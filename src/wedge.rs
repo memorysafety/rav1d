@@ -233,8 +233,8 @@ unsafe fn copy2d(
 
 #[cold]
 unsafe fn init_chroma(
-    mut chroma: *mut u8,
-    mut luma: *const u8,
+    mut chroma: &mut [u8],
+    mut luma: &[u8],
     sign: bool,
     w: usize,
     h: usize,
@@ -247,19 +247,15 @@ unsafe fn init_chroma(
     while y < h {
         let mut x = 0;
         while x < w {
-            let mut sum = *luma.offset(x as isize) as libc::c_int
-                + *luma.offset((x + 1) as isize) as libc::c_int
-                + 1;
+            let mut sum = luma[x] as libc::c_int + luma[x + 1] as libc::c_int + 1;
             if ss_ver != 0 {
-                sum += *luma.offset((w + x) as isize) as libc::c_int
-                    + *luma.offset((w + x + 1) as isize) as libc::c_int
-                    + 1;
+                sum += luma[w + x] as libc::c_int + luma[w + x + 1] as libc::c_int + 1;
             }
-            *chroma.offset((x >> 1) as isize) = (sum - sign >> 1 + ss_ver) as u8;
+            chroma[x >> 1] = (sum - sign >> 1 + ss_ver) as u8;
             x += 2;
         }
-        luma = luma.offset((w << ss_ver) as isize);
-        chroma = chroma.offset((w >> 1) as isize);
+        luma = &luma[w << ss_ver..];
+        chroma = &mut chroma[w >> 1..];
         y += 1 + ss_ver;
     }
 }
@@ -301,32 +297,32 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         let sign = (signs >> n & 1) != 0;
 
         init_chroma(
-            masks_422[sign as usize][n].as_mut_ptr(),
-            masks_444[sign as usize][n].as_ptr(),
+            &mut masks_422[sign as usize][n],
+            &masks_444[sign as usize][n],
             false,
             w,
             h,
             false,
         );
         init_chroma(
-            masks_422[!sign as usize][n].as_mut_ptr(),
-            masks_444[sign as usize][n].as_ptr(),
+            &mut masks_422[!sign as usize][n],
+            &masks_444[sign as usize][n],
             true,
             w,
             h,
             false,
         );
         init_chroma(
-            masks_420[sign as usize][n].as_mut_ptr(),
-            masks_444[sign as usize][n].as_ptr(),
+            &mut masks_420[sign as usize][n],
+            &masks_444[sign as usize][n],
             false,
             w,
             h,
             true,
         );
         init_chroma(
-            masks_420[!sign as usize][n].as_mut_ptr(),
-            masks_444[sign as usize][n].as_ptr(),
+            &mut masks_420[!sign as usize][n],
+            &masks_444[sign as usize][n],
             true,
             w,
             h,
