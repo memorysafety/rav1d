@@ -146,8 +146,8 @@ static mut wedge_masks_420_4x16: Align64<[[[u8; 4 * 16]; 16]; 2]> = Align64([[[0
 static mut wedge_masks_420_4x8: Align64<[[[u8; 4 * 8]; 16]; 2]> = Align64([[[0; 4 * 8]; 16]; 2]);
 static mut wedge_masks_420_4x4: Align64<[[[u8; 4 * 4]; 16]; 2]> = Align64([[[0; 4 * 4]; 16]; 2]);
 
-pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
-    [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
+pub static mut dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] =
+    [[[[&[]; 16]; 2]; 3]; N_BS_SIZES];
 
 const fn insert_border(
     mut dst: [u8; 64 * 64],
@@ -267,11 +267,11 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
     h: usize,
     master: &[[u8; 64 * 64]; 6],
     cb: &[wedge_code_type; 16],
-    masks_444: &mut [[[u8; LEN_444]; 16]; 2],
-    masks_422: &mut [[[u8; LEN_422]; 16]; 2],
-    masks_420: &mut [[[u8; LEN_420]; 16]; 2],
+    masks_444: &'static mut [[[u8; LEN_444]; 16]; 2],
+    masks_422: &'static mut [[[u8; LEN_422]; 16]; 2],
+    masks_420: &'static mut [[[u8; LEN_420]; 16]; 2],
     signs: libc::c_uint,
-) -> [[[*const u8; 16]; 2]; 3] {
+) -> [[[&'static [u8]; 16]; 2]; 3] {
     assert!(LEN_444 == (w * h) >> 0);
     assert!(LEN_422 == (w * h) >> 1);
     assert!(LEN_420 == (w * h) >> 2);
@@ -300,20 +300,20 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         masks_420[!sign as usize][n] = init_chroma(luma, true, w, h, true);
     }
 
-    let mut masks = [[[0 as *const u8; 16]; 2]; 3];
+    let mut masks = [[[&[] as &'static [u8]; 16]; 2]; 3];
 
     // assign pointers in externally visible array
     for n in 0..16 {
         let sign = (signs >> n & 1) != 0;
 
-        masks[0][0][n] = masks_444[sign as usize][n].as_ptr();
+        masks[0][0][n] = &masks_444[sign as usize][n];
         // not using !sign is intentional here, since 444 does not require
         // any rounding since no chroma subsampling is applied.
-        masks[0][1][n] = masks_444[sign as usize][n].as_ptr();
-        masks[1][0][n] = masks_422[sign as usize][n].as_ptr();
-        masks[1][1][n] = masks_422[!sign as usize][n].as_ptr();
-        masks[2][0][n] = masks_420[sign as usize][n].as_ptr();
-        masks[2][1][n] = masks_420[!sign as usize][n].as_ptr();
+        masks[0][1][n] = &masks_444[sign as usize][n];
+        masks[1][0][n] = &masks_422[sign as usize][n];
+        masks[1][1][n] = &masks_422[!sign as usize][n];
+        masks[2][0][n] = &masks_420[sign as usize][n];
+        masks[2][1][n] = &masks_420[!sign as usize][n];
     }
 
     masks

@@ -3563,8 +3563,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                 0 as libc::c_int,
                 8,
             );
-            let ii_mask: *const uint8_t = if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type
-                as libc::c_int
+            let ii_mask = if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int
                 == INTER_INTRA_BLEND as libc::c_int
             {
                 dav1d_ii_masks[bs as usize][0][(*b)
@@ -3573,7 +3572,6 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                     .c2rust_unnamed
                     .c2rust_unnamed
                     .interintra_mode as usize]
-                    .as_ptr()
             } else {
                 dav1d_wedge_masks[bs as usize][0][0][(*b)
                     .c2rust_unnamed
@@ -3588,7 +3586,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                 tmp.cast(),
                 bw4 * 4,
                 bh4 * 4,
-                ii_mask,
+                ii_mask.as_ptr(),
             );
         }
         if !(has_chroma == 0) {
@@ -3916,27 +3914,26 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                     }
                 }
                 if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
-                    let ii_mask_0: *const uint8_t =
-                        if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type as libc::c_int
-                            == INTER_INTRA_BLEND as libc::c_int
-                        {
-                            dav1d_ii_masks[bs as usize][chr_layout_idx as usize][(*b)
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .interintra_mode
-                                as usize]
-                                .as_ptr()
-                        } else {
-                            dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][0][(*b)
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .wedge_idx
-                                as usize]
-                        };
+                    let ii_mask_0 = if (*b).c2rust_unnamed.c2rust_unnamed_0.interintra_type
+                        as libc::c_int
+                        == INTER_INTRA_BLEND as libc::c_int
+                    {
+                        dav1d_ii_masks[bs as usize][chr_layout_idx as usize][(*b)
+                            .c2rust_unnamed
+                            .c2rust_unnamed_0
+                            .c2rust_unnamed
+                            .c2rust_unnamed
+                            .interintra_mode
+                            as usize]
+                    } else {
+                        dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][0][(*b)
+                            .c2rust_unnamed
+                            .c2rust_unnamed_0
+                            .c2rust_unnamed
+                            .c2rust_unnamed
+                            .wedge_idx
+                            as usize]
+                    };
                     let mut pl_6 = 0;
                     while pl_6 < 2 {
                         let tmp_0: *mut pixel = ((*t)
@@ -4018,7 +4015,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             tmp_0.cast(),
                             cbw4 * 4,
                             cbh4 * 4,
-                            ii_mask_0,
+                            ii_mask_0.as_ptr(),
                         );
                         pl_6 += 1;
                     }
@@ -4170,7 +4167,8 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                     .c2rust_unnamed
                     .c2rust_unnamed
                     .wedge_idx
-                    as usize];
+                    as usize]
+                    .as_ptr();
                 ((*dsp).mc.mask).expect("non-null function pointer")(
                     dst.cast(),
                     (*f).cur.stride[0],
@@ -4209,7 +4207,8 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                         .c2rust_unnamed_0
                         .c2rust_unnamed
                         .c2rust_unnamed
-                        .wedge_idx as usize];
+                        .wedge_idx as usize]
+                        .as_ptr();
                 }
             }
             _ => {}
