@@ -263,9 +263,9 @@ unsafe fn fill2d_16x2(
     bs: BlockSize,
     master: &[[u8; 64 * 64]; 6],
     cb: &[wedge_code_type; 16],
-    mut masks_444: *mut u8,
-    mut masks_422: *mut u8,
-    mut masks_420: *mut u8,
+    mut masks_444: &mut [u8],
+    mut masks_422: &mut [u8],
+    mut masks_420: &mut [u8],
     signs: libc::c_uint,
 ) {
     let bs = bs as usize;
@@ -299,19 +299,19 @@ unsafe fn fill2d_16x2(
     // assign pointers in externally visible array
     for n in 0..16 {
         let sign = (signs >> n & 1) as usize;
-        dav1d_wedge_masks[bs][0][0][n] = masks_444.offset((sign * sign_stride_444) as isize);
+        dav1d_wedge_masks[bs][0][0][n] = masks_444[sign * sign_stride_444..].as_ptr();
         // not using !sign is intentional here, since 444 does not require
         // any rounding since no chroma subsampling is applied.
-        dav1d_wedge_masks[bs][0][1][n] = masks_444.offset((sign * sign_stride_444) as isize);
-        dav1d_wedge_masks[bs][1][0][n] = masks_422.offset((sign * sign_stride_422) as isize);
+        dav1d_wedge_masks[bs][0][1][n] = masks_444[sign * sign_stride_444..].as_ptr();
+        dav1d_wedge_masks[bs][1][0][n] = masks_422[sign * sign_stride_422..].as_ptr();
         dav1d_wedge_masks[bs][1][1][n] =
-            masks_422.offset(((sign == 0) as usize * sign_stride_422) as isize);
-        dav1d_wedge_masks[bs][2][0][n] = masks_420.offset((sign * sign_stride_420) as isize);
+            masks_422[(sign == 0) as usize * sign_stride_422..].as_ptr();
+        dav1d_wedge_masks[bs][2][0][n] = masks_420[sign * sign_stride_420..].as_ptr();
         dav1d_wedge_masks[bs][2][1][n] =
-            masks_420.offset(((sign == 0) as usize * sign_stride_420) as isize);
-        masks_444 = masks_444.offset(n_stride_444 as isize);
-        masks_422 = masks_422.offset(n_stride_422 as isize);
-        masks_420 = masks_420.offset(n_stride_420 as isize);
+            masks_420[(sign == 0) as usize * sign_stride_420..].as_ptr();
+        masks_444 = &mut masks_444[n_stride_444..];
+        masks_422 = &mut masks_422[n_stride_422..];
+        masks_420 = &mut masks_420[n_stride_420..];
 
         // since the pointers come from inside, we know that
         // violation of the const is OK here. Any other approach
@@ -412,9 +412,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_32x32,
         &master,
         &wedge_codebook_16_heqw,
-        wedge_masks_444_32x32.0.as_mut_ptr(),
-        wedge_masks_422_16x32.0.as_mut_ptr(),
-        wedge_masks_420_16x16.0.as_mut_ptr(),
+        &mut wedge_masks_444_32x32.0,
+        &mut wedge_masks_422_16x32.0,
+        &mut wedge_masks_420_16x16.0,
         0x7bfb,
     );
     fill2d_16x2(
@@ -424,9 +424,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_32x16,
         &master,
         &wedge_codebook_16_hltw,
-        wedge_masks_444_32x16.0.as_mut_ptr(),
-        wedge_masks_422_16x16.0.as_mut_ptr(),
-        wedge_masks_420_16x8.0.as_mut_ptr(),
+        &mut wedge_masks_444_32x16.0,
+        &mut wedge_masks_422_16x16.0,
+        &mut wedge_masks_420_16x8.0,
         0x7beb,
     );
     fill2d_16x2(
@@ -436,9 +436,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_32x8,
         &master,
         &wedge_codebook_16_hltw,
-        wedge_masks_444_32x8.0.as_mut_ptr(),
-        wedge_masks_422_16x8.0.as_mut_ptr(),
-        wedge_masks_420_16x4.0.as_mut_ptr(),
+        &mut wedge_masks_444_32x8.0,
+        &mut wedge_masks_422_16x8.0,
+        &mut wedge_masks_420_16x4.0,
         0x6beb,
     );
     fill2d_16x2(
@@ -448,9 +448,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_16x32,
         &master,
         &wedge_codebook_16_hgtw,
-        wedge_masks_444_16x32.0.as_mut_ptr(),
-        wedge_masks_422_8x32.0.as_mut_ptr(),
-        wedge_masks_420_8x16.0.as_mut_ptr(),
+        &mut wedge_masks_444_16x32.0,
+        &mut wedge_masks_422_8x32.0,
+        &mut wedge_masks_420_8x16.0,
         0x7beb,
     );
     fill2d_16x2(
@@ -460,9 +460,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_16x16,
         &master,
         &wedge_codebook_16_heqw,
-        wedge_masks_444_16x16.0.as_mut_ptr(),
-        wedge_masks_422_8x16.0.as_mut_ptr(),
-        wedge_masks_420_8x8.0.as_mut_ptr(),
+        &mut wedge_masks_444_16x16.0,
+        &mut wedge_masks_422_8x16.0,
+        &mut wedge_masks_420_8x8.0,
         0x7bfb,
     );
     fill2d_16x2(
@@ -472,9 +472,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_16x8,
         &master,
         &wedge_codebook_16_hltw,
-        wedge_masks_444_16x8.0.as_mut_ptr(),
-        wedge_masks_422_8x8.0.as_mut_ptr(),
-        wedge_masks_420_8x4.0.as_mut_ptr(),
+        &mut wedge_masks_444_16x8.0,
+        &mut wedge_masks_422_8x8.0,
+        &mut wedge_masks_420_8x4.0,
         0x7beb,
     );
     fill2d_16x2(
@@ -484,9 +484,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_8x32,
         &master,
         &wedge_codebook_16_hgtw,
-        wedge_masks_444_8x32.0.as_mut_ptr(),
-        wedge_masks_422_4x32.0.as_mut_ptr(),
-        wedge_masks_420_4x16.0.as_mut_ptr(),
+        &mut wedge_masks_444_8x32.0,
+        &mut wedge_masks_422_4x32.0,
+        &mut wedge_masks_420_4x16.0,
         0x7aeb,
     );
     fill2d_16x2(
@@ -496,9 +496,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_8x16,
         &master,
         &wedge_codebook_16_hgtw,
-        wedge_masks_444_8x16.0.as_mut_ptr(),
-        wedge_masks_422_4x16.0.as_mut_ptr(),
-        wedge_masks_420_4x8.0.as_mut_ptr(),
+        &mut wedge_masks_444_8x16.0,
+        &mut wedge_masks_422_4x16.0,
+        &mut wedge_masks_420_4x8.0,
         0x7beb,
     );
     fill2d_16x2(
@@ -508,9 +508,9 @@ pub unsafe fn dav1d_init_wedge_masks() {
         BS_8x8,
         &master,
         &wedge_codebook_16_heqw,
-        wedge_masks_444_8x8.0.as_mut_ptr(),
-        wedge_masks_422_4x8.0.as_mut_ptr(),
-        wedge_masks_420_4x4.0.as_mut_ptr(),
+        &mut wedge_masks_444_8x8.0,
+        &mut wedge_masks_422_4x8.0,
+        &mut wedge_masks_420_4x4.0,
         0x7bfb,
     );
 }
