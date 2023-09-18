@@ -257,7 +257,7 @@ unsafe fn init_chroma(
 
 #[cold]
 unsafe fn fill2d_16x2(
-    dst: *mut u8,
+    dst: &mut [u8],
     w: usize,
     h: usize,
     bs: BlockSize,
@@ -270,7 +270,7 @@ unsafe fn fill2d_16x2(
 ) {
     let bs = bs as usize;
 
-    let mut ptr: *mut u8 = dst;
+    let mut ptr: *mut u8 = dst.as_mut_ptr();
     let mut n = 0;
     while n < 16 {
         copy2d(
@@ -287,7 +287,7 @@ unsafe fn fill2d_16x2(
     let mut n = 0;
     let mut off = 0;
     while n < 16 {
-        invert(ptr.offset(off as isize), dst.offset(off as isize), w, h);
+        invert(ptr.offset(off as isize), dst[off..].as_ptr(), w, h);
         n += 1;
         off += w * h;
     }
@@ -410,7 +410,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
     master[WEDGE_OBLIQUE153 as usize] = hflip(&master[WEDGE_OBLIQUE27 as usize]);
 
     fill2d_16x2(
-        wedge_masks_444_32x32.0.as_mut_ptr(),
+        &mut wedge_masks_444_32x32.0,
         32,
         32,
         BS_32x32,
@@ -422,7 +422,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7bfb,
     );
     fill2d_16x2(
-        wedge_masks_444_32x16.0.as_mut_ptr(),
+        &mut wedge_masks_444_32x16.0,
         32,
         16,
         BS_32x16,
@@ -434,7 +434,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7beb,
     );
     fill2d_16x2(
-        wedge_masks_444_32x8.0.as_mut_ptr(),
+        &mut wedge_masks_444_32x8.0,
         32,
         8,
         BS_32x8,
@@ -446,7 +446,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x6beb,
     );
     fill2d_16x2(
-        wedge_masks_444_16x32.0.as_mut_ptr(),
+        &mut wedge_masks_444_16x32.0,
         16,
         32,
         BS_16x32,
@@ -458,7 +458,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7beb,
     );
     fill2d_16x2(
-        wedge_masks_444_16x16.0.as_mut_ptr(),
+        &mut wedge_masks_444_16x16.0,
         16,
         16,
         BS_16x16,
@@ -470,7 +470,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7bfb,
     );
     fill2d_16x2(
-        wedge_masks_444_16x8.0.as_mut_ptr(),
+        &mut wedge_masks_444_16x8.0,
         16,
         8,
         BS_16x8,
@@ -482,7 +482,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7beb,
     );
     fill2d_16x2(
-        wedge_masks_444_8x32.0.as_mut_ptr(),
+        &mut wedge_masks_444_8x32.0,
         8,
         32,
         BS_8x32,
@@ -494,7 +494,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7aeb,
     );
     fill2d_16x2(
-        wedge_masks_444_8x16.0.as_mut_ptr(),
+        &mut wedge_masks_444_8x16.0,
         8,
         16,
         BS_8x16,
@@ -506,7 +506,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7beb,
     );
     fill2d_16x2(
-        wedge_masks_444_8x8.0.as_mut_ptr(),
+        &mut wedge_masks_444_8x8.0,
         8,
         8,
         BS_8x8,
