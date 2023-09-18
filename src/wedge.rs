@@ -232,7 +232,7 @@ unsafe fn copy2d(
 }
 
 #[cold]
-unsafe fn init_chroma(
+fn init_chroma(
     mut chroma: &mut [u8],
     mut luma: &[u8],
     sign: bool,
