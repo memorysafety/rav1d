@@ -232,27 +232,22 @@ unsafe fn copy2d(
 }
 
 #[cold]
-fn init_chroma(
-    mut chroma: &mut [u8],
-    mut luma: &[u8],
-    sign: bool,
-    w: usize,
-    h: usize,
-    ss_ver: bool,
-) {
+fn init_chroma(chroma: &mut [u8], luma: &[u8], sign: bool, w: usize, h: usize, ss_ver: bool) {
     let sign = sign as u16;
     let ss_ver = ss_ver as usize;
 
+    let mut luma_off = 0;
+    let mut chroma_off = 0;
     for _ in (0..h).step_by(1 + ss_ver) {
         for x in (0..w).step_by(2) {
-            let mut sum = luma[x] as u16 + luma[x + 1] as u16 + 1;
+            let mut sum = luma[luma_off + x] as u16 + luma[luma_off + x + 1] as u16 + 1;
             if ss_ver != 0 {
-                sum += luma[w + x] as u16 + luma[w + x + 1] as u16 + 1;
+                sum += luma[luma_off + w + x] as u16 + luma[luma_off + w + x + 1] as u16 + 1;
             }
-            chroma[x >> 1] = (sum - sign >> 1 + ss_ver) as u8;
+            chroma[chroma_off + (x >> 1)] = (sum - sign >> 1 + ss_ver) as u8;
         }
-        luma = &luma[w << ss_ver..];
-        chroma = &mut chroma[w >> 1..];
+        luma_off += w << ss_ver;
+        chroma_off += w >> 1;
     }
 }
 
