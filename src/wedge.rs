@@ -290,9 +290,6 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         invert(dst[1][n].as_mut_ptr(), dst[0][n].as_ptr(), w, h);
     }
 
-    let mut masks = [[[0 as *const u8; 16]; 2]; 3];
-
-    // assign pointers in externally visible array
     for n in 0..16 {
         let sign = (signs >> n & 1) != 0;
         let luma = &masks_444[sign as usize][n];
@@ -301,6 +298,13 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         masks_422[!sign as usize][n] = init_chroma(luma, true, w, h, false);
         masks_420[sign as usize][n] = init_chroma(luma, false, w, h, true);
         masks_420[!sign as usize][n] = init_chroma(luma, true, w, h, true);
+    }
+
+    let mut masks = [[[0 as *const u8; 16]; 2]; 3];
+
+    // assign pointers in externally visible array
+    for n in 0..16 {
+        let sign = (signs >> n & 1) != 0;
 
         masks[0][0][n] = masks_444[sign as usize][n].as_ptr();
         // not using !sign is intentional here, since 444 does not require
