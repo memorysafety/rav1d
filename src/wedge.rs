@@ -22,10 +22,6 @@ use crate::src::qm::transposed;
 
 use paste::paste;
 
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-}
-
 pub type WedgeDirectionType = u8;
 pub const WEDGE_HORIZONTAL: WedgeDirectionType = 0;
 pub const WEDGE_VERTICAL: WedgeDirectionType = 1;
@@ -210,23 +206,19 @@ const fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
 }
 
 unsafe fn copy2d(
-    mut dst: *mut u8,
-    mut src: *const u8,
+    mut dst: &mut [u8],
+    mut src: &[u8],
     w: usize,
     h: usize,
     x_off: usize,
     y_off: usize,
 ) {
-    src = src.offset((y_off * 64 + x_off) as isize);
+    src = &src[y_off * 64 + x_off..];
     let mut y = 0;
     while y < h {
-        memcpy(
-            dst as *mut libc::c_void,
-            src as *const libc::c_void,
-            w as libc::c_ulong,
-        );
-        src = src.offset(64);
-        dst = dst.offset(w as isize);
+        dst[..w].copy_from_slice(&src[..w]);
+        src = &src[64..];
+        dst = &mut dst[w..];
         y += 1;
     }
 }
@@ -278,8 +270,8 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
 
     for n in 0..16 {
         copy2d(
-            dst[0][n].as_mut_ptr(),
-            master[cb[n].direction as usize].as_ptr(),
+            &mut dst[0][n],
+            &master[cb[n].direction as usize],
             w,
             h,
             32 - (w * cb[n].x_offset as usize >> 3),
