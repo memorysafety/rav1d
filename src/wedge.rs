@@ -18,7 +18,6 @@ use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::II_VERT_PRED;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
-use crate::src::qm::transposed;
 
 use paste::paste;
 
@@ -146,34 +145,31 @@ pub static mut dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[&[]; 16]; 2]; 3]; N_BS_SIZES];
 
 const fn insert_border(
-    mut dst: [u8; 64 * 64],
+    mut dst: [[u8; 64]; 64],
     y: usize,
     src: &[u8; 8],
     ctr: usize,
-) -> [u8; 64 * 64] {
-    let dst_off = y * 64;
-
+) -> [[u8; 64]; 64] {
     {
         if ctr > 4 {
             const_for!(i in 0..ctr - 4 => {
-                dst[dst_off + i] = 0;
+                dst[y][i] = 0;
             });
         }
     }
     {
-        let dst_off = dst_off + ctr.saturating_sub(4);
+        let dst_off = ctr.saturating_sub(4);
         let src_off = 4usize.saturating_sub(ctr);
         let len = const_min!(64 - ctr, 8);
         const_for!(i in 0..len => {
-            dst[dst_off + i] = src[src_off + i];
+            dst[y][dst_off + i] = src[src_off + i];
         });
     }
     {
         let ctr = ctr + 4;
-        let dst_off = dst_off + ctr;
         if ctr < 64 {
             const_for!(i in 0..64 - ctr => {
-                dst[dst_off + i] = 64;
+                dst[y][ctr + i] = 64;
             });
         }
     }
@@ -181,11 +177,23 @@ const fn insert_border(
     dst
 }
 
-const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
-    let mut dst = [0; 64 * 64];
-    const_for!(y in 0..64 => {
-        const_for!(x in 0..64 => {
-            dst[(y * 64) + 64 - 1 - x] = src[(y * 64) + x];
+const fn transposed<const N: usize, const M: usize>(src: &[[u8; N]; M]) -> [[u8; M]; N] {
+    let mut dst = [[0; M]; N];
+
+    const_for!(y in 0..M => {
+        const_for!(x in 0..N => {
+            dst[x][y] = src[y][x];
+        });
+    });
+
+    dst
+}
+
+const fn hflip(src: &[[u8; 64]; 64]) -> [[u8; 64]; 64] {
+    let mut dst = [[0; 64]; 64];
+    const_for!(y in 0..dst.len() => {
+        const_for!(x in 0..dst[y].len() => {
+            dst[y][dst[y].len() - 1 - x] = src[y][x];
         });
     });
     dst
@@ -205,11 +213,18 @@ const fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
     dst
 }
 
-fn copy2d(mut dst: &mut [u8], mut src: &[u8], w: usize, h: usize, x_off: usize, y_off: usize) {
-    src = &src[y_off * 64 + x_off..];
+fn copy2d(
+    mut dst: &mut [u8],
+    mut src: &[[u8; 64]],
+    w: usize,
+    h: usize,
+    x_off: usize,
+    y_off: usize,
+) {
+    src = &src[y_off..];
     for _ in 0..h {
-        dst[..w].copy_from_slice(&src[..w]);
-        src = &src[64..];
+        dst[..w].copy_from_slice(&src[0][x_off..][..w]);
+        src = &src[1..];
         dst = &mut dst[w..];
     }
 }
@@ -248,7 +263,7 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
     dst: &mut [[[u8; LEN_444]; 16]; 2],
     w: usize,
     h: usize,
-    master: &[[u8; 64 * 64]; N_WEDGE_DIRECTIONS],
+    master: &[[[u8; 64]; 64]; N_WEDGE_DIRECTIONS],
     cb: &[wedge_code_type; 16],
     masks_444: &'static mut [[[u8; LEN_444]; 16]; 2],
     masks_422: &'static mut [[[u8; LEN_422]; 16]; 2],
@@ -317,7 +332,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         [1, 4, 11, 27, 46, 58, 62, 63],
         [0, 2, 7, 21, 43, 57, 62, 64],
     ];
-    let mut master: [[u8; 64 * 64]; N_WEDGE_DIRECTIONS] = [[0; 64 * 64]; N_WEDGE_DIRECTIONS];
+    let mut master: [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] = [[[0; 64]; 64]; N_WEDGE_DIRECTIONS];
 
     // create master templates
     let mut y = 0;
@@ -349,8 +364,8 @@ pub unsafe fn dav1d_init_wedge_masks() {
         ctr -= 1;
     }
 
-    master[WEDGE_OBLIQUE27 as usize] = transposed(&master[WEDGE_OBLIQUE63 as usize], 64, 64);
-    master[WEDGE_HORIZONTAL as usize] = transposed(&master[WEDGE_VERTICAL as usize], 64, 64);
+    master[WEDGE_OBLIQUE27 as usize] = transposed(&master[WEDGE_OBLIQUE63 as usize]);
+    master[WEDGE_HORIZONTAL as usize] = transposed(&master[WEDGE_VERTICAL as usize]);
     master[WEDGE_OBLIQUE117 as usize] = hflip(&master[WEDGE_OBLIQUE63 as usize]);
     master[WEDGE_OBLIQUE153 as usize] = hflip(&master[WEDGE_OBLIQUE27 as usize]);
 
