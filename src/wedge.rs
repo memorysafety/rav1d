@@ -205,14 +205,7 @@ const fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
     dst
 }
 
-unsafe fn copy2d(
-    mut dst: &mut [u8],
-    mut src: &[u8],
-    w: usize,
-    h: usize,
-    x_off: usize,
-    y_off: usize,
-) {
+fn copy2d(mut dst: &mut [u8], mut src: &[u8], w: usize, h: usize, x_off: usize, y_off: usize) {
     src = &src[y_off * 64 + x_off..];
     let mut y = 0;
     while y < h {
