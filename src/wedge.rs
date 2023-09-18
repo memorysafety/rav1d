@@ -196,15 +196,11 @@ const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
 }
 
 fn invert(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
-    let mut y = 0;
     let mut y_off = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
+    for _ in 0..h {
+        for x in 0..w {
             dst[y_off + x] = 64 - src[y_off + x];
-            x += 1;
         }
-        y += 1;
         y_off += w;
     }
 }
