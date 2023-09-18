@@ -195,7 +195,8 @@ const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
     dst
 }
 
-fn invert(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
+fn invert<const N: usize>(dst: &mut [u8; N], src: &[u8; N], w: usize, h: usize) {
+    assert!(w * h == N);
     for y in 0..h {
         let y_off = y * w;
         for x in 0..w {
