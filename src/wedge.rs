@@ -269,22 +269,24 @@ unsafe fn fill2d_16x2(
     signs: libc::c_uint,
 ) {
     let bs = bs as usize;
+    assert!(dst.len() == 2 * 16 * w * h);
 
-    let mut ptr: *mut u8 = dst.as_mut_ptr();
+    let mut ptr = &mut dst[..];
     for n in 0..16 {
         copy2d(
-            ptr,
+            ptr.as_mut_ptr(),
             (*master.offset((*cb.offset(n as isize)).direction as isize)).as_ptr(),
             w,
             h,
             32 - (w * (*cb.offset(n as isize)).x_offset as usize >> 3),
             32 - (h * (*cb.offset(n as isize)).y_offset as usize >> 3),
         );
-        ptr = ptr.offset((w * h) as isize);
+        ptr = &mut ptr[w * h..];
     }
+    let (dst, ptr) = dst.split_at_mut(16 * w * h);
     let mut off = 0;
     for _ in 0..16 {
-        invert(ptr.offset(off as isize), dst[off..].as_ptr(), w, h);
+        invert(ptr[off..].as_mut_ptr(), dst[off..].as_ptr(), w, h);
         off += w * h;
     }
 
