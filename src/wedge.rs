@@ -195,14 +195,18 @@ const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
     dst
 }
 
-fn invert<const N: usize>(dst: &mut [u8; N], src: &[u8; N], w: usize, h: usize) {
+fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
     assert!(w * h == N);
+    let mut dst = [0; N];
+
     for y in 0..h {
         let y_off = y * w;
         for x in 0..w {
             dst[y_off + x] = 64 - src[y_off + x];
         }
     }
+
+    dst
 }
 
 unsafe fn copy2d(
@@ -283,8 +287,7 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         );
     }
     for n in 0..16 {
-        let [dst_0, dst_1] = dst;
-        invert(&mut dst_1[n], &dst_0[n], w, h);
+        dst[1][n] = invert(&dst[0][n], w, h);
     }
 
     for n in 0..16 {
