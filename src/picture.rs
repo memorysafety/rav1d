@@ -97,11 +97,8 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 
 use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
-pub type pixel = ();
 
 use crate::src::internal::Dav1dFrameContext_frame_thread;
-
-pub type coef = ();
 
 use crate::src::levels::Av1Block;
 use crate::src::refmvs::refmvs_frame;

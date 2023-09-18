@@ -35,6 +35,8 @@ use crate::src::levels::RTX_8X4;
 
 use crate::src::levels::WHT_WHT;
 
+use crate::include::common::bitdepth::BitDepth8;
+use crate::include::common::intops::iclip_u8;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -52,10 +54,6 @@ use crate::src::levels::IDTX;
 use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
-pub type itx_1d_fn =
-    Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
-use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::intops::iclip_u8;
 
 unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased(
     dst: *mut DynPixel,

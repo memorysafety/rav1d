@@ -278,16 +278,14 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 
-use crate::src::internal::Dav1dFrameContext_lf;
-use crate::src::lf_mask::Av1Filter;
-pub type pixel = ();
-use crate::src::internal::Dav1dFrameContext_frame_thread;
-use crate::src::lf_mask::Av1Restoration;
-use crate::src::lf_mask::Av1RestorationUnit;
-pub type coef = ();
 use crate::src::internal::CodedBlockInfo;
+use crate::src::internal::Dav1dFrameContext_frame_thread;
+use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::levels::Av1Block;
 use crate::src::levels::MotionMode;
+use crate::src::lf_mask::Av1Filter;
+use crate::src::lf_mask::Av1Restoration;
+use crate::src::lf_mask::Av1RestorationUnit;
 
 use crate::src::levels::mv;
 
