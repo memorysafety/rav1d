@@ -299,6 +299,40 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
     // assign pointers in externally visible array
     for n in 0..16 {
         let sign = (signs >> n & 1) != 0;
+
+        init_chroma(
+            masks_422[sign as usize][n].as_mut_ptr(),
+            masks_444[sign as usize][n].as_ptr(),
+            false,
+            w,
+            h,
+            false,
+        );
+        init_chroma(
+            masks_422[!sign as usize][n].as_mut_ptr(),
+            masks_444[sign as usize][n].as_ptr(),
+            true,
+            w,
+            h,
+            false,
+        );
+        init_chroma(
+            masks_420[sign as usize][n].as_mut_ptr(),
+            masks_444[sign as usize][n].as_ptr(),
+            false,
+            w,
+            h,
+            true,
+        );
+        init_chroma(
+            masks_420[!sign as usize][n].as_mut_ptr(),
+            masks_444[sign as usize][n].as_ptr(),
+            true,
+            w,
+            h,
+            true,
+        );
+
         masks[0][0][n] = masks_444[sign as usize][n].as_ptr();
         // not using !sign is intentional here, since 444 does not require
         // any rounding since no chroma subsampling is applied.
@@ -307,23 +341,6 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         masks[1][1][n] = masks_422[!sign as usize][n].as_ptr();
         masks[2][0][n] = masks_420[sign as usize][n].as_ptr();
         masks[2][1][n] = masks_420[!sign as usize][n].as_ptr();
-
-        // since the pointers come from inside, we know that
-        // violation of the const is OK here. Any other approach
-        // means we would have to duplicate the sign correction
-        // logic in two places, which isn't very nice, or mark
-        // the table faced externally as non-const, which also sucks
-        init_chroma(
-            masks[1][0][n] as *mut u8,
-            masks[0][0][n],
-            false,
-            w,
-            h,
-            false,
-        );
-        init_chroma(masks[1][1][n] as *mut u8, masks[0][0][n], true, w, h, false);
-        init_chroma(masks[2][0][n] as *mut u8, masks[0][0][n], false, w, h, true);
-        init_chroma(masks[2][1][n] as *mut u8, masks[0][0][n], true, w, h, true);
     }
 
     masks
