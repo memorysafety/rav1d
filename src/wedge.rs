@@ -235,11 +235,14 @@ unsafe fn copy2d(
 unsafe fn init_chroma(
     mut chroma: *mut u8,
     mut luma: *const u8,
-    sign: libc::c_int,
+    sign: bool,
     w: usize,
     h: usize,
-    ss_ver: usize,
+    ss_ver: bool,
 ) {
+    let sign = sign as libc::c_int;
+    let ss_ver = ss_ver as usize;
+
     let mut y = 0;
     while y < h {
         let mut x = 0;
@@ -310,10 +313,17 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         // means we would have to duplicate the sign correction
         // logic in two places, which isn't very nice, or mark
         // the table faced externally as non-const, which also sucks
-        init_chroma(masks[1][0][n] as *mut u8, masks[0][0][n], 0, w, h, 0);
-        init_chroma(masks[1][1][n] as *mut u8, masks[0][0][n], 1, w, h, 0);
-        init_chroma(masks[2][0][n] as *mut u8, masks[0][0][n], 0, w, h, 1);
-        init_chroma(masks[2][1][n] as *mut u8, masks[0][0][n], 1, w, h, 1);
+        init_chroma(
+            masks[1][0][n] as *mut u8,
+            masks[0][0][n],
+            false,
+            w,
+            h,
+            false,
+        );
+        init_chroma(masks[1][1][n] as *mut u8, masks[0][0][n], true, w, h, false);
+        init_chroma(masks[2][0][n] as *mut u8, masks[0][0][n], false, w, h, true);
+        init_chroma(masks[2][1][n] as *mut u8, masks[0][0][n], true, w, h, true);
     }
 
     masks
