@@ -240,16 +240,16 @@ fn init_chroma(
     h: usize,
     ss_ver: bool,
 ) {
-    let sign = sign as libc::c_int;
+    let sign = sign as u16;
     let ss_ver = ss_ver as usize;
 
     let mut y = 0;
     while y < h {
         let mut x = 0;
         while x < w {
-            let mut sum = luma[x] as libc::c_int + luma[x + 1] as libc::c_int + 1;
+            let mut sum = luma[x] as u16 + luma[x + 1] as u16 + 1;
             if ss_ver != 0 {
-                sum += luma[w + x] as libc::c_int + luma[w + x + 1] as libc::c_int + 1;
+                sum += luma[w + x] as u16 + luma[w + x + 1] as u16 + 1;
             }
             chroma[x >> 1] = (sum - sign >> 1 + ss_ver) as u8;
             x += 2;
