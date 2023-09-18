@@ -243,20 +243,16 @@ fn init_chroma(
     let sign = sign as u16;
     let ss_ver = ss_ver as usize;
 
-    let mut y = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
+    for _ in (0..h).step_by(1 + ss_ver) {
+        for x in (0..w).step_by(2) {
             let mut sum = luma[x] as u16 + luma[x + 1] as u16 + 1;
             if ss_ver != 0 {
                 sum += luma[w + x] as u16 + luma[w + x + 1] as u16 + 1;
             }
             chroma[x >> 1] = (sum - sign >> 1 + ss_ver) as u8;
-            x += 2;
         }
         luma = &luma[w << ss_ver..];
         chroma = &mut chroma[w >> 1..];
-        y += 1 + ss_ver;
     }
 }
 
