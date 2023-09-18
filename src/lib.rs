@@ -58,8 +58,6 @@ extern "C" {
         in_0: *const Dav1dPicture,
     );
     fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int);
-    fn dav1d_init_wedge_masks();
-    fn dav1d_init_interintra_masks();
 }
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Dav1dUserData;
@@ -78,6 +76,8 @@ use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_task::dav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
+use crate::src::wedge::dav1d_init_interintra_masks;
+use crate::src::wedge::dav1d_init_wedge_masks;
 
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 
