@@ -29,7 +29,7 @@ pub const WEDGE_OBLIQUE27: WedgeDirectionType = 2;
 pub const WEDGE_OBLIQUE63: WedgeDirectionType = 3;
 pub const WEDGE_OBLIQUE117: WedgeDirectionType = 4;
 pub const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
-pub const _N_WEDGE_DIRECTIONS: usize = 6;
+pub const N_WEDGE_DIRECTIONS: usize = 6;
 
 #[repr(C)]
 pub struct wedge_code_type {
@@ -248,7 +248,7 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
     dst: &mut [[[u8; LEN_444]; 16]; 2],
     w: usize,
     h: usize,
-    master: &[[u8; 64 * 64]; 6],
+    master: &[[u8; 64 * 64]; N_WEDGE_DIRECTIONS],
     cb: &[wedge_code_type; 16],
     masks_444: &'static mut [[[u8; LEN_444]; 16]; 2],
     masks_422: &'static mut [[[u8; LEN_422]; 16]; 2],
@@ -317,7 +317,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
         [1, 4, 11, 27, 46, 58, 62, 63],
         [0, 2, 7, 21, 43, 57, 62, 64],
     ];
-    let mut master: [[u8; 64 * 64]; 6] = [[0; 64 * 64]; 6];
+    let mut master: [[u8; 64 * 64]; N_WEDGE_DIRECTIONS] = [[0; 64 * 64]; N_WEDGE_DIRECTIONS];
 
     // create master templates
     let mut y = 0;
