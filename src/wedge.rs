@@ -231,8 +231,7 @@ unsafe fn copy2d(
     }
 }
 
-#[cold]
-fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
+const fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
     luma: &[u8; LEN_LUMA],
     sign: bool,
     w: usize,
