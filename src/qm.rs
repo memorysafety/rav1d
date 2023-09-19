@@ -2995,7 +2995,11 @@ const fn subsampled<const N: usize, const M: usize>(
     dst
 }
 
-const fn transposed<const N: usize, const M: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; M] {
+pub const fn transposed<const N: usize, const M: usize>(
+    src: &[u8; N],
+    w: usize,
+    h: usize,
+) -> [u8; M] {
     assert!(w * h == N);
     assert!(w * h == M);
     let mut dst = [0; M];

@@ -18,6 +18,7 @@ use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::II_VERT_PRED;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
+use crate::src::qm::transposed;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
@@ -148,22 +149,6 @@ fn insert_border(dst: &mut [u8], src: &[u8], ctr: usize) {
     dst[ctr.saturating_sub(4)..][..len].copy_from_slice(&src[4usize.saturating_sub(ctr)..][..len]);
     if ctr < 64 - 4 {
         dst[ctr + 4..][..64 - 4 - ctr].fill(64);
-    }
-}
-
-unsafe fn transpose(dst: *mut u8, src: *const u8) {
-    let mut y = 0;
-    let mut y_off = 0;
-    while y < 64 {
-        let mut x = 0;
-        let mut x_off = 0;
-        while x < 64 {
-            *dst.offset((x_off + y) as isize) = *src.offset((y_off + x) as isize);
-            x += 1;
-            x_off += 64;
-        }
-        y += 1;
-        y_off += 64;
     }
 }
 
@@ -397,14 +382,8 @@ pub unsafe fn dav1d_init_wedge_masks() {
         ctr -= 1;
     }
 
-    transpose(
-        master[WEDGE_OBLIQUE27 as usize].as_mut_ptr(),
-        master[WEDGE_OBLIQUE63 as usize].as_mut_ptr(),
-    );
-    transpose(
-        master[WEDGE_HORIZONTAL as usize].as_mut_ptr(),
-        master[WEDGE_VERTICAL as usize].as_mut_ptr(),
-    );
+    master[WEDGE_OBLIQUE27 as usize] = transposed(&master[WEDGE_OBLIQUE63 as usize], 64, 64);
+    master[WEDGE_HORIZONTAL as usize] = transposed(&master[WEDGE_VERTICAL as usize], 64, 64);
     hflip(
         master[WEDGE_OBLIQUE117 as usize].as_mut_ptr(),
         master[WEDGE_OBLIQUE63 as usize].as_mut_ptr(),
