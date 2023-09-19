@@ -384,14 +384,10 @@ const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
     master
 }
 
-pub static mut dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] =
-    [[[[&[]; 16]; 2]; 3]; N_BS_SIZES];
-
-#[cold]
-pub unsafe fn dav1d_init_wedge_masks() {
-    // This function is guaranteed to be called only once
-
+pub static mut dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
     static master: [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] = build_master();
+
+    let mut masks = [[[[&[] as &'static [u8]; 16]; 2]; 3]; N_BS_SIZES];
 
     macro_rules! fill {
         ($w:literal x $h:literal, $signs:expr) => {{
@@ -401,7 +397,7 @@ pub unsafe fn dav1d_init_wedge_masks() {
                 { ($w / 2) * ($h / 2) },
             > = WedgeMasks::fill2d_16x2($w, $h, &master, wedge_codebook_16.get($w, $h), $signs);
             paste! {
-                dav1d_wedge_masks[[<BS_ $w x $h>] as usize] = wedge_masks.slice();
+                masks[[<BS_ $w x $h>] as usize] = wedge_masks.slice();
             }
         }};
     }
@@ -415,6 +411,13 @@ pub unsafe fn dav1d_init_wedge_masks() {
     fill!( 8 x 32, 0x7aeb);
     fill!( 8 x 16, 0x7beb);
     fill!( 8 x  8, 0x7bfb);
+
+    masks
+};
+
+#[cold]
+pub unsafe fn dav1d_init_wedge_masks() {
+    // This function is guaranteed to be called only once
 }
 
 static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
