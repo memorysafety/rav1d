@@ -315,14 +315,14 @@ fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
     masks
 }
 
-fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
+const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
     pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
     pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
     pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
     pub type WedgeMasterLineType = libc::c_uint;
     pub const N_WEDGE_MASTER_LINES: usize = 3;
 
-    static wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
+    const wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
         [1, 2, 6, 18, 37, 53, 60, 63],
         [1, 4, 11, 27, 46, 58, 62, 63],
         [0, 2, 7, 21, 43, 57, 62, 64],
