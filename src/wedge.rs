@@ -221,11 +221,11 @@ fn copy2d<const N: usize>(
     y_off: usize,
 ) -> [u8; N] {
     let mut dst = [0; N];
-    for y in 0..h {
-        for x in 0..w {
+    const_for!(y in 0..h => {
+        const_for!(x in 0..w => {
             dst[y * w + x] = src[y_off + y][x_off + x];
-        }
-    }
+        });
+    });
     dst
 }
 
