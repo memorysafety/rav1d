@@ -231,29 +231,33 @@ unsafe fn copy2d(
     }
 }
 
-#[cold]
-fn init_chroma(
-    mut chroma: &mut [u8],
-    mut luma: &[u8],
+const fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
+    luma: &[u8; LEN_LUMA],
     sign: bool,
     w: usize,
     h: usize,
     ss_ver: bool,
-) {
+) -> [u8; LEN_CHROMA] {
     let sign = sign as u16;
     let ss_ver = ss_ver as usize;
 
-    for _ in (0..h).step_by(1 + ss_ver) {
-        for x in (0..w).step_by(2) {
-            let mut sum = luma[x] as u16 + luma[x + 1] as u16 + 1;
+    let mut chroma = [0; LEN_CHROMA];
+
+    let mut luma_off = 0;
+    let mut chroma_off = 0;
+    const_for!(_y in 0..h, step_by 1 + ss_ver => {
+        const_for!(x in 0..w, step_by 2 => {
+            let mut sum = luma[luma_off + x] as u16 + luma[luma_off + x + 1] as u16 + 1;
             if ss_ver != 0 {
-                sum += luma[w + x] as u16 + luma[w + x + 1] as u16 + 1;
+                sum += luma[luma_off + w + x] as u16 + luma[luma_off + w + x + 1] as u16 + 1;
             }
-            chroma[x >> 1] = (sum - sign >> 1 + ss_ver) as u8;
-        }
-        luma = &luma[w << ss_ver..];
-        chroma = &mut chroma[w >> 1..];
-    }
+            chroma[chroma_off + (x >> 1)] = (sum - sign >> 1 + ss_ver) as u8;
+        });
+        luma_off += w << ss_ver;
+        chroma_off += w >> 1;
+    });
+
+    chroma
 }
 
 #[cold]
@@ -293,10 +297,10 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         let sign = (signs >> n & 1) != 0;
         let luma = &masks_444[sign as usize][n];
 
-        init_chroma(&mut masks_422[sign as usize][n], luma, false, w, h, false);
-        init_chroma(&mut masks_422[!sign as usize][n], luma, true, w, h, false);
-        init_chroma(&mut masks_420[sign as usize][n], luma, false, w, h, true);
-        init_chroma(&mut masks_420[!sign as usize][n], luma, true, w, h, true);
+        masks_422[sign as usize][n] = init_chroma(luma, false, w, h, false);
+        masks_422[!sign as usize][n] = init_chroma(luma, true, w, h, false);
+        masks_420[sign as usize][n] = init_chroma(luma, false, w, h, true);
+        masks_420[!sign as usize][n] = init_chroma(luma, true, w, h, true);
 
         masks[0][0][n] = masks_444[sign as usize][n].as_ptr();
         // not using !sign is intentional here, since 444 does not require
