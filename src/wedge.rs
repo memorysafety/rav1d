@@ -232,32 +232,27 @@ unsafe fn copy2d(
 }
 
 #[cold]
-unsafe fn init_chroma(
-    mut chroma: *mut u8,
-    mut luma: *const u8,
-    sign: libc::c_int,
+fn init_chroma(
+    mut chroma: &mut [u8],
+    mut luma: &[u8],
+    sign: bool,
     w: usize,
     h: usize,
-    ss_ver: usize,
+    ss_ver: bool,
 ) {
-    let mut y = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
-            let mut sum = *luma.offset(x as isize) as libc::c_int
-                + *luma.offset((x + 1) as isize) as libc::c_int
-                + 1;
+    let sign = sign as u16;
+    let ss_ver = ss_ver as usize;
+
+    for _ in (0..h).step_by(1 + ss_ver) {
+        for x in (0..w).step_by(2) {
+            let mut sum = luma[x] as u16 + luma[x + 1] as u16 + 1;
             if ss_ver != 0 {
-                sum += *luma.offset((w + x) as isize) as libc::c_int
-                    + *luma.offset((w + x + 1) as isize) as libc::c_int
-                    + 1;
+                sum += luma[w + x] as u16 + luma[w + x + 1] as u16 + 1;
             }
-            *chroma.offset((x >> 1) as isize) = (sum - sign >> 1 + ss_ver) as u8;
-            x += 2;
+            chroma[x >> 1] = (sum - sign >> 1 + ss_ver) as u8;
         }
-        luma = luma.offset((w << ss_ver) as isize);
-        chroma = chroma.offset((w >> 1) as isize);
-        y += 1 + ss_ver;
+        luma = &luma[w << ss_ver..];
+        chroma = &mut chroma[w >> 1..];
     }
 }
 
@@ -296,6 +291,13 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
     // assign pointers in externally visible array
     for n in 0..16 {
         let sign = (signs >> n & 1) != 0;
+        let luma = &masks_444[sign as usize][n];
+
+        init_chroma(&mut masks_422[sign as usize][n], luma, false, w, h, false);
+        init_chroma(&mut masks_422[!sign as usize][n], luma, true, w, h, false);
+        init_chroma(&mut masks_420[sign as usize][n], luma, false, w, h, true);
+        init_chroma(&mut masks_420[!sign as usize][n], luma, true, w, h, true);
+
         masks[0][0][n] = masks_444[sign as usize][n].as_ptr();
         // not using !sign is intentional here, since 444 does not require
         // any rounding since no chroma subsampling is applied.
@@ -304,16 +306,6 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         masks[1][1][n] = masks_422[!sign as usize][n].as_ptr();
         masks[2][0][n] = masks_420[sign as usize][n].as_ptr();
         masks[2][1][n] = masks_420[!sign as usize][n].as_ptr();
-
-        // since the pointers come from inside, we know that
-        // violation of the const is OK here. Any other approach
-        // means we would have to duplicate the sign correction
-        // logic in two places, which isn't very nice, or mark
-        // the table faced externally as non-const, which also sucks
-        init_chroma(masks[1][0][n] as *mut u8, masks[0][0][n], 0, w, h, 0);
-        init_chroma(masks[1][1][n] as *mut u8, masks[0][0][n], 1, w, h, 0);
-        init_chroma(masks[2][0][n] as *mut u8, masks[0][0][n], 0, w, h, 1);
-        init_chroma(masks[2][1][n] as *mut u8, masks[0][0][n], 1, w, h, 1);
     }
 
     masks
