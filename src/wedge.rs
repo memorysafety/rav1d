@@ -104,43 +104,6 @@ static wedge_codebook_16_heqw: [wedge_code_type; 16] = [
     wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
 ];
 
-static mut wedge_masks_444_32x32: Align64<[[[u8; 32 * 32]; 16]; 2]> =
-    Align64([[[0; 32 * 32]; 16]; 2]);
-static mut wedge_masks_444_32x16: Align64<[[[u8; 32 * 16]; 16]; 2]> =
-    Align64([[[0; 32 * 16]; 16]; 2]);
-static mut wedge_masks_444_32x8: Align64<[[[u8; 32 * 8]; 16]; 2]> = Align64([[[0; 32 * 8]; 16]; 2]);
-static mut wedge_masks_444_16x32: Align64<[[[u8; 16 * 32]; 16]; 2]> =
-    Align64([[[0; 16 * 32]; 16]; 2]);
-static mut wedge_masks_444_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
-    Align64([[[0; 16 * 16]; 16]; 2]);
-static mut wedge_masks_444_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
-static mut wedge_masks_444_8x32: Align64<[[[u8; 8 * 32]; 16]; 2]> = Align64([[[0; 8 * 32]; 16]; 2]);
-static mut wedge_masks_444_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
-static mut wedge_masks_444_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
-
-static mut wedge_masks_422_16x32: Align64<[[[u8; 16 * 32]; 16]; 2]> =
-    Align64([[[0; 16 * 32]; 16]; 2]);
-static mut wedge_masks_422_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
-    Align64([[[0; 16 * 16]; 16]; 2]);
-static mut wedge_masks_422_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
-static mut wedge_masks_422_8x32: Align64<[[[u8; 8 * 32]; 16]; 2]> = Align64([[[0; 8 * 32]; 16]; 2]);
-static mut wedge_masks_422_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
-static mut wedge_masks_422_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
-static mut wedge_masks_422_4x32: Align64<[[[u8; 4 * 32]; 16]; 2]> = Align64([[[0; 4 * 32]; 16]; 2]);
-static mut wedge_masks_422_4x16: Align64<[[[u8; 4 * 16]; 16]; 2]> = Align64([[[0; 4 * 16]; 16]; 2]);
-static mut wedge_masks_422_4x8: Align64<[[[u8; 4 * 8]; 16]; 2]> = Align64([[[0; 4 * 8]; 16]; 2]);
-
-static mut wedge_masks_420_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
-    Align64([[[0; 16 * 16]; 16]; 2]);
-static mut wedge_masks_420_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
-static mut wedge_masks_420_16x4: Align64<[[[u8; 16 * 4]; 16]; 2]> = Align64([[[0; 16 * 4]; 16]; 2]);
-static mut wedge_masks_420_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
-static mut wedge_masks_420_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
-static mut wedge_masks_420_8x4: Align64<[[[u8; 8 * 4]; 16]; 2]> = Align64([[[0; 8 * 4]; 16]; 2]);
-static mut wedge_masks_420_4x16: Align64<[[[u8; 4 * 16]; 16]; 2]> = Align64([[[0; 4 * 16]; 16]; 2]);
-static mut wedge_masks_420_4x8: Align64<[[[u8; 4 * 8]; 16]; 2]> = Align64([[[0; 4 * 8]; 16]; 2]);
-static mut wedge_masks_420_4x4: Align64<[[[u8; 4 * 4]; 16]; 2]> = Align64([[[0; 4 * 4]; 16]; 2]);
-
 pub static mut dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[&[]; 16]; 2]; 3]; N_BS_SIZES];
 
@@ -258,61 +221,88 @@ const fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
     chroma
 }
 
-#[cold]
-fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>(
-    w: usize,
-    h: usize,
-    master: &[[[u8; 64]; 64]; N_WEDGE_DIRECTIONS],
-    cb: &[wedge_code_type; 16],
-    masks_444: &'static mut [[[u8; LEN_444]; 16]; 2],
-    masks_422: &'static mut [[[u8; LEN_422]; 16]; 2],
-    masks_420: &'static mut [[[u8; LEN_420]; 16]; 2],
+struct WedgeMasks<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize> {
+    masks_444: Align64<[[[u8; LEN_444]; 16]; 2]>,
+    masks_422: Align64<[[[u8; LEN_422]; 16]; 2]>,
+    masks_420: Align64<[[[u8; LEN_420]; 16]; 2]>,
     signs: u16,
-) -> [[[&'static [u8]; 16]; 2]; 3] {
-    assert!(LEN_444 == (w * h) >> 0);
-    assert!(LEN_422 == (w * h) >> 1);
-    assert!(LEN_420 == (w * h) >> 2);
+}
 
-    const_for!(n in 0..16 => {
-        masks_444[0][n] = copy2d(
-            &master[cb[n].direction as usize],
-            w,
-            h,
-            32 - (w * cb[n].x_offset as usize >> 3),
-            32 - (h * cb[n].y_offset as usize >> 3),
-        );
-    });
-    const_for!(n in 0..16 => {
-        masks_444[1][n] = invert(&masks_444[0][n], w, h);
-    });
+impl<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
+    WedgeMasks<LEN_444, LEN_422, LEN_420>
+{
+    const fn fill2d_16x2(
+        w: usize,
+        h: usize,
+        master: &[[[u8; 64]; 64]; N_WEDGE_DIRECTIONS],
+        cb: &[wedge_code_type; 16],
+        signs: u16,
+    ) -> Self {
+        assert!(LEN_444 == (w * h) >> 0);
+        assert!(LEN_422 == (w * h) >> 1);
+        assert!(LEN_420 == (w * h) >> 2);
 
-    const_for!(n in 0..16 => {
-        let sign = (signs >> n & 1) != 0;
-        let luma = &masks_444[sign as usize][n];
+        let mut masks_444 = [[[0; LEN_444]; 16]; 2];
+        let mut masks_422 = [[[0; LEN_422]; 16]; 2];
+        let mut masks_420 = [[[0; LEN_420]; 16]; 2];
 
-        masks_422[sign as usize][n] = init_chroma(luma, false, w, h, false);
-        masks_422[!sign as usize][n] = init_chroma(luma, true, w, h, false);
-        masks_420[sign as usize][n] = init_chroma(luma, false, w, h, true);
-        masks_420[!sign as usize][n] = init_chroma(luma, true, w, h, true);
-    });
+        const_for!(n in 0..16 => {
+            masks_444[0][n] = copy2d(
+                &master[cb[n].direction as usize],
+                w,
+                h,
+                32 - (w * cb[n].x_offset as usize >> 3),
+                32 - (h * cb[n].y_offset as usize >> 3),
+            );
+        });
+        const_for!(n in 0..16 => {
+            masks_444[1][n] = invert(&masks_444[0][n], w, h);
+        });
 
-    let mut masks = [[[&[] as &'static [u8]; 16]; 2]; 3];
+        const_for!(n in 0..16 => {
+            let sign = (signs >> n & 1) != 0;
+            let luma = &masks_444[sign as usize][n];
 
-    // assign pointers in externally visible array
-    const_for!(n in 0..16 => {
-        let sign = (signs >> n & 1) != 0;
+            masks_422[sign as usize][n] = init_chroma(luma, false, w, h, false);
+            masks_422[!sign as usize][n] = init_chroma(luma, true, w, h, false);
+            masks_420[sign as usize][n] = init_chroma(luma, false, w, h, true);
+            masks_420[!sign as usize][n] = init_chroma(luma, true, w, h, true);
+        });
 
-        masks[0][0][n] = &masks_444[sign as usize][n];
-        // not using !sign is intentional here, since 444 does not require
-        // any rounding since no chroma subsampling is applied.
-        masks[0][1][n] = &masks_444[sign as usize][n];
-        masks[1][0][n] = &masks_422[sign as usize][n];
-        masks[1][1][n] = &masks_422[!sign as usize][n];
-        masks[2][0][n] = &masks_420[sign as usize][n];
-        masks[2][1][n] = &masks_420[!sign as usize][n];
-    });
+        Self {
+            masks_444: Align64(masks_444),
+            masks_422: Align64(masks_422),
+            masks_420: Align64(masks_420),
+            signs,
+        }
+    }
 
-    masks
+    const fn slice<'a>(&'a self) -> [[[&'a [u8]; 16]; 2]; 3] {
+        let Self {
+            masks_444: Align64(masks_444),
+            masks_422: Align64(masks_422),
+            masks_420: Align64(masks_420),
+            signs,
+        } = self;
+
+        let mut masks = [[[&[] as &'static [u8]; 16]; 2]; 3];
+
+        // assign pointers in externally visible array
+        const_for!(n in 0..16 => {
+            let sign = (*signs >> n & 1) != 0;
+
+            masks[0][0][n] = &masks_444[sign as usize][n];
+            // not using !sign is intentional here, since 444 does not require
+            // any rounding since no chroma subsampling is applied.
+            masks[0][1][n] = &masks_444[sign as usize][n];
+            masks[1][0][n] = &masks_422[sign as usize][n];
+            masks[1][1][n] = &masks_422[!sign as usize][n];
+            masks[2][0][n] = &masks_420[sign as usize][n];
+            masks[2][1][n] = &masks_420[!sign as usize][n];
+        });
+
+        masks
+    }
 }
 
 const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
@@ -366,98 +356,53 @@ const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
 pub unsafe fn dav1d_init_wedge_masks() {
     // This function is guaranteed to be called only once
 
-    let master = build_master();
+    static master: [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] = build_master();
 
-    dav1d_wedge_masks[BS_32x32 as usize] = fill2d_16x2(
-        32,
-        32,
-        &master,
-        &wedge_codebook_16_heqw,
-        &mut wedge_masks_444_32x32.0,
-        &mut wedge_masks_422_16x32.0,
-        &mut wedge_masks_420_16x16.0,
-        0x7bfb,
-    );
-    dav1d_wedge_masks[BS_32x16 as usize] = fill2d_16x2(
-        32,
-        16,
-        &master,
-        &wedge_codebook_16_hltw,
-        &mut wedge_masks_444_32x16.0,
-        &mut wedge_masks_422_16x16.0,
-        &mut wedge_masks_420_16x8.0,
-        0x7beb,
-    );
-    dav1d_wedge_masks[BS_32x8 as usize] = fill2d_16x2(
-        32,
-        8,
-        &master,
-        &wedge_codebook_16_hltw,
-        &mut wedge_masks_444_32x8.0,
-        &mut wedge_masks_422_16x8.0,
-        &mut wedge_masks_420_16x4.0,
-        0x6beb,
-    );
-    dav1d_wedge_masks[BS_16x32 as usize] = fill2d_16x2(
-        16,
-        32,
-        &master,
-        &wedge_codebook_16_hgtw,
-        &mut wedge_masks_444_16x32.0,
-        &mut wedge_masks_422_8x32.0,
-        &mut wedge_masks_420_8x16.0,
-        0x7beb,
-    );
-    dav1d_wedge_masks[BS_16x16 as usize] = fill2d_16x2(
-        16,
-        16,
-        &master,
-        &wedge_codebook_16_heqw,
-        &mut wedge_masks_444_16x16.0,
-        &mut wedge_masks_422_8x16.0,
-        &mut wedge_masks_420_8x8.0,
-        0x7bfb,
-    );
-    dav1d_wedge_masks[BS_16x8 as usize] = fill2d_16x2(
-        16,
-        8,
-        &master,
-        &wedge_codebook_16_hltw,
-        &mut wedge_masks_444_16x8.0,
-        &mut wedge_masks_422_8x8.0,
-        &mut wedge_masks_420_8x4.0,
-        0x7beb,
-    );
-    dav1d_wedge_masks[BS_8x32 as usize] = fill2d_16x2(
-        8,
-        32,
-        &master,
-        &wedge_codebook_16_hgtw,
-        &mut wedge_masks_444_8x32.0,
-        &mut wedge_masks_422_4x32.0,
-        &mut wedge_masks_420_4x16.0,
-        0x7aeb,
-    );
-    dav1d_wedge_masks[BS_8x16 as usize] = fill2d_16x2(
-        8,
-        16,
-        &master,
-        &wedge_codebook_16_hgtw,
-        &mut wedge_masks_444_8x16.0,
-        &mut wedge_masks_422_4x16.0,
-        &mut wedge_masks_420_4x8.0,
-        0x7beb,
-    );
-    dav1d_wedge_masks[BS_8x8 as usize] = fill2d_16x2(
-        8,
-        8,
-        &master,
-        &wedge_codebook_16_heqw,
-        &mut wedge_masks_444_8x8.0,
-        &mut wedge_masks_422_4x8.0,
-        &mut wedge_masks_420_4x4.0,
-        0x7bfb,
-    );
+    {
+        static wedge_masks: WedgeMasks<{ 32 * 32 }, { (32 / 2) * 32 }, { (32 / 2) * (32 / 2) }> =
+            WedgeMasks::fill2d_16x2(32, 32, &master, &wedge_codebook_16_heqw, 0x7bfb);
+        dav1d_wedge_masks[BS_32x32 as usize] = wedge_masks.slice();
+    };
+    {
+        static wedge_masks: WedgeMasks<{ 32 * 16 }, { (32 / 2) * 16 }, { (32 / 2) * (16 / 2) }> =
+            WedgeMasks::fill2d_16x2(32, 16, &master, &wedge_codebook_16_hltw, 0x7beb);
+        dav1d_wedge_masks[BS_32x16 as usize] = wedge_masks.slice();
+    };
+    {
+        static wedge_masks: WedgeMasks<{ 32 * 8 }, { (32 / 2) * 8 }, { (32 / 2) * (8 / 2) }> =
+            WedgeMasks::fill2d_16x2(32, 8, &master, &wedge_codebook_16_hltw, 0x6beb);
+        dav1d_wedge_masks[BS_32x8 as usize] = wedge_masks.slice();
+    };
+    {
+        static wedge_masks: WedgeMasks<{ 16 * 32 }, { (16 / 2) * 32 }, { (16 / 2) * (32 / 2) }> =
+            WedgeMasks::fill2d_16x2(16, 32, &master, &wedge_codebook_16_hgtw, 0x7beb);
+        dav1d_wedge_masks[BS_16x32 as usize] = wedge_masks.slice();
+    };
+    {
+        static wedge_masks: WedgeMasks<{ 16 * 16 }, { (16 / 2) * 16 }, { (16 / 2) * (16 / 2) }> =
+            WedgeMasks::fill2d_16x2(16, 16, &master, &wedge_codebook_16_heqw, 0x7bfb);
+        dav1d_wedge_masks[BS_16x16 as usize] = wedge_masks.slice();
+    };
+    {
+        static wedge_masks: WedgeMasks<{ 16 * 8 }, { (16 / 2) * 8 }, { (16 / 2) * (8 / 2) }> =
+            WedgeMasks::fill2d_16x2(16, 8, &master, &wedge_codebook_16_hltw, 0x7beb);
+        dav1d_wedge_masks[BS_16x8 as usize] = wedge_masks.slice();
+    };
+    {
+        static wedge_masks: WedgeMasks<{ 8 * 32 }, { (8 / 2) * 32 }, { (8 / 2) * (32 / 2) }> =
+            WedgeMasks::fill2d_16x2(8, 32, &master, &wedge_codebook_16_hgtw, 0x7aeb);
+        dav1d_wedge_masks[BS_8x32 as usize] = wedge_masks.slice();
+    };
+    {
+        static wedge_masks: WedgeMasks<{ 8 * 16 }, { (8 / 2) * 16 }, { (8 / 2) * (16 / 2) }> =
+            WedgeMasks::fill2d_16x2(8, 16, &master, &wedge_codebook_16_hgtw, 0x7beb);
+        dav1d_wedge_masks[BS_8x16 as usize] = wedge_masks.slice();
+    };
+    {
+        static wedge_masks: WedgeMasks<{ 8 * 8 }, { (8 / 2) * 8 }, { (8 / 2) * (8 / 2) }> =
+            WedgeMasks::fill2d_16x2(8, 8, &master, &wedge_codebook_16_heqw, 0x7bfb);
+        dav1d_wedge_masks[BS_8x8 as usize] = wedge_masks.slice();
+    };
 }
 
 static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
