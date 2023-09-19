@@ -384,7 +384,7 @@ const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
     master
 }
 
-pub static mut dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
+pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
     static master: [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] = build_master();
 
     let mut masks = [[[[&[] as &'static [u8]; 16]; 2]; 3]; N_BS_SIZES];
