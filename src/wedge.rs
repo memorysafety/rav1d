@@ -213,7 +213,7 @@ const fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
     dst
 }
 
-fn copy2d<const N: usize>(
+const fn copy2d<const N: usize>(
     src: &[[u8; 64]; 64],
     w: usize,
     h: usize,
