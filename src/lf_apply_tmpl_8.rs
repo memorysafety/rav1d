@@ -361,7 +361,7 @@ unsafe extern "C" fn backup_lpf(
     if lr_backup != 0 && (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
         while row + stripe_h <= row_h {
             let n_lines = 4 - (row + stripe_h + 1 == h) as libc::c_int;
-            ((*(*f).dsp).mc.resize).expect("non-null function pointer")(
+            ((*(*f).dsp).mc.resize)(
                 dst.cast(),
                 dst_stride,
                 src.cast(),

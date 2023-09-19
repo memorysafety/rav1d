@@ -97,10 +97,6 @@ pub mod src {
     #[cfg(feature = "bitdepth_8")]
     mod lr_apply_tmpl_8;
     mod mc;
-    #[cfg(feature = "bitdepth_16")]
-    mod mc_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
-    mod mc_tmpl_8;
     mod mem;
     mod msac;
     mod obu;

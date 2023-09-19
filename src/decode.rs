@@ -23,6 +23,7 @@ use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
+use crate::src::mc::dav1d_mc_dsp_init;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::src::thread_task::TILE_ERROR;
 
@@ -58,10 +59,6 @@ extern "C" {
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_mc_dsp_init_16bpc(c: *mut Dav1dMCDSPContext);
     fn dav1d_thread_picture_alloc(
         c: *mut Dav1dContext,
         f: *mut Dav1dFrameContext,
@@ -5663,7 +5660,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
                 dav1d_loop_filter_dsp_init_8bpc(&mut dsp.lf);
                 dav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
-                dav1d_mc_dsp_init_8bpc(&mut dsp.mc);
+                dav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
                 dav1d_film_grain_dsp_init_8bpc(&mut dsp.fg);
             }
             #[cfg(feature = "bitdepth_16")]
@@ -5673,7 +5670,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
                 dav1d_loop_filter_dsp_init_16bpc(&mut dsp.lf);
                 dav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
-                dav1d_mc_dsp_init_16bpc(&mut dsp.mc);
+                dav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
                 dav1d_film_grain_dsp_init_16bpc(&mut dsp.fg);
             }
             _ => {

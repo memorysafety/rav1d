@@ -280,13 +280,9 @@ pub struct DynCoef(c_void);
 pub type LeftPixelRow<Pixel> = [Pixel; 4];
 pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
 
-// TODO(kkysen) temporary `#[cfg]` until more code uses this
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-))]
+#[cfg(feature = "asm")]
 macro_rules! bd_fn {
-    ($decl_fn:ident, $BD:ty, $name:ident, $asm:ident) => {{
+    ($decl_fn:path, $BD:ty, $name:ident, $asm:ident) => {{
         use paste::paste;
 
         paste! {
@@ -296,11 +292,26 @@ macro_rules! bd_fn {
             }
         }
     }};
+
+    ($BD:ty, $name:ident, $asm:ident) => {
+        bd_fn!(
+            crate::include::common::bitdepth::fn_identity,
+            $BD,
+            $name,
+            $asm
+        )
+    };
 }
 
-// TODO(kkysen) temporary `#[cfg]` until more code uses this
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-))]
+#[cfg(feature = "asm")]
+macro_rules! fn_identity {
+    (fn $name:ident) => {
+        $name
+    };
+}
+
+#[cfg(feature = "asm")]
 pub(crate) use bd_fn;
+
+#[cfg(feature = "asm")]
+pub(crate) use fn_identity;
