@@ -137,8 +137,6 @@ impl WedgeCodeBook {
     }
 }
 
-static wedge_codebook_16: WedgeCodeBook = WedgeCodeBook::build();
-
 const fn insert_border(
     mut dst: [[u8; 64]; 64],
     y: usize,
@@ -386,6 +384,7 @@ const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
 
 pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
     static master: [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] = build_master();
+    static wedge_codebook_16: WedgeCodeBook = WedgeCodeBook::build();
 
     let mut masks = [[[[&[] as &'static [u8]; 16]; 2]; 3]; N_BS_SIZES];
 
