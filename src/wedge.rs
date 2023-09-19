@@ -267,7 +267,7 @@ fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
     masks_444: &'static mut [[[u8; LEN_444]; 16]; 2],
     masks_422: &'static mut [[[u8; LEN_422]; 16]; 2],
     masks_420: &'static mut [[[u8; LEN_420]; 16]; 2],
-    signs: libc::c_uint,
+    signs: u16,
 ) -> [[[&'static [u8]; 16]; 2]; 3] {
     assert!(LEN_444 == (w * h) >> 0);
     assert!(LEN_422 == (w * h) >> 1);
