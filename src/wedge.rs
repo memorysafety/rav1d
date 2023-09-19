@@ -259,8 +259,7 @@ const fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
 }
 
 #[cold]
-unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>(
-    dst: &mut [[[u8; LEN_444]; 16]; 2],
+fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>(
     w: usize,
     h: usize,
     master: &[[[u8; 64]; 64]; N_WEDGE_DIRECTIONS],
@@ -268,26 +267,26 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
     masks_444: &'static mut [[[u8; LEN_444]; 16]; 2],
     masks_422: &'static mut [[[u8; LEN_422]; 16]; 2],
     masks_420: &'static mut [[[u8; LEN_420]; 16]; 2],
-    signs: libc::c_uint,
+    signs: u16,
 ) -> [[[&'static [u8]; 16]; 2]; 3] {
     assert!(LEN_444 == (w * h) >> 0);
     assert!(LEN_422 == (w * h) >> 1);
     assert!(LEN_420 == (w * h) >> 2);
 
-    for n in 0..16 {
-        dst[0][n] = copy2d(
+    const_for!(n in 0..16 => {
+        masks_444[0][n] = copy2d(
             &master[cb[n].direction as usize],
             w,
             h,
             32 - (w * cb[n].x_offset as usize >> 3),
             32 - (h * cb[n].y_offset as usize >> 3),
         );
-    }
-    for n in 0..16 {
-        dst[1][n] = invert(&dst[0][n], w, h);
-    }
+    });
+    const_for!(n in 0..16 => {
+        masks_444[1][n] = invert(&masks_444[0][n], w, h);
+    });
 
-    for n in 0..16 {
+    const_for!(n in 0..16 => {
         let sign = (signs >> n & 1) != 0;
         let luma = &masks_444[sign as usize][n];
 
@@ -295,12 +294,12 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         masks_422[!sign as usize][n] = init_chroma(luma, true, w, h, false);
         masks_420[sign as usize][n] = init_chroma(luma, false, w, h, true);
         masks_420[!sign as usize][n] = init_chroma(luma, true, w, h, true);
-    }
+    });
 
     let mut masks = [[[&[] as &'static [u8]; 16]; 2]; 3];
 
     // assign pointers in externally visible array
-    for n in 0..16 {
+    const_for!(n in 0..16 => {
         let sign = (signs >> n & 1) != 0;
 
         masks[0][0][n] = &masks_444[sign as usize][n];
@@ -311,7 +310,7 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         masks[1][1][n] = &masks_422[!sign as usize][n];
         masks[2][0][n] = &masks_420[sign as usize][n];
         masks[2][1][n] = &masks_420[!sign as usize][n];
-    }
+    });
 
     masks
 }
@@ -369,7 +368,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
     master[WEDGE_OBLIQUE153 as usize] = hflip(&master[WEDGE_OBLIQUE27 as usize]);
 
     dav1d_wedge_masks[BS_32x32 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_32x32.0,
         32,
         32,
         &master,
@@ -380,7 +378,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7bfb,
     );
     dav1d_wedge_masks[BS_32x16 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_32x16.0,
         32,
         16,
         &master,
@@ -391,7 +388,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7beb,
     );
     dav1d_wedge_masks[BS_32x8 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_32x8.0,
         32,
         8,
         &master,
@@ -402,7 +398,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x6beb,
     );
     dav1d_wedge_masks[BS_16x32 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_16x32.0,
         16,
         32,
         &master,
@@ -413,7 +408,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7beb,
     );
     dav1d_wedge_masks[BS_16x16 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_16x16.0,
         16,
         16,
         &master,
@@ -424,7 +418,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7bfb,
     );
     dav1d_wedge_masks[BS_16x8 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_16x8.0,
         16,
         8,
         &master,
@@ -435,7 +428,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7beb,
     );
     dav1d_wedge_masks[BS_8x32 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_8x32.0,
         8,
         32,
         &master,
@@ -446,7 +438,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7aeb,
     );
     dav1d_wedge_masks[BS_8x16 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_8x16.0,
         8,
         16,
         &master,
@@ -457,7 +448,6 @@ pub unsafe fn dav1d_init_wedge_masks() {
         0x7beb,
     );
     dav1d_wedge_masks[BS_8x8 as usize] = fill2d_16x2(
-        &mut wedge_masks_444_8x8.0,
         8,
         8,
         &master,
