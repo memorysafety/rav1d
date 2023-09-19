@@ -141,15 +141,46 @@ static mut wedge_masks_420_4x4: Align64<[u8; 2 * 16 * 4 * 4]> = Align64([0; 2 * 
 pub static mut dav1d_wedge_masks: [[[[*const u8; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[0 as *const u8; 16]; 2]; 3]; N_BS_SIZES];
 
-fn insert_border(dst: &mut [u8], src: &[u8], ctr: usize) {
-    if ctr > 4 {
-        dst[..ctr - 4].fill(0);
+const fn insert_border(
+    mut dst: [u8; 64 * 64],
+    y: usize,
+    src: &[u8; 8],
+    ctr: usize,
+) -> [u8; 64 * 64] {
+    let dst_off = y * 64;
+
+    {
+        if ctr > 4 {
+            let mut i = 0;
+            while i < ctr - 4 {
+                dst[dst_off + i] = 0;
+                i += 1;
+            }
+        }
     }
-    let len = cmp::min(64 - ctr, 8);
-    dst[ctr.saturating_sub(4)..][..len].copy_from_slice(&src[4usize.saturating_sub(ctr)..][..len]);
-    if ctr < 64 - 4 {
-        dst[ctr + 4..][..64 - 4 - ctr].fill(64);
+    {
+        let dst_off = dst_off + ctr.saturating_sub(4);
+        let src_off = 4usize.saturating_sub(ctr);
+        let len = if 64 - ctr > 8 { 8 } else { 64 - ctr };
+        let mut i = 0;
+        while i < len {
+            dst[dst_off + i] = src[src_off + i];
+            i += 1;
+        }
     }
+    {
+        let ctr = ctr + 4;
+        let dst_off = dst_off + ctr;
+        if ctr < 64 {
+            let mut i = 0;
+            while i < 64 - ctr {
+                dst[dst_off + i] = 64;
+                i += 1;
+            }
+        }
+    }
+
+    dst
 }
 
 const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
@@ -353,32 +384,31 @@ pub unsafe fn dav1d_init_wedge_masks() {
 
     // create master templates
     let mut y = 0;
-    let mut off = 0;
     while y < 64 {
-        insert_border(
-            &mut master[WEDGE_VERTICAL as usize][off..],
+        master[WEDGE_VERTICAL as usize] = insert_border(
+            master[WEDGE_VERTICAL as usize],
+            y,
             &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
             32,
         );
         y += 1;
-        off += 64;
     }
     let mut y = 0;
-    let mut off = 0;
     let mut ctr = 48;
     while y < 64 {
-        insert_border(
-            &mut master[WEDGE_OBLIQUE63 as usize][off..],
+        master[WEDGE_OBLIQUE63 as usize] = insert_border(
+            master[WEDGE_OBLIQUE63 as usize],
+            y,
             &wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize],
             ctr,
         );
-        insert_border(
-            &mut master[WEDGE_OBLIQUE63 as usize][off + 64..],
+        master[WEDGE_OBLIQUE63 as usize] = insert_border(
+            master[WEDGE_OBLIQUE63 as usize],
+            y + 1,
             &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
         y += 2;
-        off += 128;
         ctr -= 1;
     }
 
