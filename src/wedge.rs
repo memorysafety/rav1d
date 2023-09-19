@@ -330,15 +330,15 @@ fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
     let mut master = [[[0; 64]; 64]; N_WEDGE_DIRECTIONS];
 
     // create master templates
-    for y in 0..64 {
+    const_for!(y in 0..64 => {
         master[WEDGE_VERTICAL as usize] = insert_border(
             master[WEDGE_VERTICAL as usize],
             y,
             &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
             32,
         );
-    }
-    for y in (0..64).step_by(2) {
+    });
+    const_for!(y in 0..64, step_by 2 => {
         let ctr = 48 - (y / 2);
         master[WEDGE_OBLIQUE63 as usize] = insert_border(
             master[WEDGE_OBLIQUE63 as usize],
@@ -352,7 +352,7 @@ fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
             &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
-    }
+    });
 
     master[WEDGE_OBLIQUE27 as usize] = transposed(&master[WEDGE_OBLIQUE63 as usize]);
     master[WEDGE_HORIZONTAL as usize] = transposed(&master[WEDGE_VERTICAL as usize]);
