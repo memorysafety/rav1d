@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
@@ -97,8 +99,8 @@ fn decomp_tx(
             }
         }
     } else {
-        let lw = std::cmp::min(2, t_dim.lw);
-        let lh = std::cmp::min(2, t_dim.lh);
+        let lw = cmp::min(2, t_dim.lw);
+        let lh = cmp::min(2, t_dim.lh);
 
         CaseSet::<16, false>::one((), t_dim.w as usize, x0, |case, ()| {
             for y in 0..t_dim.h as usize {
@@ -142,7 +144,7 @@ fn mask_edges_inter(
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4][std::cmp::min(txa[0][0][y][0], l[y]) as usize][sidx] |= smask as u16;
+        masks[0][bx4][cmp::min(txa[0][0][y][0], l[y]) as usize][sidx] |= smask as u16;
     }
 
     // top block edge
@@ -150,7 +152,7 @@ fn mask_edges_inter(
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4][std::cmp::min(txa[1][0][0][x], a[x]) as usize][sidx] |= smask as u16;
+        masks[1][by4][cmp::min(txa[1][0][0][x], a[x]) as usize][sidx] |= smask as u16;
     }
     if !skip {
         // inner (tx) left|right edges
@@ -163,7 +165,7 @@ fn mask_edges_inter(
             let mut x = step;
             while x < w4 {
                 let rtx = txa[0][0][y][x];
-                masks[0][bx4 + x][std::cmp::min(rtx, ltx) as usize][sidx] |= smask as u16;
+                masks[0][bx4 + x][cmp::min(rtx, ltx) as usize][sidx] |= smask as u16;
                 ltx = rtx;
                 let step = txa[0][1][y][x] as usize;
                 x += step;
@@ -182,7 +184,7 @@ fn mask_edges_inter(
             let mut y = step;
             while y < h4 {
                 let btx = txa[1][0][y][x];
-                masks[1][by4 + y][std::cmp::min(ttx, btx) as usize][sidx] |= smask as u16;
+                masks[1][by4 + y][cmp::min(ttx, btx) as usize][sidx] |= smask as u16;
                 ttx = btx;
                 let step = txa[1][1][y][x] as usize;
                 y += step;
@@ -210,15 +212,15 @@ fn mask_edges_intra(
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let twl4 = t_dim.lw;
     let thl4 = t_dim.lh;
-    let twl4c = std::cmp::min(2, twl4);
-    let thl4c = std::cmp::min(2, thl4);
+    let twl4c = cmp::min(2, twl4);
+    let thl4c = cmp::min(2, thl4);
 
     // left block edge
     for y in 0..h4 {
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4][std::cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
+        masks[0][bx4][cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
 
     // top block edge
@@ -226,7 +228,7 @@ fn mask_edges_intra(
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4][std::cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
+        masks[1][by4][cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
 
     // inner (tx) left|right edges
@@ -299,7 +301,7 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cby4 + y);
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
-        masks[0][cbx4][std::cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
+        masks[0][cbx4][cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
 
     // top block edge
@@ -307,7 +309,7 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cbx4 + x);
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
-        masks[1][cby4][std::cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
+        masks[1][cby4][cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
 
     if !skip_inter {
@@ -374,8 +376,8 @@ pub unsafe fn dav1d_create_lf_mask_intra(
 
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let b_dim = b_dim.map(|it| it as usize);
-    let bw4 = std::cmp::min(iw - bx, b_dim[0]);
-    let bh4 = std::cmp::min(ih - by, b_dim[1]);
+    let bw4 = cmp::min(iw - bx, b_dim[0]);
+    let bh4 = cmp::min(ih - by, b_dim[1]);
     let bx4 = bx & 31;
     let by4 = by & 31;
 
@@ -403,11 +405,11 @@ pub unsafe fn dav1d_create_lf_mask_intra(
 
     let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as usize;
     let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
-    let cbw4 = std::cmp::min(
+    let cbw4 = cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
         (b_dim[0] + ss_hor) >> ss_hor,
     );
-    let cbh4 = std::cmp::min(
+    let cbh4 = cmp::min(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
         (b_dim[1] + ss_ver) >> ss_ver,
     );
@@ -475,8 +477,8 @@ pub unsafe fn dav1d_create_lf_mask_inter(
 
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let b_dim = b_dim.map(|it| it as usize);
-    let bw4 = std::cmp::min(iw - bx, b_dim[0]);
-    let bh4 = std::cmp::min(ih - by, b_dim[1]);
+    let bw4 = cmp::min(iw - bx, b_dim[0]);
+    let bh4 = cmp::min(ih - by, b_dim[1]);
     let bx4 = bx & 31;
     let by4 = by & 31;
 
@@ -515,11 +517,11 @@ pub unsafe fn dav1d_create_lf_mask_inter(
 
     let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as usize;
     let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
-    let cbw4 = std::cmp::min(
+    let cbw4 = cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
         (b_dim[0] + ss_hor) >> ss_hor,
     );
-    let cbh4 = std::cmp::min(
+    let cbh4 = cmp::min(
         (ih + ss_ver >> ss_ver) - (by >> ss_ver),
         (b_dim[1] + ss_ver) >> ss_ver,
     );
@@ -568,9 +570,9 @@ pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int)
 
         if sharp > 0 {
             limit >>= sharp + 3 >> 2;
-            limit = std::cmp::min(limit, 9 - sharp);
+            limit = cmp::min(limit, 9 - sharp);
         }
-        limit = std::cmp::max(limit, 1);
+        limit = cmp::max(limit, 1);
 
         lim_lut.i[level as usize] = limit;
         lim_lut.e[level as usize] = 2 * (level + 2) + limit;

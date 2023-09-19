@@ -1,4 +1,5 @@
 use std::array;
+use std::cmp;
 use std::iter;
 use std::ptr;
 use std::ptr::addr_of_mut;
@@ -22,6 +23,7 @@ use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
+use crate::src::mc::dav1d_mc_dsp_init;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::src::thread_task::TILE_ERROR;
 
@@ -57,10 +59,6 @@ extern "C" {
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_mc_dsp_init_8bpc(c: *mut Dav1dMCDSPContext);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_mc_dsp_init_16bpc(c: *mut Dav1dMCDSPContext);
     fn dav1d_thread_picture_alloc(
         c: *mut Dav1dContext,
         f: *mut Dav1dFrameContext,
@@ -276,16 +274,14 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 
-use crate::src::internal::Dav1dFrameContext_lf;
-use crate::src::lf_mask::Av1Filter;
-pub type pixel = ();
-use crate::src::internal::Dav1dFrameContext_frame_thread;
-use crate::src::lf_mask::Av1Restoration;
-use crate::src::lf_mask::Av1RestorationUnit;
-pub type coef = ();
 use crate::src::internal::CodedBlockInfo;
+use crate::src::internal::Dav1dFrameContext_frame_thread;
+use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::levels::Av1Block;
 use crate::src::levels::MotionMode;
+use crate::src::lf_mask::Av1Filter;
+use crate::src::lf_mask::Av1Restoration;
+use crate::src::lf_mask::Av1RestorationUnit;
 
 use crate::src::levels::mv;
 
@@ -568,8 +564,6 @@ use crate::src::levels::MM_WARP;
 
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::imin;
 
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::ulog2;
@@ -842,7 +836,7 @@ unsafe fn find_matching_ref(
     let r = &t.rt.r[((t.by & 31) + 5 - 1) as usize..];
     let mut count = 0;
     let mut have_topleft = have_top && have_left;
-    let mut have_topright = imax(bw4, bh4) < 32
+    let mut have_topright = cmp::max(bw4, bh4) < 32
         && have_top
         && t.bx + bw4 < (*t.ts).tiling.col_end
         && intra_edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0;
@@ -1003,7 +997,7 @@ unsafe fn derive_warpmv(
     // select according to motion vector difference against a threshold
     let mut mvd = [0; 8];
     let mut ret = 0;
-    let thresh = 4 * iclip(imax(bw4, bh4), 4, 28);
+    let thresh = 4 * iclip(cmp::max(bw4, bh4), 4, 28);
     for (mvd, pts) in std::iter::zip(&mut mvd[..np], &pts[..np]) {
         *mvd = (pts[1][0] - pts[0][0] - mv.x as i32).abs()
             + (pts[1][1] - pts[0][1] - mv.y as i32).abs();
@@ -1190,14 +1184,14 @@ unsafe fn read_pal_plane(
 
             loop {
                 let delta = dav1d_msac_decode_bools(&mut ts.msac, bits) as u16;
-                prev = std::cmp::min(prev + delta + not_pl, max);
+                prev = cmp::min(prev + delta + not_pl, max);
                 pal[i] = prev;
                 i += 1;
                 if prev + not_pl >= max {
                     pal[i..].fill(max);
                     break;
                 } else {
-                    bits = std::cmp::min(bits, 1 + ulog2((max - prev - not_pl) as u32) as u32);
+                    bits = cmp::min(bits, 1 + ulog2((max - prev - not_pl) as u32) as u32);
                     if !(i < pal.len()) {
                         break;
                     }
@@ -1351,8 +1345,8 @@ fn order_palette(
                 add(if same_t_tl { l } else { t });
             } else {
                 *ctx = 1;
-                add(std::cmp::min(t, l));
-                add(std::cmp::max(t, l));
+                add(cmp::min(t, l));
+                add(cmp::max(t, l));
                 add(tl);
             }
         }
@@ -1392,7 +1386,7 @@ unsafe fn read_pal_indices(
     } = scratch_pal;
     for i in 1..4 * (w4 + h4) - 1 {
         // top/left-to-bottom/right diagonals ("wave-front")
-        let first = std::cmp::min(i, w4 * 4 - 1);
+        let first = cmp::min(i, w4 * 4 - 1);
         let last = (i + 1).checked_sub(h4 * 4).unwrap_or(0);
         order_palette(pal_idx, stride, i, first, last, order, ctx);
         for (m, j) in (last..=first).rev().enumerate() {
@@ -1540,7 +1534,7 @@ unsafe fn get_prev_frame_segid(
         prev_seg_id = ref_seg_map[..w4]
             .iter()
             .copied()
-            .fold(prev_seg_id, std::cmp::min);
+            .fold(prev_seg_id, cmp::min);
         if prev_seg_id == 0 {
             break;
         }
@@ -1571,7 +1565,7 @@ unsafe fn splat_oneref_mv(
             ],
         },
         bs: bs as u8,
-        mf: (mode == GLOBALMV && std::cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
+        mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     }));
     c.refmvs_dsp.splat_mv(
         &mut t.rt.r[((t.by & 31) + 5) as usize..],
@@ -1675,7 +1669,7 @@ fn mc_lowest_px(
     if smp.scale == 0 {
         let my = mvy >> 3 + ss_ver;
         let dy = mvy & 15 >> (ss_ver == 0) as libc::c_int;
-        *dst = imax(
+        *dst = cmp::max(
             *dst,
             (by4 + bh4) * v_mul + my + 4 * (dy != 0) as libc::c_int,
         );
@@ -1684,7 +1678,7 @@ fn mc_lowest_px(
         let tmp = y as int64_t * smp.scale as int64_t + ((smp.scale - 0x4000) * 8) as int64_t;
         y = apply_sign64((tmp.abs() + 128 >> 8) as libc::c_int, tmp) + 32;
         let bottom = (y + (bh4 * v_mul - 1) * smp.step >> 10) + 1 + 4;
-        *dst = imax(*dst, bottom);
+        *dst = cmp::max(*dst, bottom);
     };
 }
 
@@ -1709,8 +1703,8 @@ fn affine_lowest_px(
         let src_x = t.bx * 4 + ((x + 4) << ss_hor);
         let mvy = mat[4] as int64_t * src_x as int64_t + mat5_y >> ss_ver;
         let dy = (mvy >> 16) as libc::c_int - 4;
-        *dst = imax(*dst, dy + 4 + 8);
-        x += imax(8, b_dim[0] as libc::c_int * h_mul - 8);
+        *dst = cmp::max(*dst, dy + 4 + 8);
+        x += cmp::max(8, b_dim[0] as libc::c_int * h_mul - 8);
     }
 }
 
@@ -1769,11 +1763,11 @@ unsafe fn obmc_lowest_px(
     {
         let mut i = 0;
         let mut x = 0;
-        while x < w4 && i < imin(b_dim[2] as libc::c_int, 4) {
+        while x < w4 && i < cmp::min(b_dim[2] as libc::c_int, 4) {
             let a_r = &*r[0].offset((t.bx + x + 1) as isize);
             let a_b_dim = &dav1d_block_dimensions[a_r.0.bs as usize];
             if a_r.0.r#ref.r#ref[0] as libc::c_int > 0 {
-                let oh4 = imin(b_dim[1] as libc::c_int, 16) >> 1;
+                let oh4 = cmp::min(b_dim[1] as libc::c_int, 16) >> 1;
                 mc_lowest_px(
                     &mut dst[a_r.0.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.by,
@@ -1784,13 +1778,13 @@ unsafe fn obmc_lowest_px(
                 );
                 i += 1;
             }
-            x += imax(a_b_dim[0] as libc::c_int, 2);
+            x += cmp::max(a_b_dim[0] as libc::c_int, 2);
         }
     }
     if t.bx > (*t.ts).tiling.col_start {
         let mut i = 0;
         let mut y = 0;
-        while y < h4 && i < imin(b_dim[3] as libc::c_int, 4) {
+        while y < h4 && i < cmp::min(b_dim[3] as libc::c_int, 4) {
             let l_r = &*r[y as usize + 1 + 1].offset((t.bx - 1) as isize);
             let l_b_dim = &dav1d_block_dimensions[l_r.0.bs as usize];
             if l_r.0.r#ref.r#ref[0] as libc::c_int > 0 {
@@ -1805,7 +1799,7 @@ unsafe fn obmc_lowest_px(
                 );
                 i += 1;
             }
-            y += imax(l_b_dim[1] as libc::c_int, 2);
+            y += cmp::max(l_b_dim[1] as libc::c_int, 2);
         }
     }
 }
@@ -1850,8 +1844,8 @@ unsafe fn decode_b(
     let cby4 = by4 >> ss_ver;
     let bw4 = b_dim[0] as libc::c_int;
     let bh4 = b_dim[1] as libc::c_int;
-    let w4 = std::cmp::min(bw4, f.bw - t.bx);
-    let h4 = std::cmp::min(bh4, f.bh - t.by);
+    let w4 = cmp::min(bw4, f.bw - t.bx);
+    let h4 = cmp::min(bh4, f.bh - t.by);
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let have_left = t.bx > ts.tiling.col_start;
@@ -2068,7 +2062,7 @@ unsafe fn decode_b(
         .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
         .unwrap_or(true)
         && (*f.frame_hdr).skip_mode_enabled != 0
-        && std::cmp::min(bw4, bh4) > 1
+        && cmp::min(bw4, bh4) > 1
     {
         let smctx = (*t.a).skip_mode.0[bx4 as usize] + t.l.skip_mode.0[by4 as usize];
         b.skip_mode =
@@ -2394,10 +2388,7 @@ unsafe fn decode_b(
         }
 
         *b.pal_sz_mut() = [0, 0];
-        if frame_hdr.allow_screen_content_tools != 0
-            && std::cmp::max(bw4, bh4) <= 16
-            && bw4 + bh4 >= 4
-        {
+        if frame_hdr.allow_screen_content_tools != 0 && cmp::max(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
             if b.y_mode() == DC_PRED {
                 let pal_ctx = ((*t.a).pal_sz.0[bx4 as usize] > 0) as usize
@@ -2432,7 +2423,7 @@ unsafe fn decode_b(
 
         if b.y_mode() == DC_PRED
             && b.pal_sz()[0] == 0
-            && std::cmp::max(b_dim[2], b_dim[3]) <= 3
+            && cmp::max(b_dim[2], b_dim[3]) <= 3
             && (*f.seq_hdr).filter_intra != 0
         {
             let is_filter = dav1d_msac_decode_bool_adapt(
@@ -2525,7 +2516,7 @@ unsafe fn decode_b(
                 let depth = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     tx_cdf,
-                    std::cmp::min(t_dim.max, 2) as size_t,
+                    cmp::min(t_dim.max, 2) as size_t,
                 ) as libc::c_int;
 
                 for _ in 0..depth {
@@ -2601,8 +2592,8 @@ unsafe fn decode_b(
                     case.set(&mut dir.comp_type.0, COMP_INTER_NONE);
                     case.set(&mut dir.r#ref[0], -1);
                     case.set(&mut dir.r#ref[1], -1);
-                    case.set(&mut dir.filter.0[0], DAV1D_N_SWITCHABLE_FILTERS);
-                    case.set(&mut dir.filter.0[1], DAV1D_N_SWITCHABLE_FILTERS);
+                    case.set(&mut dir.filter.0[0], DAV1D_N_SWITCHABLE_FILTERS as u8);
+                    case.set(&mut dir.filter.0[1], DAV1D_N_SWITCHABLE_FILTERS as u8);
                 }
             },
         );
@@ -2803,7 +2794,7 @@ unsafe fn decode_b(
             .map(|seg| seg.r#ref == -1 && seg.globalmv == 0 && seg.skip == 0)
             .unwrap_or(true)
             && frame_hdr.switchable_comp_refs != 0
-            && std::cmp::min(bw4, bh4) > 1
+            && cmp::min(bw4, bh4) > 1
         {
             let ctx = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             let is_comp =
@@ -3013,7 +3004,7 @@ unsafe fn decode_b(
             }
             assert!(b.drl_idx() >= NEAREST_DRL && b.drl_idx() <= NEARISH_DRL);
 
-            has_subpel_filter = std::cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV;
+            has_subpel_filter = cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV;
             let mut assign_comp_mv = |idx: usize| match im[idx] {
                 NEARMV | NEARESTMV => {
                     b.mv_mut()[idx] = mvstack[b.drl_idx() as usize].mv.mv[idx];
@@ -3226,7 +3217,7 @@ unsafe fn decode_b(
                         bh4,
                         frame_hdr,
                     );
-                    has_subpel_filter = std::cmp::min(bw4, bh4) == 1
+                    has_subpel_filter = cmp::min(bw4, bh4) == 1
                         || frame_hdr.gmv[b.r#ref()[0] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
                 } else {
                     has_subpel_filter = true;
@@ -3377,7 +3368,7 @@ unsafe fn decode_b(
             // motion variation
             if frame_hdr.switchable_motion_mode != 0
                 && b.interintra_type() == INTER_INTRA_NONE
-                && std::cmp::min(bw4, bh4) >= 2
+                && cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
                 && !(frame_hdr.force_integer_mv == 0
                     && b.inter_mode() == GLOBALMV
@@ -3645,7 +3636,7 @@ unsafe fn decode_b(
         // keep track of motion vectors for each reference
         if b.comp_type() == COMP_INTER_NONE {
             // y
-            if std::cmp::min(bw4, bh4) > 1
+            if cmp::min(bw4, bh4) > 1
                 && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                     || b.motion_mode() == MM_WARP as u8
                         && t.warpmv.type_0 > DAV1D_WM_TYPE_TRANSLATION)
@@ -3742,7 +3733,7 @@ unsafe fn decode_b(
                         ss_ver,
                         &f.svc[b.r#ref()[0] as usize][1],
                     );
-                } else if std::cmp::min(cbw4, cbh4) > 1
+                } else if cmp::min(cbw4, cbh4) > 1
                     && (b.inter_mode() == GLOBALMV
                         && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                         || b.motion_mode() == MM_WARP as u8
@@ -3819,7 +3810,7 @@ unsafe fn decode_b(
             if has_chroma {
                 for (r#ref, mv) in refmvs() {
                     if b.inter_mode() == GLOBALMV_GLOBALMV
-                        && std::cmp::min(cbw4, cbh4) > 1
+                        && cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed[r#ref] != 0
                     {
                         affine_lowest_px_chroma(
@@ -4262,7 +4253,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: libc::c_int) {
         ccoef.fill(0x40);
     }
     for filter in &mut ctx.filter.0 {
-        filter.fill(DAV1D_N_SWITCHABLE_FILTERS);
+        filter.fill(DAV1D_N_SWITCHABLE_FILTERS as u8);
     }
     ctx.seg_pred.0.fill(0);
     ctx.pal_sz.0.fill(0);
@@ -4330,9 +4321,9 @@ unsafe fn setup_tile(
     ts.tiling.row = tile_row as libc::c_int;
     ts.tiling.col = tile_col as libc::c_int;
     ts.tiling.col_start = col_sb_start << sb_shift;
-    ts.tiling.col_end = std::cmp::min(col_sb_end << sb_shift, f.bw);
+    ts.tiling.col_end = cmp::min(col_sb_end << sb_shift, f.bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
-    ts.tiling.row_end = std::cmp::min(row_sb_end << sb_shift, f.bh);
+    ts.tiling.row_end = cmp::min(row_sb_end << sb_shift, f.bh);
     let diff_width = (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1];
 
     // Reference Restoration Unit (used for exp coding)
@@ -4667,14 +4658,15 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
                             (*(*f).frame_hdr).restoration.type_0[p as usize];
                         if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
                             let w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
-                            let n_units = imax(1 as libc::c_int, w + half_unit >> unit_size_log2);
+                            let n_units =
+                                cmp::max(1 as libc::c_int, w + half_unit >> unit_size_log2);
                             let d = (*(*f).frame_hdr).super_res.width_scale_denominator;
                             let rnd = unit_size * 8 - 1;
                             let shift = unit_size_log2 + 3;
                             let x0 = (4 * (*t).bx * d >> ss_hor) + rnd >> shift;
                             let x1 = (4 * ((*t).bx + sb_step) * d >> ss_hor) + rnd >> shift;
                             let mut x = x0;
-                            while x < imin(x1, n_units) {
+                            while x < cmp::min(x1, n_units) {
                                 let px_x = x << unit_size_log2 + ss_hor;
                                 let sb_idx = ((*t).by >> 5) * (*f).sr_sb128w + (px_x >> 7);
                                 let unit_idx = (((*t).by & 16) >> 3) + ((px_x & 64) >> 6);
@@ -5113,9 +5105,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     f.lf.restore_planes = (*f.frame_hdr)
         .restoration
         .type_0
-        .into_iter()
+        .iter()
         .enumerate()
-        .map(|(i, r#type)| ((r#type != DAV1D_RESTORATION_NONE) as u8) << i)
+        .map(|(i, &r#type)| ((r#type != DAV1D_RESTORATION_NONE) as u8) << i)
         .sum::<u8>()
         .into();
     if (*f.frame_hdr).loopfilter.sharpness != f.lf.last_sharpness {
@@ -5201,7 +5193,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         for i in 0..ref_pocs.len() {
             for j in i + 1..ref_pocs.len() {
                 let d = [j, i].map(|ij| {
-                    std::cmp::min(
+                    cmp::min(
                         (get_poc_diff(
                             (*f.seq_hdr).order_hint_n_bits,
                             ref_pocs[ij],
@@ -5370,7 +5362,7 @@ unsafe fn dav1d_decode_frame_main(f: &mut Dav1dFrameContext) -> libc::c_int {
         // Needed until #[feature(array_windows)] stabilizes; it should hopefully optimize out.
         let [sbh_start, sbh_end] = <[u16; 2]>::try_from(sbh_start_end).unwrap();
 
-        let sbh_end = std::cmp::min(sbh_end.into(), f.sbh);
+        let sbh_end = cmp::min(sbh_end.into(), f.sbh);
 
         for sby in sbh_start.into()..sbh_end {
             t.by = sby << 4 + (*f.seq_hdr).sb128;
@@ -5620,7 +5612,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
                 dav1d_loop_filter_dsp_init_8bpc(&mut dsp.lf);
                 dav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
-                dav1d_mc_dsp_init_8bpc(&mut dsp.mc);
+                dav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
                 dav1d_film_grain_dsp_init_8bpc(&mut dsp.fg);
             }
             #[cfg(feature = "bitdepth_16")]
@@ -5630,7 +5622,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
                 dav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
                 dav1d_loop_filter_dsp_init_16bpc(&mut dsp.lf);
                 dav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
-                dav1d_mc_dsp_init_16bpc(&mut dsp.mc);
+                dav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
                 dav1d_film_grain_dsp_init_16bpc(&mut dsp.fg);
             }
             _ => {

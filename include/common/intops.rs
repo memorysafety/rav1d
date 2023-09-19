@@ -3,33 +3,6 @@ use std::ffi::{c_int, c_uint, c_ulonglong};
 use crate::include::common::attributes::clz;
 use crate::include::common::attributes::clzll;
 
-#[inline]
-pub fn imax(a: c_int, b: c_int) -> c_int {
-    if a > b {
-        a
-    } else {
-        b
-    }
-}
-
-#[inline]
-pub fn imin(a: c_int, b: c_int) -> c_int {
-    if a < b {
-        a
-    } else {
-        b
-    }
-}
-
-#[inline]
-pub fn umin(a: c_uint, b: c_uint) -> c_uint {
-    if a < b {
-        a
-    } else {
-        b
-    }
-}
-
 /// # Safety
 ///
 /// `U: Into<T>` and `T: TryInto<U>` must be well-formed

@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 
@@ -152,13 +154,15 @@ use crate::include::dav1d::headers::DAV1D_COLOR_PRI_UNKNOWN;
 
 use crate::src::internal::Dav1dFrameContext_lf;
 use crate::src::lf_mask::Av1Filter;
-pub type pixel = ();
 
 use crate::src::internal::Dav1dFrameContext_frame_thread;
 
-pub type coef = ();
-
 use crate::src::levels::Av1Block;
+use crate::src::levels::OBU_META_HDR_CLL;
+use crate::src::levels::OBU_META_HDR_MDCV;
+use crate::src::levels::OBU_META_ITUT_T35;
+use crate::src::levels::OBU_META_SCALABILITY;
+use crate::src::levels::OBU_META_TIMECODE;
 use crate::src::refmvs::refmvs_frame;
 
 use crate::src::env::BlockContext;
@@ -327,15 +331,17 @@ pub type recon_b_intra_fn = Option<
 >;
 use crate::include::dav1d::headers::Dav1dObuType;
 use crate::include::dav1d::headers::DAV1D_OBU_FRAME;
-use crate::src::internal::ScalableMotionParams;
-
+use crate::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
+use crate::include::dav1d::headers::DAV1D_OBU_METADATA;
+use crate::include::dav1d::headers::DAV1D_OBU_PADDING;
+use crate::include::dav1d::headers::DAV1D_OBU_REDUNDANT_FRAME_HDR;
 use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 use crate::include::dav1d::headers::DAV1D_OBU_TD;
+use crate::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
+use crate::src::internal::ScalableMotionParams;
 use crate::src::levels::ObuMetaType;
 
 use crate::include::common::intops::iclip_u8;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::imin;
 use crate::include::common::intops::ulog2;
 use crate::src::env::get_poc_diff;
 use crate::src::getbits::dav1d_bytealign_get_bits;
@@ -663,9 +669,9 @@ unsafe extern "C" fn read_frame_size(
                         .wrapping_add(dav1d_get_bits(gb, 3 as libc::c_int))
                         as libc::c_int;
                     let d = (*hdr).super_res.width_scale_denominator;
-                    (*hdr).width[0] = imax(
+                    (*hdr).width[0] = cmp::max(
                         ((*hdr).width[1] * 8 + (d >> 1)) / d,
-                        imin(16 as libc::c_int, (*hdr).width[1]),
+                        cmp::min(16 as libc::c_int, (*hdr).width[1]),
                     );
                 } else {
                     (*hdr).super_res.width_scale_denominator = 8 as libc::c_int;
@@ -692,9 +698,9 @@ unsafe extern "C" fn read_frame_size(
             .wrapping_add(dav1d_get_bits(gb, 3 as libc::c_int))
             as libc::c_int;
         let d_0 = (*hdr).super_res.width_scale_denominator;
-        (*hdr).width[0] = imax(
+        (*hdr).width[0] = cmp::max(
             ((*hdr).width[1] * 8 + (d_0 >> 1)) / d_0,
-            imin(16 as libc::c_int, (*hdr).width[1]),
+            cmp::min(16 as libc::c_int, (*hdr).width[1]),
         );
     } else {
         (*hdr).super_res.width_scale_denominator = 8 as libc::c_int;
@@ -1084,9 +1090,9 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
     let max_tile_width_sb = 4096 >> sbsz_log2;
     let max_tile_area_sb = 4096 * 2304 >> 2 * sbsz_log2;
     (*hdr).tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
-    (*hdr).tiling.max_log2_cols = tile_log2(1 as libc::c_int, imin(sbw, 64 as libc::c_int));
-    (*hdr).tiling.max_log2_rows = tile_log2(1 as libc::c_int, imin(sbh, 64 as libc::c_int));
-    let min_log2_tiles: libc::c_int = imax(
+    (*hdr).tiling.max_log2_cols = tile_log2(1 as libc::c_int, cmp::min(sbw, 64 as libc::c_int));
+    (*hdr).tiling.max_log2_rows = tile_log2(1 as libc::c_int, cmp::min(sbh, 64 as libc::c_int));
+    let min_log2_tiles: libc::c_int = cmp::max(
         tile_log2(max_tile_area_sb, sbw * sbh),
         (*hdr).tiling.min_log2_cols,
     );
@@ -1104,7 +1110,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             (*hdr).tiling.cols += 1;
         }
         (*hdr).tiling.min_log2_rows =
-            imax(min_log2_tiles - (*hdr).tiling.log2_cols, 0 as libc::c_int);
+            cmp::max(min_log2_tiles - (*hdr).tiling.log2_cols, 0 as libc::c_int);
         (*hdr).tiling.log2_rows = (*hdr).tiling.min_log2_rows;
         while (*hdr).tiling.log2_rows < (*hdr).tiling.max_log2_rows && dav1d_get_bit(gb) != 0 {
             (*hdr).tiling.log2_rows += 1;
@@ -1123,7 +1129,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
         let mut max_tile_area_sb_0: libc::c_int = sbw * sbh;
         let mut sbx_0 = 0;
         while sbx_0 < sbw && (*hdr).tiling.cols < 64 {
-            let tile_width_sb: libc::c_int = imin(sbw - sbx_0, max_tile_width_sb);
+            let tile_width_sb: libc::c_int = cmp::min(sbw - sbx_0, max_tile_width_sb);
             let tile_w_0: libc::c_int = (if tile_width_sb > 1 {
                 (1 as libc::c_int as libc::c_uint)
                     .wrapping_add(dav1d_get_uniform(gb, tile_width_sb as libc::c_uint))
@@ -1132,7 +1138,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             }) as libc::c_int;
             (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx_0 as uint16_t;
             sbx_0 += tile_w_0;
-            widest_tile = imax(widest_tile, tile_w_0);
+            widest_tile = cmp::max(widest_tile, tile_w_0);
             (*hdr).tiling.cols += 1;
         }
         (*hdr).tiling.log2_cols = tile_log2(1 as libc::c_int, (*hdr).tiling.cols);
@@ -1140,11 +1146,11 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             max_tile_area_sb_0 >>= min_log2_tiles + 1;
         }
         let max_tile_height_sb: libc::c_int =
-            imax(max_tile_area_sb_0 / widest_tile, 1 as libc::c_int);
+            cmp::max(max_tile_area_sb_0 / widest_tile, 1 as libc::c_int);
         (*hdr).tiling.rows = 0 as libc::c_int;
         let mut sby_0 = 0;
         while sby_0 < sbh && (*hdr).tiling.rows < 64 {
-            let tile_height_sb: libc::c_int = imin(sbh - sby_0, max_tile_height_sb);
+            let tile_height_sb: libc::c_int = cmp::min(sbh - sby_0, max_tile_height_sb);
             let tile_h_0: libc::c_int = (if tile_height_sb > 1 {
                 (1 as libc::c_int as libc::c_uint)
                     .wrapping_add(dav1d_get_uniform(gb, tile_height_sb as libc::c_uint))
@@ -1545,8 +1551,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             i_16 += 1;
         }
         if off_before != 0xffffffff as libc::c_uint && off_after != -(1 as libc::c_int) {
-            (*hdr).skip_mode_refs[0] = imin(off_before_idx, off_after_idx);
-            (*hdr).skip_mode_refs[1] = imax(off_before_idx, off_after_idx);
+            (*hdr).skip_mode_refs[0] = cmp::min(off_before_idx, off_after_idx);
+            (*hdr).skip_mode_refs[1] = cmp::max(off_before_idx, off_after_idx);
             (*hdr).skip_mode_allowed = 1 as libc::c_int;
         } else if off_before != 0xffffffff as libc::c_uint {
             let mut off_before2: libc::c_uint = 0xffffffff as libc::c_uint;
@@ -1586,8 +1592,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                 i_17 += 1;
             }
             if off_before2 != 0xffffffff as libc::c_uint {
-                (*hdr).skip_mode_refs[0] = imin(off_before_idx, off_before2_idx);
-                (*hdr).skip_mode_refs[1] = imax(off_before_idx, off_before2_idx);
+                (*hdr).skip_mode_refs[0] = cmp::min(off_before_idx, off_before2_idx);
+                (*hdr).skip_mode_refs[1] = cmp::max(off_before_idx, off_before2_idx);
                 (*hdr).skip_mode_allowed = 1 as libc::c_int;
             }
         }
@@ -1990,7 +1996,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
     }
     let mut current_block_188: u64;
     match type_0 as libc::c_uint {
-        1 => {
+        DAV1D_OBU_SEQ_HDR => {
             let mut ref_0: *mut Dav1dRef = dav1d_ref_create_using_pool(
                 (*c).seq_hdr_pool,
                 ::core::mem::size_of::<Dav1dSequenceHeader>(),
@@ -2057,20 +2063,20 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             (*c).seq_hdr = seq_hdr;
             current_block_188 = 8953117030348968745;
         }
-        7 => {
+        DAV1D_OBU_REDUNDANT_FRAME_HDR => {
             if !((*c).frame_hdr).is_null() {
                 current_block_188 = 8953117030348968745;
             } else {
                 current_block_188 = 14065157188459580465;
             }
         }
-        6 | 3 => {
+        DAV1D_OBU_FRAME | DAV1D_OBU_FRAME_HDR => {
             current_block_188 = 14065157188459580465;
         }
-        4 => {
+        DAV1D_OBU_TILE_GRP => {
             current_block_188 = 17787701279558130514;
         }
-        5 => {
+        DAV1D_OBU_METADATA => {
             let meta_type: ObuMetaType = dav1d_get_uleb128(&mut gb) as ObuMetaType;
             let meta_type_len: libc::c_int =
                 ((dav1d_get_bits_pos(&mut gb)).wrapping_sub(init_bit_pos) >> 3) as libc::c_int;
@@ -2078,7 +2084,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 return dav1d_parse_obus_error(c, in_0);
             }
             match meta_type as libc::c_uint {
-                1 => {
+                OBU_META_HDR_CLL => {
                     let mut ref_1: *mut Dav1dRef =
                         dav1d_ref_create(::core::mem::size_of::<Dav1dContentLightLevel>());
                     if ref_1.is_null() {
@@ -2100,7 +2106,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     (*c).content_light = content_light;
                     (*c).content_light_ref = ref_1;
                 }
-                2 => {
+                OBU_META_HDR_MDCV => {
                     let mut ref_2: *mut Dav1dRef =
                         dav1d_ref_create(::core::mem::size_of::<Dav1dMasteringDisplay>());
                     if ref_2.is_null() {
@@ -2132,7 +2138,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     (*c).mastering_display = mastering_display;
                     (*c).mastering_display_ref = ref_2;
                 }
-                4 => {
+                OBU_META_ITUT_T35 => {
                     let mut payload_size: libc::c_int = len as libc::c_int;
                     while payload_size > 0
                         && *((*in_0).data).offset(
@@ -2190,7 +2196,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         (*c).itut_t35_ref = ref_3;
                     }
                 }
-                3 | 5 => {}
+                OBU_META_SCALABILITY | OBU_META_TIMECODE => {}
                 _ => {
                     dav1d_log(
                         c,
@@ -2201,14 +2207,14 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             }
             current_block_188 = 8953117030348968745;
         }
-        2 => {
+        DAV1D_OBU_TD => {
             (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
                 (*c).frame_flags as libc::c_uint
                     | PICTURE_FLAG_NEW_TEMPORAL_UNIT as libc::c_int as libc::c_uint,
             );
             current_block_188 = 8953117030348968745;
         }
-        15 => {
+        DAV1D_OBU_PADDING => {
             current_block_188 = 8953117030348968745;
         }
         _ => {
@@ -2382,14 +2388,14 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 .frame_hdr)
                 .frame_type as libc::c_uint
             {
-                1 | 3 => {
+                DAV1D_FRAME_TYPE_INTER | DAV1D_FRAME_TYPE_SWITCH => {
                     if (*c).decode_frame_type as libc::c_uint
                         > DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int as libc::c_uint
                     {
                         return dav1d_parse_obus_skip(c, len, init_byte_pos);
                     }
                 }
-                2 => {
+                DAV1D_FRAME_TYPE_INTRA => {
                     if (*c).decode_frame_type as libc::c_uint
                         > DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int as libc::c_uint
                     {
@@ -2550,7 +2556,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
         } else if (*c).n_tiles == (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows {
             match (*(*c).frame_hdr).frame_type as libc::c_uint {
-                1 | 3 => {
+                DAV1D_FRAME_TYPE_INTER | DAV1D_FRAME_TYPE_SWITCH => {
                     if (*c).decode_frame_type as libc::c_uint
                         > DAV1D_DECODEFRAMETYPE_REFERENCE as libc::c_int as libc::c_uint
                         || (*c).decode_frame_type as libc::c_uint
@@ -2560,7 +2566,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         return dav1d_parse_obus_skip(c, len, init_byte_pos);
                     }
                 }
-                2 => {
+                DAV1D_FRAME_TYPE_INTRA => {
                     if (*c).decode_frame_type as libc::c_uint
                         > DAV1D_DECODEFRAMETYPE_INTRA as libc::c_int as libc::c_uint
                         || (*c).decode_frame_type as libc::c_uint

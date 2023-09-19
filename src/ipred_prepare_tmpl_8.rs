@@ -1,7 +1,10 @@
+use std::cmp;
+
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use ::c2rust_bitfields;
 use ::libc;
+use c2rust_bitfields::BitfieldStruct;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
@@ -22,7 +25,10 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::HOR_PRED;
+use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
+use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::VERT_PRED;
+
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
 pub struct av1_intra_prediction_edge {
@@ -33,8 +39,7 @@ pub struct av1_intra_prediction_edge {
     #[bitfield(name = "needs_bottomleft", ty = "uint8_t", bits = "4..=4")]
     pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
 }
-use crate::include::common::intops::imin;
-static mut av1_mode_conv: [[[uint8_t; 2]; 2]; 13] = [
+static mut av1_mode_conv: [[[uint8_t; 2]; 2]; N_INTRA_PRED_MODES] = [
     [
         [
             DC_128_PRED as libc::c_int as uint8_t,
@@ -80,7 +85,7 @@ static mut av1_mode_to_angle_map: [uint8_t; 8] = [
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {
         needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-    }; 14];
+    }; N_IMPL_INTRA_PRED_MODES];
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     x: libc::c_int,
@@ -149,7 +154,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
         let sz = th << 2;
         let left: *mut pixel = &mut *topleft_out.offset(-sz as isize) as *mut pixel;
         if have_left != 0 {
-            let px_have = imin(sz, h - y << 2);
+            let px_have = cmp::min(sz, h - y << 2);
             let mut i = 0;
             while i < px_have {
                 *left.offset((sz - 1 - i) as isize) =
@@ -182,7 +187,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                     & EDGE_I444_LEFT_HAS_BOTTOM as libc::c_int as libc::c_uint
             }) as libc::c_int;
             if have_bottomleft != 0 {
-                let px_have_0 = imin(sz, h - y - th << 2);
+                let px_have_0 = cmp::min(sz, h - y - th << 2);
                 let mut i_0 = 0;
                 while i_0 < px_have_0 {
                     *left.offset(-(i_0 + 1) as isize) =
@@ -209,7 +214,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
         let sz_0 = tw << 2;
         let top: *mut pixel = &mut *topleft_out.offset(1) as *mut pixel;
         if have_top != 0 {
-            let px_have_1 = imin(sz_0, w - x << 2);
+            let px_have_1 = cmp::min(sz_0, w - x << 2);
             memcpy(
                 top as *mut libc::c_void,
                 dst_top as *const libc::c_void,
@@ -240,7 +245,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 edge_flags as libc::c_uint & EDGE_I444_TOP_HAS_RIGHT as libc::c_int as libc::c_uint
             }) as libc::c_int;
             if have_topright != 0 {
-                let px_have_2 = imin(sz_0, w - x - tw << 2);
+                let px_have_2 = cmp::min(sz_0, w - x - tw << 2);
                 memcpy(
                     top.offset(sz_0 as isize) as *mut libc::c_void,
                     &*dst_top.offset(sz_0 as isize) as *const pixel as *const libc::c_void,

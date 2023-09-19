@@ -1,1266 +1,540 @@
-use crate::include::stdint::*;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align64;
-use ::libc;
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-}
-
-use crate::src::levels::II_HOR_PRED;
-use crate::src::levels::II_SMOOTH_PRED;
-use crate::src::levels::II_VERT_PRED;
-
-use crate::src::levels::BlockSize;
-
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_8x8;
-
+use crate::src::const_fn::const_for;
+use crate::src::const_fn::const_min;
 use crate::src::levels::BS_16x16;
 use crate::src::levels::BS_16x32;
 use crate::src::levels::BS_16x8;
-
 use crate::src::levels::BS_32x16;
 use crate::src::levels::BS_32x32;
 use crate::src::levels::BS_32x8;
+use crate::src::levels::BS_8x16;
+use crate::src::levels::BS_8x32;
+use crate::src::levels::BS_8x8;
+use crate::src::levels::II_DC_PRED;
+use crate::src::levels::II_HOR_PRED;
+use crate::src::levels::II_SMOOTH_PRED;
+use crate::src::levels::II_VERT_PRED;
+use crate::src::levels::N_BS_SIZES;
+use crate::src::levels::N_INTER_INTRA_PRED_MODES;
+
+use paste::paste;
+
+pub type WedgeDirectionType = u8;
+pub const WEDGE_HORIZONTAL: WedgeDirectionType = 0;
+pub const WEDGE_VERTICAL: WedgeDirectionType = 1;
+pub const WEDGE_OBLIQUE27: WedgeDirectionType = 2;
+pub const WEDGE_OBLIQUE63: WedgeDirectionType = 3;
+pub const WEDGE_OBLIQUE117: WedgeDirectionType = 4;
+pub const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
+pub const N_WEDGE_DIRECTIONS: usize = 6;
 
 #[repr(C)]
 pub struct wedge_code_type {
-    pub direction: uint8_t,
-    pub x_offset: uint8_t,
-    pub y_offset: uint8_t,
+    pub direction: WedgeDirectionType,
+    pub x_offset: u8,
+    pub y_offset: u8,
 }
-pub const WEDGE_OBLIQUE117: WedgeDirectionType = 4;
-pub const WEDGE_OBLIQUE63: WedgeDirectionType = 3;
-pub const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
-pub const WEDGE_OBLIQUE27: WedgeDirectionType = 2;
-pub const WEDGE_VERTICAL: WedgeDirectionType = 1;
-pub const WEDGE_HORIZONTAL: WedgeDirectionType = 0;
-pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
-pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
-pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
-pub type WedgeMasterLineType = libc::c_uint;
-pub const N_WEDGE_MASTER_LINES: WedgeMasterLineType = 3;
-pub type WedgeDirectionType = libc::c_uint;
-pub const N_WEDGE_DIRECTIONS: WedgeDirectionType = 6;
-use crate::include::common::intops::imax;
-use crate::include::common::intops::imin;
-static mut wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-];
-static mut wedge_codebook_16_hltw: [wedge_code_type; 16] = [
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-];
-static mut wedge_codebook_16_heqw: [wedge_code_type; 16] = [
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_HORIZONTAL as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_VERTICAL as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE27 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 2 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE153 as libc::c_int as uint8_t,
-            x_offset: 4 as libc::c_int as uint8_t,
-            y_offset: 6 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE63 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 2 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-    {
-        let init = wedge_code_type {
-            direction: WEDGE_OBLIQUE117 as libc::c_int as uint8_t,
-            x_offset: 6 as libc::c_int as uint8_t,
-            y_offset: 4 as libc::c_int as uint8_t,
-        };
-        init
-    },
-];
-static mut wedge_masks_444_32x32: Align64<[uint8_t; 32768]> = Align64([0; 32768]);
-static mut wedge_masks_444_32x16: Align64<[uint8_t; 16384]> = Align64([0; 16384]);
-static mut wedge_masks_444_32x8: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
-static mut wedge_masks_444_16x32: Align64<[uint8_t; 16384]> = Align64([0; 16384]);
-static mut wedge_masks_444_16x16: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
-static mut wedge_masks_444_16x8: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
-static mut wedge_masks_444_8x32: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
-static mut wedge_masks_444_8x16: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
-static mut wedge_masks_444_8x8: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
-static mut wedge_masks_422_16x32: Align64<[uint8_t; 16384]> = Align64([0; 16384]);
-static mut wedge_masks_422_16x16: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
-static mut wedge_masks_422_16x8: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
-static mut wedge_masks_422_8x32: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
-static mut wedge_masks_422_8x16: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
-static mut wedge_masks_422_8x8: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
-static mut wedge_masks_422_4x32: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
-static mut wedge_masks_422_4x16: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
-static mut wedge_masks_422_4x8: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
-static mut wedge_masks_420_16x16: Align64<[uint8_t; 8192]> = Align64([0; 8192]);
-static mut wedge_masks_420_16x8: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
-static mut wedge_masks_420_16x4: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
-static mut wedge_masks_420_8x16: Align64<[uint8_t; 4096]> = Align64([0; 4096]);
-static mut wedge_masks_420_8x8: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
-static mut wedge_masks_420_8x4: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
-static mut wedge_masks_420_4x16: Align64<[uint8_t; 2048]> = Align64([0; 2048]);
-static mut wedge_masks_420_4x8: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
-static mut wedge_masks_420_4x4: Align64<[uint8_t; 512]> = Align64([0; 512]);
-#[no_mangle]
-pub static mut dav1d_wedge_masks: [[[[*const uint8_t; 16]; 2]; 3]; 22] =
-    [[[[0 as *const uint8_t; 16]; 2]; 3]; 22];
-unsafe extern "C" fn insert_border(dst: *mut uint8_t, src: *const uint8_t, ctr: libc::c_int) {
-    if ctr > 4 {
-        memset(
-            dst as *mut libc::c_void,
-            0 as libc::c_int,
-            (ctr - 4) as libc::c_ulong,
-        );
-    }
-    memcpy(
-        dst.offset(imax(ctr, 4 as libc::c_int) as isize)
-            .offset(-(4 as libc::c_int as isize)) as *mut libc::c_void,
-        src.offset(imax(4 - ctr, 0 as libc::c_int) as isize) as *const libc::c_void,
-        imin(64 - ctr, 8 as libc::c_int) as libc::c_ulong,
-    );
-    if ctr < 64 - 4 {
-        memset(
-            dst.offset(ctr as isize).offset(4) as *mut libc::c_void,
-            64 as libc::c_int,
-            (64 - 4 - ctr) as libc::c_ulong,
-        );
-    }
-}
-unsafe extern "C" fn transpose(dst: *mut uint8_t, src: *const uint8_t) {
-    let mut y = 0;
-    let mut y_off = 0;
-    while y < 64 {
-        let mut x = 0;
-        let mut x_off = 0;
-        while x < 64 {
-            *dst.offset((x_off + y) as isize) = *src.offset((y_off + x) as isize);
-            x += 1;
-            x_off += 64 as libc::c_int;
+
+impl wedge_code_type {
+    const fn new(x_offset: u8, y_offset: u8, direction: WedgeDirectionType) -> Self {
+        Self {
+            direction,
+            x_offset,
+            y_offset,
         }
-        y += 1;
-        y_off += 64 as libc::c_int;
     }
 }
-unsafe extern "C" fn hflip(dst: *mut uint8_t, src: *const uint8_t) {
-    let mut y = 0;
-    let mut y_off = 0;
-    while y < 64 {
-        let mut x = 0;
-        while x < 64 {
-            *dst.offset((y_off + 64 - 1 - x) as isize) = *src.offset((y_off + x) as isize);
-            x += 1;
+
+static wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 2, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 4, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 6, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
+];
+
+static wedge_codebook_16_hltw: [wedge_code_type; 16] = [
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
+    wedge_code_type::new(2, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(4, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(6, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(4, 4, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
+];
+
+static wedge_codebook_16_heqw: [wedge_code_type; 16] = [
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 2, WEDGE_HORIZONTAL),
+    wedge_code_type::new(4, 6, WEDGE_HORIZONTAL),
+    wedge_code_type::new(2, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(6, 4, WEDGE_VERTICAL),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
+    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
+    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
+    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
+    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
+];
+
+static mut wedge_masks_444_32x32: Align64<[[[u8; 32 * 32]; 16]; 2]> =
+    Align64([[[0; 32 * 32]; 16]; 2]);
+static mut wedge_masks_444_32x16: Align64<[[[u8; 32 * 16]; 16]; 2]> =
+    Align64([[[0; 32 * 16]; 16]; 2]);
+static mut wedge_masks_444_32x8: Align64<[[[u8; 32 * 8]; 16]; 2]> = Align64([[[0; 32 * 8]; 16]; 2]);
+static mut wedge_masks_444_16x32: Align64<[[[u8; 16 * 32]; 16]; 2]> =
+    Align64([[[0; 16 * 32]; 16]; 2]);
+static mut wedge_masks_444_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
+    Align64([[[0; 16 * 16]; 16]; 2]);
+static mut wedge_masks_444_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
+static mut wedge_masks_444_8x32: Align64<[[[u8; 8 * 32]; 16]; 2]> = Align64([[[0; 8 * 32]; 16]; 2]);
+static mut wedge_masks_444_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
+static mut wedge_masks_444_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
+
+static mut wedge_masks_422_16x32: Align64<[[[u8; 16 * 32]; 16]; 2]> =
+    Align64([[[0; 16 * 32]; 16]; 2]);
+static mut wedge_masks_422_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
+    Align64([[[0; 16 * 16]; 16]; 2]);
+static mut wedge_masks_422_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
+static mut wedge_masks_422_8x32: Align64<[[[u8; 8 * 32]; 16]; 2]> = Align64([[[0; 8 * 32]; 16]; 2]);
+static mut wedge_masks_422_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
+static mut wedge_masks_422_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
+static mut wedge_masks_422_4x32: Align64<[[[u8; 4 * 32]; 16]; 2]> = Align64([[[0; 4 * 32]; 16]; 2]);
+static mut wedge_masks_422_4x16: Align64<[[[u8; 4 * 16]; 16]; 2]> = Align64([[[0; 4 * 16]; 16]; 2]);
+static mut wedge_masks_422_4x8: Align64<[[[u8; 4 * 8]; 16]; 2]> = Align64([[[0; 4 * 8]; 16]; 2]);
+
+static mut wedge_masks_420_16x16: Align64<[[[u8; 16 * 16]; 16]; 2]> =
+    Align64([[[0; 16 * 16]; 16]; 2]);
+static mut wedge_masks_420_16x8: Align64<[[[u8; 16 * 8]; 16]; 2]> = Align64([[[0; 16 * 8]; 16]; 2]);
+static mut wedge_masks_420_16x4: Align64<[[[u8; 16 * 4]; 16]; 2]> = Align64([[[0; 16 * 4]; 16]; 2]);
+static mut wedge_masks_420_8x16: Align64<[[[u8; 8 * 16]; 16]; 2]> = Align64([[[0; 8 * 16]; 16]; 2]);
+static mut wedge_masks_420_8x8: Align64<[[[u8; 8 * 8]; 16]; 2]> = Align64([[[0; 8 * 8]; 16]; 2]);
+static mut wedge_masks_420_8x4: Align64<[[[u8; 8 * 4]; 16]; 2]> = Align64([[[0; 8 * 4]; 16]; 2]);
+static mut wedge_masks_420_4x16: Align64<[[[u8; 4 * 16]; 16]; 2]> = Align64([[[0; 4 * 16]; 16]; 2]);
+static mut wedge_masks_420_4x8: Align64<[[[u8; 4 * 8]; 16]; 2]> = Align64([[[0; 4 * 8]; 16]; 2]);
+static mut wedge_masks_420_4x4: Align64<[[[u8; 4 * 4]; 16]; 2]> = Align64([[[0; 4 * 4]; 16]; 2]);
+
+pub static mut dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] =
+    [[[[&[]; 16]; 2]; 3]; N_BS_SIZES];
+
+const fn insert_border(
+    mut dst: [[u8; 64]; 64],
+    y: usize,
+    src: &[u8; 8],
+    ctr: usize,
+) -> [[u8; 64]; 64] {
+    {
+        if ctr > 4 {
+            const_for!(i in 0..ctr - 4 => {
+                dst[y][i] = 0;
+            });
         }
-        y += 1;
-        y_off += 64 as libc::c_int;
     }
-}
-unsafe extern "C" fn invert(
-    dst: *mut uint8_t,
-    src: *const uint8_t,
-    w: libc::c_int,
-    h: libc::c_int,
-) {
-    let mut y = 0;
-    let mut y_off = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
-            *dst.offset((y_off + x) as isize) =
-                (64 - *src.offset((y_off + x) as isize) as libc::c_int) as uint8_t;
-            x += 1;
+    {
+        let dst_off = ctr.saturating_sub(4);
+        let src_off = 4usize.saturating_sub(ctr);
+        let len = const_min!(64 - ctr, 8);
+        const_for!(i in 0..len => {
+            dst[y][dst_off + i] = src[src_off + i];
+        });
+    }
+    {
+        let ctr = ctr + 4;
+        if ctr < 64 {
+            const_for!(i in 0..64 - ctr => {
+                dst[y][ctr + i] = 64;
+            });
         }
-        y += 1;
-        y_off += w;
     }
+
+    dst
 }
-unsafe extern "C" fn copy2d(
-    mut dst: *mut uint8_t,
-    mut src: *const uint8_t,
-    w: libc::c_int,
-    h: libc::c_int,
-    x_off: libc::c_int,
-    y_off: libc::c_int,
-) {
-    src = src.offset((y_off * 64 + x_off) as isize);
-    let mut y = 0;
-    while y < h {
-        memcpy(
-            dst as *mut libc::c_void,
-            src as *const libc::c_void,
-            w as libc::c_ulong,
-        );
-        src = src.offset(64);
-        dst = dst.offset(w as isize);
-        y += 1;
-    }
+
+const fn transposed<const N: usize, const M: usize>(src: &[[u8; N]; M]) -> [[u8; M]; N] {
+    let mut dst = [[0; M]; N];
+
+    const_for!(y in 0..M => {
+        const_for!(x in 0..N => {
+            dst[x][y] = src[y][x];
+        });
+    });
+
+    dst
 }
-#[cold]
-unsafe extern "C" fn init_chroma(
-    mut chroma: *mut uint8_t,
-    mut luma: *const uint8_t,
-    sign: libc::c_int,
-    w: libc::c_int,
-    h: libc::c_int,
-    ss_ver: libc::c_int,
-) {
-    let mut y = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
-            let mut sum = *luma.offset(x as isize) as libc::c_int
-                + *luma.offset((x + 1) as isize) as libc::c_int
-                + 1;
+
+const fn hflip(src: &[[u8; 64]; 64]) -> [[u8; 64]; 64] {
+    let mut dst = [[0; 64]; 64];
+    const_for!(y in 0..dst.len() => {
+        const_for!(x in 0..dst[y].len() => {
+            dst[y][dst[y].len() - 1 - x] = src[y][x];
+        });
+    });
+    dst
+}
+
+const fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
+    assert!(w * h == N);
+    let mut dst = [0; N];
+
+    const_for!(y in 0..h => {
+        let y_off = y * w;
+        const_for!(x in 0..w => {
+            dst[y_off + x] = 64 - src[y_off + x];
+        });
+    });
+
+    dst
+}
+
+const fn copy2d<const N: usize>(
+    src: &[[u8; 64]; 64],
+    w: usize,
+    h: usize,
+    x_off: usize,
+    y_off: usize,
+) -> [u8; N] {
+    let mut dst = [0; N];
+    const_for!(y in 0..h => {
+        const_for!(x in 0..w => {
+            dst[y * w + x] = src[y_off + y][x_off + x];
+        });
+    });
+    dst
+}
+
+const fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
+    luma: &[u8; LEN_LUMA],
+    sign: bool,
+    w: usize,
+    h: usize,
+    ss_ver: bool,
+) -> [u8; LEN_CHROMA] {
+    let sign = sign as u16;
+    let ss_ver = ss_ver as usize;
+
+    let mut chroma = [0; LEN_CHROMA];
+
+    let mut luma_off = 0;
+    let mut chroma_off = 0;
+    const_for!(_y in 0..h, step_by 1 + ss_ver => {
+        const_for!(x in 0..w, step_by 2 => {
+            let mut sum = luma[luma_off + x] as u16 + luma[luma_off + x + 1] as u16 + 1;
             if ss_ver != 0 {
-                sum += *luma.offset((w + x) as isize) as libc::c_int
-                    + *luma.offset((w + x + 1) as isize) as libc::c_int
-                    + 1;
+                sum += luma[luma_off + w + x] as u16 + luma[luma_off + w + x + 1] as u16 + 1;
             }
-            *chroma.offset((x >> 1) as isize) = (sum - sign >> 1 + ss_ver) as uint8_t;
-            x += 2 as libc::c_int;
-        }
-        luma = luma.offset((w << ss_ver) as isize);
-        chroma = chroma.offset((w >> 1) as isize);
-        y += 1 + ss_ver;
-    }
+            chroma[chroma_off + (x >> 1)] = (sum - sign >> 1 + ss_ver) as u8;
+        });
+        luma_off += w << ss_ver;
+        chroma_off += w >> 1;
+    });
+
+    chroma
 }
+
 #[cold]
-unsafe extern "C" fn fill2d_16x2(
-    dst: *mut uint8_t,
-    w: libc::c_int,
-    h: libc::c_int,
-    bs: BlockSize,
-    master: *const [uint8_t; 4096],
-    cb: *const wedge_code_type,
-    mut masks_444: *mut uint8_t,
-    mut masks_422: *mut uint8_t,
-    mut masks_420: *mut uint8_t,
-    signs: libc::c_uint,
-) {
-    let mut ptr: *mut uint8_t = dst;
-    let mut n = 0;
-    while n < 16 {
-        copy2d(
-            ptr,
-            (*master.offset((*cb.offset(n as isize)).direction as isize)).as_ptr(),
+fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>(
+    w: usize,
+    h: usize,
+    master: &[[[u8; 64]; 64]; N_WEDGE_DIRECTIONS],
+    cb: &[wedge_code_type; 16],
+    masks_444: &'static mut [[[u8; LEN_444]; 16]; 2],
+    masks_422: &'static mut [[[u8; LEN_422]; 16]; 2],
+    masks_420: &'static mut [[[u8; LEN_420]; 16]; 2],
+    signs: u16,
+) -> [[[&'static [u8]; 16]; 2]; 3] {
+    assert!(LEN_444 == (w * h) >> 0);
+    assert!(LEN_422 == (w * h) >> 1);
+    assert!(LEN_420 == (w * h) >> 2);
+
+    const_for!(n in 0..16 => {
+        masks_444[0][n] = copy2d(
+            &master[cb[n].direction as usize],
             w,
             h,
-            32 - (w * (*cb.offset(n as isize)).x_offset as libc::c_int >> 3),
-            32 - (h * (*cb.offset(n as isize)).y_offset as libc::c_int >> 3),
+            32 - (w * cb[n].x_offset as usize >> 3),
+            32 - (h * cb[n].y_offset as usize >> 3),
         );
-        ptr = ptr.offset((w * h) as isize);
-        n += 1;
-    }
-    let mut n_0 = 0;
-    let mut off = 0;
-    while n_0 < 16 {
-        invert(ptr.offset(off as isize), dst.offset(off as isize), w, h);
-        n_0 += 1;
-        off += w * h;
-    }
-    let n_stride_444 = w * h;
-    let n_stride_422 = n_stride_444 >> 1;
-    let n_stride_420 = n_stride_444 >> 2;
-    let sign_stride_444 = 16 * n_stride_444;
-    let sign_stride_422 = 16 * n_stride_422;
-    let sign_stride_420 = 16 * n_stride_420;
-    let mut n_1 = 0;
-    while n_1 < 16 {
-        let sign = (signs >> n_1 & 1 as libc::c_uint) as libc::c_int;
-        dav1d_wedge_masks[bs as usize][0][0][n_1 as usize] =
-            &mut *masks_444.offset((sign * sign_stride_444) as isize) as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][0][1][n_1 as usize] =
-            &mut *masks_444.offset((sign * sign_stride_444) as isize) as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][1][0][n_1 as usize] =
-            &mut *masks_422.offset((sign * sign_stride_422) as isize) as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][1][1][n_1 as usize] = &mut *masks_422
-            .offset(((sign == 0) as libc::c_int * sign_stride_422) as isize)
-            as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][2][0][n_1 as usize] =
-            &mut *masks_420.offset((sign * sign_stride_420) as isize) as *mut uint8_t;
-        dav1d_wedge_masks[bs as usize][2][1][n_1 as usize] = &mut *masks_420
-            .offset(((sign == 0) as libc::c_int * sign_stride_420) as isize)
-            as *mut uint8_t;
-        masks_444 = masks_444.offset(n_stride_444 as isize);
-        masks_422 = masks_422.offset(n_stride_422 as isize);
-        masks_420 = masks_420.offset(n_stride_420 as isize);
-        init_chroma(
-            dav1d_wedge_masks[bs as usize][1][0][n_1 as usize] as *mut uint8_t,
-            dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
-            0 as libc::c_int,
-            w,
-            h,
-            0 as libc::c_int,
-        );
-        init_chroma(
-            dav1d_wedge_masks[bs as usize][1][1][n_1 as usize] as *mut uint8_t,
-            dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
-            1 as libc::c_int,
-            w,
-            h,
-            0 as libc::c_int,
-        );
-        init_chroma(
-            dav1d_wedge_masks[bs as usize][2][0][n_1 as usize] as *mut uint8_t,
-            dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
-            0 as libc::c_int,
-            w,
-            h,
-            1 as libc::c_int,
-        );
-        init_chroma(
-            dav1d_wedge_masks[bs as usize][2][1][n_1 as usize] as *mut uint8_t,
-            dav1d_wedge_masks[bs as usize][0][0][n_1 as usize],
-            1 as libc::c_int,
-            w,
-            h,
-            1 as libc::c_int,
-        );
-        n_1 += 1;
-    }
+    });
+    const_for!(n in 0..16 => {
+        masks_444[1][n] = invert(&masks_444[0][n], w, h);
+    });
+
+    const_for!(n in 0..16 => {
+        let sign = (signs >> n & 1) != 0;
+        let luma = &masks_444[sign as usize][n];
+
+        masks_422[sign as usize][n] = init_chroma(luma, false, w, h, false);
+        masks_422[!sign as usize][n] = init_chroma(luma, true, w, h, false);
+        masks_420[sign as usize][n] = init_chroma(luma, false, w, h, true);
+        masks_420[!sign as usize][n] = init_chroma(luma, true, w, h, true);
+    });
+
+    let mut masks = [[[&[] as &'static [u8]; 16]; 2]; 3];
+
+    // assign pointers in externally visible array
+    const_for!(n in 0..16 => {
+        let sign = (signs >> n & 1) != 0;
+
+        masks[0][0][n] = &masks_444[sign as usize][n];
+        // not using !sign is intentional here, since 444 does not require
+        // any rounding since no chroma subsampling is applied.
+        masks[0][1][n] = &masks_444[sign as usize][n];
+        masks[1][0][n] = &masks_422[sign as usize][n];
+        masks[1][1][n] = &masks_422[!sign as usize][n];
+        masks[2][0][n] = &masks_420[sign as usize][n];
+        masks[2][1][n] = &masks_420[!sign as usize][n];
+    });
+
+    masks
 }
-#[no_mangle]
-#[cold]
-pub unsafe extern "C" fn dav1d_init_wedge_masks() {
-    static mut wedge_master_border: [[uint8_t; 8]; 3] = [
-        [
-            1 as libc::c_int as uint8_t,
-            2 as libc::c_int as uint8_t,
-            6 as libc::c_int as uint8_t,
-            18 as libc::c_int as uint8_t,
-            37 as libc::c_int as uint8_t,
-            53 as libc::c_int as uint8_t,
-            60 as libc::c_int as uint8_t,
-            63 as libc::c_int as uint8_t,
-        ],
-        [
-            1 as libc::c_int as uint8_t,
-            4 as libc::c_int as uint8_t,
-            11 as libc::c_int as uint8_t,
-            27 as libc::c_int as uint8_t,
-            46 as libc::c_int as uint8_t,
-            58 as libc::c_int as uint8_t,
-            62 as libc::c_int as uint8_t,
-            63 as libc::c_int as uint8_t,
-        ],
-        [
-            0 as libc::c_int as uint8_t,
-            2 as libc::c_int as uint8_t,
-            7 as libc::c_int as uint8_t,
-            21 as libc::c_int as uint8_t,
-            43 as libc::c_int as uint8_t,
-            57 as libc::c_int as uint8_t,
-            62 as libc::c_int as uint8_t,
-            64 as libc::c_int as uint8_t,
-        ],
+
+const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
+    pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
+    pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
+    pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
+    pub type WedgeMasterLineType = libc::c_uint;
+    pub const N_WEDGE_MASTER_LINES: usize = 3;
+
+    const wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
+        [1, 2, 6, 18, 37, 53, 60, 63],
+        [1, 4, 11, 27, 46, 58, 62, 63],
+        [0, 2, 7, 21, 43, 57, 62, 64],
     ];
-    let mut master: [[uint8_t; 4096]; 6] = [[0; 4096]; 6];
-    let mut y = 0;
-    let mut off = 0;
-    while y < 64 {
-        insert_border(
-            &mut *(*master
-                .as_mut_ptr()
-                .offset(WEDGE_VERTICAL as libc::c_int as isize))
-            .as_mut_ptr()
-            .offset(off as isize),
-            (wedge_master_border[WEDGE_MASTER_LINE_VERT as libc::c_int as usize]).as_ptr(),
-            32 as libc::c_int,
+    let mut master = [[[0; 64]; 64]; N_WEDGE_DIRECTIONS];
+
+    // create master templates
+    const_for!(y in 0..64 => {
+        master[WEDGE_VERTICAL as usize] = insert_border(
+            master[WEDGE_VERTICAL as usize],
+            y,
+            &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
+            32,
         );
-        y += 1;
-        off += 64 as libc::c_int;
-    }
-    let mut y_0 = 0;
-    let mut off_0 = 0;
-    let mut ctr = 48;
-    while y_0 < 64 {
-        insert_border(
-            &mut *(*master
-                .as_mut_ptr()
-                .offset(WEDGE_OBLIQUE63 as libc::c_int as isize))
-            .as_mut_ptr()
-            .offset(off_0 as isize),
-            (wedge_master_border[WEDGE_MASTER_LINE_EVEN as libc::c_int as usize]).as_ptr(),
+    });
+    const_for!(y in 0..64, step_by 2 => {
+        let ctr = 48 - (y / 2);
+        master[WEDGE_OBLIQUE63 as usize] = insert_border(
+            master[WEDGE_OBLIQUE63 as usize],
+            y,
+            &wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize],
             ctr,
         );
-        insert_border(
-            &mut *(*master
-                .as_mut_ptr()
-                .offset(WEDGE_OBLIQUE63 as libc::c_int as isize))
-            .as_mut_ptr()
-            .offset((off_0 + 64) as isize),
-            (wedge_master_border[WEDGE_MASTER_LINE_ODD as libc::c_int as usize]).as_ptr(),
+        master[WEDGE_OBLIQUE63 as usize] = insert_border(
+            master[WEDGE_OBLIQUE63 as usize],
+            y + 1,
+            &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
-        y_0 += 2 as libc::c_int;
-        off_0 += 128 as libc::c_int;
-        ctr -= 1;
-    }
-    transpose(
-        (master[WEDGE_OBLIQUE27 as libc::c_int as usize]).as_mut_ptr(),
-        (master[WEDGE_OBLIQUE63 as libc::c_int as usize]).as_mut_ptr(),
+    });
+
+    master[WEDGE_OBLIQUE27 as usize] = transposed(&master[WEDGE_OBLIQUE63 as usize]);
+    master[WEDGE_HORIZONTAL as usize] = transposed(&master[WEDGE_VERTICAL as usize]);
+    master[WEDGE_OBLIQUE117 as usize] = hflip(&master[WEDGE_OBLIQUE63 as usize]);
+    master[WEDGE_OBLIQUE153 as usize] = hflip(&master[WEDGE_OBLIQUE27 as usize]);
+
+    master
+}
+
+#[cold]
+pub unsafe fn dav1d_init_wedge_masks() {
+    // This function is guaranteed to be called only once
+
+    let master = build_master();
+
+    dav1d_wedge_masks[BS_32x32 as usize] = fill2d_16x2(
+        32,
+        32,
+        &master,
+        &wedge_codebook_16_heqw,
+        &mut wedge_masks_444_32x32.0,
+        &mut wedge_masks_422_16x32.0,
+        &mut wedge_masks_420_16x16.0,
+        0x7bfb,
     );
-    transpose(
-        (master[WEDGE_HORIZONTAL as libc::c_int as usize]).as_mut_ptr(),
-        (master[WEDGE_VERTICAL as libc::c_int as usize]).as_mut_ptr(),
+    dav1d_wedge_masks[BS_32x16 as usize] = fill2d_16x2(
+        32,
+        16,
+        &master,
+        &wedge_codebook_16_hltw,
+        &mut wedge_masks_444_32x16.0,
+        &mut wedge_masks_422_16x16.0,
+        &mut wedge_masks_420_16x8.0,
+        0x7beb,
     );
-    hflip(
-        (master[WEDGE_OBLIQUE117 as libc::c_int as usize]).as_mut_ptr(),
-        (master[WEDGE_OBLIQUE63 as libc::c_int as usize]).as_mut_ptr(),
+    dav1d_wedge_masks[BS_32x8 as usize] = fill2d_16x2(
+        32,
+        8,
+        &master,
+        &wedge_codebook_16_hltw,
+        &mut wedge_masks_444_32x8.0,
+        &mut wedge_masks_422_16x8.0,
+        &mut wedge_masks_420_16x4.0,
+        0x6beb,
     );
-    hflip(
-        (master[WEDGE_OBLIQUE153 as libc::c_int as usize]).as_mut_ptr(),
-        (master[WEDGE_OBLIQUE27 as libc::c_int as usize]).as_mut_ptr(),
+    dav1d_wedge_masks[BS_16x32 as usize] = fill2d_16x2(
+        16,
+        32,
+        &master,
+        &wedge_codebook_16_hgtw,
+        &mut wedge_masks_444_16x32.0,
+        &mut wedge_masks_422_8x32.0,
+        &mut wedge_masks_420_8x16.0,
+        0x7beb,
     );
-    fill2d_16x2(
-        wedge_masks_444_32x32.0.as_mut_ptr(),
-        32 as libc::c_int,
-        32 as libc::c_int,
-        BS_32x32,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_32x32.0.as_mut_ptr(),
-        wedge_masks_422_16x32.0.as_mut_ptr(),
-        wedge_masks_420_16x16.0.as_mut_ptr(),
-        0x7bfb as libc::c_int as libc::c_uint,
+    dav1d_wedge_masks[BS_16x16 as usize] = fill2d_16x2(
+        16,
+        16,
+        &master,
+        &wedge_codebook_16_heqw,
+        &mut wedge_masks_444_16x16.0,
+        &mut wedge_masks_422_8x16.0,
+        &mut wedge_masks_420_8x8.0,
+        0x7bfb,
     );
-    fill2d_16x2(
-        wedge_masks_444_32x16.0.as_mut_ptr(),
-        32 as libc::c_int,
-        16 as libc::c_int,
-        BS_32x16,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_32x16.0.as_mut_ptr(),
-        wedge_masks_422_16x16.0.as_mut_ptr(),
-        wedge_masks_420_16x8.0.as_mut_ptr(),
-        0x7beb as libc::c_int as libc::c_uint,
+    dav1d_wedge_masks[BS_16x8 as usize] = fill2d_16x2(
+        16,
+        8,
+        &master,
+        &wedge_codebook_16_hltw,
+        &mut wedge_masks_444_16x8.0,
+        &mut wedge_masks_422_8x8.0,
+        &mut wedge_masks_420_8x4.0,
+        0x7beb,
     );
-    fill2d_16x2(
-        wedge_masks_444_32x8.0.as_mut_ptr(),
-        32 as libc::c_int,
-        8 as libc::c_int,
-        BS_32x8,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_32x8.0.as_mut_ptr(),
-        wedge_masks_422_16x8.0.as_mut_ptr(),
-        wedge_masks_420_16x4.0.as_mut_ptr(),
-        0x6beb as libc::c_int as libc::c_uint,
+    dav1d_wedge_masks[BS_8x32 as usize] = fill2d_16x2(
+        8,
+        32,
+        &master,
+        &wedge_codebook_16_hgtw,
+        &mut wedge_masks_444_8x32.0,
+        &mut wedge_masks_422_4x32.0,
+        &mut wedge_masks_420_4x16.0,
+        0x7aeb,
     );
-    fill2d_16x2(
-        wedge_masks_444_16x32.0.as_mut_ptr(),
-        16 as libc::c_int,
-        32 as libc::c_int,
-        BS_16x32,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_16x32.0.as_mut_ptr(),
-        wedge_masks_422_8x32.0.as_mut_ptr(),
-        wedge_masks_420_8x16.0.as_mut_ptr(),
-        0x7beb as libc::c_int as libc::c_uint,
+    dav1d_wedge_masks[BS_8x16 as usize] = fill2d_16x2(
+        8,
+        16,
+        &master,
+        &wedge_codebook_16_hgtw,
+        &mut wedge_masks_444_8x16.0,
+        &mut wedge_masks_422_4x16.0,
+        &mut wedge_masks_420_4x8.0,
+        0x7beb,
     );
-    fill2d_16x2(
-        wedge_masks_444_16x16.0.as_mut_ptr(),
-        16 as libc::c_int,
-        16 as libc::c_int,
-        BS_16x16,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_16x16.0.as_mut_ptr(),
-        wedge_masks_422_8x16.0.as_mut_ptr(),
-        wedge_masks_420_8x8.0.as_mut_ptr(),
-        0x7bfb as libc::c_int as libc::c_uint,
-    );
-    fill2d_16x2(
-        wedge_masks_444_16x8.0.as_mut_ptr(),
-        16 as libc::c_int,
-        8 as libc::c_int,
-        BS_16x8,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_16x8.0.as_mut_ptr(),
-        wedge_masks_422_8x8.0.as_mut_ptr(),
-        wedge_masks_420_8x4.0.as_mut_ptr(),
-        0x7beb as libc::c_int as libc::c_uint,
-    );
-    fill2d_16x2(
-        wedge_masks_444_8x32.0.as_mut_ptr(),
-        8 as libc::c_int,
-        32 as libc::c_int,
-        BS_8x32,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_8x32.0.as_mut_ptr(),
-        wedge_masks_422_4x32.0.as_mut_ptr(),
-        wedge_masks_420_4x16.0.as_mut_ptr(),
-        0x7aeb as libc::c_int as libc::c_uint,
-    );
-    fill2d_16x2(
-        wedge_masks_444_8x16.0.as_mut_ptr(),
-        8 as libc::c_int,
-        16 as libc::c_int,
-        BS_8x16,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_8x16.0.as_mut_ptr(),
-        wedge_masks_422_4x16.0.as_mut_ptr(),
-        wedge_masks_420_4x8.0.as_mut_ptr(),
-        0x7beb as libc::c_int as libc::c_uint,
-    );
-    fill2d_16x2(
-        wedge_masks_444_8x8.0.as_mut_ptr(),
-        8 as libc::c_int,
-        8 as libc::c_int,
-        BS_8x8,
-        master.as_mut_ptr() as *const [uint8_t; 4096],
-        wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_8x8.0.as_mut_ptr(),
-        wedge_masks_422_4x8.0.as_mut_ptr(),
-        wedge_masks_420_4x4.0.as_mut_ptr(),
-        0x7bfb as libc::c_int as libc::c_uint,
+    dav1d_wedge_masks[BS_8x8 as usize] = fill2d_16x2(
+        8,
+        8,
+        &master,
+        &wedge_codebook_16_heqw,
+        &mut wedge_masks_444_8x8.0,
+        &mut wedge_masks_422_4x8.0,
+        &mut wedge_masks_420_4x4.0,
+        0x7bfb,
     );
 }
-static mut ii_dc_mask: Align64<[uint8_t; 1024]> = Align64([0; 1024]);
-static mut ii_nondc_mask_32x32: Align64<[[uint8_t; 1024]; 3]> = Align64([[0; 1024]; 3]);
-static mut ii_nondc_mask_16x32: Align64<[[uint8_t; 512]; 3]> = Align64([[0; 512]; 3]);
-static mut ii_nondc_mask_16x16: Align64<[[uint8_t; 256]; 3]> = Align64([[0; 256]; 3]);
-static mut ii_nondc_mask_8x32: Align64<[[uint8_t; 256]; 3]> = Align64([[0; 256]; 3]);
-static mut ii_nondc_mask_8x16: Align64<[[uint8_t; 128]; 3]> = Align64([[0; 128]; 3]);
-static mut ii_nondc_mask_8x8: Align64<[[uint8_t; 64]; 3]> = Align64([[0; 64]; 3]);
-static mut ii_nondc_mask_4x16: Align64<[[uint8_t; 64]; 3]> = Align64([[0; 64]; 3]);
-static mut ii_nondc_mask_4x8: Align32<[[uint8_t; 32]; 3]> = Align32([[0; 32]; 3]);
-static mut ii_nondc_mask_4x4: Align16<[[uint8_t; 16]; 3]> = Align16([[0; 16]; 3]);
-#[no_mangle]
-pub static mut dav1d_ii_masks: [[[*const uint8_t; 4]; 3]; 22] = [[[0 as *const uint8_t; 4]; 3]; 22];
-#[cold]
-unsafe extern "C" fn build_nondc_ii_masks(
-    mask_v: *mut uint8_t,
-    mask_h: *mut uint8_t,
-    mask_sm: *mut uint8_t,
-    w: libc::c_int,
-    h: libc::c_int,
-    step: libc::c_int,
-) {
-    static mut ii_weights_1d: [uint8_t; 32] = [
-        60 as libc::c_int as uint8_t,
-        52 as libc::c_int as uint8_t,
-        45 as libc::c_int as uint8_t,
-        39 as libc::c_int as uint8_t,
-        34 as libc::c_int as uint8_t,
-        30 as libc::c_int as uint8_t,
-        26 as libc::c_int as uint8_t,
-        22 as libc::c_int as uint8_t,
-        19 as libc::c_int as uint8_t,
-        17 as libc::c_int as uint8_t,
-        15 as libc::c_int as uint8_t,
-        13 as libc::c_int as uint8_t,
-        11 as libc::c_int as uint8_t,
-        10 as libc::c_int as uint8_t,
-        8 as libc::c_int as uint8_t,
-        7 as libc::c_int as uint8_t,
-        6 as libc::c_int as uint8_t,
-        6 as libc::c_int as uint8_t,
-        5 as libc::c_int as uint8_t,
-        4 as libc::c_int as uint8_t,
-        4 as libc::c_int as uint8_t,
-        3 as libc::c_int as uint8_t,
-        3 as libc::c_int as uint8_t,
-        2 as libc::c_int as uint8_t,
-        2 as libc::c_int as uint8_t,
-        2 as libc::c_int as uint8_t,
-        2 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
-        1 as libc::c_int as uint8_t,
+
+static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
+
+const N_II_PRED_MODES: usize = N_INTER_INTRA_PRED_MODES - 1;
+
+const fn build_nondc_ii_masks<const N: usize>(
+    w: usize,
+    h: usize,
+    step: usize,
+) -> [[u8; N]; N_II_PRED_MODES] {
+    const ii_weights_1d: [u8; 32] = [
+        60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
+        2, 1, 1, 1, 1, 1,
     ];
-    let mut y = 0;
-    let mut off = 0;
-    while y < h {
-        memset(
-            &mut *mask_v.offset(off as isize) as *mut uint8_t as *mut libc::c_void,
-            ii_weights_1d[(y * step) as usize] as libc::c_int,
-            w as libc::c_ulong,
-        );
-        let mut x = 0;
-        while x < w {
-            *mask_sm.offset((off + x) as isize) = ii_weights_1d[(imin(x, y) * step) as usize];
-            *mask_h.offset((off + x) as isize) = ii_weights_1d[(x * step) as usize];
-            x += 1;
+
+    let mut masks = [[0; N]; N_II_PRED_MODES];
+
+    const_for!(y in 0..h => {
+        let off = y * w;
+        const_for!(i in 0..w => {
+            masks[II_VERT_PRED as usize - 1][off + i] = ii_weights_1d[y * step];
+        });
+        const_for!(x in 0..w => {
+            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
+            masks[II_HOR_PRED as usize - 1][off + x] = ii_weights_1d[x * step];
+        });
+    });
+
+    masks
+}
+
+static ii_nondc_mask_32x32: Align64<[[u8; 32 * 32]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(32, 32, 1));
+static ii_nondc_mask_16x32: Align64<[[u8; 16 * 32]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(16, 32, 1));
+static ii_nondc_mask_16x16: Align64<[[u8; 16 * 16]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(16, 16, 2));
+static ii_nondc_mask_8x32: Align64<[[u8; 8 * 32]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(8, 32, 1));
+static ii_nondc_mask_8x16: Align64<[[u8; 8 * 16]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(8, 16, 2));
+static ii_nondc_mask_8x8: Align64<[[u8; 8 * 8]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(8, 8, 4));
+static ii_nondc_mask_4x16: Align64<[[u8; 4 * 16]; N_II_PRED_MODES]> =
+    Align64(build_nondc_ii_masks(4, 16, 2));
+static ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
+    Align32(build_nondc_ii_masks(4, 8, 4));
+static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
+    Align16(build_nondc_ii_masks(4, 4, 8));
+
+pub static dav1d_ii_masks: [[[&'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] = {
+    let mut masks = [[[&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
+
+    macro_rules! set {
+        ($h:literal x $w:literal) => {{
+            let mut a = [&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES];
+            paste! {
+                a[II_DC_PRED as usize] = &ii_dc_mask.0;
+                a[II_VERT_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_VERT_PRED as usize - 1];
+                a[II_HOR_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_HOR_PRED as usize - 1];
+                a[II_SMOOTH_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_SMOOTH_PRED as usize - 1];
+            }
+            a
+        }};
+        ([$($h:literal x $w:literal),*]) => {
+            [$(set!($h x $w),)*]
         }
-        y += 1;
-        off += w;
     }
-}
-#[no_mangle]
-#[cold]
-pub unsafe extern "C" fn dav1d_init_interintra_masks() {
-    memset(
-        ii_dc_mask.0.as_mut_ptr() as *mut libc::c_void,
-        32 as libc::c_int,
-        (32 * 32) as libc::c_ulong,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        32 as libc::c_int,
-        32 as libc::c_int,
-        1 as libc::c_int,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        16 as libc::c_int,
-        32 as libc::c_int,
-        1 as libc::c_int,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        16 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_8x32[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_8x32[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_8x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        8 as libc::c_int,
-        32 as libc::c_int,
-        1 as libc::c_int,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        8 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        8 as libc::c_int,
-        8 as libc::c_int,
-        4 as libc::c_int,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_4x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_4x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_4x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        4 as libc::c_int,
-        16 as libc::c_int,
-        2 as libc::c_int,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        4 as libc::c_int,
-        8 as libc::c_int,
-        4 as libc::c_int,
-    );
-    build_nondc_ii_masks(
-        (ii_nondc_mask_4x4[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_4x4[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        (ii_nondc_mask_4x4[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr(),
-        4 as libc::c_int,
-        4 as libc::c_int,
-        8 as libc::c_int,
-    );
-}
-unsafe extern "C" fn run_static_initializers() {
-    dav1d_ii_masks = [
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-        ],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_32x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-        ],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x32[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x32[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x32[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-        ],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-        ],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_16x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-        ],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x16[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_4x16[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_4x16[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-        ],
-        [
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_8x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_4x8[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-            [
-                ii_dc_mask.0.as_mut_ptr() as *const uint8_t,
-                (ii_nondc_mask_4x4[(II_VERT_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_4x4[(II_HOR_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-                (ii_nondc_mask_4x4[(II_SMOOTH_PRED as libc::c_int - 1) as usize]).as_mut_ptr()
-                    as *const uint8_t,
-            ],
-        ],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-        [[0 as *const uint8_t; 4]; 3],
-    ];
-}
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: [unsafe extern "C" fn(); 1] = [run_static_initializers];
+
+    masks[BS_8x8 as usize] = set!([8 x 8, 4 x 8, 4 x 4]);
+    masks[BS_8x16 as usize] = set!([8 x 16, 4 x 16, 4 x 8]);
+    masks[BS_16x8 as usize] = set!([16 x 16, 8 x 8, 8 x 8]);
+    masks[BS_16x16 as usize] = set!([16 x 16, 8 x 16, 8 x 8]);
+    masks[BS_16x32 as usize] = set!([16 x 32, 8 x 32, 8 x 16]);
+    masks[BS_32x16 as usize] = set!([32 x 32, 16 x 16, 16 x 16]);
+    masks[BS_32x32 as usize] = set!([32 x 32, 16 x 32, 16 x 16]);
+
+    masks
+};

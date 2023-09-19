@@ -1,3 +1,4 @@
+use std::cmp;
 use std::ops::BitOr;
 
 use crate::include::dav1d::headers::Dav1dPixelLayout;
@@ -191,7 +192,7 @@ pub fn get_skip_ctx(
         }
         let [la, ll] = [(a, t_dim.lw), (l, t_dim.lh)]
             .map(|(dir, tx)| merge_ctx(dir, tx as TxfmSize))
-            .map(|ldir| std::cmp::min(ldir & 0x3f, 4) as usize);
+            .map(|ldir| cmp::min(ldir & 0x3f, 4) as usize);
         dav1d_skip_ctx[la][ll]
     }
 }
@@ -346,7 +347,7 @@ pub fn get_lo_ctx(
         mag += level(1, 1);
         *hi_mag = mag as libc::c_uint;
         mag += level(0, 2) + level(2, 0);
-        ctx_offsets.unwrap()[std::cmp::min(y, 4)][std::cmp::min(x, 4)] as usize
+        ctx_offsets.unwrap()[cmp::min(y, 4)][cmp::min(x, 4)] as usize
     } else {
         mag += level(0, 2);
         *hi_mag = mag as libc::c_uint;

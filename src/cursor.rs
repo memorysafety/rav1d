@@ -18,10 +18,12 @@ impl<'a, T> CursorMut<'a, T> {
         &mut self.data[self.index..]
     }
 
+    #[allow(dead_code)] // TODO(kkysen) remove once used
     pub fn as_ptr(&self) -> *const T {
         self.as_slice().as_ptr()
     }
 
+    #[allow(dead_code)] // TODO(kkysen) remove once used
     pub fn as_mut_ptr(&mut self) -> *mut T {
         self.as_mut_slice().as_mut_ptr()
     }

@@ -3,6 +3,7 @@ use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
+use crate::include::dav1d::headers::DAV1D_N_FILTERS;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::src::align::Align16;
 use crate::src::align::Align4;
@@ -32,6 +33,7 @@ use crate::src::levels::BS_8x4;
 use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockSize;
 use crate::src::levels::InterPredMode;
+use crate::src::levels::TxfmType;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::ADST_FLIPADST;
@@ -39,6 +41,8 @@ use crate::src::levels::DCT_ADST;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::DCT_FLIPADST;
 use crate::src::levels::DC_PRED;
+use crate::src::levels::DIAG_DOWN_LEFT_PRED;
+use crate::src::levels::DIAG_DOWN_RIGHT_PRED;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
@@ -53,17 +57,35 @@ use crate::src::levels::FLIPADST_ADST;
 use crate::src::levels::FLIPADST_DCT;
 use crate::src::levels::FLIPADST_FLIPADST;
 use crate::src::levels::GLOBALMV;
+use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::HOR_DOWN_PRED;
 use crate::src::levels::HOR_PRED;
+use crate::src::levels::HOR_UP_PRED;
 use crate::src::levels::H_ADST;
 use crate::src::levels::H_DCT;
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::IDTX;
 use crate::src::levels::NEARESTMV;
+use crate::src::levels::NEARESTMV_NEARESTMV;
+use crate::src::levels::NEARESTMV_NEWMV;
 use crate::src::levels::NEARMV;
+use crate::src::levels::NEARMV_NEARMV;
+use crate::src::levels::NEARMV_NEWMV;
 use crate::src::levels::NEWMV;
+use crate::src::levels::NEWMV_NEARESTMV;
+use crate::src::levels::NEWMV_NEARMV;
+use crate::src::levels::NEWMV_NEWMV;
+use crate::src::levels::N_2D_FILTERS;
+use crate::src::levels::N_BL_LEVELS;
+use crate::src::levels::N_BS_SIZES;
+use crate::src::levels::N_COMP_INTER_PRED_MODES;
+use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_PARTITIONS;
+use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_SUB8X8_PARTITIONS;
+use crate::src::levels::N_TX_TYPES_PLUS_LL;
+use crate::src::levels::N_UV_INTRA_PRED_MODES;
+use crate::src::levels::PAETH_PRED;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
 use crate::src::levels::RTX_16X64;
@@ -78,6 +100,9 @@ use crate::src::levels::RTX_64X32;
 use crate::src::levels::RTX_8X16;
 use crate::src::levels::RTX_8X32;
 use crate::src::levels::RTX_8X4;
+use crate::src::levels::SMOOTH_H_PRED;
+use crate::src::levels::SMOOTH_PRED;
+use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
@@ -86,7 +111,9 @@ use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_V;
+use crate::src::levels::VERT_LEFT_PRED;
 use crate::src::levels::VERT_PRED;
+use crate::src::levels::VERT_RIGHT_PRED;
 use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
@@ -103,7 +130,7 @@ pub struct TxfmInfo {
     pub ctx: u8,
 }
 
-pub static dav1d_al_part_ctx: [[[u8; 10]; 5]; 2] = [
+pub static dav1d_al_part_ctx: [[[u8; N_PARTITIONS]; N_BL_LEVELS]; 2] = [
     [
         [0x00, 0x00, 0x10, 0xff, 0x00, 0x10, 0x10, 0x10, 0xff, 0xff],
         [0x10, 0x10, 0x18, 0xff, 0x10, 0x18, 0x18, 0x18, 0x10, 0x1c],
@@ -120,7 +147,7 @@ pub static dav1d_al_part_ctx: [[[u8; 10]; 5]; 2] = [
     ],
 ];
 
-pub static dav1d_block_sizes: [[[BlockSize; 2]; 10]; 5] = [
+pub static dav1d_block_sizes: [[[BlockSize; 2]; N_PARTITIONS]; N_BL_LEVELS] = [
     [
         [BS_128x128 as u8, 0],
         [BS_128x64 as u8, 0],
@@ -183,7 +210,7 @@ pub static dav1d_block_sizes: [[[BlockSize; 2]; 10]; 5] = [
     ],
 ];
 
-pub static dav1d_block_dimensions: [[u8; 4]; 22] = [
+pub static dav1d_block_dimensions: [[u8; 4]; N_BS_SIZES] = [
     [32, 32, 5, 5],
     [32, 16, 5, 4],
     [16, 32, 4, 5],
@@ -208,7 +235,7 @@ pub static dav1d_block_dimensions: [[u8; 4]; 22] = [
     [1, 1, 0, 0],
 ];
 
-pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
+pub static dav1d_txfm_dimensions: [TxfmInfo; N_RECT_TX_SIZES] = [
     TxfmInfo {
         w: 1,
         h: 1,
@@ -401,7 +428,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; 19] = [
     },
 ];
 
-pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; 22] = [
+pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; N_BS_SIZES] = [
     [
         TX_64X64 as u8,
         TX_32X32 as u8,
@@ -466,35 +493,38 @@ pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; 22] = [
     [TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8, TX_4X4 as u8],
 ];
 
-pub static dav1d_txtp_from_uvmode: [u8; 14] = [
-    DCT_DCT as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    DCT_DCT as u8,
-    ADST_ADST as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    DCT_ADST as u8,
-    ADST_DCT as u8,
-    ADST_ADST as u8,
-    ADST_DCT as u8,
-    DCT_ADST as u8,
-    ADST_ADST as u8,
-    0,
-];
+pub static dav1d_txtp_from_uvmode: [TxfmType; N_UV_INTRA_PRED_MODES] = {
+    let mut tbl = [0; N_UV_INTRA_PRED_MODES];
+    tbl[DC_PRED as usize] = DCT_DCT;
+    tbl[VERT_PRED as usize] = ADST_DCT;
+    tbl[HOR_PRED as usize] = DCT_ADST;
+    tbl[DIAG_DOWN_LEFT_PRED as usize] = DCT_DCT;
+    tbl[DIAG_DOWN_RIGHT_PRED as usize] = ADST_ADST;
+    tbl[VERT_RIGHT_PRED as usize] = ADST_DCT;
+    tbl[HOR_DOWN_PRED as usize] = DCT_ADST;
+    tbl[HOR_UP_PRED as usize] = DCT_ADST;
+    tbl[VERT_LEFT_PRED as usize] = ADST_DCT;
+    tbl[SMOOTH_PRED as usize] = ADST_ADST;
+    tbl[SMOOTH_V_PRED as usize] = ADST_DCT;
+    tbl[SMOOTH_H_PRED as usize] = DCT_ADST;
+    tbl[PAETH_PRED as usize] = ADST_ADST;
+    tbl
+};
 
-pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; 8] = [
-    [NEARESTMV, NEARESTMV],
-    [NEARMV, NEARMV],
-    [NEARESTMV, NEWMV],
-    [NEWMV, NEARESTMV],
-    [NEARMV, NEWMV],
-    [NEWMV, NEARMV],
-    [GLOBALMV, GLOBALMV],
-    [NEWMV, NEWMV],
-];
+pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; N_COMP_INTER_PRED_MODES] = {
+    let mut tbl = [[0; 2]; 8];
+    tbl[NEARESTMV_NEARESTMV as usize] = [NEARESTMV, NEARESTMV];
+    tbl[NEARMV_NEARMV as usize] = [NEARMV, NEARMV];
+    tbl[NEWMV_NEWMV as usize] = [NEWMV, NEWMV];
+    tbl[GLOBALMV_GLOBALMV as usize] = [GLOBALMV, GLOBALMV];
+    tbl[NEWMV_NEARESTMV as usize] = [NEWMV, NEARESTMV];
+    tbl[NEWMV_NEARMV as usize] = [NEWMV, NEARMV];
+    tbl[NEARESTMV_NEWMV as usize] = [NEARESTMV, NEWMV];
+    tbl[NEARMV_NEWMV as usize] = [NEARMV, NEWMV];
+    tbl
+};
 
-pub static dav1d_partition_type_count: [u8; 5] = [
+pub static dav1d_partition_type_count: [u8; N_BL_LEVELS] = [
     N_PARTITIONS as u8 - 3,
     N_PARTITIONS as u8 - 1,
     N_PARTITIONS as u8 - 1,
@@ -545,7 +575,7 @@ pub static dav1d_tx_types_per_set: [u8; 40] = [
     FLIPADST_ADST as u8,
 ];
 
-pub static dav1d_ymode_size_context: [u8; 22] = [
+pub static dav1d_ymode_size_context: [u8; N_BS_SIZES] = [
     3, 3, 3, 3, 3, 2, 3, 3, 2, 1, 2, 2, 2, 1, 0, 1, 1, 1, 0, 0, 0, 0,
 ];
 
@@ -581,7 +611,7 @@ pub static dav1d_skip_ctx: [[u8; 5]; 5] = [
     [3, 5, 5, 5, 6],
 ];
 
-pub static dav1d_tx_type_class: [u8; 17] = [
+pub static dav1d_tx_type_class: [u8; N_TX_TYPES_PLUS_LL] = [
     TX_CLASS_2D as u8,
     TX_CLASS_2D as u8,
     TX_CLASS_2D as u8,
@@ -601,7 +631,7 @@ pub static dav1d_tx_type_class: [u8; 17] = [
     TX_CLASS_2D as u8,
 ];
 
-pub static dav1d_filter_2d: [[u8; 4]; 4] = [
+pub static dav1d_filter_2d: [[u8; DAV1D_N_FILTERS]; DAV1D_N_FILTERS] = [
     [
         FILTER_2D_8TAP_REGULAR as u8,
         FILTER_2D_8TAP_REGULAR_SMOOTH as u8,
@@ -623,7 +653,7 @@ pub static dav1d_filter_2d: [[u8; 4]; 4] = [
     [0, 0, 0, FILTER_2D_BILINEAR as u8],
 ];
 
-pub static dav1d_filter_dir: [[u8; 2]; 10] = [
+pub static dav1d_filter_dir: [[u8; 2]; N_2D_FILTERS] = [
     [
         DAV1D_FILTER_8TAP_REGULAR as u8,
         DAV1D_FILTER_8TAP_REGULAR as u8,
@@ -668,9 +698,10 @@ pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
     DC_PRED as u8,
 ];
 
-pub static dav1d_intra_mode_context: [u8; 13] = [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
+pub static dav1d_intra_mode_context: [u8; N_INTRA_PRED_MODES] =
+    [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
 
-pub static dav1d_wedge_ctx_lut: [u8; 22] = [
+pub static dav1d_wedge_ctx_lut: [u8; N_BS_SIZES] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 
