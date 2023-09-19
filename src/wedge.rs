@@ -195,17 +195,12 @@ const fn hflip(src: &[u8; 64 * 64]) -> [u8; 64 * 64] {
     dst
 }
 
-unsafe fn invert(dst: *mut u8, src: *const u8, w: usize, h: usize) {
-    let mut y = 0;
-    let mut y_off = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
-            *dst.offset((y_off + x) as isize) = 64 - *src.offset((y_off + x) as isize);
-            x += 1;
+fn invert(dst: &mut [u8], src: &[u8], w: usize, h: usize) {
+    for y in 0..h {
+        let y_off = y * w;
+        for x in 0..w {
+            dst[y_off + x] = 64 - src[y_off + x];
         }
-        y += 1;
-        y_off += w;
     }
 }
 
@@ -287,7 +282,8 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
         );
     }
     for n in 0..16 {
-        invert(dst[1][n].as_mut_ptr(), dst[0][n].as_ptr(), w, h);
+        let [dst_0, dst_1] = dst;
+        invert(&mut dst_1[n], &dst_0[n], w, h);
     }
 
     for n in 0..16 {
