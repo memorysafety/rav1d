@@ -259,7 +259,7 @@ const fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
 }
 
 #[cold]
-unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>(
+fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>(
     dst: &mut [[[u8; LEN_444]; 16]; 2],
     w: usize,
     h: usize,
