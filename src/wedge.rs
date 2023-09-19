@@ -415,11 +415,6 @@ pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
     masks
 };
 
-#[cold]
-pub unsafe fn dav1d_init_wedge_masks() {
-    // This function is guaranteed to be called only once
-}
-
 static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
 
 const N_II_PRED_MODES: usize = N_INTER_INTRA_PRED_MODES - 1;
