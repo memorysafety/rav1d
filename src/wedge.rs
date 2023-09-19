@@ -12,7 +12,6 @@ use crate::src::levels::BS_32x8;
 use crate::src::levels::BS_8x16;
 use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x8;
-use crate::src::levels::BlockSize;
 use crate::src::levels::II_DC_PRED;
 use crate::src::levels::II_HOR_PRED;
 use crate::src::levels::II_SMOOTH_PRED;
@@ -257,40 +256,38 @@ unsafe fn init_chroma(
 
 #[cold]
 unsafe fn fill2d_16x2(
-    dst: *mut u8,
+    dst: &mut [u8],
     w: usize,
     h: usize,
-    bs: BlockSize,
-    master: *const [u8; 64 * 64],
-    cb: *const wedge_code_type,
-    mut masks_444: *mut u8,
-    mut masks_422: *mut u8,
-    mut masks_420: *mut u8,
+    master: &[[u8; 64 * 64]; 6],
+    cb: &[wedge_code_type; 16],
+    mut masks_444: &mut [u8],
+    mut masks_422: &mut [u8],
+    mut masks_420: &mut [u8],
     signs: libc::c_uint,
-) {
-    let bs = bs as usize;
+) -> [[[*const u8; 16]; 2]; 3] {
+    assert!(dst.len() == 2 * 16 * w * h);
 
-    let mut ptr: *mut u8 = dst;
-    let mut n = 0;
-    while n < 16 {
+    let mut ptr = &mut dst[..];
+    for n in 0..16 {
         copy2d(
-            ptr,
-            (*master.offset((*cb.offset(n as isize)).direction as isize)).as_ptr(),
+            ptr.as_mut_ptr(),
+            master[cb[n].direction as usize].as_ptr(),
             w,
             h,
-            32 - (w * (*cb.offset(n as isize)).x_offset as usize >> 3),
-            32 - (h * (*cb.offset(n as isize)).y_offset as usize >> 3),
+            32 - (w * cb[n].x_offset as usize >> 3),
+            32 - (h * cb[n].y_offset as usize >> 3),
         );
-        ptr = ptr.offset((w * h) as isize);
-        n += 1;
+        ptr = &mut ptr[w * h..];
     }
-    let mut n = 0;
+    let (dst, ptr) = dst.split_at_mut(16 * w * h);
     let mut off = 0;
-    while n < 16 {
-        invert(ptr.offset(off as isize), dst.offset(off as isize), w, h);
-        n += 1;
+    for _ in 0..16 {
+        invert(ptr[off..].as_mut_ptr(), dst[off..].as_ptr(), w, h);
         off += w * h;
     }
+
+    let mut masks = [[[0 as *const u8; 16]; 2]; 3];
 
     let n_stride_444 = w * h;
     let n_stride_422 = n_stride_444 >> 1;
@@ -299,62 +296,32 @@ unsafe fn fill2d_16x2(
     let sign_stride_422 = 16 * n_stride_422;
     let sign_stride_420 = 16 * n_stride_420;
     // assign pointers in externally visible array
-    let mut n = 0;
-    while n < 16 {
-        let sign = (signs >> n & 1) as usize;
-        dav1d_wedge_masks[bs][0][0][n] = masks_444.offset((sign * sign_stride_444) as isize);
+    for n in 0..16 {
+        let sign = (signs >> n & 1) != 0;
+        masks[0][0][n] = masks_444[sign as usize * sign_stride_444..].as_ptr();
         // not using !sign is intentional here, since 444 does not require
         // any rounding since no chroma subsampling is applied.
-        dav1d_wedge_masks[bs][0][1][n] = masks_444.offset((sign * sign_stride_444) as isize);
-        dav1d_wedge_masks[bs][1][0][n] = masks_422.offset((sign * sign_stride_422) as isize);
-        dav1d_wedge_masks[bs][1][1][n] =
-            masks_422.offset(((sign == 0) as usize * sign_stride_422) as isize);
-        dav1d_wedge_masks[bs][2][0][n] = masks_420.offset((sign * sign_stride_420) as isize);
-        dav1d_wedge_masks[bs][2][1][n] =
-            masks_420.offset(((sign == 0) as usize * sign_stride_420) as isize);
-        masks_444 = masks_444.offset(n_stride_444 as isize);
-        masks_422 = masks_422.offset(n_stride_422 as isize);
-        masks_420 = masks_420.offset(n_stride_420 as isize);
+        masks[0][1][n] = masks_444[sign as usize * sign_stride_444..].as_ptr();
+        masks[1][0][n] = masks_422[sign as usize * sign_stride_422..].as_ptr();
+        masks[1][1][n] = masks_422[!sign as usize * sign_stride_422..].as_ptr();
+        masks[2][0][n] = masks_420[sign as usize * sign_stride_420..].as_ptr();
+        masks[2][1][n] = masks_420[!sign as usize * sign_stride_420..].as_ptr();
+        masks_444 = &mut masks_444[n_stride_444..];
+        masks_422 = &mut masks_422[n_stride_422..];
+        masks_420 = &mut masks_420[n_stride_420..];
 
         // since the pointers come from inside, we know that
         // violation of the const is OK here. Any other approach
         // means we would have to duplicate the sign correction
         // logic in two places, which isn't very nice, or mark
         // the table faced externally as non-const, which also sucks
-        init_chroma(
-            dav1d_wedge_masks[bs][1][0][n] as *mut u8,
-            dav1d_wedge_masks[bs][0][0][n],
-            0,
-            w,
-            h,
-            0,
-        );
-        init_chroma(
-            dav1d_wedge_masks[bs][1][1][n] as *mut u8,
-            dav1d_wedge_masks[bs][0][0][n],
-            1,
-            w,
-            h,
-            0,
-        );
-        init_chroma(
-            dav1d_wedge_masks[bs][2][0][n] as *mut u8,
-            dav1d_wedge_masks[bs][0][0][n],
-            0,
-            w,
-            h,
-            1,
-        );
-        init_chroma(
-            dav1d_wedge_masks[bs][2][1][n] as *mut u8,
-            dav1d_wedge_masks[bs][0][0][n],
-            1,
-            w,
-            h,
-            1,
-        );
-        n += 1;
+        init_chroma(masks[1][0][n] as *mut u8, masks[0][0][n], 0, w, h, 0);
+        init_chroma(masks[1][1][n] as *mut u8, masks[0][0][n], 1, w, h, 0);
+        init_chroma(masks[2][0][n] as *mut u8, masks[0][0][n], 0, w, h, 1);
+        init_chroma(masks[2][1][n] as *mut u8, masks[0][0][n], 1, w, h, 1);
     }
+
+    masks
 }
 
 #[cold]
@@ -409,112 +376,103 @@ pub unsafe fn dav1d_init_wedge_masks() {
     master[WEDGE_OBLIQUE117 as usize] = hflip(&master[WEDGE_OBLIQUE63 as usize]);
     master[WEDGE_OBLIQUE153 as usize] = hflip(&master[WEDGE_OBLIQUE27 as usize]);
 
-    fill2d_16x2(
-        wedge_masks_444_32x32.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_32x32 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_32x32.0,
         32,
         32,
-        BS_32x32,
-        master.as_ptr(),
-        wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_32x32.0.as_mut_ptr(),
-        wedge_masks_422_16x32.0.as_mut_ptr(),
-        wedge_masks_420_16x16.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_heqw,
+        &mut wedge_masks_444_32x32.0,
+        &mut wedge_masks_422_16x32.0,
+        &mut wedge_masks_420_16x16.0,
         0x7bfb,
     );
-    fill2d_16x2(
-        wedge_masks_444_32x16.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_32x16 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_32x16.0,
         32,
         16,
-        BS_32x16,
-        master.as_ptr(),
-        wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_32x16.0.as_mut_ptr(),
-        wedge_masks_422_16x16.0.as_mut_ptr(),
-        wedge_masks_420_16x8.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_hltw,
+        &mut wedge_masks_444_32x16.0,
+        &mut wedge_masks_422_16x16.0,
+        &mut wedge_masks_420_16x8.0,
         0x7beb,
     );
-    fill2d_16x2(
-        wedge_masks_444_32x8.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_32x8 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_32x8.0,
         32,
         8,
-        BS_32x8,
-        master.as_ptr(),
-        wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_32x8.0.as_mut_ptr(),
-        wedge_masks_422_16x8.0.as_mut_ptr(),
-        wedge_masks_420_16x4.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_hltw,
+        &mut wedge_masks_444_32x8.0,
+        &mut wedge_masks_422_16x8.0,
+        &mut wedge_masks_420_16x4.0,
         0x6beb,
     );
-    fill2d_16x2(
-        wedge_masks_444_16x32.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_16x32 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_16x32.0,
         16,
         32,
-        BS_16x32,
-        master.as_ptr(),
-        wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_16x32.0.as_mut_ptr(),
-        wedge_masks_422_8x32.0.as_mut_ptr(),
-        wedge_masks_420_8x16.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_hgtw,
+        &mut wedge_masks_444_16x32.0,
+        &mut wedge_masks_422_8x32.0,
+        &mut wedge_masks_420_8x16.0,
         0x7beb,
     );
-    fill2d_16x2(
-        wedge_masks_444_16x16.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_16x16 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_16x16.0,
         16,
         16,
-        BS_16x16,
-        master.as_ptr(),
-        wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_16x16.0.as_mut_ptr(),
-        wedge_masks_422_8x16.0.as_mut_ptr(),
-        wedge_masks_420_8x8.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_heqw,
+        &mut wedge_masks_444_16x16.0,
+        &mut wedge_masks_422_8x16.0,
+        &mut wedge_masks_420_8x8.0,
         0x7bfb,
     );
-    fill2d_16x2(
-        wedge_masks_444_16x8.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_16x8 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_16x8.0,
         16,
         8,
-        BS_16x8,
-        master.as_ptr(),
-        wedge_codebook_16_hltw.as_ptr(),
-        wedge_masks_444_16x8.0.as_mut_ptr(),
-        wedge_masks_422_8x8.0.as_mut_ptr(),
-        wedge_masks_420_8x4.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_hltw,
+        &mut wedge_masks_444_16x8.0,
+        &mut wedge_masks_422_8x8.0,
+        &mut wedge_masks_420_8x4.0,
         0x7beb,
     );
-    fill2d_16x2(
-        wedge_masks_444_8x32.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_8x32 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_8x32.0,
         8,
         32,
-        BS_8x32,
-        master.as_ptr(),
-        wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_8x32.0.as_mut_ptr(),
-        wedge_masks_422_4x32.0.as_mut_ptr(),
-        wedge_masks_420_4x16.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_hgtw,
+        &mut wedge_masks_444_8x32.0,
+        &mut wedge_masks_422_4x32.0,
+        &mut wedge_masks_420_4x16.0,
         0x7aeb,
     );
-    fill2d_16x2(
-        wedge_masks_444_8x16.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_8x16 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_8x16.0,
         8,
         16,
-        BS_8x16,
-        master.as_ptr(),
-        wedge_codebook_16_hgtw.as_ptr(),
-        wedge_masks_444_8x16.0.as_mut_ptr(),
-        wedge_masks_422_4x16.0.as_mut_ptr(),
-        wedge_masks_420_4x8.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_hgtw,
+        &mut wedge_masks_444_8x16.0,
+        &mut wedge_masks_422_4x16.0,
+        &mut wedge_masks_420_4x8.0,
         0x7beb,
     );
-    fill2d_16x2(
-        wedge_masks_444_8x8.0.as_mut_ptr(),
+    dav1d_wedge_masks[BS_8x8 as usize] = fill2d_16x2(
+        &mut wedge_masks_444_8x8.0,
         8,
         8,
-        BS_8x8,
-        master.as_ptr(),
-        wedge_codebook_16_heqw.as_ptr(),
-        wedge_masks_444_8x8.0.as_mut_ptr(),
-        wedge_masks_422_4x8.0.as_mut_ptr(),
-        wedge_masks_420_4x4.0.as_mut_ptr(),
+        &master,
+        &wedge_codebook_16_heqw,
+        &mut wedge_masks_444_8x8.0,
+        &mut wedge_masks_422_4x8.0,
+        &mut wedge_masks_420_4x4.0,
         0x7bfb,
     );
 }
