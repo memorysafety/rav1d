@@ -340,9 +340,9 @@ impl<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
 const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
     #[derive(EnumCount)]
     enum WedgeMasterLineType {
-        ODD,
-        EVEN,
-        VERT,
+        Odd,
+        Even,
+        Vert,
     }
 
     const wedge_master_border: [[u8; 8]; WedgeMasterLineType::COUNT] = [
@@ -357,7 +357,7 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
         master[WedgeDirectionType::Vertical as usize] = insert_border(
             master[WedgeDirectionType::Vertical as usize],
             y,
-            &wedge_master_border[WedgeMasterLineType::VERT as usize],
+            &wedge_master_border[WedgeMasterLineType::Vert as usize],
             32,
         );
     });
@@ -366,13 +366,13 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
         master[WedgeDirectionType::Oblique63 as usize] = insert_border(
             master[WedgeDirectionType::Oblique63 as usize],
             y,
-            &wedge_master_border[WedgeMasterLineType::EVEN as usize],
+            &wedge_master_border[WedgeMasterLineType::Even as usize],
             ctr,
         );
         master[WedgeDirectionType::Oblique63 as usize] = insert_border(
             master[WedgeDirectionType::Oblique63 as usize],
             y + 1,
-            &wedge_master_border[WedgeMasterLineType::ODD as usize],
+            &wedge_master_border[WedgeMasterLineType::Odd as usize],
             ctr - 1,
         );
     });
