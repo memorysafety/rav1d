@@ -222,7 +222,9 @@ fn copy2d<const N: usize>(
 ) -> [u8; N] {
     let mut dst = [0; N];
     for y in 0..h {
-        dst[y * w..][..w].copy_from_slice(&src[y_off + y][x_off..][..w]);
+        for x in 0..w {
+            dst[y * w + x] = src[y_off + y][x_off + x];
+        }
     }
     dst
 }
