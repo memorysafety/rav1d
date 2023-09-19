@@ -23,14 +23,14 @@ use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 
 use paste::paste;
 
-pub type WedgeDirectionType = u8;
-pub const WEDGE_HORIZONTAL: WedgeDirectionType = 0;
-pub const WEDGE_VERTICAL: WedgeDirectionType = 1;
-pub const WEDGE_OBLIQUE27: WedgeDirectionType = 2;
-pub const WEDGE_OBLIQUE63: WedgeDirectionType = 3;
-pub const WEDGE_OBLIQUE117: WedgeDirectionType = 4;
-pub const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
-pub const N_WEDGE_DIRECTIONS: usize = 6;
+type WedgeDirectionType = u8;
+const WEDGE_HORIZONTAL: WedgeDirectionType = 0;
+const WEDGE_VERTICAL: WedgeDirectionType = 1;
+const WEDGE_OBLIQUE27: WedgeDirectionType = 2;
+const WEDGE_OBLIQUE63: WedgeDirectionType = 3;
+const WEDGE_OBLIQUE117: WedgeDirectionType = 4;
+const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
+const N_WEDGE_DIRECTIONS: usize = 6;
 
 struct WedgeCodeType {
     pub direction: WedgeDirectionType,
@@ -335,11 +335,11 @@ impl<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
 }
 
 const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
-    pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
-    pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
-    pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
-    pub type WedgeMasterLineType = libc::c_uint;
-    pub const N_WEDGE_MASTER_LINES: usize = 3;
+    const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
+    const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
+    const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
+    type WedgeMasterLineType = libc::c_uint;
+    const N_WEDGE_MASTER_LINES: usize = 3;
 
     const wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
         [1, 2, 6, 18, 37, 53, 60, 63],
