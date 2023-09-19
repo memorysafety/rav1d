@@ -277,7 +277,7 @@ impl<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
         }
     }
 
-    const fn slice<'a>(&'a self) -> [[[&'a [u8]; 16]; 2]; 3] {
+    const fn slice(&self) -> [[[&[u8]; 16]; 2]; 3] {
         let Self {
             masks_444: Align64(masks_444),
             masks_422: Align64(masks_422),
