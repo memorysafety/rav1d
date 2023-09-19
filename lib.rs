@@ -41,6 +41,7 @@ pub mod src {
     #[cfg(feature = "bitdepth_8")]
     mod cdef_tmpl_8;
     mod cdf;
+    mod const_fn;
     pub mod cpu;
     mod ctx;
     mod cursor;
