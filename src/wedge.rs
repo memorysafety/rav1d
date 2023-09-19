@@ -213,20 +213,20 @@ const fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
     dst
 }
 
-fn copy2d(
-    mut dst: &mut [u8],
-    mut src: &[[u8; 64]],
+const fn copy2d<const N: usize>(
+    src: &[[u8; 64]; 64],
     w: usize,
     h: usize,
     x_off: usize,
     y_off: usize,
-) {
-    src = &src[y_off..];
-    for _ in 0..h {
-        dst[..w].copy_from_slice(&src[0][x_off..][..w]);
-        src = &src[1..];
-        dst = &mut dst[w..];
-    }
+) -> [u8; N] {
+    let mut dst = [0; N];
+    const_for!(y in 0..h => {
+        const_for!(x in 0..w => {
+            dst[y * w + x] = src[y_off + y][x_off + x];
+        });
+    });
+    dst
 }
 
 const fn init_chroma<const LEN_LUMA: usize, const LEN_CHROMA: usize>(
@@ -275,8 +275,7 @@ unsafe fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420:
     assert!(LEN_420 == (w * h) >> 2);
 
     for n in 0..16 {
-        copy2d(
-            &mut dst[0][n],
+        dst[0][n] = copy2d(
             &master[cb[n].direction as usize],
             w,
             h,
