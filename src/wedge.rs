@@ -315,37 +315,31 @@ fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
     masks
 }
 
-#[cold]
-pub unsafe fn dav1d_init_wedge_masks() {
-    // This function is guaranteed to be called only once
-
+const fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
     pub const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
     pub const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
     pub const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
     pub type WedgeMasterLineType = libc::c_uint;
     pub const N_WEDGE_MASTER_LINES: usize = 3;
 
-    static wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
+    const wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
         [1, 2, 6, 18, 37, 53, 60, 63],
         [1, 4, 11, 27, 46, 58, 62, 63],
         [0, 2, 7, 21, 43, 57, 62, 64],
     ];
-    let mut master: [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] = [[[0; 64]; 64]; N_WEDGE_DIRECTIONS];
+    let mut master = [[[0; 64]; 64]; N_WEDGE_DIRECTIONS];
 
     // create master templates
-    let mut y = 0;
-    while y < 64 {
+    const_for!(y in 0..64 => {
         master[WEDGE_VERTICAL as usize] = insert_border(
             master[WEDGE_VERTICAL as usize],
             y,
             &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
             32,
         );
-        y += 1;
-    }
-    let mut y = 0;
-    let mut ctr = 48;
-    while y < 64 {
+    });
+    const_for!(y in 0..64, step_by 2 => {
+        let ctr = 48 - (y / 2);
         master[WEDGE_OBLIQUE63 as usize] = insert_border(
             master[WEDGE_OBLIQUE63 as usize],
             y,
@@ -358,14 +352,21 @@ pub unsafe fn dav1d_init_wedge_masks() {
             &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
-        y += 2;
-        ctr -= 1;
-    }
+    });
 
     master[WEDGE_OBLIQUE27 as usize] = transposed(&master[WEDGE_OBLIQUE63 as usize]);
     master[WEDGE_HORIZONTAL as usize] = transposed(&master[WEDGE_VERTICAL as usize]);
     master[WEDGE_OBLIQUE117 as usize] = hflip(&master[WEDGE_OBLIQUE63 as usize]);
     master[WEDGE_OBLIQUE153 as usize] = hflip(&master[WEDGE_OBLIQUE27 as usize]);
+
+    master
+}
+
+#[cold]
+pub unsafe fn dav1d_init_wedge_masks() {
+    // This function is guaranteed to be called only once
+
+    let master = build_master();
 
     dav1d_wedge_masks[BS_32x32 as usize] = fill2d_16x2(
         32,
