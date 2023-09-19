@@ -76,7 +76,6 @@ use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_task::dav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
-use crate::src::wedge::dav1d_init_interintra_masks;
 use crate::src::wedge::dav1d_init_wedge_masks;
 
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
@@ -429,7 +428,6 @@ use crate::src::mem::freep;
 #[cold]
 unsafe extern "C" fn init_internal() {
     dav1d_init_cpu();
-    dav1d_init_interintra_masks();
     dav1d_init_wedge_masks();
 }
 #[no_mangle]
