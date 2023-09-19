@@ -218,7 +218,7 @@ pub struct Dav1dFrameContext {
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
-    pub ipred_edge: [*mut libc::c_void; 3],
+    pub ipred_edge: [*mut DynPixel; 3],
     pub b4_stride: ptrdiff_t,
     pub w4: libc::c_int,
     pub h4: libc::c_int,
@@ -5171,17 +5171,17 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let ipred_edge_sz = f.sbh * f.sb128w << hbd;
     if ipred_edge_sz != f.ipred_edge_sz {
         dav1d_freep_aligned(
-            &mut *f.ipred_edge.as_mut_ptr().offset(0) as *mut *mut libc::c_void
-                as *mut libc::c_void,
+            &mut *f.ipred_edge.as_mut_ptr().offset(0) as *mut *mut DynPixel as *mut libc::c_void,
         );
-        f.ipred_edge[0] = dav1d_alloc_aligned(ipred_edge_sz as usize * 128 * 3, 64);
+        f.ipred_edge[0] =
+            dav1d_alloc_aligned(ipred_edge_sz as usize * 128 * 3, 64) as *mut DynPixel;
         let ptr = f.ipred_edge[0] as *mut u8;
         if ptr.is_null() {
             f.ipred_edge_sz = 0;
             return -12;
         }
-        f.ipred_edge[1] = ptr.offset(ipred_edge_sz as isize * 128 * 1) as *mut libc::c_void;
-        f.ipred_edge[2] = ptr.offset(ipred_edge_sz as isize * 128 * 2) as *mut libc::c_void;
+        f.ipred_edge[1] = ptr.offset(ipred_edge_sz as isize * 128 * 1) as *mut DynPixel;
+        f.ipred_edge[2] = ptr.offset(ipred_edge_sz as isize * 128 * 2) as *mut DynPixel;
         f.ipred_edge_sz = ipred_edge_sz;
     }
 

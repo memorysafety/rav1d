@@ -1,6 +1,7 @@
 use std::cmp;
 
 use crate::include::common::bitdepth::DynCoef;
+use crate::include::common::bitdepth::DynPixel;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::intra_edge::dav1d_init_mode_tree;
@@ -335,7 +336,7 @@ pub struct Dav1dFrameContext {
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
-    pub ipred_edge: [*mut libc::c_void; 3],
+    pub ipred_edge: [*mut DynPixel; 3],
     pub b4_stride: ptrdiff_t,
     pub w4: libc::c_int,
     pub h4: libc::c_int,
@@ -1602,7 +1603,7 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: libc::
                 as *mut libc::c_void,
         );
         dav1d_free_aligned((*f).ts as *mut libc::c_void);
-        dav1d_free_aligned((*f).ipred_edge[0]);
+        dav1d_free_aligned((*f).ipred_edge[0] as *mut libc::c_void);
         free((*f).a as *mut libc::c_void);
         free((*f).tile as *mut libc::c_void);
         free((*f).lf.mask as *mut libc::c_void);
