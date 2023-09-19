@@ -1,3 +1,5 @@
+use crate::include::common::bitdepth::DynCoef;
+use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
@@ -148,7 +150,7 @@ pub struct Dav1dFrameContext_frame_thread {
     pub cbi: *mut CodedBlockInfo,
     pub pal: *mut [[uint16_t; 8]; 3],
     pub pal_idx: *mut uint8_t,
-    pub cf: *mut libc::c_void,
+    pub cf: *mut DynCoef,
     pub prog_sz: libc::c_int,
     pub pal_sz: libc::c_int,
     pub pal_idx_sz: libc::c_int,
@@ -173,14 +175,14 @@ pub struct Dav1dFrameContext_lf {
     pub tx_lpf_right_edge: [*mut uint8_t; 2],
     pub cdef_line_buf: *mut uint8_t,
     pub lr_line_buf: *mut uint8_t,
-    pub cdef_line: [[*mut libc::c_void; 3]; 2],
-    pub cdef_lpf_line: [*mut libc::c_void; 3],
-    pub lr_lpf_line: [*mut libc::c_void; 3],
+    pub cdef_line: [[*mut DynPixel; 3]; 2],
+    pub cdef_lpf_line: [*mut DynPixel; 3],
+    pub lr_lpf_line: [*mut DynPixel; 3],
     pub start_of_tile_row: *mut uint8_t,
     pub start_of_tile_row_sz: libc::c_int,
     pub need_cdef_lpf_copy: libc::c_int,
-    pub p: [*mut libc::c_void; 3],
-    pub sr_p: [*mut libc::c_void; 3],
+    pub p: [*mut DynPixel; 3],
+    pub sr_p: [*mut DynPixel; 3],
     pub mask_ptr: *mut Av1Filter,
     pub prev_mask_ptr: *mut Av1Filter,
     pub restore_planes: libc::c_int,
@@ -235,7 +237,7 @@ pub struct Dav1dTileState_tiling {
 #[repr(C)]
 pub struct Dav1dTileState_frame_thread {
     pub pal_idx: *mut uint8_t,
-    pub cf: *mut libc::c_void,
+    pub cf: *mut DynCoef,
 }
 
 #[repr(C)]

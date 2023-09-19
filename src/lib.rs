@@ -1,5 +1,6 @@
 use std::cmp;
 
+use crate::include::common::bitdepth::DynCoef;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::intra_edge::dav1d_init_mode_tree;
@@ -1579,7 +1580,7 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: libc::
                 &mut (*f).frame_thread.pal_idx as *mut *mut uint8_t as *mut libc::c_void,
             );
             dav1d_freep_aligned(
-                &mut (*f).frame_thread.cf as *mut *mut libc::c_void as *mut libc::c_void,
+                &mut (*f).frame_thread.cf as *mut *mut DynCoef as *mut libc::c_void,
             );
             freep(
                 &mut (*f).frame_thread.tile_start_off as *mut *mut libc::c_int as *mut libc::c_void,
