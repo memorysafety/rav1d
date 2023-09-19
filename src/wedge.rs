@@ -338,8 +338,8 @@ fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
             32,
         );
     }
-    let mut ctr = 48;
     for y in (0..64).step_by(2) {
+        let ctr = 48 - (y / 2);
         master[WEDGE_OBLIQUE63 as usize] = insert_border(
             master[WEDGE_OBLIQUE63 as usize],
             y,
@@ -352,7 +352,6 @@ fn build_master() -> [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] {
             &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
-        ctr -= 1;
     }
 
     master[WEDGE_OBLIQUE27 as usize] = transposed(&master[WEDGE_OBLIQUE63 as usize]);
