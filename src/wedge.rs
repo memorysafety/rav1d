@@ -32,8 +32,7 @@ pub const WEDGE_OBLIQUE117: WedgeDirectionType = 4;
 pub const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
 pub const N_WEDGE_DIRECTIONS: usize = 6;
 
-#[repr(C)]
-pub struct WedgeCodeType {
+struct WedgeCodeType {
     pub direction: WedgeDirectionType,
     pub x_offset: u8,
     pub y_offset: u8,
