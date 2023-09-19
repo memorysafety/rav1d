@@ -213,10 +213,9 @@ const fn invert<const N: usize>(src: &[u8; N], w: usize, h: usize) -> [u8; N] {
     dst
 }
 
-fn copy2d(mut dst: &mut [u8], src: &[[u8; 64]], w: usize, h: usize, x_off: usize, y_off: usize) {
+fn copy2d(dst: &mut [u8], src: &[[u8; 64]], w: usize, h: usize, x_off: usize, y_off: usize) {
     for y in 0..h {
-        dst[..w].copy_from_slice(&src[y_off + y][x_off..][..w]);
-        dst = &mut dst[w..];
+        dst[y * w..][..w].copy_from_slice(&src[y_off + y][x_off..][..w]);
     }
 }
 
