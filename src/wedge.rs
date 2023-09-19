@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align64;
@@ -580,37 +578,30 @@ pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 
     masks
 };
 
-#[cold]
-unsafe fn build_nondc_ii_masks(
-    mask_v: *mut u8,
-    mask_h: *mut u8,
-    mask_sm: *mut u8,
+const fn build_nondc_ii_masks<const N: usize>(
     w: usize,
     h: usize,
     step: usize,
-) {
-    static ii_weights_1d: [u8; 32] = [
+) -> [[u8; N]; N_II_PRED_MODES] {
+    const ii_weights_1d: [u8; 32] = [
         60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
         2, 1, 1, 1, 1, 1,
     ];
 
-    let mut y = 0;
-    let mut off = 0;
-    while y < h {
-        memset(
-            mask_v.offset(off as isize) as *mut libc::c_void,
-            ii_weights_1d[y * step] as libc::c_int,
-            w as libc::c_ulong,
-        );
-        let mut x = 0;
-        while x < w {
-            *mask_sm.offset((off + x) as isize) = ii_weights_1d[cmp::min(x, y) * step];
-            *mask_h.offset((off + x) as isize) = ii_weights_1d[x * step];
-            x += 1;
-        }
-        y += 1;
-        off += w;
-    }
+    let mut masks = [[0; N]; N_II_PRED_MODES];
+
+    const_for!(y in 0..h => {
+        let off = y * w;
+        const_for!(i in 0..w => {
+            masks[II_VERT_PRED as usize - 1][off + i] = ii_weights_1d[y * step];
+        });
+        const_for!(x in 0..w => {
+            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[if x < y { x } else { y } * step];
+            masks[II_HOR_PRED as usize - 1][off + x] = ii_weights_1d[x * step];
+        });
+    });
+
+    masks
 }
 
 #[cold]
@@ -618,76 +609,13 @@ pub unsafe fn dav1d_init_interintra_masks() {
     // This function is guaranteed to be called only once
 
     memset(ii_dc_mask.0.as_mut_ptr() as *mut libc::c_void, 32, 32 * 32);
-    build_nondc_ii_masks(
-        ii_nondc_mask_32x32.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_32x32.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_32x32.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        32,
-        32,
-        1,
-    );
-    build_nondc_ii_masks(
-        ii_nondc_mask_16x32.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_16x32.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_16x32.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        16,
-        32,
-        1,
-    );
-    build_nondc_ii_masks(
-        ii_nondc_mask_16x16.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_16x16.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_16x16.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        16,
-        16,
-        2,
-    );
-    build_nondc_ii_masks(
-        ii_nondc_mask_8x32.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_8x32.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_8x32.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        8,
-        32,
-        1,
-    );
-    build_nondc_ii_masks(
-        ii_nondc_mask_8x16.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_8x16.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_8x16.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        8,
-        16,
-        2,
-    );
-    build_nondc_ii_masks(
-        ii_nondc_mask_8x8.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_8x8.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_8x8.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        8,
-        8,
-        4,
-    );
-    build_nondc_ii_masks(
-        ii_nondc_mask_4x16.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_4x16.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_4x16.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        4,
-        16,
-        2,
-    );
-    build_nondc_ii_masks(
-        ii_nondc_mask_4x8.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_4x8.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_4x8.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        4,
-        8,
-        4,
-    );
-    build_nondc_ii_masks(
-        ii_nondc_mask_4x4.0[II_VERT_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_4x4.0[II_HOR_PRED as usize - 1].as_mut_ptr(),
-        ii_nondc_mask_4x4.0[II_SMOOTH_PRED as usize - 1].as_mut_ptr(),
-        4,
-        4,
-        8,
-    );
+    ii_nondc_mask_32x32.0 = build_nondc_ii_masks(32, 32, 1);
+    ii_nondc_mask_16x32.0 = build_nondc_ii_masks(16, 32, 1);
+    ii_nondc_mask_16x16.0 = build_nondc_ii_masks(16, 16, 2);
+    ii_nondc_mask_8x32.0 = build_nondc_ii_masks(8, 32, 1);
+    ii_nondc_mask_8x16.0 = build_nondc_ii_masks(8, 16, 2);
+    ii_nondc_mask_8x8.0 = build_nondc_ii_masks(8, 8, 4);
+    ii_nondc_mask_4x16.0 = build_nondc_ii_masks(4, 16, 2);
+    ii_nondc_mask_4x8.0 = build_nondc_ii_masks(4, 8, 4);
+    ii_nondc_mask_4x4.0 = build_nondc_ii_masks(4, 4, 8);
 }
