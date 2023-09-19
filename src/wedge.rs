@@ -358,51 +358,28 @@ pub unsafe fn dav1d_init_wedge_masks() {
 
     static master: [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] = build_master();
 
-    {
-        static wedge_masks: WedgeMasks<{ 32 * 32 }, { (32 / 2) * 32 }, { (32 / 2) * (32 / 2) }> =
-            WedgeMasks::fill2d_16x2(32, 32, &master, &wedge_codebook_16_heqw, 0x7bfb);
-        dav1d_wedge_masks[BS_32x32 as usize] = wedge_masks.slice();
-    };
-    {
-        static wedge_masks: WedgeMasks<{ 32 * 16 }, { (32 / 2) * 16 }, { (32 / 2) * (16 / 2) }> =
-            WedgeMasks::fill2d_16x2(32, 16, &master, &wedge_codebook_16_hltw, 0x7beb);
-        dav1d_wedge_masks[BS_32x16 as usize] = wedge_masks.slice();
-    };
-    {
-        static wedge_masks: WedgeMasks<{ 32 * 8 }, { (32 / 2) * 8 }, { (32 / 2) * (8 / 2) }> =
-            WedgeMasks::fill2d_16x2(32, 8, &master, &wedge_codebook_16_hltw, 0x6beb);
-        dav1d_wedge_masks[BS_32x8 as usize] = wedge_masks.slice();
-    };
-    {
-        static wedge_masks: WedgeMasks<{ 16 * 32 }, { (16 / 2) * 32 }, { (16 / 2) * (32 / 2) }> =
-            WedgeMasks::fill2d_16x2(16, 32, &master, &wedge_codebook_16_hgtw, 0x7beb);
-        dav1d_wedge_masks[BS_16x32 as usize] = wedge_masks.slice();
-    };
-    {
-        static wedge_masks: WedgeMasks<{ 16 * 16 }, { (16 / 2) * 16 }, { (16 / 2) * (16 / 2) }> =
-            WedgeMasks::fill2d_16x2(16, 16, &master, &wedge_codebook_16_heqw, 0x7bfb);
-        dav1d_wedge_masks[BS_16x16 as usize] = wedge_masks.slice();
-    };
-    {
-        static wedge_masks: WedgeMasks<{ 16 * 8 }, { (16 / 2) * 8 }, { (16 / 2) * (8 / 2) }> =
-            WedgeMasks::fill2d_16x2(16, 8, &master, &wedge_codebook_16_hltw, 0x7beb);
-        dav1d_wedge_masks[BS_16x8 as usize] = wedge_masks.slice();
-    };
-    {
-        static wedge_masks: WedgeMasks<{ 8 * 32 }, { (8 / 2) * 32 }, { (8 / 2) * (32 / 2) }> =
-            WedgeMasks::fill2d_16x2(8, 32, &master, &wedge_codebook_16_hgtw, 0x7aeb);
-        dav1d_wedge_masks[BS_8x32 as usize] = wedge_masks.slice();
-    };
-    {
-        static wedge_masks: WedgeMasks<{ 8 * 16 }, { (8 / 2) * 16 }, { (8 / 2) * (16 / 2) }> =
-            WedgeMasks::fill2d_16x2(8, 16, &master, &wedge_codebook_16_hgtw, 0x7beb);
-        dav1d_wedge_masks[BS_8x16 as usize] = wedge_masks.slice();
-    };
-    {
-        static wedge_masks: WedgeMasks<{ 8 * 8 }, { (8 / 2) * 8 }, { (8 / 2) * (8 / 2) }> =
-            WedgeMasks::fill2d_16x2(8, 8, &master, &wedge_codebook_16_heqw, 0x7bfb);
-        dav1d_wedge_masks[BS_8x8 as usize] = wedge_masks.slice();
-    };
+    macro_rules! fill {
+        ($w:literal x $h:literal, $cb:expr, $signs:expr) => {{
+            static wedge_masks: WedgeMasks<
+                { $w * $h },
+                { ($w / 2) * $h },
+                { ($w / 2) * ($h / 2) },
+            > = WedgeMasks::fill2d_16x2($w, $h, &master, $cb, $signs);
+            paste! {
+                dav1d_wedge_masks[[<BS_ $w x $h>] as usize] = wedge_masks.slice();
+            }
+        }};
+    }
+
+    fill!(32 x 32, &wedge_codebook_16_heqw, 0x7bfb);
+    fill!(32 x 16, &wedge_codebook_16_hltw, 0x7beb);
+    fill!(32 x  8, &wedge_codebook_16_hltw, 0x6beb);
+    fill!(16 x 32, &wedge_codebook_16_hgtw, 0x7beb);
+    fill!(16 x 16, &wedge_codebook_16_heqw, 0x7bfb);
+    fill!(16 x  8, &wedge_codebook_16_hltw, 0x7beb);
+    fill!( 8 x 32, &wedge_codebook_16_hgtw, 0x7aeb);
+    fill!( 8 x 16, &wedge_codebook_16_hgtw, 0x7beb);
+    fill!( 8 x  8, &wedge_codebook_16_heqw, 0x7bfb);
 }
 
 static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
