@@ -526,17 +526,17 @@ static ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
 static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
     Align16(build_nondc_ii_masks(4, 4, 8));
 
-pub static dav1d_ii_masks: [[[Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] = {
-    let mut masks = [[[None; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
+pub static dav1d_ii_masks: [[[&'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] = {
+    let mut masks = [[[&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
 
     macro_rules! set {
         ($h:literal x $w:literal) => {{
-            let mut a: [Option<&'static [u8]>; N_INTER_INTRA_PRED_MODES] = [None; 4];
+            let mut a = [&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES];
             paste! {
-                a[II_DC_PRED as usize] = Some(&ii_dc_mask.0);
-                a[II_VERT_PRED as usize] = Some(&[<ii_nondc_mask _ $h x $w>].0[II_VERT_PRED as usize - 1]);
-                a[II_HOR_PRED as usize] = Some(&[<ii_nondc_mask _ $h x $w>].0[II_HOR_PRED as usize - 1]);
-                a[II_SMOOTH_PRED as usize] = Some(&[<ii_nondc_mask _ $h x $w>].0[II_SMOOTH_PRED as usize - 1]);
+                a[II_DC_PRED as usize] = &ii_dc_mask.0;
+                a[II_VERT_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_VERT_PRED as usize - 1];
+                a[II_HOR_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_HOR_PRED as usize - 1];
+                a[II_SMOOTH_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_SMOOTH_PRED as usize - 1];
             }
             a
         }};
