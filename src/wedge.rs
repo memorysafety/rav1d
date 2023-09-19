@@ -338,13 +338,14 @@ impl<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
 }
 
 const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
-    const WEDGE_MASTER_LINE_ODD: WedgeMasterLineType = 0;
-    const WEDGE_MASTER_LINE_EVEN: WedgeMasterLineType = 1;
-    const WEDGE_MASTER_LINE_VERT: WedgeMasterLineType = 2;
-    type WedgeMasterLineType = libc::c_uint;
-    const N_WEDGE_MASTER_LINES: usize = 3;
+    #[derive(EnumCount)]
+    enum WedgeMasterLineType {
+        ODD,
+        EVEN,
+        VERT,
+    }
 
-    const wedge_master_border: [[u8; 8]; N_WEDGE_MASTER_LINES] = [
+    const wedge_master_border: [[u8; 8]; WedgeMasterLineType::COUNT] = [
         [1, 2, 6, 18, 37, 53, 60, 63],
         [1, 4, 11, 27, 46, 58, 62, 63],
         [0, 2, 7, 21, 43, 57, 62, 64],
@@ -356,7 +357,7 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
         master[WedgeDirectionType::Vertical as usize] = insert_border(
             master[WedgeDirectionType::Vertical as usize],
             y,
-            &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
+            &wedge_master_border[WedgeMasterLineType::VERT as usize],
             32,
         );
     });
@@ -365,13 +366,13 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
         master[WedgeDirectionType::Oblique63 as usize] = insert_border(
             master[WedgeDirectionType::Oblique63 as usize],
             y,
-            &wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize],
+            &wedge_master_border[WedgeMasterLineType::EVEN as usize],
             ctr,
         );
         master[WedgeDirectionType::Oblique63 as usize] = insert_border(
             master[WedgeDirectionType::Oblique63 as usize],
             y + 1,
-            &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
+            &wedge_master_border[WedgeMasterLineType::ODD as usize],
             ctr - 1,
         );
     });
