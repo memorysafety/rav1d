@@ -273,7 +273,7 @@ fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
     assert!(LEN_422 == (w * h) >> 1);
     assert!(LEN_420 == (w * h) >> 2);
 
-    for n in 0..16 {
+    const_for!(n in 0..16 => {
         masks_444[0][n] = copy2d(
             &master[cb[n].direction as usize],
             w,
@@ -281,12 +281,12 @@ fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
             32 - (w * cb[n].x_offset as usize >> 3),
             32 - (h * cb[n].y_offset as usize >> 3),
         );
-    }
-    for n in 0..16 {
+    });
+    const_for!(n in 0..16 => {
         masks_444[1][n] = invert(&masks_444[0][n], w, h);
-    }
+    });
 
-    for n in 0..16 {
+    const_for!(n in 0..16 => {
         let sign = (signs >> n & 1) != 0;
         let luma = &masks_444[sign as usize][n];
 
@@ -294,12 +294,12 @@ fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
         masks_422[!sign as usize][n] = init_chroma(luma, true, w, h, false);
         masks_420[sign as usize][n] = init_chroma(luma, false, w, h, true);
         masks_420[!sign as usize][n] = init_chroma(luma, true, w, h, true);
-    }
+    });
 
     let mut masks = [[[&[] as &'static [u8]; 16]; 2]; 3];
 
     // assign pointers in externally visible array
-    for n in 0..16 {
+    const_for!(n in 0..16 => {
         let sign = (signs >> n & 1) != 0;
 
         masks[0][0][n] = &masks_444[sign as usize][n];
@@ -310,7 +310,7 @@ fn fill2d_16x2<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
         masks[1][1][n] = &masks_422[!sign as usize][n];
         masks[2][0][n] = &masks_420[sign as usize][n];
         masks[2][1][n] = &masks_420[!sign as usize][n];
-    }
+    });
 
     masks
 }
