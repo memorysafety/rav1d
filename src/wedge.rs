@@ -26,12 +26,12 @@ use strum::EnumCount;
 
 #[derive(Clone, Copy, EnumCount)]
 enum WedgeDirectionType {
-    HORIZONTAL,
-    VERTICAL,
-    OBLIQUE27,
-    OBLIQUE63,
-    OBLIQUE117,
-    OBLIQUE153,
+    Horizontal,
+    Vertical,
+    Oblique27,
+    Oblique63,
+    Oblique117,
+    Oblique153,
 }
 
 struct WedgeCodeType {
@@ -61,58 +61,58 @@ impl WedgeCodeBook {
         use WedgeDirectionType::*;
         Self {
             hgtw: [
-                WedgeCodeType::new(4, 4, OBLIQUE27),
-                WedgeCodeType::new(4, 4, OBLIQUE63),
-                WedgeCodeType::new(4, 4, OBLIQUE117),
-                WedgeCodeType::new(4, 4, OBLIQUE153),
-                WedgeCodeType::new(4, 2, HORIZONTAL),
-                WedgeCodeType::new(4, 4, HORIZONTAL),
-                WedgeCodeType::new(4, 6, HORIZONTAL),
-                WedgeCodeType::new(4, 4, VERTICAL),
-                WedgeCodeType::new(4, 2, OBLIQUE27),
-                WedgeCodeType::new(4, 6, OBLIQUE27),
-                WedgeCodeType::new(4, 2, OBLIQUE153),
-                WedgeCodeType::new(4, 6, OBLIQUE153),
-                WedgeCodeType::new(2, 4, OBLIQUE63),
-                WedgeCodeType::new(6, 4, OBLIQUE63),
-                WedgeCodeType::new(2, 4, OBLIQUE117),
-                WedgeCodeType::new(6, 4, OBLIQUE117),
+                WedgeCodeType::new(4, 4, Oblique27),
+                WedgeCodeType::new(4, 4, Oblique63),
+                WedgeCodeType::new(4, 4, Oblique117),
+                WedgeCodeType::new(4, 4, Oblique153),
+                WedgeCodeType::new(4, 2, Horizontal),
+                WedgeCodeType::new(4, 4, Horizontal),
+                WedgeCodeType::new(4, 6, Horizontal),
+                WedgeCodeType::new(4, 4, Vertical),
+                WedgeCodeType::new(4, 2, Oblique27),
+                WedgeCodeType::new(4, 6, Oblique27),
+                WedgeCodeType::new(4, 2, Oblique153),
+                WedgeCodeType::new(4, 6, Oblique153),
+                WedgeCodeType::new(2, 4, Oblique63),
+                WedgeCodeType::new(6, 4, Oblique63),
+                WedgeCodeType::new(2, 4, Oblique117),
+                WedgeCodeType::new(6, 4, Oblique117),
             ],
             hltw: [
-                WedgeCodeType::new(4, 4, OBLIQUE27),
-                WedgeCodeType::new(4, 4, OBLIQUE63),
-                WedgeCodeType::new(4, 4, OBLIQUE117),
-                WedgeCodeType::new(4, 4, OBLIQUE153),
-                WedgeCodeType::new(2, 4, VERTICAL),
-                WedgeCodeType::new(4, 4, VERTICAL),
-                WedgeCodeType::new(6, 4, VERTICAL),
-                WedgeCodeType::new(4, 4, HORIZONTAL),
-                WedgeCodeType::new(4, 2, OBLIQUE27),
-                WedgeCodeType::new(4, 6, OBLIQUE27),
-                WedgeCodeType::new(4, 2, OBLIQUE153),
-                WedgeCodeType::new(4, 6, OBLIQUE153),
-                WedgeCodeType::new(2, 4, OBLIQUE63),
-                WedgeCodeType::new(6, 4, OBLIQUE63),
-                WedgeCodeType::new(2, 4, OBLIQUE117),
-                WedgeCodeType::new(6, 4, OBLIQUE117),
+                WedgeCodeType::new(4, 4, Oblique27),
+                WedgeCodeType::new(4, 4, Oblique63),
+                WedgeCodeType::new(4, 4, Oblique117),
+                WedgeCodeType::new(4, 4, Oblique153),
+                WedgeCodeType::new(2, 4, Vertical),
+                WedgeCodeType::new(4, 4, Vertical),
+                WedgeCodeType::new(6, 4, Vertical),
+                WedgeCodeType::new(4, 4, Horizontal),
+                WedgeCodeType::new(4, 2, Oblique27),
+                WedgeCodeType::new(4, 6, Oblique27),
+                WedgeCodeType::new(4, 2, Oblique153),
+                WedgeCodeType::new(4, 6, Oblique153),
+                WedgeCodeType::new(2, 4, Oblique63),
+                WedgeCodeType::new(6, 4, Oblique63),
+                WedgeCodeType::new(2, 4, Oblique117),
+                WedgeCodeType::new(6, 4, Oblique117),
             ],
             heqw: [
-                WedgeCodeType::new(4, 4, OBLIQUE27),
-                WedgeCodeType::new(4, 4, OBLIQUE63),
-                WedgeCodeType::new(4, 4, OBLIQUE117),
-                WedgeCodeType::new(4, 4, OBLIQUE153),
-                WedgeCodeType::new(4, 2, HORIZONTAL),
-                WedgeCodeType::new(4, 6, HORIZONTAL),
-                WedgeCodeType::new(2, 4, VERTICAL),
-                WedgeCodeType::new(6, 4, VERTICAL),
-                WedgeCodeType::new(4, 2, OBLIQUE27),
-                WedgeCodeType::new(4, 6, OBLIQUE27),
-                WedgeCodeType::new(4, 2, OBLIQUE153),
-                WedgeCodeType::new(4, 6, OBLIQUE153),
-                WedgeCodeType::new(2, 4, OBLIQUE63),
-                WedgeCodeType::new(6, 4, OBLIQUE63),
-                WedgeCodeType::new(2, 4, OBLIQUE117),
-                WedgeCodeType::new(6, 4, OBLIQUE117),
+                WedgeCodeType::new(4, 4, Oblique27),
+                WedgeCodeType::new(4, 4, Oblique63),
+                WedgeCodeType::new(4, 4, Oblique117),
+                WedgeCodeType::new(4, 4, Oblique153),
+                WedgeCodeType::new(4, 2, Horizontal),
+                WedgeCodeType::new(4, 6, Horizontal),
+                WedgeCodeType::new(2, 4, Vertical),
+                WedgeCodeType::new(6, 4, Vertical),
+                WedgeCodeType::new(4, 2, Oblique27),
+                WedgeCodeType::new(4, 6, Oblique27),
+                WedgeCodeType::new(4, 2, Oblique153),
+                WedgeCodeType::new(4, 6, Oblique153),
+                WedgeCodeType::new(2, 4, Oblique63),
+                WedgeCodeType::new(6, 4, Oblique63),
+                WedgeCodeType::new(2, 4, Oblique117),
+                WedgeCodeType::new(6, 4, Oblique117),
             ],
         }
     }
@@ -353,8 +353,8 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
 
     // create master templates
     const_for!(y in 0..64 => {
-        master[WedgeDirectionType::VERTICAL as usize] = insert_border(
-            master[WedgeDirectionType::VERTICAL as usize],
+        master[WedgeDirectionType::Vertical as usize] = insert_border(
+            master[WedgeDirectionType::Vertical as usize],
             y,
             &wedge_master_border[WEDGE_MASTER_LINE_VERT as usize],
             32,
@@ -362,28 +362,28 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
     });
     const_for!(y in 0..64, step_by 2 => {
         let ctr = 48 - (y / 2);
-        master[WedgeDirectionType::OBLIQUE63 as usize] = insert_border(
-            master[WedgeDirectionType::OBLIQUE63 as usize],
+        master[WedgeDirectionType::Oblique63 as usize] = insert_border(
+            master[WedgeDirectionType::Oblique63 as usize],
             y,
             &wedge_master_border[WEDGE_MASTER_LINE_EVEN as usize],
             ctr,
         );
-        master[WedgeDirectionType::OBLIQUE63 as usize] = insert_border(
-            master[WedgeDirectionType::OBLIQUE63 as usize],
+        master[WedgeDirectionType::Oblique63 as usize] = insert_border(
+            master[WedgeDirectionType::Oblique63 as usize],
             y + 1,
             &wedge_master_border[WEDGE_MASTER_LINE_ODD as usize],
             ctr - 1,
         );
     });
 
-    master[WedgeDirectionType::OBLIQUE27 as usize] =
-        transposed(&master[WedgeDirectionType::OBLIQUE63 as usize]);
-    master[WedgeDirectionType::HORIZONTAL as usize] =
-        transposed(&master[WedgeDirectionType::VERTICAL as usize]);
-    master[WedgeDirectionType::OBLIQUE117 as usize] =
-        hflip(&master[WedgeDirectionType::OBLIQUE63 as usize]);
-    master[WedgeDirectionType::OBLIQUE153 as usize] =
-        hflip(&master[WedgeDirectionType::OBLIQUE27 as usize]);
+    master[WedgeDirectionType::Oblique27 as usize] =
+        transposed(&master[WedgeDirectionType::Oblique63 as usize]);
+    master[WedgeDirectionType::Horizontal as usize] =
+        transposed(&master[WedgeDirectionType::Vertical as usize]);
+    master[WedgeDirectionType::Oblique117 as usize] =
+        hflip(&master[WedgeDirectionType::Oblique63 as usize]);
+    master[WedgeDirectionType::Oblique153 as usize] =
+        hflip(&master[WedgeDirectionType::Oblique27 as usize]);
 
     master
 }
