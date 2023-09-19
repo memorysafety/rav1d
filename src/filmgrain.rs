@@ -24,13 +24,18 @@ pub unsafe extern "C" fn round2(x: libc::c_int, shift: uint64_t) -> libc::c_int 
     return x + ((1 as libc::c_int) << shift >> 1) >> shift;
 }
 
-pub type EntryRow = [DynEntry; 82]; // [entry; 82]
-pub type generate_grain_y_fn =
-    Option<unsafe extern "C" fn(*mut EntryRow, *const Dav1dFilmGrainData, libc::c_int) -> ()>;
+pub const GRAIN_WIDTH: usize = 82;
+pub type generate_grain_y_fn = Option<
+    unsafe extern "C" fn(
+        *mut [DynEntry; GRAIN_WIDTH],
+        *const Dav1dFilmGrainData,
+        libc::c_int,
+    ) -> (),
+>;
 pub type generate_grain_uv_fn = Option<
     unsafe extern "C" fn(
-        *mut EntryRow,
-        *const EntryRow,
+        *mut [DynEntry; GRAIN_WIDTH],
+        *const [DynEntry; GRAIN_WIDTH],
         *const Dav1dFilmGrainData,
         intptr_t,
         libc::c_int,
@@ -44,7 +49,7 @@ pub type fgy_32x32xn_fn = Option<
         *const Dav1dFilmGrainData,
         size_t,
         *const uint8_t,
-        *const EntryRow,
+        *const [DynEntry; GRAIN_WIDTH],
         libc::c_int,
         libc::c_int,
         libc::c_int,
@@ -58,7 +63,7 @@ pub type fguv_32x32xn_fn = Option<
         *const Dav1dFilmGrainData,
         size_t,
         *const uint8_t,
-        *const EntryRow,
+        *const [DynEntry; GRAIN_WIDTH],
         libc::c_int,
         libc::c_int,
         *const DynPixel,
