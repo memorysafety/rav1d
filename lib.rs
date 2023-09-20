@@ -24,7 +24,6 @@ pub mod include {
         pub mod picture;
     } // mod dav1d
     pub(crate) mod pthread;
-    pub(crate) mod sched;
     pub(crate) mod stdatomic;
 } // mod include
 pub mod src {
