@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::attributes::clz;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
@@ -16,6 +14,7 @@ use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
 use crate::src::tables::dav1d_cdef_directions;
+use std::cmp;
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;

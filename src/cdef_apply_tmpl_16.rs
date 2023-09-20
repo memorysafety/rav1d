@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
@@ -18,6 +16,7 @@ use crate::src::internal::Dav1dDSPContext;
 use crate::src::internal::Dav1dFrameContext;
 use crate::src::internal::Dav1dTaskContext;
 use crate::src::lf_mask::Av1Filter;
+use std::cmp;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;

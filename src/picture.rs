@@ -30,7 +30,6 @@ use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::dav1d_ref_wrap;
 use crate::src::r#ref::Dav1dRef;
 use crate::stderr;
-
 use libc::malloc;
 
 extern "C" {

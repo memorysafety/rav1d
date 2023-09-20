@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::apply_sign;
@@ -29,6 +27,7 @@ use crate::src::levels::Z3_PRED;
 use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
+use std::cmp;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;

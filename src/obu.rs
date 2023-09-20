@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::data::Dav1dData;
@@ -108,10 +106,10 @@ use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::tables::dav1d_default_wm_params;
 use crate::src::thread_task::FRAME_ERROR;
-
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
+use std::cmp;
 
 extern "C" {
     fn realloc(_: *mut libc::c_void, _: size_t) -> *mut libc::c_void;

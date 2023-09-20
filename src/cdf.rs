@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::stdatomic::atomic_uint;
@@ -22,6 +20,7 @@ use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::tables::dav1d_partition_type_count;
+use std::cmp;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;

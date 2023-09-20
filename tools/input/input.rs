@@ -1,10 +1,9 @@
-use std::cmp;
-
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
 use rav1d::stderr;
+use std::cmp;
 
 extern "C" {
     pub type DemuxerPriv;

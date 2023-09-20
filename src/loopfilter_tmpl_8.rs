@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
@@ -7,6 +5,7 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
+use std::cmp;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;

@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::common::Dav1dDataProps;
@@ -74,9 +72,7 @@ use crate::src::refmvs::Dav1dRefmvsDSPContext;
 use crate::src::thread_task::dav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::stderr;
-
 use cfg_if::cfg_if;
-
 use libc::pthread_attr_destroy;
 use libc::pthread_attr_init;
 use libc::pthread_attr_setstacksize;
@@ -93,6 +89,7 @@ use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
 use libc::pthread_mutexattr_t;
 use libc::pthread_t;
+use std::cmp;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;

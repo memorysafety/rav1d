@@ -20,7 +20,6 @@ mod output {
 } // mod output
 #[path = "../tools/dav1d_cli_parse.rs"]
 mod dav1d_cli_parse;
-
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;

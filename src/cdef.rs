@@ -1,10 +1,9 @@
-use std::cmp;
-
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int16_t;
+use std::cmp;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use crate::include::stddef::size_t;

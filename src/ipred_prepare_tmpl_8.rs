@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::intra_edge::EdgeFlags;
@@ -18,8 +16,8 @@ use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
-
 use c2rust_bitfields::BitfieldStruct;
+use std::cmp;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;

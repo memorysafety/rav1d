@@ -1,5 +1,3 @@
-use std::cmp;
-
 use rav1d::errno_location;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
@@ -12,6 +10,7 @@ use rav1d::include::stdint::uint8_t;
 use rav1d::src::lib::dav1d_picture_unref;
 use rav1d::stderr;
 use rav1d::stdout;
+use std::cmp;
 
 extern "C" {
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;

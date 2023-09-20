@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align64;
@@ -20,8 +18,8 @@ use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::II_VERT_PRED;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
-
 use paste::paste;
+use std::cmp::Ordering;
 use strum::EnumCount;
 
 #[derive(Clone, Copy, EnumCount)]

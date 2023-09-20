@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
@@ -15,6 +13,7 @@ use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TX_4X4;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
+use std::cmp;
 
 #[repr(C)]
 pub struct Av1FilterLUT {

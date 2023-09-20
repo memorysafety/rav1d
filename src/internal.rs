@@ -59,7 +59,6 @@ use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
 use crate::src::thread_data::thread_data;
-
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
 

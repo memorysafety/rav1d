@@ -1,12 +1,3 @@
-use std::array;
-use std::cmp;
-use std::iter;
-use std::ptr;
-use std::ptr::addr_of_mut;
-use std::slice;
-use std::sync::atomic::AtomicI32;
-use std::sync::atomic::Ordering;
-
 use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
@@ -226,11 +217,18 @@ use crate::src::thread_task::TILE_ERROR;
 use crate::src::warpmv::dav1d_find_affine_int;
 use crate::src::warpmv::dav1d_get_shear_params;
 use crate::src::warpmv::dav1d_set_affine_mv2d;
-
 use libc::pthread_cond_signal;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
+use std::array;
+use std::cmp;
+use std::iter;
+use std::ptr;
+use std::ptr::addr_of_mut;
+use std::slice;
+use std::sync::atomic::AtomicI32;
+use std::sync::atomic::Ordering;
 
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;

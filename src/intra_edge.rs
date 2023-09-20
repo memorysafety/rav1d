@@ -1,13 +1,12 @@
-use std::iter;
-use std::ptr;
-use std::slice;
-
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_16X16;
 use crate::src::levels::BL_32X32;
 use crate::src::levels::BL_64X64;
 use crate::src::levels::BL_8X8;
+use std::iter;
+use std::ptr;
+use std::slice;
 
 pub type EdgeFlags = u8;
 pub const EDGE_I420_LEFT_HAS_BOTTOM: EdgeFlags = 32;

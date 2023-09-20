@@ -1,9 +1,8 @@
-use std::ops::Neg;
-
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint8_t;
+use std::ops::Neg;
 
 pub type ObuMetaType = libc::c_uint;
 pub const OBU_META_TIMECODE: ObuMetaType = 5;

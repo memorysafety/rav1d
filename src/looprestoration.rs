@@ -1,6 +1,3 @@
-use std::cmp;
-use std::ops::Add;
-
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -16,6 +13,8 @@ use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
 use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
+use std::cmp;
+use std::ops::Add;
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 use crate::include::stdint::intptr_t;

@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
@@ -17,8 +15,8 @@ use crate::src::levels::BlockSize;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_freep_aligned;
 use crate::src::tables::dav1d_block_dimensions;
-
 use cfg_if::cfg_if;
+use std::cmp;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;

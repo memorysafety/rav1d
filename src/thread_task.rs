@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::common::attributes::ctz;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
@@ -30,13 +28,12 @@ use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
 use crate::src::picture::Dav1dThreadPicture;
-
+use cfg_if::cfg_if;
 use libc::pthread_cond_signal;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
-
-use cfg_if::cfg_if;
+use std::cmp;
 
 extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;

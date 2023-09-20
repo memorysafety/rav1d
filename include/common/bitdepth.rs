@@ -1,3 +1,4 @@
+use crate::include::common::intops::clip;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
@@ -7,8 +8,6 @@ use std::fmt::Formatter;
 use std::ops::Add;
 use std::ops::Mul;
 use std::ops::Shr;
-
-use crate::include::common::intops::clip;
 
 pub trait FromPrimitive<T> {
     fn from_prim(t: T) -> Self;

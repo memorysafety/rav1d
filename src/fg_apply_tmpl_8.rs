@@ -1,5 +1,3 @@
-use std::cmp;
-
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
@@ -10,8 +8,8 @@ use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
-
 use cfg_if::cfg_if;
+use std::cmp;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;

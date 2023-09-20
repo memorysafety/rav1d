@@ -1,11 +1,9 @@
-use std::cmp;
-
+use libc::size_t;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::include::stdint::uint64_t;
 use rav1d::stderr;
-
-use libc::size_t;
+use std::cmp;
 
 extern "C" {
     pub type MuxerPriv;

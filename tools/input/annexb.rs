@@ -1,5 +1,5 @@
-use std::cmp;
-
+use libc::fread;
+use libc::fseeko;
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::headers::Dav1dObuType;
@@ -14,9 +14,7 @@ use rav1d::include::stdint::uint8_t;
 use rav1d::src::lib::dav1d_data_create;
 use rav1d::src::lib::dav1d_data_unref;
 use rav1d::stderr;
-
-use libc::fread;
-use libc::fseeko;
+use std::cmp;
 
 extern "C" {
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;

@@ -1,6 +1,5 @@
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-
 use libc::pthread_mutex_destroy;
 use libc::pthread_mutex_init;
 use libc::pthread_mutex_lock;

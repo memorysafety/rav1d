@@ -1,6 +1,3 @@
-use std::cmp;
-use std::iter;
-
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -27,6 +24,8 @@ use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
+use std::cmp;
+use std::iter;
 
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::bd_fn;

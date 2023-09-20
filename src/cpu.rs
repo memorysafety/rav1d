@@ -1,7 +1,6 @@
+use crate::src::internal::Dav1dContext;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
-
-use crate::src::internal::Dav1dContext;
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;

@@ -37,7 +37,6 @@
 //! * is far simpler than the `case_set*` implementation, consisting of a `match` and array writes
 //!
 //! [`BlockContext`]: crate::src::env::BlockContext
-
 use std::iter::zip;
 
 /// Perform a `memset` optimized for lengths that are small powers of 2.
