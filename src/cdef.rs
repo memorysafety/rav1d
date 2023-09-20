@@ -1,7 +1,7 @@
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
-use crate::include::stddef::ptrdiff_t;
+use libc::ptrdiff_t;
 use std::cmp;
 
 pub type CdefEdgeFlags = libc::c_uint;

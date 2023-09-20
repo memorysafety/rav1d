@@ -2,7 +2,6 @@ use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
-use crate::include::stddef::*;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -40,6 +39,7 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::WHT_WHT;
+use libc::ptrdiff_t;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;

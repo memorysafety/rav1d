@@ -5,7 +5,6 @@ use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::stddef::ptrdiff_t;
 use crate::src::align::Align16;
 use crate::src::ctx::CaseSet;
 use crate::src::levels::BlockSize;
@@ -13,6 +12,7 @@ use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TX_4X4;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
+use libc::ptrdiff_t;
 use std::cmp;
 
 #[repr(C)]

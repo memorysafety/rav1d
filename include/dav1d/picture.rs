@@ -5,8 +5,8 @@ use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::stddef::ptrdiff_t;
 use crate::src::r#ref::Dav1dRef;
+use libc::ptrdiff_t;
 use libc::uintptr_t;
 
 #[derive(Clone)]

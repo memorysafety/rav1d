@@ -2,7 +2,6 @@ use crate::include::common::intops::apply_sign;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::stddef::ptrdiff_t;
 use crate::src::align::Align8;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
@@ -30,6 +29,7 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::refmvs::refmvs_candidate;
 use crate::src::tables::TxfmInfo;
+use libc::ptrdiff_t;
 use std::cmp;
 use std::cmp::Ordering;
 

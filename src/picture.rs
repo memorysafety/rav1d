@@ -15,7 +15,6 @@ use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
-use crate::include::stddef::*;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_props_set_defaults;
 use crate::src::internal::Dav1dContext;
@@ -30,6 +29,7 @@ use crate::src::r#ref::dav1d_ref_wrap;
 use crate::src::r#ref::Dav1dRef;
 use crate::stderr;
 use libc::malloc;
+use libc::ptrdiff_t;
 
 extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;

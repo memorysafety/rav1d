@@ -4,7 +4,6 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::stddef::*;
 use crate::src::align::Align16;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
@@ -15,6 +14,7 @@ use crate::src::internal::Dav1dDSPContext;
 use crate::src::internal::Dav1dFrameContext;
 use crate::src::internal::Dav1dTaskContext;
 use crate::src::lf_mask::Av1Filter;
+use libc::ptrdiff_t;
 use std::cmp;
 
 extern "C" {

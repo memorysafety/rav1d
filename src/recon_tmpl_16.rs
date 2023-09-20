@@ -13,7 +13,6 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-use crate::include::stddef::*;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::CodedBlockInfo;
@@ -87,6 +86,7 @@ use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
 use libc::intptr_t;
+use libc::ptrdiff_t;
 use std::cmp;
 
 extern "C" {

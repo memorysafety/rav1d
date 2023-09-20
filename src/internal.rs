@@ -16,7 +16,6 @@ use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
-use crate::include::stddef::ptrdiff_t;
 use crate::src::align::*;
 use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
@@ -56,6 +55,7 @@ use crate::src::refmvs::Dav1dRefmvsDSPContext;
 use crate::src::thread_data::thread_data;
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
+use libc::ptrdiff_t;
 
 #[repr(C)]
 pub struct Dav1dDSPContext {

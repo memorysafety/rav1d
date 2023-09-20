@@ -1,6 +1,6 @@
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::stddef::ptrdiff_t;
 use crate::src::lf_mask::Av1FilterLUT;
+use libc::ptrdiff_t;
 
 pub type loopfilter_sb_fn = unsafe extern "C" fn(
     *mut DynPixel,

@@ -5,10 +5,10 @@ use crate::include::common::bitdepth::LeftPixelRow;
 use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
-use crate::include::stddef::ptrdiff_t;
 use crate::src::align::Align16;
 use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
+use libc::ptrdiff_t;
 use std::cmp;
 use std::ops::Add;
 

@@ -1,8 +1,8 @@
 use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::stddef::ptrdiff_t;
 use libc::intptr_t;
+use libc::ptrdiff_t;
 
 #[inline]
 pub unsafe extern "C" fn get_random_number(

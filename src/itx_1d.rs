@@ -1,5 +1,5 @@
 use crate::include::common::intops::iclip;
-use crate::include::stddef::*;
+use libc::ptrdiff_t;
 
 #[inline(never)]
 unsafe extern "C" fn inv_dct4_1d_internal_c(
