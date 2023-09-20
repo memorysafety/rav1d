@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align64;
@@ -31,13 +33,13 @@ pub const WEDGE_OBLIQUE153: WedgeDirectionType = 5;
 pub const N_WEDGE_DIRECTIONS: usize = 6;
 
 #[repr(C)]
-pub struct wedge_code_type {
+pub struct WedgeCodeType {
     pub direction: WedgeDirectionType,
     pub x_offset: u8,
     pub y_offset: u8,
 }
 
-impl wedge_code_type {
+impl WedgeCodeType {
     const fn new(x_offset: u8, y_offset: u8, direction: WedgeDirectionType) -> Self {
         Self {
             direction,
@@ -47,62 +49,95 @@ impl wedge_code_type {
     }
 }
 
-static wedge_codebook_16_hgtw: [wedge_code_type; 16] = [
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
-    wedge_code_type::new(4, 2, WEDGE_HORIZONTAL),
-    wedge_code_type::new(4, 4, WEDGE_HORIZONTAL),
-    wedge_code_type::new(4, 6, WEDGE_HORIZONTAL),
-    wedge_code_type::new(4, 4, WEDGE_VERTICAL),
-    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
-    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
-    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
-    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
-];
+struct WedgeCodeBook {
+    hgtw: [WedgeCodeType; 16],
+    hltw: [WedgeCodeType; 16],
+    heqw: [WedgeCodeType; 16],
+}
 
-static wedge_codebook_16_hltw: [wedge_code_type; 16] = [
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
-    wedge_code_type::new(2, 4, WEDGE_VERTICAL),
-    wedge_code_type::new(4, 4, WEDGE_VERTICAL),
-    wedge_code_type::new(6, 4, WEDGE_VERTICAL),
-    wedge_code_type::new(4, 4, WEDGE_HORIZONTAL),
-    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
-    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
-    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
-    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
-];
+impl WedgeCodeBook {
+    const fn build() -> Self {
+        Self {
+            hgtw: [
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE117),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(4, 2, WEDGE_HORIZONTAL),
+                WedgeCodeType::new(4, 4, WEDGE_HORIZONTAL),
+                WedgeCodeType::new(4, 6, WEDGE_HORIZONTAL),
+                WedgeCodeType::new(4, 4, WEDGE_VERTICAL),
+                WedgeCodeType::new(4, 2, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 6, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 2, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(4, 6, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(2, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(6, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(2, 4, WEDGE_OBLIQUE117),
+                WedgeCodeType::new(6, 4, WEDGE_OBLIQUE117),
+            ],
+            hltw: [
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE117),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(2, 4, WEDGE_VERTICAL),
+                WedgeCodeType::new(4, 4, WEDGE_VERTICAL),
+                WedgeCodeType::new(6, 4, WEDGE_VERTICAL),
+                WedgeCodeType::new(4, 4, WEDGE_HORIZONTAL),
+                WedgeCodeType::new(4, 2, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 6, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 2, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(4, 6, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(2, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(6, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(2, 4, WEDGE_OBLIQUE117),
+                WedgeCodeType::new(6, 4, WEDGE_OBLIQUE117),
+            ],
+            heqw: [
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE117),
+                WedgeCodeType::new(4, 4, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(4, 2, WEDGE_HORIZONTAL),
+                WedgeCodeType::new(4, 6, WEDGE_HORIZONTAL),
+                WedgeCodeType::new(2, 4, WEDGE_VERTICAL),
+                WedgeCodeType::new(6, 4, WEDGE_VERTICAL),
+                WedgeCodeType::new(4, 2, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 6, WEDGE_OBLIQUE27),
+                WedgeCodeType::new(4, 2, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(4, 6, WEDGE_OBLIQUE153),
+                WedgeCodeType::new(2, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(6, 4, WEDGE_OBLIQUE63),
+                WedgeCodeType::new(2, 4, WEDGE_OBLIQUE117),
+                WedgeCodeType::new(6, 4, WEDGE_OBLIQUE117),
+            ],
+        }
+    }
 
-static wedge_codebook_16_heqw: [wedge_code_type; 16] = [
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE117),
-    wedge_code_type::new(4, 4, WEDGE_OBLIQUE153),
-    wedge_code_type::new(4, 2, WEDGE_HORIZONTAL),
-    wedge_code_type::new(4, 6, WEDGE_HORIZONTAL),
-    wedge_code_type::new(2, 4, WEDGE_VERTICAL),
-    wedge_code_type::new(6, 4, WEDGE_VERTICAL),
-    wedge_code_type::new(4, 2, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 6, WEDGE_OBLIQUE27),
-    wedge_code_type::new(4, 2, WEDGE_OBLIQUE153),
-    wedge_code_type::new(4, 6, WEDGE_OBLIQUE153),
-    wedge_code_type::new(2, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(6, 4, WEDGE_OBLIQUE63),
-    wedge_code_type::new(2, 4, WEDGE_OBLIQUE117),
-    wedge_code_type::new(6, 4, WEDGE_OBLIQUE117),
-];
+    const fn get(&self, w: usize, h: usize) -> &[WedgeCodeType; 16] {
+        let Self { hgtw, hltw, heqw } = self;
+
+        use Ordering::*;
+
+        // `Ord::cmp` is not `const`
+        let order = if h < w {
+            Less
+        } else if h > w {
+            Greater
+        } else {
+            Equal
+        };
+
+        match order {
+            Less => hltw,
+            Equal => heqw,
+            Greater => hgtw,
+        }
+    }
+}
+
+static wedge_codebook_16: WedgeCodeBook = WedgeCodeBook::build();
 
 pub static mut dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] =
     [[[[&[]; 16]; 2]; 3]; N_BS_SIZES];
@@ -235,7 +270,7 @@ impl<const LEN_444: usize, const LEN_422: usize, const LEN_420: usize>
         w: usize,
         h: usize,
         master: &[[[u8; 64]; 64]; N_WEDGE_DIRECTIONS],
-        cb: &[wedge_code_type; 16],
+        cb: &[WedgeCodeType; 16],
         signs: u16,
     ) -> Self {
         assert!(LEN_444 == (w * h) >> 0);
@@ -359,27 +394,27 @@ pub unsafe fn dav1d_init_wedge_masks() {
     static master: [[[u8; 64]; 64]; N_WEDGE_DIRECTIONS] = build_master();
 
     macro_rules! fill {
-        ($w:literal x $h:literal, $cb:expr, $signs:expr) => {{
+        ($w:literal x $h:literal, $signs:expr) => {{
             static wedge_masks: WedgeMasks<
                 { $w * $h },
                 { ($w / 2) * $h },
                 { ($w / 2) * ($h / 2) },
-            > = WedgeMasks::fill2d_16x2($w, $h, &master, $cb, $signs);
+            > = WedgeMasks::fill2d_16x2($w, $h, &master, wedge_codebook_16.get($w, $h), $signs);
             paste! {
                 dav1d_wedge_masks[[<BS_ $w x $h>] as usize] = wedge_masks.slice();
             }
         }};
     }
 
-    fill!(32 x 32, &wedge_codebook_16_heqw, 0x7bfb);
-    fill!(32 x 16, &wedge_codebook_16_hltw, 0x7beb);
-    fill!(32 x  8, &wedge_codebook_16_hltw, 0x6beb);
-    fill!(16 x 32, &wedge_codebook_16_hgtw, 0x7beb);
-    fill!(16 x 16, &wedge_codebook_16_heqw, 0x7bfb);
-    fill!(16 x  8, &wedge_codebook_16_hltw, 0x7beb);
-    fill!( 8 x 32, &wedge_codebook_16_hgtw, 0x7aeb);
-    fill!( 8 x 16, &wedge_codebook_16_hgtw, 0x7beb);
-    fill!( 8 x  8, &wedge_codebook_16_heqw, 0x7bfb);
+    fill!(32 x 32, 0x7bfb);
+    fill!(32 x 16, 0x7beb);
+    fill!(32 x  8, 0x6beb);
+    fill!(16 x 32, 0x7beb);
+    fill!(16 x 16, 0x7bfb);
+    fill!(16 x  8, 0x7beb);
+    fill!( 8 x 32, 0x7aeb);
+    fill!( 8 x 16, 0x7beb);
+    fill!( 8 x  8, 0x7bfb);
 }
 
 static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
