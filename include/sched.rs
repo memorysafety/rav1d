@@ -1,4 +1,6 @@
-pub type __cpu_mask = libc::c_ulong;
+use std::ffi::c_ulong;
+
+pub type __cpu_mask = c_ulong;
 
 #[repr(C)]
 pub struct cpu_set_t {

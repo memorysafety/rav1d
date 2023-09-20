@@ -53,52 +53,55 @@ use rav1d::src::lib::dav1d_send_data;
 use rav1d::src::lib::dav1d_version;
 use rav1d::src::lib::Dav1dSettings;
 use rav1d::stderr;
+use std::ffi::c_char;
+use std::ffi::c_double;
+use std::ffi::c_int;
+use std::ffi::c_long;
+use std::ffi::c_uint;
+use std::ffi::c_ulong;
+use std::ffi::c_ulonglong;
+use std::ffi::c_void;
 
 extern "C" {
     pub type DemuxerContext;
     pub type MuxerContext;
-    fn malloc(_: usize) -> *mut libc::c_void;
-    fn free(_: *mut libc::c_void);
-    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
-    fn fflush(__stream: *mut libc::FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn snprintf(
-        _: *mut libc::c_char,
-        _: libc::c_ulong,
-        _: *const libc::c_char,
-        _: ...
-    ) -> libc::c_int;
-    fn fputs(__s: *const libc::c_char, __stream: *mut libc::FILE) -> libc::c_int;
-    fn fileno(__stream: *mut libc::FILE) -> libc::c_int;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: usize) -> *mut libc::c_void;
-    fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
-    fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn strcpy(_: *mut libc::c_char, _: *const libc::c_char) -> *mut libc::c_char;
-    fn isatty(__fd: libc::c_int) -> libc::c_int;
+    fn malloc(_: usize) -> *mut c_void;
+    fn free(_: *mut c_void);
+    fn fclose(__stream: *mut libc::FILE) -> c_int;
+    fn fflush(__stream: *mut libc::FILE) -> c_int;
+    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
+    fn snprintf(_: *mut c_char, _: c_ulong, _: *const c_char, _: ...) -> c_int;
+    fn fputs(__s: *const c_char, __stream: *mut libc::FILE) -> c_int;
+    fn fileno(__stream: *mut libc::FILE) -> c_int;
+    fn memset(_: *mut c_void, _: c_int, _: usize) -> *mut c_void;
+    fn strcmp(_: *const c_char, _: *const c_char) -> c_int;
+    fn strerror(_: c_int) -> *mut c_char;
+    fn strcpy(_: *mut c_char, _: *const c_char) -> *mut c_char;
+    fn isatty(__fd: c_int) -> c_int;
     fn input_open(
         c_out: *mut *mut DemuxerContext,
-        name: *const libc::c_char,
-        filename: *const libc::c_char,
-        fps: *mut libc::c_uint,
-        num_frames: *mut libc::c_uint,
-        timebase: *mut libc::c_uint,
-    ) -> libc::c_int;
-    fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> libc::c_int;
+        name: *const c_char,
+        filename: *const c_char,
+        fps: *mut c_uint,
+        num_frames: *mut c_uint,
+        timebase: *mut c_uint,
+    ) -> c_int;
+    fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> c_int;
     fn input_close(ctx: *mut DemuxerContext);
     fn output_open(
         c: *mut *mut MuxerContext,
-        name: *const libc::c_char,
-        filename: *const libc::c_char,
+        name: *const c_char,
+        filename: *const c_char,
         p: *const Dav1dPictureParameters,
-        fps: *const libc::c_uint,
-    ) -> libc::c_int;
-    fn output_write(ctx: *mut MuxerContext, pic: *mut Dav1dPicture) -> libc::c_int;
+        fps: *const c_uint,
+    ) -> c_int;
+    fn output_write(ctx: *mut MuxerContext, pic: *mut Dav1dPicture) -> c_int;
     fn output_close(ctx: *mut MuxerContext);
-    fn output_verify(ctx: *mut MuxerContext, hash_string: *const libc::c_char) -> libc::c_int;
+    fn output_verify(ctx: *mut MuxerContext, hash_string: *const c_char) -> c_int;
     fn parse(
-        argc: libc::c_int,
-        argv: *const *mut libc::c_char,
+        argc: c_int,
+        argv: *const *mut c_char,
         cli_settings: *mut CLISettings,
         lib_settings: *mut Dav1dSettings,
     );
@@ -106,22 +109,22 @@ extern "C" {
 
 #[repr(C)]
 pub struct CLISettings {
-    pub outputfile: *const libc::c_char,
-    pub inputfile: *const libc::c_char,
-    pub demuxer: *const libc::c_char,
-    pub muxer: *const libc::c_char,
-    pub frametimes: *const libc::c_char,
-    pub verify: *const libc::c_char,
-    pub limit: libc::c_uint,
-    pub skip: libc::c_uint,
-    pub quiet: libc::c_int,
+    pub outputfile: *const c_char,
+    pub inputfile: *const c_char,
+    pub demuxer: *const c_char,
+    pub muxer: *const c_char,
+    pub frametimes: *const c_char,
+    pub verify: *const c_char,
+    pub limit: c_uint,
+    pub skip: c_uint,
+    pub quiet: c_int,
     pub realtime: CLISettings_realtime,
-    pub realtime_fps: libc::c_double,
-    pub realtime_cache: libc::c_uint,
-    pub neg_stride: libc::c_int,
+    pub realtime_fps: c_double,
+    pub realtime_cache: c_uint,
+    pub neg_stride: c_int,
 }
 
-pub type CLISettings_realtime = libc::c_uint;
+pub type CLISettings_realtime = c_uint;
 pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
 pub const REALTIME_INPUT: CLISettings_realtime = 1;
 pub const REALTIME_DISABLE: CLISettings_realtime = 0;
@@ -132,9 +135,9 @@ unsafe extern "C" fn get_time_nanos() -> u64 {
         tv_nsec: 0,
     };
     libc::clock_gettime(1, &mut ts);
-    return (1000000000 as libc::c_ulonglong)
-        .wrapping_mul(ts.tv_sec as libc::c_ulonglong)
-        .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as u64;
+    return (1000000000 as c_ulonglong)
+        .wrapping_mul(ts.tv_sec as c_ulonglong)
+        .wrapping_add(ts.tv_nsec as c_ulonglong) as u64;
 }
 
 unsafe extern "C" fn sleep_nanos(d: u64) {
@@ -150,9 +153,9 @@ unsafe extern "C" fn sleep_nanos(d: u64) {
 }
 
 unsafe extern "C" fn synchronize(
-    realtime: libc::c_int,
-    cache: libc::c_uint,
-    n_out: libc::c_uint,
+    realtime: c_int,
+    cache: c_uint,
+    n_out: c_uint,
     nspf: u64,
     tfirst: u64,
     elapsed: *mut u64,
@@ -175,7 +178,7 @@ unsafe extern "C" fn synchronize(
         let frametime: u64 = (*elapsed).wrapping_sub(last);
         fprintf(
             frametimes,
-            b"%lu\n\0" as *const u8 as *const libc::c_char,
+            b"%lu\n\0" as *const u8 as *const c_char,
             frametime,
         );
         fflush(frametimes);
@@ -183,45 +186,45 @@ unsafe extern "C" fn synchronize(
 }
 
 unsafe extern "C" fn print_stats(
-    istty: libc::c_int,
-    n: libc::c_uint,
-    num: libc::c_uint,
+    istty: c_int,
+    n: c_uint,
+    num: c_uint,
     elapsed: u64,
-    i_fps: libc::c_double,
+    i_fps: c_double,
 ) {
-    let mut buf: [libc::c_char; 80] = [0; 80];
-    let mut b: *mut libc::c_char = buf.as_mut_ptr();
-    let end: *mut libc::c_char = buf.as_mut_ptr().offset(80);
+    let mut buf: [c_char; 80] = [0; 80];
+    let mut b: *mut c_char = buf.as_mut_ptr();
+    let end: *mut c_char = buf.as_mut_ptr().offset(80);
     if istty != 0 {
         let fresh0 = b;
         b = b.offset(1);
-        *fresh0 = '\r' as i32 as libc::c_char;
+        *fresh0 = '\r' as i32 as c_char;
     }
-    if num == 0xffffffff as libc::c_uint {
+    if num == 0xffffffff as c_uint {
         b = b.offset(snprintf(
             b,
-            end.offset_from(b) as libc::c_long as libc::c_ulong,
-            b"Decoded %u frames\0" as *const u8 as *const libc::c_char,
+            end.offset_from(b) as c_long as c_ulong,
+            b"Decoded %u frames\0" as *const u8 as *const c_char,
             n,
         ) as isize);
     } else {
         b = b.offset(snprintf(
             b,
-            end.offset_from(b) as libc::c_long as libc::c_ulong,
-            b"Decoded %u/%u frames (%.1lf%%)\0" as *const u8 as *const libc::c_char,
+            end.offset_from(b) as c_long as c_ulong,
+            b"Decoded %u/%u frames (%.1lf%%)\0" as *const u8 as *const c_char,
             n,
             num,
-            100.0f64 * n as libc::c_double / num as libc::c_double,
+            100.0f64 * n as c_double / num as c_double,
         ) as isize);
     }
     if b < end {
-        let d_fps: libc::c_double = 1e9f64 * n as libc::c_double / elapsed as libc::c_double;
+        let d_fps: c_double = 1e9f64 * n as c_double / elapsed as c_double;
         if i_fps != 0. {
-            let speed: libc::c_double = d_fps / i_fps;
+            let speed: c_double = d_fps / i_fps;
             b = b.offset(snprintf(
                 b,
-                end.offset_from(b) as libc::c_long as libc::c_ulong,
-                b" - %.2lf/%.2lf fps (%.2lfx)\0" as *const u8 as *const libc::c_char,
+                end.offset_from(b) as c_long as c_ulong,
+                b" - %.2lf/%.2lf fps (%.2lfx)\0" as *const u8 as *const c_char,
                 d_fps,
                 i_fps,
                 speed,
@@ -229,36 +232,33 @@ unsafe extern "C" fn print_stats(
         } else {
             b = b.offset(snprintf(
                 b,
-                end.offset_from(b) as libc::c_long as libc::c_ulong,
-                b" - %.2lf fps\0" as *const u8 as *const libc::c_char,
+                end.offset_from(b) as c_long as c_ulong,
+                b" - %.2lf fps\0" as *const u8 as *const c_char,
                 d_fps,
             ) as isize);
         }
     }
     if istty == 0 {
         strcpy(
-            if b > end.offset(-(2 as libc::c_int as isize)) {
-                end.offset(-(2 as libc::c_int as isize))
+            if b > end.offset(-(2 as c_int as isize)) {
+                end.offset(-(2 as c_int as isize))
             } else {
                 b
             },
-            b"\n\0" as *const u8 as *const libc::c_char,
+            b"\n\0" as *const u8 as *const c_char,
         );
     }
     fputs(buf.as_mut_ptr(), stderr);
 }
 
-unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut libc::c_void) -> libc::c_int {
-    let hbd = ((*p).p.bpc > 8) as libc::c_int;
-    let aligned_w = (*p).p.w + 127 & !(127 as libc::c_int);
-    let aligned_h = (*p).p.h + 127 & !(127 as libc::c_int);
-    let has_chroma = ((*p).p.layout as libc::c_uint
-        != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint)
-        as libc::c_int;
-    let ss_ver = ((*p).p.layout as libc::c_uint
-        == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-    let ss_hor = ((*p).p.layout as libc::c_uint
-        != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
+unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> c_int {
+    let hbd = ((*p).p.bpc > 8) as c_int;
+    let aligned_w = (*p).p.w + 127 & !(127 as c_int);
+    let aligned_h = (*p).p.h + 127 & !(127 as c_int);
+    let has_chroma =
+        ((*p).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
+    let ss_ver = ((*p).p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_hor = ((*p).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let mut y_stride: ptrdiff_t = (aligned_w << hbd) as ptrdiff_t;
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
         y_stride >> ss_hor
@@ -278,43 +278,43 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut libc::c_void) -
     let pic_size: usize = y_sz.wrapping_add(2 * uv_sz);
     let buf: *mut u8 = malloc(pic_size.wrapping_add(64)) as *mut u8;
     if buf.is_null() {
-        return -(12 as libc::c_int);
+        return -(12 as c_int);
     }
-    (*p).allocator_data = buf as *mut libc::c_void;
+    (*p).allocator_data = buf as *mut c_void;
     let align_m1: ptrdiff_t = (64 - 1) as ptrdiff_t;
     let data: *mut u8 = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut u8;
-    (*p).data[0] = data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut libc::c_void;
+    (*p).data[0] = data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void;
     (*p).data[1] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
             .offset(uv_sz.wrapping_mul(1) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut u8
-    }) as *mut libc::c_void;
+    }) as *mut c_void;
     (*p).data[2] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
             .offset(uv_sz.wrapping_mul(2) as isize)
             .offset(-(uv_stride as isize))
     } else {
         0 as *mut u8
-    }) as *mut libc::c_void;
-    return 0 as libc::c_int;
+    }) as *mut c_void;
+    return 0 as c_int;
 }
 
-unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut libc::c_void) {
+unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut c_void) {
     free((*p).allocator_data);
 }
 
-unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_int {
+unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     let istty = isatty(fileno(stderr));
     let mut res;
     let mut cli_settings: CLISettings = CLISettings {
-        outputfile: 0 as *const libc::c_char,
-        inputfile: 0 as *const libc::c_char,
-        demuxer: 0 as *const libc::c_char,
-        muxer: 0 as *const libc::c_char,
-        frametimes: 0 as *const libc::c_char,
-        verify: 0 as *const libc::c_char,
+        outputfile: 0 as *const c_char,
+        inputfile: 0 as *const c_char,
+        demuxer: 0 as *const c_char,
+        muxer: 0 as *const c_char,
+        frametimes: 0 as *const c_char,
+        verify: 0 as *const c_char,
         limit: 0,
         skip: 0,
         quiet: 0,
@@ -331,12 +331,12 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         all_layers: 0,
         frame_size_limit: 0,
         allocator: Dav1dPicAllocator {
-            cookie: 0 as *mut libc::c_void,
+            cookie: 0 as *mut c_void,
             alloc_picture_callback: None,
             release_picture_callback: None,
         },
         logger: Dav1dLogger {
-            cookie: 0 as *mut libc::c_void,
+            cookie: 0 as *mut c_void,
             callback: None,
         },
         strict_std_compliance: 0,
@@ -350,7 +350,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut p: Dav1dPicture = Dav1dPicture {
         seq_hdr: 0 as *mut Dav1dSequenceHeader,
         frame_hdr: 0 as *mut Dav1dFrameHeader,
-        data: [0 as *mut libc::c_void; 3],
+        data: [0 as *mut c_void; 3],
         stride: [0; 2],
         p: Dav1dPictureParameters {
             w: 0,
@@ -379,7 +379,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         itut_t35_ref: 0 as *mut Dav1dRef,
         reserved_ref: [0; 4],
         r#ref: 0 as *mut Dav1dRef,
-        allocator_data: 0 as *mut libc::c_void,
+        allocator_data: 0 as *mut c_void,
     };
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
@@ -397,35 +397,31 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             },
         },
     };
-    let mut n_out: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    let mut total: libc::c_uint = 0;
-    let mut fps: [libc::c_uint; 2] = [0; 2];
-    let mut timebase: [libc::c_uint; 2] = [0; 2];
+    let mut n_out: c_uint = 0 as c_int as c_uint;
+    let mut total: c_uint = 0;
+    let mut fps: [c_uint; 2] = [0; 2];
+    let mut timebase: [c_uint; 2] = [0; 2];
     let nspf: u64;
     let tfirst: u64;
     let mut elapsed: u64 = 0;
-    let i_fps: libc::c_double;
+    let i_fps: c_double;
     let mut frametimes: *mut libc::FILE = 0 as *mut libc::FILE;
-    let version: *const libc::c_char = dav1d_version();
-    if strcmp(version, b"966d63c1\0" as *const u8 as *const libc::c_char) != 0 {
+    let version: *const c_char = dav1d_version();
+    if strcmp(version, b"966d63c1\0" as *const u8 as *const c_char) != 0 {
         fprintf(
             stderr,
-            b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8
-                as *const libc::c_char,
+            b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8 as *const c_char,
             version,
-            b"966d63c1\0" as *const u8 as *const libc::c_char,
+            b"966d63c1\0" as *const u8 as *const c_char,
         );
-        return 1 as libc::c_int;
+        return 1 as c_int;
     }
     parse(argc, argv, &mut cli_settings, &mut lib_settings);
     if cli_settings.neg_stride != 0 {
-        lib_settings.allocator.alloc_picture_callback = Some(
-            picture_alloc
-                as unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int,
-        );
-        lib_settings.allocator.release_picture_callback = Some(
-            picture_release as unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> (),
-        );
+        lib_settings.allocator.alloc_picture_callback =
+            Some(picture_alloc as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> c_int);
+        lib_settings.allocator.release_picture_callback =
+            Some(picture_release as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> ());
     }
     res = input_open(
         &mut in_0,
@@ -436,14 +432,14 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         timebase.as_mut_ptr(),
     );
     if res < 0 {
-        return 1 as libc::c_int;
+        return 1 as c_int;
     }
-    let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+    let mut i: c_uint = 0 as c_int as c_uint;
     while i <= cli_settings.skip {
         res = input_read(in_0, &mut data);
         if res < 0 {
             input_close(in_0);
-            return 1 as libc::c_int;
+            return 1 as c_int;
         }
         if i < cli_settings.skip {
             dav1d_data_unref(&mut data);
@@ -453,7 +449,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     if cli_settings.quiet == 0 {
         fprintf(
             stderr,
-            b"dav1d %s - by VideoLAN\n\0" as *const u8 as *const libc::c_char,
+            b"dav1d %s - by VideoLAN\n\0" as *const u8 as *const c_char,
             dav1d_version(),
         );
     }
@@ -525,12 +521,12 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                 low_delay_mode: 0,
             }; 32],
         };
-        let mut seq_skip: libc::c_uint = 0 as libc::c_int as libc::c_uint;
+        let mut seq_skip: c_uint = 0 as c_int as c_uint;
         while dav1d_parse_sequence_header(&mut seq, data.data, data.sz) != 0 {
             res = input_read(in_0, &mut data);
             if res < 0 {
                 input_close(in_0);
-                return 1 as libc::c_int;
+                return 1 as c_int;
             }
             seq_skip = seq_skip.wrapping_add(1);
         }
@@ -538,33 +534,33 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             fprintf(
                 stderr,
                 b"skipped %u packets due to missing sequence header\n\0" as *const u8
-                    as *const libc::c_char,
+                    as *const c_char,
                 seq_skip,
             );
         }
     }
-    if cli_settings.limit != 0 as libc::c_int as libc::c_uint && cli_settings.limit < total {
+    if cli_settings.limit != 0 as c_int as c_uint && cli_settings.limit < total {
         total = cli_settings.limit;
     }
     res = dav1d_open(&mut c, &mut lib_settings);
     if res != 0 {
-        return 1 as libc::c_int;
+        return 1 as c_int;
     }
     if !(cli_settings.frametimes).is_null() {
         frametimes = fopen(
             cli_settings.frametimes,
-            b"w\0" as *const u8 as *const libc::c_char,
+            b"w\0" as *const u8 as *const c_char,
         );
     }
-    if cli_settings.realtime as libc::c_uint != REALTIME_CUSTOM as libc::c_int as libc::c_uint {
-        if fps[1] == 0 as libc::c_uint {
-            i_fps = 0 as libc::c_int as libc::c_double;
-            nspf = 0 as libc::c_int as u64;
+    if cli_settings.realtime as c_uint != REALTIME_CUSTOM as c_int as c_uint {
+        if fps[1] == 0 as c_uint {
+            i_fps = 0 as c_int as c_double;
+            nspf = 0 as c_int as u64;
         } else {
-            i_fps = fps[0] as libc::c_double / fps[1] as libc::c_double;
-            nspf = (1000000000 as libc::c_ulonglong)
-                .wrapping_mul(fps[1] as libc::c_ulonglong)
-                .wrapping_div(fps[0] as libc::c_ulonglong) as u64;
+            i_fps = fps[0] as c_double / fps[1] as c_double;
+            nspf = (1000000000 as c_ulonglong)
+                .wrapping_mul(fps[1] as c_ulonglong)
+                .wrapping_div(fps[0] as c_ulonglong) as u64;
         }
     } else {
         i_fps = cli_settings.realtime_fps;
@@ -573,37 +569,37 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     tfirst = get_time_nanos();
     loop {
         memset(
-            &mut p as *mut Dav1dPicture as *mut libc::c_void,
-            0 as libc::c_int,
+            &mut p as *mut Dav1dPicture as *mut c_void,
+            0 as c_int,
             ::core::mem::size_of::<Dav1dPicture>(),
         );
         res = dav1d_send_data(c, &mut data);
         if res < 0 {
-            if res != -(11 as libc::c_int) {
+            if res != -(11 as c_int) {
                 dav1d_data_unref(&mut data);
                 fprintf(
                     stderr,
-                    b"Error decoding frame: %s\n\0" as *const u8 as *const libc::c_char,
+                    b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                     strerror(-res),
                 );
-                if res != -(22 as libc::c_int) {
+                if res != -(22 as c_int) {
                     break;
                 }
             }
         }
         res = dav1d_get_picture(c, &mut p);
         if res < 0 {
-            if res != -(11 as libc::c_int) {
+            if res != -(11 as c_int) {
                 fprintf(
                     stderr,
-                    b"Error decoding frame: %s\n\0" as *const u8 as *const libc::c_char,
+                    b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                     strerror(-res),
                 );
-                if res != -(22 as libc::c_int) {
+                if res != -(22 as c_int) {
                     break;
                 }
             }
-            res = 0 as libc::c_int;
+            res = 0 as c_int;
         } else {
             if n_out == 0 {
                 res = output_open(
@@ -611,13 +607,13 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                     cli_settings.muxer,
                     cli_settings.outputfile,
                     &mut p.p,
-                    fps.as_mut_ptr() as *const libc::c_uint,
+                    fps.as_mut_ptr() as *const c_uint,
                 );
                 if res < 0 {
                     if !frametimes.is_null() {
                         fclose(frametimes);
                     }
-                    return 1 as libc::c_int;
+                    return 1 as c_int;
                 }
             }
             res = output_write(out, &mut p);
@@ -627,7 +623,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             n_out = n_out.wrapping_add(1);
             if nspf != 0 || cli_settings.quiet == 0 {
                 synchronize(
-                    cli_settings.realtime as libc::c_int,
+                    cli_settings.realtime as c_int,
                     cli_settings.realtime_cache,
                     n_out,
                     nspf,
@@ -654,17 +650,17 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         while cli_settings.limit == 0 || n_out < cli_settings.limit {
             res = dav1d_get_picture(c, &mut p);
             if res < 0 {
-                if res != -(11 as libc::c_int) {
+                if res != -(11 as c_int) {
                     fprintf(
                         stderr,
-                        b"Error decoding frame: %s\n\0" as *const u8 as *const libc::c_char,
+                        b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                         strerror(-res),
                     );
-                    if res != -(22 as libc::c_int) {
+                    if res != -(22 as c_int) {
                         break;
                     }
                 } else {
-                    res = 0 as libc::c_int;
+                    res = 0 as c_int;
                     break;
                 }
             } else {
@@ -674,13 +670,13 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                         cli_settings.muxer,
                         cli_settings.outputfile,
                         &mut p.p,
-                        fps.as_mut_ptr() as *const libc::c_uint,
+                        fps.as_mut_ptr() as *const c_uint,
                     );
                     if res < 0 {
                         if !frametimes.is_null() {
                             fclose(frametimes);
                         }
-                        return 1 as libc::c_int;
+                        return 1 as c_int;
                     }
                 }
                 res = output_write(out, &mut p);
@@ -690,7 +686,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                 n_out = n_out.wrapping_add(1);
                 if nspf != 0 || cli_settings.quiet == 0 {
                     synchronize(
-                        cli_settings.realtime as libc::c_int,
+                        cli_settings.realtime as c_int,
                         cli_settings.realtime_cache,
                         n_out,
                         nspf,
@@ -711,7 +707,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     input_close(in_0);
     if !out.is_null() {
         if cli_settings.quiet == 0 && istty != 0 {
-            fprintf(stderr, b"\n\0" as *const u8 as *const libc::c_char);
+            fprintf(stderr, b"\n\0" as *const u8 as *const c_char);
         }
         if !(cli_settings.verify).is_null() {
             res |= output_verify(out, cli_settings.verify);
@@ -719,22 +715,15 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             output_close(out);
         }
     } else {
-        fprintf(
-            stderr,
-            b"No data decoded\n\0" as *const u8 as *const libc::c_char,
-        );
-        res = 1 as libc::c_int;
+        fprintf(stderr, b"No data decoded\n\0" as *const u8 as *const c_char);
+        res = 1 as c_int;
     }
     dav1d_close(&mut c);
-    return if res == 0 {
-        0 as libc::c_int
-    } else {
-        1 as libc::c_int
-    };
+    return if res == 0 { 0 as c_int } else { 1 as c_int };
 }
 
 pub fn main() {
-    let mut args: Vec<*mut libc::c_char> = Vec::new();
+    let mut args: Vec<*mut c_char> = Vec::new();
     for arg in ::std::env::args() {
         args.push(
             (::std::ffi::CString::new(arg))
@@ -745,8 +734,8 @@ pub fn main() {
     args.push(::core::ptr::null_mut());
     unsafe {
         ::std::process::exit(main_0(
-            (args.len() - 1) as libc::c_int,
-            args.as_mut_ptr() as *const *mut libc::c_char,
+            (args.len() - 1) as c_int,
+            args.as_mut_ptr() as *const *mut c_char,
         ) as i32)
     }
 }

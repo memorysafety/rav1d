@@ -8,14 +8,16 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::src::r#ref::Dav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
+use std::ffi::c_int;
+use std::ffi::c_void;
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPictureParameters {
-    pub w: libc::c_int,
-    pub h: libc::c_int,
+    pub w: c_int,
+    pub h: c_int,
     pub layout: Dav1dPixelLayout,
-    pub bpc: libc::c_int,
+    pub bpc: c_int,
 }
 
 #[derive(Clone)]
@@ -23,7 +25,7 @@ pub struct Dav1dPictureParameters {
 pub struct Dav1dPicture {
     pub seq_hdr: *mut Dav1dSequenceHeader,
     pub frame_hdr: *mut Dav1dFrameHeader,
-    pub data: [*mut libc::c_void; 3],
+    pub data: [*mut c_void; 3],
     pub stride: [ptrdiff_t; 2],
     pub p: Dav1dPictureParameters,
     pub m: Dav1dDataProps,
@@ -38,15 +40,15 @@ pub struct Dav1dPicture {
     pub itut_t35_ref: *mut Dav1dRef,
     pub reserved_ref: [uintptr_t; 4],
     pub r#ref: *mut Dav1dRef,
-    pub allocator_data: *mut libc::c_void,
+    pub allocator_data: *mut c_void,
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPicAllocator {
-    pub cookie: *mut libc::c_void,
+    pub cookie: *mut c_void,
     pub alloc_picture_callback:
-        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> libc::c_int>,
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> c_int>,
     pub release_picture_callback:
-        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut libc::c_void) -> ()>,
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> ()>,
 }

@@ -1,16 +1,21 @@
 // NOTE: temporary code to support Linux and macOS, should be removed eventually
 cfg_if::cfg_if! {
     if #[cfg(target_os = "linux")] {
-        pub type pthread_once_t = libc::c_int;
+        use std::ffi::c_int;
+
+        pub type pthread_once_t = c_int;
 
         pub const fn pthread_once_init() -> pthread_once_t {
             0
         }
     } else if #[cfg(target_os = "macos")] {
+        use std::ffi::c_char;
+        use std::ffi::c_long;
+
         #[repr(C)]
         pub struct _opaque_pthread_once_t {
-            pub __sig: libc::c_long,
-            pub __opaque: [libc::c_char; 8],
+            pub __sig: c_long,
+            pub __opaque: [c_char; 8],
         }
         pub type pthread_once_t = _opaque_pthread_once_t;
 

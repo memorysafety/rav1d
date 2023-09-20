@@ -7,28 +7,30 @@ use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_TX_TYPES_PLUS_LL;
 use libc::ptrdiff_t;
 use std::cmp;
+use std::ffi::c_int;
+use std::ffi::c_ulong;
+use std::ffi::c_void;
 
 extern "C" {
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
 }
 
-pub type itx_1d_fn =
-    Option<unsafe extern "C" fn(*mut i32, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
+pub type itx_1d_fn = Option<unsafe extern "C" fn(*mut i32, ptrdiff_t, c_int, c_int) -> ()>;
 
 pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     coeff: *mut BD::Coef,
-    eob: libc::c_int,
-    w: libc::c_int,
-    h: libc::c_int,
-    shift: libc::c_int,
+    eob: c_int,
+    w: c_int,
+    h: c_int,
+    shift: c_int,
     first_1d_fn: itx_1d_fn,
     second_1d_fn: itx_1d_fn,
-    has_dconly: libc::c_int,
+    has_dconly: c_int,
     bd: BD,
 ) {
-    let bitdepth_max: libc::c_int = bd.bitdepth_max().as_();
+    let bitdepth_max: c_int = bd.bitdepth_max().as_();
     let stride = stride as usize;
     if !(w >= 4 && w <= 64) {
         unreachable!();
@@ -39,10 +41,10 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     if !(eob >= 0) {
         unreachable!();
     }
-    let is_rect2: libc::c_int = (w * 2 == h || h * 2 == w) as libc::c_int;
-    let rnd = (1 as libc::c_int) << shift >> 1;
+    let is_rect2: c_int = (w * 2 == h || h * 2 == w) as c_int;
+    let rnd = (1 as c_int) << shift >> 1;
     if eob < has_dconly {
-        let mut dc: libc::c_int = (*coeff.offset(0)).as_();
+        let mut dc: c_int = (*coeff.offset(0)).as_();
         *coeff.offset(0) = 0.as_();
         if is_rect2 != 0 {
             dc = dc * 181 + 128 >> 8;
@@ -55,7 +57,7 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
             let mut x = 0;
             while x < w {
                 *dst.offset(x as isize) =
-                    bd.iclip_pixel((*dst.offset(x as isize)).as_::<libc::c_int>() + dc);
+                    bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + dc);
                 x += 1;
             }
             y += 1;
@@ -63,16 +65,16 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
         }
         return;
     }
-    let sh = cmp::min(h, 32 as libc::c_int);
-    let sw = cmp::min(w, 32 as libc::c_int);
+    let sh = cmp::min(h, 32 as c_int);
+    let sw = cmp::min(w, 32 as c_int);
     let row_clip_min;
     let col_clip_min;
     if BD::BITDEPTH == 8 {
         row_clip_min = i16::MIN as i32;
         col_clip_min = i16::MIN as i32;
     } else {
-        row_clip_min = ((!bitdepth_max) << 7) as libc::c_int;
-        col_clip_min = ((!bitdepth_max) << 5) as libc::c_int;
+        row_clip_min = ((!bitdepth_max) << 7) as c_int;
+        col_clip_min = ((!bitdepth_max) << 5) as c_int;
     }
     let row_clip_max = !row_clip_min;
     let col_clip_max = !col_clip_min;
@@ -84,8 +86,7 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
             let mut x_0 = 0;
             while x_0 < sw {
                 *c.offset(x_0 as isize) =
-                    (*coeff.offset((y_0 + x_0 * sh) as isize)).as_::<libc::c_int>() * 181 + 128
-                        >> 8;
+                    (*coeff.offset((y_0 + x_0 * sh) as isize)).as_::<c_int>() * 181 + 128 >> 8;
                 x_0 += 1;
             }
         } else {
@@ -97,7 +98,7 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
         }
         first_1d_fn.expect("non-null function pointer")(
             c,
-            1 as libc::c_int as ptrdiff_t,
+            1 as c_int as ptrdiff_t,
             row_clip_min,
             row_clip_max,
         );
@@ -105,11 +106,11 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
         c = c.offset(w as isize);
     }
     memset(
-        coeff as *mut libc::c_void,
-        0 as libc::c_int,
-        (::core::mem::size_of::<BD::Coef>() as libc::c_ulong)
-            .wrapping_mul(sw as libc::c_ulong)
-            .wrapping_mul(sh as libc::c_ulong),
+        coeff as *mut c_void,
+        0 as c_int,
+        (::core::mem::size_of::<BD::Coef>() as c_ulong)
+            .wrapping_mul(sw as c_ulong)
+            .wrapping_mul(sh as c_ulong),
     );
     let mut i = 0;
     while i < w * sh {
@@ -133,8 +134,8 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
         while x_3 < w {
             let fresh0 = c;
             c = c.offset(1);
-            *dst.offset(x_3 as isize) = bd
-                .iclip_pixel((*dst.offset(x_3 as isize)).as_::<libc::c_int>() + (*fresh0 + 8 >> 4));
+            *dst.offset(x_3 as isize) =
+                bd.iclip_pixel((*dst.offset(x_3 as isize)).as_::<c_int>() + (*fresh0 + 8 >> 4));
             x_3 += 1;
         }
         y_1 += 1;
@@ -142,9 +143,8 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     }
 }
 
-pub type itxfm_fn = Option<
-    unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *mut DynCoef, libc::c_int, libc::c_int) -> (),
->;
+pub type itxfm_fn =
+    Option<unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *mut DynCoef, c_int, c_int) -> ()>;
 
 #[repr(C)]
 pub struct Dav1dInvTxfmDSPContext {
@@ -159,8 +159,8 @@ macro_rules! decl_itx_fn {
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
             coeff: *mut DynCoef,
-            eob: libc::c_int,
-            bitdepth_max: libc::c_int,
+            eob: c_int,
+            bitdepth_max: c_int,
         );
     };
 
@@ -333,8 +333,8 @@ macro_rules! inv_txfm_fn {
                 dst: *mut DynPixel,
                 stride: ptrdiff_t,
                 coeff: *mut DynCoef,
-                eob: libc::c_int,
-                bitdepth_max: libc::c_int,
+                eob: c_int,
+                bitdepth_max: c_int,
             ) {
                 use crate::src::itx_1d::*;
                 inv_txfm_add_rust(
@@ -347,7 +347,7 @@ macro_rules! inv_txfm_fn {
                     $shift,
                     Some([<dav1d_inv_ $type1 $w _1d_c>]),
                     Some([<dav1d_inv_ $type2 $h _1d_c>]),
-                    $has_dconly as libc::c_int,
+                    $has_dconly as c_int,
                     BD::from_c(bitdepth_max),
                 );
             }

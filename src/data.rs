@@ -6,22 +6,24 @@ use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::dav1d_ref_wrap;
 use crate::src::r#ref::Dav1dRef;
 use crate::stderr;
+use std::ffi::c_char;
+use std::ffi::c_int;
+use std::ffi::c_ulong;
+use std::ffi::c_void;
 
 extern "C" {
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
+    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
 }
 
 pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
     if buf.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"buf != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 27], &[libc::c_char; 27]>(
-                b"dav1d_data_create_internal\0",
-            ))
-            .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"buf != NULL\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 27], &[c_char; 27]>(b"dav1d_data_create_internal\0"))
+                .as_ptr(),
         );
         return 0 as *mut u8;
     }
@@ -43,122 +45,113 @@ pub unsafe fn dav1d_data_wrap_internal(
     buf: *mut Dav1dData,
     ptr: *const u8,
     sz: usize,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut libc::c_void) -> ()>,
-    cookie: *mut libc::c_void,
-) -> libc::c_int {
+    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
+    cookie: *mut c_void,
+) -> c_int {
     if buf.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"buf != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
-                b"dav1d_data_wrap_internal\0",
-            ))
-            .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"buf != NULL\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 25], &[c_char; 25]>(b"dav1d_data_wrap_internal\0"))
+                .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22 as c_int);
     }
     if ptr.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"ptr != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
-                b"dav1d_data_wrap_internal\0",
-            ))
-            .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"ptr != NULL\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 25], &[c_char; 25]>(b"dav1d_data_wrap_internal\0"))
+                .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22 as c_int);
     }
     if free_callback.is_none() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"free_callback != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 25], &[libc::c_char; 25]>(
-                b"dav1d_data_wrap_internal\0",
-            ))
-            .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"free_callback != NULL\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 25], &[c_char; 25]>(b"dav1d_data_wrap_internal\0"))
+                .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22 as c_int);
     }
     (*buf).r#ref = dav1d_ref_wrap(ptr, free_callback, cookie);
     if ((*buf).r#ref).is_null() {
-        return -(12 as libc::c_int);
+        return -(12 as c_int);
     }
     (*buf).data = ptr;
     (*buf).sz = sz;
     dav1d_data_props_set_defaults(&mut (*buf).m);
     (*buf).m.size = sz;
-    return 0 as libc::c_int;
+    return 0 as c_int;
 }
 
 pub unsafe fn dav1d_data_wrap_user_data_internal(
     buf: *mut Dav1dData,
     user_data: *const u8,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut libc::c_void) -> ()>,
-    cookie: *mut libc::c_void,
-) -> libc::c_int {
+    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
+    cookie: *mut c_void,
+) -> c_int {
     if buf.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"buf != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 35], &[libc::c_char; 35]>(
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"buf != NULL\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 35], &[c_char; 35]>(
                 b"dav1d_data_wrap_user_data_internal\0",
             ))
             .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22 as c_int);
     }
     if free_callback.is_none() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"free_callback != NULL\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 35], &[libc::c_char; 35]>(
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"free_callback != NULL\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 35], &[c_char; 35]>(
                 b"dav1d_data_wrap_user_data_internal\0",
             ))
             .as_ptr(),
         );
-        return -(22 as libc::c_int);
+        return -(22 as c_int);
     }
     (*buf).m.user_data.r#ref = dav1d_ref_wrap(user_data, free_callback, cookie);
     if ((*buf).m.user_data.r#ref).is_null() {
-        return -(12 as libc::c_int);
+        return -(12 as c_int);
     }
     (*buf).m.user_data.data = user_data;
-    return 0 as libc::c_int;
+    return 0 as c_int;
 }
 
 pub unsafe fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData) {
     if dst.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"dst != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"dav1d_data_ref\0"))
-                .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"dst != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 15], &[c_char; 15]>(b"dav1d_data_ref\0")).as_ptr(),
         );
         return;
     }
     if !((*dst).data).is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"dst->data == ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"dav1d_data_ref\0"))
-                .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"dst->data == ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 15], &[c_char; 15]>(b"dav1d_data_ref\0")).as_ptr(),
         );
         return;
     }
     if src.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"src != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"dav1d_data_ref\0"))
-                .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"src != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 15], &[c_char; 15]>(b"dav1d_data_ref\0")).as_ptr(),
         );
         return;
     }
@@ -166,11 +159,9 @@ pub unsafe fn dav1d_data_ref(dst: *mut Dav1dData, src: *const Dav1dData) {
         if ((*src).data).is_null() {
             fprintf(
                 stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                    as *const libc::c_char,
-                b"src->data != ((void*)0)\0" as *const u8 as *const libc::c_char,
-                (*::core::mem::transmute::<&[u8; 15], &[libc::c_char; 15]>(b"dav1d_data_ref\0"))
-                    .as_ptr(),
+                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+                b"src->data != ((void*)0)\0" as *const u8 as *const c_char,
+                (*::core::mem::transmute::<&[u8; 15], &[c_char; 15]>(b"dav1d_data_ref\0")).as_ptr(),
             );
             return;
         }
@@ -201,9 +192,9 @@ pub unsafe fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps) {
         unreachable!();
     }
     memset(
-        props as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<Dav1dDataProps>() as libc::c_ulong,
+        props as *mut c_void,
+        0 as c_int,
+        ::core::mem::size_of::<Dav1dDataProps>() as c_ulong,
     );
     (*props).timestamp = i64::MIN;
     (*props).offset = -1;
@@ -213,9 +204,9 @@ pub unsafe fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {
     if props.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"props != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 32], &[libc::c_char; 32]>(
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"props != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 32], &[c_char; 32]>(
                 b"dav1d_data_props_unref_internal\0",
             ))
             .as_ptr(),
@@ -231,12 +222,10 @@ pub unsafe fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
     if buf.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"buf != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
-                b"dav1d_data_unref_internal\0",
-            ))
-            .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"buf != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 26], &[c_char; 26]>(b"dav1d_data_unref_internal\0"))
+                .as_ptr(),
         );
         return;
     }
@@ -245,10 +234,9 @@ pub unsafe fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
         if ((*buf).data).is_null() {
             fprintf(
                 stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                    as *const libc::c_char,
-                b"buf->data != ((void*)0)\0" as *const u8 as *const libc::c_char,
-                (*::core::mem::transmute::<&[u8; 26], &[libc::c_char; 26]>(
+                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+                b"buf->data != ((void*)0)\0" as *const u8 as *const c_char,
+                (*::core::mem::transmute::<&[u8; 26], &[c_char; 26]>(
                     b"dav1d_data_unref_internal\0",
                 ))
                 .as_ptr(),
@@ -258,9 +246,9 @@ pub unsafe fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
         dav1d_ref_dec(&mut (*buf).r#ref);
     }
     memset(
-        buf as *mut libc::c_void,
-        0 as libc::c_int,
-        ::core::mem::size_of::<Dav1dData>() as libc::c_ulong,
+        buf as *mut c_void,
+        0 as c_int,
+        ::core::mem::size_of::<Dav1dData>() as c_ulong,
     );
     dav1d_data_props_set_defaults(&mut (*buf).m);
     dav1d_ref_dec(&mut user_data_ref);

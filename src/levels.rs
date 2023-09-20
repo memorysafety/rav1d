@@ -1,6 +1,7 @@
+use std::ffi::c_uint;
 use std::ops::Neg;
 
-pub type ObuMetaType = libc::c_uint;
+pub type ObuMetaType = c_uint;
 pub const OBU_META_TIMECODE: ObuMetaType = 5;
 pub const OBU_META_ITUT_T35: ObuMetaType = 4;
 pub const OBU_META_SCALABILITY: ObuMetaType = 3;
@@ -61,7 +62,7 @@ pub const DCT_ADST: TxfmType = 2;
 pub const ADST_DCT: TxfmType = 1;
 pub const DCT_DCT: TxfmType = 0;
 
-pub type TxClass = libc::c_uint;
+pub type TxClass = c_uint;
 pub const TX_CLASS_V: TxClass = 2;
 pub const TX_CLASS_H: TxClass = 1;
 pub const TX_CLASS_2D: TxClass = 0;
@@ -92,7 +93,7 @@ pub const HOR_PRED: IntraPredMode = 2;
 pub const VERT_PRED: IntraPredMode = 1;
 pub const DC_PRED: IntraPredMode = 0;
 
-pub type InterIntraPredMode = libc::c_uint;
+pub type InterIntraPredMode = c_uint;
 pub const N_INTER_INTRA_PRED_MODES: usize = 4;
 pub const II_SMOOTH_PRED: InterIntraPredMode = 3;
 pub const II_HOR_PRED: InterIntraPredMode = 2;
@@ -138,7 +139,7 @@ pub const BS_64x128: BlockSize = 2;
 pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
 
-pub type Filter2d = libc::c_uint;
+pub type Filter2d = c_uint;
 pub const N_2D_FILTERS: usize = 10; // TODO(kkysen) symbolicate in struct Dav1dMCDSPContext once deduplicated
 pub const FILTER_2D_BILINEAR: Filter2d = 9;
 pub const FILTER_2D_8TAP_SMOOTH_SHARP: Filter2d = 8;
@@ -151,7 +152,7 @@ pub const FILTER_2D_8TAP_REGULAR_SHARP: Filter2d = 2;
 pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
 pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
 
-pub type MVJoint = libc::c_uint;
+pub type MVJoint = c_uint;
 pub const N_MV_JOINTS: usize = 4;
 pub const MV_JOINT_HV: MVJoint = 3;
 pub const MV_JOINT_V: MVJoint = 2;
@@ -237,7 +238,7 @@ impl Neg for mv {
     }
 }
 
-pub type MotionMode = libc::c_uint;
+pub type MotionMode = c_uint;
 pub const MM_WARP: MotionMode = 2;
 pub const MM_OBMC: MotionMode = 1;
 pub const MM_TRANSLATION: MotionMode = 0;

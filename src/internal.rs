@@ -56,6 +56,8 @@ use crate::src::thread_data::thread_data;
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
 use libc::ptrdiff_t;
+use std::ffi::c_int;
+use std::ffi::c_uint;
 
 #[repr(C)]
 pub struct Dav1dDSPContext {
@@ -72,11 +74,11 @@ pub struct Dav1dDSPContext {
 #[repr(C)]
 pub struct Dav1dTileGroup {
     pub data: Dav1dData,
-    pub start: libc::c_int,
-    pub end: libc::c_int,
+    pub start: c_int,
+    pub end: c_int,
 }
 
-pub type TaskType = libc::c_uint;
+pub type TaskType = c_uint;
 pub const DAV1D_TASK_TYPE_FG_APPLY: TaskType = 12;
 pub const DAV1D_TASK_TYPE_FG_PREP: TaskType = 11;
 pub const DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS: TaskType = 10;
@@ -94,7 +96,7 @@ pub const DAV1D_TASK_TYPE_INIT: TaskType = 0;
 #[repr(C)]
 pub struct Dav1dContext_frame_thread {
     pub out_delayed: *mut Dav1dThreadPicture,
-    pub next: libc::c_uint,
+    pub next: c_uint,
 }
 
 #[derive(Clone, Copy)]
@@ -119,7 +121,7 @@ pub union TaskThreadData_grain_lut_scaling {
 
 #[repr(C)]
 pub struct TaskThreadData_delayed_fg {
-    pub exec: libc::c_int,
+    pub exec: c_int,
     pub cond: pthread_cond_t,
     pub in_0: *const Dav1dPicture,
     pub out: *mut Dav1dPicture,
@@ -133,11 +135,11 @@ pub struct TaskThreadData {
     pub lock: pthread_mutex_t,
     pub cond: pthread_cond_t,
     pub first: atomic_uint,
-    pub cur: libc::c_uint,
+    pub cur: c_uint,
     pub reset_task_cur: atomic_uint,
     pub cond_signaled: atomic_int,
     pub delayed_fg: TaskThreadData_delayed_fg,
-    pub inited: libc::c_int,
+    pub inited: c_int,
 }
 
 #[repr(C)]
@@ -145,7 +147,7 @@ pub struct Dav1dContext_refs {
     pub p: Dav1dThreadPicture,
     pub segmap: *mut Dav1dRef,
     pub refmvs: *mut Dav1dRef,
-    pub refpoc: [libc::c_uint; 7],
+    pub refpoc: [c_uint; 7],
 }
 
 #[repr(C)]
@@ -160,13 +162,13 @@ pub struct Dav1dContext_intra_edge {
 #[repr(C)]
 pub struct Dav1dContext {
     pub(crate) fc: *mut Dav1dFrameContext,
-    pub(crate) n_fc: libc::c_uint,
+    pub(crate) n_fc: c_uint,
     pub(crate) tc: *mut Dav1dTaskContext,
-    pub(crate) n_tc: libc::c_uint,
+    pub(crate) n_tc: c_uint,
     pub(crate) tile: *mut Dav1dTileGroup,
-    pub(crate) n_tile_data_alloc: libc::c_int,
-    pub(crate) n_tile_data: libc::c_int,
-    pub(crate) n_tiles: libc::c_int,
+    pub(crate) n_tile_data_alloc: c_int,
+    pub(crate) n_tile_data: c_int,
+    pub(crate) n_tiles: c_int,
     pub(crate) seq_hdr_pool: *mut Dav1dMemPool,
     pub(crate) seq_hdr_ref: *mut Dav1dRef,
     pub(crate) seq_hdr: *mut Dav1dSequenceHeader,
@@ -195,21 +197,21 @@ pub struct Dav1dContext {
     pub(crate) refmvs_dsp: Dav1dRefmvsDSPContext,
     pub(crate) intra_edge: Dav1dContext_intra_edge,
     pub(crate) allocator: Dav1dPicAllocator,
-    pub(crate) apply_grain: libc::c_int,
-    pub(crate) operating_point: libc::c_int,
-    pub(crate) operating_point_idc: libc::c_uint,
-    pub(crate) all_layers: libc::c_int,
-    pub(crate) max_spatial_id: libc::c_int,
-    pub(crate) frame_size_limit: libc::c_uint,
-    pub(crate) strict_std_compliance: libc::c_int,
-    pub(crate) output_invisible_frames: libc::c_int,
+    pub(crate) apply_grain: c_int,
+    pub(crate) operating_point: c_int,
+    pub(crate) operating_point_idc: c_uint,
+    pub(crate) all_layers: c_int,
+    pub(crate) max_spatial_id: c_int,
+    pub(crate) frame_size_limit: c_uint,
+    pub(crate) strict_std_compliance: c_int,
+    pub(crate) output_invisible_frames: c_int,
     pub(crate) inloop_filters: Dav1dInloopFilterType,
     pub(crate) decode_frame_type: Dav1dDecodeFrameType,
-    pub(crate) drain: libc::c_int,
+    pub(crate) drain: c_int,
     pub(crate) frame_flags: PictureFlags,
     pub(crate) event_flags: Dav1dEventFlags,
     pub(crate) cached_error_props: Dav1dDataProps,
-    pub(crate) cached_error: libc::c_int,
+    pub(crate) cached_error: c_int,
     pub(crate) logger: Dav1dLogger,
     pub(crate) picture_pool: *mut Dav1dMemPool,
 }
@@ -217,19 +219,19 @@ pub struct Dav1dContext {
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dTask {
-    pub frame_idx: libc::c_uint,
+    pub frame_idx: c_uint,
     pub type_0: TaskType,
-    pub sby: libc::c_int,
-    pub recon_progress: libc::c_int,
-    pub deblock_progress: libc::c_int,
-    pub deps_skip: libc::c_int,
+    pub sby: c_int,
+    pub recon_progress: c_int,
+    pub deblock_progress: c_int,
+    pub deps_skip: c_int,
     pub next: *mut Dav1dTask,
 }
 
 #[repr(C)]
 pub struct ScalableMotionParams {
-    pub scale: libc::c_int,
-    pub step: libc::c_int,
+    pub scale: c_int,
+    pub step: c_int,
 }
 
 #[repr(C)]
@@ -239,7 +241,7 @@ pub struct Dav1dFrameContext_bd_fn {
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> ()>,
+    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Dav1dTaskContext, c_int) -> ()>,
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
@@ -262,7 +264,7 @@ impl Dav1dFrameContext_bd_fn {
         context: *mut Dav1dTaskContext,
         block_size: BlockSize,
         block: *const Av1Block,
-    ) -> libc::c_int {
+    ) -> c_int {
         self.recon_b_inter.expect("non-null function pointer")(context, block_size, block)
     }
 
@@ -284,7 +286,7 @@ pub struct CodedBlockInfo {
 
 #[repr(C)]
 pub struct Dav1dFrameContext_frame_thread {
-    pub next_tile_row: [libc::c_int; 2],
+    pub next_tile_row: [c_int; 2],
     pub entropy_progress: atomic_int,
     pub deblock_progress: atomic_int,
     pub frame_progress: *mut atomic_uint,
@@ -294,11 +296,11 @@ pub struct Dav1dFrameContext_frame_thread {
     pub pal: *mut [[u16; 8]; 3],
     pub pal_idx: *mut u8,
     pub cf: *mut DynCoef,
-    pub prog_sz: libc::c_int,
-    pub pal_sz: libc::c_int,
-    pub pal_idx_sz: libc::c_int,
-    pub cf_sz: libc::c_int,
-    pub tile_start_off: *mut libc::c_int,
+    pub prog_sz: c_int,
+    pub pal_sz: c_int,
+    pub pal_idx_sz: c_int,
+    pub cf_sz: c_int,
+    pub tile_start_off: *mut c_int,
 }
 
 #[repr(C)]
@@ -306,14 +308,14 @@ pub struct Dav1dFrameContext_lf {
     pub level: *mut [u8; 4],
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
-    pub mask_sz: libc::c_int,
-    pub lr_mask_sz: libc::c_int,
-    pub cdef_buf_plane_sz: [libc::c_int; 2],
-    pub cdef_buf_sbh: libc::c_int,
-    pub lr_buf_plane_sz: [libc::c_int; 2],
-    pub re_sz: libc::c_int,
+    pub mask_sz: c_int,
+    pub lr_mask_sz: c_int,
+    pub cdef_buf_plane_sz: [c_int; 2],
+    pub cdef_buf_sbh: c_int,
+    pub lr_buf_plane_sz: [c_int; 2],
+    pub re_sz: c_int,
     pub lim_lut: Align16<Av1FilterLUT>,
-    pub last_sharpness: libc::c_int,
+    pub last_sharpness: c_int,
     pub lvl: [[[[u8; 2]; 8]; 4]; 8],
     pub tx_lpf_right_edge: [*mut u8; 2],
     pub cdef_line_buf: *mut u8,
@@ -322,13 +324,13 @@ pub struct Dav1dFrameContext_lf {
     pub cdef_lpf_line: [*mut DynPixel; 3],
     pub lr_lpf_line: [*mut DynPixel; 3],
     pub start_of_tile_row: *mut u8,
-    pub start_of_tile_row_sz: libc::c_int,
-    pub need_cdef_lpf_copy: libc::c_int,
+    pub start_of_tile_row_sz: c_int,
+    pub need_cdef_lpf_copy: c_int,
     pub p: [*mut DynPixel; 3],
     pub sr_p: [*mut DynPixel; 3],
     pub mask_ptr: *mut Av1Filter,
     pub prev_mask_ptr: *mut Av1Filter,
-    pub restore_planes: libc::c_int,
+    pub restore_planes: c_int,
 }
 
 #[repr(C)]
@@ -347,11 +349,11 @@ pub struct Dav1dFrameContext_task_thread {
     pub tasks: *mut Dav1dTask,
     pub tile_tasks: [*mut Dav1dTask; 2],
     pub init_task: Dav1dTask,
-    pub num_tasks: libc::c_int,
-    pub num_tile_tasks: libc::c_int,
+    pub num_tasks: c_int,
+    pub num_tile_tasks: c_int,
     pub init_done: atomic_int,
     pub done: [atomic_int; 2],
-    pub retval: libc::c_int,
+    pub retval: c_int,
     pub update_set: bool,
     pub error: atomic_int,
     pub task_counter: atomic_int,
@@ -363,8 +365,8 @@ pub struct Dav1dFrameContext_task_thread {
 
 #[repr(C)]
 pub struct FrameTileThreadData {
-    pub lowest_pixel_mem: *mut [[libc::c_int; 2]; 7],
-    pub lowest_pixel_mem_sz: libc::c_int,
+    pub lowest_pixel_mem: *mut [[c_int; 2]; 7],
+    pub lowest_pixel_mem_sz: c_int,
 }
 
 #[repr(C)]
@@ -384,42 +386,42 @@ pub struct Dav1dFrameContext {
     pub prev_segmap_ref: *mut Dav1dRef,
     pub cur_segmap: *mut u8,
     pub prev_segmap: *const u8,
-    pub refpoc: [libc::c_uint; 7],
-    pub refrefpoc: [[libc::c_uint; 7]; 7],
+    pub refpoc: [c_uint; 7],
+    pub refrefpoc: [[c_uint; 7]; 7],
     pub gmv_warp_allowed: [u8; 7],
     pub in_cdf: CdfThreadContext,
     pub out_cdf: CdfThreadContext,
     pub tile: *mut Dav1dTileGroup,
-    pub n_tile_data_alloc: libc::c_int,
-    pub n_tile_data: libc::c_int,
+    pub n_tile_data_alloc: c_int,
+    pub n_tile_data: c_int,
     pub svc: [[ScalableMotionParams; 2]; 7],
-    pub resize_step: [libc::c_int; 2],
-    pub resize_start: [libc::c_int; 2],
+    pub resize_step: [c_int; 2],
+    pub resize_start: [c_int; 2],
     pub c: *const Dav1dContext,
     pub ts: *mut Dav1dTileState,
-    pub n_ts: libc::c_int,
+    pub n_ts: c_int,
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
-    pub ipred_edge_sz: libc::c_int,
+    pub ipred_edge_sz: c_int,
     pub ipred_edge: [*mut DynPixel; 3],
     pub b4_stride: ptrdiff_t,
-    pub w4: libc::c_int,
-    pub h4: libc::c_int,
-    pub bw: libc::c_int,
-    pub bh: libc::c_int,
-    pub sb128w: libc::c_int,
-    pub sb128h: libc::c_int,
-    pub sbh: libc::c_int,
-    pub sb_shift: libc::c_int,
-    pub sb_step: libc::c_int,
-    pub sr_sb128w: libc::c_int,
+    pub w4: c_int,
+    pub h4: c_int,
+    pub bw: c_int,
+    pub bh: c_int,
+    pub sb128w: c_int,
+    pub sb128h: c_int,
+    pub sbh: c_int,
+    pub sb_shift: c_int,
+    pub sb_step: c_int,
+    pub sr_sb128w: c_int,
     pub dq: [[[u16; 2]; 3]; 8],
     pub qm: [[*const u8; 3]; 19],
     pub a: *mut BlockContext,
-    pub a_sz: libc::c_int,
+    pub a_sz: c_int,
     pub rf: refmvs_frame,
     pub jnt_weights: [[u8; 7]; 7],
-    pub bitdepth_max: libc::c_int,
+    pub bitdepth_max: c_int,
     pub frame_thread: Dav1dFrameContext_frame_thread,
     pub lf: Dav1dFrameContext_lf,
     pub task_thread: Dav1dFrameContext_task_thread,
@@ -428,12 +430,12 @@ pub struct Dav1dFrameContext {
 
 #[repr(C)]
 pub struct Dav1dTileState_tiling {
-    pub col_start: libc::c_int,
-    pub col_end: libc::c_int,
-    pub row_start: libc::c_int,
-    pub row_end: libc::c_int,
-    pub col: libc::c_int,
-    pub row: libc::c_int,
+    pub col_start: c_int,
+    pub col_end: c_int,
+    pub row_start: c_int,
+    pub row_end: c_int,
+    pub col: c_int,
+    pub row: c_int,
 }
 
 #[repr(C)]
@@ -449,10 +451,10 @@ pub struct Dav1dTileState {
     pub tiling: Dav1dTileState_tiling,
     pub progress: [atomic_int; 2],
     pub frame_thread: [Dav1dTileState_frame_thread; 2],
-    pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
+    pub lowest_pixel: *mut [[c_int; 2]; 7],
     pub dqmem: [[[u16; 2]; 3]; 8],
     pub dq: *const [[u16; 2]; 3],
-    pub last_qidx: libc::c_int,
+    pub last_qidx: c_int,
     pub last_delta_lf: [i8; 4],
     pub lflvlmem: [[[[u8; 2]; 8]; 4]; 8],
     pub lflvl: *const [[[u8; 2]; 8]; 4],
@@ -547,7 +549,7 @@ pub union Dav1dTaskContext_scratch {
 
 #[repr(C)]
 pub struct Dav1dTaskContext_frame_thread {
-    pub pass: libc::c_int,
+    pub pass: c_int,
 }
 
 #[repr(C)]
@@ -564,8 +566,8 @@ pub struct Dav1dTaskContext {
     pub c: *const Dav1dContext,
     pub f: *const Dav1dFrameContext,
     pub ts: *mut Dav1dTileState,
-    pub bx: libc::c_int,
-    pub by: libc::c_int,
+    pub bx: c_int,
+    pub by: c_int,
     pub l: BlockContext,
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
@@ -576,7 +578,7 @@ pub struct Dav1dTaskContext {
     pub scratch: Dav1dTaskContext_scratch,
     pub warpmv: Dav1dWarpedMotionParams,
     pub lf_mask: *mut Av1Filter,
-    pub top_pre_cdef_toggle: libc::c_int,
+    pub top_pre_cdef_toggle: c_int,
     pub cur_sb_cdef_idx_ptr: *mut i8,
     pub tl_4x4_filter: Filter2d,
     pub frame_thread: Dav1dTaskContext_frame_thread,

@@ -2,23 +2,23 @@ use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::stderr;
 use std::cmp;
+use std::ffi::c_char;
+use std::ffi::c_int;
+use std::ffi::c_uint;
+use std::ffi::c_ulong;
+use std::ffi::c_void;
 
 extern "C" {
     pub type DemuxerPriv;
-    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn fread(
-        _: *mut libc::c_void,
-        _: libc::c_ulong,
-        _: libc::c_ulong,
-        _: *mut libc::FILE,
-    ) -> libc::c_ulong;
-    fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
-    fn calloc(_: libc::c_ulong, _: libc::c_ulong) -> *mut libc::c_void;
-    fn free(_: *mut libc::c_void);
-    fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
-    fn strerror(_: libc::c_int) -> *mut libc::c_char;
+    fn fclose(__stream: *mut libc::FILE) -> c_int;
+    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
+    fn fread(_: *mut c_void, _: c_ulong, _: c_ulong, _: *mut libc::FILE) -> c_ulong;
+    fn malloc(_: c_ulong) -> *mut c_void;
+    fn calloc(_: c_ulong, _: c_ulong) -> *mut c_void;
+    fn free(_: *mut c_void);
+    fn strcmp(_: *const c_char, _: *const c_char) -> c_int;
+    fn strerror(_: c_int) -> *mut c_char;
     static ivf_demuxer: Demuxer;
     static annexb_demuxer: Demuxer;
     static section5_demuxer: Demuxer;
@@ -33,21 +33,21 @@ pub struct DemuxerContext {
 
 #[repr(C)]
 pub struct Demuxer {
-    pub priv_data_size: libc::c_int,
-    pub name: *const libc::c_char,
-    pub probe_sz: libc::c_int,
-    pub probe: Option<unsafe extern "C" fn(*const u8) -> libc::c_int>,
+    pub priv_data_size: c_int,
+    pub name: *const c_char,
+    pub probe_sz: c_int,
+    pub probe: Option<unsafe extern "C" fn(*const u8) -> c_int>,
     pub open: Option<
         unsafe extern "C" fn(
             *mut DemuxerPriv,
-            *const libc::c_char,
-            *mut libc::c_uint,
-            *mut libc::c_uint,
-            *mut libc::c_uint,
-        ) -> libc::c_int,
+            *const c_char,
+            *mut c_uint,
+            *mut c_uint,
+            *mut c_uint,
+        ) -> c_int,
     >,
-    pub read: Option<unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> libc::c_int>,
-    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, u64) -> libc::c_int>,
+    pub read: Option<unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> c_int>,
+    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, u64) -> c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 
@@ -63,18 +63,18 @@ static mut demuxers: [*const Demuxer; 4] = unsafe {
 #[no_mangle]
 pub unsafe extern "C" fn input_open(
     c_out: *mut *mut DemuxerContext,
-    name: *const libc::c_char,
-    filename: *const libc::c_char,
-    fps: *mut libc::c_uint,
-    num_frames: *mut libc::c_uint,
-    timebase: *mut libc::c_uint,
-) -> libc::c_int {
+    name: *const c_char,
+    filename: *const c_char,
+    fps: *mut c_uint,
+    num_frames: *mut c_uint,
+    timebase: *mut c_uint,
+) -> c_int {
     let mut impl_0: *const Demuxer = 0 as *const Demuxer;
     let c: *mut DemuxerContext;
     let mut res;
     let mut i;
     if !name.is_null() {
-        i = 0 as libc::c_int;
+        i = 0 as c_int;
         while !(demuxers[i as usize]).is_null() {
             if strcmp((*demuxers[i as usize]).name, name) == 0 {
                 impl_0 = demuxers[i as usize];
@@ -86,60 +86,60 @@ pub unsafe extern "C" fn input_open(
         if (demuxers[i as usize]).is_null() {
             fprintf(
                 stderr,
-                b"Failed to find demuxer named \"%s\"\n\0" as *const u8 as *const libc::c_char,
+                b"Failed to find demuxer named \"%s\"\n\0" as *const u8 as *const c_char,
                 name,
             );
-            return -(92 as libc::c_int);
+            return -(92 as c_int);
         }
     } else {
         let mut probe_sz = 0;
-        i = 0 as libc::c_int;
+        i = 0 as c_int;
         while !(demuxers[i as usize]).is_null() {
             probe_sz = cmp::max(probe_sz, (*demuxers[i as usize]).probe_sz);
             i += 1;
         }
-        let probe_data: *mut u8 = malloc(probe_sz as libc::c_ulong) as *mut u8;
+        let probe_data: *mut u8 = malloc(probe_sz as c_ulong) as *mut u8;
         if probe_data.is_null() {
             fprintf(
                 stderr,
-                b"Failed to allocate memory\n\0" as *const u8 as *const libc::c_char,
+                b"Failed to allocate memory\n\0" as *const u8 as *const c_char,
             );
-            return -(12 as libc::c_int);
+            return -(12 as c_int);
         }
-        let f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const libc::c_char);
+        let f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const c_char);
         if f.is_null() {
             fprintf(
                 stderr,
-                b"Failed to open input file %s: %s\n\0" as *const u8 as *const libc::c_char,
+                b"Failed to open input file %s: %s\n\0" as *const u8 as *const c_char,
                 filename,
                 strerror(*errno_location()),
             );
             return if *errno_location() != 0 {
                 -*errno_location()
             } else {
-                -(5 as libc::c_int)
+                -(5 as c_int)
             };
         }
         res = (fread(
-            probe_data as *mut libc::c_void,
-            1 as libc::c_int as libc::c_ulong,
-            probe_sz as libc::c_ulong,
+            probe_data as *mut c_void,
+            1 as c_int as c_ulong,
+            probe_sz as c_ulong,
             f,
-        ) != 0) as libc::c_int;
+        ) != 0) as c_int;
         fclose(f);
         if res == 0 {
-            free(probe_data as *mut libc::c_void);
+            free(probe_data as *mut c_void);
             fprintf(
                 stderr,
-                b"Failed to read probe data\n\0" as *const u8 as *const libc::c_char,
+                b"Failed to read probe data\n\0" as *const u8 as *const c_char,
             );
             return if *errno_location() != 0 {
                 -*errno_location()
             } else {
-                -(5 as libc::c_int)
+                -(5 as c_int)
             };
         }
-        i = 0 as libc::c_int;
+        i = 0 as c_int;
         while !(demuxers[i as usize]).is_null() {
             if ((*demuxers[i as usize]).probe).expect("non-null function pointer")(probe_data) != 0
             {
@@ -149,26 +149,26 @@ pub unsafe extern "C" fn input_open(
                 i += 1;
             }
         }
-        free(probe_data as *mut libc::c_void);
+        free(probe_data as *mut c_void);
         if (demuxers[i as usize]).is_null() {
             fprintf(
                 stderr,
-                b"Failed to probe demuxer for file %s\n\0" as *const u8 as *const libc::c_char,
+                b"Failed to probe demuxer for file %s\n\0" as *const u8 as *const c_char,
                 filename,
             );
-            return -(92 as libc::c_int);
+            return -(92 as c_int);
         }
     }
     c = calloc(
-        1 as libc::c_int as libc::c_ulong,
-        (16 as libc::c_ulong).wrapping_add((*impl_0).priv_data_size as libc::c_ulong),
+        1 as c_int as c_ulong,
+        (16 as c_ulong).wrapping_add((*impl_0).priv_data_size as c_ulong),
     ) as *mut DemuxerContext;
     if c.is_null() {
         fprintf(
             stderr,
-            b"Failed to allocate memory\n\0" as *const u8 as *const libc::c_char,
+            b"Failed to allocate memory\n\0" as *const u8 as *const c_char,
         );
-        return -(12 as libc::c_int);
+        return -(12 as c_int);
     }
     (*c).impl_0 = impl_0;
     (*c).data = ((*c).priv_data).as_mut_ptr() as *mut DemuxerPriv;
@@ -180,29 +180,29 @@ pub unsafe extern "C" fn input_open(
         timebase,
     );
     if res < 0 {
-        free(c as *mut libc::c_void);
+        free(c as *mut c_void);
         return res;
     }
     *c_out = c;
-    return 0 as libc::c_int;
+    return 0 as c_int;
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> libc::c_int {
+pub unsafe extern "C" fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> c_int {
     return ((*(*ctx).impl_0).read).expect("non-null function pointer")((*ctx).data, data);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> libc::c_int {
+pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> c_int {
     return if ((*(*ctx).impl_0).seek).is_some() {
         ((*(*ctx).impl_0).seek).expect("non-null function pointer")((*ctx).data, pts)
     } else {
-        -(1 as libc::c_int)
+        -(1 as c_int)
     };
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn input_close(ctx: *mut DemuxerContext) {
     ((*(*ctx).impl_0).close).expect("non-null function pointer")((*ctx).data);
-    free(ctx as *mut libc::c_void);
+    free(ctx as *mut c_void);
 }
