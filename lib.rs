@@ -108,7 +108,7 @@ pub mod src {
     mod recon_tmpl_16;
     #[cfg(feature = "bitdepth_8")]
     mod recon_tmpl_8;
-    pub mod r#ref;
+    pub(crate) mod r#ref;
     mod refmvs;
     mod scan;
     mod tables;

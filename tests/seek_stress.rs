@@ -23,6 +23,7 @@ use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::dav1d::Dav1dContext;
 use rav1d::include::dav1d::dav1d::Dav1dLogger;
+use rav1d::include::dav1d::dav1d::Dav1dRef;
 use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::headers::Dav1dColorPrimaries;
@@ -54,7 +55,6 @@ use rav1d::src::lib::dav1d_picture_unref;
 use rav1d::src::lib::dav1d_send_data;
 use rav1d::src::lib::dav1d_version;
 use rav1d::src::lib::Dav1dSettings;
-use rav1d::src::r#ref::Dav1dRef;
 #[path = "../tools/dav1d_cli_parse.rs"]
 mod dav1d_cli_parse;
 extern "C" {
