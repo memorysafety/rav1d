@@ -1,3 +1,9 @@
+// TODO(kkysen)
+// In C, this is an incomplete type.
+// This can be mimicked in Rust with type alias impl trait,
+// but that is still unstable, so the type is just `pub` for now.
+pub use crate::src::internal::Dav1dContext;
+
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dLogger {

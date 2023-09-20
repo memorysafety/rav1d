@@ -59,7 +59,8 @@ pub mod src {
     #[cfg(feature = "bitdepth_8")]
     mod filmgrain_tmpl_8;
     mod getbits;
-    mod internal;
+    // TODO(kkysen) Temporarily `pub(crate)` due to a `pub use` until TAIT.
+    pub(super) mod internal;
     mod intra_edge;
     mod ipred;
     mod ipred_prepare;
