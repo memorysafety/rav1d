@@ -64,7 +64,6 @@ use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
-use crate::include::stddef::*;
 use crate::src::cdf::dav1d_cdf_thread_ref;
 use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::data::dav1d_data_props_copy;
@@ -111,9 +110,9 @@ use libc::pthread_mutex_unlock;
 use std::cmp;
 
 extern "C" {
-    fn realloc(_: *mut libc::c_void, _: size_t) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
-    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: size_t) -> libc::c_int;
+    fn realloc(_: *mut libc::c_void, _: usize) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: usize) -> *mut libc::c_void;
+    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: usize) -> libc::c_int;
     fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
@@ -1739,10 +1738,10 @@ pub unsafe extern "C" fn dav1d_parse_obus(
     if !(init_bit_pos & 7 as libc::c_uint == 0 as libc::c_uint) {
         unreachable!();
     }
-    if !((*in_0).sz >= init_byte_pos as size_t) {
+    if !((*in_0).sz >= init_byte_pos as usize) {
         unreachable!();
     }
-    if len as size_t > ((*in_0).sz).wrapping_sub(init_byte_pos as size_t) {
+    if len as usize > ((*in_0).sz).wrapping_sub(init_byte_pos as usize) {
         return dav1d_parse_obus_error(c, in_0);
     }
     if type_0 as libc::c_uint != DAV1D_OBU_SEQ_HDR as libc::c_int as libc::c_uint
@@ -1934,7 +1933,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     } else {
                         let ref_3: *mut Dav1dRef = dav1d_ref_create(
                             (::core::mem::size_of::<Dav1dITUTT35>()).wrapping_add(
-                                (payload_size as size_t).wrapping_mul(::core::mem::size_of::<u8>()),
+                                (payload_size as usize).wrapping_mul(::core::mem::size_of::<u8>()),
                             ),
                         );
                         if ref_3.is_null() {
@@ -1953,7 +1952,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                                 dav1d_get_bits(&mut gb, 8 as libc::c_int) as u8;
                             i_2 += 1;
                         }
-                        (*itut_t35_metadata).payload_size = payload_size as size_t;
+                        (*itut_t35_metadata).payload_size = payload_size as usize;
                         dav1d_ref_dec(&mut (*c).itut_t35_ref);
                         (*c).itut_t35 = itut_t35_metadata;
                         (*c).itut_t35_ref = ref_3;
@@ -2079,7 +2078,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     }
                     let tile: *mut Dav1dTileGroup = realloc(
                         (*c).tile as *mut libc::c_void,
-                        (((*c).n_tile_data + 1) as size_t)
+                        (((*c).n_tile_data + 1) as usize)
                             .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>()),
                     ) as *mut Dav1dTileGroup;
                     if tile.is_null() {
@@ -2113,7 +2112,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                 let ref mut fresh0 = (*((*c).tile).offset((*c).n_tile_data as isize)).data.data;
                 *fresh0 = (*fresh0).offset((bit_pos >> 3) as isize);
                 (*((*c).tile).offset((*c).n_tile_data as isize)).data.sz =
-                    pkt_bytelen.wrapping_sub(bit_pos >> 3) as size_t;
+                    pkt_bytelen.wrapping_sub(bit_pos >> 3) as usize;
                 if (*((*c).tile).offset((*c).n_tile_data as isize)).start
                     > (*((*c).tile).offset((*c).n_tile_data as isize)).end
                     || (*((*c).tile).offset((*c).n_tile_data as isize)).start != (*c).n_tiles

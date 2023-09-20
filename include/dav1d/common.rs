@@ -1,4 +1,3 @@
-use crate::include::stddef::size_t;
 use crate::src::r#ref::Dav1dRef;
 use std::ptr;
 
@@ -24,6 +23,6 @@ pub struct Dav1dDataProps {
     pub timestamp: i64,
     pub duration: i64,
     pub offset: libc::off_t,
-    pub size: size_t,
+    pub size: usize,
     pub user_data: Dav1dUserData,
 }

@@ -1,6 +1,5 @@
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-use crate::include::stddef::*;
 use crate::src::r#ref::dav1d_ref_create;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
@@ -13,7 +12,7 @@ extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
 }
 
-pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mut u8 {
+pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
     if buf.is_null() {
         fprintf(
             stderr,
@@ -26,7 +25,7 @@ pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mu
         );
         return 0 as *mut u8;
     }
-    if sz > libc::size_t::MAX / 2 {
+    if sz > usize::MAX / 2 {
         return 0 as *mut u8;
     }
     (*buf).r#ref = dav1d_ref_create(sz);
@@ -43,7 +42,7 @@ pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mu
 pub unsafe fn dav1d_data_wrap_internal(
     buf: *mut Dav1dData,
     ptr: *const u8,
-    sz: size_t,
+    sz: usize,
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut libc::c_void) -> ()>,
     cookie: *mut libc::c_void,
 ) -> libc::c_int {

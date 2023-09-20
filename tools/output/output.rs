@@ -1,4 +1,3 @@
-use libc::size_t;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::stderr;
@@ -7,14 +6,14 @@ use std::cmp;
 extern "C" {
     pub type MuxerPriv;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn snprintf(_: *mut libc::c_char, _: size_t, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn malloc(_: size_t) -> *mut libc::c_void;
+    fn snprintf(_: *mut libc::c_char, _: usize, _: *const libc::c_char, _: ...) -> libc::c_int;
+    fn malloc(_: usize) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: usize) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
-    fn strncmp(_: *const libc::c_char, _: *const libc::c_char, _: size_t) -> libc::c_int;
+    fn strncmp(_: *const libc::c_char, _: *const libc::c_char, _: usize) -> libc::c_int;
     fn strchr(_: *const libc::c_char, _: libc::c_int) -> *mut libc::c_char;
-    fn strlen(_: *const libc::c_char) -> size_t;
+    fn strlen(_: *const libc::c_char) -> usize;
     static null_muxer: Muxer;
     static md5_muxer: Muxer;
     static yuv_muxer: Muxer;
@@ -62,7 +61,7 @@ static mut muxers: [*const Muxer; 5] = unsafe {
 };
 
 unsafe extern "C" fn find_extension(f: *const libc::c_char) -> *const libc::c_char {
-    let l: size_t = strlen(f);
+    let l: usize = strlen(f);
     if l == 0 {
         return 0 as *const libc::c_char;
     }
@@ -154,8 +153,7 @@ pub unsafe extern "C" fn output_open(
             return -(92 as libc::c_int);
         }
     }
-    c = malloc((48 as size_t).wrapping_add((*impl_0).priv_data_size as size_t))
-        as *mut MuxerContext;
+    c = malloc((48 as usize).wrapping_add((*impl_0).priv_data_size as usize)) as *mut MuxerContext;
     if c.is_null() {
         fprintf(
             stderr,
@@ -222,7 +220,7 @@ unsafe extern "C" fn safe_strncat(
     memcpy(
         dst.offset(dst_fill as isize) as *mut libc::c_void,
         src as *const libc::c_void,
-        to_copy as size_t,
+        to_copy as usize,
     );
     *dst.offset((dst_fill + to_copy) as isize) = 0 as libc::c_int as libc::c_char;
 }

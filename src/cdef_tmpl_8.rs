@@ -610,7 +610,7 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased(
         dir,
         damping,
         4,
-        edges as size_t,
+        edges as usize,
     );
 }
 
@@ -644,7 +644,7 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased(
         dir,
         damping,
         8,
-        edges as size_t,
+        edges as usize,
     );
 }
 
@@ -678,7 +678,7 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased(
         dir,
         damping,
         8,
-        edges as size_t,
+        edges as usize,
     );
 }
 

@@ -1,5 +1,4 @@
 use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::stddef::size_t;
 use crate::src::r#ref::Dav1dRef;
 use std::ptr;
 
@@ -7,7 +6,7 @@ use std::ptr;
 #[repr(C)]
 pub struct Dav1dData {
     pub data: *const u8,
-    pub sz: size_t,
+    pub sz: usize,
     pub r#ref: *mut Dav1dRef,
     pub m: Dav1dDataProps,
 }

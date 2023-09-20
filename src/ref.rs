@@ -1,5 +1,4 @@
 use crate::include::stdatomic::atomic_int;
-use crate::include::stddef::*;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
 use crate::src::mem::dav1d_mem_pool_pop;
@@ -34,14 +33,14 @@ unsafe extern "C" fn default_free_callback(data: *const u8, user_data: *mut libc
     dav1d_free_aligned(user_data);
 }
 
-pub unsafe fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
+pub unsafe fn dav1d_ref_create(mut size: usize) -> *mut Dav1dRef {
     size = size
         .wrapping_add(::core::mem::size_of::<*mut libc::c_void>())
         .wrapping_sub(1)
         & !(::core::mem::size_of::<*mut libc::c_void>()).wrapping_sub(1);
     let data: *mut u8 = dav1d_alloc_aligned(
         size.wrapping_add(::core::mem::size_of::<Dav1dRef>()),
-        64 as libc::c_int as size_t,
+        64 as libc::c_int as usize,
     ) as *mut u8;
     if data.is_null() {
         return 0 as *mut Dav1dRef;
@@ -66,7 +65,7 @@ unsafe extern "C" fn pool_free_callback(data: *const u8, user_data: *mut libc::c
 
 pub unsafe fn dav1d_ref_create_using_pool(
     pool: *mut Dav1dMemPool,
-    mut size: size_t,
+    mut size: usize,
 ) -> *mut Dav1dRef {
     size = size
         .wrapping_add(::core::mem::size_of::<*mut libc::c_void>())

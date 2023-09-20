@@ -2,7 +2,6 @@ use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::stddef::ptrdiff_t;
-use crate::include::stddef::size_t;
 use crate::include::stdint::intptr_t;
 
 #[inline]
@@ -48,7 +47,7 @@ pub type fgy_32x32xn_fn = Option<
         *const DynPixel,
         ptrdiff_t,
         *const Dav1dFilmGrainData,
-        size_t,
+        usize,
         *const u8,
         *const [DynEntry; GRAIN_WIDTH],
         libc::c_int,
@@ -63,7 +62,7 @@ pub type fguv_32x32xn_fn = Option<
         *const DynPixel,
         ptrdiff_t,
         *const Dav1dFilmGrainData,
-        size_t,
+        usize,
         *const u8,
         *const [DynEntry; GRAIN_WIDTH],
         libc::c_int,

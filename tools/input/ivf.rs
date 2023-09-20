@@ -1,7 +1,6 @@
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::stddef::ptrdiff_t;
-use rav1d::include::stddef::size_t;
 use rav1d::src::lib::dav1d_data_create;
 use rav1d::src::lib::dav1d_data_unref;
 use rav1d::stderr;
@@ -11,10 +10,10 @@ extern "C" {
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn fread(_: *mut libc::c_void, _: size_t, _: size_t, _: *mut libc::FILE) -> libc::c_ulong;
+    fn fread(_: *mut libc::c_void, _: usize, _: usize, _: *mut libc::FILE) -> libc::c_ulong;
     fn fseeko(__stream: *mut libc::FILE, __off: libc::off_t, __whence: libc::c_int) -> libc::c_int;
     fn ftello(__stream: *mut libc::FILE) -> libc::off_t;
-    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: size_t) -> libc::c_int;
+    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: usize) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
 }
 
@@ -164,7 +163,7 @@ unsafe extern "C" fn ivf_open(
     while !(fread(data.as_mut_ptr() as *mut libc::c_void, 4, 1, (*c).f)
         != 1 as libc::c_int as libc::c_ulong)
     {
-        let sz: size_t = rl32(data.as_mut_ptr()) as size_t;
+        let sz: usize = rl32(data.as_mut_ptr()) as usize;
         if fread(data.as_mut_ptr() as *mut libc::c_void, 8, 1, (*c).f)
             != 1 as libc::c_int as libc::c_ulong
         {
@@ -261,11 +260,11 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> l
     if ivf_read_header(c, &mut sz, &mut off, &mut ts) != 0 {
         return -(1 as libc::c_int);
     }
-    ptr = dav1d_data_create(buf, sz as size_t);
+    ptr = dav1d_data_create(buf, sz as usize);
     if ptr.is_null() {
         return -(1 as libc::c_int);
     }
-    if fread(ptr as *mut libc::c_void, sz as size_t, 1, (*c).f) != 1 as libc::c_int as libc::c_ulong
+    if fread(ptr as *mut libc::c_void, sz as usize, 1, (*c).f) != 1 as libc::c_int as libc::c_ulong
     {
         fprintf(
             stderr,

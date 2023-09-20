@@ -1431,11 +1431,11 @@ pub unsafe fn dav1d_refmvs_init_frame(
         let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as libc::c_int;
         (*rf).r = dav1d_alloc_aligned(
             (::core::mem::size_of::<refmvs_block>())
-                .wrapping_mul(35 as size_t)
-                .wrapping_mul(r_stride as size_t)
-                .wrapping_mul(n_tile_rows as size_t)
-                .wrapping_mul((1 + uses_2pass) as size_t),
-            64 as libc::c_int as size_t,
+                .wrapping_mul(35 as usize)
+                .wrapping_mul(r_stride as usize)
+                .wrapping_mul(n_tile_rows as usize)
+                .wrapping_mul((1 + uses_2pass) as usize),
+            64 as libc::c_int as usize,
         ) as *mut refmvs_block;
         if ((*rf).r).is_null() {
             return -(12 as libc::c_int);
@@ -1451,10 +1451,10 @@ pub unsafe fn dav1d_refmvs_init_frame(
         }
         (*rf).rp_proj = dav1d_alloc_aligned(
             (::core::mem::size_of::<refmvs_temporal_block>())
-                .wrapping_mul(16 as size_t)
-                .wrapping_mul(rp_stride as size_t)
-                .wrapping_mul(n_tile_rows as size_t),
-            64 as size_t,
+                .wrapping_mul(16 as usize)
+                .wrapping_mul(rp_stride as usize)
+                .wrapping_mul(n_tile_rows as usize),
+            64 as usize,
         ) as *mut refmvs_temporal_block;
         if ((*rf).rp_proj).is_null() {
             return -(12 as libc::c_int);

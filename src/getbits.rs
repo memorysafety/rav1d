@@ -1,6 +1,5 @@
 use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
-use crate::include::stddef::*;
 
 #[repr(C)]
 pub struct GetBits {
@@ -12,7 +11,7 @@ pub struct GetBits {
     pub ptr_end: *const u8,
 }
 
-pub unsafe fn dav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: size_t) {
+pub unsafe fn dav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: usize) {
     if sz == 0 {
         unreachable!();
     }

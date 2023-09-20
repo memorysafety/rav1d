@@ -4,9 +4,6 @@ use crate::include::common::intops::apply_sign;
 use crate::include::stddef::ptrdiff_t;
 use std::cmp;
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-use crate::include::stddef::size_t;
-
 pub type CdefEdgeFlags = libc::c_uint;
 pub const CDEF_HAVE_BOTTOM: CdefEdgeFlags = 8;
 pub const CDEF_HAVE_TOP: CdefEdgeFlags = 4;
@@ -305,7 +302,7 @@ extern "C" {
         dir: libc::c_int,
         damping: libc::c_int,
         h: libc::c_int,
-        edges: size_t,
+        edges: usize,
     );
     pub(crate) fn dav1d_cdef_filter8_8bpc_neon(
         dst: *mut DynPixel,
@@ -316,7 +313,7 @@ extern "C" {
         dir: libc::c_int,
         damping: libc::c_int,
         h: libc::c_int,
-        edges: size_t,
+        edges: usize,
     );
 }
 
@@ -511,7 +508,7 @@ extern "C" {
         dir: libc::c_int,
         damping: libc::c_int,
         h: libc::c_int,
-        edges: size_t,
+        edges: usize,
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter8_16bpc_neon(
@@ -523,7 +520,7 @@ extern "C" {
         dir: libc::c_int,
         damping: libc::c_int,
         h: libc::c_int,
-        edges: size_t,
+        edges: usize,
         bitdepth_max: libc::c_int,
     );
 }

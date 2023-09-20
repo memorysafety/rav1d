@@ -12,7 +12,7 @@ use crate::src::lr_apply::LR_RESTORE_Y;
 use std::cmp;
 
 extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: usize) -> *mut libc::c_void;
 }
 
 pub type pixel = u8;
@@ -48,26 +48,26 @@ unsafe extern "C" fn backup_lpf(
                 &mut *dst.offset((dst_stride * 0isize) as isize) as *mut pixel as *mut libc::c_void,
                 &mut *dst.offset((dst_stride * top as isize) as isize) as *mut pixel
                     as *const libc::c_void,
-                dst_w as size_t,
+                dst_w as usize,
             );
             memcpy(
                 &mut *dst.offset((dst_stride * 1) as isize) as *mut pixel as *mut libc::c_void,
                 &mut *dst.offset((dst_stride * (top + 1) as isize) as isize) as *mut pixel
                     as *const libc::c_void,
-                dst_w as size_t,
+                dst_w as usize,
             );
             memcpy(
                 &mut *dst.offset((dst_stride * 2) as isize) as *mut pixel as *mut libc::c_void,
                 &mut *dst.offset((dst_stride * (top + 2) as isize) as isize) as *mut pixel
                     as *const libc::c_void,
-                dst_w as size_t,
+                dst_w as usize,
             );
             memcpy(
                 &mut *dst.offset((dst_stride * 3 as isize) as isize) as *mut pixel
                     as *mut libc::c_void,
                 &mut *dst.offset((dst_stride * (top + 3) as isize) as isize) as *mut pixel
                     as *const libc::c_void,
-                dst_w as size_t,
+                dst_w as usize,
             );
         }
         dst = dst.offset((4 as libc::c_int as isize * dst_stride) as isize);
@@ -95,7 +95,7 @@ unsafe extern "C" fn backup_lpf(
                 memcpy(
                     dst as *mut libc::c_void,
                     &mut *dst.offset(-dst_stride as isize) as *mut pixel as *const libc::c_void,
-                    dst_w as size_t,
+                    dst_w as usize,
                 );
                 dst = dst.offset(dst_stride as isize);
             }
@@ -112,7 +112,7 @@ unsafe extern "C" fn backup_lpf(
                     } else {
                         src
                     }) as *const libc::c_void,
-                    src_w as size_t,
+                    src_w as usize,
                 );
                 dst = dst.offset(dst_stride as isize);
                 src = src.offset(src_stride as isize);

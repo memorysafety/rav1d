@@ -1,4 +1,3 @@
-use crate::include::stddef::*;
 use crate::include::stdint::*;
 use libc::pthread_mutex_destroy;
 use libc::pthread_mutex_init;
@@ -12,8 +11,8 @@ extern "C" {
     fn free(_: *mut libc::c_void);
     fn posix_memalign(
         __memptr: *mut *mut libc::c_void,
-        __alignment: size_t,
-        __size: size_t,
+        __alignment: usize,
+        __size: usize,
     ) -> libc::c_int;
 }
 
@@ -32,7 +31,7 @@ pub struct Dav1dMemPoolBuffer {
 }
 
 #[inline]
-pub unsafe extern "C" fn dav1d_alloc_aligned(sz: size_t, align: size_t) -> *mut libc::c_void {
+pub unsafe extern "C" fn dav1d_alloc_aligned(sz: usize, align: usize) -> *mut libc::c_void {
     if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
@@ -92,7 +91,7 @@ pub unsafe fn dav1d_mem_pool_push(pool: *mut Dav1dMemPool, buf: *mut Dav1dMemPoo
     };
 }
 
-pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut Dav1dMemPoolBuffer {
+pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: usize) -> *mut Dav1dMemPoolBuffer {
     if size & ::core::mem::size_of::<*mut libc::c_void>().wrapping_sub(1) != 0 {
         unreachable!();
     }

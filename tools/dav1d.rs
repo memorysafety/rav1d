@@ -57,7 +57,7 @@ use rav1d::stderr;
 extern "C" {
     pub type DemuxerContext;
     pub type MuxerContext;
-    fn malloc(_: size_t) -> *mut libc::c_void;
+    fn malloc(_: usize) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fflush(__stream: *mut libc::FILE) -> libc::c_int;
@@ -71,7 +71,7 @@ extern "C" {
     ) -> libc::c_int;
     fn fputs(__s: *const libc::c_char, __stream: *mut libc::FILE) -> libc::c_int;
     fn fileno(__stream: *mut libc::FILE) -> libc::c_int;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: usize) -> *mut libc::c_void;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn strcpy(_: *mut libc::c_char, _: *const libc::c_char) -> *mut libc::c_char;
@@ -273,9 +273,9 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut libc::c_void) -
     }
     (*p).stride[0] = -y_stride;
     (*p).stride[1] = -uv_stride;
-    let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
-    let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
-    let pic_size: size_t = y_sz.wrapping_add(2 * uv_sz);
+    let y_sz: usize = (y_stride * aligned_h as isize) as usize;
+    let uv_sz: usize = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
+    let pic_size: usize = y_sz.wrapping_add(2 * uv_sz);
     let buf: *mut u8 = malloc(pic_size.wrapping_add(64)) as *mut u8;
     if buf.is_null() {
         return -(12 as libc::c_int);

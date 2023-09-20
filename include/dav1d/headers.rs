@@ -1,5 +1,3 @@
-use crate::include::stddef::size_t;
-
 pub type Dav1dObuType = libc::c_uint;
 pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
 pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
@@ -158,7 +156,7 @@ pub struct Dav1dMasteringDisplay {
 pub struct Dav1dITUTT35 {
     pub country_code: u8,
     pub country_code_extension_byte: u8,
-    pub payload_size: size_t,
+    pub payload_size: usize,
     pub payload: *mut u8,
 }
 

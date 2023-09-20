@@ -12,7 +12,7 @@ use crate::src::lr_apply::LR_RESTORE_Y;
 use std::cmp;
 
 extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: usize) -> *mut libc::c_void;
 }
 
 pub type pixel = u16;
@@ -61,7 +61,7 @@ unsafe extern "C" fn backup_lpf(
                     ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
                         * top as isize) as isize,
                 ) as *mut pixel as *const libc::c_void,
-                (dst_w << 1) as size_t,
+                (dst_w << 1) as usize,
             );
             memcpy(
                 &mut *dst.offset(
@@ -72,7 +72,7 @@ unsafe extern "C" fn backup_lpf(
                     ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
                         * (top + 1) as isize) as isize,
                 ) as *mut pixel as *const libc::c_void,
-                (dst_w << 1) as size_t,
+                (dst_w << 1) as usize,
             );
             memcpy(
                 &mut *dst.offset(
@@ -83,7 +83,7 @@ unsafe extern "C" fn backup_lpf(
                     ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
                         * (top + 2) as isize) as isize,
                 ) as *mut pixel as *const libc::c_void,
-                (dst_w << 1) as size_t,
+                (dst_w << 1) as usize,
             );
             memcpy(
                 &mut *dst.offset(
@@ -94,7 +94,7 @@ unsafe extern "C" fn backup_lpf(
                     ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
                         * (top + 3) as isize) as isize,
                 ) as *mut pixel as *const libc::c_void,
-                (dst_w << 1) as size_t,
+                (dst_w << 1) as usize,
             );
         }
         dst = dst.offset(4 * PXSTRIDE(dst_stride));
@@ -124,7 +124,7 @@ unsafe extern "C" fn backup_lpf(
                     &mut *dst.offset(-(PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(
                         dst_stride,
                     ) as isize) as *mut pixel as *const libc::c_void,
-                    (dst_w << 1) as size_t,
+                    (dst_w << 1) as usize,
                 );
                 dst = dst.offset(PXSTRIDE(dst_stride) as isize);
             }
@@ -144,7 +144,7 @@ unsafe extern "C" fn backup_lpf(
                     } else {
                         src
                     }) as *const libc::c_void,
-                    (src_w << 1) as size_t,
+                    (src_w << 1) as usize,
                 );
                 dst = dst.offset(PXSTRIDE(dst_stride) as isize);
                 src = src.offset(PXSTRIDE(src_stride) as isize);

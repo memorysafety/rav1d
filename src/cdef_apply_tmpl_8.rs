@@ -18,7 +18,7 @@ use crate::src::lf_mask::Av1Filter;
 use std::cmp;
 
 extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: usize) -> *mut libc::c_void;
 }
 
 pub type pixel = u8;
@@ -38,13 +38,13 @@ unsafe extern "C" fn backup2lines(
         memcpy(
             (*dst.offset(0)).offset(y_stride as isize) as *mut libc::c_void,
             (*src.offset(0)).offset(7 * y_stride as isize) as *const libc::c_void,
-            (-(2) * y_stride) as size_t,
+            (-(2) * y_stride) as usize,
         );
     } else {
         memcpy(
             *dst.offset(0) as *mut libc::c_void,
             (*src.offset(0)).offset((6 * y_stride) as isize) as *const libc::c_void,
-            (2 * y_stride) as size_t,
+            (2 * y_stride) as usize,
         );
     }
     if layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint {
@@ -61,13 +61,13 @@ unsafe extern "C" fn backup2lines(
                 (*dst.offset(1)).offset(uv_stride as isize) as *mut libc::c_void,
                 (*src.offset(1)).offset((uv_off as isize * uv_stride) as isize)
                     as *const libc::c_void,
-                (-(2) * uv_stride) as size_t,
+                (-(2) * uv_stride) as usize,
             );
             memcpy(
                 (*dst.offset(2)).offset(uv_stride as isize) as *mut libc::c_void,
                 (*src.offset(2)).offset((uv_off as isize * uv_stride) as isize)
                     as *const libc::c_void,
-                (-(2) * uv_stride) as size_t,
+                (-(2) * uv_stride) as usize,
             );
         } else {
             let uv_off_0 = if layout as libc::c_uint
@@ -81,13 +81,13 @@ unsafe extern "C" fn backup2lines(
                 *dst.offset(1) as *mut libc::c_void,
                 (*src.offset(1)).offset((uv_off_0 as isize * uv_stride) as isize)
                     as *const libc::c_void,
-                (2 * uv_stride) as size_t,
+                (2 * uv_stride) as usize,
             );
             memcpy(
                 *dst.offset(2) as *mut libc::c_void,
                 (*src.offset(2)).offset((uv_off_0 as isize * uv_stride) as isize)
                     as *const libc::c_void,
-                (2 * uv_stride) as size_t,
+                (2 * uv_stride) as usize,
             );
         }
     }
@@ -132,7 +132,7 @@ unsafe extern "C" fn backup2x8(
             ((*dst.offset(1))[y_0 as usize]).as_mut_ptr() as *mut libc::c_void,
             &mut *(*src.offset(1)).offset((y_off + x_off as isize - 2) as isize) as *mut pixel
                 as *const libc::c_void,
-            2 as size_t,
+            2 as usize,
         );
         memcpy(
             ((*dst.offset(2))[y_0 as usize]).as_mut_ptr() as *mut libc::c_void,

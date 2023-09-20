@@ -238,7 +238,7 @@ use crate::include::common::bitdepth::BitDepth8;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: usize) -> *mut libc::c_void;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext);
     #[cfg(feature = "bitdepth_16")]
@@ -445,7 +445,7 @@ unsafe fn read_mv_residual(
     match dav1d_msac_decode_symbol_adapt4(
         &mut ts.msac,
         &mut ts.cdf.mv.joint.0,
-        N_MV_JOINTS as size_t - 1,
+        N_MV_JOINTS as usize - 1,
     ) {
         MV_JOINT_HV => {
             ref_mv.y += read_mv_component_diff(t, &mut mv_cdf.comp[0], have_fp) as i16;
@@ -1764,7 +1764,7 @@ unsafe fn decode_b(
                 let diff = dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_id[seg_ctx as usize],
-                    DAV1D_MAX_SEGMENTS as size_t - 1,
+                    DAV1D_MAX_SEGMENTS as usize - 1,
                 );
                 let last_active_seg_id = frame_hdr.segmentation.seg_data.last_active_segid;
                 b.seg_id = neg_deinterleave(
@@ -1853,7 +1853,7 @@ unsafe fn decode_b(
                 let diff = dav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_id[seg_ctx as usize],
-                    DAV1D_MAX_SEGMENTS as size_t - 1,
+                    DAV1D_MAX_SEGMENTS as usize - 1,
                 );
                 let last_active_seg_id = (*f.frame_hdr).segmentation.seg_data.last_active_segid;
                 b.seg_id = neg_deinterleave(
@@ -2036,7 +2036,7 @@ unsafe fn decode_b(
         *b.y_mode_mut() = dav1d_msac_decode_symbol_adapt16(
             &mut ts.msac,
             ymode_cdf,
-            (N_INTRA_PRED_MODES - 1) as size_t,
+            (N_INTRA_PRED_MODES - 1) as usize,
         ) as u8;
         if DEBUG_BLOCK_INFO(f, t) {
             println!("Post-ymode[{}]: r={}", b.y_mode(), ts.msac.rng);
@@ -2061,7 +2061,7 @@ unsafe fn decode_b(
             *b.uv_mode_mut() = dav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 uvmode_cdf,
-                (N_UV_INTRA_PRED_MODES as size_t) - 1 - (!cfl_allowed as size_t),
+                (N_UV_INTRA_PRED_MODES as usize) - 1 - (!cfl_allowed as usize),
             ) as u8;
             if DEBUG_BLOCK_INFO(f, t) {
                 println!("Post-uvmode[{}]: r={}", b.uv_mode(), ts.msac.rng);
@@ -2249,7 +2249,7 @@ unsafe fn decode_b(
                 let depth = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     tx_cdf,
-                    cmp::min(t_dim.max, 2) as size_t,
+                    cmp::min(t_dim.max, 2) as usize,
                 ) as libc::c_int;
 
                 for _ in 0..depth {
@@ -2671,7 +2671,7 @@ unsafe fn decode_b(
             *b.inter_mode_mut() = dav1d_msac_decode_symbol_adapt8(
                 &mut ts.msac,
                 &mut ts.cdf.m.comp_inter_mode[ctx as usize],
-                N_COMP_INTER_PRED_MODES as size_t - 1,
+                N_COMP_INTER_PRED_MODES as usize - 1,
             ) as u8;
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
@@ -3067,7 +3067,7 @@ unsafe fn decode_b(
                 *b.interintra_mode_mut() = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.interintra_mode[ii_sz_grp as usize],
-                    N_INTER_INTRA_PRED_MODES as size_t - 1,
+                    N_INTER_INTRA_PRED_MODES as usize - 1,
                 ) as u8;
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as libc::c_int;
                 *b.interintra_type_mut() = INTER_INTRA_BLEND
@@ -3195,7 +3195,7 @@ unsafe fn decode_b(
                 let filter0 = dav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.filter.0[0][ctx1 as usize],
-                    DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
+                    DAV1D_N_SWITCHABLE_FILTERS as usize - 1,
                 ) as Dav1dFilterMode;
                 if (*f.seq_hdr).dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&*t.a, &t.l, comp, true, b.r#ref()[0], by4, bx4);
@@ -3208,7 +3208,7 @@ unsafe fn decode_b(
                     let filter1 = dav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.filter.0[1][ctx2 as usize],
-                        DAV1D_N_SWITCHABLE_FILTERS as size_t - 1,
+                        DAV1D_N_SWITCHABLE_FILTERS as usize - 1,
                     ) as Dav1dFilterMode;
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
@@ -4022,7 +4022,7 @@ unsafe fn setup_tile(
         ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
             f.frame_thread
                 .pal_idx
-                .offset((tile_start_off * size_mul[1] as size_t / 4) as isize)
+                .offset((tile_start_off * size_mul[1] as usize / 4) as isize)
         } else {
             ptr::null_mut()
         };
@@ -4031,7 +4031,7 @@ unsafe fn setup_tile(
                 .cf
                 .cast::<u8>()
                 .offset(
-                    (tile_start_off * size_mul[0] as size_t
+                    (tile_start_off * size_mul[0] as usize
                         >> ((*f.seq_hdr).hbd == 0) as libc::c_int) as isize,
                 )
                 .cast::<DynCoef>()
@@ -5547,9 +5547,9 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         f.mvs_ref = dav1d_ref_create_using_pool(
             c.refmvs_pool,
             ::core::mem::size_of::<refmvs_temporal_block>()
-                * f.sb128h as size_t
+                * f.sb128h as usize
                 * 16
-                * (f.b4_stride >> 1) as size_t,
+                * (f.b4_stride >> 1) as usize,
         );
         if f.mvs_ref.is_null() {
             on_error(f, c, out_delayed);
@@ -5617,7 +5617,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             // Allocate them here (the data actually gets set elsewhere).
             f.cur_segmap_ref = dav1d_ref_create_using_pool(
                 c.segmap_pool,
-                ::core::mem::size_of::<u8>() * f.b4_stride as size_t * 32 * f.sb128h as size_t,
+                ::core::mem::size_of::<u8>() * f.b4_stride as usize * 32 * f.sb128h as usize,
             );
             if f.cur_segmap_ref.is_null() {
                 dav1d_ref_dec(&mut f.prev_segmap_ref);
@@ -5634,7 +5634,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
         } else {
             // We need to make a new map. Allocate one here and zero it out.
             let segmap_size =
-                ::core::mem::size_of::<u8>() * f.b4_stride as size_t * 32 * f.sb128h as size_t;
+                ::core::mem::size_of::<u8>() * f.b4_stride as usize * 32 * f.sb128h as usize;
             f.cur_segmap_ref = dav1d_ref_create_using_pool(c.segmap_pool, segmap_size);
             if f.cur_segmap_ref.is_null() {
                 on_error(f, c, out_delayed);
