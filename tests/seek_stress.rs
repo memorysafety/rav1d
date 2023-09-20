@@ -2,7 +2,7 @@
 #![allow(non_upper_case_globals)]
 #![feature(extern_types)]
 #![feature(c_variadic)]
-extern crate rav1d;
+
 #[path = "../tools/input"]
 mod input {
     mod annexb;
@@ -18,6 +18,9 @@ mod output {
     mod y4m2;
     mod yuv;
 } // mod output
+#[path = "../tools/dav1d_cli_parse.rs"]
+mod dav1d_cli_parse;
+
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -55,8 +58,8 @@ use rav1d::src::lib::dav1d_picture_unref;
 use rav1d::src::lib::dav1d_send_data;
 use rav1d::src::lib::dav1d_version;
 use rav1d::src::lib::Dav1dSettings;
-#[path = "../tools/dav1d_cli_parse.rs"]
-mod dav1d_cli_parse;
+use rav1d::stderr;
+
 extern "C" {
     pub type DemuxerContext;
     fn llround(_: libc::c_double) -> libc::c_longlong;
@@ -78,30 +81,7 @@ extern "C" {
         lib_settings: *mut Dav1dSettings,
     );
 }
-// NOTE: temporary code to support Linux and macOS, should be removed eventually
-cfg_if::cfg_if! {
-    if #[cfg(target_os = "linux")] {
-        extern "C" {
-            pub static mut stdout: *mut libc::FILE;
-            pub static mut stderr: *mut libc::FILE;
-        }
 
-        unsafe fn errno_location() -> *mut libc::c_int {
-            libc::__errno_location()
-        }
-    } else if #[cfg(target_os = "macos")] {
-        extern "C" {
-            #[link_name = "__stdoutp"]
-            static mut stdout: *mut libc::FILE;
-            #[link_name = "__stderrp"]
-            static mut stderr: *mut libc::FILE;
-        }
-
-        unsafe fn errno_location() -> *mut libc::c_int {
-            libc::__error()
-        }
-    }
-}
 #[repr(C)]
 pub struct CLISettings {
     pub outputfile: *const libc::c_char,
@@ -118,10 +98,13 @@ pub struct CLISettings {
     pub realtime_cache: libc::c_uint,
     pub neg_stride: libc::c_int,
 }
+
 pub type CLISettings_realtime = libc::c_uint;
+
 pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
 pub const REALTIME_INPUT: CLISettings_realtime = 1;
 pub const REALTIME_DISABLE: CLISettings_realtime = 0;
+
 unsafe extern "C" fn get_seed() -> libc::c_uint {
     let mut ts: libc::timespec = libc::timespec {
         tv_sec: 0,
@@ -132,13 +115,16 @@ unsafe extern "C" fn get_seed() -> libc::c_uint {
         .wrapping_mul(ts.tv_sec as libc::c_ulonglong)
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as libc::c_uint;
 }
+
 static mut xs_state: [uint32_t; 4] = [0; 4];
+
 unsafe fn xor128_srand(seed: libc::c_uint) {
     xs_state[0] = seed;
     xs_state[1] = seed & 0xffff0000 | !seed & 0xffff;
     xs_state[2] = !seed & 0xffff0000 | seed & 0xffff;
     xs_state[3] = !seed;
 }
+
 unsafe fn xor128_rand() -> libc::c_int {
     let x: uint32_t = xs_state[0];
     let t: uint32_t = x ^ x << 11;
@@ -150,6 +136,7 @@ unsafe fn xor128_rand() -> libc::c_int {
     xs_state[3] = w;
     return w as libc::c_int >> 1;
 }
+
 #[inline]
 unsafe extern "C" fn decode_frame(
     p: *mut Dav1dPicture,
@@ -188,6 +175,7 @@ unsafe extern "C" fn decode_frame(
     }
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn decode_rand(
     in_0: *mut DemuxerContext,
     c: *mut Dav1dContext,
@@ -243,6 +231,7 @@ unsafe extern "C" fn decode_rand(
     }
     return res;
 }
+
 unsafe extern "C" fn decode_all(
     in_0: *mut DemuxerContext,
     c: *mut Dav1dContext,
@@ -294,6 +283,7 @@ unsafe extern "C" fn decode_all(
     }
     return res;
 }
+
 unsafe extern "C" fn seek(
     in_0: *mut DemuxerContext,
     c: *mut Dav1dContext,
@@ -384,6 +374,7 @@ unsafe extern "C" fn seek(
     dav1d_flush(c);
     return res;
 }
+
 unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_int {
     let mut shift: libc::c_uint;
     let mut current_block: u64;
@@ -630,6 +621,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     dav1d_close(&mut c);
     return libc::EXIT_SUCCESS;
 }
+
 pub fn main() {
     let mut args: Vec<*mut libc::c_char> = Vec::new();
     for arg in ::std::env::args() {

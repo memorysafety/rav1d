@@ -1,6 +1,12 @@
-use std::ffi::{c_int, c_uint, c_void};
-use std::fmt::{self, Display, Formatter};
-use std::ops::{Add, Mul, Shr};
+use std::ffi::c_int;
+use std::ffi::c_uint;
+use std::ffi::c_void;
+use std::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
+use std::ops::Add;
+use std::ops::Mul;
+use std::ops::Shr;
 
 use crate::include::common::intops::clip;
 

@@ -1,13 +1,99 @@
 use std::cmp;
 
 use crate::include::common::bitdepth::DynCoef;
-
+use crate::include::common::intops::iclip;
+use crate::include::dav1d::common::Dav1dDataProps;
+use crate::include::dav1d::common::Dav1dUserData;
+use crate::include::dav1d::data::Dav1dData;
+use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
+use crate::include::dav1d::dav1d::Dav1dEventFlags;
+use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
+use crate::include::dav1d::dav1d::Dav1dLogger;
+use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
+use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
+use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
+use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
+use crate::include::dav1d::headers::Dav1dContentLightLevel;
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::Dav1dITUTT35;
+use crate::include::dav1d::headers::Dav1dMasteringDisplay;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::picture::Dav1dPicAllocator;
+use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::pthread::pthread_once_init;
+use crate::include::pthread::pthread_once_t;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::cdf::dav1d_cdf_thread_unref;
+use crate::src::cpu::dav1d_init_cpu;
+use crate::src::data::dav1d_data_create_internal;
+use crate::src::data::dav1d_data_props_copy;
+use crate::src::data::dav1d_data_props_set_defaults;
+use crate::src::data::dav1d_data_props_unref_internal;
+use crate::src::data::dav1d_data_ref;
+use crate::src::data::dav1d_data_unref_internal;
+use crate::src::data::dav1d_data_wrap_internal;
+use crate::src::data::dav1d_data_wrap_user_data_internal;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use crate::src::internal::CodedBlockInfo;
+use crate::src::internal::Dav1dContext;
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Dav1dTask;
+use crate::src::internal::Dav1dTaskContext;
+use crate::src::internal::TaskThreadData;
 use crate::src::intra_edge::dav1d_init_mode_tree;
+use crate::src::levels::Av1Block;
+use crate::src::levels::BL_128X128;
+use crate::src::levels::BL_64X64;
+use crate::src::log::dav1d_log_default_callback;
+use crate::src::mem::dav1d_alloc_aligned;
+use crate::src::mem::dav1d_free_aligned;
+use crate::src::mem::dav1d_freep_aligned;
+use crate::src::mem::dav1d_mem_pool_end;
+use crate::src::mem::dav1d_mem_pool_init;
+use crate::src::mem::freep;
+use crate::src::picture::dav1d_default_picture_alloc;
+use crate::src::picture::dav1d_default_picture_release;
+use crate::src::picture::dav1d_picture_get_event_flags;
+use crate::src::picture::dav1d_picture_move_ref;
+use crate::src::picture::dav1d_picture_ref;
+use crate::src::picture::dav1d_picture_unref_internal;
+use crate::src::picture::dav1d_thread_picture_move_ref;
+use crate::src::picture::dav1d_thread_picture_ref;
+use crate::src::picture::dav1d_thread_picture_unref;
+use crate::src::picture::Dav1dThreadPicture;
+use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
+use crate::src::r#ref::dav1d_ref_dec;
+use crate::src::r#ref::Dav1dRef;
+use crate::src::refmvs::dav1d_refmvs_clear;
+use crate::src::refmvs::dav1d_refmvs_init;
+use crate::src::refmvs::Dav1dRefmvsDSPContext;
+use crate::src::thread_task::dav1d_worker_task;
+use crate::src::thread_task::FRAME_ERROR;
 use crate::stderr;
-use ::libc;
+
 use cfg_if::cfg_if;
+
+use libc::pthread_attr_destroy;
+use libc::pthread_attr_init;
+use libc::pthread_attr_setstacksize;
+use libc::pthread_attr_t;
+use libc::pthread_cond_broadcast;
+use libc::pthread_cond_destroy;
+use libc::pthread_cond_init;
+use libc::pthread_cond_wait;
+use libc::pthread_condattr_t;
+use libc::pthread_join;
+use libc::pthread_mutex_destroy;
+use libc::pthread_mutex_init;
+use libc::pthread_mutex_lock;
+use libc::pthread_mutex_unlock;
+use libc::pthread_mutexattr_t;
+use libc::pthread_t;
+
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
@@ -61,94 +147,6 @@ extern "C" {
     );
     fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: libc::c_int);
 }
-use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::dav1d::common::Dav1dUserData;
-use crate::include::stdatomic::atomic_int;
-use crate::src::cpu::dav1d_init_cpu;
-use crate::src::data::dav1d_data_create_internal;
-use crate::src::data::dav1d_data_props_copy;
-use crate::src::data::dav1d_data_props_set_defaults;
-use crate::src::data::dav1d_data_props_unref_internal;
-use crate::src::data::dav1d_data_ref;
-use crate::src::data::dav1d_data_unref_internal;
-use crate::src::data::dav1d_data_wrap_internal;
-use crate::src::data::dav1d_data_wrap_user_data_internal;
-use crate::src::log::dav1d_log_default_callback;
-use crate::src::r#ref::dav1d_ref_dec;
-use crate::src::r#ref::Dav1dRef;
-use crate::src::thread_task::dav1d_worker_task;
-use crate::src::thread_task::FRAME_ERROR;
-
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
-use crate::include::dav1d::headers::Dav1dITUTT35;
-use crate::include::dav1d::headers::Dav1dMasteringDisplay;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-use crate::include::dav1d::data::Dav1dData;
-use crate::include::dav1d::picture::Dav1dPicAllocator;
-use crate::include::dav1d::picture::Dav1dPicture;
-use crate::src::internal::Dav1dContext;
-
-use libc::pthread_attr_destroy;
-use libc::pthread_attr_init;
-use libc::pthread_attr_setstacksize;
-use libc::pthread_cond_broadcast;
-use libc::pthread_cond_destroy;
-use libc::pthread_cond_init;
-use libc::pthread_cond_wait;
-use libc::pthread_join;
-use libc::pthread_mutex_destroy;
-use libc::pthread_mutex_init;
-use libc::pthread_mutex_lock;
-use libc::pthread_mutex_unlock;
-
-use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-use crate::include::dav1d::dav1d::Dav1dEventFlags;
-use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-use crate::include::dav1d::dav1d::Dav1dLogger;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
-
-use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
-
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
-
-use crate::include::stdatomic::atomic_uint;
-
-use crate::src::refmvs::dav1d_refmvs_clear;
-use crate::src::refmvs::dav1d_refmvs_init;
-use crate::src::refmvs::Dav1dRefmvsDSPContext;
-
-use crate::src::cdf::dav1d_cdf_thread_unref;
-
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
-
-use crate::src::internal::Dav1dTaskContext;
-use crate::src::internal::TaskThreadData;
-use crate::src::picture::dav1d_default_picture_alloc;
-use crate::src::picture::dav1d_default_picture_release;
-use crate::src::picture::dav1d_picture_get_event_flags;
-use crate::src::picture::dav1d_picture_move_ref;
-use crate::src::picture::dav1d_picture_ref;
-use crate::src::picture::dav1d_picture_unref_internal;
-use crate::src::picture::dav1d_thread_picture_move_ref;
-use crate::src::picture::dav1d_thread_picture_ref;
-use crate::src::picture::dav1d_thread_picture_unref;
-use crate::src::picture::Dav1dThreadPicture;
-
-use libc::pthread_t;
-
-use crate::src::internal::Dav1dFrameContext;
-
-use crate::src::internal::Dav1dTask;
-
-use crate::src::internal::CodedBlockInfo;
-
-use crate::src::levels::Av1Block;
 
 #[repr(C)]
 pub struct Dav1dSettings {
@@ -166,31 +164,18 @@ pub struct Dav1dSettings {
     pub decode_frame_type: Dav1dDecodeFrameType,
     pub reserved: [uint8_t; 16],
 }
-use crate::include::pthread::pthread_once_init;
-use crate::include::pthread::pthread_once_t;
-use crate::src::levels::BL_128X128;
-use crate::src::levels::BL_64X64;
-use libc::pthread_attr_t;
-use libc::pthread_condattr_t;
-use libc::pthread_mutexattr_t;
-
-use crate::include::common::intops::iclip;
-use crate::src::mem::dav1d_alloc_aligned;
-use crate::src::mem::dav1d_free_aligned;
-use crate::src::mem::dav1d_freep_aligned;
-use crate::src::mem::dav1d_mem_pool_end;
-use crate::src::mem::dav1d_mem_pool_init;
-use crate::src::mem::freep;
 
 #[cold]
 unsafe extern "C" fn init_internal() {
     dav1d_init_cpu();
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_version() -> *const libc::c_char {
     return b"966d63c1\0" as *const u8 as *const libc::c_char;
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
@@ -223,6 +208,7 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
     (*s).inloop_filters = DAV1D_INLOOPFILTER_ALL;
     (*s).decode_frame_type = DAV1D_DECODEFRAMETYPE_ALL;
 }
+
 #[cold]
 unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t) -> size_t {
     if 0 != 0 {
@@ -247,6 +233,7 @@ unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t
     }
     return 0;
 }
+
 #[cold]
 unsafe extern "C" fn get_num_threads(
     c: *mut Dav1dContext,
@@ -324,6 +311,7 @@ unsafe extern "C" fn get_num_threads(
         }) as libc::c_uint
     };
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> libc::c_int {
@@ -706,6 +694,7 @@ unsafe extern "C" fn dummy_free(data: *const uint8_t, user_data: *mut libc::c_vo
         unreachable!();
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_parse_sequence_header(
     out: *mut Dav1dSequenceHeader,
@@ -828,6 +817,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     dav1d_close(&mut c);
     return res;
 }
+
 unsafe extern "C" fn has_grain(pic: *const Dav1dPicture) -> libc::c_int {
     let fgdata: *const Dav1dFilmGrainData = &mut (*(*pic).frame_hdr).film_grain.data;
     return ((*fgdata).num_y_points != 0
@@ -836,6 +826,7 @@ unsafe extern "C" fn has_grain(pic: *const Dav1dPicture) -> libc::c_int {
         || (*fgdata).clip_to_restricted_range != 0 && (*fgdata).chroma_scaling_from_luma != 0)
         as libc::c_int;
 }
+
 unsafe extern "C" fn output_image(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int {
     let mut res = 0;
     let in_0: *mut Dav1dThreadPicture = if (*c).all_layers != 0 || (*c).max_spatial_id == 0 {
@@ -855,6 +846,7 @@ unsafe extern "C" fn output_image(c: *mut Dav1dContext, out: *mut Dav1dPicture) 
     }
     return res;
 }
+
 unsafe extern "C" fn output_picture_ready(c: *mut Dav1dContext, drain: libc::c_int) -> libc::c_int {
     if (*c).cached_error != 0 {
         return 1 as libc::c_int;
@@ -884,6 +876,7 @@ unsafe extern "C" fn output_picture_ready(c: *mut Dav1dContext, drain: libc::c_i
     }
     return !((*c).out.p.data[0]).is_null() as libc::c_int;
 }
+
 unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int {
     let mut drain_count: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     let mut drained = 0;
@@ -973,6 +966,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
     }
     return -(11 as libc::c_int);
 }
+
 unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> libc::c_int {
     let mut res;
     let in_0: *mut Dav1dData = &mut (*c).in_0;
@@ -1003,6 +997,7 @@ unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> libc::c_int {
     }
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_send_data(
     c: *mut Dav1dContext,
@@ -1051,6 +1046,7 @@ pub unsafe extern "C" fn dav1d_send_data(
     }
     return res;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_picture(
     c: *mut Dav1dContext,
@@ -1095,6 +1091,7 @@ pub unsafe extern "C" fn dav1d_get_picture(
     }
     return -(11 as libc::c_int);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain(
     c: *mut Dav1dContext,
@@ -1167,6 +1164,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
         return 0 as libc::c_int;
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
     dav1d_data_unref_internal(&mut (*c).in_0);
@@ -1271,6 +1269,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
     }
     ::core::intrinsics::atomic_store_seqcst((*c).flush, 0 as libc::c_int);
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
@@ -1285,6 +1284,7 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
     }
     close_internal(c_out, 1 as libc::c_int);
 }
+
 #[cold]
 unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: libc::c_int) {
     let c: *mut Dav1dContext = *c_out;
@@ -1418,6 +1418,7 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: libc::
     dav1d_mem_pool_end((*c).picture_pool);
     dav1d_freep_aligned(c_out as *mut libc::c_void);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_event_flags(
     c: *mut Dav1dContext,
@@ -1447,6 +1448,7 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     (*c).event_flags = 0 as Dav1dEventFlags;
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     c: *mut Dav1dContext,
@@ -1481,14 +1483,17 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     dav1d_data_props_set_defaults(&mut (*c).cached_error_props);
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
     dav1d_picture_unref_internal(p);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_create(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t {
     return dav1d_data_create_internal(buf, sz);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_wrap(
     buf: *mut Dav1dData,
@@ -1499,6 +1504,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
 ) -> libc::c_int {
     return dav1d_data_wrap_internal(buf, ptr, sz, free_callback, user_data);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     buf: *mut Dav1dData,
@@ -1508,10 +1514,12 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
 ) -> libc::c_int {
     return dav1d_data_wrap_user_data_internal(buf, user_data, free_callback, cookie);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_unref(buf: *mut Dav1dData) {
     dav1d_data_unref_internal(buf);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_props_unref(props: *mut Dav1dDataProps) {
     dav1d_data_props_unref_internal(props);

@@ -2,11 +2,93 @@ use std::cmp;
 
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
-
+use crate::include::common::dump::ac_dump;
+use crate::include::common::dump::coef_dump;
+use crate::include::common::dump::hex_dump;
+use crate::include::common::intops::apply_sign64;
+use crate::include::common::intops::iclip;
+use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
+use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
+use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::ctx::CaseSet;
-use ::libc;
+use crate::src::env::get_uv_inter_txtp;
+use crate::src::internal::CodedBlockInfo;
+use crate::src::internal::Dav1dDSPContext;
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Dav1dTaskContext;
+use crate::src::internal::Dav1dTileState;
+use crate::src::intra_edge::EdgeFlags;
+use crate::src::intra_edge::EDGE_I420_LEFT_HAS_BOTTOM;
+use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
+use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
+use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
+use crate::src::ipred_prepare::sm_flag;
+use crate::src::ipred_prepare::sm_uv_flag;
+use crate::src::levels::mv;
+use crate::src::levels::Av1Block;
+use crate::src::levels::BlockSize;
+use crate::src::levels::Filter2d;
+use crate::src::levels::IntraPredMode;
+use crate::src::levels::RectTxfmSize;
+use crate::src::levels::TxClass;
+use crate::src::levels::TxfmType;
+use crate::src::levels::CFL_PRED;
+use crate::src::levels::COMP_INTER_NONE;
+use crate::src::levels::DCT_DCT;
+use crate::src::levels::DC_PRED;
+use crate::src::levels::FILTER_2D_BILINEAR;
+use crate::src::levels::FILTER_PRED;
+use crate::src::levels::GLOBALMV;
+use crate::src::levels::GLOBALMV_GLOBALMV;
+use crate::src::levels::IDTX;
+use crate::src::levels::II_SMOOTH_PRED;
+use crate::src::levels::INTER_INTRA_BLEND;
+use crate::src::levels::MM_OBMC;
+use crate::src::levels::MM_WARP;
+use crate::src::levels::RTX_4X8;
+use crate::src::levels::SMOOTH_PRED;
+use crate::src::levels::TX_16X16;
+use crate::src::levels::TX_32X32;
+use crate::src::levels::TX_4X4;
+use crate::src::levels::TX_64X64;
+use crate::src::levels::TX_CLASS_2D;
+use crate::src::levels::TX_CLASS_H;
+use crate::src::levels::TX_CLASS_V;
+use crate::src::levels::WHT_WHT;
+use crate::src::lf_mask::Av1Filter;
+use crate::src::msac::dav1d_msac_decode_bool_adapt;
+use crate::src::msac::dav1d_msac_decode_bool_equi;
+use crate::src::msac::dav1d_msac_decode_bools;
+use crate::src::msac::dav1d_msac_decode_hi_tok;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
+use crate::src::picture::Dav1dThreadPicture;
+use crate::src::recon::get_dc_sign_ctx;
+use crate::src::recon::get_lo_ctx;
+use crate::src::recon::get_skip_ctx;
+use crate::src::recon::read_golomb;
+use crate::src::recon::DEBUG_BLOCK_INFO;
+use crate::src::refmvs::refmvs_block;
+use crate::src::scan::dav1d_scans;
+use crate::src::tables::dav1d_block_dimensions;
+use crate::src::tables::dav1d_filter_2d;
+use crate::src::tables::dav1d_filter_mode_to_y_mode;
+use crate::src::tables::dav1d_lo_ctx_offsets;
+use crate::src::tables::dav1d_tx_type_class;
+use crate::src::tables::dav1d_tx_types_per_set;
+use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::dav1d_txtp_from_uvmode;
+use crate::src::tables::TxfmInfo;
+use crate::src::wedge::dav1d_ii_masks;
+use crate::src::wedge::dav1d_wedge_masks;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::size_t) -> *mut libc::c_void;
@@ -56,117 +138,9 @@ extern "C" {
     fn dav1d_lr_sbrow_8bpc(f: *mut Dav1dFrameContext, dst: *const *mut pixel, sby: libc::c_int);
 }
 
-use crate::src::msac::dav1d_msac_decode_bool_adapt;
-use crate::src::msac::dav1d_msac_decode_bool_equi;
-use crate::src::msac::dav1d_msac_decode_hi_tok;
-use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
-use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
-use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
-use crate::src::scan::dav1d_scans;
-use crate::src::tables::dav1d_block_dimensions;
-use crate::src::tables::dav1d_filter_2d;
-use crate::src::tables::dav1d_filter_mode_to_y_mode;
-use crate::src::tables::dav1d_lo_ctx_offsets;
-use crate::src::tables::dav1d_tx_type_class;
-use crate::src::tables::dav1d_tx_types_per_set;
-use crate::src::tables::dav1d_txfm_dimensions;
-use crate::src::tables::dav1d_txtp_from_uvmode;
-use crate::src::wedge::dav1d_ii_masks;
-use crate::src::wedge::dav1d_wedge_masks;
-
 pub type pixel = uint8_t;
 pub type coef = int16_t;
 
-use crate::src::internal::Dav1dFrameContext;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-
-use crate::src::lf_mask::Av1Filter;
-
-use crate::src::internal::CodedBlockInfo;
-
-use crate::src::levels::mv;
-use crate::src::levels::Av1Block;
-
-use crate::src::refmvs::refmvs_block;
-
-use crate::src::levels::BlockSize;
-
-use crate::src::internal::Dav1dTaskContext;
-
-use crate::src::levels::Filter2d;
-
-use crate::src::levels::FILTER_2D_BILINEAR;
-
-use crate::src::internal::Dav1dTileState;
-
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
-
-use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EDGE_I420_LEFT_HAS_BOTTOM;
-
-use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
-use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
-
-use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-
-use crate::src::internal::Dav1dDSPContext;
-
-use crate::src::picture::Dav1dThreadPicture;
-
-use crate::src::levels::IntraPredMode;
-use crate::src::levels::RectTxfmSize;
-use crate::src::levels::TxClass;
-use crate::src::levels::TxfmType;
-use crate::src::levels::CFL_PRED;
-use crate::src::levels::COMP_INTER_NONE;
-use crate::src::levels::DCT_DCT;
-use crate::src::levels::DC_PRED;
-use crate::src::levels::FILTER_PRED;
-use crate::src::levels::GLOBALMV;
-use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::IDTX;
-use crate::src::levels::II_SMOOTH_PRED;
-use crate::src::levels::INTER_INTRA_BLEND;
-use crate::src::levels::MM_OBMC;
-use crate::src::levels::MM_WARP;
-use crate::src::levels::RTX_4X8;
-use crate::src::levels::SMOOTH_PRED;
-use crate::src::levels::TX_16X16;
-use crate::src::levels::TX_32X32;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::TX_64X64;
-
-use crate::src::levels::TX_CLASS_2D;
-use crate::src::levels::TX_CLASS_H;
-use crate::src::levels::TX_CLASS_V;
-use crate::src::levels::WHT_WHT;
-
-use crate::src::tables::TxfmInfo;
-
-use crate::src::recon::DEBUG_BLOCK_INFO;
-
-use crate::include::common::dump::ac_dump;
-use crate::include::common::dump::coef_dump;
-use crate::include::common::dump::hex_dump;
-use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::iclip;
-use crate::src::env::get_uv_inter_txtp;
-use crate::src::ipred_prepare::sm_flag;
-use crate::src::ipred_prepare::sm_uv_flag;
-use crate::src::msac::dav1d_msac_decode_bools;
-use crate::src::recon::get_dc_sign_ctx;
-use crate::src::recon::get_lo_ctx;
-use crate::src::recon::get_skip_ctx;
-use crate::src::recon::read_golomb;
 unsafe fn decode_coefs(
     t: *mut Dav1dTaskContext,
     a: &mut [u8],
@@ -1377,6 +1351,7 @@ unsafe fn decode_coefs(
     *res_ctx = (cmp::min(cul_level, 63 as libc::c_int as libc::c_uint) | dc_sign_level) as uint8_t;
     return eob;
 }
+
 unsafe extern "C" fn read_coef_tree(
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -1582,6 +1557,7 @@ unsafe extern "C" fn read_coef_tree(
         }
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
     t: *mut Dav1dTaskContext,
@@ -1829,6 +1805,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
         init_y += 16 as libc::c_int;
     }
 }
+
 unsafe extern "C" fn mc(
     t: *mut Dav1dTaskContext,
     dst8: *mut pixel,
@@ -2037,6 +2014,7 @@ unsafe extern "C" fn mc(
     }
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn obmc(
     t: *mut Dav1dTaskContext,
     dst: *mut pixel,
@@ -2179,6 +2157,7 @@ unsafe extern "C" fn obmc(
     }
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn warp_affine(
     t: *mut Dav1dTaskContext,
     mut dst8: *mut pixel,
@@ -2299,6 +2278,7 @@ unsafe extern "C" fn warp_affine(
     }
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
     t: *mut Dav1dTaskContext,
@@ -3050,6 +3030,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
         init_y += 16 as libc::c_int;
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
     t: *mut Dav1dTaskContext,
@@ -4299,6 +4280,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
     }
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_8bpc(
     f: *mut Dav1dFrameContext,
@@ -4330,6 +4312,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_8bpc(
         *((*f).lf.start_of_tile_row).offset(sby as isize) as libc::c_int,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_8bpc(
     f: *mut Dav1dFrameContext,
@@ -4357,6 +4340,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_8bpc(
         dav1d_copy_lpf_8bpc(f, p.as_ptr(), sby);
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext, sby: libc::c_int) {
     let f: *const Dav1dFrameContext = (*tc).f;
@@ -4403,6 +4387,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext,
     let end = cmp::min(start + n_blks, (*f).bh);
     dav1d_cdef_brow_8bpc(tc, p.as_ptr(), mask, start, end, 0 as libc::c_int, sby);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(
     f: *mut Dav1dFrameContext,
@@ -4466,6 +4451,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(
         pl += 1;
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int) {
     if (*(*f).c).inloop_filters as libc::c_uint
@@ -4486,6 +4472,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, s
     ];
     dav1d_lr_sbrow_8bpc(f, sr_p.as_ptr(), sby);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby: libc::c_int) {
     dav1d_filter_sbrow_deblock_cols_8bpc(f, sby);
@@ -4500,6 +4487,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby:
         dav1d_filter_sbrow_lr_8bpc(f, sby);
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_backup_ipred_edge_8bpc(t: *mut Dav1dTaskContext) {
     let f: *const Dav1dFrameContext = (*t).f;

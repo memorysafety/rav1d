@@ -1,17 +1,21 @@
 use std::cmp;
 
+use crate::include::common::attributes::clz;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::intops::iclip;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
+use crate::src::lf_mask::Av1FilterLUT;
+use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
+
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
+
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
 pub type pixel = uint16_t;
-use crate::include::common::attributes::clz;
-use crate::include::common::intops::iclip;
-use crate::src::lf_mask::Av1FilterLUT;
-use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
+
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -19,6 +23,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1;
 }
+
 #[inline(never)]
 unsafe extern "C" fn loop_filter(
     mut dst: *mut pixel,
@@ -197,6 +202,7 @@ unsafe extern "C" fn loop_filter(
         dst = dst.offset(stridea as isize);
     }
 }
+
 unsafe extern "C" fn loop_filter_h_sb128y_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -218,6 +224,7 @@ unsafe extern "C" fn loop_filter_h_sb128y_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn loop_filter_h_sb128y_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -263,6 +270,7 @@ unsafe extern "C" fn loop_filter_h_sb128y_rust(
         l = l.offset(b4_stride as isize);
     }
 }
+
 unsafe extern "C" fn loop_filter_v_sb128y_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -284,6 +292,7 @@ unsafe extern "C" fn loop_filter_v_sb128y_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn loop_filter_v_sb128y_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -329,6 +338,7 @@ unsafe extern "C" fn loop_filter_v_sb128y_rust(
         l = l.offset(1);
     }
 }
+
 unsafe extern "C" fn loop_filter_h_sb128uv_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -350,6 +360,7 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c_erased(
         bitdepth_max,
     )
 }
+
 unsafe extern "C" fn loop_filter_h_sb128uv_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -391,6 +402,7 @@ unsafe extern "C" fn loop_filter_h_sb128uv_rust(
         l = l.offset(b4_stride as isize);
     }
 }
+
 unsafe extern "C" fn loop_filter_v_sb128uv_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -412,6 +424,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c_erased(
         bitdepth_max,
     )
 }
+
 unsafe extern "C" fn loop_filter_v_sb128uv_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -453,9 +466,6 @@ unsafe extern "C" fn loop_filter_v_sb128uv_rust(
         l = l.offset(1);
     }
 }
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]

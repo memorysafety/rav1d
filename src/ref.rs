@@ -1,6 +1,13 @@
+use crate::include::stdatomic::atomic_int;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
+use crate::src::mem::dav1d_alloc_aligned;
+use crate::src::mem::dav1d_free_aligned;
+use crate::src::mem::dav1d_mem_pool_pop;
+use crate::src::mem::dav1d_mem_pool_push;
+use crate::src::mem::Dav1dMemPool;
+use crate::src::mem::Dav1dMemPoolBuffer;
+
 extern "C" {
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
     fn free(_: *mut libc::c_void);
@@ -15,14 +22,6 @@ pub struct Dav1dRef {
     pub(crate) free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
     pub(crate) user_data: *mut libc::c_void,
 }
-use crate::include::stdatomic::atomic_int;
-
-use crate::src::mem::dav1d_alloc_aligned;
-use crate::src::mem::dav1d_free_aligned;
-use crate::src::mem::dav1d_mem_pool_pop;
-use crate::src::mem::dav1d_mem_pool_push;
-use crate::src::mem::Dav1dMemPool;
-use crate::src::mem::Dav1dMemPoolBuffer;
 
 #[inline]
 pub unsafe extern "C" fn dav1d_ref_inc(r#ref: *mut Dav1dRef) {
@@ -59,6 +58,7 @@ pub unsafe fn dav1d_ref_create(mut size: size_t) -> *mut Dav1dRef {
     );
     return res;
 }
+
 unsafe extern "C" fn pool_free_callback(data: *const uint8_t, user_data: *mut libc::c_void) {
     dav1d_mem_pool_push(
         data as *mut Dav1dMemPool,
@@ -134,6 +134,7 @@ pub unsafe fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
         }
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_ref_is_writable(r#ref: *mut Dav1dRef) -> libc::c_int {
     return (::core::intrinsics::atomic_load_seqcst(&mut (*r#ref).ref_cnt as *mut atomic_int) == 1

@@ -2,32 +2,31 @@ use std::cmp;
 
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::c2rust_bitfields;
-use ::libc;
-use c2rust_bitfields::BitfieldStruct;
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-}
-pub type pixel = uint8_t;
+use crate::src::intra_edge::EdgeFlags;
+use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
+use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::IntraPredMode;
-
 use crate::src::levels::DC_128_PRED;
+use crate::src::levels::DC_PRED;
+use crate::src::levels::HOR_PRED;
 use crate::src::levels::LEFT_DC_PRED;
+use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
+use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::PAETH_PRED;
 use crate::src::levels::TOP_DC_PRED;
+use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
 
-use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
-use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-use crate::src::levels::DC_PRED;
-use crate::src::levels::HOR_PRED;
-use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
-use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::VERT_PRED;
+use c2rust_bitfields::BitfieldStruct;
+
+extern "C" {
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+}
+
+pub type pixel = uint8_t;
 
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
@@ -39,6 +38,7 @@ pub struct av1_intra_prediction_edge {
     #[bitfield(name = "needs_bottomleft", ty = "uint8_t", bits = "4..=4")]
     pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
 }
+
 static mut av1_mode_conv: [[[uint8_t; 2]; 2]; N_INTRA_PRED_MODES] = [
     [
         [
@@ -86,6 +86,7 @@ static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {
         needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
     }; N_IMPL_INTRA_PRED_MODES];
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     x: libc::c_int,
@@ -295,6 +296,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
     }
     return mode;
 }
+
 unsafe extern "C" fn run_static_initializers() {
     av1_intra_prediction_edges = [
         {
@@ -453,6 +455,7 @@ unsafe extern "C" fn run_static_initializers() {
         },
     ];
 }
+
 #[used]
 #[cfg_attr(target_os = "linux", link_section = ".init_array")]
 #[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]

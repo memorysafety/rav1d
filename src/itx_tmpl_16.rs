@@ -1,41 +1,9 @@
+use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::intops::iclip;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
-#[cfg(feature = "asm")]
-use cfg_if::cfg_if;
-extern "C" {
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-}
-
-pub type pixel = uint16_t;
-pub type coef = int32_t;
-
-use crate::src::levels::TX_16X16;
-use crate::src::levels::TX_32X32;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_8X8;
-
-use crate::src::levels::RTX_16X32;
-use crate::src::levels::RTX_16X4;
-use crate::src::levels::RTX_16X64;
-use crate::src::levels::RTX_16X8;
-use crate::src::levels::RTX_32X16;
-use crate::src::levels::RTX_32X64;
-use crate::src::levels::RTX_32X8;
-use crate::src::levels::RTX_4X16;
-use crate::src::levels::RTX_4X8;
-use crate::src::levels::RTX_64X16;
-use crate::src::levels::RTX_64X32;
-use crate::src::levels::RTX_8X16;
-use crate::src::levels::RTX_8X32;
-use crate::src::levels::RTX_8X4;
-
-use crate::src::levels::WHT_WHT;
-
-use crate::include::common::intops::iclip;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -50,9 +18,43 @@ use crate::src::levels::H_ADST;
 use crate::src::levels::H_DCT;
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::IDTX;
+use crate::src::levels::RTX_16X32;
+use crate::src::levels::RTX_16X4;
+use crate::src::levels::RTX_16X64;
+use crate::src::levels::RTX_16X8;
+use crate::src::levels::RTX_32X16;
+use crate::src::levels::RTX_32X64;
+use crate::src::levels::RTX_32X8;
+use crate::src::levels::RTX_4X16;
+use crate::src::levels::RTX_4X8;
+use crate::src::levels::RTX_64X16;
+use crate::src::levels::RTX_64X32;
+use crate::src::levels::RTX_8X16;
+use crate::src::levels::RTX_8X32;
+use crate::src::levels::RTX_8X4;
+use crate::src::levels::TX_16X16;
+use crate::src::levels::TX_32X32;
+use crate::src::levels::TX_4X4;
+use crate::src::levels::TX_64X64;
+use crate::src::levels::TX_8X8;
 use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
+use crate::src::levels::WHT_WHT;
+
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
+
+#[cfg(feature = "asm")]
+use cfg_if::cfg_if;
+
+extern "C" {
+    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+}
+
+pub type pixel = uint16_t;
+pub type coef = int32_t;
+
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -60,7 +62,6 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1;
 }
-use crate::include::common::bitdepth::BitDepth16;
 
 unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased(
     dst: *mut DynPixel,
@@ -708,9 +709,6 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: libc:
         }
     }
 }
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]

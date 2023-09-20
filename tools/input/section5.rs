@@ -1,9 +1,18 @@
-use crate::errno_location;
-use crate::stderr;
-use ::libc;
+use rav1d::errno_location;
+use rav1d::include::dav1d::data::Dav1dData;
+use rav1d::include::dav1d::headers::Dav1dObuType;
+use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME;
+use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
+use rav1d::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
+use rav1d::include::dav1d::headers::DAV1D_OBU_TD;
+use rav1d::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
 use rav1d::include::stddef::size_t;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
+use rav1d::src::lib::dav1d_data_create;
+use rav1d::src::lib::dav1d_data_unref;
+use rav1d::stderr;
+
 extern "C" {
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
@@ -12,21 +21,13 @@ extern "C" {
     fn fseeko(__stream: *mut libc::FILE, __off: libc::off_t, __whence: libc::c_int) -> libc::c_int;
     fn feof(__stream: *mut libc::FILE) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn dav1d_data_unref(data: *mut Dav1dData);
-    fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
 }
-use rav1d::include::dav1d::headers::Dav1dObuType;
-use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME;
-use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
-use rav1d::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
-use rav1d::include::dav1d::headers::DAV1D_OBU_TD;
-use rav1d::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
 
-use rav1d::include::dav1d::data::Dav1dData;
 #[repr(C)]
 pub struct DemuxerPriv {
     pub f: *mut libc::FILE,
 }
+
 #[repr(C)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,
@@ -46,7 +47,9 @@ pub struct Demuxer {
     pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
+
 pub type Section5InputContext = DemuxerPriv;
+
 unsafe extern "C" fn leb(
     mut ptr: *const uint8_t,
     mut sz: libc::c_int,
@@ -78,6 +81,7 @@ unsafe extern "C" fn leb(
     *len = val as usize;
     return i as libc::c_int;
 }
+
 #[inline]
 unsafe extern "C" fn parse_obu_header(
     mut buf: *const uint8_t,
@@ -118,6 +122,7 @@ unsafe extern "C" fn parse_obu_header(
     *obu_size = buf_size as size_t;
     return buf_size + 1 + extension_flag;
 }
+
 unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int {
     let mut val: uint64_t = 0 as libc::c_int as uint64_t;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
@@ -141,6 +146,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int
     *len = val as usize;
     return i as libc::c_int;
 }
+
 unsafe extern "C" fn section5_probe(data: *const uint8_t) -> libc::c_int {
     let mut ret;
     let mut cnt = 0;
@@ -184,6 +190,7 @@ unsafe extern "C" fn section5_probe(data: *const uint8_t) -> libc::c_int {
     }
     return seq;
 }
+
 unsafe extern "C" fn section5_open(
     c: *mut Section5InputContext,
     file: *const libc::c_char,
@@ -247,6 +254,7 @@ unsafe extern "C" fn section5_open(
     fseeko((*c).f, 0, 0 as libc::c_int);
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn section5_read(
     c: *mut Section5InputContext,
     data: *mut Dav1dData,
@@ -319,9 +327,11 @@ unsafe extern "C" fn section5_read(
     }
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn section5_close(c: *mut Section5InputContext) {
     fclose((*c).f);
 }
+
 #[no_mangle]
 pub static mut section5_demuxer: Demuxer = {
     let init = Demuxer {

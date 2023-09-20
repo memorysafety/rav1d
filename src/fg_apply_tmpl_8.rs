@@ -1,27 +1,26 @@
 use std::cmp;
 
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
+use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::align::Align16;
-use ::libc;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+
 use cfg_if::cfg_if;
+
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
-
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::dav1d::picture::Dav1dPicture;
 pub type pixel = uint8_t;
 pub type entry = int8_t;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+
 unsafe extern "C" fn generate_scaling(
     _bitdepth: libc::c_int,
     points: *const [uint8_t; 2],
@@ -71,6 +70,7 @@ unsafe extern "C" fn generate_scaling(
         (scaling_size - n) as libc::c_ulong,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
@@ -197,6 +197,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
         }
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
@@ -310,6 +311,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
         }
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,

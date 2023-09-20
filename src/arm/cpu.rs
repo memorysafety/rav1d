@@ -1,5 +1,4 @@
 use cfg_if::cfg_if;
-use libc;
 
 pub const DAV1D_ARM_CPU_FLAG_NEON: libc::c_uint = 1 << 0;
 pub const NEON_HWCAP: libc::c_ulong = 1 << 12;

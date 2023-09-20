@@ -1,31 +1,23 @@
 use std::cmp;
 
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::env::BlockContext;
+use crate::src::internal::Dav1dDSPContext;
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::lf_mask::Av1Filter;
+use crate::src::lr_apply::LR_RESTORE_U;
+use crate::src::lr_apply::LR_RESTORE_V;
+use crate::src::lr_apply::LR_RESTORE_Y;
 
-use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
 }
 
 pub type pixel = uint16_t;
-
-use crate::src::internal::Dav1dFrameContext;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use crate::src::lf_mask::Av1Filter;
-
-use crate::src::env::BlockContext;
-
-use crate::src::internal::Dav1dDSPContext;
-
-use crate::src::lr_apply::LR_RESTORE_U;
-use crate::src::lr_apply::LR_RESTORE_V;
-use crate::src::lr_apply::LR_RESTORE_Y;
 
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
@@ -34,6 +26,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1;
 }
+
 unsafe extern "C" fn backup_lpf(
     f: *const Dav1dFrameContext,
     mut dst: *mut pixel,
@@ -165,6 +158,7 @@ unsafe extern "C" fn backup_lpf(
         }
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
     f: *mut Dav1dFrameContext,
@@ -324,6 +318,7 @@ pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
         }
     }
 }
+
 #[inline]
 unsafe extern "C" fn filter_plane_cols_y(
     f: *const Dav1dFrameContext,
@@ -372,6 +367,7 @@ unsafe extern "C" fn filter_plane_cols_y(
         x += 1;
     }
 }
+
 #[inline]
 unsafe extern "C" fn filter_plane_rows_y(
     f: *const Dav1dFrameContext,
@@ -414,6 +410,7 @@ unsafe extern "C" fn filter_plane_rows_y(
         lvl = lvl.offset(b4_stride as isize);
     }
 }
+
 #[inline]
 unsafe extern "C" fn filter_plane_cols_uv(
     f: *const Dav1dFrameContext,
@@ -474,6 +471,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
         x += 1;
     }
 }
+
 #[inline]
 unsafe extern "C" fn filter_plane_rows_uv(
     f: *const Dav1dFrameContext,
@@ -527,6 +525,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
         lvl = lvl.offset(b4_stride as isize);
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
     f: *const Dav1dFrameContext,
@@ -740,6 +739,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
         level_ptr = level_ptr.offset((32 >> ss_hor) as isize);
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_16bpc(
     f: *const Dav1dFrameContext,

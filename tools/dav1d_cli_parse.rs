@@ -1,7 +1,21 @@
-use crate::stderr;
-use ::libc;
+use rav1d::include::dav1d::dav1d::Dav1dDecodeFrameType;
+use rav1d::include::dav1d::dav1d::Dav1dInloopFilterType;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
 use rav1d::include::stdint::uint64_t;
-use rav1d::include::stdint::uint8_t;
+use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
+use rav1d::src::lib::dav1d_default_settings;
+use rav1d::src::lib::dav1d_version;
+use rav1d::src::lib::Dav1dSettings;
+use rav1d::stderr;
+
 extern "C" {
     static mut optarg: *mut libc::c_char;
     static mut optind: libc::c_int;
@@ -23,9 +37,8 @@ extern "C" {
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strncmp(_: *const libc::c_char, _: *const libc::c_char, _: libc::c_ulong) -> libc::c_int;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
-    fn dav1d_version() -> *const libc::c_char;
-    fn dav1d_default_settings(s: *mut Dav1dSettings);
 }
+
 #[repr(C)]
 pub struct option {
     pub name: *const libc::c_char,
@@ -34,36 +47,6 @@ pub struct option {
     pub val: libc::c_int,
 }
 
-use rav1d::include::dav1d::dav1d::Dav1dDecodeFrameType;
-use rav1d::include::dav1d::dav1d::Dav1dInloopFilterType;
-use rav1d::include::dav1d::dav1d::Dav1dLogger;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
-use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
-use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
-use rav1d::include::dav1d::picture::Dav1dPicAllocator;
-use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
-#[repr(C)]
-pub struct Dav1dSettings {
-    pub n_threads: libc::c_int,
-    pub max_frame_delay: libc::c_int,
-    pub apply_grain: libc::c_int,
-    pub operating_point: libc::c_int,
-    pub all_layers: libc::c_int,
-    pub frame_size_limit: libc::c_uint,
-    pub allocator: Dav1dPicAllocator,
-    pub logger: Dav1dLogger,
-    pub strict_std_compliance: libc::c_int,
-    pub output_invisible_frames: libc::c_int,
-    pub inloop_filters: Dav1dInloopFilterType,
-    pub decode_frame_type: Dav1dDecodeFrameType,
-    pub reserved: [uint8_t; 16],
-}
 #[repr(C)]
 pub struct CLISettings {
     pub outputfile: *const libc::c_char,
@@ -80,13 +63,16 @@ pub struct CLISettings {
     pub realtime_cache: libc::c_uint,
     pub neg_stride: libc::c_int,
 }
+
 pub type CLISettings_realtime = libc::c_uint;
-pub const ARG_DECODE_FRAME_TYPE: arg = 273;
+
 #[repr(C)]
 pub struct EnumParseTable {
     pub str_0: *const libc::c_char,
     pub val: libc::c_int,
 }
+
+pub const ARG_DECODE_FRAME_TYPE: arg = 273;
 pub const ARG_INLOOP_FILTERS: arg = 272;
 pub const ARG_OUTPUT_INVISIBLE: arg = 271;
 pub const ARG_NEG_STRIDE: arg = 270;
@@ -110,7 +96,9 @@ pub const X86_CPU_MASK_SSE41: CpuMask = 7;
 pub const X86_CPU_MASK_SSSE3: CpuMask = 3;
 pub const X86_CPU_MASK_SSE2: CpuMask = 1;
 pub type arg = libc::c_uint;
+
 pub type CpuMask = libc::c_uint;
+
 static mut short_opts: [libc::c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[libc::c_char; 11]>(b"i:o:vql:s:\0") };
 static mut long_opts: [option; 25] = [
@@ -340,6 +328,7 @@ static mut long_opts: [option; 25] = [
         init
     },
 ];
+
 unsafe extern "C" fn usage(app: *const libc::c_char, reason: *const libc::c_char, args: ...) {
     if !reason.is_null() {
         let mut args_0: ::core::ffi::VaListImpl;
@@ -359,6 +348,7 @@ unsafe extern "C" fn usage(app: *const libc::c_char, reason: *const libc::c_char
     );
     exit(1 as libc::c_int);
 }
+
 unsafe extern "C" fn error(
     app: *const libc::c_char,
     optarg_0: *const libc::c_char,
@@ -400,6 +390,7 @@ unsafe extern "C" fn error(
         shouldbe,
     );
 }
+
 unsafe extern "C" fn parse_unsigned(
     optarg_0: *const libc::c_char,
     option: libc::c_int,
@@ -417,6 +408,7 @@ unsafe extern "C" fn parse_unsigned(
     }
     return res;
 }
+
 unsafe extern "C" fn parse_optional_fraction(
     optarg_0: *const libc::c_char,
     option: libc::c_int,
@@ -449,6 +441,7 @@ unsafe extern "C" fn parse_optional_fraction(
     }
     return 1 as libc::c_int;
 }
+
 static mut cpu_mask_tbl: [EnumParseTable; 6] = [
     {
         let init = EnumParseTable {
@@ -582,6 +575,7 @@ static mut decode_frame_type_tbl: [EnumParseTable; 4] = [
         init
     },
 ];
+
 unsafe extern "C" fn parse_enum(
     optarg_0: *mut libc::c_char,
     tbl: *const EnumParseTable,
@@ -637,6 +631,7 @@ unsafe extern "C" fn parse_enum(
     }
     return res;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn parse(
     argc: libc::c_int,

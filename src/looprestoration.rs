@@ -1,11 +1,6 @@
 use std::cmp;
 use std::ops::Add;
 
-#[cfg(all(
-    feature = "asm",
-    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
-))]
-use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -16,13 +11,60 @@ use crate::include::common::intops::iclip;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
-#[cfg(all(feature = "asm", target_arch = "arm"))]
-use crate::include::stdint::intptr_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
 use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
+
+#[cfg(all(feature = "asm", target_arch = "arm"))]
+use crate::include::stdint::intptr_t;
+
+#[cfg(all(
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
+))]
+use crate::include::common::bitdepth::bd_fn;
+
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+extern "C" {
+    fn dav1d_sgr_box3_v_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+
+    fn dav1d_sgr_calc_ab1_neon(
+        a: *mut int32_t,
+        b: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        strength: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+
+    fn dav1d_sgr_box5_v_neon(
+        sumsq: *mut int32_t,
+        sum: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        edges: LrEdgeFlags,
+    );
+
+    fn dav1d_sgr_calc_ab2_neon(
+        a: *mut int32_t,
+        b: *mut int16_t,
+        w: libc::c_int,
+        h: libc::c_int,
+        strength: libc::c_int,
+        bitdepth_max: libc::c_int,
+    );
+}
 
 pub type LrEdgeFlags = libc::c_uint;
 pub const LR_HAVE_BOTTOM: LrEdgeFlags = 8;
@@ -85,43 +127,6 @@ macro_rules! decl_looprestorationfilter_fn {
 
         $name
     }};
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-extern "C" {
-    fn dav1d_sgr_box3_v_neon(
-        sumsq: *mut int32_t,
-        sum: *mut int16_t,
-        w: libc::c_int,
-        h: libc::c_int,
-        edges: LrEdgeFlags,
-    );
-
-    fn dav1d_sgr_calc_ab1_neon(
-        a: *mut int32_t,
-        b: *mut int16_t,
-        w: libc::c_int,
-        h: libc::c_int,
-        strength: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
-
-    fn dav1d_sgr_box5_v_neon(
-        sumsq: *mut int32_t,
-        sum: *mut int16_t,
-        w: libc::c_int,
-        h: libc::c_int,
-        edges: LrEdgeFlags,
-    );
-
-    fn dav1d_sgr_calc_ab2_neon(
-        a: *mut int32_t,
-        b: *mut int16_t,
-        w: libc::c_int,
-        h: libc::c_int,
-        strength: libc::c_int,
-        bitdepth_max: libc::c_int,
-    );
 }
 
 // 256 * 1.5 + 3 + 3 = 390
@@ -1694,9 +1699,6 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(
         }
     }
 }
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]

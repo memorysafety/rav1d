@@ -1,11 +1,10 @@
-#[cfg(feature = "asm")]
-use cfg_if::cfg_if;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 
-extern "C" {
-    pub type Dav1dContext;
-}
+use crate::src::internal::Dav1dContext;
+
+#[cfg(feature = "asm")]
+use cfg_if::cfg_if;
 
 /// This is atomic, which has interior mutability,
 /// instead of a `static mut`, since the latter is `unsafe` to access.

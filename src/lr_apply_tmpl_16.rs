@@ -1,46 +1,34 @@
 use std::cmp;
 
-use crate::include::stddef::*;
-use crate::include::stdint::*;
-
-use ::libc;
-extern "C" {
-    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
-}
-
-use crate::src::tables::dav1d_sgr_params;
-
-pub type pixel = uint16_t;
-
-use crate::src::internal::Dav1dFrameContext;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-
+use crate::include::stddef::*;
+use crate::include::stdint::*;
 use crate::src::align::Align16;
-
-use crate::src::lf_mask::Av1RestorationUnit;
-
 use crate::src::internal::Dav1dDSPContext;
-
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::looprestoration::looprestorationfilter_fn;
-
 use crate::src::looprestoration::LooprestorationParams;
 use crate::src::looprestoration::LrEdgeFlags;
 use crate::src::looprestoration::LR_HAVE_BOTTOM;
 use crate::src::looprestoration::LR_HAVE_LEFT;
 use crate::src::looprestoration::LR_HAVE_RIGHT;
 use crate::src::looprestoration::LR_HAVE_TOP;
-
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
+use crate::src::tables::dav1d_sgr_params;
+
+extern "C" {
+    fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
+}
+
+pub type pixel = uint16_t;
+
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -48,6 +36,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1;
 }
+
 unsafe extern "C" fn lr_stripe(
     f: *const Dav1dFrameContext,
     mut p: *mut pixel,
@@ -165,6 +154,7 @@ unsafe extern "C" fn lr_stripe(
         lpf = lpf.offset(4 * PXSTRIDE(stride));
     }
 }
+
 unsafe extern "C" fn backup4xU(
     mut dst: *mut [pixel; 4],
     mut src: *const pixel,
@@ -182,6 +172,7 @@ unsafe extern "C" fn backup4xU(
         src = src.offset(PXSTRIDE(src_stride) as isize);
     }
 }
+
 unsafe extern "C" fn lr_sbrow(
     f: *const Dav1dFrameContext,
     mut p: *mut pixel,
@@ -291,6 +282,7 @@ unsafe extern "C" fn lr_sbrow(
         );
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_lr_sbrow_16bpc(
     f: *mut Dav1dFrameContext,

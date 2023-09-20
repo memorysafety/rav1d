@@ -1,12 +1,15 @@
-use crate::errno_location;
-use crate::stderr;
-use ::libc;
+use rav1d::errno_location;
+use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::stddef::ptrdiff_t;
 use rav1d::include::stddef::size_t;
 use rav1d::include::stdint::int64_t;
 use rav1d::include::stdint::uint32_t;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
+use rav1d::src::lib::dav1d_data_create;
+use rav1d::src::lib::dav1d_data_unref;
+use rav1d::stderr;
+
 extern "C" {
     fn llround(_: libc::c_double) -> libc::c_longlong;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
@@ -17,11 +20,8 @@ extern "C" {
     fn ftello(__stream: *mut libc::FILE) -> libc::off_t;
     fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: size_t) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn dav1d_data_create(data: *mut Dav1dData, sz: size_t) -> *mut uint8_t;
-    fn dav1d_data_unref(data: *mut Dav1dData);
 }
 
-use rav1d::include::dav1d::data::Dav1dData;
 #[repr(C)]
 pub struct DemuxerPriv {
     pub f: *mut libc::FILE,
@@ -30,6 +30,7 @@ pub struct DemuxerPriv {
     pub last_ts: uint64_t,
     pub step: uint64_t,
 }
+
 #[repr(C)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,
@@ -49,7 +50,9 @@ pub struct Demuxer {
     pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
+
 pub type IvfInputContext = DemuxerPriv;
+
 static mut probe_data: [uint8_t; 12] = [
     'D' as i32 as uint8_t,
     'K' as i32 as uint8_t,
@@ -64,6 +67,7 @@ static mut probe_data: [uint8_t; 12] = [
     '0' as i32 as uint8_t,
     '1' as i32 as uint8_t,
 ];
+
 unsafe extern "C" fn ivf_probe(data: *const uint8_t) -> libc::c_int {
     return (memcmp(
         data as *const libc::c_void,
@@ -71,15 +75,18 @@ unsafe extern "C" fn ivf_probe(data: *const uint8_t) -> libc::c_int {
         ::core::mem::size_of::<[uint8_t; 12]>(),
     ) == 0) as libc::c_int;
 }
+
 unsafe extern "C" fn rl32(p: *const uint8_t) -> libc::c_uint {
     return (*p.offset(3) as uint32_t) << 24 as libc::c_uint
         | ((*p.offset(2) as libc::c_int) << 16 as libc::c_uint) as libc::c_uint
         | ((*p.offset(1) as libc::c_int) << 8 as libc::c_uint) as libc::c_uint
         | *p.offset(0) as libc::c_uint;
 }
+
 unsafe extern "C" fn rl64(p: *const uint8_t) -> int64_t {
     return ((rl32(&*p.offset(4)) as uint64_t) << 32 | rl32(p) as uint64_t) as int64_t;
 }
+
 unsafe extern "C" fn ivf_open(
     c: *mut IvfInputContext,
     file: *const libc::c_char,
@@ -212,7 +219,9 @@ unsafe extern "C" fn ivf_open(
     (*c).last_ts = 0 as libc::c_int as uint64_t;
     return 0 as libc::c_int;
 }
+
 #[inline]
+
 unsafe extern "C" fn ivf_read_header(
     c: *mut IvfInputContext,
     sz: *mut ptrdiff_t,
@@ -249,6 +258,7 @@ unsafe extern "C" fn ivf_read_header(
     }
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> libc::c_int {
     let ptr: *mut uint8_t;
     let mut sz: ptrdiff_t = 0;
@@ -276,6 +286,7 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> l
     (*c).last_ts = ts;
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: uint64_t) -> libc::c_int {
     let mut current_block: u64;
     let mut cur: uint64_t = 0;
@@ -328,9 +339,11 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: uint64_t) -> libc::c
         }
     }
 }
+
 unsafe extern "C" fn ivf_close(c: *mut IvfInputContext) {
     fclose((*c).f);
 }
+
 #[no_mangle]
 pub static mut ivf_demuxer: Demuxer = {
     let init = Demuxer {

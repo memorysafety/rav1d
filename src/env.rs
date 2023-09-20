@@ -1,6 +1,5 @@
 use std::cmp;
-
-use cmp::Ordering;
+use std::cmp::Ordering;
 
 use crate::include::common::intops::apply_sign;
 use crate::include::dav1d::headers::Dav1dFrameHeader;

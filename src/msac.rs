@@ -1,11 +1,13 @@
+use std::mem;
+use std::ops::Range;
+
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+
 use cfg_if::cfg_if;
-use std::mem;
-use std::ops::Range;
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 extern "C" {

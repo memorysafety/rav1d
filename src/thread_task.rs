@@ -1,9 +1,43 @@
 use std::cmp;
 
+use crate::include::common::attributes::ctz;
+use crate::include::common::intops::iclip;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 use crate::include::stddef::*;
+use crate::src::cdf::dav1d_cdf_thread_update;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use crate::src::internal::Dav1dContext;
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Dav1dTask;
+use crate::src::internal::Dav1dTaskContext;
+use crate::src::internal::Dav1dTileState;
+use crate::src::internal::TaskThreadData;
+use crate::src::internal::TaskType;
+use crate::src::internal::DAV1D_TASK_TYPE_CDEF;
+use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_COLS;
+use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_ROWS;
+use crate::src::internal::DAV1D_TASK_TYPE_ENTROPY_PROGRESS;
+use crate::src::internal::DAV1D_TASK_TYPE_FG_APPLY;
+use crate::src::internal::DAV1D_TASK_TYPE_FG_PREP;
+use crate::src::internal::DAV1D_TASK_TYPE_INIT;
+use crate::src::internal::DAV1D_TASK_TYPE_INIT_CDF;
+use crate::src::internal::DAV1D_TASK_TYPE_LOOP_RESTORATION;
+use crate::src::internal::DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
+use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
+use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
+use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
+use crate::src::picture::Dav1dThreadPicture;
 
-use ::libc;
+use libc::pthread_cond_signal;
+use libc::pthread_cond_wait;
+use libc::pthread_mutex_lock;
+use libc::pthread_mutex_unlock;
+
 use cfg_if::cfg_if;
+
 extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: size_t) -> *mut libc::c_void;
     fn realloc(_: *mut libc::c_void, _: size_t) -> *mut libc::c_void;
@@ -54,48 +88,6 @@ extern "C" {
         row: libc::c_int,
     );
 }
-use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
-
-use crate::src::internal::Dav1dFrameContext;
-
-use crate::src::internal::Dav1dTask;
-use crate::src::internal::TaskType;
-use crate::src::internal::DAV1D_TASK_TYPE_CDEF;
-use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_COLS;
-use crate::src::internal::DAV1D_TASK_TYPE_DEBLOCK_ROWS;
-use crate::src::internal::DAV1D_TASK_TYPE_ENTROPY_PROGRESS;
-use crate::src::internal::DAV1D_TASK_TYPE_FG_APPLY;
-use crate::src::internal::DAV1D_TASK_TYPE_FG_PREP;
-use crate::src::internal::DAV1D_TASK_TYPE_INIT;
-use crate::src::internal::DAV1D_TASK_TYPE_INIT_CDF;
-use crate::src::internal::DAV1D_TASK_TYPE_LOOP_RESTORATION;
-use crate::src::internal::DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
-use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
-use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
-use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
-use libc::pthread_cond_signal;
-use libc::pthread_cond_wait;
-use libc::pthread_mutex_lock;
-use libc::pthread_mutex_unlock;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::picture::Dav1dPicture;
-use crate::src::internal::TaskThreadData;
-
-use crate::src::internal::Dav1dTaskContext;
-
-use crate::src::internal::Dav1dTileState;
-
-use crate::src::internal::Dav1dContext;
-
-use crate::src::cdf::dav1d_cdf_thread_update;
-
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
-
-use crate::src::picture::Dav1dThreadPicture;
-
-use crate::include::common::attributes::ctz;
 
 pub const FRAME_ERROR: u32 = u32::MAX - 1;
 pub const TILE_ERROR: i32 = i32::MAX - 1;
@@ -112,7 +104,7 @@ unsafe extern "C" fn dav1d_set_thread_name(name: *const libc::c_char) {
         }
     }
 }
-use crate::include::common::intops::iclip;
+
 #[inline]
 unsafe extern "C" fn reset_task_cur(
     c: *const Dav1dContext,
@@ -191,6 +183,7 @@ unsafe extern "C" fn reset_task_cur(
     }
     return 1 as libc::c_int;
 }
+
 #[inline]
 unsafe extern "C" fn reset_task_cur_async(
     ttd: *mut TaskThreadData,
@@ -222,6 +215,7 @@ unsafe extern "C" fn reset_task_cur_async(
         fresh1.1;
     }
 }
+
 unsafe extern "C" fn insert_tasks_between(
     f: *mut Dav1dFrameContext,
     first: *mut Dav1dTask,
@@ -256,6 +250,7 @@ unsafe extern "C" fn insert_tasks_between(
         pthread_cond_signal(&mut (*ttd).cond);
     }
 }
+
 unsafe extern "C" fn insert_tasks(
     f: *mut Dav1dFrameContext,
     first: *mut Dav1dTask,
@@ -345,6 +340,7 @@ unsafe extern "C" fn insert_tasks(
     }
     insert_tasks_between(f, first, last, prev_t, 0 as *mut Dav1dTask, cond_signal);
 }
+
 #[inline]
 unsafe extern "C" fn insert_task(
     f: *mut Dav1dFrameContext,
@@ -353,6 +349,7 @@ unsafe extern "C" fn insert_task(
 ) {
     insert_tasks(f, t, t, cond_signal);
 }
+
 #[inline]
 unsafe extern "C" fn add_pending(f: *mut Dav1dFrameContext, t: *mut Dav1dTask) {
     pthread_mutex_lock(&mut (*f).task_thread.pending_tasks.lock);
@@ -369,6 +366,7 @@ unsafe extern "C" fn add_pending(f: *mut Dav1dFrameContext, t: *mut Dav1dTask) {
     );
     pthread_mutex_unlock(&mut (*f).task_thread.pending_tasks.lock);
 }
+
 #[inline]
 unsafe extern "C" fn merge_pending_frame(f: *mut Dav1dFrameContext) -> libc::c_int {
     let merge = ::core::intrinsics::atomic_load_seqcst(&mut (*f).task_thread.pending_tasks.merge);
@@ -390,6 +388,7 @@ unsafe extern "C" fn merge_pending_frame(f: *mut Dav1dFrameContext) -> libc::c_i
     }
     return merge;
 }
+
 #[inline]
 unsafe extern "C" fn merge_pending(c: *const Dav1dContext) -> libc::c_int {
     let mut res = 0;
@@ -400,6 +399,7 @@ unsafe extern "C" fn merge_pending(c: *const Dav1dContext) -> libc::c_int {
     }
     return res;
 }
+
 unsafe extern "C" fn create_filter_sbrow(
     f: *mut Dav1dFrameContext,
     pass: libc::c_int,
@@ -475,6 +475,7 @@ unsafe extern "C" fn create_filter_sbrow(
     *res_t = t;
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
     f: *mut Dav1dFrameContext,
@@ -561,6 +562,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
     pthread_mutex_unlock(&mut (*f).task_thread.pending_tasks.lock);
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
     let c: *const Dav1dContext = (*f).c;
@@ -573,6 +575,7 @@ pub unsafe extern "C" fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
     (*t).recon_progress = (*t).deblock_progress;
     insert_task(f, t, 1 as libc::c_int);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_task_delayed_fg(
     c: *mut Dav1dContext,
@@ -593,6 +596,7 @@ pub unsafe extern "C" fn dav1d_task_delayed_fg(
     pthread_cond_wait(&mut (*ttd).delayed_fg.cond, &mut (*ttd).lock);
     pthread_mutex_unlock(&mut (*ttd).lock);
 }
+
 #[inline]
 unsafe extern "C" fn ensure_progress(
     ttd: *mut TaskThreadData,
@@ -614,6 +618,7 @@ unsafe extern "C" fn ensure_progress(
     }
     return 0 as libc::c_int;
 }
+
 #[inline]
 unsafe extern "C" fn check_tile(
     t: *mut Dav1dTask,
@@ -706,6 +711,7 @@ unsafe extern "C" fn check_tile(
     }
     return 0 as libc::c_int;
 }
+
 #[inline]
 unsafe extern "C" fn get_frame_progress(
     c: *const Dav1dContext,
@@ -743,6 +749,7 @@ unsafe extern "C" fn get_frame_progress(
     }
     return (idx << 5 | prog) - 1;
 }
+
 #[inline]
 unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: libc::c_int) {
     ::core::intrinsics::atomic_store_seqcst(
@@ -774,6 +781,7 @@ unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: libc::c_int) 
     (*f).n_tile_data = 0 as libc::c_int;
     pthread_cond_signal(&mut (*f).task_thread.cond);
 }
+
 #[inline]
 unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThreadData) {
     let in_0: *const Dav1dPicture = (*ttd).delayed_fg.in_0;

@@ -1,11 +1,40 @@
 use std::cmp;
 
+use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::intops::apply_sign;
+use crate::include::common::intops::iclip;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::ipred::get_upsample;
+use crate::src::ipred::Dav1dIntraPredDSPContext;
+use crate::src::levels::DC_128_PRED;
+use crate::src::levels::DC_PRED;
+use crate::src::levels::FILTER_PRED;
+use crate::src::levels::HOR_PRED;
+use crate::src::levels::LEFT_DC_PRED;
+use crate::src::levels::PAETH_PRED;
+use crate::src::levels::SMOOTH_H_PRED;
+use crate::src::levels::SMOOTH_PRED;
+use crate::src::levels::SMOOTH_V_PRED;
+use crate::src::levels::TOP_DC_PRED;
+use crate::src::levels::VERT_PRED;
+use crate::src::levels::Z1_PRED;
+use crate::src::levels::Z2_PRED;
+use crate::src::levels::Z3_PRED;
+use crate::src::tables::dav1d_dr_intra_derivative;
+use crate::src::tables::dav1d_filter_intra_taps;
+use crate::src::tables::dav1d_sm_weights;
+
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
+
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-use libc;
+
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
 }
@@ -102,35 +131,7 @@ extern "C" {
     fn dav1d_ipred_pixel_set_16bpc_neon(out: *mut pixel, px: pixel, n: libc::c_int);
 }
 
-use crate::src::tables::dav1d_dr_intra_derivative;
-use crate::src::tables::dav1d_filter_intra_taps;
-use crate::src::tables::dav1d_sm_weights;
-
 pub type pixel = uint16_t;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use crate::src::ipred::Dav1dIntraPredDSPContext;
-use crate::src::levels::DC_128_PRED;
-use crate::src::levels::DC_PRED;
-use crate::src::levels::FILTER_PRED;
-use crate::src::levels::HOR_PRED;
-use crate::src::levels::LEFT_DC_PRED;
-use crate::src::levels::PAETH_PRED;
-use crate::src::levels::SMOOTH_H_PRED;
-use crate::src::levels::SMOOTH_PRED;
-use crate::src::levels::SMOOTH_V_PRED;
-use crate::src::levels::TOP_DC_PRED;
-use crate::src::levels::VERT_PRED;
-use crate::src::levels::Z1_PRED;
-use crate::src::levels::Z2_PRED;
-use crate::src::levels::Z3_PRED;
-
-use crate::include::common::attributes::ctz;
-use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::iclip;
 
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
@@ -139,6 +140,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1;
 }
+
 #[inline]
 unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_int) {
     let mut n = 0;
@@ -147,6 +149,7 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: libc::c_int, num: libc::c_i
         n += 1;
     }
 }
+
 #[inline(never)]
 unsafe extern "C" fn splat_dc(
     mut dst: *mut pixel,
@@ -174,6 +177,7 @@ unsafe extern "C" fn splat_dc(
         y += 1;
     }
 }
+
 #[inline(never)]
 unsafe extern "C" fn cfl_pred(
     mut dst: *mut pixel,
@@ -202,6 +206,7 @@ unsafe extern "C" fn cfl_pred(
         y += 1;
     }
 }
+
 unsafe extern "C" fn dc_gen_top(topleft: *const pixel, width: libc::c_int) -> libc::c_uint {
     let mut dc: libc::c_uint = (width >> 1) as libc::c_uint;
     let mut i = 0;
@@ -211,6 +216,7 @@ unsafe extern "C" fn dc_gen_top(topleft: *const pixel, width: libc::c_int) -> li
     }
     return dc >> ctz(width as libc::c_uint);
 }
+
 unsafe extern "C" fn ipred_dc_top_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -231,6 +237,7 @@ unsafe extern "C" fn ipred_dc_top_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn ipred_cfl_top_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -252,6 +259,7 @@ unsafe extern "C" fn ipred_cfl_top_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn dc_gen_left(topleft: *const pixel, height: libc::c_int) -> libc::c_uint {
     let mut dc: libc::c_uint = (height >> 1) as libc::c_uint;
     let mut i = 0;
@@ -261,6 +269,7 @@ unsafe extern "C" fn dc_gen_left(topleft: *const pixel, height: libc::c_int) -> 
     }
     return dc >> ctz(height as libc::c_uint);
 }
+
 unsafe extern "C" fn ipred_dc_left_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -281,6 +290,7 @@ unsafe extern "C" fn ipred_dc_left_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn ipred_cfl_left_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -303,6 +313,7 @@ unsafe extern "C" fn ipred_cfl_left_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn dc_gen(
     topleft: *const pixel,
     width: libc::c_int,
@@ -332,6 +343,7 @@ unsafe extern "C" fn dc_gen(
     }
     return dc;
 }
+
 unsafe extern "C" fn ipred_dc_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -352,6 +364,7 @@ unsafe extern "C" fn ipred_dc_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn ipred_cfl_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -374,6 +387,7 @@ unsafe extern "C" fn ipred_cfl_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn ipred_dc_128_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -388,6 +402,7 @@ unsafe extern "C" fn ipred_dc_128_c_erased(
     let dc = bitdepth_max + 1 >> 1;
     splat_dc(dst.cast(), stride, width, height, dc, bitdepth_max);
 }
+
 unsafe extern "C" fn ipred_cfl_128_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -410,6 +425,7 @@ unsafe extern "C" fn ipred_cfl_128_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe extern "C" fn ipred_v_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -433,6 +449,7 @@ unsafe extern "C" fn ipred_v_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_v_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -455,6 +472,7 @@ unsafe fn ipred_v_rust(
         y += 1;
     }
 }
+
 unsafe extern "C" fn ipred_h_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -478,6 +496,7 @@ unsafe extern "C" fn ipred_h_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_h_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -500,6 +519,7 @@ unsafe fn ipred_h_rust(
         y += 1;
     }
 }
+
 unsafe extern "C" fn ipred_paeth_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -523,6 +543,7 @@ unsafe extern "C" fn ipred_paeth_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_paeth_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -558,6 +579,7 @@ unsafe fn ipred_paeth_rust(
         y += 1;
     }
 }
+
 unsafe extern "C" fn ipred_smooth_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -581,6 +603,7 @@ unsafe extern "C" fn ipred_smooth_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_smooth_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -615,6 +638,7 @@ unsafe fn ipred_smooth_rust(
         y += 1;
     }
 }
+
 unsafe extern "C" fn ipred_smooth_v_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -638,6 +662,7 @@ unsafe extern "C" fn ipred_smooth_v_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_smooth_v_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -666,6 +691,7 @@ unsafe fn ipred_smooth_v_rust(
         y += 1;
     }
 }
+
 unsafe extern "C" fn ipred_smooth_h_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -689,6 +715,7 @@ unsafe extern "C" fn ipred_smooth_h_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_smooth_h_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -717,6 +744,7 @@ unsafe fn ipred_smooth_h_rust(
         y += 1;
     }
 }
+
 #[inline(never)]
 unsafe extern "C" fn get_filter_strength(
     wh: libc::c_int,
@@ -776,6 +804,7 @@ unsafe extern "C" fn get_filter_strength(
     }
     return 0 as libc::c_int;
 }
+
 #[inline(never)]
 unsafe extern "C" fn filter_edge(
     out: *mut pixel,
@@ -834,7 +863,7 @@ unsafe extern "C" fn filter_edge(
         i += 1;
     }
 }
-use crate::src::ipred::get_upsample;
+
 #[inline(never)]
 unsafe extern "C" fn upsample_edge(
     out: *mut pixel,
@@ -867,6 +896,7 @@ unsafe extern "C" fn upsample_edge(
     }
     *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
 }
+
 unsafe extern "C" fn ipred_z1_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -890,6 +920,7 @@ unsafe extern "C" fn ipred_z1_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_z1_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -980,6 +1011,7 @@ unsafe fn ipred_z1_rust(
         xpos += dx;
     }
 }
+
 unsafe extern "C" fn ipred_z2_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -1003,6 +1035,7 @@ unsafe extern "C" fn ipred_z2_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_z2_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -1138,6 +1171,7 @@ unsafe fn ipred_z2_rust(
         dst = dst.offset(PXSTRIDE(stride) as isize);
     }
 }
+
 unsafe extern "C" fn ipred_z3_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -1161,6 +1195,7 @@ unsafe extern "C" fn ipred_z3_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_z3_rust(
     dst: *mut pixel,
     stride: ptrdiff_t,
@@ -1256,6 +1291,7 @@ unsafe fn ipred_z3_rust(
         ypos += dy;
     }
 }
+
 unsafe extern "C" fn ipred_filter_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -1279,6 +1315,7 @@ unsafe extern "C" fn ipred_filter_c_erased(
         bitdepth_max,
     );
 }
+
 unsafe fn ipred_filter_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -1342,6 +1379,7 @@ unsafe fn ipred_filter_rust(
         y += 2 as libc::c_int;
     }
 }
+
 #[inline(never)]
 unsafe extern "C" fn cfl_ac_c(
     mut ac: *mut int16_t,
@@ -1429,6 +1467,7 @@ unsafe extern "C" fn cfl_ac_c(
         y += 1;
     }
 }
+
 unsafe extern "C" fn cfl_ac_420_c_erased(
     ac: *mut int16_t,
     ypx: *const DynPixel,
@@ -1450,6 +1489,7 @@ unsafe extern "C" fn cfl_ac_420_c_erased(
         1 as libc::c_int,
     );
 }
+
 unsafe extern "C" fn cfl_ac_422_c_erased(
     ac: *mut int16_t,
     ypx: *const DynPixel,
@@ -1471,6 +1511,7 @@ unsafe extern "C" fn cfl_ac_422_c_erased(
         0 as libc::c_int,
     );
 }
+
 unsafe extern "C" fn cfl_ac_444_c_erased(
     ac: *mut int16_t,
     ypx: *const DynPixel,
@@ -1492,6 +1533,7 @@ unsafe extern "C" fn cfl_ac_444_c_erased(
         0 as libc::c_int,
     );
 }
+
 unsafe extern "C" fn pal_pred_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -1502,6 +1544,7 @@ unsafe extern "C" fn pal_pred_c_erased(
 ) {
     pal_pred_rust(dst.cast(), stride, pal, idx, w, h);
 }
+
 unsafe extern "C" fn pal_pred_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -1608,9 +1651,6 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
         (*c).pal_pred = dav1d_pal_pred_16bpc_avx512icl;
     }
 }
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]

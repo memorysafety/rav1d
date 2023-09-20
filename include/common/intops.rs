@@ -1,4 +1,6 @@
-use std::ffi::{c_int, c_uint, c_ulonglong};
+use std::ffi::c_int;
+use std::ffi::c_uint;
+use std::ffi::c_ulonglong;
 
 use crate::include::common::attributes::clz;
 use crate::include::common::attributes::clzll;

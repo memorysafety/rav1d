@@ -1,4 +1,9 @@
-use std::ops::{Add, AddAssign, Index, IndexMut, Sub, SubAssign};
+use std::ops::Add;
+use std::ops::AddAssign;
+use std::ops::Index;
+use std::ops::IndexMut;
+use std::ops::Sub;
+use std::ops::SubAssign;
 
 pub struct CursorMut<'a, T> {
     data: &'a mut [T],

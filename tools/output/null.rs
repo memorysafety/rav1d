@@ -1,11 +1,11 @@
-use ::libc;
-extern "C" {
-    pub type MuxerPriv;
-    fn dav1d_picture_unref(p: *mut Dav1dPicture);
-}
-
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
+use rav1d::src::lib::dav1d_picture_unref;
+
+extern "C" {
+    pub type MuxerPriv;
+}
+
 #[repr(C)]
 pub struct Muxer {
     pub priv_data_size: libc::c_int,
@@ -24,11 +24,14 @@ pub struct Muxer {
     pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
+
 pub type NullOutputContext = MuxerPriv;
+
 unsafe extern "C" fn null_write(_c: *mut NullOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     dav1d_picture_unref(p);
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub static mut null_muxer: Muxer = {
     let init = Muxer {

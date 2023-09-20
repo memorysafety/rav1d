@@ -11,6 +11,7 @@ pub const OBU_META_ITUT_T35: ObuMetaType = 4;
 pub const OBU_META_SCALABILITY: ObuMetaType = 3;
 pub const OBU_META_HDR_MDCV: ObuMetaType = 2;
 pub const OBU_META_HDR_CLL: ObuMetaType = 1;
+
 pub type TxfmSize = u8;
 pub const N_TX_SIZES: usize = 5;
 pub const TX_64X64: TxfmSize = 4;
@@ -18,6 +19,7 @@ pub const TX_32X32: TxfmSize = 3;
 pub const TX_16X16: TxfmSize = 2;
 pub const TX_8X8: TxfmSize = 1;
 pub const TX_4X4: TxfmSize = 0;
+
 pub type BlockLevel = u8;
 pub const N_BL_LEVELS: usize = 5;
 pub const BL_8X8: BlockLevel = 4;
@@ -25,6 +27,7 @@ pub const BL_16X16: BlockLevel = 3;
 pub const BL_32X32: BlockLevel = 2;
 pub const BL_64X64: BlockLevel = 1;
 pub const BL_128X128: BlockLevel = 0;
+
 pub type RectTxfmSize = u8;
 pub const N_RECT_TX_SIZES: usize = 19; // TODO(kkysen) symbolicate in Dav1dFrameContext::qm once deduplicated
 pub const RTX_64X16: RectTxfmSize = 18;
@@ -41,6 +44,7 @@ pub const RTX_16X8: RectTxfmSize = 8;
 pub const RTX_8X16: RectTxfmSize = 7;
 pub const RTX_8X4: RectTxfmSize = 6;
 pub const RTX_4X8: RectTxfmSize = 5;
+
 pub type TxfmType = u8;
 pub const N_TX_TYPES_PLUS_LL: usize = 17;
 pub const WHT_WHT: TxfmType = 16;
@@ -61,10 +65,12 @@ pub const ADST_ADST: TxfmType = 3;
 pub const DCT_ADST: TxfmType = 2;
 pub const ADST_DCT: TxfmType = 1;
 pub const DCT_DCT: TxfmType = 0;
+
 pub type TxClass = libc::c_uint;
 pub const TX_CLASS_V: TxClass = 2;
 pub const TX_CLASS_H: TxClass = 1;
 pub const TX_CLASS_2D: TxClass = 0;
+
 pub type IntraPredMode = u8;
 pub const FILTER_PRED: IntraPredMode = 13;
 pub const Z3_PRED: IntraPredMode = 8;
@@ -90,12 +96,14 @@ pub const DIAG_DOWN_LEFT_PRED: IntraPredMode = 3;
 pub const HOR_PRED: IntraPredMode = 2;
 pub const VERT_PRED: IntraPredMode = 1;
 pub const DC_PRED: IntraPredMode = 0;
+
 pub type InterIntraPredMode = libc::c_uint;
 pub const N_INTER_INTRA_PRED_MODES: usize = 4;
 pub const II_SMOOTH_PRED: InterIntraPredMode = 3;
 pub const II_HOR_PRED: InterIntraPredMode = 2;
 pub const II_VERT_PRED: InterIntraPredMode = 1;
 pub const II_DC_PRED: InterIntraPredMode = 0;
+
 pub type BlockPartition = u8;
 pub const N_SUB8X8_PARTITIONS: usize = 4;
 pub const N_PARTITIONS: usize = 10;
@@ -109,6 +117,7 @@ pub const PARTITION_SPLIT: BlockPartition = 3;
 pub const PARTITION_V: BlockPartition = 2;
 pub const PARTITION_H: BlockPartition = 1;
 pub const PARTITION_NONE: BlockPartition = 0;
+
 pub type BlockSize = u8;
 pub const N_BS_SIZES: usize = 22;
 pub const BS_4x4: BlockSize = 21;
@@ -133,6 +142,7 @@ pub const BS_64x64: BlockSize = 3;
 pub const BS_64x128: BlockSize = 2;
 pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
+
 pub type Filter2d = libc::c_uint;
 pub const N_2D_FILTERS: usize = 10; // TODO(kkysen) symbolicate in struct Dav1dMCDSPContext once deduplicated
 pub const FILTER_2D_BILINEAR: Filter2d = 9;
@@ -145,23 +155,27 @@ pub const FILTER_2D_8TAP_SHARP_REGULAR: Filter2d = 3;
 pub const FILTER_2D_8TAP_REGULAR_SHARP: Filter2d = 2;
 pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
 pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
+
 pub type MVJoint = libc::c_uint;
 pub const N_MV_JOINTS: usize = 4;
 pub const MV_JOINT_HV: MVJoint = 3;
 pub const MV_JOINT_V: MVJoint = 2;
 pub const MV_JOINT_H: MVJoint = 1;
 pub const _MV_JOINT_ZERO: MVJoint = 0;
+
 pub type InterPredMode = u8;
 pub const _N_INTER_PRED_MODES: usize = 4;
 pub const NEWMV: InterPredMode = 3;
 pub const GLOBALMV: InterPredMode = 2;
 pub const NEARMV: InterPredMode = 1;
 pub const NEARESTMV: InterPredMode = 0;
+
 pub type DRL_PROXIMITY = u8;
 pub const NEARISH_DRL: DRL_PROXIMITY = 3;
 pub const NEAR_DRL: DRL_PROXIMITY = 2;
 pub const NEARER_DRL: DRL_PROXIMITY = 1;
 pub const NEAREST_DRL: DRL_PROXIMITY = 0;
+
 pub type CompInterPredMode = u8;
 pub const N_COMP_INTER_PRED_MODES: usize = 8;
 pub const NEWMV_NEWMV: CompInterPredMode = 7;
@@ -172,12 +186,14 @@ pub const NEWMV_NEARESTMV: CompInterPredMode = 3;
 pub const NEARESTMV_NEWMV: CompInterPredMode = 2;
 pub const NEARMV_NEARMV: CompInterPredMode = 1;
 pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
+
 pub type CompInterType = u8;
 pub const COMP_INTER_WEDGE: CompInterType = 4;
 pub const COMP_INTER_SEG: CompInterType = 3;
 pub const COMP_INTER_AVG: CompInterType = 2;
 pub const COMP_INTER_WEIGHTED_AVG: CompInterType = 1;
 pub const COMP_INTER_NONE: CompInterType = 0;
+
 pub type InterIntraType = u8;
 pub const INTER_INTRA_WEDGE: InterIntraType = 2;
 pub const INTER_INTRA_BLEND: InterIntraType = 1;

@@ -14,11 +14,13 @@ pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = 4;
 pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = 3;
 pub const DAV1D_OBU_TD: Dav1dObuType = 2;
 pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = 1;
+
 pub type Dav1dTxfmMode = libc::c_uint;
 pub const DAV1D_N_TX_MODES: usize = 3;
 pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
 pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
 pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
+
 pub type Dav1dFilterMode = u8;
 pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
 pub const DAV1D_N_FILTERS: usize = 4;
@@ -27,15 +29,18 @@ pub const DAV1D_N_SWITCHABLE_FILTERS: usize = 3;
 pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
 pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
 pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
+
 pub type Dav1dAdaptiveBoolean = libc::c_uint;
 pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
 pub const DAV1D_ON: Dav1dAdaptiveBoolean = 1;
 pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
+
 pub type Dav1dRestorationType = u8;
 pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
 pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
 pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
 pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
+
 pub type Dav1dWarpedMotionType = libc::c_uint;
 pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
@@ -73,11 +78,13 @@ pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
 pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
 pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
 pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
+
 pub type Dav1dFrameType = libc::c_uint;
 pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
 pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
 pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
 pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
+
 pub type Dav1dColorPrimaries = libc::c_uint;
 pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
 pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries = 22;
@@ -92,6 +99,7 @@ pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries = 5;
 pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = 4;
 pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = 2;
 pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = 1;
+
 pub type Dav1dTransferCharacteristics = libc::c_uint;
 pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
 pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics = 18;
@@ -111,6 +119,7 @@ pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics = 5;
 pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics = 4;
 pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics = 2;
 pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics = 1;
+
 pub type Dav1dMatrixCoefficients = libc::c_uint;
 pub const DAV1D_MC_RESERVED: Dav1dMatrixCoefficients = 255;
 pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = 14;
@@ -127,6 +136,7 @@ pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = 4;
 pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients = 2;
 pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = 1;
 pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = 0;
+
 pub type Dav1dChromaSamplePosition = libc::c_uint;
 pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
 pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
@@ -140,6 +150,7 @@ pub struct Dav1dContentLightLevel {
     pub max_content_light_level: libc::c_int,
     pub max_frame_average_light_level: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dMasteringDisplay {
     pub primaries: [[uint16_t; 2]; 3],
@@ -147,6 +158,7 @@ pub struct Dav1dMasteringDisplay {
     pub max_luminance: uint32_t,
     pub min_luminance: uint32_t,
 }
+
 #[repr(C)]
 pub struct Dav1dITUTT35 {
     pub country_code: uint8_t,
@@ -281,21 +293,25 @@ pub struct Dav1dFilmGrainData {
     pub overlap_flag: libc::c_int,
     pub clip_to_restricted_range: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_film_grain {
     pub data: Dav1dFilmGrainData,
     pub present: libc::c_int,
     pub update: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_super_res {
     pub width_scale_denominator: libc::c_int,
     pub enabled: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_tiling {
     pub uniform: libc::c_int,
@@ -312,6 +328,7 @@ pub struct Dav1dFrameHeader_tiling {
     pub row_start_sb: [uint16_t; 65],
     pub update: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_quant {
     pub yac: libc::c_int,
@@ -325,6 +342,7 @@ pub struct Dav1dFrameHeader_quant {
     pub qm_u: libc::c_int,
     pub qm_v: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_segmentation {
     pub enabled: libc::c_int,
@@ -335,22 +353,26 @@ pub struct Dav1dFrameHeader_segmentation {
     pub lossless: [libc::c_int; 8],
     pub qidx: [libc::c_int; 8],
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_q {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_lf {
     pub present: libc::c_int,
     pub res_log2: libc::c_int,
     pub multi: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta {
     pub q: Dav1dFrameHeader_delta_q,
     pub lf: Dav1dFrameHeader_delta_lf,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_loopfilter {
     pub level_y: [libc::c_int; 2],
@@ -361,6 +383,7 @@ pub struct Dav1dFrameHeader_loopfilter {
     pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
     pub sharpness: libc::c_int,
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_cdef {
     pub damping: libc::c_int,
@@ -368,11 +391,13 @@ pub struct Dav1dFrameHeader_cdef {
     pub y_strength: [libc::c_int; 8],
     pub uv_strength: [libc::c_int; 8],
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader_restoration {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [libc::c_int; 2],
 }
+
 #[repr(C)]
 pub struct Dav1dFrameHeader {
     pub film_grain: Dav1dFrameHeader_film_grain,

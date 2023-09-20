@@ -1,29 +1,32 @@
 use std::cmp;
 
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::stdatomic::atomic_uint;
 use crate::include::stdint::*;
-use crate::src::align::*;
+use crate::src::align::Align16;
+use crate::src::align::Align32;
+use crate::src::align::Align4;
+use crate::src::align::Align8;
+use crate::src::internal::Dav1dContext;
+use crate::src::levels::N_BL_LEVELS;
+use crate::src::levels::N_BS_SIZES;
+use crate::src::levels::N_COMP_INTER_PRED_MODES;
+use crate::src::levels::N_INTRA_PRED_MODES;
+use crate::src::levels::N_MV_JOINTS;
+use crate::src::levels::N_PARTITIONS;
+use crate::src::levels::N_TX_SIZES;
+use crate::src::levels::N_UV_INTRA_PRED_MODES;
+use crate::src::r#ref::dav1d_ref_create_using_pool;
+use crate::src::r#ref::dav1d_ref_dec;
+use crate::src::r#ref::dav1d_ref_inc;
+use crate::src::r#ref::Dav1dRef;
+use crate::src::tables::dav1d_partition_type_count;
 
-use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
-
-use crate::src::tables::dav1d_partition_type_count;
-
-use crate::include::stdatomic::atomic_uint;
-
-use crate::src::r#ref::dav1d_ref_create_using_pool;
-use crate::src::r#ref::dav1d_ref_dec;
-use crate::src::r#ref::Dav1dRef;
-
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-
-use crate::src::align::Align16;
-
-use crate::src::levels::N_BS_SIZES;
 
 #[repr(C)]
 pub struct CdfContext {
@@ -125,7 +128,6 @@ pub struct CdfModeContext {
     pub pal_uv: Align4<[[uint16_t; 2]; 2]>,
     pub intrabc: Align4<[uint16_t; 2]>,
 }
-use crate::src::internal::Dav1dContext;
 
 #[derive(Clone)]
 #[repr(C)]
@@ -142,15 +144,6 @@ pub union CdfThreadContext_data {
     pub qcat: libc::c_uint,
 }
 
-use crate::src::levels::N_BL_LEVELS;
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
-use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_MV_JOINTS;
-use crate::src::levels::N_PARTITIONS;
-use crate::src::levels::N_TX_SIZES;
-use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::r#ref::dav1d_ref_inc;
-
 const fn cdf0d<const P: usize, const N: usize>(probs: [u16; P]) -> [u16; N] {
     assert!(P < N);
     let mut cdf0d = [0; N];
@@ -161,6 +154,7 @@ const fn cdf0d<const P: usize, const N: usize>(probs: [u16; P]) -> [u16; N] {
     }
     cdf0d
 }
+
 const fn cdf1d<const P: usize, const N: usize, const M: usize>(
     probs: [[u16; P]; M],
 ) -> [[u16; N]; M] {
@@ -172,6 +166,7 @@ const fn cdf1d<const P: usize, const N: usize, const M: usize>(
     }
     cdf1d
 }
+
 const fn cdf2d<const P: usize, const N: usize, const M: usize, const L: usize>(
     probs: [[[u16; P]; M]; L],
 ) -> [[[u16; N]; M]; L] {
@@ -183,6 +178,7 @@ const fn cdf2d<const P: usize, const N: usize, const M: usize, const L: usize>(
     }
     cdf2d
 }
+
 const fn cdf3d<const P: usize, const N: usize, const M: usize, const L: usize, const K: usize>(
     probs: [[[[u16; P]; M]; L]; K],
 ) -> [[[[u16; N]; M]; L]; K] {
@@ -194,6 +190,7 @@ const fn cdf3d<const P: usize, const N: usize, const M: usize, const L: usize, c
     }
     cdf3d
 }
+
 static av1_default_cdf: CdfModeContext = CdfModeContext {
     y_mode: Align32(cdf1d([
         [

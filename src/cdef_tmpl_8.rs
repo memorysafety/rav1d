@@ -2,28 +2,28 @@ use std::cmp;
 
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-use crate::src::align::Align16;
-use ::libc;
-#[cfg(feature = "asm")]
-use cfg_if::cfg_if;
-
-use crate::src::tables::dav1d_cdef_directions;
-
-pub type pixel = uint8_t;
-use crate::include::common::intops::iclip;
+use crate::src::cdef::constrain;
+use crate::src::cdef::fill;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
+use crate::src::tables::dav1d_cdef_directions;
 
-use crate::include::common::intops::ulog2;
-use crate::src::cdef::constrain;
-use crate::src::cdef::fill;
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+use crate::src::align::Align16;
+
+#[cfg(feature = "asm")]
+use cfg_if::cfg_if;
+
+pub type pixel = uint8_t;
+
 unsafe extern "C" fn padding(
     mut tmp: *mut int16_t,
     tmp_stride: ptrdiff_t,
@@ -124,6 +124,7 @@ unsafe extern "C" fn padding(
         y_2 += 1;
     }
 }
+
 #[inline(never)]
 unsafe extern "C" fn cdef_filter_block_c(
     mut dst: *mut pixel,
@@ -285,6 +286,7 @@ unsafe extern "C" fn cdef_filter_block_c(
         }
     };
 }
+
 unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -313,6 +315,7 @@ unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
         edges,
     );
 }
+
 unsafe extern "C" fn cdef_filter_block_4x8_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -341,6 +344,7 @@ unsafe extern "C" fn cdef_filter_block_4x8_c_erased(
         edges,
     );
 }
+
 unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -369,6 +373,7 @@ unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
         edges,
     );
 }
+
 unsafe extern "C" fn cdef_find_dir_c_erased(
     img: *const DynPixel,
     stride: ptrdiff_t,
@@ -377,6 +382,7 @@ unsafe extern "C" fn cdef_find_dir_c_erased(
 ) -> libc::c_int {
     cdef_find_dir_rust(img.cast(), stride, var)
 }
+
 unsafe fn cdef_find_dir_rust(
     mut img: *const pixel,
     stride: ptrdiff_t,
