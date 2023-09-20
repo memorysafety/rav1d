@@ -7,12 +7,12 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::filmgrain::get_random_number;
 use crate::src::filmgrain::round2;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::filmgrain::GRAIN_WIDTH;
 use crate::src::tables::dav1d_gaussian_sequence;
+use libc::intptr_t;
 use std::cmp;
 
 #[cfg(feature = "asm")]

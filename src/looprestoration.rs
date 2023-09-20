@@ -13,7 +13,7 @@ use std::cmp;
 use std::ops::Add;
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
-use crate::include::stdint::intptr_t;
+use libc::intptr_t;
 
 #[cfg(all(
     feature = "asm",

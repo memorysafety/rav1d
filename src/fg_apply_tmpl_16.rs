@@ -5,10 +5,10 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::align::Align1;
 use crate::src::align::Align16;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use libc::intptr_t;
 use std::cmp;
 
 extern "C" {

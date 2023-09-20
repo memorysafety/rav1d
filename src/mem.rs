@@ -1,10 +1,10 @@
-use crate::include::stdint::*;
 use libc::pthread_mutex_destroy;
 use libc::pthread_mutex_init;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_t;
 use libc::pthread_mutex_unlock;
 use libc::pthread_mutexattr_t;
+use libc::uintptr_t;
 
 extern "C" {
     fn malloc(_: libc::c_ulong) -> *mut libc::c_void;
