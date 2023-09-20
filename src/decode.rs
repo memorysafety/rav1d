@@ -11,6 +11,8 @@ use std::sync::atomic::Ordering;
 use crate::include::common::bitdepth::BitDepth16;
 #[cfg(feature = "bitdepth_8")]
 use crate::include::common::bitdepth::BitDepth8;
+use crate::include::common::bitdepth::DynCoef;
+use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::frame::is_inter_or_switch;
 use crate::include::common::frame::is_key_or_intra;
 use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
@@ -213,7 +215,7 @@ pub struct Dav1dFrameContext {
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
-    pub ipred_edge: [*mut libc::c_void; 3],
+    pub ipred_edge: [*mut DynPixel; 3],
     pub b4_stride: ptrdiff_t,
     pub w4: libc::c_int,
     pub h4: libc::c_int,
@@ -3967,8 +3969,8 @@ unsafe fn decode_sb(
                         // can end up misaligned due to skips here.
                         // Work around the issue by explicitly realigning the buffer.
                         let p = (t.frame_thread.pass & 1) as usize;
-                        ts.frame_thread[p].cf = (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63)
-                            as *mut libc::c_void;
+                        ts.frame_thread[p].cf =
+                            (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63) as *mut DynCoef;
                     }
                 } else {
                     let branch = &*(node as *const EdgeBranch);
@@ -4301,7 +4303,7 @@ unsafe fn setup_tile(
                     (tile_start_off * size_mul[0] as size_t
                         >> ((*f.seq_hdr).hbd == 0) as libc::c_int) as isize,
                 )
-                .cast::<libc::c_void>()
+                .cast::<DynCoef>()
         } else {
             ptr::null_mut()
         };
@@ -4871,10 +4873,9 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
 
         let cf_sz = (num_sb128 * size_mul[0] as libc::c_int) << hbd;
         if cf_sz != f.frame_thread.cf_sz {
-            dav1d_freep_aligned(
-                &mut f.frame_thread.cf as *mut *mut libc::c_void as *mut libc::c_void,
-            );
-            f.frame_thread.cf = dav1d_alloc_aligned(cf_sz as usize * 128 * 128 / 2, 64);
+            dav1d_freep_aligned(&mut f.frame_thread.cf as *mut *mut DynCoef as *mut libc::c_void);
+            f.frame_thread.cf =
+                dav1d_alloc_aligned(cf_sz as usize * 128 * 128 / 2, 64) as *mut DynCoef;
             if f.frame_thread.cf.is_null() {
                 f.frame_thread.cf_sz = 0;
                 return -12;
@@ -4953,48 +4954,47 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         ptr = ptr.offset(32);
         if y_stride < 0 {
             f.lf.cdef_line[0][0] =
-                ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut libc::c_void;
+                ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
             f.lf.cdef_line[1][0] =
-                ptr.offset(-(y_stride * (f.sbh as isize * 4 - 3))) as *mut libc::c_void;
+                ptr.offset(-(y_stride * (f.sbh as isize * 4 - 3))) as *mut DynPixel;
         } else {
-            f.lf.cdef_line[0][0] = ptr.offset(y_stride * 0) as *mut libc::c_void;
-            f.lf.cdef_line[1][0] = ptr.offset(y_stride * 2) as *mut libc::c_void;
+            f.lf.cdef_line[0][0] = ptr.offset(y_stride * 0) as *mut DynPixel;
+            f.lf.cdef_line[1][0] = ptr.offset(y_stride * 2) as *mut DynPixel;
         }
         ptr = ptr.offset(y_stride.abs() * f.sbh as isize * 4);
         if uv_stride < 0 {
             f.lf.cdef_line[0][1] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut libc::c_void;
+                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut DynPixel;
             f.lf.cdef_line[0][2] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 3))) as *mut libc::c_void;
+                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 3))) as *mut DynPixel;
             f.lf.cdef_line[1][1] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 5))) as *mut libc::c_void;
+                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 5))) as *mut DynPixel;
             f.lf.cdef_line[1][2] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 7))) as *mut libc::c_void;
+                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 7))) as *mut DynPixel;
         } else {
-            f.lf.cdef_line[0][1] = ptr.offset(uv_stride * 0) as *mut libc::c_void;
-            f.lf.cdef_line[0][2] = ptr.offset(uv_stride * 2) as *mut libc::c_void;
-            f.lf.cdef_line[1][1] = ptr.offset(uv_stride * 4) as *mut libc::c_void;
-            f.lf.cdef_line[1][2] = ptr.offset(uv_stride * 6) as *mut libc::c_void;
+            f.lf.cdef_line[0][1] = ptr.offset(uv_stride * 0) as *mut DynPixel;
+            f.lf.cdef_line[0][2] = ptr.offset(uv_stride * 2) as *mut DynPixel;
+            f.lf.cdef_line[1][1] = ptr.offset(uv_stride * 4) as *mut DynPixel;
+            f.lf.cdef_line[1][2] = ptr.offset(uv_stride * 6) as *mut DynPixel;
         }
 
         if need_cdef_lpf_copy != 0 {
             ptr = ptr.offset(uv_stride.abs() * f.sbh as isize * 8);
             if y_stride < 0 {
                 f.lf.cdef_lpf_line[0] =
-                    ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut libc::c_void;
+                    ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
             } else {
-                f.lf.cdef_lpf_line[0] = ptr as *mut libc::c_void;
+                f.lf.cdef_lpf_line[0] = ptr as *mut DynPixel;
             }
             ptr = ptr.offset(y_stride.abs() * f.sbh as isize * 4);
             if uv_stride < 0 {
                 f.lf.cdef_lpf_line[1] =
-                    ptr.offset(-(uv_stride * (f.sbh as isize * 4 - 1))) as *mut libc::c_void;
+                    ptr.offset(-(uv_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
                 f.lf.cdef_lpf_line[2] =
-                    ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut libc::c_void;
+                    ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut DynPixel;
             } else {
-                f.lf.cdef_lpf_line[1] = ptr as *mut libc::c_void;
-                f.lf.cdef_lpf_line[2] =
-                    ptr.offset(uv_stride * f.sbh as isize * 4) as *mut libc::c_void;
+                f.lf.cdef_lpf_line[1] = ptr as *mut DynPixel;
+                f.lf.cdef_lpf_line[2] = ptr.offset(uv_stride * f.sbh as isize * 4) as *mut DynPixel;
             }
         }
 
@@ -5027,19 +5027,19 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         ptr = ptr.offset(64);
         if y_stride < 0 {
             f.lf.lr_lpf_line[0] =
-                ptr.offset(-(y_stride * (num_lines as isize - 1))) as *mut libc::c_void;
+                ptr.offset(-(y_stride * (num_lines as isize - 1))) as *mut DynPixel;
         } else {
-            f.lf.lr_lpf_line[0] = ptr as *mut libc::c_void;
+            f.lf.lr_lpf_line[0] = ptr as *mut DynPixel;
         }
         ptr = ptr.offset(y_stride.abs() * num_lines as isize);
         if uv_stride < 0 {
             f.lf.lr_lpf_line[1] =
-                ptr.offset(-(uv_stride * (num_lines as isize * 1 - 1))) as *mut libc::c_void;
+                ptr.offset(-(uv_stride * (num_lines as isize * 1 - 1))) as *mut DynPixel;
             f.lf.lr_lpf_line[2] =
-                ptr.offset(-(uv_stride * (num_lines as isize * 2 - 1))) as *mut libc::c_void;
+                ptr.offset(-(uv_stride * (num_lines as isize * 2 - 1))) as *mut DynPixel;
         } else {
-            f.lf.lr_lpf_line[1] = ptr as *mut libc::c_void;
-            f.lf.lr_lpf_line[2] = ptr.offset(uv_stride * num_lines as isize) as *mut libc::c_void;
+            f.lf.lr_lpf_line[1] = ptr as *mut DynPixel;
+            f.lf.lr_lpf_line[2] = ptr.offset(uv_stride * num_lines as isize) as *mut DynPixel;
         }
 
         f.lf.lr_buf_plane_sz[0] = y_stride as libc::c_int * num_lines;
@@ -5120,17 +5120,17 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     let ipred_edge_sz = f.sbh * f.sb128w << hbd;
     if ipred_edge_sz != f.ipred_edge_sz {
         dav1d_freep_aligned(
-            &mut *f.ipred_edge.as_mut_ptr().offset(0) as *mut *mut libc::c_void
-                as *mut libc::c_void,
+            &mut *f.ipred_edge.as_mut_ptr().offset(0) as *mut *mut DynPixel as *mut libc::c_void,
         );
-        f.ipred_edge[0] = dav1d_alloc_aligned(ipred_edge_sz as usize * 128 * 3, 64);
+        f.ipred_edge[0] =
+            dav1d_alloc_aligned(ipred_edge_sz as usize * 128 * 3, 64) as *mut DynPixel;
         let ptr = f.ipred_edge[0] as *mut u8;
         if ptr.is_null() {
             f.ipred_edge_sz = 0;
             return -12;
         }
-        f.ipred_edge[1] = ptr.offset(ipred_edge_sz as isize * 128 * 1) as *mut libc::c_void;
-        f.ipred_edge[2] = ptr.offset(ipred_edge_sz as isize * 128 * 2) as *mut libc::c_void;
+        f.ipred_edge[1] = ptr.offset(ipred_edge_sz as isize * 128 * 1) as *mut DynPixel;
+        f.ipred_edge[2] = ptr.offset(ipred_edge_sz as isize * 128 * 2) as *mut DynPixel;
         f.ipred_edge_sz = ipred_edge_sz;
     }
 
@@ -5229,8 +5229,8 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
     // what they point at, as long as the pointers are valid.
     let has_chroma = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) as usize;
     f.lf.mask_ptr = f.lf.mask;
-    f.lf.p = array::from_fn(|i| f.cur.data[has_chroma * i]);
-    f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[has_chroma * i]);
+    f.lf.p = array::from_fn(|i| f.cur.data[has_chroma * i].cast());
+    f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[has_chroma * i].cast());
 
     0
 }

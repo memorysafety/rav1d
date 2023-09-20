@@ -1,6 +1,8 @@
 use std::cmp;
 
 use crate::include::common::bitdepth::BitDepth16;
+use crate::include::common::bitdepth::DynCoef;
+use crate::include::common::bitdepth::DynPixel;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 use crate::src::ctx::CaseSet;
@@ -114,7 +116,7 @@ pub struct Dav1dFrameContext {
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
-    pub ipred_edge: [*mut libc::c_void; 3],
+    pub ipred_edge: [*mut DynPixel; 3],
     pub b4_stride: ptrdiff_t,
     pub w4: libc::c_int,
     pub h4: libc::c_int,
@@ -1712,7 +1714,7 @@ unsafe extern "C" fn read_coef_tree(
                     (cmp::min((*t_dim).w as libc::c_int, 8 as libc::c_int)
                         * cmp::min((*t_dim).h as libc::c_int, 8 as libc::c_int)
                         * 16) as isize,
-                ) as *mut libc::c_void;
+                ) as *mut DynCoef;
             cbi = &mut *((*f).frame_thread.cbi)
                 .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
                 as *mut CodedBlockInfo;
@@ -1937,7 +1939,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_16bpc(
                             (cmp::min((*t_dim).w as libc::c_int, 8 as libc::c_int)
                                 * cmp::min((*t_dim).h as libc::c_int, 8 as libc::c_int)
                                 * 16) as isize,
-                        ) as *mut libc::c_void;
+                        ) as *mut DynCoef;
                         CaseSet::<16, true>::many(
                             [&mut (*t).l, &mut *(*t).a],
                             [
@@ -2016,7 +2018,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_16bpc(
                                     ((*uv_t_dim).w as libc::c_int
                                         * (*uv_t_dim).h as libc::c_int
                                         * 16) as isize,
-                                ) as *mut libc::c_void;
+                                ) as *mut DynCoef;
                             CaseSet::<16, true>::many(
                                 [&mut (*t).l, &mut *(*t).a],
                                 [
@@ -2747,7 +2749,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                                     (cmp::min((*t_dim).w as libc::c_int, 8 as libc::c_int)
                                         * cmp::min((*t_dim).h as libc::c_int, 8 as libc::c_int)
                                         * 16) as isize,
-                                ) as *mut libc::c_void;
+                                ) as *mut DynCoef;
                             let cbi: *const CodedBlockInfo = &mut *((*f).frame_thread.cbi).offset(
                                 ((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize,
                             )
@@ -3172,8 +3174,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
                                                 * (*uv_t_dim).h as libc::c_int
                                                 * 16)
                                                 as isize,
-                                        )
-                                            as *mut libc::c_void;
+                                        ) as *mut DynCoef;
                                     let cbi_0: *const CodedBlockInfo = &mut *((*f).frame_thread.cbi)
                                         .offset(
                                             ((*t).by as isize * (*f).b4_stride + (*t).bx as isize)
@@ -4436,7 +4437,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
                                     ((*ts).frame_thread[p as usize].cf as *mut coef).offset(
                                         ((*uvtx).w as libc::c_int * (*uvtx).h as libc::c_int * 16)
                                             as isize,
-                                    ) as *mut libc::c_void;
+                                    ) as *mut DynCoef;
                                 let cbi: *const CodedBlockInfo =
                                     &mut *((*f).frame_thread.cbi).offset(
                                         ((*t).by as isize * (*f).b4_stride + (*t).bx as isize)

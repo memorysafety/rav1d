@@ -1,5 +1,6 @@
 use std::cmp;
 
+use crate::include::common::bitdepth::DynPixel;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
 
@@ -60,7 +61,7 @@ pub struct Dav1dFrameContext {
     pub dsp: *const Dav1dDSPContext,
     pub bd_fn: Dav1dFrameContext_bd_fn,
     pub ipred_edge_sz: libc::c_int,
-    pub ipred_edge: [*mut libc::c_void; 3],
+    pub ipred_edge: [*mut DynPixel; 3],
     pub b4_stride: ptrdiff_t,
     pub w4: libc::c_int,
     pub h4: libc::c_int,
