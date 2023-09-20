@@ -5,8 +5,6 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use rav1d::include::stdint::uint64_t;
-use rav1d::include::stdint::uint8_t;
 use rav1d::src::lib::dav1d_picture_unref;
 use rav1d::stderr;
 use rav1d::stdout;
@@ -124,13 +122,11 @@ unsafe extern "C" fn write_header(
     };
     let fw: libc::c_uint = (*p).p.w as libc::c_uint;
     let fh: libc::c_uint = (*p).p.h as libc::c_uint;
-    let mut aw: uint64_t =
-        (fh as uint64_t).wrapping_mul((*(*p).frame_hdr).render_width as uint64_t);
-    let mut ah: uint64_t =
-        (fw as uint64_t).wrapping_mul((*(*p).frame_hdr).render_height as uint64_t);
-    let mut gcd: uint64_t = ah;
-    let mut a: uint64_t = aw;
-    let mut b: uint64_t;
+    let mut aw: u64 = (fh as u64).wrapping_mul((*(*p).frame_hdr).render_width as u64);
+    let mut ah: u64 = (fw as u64).wrapping_mul((*(*p).frame_hdr).render_height as u64);
+    let mut gcd: u64 = ah;
+    let mut a: u64 = aw;
+    let mut b: u64;
     loop {
         b = a.wrapping_rem(gcd);
         if !(b != 0) {
@@ -165,9 +161,9 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
         }
     }
     fprintf((*c).f, b"FRAME\n\0" as *const u8 as *const libc::c_char);
-    let mut ptr: *mut uint8_t;
+    let mut ptr: *mut u8;
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
-    ptr = (*p).data[0] as *mut uint8_t;
+    ptr = (*p).data[0] as *mut u8;
     let mut y = 0;
     loop {
         if !(y < (*p).p.h) {
@@ -206,7 +202,7 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
                         current_block = 13797916685926291137;
                         break;
                     }
-                    ptr = (*p).data[pl as usize] as *mut uint8_t;
+                    ptr = (*p).data[pl as usize] as *mut u8;
                     let mut y_0 = 0;
                     while y_0 < ch {
                         if fwrite(

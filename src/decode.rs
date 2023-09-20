@@ -348,7 +348,7 @@ fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
     frame_hdr: &Dav1dFrameHeader,
     qidx: libc::c_int,
-    dq: &mut [[[uint16_t; 2]; 3]],
+    dq: &mut [[[u16; 2]; 3]],
 ) {
     let tbl = &dav1d_dq_tbl;
 
@@ -1408,7 +1408,7 @@ fn mc_lowest_px(
         );
     } else {
         let mut y = (by4 * v_mul << 4) + mvy * (1 << (ss_ver == 0) as libc::c_int);
-        let tmp = y as int64_t * smp.scale as int64_t + ((smp.scale - 0x4000) * 8) as int64_t;
+        let tmp = y as i64 * smp.scale as i64 + ((smp.scale - 0x4000) * 8) as i64;
         y = apply_sign64((tmp.abs() + 128 >> 8) as libc::c_int, tmp) + 32;
         let bottom = (y + (bh4 * v_mul - 1) * smp.step >> 10) + 1 + 4;
         *dst = cmp::max(*dst, bottom);
@@ -1430,11 +1430,11 @@ fn affine_lowest_px(
     let mat = &wmp.matrix;
     let y = b_dim[1] as libc::c_int * v_mul - 8;
     let src_y = t.by * 4 + ((y + 4) << ss_ver);
-    let mat5_y = mat[5] as int64_t * src_y as int64_t + mat[1] as int64_t;
+    let mat5_y = mat[5] as i64 * src_y as i64 + mat[1] as i64;
     let mut x = 0;
     while x < b_dim[0] as libc::c_int * h_mul {
         let src_x = t.bx * 4 + ((x + 4) << ss_hor);
-        let mvy = mat[4] as int64_t * src_x as int64_t + mat5_y >> ss_ver;
+        let mvy = mat[4] as i64 * src_x as i64 + mat5_y >> ss_ver;
         let dy = (mvy >> 16) as libc::c_int - 4;
         *dst = cmp::max(*dst, dy + 4 + 8);
         x += cmp::max(8, b_dim[0] as libc::c_int * h_mul - 8);
@@ -2016,7 +2016,7 @@ unsafe fn decode_b(
             }
         }
     } else if frame_hdr.allow_intrabc != 0 {
-        b.intra = (!dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intrabc.0)) as uint8_t;
+        b.intra = (!dav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intrabc.0)) as u8;
         if DEBUG_BLOCK_INFO(f, t) {
             println!("Post-intrabcflag[{}]: r={}", b.intra, ts.msac.rng);
         }
@@ -2236,7 +2236,7 @@ unsafe fn decode_b(
         }
 
         let t_dim = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
-            b.uvtx = TX_4X4 as uint8_t;
+            b.uvtx = TX_4X4 as u8;
             *b.tx_mut() = b.uvtx;
             &dav1d_txfm_dimensions[TX_4X4 as usize]
         } else {
@@ -2464,8 +2464,8 @@ unsafe fn decode_b(
             return -1;
         }
 
-        b.mv_mut()[0].x = ((src_left - t.bx * 4) * 8) as int16_t;
-        b.mv_mut()[0].y = ((src_top - t.by * 4) * 8) as int16_t;
+        b.mv_mut()[0].x = ((src_left - t.bx * 4) * 8) as i16;
+        b.mv_mut()[0].y = ((src_top - t.by * 4) * 8) as i16;
 
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
@@ -2484,7 +2484,7 @@ unsafe fn decode_b(
         // reconstruction
         if t.frame_thread.pass == 1 {
             f.bd_fn.read_coef_blocks(t, bs, b);
-            *b.filter2d_mut() = FILTER_2D_BILINEAR as uint8_t;
+            *b.filter2d_mut() = FILTER_2D_BILINEAR as u8;
         } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
             return -1;
         }
@@ -4340,7 +4340,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
     memset(
         ((*t).pal_sz_uv[1]).as_mut_ptr() as *mut libc::c_void,
         0 as libc::c_int,
-        ::core::mem::size_of::<[uint8_t; 32]>(),
+        ::core::mem::size_of::<[u8; 32]>(),
     );
     let sb128y = (*t).by >> 5;
     (*t).bx = (*ts).tiling.col_start;
@@ -4356,16 +4356,16 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
         }
         if root_bl as libc::c_uint == BL_128X128 as libc::c_int as libc::c_uint {
             (*t).cur_sb_cdef_idx_ptr = ((*(*t).lf_mask).cdef_idx).as_mut_ptr();
-            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as libc::c_int) as int8_t;
-            *((*t).cur_sb_cdef_idx_ptr).offset(1) = -(1 as libc::c_int) as int8_t;
-            *((*t).cur_sb_cdef_idx_ptr).offset(2) = -(1 as libc::c_int) as int8_t;
-            *((*t).cur_sb_cdef_idx_ptr).offset(3) = -(1 as libc::c_int) as int8_t;
+            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as libc::c_int) as i8;
+            *((*t).cur_sb_cdef_idx_ptr).offset(1) = -(1 as libc::c_int) as i8;
+            *((*t).cur_sb_cdef_idx_ptr).offset(2) = -(1 as libc::c_int) as i8;
+            *((*t).cur_sb_cdef_idx_ptr).offset(3) = -(1 as libc::c_int) as i8;
         } else {
             (*t).cur_sb_cdef_idx_ptr = &mut *((*(*t).lf_mask).cdef_idx)
                 .as_mut_ptr()
                 .offset(((((*t).bx & 16) >> 4) + (((*t).by & 16) >> 3)) as isize)
-                as *mut int8_t;
-            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as libc::c_int) as int8_t;
+                as *mut i8;
+            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as libc::c_int) as i8;
         }
         let mut p = 0;
         while p < 3 {
@@ -4464,11 +4464,11 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
     let mut align_h = (*f).bh + 31 & !(31 as libc::c_int);
     memcpy(
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(0))
-            .offset((align_h * tile_col + (*t).by) as isize) as *mut uint8_t
+            .offset((align_h * tile_col + (*t).by) as isize) as *mut u8
             as *mut libc::c_void,
         &mut *((*t).l.tx_lpf_y.0)
             .as_mut_ptr()
-            .offset(((*t).by & 16) as isize) as *mut uint8_t as *const libc::c_void,
+            .offset(((*t).by & 16) as isize) as *mut u8 as *const libc::c_void,
         sb_step as libc::c_ulong,
     );
     let ss_ver_0 = ((*f).cur.p.layout as libc::c_uint
@@ -4477,11 +4477,11 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> li
     align_h >>= ss_ver_0;
     memcpy(
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
-            .offset((align_h * tile_col + ((*t).by >> ss_ver_0)) as isize) as *mut uint8_t
+            .offset((align_h * tile_col + ((*t).by >> ss_ver_0)) as isize) as *mut u8
             as *mut libc::c_void,
         &mut *((*t).l.tx_lpf_uv.0)
             .as_mut_ptr()
-            .offset((((*t).by & 16) >> ss_ver_0) as isize) as *mut uint8_t
+            .offset((((*t).by & 16) >> ss_ver_0) as isize) as *mut u8
             as *const libc::c_void,
         (sb_step >> ss_ver_0) as libc::c_ulong,
     );
@@ -4674,7 +4674,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         let mut alloc_sz: usize = 64;
         alloc_sz += (y_stride.unsigned_abs() * 4 * f.sbh as usize) << need_cdef_lpf_copy;
         alloc_sz += (uv_stride.unsigned_abs() * 8 * f.sbh as usize) << need_cdef_lpf_copy;
-        f.lf.cdef_line_buf = dav1d_alloc_aligned(alloc_sz, 32) as *mut uint8_t;
+        f.lf.cdef_line_buf = dav1d_alloc_aligned(alloc_sz, 32) as *mut u8;
         let mut ptr = f.lf.cdef_line_buf;
         if ptr.is_null() {
             f.lf.cdef_buf_plane_sz[1] = 0;
@@ -4747,7 +4747,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> l
         let mut alloc_sz: usize = 128;
         alloc_sz += y_stride.unsigned_abs() * num_lines as usize;
         alloc_sz += uv_stride.unsigned_abs() * num_lines as usize * 2;
-        f.lf.lr_line_buf = dav1d_alloc_aligned(alloc_sz, 64) as *mut uint8_t;
+        f.lf.lr_line_buf = dav1d_alloc_aligned(alloc_sz, 64) as *mut u8;
         let mut ptr = f.lf.lr_line_buf;
         if ptr.is_null() {
             f.lf.lr_buf_plane_sz[1] = 0;
@@ -5630,7 +5630,7 @@ pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> libc::c_int
             // and we have a valid reference. Use that.
             f.cur_segmap_ref = f.prev_segmap_ref;
             dav1d_ref_inc(f.cur_segmap_ref);
-            f.cur_segmap = (*f.prev_segmap_ref).data.cast::<uint8_t>();
+            f.cur_segmap = (*f.prev_segmap_ref).data.cast::<u8>();
         } else {
             // We need to make a new map. Allocate one here and zero it out.
             let segmap_size =

@@ -4,7 +4,6 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::align::Align16;
 use crate::src::internal::Dav1dDSPContext;
 use crate::src::internal::Dav1dFrameContext;
@@ -26,7 +25,7 @@ extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
-pub type pixel = uint8_t;
+pub type pixel = u8;
 
 unsafe extern "C" fn lr_stripe(
     f: *const Dav1dFrameContext,
@@ -65,34 +64,34 @@ unsafe extern "C" fn lr_stripe(
         filter: [[0; 8]; 2].into(),
     };
     if (*lr).r#type as libc::c_int == DAV1D_RESTORATION_WIENER as libc::c_int {
-        let filter: *mut [int16_t; 8] = (params.filter.0).as_mut_ptr();
+        let filter: *mut [i16; 8] = (params.filter.0).as_mut_ptr();
         let ref mut fresh0 = (*filter.offset(0))[6];
-        *fresh0 = (*lr).filter_h[0] as int16_t;
+        *fresh0 = (*lr).filter_h[0] as i16;
         (*filter.offset(0))[0] = *fresh0;
         let ref mut fresh1 = (*filter.offset(0))[5];
-        *fresh1 = (*lr).filter_h[1] as int16_t;
+        *fresh1 = (*lr).filter_h[1] as i16;
         (*filter.offset(0))[1] = *fresh1;
         let ref mut fresh2 = (*filter.offset(0))[4];
-        *fresh2 = (*lr).filter_h[2] as int16_t;
+        *fresh2 = (*lr).filter_h[2] as i16;
         (*filter.offset(0))[2] = *fresh2;
         (*filter.offset(0))[3] = (-((*filter.offset(0))[0] as libc::c_int
             + (*filter.offset(0))[1] as libc::c_int
             + (*filter.offset(0))[2] as libc::c_int)
-            * 2) as int16_t;
+            * 2) as i16;
         let ref mut fresh3 = (*filter.offset(1))[6];
-        *fresh3 = (*lr).filter_v[0] as int16_t;
+        *fresh3 = (*lr).filter_v[0] as i16;
         (*filter.offset(1))[0] = *fresh3;
         let ref mut fresh4 = (*filter.offset(1))[5];
-        *fresh4 = (*lr).filter_v[1] as int16_t;
+        *fresh4 = (*lr).filter_v[1] as i16;
         (*filter.offset(1))[1] = *fresh4;
         let ref mut fresh5 = (*filter.offset(1))[4];
-        *fresh5 = (*lr).filter_v[2] as int16_t;
+        *fresh5 = (*lr).filter_v[2] as i16;
         (*filter.offset(1))[2] = *fresh5;
         (*filter.offset(1))[3] = (128 as libc::c_int
             - ((*filter.offset(1))[0] as libc::c_int
                 + (*filter.offset(1))[1] as libc::c_int
                 + (*filter.offset(1))[2] as libc::c_int)
-                * 2) as int16_t;
+                * 2) as i16;
         lr_fn = (*dsp).lr.wiener[((*filter.offset(0))[0] as libc::c_int
             | (*filter.offset(1))[0] as libc::c_int
             == 0) as libc::c_int as usize];
@@ -100,13 +99,13 @@ unsafe extern "C" fn lr_stripe(
         if !((*lr).r#type as libc::c_int == DAV1D_RESTORATION_SGRPROJ as libc::c_int) {
             unreachable!();
         }
-        let sgr_params: *const uint16_t = (dav1d_sgr_params[(*lr).sgr_idx as usize]).as_ptr();
-        params.sgr.s0 = *sgr_params.offset(0) as uint32_t;
-        params.sgr.s1 = *sgr_params.offset(1) as uint32_t;
-        params.sgr.w0 = (*lr).sgr_weights[0] as int16_t;
+        let sgr_params: *const u16 = (dav1d_sgr_params[(*lr).sgr_idx as usize]).as_ptr();
+        params.sgr.s0 = *sgr_params.offset(0) as u32;
+        params.sgr.s1 = *sgr_params.offset(1) as u32;
+        params.sgr.w0 = (*lr).sgr_weights[0] as i16;
         params.sgr.w1 = (128 as libc::c_int
             - ((*lr).sgr_weights[0] as libc::c_int + (*lr).sgr_weights[1] as libc::c_int))
-            as int16_t;
+            as i16;
         lr_fn = (*dsp).lr.sgr[((*sgr_params.offset(0) != 0) as libc::c_int
             + (*sgr_params.offset(1) != 0) as libc::c_int * 2
             - 1) as usize];

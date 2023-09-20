@@ -4,8 +4,6 @@ use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::stddef::ptrdiff_t;
 use crate::include::stddef::size_t;
 use crate::include::stdint::intptr_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stdint::uint8_t;
 
 #[inline]
 pub unsafe extern "C" fn get_random_number(
@@ -20,7 +18,7 @@ pub unsafe extern "C" fn get_random_number(
 }
 
 #[inline]
-pub unsafe extern "C" fn round2(x: libc::c_int, shift: uint64_t) -> libc::c_int {
+pub unsafe extern "C" fn round2(x: libc::c_int, shift: u64) -> libc::c_int {
     return x + ((1 as libc::c_int) << shift >> 1) >> shift;
 }
 
@@ -51,7 +49,7 @@ pub type fgy_32x32xn_fn = Option<
         ptrdiff_t,
         *const Dav1dFilmGrainData,
         size_t,
-        *const uint8_t,
+        *const u8,
         *const [DynEntry; GRAIN_WIDTH],
         libc::c_int,
         libc::c_int,
@@ -66,7 +64,7 @@ pub type fguv_32x32xn_fn = Option<
         ptrdiff_t,
         *const Dav1dFilmGrainData,
         size_t,
-        *const uint8_t,
+        *const u8,
         *const [DynEntry; GRAIN_WIDTH],
         libc::c_int,
         libc::c_int,

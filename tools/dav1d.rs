@@ -44,7 +44,6 @@ use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::include::stddef::*;
-use rav1d::include::stdint::*;
 use rav1d::src::lib::dav1d_close;
 use rav1d::src::lib::dav1d_data_unref;
 use rav1d::src::lib::dav1d_get_picture;
@@ -127,7 +126,7 @@ pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
 pub const REALTIME_INPUT: CLISettings_realtime = 1;
 pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 
-unsafe extern "C" fn get_time_nanos() -> uint64_t {
+unsafe extern "C" fn get_time_nanos() -> u64 {
     let mut ts: libc::timespec = libc::timespec {
         tv_sec: 0,
         tv_nsec: 0,
@@ -135,10 +134,10 @@ unsafe extern "C" fn get_time_nanos() -> uint64_t {
     libc::clock_gettime(1, &mut ts);
     return (1000000000 as libc::c_ulonglong)
         .wrapping_mul(ts.tv_sec as libc::c_ulonglong)
-        .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as uint64_t;
+        .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as u64;
 }
 
-unsafe extern "C" fn sleep_nanos(d: uint64_t) {
+unsafe extern "C" fn sleep_nanos(d: u64) {
     // TODO: C version has Windows specific code path
     let ts: libc::timespec = {
         let init = libc::timespec {
@@ -154,26 +153,26 @@ unsafe extern "C" fn synchronize(
     realtime: libc::c_int,
     cache: libc::c_uint,
     n_out: libc::c_uint,
-    nspf: uint64_t,
-    tfirst: uint64_t,
-    elapsed: *mut uint64_t,
+    nspf: u64,
+    tfirst: u64,
+    elapsed: *mut u64,
     frametimes: *mut libc::FILE,
 ) {
-    let tcurr: uint64_t = get_time_nanos();
-    let last: uint64_t = *elapsed;
+    let tcurr: u64 = get_time_nanos();
+    let last: u64 = *elapsed;
     *elapsed = tcurr.wrapping_sub(tfirst);
     if realtime != 0 {
-        let deadline: uint64_t = nspf.wrapping_mul(n_out as uint64_t);
+        let deadline: u64 = nspf.wrapping_mul(n_out as u64);
         if *elapsed < deadline {
-            let remaining: uint64_t = deadline.wrapping_sub(*elapsed);
-            if remaining > nspf.wrapping_mul(cache as uint64_t) {
-                sleep_nanos(remaining.wrapping_sub(nspf.wrapping_mul(cache as uint64_t)));
+            let remaining: u64 = deadline.wrapping_sub(*elapsed);
+            if remaining > nspf.wrapping_mul(cache as u64) {
+                sleep_nanos(remaining.wrapping_sub(nspf.wrapping_mul(cache as u64)));
             }
             *elapsed = deadline;
         }
     }
     if !frametimes.is_null() {
-        let frametime: uint64_t = (*elapsed).wrapping_sub(last);
+        let frametime: u64 = (*elapsed).wrapping_sub(last);
         fprintf(
             frametimes,
             b"%lu\n\0" as *const u8 as *const libc::c_char,
@@ -187,7 +186,7 @@ unsafe extern "C" fn print_stats(
     istty: libc::c_int,
     n: libc::c_uint,
     num: libc::c_uint,
-    elapsed: uint64_t,
+    elapsed: u64,
     i_fps: libc::c_double,
 ) {
     let mut buf: [libc::c_char; 80] = [0; 80];
@@ -277,27 +276,27 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut libc::c_void) -
     let y_sz: size_t = (y_stride * aligned_h as isize) as size_t;
     let uv_sz: size_t = (uv_stride * (aligned_h >> ss_ver) as isize) as size_t;
     let pic_size: size_t = y_sz.wrapping_add(2 * uv_sz);
-    let buf: *mut uint8_t = malloc(pic_size.wrapping_add(64)) as *mut uint8_t;
+    let buf: *mut u8 = malloc(pic_size.wrapping_add(64)) as *mut u8;
     if buf.is_null() {
         return -(12 as libc::c_int);
     }
     (*p).allocator_data = buf as *mut libc::c_void;
     let align_m1: ptrdiff_t = (64 - 1) as ptrdiff_t;
-    let data: *mut uint8_t = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut uint8_t;
+    let data: *mut u8 = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut u8;
     (*p).data[0] = data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut libc::c_void;
     (*p).data[1] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
             .offset(uv_sz.wrapping_mul(1) as isize)
             .offset(-(uv_stride as isize))
     } else {
-        0 as *mut uint8_t
+        0 as *mut u8
     }) as *mut libc::c_void;
     (*p).data[2] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
             .offset(uv_sz.wrapping_mul(2) as isize)
             .offset(-(uv_stride as isize))
     } else {
-        0 as *mut uint8_t
+        0 as *mut u8
     }) as *mut libc::c_void;
     return 0 as libc::c_int;
 }
@@ -365,7 +364,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const uint8_t,
+                data: 0 as *const u8,
                 r#ref: 0 as *mut Dav1dRef,
             },
         },
@@ -384,7 +383,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     };
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
-        data: 0 as *const uint8_t,
+        data: 0 as *const u8,
         sz: 0,
         r#ref: 0 as *mut Dav1dRef,
         m: Dav1dDataProps {
@@ -393,7 +392,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const uint8_t,
+                data: 0 as *const u8,
                 r#ref: 0 as *mut Dav1dRef,
             },
         },
@@ -402,9 +401,9 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut total: libc::c_uint = 0;
     let mut fps: [libc::c_uint; 2] = [0; 2];
     let mut timebase: [libc::c_uint; 2] = [0; 2];
-    let nspf: uint64_t;
-    let tfirst: uint64_t;
-    let mut elapsed: uint64_t = 0;
+    let nspf: u64;
+    let tfirst: u64;
+    let mut elapsed: u64 = 0;
     let i_fps: libc::c_double;
     let mut frametimes: *mut libc::FILE = 0 as *mut libc::FILE;
     let version: *const libc::c_char = dav1d_version();
@@ -560,16 +559,16 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     if cli_settings.realtime as libc::c_uint != REALTIME_CUSTOM as libc::c_int as libc::c_uint {
         if fps[1] == 0 as libc::c_uint {
             i_fps = 0 as libc::c_int as libc::c_double;
-            nspf = 0 as libc::c_int as uint64_t;
+            nspf = 0 as libc::c_int as u64;
         } else {
             i_fps = fps[0] as libc::c_double / fps[1] as libc::c_double;
             nspf = (1000000000 as libc::c_ulonglong)
                 .wrapping_mul(fps[1] as libc::c_ulonglong)
-                .wrapping_div(fps[0] as libc::c_ulonglong) as uint64_t;
+                .wrapping_div(fps[0] as libc::c_ulonglong) as u64;
         }
     } else {
         i_fps = cli_settings.realtime_fps;
-        nspf = (1000000000.0f64 / cli_settings.realtime_fps) as uint64_t;
+        nspf = (1000000000.0f64 / cli_settings.realtime_fps) as u64;
     }
     tfirst = get_time_nanos();
     loop {

@@ -137,8 +137,8 @@ extern "C" {
     fn dav1d_lr_sbrow_8bpc(f: *mut Dav1dFrameContext, dst: *const *mut pixel, sby: libc::c_int);
 }
 
-pub type pixel = uint8_t;
-pub type coef = int16_t;
+pub type pixel = u8;
+pub type coef = i16;
 
 unsafe fn decode_coefs(
     t: *mut Dav1dTaskContext,
@@ -151,7 +151,7 @@ unsafe fn decode_coefs(
     plane: libc::c_int,
     cf: *mut coef,
     txtp: *mut TxfmType,
-    res_ctx: *mut uint8_t,
+    res_ctx: *mut u8,
 ) -> libc::c_int {
     let dc_sign_ctx;
     let dc_sign;
@@ -184,7 +184,7 @@ unsafe fn decode_coefs(
         );
     }
     if all_skip != 0 {
-        *res_ctx = 0x40 as libc::c_int as uint8_t;
+        *res_ctx = 0x40 as libc::c_int as u8;
         *txtp = (lossless * WHT_WHT as libc::c_int) as TxfmType;
         return -(1 as libc::c_int);
     }
@@ -384,15 +384,15 @@ unsafe fn decode_coefs(
     if !(eob >= 0) {
         unreachable!();
     }
-    let eob_cdf: *mut [uint16_t; 4] =
+    let eob_cdf: *mut [u16; 4] =
         ((*ts).cdf.coef.eob_base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
-    let hi_cdf: *mut [uint16_t; 4] = ((*ts).cdf.coef.br_tok
+    let hi_cdf: *mut [u16; 4] = ((*ts).cdf.coef.br_tok
         [cmp::min((*t_dim).ctx as libc::c_int, 3 as libc::c_int) as usize][chroma as usize])
         .as_mut_ptr();
     let mut rc: libc::c_uint = 0;
     let mut dc_tok: libc::c_uint = 0;
     if eob != 0 {
-        let lo_cdf: *mut [uint16_t; 4] =
+        let lo_cdf: *mut [u16; 4] =
             ((*ts).cdf.coef.base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
         let levels = &mut (*t).scratch.c2rust_unnamed_0.c2rust_unnamed.levels;
         let sw = cmp::min((*t_dim).w as libc::c_int, 8 as libc::c_int);
@@ -409,7 +409,7 @@ unsafe fn decode_coefs(
         let mut tok = eob_tok + 1;
         let mut level_tok = tok * 0x41 as libc::c_int;
         let mut mag: libc::c_uint = 0;
-        let mut scan: *const uint16_t = 0 as *const uint16_t;
+        let mut scan: *const u16 = 0 as *const u16;
         match tx_class as libc::c_uint {
             0 => {
                 let nonsquare_tx: libc::c_uint = (tx as libc::c_uint
@@ -492,7 +492,7 @@ unsafe fn decode_coefs(
                     }
                 }
                 *cf.offset(rc as isize) = (tok << 11) as coef;
-                levels[(x as isize * stride + y as isize) as usize] = level_tok as uint8_t;
+                levels[(x as isize * stride + y as isize) as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: libc::c_uint;
@@ -575,12 +575,12 @@ unsafe fn decode_coefs(
                                 (*ts).msac.rng,
                             );
                         }
-                        level[0] = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
+                        level[0] = (tok + ((3 as libc::c_int) << 6)) as u8;
                         *cf.offset(rc_i as isize) = ((tok << 11) as libc::c_uint | rc) as coef;
                         rc = rc_i;
                     } else {
                         tok *= 0x17ff41 as libc::c_int;
-                        level[0] = tok as uint8_t;
+                        level[0] = tok as u8;
                         tok = ((tok >> 9) as libc::c_uint
                             & rc.wrapping_add(!(0x7ff as libc::c_uint)))
                             as libc::c_int;
@@ -719,7 +719,7 @@ unsafe fn decode_coefs(
                     }
                 }
                 *cf.offset(rc as isize) = (tok << 11) as coef;
-                levels[(x_0 as isize * stride_0 + y_0 as isize) as usize] = level_tok as uint8_t;
+                levels[(x_0 as isize * stride_0 + y_0 as isize) as usize] = level_tok as u8;
                 let mut i_0 = eob - 1;
                 while i_0 > 0 {
                     let rc_i_0: libc::c_uint;
@@ -802,12 +802,12 @@ unsafe fn decode_coefs(
                                 (*ts).msac.rng,
                             );
                         }
-                        level_0[0] = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
+                        level_0[0] = (tok + ((3 as libc::c_int) << 6)) as u8;
                         *cf.offset(rc_i_0 as isize) = ((tok << 11) as libc::c_uint | rc) as coef;
                         rc = rc_i_0;
                     } else {
                         tok *= 0x17ff41 as libc::c_int;
-                        level_0[0] = tok as uint8_t;
+                        level_0[0] = tok as u8;
                         tok = ((tok >> 9) as libc::c_uint
                             & rc.wrapping_add(!(0x7ff as libc::c_uint)))
                             as libc::c_int;
@@ -946,7 +946,7 @@ unsafe fn decode_coefs(
                     }
                 }
                 *cf.offset(rc as isize) = (tok << 11) as coef;
-                levels[(x_1 as isize * stride_1 + y_1 as isize) as usize] = level_tok as uint8_t;
+                levels[(x_1 as isize * stride_1 + y_1 as isize) as usize] = level_tok as u8;
                 let mut i_1 = eob - 1;
                 while i_1 > 0 {
                     let rc_i_1: libc::c_uint;
@@ -1029,12 +1029,12 @@ unsafe fn decode_coefs(
                                 (*ts).msac.rng,
                             );
                         }
-                        level_1[0] = (tok + ((3 as libc::c_int) << 6)) as uint8_t;
+                        level_1[0] = (tok + ((3 as libc::c_int) << 6)) as u8;
                         *cf.offset(rc_i_1 as isize) = ((tok << 11) as libc::c_uint | rc) as coef;
                         rc = rc_i_1;
                     } else {
                         tok *= 0x17ff41 as libc::c_int;
-                        level_1[0] = tok as uint8_t;
+                        level_1[0] = tok as u8;
                         tok = ((tok >> 9) as libc::c_uint
                             & rc.wrapping_add(!(0x7ff as libc::c_uint)))
                             as libc::c_int;
@@ -1140,12 +1140,11 @@ unsafe fn decode_coefs(
         }
         rc = 0 as libc::c_int as libc::c_uint;
     }
-    let dq_tbl: *const uint16_t =
-        ((*((*ts).dq).offset((*b).seg_id as isize))[plane as usize]).as_ptr();
-    let qm_tbl: *const uint8_t = if (*txtp as libc::c_uint) < IDTX as libc::c_int as libc::c_uint {
+    let dq_tbl: *const u16 = ((*((*ts).dq).offset((*b).seg_id as isize))[plane as usize]).as_ptr();
+    let qm_tbl: *const u8 = if (*txtp as libc::c_uint) < IDTX as libc::c_int as libc::c_uint {
         (*f).qm[tx as usize][plane as usize]
     } else {
-        0 as *const uint8_t
+        0 as *const u8
     };
     let dq_shift = cmp::max(0 as libc::c_int, (*t_dim).ctx as libc::c_int - 2);
     let cf_max = !(!(127 as libc::c_uint)
@@ -1347,7 +1346,7 @@ unsafe fn decode_coefs(
         }
         _ => {}
     }
-    *res_ctx = (cmp::min(cul_level, 63 as libc::c_int as libc::c_uint) | dc_sign_level) as uint8_t;
+    *res_ctx = (cmp::min(cul_level, 63 as libc::c_int as libc::c_uint) | dc_sign_level) as u8;
     return eob;
 }
 
@@ -1357,7 +1356,7 @@ unsafe extern "C" fn read_coef_tree(
     b: *const Av1Block,
     ytx: RectTxfmSize,
     depth: libc::c_int,
-    tx_split: *const uint16_t,
+    tx_split: *const u16,
     x_off: libc::c_int,
     y_off: libc::c_int,
     mut dst: *mut pixel,
@@ -1450,7 +1449,7 @@ unsafe extern "C" fn read_coef_tree(
         let bx4 = (*t).bx & 31;
         let by4 = (*t).by & 31;
         let mut txtp: TxfmType = DCT_DCT;
-        let mut cf_ctx: uint8_t = 0;
+        let mut cf_ctx: u8 = 0;
         let eob;
         let cf: *mut coef;
         let mut cbi: *mut CodedBlockInfo = 0 as *mut CodedBlockInfo;
@@ -1514,8 +1513,8 @@ unsafe extern "C" fn read_coef_tree(
                 }
             });
             if (*t).frame_thread.pass == 1 {
-                (*cbi).eob[0] = eob as int16_t;
-                (*cbi).txtp[0] = txtp as uint8_t;
+                (*cbi).eob[0] = eob as i16;
+                (*cbi).txtp[0] = txtp as u8;
             }
         } else {
             eob = (*cbi).eob[0] as libc::c_int;
@@ -1572,7 +1571,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
     let by4 = (*t).by & 31;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
+    let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
     let bw4 = *b_dim.offset(0) as libc::c_int;
     let bh4 = *b_dim.offset(1) as libc::c_int;
     let cbw4 = bw4 + ss_hor >> ss_hor;
@@ -1623,8 +1622,8 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
             (*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as libc::c_int
         }) as isize,
     ) as *const TxfmInfo;
-    let tx_split: [uint16_t; 2] = [
-        (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split0 as uint16_t,
+    let tx_split: [u16; 2] = [
+        (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split0 as u16,
         (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split1,
     ];
     let mut init_y = 0;
@@ -1659,7 +1658,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                             0 as *mut pixel,
                         );
                     } else {
-                        let mut cf_ctx: uint8_t = 0x40 as libc::c_int as uint8_t;
+                        let mut cf_ctx: u8 = 0x40 as libc::c_int as u8;
                         let mut txtp: TxfmType = DCT_DCT;
                         let ref mut fresh4 = (*cbi.offset((*t).bx as isize)).eob[0];
                         *fresh4 = decode_coefs(
@@ -1674,7 +1673,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                             (*ts).frame_thread[1].cf as *mut coef,
                             &mut txtp,
                             &mut cf_ctx,
-                        ) as int16_t;
+                        ) as i16;
                         let eob = *fresh4 as libc::c_int;
                         if DEBUG_BLOCK_INFO(&*f, &*t) {
                             printf(
@@ -1686,7 +1685,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                                 (*ts).msac.rng,
                             );
                         }
-                        (*cbi.offset((*t).bx as isize)).txtp[0] = txtp as uint8_t;
+                        (*cbi.offset((*t).bx as isize)).txtp[0] = txtp as u8;
                         (*ts).frame_thread[1].cf = ((*ts).frame_thread[1].cf as *mut coef).offset(
                             (cmp::min((*t_dim).w as libc::c_int, 8 as libc::c_int)
                                 * cmp::min((*t_dim).h as libc::c_int, 8 as libc::c_int)
@@ -1728,7 +1727,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                         x = init_x >> ss_hor;
                         (*t).bx += init_x;
                         while x < sub_cw4 {
-                            let mut cf_ctx_0: uint8_t = 0x40 as libc::c_int as uint8_t;
+                            let mut cf_ctx_0: u8 = 0x40 as libc::c_int as u8;
                             let mut txtp_0: TxfmType = DCT_DCT;
                             if (*b).intra == 0 {
                                 txtp_0 = (*t).txtp_map
@@ -1749,7 +1748,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                                 (*ts).frame_thread[1].cf as *mut coef,
                                 &mut txtp_0,
                                 &mut cf_ctx_0,
-                            ) as int16_t;
+                            ) as i16;
                             let eob_0 = *fresh5 as libc::c_int;
                             if DEBUG_BLOCK_INFO(&*f, &*t) {
                                 printf(
@@ -1764,7 +1763,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
                                 );
                             }
                             (*cbi_0.offset((*t).bx as isize)).txtp[(1 + pl) as usize] =
-                                txtp_0 as uint8_t;
+                                txtp_0 as u8;
                             (*ts).frame_thread[1].cf =
                                 ((*ts).frame_thread[1].cf as *mut coef).offset(
                                     ((*uv_t_dim).w as libc::c_int
@@ -1808,7 +1807,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
 unsafe extern "C" fn mc(
     t: *mut Dav1dTaskContext,
     dst8: *mut pixel,
-    dst16: *mut int16_t,
+    dst16: *mut i16,
     dst_stride: ptrdiff_t,
     bw4: libc::c_int,
     bh4: libc::c_int,
@@ -1821,7 +1820,7 @@ unsafe extern "C" fn mc(
     filter_2d: Filter2d,
 ) -> libc::c_int {
     if (dst8 != 0 as *mut libc::c_void as *mut pixel) as libc::c_int
-        ^ (dst16 != 0 as *mut libc::c_void as *mut int16_t) as libc::c_int
+        ^ (dst16 != 0 as *mut libc::c_void as *mut i16) as libc::c_int
         == 0
     {
         unreachable!();
@@ -1921,14 +1920,14 @@ unsafe extern "C" fn mc(
             (bx * h_mul << 4) + mvx * ((1 as libc::c_int) << (ss_hor == 0) as libc::c_int);
         let pos_y;
         let pos_x;
-        let tmp: int64_t = orig_pos_x as int64_t * (*f).svc[refidx as usize][0].scale as int64_t
-            + (((*f).svc[refidx as usize][0].scale - 0x4000 as libc::c_int) * 8) as int64_t;
+        let tmp: i64 = orig_pos_x as i64 * (*f).svc[refidx as usize][0].scale as i64
+            + (((*f).svc[refidx as usize][0].scale - 0x4000 as libc::c_int) * 8) as i64;
         pos_x = apply_sign64(
             ((tmp as libc::c_longlong).abs() + 128 as libc::c_longlong >> 8) as libc::c_int,
             tmp,
         ) + 32;
-        let tmp_0: int64_t = orig_pos_y as int64_t * (*f).svc[refidx as usize][1].scale as int64_t
-            + (((*f).svc[refidx as usize][1].scale - 0x4000 as libc::c_int) * 8) as int64_t;
+        let tmp_0: i64 = orig_pos_y as i64 * (*f).svc[refidx as usize][1].scale as i64
+            + (((*f).svc[refidx as usize][1].scale - 0x4000 as libc::c_int) * 8) as i64;
         pos_y = apply_sign64(
             ((tmp_0 as libc::c_longlong).abs() + 128 as libc::c_longlong >> 8) as libc::c_int,
             tmp_0,
@@ -2018,7 +2017,7 @@ unsafe extern "C" fn obmc(
     t: *mut Dav1dTaskContext,
     dst: *mut pixel,
     dst_stride: ptrdiff_t,
-    b_dim: *const uint8_t,
+    b_dim: *const u8,
     pl: libc::c_int,
     bx4: libc::c_int,
     by4: libc::c_int,
@@ -2056,7 +2055,7 @@ unsafe extern "C" fn obmc(
             let a_r: *const refmvs_block = &mut *(*r.offset(-(1 as libc::c_int) as isize))
                 .offset(((*t).bx + x + 1) as isize)
                 as *mut refmvs_block;
-            let a_b_dim: *const uint8_t = (dav1d_block_dimensions[(*a_r).0.bs as usize]).as_ptr();
+            let a_b_dim: *const u8 = (dav1d_block_dimensions[(*a_r).0.bs as usize]).as_ptr();
             let step4 = iclip(
                 *a_b_dim.offset(0) as libc::c_int,
                 2 as libc::c_int,
@@ -2068,7 +2067,7 @@ unsafe extern "C" fn obmc(
                 res = mc(
                     t,
                     lap,
-                    0 as *mut int16_t,
+                    0 as *mut i16,
                     ((ow4 * h_mul) as libc::c_ulong)
                         .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong)
                         as ptrdiff_t,
@@ -2108,7 +2107,7 @@ unsafe extern "C" fn obmc(
             let l_r: *const refmvs_block = &mut *(*r.offset((y + 1) as isize))
                 .offset(((*t).bx - 1) as isize)
                 as *mut refmvs_block;
-            let l_b_dim: *const uint8_t = (dav1d_block_dimensions[(*l_r).0.bs as usize]).as_ptr();
+            let l_b_dim: *const u8 = (dav1d_block_dimensions[(*l_r).0.bs as usize]).as_ptr();
             let step4_0 = iclip(
                 *l_b_dim.offset(1) as libc::c_int,
                 2 as libc::c_int,
@@ -2120,7 +2119,7 @@ unsafe extern "C" fn obmc(
                 res = mc(
                     t,
                     lap,
-                    0 as *mut int16_t,
+                    0 as *mut i16,
                     ((h_mul * ow4_0) as libc::c_ulong)
                         .wrapping_mul(::core::mem::size_of::<pixel>() as libc::c_ulong)
                         as ptrdiff_t,
@@ -2160,15 +2159,15 @@ unsafe extern "C" fn obmc(
 unsafe extern "C" fn warp_affine(
     t: *mut Dav1dTaskContext,
     mut dst8: *mut pixel,
-    mut dst16: *mut int16_t,
+    mut dst16: *mut i16,
     dstride: ptrdiff_t,
-    b_dim: *const uint8_t,
+    b_dim: *const u8,
     pl: libc::c_int,
     refp: *const Dav1dThreadPicture,
     wmp: *const Dav1dWarpedMotionParams,
 ) -> libc::c_int {
     if (dst8 != 0 as *mut libc::c_void as *mut pixel) as libc::c_int
-        ^ (dst16 != 0 as *mut libc::c_void as *mut int16_t) as libc::c_int
+        ^ (dst16 != 0 as *mut libc::c_void as *mut i16) as libc::c_int
         == 0
     {
         unreachable!();
@@ -2190,21 +2189,19 @@ unsafe extern "C" fn warp_affine(
     {
         unreachable!();
     }
-    let mat: *const int32_t = ((*wmp).matrix).as_ptr();
+    let mat: *const i32 = ((*wmp).matrix).as_ptr();
     let width = (*refp).p.p.w + ss_hor >> ss_hor;
     let height = (*refp).p.p.h + ss_ver >> ss_ver;
     let mut y = 0;
     while y < *b_dim.offset(1) as libc::c_int * v_mul {
         let src_y = (*t).by * 4 + ((y + 4) << ss_ver);
-        let mat3_y: int64_t =
-            *mat.offset(3) as int64_t * src_y as int64_t + *mat.offset(0) as int64_t;
-        let mat5_y: int64_t =
-            *mat.offset(5) as int64_t * src_y as int64_t + *mat.offset(1) as int64_t;
+        let mat3_y: i64 = *mat.offset(3) as i64 * src_y as i64 + *mat.offset(0) as i64;
+        let mat5_y: i64 = *mat.offset(5) as i64 * src_y as i64 + *mat.offset(1) as i64;
         let mut x = 0;
         while x < *b_dim.offset(0) as libc::c_int * h_mul {
             let src_x = (*t).bx * 4 + ((x + 4) << ss_hor);
-            let mvx: int64_t = *mat.offset(2) as int64_t * src_x as int64_t + mat3_y >> ss_hor;
-            let mvy: int64_t = *mat.offset(4) as int64_t * src_x as int64_t + mat5_y >> ss_ver;
+            let mvx: i64 = *mat.offset(2) as i64 * src_x as i64 + mat3_y >> ss_hor;
+            let mvy: i64 = *mat.offset(4) as i64 * src_x as i64 + mat5_y >> ss_ver;
             let dx = (mvx >> 16) as libc::c_int - 4;
             let mx = (mvx as libc::c_int & 0xffff as libc::c_int)
                 - (*wmp).alpha() as libc::c_int * 4
@@ -2296,7 +2293,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
+    let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
     let bw4 = *b_dim.offset(0) as libc::c_int;
     let bh4 = *b_dim.offset(1) as libc::c_int;
     let w4 = cmp::min(bw4, (*f).bw - (*t).bx);
@@ -2334,7 +2331,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                 let dst: *mut pixel = ((*f).cur.data[0] as *mut pixel).offset(
                     (4 * ((*t).by as isize * (*f).cur.stride[0] + (*t).bx as isize)) as isize,
                 );
-                let pal_idx: *const uint8_t;
+                let pal_idx: *const u8;
                 if (*t).frame_thread.pass != 0 {
                     let p = (*t).frame_thread.pass & 1;
                     if ((*ts).frame_thread[p as usize].pal_idx).is_null() {
@@ -2346,7 +2343,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                 } else {
                     pal_idx = ((*t).scratch.c2rust_unnamed_0.pal_idx).as_mut_ptr();
                 }
-                let pal: *const uint16_t = if (*t).frame_thread.pass != 0 {
+                let pal: *const u16 = if (*t).frame_thread.pass != 0 {
                     ((*((*f).frame_thread.pal).offset(
                         ((((*t).by >> 1) + ((*t).bx & 1)) as isize * ((*f).b4_stride >> 1)
                             + (((*t).bx >> 1) + ((*t).by & 1)) as isize)
@@ -2506,7 +2503,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             eob = (*cbi).eob[0] as libc::c_int;
                             txtp = (*cbi).txtp[0] as TxfmType;
                         } else {
-                            let mut cf_ctx: uint8_t = 0;
+                            let mut cf_ctx: u8 = 0;
                             cf = ((*t).c2rust_unnamed.cf_8bpc).as_mut_ptr();
                             eob = decode_coefs(
                                 t,
@@ -2692,8 +2689,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                     let uv_dstoff: ptrdiff_t = 4
                         * (((*t).bx >> ss_hor) as isize
                             + ((*t).by >> ss_ver) as isize * (*f).cur.stride[1]);
-                    let pal_0: *const [uint16_t; 8];
-                    let pal_idx_0: *const uint8_t;
+                    let pal_0: *const [u16; 8];
+                    let pal_idx_0: *const u8;
                     if (*t).frame_thread.pass != 0 {
                         let p_1 = (*t).frame_thread.pass & 1;
                         if ((*ts).frame_thread[p_1 as usize].pal_idx).is_null() {
@@ -2704,18 +2701,17 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 + (((*t).bx >> 1) + ((*t).by & 1)) as isize)
                                 as isize,
                         ))
-                        .as_mut_ptr() as *const [uint16_t; 8];
+                        .as_mut_ptr() as *const [u16; 8];
                         pal_idx_0 = (*ts).frame_thread[p_1 as usize].pal_idx;
                         (*ts).frame_thread[p_1 as usize].pal_idx =
                             ((*ts).frame_thread[p_1 as usize].pal_idx)
                                 .offset((cbw4 * cbh4 * 16) as isize);
                     } else {
-                        pal_0 = ((*t).scratch.c2rust_unnamed_0.pal).as_mut_ptr()
-                            as *const [uint16_t; 8];
+                        pal_0 = ((*t).scratch.c2rust_unnamed_0.pal).as_mut_ptr() as *const [u16; 8];
                         pal_idx_0 = &mut *((*t).scratch.c2rust_unnamed_0.pal_idx)
                             .as_mut_ptr()
                             .offset((bw4 * bh4 * 16) as isize)
-                            as *mut uint8_t;
+                            as *mut u8;
                     }
                     ((*(*f).dsp).ipred.pal_pred)(
                         ((*f).cur.data[1] as *mut pixel)
@@ -2927,7 +2923,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     eob_0 = (*cbi_0).eob[(pl_0 + 1) as usize] as libc::c_int;
                                     txtp_0 = (*cbi_0).txtp[(pl_0 + 1) as usize] as TxfmType;
                                 } else {
-                                    let mut cf_ctx_0: uint8_t = 0;
+                                    let mut cf_ctx_0: u8 = 0;
                                     cf_0 = ((*t).c2rust_unnamed.cf_8bpc).as_mut_ptr();
                                     eob_0 = decode_coefs(
                                         t,
@@ -3047,7 +3043,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
         != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim: *const uint8_t = (dav1d_block_dimensions[bs as usize]).as_ptr();
+    let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
     let bw4 = *b_dim.offset(0) as libc::c_int;
     let bh4 = *b_dim.offset(1) as libc::c_int;
     let w4 = cmp::min(bw4, (*f).bw - (*t).bx);
@@ -3078,7 +3074,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
         res = mc(
             t,
             dst,
-            0 as *mut int16_t,
+            0 as *mut i16,
             (*f).cur.stride[0],
             bw4,
             bh4,
@@ -3103,7 +3099,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                 res = mc(
                     t,
                     ((*f).cur.data[pl as usize] as *mut pixel).offset(uvdstoff as isize),
-                    0 as *mut int16_t,
+                    0 as *mut i16,
                     (*f).cur.stride[1],
                     bw4 << (bw4 == ss_hor) as libc::c_int,
                     bh4 << (bh4 == ss_ver) as libc::c_int,
@@ -3150,7 +3146,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
             res = warp_affine(
                 t,
                 dst,
-                0 as *mut int16_t,
+                0 as *mut i16,
                 (*f).cur.stride[0],
                 b_dim,
                 0 as libc::c_int,
@@ -3174,7 +3170,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
             res = mc(
                 t,
                 dst,
-                0 as *mut int16_t,
+                0 as *mut i16,
                 (*f).cur.stride[0],
                 bw4,
                 bh4,
@@ -3356,7 +3352,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             t,
                             ((*f).cur.data[(1 + pl_0) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize),
-                            0 as *mut int16_t,
+                            0 as *mut i16,
                             (*f).cur.stride[1],
                             bw4,
                             bh4,
@@ -3416,7 +3412,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             ((*f).cur.data[(1 + pl_1) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize)
                                 .offset(v_off as isize),
-                            0 as *mut int16_t,
+                            0 as *mut i16,
                             (*f).cur.stride[1],
                             bw4,
                             bh4,
@@ -3469,7 +3465,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             ((*f).cur.data[(1 + pl_2) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize)
                                 .offset(h_off as isize),
-                            0 as *mut int16_t,
+                            0 as *mut i16,
                             (*f).cur.stride[1],
                             bw4,
                             bh4,
@@ -3522,7 +3518,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             .offset(uvdstoff as isize)
                             .offset(h_off as isize)
                             .offset(v_off as isize),
-                        0 as *mut int16_t,
+                        0 as *mut i16,
                         (*f).cur.stride[1],
                         bw4,
                         bh4,
@@ -3562,7 +3558,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             t,
                             ((*f).cur.data[(1 + pl_4) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize),
-                            0 as *mut int16_t,
+                            0 as *mut i16,
                             (*f).cur.stride[1],
                             b_dim,
                             1 + pl_4,
@@ -3591,7 +3587,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             t,
                             ((*f).cur.data[(1 + pl_5) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize),
-                            0 as *mut int16_t,
+                            0 as *mut i16,
                             (*f).cur.stride[1],
                             bw4 << (bw4 == ss_hor) as libc::c_int,
                             bh4 << (bh4 == ss_ver) as libc::c_int,
@@ -3744,7 +3740,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
         (*t).tl_4x4_filter = filter_2d;
     } else {
         let filter_2d_0: Filter2d = (*b).c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
-        let tmp_1: *mut [int16_t; 16384] = ((*t)
+        let tmp_1: *mut [i16; 16384] = ((*t)
             .scratch
             .c2rust_unnamed
             .c2rust_unnamed
@@ -3752,14 +3748,14 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
             .compinter)
             .as_mut_ptr();
         let mut jnt_weight = 0;
-        let seg_mask: *mut uint8_t = ((*t)
+        let seg_mask: *mut u8 = ((*t)
             .scratch
             .c2rust_unnamed
             .c2rust_unnamed
             .c2rust_unnamed
             .seg_mask)
             .as_mut_ptr();
-        let mut mask: *const uint8_t = 0 as *const uint8_t;
+        let mut mask: *const u8 = 0 as *const u8;
         let mut i = 0;
         while i < 2 {
             let refp_0: *const Dav1dThreadPicture = &*((*f).refp).as_ptr().offset(
@@ -4109,8 +4105,8 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
         .as_ptr()
         .offset((*b).c2rust_unnamed.c2rust_unnamed_0.max_ytx as isize)
         as *const TxfmInfo;
-    let tx_split: [uint16_t; 2] = [
-        (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split0 as uint16_t,
+    let tx_split: [u16; 2] = [
+        (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split0 as u16,
         (*b).c2rust_unnamed.c2rust_unnamed_0.tx_split1,
     ];
     let mut init_y = 0;
@@ -4184,7 +4180,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                                 eob = (*cbi).eob[(1 + pl_8) as usize] as libc::c_int;
                                 txtp = (*cbi).txtp[(1 + pl_8) as usize] as TxfmType;
                             } else {
-                                let mut cf_ctx: uint8_t = 0;
+                                let mut cf_ctx: u8 = 0;
                                 cf = ((*t).c2rust_unnamed.cf_8bpc).as_mut_ptr();
                                 txtp = (*t).txtp_map
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x_0 << ss_hor)) as usize]

@@ -5,7 +5,6 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::align::Align16;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
@@ -22,7 +21,7 @@ extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
 }
 
-pub type pixel = uint16_t;
+pub type pixel = u16;
 
 pub type Backup2x8Flags = libc::c_uint;
 pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
@@ -201,29 +200,29 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
         as libc::c_int;
     let ss_hor = (layout as libc::c_uint != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint)
         as libc::c_int;
-    static mut uv_dirs: [[uint8_t; 8]; 2] = [
+    static mut uv_dirs: [[u8; 8]; 2] = [
         [
-            0 as libc::c_int as uint8_t,
-            1 as libc::c_int as uint8_t,
-            2 as libc::c_int as uint8_t,
-            3 as libc::c_int as uint8_t,
-            4 as libc::c_int as uint8_t,
-            5 as libc::c_int as uint8_t,
-            6 as libc::c_int as uint8_t,
-            7 as libc::c_int as uint8_t,
+            0 as libc::c_int as u8,
+            1 as libc::c_int as u8,
+            2 as libc::c_int as u8,
+            3 as libc::c_int as u8,
+            4 as libc::c_int as u8,
+            5 as libc::c_int as u8,
+            6 as libc::c_int as u8,
+            7 as libc::c_int as u8,
         ],
         [
-            7 as libc::c_int as uint8_t,
-            0 as libc::c_int as uint8_t,
-            2 as libc::c_int as uint8_t,
-            4 as libc::c_int as uint8_t,
-            5 as libc::c_int as uint8_t,
-            6 as libc::c_int as uint8_t,
-            6 as libc::c_int as uint8_t,
-            6 as libc::c_int as uint8_t,
+            7 as libc::c_int as u8,
+            0 as libc::c_int as u8,
+            2 as libc::c_int as u8,
+            4 as libc::c_int as u8,
+            5 as libc::c_int as u8,
+            6 as libc::c_int as u8,
+            6 as libc::c_int as u8,
+            6 as libc::c_int as u8,
         ],
     ];
-    let uv_dir: *const uint8_t = (uv_dirs[(layout as libc::c_uint
+    let uv_dir: *const u8 = (uv_dirs[(layout as libc::c_uint
         == DAV1D_PIXEL_LAYOUT_I422 as libc::c_int as libc::c_uint)
         as libc::c_int as usize])
         .as_ptr();
@@ -272,7 +271,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
         let mut sbx = 0;
         let mut last_skip = 1;
         while sbx < sb64w {
-            let noskip_row: *const [uint16_t; 2];
+            let noskip_row: *const [u16; 2];
             let noskip_mask: libc::c_uint;
             let y_lvl;
             let uv_lvl;
@@ -294,7 +293,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
             } else {
                 noskip_row = &*((*lflvl.offset(sb128x as isize)).noskip_mask)
                     .as_ptr()
-                    .offset(by_idx as isize) as *const [uint16_t; 2];
+                    .offset(by_idx as isize) as *const [u16; 2];
                 noskip_mask = ((*noskip_row.offset(0))[1] as libc::c_uint) << 16
                     | (*noskip_row.offset(0))[0] as libc::c_uint;
                 y_lvl = (*(*f).frame_hdr).cdef.y_strength[cdef_idx as usize];
@@ -326,7 +325,7 @@ pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
                                 & !(CDEF_HAVE_RIGHT as libc::c_int) as libc::c_uint,
                         );
                     }
-                    let bx_mask: uint32_t = (3 as libc::c_uint) << (bx & 30);
+                    let bx_mask: u32 = (3 as libc::c_uint) << (bx & 30);
                     if noskip_mask & bx_mask == 0 {
                         last_skip = 1 as libc::c_int;
                     } else {

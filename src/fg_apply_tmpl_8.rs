@@ -16,14 +16,14 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
-pub type pixel = uint8_t;
-pub type entry = int8_t;
+pub type pixel = u8;
+pub type entry = i8;
 
 unsafe extern "C" fn generate_scaling(
     _bitdepth: libc::c_int,
-    points: *const [uint8_t; 2],
+    points: *const [u8; 2],
     num: libc::c_int,
-    scaling: *mut uint8_t,
+    scaling: *mut u8,
 ) {
     let shift_x = 0;
     let scaling_size = 256;
@@ -55,7 +55,7 @@ unsafe extern "C" fn generate_scaling(
         let mut x = 0;
         let mut d = 0x8000 as libc::c_int;
         while x < dx {
-            *scaling.offset((bx + x << shift_x) as isize) = (by + (d >> 16)) as uint8_t;
+            *scaling.offset((bx + x << shift_x) as isize) = (by + (d >> 16)) as u8;
             d += delta;
             x += 1;
         }
@@ -63,7 +63,7 @@ unsafe extern "C" fn generate_scaling(
     }
     let n = ((*points.offset((num - 1) as isize))[0] as libc::c_int) << shift_x;
     memset(
-        &mut *scaling.offset(n as isize) as *mut uint8_t as *mut libc::c_void,
+        &mut *scaling.offset(n as isize) as *mut u8 as *mut libc::c_void,
         (*points.offset((num - 1) as isize))[1] as libc::c_int,
         (scaling_size - n) as libc::c_ulong,
     );
@@ -74,7 +74,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
-    scaling: *mut [uint8_t; 256],
+    scaling: *mut [u8; 256],
     grain_lut: *mut [[entry; 82]; 74],
 ) {
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
@@ -139,10 +139,10 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
         let sz: ptrdiff_t = (*out).p.h as isize * stride;
         if sz < 0 {
             memcpy(
-                ((*out).data[0] as *mut uint8_t)
+                ((*out).data[0] as *mut u8)
                     .offset(sz as isize)
                     .offset(-(stride as isize)) as *mut libc::c_void,
-                ((*in_0).data[0] as *mut uint8_t)
+                ((*in_0).data[0] as *mut u8)
                     .offset(sz as isize)
                     .offset(-(stride as isize)) as *const libc::c_void,
                 -sz as libc::c_ulong,
@@ -165,10 +165,10 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
         if sz_0 < 0 {
             if (*data).num_uv_points[0] == 0 {
                 memcpy(
-                    ((*out).data[1] as *mut uint8_t)
+                    ((*out).data[1] as *mut u8)
                         .offset(sz_0 as isize)
                         .offset(-(stride_0 as isize)) as *mut libc::c_void,
-                    ((*in_0).data[1] as *mut uint8_t)
+                    ((*in_0).data[1] as *mut u8)
                         .offset(sz_0 as isize)
                         .offset(-(stride_0 as isize)) as *const libc::c_void,
                     -sz_0 as libc::c_ulong,
@@ -176,10 +176,10 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
             }
             if (*data).num_uv_points[1] == 0 {
                 memcpy(
-                    ((*out).data[2] as *mut uint8_t)
+                    ((*out).data[2] as *mut u8)
                         .offset(sz_0 as isize)
                         .offset(-(stride_0 as isize)) as *mut libc::c_void,
-                    ((*in_0).data[2] as *mut uint8_t)
+                    ((*in_0).data[2] as *mut u8)
                         .offset(sz_0 as isize)
                         .offset(-(stride_0 as isize)) as *const libc::c_void,
                     -sz_0 as libc::c_ulong,
@@ -201,7 +201,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
-    scaling: *const [uint8_t; 256],
+    scaling: *const [u8; 256],
     grain_lut: *const [[entry; 82]; 74],
     row: libc::c_int,
 ) {
@@ -342,7 +342,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_8bpc(
             dsp,
             out,
             in_0,
-            scaling.0.as_mut_ptr() as *const [uint8_t; 256],
+            scaling.0.as_mut_ptr() as *const [u8; 256],
             grain_lut.0.as_mut_ptr() as *const [[entry; 82]; 74],
             row,
         );

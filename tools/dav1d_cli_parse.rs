@@ -9,7 +9,6 @@ use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
-use rav1d::include::stdint::uint64_t;
 use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
 use rav1d::src::lib::dav1d_default_settings;
 use rav1d::src::lib::dav1d_version;
@@ -737,13 +736,13 @@ pub unsafe extern "C" fn parse(
             267 => {
                 let mut arg: *mut libc::c_char = optarg;
                 let mut end: *mut libc::c_char = 0 as *mut libc::c_char;
-                let mut res: uint64_t = strtoul(arg, &mut end, 0) as uint64_t;
+                let mut res: u64 = strtoul(arg, &mut end, 0) as u64;
                 if *end as libc::c_int == 'x' as i32 {
                     arg = end.offset(1);
-                    res = (res as libc::c_ulong).wrapping_mul(strtoul(arg, &mut end, 0)) as uint64_t
-                        as uint64_t;
+                    res = (res as libc::c_ulong).wrapping_mul(strtoul(arg, &mut end, 0)) as u64
+                        as u64;
                 }
-                if *end as libc::c_int != 0 || end == arg || res >= u32::MAX as uint64_t {
+                if *end as libc::c_int != 0 || end == arg || res >= u32::MAX as u64 {
                     error(
                         *argv.offset(0),
                         optarg,

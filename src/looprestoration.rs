@@ -6,10 +6,6 @@ use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
 use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
 use crate::src::align::Align16;
 use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
@@ -31,16 +27,16 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
     fn dav1d_sgr_box3_v_neon(
-        sumsq: *mut int32_t,
-        sum: *mut int16_t,
+        sumsq: *mut i32,
+        sum: *mut i16,
         w: libc::c_int,
         h: libc::c_int,
         edges: LrEdgeFlags,
     );
 
     fn dav1d_sgr_calc_ab1_neon(
-        a: *mut int32_t,
-        b: *mut int16_t,
+        a: *mut i32,
+        b: *mut i16,
         w: libc::c_int,
         h: libc::c_int,
         strength: libc::c_int,
@@ -48,16 +44,16 @@ extern "C" {
     );
 
     fn dav1d_sgr_box5_v_neon(
-        sumsq: *mut int32_t,
-        sum: *mut int16_t,
+        sumsq: *mut i32,
+        sum: *mut i16,
         w: libc::c_int,
         h: libc::c_int,
         edges: LrEdgeFlags,
     );
 
     fn dav1d_sgr_calc_ab2_neon(
-        a: *mut int32_t,
-        b: *mut int16_t,
+        a: *mut i32,
+        b: *mut i16,
         w: libc::c_int,
         h: libc::c_int,
         strength: libc::c_int,
@@ -74,15 +70,15 @@ pub const LR_HAVE_LEFT: LrEdgeFlags = 1;
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct LooprestorationParams_sgr {
-    pub s0: uint32_t,
-    pub s1: uint32_t,
-    pub w0: int16_t,
-    pub w1: int16_t,
+    pub s0: u32,
+    pub s1: u32,
+    pub w0: i16,
+    pub w1: i16,
 }
 
 #[repr(C)]
 pub union LooprestorationParams {
-    pub filter: Align16<[[int16_t; 8]; 2]>,
+    pub filter: Align16<[[i16; 8]; 2]>,
     pub sgr: LooprestorationParams_sgr,
 }
 
@@ -345,7 +341,7 @@ unsafe fn wiener_rust<BD: BitDepth>(
                 sum += tmp.into() * filter as libc::c_int;
             }
 
-            hor[i] = iclip(sum + rounding_off_h >> round_bits_h, 0, clip_limit - 1) as uint16_t;
+            hor[i] = iclip(sum + rounding_off_h >> round_bits_h, 0, clip_limit - 1) as u16;
         }
     }
 
@@ -392,7 +388,7 @@ unsafe fn wiener_rust<BD: BitDepth>(
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
 fn boxsum3<BD: BitDepth>(
-    sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    sumsq: &mut [i32; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     w: libc::c_int,
@@ -482,7 +478,7 @@ fn boxsum3<BD: BitDepth>(
 /// * c: Pixel summed not stored
 /// * x: Pixel not summed not stored
 fn boxsum5<BD: BitDepth>(
-    sumsq: &mut [int32_t; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
+    sumsq: &mut [i32; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     sum: &mut [BD::Coef; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE],
     src: &[BD::Pixel; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE],
     w: libc::c_int,
@@ -573,7 +569,7 @@ fn selfguided_filter<BD: BitDepth>(
     // of padding above and below
     let mut sumsq = [0; 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
     // By inverting A and B after the boxsums, B can be of size coef instead
-    // of int32_t
+    // of i32
     let mut sum = [0.as_::<BD::Coef>(); 68 /*(64 + 2 + 2)*/ * REST_UNIT_STRIDE];
 
     let step = (n == 25) as libc::c_int + 1;
@@ -926,11 +922,11 @@ unsafe fn dav1d_wiener_filter_h_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    dst: *mut int16_t,
+                    dst: *mut i16,
                     left: *const libc::c_void,
                     src: *const libc::c_void,
                     stride: ptrdiff_t,
-                    fh: *const int16_t,
+                    fh: *const i16,
                     w: intptr_t,
                     h: libc::c_int,
                     edges: LrEdgeFlags,
@@ -974,10 +970,10 @@ unsafe fn dav1d_wiener_filter_v_neon<BD: BitDepth>(
                 fn $name(
                     dst: *mut libc::c_void,
                     stride: ptrdiff_t,
-                    mid: *const int16_t,
+                    mid: *const i16,
                     w: libc::c_int,
                     h: libc::c_int,
-                    fv: *const int16_t,
+                    fv: *const i16,
                     edges: LrEdgeFlags,
                     mid_stride: ptrdiff_t,
                     bitdepth_max: libc::c_int,
@@ -1039,8 +1035,8 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let filter: *const [int16_t; 8] = (*params).filter.0.as_ptr();
-    let mut mid: Align16<[int16_t; 68 * 384]> = Align16([0; 68 * 384]);
+    let filter: *const [i16; 8] = (*params).filter.0.as_ptr();
+    let mut mid: Align16<[i16; 68 * 384]> = Align16([0; 68 * 384]);
     let mid_stride: libc::c_int = w + 7 & !7;
     dav1d_wiener_filter_h_neon(
         &mut mid.0[2 * mid_stride as usize..],
@@ -1087,15 +1083,15 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
         h,
         filter.offset(1),
         edges,
-        (mid_stride as usize * ::core::mem::size_of::<int16_t>()) as ptrdiff_t,
+        (mid_stride as usize * ::core::mem::size_of::<i16>()) as ptrdiff_t,
         bd,
     );
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe fn dav1d_sgr_box3_h_neon<BD: BitDepth>(
-    sumsq: *mut int32_t,
-    sum: *mut int16_t,
+    sumsq: *mut i32,
+    sum: *mut i16,
     left: *const [BD::Pixel; 4],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -1107,8 +1103,8 @@ unsafe fn dav1d_sgr_box3_h_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    sumsq: *mut int32_t,
-                    sum: *mut int16_t,
+                    sumsq: *mut i32,
+                    sum: *mut i16,
                     left: *const libc::c_void,
                     src: *const libc::c_void,
                     stride: ptrdiff_t,
@@ -1131,8 +1127,8 @@ unsafe fn dav1d_sgr_finish_filter1_neon<BD: BitDepth>(
     tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
-    a: *const int32_t,
-    b: *const int16_t,
+    a: *const i32,
+    b: *const i16,
     w: libc::c_int,
     h: libc::c_int,
 ) {
@@ -1140,11 +1136,11 @@ unsafe fn dav1d_sgr_finish_filter1_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    tmp: *mut int16_t,
+                    tmp: *mut i16,
                     src: *const libc::c_void,
                     stride: ptrdiff_t,
-                    a: *const int32_t,
-                    b: *const int16_t,
+                    a: *const i32,
+                    b: *const i16,
                     w: libc::c_int,
                     h: libc::c_int,
                 );
@@ -1171,18 +1167,18 @@ unsafe fn dav1d_sgr_filter1_neon<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
-    let sumsq: *mut int32_t = &mut *sumsq_mem
+    let mut sumsq_mem: Align16<[i32; 27208]> = Align16([0; 27208]);
+    let sumsq: *mut i32 = &mut *sumsq_mem
         .0
         .as_mut_ptr()
-        .offset(((384 + 16) * 2 + 8) as isize) as *mut int32_t;
-    let a: *mut int32_t = sumsq;
-    let mut sum_mem: Align16<[int16_t; 27216]> = Align16([0; 27216]);
-    let sum: *mut int16_t = &mut *sum_mem
+        .offset(((384 + 16) * 2 + 8) as isize) as *mut i32;
+    let a: *mut i32 = sumsq;
+    let mut sum_mem: Align16<[i16; 27216]> = Align16([0; 27216]);
+    let sum: *mut i16 = &mut *sum_mem
         .0
         .as_mut_ptr()
-        .offset(((384 + 16) * 2 + 16) as isize) as *mut int16_t;
-    let b: *mut int16_t = sum;
+        .offset(((384 + 16) * 2 + 16) as isize) as *mut i16;
+    let b: *mut i16 = sum;
     dav1d_sgr_box3_h_neon::<BD>(sumsq, sum, left.cast(), src.cast(), stride, w, h, edges);
     if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
         dav1d_sgr_box3_h_neon::<BD>(
@@ -1215,8 +1211,8 @@ unsafe fn dav1d_sgr_filter1_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe fn dav1d_sgr_box5_h_neon<BD: BitDepth>(
-    sumsq: *mut int32_t,
-    sum: *mut int16_t,
+    sumsq: *mut i32,
+    sum: *mut i16,
     left: *const [BD::Pixel; 4],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -1228,8 +1224,8 @@ unsafe fn dav1d_sgr_box5_h_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    sumsq: *mut int32_t,
-                    sum: *mut int16_t,
+                    sumsq: *mut i32,
+                    sum: *mut i16,
                     left: *const libc::c_void,
                     src: *const libc::c_void,
                     stride: ptrdiff_t,
@@ -1252,8 +1248,8 @@ unsafe fn dav1d_sgr_finish_filter2_neon<BD: BitDepth>(
     tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
-    a: *const int32_t,
-    b: *const int16_t,
+    a: *const i32,
+    b: *const i16,
     w: libc::c_int,
     h: libc::c_int,
 ) {
@@ -1261,11 +1257,11 @@ unsafe fn dav1d_sgr_finish_filter2_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    tmp: *mut int16_t,
+                    tmp: *mut i16,
                     src: *const libc::c_void,
                     stride: ptrdiff_t,
-                    a: *const int32_t,
-                    b: *const int16_t,
+                    a: *const i32,
+                    b: *const i16,
                     w: libc::c_int,
                     h: libc::c_int,
                 );
@@ -1292,18 +1288,18 @@ unsafe fn dav1d_sgr_filter2_neon<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut sumsq_mem: Align16<[int32_t; 27208]> = Align16([0; 27208]);
-    let sumsq: *mut int32_t = &mut *sumsq_mem
+    let mut sumsq_mem: Align16<[i32; 27208]> = Align16([0; 27208]);
+    let sumsq: *mut i32 = &mut *sumsq_mem
         .0
         .as_mut_ptr()
-        .offset(((384 + 16) * 2 + 8) as isize) as *mut int32_t;
-    let a: *mut int32_t = sumsq;
-    let mut sum_mem: Align16<[int16_t; 27216]> = Align16([0; 27216]);
-    let sum: *mut int16_t = &mut *sum_mem
+        .offset(((384 + 16) * 2 + 8) as isize) as *mut i32;
+    let a: *mut i32 = sumsq;
+    let mut sum_mem: Align16<[i16; 27216]> = Align16([0; 27216]);
+    let sum: *mut i16 = &mut *sum_mem
         .0
         .as_mut_ptr()
-        .offset(((384 + 16) * 2 + 16) as isize) as *mut int16_t;
-    let b: *mut int16_t = sum;
+        .offset(((384 + 16) * 2 + 16) as isize) as *mut i16;
+    let b: *mut i16 = sum;
     dav1d_sgr_box5_h_neon::<BD>(sumsq, sum, left, src, stride, w, h, edges);
     if edges as libc::c_uint & LR_HAVE_TOP as libc::c_int as libc::c_uint != 0 {
         dav1d_sgr_box5_h_neon::<BD>(
@@ -1354,7 +1350,7 @@ unsafe fn dav1d_sgr_weighted1_neon<BD: BitDepth>(
                     dst_stride: ptrdiff_t,
                     src: *const DynPixel,
                     src_stride: ptrdiff_t,
-                    t1: *const int16_t,
+                    t1: *const i16,
                     w: libc::c_int,
                     h: libc::c_int,
                     wt: libc::c_int,
@@ -1401,11 +1397,11 @@ unsafe fn dav1d_sgr_weighted2_neon<BD: BitDepth>(
                     dst_stride: ptrdiff_t,
                     src: *const libc::c_void,
                     src_stride: ptrdiff_t,
-                    t1: *const int16_t,
-                    t2: *const int16_t,
+                    t1: *const i16,
+                    t2: *const i16,
                     w: libc::c_int,
                     h: libc::c_int,
-                    wt: *const int16_t,
+                    wt: *const i16,
                     bitdepth_max: libc::c_int,
                 );
             }
@@ -1466,7 +1462,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: Align16<[int16_t; 24576]> = Align16([0; 24576]);
+    let mut tmp: Align16<[i16; 24576]> = Align16([0; 24576]);
     dav1d_sgr_filter2_neon(
         &mut tmp.0,
         dst,
@@ -1529,7 +1525,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp: Align16<[int16_t; 24576]> = Align16([0; 24576]);
+    let mut tmp: Align16<[i16; 24576]> = Align16([0; 24576]);
     dav1d_sgr_filter1_neon(
         &mut tmp.0,
         dst,
@@ -1592,8 +1588,8 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let mut tmp1: Align16<[int16_t; 24576]> = Align16([0; 24576]);
-    let mut tmp2: Align16<[int16_t; 24576]> = Align16([0; 24576]);
+    let mut tmp1: Align16<[i16; 24576]> = Align16([0; 24576]);
+    let mut tmp2: Align16<[i16; 24576]> = Align16([0; 24576]);
     dav1d_sgr_filter2_neon(
         &mut tmp1.0,
         dst,
@@ -1618,7 +1614,7 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepth>(
         edges,
         bd,
     );
-    let wt: [int16_t; 2] = [(*params).sgr.w0, (*params).sgr.w1];
+    let wt: [i16; 2] = [(*params).sgr.w0, (*params).sgr.w1];
     dav1d_sgr_weighted2_neon(
         dst,
         stride,

@@ -16,7 +16,6 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_props_set_defaults;
 use crate::src::internal::Dav1dContext;
@@ -105,17 +104,17 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
         return -(12 as libc::c_int);
     }
     (*p).allocator_data = buf as *mut libc::c_void;
-    let data: *mut uint8_t = (*buf).data as *mut uint8_t;
+    let data: *mut u8 = (*buf).data as *mut u8;
     (*p).data[0] = data as *mut libc::c_void;
     (*p).data[1] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
     } else {
-        0 as *mut uint8_t
+        0 as *mut u8
     }) as *mut libc::c_void;
     (*p).data[2] = (if has_chroma != 0 {
         data.offset(y_sz as isize).offset(uv_sz as isize)
     } else {
-        0 as *mut uint8_t
+        0 as *mut u8
     }) as *mut libc::c_void;
     return 0 as libc::c_int;
 }
@@ -130,7 +129,7 @@ pub unsafe extern "C" fn dav1d_default_picture_release(
     );
 }
 
-unsafe extern "C" fn free_buffer(_data: *const uint8_t, user_data: *mut libc::c_void) {
+unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut libc::c_void) {
     let pic_ctx: *mut pic_ctx_context = user_data as *mut pic_ctx_context;
     ((*pic_ctx).allocator.release_picture_callback).expect("non-null function pointer")(
         &mut (*pic_ctx).pic,
@@ -197,8 +196,8 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*pic_ctx).allocator = (*p_allocator).clone();
     (*pic_ctx).pic = (*p).clone();
     (*p).r#ref = dav1d_ref_wrap(
-        (*p).data[0] as *const uint8_t,
-        Some(free_buffer as unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()),
+        (*p).data[0] as *const u8,
+        Some(free_buffer as unsafe extern "C" fn(*const u8, *mut libc::c_void) -> ()),
         pic_ctx as *mut libc::c_void,
     );
     if ((*p).r#ref).is_null() {

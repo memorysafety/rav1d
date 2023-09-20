@@ -7,9 +7,7 @@ use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
 use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::int16_t;
 use crate::include::stdint::intptr_t;
-use crate::include::stdint::uint8_t;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
@@ -1268,14 +1266,14 @@ pub type warp8x8_fn = unsafe extern "C" fn(
     ptrdiff_t,
     *const DynPixel,
     ptrdiff_t,
-    *const int16_t,
+    *const i16,
     libc::c_int,
     libc::c_int,
     libc::c_int,
 ) -> ();
 
 pub type mct_fn = unsafe extern "C" fn(
-    *mut int16_t,
+    *mut i16,
     *const DynPixel,
     ptrdiff_t,
     libc::c_int,
@@ -1286,7 +1284,7 @@ pub type mct_fn = unsafe extern "C" fn(
 ) -> ();
 
 pub type mct_scaled_fn = unsafe extern "C" fn(
-    *mut int16_t,
+    *mut i16,
     *const DynPixel,
     ptrdiff_t,
     libc::c_int,
@@ -1299,11 +1297,11 @@ pub type mct_scaled_fn = unsafe extern "C" fn(
 ) -> ();
 
 pub type warp8x8t_fn = unsafe extern "C" fn(
-    *mut int16_t,
+    *mut i16,
     ptrdiff_t,
     *const DynPixel,
     ptrdiff_t,
-    *const int16_t,
+    *const i16,
     libc::c_int,
     libc::c_int,
     libc::c_int,
@@ -1312,8 +1310,8 @@ pub type warp8x8t_fn = unsafe extern "C" fn(
 pub type avg_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
-    *const int16_t,
-    *const int16_t,
+    *const i16,
+    *const i16,
     libc::c_int,
     libc::c_int,
     libc::c_int,
@@ -1322,8 +1320,8 @@ pub type avg_fn = unsafe extern "C" fn(
 pub type w_avg_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
-    *const int16_t,
-    *const int16_t,
+    *const i16,
+    *const i16,
     libc::c_int,
     libc::c_int,
     libc::c_int,
@@ -1333,22 +1331,22 @@ pub type w_avg_fn = unsafe extern "C" fn(
 pub type mask_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
-    *const int16_t,
-    *const int16_t,
+    *const i16,
+    *const i16,
     libc::c_int,
     libc::c_int,
-    *const uint8_t,
+    *const u8,
     libc::c_int,
 ) -> ();
 
 pub type w_mask_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
-    *const int16_t,
-    *const int16_t,
+    *const i16,
+    *const i16,
     libc::c_int,
     libc::c_int,
-    *mut uint8_t,
+    *mut u8,
     libc::c_int,
     libc::c_int,
 ) -> ();
@@ -1359,7 +1357,7 @@ pub type blend_fn = unsafe extern "C" fn(
     *const DynPixel,
     libc::c_int,
     libc::c_int,
-    *const uint8_t,
+    *const u8,
 ) -> ();
 
 pub type blend_dir_fn =
@@ -1470,7 +1468,7 @@ macro_rules! filter_fns {
 
             // TODO(legare): Temporarily pub until init fns are deduplicated.
             pub(crate) unsafe extern "C" fn [<prep_8tap_ $mc_kind _c_erased>]<BD: BitDepth>(
-                tmp: *mut int16_t,
+                tmp: *mut i16,
                 src: *const DynPixel,
                 src_stride: ptrdiff_t,
                 w: libc::c_int,
@@ -1494,7 +1492,7 @@ macro_rules! filter_fns {
 
             // TODO(legare): Temporarily pub until init fns are deduplicated.
             pub(crate) unsafe extern "C" fn [<prep_8tap_ $mc_kind _scaled_c_erased>]<BD: BitDepth>(
-                tmp: *mut int16_t,
+                tmp: *mut i16,
                 src: *const DynPixel,
                 src_stride: ptrdiff_t,
                 w: libc::c_int,
@@ -1588,7 +1586,7 @@ pub(crate) unsafe extern "C" fn put_bilin_c_erased<BD: BitDepth>(
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
-    tmp: *mut int16_t,
+    tmp: *mut i16,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
     w: libc::c_int,
@@ -1640,7 +1638,7 @@ pub(crate) unsafe extern "C" fn put_bilin_scaled_c_erased<BD: BitDepth>(
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
-    tmp: *mut int16_t,
+    tmp: *mut i16,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
     w: libc::c_int,
@@ -1669,8 +1667,8 @@ pub(crate) unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const int16_t,
-    tmp2: *const int16_t,
+    tmp1: *const i16,
+    tmp2: *const i16,
     w: libc::c_int,
     h: libc::c_int,
     bitdepth_max: libc::c_int,
@@ -1690,8 +1688,8 @@ pub(crate) unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const int16_t,
-    tmp2: *const int16_t,
+    tmp1: *const i16,
+    tmp2: *const i16,
     w: libc::c_int,
     h: libc::c_int,
     weight: libc::c_int,
@@ -1713,11 +1711,11 @@ pub(crate) unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const int16_t,
-    tmp2: *const int16_t,
+    tmp1: *const i16,
+    tmp2: *const i16,
     w: libc::c_int,
     h: libc::c_int,
-    mask: *const uint8_t,
+    mask: *const u8,
     bitdepth_max: libc::c_int,
 ) {
     mask_rust(
@@ -1736,11 +1734,11 @@ pub(crate) unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const int16_t,
-    tmp2: *const int16_t,
+    tmp1: *const i16,
+    tmp2: *const i16,
     w: libc::c_int,
     h: libc::c_int,
-    mask: *mut uint8_t,
+    mask: *mut u8,
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -1764,11 +1762,11 @@ pub(crate) unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const int16_t,
-    tmp2: *const int16_t,
+    tmp1: *const i16,
+    tmp2: *const i16,
     w: libc::c_int,
     h: libc::c_int,
-    mask: *mut uint8_t,
+    mask: *mut u8,
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -1792,11 +1790,11 @@ pub(crate) unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const int16_t,
-    tmp2: *const int16_t,
+    tmp1: *const i16,
+    tmp2: *const i16,
     w: libc::c_int,
     h: libc::c_int,
-    mask: *mut uint8_t,
+    mask: *mut u8,
     sign: libc::c_int,
     bitdepth_max: libc::c_int,
 ) {
@@ -1823,7 +1821,7 @@ pub(crate) unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
     tmp: *const DynPixel,
     w: libc::c_int,
     h: libc::c_int,
-    mask: *const uint8_t,
+    mask: *const u8,
 ) {
     blend_rust::<BD>(
         dst.cast(),
@@ -1875,7 +1873,7 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
     dst_stride: ptrdiff_t,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    abcd: *const int16_t,
+    abcd: *const i16,
     mx: libc::c_int,
     my: libc::c_int,
     bitdepth_max: libc::c_int,
@@ -1894,11 +1892,11 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
-    tmp: *mut int16_t,
+    tmp: *mut i16,
     tmp_stride: ptrdiff_t,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    abcd: *const int16_t,
+    abcd: *const i16,
     mx: libc::c_int,
     my: libc::c_int,
     bitdepth_max: libc::c_int,
@@ -1988,7 +1986,7 @@ macro_rules! decl_fn {
 
     (mct, $name:ident) => {
         pub(crate) fn $name(
-            tmp: *mut int16_t,
+            tmp: *mut i16,
             src: *const DynPixel,
             src_stride: ptrdiff_t,
             w: libc::c_int,
@@ -2017,7 +2015,7 @@ macro_rules! decl_fn {
 
     (mct_scaled, $name:ident) => {
         pub(crate) fn $name(
-            tmp: *mut int16_t,
+            tmp: *mut i16,
             src: *const DynPixel,
             src_stride: ptrdiff_t,
             w: libc::c_int,
@@ -2034,8 +2032,8 @@ macro_rules! decl_fn {
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
-            tmp1: *const int16_t,
-            tmp2: *const int16_t,
+            tmp1: *const i16,
+            tmp2: *const i16,
             w: libc::c_int,
             h: libc::c_int,
             bitdepth_max: libc::c_int,
@@ -2046,8 +2044,8 @@ macro_rules! decl_fn {
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
-            tmp1: *const int16_t,
-            tmp2: *const int16_t,
+            tmp1: *const i16,
+            tmp2: *const i16,
             w: libc::c_int,
             h: libc::c_int,
             weight: libc::c_int,
@@ -2059,11 +2057,11 @@ macro_rules! decl_fn {
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
-            tmp1: *const int16_t,
-            tmp2: *const int16_t,
+            tmp1: *const i16,
+            tmp2: *const i16,
             w: libc::c_int,
             h: libc::c_int,
-            mask: *const uint8_t,
+            mask: *const u8,
             bitdepth_max: libc::c_int,
         );
     };
@@ -2072,11 +2070,11 @@ macro_rules! decl_fn {
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
-            tmp1: *const int16_t,
-            tmp2: *const int16_t,
+            tmp1: *const i16,
+            tmp2: *const i16,
             w: libc::c_int,
             h: libc::c_int,
-            mask: *mut uint8_t,
+            mask: *mut u8,
             sign: libc::c_int,
             bitdepth_max: libc::c_int,
         );
@@ -2089,7 +2087,7 @@ macro_rules! decl_fn {
             tmp: *const DynPixel,
             w: libc::c_int,
             h: libc::c_int,
-            mask: *const uint8_t,
+            mask: *const u8,
         );
     };
 
@@ -2109,7 +2107,7 @@ macro_rules! decl_fn {
             dst_stride: ptrdiff_t,
             src: *const DynPixel,
             src_stride: ptrdiff_t,
-            abcd: *const int16_t,
+            abcd: *const i16,
             mx: libc::c_int,
             my: libc::c_int,
             bitdepth_max: libc::c_int,
@@ -2118,11 +2116,11 @@ macro_rules! decl_fn {
 
     (warp8x8t, $name:ident) => {
         pub(crate) fn $name(
-            tmp: *mut int16_t,
+            tmp: *mut i16,
             tmp_stride: ptrdiff_t,
             src: *const DynPixel,
             src_stride: ptrdiff_t,
-            abcd: *const int16_t,
+            abcd: *const i16,
             mx: libc::c_int,
             my: libc::c_int,
             bitdepth_max: libc::c_int,

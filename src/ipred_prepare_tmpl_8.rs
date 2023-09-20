@@ -1,5 +1,4 @@
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
@@ -24,28 +23,28 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
-pub type pixel = uint8_t;
+pub type pixel = u8;
 
 #[derive(Copy, Clone, BitfieldStruct)]
 #[repr(C)]
 pub struct av1_intra_prediction_edge {
-    #[bitfield(name = "needs_left", ty = "uint8_t", bits = "0..=0")]
-    #[bitfield(name = "needs_top", ty = "uint8_t", bits = "1..=1")]
-    #[bitfield(name = "needs_topleft", ty = "uint8_t", bits = "2..=2")]
-    #[bitfield(name = "needs_topright", ty = "uint8_t", bits = "3..=3")]
-    #[bitfield(name = "needs_bottomleft", ty = "uint8_t", bits = "4..=4")]
+    #[bitfield(name = "needs_left", ty = "u8", bits = "0..=0")]
+    #[bitfield(name = "needs_top", ty = "u8", bits = "1..=1")]
+    #[bitfield(name = "needs_topleft", ty = "u8", bits = "2..=2")]
+    #[bitfield(name = "needs_topright", ty = "u8", bits = "3..=3")]
+    #[bitfield(name = "needs_bottomleft", ty = "u8", bits = "4..=4")]
     pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
 }
 
-static mut av1_mode_conv: [[[uint8_t; 2]; 2]; N_INTRA_PRED_MODES] = [
+static mut av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
     [
         [
-            DC_128_PRED as libc::c_int as uint8_t,
-            TOP_DC_PRED as libc::c_int as uint8_t,
+            DC_128_PRED as libc::c_int as u8,
+            TOP_DC_PRED as libc::c_int as u8,
         ],
         [
-            LEFT_DC_PRED as libc::c_int as uint8_t,
-            DC_PRED as libc::c_int as uint8_t,
+            LEFT_DC_PRED as libc::c_int as u8,
+            DC_PRED as libc::c_int as u8,
         ],
     ],
     [[0; 2]; 2],
@@ -61,24 +60,24 @@ static mut av1_mode_conv: [[[uint8_t; 2]; 2]; N_INTRA_PRED_MODES] = [
     [[0; 2]; 2],
     [
         [
-            DC_128_PRED as libc::c_int as uint8_t,
-            VERT_PRED as libc::c_int as uint8_t,
+            DC_128_PRED as libc::c_int as u8,
+            VERT_PRED as libc::c_int as u8,
         ],
         [
-            HOR_PRED as libc::c_int as uint8_t,
-            PAETH_PRED as libc::c_int as uint8_t,
+            HOR_PRED as libc::c_int as u8,
+            PAETH_PRED as libc::c_int as u8,
         ],
     ],
 ];
-static mut av1_mode_to_angle_map: [uint8_t; 8] = [
-    90 as libc::c_int as uint8_t,
-    180 as libc::c_int as uint8_t,
-    45 as libc::c_int as uint8_t,
-    135 as libc::c_int as uint8_t,
-    113 as libc::c_int as uint8_t,
-    157 as libc::c_int as uint8_t,
-    203 as libc::c_int as uint8_t,
-    67 as libc::c_int as uint8_t,
+static mut av1_mode_to_angle_map: [u8; 8] = [
+    90 as libc::c_int as u8,
+    180 as libc::c_int as u8,
+    45 as libc::c_int as u8,
+    135 as libc::c_int as u8,
+    113 as libc::c_int as u8,
+    157 as libc::c_int as u8,
+    203 as libc::c_int as u8,
+    67 as libc::c_int as u8,
 ];
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {
@@ -301,8 +300,8 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1 as libc::c_int as u8);
+            init.set_needs_top(1 as libc::c_int as u8);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -313,7 +312,7 @@ unsafe extern "C" fn run_static_initializers() {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(0);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
+            init.set_needs_top(1 as libc::c_int as u8);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -323,7 +322,7 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1 as libc::c_int as u8);
             init.set_needs_top(0);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
@@ -334,29 +333,7 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(0);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0 as libc::c_int as uint8_t);
+            init.set_needs_left(1 as libc::c_int as u8);
             init.set_needs_top(0);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
@@ -368,19 +345,8 @@ unsafe extern "C" fn run_static_initializers() {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
             init.set_needs_left(0);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
-            init.set_needs_topright(1 as libc::c_int as uint8_t);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
+            init.set_needs_top(1 as libc::c_int as u8);
+            init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
             init
@@ -389,19 +355,8 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
+            init.set_needs_left(0 as libc::c_int as u8);
             init.set_needs_top(0);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(1 as libc::c_int as uint8_t);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -411,8 +366,41 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
+            init.set_needs_left(0);
+            init.set_needs_top(1 as libc::c_int as u8);
+            init.set_needs_topleft(1 as libc::c_int as u8);
+            init.set_needs_topright(1 as libc::c_int as u8);
+            init.set_needs_bottomleft(0);
+            init
+        },
+        {
+            let mut init = av1_intra_prediction_edge {
+                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+            };
+            init.set_needs_left(1 as libc::c_int as u8);
+            init.set_needs_top(1 as libc::c_int as u8);
+            init.set_needs_topleft(1 as libc::c_int as u8);
+            init.set_needs_topright(0);
+            init.set_needs_bottomleft(0);
+            init
+        },
+        {
+            let mut init = av1_intra_prediction_edge {
+                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+            };
+            init.set_needs_left(1 as libc::c_int as u8);
+            init.set_needs_top(0);
+            init.set_needs_topleft(1 as libc::c_int as u8);
+            init.set_needs_topright(0);
+            init.set_needs_bottomleft(1 as libc::c_int as u8);
+            init
+        },
+        {
+            let mut init = av1_intra_prediction_edge {
+                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+            };
+            init.set_needs_left(1 as libc::c_int as u8);
+            init.set_needs_top(1 as libc::c_int as u8);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -422,8 +410,8 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1 as libc::c_int as u8);
+            init.set_needs_top(1 as libc::c_int as u8);
             init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
@@ -433,9 +421,9 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1 as libc::c_int as u8);
+            init.set_needs_top(1 as libc::c_int as u8);
+            init.set_needs_topleft(0);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
             init
@@ -444,9 +432,20 @@ unsafe extern "C" fn run_static_initializers() {
             let mut init = av1_intra_prediction_edge {
                 needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
             };
-            init.set_needs_left(1 as libc::c_int as uint8_t);
-            init.set_needs_top(1 as libc::c_int as uint8_t);
-            init.set_needs_topleft(1 as libc::c_int as uint8_t);
+            init.set_needs_left(1 as libc::c_int as u8);
+            init.set_needs_top(1 as libc::c_int as u8);
+            init.set_needs_topleft(1 as libc::c_int as u8);
+            init.set_needs_topright(0);
+            init.set_needs_bottomleft(0);
+            init
+        },
+        {
+            let mut init = av1_intra_prediction_edge {
+                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+            };
+            init.set_needs_left(1 as libc::c_int as u8);
+            init.set_needs_top(1 as libc::c_int as u8);
+            init.set_needs_topleft(1 as libc::c_int as u8);
             init.set_needs_topright(0);
             init.set_needs_bottomleft(0);
             init

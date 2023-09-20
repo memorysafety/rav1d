@@ -65,7 +65,6 @@ use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::cdf::dav1d_cdf_thread_ref;
 use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::data::dav1d_data_props_copy;
@@ -869,7 +868,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
         (*hdr).tiling.cols = 0 as libc::c_int;
         let mut sbx = 0;
         while sbx < sbw {
-            (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx as uint16_t;
+            (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx as u16;
             sbx += tile_w;
             (*hdr).tiling.cols += 1;
         }
@@ -883,7 +882,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
         (*hdr).tiling.rows = 0 as libc::c_int;
         let mut sby = 0;
         while sby < sbh {
-            (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sby as uint16_t;
+            (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sby as u16;
             sby += tile_h;
             (*hdr).tiling.rows += 1;
         }
@@ -900,7 +899,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             } else {
                 1 as libc::c_int as libc::c_uint
             }) as libc::c_int;
-            (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx_0 as uint16_t;
+            (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbx_0 as u16;
             sbx_0 += tile_w_0;
             widest_tile = cmp::max(widest_tile, tile_w_0);
             (*hdr).tiling.cols += 1;
@@ -921,14 +920,14 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             } else {
                 1 as libc::c_int as libc::c_uint
             }) as libc::c_int;
-            (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sby_0 as uint16_t;
+            (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sby_0 as u16;
             sby_0 += tile_h_0;
             (*hdr).tiling.rows += 1;
         }
         (*hdr).tiling.log2_rows = tile_log2(1 as libc::c_int, (*hdr).tiling.rows);
     }
-    (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbw as uint16_t;
-    (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sbh as uint16_t;
+    (*hdr).tiling.col_start_sb[(*hdr).tiling.cols as usize] = sbw as u16;
+    (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sbh as u16;
     if (*hdr).tiling.log2_cols != 0 || (*hdr).tiling.log2_rows != 0 {
         (*hdr).tiling.update =
             dav1d_get_bits(gb, (*hdr).tiling.log2_cols + (*hdr).tiling.log2_rows) as libc::c_int;
@@ -1409,8 +1408,8 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                         .offset(i_19 as isize)
                         as *mut Dav1dWarpedMotionParams;
                 }
-                let mat: *mut int32_t = ((*hdr).gmv[i_19 as usize].matrix).as_mut_ptr();
-                let ref_mat: *const int32_t = ((*ref_gmv).matrix).as_ptr();
+                let mat: *mut i32 = ((*hdr).gmv[i_19 as usize].matrix).as_mut_ptr();
+                let ref_mat: *const i32 = ((*ref_gmv).matrix).as_ptr();
                 let bits: libc::c_int;
                 let shift: libc::c_int;
                 if (*hdr).gmv[i_19 as usize].type_0 as libc::c_uint
@@ -1498,14 +1497,14 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
             }
             let mut i_21 = 0;
             while i_21 < (*fgd).num_y_points {
-                (*fgd).y_points[i_21 as usize][0] = dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
+                (*fgd).y_points[i_21 as usize][0] = dav1d_get_bits(gb, 8 as libc::c_int) as u8;
                 if i_21 != 0
                     && (*fgd).y_points[(i_21 - 1) as usize][0] as libc::c_int
                         >= (*fgd).y_points[i_21 as usize][0] as libc::c_int
                 {
                     return parse_frame_hdr_error(c);
                 }
-                (*fgd).y_points[i_21 as usize][1] = dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
+                (*fgd).y_points[i_21 as usize][1] = dav1d_get_bits(gb, 8 as libc::c_int) as u8;
                 i_21 += 1;
             }
             (*fgd).chroma_scaling_from_luma =
@@ -1527,7 +1526,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                     let mut i_22 = 0;
                     while i_22 < (*fgd).num_uv_points[pl as usize] {
                         (*fgd).uv_points[pl as usize][i_22 as usize][0] =
-                            dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
+                            dav1d_get_bits(gb, 8 as libc::c_int) as u8;
                         if i_22 != 0
                             && (*fgd).uv_points[pl as usize][(i_22 - 1) as usize][0] as libc::c_int
                                 >= (*fgd).uv_points[pl as usize][i_22 as usize][0] as libc::c_int
@@ -1535,7 +1534,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                             return parse_frame_hdr_error(c);
                         }
                         (*fgd).uv_points[pl as usize][i_22 as usize][1] =
-                            dav1d_get_bits(gb, 8 as libc::c_int) as uint8_t;
+                            dav1d_get_bits(gb, 8 as libc::c_int) as u8;
                         i_22 += 1;
                     }
                     pl += 1;
@@ -1558,7 +1557,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                 while i_23 < num_y_pos {
                     (*fgd).ar_coeffs_y[i_23 as usize] = (dav1d_get_bits(gb, 8 as libc::c_int))
                         .wrapping_sub(128 as libc::c_int as libc::c_uint)
-                        as int8_t;
+                        as i8;
                     i_23 += 1;
                 }
             }
@@ -1573,19 +1572,19 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
                         (*fgd).ar_coeffs_uv[pl_0 as usize][i_24 as usize] =
                             (dav1d_get_bits(gb, 8 as libc::c_int))
                                 .wrapping_sub(128 as libc::c_int as libc::c_uint)
-                                as int8_t;
+                                as i8;
                         i_24 += 1;
                     }
                     if (*fgd).num_y_points == 0 {
                         (*fgd).ar_coeffs_uv[pl_0 as usize][num_uv_pos as usize] =
-                            0 as libc::c_int as int8_t;
+                            0 as libc::c_int as i8;
                     }
                 }
                 pl_0 += 1;
             }
             (*fgd).ar_coeff_shift = (dav1d_get_bits(gb, 2 as libc::c_int))
                 .wrapping_add(6 as libc::c_int as libc::c_uint)
-                as uint64_t;
+                as u64;
             (*fgd).grain_scale_shift = dav1d_get_bits(gb, 2 as libc::c_int) as libc::c_int;
             let mut pl_1 = 0;
             while pl_1 < 2 {
@@ -1707,9 +1706,9 @@ pub unsafe extern "C" fn dav1d_parse_obus(
         state: 0,
         bits_left: 0,
         error: 0,
-        ptr: 0 as *const uint8_t,
-        ptr_start: 0 as *const uint8_t,
-        ptr_end: 0 as *const uint8_t,
+        ptr: 0 as *const u8,
+        ptr_start: 0 as *const u8,
+        ptr_end: 0 as *const u8,
     };
     let mut res: libc::c_int;
     dav1d_init_get_bits(&mut gb, (*in_0).data, (*in_0).sz);
@@ -1882,15 +1881,15 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     let mut i_1 = 0;
                     while i_1 < 3 {
                         (*mastering_display).primaries[i_1 as usize][0] =
-                            dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
+                            dav1d_get_bits(&mut gb, 16 as libc::c_int) as u16;
                         (*mastering_display).primaries[i_1 as usize][1] =
-                            dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
+                            dav1d_get_bits(&mut gb, 16 as libc::c_int) as u16;
                         i_1 += 1;
                     }
                     (*mastering_display).white_point[0] =
-                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
+                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as u16;
                     (*mastering_display).white_point[1] =
-                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as uint16_t;
+                        dav1d_get_bits(&mut gb, 16 as libc::c_int) as u16;
                     (*mastering_display).max_luminance = dav1d_get_bits(&mut gb, 32 as libc::c_int);
                     (*mastering_display).min_luminance = dav1d_get_bits(&mut gb, 32 as libc::c_int);
                     dav1d_get_bit(&mut gb);
@@ -1935,8 +1934,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     } else {
                         let ref_3: *mut Dav1dRef = dav1d_ref_create(
                             (::core::mem::size_of::<Dav1dITUTT35>()).wrapping_add(
-                                (payload_size as size_t)
-                                    .wrapping_mul(::core::mem::size_of::<uint8_t>()),
+                                (payload_size as size_t).wrapping_mul(::core::mem::size_of::<u8>()),
                             ),
                         );
                         if ref_3.is_null() {
@@ -1945,14 +1943,14 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         let itut_t35_metadata: *mut Dav1dITUTT35 =
                             (*ref_3).data as *mut Dav1dITUTT35;
                         (*itut_t35_metadata).payload =
-                            &mut *itut_t35_metadata.offset(1) as *mut Dav1dITUTT35 as *mut uint8_t;
-                        (*itut_t35_metadata).country_code = country_code as uint8_t;
+                            &mut *itut_t35_metadata.offset(1) as *mut Dav1dITUTT35 as *mut u8;
+                        (*itut_t35_metadata).country_code = country_code as u8;
                         (*itut_t35_metadata).country_code_extension_byte =
-                            country_code_extension_byte as uint8_t;
+                            country_code_extension_byte as u8;
                         let mut i_2 = 0;
                         while i_2 < payload_size {
                             *((*itut_t35_metadata).payload).offset(i_2 as isize) =
-                                dav1d_get_bits(&mut gb, 8 as libc::c_int) as uint8_t;
+                                dav1d_get_bits(&mut gb, 8 as libc::c_int) as u8;
                             i_2 += 1;
                         }
                         (*itut_t35_metadata).payload_size = payload_size as size_t;
@@ -2037,8 +2035,8 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                     }
                 }
                 if (*c).frame_size_limit != 0
-                    && (*(*c).frame_hdr).width[1] as int64_t * (*(*c).frame_hdr).height as int64_t
-                        > (*c).frame_size_limit as int64_t
+                    && (*(*c).frame_hdr).width[1] as i64 * (*(*c).frame_hdr).height as i64
+                        > (*c).frame_size_limit as i64
                 {
                     dav1d_log(
                         c,

@@ -1,7 +1,5 @@
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
-use rav1d::include::stdint::uint64_t;
-use rav1d::include::stdint::uint8_t;
 use rav1d::stderr;
 use std::cmp;
 
@@ -30,7 +28,7 @@ extern "C" {
 pub struct DemuxerContext {
     pub data: *mut DemuxerPriv,
     pub impl_0: *const Demuxer,
-    pub priv_data: [uint64_t; 0],
+    pub priv_data: [u64; 0],
 }
 
 #[repr(C)]
@@ -38,7 +36,7 @@ pub struct Demuxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub probe_sz: libc::c_int,
-    pub probe: Option<unsafe extern "C" fn(*const uint8_t) -> libc::c_int>,
+    pub probe: Option<unsafe extern "C" fn(*const u8) -> libc::c_int>,
     pub open: Option<
         unsafe extern "C" fn(
             *mut DemuxerPriv,
@@ -49,7 +47,7 @@ pub struct Demuxer {
         ) -> libc::c_int,
     >,
     pub read: Option<unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> libc::c_int>,
-    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
+    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, u64) -> libc::c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 
@@ -100,7 +98,7 @@ pub unsafe extern "C" fn input_open(
             probe_sz = cmp::max(probe_sz, (*demuxers[i as usize]).probe_sz);
             i += 1;
         }
-        let probe_data: *mut uint8_t = malloc(probe_sz as libc::c_ulong) as *mut uint8_t;
+        let probe_data: *mut u8 = malloc(probe_sz as libc::c_ulong) as *mut u8;
         if probe_data.is_null() {
             fprintf(
                 stderr,
@@ -195,7 +193,7 @@ pub unsafe extern "C" fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dDa
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: uint64_t) -> libc::c_int {
+pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> libc::c_int {
     return if ((*(*ctx).impl_0).seek).is_some() {
         ((*(*ctx).impl_0).seek).expect("non-null function pointer")((*ctx).data, pts)
     } else {

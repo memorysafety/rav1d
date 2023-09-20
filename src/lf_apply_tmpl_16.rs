@@ -2,7 +2,6 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::env::BlockContext;
 use crate::src::internal::Dav1dDSPContext;
 use crate::src::internal::Dav1dFrameContext;
@@ -16,7 +15,7 @@ extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
 }
 
-pub type pixel = uint16_t;
+pub type pixel = u16;
 
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
@@ -322,9 +321,9 @@ pub unsafe extern "C" fn dav1d_copy_lpf_16bpc(
 unsafe extern "C" fn filter_plane_cols_y(
     f: *const Dav1dFrameContext,
     have_left: libc::c_int,
-    lvl: *const [uint8_t; 4],
+    lvl: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    mask: *const [[uint16_t; 2]; 3],
+    mask: *const [[u16; 2]; 3],
     dst: *mut pixel,
     ls: ptrdiff_t,
     w: libc::c_int,
@@ -335,28 +334,27 @@ unsafe extern "C" fn filter_plane_cols_y(
     let mut x = 0;
     while x < w {
         if !(have_left == 0 && x == 0) {
-            let mut hmask: [uint32_t; 4] = [0; 4];
+            let mut hmask: [u32; 4] = [0; 4];
             if starty4 == 0 {
-                hmask[0] = (*mask.offset(x as isize))[0][0] as uint32_t;
-                hmask[1] = (*mask.offset(x as isize))[1][0] as uint32_t;
-                hmask[2] = (*mask.offset(x as isize))[2][0] as uint32_t;
+                hmask[0] = (*mask.offset(x as isize))[0][0] as u32;
+                hmask[1] = (*mask.offset(x as isize))[1][0] as u32;
+                hmask[2] = (*mask.offset(x as isize))[2][0] as u32;
                 if endy4 > 16 {
                     hmask[0] |= ((*mask.offset(x as isize))[0][1] as libc::c_uint) << 16;
                     hmask[1] |= ((*mask.offset(x as isize))[1][1] as libc::c_uint) << 16;
                     hmask[2] |= ((*mask.offset(x as isize))[2][1] as libc::c_uint) << 16;
                 }
             } else {
-                hmask[0] = (*mask.offset(x as isize))[0][1] as uint32_t;
-                hmask[1] = (*mask.offset(x as isize))[1][1] as uint32_t;
-                hmask[2] = (*mask.offset(x as isize))[2][1] as uint32_t;
+                hmask[0] = (*mask.offset(x as isize))[0][1] as u32;
+                hmask[1] = (*mask.offset(x as isize))[1][1] as u32;
+                hmask[2] = (*mask.offset(x as isize))[2][1] as u32;
             }
-            hmask[3] = 0 as libc::c_int as uint32_t;
+            hmask[3] = 0 as libc::c_int as u32;
             (*dsp).lf.loop_filter_sb[0][0](
                 dst.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
-                &*(*lvl.offset(x as isize)).as_ptr().offset(0) as *const uint8_t
-                    as *const [uint8_t; 4],
+                &*(*lvl.offset(x as isize)).as_ptr().offset(0) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
@@ -371,9 +369,9 @@ unsafe extern "C" fn filter_plane_cols_y(
 unsafe extern "C" fn filter_plane_rows_y(
     f: *const Dav1dFrameContext,
     have_top: libc::c_int,
-    mut lvl: *const [uint8_t; 4],
+    mut lvl: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    mask: *const [[uint16_t; 2]; 3],
+    mask: *const [[u16; 2]; 3],
     mut dst: *mut pixel,
     ls: ptrdiff_t,
     w: libc::c_int,
@@ -384,20 +382,20 @@ unsafe extern "C" fn filter_plane_rows_y(
     let mut y = starty4;
     while y < endy4 {
         if !(have_top == 0 && y == 0) {
-            let vmask: [uint32_t; 4] = [
+            let vmask: [u32; 4] = [
                 (*mask.offset(y as isize))[0][0] as libc::c_uint
                     | ((*mask.offset(y as isize))[0][1] as libc::c_uint) << 16,
                 (*mask.offset(y as isize))[1][0] as libc::c_uint
                     | ((*mask.offset(y as isize))[1][1] as libc::c_uint) << 16,
                 (*mask.offset(y as isize))[2][0] as libc::c_uint
                     | ((*mask.offset(y as isize))[2][1] as libc::c_uint) << 16,
-                0 as libc::c_int as uint32_t,
+                0 as libc::c_int as u32,
             ];
             (*dsp).lf.loop_filter_sb[0][1](
                 dst.cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(1) as *const uint8_t as *const [uint8_t; 4],
+                &*(*lvl.offset(0)).as_ptr().offset(1) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
@@ -414,9 +412,9 @@ unsafe extern "C" fn filter_plane_rows_y(
 unsafe extern "C" fn filter_plane_cols_uv(
     f: *const Dav1dFrameContext,
     have_left: libc::c_int,
-    lvl: *const [uint8_t; 4],
+    lvl: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    mask: *const [[uint16_t; 2]; 2],
+    mask: *const [[u16; 2]; 2],
     u: *mut pixel,
     v: *mut pixel,
     ls: ptrdiff_t,
@@ -429,10 +427,10 @@ unsafe extern "C" fn filter_plane_cols_uv(
     let mut x = 0;
     while x < w {
         if !(have_left == 0 && x == 0) {
-            let mut hmask: [uint32_t; 3] = [0; 3];
+            let mut hmask: [u32; 3] = [0; 3];
             if starty4 == 0 {
-                hmask[0] = (*mask.offset(x as isize))[0][0] as uint32_t;
-                hmask[1] = (*mask.offset(x as isize))[1][0] as uint32_t;
+                hmask[0] = (*mask.offset(x as isize))[0][0] as u32;
+                hmask[1] = (*mask.offset(x as isize))[1][0] as u32;
                 if endy4 > 16 >> ss_ver {
                     hmask[0] |=
                         ((*mask.offset(x as isize))[0][1] as libc::c_uint) << (16 >> ss_ver);
@@ -440,16 +438,15 @@ unsafe extern "C" fn filter_plane_cols_uv(
                         ((*mask.offset(x as isize))[1][1] as libc::c_uint) << (16 >> ss_ver);
                 }
             } else {
-                hmask[0] = (*mask.offset(x as isize))[0][1] as uint32_t;
-                hmask[1] = (*mask.offset(x as isize))[1][1] as uint32_t;
+                hmask[0] = (*mask.offset(x as isize))[0][1] as u32;
+                hmask[1] = (*mask.offset(x as isize))[1][1] as u32;
             }
-            hmask[2] = 0 as libc::c_int as uint32_t;
+            hmask[2] = 0 as libc::c_int as u32;
             (*dsp).lf.loop_filter_sb[1][0](
                 u.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
-                &*(*lvl.offset(x as isize)).as_ptr().offset(2) as *const uint8_t
-                    as *const [uint8_t; 4],
+                &*(*lvl.offset(x as isize)).as_ptr().offset(2) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
@@ -459,8 +456,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
                 v.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
-                &*(*lvl.offset(x as isize)).as_ptr().offset(3) as *const uint8_t
-                    as *const [uint8_t; 4],
+                &*(*lvl.offset(x as isize)).as_ptr().offset(3) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
@@ -475,9 +471,9 @@ unsafe extern "C" fn filter_plane_cols_uv(
 unsafe extern "C" fn filter_plane_rows_uv(
     f: *const Dav1dFrameContext,
     have_top: libc::c_int,
-    mut lvl: *const [uint8_t; 4],
+    mut lvl: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    mask: *const [[uint16_t; 2]; 2],
+    mask: *const [[u16; 2]; 2],
     u: *mut pixel,
     v: *mut pixel,
     ls: ptrdiff_t,
@@ -491,18 +487,18 @@ unsafe extern "C" fn filter_plane_rows_uv(
     let mut y = starty4;
     while y < endy4 {
         if !(have_top == 0 && y == 0) {
-            let vmask: [uint32_t; 3] = [
+            let vmask: [u32; 3] = [
                 (*mask.offset(y as isize))[0][0] as libc::c_uint
                     | ((*mask.offset(y as isize))[0][1] as libc::c_uint) << (16 >> ss_hor),
                 (*mask.offset(y as isize))[1][0] as libc::c_uint
                     | ((*mask.offset(y as isize))[1][1] as libc::c_uint) << (16 >> ss_hor),
-                0 as libc::c_int as uint32_t,
+                0 as libc::c_int as u32,
             ];
             (*dsp).lf.loop_filter_sb[1][1](
                 u.offset(off_l as isize).cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(2) as *const uint8_t as *const [uint8_t; 4],
+                &*(*lvl.offset(0)).as_ptr().offset(2) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
@@ -512,7 +508,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
                 v.offset(off_l as isize).cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(3) as *const uint8_t as *const [uint8_t; 4],
+                &*(*lvl.offset(0)).as_ptr().offset(3) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
@@ -550,11 +546,10 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
     let hmax: libc::c_uint = (1 as libc::c_uint) << hmask;
     let endy4: libc::c_uint = (starty4 + cmp::min((*f).h4 - sby * sbsz, sbsz)) as libc::c_uint;
     let uv_endy4: libc::c_uint = endy4.wrapping_add(ss_ver as libc::c_uint) >> ss_ver;
-    let mut lpf_y: *const uint8_t = &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(0))
-        .offset((sby << sbl2) as isize) as *mut uint8_t;
-    let mut lpf_uv: *const uint8_t = &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
-        .offset((sby << sbl2 - ss_ver) as isize)
-        as *mut uint8_t;
+    let mut lpf_y: *const u8 = &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(0))
+        .offset((sby << sbl2) as isize) as *mut u8;
+    let mut lpf_uv: *const u8 = &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
+        .offset((sby << sbl2 - ss_ver) as isize) as *mut u8;
     let mut tile_col = 1;
     loop {
         x = (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize] as libc::c_int;
@@ -568,7 +563,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
         };
         let cbx4 = bx4 >> ss_hor;
         x >>= is_sb64;
-        let y_hmask: *mut [uint16_t; 2] =
+        let y_hmask: *mut [u16; 2] =
             ((*lflvl.offset(x as isize)).filter_y[0][bx4 as usize]).as_mut_ptr();
         let mut y: libc::c_uint = starty4 as libc::c_uint;
         let mut mask: libc::c_uint = ((1 as libc::c_int) << y) as libc::c_uint;
@@ -579,23 +574,23 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                 * ((*y_hmask.offset(2))[sidx as usize] as libc::c_uint & smask != 0) as libc::c_int
                 + ((*y_hmask.offset(1))[sidx as usize] as libc::c_uint & smask != 0) as libc::c_int;
             let ref mut fresh0 = (*y_hmask.offset(2))[sidx as usize];
-            *fresh0 = (*fresh0 as libc::c_uint & !smask) as uint16_t;
+            *fresh0 = (*fresh0 as libc::c_uint & !smask) as u16;
             let ref mut fresh1 = (*y_hmask.offset(1))[sidx as usize];
-            *fresh1 = (*fresh1 as libc::c_uint & !smask) as uint16_t;
+            *fresh1 = (*fresh1 as libc::c_uint & !smask) as u16;
             let ref mut fresh2 = (*y_hmask.offset(0))[sidx as usize];
-            *fresh2 = (*fresh2 as libc::c_uint & !smask) as uint16_t;
+            *fresh2 = (*fresh2 as libc::c_uint & !smask) as u16;
             let ref mut fresh3 = (*y_hmask.offset(cmp::min(
                 idx,
                 *lpf_y.offset(y.wrapping_sub(starty4 as libc::c_uint) as isize) as libc::c_int,
             ) as isize))[sidx as usize];
-            *fresh3 = (*fresh3 as libc::c_uint | smask) as uint16_t;
+            *fresh3 = (*fresh3 as libc::c_uint | smask) as u16;
             y = y.wrapping_add(1);
             mask <<= 1;
         }
         if (*f).cur.p.layout as libc::c_uint
             != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
         {
-            let uv_hmask: *mut [uint16_t; 2] =
+            let uv_hmask: *mut [u16; 2] =
                 ((*lflvl.offset(x as isize)).filter_uv[0][cbx4 as usize]).as_mut_ptr();
             let mut y_0: libc::c_uint = (starty4 >> ss_ver) as libc::c_uint;
             let mut uv_mask: libc::c_uint = ((1 as libc::c_int) << y_0) as libc::c_uint;
@@ -605,15 +600,15 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                 let idx_0 = ((*uv_hmask.offset(1))[sidx_0 as usize] as libc::c_uint & smask_0 != 0)
                     as libc::c_int;
                 let ref mut fresh4 = (*uv_hmask.offset(1))[sidx_0 as usize];
-                *fresh4 = (*fresh4 as libc::c_uint & !smask_0) as uint16_t;
+                *fresh4 = (*fresh4 as libc::c_uint & !smask_0) as u16;
                 let ref mut fresh5 = (*uv_hmask.offset(0))[sidx_0 as usize];
-                *fresh5 = (*fresh5 as libc::c_uint & !smask_0) as uint16_t;
+                *fresh5 = (*fresh5 as libc::c_uint & !smask_0) as u16;
                 let ref mut fresh6 = (*uv_hmask.offset(cmp::min(
                     idx_0,
                     *lpf_uv.offset(y_0.wrapping_sub((starty4 >> ss_ver) as libc::c_uint) as isize)
                         as libc::c_int,
                 ) as isize))[sidx_0 as usize];
-                *fresh6 = (*fresh6 as libc::c_uint | smask_0) as uint16_t;
+                *fresh6 = (*fresh6 as libc::c_uint | smask_0) as u16;
                 y_0 = y_0.wrapping_add(1);
                 uv_mask <<= 1;
             }
@@ -628,7 +623,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
         a = &mut *((*f).a).offset(((*f).sb128w * (start_of_tile_row - 1)) as isize)
             as *mut BlockContext;
         while x < (*f).sb128w {
-            let y_vmask: *mut [uint16_t; 2] =
+            let y_vmask: *mut [u16; 2] =
                 ((*lflvl.offset(x as isize)).filter_y[1][starty4 as usize]).as_mut_ptr();
             let w: libc::c_uint = cmp::min(32 as libc::c_int, (*f).w4 - (x << 5)) as libc::c_uint;
             let mut mask_0: libc::c_uint = 1 as libc::c_int as libc::c_uint;
@@ -642,15 +637,15 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                     + ((*y_vmask.offset(1))[sidx_1 as usize] as libc::c_uint & smask_1 != 0)
                         as libc::c_int;
                 let ref mut fresh7 = (*y_vmask.offset(2))[sidx_1 as usize];
-                *fresh7 = (*fresh7 as libc::c_uint & !smask_1) as uint16_t;
+                *fresh7 = (*fresh7 as libc::c_uint & !smask_1) as u16;
                 let ref mut fresh8 = (*y_vmask.offset(1))[sidx_1 as usize];
-                *fresh8 = (*fresh8 as libc::c_uint & !smask_1) as uint16_t;
+                *fresh8 = (*fresh8 as libc::c_uint & !smask_1) as u16;
                 let ref mut fresh9 = (*y_vmask.offset(0))[sidx_1 as usize];
-                *fresh9 = (*fresh9 as libc::c_uint & !smask_1) as uint16_t;
+                *fresh9 = (*fresh9 as libc::c_uint & !smask_1) as u16;
                 let ref mut fresh10 = (*y_vmask
                     .offset(cmp::min(idx_1, (*a).tx_lpf_y[i as usize] as libc::c_int) as isize))
                     [sidx_1 as usize];
-                *fresh10 = (*fresh10 as libc::c_uint | smask_1) as uint16_t;
+                *fresh10 = (*fresh10 as libc::c_uint | smask_1) as u16;
                 mask_0 <<= 1;
                 i = i.wrapping_add(1);
             }
@@ -658,7 +653,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                 != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint
             {
                 let cw: libc::c_uint = w.wrapping_add(ss_hor as libc::c_uint) >> ss_hor;
-                let uv_vmask: *mut [uint16_t; 2] = ((*lflvl.offset(x as isize)).filter_uv[1]
+                let uv_vmask: *mut [u16; 2] = ((*lflvl.offset(x as isize)).filter_uv[1]
                     [(starty4 >> ss_ver) as usize])
                     .as_mut_ptr();
                 let mut uv_mask_0: libc::c_uint = 1 as libc::c_int as libc::c_uint;
@@ -669,14 +664,14 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
                     let idx_2 = ((*uv_vmask.offset(1))[sidx_2 as usize] as libc::c_uint & smask_2
                         != 0) as libc::c_int;
                     let ref mut fresh11 = (*uv_vmask.offset(1))[sidx_2 as usize];
-                    *fresh11 = (*fresh11 as libc::c_uint & !smask_2) as uint16_t;
+                    *fresh11 = (*fresh11 as libc::c_uint & !smask_2) as u16;
                     let ref mut fresh12 = (*uv_vmask.offset(0))[sidx_2 as usize];
-                    *fresh12 = (*fresh12 as libc::c_uint & !smask_2) as uint16_t;
+                    *fresh12 = (*fresh12 as libc::c_uint & !smask_2) as u16;
                     let ref mut fresh13 = (*uv_vmask
                         .offset(
                             cmp::min(idx_2, (*a).tx_lpf_uv[i_0 as usize] as libc::c_int) as isize
                         ))[sidx_2 as usize];
-                    *fresh13 = (*fresh13 as libc::c_uint | smask_2) as uint16_t;
+                    *fresh13 = (*fresh13 as libc::c_uint | smask_2) as u16;
                     uv_mask_0 <<= 1;
                     i_0 = i_0.wrapping_add(1);
                 }
@@ -686,7 +681,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
         }
     }
     let mut ptr: *mut pixel;
-    let mut level_ptr: *mut [uint8_t; 4] =
+    let mut level_ptr: *mut [u8; 4] =
         ((*f).lf.level).offset((*f).b4_stride * sby as isize * sbsz as isize);
     ptr = *p.offset(0);
     have_left = 0 as libc::c_int;
@@ -695,9 +690,9 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
         filter_plane_cols_y(
             f,
             have_left,
-            level_ptr as *const [uint8_t; 4],
+            level_ptr as *const [u8; 4],
             (*f).b4_stride,
-            ((*lflvl.offset(x as isize)).filter_y[0]).as_mut_ptr() as *const [[uint16_t; 2]; 3],
+            ((*lflvl.offset(x as isize)).filter_y[0]).as_mut_ptr() as *const [[u16; 2]; 3],
             ptr,
             (*f).cur.stride[0],
             cmp::min(32 as libc::c_int, (*f).w4 - x * 32),
@@ -721,9 +716,9 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_cols_16bpc(
         filter_plane_cols_uv(
             f,
             have_left,
-            level_ptr as *const [uint8_t; 4],
+            level_ptr as *const [u8; 4],
             (*f).b4_stride,
-            ((*lflvl.offset(x as isize)).filter_uv[0]).as_mut_ptr() as *const [[uint16_t; 2]; 2],
+            ((*lflvl.offset(x as isize)).filter_uv[0]).as_mut_ptr() as *const [[u16; 2]; 2],
             &mut *(*p.offset(1)).offset(uv_off as isize),
             &mut *(*p.offset(2)).offset(uv_off as isize),
             (*f).cur.stride[1],
@@ -758,7 +753,7 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_16bpc(
     let endy4: libc::c_uint = (starty4 + cmp::min((*f).h4 - sby * sbsz, sbsz)) as libc::c_uint;
     let uv_endy4: libc::c_uint = endy4.wrapping_add(ss_ver as libc::c_uint) >> ss_ver;
     let mut ptr: *mut pixel;
-    let mut level_ptr: *mut [uint8_t; 4] =
+    let mut level_ptr: *mut [u8; 4] =
         ((*f).lf.level).offset((*f).b4_stride * sby as isize * sbsz as isize);
     ptr = *p.offset(0);
     x = 0 as libc::c_int;
@@ -766,9 +761,9 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_16bpc(
         filter_plane_rows_y(
             f,
             have_top,
-            level_ptr as *const [uint8_t; 4],
+            level_ptr as *const [u8; 4],
             (*f).b4_stride,
-            ((*lflvl.offset(x as isize)).filter_y[1]).as_mut_ptr() as *const [[uint16_t; 2]; 3],
+            ((*lflvl.offset(x as isize)).filter_y[1]).as_mut_ptr() as *const [[u16; 2]; 3],
             ptr,
             (*f).cur.stride[0],
             cmp::min(32 as libc::c_int, (*f).w4 - x * 32),
@@ -790,9 +785,9 @@ pub unsafe extern "C" fn dav1d_loopfilter_sbrow_rows_16bpc(
         filter_plane_rows_uv(
             f,
             have_top,
-            level_ptr as *const [uint8_t; 4],
+            level_ptr as *const [u8; 4],
             (*f).b4_stride,
-            ((*lflvl.offset(x as isize)).filter_uv[1]).as_mut_ptr() as *const [[uint16_t; 2]; 2],
+            ((*lflvl.offset(x as isize)).filter_uv[1]).as_mut_ptr() as *const [[u16; 2]; 2],
             &mut *(*p.offset(1)).offset(uv_off as isize),
             &mut *(*p.offset(2)).offset(uv_off as isize),
             (*f).cur.stride[1],

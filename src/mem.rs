@@ -99,11 +99,11 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut 
     pthread_mutex_lock(&mut (*pool).lock);
     let mut buf: *mut Dav1dMemPoolBuffer = (*pool).buf;
     (*pool).ref_cnt += 1;
-    let mut data: *mut uint8_t;
+    let mut data: *mut u8;
     if !buf.is_null() {
         (*pool).buf = (*buf).next;
         pthread_mutex_unlock(&mut (*pool).lock);
-        data = (*buf).data as *mut uint8_t;
+        data = (*buf).data as *mut u8;
         if (buf as uintptr_t).wrapping_sub(data as uintptr_t) == size {
             return buf;
         }
@@ -114,7 +114,7 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: size_t) -> *mut 
     data = dav1d_alloc_aligned(
         size.wrapping_add(::core::mem::size_of::<Dav1dMemPoolBuffer>()),
         64,
-    ) as *mut uint8_t;
+    ) as *mut u8;
     if data.is_null() {
         pthread_mutex_lock(&mut (*pool).lock);
         (*pool).ref_cnt -= 1;

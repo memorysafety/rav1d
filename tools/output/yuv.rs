@@ -4,7 +4,6 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use rav1d::include::stdint::uint8_t;
 use rav1d::src::lib::dav1d_picture_unref;
 use rav1d::stderr;
 use rav1d::stdout;
@@ -74,9 +73,9 @@ unsafe extern "C" fn yuv_open(
 
 unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
-    let mut ptr: *mut uint8_t;
+    let mut ptr: *mut u8;
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
-    ptr = (*p).data[0] as *mut uint8_t;
+    ptr = (*p).data[0] as *mut u8;
     let mut y = 0;
     loop {
         if !(y < (*p).p.h) {
@@ -115,7 +114,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
                         current_block = 7976072742316086414;
                         break;
                     }
-                    ptr = (*p).data[pl as usize] as *mut uint8_t;
+                    ptr = (*p).data[pl as usize] as *mut u8;
                     let mut y_0 = 0;
                     while y_0 < ch {
                         if fwrite(

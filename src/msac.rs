@@ -2,60 +2,59 @@ use crate::include::common::attributes::clz;
 use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use cfg_if::cfg_if;
 use std::mem;
 use std::ops::Range;
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 extern "C" {
-    fn dav1d_msac_decode_hi_tok_sse2(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
+    fn dav1d_msac_decode_hi_tok_sse2(s: *mut MsacContext, cdf: *mut u16) -> libc::c_uint;
     fn dav1d_msac_decode_bool_sse2(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint;
     fn dav1d_msac_decode_bool_equi_sse2(s: *mut MsacContext) -> libc::c_uint;
-    fn dav1d_msac_decode_bool_adapt_sse2(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
+    fn dav1d_msac_decode_bool_adapt_sse2(s: *mut MsacContext, cdf: *mut u16) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt16_avx2(
         s: &mut MsacContext,
-        cdf: *mut uint16_t,
+        cdf: *mut u16,
         n_symbols: size_t,
         _cdf_len: usize,
     ) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt16_sse2(
         s: &mut MsacContext,
-        cdf: *mut uint16_t,
+        cdf: *mut u16,
         n_symbols: size_t,
         _cdf_len: usize,
     ) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt8_sse2(
         s: *mut MsacContext,
-        cdf: *mut uint16_t,
+        cdf: *mut u16,
         n_symbols: size_t,
     ) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt4_sse2(
         s: *mut MsacContext,
-        cdf: *mut uint16_t,
+        cdf: *mut u16,
         n_symbols: size_t,
     ) -> libc::c_uint;
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 extern "C" {
-    fn dav1d_msac_decode_hi_tok_neon(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
+    fn dav1d_msac_decode_hi_tok_neon(s: *mut MsacContext, cdf: *mut u16) -> libc::c_uint;
     fn dav1d_msac_decode_bool_neon(s: *mut MsacContext, f: libc::c_uint) -> libc::c_uint;
     fn dav1d_msac_decode_bool_equi_neon(s: *mut MsacContext) -> libc::c_uint;
-    fn dav1d_msac_decode_bool_adapt_neon(s: *mut MsacContext, cdf: *mut uint16_t) -> libc::c_uint;
+    fn dav1d_msac_decode_bool_adapt_neon(s: *mut MsacContext, cdf: *mut u16) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt16_neon(
         s: *mut MsacContext,
-        cdf: *mut uint16_t,
+        cdf: *mut u16,
         n_symbols: size_t,
     ) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt8_neon(
         s: *mut MsacContext,
-        cdf: *mut uint16_t,
+        cdf: *mut u16,
         n_symbols: size_t,
     ) -> libc::c_uint;
     fn dav1d_msac_decode_symbol_adapt4_neon(
         s: *mut MsacContext,
-        cdf: *mut uint16_t,
+        cdf: *mut u16,
         n_symbols: size_t,
     ) -> libc::c_uint;
 }
@@ -64,15 +63,14 @@ pub type ec_win = size_t;
 
 #[repr(C)]
 pub struct MsacContext {
-    buf_pos: *const uint8_t,
-    buf_end: *const uint8_t,
+    buf_pos: *const u8,
+    buf_end: *const u8,
     pub dif: ec_win,
     pub rng: libc::c_uint,
     pub cnt: libc::c_int,
     allow_update_cdf: libc::c_int,
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
-    symbol_adapt16:
-        unsafe extern "C" fn(&mut MsacContext, *mut uint16_t, size_t, usize) -> libc::c_uint,
+    symbol_adapt16: unsafe extern "C" fn(&mut MsacContext, *mut u16, size_t, usize) -> libc::c_uint,
 }
 
 impl MsacContext {
@@ -337,7 +335,7 @@ fn dav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> lib
 /// and must live longer than all of the other functions called on [`MsacContext`].
 pub unsafe fn dav1d_msac_init(
     s: &mut MsacContext,
-    data: *const uint8_t,
+    data: *const u8,
     sz: size_t,
     disable_cdf_update_flag: bool,
 ) {

@@ -1,7 +1,6 @@
 use libc::size_t;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use rav1d::include::stdint::uint64_t;
 use rav1d::stderr;
 use std::cmp;
 
@@ -30,7 +29,7 @@ pub struct MuxerContext {
     pub fps: [libc::c_uint; 2],
     pub filename: *const libc::c_char,
     pub framenum: libc::c_int,
-    pub priv_data: [uint64_t; 0],
+    pub priv_data: [u64; 0],
 }
 
 #[repr(C)]

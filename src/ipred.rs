@@ -1,8 +1,5 @@
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint8_t;
 
 #[inline]
 pub unsafe extern "C" fn get_upsample(
@@ -26,7 +23,7 @@ pub type angular_ipred_fn = unsafe extern "C" fn(
 ) -> ();
 
 pub type cfl_ac_fn = unsafe extern "C" fn(
-    *mut int16_t,
+    *mut i16,
     *const DynPixel,
     ptrdiff_t,
     libc::c_int,
@@ -41,7 +38,7 @@ pub type cfl_pred_fn = unsafe extern "C" fn(
     *const DynPixel,
     libc::c_int,
     libc::c_int,
-    *const int16_t,
+    *const i16,
     libc::c_int,
     libc::c_int,
 ) -> ();
@@ -49,8 +46,8 @@ pub type cfl_pred_fn = unsafe extern "C" fn(
 pub type pal_pred_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
-    *const uint16_t,
-    *const uint8_t,
+    *const u16,
+    *const u8,
     libc::c_int,
     libc::c_int,
 ) -> ();
@@ -89,7 +86,7 @@ macro_rules! decl_fn {
             topleft: *const DynPixel,
             width: libc::c_int,
             height: libc::c_int,
-            ac: *const int16_t,
+            ac: *const i16,
             alpha: libc::c_int,
             bitdepth_max: libc::c_int,
         );
@@ -97,7 +94,7 @@ macro_rules! decl_fn {
 
     (cfl_ac, $name:ident) => {
         pub(crate) fn $name(
-            ac: *mut int16_t,
+            ac: *mut i16,
             y: *const DynPixel,
             stride: ptrdiff_t,
             w_pad: libc::c_int,
@@ -111,8 +108,8 @@ macro_rules! decl_fn {
         pub(crate) fn $name(
             dst: *mut DynPixel,
             stride: ptrdiff_t,
-            pal: *const uint16_t,
-            idx: *const uint8_t,
+            pal: *const u16,
+            idx: *const u8,
             w: libc::c_int,
             h: libc::c_int,
         );

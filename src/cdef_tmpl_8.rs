@@ -3,7 +3,6 @@ use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::cdef::constrain;
 use crate::src::cdef::fill;
 use crate::src::cdef::CdefEdgeFlags;
@@ -21,10 +20,10 @@ use crate::src::align::Align16;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
-pub type pixel = uint8_t;
+pub type pixel = u8;
 
 unsafe extern "C" fn padding(
-    mut tmp: *mut int16_t,
+    mut tmp: *mut i16,
     tmp_stride: ptrdiff_t,
     mut src: *const pixel,
     src_stride: ptrdiff_t,
@@ -84,7 +83,7 @@ unsafe extern "C" fn padding(
         let mut x = x_start;
         while x < x_end {
             *tmp.offset((x as isize + y as isize * tmp_stride) as isize) =
-                *top.offset(x as isize) as int16_t;
+                *top.offset(x as isize) as i16;
             x += 1;
         }
         top = top.offset(src_stride as isize);
@@ -95,7 +94,7 @@ unsafe extern "C" fn padding(
         let mut x_0 = x_start;
         while x_0 < 0 {
             *tmp.offset((x_0 as isize + y_0 as isize * tmp_stride) as isize) =
-                (*left.offset(y_0 as isize))[(2 + x_0) as usize] as int16_t;
+                (*left.offset(y_0 as isize))[(2 + x_0) as usize] as i16;
             x_0 += 1;
         }
         y_0 += 1;
@@ -104,7 +103,7 @@ unsafe extern "C" fn padding(
     while y_1 < h {
         let mut x_1 = if y_1 < h { 0 as libc::c_int } else { x_start };
         while x_1 < x_end {
-            *tmp.offset(x_1 as isize) = *src.offset(x_1 as isize) as int16_t;
+            *tmp.offset(x_1 as isize) = *src.offset(x_1 as isize) as i16;
             x_1 += 1;
         }
         src = src.offset(src_stride as isize);
@@ -115,7 +114,7 @@ unsafe extern "C" fn padding(
     while y_2 < y_end {
         let mut x_2 = x_start;
         while x_2 < x_end {
-            *tmp.offset(x_2 as isize) = *bottom.offset(x_2 as isize) as int16_t;
+            *tmp.offset(x_2 as isize) = *bottom.offset(x_2 as isize) as i16;
             x_2 += 1;
         }
         bottom = bottom.offset(src_stride as isize);
@@ -143,8 +142,8 @@ unsafe extern "C" fn cdef_filter_block_c(
     if !((w == 4 || w == 8) && (h == 4 || h == 8)) {
         unreachable!();
     }
-    let mut tmp_buf: [int16_t; 144] = [0; 144];
-    let mut tmp: *mut int16_t = tmp_buf
+    let mut tmp_buf: [i16; 144] = [0; 144];
+    let mut tmp: *mut i16 = tmp_buf
         .as_mut_ptr()
         .offset((2 * tmp_stride) as isize)
         .offset(2);
@@ -431,14 +430,14 @@ unsafe fn cdef_find_dir_rust(
     }
     cost[2] = (cost[2]).wrapping_mul(105 as libc::c_int as libc::c_uint);
     cost[6] = (cost[6]).wrapping_mul(105 as libc::c_int as libc::c_uint);
-    static mut div_table: [uint16_t; 7] = [
-        840 as libc::c_int as uint16_t,
-        420 as libc::c_int as uint16_t,
-        280 as libc::c_int as uint16_t,
-        210 as libc::c_int as uint16_t,
-        168 as libc::c_int as uint16_t,
-        140 as libc::c_int as uint16_t,
-        120 as libc::c_int as uint16_t,
+    static mut div_table: [u16; 7] = [
+        840 as libc::c_int as u16,
+        420 as libc::c_int as u16,
+        280 as libc::c_int as u16,
+        210 as libc::c_int as u16,
+        168 as libc::c_int as u16,
+        140 as libc::c_int as u16,
+        120 as libc::c_int as u16,
     ];
     let mut n_0 = 0;
     while n_0 < 7 {

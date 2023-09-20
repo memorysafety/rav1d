@@ -3,7 +3,6 @@ use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -52,8 +51,8 @@ extern "C" {
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
 
-pub type pixel = uint16_t;
-pub type coef = int32_t;
+pub type pixel = u16;
+pub type coef = i32;
 
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
@@ -82,8 +81,8 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_rust(
 ) {
     use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
 
-    let mut tmp: [int32_t; 16] = [0; 16];
-    let mut c: *mut int32_t = tmp.as_mut_ptr();
+    let mut tmp: [i32; 16] = [0; 16];
+    let mut c: *mut i32 = tmp.as_mut_ptr();
     let mut y = 0;
     while y < 4 {
         let mut x = 0;

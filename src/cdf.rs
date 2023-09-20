@@ -1,7 +1,6 @@
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::stdatomic::atomic_uint;
-use crate::include::stdint::*;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align4;
@@ -30,7 +29,7 @@ extern "C" {
 #[repr(C)]
 pub struct CdfContext {
     pub m: CdfModeContext,
-    pub kfym: Align32<[[[uint16_t; N_INTRA_PRED_MODES + 3]; 5]; 5]>,
+    pub kfym: Align32<[[[u16; N_INTRA_PRED_MODES + 3]; 5]; 5]>,
     pub coef: CdfCoefContext,
     pub mv: CdfMvContext,
     pub dmv: CdfMvContext,
@@ -38,94 +37,94 @@ pub struct CdfContext {
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
-    pub joint: Align8<[uint16_t; 4]>,
+    pub joint: Align8<[u16; 4]>,
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct CdfMvComponent {
-    pub classes: Align32<[uint16_t; 16]>,
-    pub class0_fp: Align8<[[uint16_t; 4]; 2]>,
-    pub classN_fp: Align8<[uint16_t; 4]>,
-    pub class0_hp: Align4<[uint16_t; 2]>,
-    pub classN_hp: Align4<[uint16_t; 2]>,
-    pub class0: Align4<[uint16_t; 2]>,
-    pub classN: Align4<[[uint16_t; 2]; 10]>,
-    pub sign: Align4<[uint16_t; 2]>,
+    pub classes: Align32<[u16; 16]>,
+    pub class0_fp: Align8<[[u16; 4]; 2]>,
+    pub classN_fp: Align8<[u16; 4]>,
+    pub class0_hp: Align4<[u16; 2]>,
+    pub classN_hp: Align4<[u16; 2]>,
+    pub class0: Align4<[u16; 2]>,
+    pub classN: Align4<[[u16; 2]; 10]>,
+    pub sign: Align4<[u16; 2]>,
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct CdfCoefContext {
-    pub eob_bin_16: Align16<[[[uint16_t; 8]; 2]; 2]>,
-    pub eob_bin_32: Align16<[[[uint16_t; 8]; 2]; 2]>,
-    pub eob_bin_64: Align16<[[[uint16_t; 8]; 2]; 2]>,
-    pub eob_bin_128: Align16<[[[uint16_t; 8]; 2]; 2]>,
-    pub eob_bin_256: Align32<[[[uint16_t; 16]; 2]; 2]>,
-    pub eob_bin_512: Align32<[[uint16_t; 16]; 2]>,
-    pub eob_bin_1024: Align32<[[uint16_t; 16]; 2]>,
-    pub eob_base_tok: Align8<[[[[uint16_t; 4]; 4]; 2]; 5]>,
-    pub base_tok: Align8<[[[[uint16_t; 4]; 41]; 2]; 5]>,
-    pub br_tok: Align8<[[[[uint16_t; 4]; 21]; 2]; 4]>,
-    pub eob_hi_bit: Align4<[[[[uint16_t; 2]; 11]; 2]; 5]>,
-    pub skip: Align4<[[[uint16_t; 2]; 13]; 5]>,
-    pub dc_sign: Align4<[[[uint16_t; 2]; 3]; 2]>,
+    pub eob_bin_16: Align16<[[[u16; 8]; 2]; 2]>,
+    pub eob_bin_32: Align16<[[[u16; 8]; 2]; 2]>,
+    pub eob_bin_64: Align16<[[[u16; 8]; 2]; 2]>,
+    pub eob_bin_128: Align16<[[[u16; 8]; 2]; 2]>,
+    pub eob_bin_256: Align32<[[[u16; 16]; 2]; 2]>,
+    pub eob_bin_512: Align32<[[u16; 16]; 2]>,
+    pub eob_bin_1024: Align32<[[u16; 16]; 2]>,
+    pub eob_base_tok: Align8<[[[[u16; 4]; 4]; 2]; 5]>,
+    pub base_tok: Align8<[[[[u16; 4]; 41]; 2]; 5]>,
+    pub br_tok: Align8<[[[[u16; 4]; 21]; 2]; 4]>,
+    pub eob_hi_bit: Align4<[[[[u16; 2]; 11]; 2]; 5]>,
+    pub skip: Align4<[[[u16; 2]; 13]; 5]>,
+    pub dc_sign: Align4<[[[u16; 2]; 3]; 2]>,
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct CdfModeContext {
-    pub y_mode: Align32<[[uint16_t; N_INTRA_PRED_MODES + 3]; 4]>,
-    pub uv_mode: Align32<[[[uint16_t; N_UV_INTRA_PRED_MODES + 2]; N_INTRA_PRED_MODES]; 2]>,
-    pub wedge_idx: Align32<[[uint16_t; 16]; 9]>,
-    pub partition: Align32<[[[uint16_t; N_PARTITIONS + 6]; 4]; N_BL_LEVELS]>,
-    pub cfl_alpha: Align32<[[uint16_t; 16]; 6]>,
-    pub txtp_inter1: Align32<[[uint16_t; 16]; 2]>,
-    pub txtp_inter2: Align32<[uint16_t; 16]>,
-    pub txtp_intra1: Align16<[[[uint16_t; 8]; N_INTRA_PRED_MODES]; 2]>,
-    pub txtp_intra2: Align16<[[[uint16_t; 8]; N_INTRA_PRED_MODES]; 3]>,
-    pub cfl_sign: Align16<[uint16_t; 8]>,
-    pub angle_delta: Align16<[[uint16_t; 8]; 8]>,
-    pub filter_intra: Align16<[uint16_t; 8]>,
-    pub comp_inter_mode: Align16<[[uint16_t; N_COMP_INTER_PRED_MODES]; 8]>,
-    pub seg_id: Align16<[[uint16_t; 8]; 3]>,
-    pub pal_sz: Align16<[[[uint16_t; 8]; 7]; 2]>,
-    pub color_map: Align16<[[[[uint16_t; 8]; 5]; 7]; 2]>,
-    pub filter: Align8<[[[uint16_t; 4]; 8]; 2]>,
-    pub txsz: Align8<[[[uint16_t; 4]; 3]; 4]>,
-    pub motion_mode: Align8<[[uint16_t; 4]; N_BS_SIZES]>,
-    pub delta_q: Align8<[uint16_t; 4]>,
-    pub delta_lf: Align8<[[uint16_t; 4]; 5]>,
-    pub interintra_mode: Align8<[[uint16_t; 4]; 4]>,
-    pub restore_switchable: Align8<[uint16_t; 4]>,
-    pub restore_wiener: Align4<[uint16_t; 2]>,
-    pub restore_sgrproj: Align4<[uint16_t; 2]>,
-    pub interintra: Align4<[[uint16_t; 2]; 7]>,
-    pub interintra_wedge: Align4<[[uint16_t; 2]; 7]>,
-    pub txtp_inter3: Align4<[[uint16_t; 2]; 4]>,
-    pub use_filter_intra: Align4<[[uint16_t; 2]; N_BS_SIZES]>,
-    pub newmv_mode: Align4<[[uint16_t; 2]; 6]>,
-    pub globalmv_mode: Align4<[[uint16_t; 2]; 2]>,
-    pub refmv_mode: Align4<[[uint16_t; 2]; 6]>,
-    pub drl_bit: Align4<[[uint16_t; 2]; 3]>,
-    pub intra: Align4<[[uint16_t; 2]; 4]>,
-    pub comp: Align4<[[uint16_t; 2]; 5]>,
-    pub comp_dir: Align4<[[uint16_t; 2]; 5]>,
-    pub jnt_comp: Align4<[[uint16_t; 2]; 6]>,
-    pub mask_comp: Align4<[[uint16_t; 2]; 6]>,
-    pub wedge_comp: Align4<[[uint16_t; 2]; 9]>,
-    pub r#ref: Align4<[[[uint16_t; 2]; 3]; 6]>,
-    pub comp_fwd_ref: Align4<[[[uint16_t; 2]; 3]; 3]>,
-    pub comp_bwd_ref: Align4<[[[uint16_t; 2]; 3]; 2]>,
-    pub comp_uni_ref: Align4<[[[uint16_t; 2]; 3]; 3]>,
-    pub txpart: Align4<[[[uint16_t; 2]; 3]; 7]>,
-    pub skip: Align4<[[uint16_t; 2]; 3]>,
-    pub skip_mode: Align4<[[uint16_t; 2]; 3]>,
-    pub seg_pred: Align4<[[uint16_t; 2]; 3]>,
-    pub obmc: Align4<[[uint16_t; 2]; N_BS_SIZES]>,
-    pub pal_y: Align4<[[[uint16_t; 2]; 3]; 7]>,
-    pub pal_uv: Align4<[[uint16_t; 2]; 2]>,
-    pub intrabc: Align4<[uint16_t; 2]>,
+    pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
+    pub uv_mode: Align32<[[[u16; N_UV_INTRA_PRED_MODES + 2]; N_INTRA_PRED_MODES]; 2]>,
+    pub wedge_idx: Align32<[[u16; 16]; 9]>,
+    pub partition: Align32<[[[u16; N_PARTITIONS + 6]; 4]; N_BL_LEVELS]>,
+    pub cfl_alpha: Align32<[[u16; 16]; 6]>,
+    pub txtp_inter1: Align32<[[u16; 16]; 2]>,
+    pub txtp_inter2: Align32<[u16; 16]>,
+    pub txtp_intra1: Align16<[[[u16; 8]; N_INTRA_PRED_MODES]; 2]>,
+    pub txtp_intra2: Align16<[[[u16; 8]; N_INTRA_PRED_MODES]; 3]>,
+    pub cfl_sign: Align16<[u16; 8]>,
+    pub angle_delta: Align16<[[u16; 8]; 8]>,
+    pub filter_intra: Align16<[u16; 8]>,
+    pub comp_inter_mode: Align16<[[u16; N_COMP_INTER_PRED_MODES]; 8]>,
+    pub seg_id: Align16<[[u16; 8]; 3]>,
+    pub pal_sz: Align16<[[[u16; 8]; 7]; 2]>,
+    pub color_map: Align16<[[[[u16; 8]; 5]; 7]; 2]>,
+    pub filter: Align8<[[[u16; 4]; 8]; 2]>,
+    pub txsz: Align8<[[[u16; 4]; 3]; 4]>,
+    pub motion_mode: Align8<[[u16; 4]; N_BS_SIZES]>,
+    pub delta_q: Align8<[u16; 4]>,
+    pub delta_lf: Align8<[[u16; 4]; 5]>,
+    pub interintra_mode: Align8<[[u16; 4]; 4]>,
+    pub restore_switchable: Align8<[u16; 4]>,
+    pub restore_wiener: Align4<[u16; 2]>,
+    pub restore_sgrproj: Align4<[u16; 2]>,
+    pub interintra: Align4<[[u16; 2]; 7]>,
+    pub interintra_wedge: Align4<[[u16; 2]; 7]>,
+    pub txtp_inter3: Align4<[[u16; 2]; 4]>,
+    pub use_filter_intra: Align4<[[u16; 2]; N_BS_SIZES]>,
+    pub newmv_mode: Align4<[[u16; 2]; 6]>,
+    pub globalmv_mode: Align4<[[u16; 2]; 2]>,
+    pub refmv_mode: Align4<[[u16; 2]; 6]>,
+    pub drl_bit: Align4<[[u16; 2]; 3]>,
+    pub intra: Align4<[[u16; 2]; 4]>,
+    pub comp: Align4<[[u16; 2]; 5]>,
+    pub comp_dir: Align4<[[u16; 2]; 5]>,
+    pub jnt_comp: Align4<[[u16; 2]; 6]>,
+    pub mask_comp: Align4<[[u16; 2]; 6]>,
+    pub wedge_comp: Align4<[[u16; 2]; 9]>,
+    pub r#ref: Align4<[[[u16; 2]; 3]; 6]>,
+    pub comp_fwd_ref: Align4<[[[u16; 2]; 3]; 3]>,
+    pub comp_bwd_ref: Align4<[[[u16; 2]; 3]; 2]>,
+    pub comp_uni_ref: Align4<[[[u16; 2]; 3]; 3]>,
+    pub txpart: Align4<[[[u16; 2]; 3]; 7]>,
+    pub skip: Align4<[[u16; 2]; 3]>,
+    pub skip_mode: Align4<[[u16; 2]; 3]>,
+    pub seg_pred: Align4<[[u16; 2]; 3]>,
+    pub obmc: Align4<[[u16; 2]; N_BS_SIZES]>,
+    pub pal_y: Align4<[[[u16; 2]; 3]; 7]>,
+    pub pal_uv: Align4<[[u16; 2]; 2]>,
+    pub intrabc: Align4<[u16; 2]>,
 }
 
 #[derive(Clone)]
@@ -862,95 +861,94 @@ static default_mv_component_cdf: CdfMvComponent = CdfMvComponent {
     ])),
     sign: Align4(cdf0d([16384])),
 };
-static default_mv_joint_cdf: Align8<[uint16_t; 4]> = Align8(cdf0d([4096, 11264, 19328]));
-static default_kf_y_mode_cdf: Align32<[[[uint16_t; N_INTRA_PRED_MODES + 3]; 5]; 5]> =
-    Align32(cdf2d([
+static default_mv_joint_cdf: Align8<[u16; 4]> = Align8(cdf0d([4096, 11264, 19328]));
+static default_kf_y_mode_cdf: Align32<[[[u16; N_INTRA_PRED_MODES + 3]; 5]; 5]> = Align32(cdf2d([
+    [
         [
-            [
-                15588, 17027, 19338, 20218, 20682, 21110, 21825, 23244, 24189, 28165, 29093, 30466,
-            ],
-            [
-                12016, 18066, 19516, 20303, 20719, 21444, 21888, 23032, 24434, 28658, 30172, 31409,
-            ],
-            [
-                10052, 10771, 22296, 22788, 23055, 23239, 24133, 25620, 26160, 29336, 29929, 31567,
-            ],
-            [
-                14091, 15406, 16442, 18808, 19136, 19546, 19998, 22096, 24746, 29585, 30958, 32462,
-            ],
-            [
-                12122, 13265, 15603, 16501, 18609, 20033, 22391, 25583, 26437, 30261, 31073, 32475,
-            ],
+            15588, 17027, 19338, 20218, 20682, 21110, 21825, 23244, 24189, 28165, 29093, 30466,
         ],
         [
-            [
-                10023, 19585, 20848, 21440, 21832, 22760, 23089, 24023, 25381, 29014, 30482, 31436,
-            ],
-            [
-                5983, 24099, 24560, 24886, 25066, 25795, 25913, 26423, 27610, 29905, 31276, 31794,
-            ],
-            [
-                7444, 12781, 20177, 20728, 21077, 21607, 22170, 23405, 24469, 27915, 29090, 30492,
-            ],
-            [
-                8537, 14689, 15432, 17087, 17408, 18172, 18408, 19825, 24649, 29153, 31096, 32210,
-            ],
-            [
-                7543, 14231, 15496, 16195, 17905, 20717, 21984, 24516, 26001, 29675, 30981, 31994,
-            ],
+            12016, 18066, 19516, 20303, 20719, 21444, 21888, 23032, 24434, 28658, 30172, 31409,
         ],
         [
-            [
-                12613, 13591, 21383, 22004, 22312, 22577, 23401, 25055, 25729, 29538, 30305, 32077,
-            ],
-            [
-                9687, 13470, 18506, 19230, 19604, 20147, 20695, 22062, 23219, 27743, 29211, 30907,
-            ],
-            [
-                6183, 6505, 26024, 26252, 26366, 26434, 27082, 28354, 28555, 30467, 30794, 32086,
-            ],
-            [
-                10718, 11734, 14954, 17224, 17565, 17924, 18561, 21523, 23878, 28975, 30287, 32252,
-            ],
-            [
-                9194, 9858, 16501, 17263, 18424, 19171, 21563, 25961, 26561, 30072, 30737, 32463,
-            ],
+            10052, 10771, 22296, 22788, 23055, 23239, 24133, 25620, 26160, 29336, 29929, 31567,
         ],
         [
-            [
-                12602, 14399, 15488, 18381, 18778, 19315, 19724, 21419, 25060, 29696, 30917, 32409,
-            ],
-            [
-                8203, 13821, 14524, 17105, 17439, 18131, 18404, 19468, 25225, 29485, 31158, 32342,
-            ],
-            [
-                8451, 9731, 15004, 17643, 18012, 18425, 19070, 21538, 24605, 29118, 30078, 32018,
-            ],
-            [
-                7714, 9048, 9516, 16667, 16817, 16994, 17153, 18767, 26743, 30389, 31536, 32528,
-            ],
-            [
-                8843, 10280, 11496, 15317, 16652, 17943, 19108, 22718, 25769, 29953, 30983, 32485,
-            ],
+            14091, 15406, 16442, 18808, 19136, 19546, 19998, 22096, 24746, 29585, 30958, 32462,
         ],
         [
-            [
-                12578, 13671, 15979, 16834, 19075, 20913, 22989, 25449, 26219, 30214, 31150, 32477,
-            ],
-            [
-                9563, 13626, 15080, 15892, 17756, 20863, 22207, 24236, 25380, 29653, 31143, 32277,
-            ],
-            [
-                8356, 8901, 17616, 18256, 19350, 20106, 22598, 25947, 26466, 29900, 30523, 32261,
-            ],
-            [
-                10835, 11815, 13124, 16042, 17018, 18039, 18947, 22753, 24615, 29489, 30883, 32482,
-            ],
-            [
-                7618, 8288, 9859, 10509, 15386, 18657, 22903, 28776, 29180, 31355, 31802, 32593,
-            ],
+            12122, 13265, 15603, 16501, 18609, 20033, 22391, 25583, 26437, 30261, 31073, 32475,
         ],
-    ]));
+    ],
+    [
+        [
+            10023, 19585, 20848, 21440, 21832, 22760, 23089, 24023, 25381, 29014, 30482, 31436,
+        ],
+        [
+            5983, 24099, 24560, 24886, 25066, 25795, 25913, 26423, 27610, 29905, 31276, 31794,
+        ],
+        [
+            7444, 12781, 20177, 20728, 21077, 21607, 22170, 23405, 24469, 27915, 29090, 30492,
+        ],
+        [
+            8537, 14689, 15432, 17087, 17408, 18172, 18408, 19825, 24649, 29153, 31096, 32210,
+        ],
+        [
+            7543, 14231, 15496, 16195, 17905, 20717, 21984, 24516, 26001, 29675, 30981, 31994,
+        ],
+    ],
+    [
+        [
+            12613, 13591, 21383, 22004, 22312, 22577, 23401, 25055, 25729, 29538, 30305, 32077,
+        ],
+        [
+            9687, 13470, 18506, 19230, 19604, 20147, 20695, 22062, 23219, 27743, 29211, 30907,
+        ],
+        [
+            6183, 6505, 26024, 26252, 26366, 26434, 27082, 28354, 28555, 30467, 30794, 32086,
+        ],
+        [
+            10718, 11734, 14954, 17224, 17565, 17924, 18561, 21523, 23878, 28975, 30287, 32252,
+        ],
+        [
+            9194, 9858, 16501, 17263, 18424, 19171, 21563, 25961, 26561, 30072, 30737, 32463,
+        ],
+    ],
+    [
+        [
+            12602, 14399, 15488, 18381, 18778, 19315, 19724, 21419, 25060, 29696, 30917, 32409,
+        ],
+        [
+            8203, 13821, 14524, 17105, 17439, 18131, 18404, 19468, 25225, 29485, 31158, 32342,
+        ],
+        [
+            8451, 9731, 15004, 17643, 18012, 18425, 19070, 21538, 24605, 29118, 30078, 32018,
+        ],
+        [
+            7714, 9048, 9516, 16667, 16817, 16994, 17153, 18767, 26743, 30389, 31536, 32528,
+        ],
+        [
+            8843, 10280, 11496, 15317, 16652, 17943, 19108, 22718, 25769, 29953, 30983, 32485,
+        ],
+    ],
+    [
+        [
+            12578, 13671, 15979, 16834, 19075, 20913, 22989, 25449, 26219, 30214, 31150, 32477,
+        ],
+        [
+            9563, 13626, 15080, 15892, 17756, 20863, 22207, 24236, 25380, 29653, 31143, 32277,
+        ],
+        [
+            8356, 8901, 17616, 18256, 19350, 20106, 22598, 25947, 26466, 29900, 30523, 32261,
+        ],
+        [
+            10835, 11815, 13124, 16042, 17018, 18039, 18947, 22753, 24615, 29489, 30883, 32482,
+        ],
+        [
+            7618, 8288, 9859, 10509, 15386, 18657, 22903, 28776, 29180, 31355, 31802, 32593,
+        ],
+    ],
+]));
 static av1_default_coef_cdf: [CdfCoefContext; 4] = [
     CdfCoefContext {
         eob_bin_16: Align16(cdf2d([
@@ -4889,15 +4887,15 @@ pub unsafe fn dav1d_cdf_thread_update(
     let mut i = 0;
     while i < N_BS_SIZES as libc::c_int {
         (*dst).m.use_filter_intra[i as usize][0] = (*src).m.use_filter_intra[i as usize][0];
-        (*dst).m.use_filter_intra[i as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.use_filter_intra[i as usize][1] = 0 as libc::c_int as u16;
         i += 1;
     }
     memcpy(
         ((*dst).m.filter_intra).0.as_mut_ptr() as *mut libc::c_void,
         ((*src).m.filter_intra).0.as_ptr() as *const libc::c_void,
-        ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+        ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
     );
-    (*dst).m.filter_intra[4] = 0 as libc::c_int as uint16_t;
+    (*dst).m.filter_intra[4] = 0 as libc::c_int as u16;
     let mut k = 0;
     while k < 2 {
         let mut j = 0;
@@ -4905,11 +4903,11 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.uv_mode[k as usize][j as usize]).as_mut_ptr() as *mut libc::c_void,
                 ((*src).m.uv_mode[k as usize][j as usize]).as_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
             );
             (*dst).m.uv_mode[k as usize][j as usize]
                 [(N_UV_INTRA_PRED_MODES as libc::c_int - 1 - (k == 0) as libc::c_int) as usize] =
-                0 as libc::c_int as uint16_t;
+                0 as libc::c_int as u16;
             j += 1;
         }
         k += 1;
@@ -4919,9 +4917,9 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.angle_delta[j_0 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.angle_delta[j_0 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
         );
-        (*dst).m.angle_delta[j_0 as usize][6] = 0 as libc::c_int as uint16_t;
+        (*dst).m.angle_delta[j_0 as usize][6] = 0 as libc::c_int as u16;
         j_0 += 1;
     }
     let mut k_0 = 0;
@@ -4931,10 +4929,10 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.txsz[k_0 as usize][j_1 as usize]).as_mut_ptr() as *mut libc::c_void,
                 ((*src).m.txsz[k_0 as usize][j_1 as usize]).as_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
             );
             (*dst).m.txsz[k_0 as usize][j_1 as usize]
-                [cmp::min(k_0 + 1, 2 as libc::c_int) as usize] = 0 as libc::c_int as uint16_t;
+                [cmp::min(k_0 + 1, 2 as libc::c_int) as usize] = 0 as libc::c_int as u16;
             j_1 += 1;
         }
         k_0 += 1;
@@ -4947,9 +4945,9 @@ pub unsafe fn dav1d_cdf_thread_update(
                 ((*dst).m.txtp_intra1[k_1 as usize][j_2 as usize]).as_mut_ptr()
                     as *mut libc::c_void,
                 ((*src).m.txtp_intra1[k_1 as usize][j_2 as usize]).as_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
             );
-            (*dst).m.txtp_intra1[k_1 as usize][j_2 as usize][6] = 0 as libc::c_int as uint16_t;
+            (*dst).m.txtp_intra1[k_1 as usize][j_2 as usize][6] = 0 as libc::c_int as u16;
             j_2 += 1;
         }
         k_1 += 1;
@@ -4962,9 +4960,9 @@ pub unsafe fn dav1d_cdf_thread_update(
                 ((*dst).m.txtp_intra2[k_2 as usize][j_3 as usize]).as_mut_ptr()
                     as *mut libc::c_void,
                 ((*src).m.txtp_intra2[k_2 as usize][j_3 as usize]).as_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
             );
-            (*dst).m.txtp_intra2[k_2 as usize][j_3 as usize][4] = 0 as libc::c_int as uint16_t;
+            (*dst).m.txtp_intra2[k_2 as usize][j_3 as usize][4] = 0 as libc::c_int as u16;
             j_3 += 1;
         }
         k_2 += 1;
@@ -4972,7 +4970,7 @@ pub unsafe fn dav1d_cdf_thread_update(
     let mut i_0 = 0;
     while i_0 < 3 {
         (*dst).m.skip[i_0 as usize][0] = (*src).m.skip[i_0 as usize][0];
-        (*dst).m.skip[i_0 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.skip[i_0 as usize][1] = 0 as libc::c_int as u16;
         i_0 += 1;
     }
     let mut k_3 = 0;
@@ -4982,10 +4980,10 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.partition[k_3 as usize][j_4 as usize]).as_mut_ptr() as *mut libc::c_void,
                 ((*src).m.partition[k_3 as usize][j_4 as usize]).as_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
             );
             (*dst).m.partition[k_3 as usize][j_4 as usize]
-                [dav1d_partition_type_count[k_3 as usize] as usize] = 0 as libc::c_int as uint16_t;
+                [dav1d_partition_type_count[k_3 as usize] as usize] = 0 as libc::c_int as u16;
             j_4 += 1;
         }
         k_3 += 1;
@@ -4996,7 +4994,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         while i_1 < 13 {
             (*dst).coef.skip[j_5 as usize][i_1 as usize][0] =
                 (*src).coef.skip[j_5 as usize][i_1 as usize][0];
-            (*dst).coef.skip[j_5 as usize][i_1 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).coef.skip[j_5 as usize][i_1 as usize][1] = 0 as libc::c_int as u16;
             i_1 += 1;
         }
         j_5 += 1;
@@ -5010,9 +5008,9 @@ pub unsafe fn dav1d_cdf_thread_update(
                     as *mut libc::c_void,
                 ((*src).coef.eob_bin_16[k_4 as usize][j_6 as usize]).as_ptr()
                     as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
             );
-            (*dst).coef.eob_bin_16[k_4 as usize][j_6 as usize][4] = 0 as libc::c_int as uint16_t;
+            (*dst).coef.eob_bin_16[k_4 as usize][j_6 as usize][4] = 0 as libc::c_int as u16;
             j_6 += 1;
         }
         k_4 += 1;
@@ -5026,9 +5024,9 @@ pub unsafe fn dav1d_cdf_thread_update(
                     as *mut libc::c_void,
                 ((*src).coef.eob_bin_32[k_5 as usize][j_7 as usize]).as_ptr()
                     as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
             );
-            (*dst).coef.eob_bin_32[k_5 as usize][j_7 as usize][5] = 0 as libc::c_int as uint16_t;
+            (*dst).coef.eob_bin_32[k_5 as usize][j_7 as usize][5] = 0 as libc::c_int as u16;
             j_7 += 1;
         }
         k_5 += 1;
@@ -5042,9 +5040,9 @@ pub unsafe fn dav1d_cdf_thread_update(
                     as *mut libc::c_void,
                 ((*src).coef.eob_bin_64[k_6 as usize][j_8 as usize]).as_ptr()
                     as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
             );
-            (*dst).coef.eob_bin_64[k_6 as usize][j_8 as usize][6] = 0 as libc::c_int as uint16_t;
+            (*dst).coef.eob_bin_64[k_6 as usize][j_8 as usize][6] = 0 as libc::c_int as u16;
             j_8 += 1;
         }
         k_6 += 1;
@@ -5058,9 +5056,9 @@ pub unsafe fn dav1d_cdf_thread_update(
                     as *mut libc::c_void,
                 ((*src).coef.eob_bin_128[k_7 as usize][j_9 as usize]).as_ptr()
                     as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
             );
-            (*dst).coef.eob_bin_128[k_7 as usize][j_9 as usize][7] = 0 as libc::c_int as uint16_t;
+            (*dst).coef.eob_bin_128[k_7 as usize][j_9 as usize][7] = 0 as libc::c_int as u16;
             j_9 += 1;
         }
         k_7 += 1;
@@ -5074,9 +5072,9 @@ pub unsafe fn dav1d_cdf_thread_update(
                     as *mut libc::c_void,
                 ((*src).coef.eob_bin_256[k_8 as usize][j_10 as usize]).as_ptr()
                     as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
             );
-            (*dst).coef.eob_bin_256[k_8 as usize][j_10 as usize][8] = 0 as libc::c_int as uint16_t;
+            (*dst).coef.eob_bin_256[k_8 as usize][j_10 as usize][8] = 0 as libc::c_int as u16;
             j_10 += 1;
         }
         k_8 += 1;
@@ -5086,9 +5084,9 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).coef.eob_bin_512[j_11 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).coef.eob_bin_512[j_11 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
         );
-        (*dst).coef.eob_bin_512[j_11 as usize][9] = 0 as libc::c_int as uint16_t;
+        (*dst).coef.eob_bin_512[j_11 as usize][9] = 0 as libc::c_int as u16;
         j_11 += 1;
     }
     let mut j_12 = 0;
@@ -5096,9 +5094,9 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).coef.eob_bin_1024[j_12 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).coef.eob_bin_1024[j_12 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
         );
-        (*dst).coef.eob_bin_1024[j_12 as usize][10] = 0 as libc::c_int as uint16_t;
+        (*dst).coef.eob_bin_1024[j_12 as usize][10] = 0 as libc::c_int as u16;
         j_12 += 1;
     }
     let mut k_9 = 0;
@@ -5110,7 +5108,7 @@ pub unsafe fn dav1d_cdf_thread_update(
                 (*dst).coef.eob_hi_bit[k_9 as usize][j_13 as usize][i_2 as usize][0] =
                     (*src).coef.eob_hi_bit[k_9 as usize][j_13 as usize][i_2 as usize][0];
                 (*dst).coef.eob_hi_bit[k_9 as usize][j_13 as usize][i_2 as usize][1] =
-                    0 as libc::c_int as uint16_t;
+                    0 as libc::c_int as u16;
                 i_2 += 1;
             }
             j_13 += 1;
@@ -5128,10 +5126,10 @@ pub unsafe fn dav1d_cdf_thread_update(
                         .as_mut_ptr() as *mut libc::c_void,
                     ((*src).coef.eob_base_tok[l as usize][k_10 as usize][j_14 as usize]).as_ptr()
                         as *const libc::c_void,
-                    ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+                    ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
                 );
                 (*dst).coef.eob_base_tok[l as usize][k_10 as usize][j_14 as usize][2] =
-                    0 as libc::c_int as uint16_t;
+                    0 as libc::c_int as u16;
                 j_14 += 1;
             }
             k_10 += 1;
@@ -5149,10 +5147,10 @@ pub unsafe fn dav1d_cdf_thread_update(
                         as *mut libc::c_void,
                     ((*src).coef.base_tok[l_0 as usize][k_11 as usize][j_15 as usize]).as_ptr()
                         as *const libc::c_void,
-                    ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+                    ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
                 );
                 (*dst).coef.base_tok[l_0 as usize][k_11 as usize][j_15 as usize][3] =
-                    0 as libc::c_int as uint16_t;
+                    0 as libc::c_int as u16;
                 j_15 += 1;
             }
             k_11 += 1;
@@ -5165,7 +5163,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         while i_3 < 3 {
             (*dst).coef.dc_sign[j_16 as usize][i_3 as usize][0] =
                 (*src).coef.dc_sign[j_16 as usize][i_3 as usize][0];
-            (*dst).coef.dc_sign[j_16 as usize][i_3 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).coef.dc_sign[j_16 as usize][i_3 as usize][1] = 0 as libc::c_int as u16;
             i_3 += 1;
         }
         j_16 += 1;
@@ -5181,10 +5179,10 @@ pub unsafe fn dav1d_cdf_thread_update(
                         as *mut libc::c_void,
                     ((*src).coef.br_tok[l_1 as usize][k_12 as usize][j_17 as usize]).as_ptr()
                         as *const libc::c_void,
-                    ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+                    ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
                 );
                 (*dst).coef.br_tok[l_1 as usize][k_12 as usize][j_17 as usize][3] =
-                    0 as libc::c_int as uint16_t;
+                    0 as libc::c_int as u16;
                 j_17 += 1;
             }
             k_12 += 1;
@@ -5196,51 +5194,51 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.seg_id[j_18 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.seg_id[j_18 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
         );
-        (*dst).m.seg_id[j_18 as usize][(8 - 1) as usize] = 0 as libc::c_int as uint16_t;
+        (*dst).m.seg_id[j_18 as usize][(8 - 1) as usize] = 0 as libc::c_int as u16;
         j_18 += 1;
     }
     memcpy(
         ((*dst).m.cfl_sign).0.as_mut_ptr() as *mut libc::c_void,
         ((*src).m.cfl_sign).0.as_ptr() as *const libc::c_void,
-        ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+        ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
     );
-    (*dst).m.cfl_sign[7] = 0 as libc::c_int as uint16_t;
+    (*dst).m.cfl_sign[7] = 0 as libc::c_int as u16;
     let mut j_19 = 0;
     while j_19 < 6 {
         memcpy(
             ((*dst).m.cfl_alpha[j_19 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.cfl_alpha[j_19 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
         );
-        (*dst).m.cfl_alpha[j_19 as usize][15] = 0 as libc::c_int as uint16_t;
+        (*dst).m.cfl_alpha[j_19 as usize][15] = 0 as libc::c_int as u16;
         j_19 += 1;
     }
     (*dst).m.restore_wiener[0] = (*src).m.restore_wiener[0];
-    (*dst).m.restore_wiener[1] = 0 as libc::c_int as uint16_t;
+    (*dst).m.restore_wiener[1] = 0 as libc::c_int as u16;
     (*dst).m.restore_sgrproj[0] = (*src).m.restore_sgrproj[0];
-    (*dst).m.restore_sgrproj[1] = 0 as libc::c_int as uint16_t;
+    (*dst).m.restore_sgrproj[1] = 0 as libc::c_int as u16;
     memcpy(
         ((*dst).m.restore_switchable).0.as_mut_ptr() as *mut libc::c_void,
         ((*src).m.restore_switchable).0.as_ptr() as *const libc::c_void,
-        ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+        ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
     );
-    (*dst).m.restore_switchable[2] = 0 as libc::c_int as uint16_t;
+    (*dst).m.restore_switchable[2] = 0 as libc::c_int as u16;
     memcpy(
         ((*dst).m.delta_q).0.as_mut_ptr() as *mut libc::c_void,
         ((*src).m.delta_q).0.as_ptr() as *const libc::c_void,
-        ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+        ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
     );
-    (*dst).m.delta_q[3] = 0 as libc::c_int as uint16_t;
+    (*dst).m.delta_q[3] = 0 as libc::c_int as u16;
     let mut j_20 = 0;
     while j_20 < 5 {
         memcpy(
             ((*dst).m.delta_lf[j_20 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.delta_lf[j_20 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
         );
-        (*dst).m.delta_lf[j_20 as usize][3] = 0 as libc::c_int as uint16_t;
+        (*dst).m.delta_lf[j_20 as usize][3] = 0 as libc::c_int as u16;
         j_20 += 1;
     }
     let mut j_21 = 0;
@@ -5249,7 +5247,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         while i_4 < 3 {
             (*dst).m.pal_y[j_21 as usize][i_4 as usize][0] =
                 (*src).m.pal_y[j_21 as usize][i_4 as usize][0];
-            (*dst).m.pal_y[j_21 as usize][i_4 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).m.pal_y[j_21 as usize][i_4 as usize][1] = 0 as libc::c_int as u16;
             i_4 += 1;
         }
         j_21 += 1;
@@ -5257,7 +5255,7 @@ pub unsafe fn dav1d_cdf_thread_update(
     let mut i_5 = 0;
     while i_5 < 2 {
         (*dst).m.pal_uv[i_5 as usize][0] = (*src).m.pal_uv[i_5 as usize][0];
-        (*dst).m.pal_uv[i_5 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.pal_uv[i_5 as usize][1] = 0 as libc::c_int as u16;
         i_5 += 1;
     }
     let mut k_13 = 0;
@@ -5267,9 +5265,9 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.pal_sz[k_13 as usize][j_22 as usize]).as_mut_ptr() as *mut libc::c_void,
                 ((*src).m.pal_sz[k_13 as usize][j_22 as usize]).as_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
             );
-            (*dst).m.pal_sz[k_13 as usize][j_22 as usize][6] = 0 as libc::c_int as uint16_t;
+            (*dst).m.pal_sz[k_13 as usize][j_22 as usize][6] = 0 as libc::c_int as u16;
             j_22 += 1;
         }
         k_13 += 1;
@@ -5285,10 +5283,10 @@ pub unsafe fn dav1d_cdf_thread_update(
                         as *mut libc::c_void,
                     ((*src).m.color_map[l_2 as usize][k_14 as usize][j_23 as usize]).as_ptr()
                         as *const libc::c_void,
-                    ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+                    ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
                 );
                 (*dst).m.color_map[l_2 as usize][k_14 as usize][j_23 as usize]
-                    [(k_14 + 1) as usize] = 0 as libc::c_int as uint16_t;
+                    [(k_14 + 1) as usize] = 0 as libc::c_int as u16;
                 j_23 += 1;
             }
             k_14 += 1;
@@ -5301,7 +5299,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         while i_6 < 3 {
             (*dst).m.txpart[j_24 as usize][i_6 as usize][0] =
                 (*src).m.txpart[j_24 as usize][i_6 as usize][0];
-            (*dst).m.txpart[j_24 as usize][i_6 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).m.txpart[j_24 as usize][i_6 as usize][1] = 0 as libc::c_int as u16;
             i_6 += 1;
         }
         j_24 += 1;
@@ -5311,52 +5309,51 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.txtp_inter1[j_25 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.txtp_inter1[j_25 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
         );
-        (*dst).m.txtp_inter1[j_25 as usize][15] = 0 as libc::c_int as uint16_t;
+        (*dst).m.txtp_inter1[j_25 as usize][15] = 0 as libc::c_int as u16;
         j_25 += 1;
     }
     memcpy(
         ((*dst).m.txtp_inter2.0).as_mut_ptr() as *mut libc::c_void,
         ((*src).m.txtp_inter2.0).as_ptr() as *const libc::c_void,
-        ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+        ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
     );
-    (*dst).m.txtp_inter2[11] = 0 as libc::c_int as uint16_t;
+    (*dst).m.txtp_inter2[11] = 0 as libc::c_int as u16;
     let mut i_7 = 0;
     while i_7 < 4 {
         (*dst).m.txtp_inter3[i_7 as usize][0] = (*src).m.txtp_inter3[i_7 as usize][0];
-        (*dst).m.txtp_inter3[i_7 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.txtp_inter3[i_7 as usize][1] = 0 as libc::c_int as u16;
         i_7 += 1;
     }
     if (*hdr).frame_type as libc::c_uint & 1 as libc::c_uint == 0 {
         (*dst).m.intrabc[0] = (*src).m.intrabc[0];
-        (*dst).m.intrabc[1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.intrabc[1] = 0 as libc::c_int as u16;
         memcpy(
             ((*dst).dmv.joint.0).as_mut_ptr() as *mut libc::c_void,
             ((*src).dmv.joint.0).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
         );
-        (*dst).dmv.joint[(N_MV_JOINTS as libc::c_int - 1) as usize] = 0 as libc::c_int as uint16_t;
+        (*dst).dmv.joint[(N_MV_JOINTS as libc::c_int - 1) as usize] = 0 as libc::c_int as u16;
         let mut k_15 = 0;
         while k_15 < 2 {
             memcpy(
                 ((*dst).dmv.comp[k_15 as usize].classes.0).as_mut_ptr() as *mut libc::c_void,
                 ((*src).dmv.comp[k_15 as usize].classes.0).as_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
             );
-            (*dst).dmv.comp[k_15 as usize].classes[10] = 0 as libc::c_int as uint16_t;
+            (*dst).dmv.comp[k_15 as usize].classes[10] = 0 as libc::c_int as u16;
             (*dst).dmv.comp[k_15 as usize].class0[0] = (*src).dmv.comp[k_15 as usize].class0[0];
-            (*dst).dmv.comp[k_15 as usize].class0[1] = 0 as libc::c_int as uint16_t;
+            (*dst).dmv.comp[k_15 as usize].class0[1] = 0 as libc::c_int as u16;
             let mut i_8 = 0;
             while i_8 < 10 {
                 (*dst).dmv.comp[k_15 as usize].classN[i_8 as usize][0] =
                     (*src).dmv.comp[k_15 as usize].classN[i_8 as usize][0];
-                (*dst).dmv.comp[k_15 as usize].classN[i_8 as usize][1] =
-                    0 as libc::c_int as uint16_t;
+                (*dst).dmv.comp[k_15 as usize].classN[i_8 as usize][1] = 0 as libc::c_int as u16;
                 i_8 += 1;
             }
             (*dst).dmv.comp[k_15 as usize].sign[0] = (*src).dmv.comp[k_15 as usize].sign[0];
-            (*dst).dmv.comp[k_15 as usize].sign[1] = 0 as libc::c_int as uint16_t;
+            (*dst).dmv.comp[k_15 as usize].sign[1] = 0 as libc::c_int as u16;
             k_15 += 1;
         }
         return;
@@ -5364,7 +5361,7 @@ pub unsafe fn dav1d_cdf_thread_update(
     let mut i_9 = 0;
     while i_9 < 3 {
         (*dst).m.skip_mode.0[i_9 as usize][0] = (*src).m.skip_mode.0[i_9 as usize][0];
-        (*dst).m.skip_mode.0[i_9 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.skip_mode.0[i_9 as usize][1] = 0 as libc::c_int as u16;
         i_9 += 1;
     }
     let mut j_26 = 0;
@@ -5372,10 +5369,10 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.y_mode.0[j_26 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.y_mode.0[j_26 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
         );
         (*dst).m.y_mode.0[j_26 as usize][(N_INTRA_PRED_MODES as libc::c_int - 1) as usize] =
-            0 as libc::c_int as uint16_t;
+            0 as libc::c_int as u16;
         j_26 += 1;
     }
     let mut k_16 = 0;
@@ -5385,11 +5382,11 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.filter.0[k_16 as usize][j_27 as usize]).as_mut_ptr() as *mut libc::c_void,
                 ((*src).m.filter.0[k_16 as usize][j_27 as usize]).as_ptr() as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
             );
             (*dst).m.filter.0[k_16 as usize][j_27 as usize]
                 [(DAV1D_N_SWITCHABLE_FILTERS as libc::c_int - 1) as usize] =
-                0 as libc::c_int as uint16_t;
+                0 as libc::c_int as u16;
             j_27 += 1;
         }
         k_16 += 1;
@@ -5397,25 +5394,25 @@ pub unsafe fn dav1d_cdf_thread_update(
     let mut i_10 = 0;
     while i_10 < 6 {
         (*dst).m.newmv_mode.0[i_10 as usize][0] = (*src).m.newmv_mode.0[i_10 as usize][0];
-        (*dst).m.newmv_mode.0[i_10 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.newmv_mode.0[i_10 as usize][1] = 0 as libc::c_int as u16;
         i_10 += 1;
     }
     let mut i_11 = 0;
     while i_11 < 2 {
         (*dst).m.globalmv_mode.0[i_11 as usize][0] = (*src).m.globalmv_mode.0[i_11 as usize][0];
-        (*dst).m.globalmv_mode.0[i_11 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.globalmv_mode.0[i_11 as usize][1] = 0 as libc::c_int as u16;
         i_11 += 1;
     }
     let mut i_12 = 0;
     while i_12 < 6 {
         (*dst).m.refmv_mode.0[i_12 as usize][0] = (*src).m.refmv_mode.0[i_12 as usize][0];
-        (*dst).m.refmv_mode.0[i_12 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.refmv_mode.0[i_12 as usize][1] = 0 as libc::c_int as u16;
         i_12 += 1;
     }
     let mut i_13 = 0;
     while i_13 < 3 {
         (*dst).m.drl_bit.0[i_13 as usize][0] = (*src).m.drl_bit.0[i_13 as usize][0];
-        (*dst).m.drl_bit.0[i_13 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.drl_bit.0[i_13 as usize][1] = 0 as libc::c_int as u16;
         i_13 += 1;
     }
     let mut j_28 = 0;
@@ -5423,46 +5420,46 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.comp_inter_mode.0[j_28 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.comp_inter_mode.0[j_28 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 8]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 8]>() as libc::c_ulong,
         );
         (*dst).m.comp_inter_mode.0[j_28 as usize]
-            [(N_COMP_INTER_PRED_MODES as libc::c_int - 1) as usize] = 0 as libc::c_int as uint16_t;
+            [(N_COMP_INTER_PRED_MODES as libc::c_int - 1) as usize] = 0 as libc::c_int as u16;
         j_28 += 1;
     }
     let mut i_14 = 0;
     while i_14 < 4 {
         (*dst).m.intra.0[i_14 as usize][0] = (*src).m.intra.0[i_14 as usize][0];
-        (*dst).m.intra.0[i_14 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.intra.0[i_14 as usize][1] = 0 as libc::c_int as u16;
         i_14 += 1;
     }
     let mut i_15 = 0;
     while i_15 < 5 {
         (*dst).m.comp.0[i_15 as usize][0] = (*src).m.comp.0[i_15 as usize][0];
-        (*dst).m.comp.0[i_15 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.comp.0[i_15 as usize][1] = 0 as libc::c_int as u16;
         i_15 += 1;
     }
     let mut i_16 = 0;
     while i_16 < 5 {
         (*dst).m.comp_dir.0[i_16 as usize][0] = (*src).m.comp_dir.0[i_16 as usize][0];
-        (*dst).m.comp_dir.0[i_16 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.comp_dir.0[i_16 as usize][1] = 0 as libc::c_int as u16;
         i_16 += 1;
     }
     let mut i_17 = 0;
     while i_17 < 6 {
         (*dst).m.jnt_comp.0[i_17 as usize][0] = (*src).m.jnt_comp.0[i_17 as usize][0];
-        (*dst).m.jnt_comp.0[i_17 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.jnt_comp.0[i_17 as usize][1] = 0 as libc::c_int as u16;
         i_17 += 1;
     }
     let mut i_18 = 0;
     while i_18 < 6 {
         (*dst).m.mask_comp.0[i_18 as usize][0] = (*src).m.mask_comp.0[i_18 as usize][0];
-        (*dst).m.mask_comp.0[i_18 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.mask_comp.0[i_18 as usize][1] = 0 as libc::c_int as u16;
         i_18 += 1;
     }
     let mut i_19 = 0;
     while i_19 < 9 {
         (*dst).m.wedge_comp.0[i_19 as usize][0] = (*src).m.wedge_comp.0[i_19 as usize][0];
-        (*dst).m.wedge_comp.0[i_19 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.wedge_comp.0[i_19 as usize][1] = 0 as libc::c_int as u16;
         i_19 += 1;
     }
     let mut j_29 = 0;
@@ -5470,9 +5467,9 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.wedge_idx.0[j_29 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.wedge_idx.0[j_29 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
         );
-        (*dst).m.wedge_idx[j_29 as usize][15] = 0 as libc::c_int as uint16_t;
+        (*dst).m.wedge_idx[j_29 as usize][15] = 0 as libc::c_int as u16;
         j_29 += 1;
     }
     let mut j_30 = 0;
@@ -5481,7 +5478,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         while i_20 < 3 {
             (*dst).m.r#ref[j_30 as usize][i_20 as usize][0] =
                 (*src).m.r#ref[j_30 as usize][i_20 as usize][0];
-            (*dst).m.r#ref[j_30 as usize][i_20 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).m.r#ref[j_30 as usize][i_20 as usize][1] = 0 as libc::c_int as u16;
             i_20 += 1;
         }
         j_30 += 1;
@@ -5492,7 +5489,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         while i_21 < 3 {
             (*dst).m.comp_fwd_ref[j_31 as usize][i_21 as usize][0] =
                 (*src).m.comp_fwd_ref[j_31 as usize][i_21 as usize][0];
-            (*dst).m.comp_fwd_ref[j_31 as usize][i_21 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).m.comp_fwd_ref[j_31 as usize][i_21 as usize][1] = 0 as libc::c_int as u16;
             i_21 += 1;
         }
         j_31 += 1;
@@ -5503,7 +5500,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         while i_22 < 3 {
             (*dst).m.comp_bwd_ref[j_32 as usize][i_22 as usize][0] =
                 (*src).m.comp_bwd_ref[j_32 as usize][i_22 as usize][0];
-            (*dst).m.comp_bwd_ref[j_32 as usize][i_22 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).m.comp_bwd_ref[j_32 as usize][i_22 as usize][1] = 0 as libc::c_int as u16;
             i_22 += 1;
         }
         j_32 += 1;
@@ -5514,7 +5511,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         while i_23 < 3 {
             (*dst).m.comp_uni_ref[j_33 as usize][i_23 as usize][0] =
                 (*src).m.comp_uni_ref[j_33 as usize][i_23 as usize][0];
-            (*dst).m.comp_uni_ref[j_33 as usize][i_23 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).m.comp_uni_ref[j_33 as usize][i_23 as usize][1] = 0 as libc::c_int as u16;
             i_23 += 1;
         }
         j_33 += 1;
@@ -5522,19 +5519,19 @@ pub unsafe fn dav1d_cdf_thread_update(
     let mut i_24 = 0;
     while i_24 < 3 {
         (*dst).m.seg_pred[i_24 as usize][0] = (*src).m.seg_pred[i_24 as usize][0];
-        (*dst).m.seg_pred[i_24 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.seg_pred[i_24 as usize][1] = 0 as libc::c_int as u16;
         i_24 += 1;
     }
     let mut i_25 = 0;
     while i_25 < 4 {
         (*dst).m.interintra[i_25 as usize][0] = (*src).m.interintra[i_25 as usize][0];
-        (*dst).m.interintra[i_25 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.interintra[i_25 as usize][1] = 0 as libc::c_int as u16;
         i_25 += 1;
     }
     let mut i_26 = 0;
     while i_26 < 7 {
         (*dst).m.interintra_wedge[i_26 as usize][0] = (*src).m.interintra_wedge[i_26 as usize][0];
-        (*dst).m.interintra_wedge[i_26 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.interintra_wedge[i_26 as usize][1] = 0 as libc::c_int as u16;
         i_26 += 1;
     }
     let mut j_34 = 0;
@@ -5542,9 +5539,9 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.interintra_mode[j_34 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.interintra_mode[j_34 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
         );
-        (*dst).m.interintra_mode[j_34 as usize][3] = 0 as libc::c_int as uint16_t;
+        (*dst).m.interintra_mode[j_34 as usize][3] = 0 as libc::c_int as u16;
         j_34 += 1;
     }
     let mut j_35 = 0;
@@ -5552,38 +5549,38 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.motion_mode[j_35 as usize]).as_mut_ptr() as *mut libc::c_void,
             ((*src).m.motion_mode[j_35 as usize]).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
         );
-        (*dst).m.motion_mode[j_35 as usize][2] = 0 as libc::c_int as uint16_t;
+        (*dst).m.motion_mode[j_35 as usize][2] = 0 as libc::c_int as u16;
         j_35 += 1;
     }
     let mut i_27 = 0;
     while i_27 < N_BS_SIZES as libc::c_int {
         (*dst).m.obmc[i_27 as usize][0] = (*src).m.obmc[i_27 as usize][0];
-        (*dst).m.obmc[i_27 as usize][1] = 0 as libc::c_int as uint16_t;
+        (*dst).m.obmc[i_27 as usize][1] = 0 as libc::c_int as u16;
         i_27 += 1;
     }
     memcpy(
         ((*dst).mv.joint.0).as_mut_ptr() as *mut libc::c_void,
         ((*src).mv.joint.0).as_ptr() as *const libc::c_void,
-        ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+        ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
     );
-    (*dst).mv.joint[(N_MV_JOINTS as libc::c_int - 1) as usize] = 0 as libc::c_int as uint16_t;
+    (*dst).mv.joint[(N_MV_JOINTS as libc::c_int - 1) as usize] = 0 as libc::c_int as u16;
     let mut k_17 = 0;
     while k_17 < 2 {
         memcpy(
             ((*dst).mv.comp[k_17 as usize].classes.0).as_mut_ptr() as *mut libc::c_void,
             ((*src).mv.comp[k_17 as usize].classes.0).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 16]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 16]>() as libc::c_ulong,
         );
-        (*dst).mv.comp[k_17 as usize].classes[10] = 0 as libc::c_int as uint16_t;
+        (*dst).mv.comp[k_17 as usize].classes[10] = 0 as libc::c_int as u16;
         (*dst).mv.comp[k_17 as usize].class0[0] = (*src).mv.comp[k_17 as usize].class0[0];
-        (*dst).mv.comp[k_17 as usize].class0[1] = 0 as libc::c_int as uint16_t;
+        (*dst).mv.comp[k_17 as usize].class0[1] = 0 as libc::c_int as u16;
         let mut i_28 = 0;
         while i_28 < 10 {
             (*dst).mv.comp[k_17 as usize].classN[i_28 as usize][0] =
                 (*src).mv.comp[k_17 as usize].classN[i_28 as usize][0];
-            (*dst).mv.comp[k_17 as usize].classN[i_28 as usize][1] = 0 as libc::c_int as uint16_t;
+            (*dst).mv.comp[k_17 as usize].classN[i_28 as usize][1] = 0 as libc::c_int as u16;
             i_28 += 1;
         }
         let mut j_36 = 0;
@@ -5593,24 +5590,23 @@ pub unsafe fn dav1d_cdf_thread_update(
                     as *mut libc::c_void,
                 ((*src).mv.comp[k_17 as usize].class0_fp[j_36 as usize]).as_ptr()
                     as *const libc::c_void,
-                ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+                ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
             );
-            (*dst).mv.comp[k_17 as usize].class0_fp[j_36 as usize][3] =
-                0 as libc::c_int as uint16_t;
+            (*dst).mv.comp[k_17 as usize].class0_fp[j_36 as usize][3] = 0 as libc::c_int as u16;
             j_36 += 1;
         }
         memcpy(
             ((*dst).mv.comp[k_17 as usize].classN_fp.0).as_mut_ptr() as *mut libc::c_void,
             ((*src).mv.comp[k_17 as usize].classN_fp.0).as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
         );
-        (*dst).mv.comp[k_17 as usize].classN_fp[3] = 0 as libc::c_int as uint16_t;
+        (*dst).mv.comp[k_17 as usize].classN_fp[3] = 0 as libc::c_int as u16;
         (*dst).mv.comp[k_17 as usize].class0_hp[0] = (*src).mv.comp[k_17 as usize].class0_hp[0];
-        (*dst).mv.comp[k_17 as usize].class0_hp[1] = 0 as libc::c_int as uint16_t;
+        (*dst).mv.comp[k_17 as usize].class0_hp[1] = 0 as libc::c_int as u16;
         (*dst).mv.comp[k_17 as usize].classN_hp[0] = (*src).mv.comp[k_17 as usize].classN_hp[0];
-        (*dst).mv.comp[k_17 as usize].classN_hp[1] = 0 as libc::c_int as uint16_t;
+        (*dst).mv.comp[k_17 as usize].classN_hp[1] = 0 as libc::c_int as u16;
         (*dst).mv.comp[k_17 as usize].sign[0] = (*src).mv.comp[k_17 as usize].sign[0];
-        (*dst).mv.comp[k_17 as usize].sign[1] = 0 as libc::c_int as uint16_t;
+        (*dst).mv.comp[k_17 as usize].sign[1] = 0 as libc::c_int as u16;
         k_17 += 1;
     }
 }
@@ -5646,18 +5642,18 @@ pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
         memcpy(
             ((*dst).kfym.0).as_mut_ptr() as *mut libc::c_void,
             default_kf_y_mode_cdf.0.as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[[[uint16_t; 16]; 5]; 5]>() as libc::c_ulong,
+            ::core::mem::size_of::<[[[u16; 16]; 5]; 5]>() as libc::c_ulong,
         );
         (*dst).coef = av1_default_coef_cdf[(*src).data.qcat as usize].clone();
         memcpy(
             ((*dst).mv.joint.0).as_mut_ptr() as *mut libc::c_void,
             default_mv_joint_cdf.0.as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
         );
         memcpy(
             ((*dst).dmv.joint.0).as_mut_ptr() as *mut libc::c_void,
             default_mv_joint_cdf.0.as_ptr() as *const libc::c_void,
-            ::core::mem::size_of::<[uint16_t; 4]>() as libc::c_ulong,
+            ::core::mem::size_of::<[u16; 4]>() as libc::c_ulong,
         );
         (*dst).dmv.comp[1] = default_mv_component_cdf.clone();
         (*dst).dmv.comp[0] = (*dst).dmv.comp[1].clone();
