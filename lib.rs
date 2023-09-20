@@ -10,11 +10,11 @@ compile_error!("No bitdepths enabled. Enable one or more of the following featur
 
 pub mod include {
     pub mod common {
-        pub mod attributes;
-        pub mod bitdepth;
-        pub mod dump;
+        pub(crate) mod attributes;
+        pub(crate) mod bitdepth;
+        pub(crate) mod dump;
         pub mod frame;
-        pub mod intops;
+        pub(crate) mod intops;
     } // mod common
     pub mod dav1d {
         pub mod common;
@@ -23,9 +23,9 @@ pub mod include {
         pub mod headers;
         pub mod picture;
     } // mod dav1d
-    pub mod pthread;
-    pub mod sched;
-    pub mod stdatomic;
+    pub(crate) mod pthread;
+    pub(crate) mod sched;
+    pub(crate) mod stdatomic;
 } // mod include
 pub mod src {
     mod align;
