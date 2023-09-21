@@ -39,6 +39,7 @@ use std::ffi::c_int;
 use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::process::abort;
 
 #[cfg(target_os = "linux")]
 use libc::prctl;
@@ -47,7 +48,6 @@ use libc::prctl;
 use libc::pthread_setname_np;
 
 extern "C" {
-    fn abort() -> !;
     fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int;
     fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> c_int;
     fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int;

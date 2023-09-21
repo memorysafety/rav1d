@@ -99,12 +99,12 @@ use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::process::abort;
 
 #[cfg(target_os = "linux")]
 use libc::dlsym;
 
 extern "C" {
-    fn abort() -> !;
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> c_int;
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_apply_grain_16bpc(
