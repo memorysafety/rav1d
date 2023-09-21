@@ -4203,8 +4203,7 @@ unsafe fn read_restoration_info(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int {
+pub unsafe fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int {
     let f: *const Dav1dFrameContext = (*t).f;
     let root_bl: BlockLevel = (if (*(*f).seq_hdr).sb128 != 0 {
         BL_128X128 as c_int
@@ -4438,8 +4437,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int {
+pub unsafe fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int {
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
     let c = &*f.c;
@@ -4888,8 +4886,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c
     0
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> c_int {
+pub unsafe fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> c_int {
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
     let c = &*f.c;
@@ -5055,8 +5052,7 @@ unsafe fn dav1d_decode_frame_main(f: &mut Dav1dFrameContext) -> c_int {
     0
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: c_int) {
+pub unsafe fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: c_int) {
     let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
     let c = &*f.c;
     if !f.sr_cur.p.data[0].is_null() {
@@ -5147,8 +5143,7 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
     x0 & 0x3fff
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> c_int {
+pub unsafe fn dav1d_submit_frame(c: *mut Dav1dContext) -> c_int {
     let c = &mut *c; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
 
     // wait for c->out_delayed[next] and move into c->out if visible

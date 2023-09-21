@@ -5,6 +5,10 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::dav1d_cdf_thread_update;
+use crate::src::decode::dav1d_decode_frame_exit;
+use crate::src::decode::dav1d_decode_frame_init;
+use crate::src::decode::dav1d_decode_frame_init_cdf;
+use crate::src::decode::dav1d_decode_tile_sbrow;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::internal::Dav1dContext;
 use crate::src::internal::Dav1dFrameContext;
@@ -48,10 +52,6 @@ use libc::prctl;
 use libc::pthread_setname_np;
 
 extern "C" {
-    fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int;
-    fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> c_int;
-    fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int;
-    fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: c_int);
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_prep_grain_8bpc(
         dsp: *const Dav1dFilmGrainDSPContext,

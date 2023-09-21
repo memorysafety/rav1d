@@ -69,6 +69,7 @@ use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_ref;
 use crate::src::data::dav1d_data_unref_internal;
+use crate::src::decode::dav1d_submit_frame;
 use crate::src::env::get_poc_diff;
 use crate::src::getbits::dav1d_bytealign_get_bits;
 use crate::src::getbits::dav1d_get_bit;
@@ -119,7 +120,6 @@ use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 extern "C" {
-    fn dav1d_submit_frame(c: *mut Dav1dContext) -> c_int;
     fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
 }
 

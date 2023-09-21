@@ -33,6 +33,7 @@ use crate::src::data::dav1d_data_ref;
 use crate::src::data::dav1d_data_unref_internal;
 use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::data::dav1d_data_wrap_user_data_internal;
+use crate::src::decode::dav1d_decode_frame_exit;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Dav1dContext;
@@ -144,7 +145,6 @@ extern "C" {
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
     );
-    fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: c_int);
 }
 
 #[repr(C)]
