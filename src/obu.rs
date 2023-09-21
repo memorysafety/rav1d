@@ -90,6 +90,7 @@ use crate::src::levels::OBU_META_HDR_MDCV;
 use crate::src::levels::OBU_META_ITUT_T35;
 use crate::src::levels::OBU_META_SCALABILITY;
 use crate::src::levels::OBU_META_TIMECODE;
+use crate::src::log::dav1d_log;
 use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
@@ -118,10 +119,6 @@ use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
-}
 
 #[inline]
 unsafe extern "C" fn dav1d_get_bits_pos(c: *const GetBits) -> c_uint {

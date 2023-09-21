@@ -157,6 +157,7 @@ use crate::src::lf_mask::dav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
+use crate::src::log::dav1d_log;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
 use crate::src::mc::dav1d_mc_dsp_init;
@@ -334,7 +335,6 @@ extern "C" {
     fn dav1d_read_coef_blocks_8bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_read_coef_blocks_16bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
-    fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
     fn dav1d_task_create_tile_sbrow(
         f: *mut Dav1dFrameContext,
         pass: c_int,

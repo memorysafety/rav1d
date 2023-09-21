@@ -19,6 +19,7 @@ use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_props_set_defaults;
 use crate::src::internal::Dav1dContext;
 use crate::src::internal::Dav1dFrameContext;
+use crate::src::log::dav1d_log;
 use crate::src::mem::dav1d_mem_pool_pop;
 use crate::src::mem::dav1d_mem_pool_push;
 use crate::src::mem::Dav1dMemPool;
@@ -39,10 +40,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
-}
 
 pub type PictureFlags = c_uint;
 pub const PICTURE_FLAG_NEW_TEMPORAL_UNIT: PictureFlags = 4;

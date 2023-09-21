@@ -45,6 +45,7 @@ use crate::src::intra_edge::dav1d_init_mode_tree;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_64X64;
+use crate::src::log::dav1d_log;
 use crate::src::log::dav1d_log_default_callback;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
@@ -138,7 +139,6 @@ extern "C" {
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> c_int;
-    fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
     fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, global: c_int) -> c_int;
     fn dav1d_task_delayed_fg(
         c: *mut Dav1dContext,
