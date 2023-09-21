@@ -103,6 +103,7 @@ use crate::src::r#ref::dav1d_ref_create;
 use crate::src::r#ref::dav1d_ref_create_using_pool;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
+use crate::src::r#ref::dav1d_ref_is_writable;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::tables::dav1d_default_wm_params;
 use crate::src::thread_task::FRAME_ERROR;
@@ -1937,6 +1938,8 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         return -(12 as c_int);
                     }
                 }
+                // ensure that the reference is writable
+                debug_assert!(dav1d_ref_is_writable((*c).frame_hdr_ref) != 0);
                 (*c).frame_hdr = (*(*c).frame_hdr_ref).data as *mut Dav1dFrameHeader;
                 memset(
                     (*c).frame_hdr as *mut c_void,
