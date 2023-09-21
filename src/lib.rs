@@ -70,8 +70,8 @@ use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::refmvs::dav1d_refmvs_clear;
+use crate::src::refmvs::dav1d_refmvs_dsp_init;
 use crate::src::refmvs::dav1d_refmvs_init;
-use crate::src::refmvs::Dav1dRefmvsDSPContext;
 use crate::src::thread_task::dav1d_task_delayed_fg;
 use crate::src::thread_task::dav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
@@ -131,7 +131,6 @@ extern "C" {
         __start_routine: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
         __arg: *mut c_void,
     ) -> c_int;
-    fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
     fn pthread_once(
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
