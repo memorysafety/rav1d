@@ -10,21 +10,40 @@ use crate::include::stdint::int8_t;
 use crate::include::stdint::uint16_t;
 use crate::include::stdint::uint8_t;
 use crate::src::align::*;
+use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeTip;
+use crate::src::ipred::Dav1dIntraPredDSPContext;
+use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
+use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
+use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
+use crate::src::mc::Dav1dMCDSPContext;
 use crate::src::msac::MsacContext;
 use crate::src::picture::Dav1dThreadPicture;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::thread_data::thread_data;
+
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
+
+#[repr(C)]
+pub struct Dav1dDSPContext {
+    pub fg: Dav1dFilmGrainDSPContext,
+    pub ipred: Dav1dIntraPredDSPContext,
+    pub mc: Dav1dMCDSPContext,
+    pub itx: Dav1dInvTxfmDSPContext,
+    pub lf: Dav1dLoopFilterDSPContext,
+    pub cdef: Dav1dCdefDSPContext,
+    pub lr: Dav1dLoopRestorationDSPContext,
+}
 
 #[derive(Clone, Default)]
 #[repr(C)]

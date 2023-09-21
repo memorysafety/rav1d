@@ -91,25 +91,9 @@ use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 
 use crate::src::internal::Dav1dContext_intra_edge;
 
+use crate::src::internal::Dav1dDSPContext;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
-#[repr(C)]
-pub struct Dav1dDSPContext {
-    pub fg: Dav1dFilmGrainDSPContext,
-    pub ipred: Dav1dIntraPredDSPContext,
-    pub mc: Dav1dMCDSPContext,
-    pub itx: Dav1dInvTxfmDSPContext,
-    pub lf: Dav1dLoopFilterDSPContext,
-    pub cdef: Dav1dCdefDSPContext,
-    pub lr: Dav1dLoopRestorationDSPContext,
-}
-use crate::src::cdef::Dav1dCdefDSPContext;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
-use crate::src::ipred::Dav1dIntraPredDSPContext;
-use crate::src::itx::Dav1dInvTxfmDSPContext;
-use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
-use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-use crate::src::mc::Dav1dMCDSPContext;
 
 use crate::src::cdf::CdfThreadContext;
 
