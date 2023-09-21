@@ -25,6 +25,7 @@ use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::cpu::dav1d_init_cpu;
+use crate::src::cpu::dav1d_num_logical_processors;
 use crate::src::data::dav1d_data_create_internal;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_props_set_defaults;
@@ -112,7 +113,6 @@ use libc::dlsym;
 use libc::sysconf;
 
 extern "C" {
-    fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> c_int;
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_apply_grain_16bpc(
         dsp: *const Dav1dFilmGrainDSPContext,
