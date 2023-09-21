@@ -29,6 +29,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::process::exit;
 
 extern "C" {
     static mut optarg: *mut c_char;
@@ -41,7 +42,6 @@ extern "C" {
         __longind: *mut c_int,
     ) -> c_int;
     fn vfprintf(_: *mut libc::FILE, _: *const c_char, _: ::core::ffi::VaList) -> c_int;
-    fn exit(_: c_int) -> !;
 }
 
 #[repr(C)]
