@@ -555,8 +555,7 @@ pub unsafe fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
     insert_task(f, t, 1 as c_int);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_task_delayed_fg(
+pub unsafe fn dav1d_task_delayed_fg(
     c: *mut Dav1dContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,

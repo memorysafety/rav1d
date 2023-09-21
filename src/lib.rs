@@ -71,6 +71,7 @@ use crate::src::r#ref::Dav1dRef;
 use crate::src::refmvs::dav1d_refmvs_clear;
 use crate::src::refmvs::dav1d_refmvs_init;
 use crate::src::refmvs::Dav1dRefmvsDSPContext;
+use crate::src::thread_task::dav1d_task_delayed_fg;
 use crate::src::thread_task::dav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::stderr;
@@ -135,11 +136,6 @@ extern "C" {
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> c_int;
-    fn dav1d_task_delayed_fg(
-        c: *mut Dav1dContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-    );
 }
 
 #[repr(C)]
