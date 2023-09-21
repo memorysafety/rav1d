@@ -58,14 +58,12 @@ use std::ffi::c_char;
 use std::ffi::c_double;
 use std::ffi::c_float;
 use std::ffi::c_int;
-use std::ffi::c_longlong;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 
 extern "C" {
     pub type DemuxerContext;
-    fn llround(_: c_double) -> c_longlong;
     fn input_open(
         c_out: *mut *mut DemuxerContext,
         name: *const c_char,
@@ -478,9 +476,9 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                 current_block = 5948590327928692120;
                 break;
             }
-            pts = llround(
-                (xor128_rand() as c_uint).wrapping_rem(total) as c_double * spf * 1000000000.0f64,
-            ) as u64;
+            pts =
+                ((xor128_rand() as c_uint).wrapping_rem(total) as c_double * spf * 1000000000.0f64)
+                    .round() as u64;
             if !(seek(in_0, c, pts, &mut data) != 0) {
                 if decode_rand(in_0, c, &mut data, fps) != 0 {
                     current_block = 1928200949476507836;
@@ -492,7 +490,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         match current_block {
             1928200949476507836 => {}
             _ => {
-                pts = llround(data.m.timestamp as c_double * timebase * 1000000000.0f64) as u64;
+                pts = (data.m.timestamp as c_double * timebase * 1000000000.0f64).round() as u64;
                 let mut i_0 = 0;
                 let mut tries = 0;
                 loop {
@@ -506,34 +504,31 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                         1 as c_int
                     };
                     let diff: c_float = (xor128_rand() % 100 as c_int) as c_float / 100.0f32;
-                    let mut new_pts: i64 = pts.wrapping_add(
-                        (sign as u64).wrapping_mul(llround(
-                            diff as c_double * fps * spf * 1000000000.0f64,
-                        ) as u64),
-                    ) as i64;
+                    let mut new_pts: i64 = pts.wrapping_add((sign as u64).wrapping_mul(
+                        (diff as c_double * fps * spf * 1000000000.0f64).round() as u64,
+                    )) as i64;
                     let new_ts: i64 =
-                        llround(new_pts as c_double / (timebase * 1000000000.0f64)) as i64;
+                        (new_pts as c_double / (timebase * 1000000000.0f64)).round() as i64;
                     new_pts =
-                        llround(new_ts as c_double * timebase * 1000000000.0f64) as u64 as i64;
+                        (new_ts as c_double * timebase * 1000000000.0f64).round() as u64 as i64;
                     if new_pts < 0
                         || new_pts as u64
-                            >= llround(total as c_double * spf * 1000000000.0f64) as u64
+                            >= (total as c_double * spf * 1000000000.0f64).round() as u64
                     {
                         if seek(
                             in_0,
                             c,
-                            llround(
-                                total.wrapping_div(2 as c_int as c_uint) as c_double
-                                    * spf
-                                    * 1000000000.0f64,
-                            ) as u64,
+                            (total.wrapping_div(2 as c_int as c_uint) as c_double
+                                * spf
+                                * 1000000000.0f64)
+                                .round() as u64,
                             &mut data,
                         ) != 0
                         {
                             current_block = 8693738493027456495;
                             break;
                         }
-                        pts = llround(data.m.timestamp as c_double * timebase * 1000000000.0f64)
+                        pts = (data.m.timestamp as c_double * timebase * 1000000000.0f64).round()
                             as u64;
                         tries += 1;
                     } else {
@@ -547,7 +542,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                             current_block = 1928200949476507836;
                             break;
                         }
-                        pts = llround(data.m.timestamp as c_double * timebase * 1000000000.0f64)
+                        pts = (data.m.timestamp as c_double * timebase * 1000000000.0f64).round()
                             as u64;
                     }
                     i_0 += 1;
@@ -564,9 +559,8 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                             if !(seek(
                                 in_0,
                                 c,
-                                llround(
-                                    total.wrapping_sub(shift) as c_double * spf * 1000000000.0f64,
-                                ) as u64,
+                                (total.wrapping_sub(shift) as c_double * spf * 1000000000.0f64)
+                                    .round() as u64,
                                 &mut data,
                             ) != 0)
                             {
@@ -579,9 +573,8 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                             if seek(
                                 in_0,
                                 c,
-                                llround(
-                                    total.wrapping_sub(shift) as c_double * spf * 1000000000.0f64,
-                                ) as u64,
+                                (total.wrapping_sub(shift) as c_double * spf * 1000000000.0f64)
+                                    .round() as u64,
                                 &mut data,
                             ) != 0
                             {

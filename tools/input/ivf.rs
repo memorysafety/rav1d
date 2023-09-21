@@ -15,14 +15,9 @@ use rav1d::stderr;
 use std::ffi::c_char;
 use std::ffi::c_double;
 use std::ffi::c_int;
-use std::ffi::c_longlong;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn llround(_: c_double) -> c_longlong;
-}
 
 #[repr(C)]
 pub struct DemuxerPriv {
@@ -279,7 +274,7 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> c
 unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: u64) -> c_int {
     let mut current_block: u64;
     let mut cur: u64 = 0;
-    let ts: u64 = llround(pts as c_double * (*c).timebase / 1000000000.0f64) as u64;
+    let ts: u64 = (pts as c_double * (*c).timebase / 1000000000.0f64).round() as u64;
     if ts <= (*c).last_ts {
         if fseeko((*c).f, 32, 0) != 0 {
             current_block = 679495355492430298;
