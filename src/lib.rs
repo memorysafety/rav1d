@@ -95,7 +95,6 @@ use libc::pthread_t;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
-use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
@@ -103,6 +102,9 @@ use std::process::abort;
 
 #[cfg(target_os = "linux")]
 use libc::dlsym;
+
+#[cfg(target_os = "linux")]
+use libc::sysconf;
 
 extern "C" {
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> c_int;
@@ -124,7 +126,6 @@ extern "C" {
         w: c_int,
         src: *const Dav1dPicture,
     ) -> c_int;
-    fn __sysconf(__name: c_int) -> c_long;
     fn pthread_create(
         __newthread: *mut pthread_t,
         __attr: *const pthread_attr_t,
@@ -219,7 +220,7 @@ unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t
                     ));
                 if get_minstack.is_some() {
                     return (get_minstack.expect("non-null function pointer")(_thread_attr))
-                        .wrapping_sub(__sysconf(75) as usize);
+                        .wrapping_sub(sysconf(75) as usize);
                 }
             }
         }
