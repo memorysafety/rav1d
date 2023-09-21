@@ -35,6 +35,7 @@ use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::cdf::dav1d_cdf_thread_alloc;
 use crate::src::cdf::dav1d_cdf_thread_copy;
 use crate::src::cdf::dav1d_cdf_thread_init_static;
 use crate::src::cdf::dav1d_cdf_thread_ref;
@@ -42,7 +43,6 @@ use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::cdf::dav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
-use crate::src::cdf::CdfThreadContext;
 use crate::src::ctx::CaseSet;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_unref_internal;
@@ -249,11 +249,6 @@ extern "C" {
     fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext);
-    fn dav1d_cdf_thread_alloc(
-        c: *mut Dav1dContext,
-        cdf: *mut CdfThreadContext,
-        have_frame_mt: c_int,
-    ) -> c_int;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_film_grain_dsp_init_8bpc(c: *mut Dav1dFilmGrainDSPContext);
     #[cfg(feature = "bitdepth_16")]

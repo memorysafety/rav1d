@@ -5648,8 +5648,7 @@ pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
     };
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdf_thread_alloc(
+pub unsafe fn dav1d_cdf_thread_alloc(
     c: *mut Dav1dContext,
     cdf: *mut CdfThreadContext,
     have_frame_mt: c_int,
