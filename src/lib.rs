@@ -1210,7 +1210,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
             }
             let f: *mut Dav1dFrameContext =
                 &mut *((*c).fc).offset(next as isize) as *mut Dav1dFrameContext;
-            dav1d_decode_frame_exit(f, -(1 as c_int));
+            dav1d_decode_frame_exit(&mut *f, -(1 as c_int));
             (*f).n_tile_data = 0 as c_int;
             (*f).task_thread.retval = 0 as c_int;
             let out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)

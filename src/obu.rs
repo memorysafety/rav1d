@@ -2273,7 +2273,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             if (*c).n_tile_data == 0 {
                 return dav1d_parse_obus_error(c, in_0);
             }
-            res = dav1d_submit_frame(c);
+            res = dav1d_submit_frame(&mut *c);
             if res < 0 {
                 return res;
             }

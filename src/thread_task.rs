@@ -744,7 +744,7 @@ unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: c_int) {
         &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint,
         FRAME_ERROR,
     );
-    dav1d_decode_frame_exit(f, error);
+    dav1d_decode_frame_exit(&mut *f, error);
     (*f).n_tile_data = 0 as c_int;
     pthread_cond_signal(&mut (*f).task_thread.cond);
 }
@@ -1222,7 +1222,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     if !((*c).n_fc > 1 as c_uint) {
                                         unreachable!();
                                     }
-                                    let res = dav1d_decode_frame_init(f);
+                                    let res = dav1d_decode_frame_init(&mut *f);
                                     let p1_3 = (if !((*f).in_cdf.progress).is_null() {
                                         ::core::intrinsics::atomic_load_seqcst((*f).in_cdf.progress)
                                     } else {
@@ -1252,7 +1252,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
                                     {
-                                        res_0 = dav1d_decode_frame_init_cdf(f);
+                                        res_0 = dav1d_decode_frame_init_cdf(&mut *f);
                                     }
                                     if (*(*f).frame_hdr).refresh_context != 0
                                         && !(*f).task_thread.update_set
@@ -1311,7 +1311,10 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                     {
                                                         unreachable!();
                                                     }
-                                                    dav1d_decode_frame_exit(f, -(12 as c_int));
+                                                    dav1d_decode_frame_exit(
+                                                        &mut *f,
+                                                        -(12 as c_int),
+                                                    );
                                                     (*f).n_tile_data = 0 as c_int;
                                                     pthread_cond_signal(&mut (*f).task_thread.cond);
                                                 } else {
@@ -1453,7 +1456,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                 ) != 0)
                                         {
                                             dav1d_decode_frame_exit(
-                                                f,
+                                                &mut *f,
                                                 if error_0 == 1 {
                                                     -(22 as c_int)
                                                 } else if error_0 != 0 {
@@ -1708,7 +1711,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     ) != 0
                                 {
                                     dav1d_decode_frame_exit(
-                                        f,
+                                        &mut *f,
                                         if error_0 == 1 {
                                             -(22 as c_int)
                                         } else if error_0 != 0 {
@@ -1773,7 +1776,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         ) != 0)
                                 {
                                     dav1d_decode_frame_exit(
-                                        f,
+                                        &mut *f,
                                         if error_0 == 1 {
                                             -(22 as c_int)
                                         } else if error_0 != 0 {

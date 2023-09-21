@@ -4437,9 +4437,7 @@ pub unsafe fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int {
     return 0 as c_int;
 }
 
-pub unsafe fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int {
-    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
-
+pub unsafe fn dav1d_decode_frame_init(f: &mut Dav1dFrameContext) -> c_int {
     let c = &*f.c;
 
     if f.sbh > f.lf.start_of_tile_row_sz {
@@ -4886,9 +4884,7 @@ pub unsafe fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int {
     0
 }
 
-pub unsafe fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> c_int {
-    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
-
+pub unsafe fn dav1d_decode_frame_init_cdf(f: &mut Dav1dFrameContext) -> c_int {
     let c = &*f.c;
 
     if (*f.frame_hdr).refresh_context != 0 {
@@ -5052,8 +5048,7 @@ unsafe fn dav1d_decode_frame_main(f: &mut Dav1dFrameContext) -> c_int {
     0
 }
 
-pub unsafe fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: c_int) {
-    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
+pub unsafe fn dav1d_decode_frame_exit(f: &mut Dav1dFrameContext, retval: c_int) {
     let c = &*f.c;
     if !f.sr_cur.p.data[0].is_null() {
         f.task_thread.error = 0;
@@ -5143,9 +5138,7 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
     x0 & 0x3fff
 }
 
-pub unsafe fn dav1d_submit_frame(c: *mut Dav1dContext) -> c_int {
-    let c = &mut *c; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
-
+pub unsafe fn dav1d_submit_frame(c: &mut Dav1dContext) -> c_int {
     // wait for c->out_delayed[next] and move into c->out if visible
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
