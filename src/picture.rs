@@ -291,8 +291,7 @@ pub unsafe fn dav1d_thread_picture_alloc(
     return res;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_picture_alloc_copy(
+pub unsafe fn dav1d_picture_alloc_copy(
     c: *mut Dav1dContext,
     dst: *mut Dav1dPicture,
     w: c_int,

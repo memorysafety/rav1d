@@ -56,6 +56,7 @@ use crate::src::mem::freep;
 use crate::src::obu::dav1d_parse_obus;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
+use crate::src::picture::dav1d_picture_alloc_copy;
 use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_picture_move_ref;
 use crate::src::picture::dav1d_picture_ref;
@@ -123,12 +124,6 @@ extern "C" {
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
     );
-    fn dav1d_picture_alloc_copy(
-        c: *mut Dav1dContext,
-        dst: *mut Dav1dPicture,
-        w: c_int,
-        src: *const Dav1dPicture,
-    ) -> c_int;
     fn pthread_create(
         __newthread: *mut pthread_t,
         __attr: *const pthread_attr_t,

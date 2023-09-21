@@ -30,7 +30,6 @@ use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
@@ -175,6 +174,7 @@ use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::dav1d_msac_decode_uniform;
 use crate::src::msac::dav1d_msac_init;
+use crate::src::picture::dav1d_picture_alloc_copy;
 use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_picture_ref;
 use crate::src::picture::dav1d_picture_unref_internal;
@@ -267,12 +267,6 @@ extern "C" {
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
-    fn dav1d_picture_alloc_copy(
-        c: *mut Dav1dContext,
-        dst: *mut Dav1dPicture,
-        w: c_int,
-        src: *const Dav1dPicture,
-    ) -> c_int;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_recon_b_intra_8bpc(
         t: *mut Dav1dTaskContext,
