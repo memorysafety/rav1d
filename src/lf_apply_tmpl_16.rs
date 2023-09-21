@@ -8,15 +8,12 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
+use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
-
-extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: usize) -> *mut c_void;
-}
 
 pub type pixel = u16;
 

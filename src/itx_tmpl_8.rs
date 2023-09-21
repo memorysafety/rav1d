@@ -39,9 +39,9 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::WHT_WHT;
+use libc::memset;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
@@ -49,10 +49,6 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-
-extern "C" {
-    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
-}
 
 pub type pixel = u8;
 pub type coef = i16;
@@ -91,9 +87,9 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust(
     memset(
         coeff as *mut c_void,
         0 as c_int,
-        (::core::mem::size_of::<coef>() as c_ulong)
-            .wrapping_mul(4 as c_int as c_ulong)
-            .wrapping_mul(4 as c_int as c_ulong),
+        ::core::mem::size_of::<coef>()
+            .wrapping_mul(4)
+            .wrapping_mul(4),
     );
     let mut x_0 = 0;
     while x_0 < 4 {

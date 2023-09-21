@@ -15,17 +15,13 @@ use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
 use c2rust_bitfields::BitfieldStruct;
+use libc::memcpy;
+use libc::memset;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: c_ulong) -> *mut c_void;
-    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
-}
 
 pub type pixel = u8;
 
@@ -155,7 +151,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 memset(
                     left as *mut c_void,
                     *left.offset((sz - px_have) as isize) as c_int,
-                    (sz - px_have) as c_ulong,
+                    (sz - px_have) as usize,
                 );
             }
         } else {
@@ -166,7 +162,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 } else {
                     ((1 as c_int) << bitdepth >> 1) + 1
                 },
-                sz as c_ulong,
+                sz as usize,
             );
         }
         if (av1_intra_prediction_edges[mode as usize]).needs_bottomleft() != 0 {
@@ -187,14 +183,14 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                     memset(
                         left.offset(-(sz as isize)) as *mut c_void,
                         *left.offset(-px_have_0 as isize) as c_int,
-                        (sz - px_have_0) as c_ulong,
+                        (sz - px_have_0) as usize,
                     );
                 }
             } else {
                 memset(
                     left.offset(-(sz as isize)) as *mut c_void,
                     *left.offset(0) as c_int,
-                    sz as c_ulong,
+                    sz as usize,
                 );
             }
         }
@@ -207,13 +203,13 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
             memcpy(
                 top as *mut c_void,
                 dst_top as *const c_void,
-                px_have_1 as c_ulong,
+                px_have_1 as usize,
             );
             if px_have_1 < sz_0 {
                 memset(
                     top.offset(px_have_1 as isize) as *mut c_void,
                     *top.offset((px_have_1 - 1) as isize) as c_int,
-                    (sz_0 - px_have_1) as c_ulong,
+                    (sz_0 - px_have_1) as usize,
                 );
             }
         } else {
@@ -224,7 +220,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 } else {
                     ((1 as c_int) << bitdepth >> 1) - 1
                 },
-                sz_0 as c_ulong,
+                sz_0 as usize,
             );
         }
         if (av1_intra_prediction_edges[mode as usize]).needs_topright() != 0 {
@@ -238,20 +234,20 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_8bpc(
                 memcpy(
                     top.offset(sz_0 as isize) as *mut c_void,
                     &*dst_top.offset(sz_0 as isize) as *const pixel as *const c_void,
-                    px_have_2 as c_ulong,
+                    px_have_2 as usize,
                 );
                 if px_have_2 < sz_0 {
                     memset(
                         top.offset(sz_0 as isize).offset(px_have_2 as isize) as *mut c_void,
                         *top.offset((sz_0 + px_have_2 - 1) as isize) as c_int,
-                        (sz_0 - px_have_2) as c_ulong,
+                        (sz_0 - px_have_2) as usize,
                     );
                 }
             } else {
                 memset(
                     top.offset(sz_0 as isize) as *mut c_void,
                     *top.offset((sz_0 - 1) as isize) as c_int,
-                    sz_0 as c_ulong,
+                    sz_0 as usize,
                 );
             }
         }

@@ -1,4 +1,12 @@
+use libc::fclose;
+use libc::fopen;
+use libc::fprintf;
+use libc::fread;
+use libc::fseeko;
+use libc::ftello;
+use libc::memcmp;
 use libc::ptrdiff_t;
+use libc::strerror;
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::src::lib::dav1d_data_create;
@@ -14,14 +22,6 @@ use std::ffi::c_void;
 
 extern "C" {
     fn llround(_: c_double) -> c_longlong;
-    fn fclose(__stream: *mut libc::FILE) -> c_int;
-    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn fread(_: *mut c_void, _: usize, _: usize, _: *mut libc::FILE) -> c_ulong;
-    fn fseeko(__stream: *mut libc::FILE, __off: libc::off_t, __whence: c_int) -> c_int;
-    fn ftello(__stream: *mut libc::FILE) -> libc::off_t;
-    fn memcmp(_: *const c_void, _: *const c_void, _: usize) -> c_int;
-    fn strerror(_: c_int) -> *mut c_char;
 }
 
 #[repr(C)]
@@ -107,7 +107,7 @@ unsafe extern "C" fn ivf_open(
         );
         return -(1 as c_int);
     } else {
-        if fread(hdr.as_mut_ptr() as *mut c_void, 32, 1, (*c).f) != 1 as c_int as c_ulong {
+        if fread(hdr.as_mut_ptr() as *mut c_void, 32, 1, (*c).f) != 1 {
             fprintf(
                 stderr,
                 b"Failed to read stream header: %s\n\0" as *const u8 as *const c_char,
@@ -165,9 +165,9 @@ unsafe extern "C" fn ivf_open(
     let mut data: [u8; 8] = [0; 8];
     (*c).broken = 0 as c_int;
     *num_frames = 0 as c_int as c_uint;
-    while !(fread(data.as_mut_ptr() as *mut c_void, 4, 1, (*c).f) != 1 as c_int as c_ulong) {
+    while !(fread(data.as_mut_ptr() as *mut c_void, 4, 1, (*c).f) != 1) {
         let sz: usize = rl32(data.as_mut_ptr()) as usize;
-        if fread(data.as_mut_ptr() as *mut c_void, 8, 1, (*c).f) != 1 as c_int as c_ulong {
+        if fread(data.as_mut_ptr() as *mut c_void, 8, 1, (*c).f) != 1 {
             break;
         }
         let ts: u64 = rl64(data.as_mut_ptr()) as u64;
@@ -227,12 +227,12 @@ unsafe extern "C" fn ivf_read_header(
     if !off_.is_null() {
         *off_ = off;
     }
-    if fread(data.as_mut_ptr() as *mut c_void, 4, 1, (*c).f) != 1 as c_int as c_ulong {
+    if fread(data.as_mut_ptr() as *mut c_void, 4, 1, (*c).f) != 1 {
         return -(1 as c_int);
     }
     *sz = rl32(data.as_mut_ptr()) as ptrdiff_t;
     if (*c).broken == 0 {
-        if fread(data.as_mut_ptr() as *mut c_void, 8, 1, (*c).f) != 1 as c_int as c_ulong {
+        if fread(data.as_mut_ptr() as *mut c_void, 8, 1, (*c).f) != 1 {
             return -(1 as c_int);
         }
         *ts = rl64(data.as_mut_ptr()) as u64;
@@ -261,7 +261,7 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> c
     if ptr.is_null() {
         return -(1 as c_int);
     }
-    if fread(ptr as *mut c_void, sz as usize, 1, (*c).f) != 1 as c_int as c_ulong {
+    if fread(ptr as *mut c_void, sz as usize, 1, (*c).f) != 1 {
         fprintf(
             stderr,
             b"Failed to read frame data: %s\n\0" as *const u8 as *const c_char,

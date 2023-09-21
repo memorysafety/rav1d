@@ -17,7 +17,21 @@ mod output {
     mod yuv;
 } // mod output
 mod dav1d_cli_parse;
+use libc::fclose;
+use libc::fflush;
+use libc::fileno;
+use libc::fopen;
+use libc::fprintf;
+use libc::fputs;
+use libc::free;
+use libc::isatty;
+use libc::malloc;
+use libc::memset;
 use libc::ptrdiff_t;
+use libc::snprintf;
+use libc::strcmp;
+use libc::strcpy;
+use libc::strerror;
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -56,29 +70,13 @@ use rav1d::stderr;
 use std::ffi::c_char;
 use std::ffi::c_double;
 use std::ffi::c_int;
-use std::ffi::c_long;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 
 extern "C" {
     pub type DemuxerContext;
     pub type MuxerContext;
-    fn malloc(_: usize) -> *mut c_void;
-    fn free(_: *mut c_void);
-    fn fclose(__stream: *mut libc::FILE) -> c_int;
-    fn fflush(__stream: *mut libc::FILE) -> c_int;
-    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn snprintf(_: *mut c_char, _: c_ulong, _: *const c_char, _: ...) -> c_int;
-    fn fputs(__s: *const c_char, __stream: *mut libc::FILE) -> c_int;
-    fn fileno(__stream: *mut libc::FILE) -> c_int;
-    fn memset(_: *mut c_void, _: c_int, _: usize) -> *mut c_void;
-    fn strcmp(_: *const c_char, _: *const c_char) -> c_int;
-    fn strerror(_: c_int) -> *mut c_char;
-    fn strcpy(_: *mut c_char, _: *const c_char) -> *mut c_char;
-    fn isatty(__fd: c_int) -> c_int;
     fn input_open(
         c_out: *mut *mut DemuxerContext,
         name: *const c_char,
@@ -203,14 +201,14 @@ unsafe extern "C" fn print_stats(
     if num == 0xffffffff as c_uint {
         b = b.offset(snprintf(
             b,
-            end.offset_from(b) as c_long as c_ulong,
+            end.offset_from(b) as usize,
             b"Decoded %u frames\0" as *const u8 as *const c_char,
             n,
         ) as isize);
     } else {
         b = b.offset(snprintf(
             b,
-            end.offset_from(b) as c_long as c_ulong,
+            end.offset_from(b) as usize,
             b"Decoded %u/%u frames (%.1lf%%)\0" as *const u8 as *const c_char,
             n,
             num,
@@ -223,7 +221,7 @@ unsafe extern "C" fn print_stats(
             let speed: c_double = d_fps / i_fps;
             b = b.offset(snprintf(
                 b,
-                end.offset_from(b) as c_long as c_ulong,
+                end.offset_from(b) as usize,
                 b" - %.2lf/%.2lf fps (%.2lfx)\0" as *const u8 as *const c_char,
                 d_fps,
                 i_fps,
@@ -232,7 +230,7 @@ unsafe extern "C" fn print_stats(
         } else {
             b = b.offset(snprintf(
                 b,
-                end.offset_from(b) as c_long as c_ulong,
+                end.offset_from(b) as usize,
                 b" - %.2lf fps\0" as *const u8 as *const c_char,
                 d_fps,
             ) as isize);

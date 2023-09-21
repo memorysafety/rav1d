@@ -25,6 +25,8 @@ use crate::src::levels::Z3_PRED;
 use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
+use libc::memcpy;
+use libc::memset;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -38,11 +40,6 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-use libc;
-extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: c_ulong) -> *mut c_void;
-    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
-}
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 extern "C" {
@@ -419,7 +416,7 @@ unsafe fn ipred_v_rust(
         memcpy(
             dst as *mut c_void,
             topleft.offset(1) as *const c_void,
-            width as c_ulong,
+            width as usize,
         );
         dst = dst.offset(stride as isize);
         y += 1;
@@ -464,7 +461,7 @@ unsafe fn ipred_h_rust(
         memset(
             dst as *mut c_void,
             *topleft.offset(-(1 + y) as isize) as c_int,
-            width as c_ulong,
+            width as usize,
         );
         dst = dst.offset(stride as isize);
         y += 1;
@@ -931,7 +928,7 @@ unsafe fn ipred_z1_rust(
                 memset(
                     &mut *dst.offset(x as isize) as *mut pixel as *mut c_void,
                     *top.offset(max_base_x as isize) as c_int,
-                    (width - x) as c_ulong,
+                    (width - x) as usize,
                 );
                 break;
             }
@@ -1019,7 +1016,7 @@ unsafe fn ipred_z2_rust(
             memcpy(
                 &mut *topleft.offset(1) as *mut pixel as *mut c_void,
                 &*topleft_in.offset(1) as *const pixel as *const c_void,
-                width as c_ulong,
+                width as usize,
             );
         }
     }
@@ -1053,7 +1050,7 @@ unsafe fn ipred_z2_rust(
             memcpy(
                 &mut *topleft.offset(-height as isize) as *mut pixel as *mut c_void,
                 &*topleft_in.offset(-height as isize) as *const pixel as *const c_void,
-                height as c_ulong,
+                height as usize,
             );
         }
     }
@@ -1340,7 +1337,7 @@ unsafe extern "C" fn cfl_ac_c(
         memcpy(
             ac as *mut c_void,
             &mut *ac.offset(-width as isize) as *mut i16 as *const c_void,
-            (width as c_ulong).wrapping_mul(::core::mem::size_of::<i16>() as c_ulong),
+            (width as usize).wrapping_mul(::core::mem::size_of::<i16>()),
         );
         ac = ac.offset(width as isize);
         y += 1;
@@ -1822,8 +1819,7 @@ unsafe fn ipred_z2_neon(
                 memcpy(
                     buf.as_mut_ptr().offset(top_offset + 1 + max_width as isize) as *mut c_void,
                     topleft_in.offset(1 + max_width as isize) as *const c_void,
-                    ((width - max_width) as c_ulong)
-                        .wrapping_mul(::core::mem::size_of::<pixel>() as c_ulong),
+                    ((width - max_width) as usize).wrapping_mul(::core::mem::size_of::<pixel>()),
                 );
             }
         } else {
@@ -1876,8 +1872,7 @@ unsafe fn ipred_z2_neon(
                     buf.as_mut_ptr()
                         .offset(flipped_offset + 1 + max_height as isize)
                         as *const c_void,
-                    ((height - max_height) as c_ulong)
-                        .wrapping_mul(::core::mem::size_of::<pixel>() as c_ulong),
+                    ((height - max_height) as usize).wrapping_mul(::core::mem::size_of::<pixel>()),
                 );
             }
         } else {
@@ -2007,8 +2002,7 @@ unsafe fn ipred_z1_neon(
             memcpy(
                 top_out.as_mut_ptr() as *mut c_void,
                 &*topleft_in.offset(1) as *const pixel as *const c_void,
-                ((max_base_x + 1) as c_ulong)
-                    .wrapping_mul(::core::mem::size_of::<pixel>() as c_ulong),
+                ((max_base_x + 1) as usize).wrapping_mul(::core::mem::size_of::<pixel>()),
             );
         }
     }

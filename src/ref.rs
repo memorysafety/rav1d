@@ -5,14 +5,10 @@ use crate::src::mem::dav1d_mem_pool_pop;
 use crate::src::mem::dav1d_mem_pool_push;
 use crate::src::mem::Dav1dMemPool;
 use crate::src::mem::Dav1dMemPoolBuffer;
+use libc::free;
+use libc::malloc;
 use std::ffi::c_int;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn malloc(_: c_ulong) -> *mut c_void;
-    fn free(_: *mut c_void);
-}
 
 #[repr(C)]
 pub struct Dav1dRef {
@@ -96,7 +92,7 @@ pub unsafe fn dav1d_ref_wrap(
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     user_data: *mut c_void,
 ) -> *mut Dav1dRef {
-    let res: *mut Dav1dRef = malloc(::core::mem::size_of::<Dav1dRef>() as c_ulong) as *mut Dav1dRef;
+    let res: *mut Dav1dRef = malloc(::core::mem::size_of::<Dav1dRef>()) as *mut Dav1dRef;
     if res.is_null() {
         return 0 as *mut Dav1dRef;
     }

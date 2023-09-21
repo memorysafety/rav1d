@@ -28,8 +28,12 @@ use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::dav1d_ref_wrap;
 use crate::src::r#ref::Dav1dRef;
 use crate::stderr;
+use libc::fprintf;
+use libc::free;
 use libc::malloc;
+use libc::memset;
 use libc::ptrdiff_t;
+use libc::strerror;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -37,10 +41,6 @@ use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 extern "C" {
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn free(_: *mut c_void);
-    fn memset(_: *mut c_void, _: c_int, _: usize) -> *mut c_void;
-    fn strerror(_: c_int) -> *mut c_char;
     fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
 }
 

@@ -86,6 +86,9 @@ use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
 use libc::intptr_t;
+use libc::memcpy;
+use libc::memset;
+use libc::printf;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_char;
@@ -96,9 +99,6 @@ use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: usize) -> *mut c_void;
-    fn memset(_: *mut c_void, _: c_int, _: usize) -> *mut c_void;
-    fn printf(_: *const c_char, _: ...) -> c_int;
     fn dav1d_cdef_brow_8bpc(
         tc: *mut Dav1dTaskContext,
         p: *const *mut pixel,

@@ -71,6 +71,11 @@ use crate::src::thread_task::dav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::stderr;
 use cfg_if::cfg_if;
+use libc::calloc;
+use libc::fprintf;
+use libc::free;
+use libc::memcpy;
+use libc::memset;
 use libc::pthread_attr_destroy;
 use libc::pthread_attr_init;
 use libc::pthread_attr_setstacksize;
@@ -95,15 +100,11 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 
+#[cfg(target_os = "linux")]
+use libc::dlsym;
+
 extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: usize) -> *mut c_void;
-    fn memset(_: *mut c_void, _: c_int, _: usize) -> *mut c_void;
-    #[cfg(target_os = "linux")]
-    fn dlsym(__handle: *mut c_void, __name: *const c_char) -> *mut c_void;
-    fn calloc(_: usize, _: usize) -> *mut c_void;
-    fn free(_: *mut c_void);
     fn abort() -> !;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
     fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> c_int;
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_apply_grain_16bpc(

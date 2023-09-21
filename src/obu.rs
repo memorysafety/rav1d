@@ -104,9 +104,12 @@ use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::tables::dav1d_default_wm_params;
 use crate::src::thread_task::FRAME_ERROR;
+use libc::memcmp;
+use libc::memset;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
+use libc::realloc;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
@@ -116,9 +119,6 @@ use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 extern "C" {
-    fn realloc(_: *mut c_void, _: usize) -> *mut c_void;
-    fn memset(_: *mut c_void, _: c_int, _: usize) -> *mut c_void;
-    fn memcmp(_: *const c_void, _: *const c_void, _: usize) -> c_int;
     fn dav1d_submit_frame(c: *mut Dav1dContext) -> c_int;
     fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
 }

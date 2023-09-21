@@ -1,3 +1,12 @@
+use libc::fprintf;
+use libc::memset;
+use libc::sprintf;
+use libc::strcat;
+use libc::strcmp;
+use libc::strcpy;
+use libc::strncmp;
+use libc::strtod;
+use libc::strtoul;
 use rav1d::include::dav1d::dav1d::Dav1dDecodeFrameType;
 use rav1d::include::dav1d::dav1d::Dav1dInloopFilterType;
 use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
@@ -31,17 +40,8 @@ extern "C" {
         __longopts: *const option,
         __longind: *mut c_int,
     ) -> c_int;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn sprintf(_: *mut c_char, _: *const c_char, _: ...) -> c_int;
     fn vfprintf(_: *mut libc::FILE, _: *const c_char, _: ::core::ffi::VaList) -> c_int;
-    fn strtod(_: *const c_char, _: *mut *mut c_char) -> c_double;
-    fn strtoul(_: *const c_char, _: *mut *mut c_char, _: c_int) -> c_ulong;
     fn exit(_: c_int) -> !;
-    fn strcpy(_: *mut c_char, _: *const c_char) -> *mut c_char;
-    fn strcat(_: *mut c_char, _: *const c_char) -> *mut c_char;
-    fn strcmp(_: *const c_char, _: *const c_char) -> c_int;
-    fn strncmp(_: *const c_char, _: *const c_char, _: c_ulong) -> c_int;
-    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
 }
 
 #[repr(C)]
@@ -605,12 +605,7 @@ unsafe extern "C" fn parse_enum(
     }
     let mut end: *mut c_char = 0 as *mut c_char;
     let res: c_uint;
-    if strncmp(
-        optarg_0,
-        b"0x\0" as *const u8 as *const c_char,
-        2 as c_int as c_ulong,
-    ) == 0
-    {
+    if strncmp(optarg_0, b"0x\0" as *const u8 as *const c_char, 2) == 0 {
         res = strtoul(&mut *optarg_0.offset(2), &mut end, 16 as c_int) as c_uint;
     } else {
         res = strtoul(optarg_0, &mut end, 0 as c_int) as c_uint;
@@ -636,7 +631,7 @@ pub unsafe extern "C" fn parse(
     memset(
         cli_settings as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<CLISettings>() as c_ulong,
+        ::core::mem::size_of::<CLISettings>(),
     );
     dav1d_default_settings(lib_settings);
     (*lib_settings).strict_std_compliance = 1 as c_int;

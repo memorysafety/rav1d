@@ -18,16 +18,12 @@ use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
 use crate::src::tables::dav1d_sgr_params;
+use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: c_ulong) -> *mut c_void;
-}
 
 pub type pixel = u8;
 
@@ -150,11 +146,7 @@ unsafe extern "C" fn backup4xU(
     mut u: c_int,
 ) {
     while u > 0 {
-        memcpy(
-            dst as *mut c_void,
-            src as *const c_void,
-            4 as c_int as c_ulong,
-        );
+        memcpy(dst as *mut c_void, src as *const c_void, 4);
         u -= 1;
         dst = dst.offset(1);
         src = src.offset(src_stride as isize);
