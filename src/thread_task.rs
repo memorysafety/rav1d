@@ -543,8 +543,7 @@ pub unsafe fn dav1d_task_create_tile_sbrow(
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
+pub unsafe fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
     let c: *const Dav1dContext = (*f).c;
     ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.init_done, 0 as c_int);
     let t: *mut Dav1dTask = &mut (*f).task_thread.init_task;

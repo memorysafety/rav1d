@@ -213,6 +213,7 @@ use crate::src::tables::dav1d_ymode_size_context;
 use crate::src::tables::interintra_allowed_mask;
 use crate::src::tables::wedge_allowed_mask;
 use crate::src::thread_task::dav1d_task_create_tile_sbrow;
+use crate::src::thread_task::dav1d_task_frame_init;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::src::thread_task::TILE_ERROR;
 use crate::src::warpmv::dav1d_find_affine_int;
@@ -326,7 +327,6 @@ extern "C" {
     fn dav1d_read_coef_blocks_8bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_read_coef_blocks_16bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
-    fn dav1d_task_frame_init(f: *mut Dav1dFrameContext);
 }
 
 fn init_quant_tables(
