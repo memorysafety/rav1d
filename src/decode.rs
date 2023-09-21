@@ -178,6 +178,7 @@ use crate::src::msac::dav1d_msac_init;
 use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_picture_ref;
 use crate::src::picture::dav1d_picture_unref_internal;
+use crate::src::picture::dav1d_thread_picture_alloc;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
@@ -266,11 +267,6 @@ extern "C" {
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
-    fn dav1d_thread_picture_alloc(
-        c: *mut Dav1dContext,
-        f: *mut Dav1dFrameContext,
-        bpc: c_int,
-    ) -> c_int;
     fn dav1d_picture_alloc_copy(
         c: *mut Dav1dContext,
         dst: *mut Dav1dPicture,

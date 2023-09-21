@@ -236,8 +236,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_thread_picture_alloc(
+pub unsafe fn dav1d_thread_picture_alloc(
     c: *mut Dav1dContext,
     f: *mut Dav1dFrameContext,
     bpc: c_int,
