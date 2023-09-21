@@ -1,7 +1,3 @@
-// TODO(kkysen)
-// In C, these are incomplete types.
-// This can be mimicked in Rust with type alias impl trait,
-// but that is still unstable, so the types are just `pub` for now.
 pub use crate::src::internal::Dav1dContext;
 pub use crate::src::r#ref::Dav1dRef;
 

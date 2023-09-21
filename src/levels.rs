@@ -209,6 +209,7 @@ impl mv {
         self == Self::INVALID
     }
 
+    #[allow(dead_code)]
     pub fn is_valid(self) -> bool {
         !self.is_invalid()
     }
@@ -391,6 +392,7 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed.y_angle
     }
 
+    #[allow(dead_code)]
     pub unsafe fn uv_angle(&self) -> i8 {
         self.c2rust_unnamed.c2rust_unnamed.uv_angle
     }
