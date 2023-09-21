@@ -461,8 +461,7 @@ unsafe extern "C" fn create_filter_sbrow(
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
+pub unsafe fn dav1d_task_create_tile_sbrow(
     f: *mut Dav1dFrameContext,
     pass: c_int,
     _cond_signal: c_int,
