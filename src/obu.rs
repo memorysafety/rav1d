@@ -1633,12 +1633,7 @@ unsafe extern "C" fn dav1d_parse_obus_skip(
     return len.wrapping_add(init_byte_pos) as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_parse_obus(
-    c: *mut Dav1dContext,
-    in_0: *mut Dav1dData,
-    global: c_int,
-) -> c_int {
+pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, global: c_int) -> c_int {
     let mut gb: GetBits = GetBits {
         state: 0,
         bits_left: 0,

@@ -53,6 +53,7 @@ use crate::src::mem::dav1d_freep_aligned;
 use crate::src::mem::dav1d_mem_pool_end;
 use crate::src::mem::dav1d_mem_pool_init;
 use crate::src::mem::freep;
+use crate::src::obu::dav1d_parse_obus;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::dav1d_picture_get_event_flags;
@@ -139,7 +140,6 @@ extern "C" {
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> c_int;
-    fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, global: c_int) -> c_int;
     fn dav1d_task_delayed_fg(
         c: *mut Dav1dContext,
         out: *mut Dav1dPicture,
