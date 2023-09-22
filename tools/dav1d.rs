@@ -19,6 +19,8 @@ mod output {
 mod dav1d_cli_parse;
 
 use crate::dav1d_cli_parse::CLISettings;
+use crate::dav1d_cli_parse::REALTIME_CUSTOM;
+use crate::dav1d_cli_parse::REALTIME_DISABLE;
 use libc::fclose;
 use libc::fflush;
 use libc::fileno;
@@ -106,11 +108,6 @@ extern "C" {
         lib_settings: *mut Dav1dSettings,
     );
 }
-
-pub type CLISettings_realtime = c_uint;
-pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
-pub const REALTIME_INPUT: CLISettings_realtime = 1;
-pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 
 unsafe extern "C" fn get_time_nanos() -> u64 {
     let mut ts: libc::timespec = libc::timespec {

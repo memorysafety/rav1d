@@ -52,6 +52,15 @@ pub struct option {
     pub val: c_int,
 }
 
+// TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
+// but are still marked as unused since `[[bin]]` are only supposed to be one file in `cargo`.
+pub type CLISettings_realtime = c_uint;
+#[allow(dead_code)]
+pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
+#[allow(dead_code)]
+pub const REALTIME_INPUT: CLISettings_realtime = 1;
+pub const REALTIME_DISABLE: CLISettings_realtime = 0;
+
 #[repr(C)]
 pub struct CLISettings {
     pub outputfile: *const c_char,
@@ -68,8 +77,6 @@ pub struct CLISettings {
     pub realtime_cache: c_uint,
     pub neg_stride: c_int,
 }
-
-pub type CLISettings_realtime = c_uint;
 
 #[repr(C)]
 pub struct EnumParseTable {

@@ -22,6 +22,7 @@ mod output {
 mod dav1d_cli_parse;
 
 use crate::dav1d_cli_parse::CLISettings;
+use crate::dav1d_cli_parse::REALTIME_DISABLE;
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -84,12 +85,6 @@ extern "C" {
         lib_settings: *mut Dav1dSettings,
     );
 }
-
-pub type CLISettings_realtime = c_uint;
-
-pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
-pub const REALTIME_INPUT: CLISettings_realtime = 1;
-pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 
 unsafe extern "C" fn get_seed() -> c_uint {
     let mut ts: libc::timespec = libc::timespec {
