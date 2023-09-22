@@ -9,7 +9,6 @@ use crate::src::decode::dav1d_decode_frame_exit;
 use crate::src::decode::dav1d_decode_frame_init;
 use crate::src::decode::dav1d_decode_frame_init_cdf;
 use crate::src::decode::dav1d_decode_tile_sbrow;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::internal::Dav1dContext;
 use crate::src::internal::Dav1dFrameContext;
 use crate::src::internal::Dav1dTask;
@@ -45,48 +44,22 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::process::abort;
 
+#[cfg(feature = "bitdepth_8")]
+use crate::{
+    src::fg_apply_tmpl_8::dav1d_apply_grain_row_8bpc, src::fg_apply_tmpl_8::dav1d_prep_grain_8bpc,
+};
+
+#[cfg(feature = "bitdepth_16")]
+use crate::{
+    src::fg_apply_tmpl_16::dav1d_apply_grain_row_16bpc,
+    src::fg_apply_tmpl_16::dav1d_prep_grain_16bpc,
+};
+
 #[cfg(target_os = "linux")]
 use libc::prctl;
 
 #[cfg(target_os = "macos")]
 use libc::pthread_setname_np;
-
-extern "C" {
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_prep_grain_8bpc(
-        dsp: *const Dav1dFilmGrainDSPContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-        scaling: *mut c_void,
-        grain_lut: *mut c_void,
-    );
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_prep_grain_16bpc(
-        dsp: *const Dav1dFilmGrainDSPContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-        scaling: *mut c_void,
-        grain_lut: *mut c_void,
-    );
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_apply_grain_row_16bpc(
-        dsp: *const Dav1dFilmGrainDSPContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-        scaling: *mut c_void,
-        grain_lut: *mut c_void,
-        row: c_int,
-    );
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_apply_grain_row_8bpc(
-        dsp: *const Dav1dFilmGrainDSPContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-        scaling: *mut c_void,
-        grain_lut: *mut c_void,
-        row: c_int,
-    );
-}
 
 pub const FRAME_ERROR: u32 = u32::MAX - 1;
 pub const TILE_ERROR: i32 = i32::MAX - 1;
@@ -779,14 +752,14 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                             .c2rust_unnamed
                             .scaling_8bpc
                             .0)
-                            .as_mut_ptr() as *mut c_void,
+                            .as_mut_ptr(),
                         ((*ttd)
                             .delayed_fg
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .grain_lut_8bpc
                             .0)
-                            .as_mut_ptr() as *mut c_void,
+                            .as_mut_ptr(),
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
@@ -801,14 +774,14 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                             .c2rust_unnamed_0
                             .scaling_16bpc
                             .0)
-                            .as_mut_ptr() as *mut c_void,
+                            .as_mut_ptr(),
                         ((*ttd)
                             .delayed_fg
                             .c2rust_unnamed
                             .c2rust_unnamed_0
                             .grain_lut_16bpc
                             .0)
-                            .as_mut_ptr() as *mut c_void,
+                            .as_mut_ptr(),
                     );
                 }
                 _ => {
@@ -854,14 +827,14 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                         .c2rust_unnamed
                         .scaling_8bpc
                         .0)
-                        .as_mut_ptr() as *mut c_void,
+                        .as_mut_ptr(),
                     ((*ttd)
                         .delayed_fg
                         .c2rust_unnamed
                         .c2rust_unnamed
                         .grain_lut_8bpc
                         .0)
-                        .as_mut_ptr() as *mut c_void,
+                        .as_mut_ptr(),
                     row,
                 );
             }
@@ -877,14 +850,14 @@ unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThrea
                         .c2rust_unnamed_0
                         .scaling_16bpc
                         .0)
-                        .as_mut_ptr() as *mut c_void,
+                        .as_mut_ptr(),
                     ((*ttd)
                         .delayed_fg
                         .c2rust_unnamed
                         .c2rust_unnamed_0
                         .grain_lut_16bpc
                         .0)
-                        .as_mut_ptr() as *mut c_void,
+                        .as_mut_ptr(),
                     row,
                 );
             }
