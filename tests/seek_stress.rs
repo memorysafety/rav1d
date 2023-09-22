@@ -20,6 +20,8 @@ mod output {
 } // mod output
 #[path = "../tools/dav1d_cli_parse.rs"]
 mod dav1d_cli_parse;
+
+use crate::dav1d_cli_parse::CLISettings;
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -81,23 +83,6 @@ extern "C" {
         cli_settings: *mut CLISettings,
         lib_settings: *mut Dav1dSettings,
     );
-}
-
-#[repr(C)]
-pub struct CLISettings {
-    pub outputfile: *const c_char,
-    pub inputfile: *const c_char,
-    pub demuxer: *const c_char,
-    pub muxer: *const c_char,
-    pub frametimes: *const c_char,
-    pub verify: *const c_char,
-    pub limit: c_uint,
-    pub skip: c_uint,
-    pub quiet: c_int,
-    pub realtime: CLISettings_realtime,
-    pub realtime_fps: c_double,
-    pub realtime_cache: c_uint,
-    pub neg_stride: c_int,
 }
 
 pub type CLISettings_realtime = c_uint;
