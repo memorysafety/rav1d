@@ -153,9 +153,7 @@ use crate::src::levels::WHT_WHT;
 
 use crate::src::tables::TxfmInfo;
 
-use crate::src::recon::define_DEBUG_BLOCK_INFO;
-
-define_DEBUG_BLOCK_INFO!();
+use crate::src::recon::DEBUG_BLOCK_INFO;
 
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {

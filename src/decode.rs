@@ -383,11 +383,9 @@ use crate::src::env::get_tx_ctx;
 use crate::src::msac::dav1d_msac_decode_bools;
 use crate::src::msac::dav1d_msac_decode_uniform;
 
-use crate::src::recon::define_DEBUG_BLOCK_INFO;
-
 use crate::src::internal::Dav1dTaskContext_scratch_pal;
 
-define_DEBUG_BLOCK_INFO!();
+use crate::src::recon::DEBUG_BLOCK_INFO;
 
 fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
