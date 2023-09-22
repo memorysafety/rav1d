@@ -1,5 +1,6 @@
 use libc::fprintf;
 use libc::memset;
+use libc::option;
 use libc::sprintf;
 use libc::strcat;
 use libc::strcmp;
@@ -42,14 +43,6 @@ extern "C" {
         __longind: *mut c_int,
     ) -> c_int;
     fn vfprintf(_: *mut libc::FILE, _: *const c_char, _: ::core::ffi::VaList) -> c_int;
-}
-
-#[repr(C)]
-pub struct option {
-    pub name: *const c_char,
-    pub has_arg: c_int,
-    pub flag: *mut c_int,
-    pub val: c_int,
 }
 
 // TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
