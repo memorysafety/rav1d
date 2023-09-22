@@ -18,6 +18,7 @@ mod output {
 } // mod output
 mod dav1d_cli_parse;
 
+use crate::dav1d_cli_parse::parse;
 use crate::dav1d_cli_parse::CLISettings;
 use crate::dav1d_cli_parse::REALTIME_CUSTOM;
 use crate::dav1d_cli_parse::REALTIME_DISABLE;
@@ -101,12 +102,6 @@ extern "C" {
     fn output_write(ctx: *mut MuxerContext, pic: *mut Dav1dPicture) -> c_int;
     fn output_close(ctx: *mut MuxerContext);
     fn output_verify(ctx: *mut MuxerContext, hash_string: *const c_char) -> c_int;
-    fn parse(
-        argc: c_int,
-        argv: *const *mut c_char,
-        cli_settings: *mut CLISettings,
-        lib_settings: *mut Dav1dSettings,
-    );
 }
 
 unsafe extern "C" fn get_time_nanos() -> u64 {

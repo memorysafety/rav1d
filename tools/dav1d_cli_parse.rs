@@ -627,8 +627,7 @@ unsafe extern "C" fn parse_enum(
     return res;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn parse(
+pub unsafe fn parse(
     argc: c_int,
     argv: *const *mut c_char,
     cli_settings: *mut CLISettings,

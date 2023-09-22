@@ -21,6 +21,7 @@ mod output {
 #[path = "../tools/dav1d_cli_parse.rs"]
 mod dav1d_cli_parse;
 
+use crate::dav1d_cli_parse::parse;
 use crate::dav1d_cli_parse::CLISettings;
 use crate::dav1d_cli_parse::REALTIME_DISABLE;
 use rav1d::include::dav1d::common::Dav1dDataProps;
@@ -78,12 +79,6 @@ extern "C" {
     fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> c_int;
     fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> c_int;
     fn input_close(ctx: *mut DemuxerContext);
-    fn parse(
-        argc: c_int,
-        argv: *const *mut c_char,
-        cli_settings: *mut CLISettings,
-        lib_settings: *mut Dav1dSettings,
-    );
 }
 
 unsafe extern "C" fn get_seed() -> c_uint {
