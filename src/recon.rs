@@ -4,6 +4,10 @@ use std::ops::BitOr;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Dav1dTaskContext;
+use crate::src::intra_edge::EdgeFlags;
+use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
@@ -57,6 +61,20 @@ macro_rules! define_DEBUG_BLOCK_INFO {
 }
 
 pub(crate) use define_DEBUG_BLOCK_INFO;
+
+pub type recon_b_intra_fn = Option<
+    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
+>;
+
+pub type recon_b_inter_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
+
+pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+
+pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
+
+pub type read_coef_blocks_fn =
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 
 #[inline]
 pub fn read_golomb(msac: &mut MsacContext) -> libc::c_uint {

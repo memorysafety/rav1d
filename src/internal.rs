@@ -1,9 +1,22 @@
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
+use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
+use crate::include::dav1d::dav1d::Dav1dEventFlags;
+use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
+use crate::include::dav1d::dav1d::Dav1dLogger;
+use crate::include::dav1d::headers::Dav1dContentLightLevel;
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::Dav1dITUTT35;
+use crate::include::dav1d::headers::Dav1dMasteringDisplay;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
+use crate::include::stddef::ptrdiff_t;
 use crate::include::stdint::int16_t;
 use crate::include::stdint::int32_t;
 use crate::include::stdint::int8_t;
@@ -12,13 +25,18 @@ use crate::include::stdint::uint8_t;
 use crate::src::align::*;
 use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
+use crate::src::cdf::CdfThreadContext;
+use crate::src::env::BlockContext;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::intra_edge::EdgeBranch;
+use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeTip;
 use crate::src::ipred::Dav1dIntraPredDSPContext;
 use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
+use crate::src::levels::BlockSize;
+use crate::src::levels::Filter2d;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
@@ -26,9 +44,20 @@ use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
 use crate::src::mc::Dav1dMCDSPContext;
+use crate::src::mem::Dav1dMemPool;
 use crate::src::msac::MsacContext;
 use crate::src::picture::Dav1dThreadPicture;
+use crate::src::picture::PictureFlags;
 use crate::src::r#ref::Dav1dRef;
+use crate::src::recon::backup_ipred_edge_fn;
+use crate::src::recon::filter_sbrow_fn;
+use crate::src::recon::read_coef_blocks_fn;
+use crate::src::recon::recon_b_inter_fn;
+use crate::src::recon::recon_b_intra_fn;
+use crate::src::refmvs::refmvs_frame;
+use crate::src::refmvs::refmvs_temporal_block;
+use crate::src::refmvs::refmvs_tile;
+use crate::src::refmvs::Dav1dRefmvsDSPContext;
 use crate::src::thread_data::thread_data;
 
 use libc::pthread_cond_t;
@@ -134,6 +163,63 @@ pub struct Dav1dContext_intra_edge {
     pub tip_sb64: [EdgeTip; 64],
 }
 
+#[repr(C)]
+pub struct Dav1dContext {
+    pub(crate) fc: *mut Dav1dFrameContext,
+    pub(crate) n_fc: libc::c_uint,
+    pub(crate) tc: *mut Dav1dTaskContext,
+    pub(crate) n_tc: libc::c_uint,
+    pub(crate) tile: *mut Dav1dTileGroup,
+    pub(crate) n_tile_data_alloc: libc::c_int,
+    pub(crate) n_tile_data: libc::c_int,
+    pub(crate) n_tiles: libc::c_int,
+    pub(crate) seq_hdr_pool: *mut Dav1dMemPool,
+    pub(crate) seq_hdr_ref: *mut Dav1dRef,
+    pub(crate) seq_hdr: *mut Dav1dSequenceHeader,
+    pub(crate) frame_hdr_pool: *mut Dav1dMemPool,
+    pub(crate) frame_hdr_ref: *mut Dav1dRef,
+    pub(crate) frame_hdr: *mut Dav1dFrameHeader,
+    pub(crate) content_light_ref: *mut Dav1dRef,
+    pub(crate) content_light: *mut Dav1dContentLightLevel,
+    pub(crate) mastering_display_ref: *mut Dav1dRef,
+    pub(crate) mastering_display: *mut Dav1dMasteringDisplay,
+    pub(crate) itut_t35_ref: *mut Dav1dRef,
+    pub(crate) itut_t35: *mut Dav1dITUTT35,
+    pub(crate) in_0: Dav1dData,
+    pub(crate) out: Dav1dThreadPicture,
+    pub(crate) cache: Dav1dThreadPicture,
+    pub(crate) flush_mem: atomic_int,
+    pub(crate) flush: *mut atomic_int,
+    pub(crate) frame_thread: Dav1dContext_frame_thread,
+    pub(crate) task_thread: TaskThreadData,
+    pub(crate) segmap_pool: *mut Dav1dMemPool,
+    pub(crate) refmvs_pool: *mut Dav1dMemPool,
+    pub(crate) refs: [Dav1dContext_refs; 8],
+    pub(crate) cdf_pool: *mut Dav1dMemPool,
+    pub(crate) cdf: [CdfThreadContext; 8],
+    pub(crate) dsp: [Dav1dDSPContext; 3],
+    pub(crate) refmvs_dsp: Dav1dRefmvsDSPContext,
+    pub(crate) intra_edge: Dav1dContext_intra_edge,
+    pub(crate) allocator: Dav1dPicAllocator,
+    pub(crate) apply_grain: libc::c_int,
+    pub(crate) operating_point: libc::c_int,
+    pub(crate) operating_point_idc: libc::c_uint,
+    pub(crate) all_layers: libc::c_int,
+    pub(crate) max_spatial_id: libc::c_int,
+    pub(crate) frame_size_limit: libc::c_uint,
+    pub(crate) strict_std_compliance: libc::c_int,
+    pub(crate) output_invisible_frames: libc::c_int,
+    pub(crate) inloop_filters: Dav1dInloopFilterType,
+    pub(crate) decode_frame_type: Dav1dDecodeFrameType,
+    pub(crate) drain: libc::c_int,
+    pub(crate) frame_flags: PictureFlags,
+    pub(crate) event_flags: Dav1dEventFlags,
+    pub(crate) cached_error_props: Dav1dDataProps,
+    pub(crate) cached_error: libc::c_int,
+    pub(crate) logger: Dav1dLogger,
+    pub(crate) picture_pool: *mut Dav1dMemPool,
+}
+
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dTask {
@@ -150,6 +236,50 @@ pub struct Dav1dTask {
 pub struct ScalableMotionParams {
     pub scale: libc::c_int,
     pub step: libc::c_int,
+}
+
+#[repr(C)]
+pub struct Dav1dFrameContext_bd_fn {
+    pub recon_b_intra: recon_b_intra_fn,
+    pub recon_b_inter: recon_b_inter_fn,
+    pub filter_sbrow: filter_sbrow_fn,
+    pub filter_sbrow_deblock_cols: filter_sbrow_fn,
+    pub filter_sbrow_deblock_rows: filter_sbrow_fn,
+    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Dav1dTaskContext, libc::c_int) -> ()>,
+    pub filter_sbrow_resize: filter_sbrow_fn,
+    pub filter_sbrow_lr: filter_sbrow_fn,
+    pub backup_ipred_edge: backup_ipred_edge_fn,
+    pub read_coef_blocks: read_coef_blocks_fn,
+}
+
+impl Dav1dFrameContext_bd_fn {
+    pub unsafe fn recon_b_intra(
+        &self,
+        context: *mut Dav1dTaskContext,
+        block_size: BlockSize,
+        flags: EdgeFlags,
+        block: *const Av1Block,
+    ) {
+        self.recon_b_intra.expect("non-null function pointer")(context, block_size, flags, block);
+    }
+
+    pub unsafe fn recon_b_inter(
+        &self,
+        context: *mut Dav1dTaskContext,
+        block_size: BlockSize,
+        block: *const Av1Block,
+    ) -> libc::c_int {
+        self.recon_b_inter.expect("non-null function pointer")(context, block_size, block)
+    }
+
+    pub unsafe fn read_coef_blocks(
+        &self,
+        context: *mut Dav1dTaskContext,
+        block_size: BlockSize,
+        block: *const Av1Block,
+    ) {
+        self.read_coef_blocks.expect("non-null function pointer")(context, block_size, block);
+    }
 }
 
 #[repr(C)]
@@ -241,6 +371,65 @@ pub struct Dav1dFrameContext_task_thread {
 pub struct FrameTileThreadData {
     pub lowest_pixel_mem: *mut [[libc::c_int; 2]; 7],
     pub lowest_pixel_mem_sz: libc::c_int,
+}
+
+#[repr(C)]
+pub struct Dav1dFrameContext {
+    pub seq_hdr_ref: *mut Dav1dRef,
+    pub seq_hdr: *mut Dav1dSequenceHeader,
+    pub frame_hdr_ref: *mut Dav1dRef,
+    pub frame_hdr: *mut Dav1dFrameHeader,
+    pub refp: [Dav1dThreadPicture; 7],
+    pub cur: Dav1dPicture,
+    pub sr_cur: Dav1dThreadPicture,
+    pub mvs_ref: *mut Dav1dRef,
+    pub mvs: *mut refmvs_temporal_block,
+    pub ref_mvs: [*mut refmvs_temporal_block; 7],
+    pub ref_mvs_ref: [*mut Dav1dRef; 7],
+    pub cur_segmap_ref: *mut Dav1dRef,
+    pub prev_segmap_ref: *mut Dav1dRef,
+    pub cur_segmap: *mut uint8_t,
+    pub prev_segmap: *const uint8_t,
+    pub refpoc: [libc::c_uint; 7],
+    pub refrefpoc: [[libc::c_uint; 7]; 7],
+    pub gmv_warp_allowed: [uint8_t; 7],
+    pub in_cdf: CdfThreadContext,
+    pub out_cdf: CdfThreadContext,
+    pub tile: *mut Dav1dTileGroup,
+    pub n_tile_data_alloc: libc::c_int,
+    pub n_tile_data: libc::c_int,
+    pub svc: [[ScalableMotionParams; 2]; 7],
+    pub resize_step: [libc::c_int; 2],
+    pub resize_start: [libc::c_int; 2],
+    pub c: *const Dav1dContext,
+    pub ts: *mut Dav1dTileState,
+    pub n_ts: libc::c_int,
+    pub dsp: *const Dav1dDSPContext,
+    pub bd_fn: Dav1dFrameContext_bd_fn,
+    pub ipred_edge_sz: libc::c_int,
+    pub ipred_edge: [*mut DynPixel; 3],
+    pub b4_stride: ptrdiff_t,
+    pub w4: libc::c_int,
+    pub h4: libc::c_int,
+    pub bw: libc::c_int,
+    pub bh: libc::c_int,
+    pub sb128w: libc::c_int,
+    pub sb128h: libc::c_int,
+    pub sbh: libc::c_int,
+    pub sb_shift: libc::c_int,
+    pub sb_step: libc::c_int,
+    pub sr_sb128w: libc::c_int,
+    pub dq: [[[uint16_t; 2]; 3]; 8],
+    pub qm: [[*const uint8_t; 3]; 19],
+    pub a: *mut BlockContext,
+    pub a_sz: libc::c_int,
+    pub rf: refmvs_frame,
+    pub jnt_weights: [[uint8_t; 7]; 7],
+    pub bitdepth_max: libc::c_int,
+    pub frame_thread: Dav1dFrameContext_frame_thread,
+    pub lf: Dav1dFrameContext_lf,
+    pub task_thread: Dav1dFrameContext_task_thread,
+    pub tile_thread: FrameTileThreadData,
 }
 
 #[repr(C)]
@@ -374,4 +563,28 @@ pub struct Dav1dTaskContext_task_thread {
     pub fttd: *mut FrameTileThreadData,
     pub flushed: bool,
     pub die: bool,
+}
+
+#[repr(C)]
+pub struct Dav1dTaskContext {
+    pub c: *const Dav1dContext,
+    pub f: *const Dav1dFrameContext,
+    pub ts: *mut Dav1dTileState,
+    pub bx: libc::c_int,
+    pub by: libc::c_int,
+    pub l: BlockContext,
+    pub a: *mut BlockContext,
+    pub rt: refmvs_tile,
+    pub c2rust_unnamed: Dav1dTaskContext_cf,
+    pub al_pal: [[[[uint16_t; 8]; 3]; 32]; 2],
+    pub pal_sz_uv: [[uint8_t; 32]; 2],
+    pub txtp_map: [uint8_t; 1024],
+    pub scratch: Dav1dTaskContext_scratch,
+    pub warpmv: Dav1dWarpedMotionParams,
+    pub lf_mask: *mut Av1Filter,
+    pub top_pre_cdef_toggle: libc::c_int,
+    pub cur_sb_cdef_idx_ptr: *mut int8_t,
+    pub tl_4x4_filter: Filter2d,
+    pub frame_thread: Dav1dTaskContext_frame_thread,
+    pub task_thread: Dav1dTaskContext_task_thread,
 }

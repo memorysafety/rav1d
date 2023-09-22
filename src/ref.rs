@@ -8,12 +8,12 @@ extern "C" {
 
 #[repr(C)]
 pub struct Dav1dRef {
-    pub data: *mut libc::c_void,
-    pub const_data: *const libc::c_void,
-    pub ref_cnt: atomic_int,
-    pub free_ref: libc::c_int,
-    pub free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
-    pub user_data: *mut libc::c_void,
+    pub(crate) data: *mut libc::c_void,
+    pub(crate) const_data: *const libc::c_void,
+    pub(crate) ref_cnt: atomic_int,
+    pub(crate) free_ref: libc::c_int,
+    pub(crate) free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
+    pub(crate) user_data: *mut libc::c_void,
 }
 use crate::include::stdatomic::atomic_int;
 

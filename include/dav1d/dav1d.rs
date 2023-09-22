@@ -1,3 +1,6 @@
+pub use crate::src::internal::Dav1dContext;
+pub use crate::src::r#ref::Dav1dRef;
+
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dLogger {

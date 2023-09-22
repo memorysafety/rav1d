@@ -2,9 +2,9 @@
 #![allow(non_upper_case_globals)]
 #![feature(extern_types)]
 #![feature(c_variadic)]
+use crate::include::dav1d::dav1d::Dav1dRef;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use crate::src::r#ref::Dav1dRef;
 use ::rav1d::*;
 mod input {
     mod annexb;
