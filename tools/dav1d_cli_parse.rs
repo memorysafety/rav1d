@@ -1,4 +1,5 @@
 use libc::fprintf;
+use libc::getopt_long;
 use libc::memset;
 use libc::option;
 use libc::sprintf;
@@ -35,13 +36,6 @@ use std::process::exit;
 extern "C" {
     static mut optarg: *mut c_char;
     static mut optind: c_int;
-    fn getopt_long(
-        ___argc: c_int,
-        ___argv: *const *mut c_char,
-        __shortopts: *const c_char,
-        __longopts: *const option,
-        __longind: *mut c_int,
-    ) -> c_int;
     fn vfprintf(_: *mut libc::FILE, _: *const c_char, _: ::core::ffi::VaList) -> c_int;
 }
 
