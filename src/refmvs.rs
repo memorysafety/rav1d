@@ -1187,8 +1187,7 @@ pub unsafe fn dav1d_refmvs_tile_sbrow_init(
     (*rt).tile_col.end = cmp::min(tile_col_end4, (*rf).iw4);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn load_tmvs_c(
+unsafe extern "C" fn load_tmvs_c(
     rf: *const refmvs_frame,
     mut tile_row_idx: c_int,
     col_start8: c_int,
@@ -1306,8 +1305,7 @@ pub unsafe extern "C" fn load_tmvs_c(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn save_tmvs_c(
+unsafe extern "C" fn save_tmvs_c(
     mut rp: *mut refmvs_temporal_block,
     stride: ptrdiff_t,
     rr: *const *const refmvs_block,
