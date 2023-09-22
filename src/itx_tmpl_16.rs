@@ -1039,10 +1039,9 @@ unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int
         Some(dav1d_inv_txfm_add_dct_dct_64x64_16bpc_neon);
 }
 
-#[no_mangle]
 #[cold]
 #[rustfmt::skip]
-pub unsafe extern "C" fn dav1d_itx_dsp_init_16bpc(
+pub unsafe fn dav1d_itx_dsp_init_16bpc(
     c: *mut Dav1dInvTxfmDSPContext,
     mut _bpc: c_int,
 ) {

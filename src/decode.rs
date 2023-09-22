@@ -33,7 +33,6 @@ use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
-use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdf::dav1d_cdf_thread_alloc;
 use crate::src::cdf::dav1d_cdf_thread_copy;
 use crate::src::cdf::dav1d_cdf_thread_init_static;
@@ -69,7 +68,6 @@ use crate::src::env::get_partition_ctx;
 use crate::src::env::get_poc_diff;
 use crate::src::env::get_tx_ctx;
 use crate::src::env::BlockContext;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Dav1dContext;
 use crate::src::internal::Dav1dFrameContext;
@@ -83,8 +81,6 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeTip;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-use crate::src::ipred::Dav1dIntraPredDSPContext;
-use crate::src::itx::Dav1dInvTxfmDSPContext;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BS_128x128;
@@ -157,7 +153,6 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::dav1d_log;
-use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
 use crate::src::mc::dav1d_mc_dsp_init;
 use crate::src::mem::dav1d_alloc_aligned;
@@ -242,33 +237,24 @@ use std::slice;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::Ordering;
 
-#[cfg(feature = "bitdepth_16")]
-use crate::include::common::bitdepth::BitDepth16;
-
 #[cfg(feature = "bitdepth_8")]
-use crate::include::common::bitdepth::BitDepth8;
+use crate::{
+    include::common::bitdepth::BitDepth8, src::cdef_tmpl_8::dav1d_cdef_dsp_init_8bpc,
+    src::filmgrain_tmpl_8::dav1d_film_grain_dsp_init_8bpc,
+    src::ipred_tmpl_8::dav1d_intra_pred_dsp_init_8bpc, src::itx_tmpl_8::dav1d_itx_dsp_init_8bpc,
+    src::loopfilter_tmpl_8::dav1d_loop_filter_dsp_init_8bpc,
+};
+
+#[cfg(feature = "bitdepth_16")]
+use crate::{
+    include::common::bitdepth::BitDepth16, src::cdef_tmpl_16::dav1d_cdef_dsp_init_16bpc,
+    src::filmgrain_tmpl_16::dav1d_film_grain_dsp_init_16bpc,
+    src::ipred_tmpl_16::dav1d_intra_pred_dsp_init_16bpc,
+    src::itx_tmpl_16::dav1d_itx_dsp_init_16bpc,
+    src::loopfilter_tmpl_16::dav1d_loop_filter_dsp_init_16bpc,
+};
 
 extern "C" {
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_film_grain_dsp_init_8bpc(c: *mut Dav1dFilmGrainDSPContext);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_film_grain_dsp_init_16bpc(c: *mut Dav1dFilmGrainDSPContext);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_intra_pred_dsp_init_8bpc(c: *mut Dav1dIntraPredDSPContext);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_intra_pred_dsp_init_16bpc(c: *mut Dav1dIntraPredDSPContext);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_itx_dsp_init_8bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_itx_dsp_init_16bpc(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_recon_b_intra_8bpc(
         t: *mut Dav1dTaskContext,

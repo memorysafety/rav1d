@@ -675,9 +675,8 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased(
     );
 }
 
-#[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext) {
+pub unsafe fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext) {
     (*c).dir = cdef_find_dir_c_erased;
     (*c).fb[0] = cdef_filter_block_8x8_c_erased;
     (*c).fb[1] = cdef_filter_block_4x8_c_erased;

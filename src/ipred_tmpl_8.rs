@@ -2036,9 +2036,8 @@ unsafe fn ipred_z1_neon(
     };
 }
 
-#[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_intra_pred_dsp_init_8bpc(c: *mut Dav1dIntraPredDSPContext) {
+pub unsafe fn dav1d_intra_pred_dsp_init_8bpc(c: *mut Dav1dIntraPredDSPContext) {
     (*c).intra_pred[DC_PRED as usize] = Some(ipred_dc_c_erased);
     (*c).intra_pred[DC_128_PRED as usize] = Some(ipred_dc_128_c_erased);
     (*c).intra_pred[TOP_DC_PRED as usize] = Some(ipred_dc_top_c_erased);
