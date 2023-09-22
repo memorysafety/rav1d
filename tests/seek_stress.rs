@@ -24,6 +24,10 @@ mod dav1d_cli_parse;
 use crate::dav1d_cli_parse::parse;
 use crate::dav1d_cli_parse::CLISettings;
 use crate::dav1d_cli_parse::REALTIME_DISABLE;
+use crate::input::input::input_close;
+use crate::input::input::input_open;
+use crate::input::input::input_read;
+use crate::input::input::input_seek;
 use crate::input::input::DemuxerContext;
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
@@ -66,20 +70,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn input_open(
-        c_out: *mut *mut DemuxerContext,
-        name: *const c_char,
-        filename: *const c_char,
-        fps: *mut c_uint,
-        num_frames: *mut c_uint,
-        timebase: *mut c_uint,
-    ) -> c_int;
-    fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> c_int;
-    fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> c_int;
-    fn input_close(ctx: *mut DemuxerContext);
-}
 
 unsafe extern "C" fn get_seed() -> c_uint {
     let mut ts: libc::timespec = libc::timespec {

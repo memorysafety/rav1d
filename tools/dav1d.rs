@@ -22,7 +22,14 @@ use crate::dav1d_cli_parse::parse;
 use crate::dav1d_cli_parse::CLISettings;
 use crate::dav1d_cli_parse::REALTIME_CUSTOM;
 use crate::dav1d_cli_parse::REALTIME_DISABLE;
+use crate::input::input::input_close;
+use crate::input::input::input_open;
+use crate::input::input::input_read;
 use crate::input::input::DemuxerContext;
+use crate::output::output::output_close;
+use crate::output::output::output_open;
+use crate::output::output::output_verify;
+use crate::output::output::output_write;
 use crate::output::output::MuxerContext;
 use libc::fclose;
 use libc::fflush;
@@ -80,29 +87,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn input_open(
-        c_out: *mut *mut DemuxerContext,
-        name: *const c_char,
-        filename: *const c_char,
-        fps: *mut c_uint,
-        num_frames: *mut c_uint,
-        timebase: *mut c_uint,
-    ) -> c_int;
-    fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> c_int;
-    fn input_close(ctx: *mut DemuxerContext);
-    fn output_open(
-        c: *mut *mut MuxerContext,
-        name: *const c_char,
-        filename: *const c_char,
-        p: *const Dav1dPictureParameters,
-        fps: *const c_uint,
-    ) -> c_int;
-    fn output_write(ctx: *mut MuxerContext, pic: *mut Dav1dPicture) -> c_int;
-    fn output_close(ctx: *mut MuxerContext);
-    fn output_verify(ctx: *mut MuxerContext, hash_string: *const c_char) -> c_int;
-}
 
 unsafe extern "C" fn get_time_nanos() -> u64 {
     let mut ts: libc::timespec = libc::timespec {
