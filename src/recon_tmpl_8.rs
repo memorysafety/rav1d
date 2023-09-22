@@ -1516,7 +1516,6 @@ unsafe extern "C" fn read_coef_tree(
     };
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -2210,7 +2209,6 @@ unsafe extern "C" fn warp_affine(
     return 0 as c_int;
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -2947,7 +2945,6 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -4178,7 +4175,6 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
     return 0 as c_int;
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_8bpc(
     f: *mut Dav1dFrameContext,
     sby: c_int,
@@ -4208,7 +4204,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_8bpc(
     );
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_8bpc(
     f: *mut Dav1dFrameContext,
     sby: c_int,
@@ -4234,7 +4229,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_8bpc(
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext, sby: c_int) {
     let f: *const Dav1dFrameContext = (*tc).f;
     if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
@@ -4277,7 +4271,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext,
     dav1d_cdef_brow_8bpc(tc, p.as_ptr(), mask, start, end, 0 as c_int, sby);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(f: *mut Dav1dFrameContext, sby: c_int) {
     let sbsz = (*f).sb_step;
     let y = sby * sbsz * 4;
@@ -4335,7 +4328,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(f: *mut Dav1dFrameContex
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, sby: c_int) {
     if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
         return;
@@ -4353,7 +4345,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, s
     dav1d_lr_sbrow_8bpc(f, sr_p.as_ptr(), sby);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby: c_int) {
     dav1d_filter_sbrow_deblock_cols_8bpc(f, sby);
     dav1d_filter_sbrow_deblock_rows_8bpc(f, sby);
@@ -4368,7 +4359,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby:
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_backup_ipred_edge_8bpc(t: *mut Dav1dTaskContext) {
     let f: *const Dav1dFrameContext = (*t).f;
     let ts: *mut Dav1dTileState = (*t).ts;

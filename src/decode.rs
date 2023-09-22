@@ -243,6 +243,14 @@ use crate::{
     src::filmgrain_tmpl_8::dav1d_film_grain_dsp_init_8bpc,
     src::ipred_tmpl_8::dav1d_intra_pred_dsp_init_8bpc, src::itx_tmpl_8::dav1d_itx_dsp_init_8bpc,
     src::loopfilter_tmpl_8::dav1d_loop_filter_dsp_init_8bpc,
+    src::recon_tmpl_8::dav1d_backup_ipred_edge_8bpc, src::recon_tmpl_8::dav1d_filter_sbrow_8bpc,
+    src::recon_tmpl_8::dav1d_filter_sbrow_cdef_8bpc,
+    src::recon_tmpl_8::dav1d_filter_sbrow_deblock_cols_8bpc,
+    src::recon_tmpl_8::dav1d_filter_sbrow_deblock_rows_8bpc,
+    src::recon_tmpl_8::dav1d_filter_sbrow_lr_8bpc,
+    src::recon_tmpl_8::dav1d_filter_sbrow_resize_8bpc,
+    src::recon_tmpl_8::dav1d_read_coef_blocks_8bpc, src::recon_tmpl_8::dav1d_recon_b_inter_8bpc,
+    src::recon_tmpl_8::dav1d_recon_b_intra_8bpc,
 };
 
 #[cfg(feature = "bitdepth_16")]
@@ -252,68 +260,16 @@ use crate::{
     src::ipred_tmpl_16::dav1d_intra_pred_dsp_init_16bpc,
     src::itx_tmpl_16::dav1d_itx_dsp_init_16bpc,
     src::loopfilter_tmpl_16::dav1d_loop_filter_dsp_init_16bpc,
+    src::recon_tmpl_16::dav1d_backup_ipred_edge_16bpc,
+    src::recon_tmpl_16::dav1d_filter_sbrow_16bpc,
+    src::recon_tmpl_16::dav1d_filter_sbrow_cdef_16bpc,
+    src::recon_tmpl_16::dav1d_filter_sbrow_deblock_cols_16bpc,
+    src::recon_tmpl_16::dav1d_filter_sbrow_deblock_rows_16bpc,
+    src::recon_tmpl_16::dav1d_filter_sbrow_lr_16bpc,
+    src::recon_tmpl_16::dav1d_filter_sbrow_resize_16bpc,
+    src::recon_tmpl_16::dav1d_read_coef_blocks_16bpc,
+    src::recon_tmpl_16::dav1d_recon_b_inter_16bpc, src::recon_tmpl_16::dav1d_recon_b_intra_16bpc,
 };
-
-extern "C" {
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_recon_b_intra_8bpc(
-        t: *mut Dav1dTaskContext,
-        bs: BlockSize,
-        intra_edge_flags: EdgeFlags,
-        b: *const Av1Block,
-    );
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_recon_b_intra_16bpc(
-        t: *mut Dav1dTaskContext,
-        bs: BlockSize,
-        intra_edge_flags: EdgeFlags,
-        b: *const Av1Block,
-    );
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_recon_b_inter_8bpc(
-        t: *mut Dav1dTaskContext,
-        bs: BlockSize,
-        b: *const Av1Block,
-    ) -> c_int;
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_recon_b_inter_16bpc(
-        t: *mut Dav1dTaskContext,
-        bs: BlockSize,
-        b: *const Av1Block,
-    ) -> c_int;
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_filter_sbrow_16bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_filter_sbrow_deblock_cols_8bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_filter_sbrow_deblock_cols_16bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_filter_sbrow_deblock_rows_8bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_filter_sbrow_deblock_rows_16bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext, sby: c_int);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_filter_sbrow_cdef_16bpc(tc: *mut Dav1dTaskContext, sby: c_int);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_filter_sbrow_resize_8bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_filter_sbrow_resize_16bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_filter_sbrow_lr_16bpc(f: *mut Dav1dFrameContext, sby: c_int);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_backup_ipred_edge_8bpc(t: *mut Dav1dTaskContext);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_backup_ipred_edge_16bpc(t: *mut Dav1dTaskContext);
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_read_coef_blocks_8bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_read_coef_blocks_16bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
-}
 
 fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,

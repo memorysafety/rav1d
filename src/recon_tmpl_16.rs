@@ -2226,7 +2226,6 @@ unsafe extern "C" fn warp_affine(
     return 0 as c_int;
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -2971,7 +2970,6 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_16bpc(
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
     t: *mut Dav1dTaskContext,
     bs: BlockSize,
@@ -4209,7 +4207,6 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_16bpc(
     return 0 as c_int;
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_16bpc(
     f: *mut Dav1dFrameContext,
     sby: c_int,
@@ -4241,7 +4238,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_16bpc(
     );
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_16bpc(
     f: *mut Dav1dFrameContext,
     sby: c_int,
@@ -4269,7 +4265,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_16bpc(
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_16bpc(tc: *mut Dav1dTaskContext, sby: c_int) {
     let f: *const Dav1dFrameContext = (*tc).f;
     if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
@@ -4314,7 +4309,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_16bpc(tc: *mut Dav1dTaskContext
     dav1d_cdef_brow_16bpc(tc, p.as_ptr(), mask, start, end, 0 as c_int, sby);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_resize_16bpc(f: *mut Dav1dFrameContext, sby: c_int) {
     let sbsz = (*f).sb_step;
     let y = sby * sbsz * 4;
@@ -4374,7 +4368,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_resize_16bpc(f: *mut Dav1dFrameConte
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_lr_16bpc(f: *mut Dav1dFrameContext, sby: c_int) {
     if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
         return;
@@ -4392,7 +4385,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_lr_16bpc(f: *mut Dav1dFrameContext, 
     dav1d_lr_sbrow_16bpc(f, sr_p.as_ptr(), sby);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_filter_sbrow_16bpc(f: *mut Dav1dFrameContext, sby: c_int) {
     dav1d_filter_sbrow_deblock_cols_16bpc(f, sby);
     dav1d_filter_sbrow_deblock_rows_16bpc(f, sby);
@@ -4407,7 +4399,6 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_16bpc(f: *mut Dav1dFrameContext, sby
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_backup_ipred_edge_16bpc(t: *mut Dav1dTaskContext) {
     let f: *const Dav1dFrameContext = (*t).f;
     let ts: *mut Dav1dTileState = (*t).ts;
