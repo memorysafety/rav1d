@@ -53,7 +53,7 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: c_int, num: c_int) {
     }
 }
 
-static mut av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
+static av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
     [[DC_128_PRED, TOP_DC_PRED], [LEFT_DC_PRED, DC_PRED]],
     [[0; 2]; 2],
     [[0; 2]; 2],
@@ -69,7 +69,7 @@ static mut av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
     [[DC_128_PRED, VERT_PRED], [HOR_PRED, PAETH_PRED]],
 ];
 
-static mut av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
+static av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
 
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {

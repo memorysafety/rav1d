@@ -98,7 +98,7 @@ pub type arg = c_uint;
 
 pub type CpuMask = c_uint;
 
-static mut short_opts: [c_char; 11] =
+static short_opts: [c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"i:o:vql:s:\0") };
 
 static mut long_opts: [option; 25] = [

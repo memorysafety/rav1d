@@ -50,7 +50,7 @@ pub struct Demuxer {
 
 pub type IvfInputContext = DemuxerPriv;
 
-static mut probe_data: [u8; 12] = [
+static probe_data: [u8; 12] = [
     b'D', b'K', b'I', b'F', 0, 0, 0x20, 0, b'A', b'V', b'0', b'1',
 ];
 

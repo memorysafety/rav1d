@@ -476,7 +476,7 @@ unsafe extern "C" fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
     return k;
 }
 
-static mut default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = Dav1dLoopfilterModeRefDeltas {
+static default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = Dav1dLoopfilterModeRefDeltas {
     mode_delta: [0, 0],
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };

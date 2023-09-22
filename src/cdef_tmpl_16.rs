@@ -435,7 +435,7 @@ unsafe fn cdef_find_dir_rust(
     }
     cost[2] = (cost[2]).wrapping_mul(105 as c_int as c_uint);
     cost[6] = (cost[6]).wrapping_mul(105 as c_int as c_uint);
-    static mut div_table: [u16; 7] = [840, 420, 280, 210, 168, 140, 120];
+    static div_table: [u16; 7] = [840, 420, 280, 210, 168, 140, 120];
     let mut n_0 = 0;
     while n_0 < 7 {
         let d = div_table[n_0 as usize] as c_int;

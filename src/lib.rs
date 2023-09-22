@@ -218,7 +218,7 @@ unsafe extern "C" fn get_num_threads(
     n_tc: *mut c_uint,
     n_fc: *mut c_uint,
 ) {
-    static mut fc_lut: [u8; 49] = [
+    static fc_lut: [u8; 49] = [
         1, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     ];
