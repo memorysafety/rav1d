@@ -155,8 +155,7 @@ unsafe extern "C" fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
     return strength * (4 + i) + 8 >> 4;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
+pub unsafe fn dav1d_cdef_brow_16bpc(
     tc: *mut Dav1dTaskContext,
     p: *const *mut pixel,
     lflvl: *const Av1Filter,

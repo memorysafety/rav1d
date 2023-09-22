@@ -13,6 +13,7 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
+use crate::src::cdef_apply_tmpl_8::dav1d_cdef_brow_8bpc;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::CodedBlockInfo;
@@ -27,6 +28,7 @@ use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
+use crate::src::ipred_prepare_tmpl_8::dav1d_prepare_intra_edges_8bpc;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
@@ -58,7 +60,11 @@ use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_V;
 use crate::src::levels::WHT_WHT;
+use crate::src::lf_apply_tmpl_8::dav1d_copy_lpf_8bpc;
+use crate::src::lf_apply_tmpl_8::dav1d_loopfilter_sbrow_cols_8bpc;
+use crate::src::lf_apply_tmpl_8::dav1d_loopfilter_sbrow_rows_8bpc;
 use crate::src::lf_mask::Av1Filter;
+use crate::src::lr_apply_tmpl_8::dav1d_lr_sbrow_8bpc;
 use crate::src::msac::dav1d_msac_decode_bool_adapt;
 use crate::src::msac::dav1d_msac_decode_bool_equi;
 use crate::src::msac::dav1d_msac_decode_bools;
@@ -97,51 +103,6 @@ use std::ffi::c_longlong;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn dav1d_cdef_brow_8bpc(
-        tc: *mut Dav1dTaskContext,
-        p: *const *mut pixel,
-        lflvl: *const Av1Filter,
-        by_start: c_int,
-        by_end: c_int,
-        sbrow_start: c_int,
-        sby: c_int,
-    );
-    fn dav1d_prepare_intra_edges_8bpc(
-        x: c_int,
-        have_left: c_int,
-        y: c_int,
-        have_top: c_int,
-        w: c_int,
-        h: c_int,
-        edge_flags: EdgeFlags,
-        dst: *const pixel,
-        stride: ptrdiff_t,
-        prefilter_toplevel_sb_edge: *const pixel,
-        mode: IntraPredMode,
-        angle: *mut c_int,
-        tw: c_int,
-        th: c_int,
-        filter_edge: c_int,
-        topleft_out: *mut pixel,
-    ) -> IntraPredMode;
-    fn dav1d_loopfilter_sbrow_cols_8bpc(
-        f: *const Dav1dFrameContext,
-        p: *const *mut pixel,
-        lflvl: *mut Av1Filter,
-        sby: c_int,
-        start_of_tile_row: c_int,
-    );
-    fn dav1d_loopfilter_sbrow_rows_8bpc(
-        f: *const Dav1dFrameContext,
-        p: *const *mut pixel,
-        lflvl: *mut Av1Filter,
-        sby: c_int,
-    );
-    fn dav1d_copy_lpf_8bpc(f: *mut Dav1dFrameContext, src: *const *mut pixel, sby: c_int);
-    fn dav1d_lr_sbrow_8bpc(f: *mut Dav1dFrameContext, dst: *const *mut pixel, sby: c_int);
-}
 
 pub type pixel = u8;
 pub type coef = i16;

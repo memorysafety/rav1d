@@ -332,8 +332,7 @@ pub unsafe fn dav1d_apply_grain_row_16bpc(
     };
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_apply_grain_16bpc(
+pub unsafe fn dav1d_apply_grain_16bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,

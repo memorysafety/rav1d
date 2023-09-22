@@ -35,7 +35,6 @@ use crate::src::data::dav1d_data_unref_internal;
 use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::data::dav1d_data_wrap_user_data_internal;
 use crate::src::decode::dav1d_decode_frame_exit;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Dav1dContext;
 use crate::src::internal::Dav1dFrameContext;
@@ -106,6 +105,12 @@ use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::process::abort;
 
+#[cfg(feature = "bitdepth_8")]
+use crate::src::fg_apply_tmpl_8::dav1d_apply_grain_8bpc;
+
+#[cfg(feature = "bitdepth_16")]
+use crate::src::fg_apply_tmpl_16::dav1d_apply_grain_16bpc;
+
 #[cfg(target_os = "linux")]
 use libc::dlsym;
 
@@ -113,18 +118,6 @@ use libc::dlsym;
 use libc::sysconf;
 
 extern "C" {
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_apply_grain_16bpc(
-        dsp: *const Dav1dFilmGrainDSPContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-    );
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_apply_grain_8bpc(
-        dsp: *const Dav1dFilmGrainDSPContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-    );
     fn pthread_create(
         __newthread: *mut pthread_t,
         __attr: *const pthread_attr_t,
