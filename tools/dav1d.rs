@@ -5,7 +5,7 @@
 
 mod input {
     mod annexb;
-    mod input;
+    pub mod input;
     mod ivf;
     mod section5;
 } // mod input
@@ -22,6 +22,7 @@ use crate::dav1d_cli_parse::parse;
 use crate::dav1d_cli_parse::CLISettings;
 use crate::dav1d_cli_parse::REALTIME_CUSTOM;
 use crate::dav1d_cli_parse::REALTIME_DISABLE;
+use crate::input::input::DemuxerContext;
 use crate::output::output::MuxerContext;
 use libc::fclose;
 use libc::fflush;
@@ -81,7 +82,6 @@ use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 
 extern "C" {
-    pub type DemuxerContext;
     fn input_open(
         c_out: *mut *mut DemuxerContext,
         name: *const c_char,
