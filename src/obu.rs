@@ -476,21 +476,9 @@ unsafe extern "C" fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
     return k;
 }
 
-static mut default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = {
-    let init = Dav1dLoopfilterModeRefDeltas {
-        mode_delta: [0 as c_int, 0 as c_int],
-        ref_delta: [
-            1 as c_int,
-            0 as c_int,
-            0 as c_int,
-            0 as c_int,
-            -(1 as c_int),
-            0 as c_int,
-            -(1 as c_int),
-            -(1 as c_int),
-        ],
-    };
-    init
+static mut default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = Dav1dLoopfilterModeRefDeltas {
+    mode_delta: [0, 0],
+    ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
 unsafe extern "C" fn parse_frame_hdr_error(c: *mut Dav1dContext) -> c_int {

@@ -748,29 +748,7 @@ unsafe extern "C" fn filter_edge(
     to: c_int,
     strength: c_int,
 ) {
-    static mut kernel: [[u8; 5]; 3] = [
-        [
-            0 as c_int as u8,
-            4 as c_int as u8,
-            8 as c_int as u8,
-            4 as c_int as u8,
-            0 as c_int as u8,
-        ],
-        [
-            0 as c_int as u8,
-            5 as c_int as u8,
-            6 as c_int as u8,
-            5 as c_int as u8,
-            0 as c_int as u8,
-        ],
-        [
-            2 as c_int as u8,
-            4 as c_int as u8,
-            4 as c_int as u8,
-            4 as c_int as u8,
-            2 as c_int as u8,
-        ],
-    ];
+    static mut kernel: [[u8; 5]; 3] = [[0, 4, 8, 4, 0], [0, 5, 6, 5, 0], [2, 4, 4, 4, 2]];
     if !(strength > 0) {
         unreachable!();
     }
@@ -804,12 +782,7 @@ unsafe extern "C" fn upsample_edge(
     from: c_int,
     to: c_int,
 ) {
-    static mut kernel: [i8; 4] = [
-        -(1 as c_int) as i8,
-        9 as c_int as i8,
-        9 as c_int as i8,
-        -(1 as c_int) as i8,
-    ];
+    static mut kernel: [i8; 4] = [-1, 9, 9, -1];
     let mut i;
     i = 0 as c_int;
     while i < hsz - 1 {

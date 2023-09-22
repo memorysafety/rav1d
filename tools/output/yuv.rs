@@ -141,25 +141,22 @@ unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
 }
 
 #[no_mangle]
-pub static mut yuv_muxer: Muxer = {
-    let init = Muxer {
-        priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as c_ulong as c_int,
-        name: b"yuv\0" as *const u8 as *const c_char,
-        extension: b"yuv\0" as *const u8 as *const c_char,
-        write_header: Some(
-            yuv_open
-                as unsafe extern "C" fn(
-                    *mut YuvOutputContext,
-                    *const c_char,
-                    *const Dav1dPictureParameters,
-                    *const c_uint,
-                ) -> c_int,
-        ),
-        write_picture: Some(
-            yuv_write as unsafe extern "C" fn(*mut YuvOutputContext, *mut Dav1dPicture) -> c_int,
-        ),
-        write_trailer: Some(yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> ()),
-        verify: None,
-    };
-    init
+pub static mut yuv_muxer: Muxer = Muxer {
+    priv_data_size: ::core::mem::size_of::<YuvOutputContext>() as c_ulong as c_int,
+    name: b"yuv\0" as *const u8 as *const c_char,
+    extension: b"yuv\0" as *const u8 as *const c_char,
+    write_header: Some(
+        yuv_open
+            as unsafe extern "C" fn(
+                *mut YuvOutputContext,
+                *const c_char,
+                *const Dav1dPictureParameters,
+                *const c_uint,
+            ) -> c_int,
+    ),
+    write_picture: Some(
+        yuv_write as unsafe extern "C" fn(*mut YuvOutputContext, *mut Dav1dPicture) -> c_int,
+    ),
+    write_trailer: Some(yuv_close as unsafe extern "C" fn(*mut YuvOutputContext) -> ()),
+    verify: None,
 };

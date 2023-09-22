@@ -418,15 +418,7 @@ unsafe fn cdef_find_dir_rust(mut img: *const pixel, stride: ptrdiff_t, var: *mut
     }
     cost[2] = (cost[2]).wrapping_mul(105 as c_int as c_uint);
     cost[6] = (cost[6]).wrapping_mul(105 as c_int as c_uint);
-    static mut div_table: [u16; 7] = [
-        840 as c_int as u16,
-        420 as c_int as u16,
-        280 as c_int as u16,
-        210 as c_int as u16,
-        168 as c_int as u16,
-        140 as c_int as u16,
-        120 as c_int as u16,
-    ];
+    static mut div_table: [u16; 7] = [840, 420, 280, 210, 168, 140, 120];
     let mut n_0 = 0;
     while n_0 < 7 {
         let d = div_table[n_0 as usize] as c_int;

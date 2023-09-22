@@ -178,28 +178,7 @@ pub unsafe fn dav1d_cdef_brow_8bpc(
         (DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint).wrapping_sub(layout as c_uint) as c_int;
     let ss_ver = (layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let ss_hor = (layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
-    static mut uv_dirs: [[u8; 8]; 2] = [
-        [
-            0 as c_int as u8,
-            1 as c_int as u8,
-            2 as c_int as u8,
-            3 as c_int as u8,
-            4 as c_int as u8,
-            5 as c_int as u8,
-            6 as c_int as u8,
-            7 as c_int as u8,
-        ],
-        [
-            7 as c_int as u8,
-            0 as c_int as u8,
-            2 as c_int as u8,
-            4 as c_int as u8,
-            5 as c_int as u8,
-            6 as c_int as u8,
-            6 as c_int as u8,
-            6 as c_int as u8,
-        ],
-    ];
+    static mut uv_dirs: [[u8; 8]; 2] = [[0, 1, 2, 3, 4, 5, 6, 7], [7, 0, 2, 4, 5, 6, 6, 6]];
     let uv_dir: *const u8 = (uv_dirs
         [(layout as c_uint == DAV1D_PIXEL_LAYOUT_I422 as c_int as c_uint) as c_int as usize])
         .as_ptr();

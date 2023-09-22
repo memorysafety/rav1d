@@ -642,7 +642,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
         } else {
             0 as c_int
         };
-        static mut w: [[c_int; 2]; 2] = [[27 as c_int, 17 as c_int], [17 as c_int, 27 as c_int]];
+        static mut w: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
         let mut y = ystart;
         while y < bh {
             let mut x = xstart;
@@ -915,10 +915,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
         } else {
             0 as c_int
         };
-        static mut w: [[[c_int; 2]; 2]; 2] = [
-            [[27 as c_int, 17 as c_int], [17 as c_int, 27 as c_int]],
-            [[23 as c_int, 22 as c_int], [0; 2]],
-        ];
+        static mut w: [[[c_int; 2]; 2]; 2] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
         let mut y = ystart;
         while y < bh {
             let mut x = xstart;

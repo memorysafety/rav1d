@@ -37,10 +37,7 @@ pub struct av1_intra_prediction_edge {
 }
 
 static mut av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
-    [
-        [DC_128_PRED as c_int as u8, TOP_DC_PRED as c_int as u8],
-        [LEFT_DC_PRED as c_int as u8, DC_PRED as c_int as u8],
-    ],
+    [[DC_128_PRED, TOP_DC_PRED], [LEFT_DC_PRED, DC_PRED]],
     [[0; 2]; 2],
     [[0; 2]; 2],
     [[0; 2]; 2],
@@ -52,21 +49,11 @@ static mut av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
     [[0; 2]; 2],
     [[0; 2]; 2],
     [[0; 2]; 2],
-    [
-        [DC_128_PRED as c_int as u8, VERT_PRED as c_int as u8],
-        [HOR_PRED as c_int as u8, PAETH_PRED as c_int as u8],
-    ],
+    [[DC_128_PRED, VERT_PRED], [HOR_PRED, PAETH_PRED]],
 ];
-static mut av1_mode_to_angle_map: [u8; 8] = [
-    90 as c_int as u8,
-    180 as c_int as u8,
-    45 as c_int as u8,
-    135 as c_int as u8,
-    113 as c_int as u8,
-    157 as c_int as u8,
-    203 as c_int as u8,
-    67 as c_int as u8,
-];
+
+static mut av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
+
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {
         needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],

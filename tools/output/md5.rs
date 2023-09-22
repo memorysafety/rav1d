@@ -58,70 +58,14 @@ pub struct Muxer {
 pub type MD5Context = MuxerPriv;
 
 static mut k: [u32; 64] = [
-    0xd76aa478 as c_uint,
-    0xe8c7b756 as c_uint,
-    0x242070db as c_int as u32,
-    0xc1bdceee as c_uint,
-    0xf57c0faf as c_uint,
-    0x4787c62a as c_int as u32,
-    0xa8304613 as c_uint,
-    0xfd469501 as c_uint,
-    0x698098d8 as c_int as u32,
-    0x8b44f7af as c_uint,
-    0xffff5bb1 as c_uint,
-    0x895cd7be as c_uint,
-    0x6b901122 as c_int as u32,
-    0xfd987193 as c_uint,
-    0xa679438e as c_uint,
-    0x49b40821 as c_int as u32,
-    0xf61e2562 as c_uint,
-    0xc040b340 as c_uint,
-    0x265e5a51 as c_int as u32,
-    0xe9b6c7aa as c_uint,
-    0xd62f105d as c_uint,
-    0x2441453 as c_int as u32,
-    0xd8a1e681 as c_uint,
-    0xe7d3fbc8 as c_uint,
-    0x21e1cde6 as c_int as u32,
-    0xc33707d6 as c_uint,
-    0xf4d50d87 as c_uint,
-    0x455a14ed as c_int as u32,
-    0xa9e3e905 as c_uint,
-    0xfcefa3f8 as c_uint,
-    0x676f02d9 as c_int as u32,
-    0x8d2a4c8a as c_uint,
-    0xfffa3942 as c_uint,
-    0x8771f681 as c_uint,
-    0x6d9d6122 as c_int as u32,
-    0xfde5380c as c_uint,
-    0xa4beea44 as c_uint,
-    0x4bdecfa9 as c_int as u32,
-    0xf6bb4b60 as c_uint,
-    0xbebfbc70 as c_uint,
-    0x289b7ec6 as c_int as u32,
-    0xeaa127fa as c_uint,
-    0xd4ef3085 as c_uint,
-    0x4881d05 as c_int as u32,
-    0xd9d4d039 as c_uint,
-    0xe6db99e5 as c_uint,
-    0x1fa27cf8 as c_int as u32,
-    0xc4ac5665 as c_uint,
-    0xf4292244 as c_uint,
-    0x432aff97 as c_int as u32,
-    0xab9423a7 as c_uint,
-    0xfc93a039 as c_uint,
-    0x655b59c3 as c_int as u32,
-    0x8f0ccc92 as c_uint,
-    0xffeff47d as c_uint,
-    0x85845dd1 as c_uint,
-    0x6fa87e4f as c_int as u32,
-    0xfe2ce6e0 as c_uint,
-    0xa3014314 as c_uint,
-    0x4e0811a1 as c_int as u32,
-    0xf7537e82 as c_uint,
-    0xbd3af235 as c_uint,
-    0x2ad7d2bb as c_int as u32,
-    0xeb86d391 as c_uint,
+    0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
+    0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
+    0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x2441453, 0xd8a1e681, 0xe7d3fbc8,
+    0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed, 0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
+    0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c, 0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+    0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x4881d05, 0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+    0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039, 0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+    0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1, 0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391,
 ];
 
 unsafe extern "C" fn md5_open(
@@ -628,7 +572,7 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> c_
 }
 
 unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
-    static mut bit: [u8; 2] = [0x80 as c_int as u8, 0 as c_int as u8];
+    static mut bit: [u8; 2] = [0x80, 0];
     let len: u64 = (*md5).len << 3;
     md5_update(md5, &*bit.as_ptr().offset(0), 1 as c_int as c_uint);
     while ((*md5).len & 63) != 56 {
@@ -684,25 +628,22 @@ unsafe extern "C" fn md5_verify(md5: *mut MD5Context, mut md5_str: *const c_char
 }
 
 #[no_mangle]
-pub static mut md5_muxer: Muxer = {
-    let init = Muxer {
-        priv_data_size: ::core::mem::size_of::<MD5Context>() as c_ulong as c_int,
-        name: b"md5\0" as *const u8 as *const c_char,
-        extension: b"md5\0" as *const u8 as *const c_char,
-        write_header: Some(
-            md5_open
-                as unsafe extern "C" fn(
-                    *mut MD5Context,
-                    *const c_char,
-                    *const Dav1dPictureParameters,
-                    *const c_uint,
-                ) -> c_int,
-        ),
-        write_picture: Some(
-            md5_write as unsafe extern "C" fn(*mut MD5Context, *mut Dav1dPicture) -> c_int,
-        ),
-        write_trailer: Some(md5_close as unsafe extern "C" fn(*mut MD5Context) -> ()),
-        verify: Some(md5_verify as unsafe extern "C" fn(*mut MD5Context, *const c_char) -> c_int),
-    };
-    init
+pub static mut md5_muxer: Muxer = Muxer {
+    priv_data_size: ::core::mem::size_of::<MD5Context>() as c_ulong as c_int,
+    name: b"md5\0" as *const u8 as *const c_char,
+    extension: b"md5\0" as *const u8 as *const c_char,
+    write_header: Some(
+        md5_open
+            as unsafe extern "C" fn(
+                *mut MD5Context,
+                *const c_char,
+                *const Dav1dPictureParameters,
+                *const c_uint,
+            ) -> c_int,
+    ),
+    write_picture: Some(
+        md5_write as unsafe extern "C" fn(*mut MD5Context, *mut Dav1dPicture) -> c_int,
+    ),
+    write_trailer: Some(md5_close as unsafe extern "C" fn(*mut MD5Context) -> ()),
+    verify: Some(md5_verify as unsafe extern "C" fn(*mut MD5Context, *const c_char) -> c_int),
 };

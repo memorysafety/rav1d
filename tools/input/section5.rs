@@ -318,28 +318,24 @@ unsafe extern "C" fn section5_close(c: *mut Section5InputContext) {
 }
 
 #[no_mangle]
-pub static mut section5_demuxer: Demuxer = {
-    let init = Demuxer {
-        priv_data_size: ::core::mem::size_of::<Section5InputContext>() as c_ulong as c_int,
-        name: b"section5\0" as *const u8 as *const c_char,
-        probe_sz: 2048 as c_int,
-        probe: Some(section5_probe as unsafe extern "C" fn(*const u8) -> c_int),
-        open: Some(
-            section5_open
-                as unsafe extern "C" fn(
-                    *mut Section5InputContext,
-                    *const c_char,
-                    *mut c_uint,
-                    *mut c_uint,
-                    *mut c_uint,
-                ) -> c_int,
-        ),
-        read: Some(
-            section5_read
-                as unsafe extern "C" fn(*mut Section5InputContext, *mut Dav1dData) -> c_int,
-        ),
-        seek: None,
-        close: Some(section5_close as unsafe extern "C" fn(*mut Section5InputContext) -> ()),
-    };
-    init
+pub static mut section5_demuxer: Demuxer = Demuxer {
+    priv_data_size: ::core::mem::size_of::<Section5InputContext>() as c_ulong as c_int,
+    name: b"section5\0" as *const u8 as *const c_char,
+    probe_sz: 2048 as c_int,
+    probe: Some(section5_probe as unsafe extern "C" fn(*const u8) -> c_int),
+    open: Some(
+        section5_open
+            as unsafe extern "C" fn(
+                *mut Section5InputContext,
+                *const c_char,
+                *mut c_uint,
+                *mut c_uint,
+                *mut c_uint,
+            ) -> c_int,
+    ),
+    read: Some(
+        section5_read as unsafe extern "C" fn(*mut Section5InputContext, *mut Dav1dData) -> c_int,
+    ),
+    seek: None,
+    close: Some(section5_close as unsafe extern "C" fn(*mut Section5InputContext) -> ()),
 };
