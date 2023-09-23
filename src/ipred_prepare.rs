@@ -31,7 +31,7 @@ use std::ffi::c_void;
 use std::slice;
 
 #[inline]
-pub unsafe fn sm_flag(b: &BlockContext, idx: c_int) -> c_int {
+pub fn sm_flag(b: &BlockContext, idx: c_int) -> c_int {
     if b.intra[idx as usize] == 0 {
         return 0;
     }
@@ -44,7 +44,7 @@ pub unsafe fn sm_flag(b: &BlockContext, idx: c_int) -> c_int {
 }
 
 #[inline]
-pub unsafe fn sm_uv_flag(b: &BlockContext, idx: c_int) -> c_int {
+pub fn sm_uv_flag(b: &BlockContext, idx: c_int) -> c_int {
     let m = b.uvmode[idx as usize];
     return if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
