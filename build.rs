@@ -58,7 +58,6 @@ fn build_nasm_files(x86_64: bool) {
     let mut asm_files = vec![
         "src/x86/cdef_avx2.asm",
         "src/x86/cdef_sse.asm",
-        "src/x86/cpuid.asm",
         "src/x86/itx_avx2.asm",
         "src/x86/itx_avx512.asm",
         "src/x86/itx_sse.asm",
