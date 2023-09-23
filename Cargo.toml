@@ -1,6 +1,5 @@
 [workspace]
-members = [
-]
+members = []
 [package]
 name = "c2rust_out"
 authors = ["C2Rust"]
@@ -22,7 +21,6 @@ name = "dav1d"
 path = "tests/seek_stress.rs"
 name = "seek_stress"
 [dependencies]
-c2rust-bitfields = "0.18"
 cfg-if = "1.0.0"
 libc = "0.2"
 num_cpus = "1.0"

@@ -21,7 +21,6 @@ use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
-use c2rust_bitfields::BitfieldStruct;
 use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -68,185 +67,119 @@ static av1_mode_conv: [[[IntraPredMode; 2 /* have_top */]; 2 /* have_left */]; N
 
 static av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
 
-#[derive(Copy, Clone, BitfieldStruct)]
-#[repr(C)]
+macro_rules! bools_bitfield_struct {
+    (
+        type Bits = $Bits:ty;
+
+        struct $T:ident {
+            $($vis:vis $field:ident: bool: $index:literal,)*
+        }
+    ) => {
+        #[derive(Clone, Copy, Default, PartialEq, Eq)]
+        struct $T {
+            bits: $Bits,
+        }
+
+        impl $T {
+            const fn empty() -> Self {
+                Self {
+                    bits: 0,
+                }
+            }
+
+            const fn bit(self, index: usize) -> bool {
+                ((self.bits >> index) & 1) != 0
+            }
+
+            const fn with_bit(self, index: usize, value: bool) -> Self {
+                Self {
+                    bits: self.bits | (value as u8) << index,
+                }
+            }
+        }
+
+        paste::paste! {
+            impl $T {
+                $(
+                    pub const fn $field(self) -> bool {
+                        self.bit($index)
+                    }
+
+                    $vis const fn [<with_ $field>](self, value: bool) -> Self {
+                        self.with_bit($index, value)
+                    }
+
+                    $vis const fn [<set_ $field>](self) -> Self {
+                        self.[<with_ $field>](true)
+                    }
+
+                    #[allow(dead_code)]
+                    $vis const fn [<unset_ $field>](self) -> Self {
+                        self.[<with_ $field>](false)
+                    }
+                )*
+
+                #[allow(dead_code)]
+                pub const fn new(
+                    $($field: bool),*
+                ) -> Self {
+                    Self::empty()
+                        $(.[<with_ $field>]($field))*
+                }
+            }
+        }
+    };
+}
+
+bools_bitfield_struct! {
+    type Bits = u8;
+
+    struct Needs {
+        left: bool: 0,
+        top: bool: 1,
+        top_left: bool: 2,
+        top_right: bool: 3,
+        bottom_left: bool: 4,
+    }
+}
+
+impl Needs {
+    const fn edge(self) -> av1_intra_prediction_edge {
+        av1_intra_prediction_edge { needs: self }
+    }
+}
+
+#[derive(Clone, Copy)]
 struct av1_intra_prediction_edge {
-    #[bitfield(name = "needs_left", ty = "u8", bits = "0..=0")]
-    #[bitfield(name = "needs_top", ty = "u8", bits = "1..=1")]
-    #[bitfield(name = "needs_topleft", ty = "u8", bits = "2..=2")]
-    #[bitfield(name = "needs_topright", ty = "u8", bits = "3..=3")]
-    #[bitfield(name = "needs_bottomleft", ty = "u8", bits = "4..=4")]
-    pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
+    pub needs: Needs,
 }
 
-static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED_MODES] =
-    [av1_intra_prediction_edge {
-        needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-    }; N_IMPL_INTRA_PRED_MODES];
-
-unsafe extern "C" fn run_static_initializers() {
-    let a = &mut av1_intra_prediction_edges;
-    a[DC_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[VERT_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(0);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[HOR_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(0);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[LEFT_DC_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(0);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[TOP_DC_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(0);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[DC_128_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(0 as c_int as u8);
-        init.set_needs_top(0);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[Z1_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(0);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(1 as c_int as u8);
-        init.set_needs_topright(1 as c_int as u8);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[Z2_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(1 as c_int as u8);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[Z3_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(0);
-        init.set_needs_topleft(1 as c_int as u8);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(1 as c_int as u8);
-        init
-    };
-    a[SMOOTH_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[SMOOTH_V_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[SMOOTH_H_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(0);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[PAETH_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(1 as c_int as u8);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-    a[FILTER_PRED as usize] = {
-        let mut init = av1_intra_prediction_edge {
-            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-        };
-        init.set_needs_left(1 as c_int as u8);
-        init.set_needs_top(1 as c_int as u8);
-        init.set_needs_topleft(1 as c_int as u8);
-        init.set_needs_topright(0);
-        init.set_needs_bottomleft(0);
-        init
-    };
-}
-
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: [unsafe extern "C" fn(); 1] = [run_static_initializers];
+static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED_MODES] = {
+    let mut a = [Needs::empty().edge(); N_IMPL_INTRA_PRED_MODES];
+    a[DC_PRED as usize] = Needs::empty().set_top().set_left().edge();
+    a[VERT_PRED as usize] = Needs::empty().set_top().edge();
+    a[HOR_PRED as usize] = Needs::empty().set_left().edge();
+    a[LEFT_DC_PRED as usize] = Needs::empty().set_left().edge();
+    a[TOP_DC_PRED as usize] = Needs::empty().set_top().edge();
+    a[DC_128_PRED as usize] = Needs::empty().edge();
+    a[Z1_PRED as usize] = Needs::empty()
+        .set_top()
+        .set_top_right()
+        .set_top_left()
+        .edge();
+    a[Z2_PRED as usize] = Needs::empty().set_left().set_top().set_top_left().edge();
+    a[Z3_PRED as usize] = Needs::empty()
+        .set_left()
+        .set_bottom_left()
+        .set_top_left()
+        .edge();
+    a[SMOOTH_PRED as usize] = Needs::empty().set_left().set_top().edge();
+    a[SMOOTH_V_PRED as usize] = Needs::empty().set_left().set_top().edge();
+    a[SMOOTH_H_PRED as usize] = Needs::empty().set_left().set_top().edge();
+    a[PAETH_PRED as usize] = Needs::empty().set_left().set_top().set_top_left().edge();
+    a[FILTER_PRED as usize] = Needs::empty().set_left().set_top().set_top_left().edge();
+    a
+};
 
 pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
     x: c_int,
@@ -301,10 +234,9 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
     }
     let mut dst_top: *const BD::Pixel = 0 as *const BD::Pixel;
     if have_top != 0
-        && ((av1_intra_prediction_edges[mode as usize]).needs_top() as c_int != 0
-            || (av1_intra_prediction_edges[mode as usize]).needs_topleft() as c_int != 0
-            || (av1_intra_prediction_edges[mode as usize]).needs_left() as c_int != 0
-                && have_left == 0)
+        && (av1_intra_prediction_edges[mode as usize].needs.top()
+            || av1_intra_prediction_edges[mode as usize].needs.top_left()
+            || av1_intra_prediction_edges[mode as usize].needs.left() && have_left == 0)
     {
         if !prefilter_toplevel_sb_edge.is_null() {
             dst_top = &*prefilter_toplevel_sb_edge.offset((x * 4) as isize) as *const BD::Pixel;
@@ -312,7 +244,7 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
             dst_top = &*dst.offset(-(BD::pxstride(stride as usize) as isize)) as *const BD::Pixel;
         }
     }
-    if (av1_intra_prediction_edges[mode as usize]).needs_left() != 0 {
+    if av1_intra_prediction_edges[mode as usize].needs.left() {
         let sz = th << 2;
         let left: *mut BD::Pixel = &mut *topleft_out.offset(-sz as isize) as *mut BD::Pixel;
         if have_left != 0 {
@@ -341,7 +273,10 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
                 sz.try_into().unwrap(),
             );
         }
-        if (av1_intra_prediction_edges[mode as usize]).needs_bottomleft() != 0 {
+        if av1_intra_prediction_edges[mode as usize]
+            .needs
+            .bottom_left()
+        {
             let have_bottomleft = (if have_left == 0 || y + th >= h {
                 0 as c_int as c_uint
             } else {
@@ -376,7 +311,7 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
             }
         }
     }
-    if (av1_intra_prediction_edges[mode as usize]).needs_top() != 0 {
+    if av1_intra_prediction_edges[mode as usize].needs.top() {
         let sz_0 = tw << 2;
         let top: *mut BD::Pixel = &mut *topleft_out.offset(1) as *mut BD::Pixel;
         if have_top != 0 {
@@ -407,7 +342,7 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
                 sz_0.try_into().unwrap(),
             );
         }
-        if (av1_intra_prediction_edges[mode as usize]).needs_topright() != 0 {
+        if av1_intra_prediction_edges[mode as usize].needs.top_right() {
             let have_topright = (if have_top == 0 || x + tw >= w {
                 0 as c_int as c_uint
             } else {
@@ -439,7 +374,7 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
             }
         }
     }
-    if (av1_intra_prediction_edges[mode as usize]).needs_topleft() != 0 {
+    if av1_intra_prediction_edges[mode as usize].needs.top_left() {
         if have_left != 0 {
             *topleft_out = (if have_top != 0 {
                 (*dst_top.offset(-(1 as c_int) as isize)).as_::<c_int>()
