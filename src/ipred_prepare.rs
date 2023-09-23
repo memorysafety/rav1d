@@ -33,29 +33,23 @@ use std::slice;
 #[inline]
 pub unsafe fn sm_flag(b: *const BlockContext, idx: c_int) -> c_int {
     if (*b).intra[idx as usize] == 0 {
-        return 0 as c_int;
+        return 0;
     }
-    let m: IntraPredMode = (*b).mode[idx as usize] as IntraPredMode;
-    return if m as c_uint == SMOOTH_PRED as c_int as c_uint
-        || m as c_uint == SMOOTH_H_PRED as c_int as c_uint
-        || m as c_uint == SMOOTH_V_PRED as c_int as c_uint
-    {
-        512 as c_int
+    let m = (*b).mode[idx as usize];
+    return if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
+        512
     } else {
-        0 as c_int
+        0
     };
 }
 
 #[inline]
 pub unsafe fn sm_uv_flag(b: *const BlockContext, idx: c_int) -> c_int {
-    let m: IntraPredMode = (*b).uvmode[idx as usize] as IntraPredMode;
-    return if m as c_uint == SMOOTH_PRED as c_int as c_uint
-        || m as c_uint == SMOOTH_H_PRED as c_int as c_uint
-        || m as c_uint == SMOOTH_V_PRED as c_int as c_uint
-    {
-        512 as c_int
+    let m = (*b).uvmode[idx as usize];
+    return if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
+        512
     } else {
-        0 as c_int
+        0
     };
 }
 
