@@ -18,7 +18,13 @@ bitflags! {
         const SSSE3 = 1 << 1;
         const SSE41 = 1 << 2;
         const AVX2 = 1 << 3;
+
+        /// F/CD/BW/DQ/VL/VNNI/IFMA/VBMI/VBMI2/
+        /// VPOPCNTDQ/BITALG/GFNI/VAES/VPCLMULQDQ
         const AVX512ICL = 1 << 4;
+
+        /// Flag CPUs where gather instructions are
+        /// slow enough to cause performance regressions.
         const SLOW_GATHER = 1 << 5;
     }
 }
