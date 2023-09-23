@@ -20,7 +20,7 @@ bitflags! {
 }
 
 #[cold]
-pub unsafe fn dav1d_get_cpu_flags_x86() -> CpuFlags {
+pub fn dav1d_get_cpu_flags_x86() -> CpuFlags {
     let mut flags = CpuFlags::empty();
 
     if is_x86_feature_detected!("sse2") {
