@@ -9,7 +9,7 @@ bitflags! {
 }
 
 #[cold]
-pub unsafe fn dav1d_get_cpu_flags_arm() -> CpuFlags {
+pub fn dav1d_get_cpu_flags_arm() -> CpuFlags {
     let mut flags = CpuFlags::empty();
 
     #[cfg(target_arch = "arm")]
