@@ -1,5 +1,6 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::src::const_fn::const_for;
 use crate::src::env::BlockContext;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
@@ -143,42 +144,36 @@ bools_bitfield_struct! {
     }
 }
 
-impl Needs {
-    const fn edge(self) -> av1_intra_prediction_edge {
-        av1_intra_prediction_edge { needs: self }
-    }
-}
-
 #[derive(Clone, Copy)]
 struct av1_intra_prediction_edge {
     pub needs: Needs,
 }
 
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED_MODES] = {
-    let mut a = [Needs::empty().edge(); N_IMPL_INTRA_PRED_MODES];
-    a[DC_PRED as usize] = Needs::empty().set_top().set_left().edge();
-    a[VERT_PRED as usize] = Needs::empty().set_top().edge();
-    a[HOR_PRED as usize] = Needs::empty().set_left().edge();
-    a[LEFT_DC_PRED as usize] = Needs::empty().set_left().edge();
-    a[TOP_DC_PRED as usize] = Needs::empty().set_top().edge();
-    a[DC_128_PRED as usize] = Needs::empty().edge();
-    a[Z1_PRED as usize] = Needs::empty()
-        .set_top()
-        .set_top_right()
-        .set_top_left()
-        .edge();
-    a[Z2_PRED as usize] = Needs::empty().set_left().set_top().set_top_left().edge();
-    a[Z3_PRED as usize] = Needs::empty()
-        .set_left()
-        .set_bottom_left()
-        .set_top_left()
-        .edge();
-    a[SMOOTH_PRED as usize] = Needs::empty().set_left().set_top().edge();
-    a[SMOOTH_V_PRED as usize] = Needs::empty().set_left().set_top().edge();
-    a[SMOOTH_H_PRED as usize] = Needs::empty().set_left().set_top().edge();
-    a[PAETH_PRED as usize] = Needs::empty().set_left().set_top().set_top_left().edge();
-    a[FILTER_PRED as usize] = Needs::empty().set_left().set_top().set_top_left().edge();
-    a
+    let mut a = [Needs::empty(); N_IMPL_INTRA_PRED_MODES];
+    a[DC_PRED as usize] = Needs::empty().set_top().set_left();
+    a[VERT_PRED as usize] = Needs::empty().set_top();
+    a[HOR_PRED as usize] = Needs::empty().set_left();
+    a[LEFT_DC_PRED as usize] = Needs::empty().set_left();
+    a[TOP_DC_PRED as usize] = Needs::empty().set_top();
+    a[DC_128_PRED as usize] = Needs::empty();
+    a[Z1_PRED as usize] = Needs::empty().set_top().set_top_right().set_top_left();
+    a[Z2_PRED as usize] = Needs::empty().set_left().set_top().set_top_left();
+    a[Z3_PRED as usize] = Needs::empty().set_left().set_bottom_left().set_top_left();
+    a[SMOOTH_PRED as usize] = Needs::empty().set_left().set_top();
+    a[SMOOTH_V_PRED as usize] = Needs::empty().set_left().set_top();
+    a[SMOOTH_H_PRED as usize] = Needs::empty().set_left().set_top();
+    a[PAETH_PRED as usize] = Needs::empty().set_left().set_top().set_top_left();
+    a[FILTER_PRED as usize] = Needs::empty().set_left().set_top().set_top_left();
+
+    let mut b = [av1_intra_prediction_edge {
+        needs: Needs::empty(),
+    }; N_IMPL_INTRA_PRED_MODES];
+    const_for!(i in 0..N_IMPL_INTRA_PRED_MODES => {
+        b[i].needs = a[i];
+    });
+
+    b
 };
 
 pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
