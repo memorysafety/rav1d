@@ -36,21 +36,21 @@ pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
         return 0;
     }
     let m = b.mode[idx];
-    return if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
+    if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
     } else {
         0
-    };
+    }
 }
 
 #[inline]
 pub fn sm_uv_flag(b: &BlockContext, idx: usize) -> c_int {
     let m = b.uvmode[idx];
-    return if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
+    if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
     } else {
         0
-    };
+    }
 }
 
 static av1_mode_conv: [[[IntraPredMode; 2 /* have_top */]; 2 /* have_left */]; N_INTRA_PRED_MODES] = {
