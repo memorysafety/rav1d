@@ -2,6 +2,7 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::ipred_prepare::av1_mode_conv;
+use crate::src::ipred_prepare::av1_mode_to_angle_map;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
@@ -30,8 +31,6 @@ pub struct av1_intra_prediction_edge {
     #[bitfield(name = "needs_bottomleft", ty = "u8", bits = "4..=4")]
     pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
 }
-
-static av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
 
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {

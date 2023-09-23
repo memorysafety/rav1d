@@ -59,3 +59,6 @@ pub(super) static av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
     [[0; 2]; 2],
     [[DC_128_PRED, VERT_PRED], [HOR_PRED, PAETH_PRED]],
 ];
+
+// TODO(kkysen) make private once module is fully deduplicated
+pub(super) static av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
