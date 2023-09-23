@@ -31,7 +31,7 @@ use std::ffi::c_void;
 use std::slice;
 
 #[inline]
-pub unsafe extern "C" fn sm_flag(b: *const BlockContext, idx: c_int) -> c_int {
+pub unsafe fn sm_flag(b: *const BlockContext, idx: c_int) -> c_int {
     if (*b).intra[idx as usize] == 0 {
         return 0 as c_int;
     }
@@ -47,7 +47,7 @@ pub unsafe extern "C" fn sm_flag(b: *const BlockContext, idx: c_int) -> c_int {
 }
 
 #[inline]
-pub unsafe extern "C" fn sm_uv_flag(b: *const BlockContext, idx: c_int) -> c_int {
+pub unsafe fn sm_uv_flag(b: *const BlockContext, idx: c_int) -> c_int {
     let m: IntraPredMode = (*b).uvmode[idx as usize] as IntraPredMode;
     return if m as c_uint == SMOOTH_PRED as c_int as c_uint
         || m as c_uint == SMOOTH_H_PRED as c_int as c_uint
