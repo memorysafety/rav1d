@@ -7,6 +7,12 @@ use std::sync::atomic::Ordering;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+pub use crate::src::x86::cpu::CpuFlags;
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+pub use crate::src::arm::cpu::CpuFlags;
+
 /// This is atomic, which has interior mutability,
 /// instead of a `static mut`, since the latter is `unsafe` to access.
 ///
@@ -29,16 +35,17 @@ static dav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
 
 #[cfg(feature = "asm")]
 #[inline(always)]
-pub(crate) fn dav1d_get_cpu_flags() -> c_uint {
-    let mut flags =
+pub(crate) fn dav1d_get_cpu_flags() -> CpuFlags {
+    let flags =
         dav1d_cpu_flags.load(Ordering::SeqCst) & dav1d_cpu_flags_mask.load(Ordering::SeqCst);
+    // Note that `bitflags!` `struct`s are `#[repr(transparent)]`.
+    let mut flags = CpuFlags::from_bits_truncate(flags);
     cfg_if! {
         if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
-            flags |= DAV1D_X86_CPU_FLAG_SSE2;
+            flags |= CpuFlags::SSE2;
         } else {
             // For `unused_mut`.
-            flags |= 0;
+            flags |= CpuFlags::empty();
         }
     }
     flags
@@ -51,11 +58,11 @@ pub(crate) unsafe fn dav1d_init_cpu() {
         if #[cfg(target_arch = "x86_64")] {
             use crate::src::x86::cpu::dav1d_get_cpu_flags_x86;
 
-            dav1d_cpu_flags.store(dav1d_get_cpu_flags_x86(), Ordering::SeqCst);
+            dav1d_cpu_flags.store(dav1d_get_cpu_flags_x86().bits(), Ordering::SeqCst);
         } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
             use crate::src::arm::cpu::dav1d_get_cpu_flags_arm;
 
-            dav1d_cpu_flags.store(dav1d_get_cpu_flags_arm(), Ordering::SeqCst);
+            dav1d_cpu_flags.store(dav1d_get_cpu_flags_arm().bits(), Ordering::SeqCst);
         }
     }
 }

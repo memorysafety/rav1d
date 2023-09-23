@@ -128,15 +128,13 @@ pub fn dav1d_msac_decode_uniform(s: &mut MsacContext, n: c_uint) -> c_int {
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 #[inline(always)]
 fn msac_init_x86(s: &mut MsacContext) {
-    use crate::src::cpu::dav1d_get_cpu_flags;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSE2;
+    use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
     let flags = dav1d_get_cpu_flags();
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 != 0 {
+    if flags.contains(CpuFlags::SSE2) {
         s.symbol_adapt16 = dav1d_msac_decode_symbol_adapt16_sse2;
     }
-    if flags & DAV1D_X86_CPU_FLAG_AVX2 != 0 {
+    if flags.contains(CpuFlags::AVX2) {
         s.symbol_adapt16 = dav1d_msac_decode_symbol_adapt16_avx2;
     }
 }

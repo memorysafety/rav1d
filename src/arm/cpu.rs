@@ -1,13 +1,19 @@
+use bitflags::bitflags;
 use cfg_if::cfg_if;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 
-pub const DAV1D_ARM_CPU_FLAG_NEON: c_uint = 1 << 0;
+bitflags! {
+    pub struct CpuFlags: c_uint {
+        const NEON = 1 << 0;
+    }
+}
+
 pub const NEON_HWCAP: c_ulong = 1 << 12;
 
 #[cold]
-pub unsafe fn dav1d_get_cpu_flags_arm() -> c_uint {
-    let mut flags = 0;
+pub unsafe fn dav1d_get_cpu_flags_arm() -> CpuFlags {
+    let mut flags = CpuFlags::empty();
 
     cfg_if! {
         if #[cfg(any(
@@ -15,10 +21,10 @@ pub unsafe fn dav1d_get_cpu_flags_arm() -> c_uint {
             target_os = "windows",
             target_os = "macos"
         ))] {
-            flags |= DAV1D_ARM_CPU_FLAG_NEON;
+            flags |= CpuFlags::NEON;
         } else if #[cfg(target_arch = "arm")] {
             if (libc::getauxval(libc::AT_HWCAP) & NEON_HWCAP) != 0 {
-                flags |= DAV1D_ARM_CPU_FLAG_NEON;
+                flags |= CpuFlags::NEON;
             }
         } else if #[cfg(target_os = "android")] {
             // TODO: Support Android by parsing `/proc/cpuinfo` the way the original C does.

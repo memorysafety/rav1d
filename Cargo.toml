@@ -21,6 +21,7 @@ name = "dav1d"
 path = "tests/seek_stress.rs"
 name = "seek_stress"
 [dependencies]
+bitflags = "2.4.0"
 cfg-if = "1.0.0"
 libc = "0.2"
 num_cpus = "1.0"

@@ -19,7 +19,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
+use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -1287,11 +1287,9 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
-    use crate::src::x86::cpu::*;
-
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+    if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
@@ -1313,7 +1311,7 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
 
     #[cfg(target_arch = "x86_64")]
     {
-        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
@@ -1325,7 +1323,7 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
         (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
             Some(dav1d_generate_grain_uv_444_8bpc_avx2);
 
-        if flags & DAV1D_X86_CPU_FLAG_SLOW_GATHER == 0 {
+        if !flags.contains(CpuFlags::SLOW_GATHER) {
             (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_8bpc_avx2);
             (*c).fguv_32x32xn[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
                 Some(dav1d_fguv_32x32xn_i420_8bpc_avx2);
@@ -1335,7 +1333,7 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
                 Some(dav1d_fguv_32x32xn_i444_8bpc_avx2);
         }
 
-        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
@@ -1352,11 +1350,9 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_arm(c: *mut Dav1dFilmGrainDSPContext) {
-    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
-
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+    if !flags.contains(CpuFlags::NEON) {
         return;
     }
 

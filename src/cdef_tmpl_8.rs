@@ -482,18 +482,17 @@ unsafe fn cdef_find_dir_rust(mut img: *const pixel, stride: ptrdiff_t, var: *mut
 }
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
+use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
-    use crate::src::x86::cpu::*;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::cdef::*;
 
-    let flags: c_uint = dav1d_get_cpu_flags();
+    let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+    if !flags.contains(CpuFlags::SSE2) {
         return;
     }
 
@@ -501,7 +500,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
     (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_sse2;
     (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_sse2;
 
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+    if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
@@ -510,7 +509,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
     (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_ssse3;
     (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_ssse3;
 
-    if flags & DAV1D_X86_CPU_FLAG_SSE41 == 0 {
+    if !flags.contains(CpuFlags::SSE41) {
         return;
     }
 
@@ -521,7 +520,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
 
     #[cfg(target_arch = "x86_64")]
     {
-        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
@@ -530,7 +529,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
         (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_avx2;
         (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_avx2;
 
-        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
@@ -543,13 +542,12 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
-    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::cdef::*;
 
-    let flags: c_uint = dav1d_get_cpu_flags();
+    let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+    if !flags.contains(CpuFlags::NEON) {
         return;
     }
 

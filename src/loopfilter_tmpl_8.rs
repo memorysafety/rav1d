@@ -9,7 +9,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
+use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -398,13 +398,12 @@ unsafe extern "C" fn loop_filter_v_sb128uv_rust(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext) {
-    use crate::src::x86::cpu::*;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::loopfilter::*;
 
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+    if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
@@ -415,7 +414,7 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
 
     #[cfg(target_arch = "x86_64")]
     {
-        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
@@ -424,7 +423,7 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
         (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx2;
         (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx2;
 
-        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
@@ -438,13 +437,12 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext) {
-    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::loopfilter::*;
 
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+    if !flags.contains(CpuFlags::NEON) {
         return;
     }
 

@@ -45,7 +45,7 @@ use std::ffi::c_int;
 use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
+use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -131,23 +131,22 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_rust(
 #[inline(always)]
 #[rustfmt::skip]
 unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int) {
-    use crate::src::x86::cpu::*;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+    if !flags.contains(CpuFlags::SSE2) {
         return;
     }
 
     (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(dav1d_inv_txfm_add_wht_wht_4x4_16bpc_sse2);
 
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+    if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
-    if flags & DAV1D_X86_CPU_FLAG_SSE41 == 0 {
+    if !flags.contains(CpuFlags::SSE41) {
         return;
     }
 
@@ -312,7 +311,7 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int
 
     #[cfg(target_arch = "x86_64")]
     {
-        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
@@ -624,7 +623,7 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int
             (*c).itxfm_add[TX_32X32 as usize][IDTX as usize] = Some(dav1d_inv_txfm_add_identity_identity_32x32_12bpc_avx2);
         }
 
-        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
@@ -711,13 +710,12 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int) {
-    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+    if !flags.contains(CpuFlags::NEON) {
         return;
     }
 
