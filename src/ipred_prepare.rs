@@ -22,6 +22,7 @@ use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
+use bitflags::bitflags;
 use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -62,79 +63,14 @@ static av1_mode_conv: [[[IntraPredMode; 2 /* have_top */]; 2 /* have_left */]; N
 
 static av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
 
-macro_rules! bools_bitfield_struct {
-    (
-        type Bits = $Bits:ty;
-
-        struct $T:ident {
-            $($vis:vis $field:ident: bool: $index:literal,)*
-        }
-    ) => {
-        #[derive(Clone, Copy, Default, PartialEq, Eq)]
-        struct $T {
-            bits: $Bits,
-        }
-
-        impl $T {
-            const fn empty() -> Self {
-                Self {
-                    bits: 0,
-                }
-            }
-
-            const fn bit(self, index: usize) -> bool {
-                ((self.bits >> index) & 1) != 0
-            }
-
-            const fn with_bit(self, index: usize, value: bool) -> Self {
-                Self {
-                    bits: self.bits | (value as u8) << index,
-                }
-            }
-        }
-
-        paste::paste! {
-            impl $T {
-                $(
-                    pub const fn $field(self) -> bool {
-                        self.bit($index)
-                    }
-
-                    $vis const fn [<with_ $field>](self, value: bool) -> Self {
-                        self.with_bit($index, value)
-                    }
-
-                    $vis const fn [<set_ $field>](self) -> Self {
-                        self.[<with_ $field>](true)
-                    }
-
-                    #[allow(dead_code)]
-                    $vis const fn [<unset_ $field>](self) -> Self {
-                        self.[<with_ $field>](false)
-                    }
-                )*
-
-                #[allow(dead_code)]
-                pub const fn new(
-                    $($field: bool),*
-                ) -> Self {
-                    Self::empty()
-                        $(.[<with_ $field>]($field))*
-                }
-            }
-        }
-    };
-}
-
-bools_bitfield_struct! {
-    type Bits = u8;
-
-    struct Needs {
-        left: bool: 0,
-        top: bool: 1,
-        top_left: bool: 2,
-        top_right: bool: 3,
-        bottom_left: bool: 4,
+bitflags! {
+    #[derive(Clone, Copy)]
+    struct Needs: u8 {
+        const LEFT = 1 << 0;
+        const TOP = 1 << 1;
+        const TOP_LEFT = 1 << 2;
+        const TOP_RIGHT = 1 << 3;
+        const BOTTOM_LEFT = 1 << 4;
     }
 }
 
@@ -144,21 +80,35 @@ struct av1_intra_prediction_edge {
 }
 
 static av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED_MODES] = {
+    const LEFT: Needs = Needs::LEFT;
+    const TOP: Needs = Needs::TOP;
+    const TOP_LEFT: Needs = Needs::TOP_LEFT;
+    const TOP_RIGHT: Needs = Needs::TOP_RIGHT;
+    const BOTTOM_LEFT: Needs = Needs::BOTTOM_LEFT;
+
+    const fn all<const N: usize>(a: [Needs; N]) -> Needs {
+        let mut needs = Needs::empty();
+        const_for!(i in 0..N => {
+            needs = needs.union(a[i]);
+        });
+        needs
+    }
+
     let mut a = [Needs::empty(); N_IMPL_INTRA_PRED_MODES];
-    a[DC_PRED as usize] = Needs::empty().set_top().set_left();
-    a[VERT_PRED as usize] = Needs::empty().set_top();
-    a[HOR_PRED as usize] = Needs::empty().set_left();
-    a[LEFT_DC_PRED as usize] = Needs::empty().set_left();
-    a[TOP_DC_PRED as usize] = Needs::empty().set_top();
-    a[DC_128_PRED as usize] = Needs::empty();
-    a[Z1_PRED as usize] = Needs::empty().set_top().set_top_right().set_top_left();
-    a[Z2_PRED as usize] = Needs::empty().set_left().set_top().set_top_left();
-    a[Z3_PRED as usize] = Needs::empty().set_left().set_bottom_left().set_top_left();
-    a[SMOOTH_PRED as usize] = Needs::empty().set_left().set_top();
-    a[SMOOTH_V_PRED as usize] = Needs::empty().set_left().set_top();
-    a[SMOOTH_H_PRED as usize] = Needs::empty().set_left().set_top();
-    a[PAETH_PRED as usize] = Needs::empty().set_left().set_top().set_top_left();
-    a[FILTER_PRED as usize] = Needs::empty().set_left().set_top().set_top_left();
+    a[DC_PRED as usize] = all([TOP, LEFT]);
+    a[VERT_PRED as usize] = all([TOP]);
+    a[HOR_PRED as usize] = all([LEFT]);
+    a[LEFT_DC_PRED as usize] = all([LEFT]);
+    a[TOP_DC_PRED as usize] = all([TOP]);
+    a[DC_128_PRED as usize] = all([]);
+    a[Z1_PRED as usize] = all([TOP, TOP_RIGHT, TOP_LEFT]);
+    a[Z2_PRED as usize] = all([LEFT, TOP, TOP_LEFT]);
+    a[Z3_PRED as usize] = all([LEFT, BOTTOM_LEFT, TOP_LEFT]);
+    a[SMOOTH_PRED as usize] = all([LEFT, TOP]);
+    a[SMOOTH_V_PRED as usize] = all([LEFT, TOP]);
+    a[SMOOTH_H_PRED as usize] = all([LEFT, TOP]);
+    a[PAETH_PRED as usize] = all([LEFT, TOP, TOP_LEFT]);
+    a[FILTER_PRED as usize] = all([LEFT, TOP, TOP_LEFT]);
 
     let mut b = [av1_intra_prediction_edge {
         needs: Needs::empty(),
@@ -223,9 +173,16 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
     }
     let mut dst_top: *const BD::Pixel = 0 as *const BD::Pixel;
     if have_top != 0
-        && (av1_intra_prediction_edges[mode as usize].needs.top()
-            || av1_intra_prediction_edges[mode as usize].needs.top_left()
-            || av1_intra_prediction_edges[mode as usize].needs.left() && have_left == 0)
+        && (av1_intra_prediction_edges[mode as usize]
+            .needs
+            .contains(Needs::TOP)
+            || av1_intra_prediction_edges[mode as usize]
+                .needs
+                .contains(Needs::TOP_LEFT)
+            || av1_intra_prediction_edges[mode as usize]
+                .needs
+                .contains(Needs::LEFT)
+                && have_left == 0)
     {
         if !prefilter_toplevel_sb_edge.is_null() {
             dst_top = &*prefilter_toplevel_sb_edge.offset((x * 4) as isize) as *const BD::Pixel;
@@ -233,7 +190,10 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
             dst_top = &*dst.offset(-(BD::pxstride(stride as usize) as isize)) as *const BD::Pixel;
         }
     }
-    if av1_intra_prediction_edges[mode as usize].needs.left() {
+    if av1_intra_prediction_edges[mode as usize]
+        .needs
+        .contains(Needs::LEFT)
+    {
         let sz = th << 2;
         let left: *mut BD::Pixel = &mut *topleft_out.offset(-sz as isize) as *mut BD::Pixel;
         if have_left != 0 {
@@ -264,7 +224,7 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
         }
         if av1_intra_prediction_edges[mode as usize]
             .needs
-            .bottom_left()
+            .contains(Needs::BOTTOM_LEFT)
         {
             let have_bottomleft = (if have_left == 0 || y + th >= h {
                 0 as c_int as c_uint
@@ -300,7 +260,10 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
             }
         }
     }
-    if av1_intra_prediction_edges[mode as usize].needs.top() {
+    if av1_intra_prediction_edges[mode as usize]
+        .needs
+        .contains(Needs::TOP)
+    {
         let sz_0 = tw << 2;
         let top: *mut BD::Pixel = &mut *topleft_out.offset(1) as *mut BD::Pixel;
         if have_top != 0 {
@@ -331,7 +294,10 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
                 sz_0.try_into().unwrap(),
             );
         }
-        if av1_intra_prediction_edges[mode as usize].needs.top_right() {
+        if av1_intra_prediction_edges[mode as usize]
+            .needs
+            .contains(Needs::TOP_RIGHT)
+        {
             let have_topright = (if have_top == 0 || x + tw >= w {
                 0 as c_int as c_uint
             } else {
@@ -363,7 +329,10 @@ pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
             }
         }
     }
-    if av1_intra_prediction_edges[mode as usize].needs.top_left() {
+    if av1_intra_prediction_edges[mode as usize]
+        .needs
+        .contains(Needs::TOP_LEFT)
+    {
         if have_left != 0 {
             *topleft_out = (if have_top != 0 {
                 (*dst_top.offset(-(1 as c_int) as isize)).as_::<c_int>()
