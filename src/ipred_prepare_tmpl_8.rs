@@ -1,12 +1,11 @@
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-use crate::src::ipred_prepare::av1_intra_prediction_edge;
+use crate::src::ipred_prepare::av1_intra_prediction_edges;
 use crate::src::ipred_prepare::av1_mode_conv;
 use crate::src::ipred_prepare::av1_mode_to_angle_map;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::HOR_PRED;
-use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
@@ -20,11 +19,6 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 
 pub type pixel = u8;
-
-static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
-    [av1_intra_prediction_edge {
-        needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-    }; N_IMPL_INTRA_PRED_MODES];
 
 pub unsafe fn dav1d_prepare_intra_edges_8bpc(
     x: c_int,
@@ -230,168 +224,3 @@ pub unsafe fn dav1d_prepare_intra_edges_8bpc(
     }
     return mode;
 }
-
-unsafe extern "C" fn run_static_initializers() {
-    av1_intra_prediction_edges = [
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(0);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(0);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0 as c_int as u8);
-            init.set_needs_top(0);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(1 as c_int as u8);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(0);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(1 as c_int as u8);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-    ];
-}
-
-#[used]
-#[cfg_attr(target_os = "linux", link_section = ".init_array")]
-#[cfg_attr(target_os = "windows", link_section = ".CRT$XIB")]
-#[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-static INIT_ARRAY: [unsafe extern "C" fn(); 1] = [run_static_initializers];
