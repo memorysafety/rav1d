@@ -58,7 +58,7 @@ pub unsafe extern "C" fn sm_uv_flag(b: *const BlockContext, idx: c_int) -> c_int
     };
 }
 
-static av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
+static av1_mode_conv: [[[u8; 2 /* have_top */]; 2 /* have_left */]; N_INTRA_PRED_MODES] = [
     [[DC_128_PRED, TOP_DC_PRED], [LEFT_DC_PRED, DC_PRED]],
     [[0; 2]; 2],
     [[0; 2]; 2],
