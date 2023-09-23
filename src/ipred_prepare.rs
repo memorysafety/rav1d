@@ -149,7 +149,7 @@ struct av1_intra_prediction_edge {
     pub needs: Needs,
 }
 
-static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED_MODES] = {
+static av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED_MODES] = {
     let mut a = [Needs::empty(); N_IMPL_INTRA_PRED_MODES];
     a[DC_PRED as usize] = Needs::empty().set_top().set_left();
     a[VERT_PRED as usize] = Needs::empty().set_top();
