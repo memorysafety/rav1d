@@ -109,14 +109,6 @@ pub mod src {
     mod thread_task;
     mod warpmv;
     mod wedge;
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    mod x86 {
-        pub mod cpu;
-    } // mod x86
-    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-    mod arm {
-        pub mod cpu;
-    } // mod arm
 } // mod src
 
 use std::ffi::c_int;
