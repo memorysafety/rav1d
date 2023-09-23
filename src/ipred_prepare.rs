@@ -58,7 +58,7 @@ pub unsafe extern "C" fn sm_uv_flag(b: *const BlockContext, idx: c_int) -> c_int
     };
 }
 
-static av1_mode_conv: [[[u8; 2 /* have_top */]; 2 /* have_left */]; N_INTRA_PRED_MODES] = {
+static av1_mode_conv: [[[IntraPredMode; 2 /* have_top */]; 2 /* have_left */]; N_INTRA_PRED_MODES] = {
     let mut a = [[[0; 2]; 2]; N_INTRA_PRED_MODES];
     a[DC_PRED as usize] = [[DC_128_PRED, TOP_DC_PRED], [LEFT_DC_PRED, DC_PRED]];
     a[PAETH_PRED as usize] = [[DC_128_PRED, VERT_PRED], [HOR_PRED, PAETH_PRED]];
