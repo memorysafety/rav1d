@@ -7,6 +7,7 @@ use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
+use crate::src::levels::FILTER_PRED;
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::LEFT_DC_PRED;
 use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
@@ -84,162 +85,161 @@ static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_
     }; N_IMPL_INTRA_PRED_MODES];
 
 unsafe extern "C" fn run_static_initializers() {
-    av1_intra_prediction_edges = [
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(0);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(0);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0 as c_int as u8);
-            init.set_needs_top(0);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(0);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(1 as c_int as u8);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(0);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(1 as c_int as u8);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(0);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-        {
-            let mut init = av1_intra_prediction_edge {
-                needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
-            };
-            init.set_needs_left(1 as c_int as u8);
-            init.set_needs_top(1 as c_int as u8);
-            init.set_needs_topleft(1 as c_int as u8);
-            init.set_needs_topright(0);
-            init.set_needs_bottomleft(0);
-            init
-        },
-    ];
+    let a = &mut av1_intra_prediction_edges;
+    a[DC_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[VERT_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(0);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[HOR_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(0);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[LEFT_DC_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(0);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[TOP_DC_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(0);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[DC_128_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(0 as c_int as u8);
+        init.set_needs_top(0);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[Z1_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(0);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(1 as c_int as u8);
+        init.set_needs_topright(1 as c_int as u8);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[Z2_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(1 as c_int as u8);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[Z3_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(0);
+        init.set_needs_topleft(1 as c_int as u8);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(1 as c_int as u8);
+        init
+    };
+    a[SMOOTH_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[SMOOTH_V_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[SMOOTH_H_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(0);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[PAETH_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(1 as c_int as u8);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
+    a[FILTER_PRED as usize] = {
+        let mut init = av1_intra_prediction_edge {
+            needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
+        };
+        init.set_needs_left(1 as c_int as u8);
+        init.set_needs_top(1 as c_int as u8);
+        init.set_needs_topleft(1 as c_int as u8);
+        init.set_needs_topright(0);
+        init.set_needs_bottomleft(0);
+        init
+    };
 }
 
 #[used]
