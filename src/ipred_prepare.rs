@@ -11,6 +11,7 @@ use crate::src::levels::SMOOTH_PRED;
 use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::TOP_DC_PRED;
 use crate::src::levels::VERT_PRED;
+use c2rust_bitfields::BitfieldStruct;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
@@ -62,3 +63,15 @@ pub(super) static av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
 
 // TODO(kkysen) make private once module is fully deduplicated
 pub(super) static av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
+
+// TODO(kkysen) make private once module is fully deduplicated
+#[derive(Copy, Clone, BitfieldStruct)]
+#[repr(C)]
+pub(super) struct av1_intra_prediction_edge {
+    #[bitfield(name = "needs_left", ty = "u8", bits = "0..=0")]
+    #[bitfield(name = "needs_top", ty = "u8", bits = "1..=1")]
+    #[bitfield(name = "needs_topleft", ty = "u8", bits = "2..=2")]
+    #[bitfield(name = "needs_topright", ty = "u8", bits = "3..=3")]
+    #[bitfield(name = "needs_bottomleft", ty = "u8", bits = "4..=4")]
+    pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
+}

@@ -1,6 +1,7 @@
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
+use crate::src::ipred_prepare::av1_intra_prediction_edge;
 use crate::src::ipred_prepare::av1_mode_conv;
 use crate::src::ipred_prepare::av1_mode_to_angle_map;
 use crate::src::levels::IntraPredMode;
@@ -10,7 +11,6 @@ use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
-use c2rust_bitfields::BitfieldStruct;
 use libc::memcpy;
 use libc::memset;
 use libc::ptrdiff_t;
@@ -20,17 +20,6 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 
 pub type pixel = u8;
-
-#[derive(Copy, Clone, BitfieldStruct)]
-#[repr(C)]
-pub struct av1_intra_prediction_edge {
-    #[bitfield(name = "needs_left", ty = "u8", bits = "0..=0")]
-    #[bitfield(name = "needs_top", ty = "u8", bits = "1..=1")]
-    #[bitfield(name = "needs_topleft", ty = "u8", bits = "2..=2")]
-    #[bitfield(name = "needs_topright", ty = "u8", bits = "3..=3")]
-    #[bitfield(name = "needs_bottomleft", ty = "u8", bits = "4..=4")]
-    pub needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [u8; 1],
-}
 
 static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
     [av1_intra_prediction_edge {
