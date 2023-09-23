@@ -31,11 +31,11 @@ use std::ffi::c_void;
 use std::slice;
 
 #[inline]
-pub fn sm_flag(b: &BlockContext, idx: c_int) -> c_int {
-    if b.intra[idx as usize] == 0 {
+pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
+    if b.intra[idx] == 0 {
         return 0;
     }
-    let m = b.mode[idx as usize];
+    let m = b.mode[idx];
     return if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
     } else {
@@ -44,8 +44,8 @@ pub fn sm_flag(b: &BlockContext, idx: c_int) -> c_int {
 }
 
 #[inline]
-pub fn sm_uv_flag(b: &BlockContext, idx: c_int) -> c_int {
-    let m = b.uvmode[idx as usize];
+pub fn sm_uv_flag(b: &BlockContext, idx: usize) -> c_int {
+    let m = b.uvmode[idx];
     return if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
     } else {
