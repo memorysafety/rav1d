@@ -2,15 +2,10 @@ use crate::include::common::attributes::clz;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
+use crate::src::ipred_prepare::av1_mode_conv;
 use crate::src::levels::IntraPredMode;
-use crate::src::levels::DC_128_PRED;
-use crate::src::levels::DC_PRED;
 use crate::src::levels::HOR_PRED;
-use crate::src::levels::LEFT_DC_PRED;
 use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
-use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::PAETH_PRED;
-use crate::src::levels::TOP_DC_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
@@ -52,22 +47,6 @@ unsafe extern "C" fn pixel_set(dst: *mut pixel, val: c_int, num: c_int) {
         n += 1;
     }
 }
-
-static av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
-    [[DC_128_PRED, TOP_DC_PRED], [LEFT_DC_PRED, DC_PRED]],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[0; 2]; 2],
-    [[DC_128_PRED, VERT_PRED], [HOR_PRED, PAETH_PRED]],
-];
 
 static av1_mode_to_angle_map: [u8; 8] = [90, 180, 45, 135, 113, 157, 203, 67];
 

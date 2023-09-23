@@ -1,8 +1,16 @@
 use crate::src::env::BlockContext;
 use crate::src::levels::IntraPredMode;
+use crate::src::levels::DC_128_PRED;
+use crate::src::levels::DC_PRED;
+use crate::src::levels::HOR_PRED;
+use crate::src::levels::LEFT_DC_PRED;
+use crate::src::levels::N_INTRA_PRED_MODES;
+use crate::src::levels::PAETH_PRED;
 use crate::src::levels::SMOOTH_H_PRED;
 use crate::src::levels::SMOOTH_PRED;
 use crate::src::levels::SMOOTH_V_PRED;
+use crate::src::levels::TOP_DC_PRED;
+use crate::src::levels::VERT_PRED;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
@@ -34,3 +42,20 @@ pub unsafe extern "C" fn sm_uv_flag(b: *const BlockContext, idx: c_int) -> c_int
         0 as c_int
     };
 }
+
+// TODO(kkysen) make private once module is fully deduplicated
+pub(super) static av1_mode_conv: [[[u8; 2]; 2]; N_INTRA_PRED_MODES] = [
+    [[DC_128_PRED, TOP_DC_PRED], [LEFT_DC_PRED, DC_PRED]],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[0; 2]; 2],
+    [[DC_128_PRED, VERT_PRED], [HOR_PRED, PAETH_PRED]],
+];
