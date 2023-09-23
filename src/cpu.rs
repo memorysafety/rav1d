@@ -1,12 +1,10 @@
+use crate::src::const_fn::const_for;
 use crate::src::internal::Dav1dContext;
 use bitflags::bitflags;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
-
-#[cfg(feature = "asm")]
-use cfg_if::cfg_if;
 
 #[cfg(not(any(
     target_arch = "x86",
@@ -47,13 +45,51 @@ bitflags! {
 }
 
 impl CpuFlags {
+    pub const fn compile_time_detect() -> Self {
+        let individual_flags = [
+            #[cfg(target_feature = "sse2")]
+            CpuFlags::SSE2,
+            #[cfg(target_feature = "sse3")]
+            CpuFlags::SSSE3,
+            #[cfg(target_feature = "sse4.1")]
+            CpuFlags::SSE41,
+            #[cfg(target_feature = "avx2")]
+            CpuFlags::AVX2,
+            #[cfg(all(
+                target_feature = "avx512f",
+                target_feature = "avx512cd",
+                target_feature = "avx512bw",
+                target_feature = "avx512dq",
+                target_feature = "avx512vl",
+                target_feature = "avx512vnni",
+                target_feature = "avx512ifma",
+                target_feature = "avx512vbmi",
+                target_feature = "avx512vbmi2",
+                target_feature = "avx512vpopcntdq",
+                target_feature = "avx512bitalg",
+                target_feature = "gfni",
+                target_feature = "vaes",
+                target_feature = "vpclmulqdq",
+            ))]
+            CpuFlags::AVX512ICL,
+            #[cfg(target_feature = "neon")]
+            CpuFlags::NEON,
+        ];
+
+        let mut combined_flags = Self::empty();
+        const_for!(i in 0..individual_flags.len() => {
+            combined_flags = combined_flags.union(individual_flags[i]);
+        });
+        combined_flags
+    }
+
     #[cfg(not(feature = "asm"))]
-    pub fn detect() -> Self {
+    pub fn run_time_detect() -> Self {
         Self::empty()
     }
 
     #[cfg(feature = "asm")]
-    pub fn detect() -> Self {
+    pub fn run_time_detect() -> Self {
         let mut flags = Self::empty();
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -152,21 +188,12 @@ pub(crate) fn dav1d_get_cpu_flags() -> CpuFlags {
     let flags =
         dav1d_cpu_flags.load(Ordering::SeqCst) & dav1d_cpu_flags_mask.load(Ordering::SeqCst);
     // Note that `bitflags!` `struct`s are `#[repr(transparent)]`.
-    let mut flags = CpuFlags::from_bits_truncate(flags);
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            flags |= CpuFlags::SSE2;
-        } else {
-            // For `unused_mut`.
-            flags |= CpuFlags::empty();
-        }
-    }
-    flags
+    CpuFlags::from_bits_truncate(flags) | CpuFlags::compile_time_detect()
 }
 
 #[cold]
 pub(crate) fn dav1d_init_cpu() {
-    dav1d_cpu_flags.store(CpuFlags::detect().bits(), Ordering::SeqCst);
+    dav1d_cpu_flags.store(CpuFlags::run_time_detect().bits(), Ordering::SeqCst);
 }
 
 #[no_mangle]
