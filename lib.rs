@@ -23,7 +23,6 @@ pub mod include {
         pub mod headers;
         pub mod picture;
     } // mod dav1d
-    pub(crate) mod pthread;
     pub(crate) mod stdatomic;
 } // mod include
 pub mod src {
