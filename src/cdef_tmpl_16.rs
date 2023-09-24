@@ -6,7 +6,7 @@ use crate::include::common::intops::ulog2;
 use crate::src::cdef::constrain;
 use crate::src::cdef::fill;
 use crate::src::cdef::CdefEdgeFlags;
-use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
@@ -500,7 +500,7 @@ unsafe fn cdef_find_dir_rust(
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
+unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Rav1dCdefDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::cdef::*;
 
@@ -544,7 +544,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Dav1dCdefDSPContext) {
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Dav1dCdefDSPContext) {
+unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Rav1dCdefDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::cdef::*;
 
@@ -666,7 +666,7 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased(
 }
 
 #[cold]
-pub unsafe fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext) {
+pub unsafe fn dav1d_cdef_dsp_init_16bpc(c: *mut Rav1dCdefDSPContext) {
     (*c).dir = cdef_find_dir_c_erased;
     (*c).fb[0] = cdef_filter_block_8x8_c_erased;
     (*c).fb[1] = cdef_filter_block_4x8_c_erased;

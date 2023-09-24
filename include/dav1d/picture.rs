@@ -1,11 +1,11 @@
 use crate::include::dav1d::common::Dav1dDataProps;
+use crate::include::dav1d::dav1d::Dav1dRef;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::src::r#ref::Dav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::ffi::c_int;

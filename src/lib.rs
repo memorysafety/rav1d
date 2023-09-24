@@ -33,10 +33,10 @@ use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::data::dav1d_data_wrap_user_data_internal;
 use crate::src::decode::dav1d_decode_frame_exit;
 use crate::src::internal::CodedBlockInfo;
-use crate::src::internal::Dav1dContext;
-use crate::src::internal::Dav1dFrameContext;
-use crate::src::internal::Dav1dTask;
-use crate::src::internal::Dav1dTaskContext;
+use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dTask;
+use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::TaskThreadData;
 use crate::src::intra_edge::dav1d_init_mode_tree;
 use crate::src::levels::Av1Block;
@@ -61,10 +61,10 @@ use crate::src::picture::dav1d_picture_unref_internal;
 use crate::src::picture::dav1d_thread_picture_move_ref;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
-use crate::src::picture::Dav1dThreadPicture;
+use crate::src::picture::Rav1dThreadPicture;
 use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
 use crate::src::r#ref::dav1d_ref_dec;
-use crate::src::r#ref::Dav1dRef;
+use crate::src::r#ref::Rav1dRef;
 use crate::src::refmvs::dav1d_refmvs_clear;
 use crate::src::refmvs::dav1d_refmvs_dsp_init;
 use crate::src::refmvs::dav1d_refmvs_init;
@@ -190,7 +190,7 @@ unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t
 
 #[cold]
 unsafe extern "C" fn get_num_threads(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     s: *const Dav1dSettings,
     n_tc: *mut c_uint,
     n_fc: *mut c_uint,
@@ -252,19 +252,19 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> c_int
         );
         return -(22 as c_int);
     }
-    get_num_threads(0 as *mut Dav1dContext, s, &mut n_tc, &mut n_fc);
+    get_num_threads(0 as *mut Rav1dContext, s, &mut n_tc, &mut n_fc);
     return n_fc as c_int;
 }
 
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_open(
-    c_out: *mut *mut Dav1dContext,
+    c_out: *mut *mut Rav1dContext,
     s: *const Dav1dSettings,
 ) -> c_int {
     unsafe extern "C" fn error(
-        c: *mut Dav1dContext,
-        c_out: *mut *mut Dav1dContext,
+        c: *mut Rav1dContext,
+        c_out: *mut *mut Rav1dContext,
         thread_attr: *mut pthread_attr_t,
     ) -> c_int {
         if !c.is_null() {
@@ -361,15 +361,15 @@ pub unsafe extern "C" fn dav1d_open(
     }
     let stack_size: usize = 1024 * 1024 * get_stack_size_internal(&mut thread_attr);
     pthread_attr_setstacksize(&mut thread_attr, stack_size);
-    *c_out = dav1d_alloc_aligned(::core::mem::size_of::<Dav1dContext>(), 64) as *mut Dav1dContext;
-    let c: *mut Dav1dContext = *c_out;
+    *c_out = dav1d_alloc_aligned(::core::mem::size_of::<Rav1dContext>(), 64) as *mut Rav1dContext;
+    let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
         return error(c, c_out, &mut thread_attr);
     }
     memset(
         c as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Dav1dContext>(),
+        ::core::mem::size_of::<Rav1dContext>(),
     );
     (*c).allocator = (*s).allocator.clone();
     (*c).logger = (*s).logger.clone();
@@ -438,28 +438,28 @@ pub unsafe extern "C" fn dav1d_open(
     *(*c).flush = 0 as c_int;
     get_num_threads(c, s, &mut (*c).n_tc, &mut (*c).n_fc);
     (*c).fc = dav1d_alloc_aligned(
-        ::core::mem::size_of::<Dav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
+        ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
         32 as c_int as usize,
-    ) as *mut Dav1dFrameContext;
+    ) as *mut Rav1dFrameContext;
     if ((*c).fc).is_null() {
         return error(c, c_out, &mut thread_attr);
     }
     memset(
         (*c).fc as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Dav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
+        ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
     );
     (*c).tc = dav1d_alloc_aligned(
-        ::core::mem::size_of::<Dav1dTaskContext>().wrapping_mul((*c).n_tc as usize),
+        ::core::mem::size_of::<Rav1dTaskContext>().wrapping_mul((*c).n_tc as usize),
         64 as c_int as usize,
-    ) as *mut Dav1dTaskContext;
+    ) as *mut Rav1dTaskContext;
     if ((*c).tc).is_null() {
         return error(c, c_out, &mut thread_attr);
     }
     memset(
         (*c).tc as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Dav1dTaskContext>().wrapping_mul((*c).n_tc as usize),
+        ::core::mem::size_of::<Rav1dTaskContext>().wrapping_mul((*c).n_tc as usize),
     );
     if (*c).n_tc > 1 as c_uint {
         if pthread_mutex_init(&mut (*c).task_thread.lock, 0 as *const pthread_mutexattr_t) != 0 {
@@ -486,16 +486,16 @@ pub unsafe extern "C" fn dav1d_open(
     if (*c).n_fc > 1 as c_uint {
         (*c).frame_thread.out_delayed = calloc(
             (*c).n_fc as usize,
-            ::core::mem::size_of::<Dav1dThreadPicture>(),
-        ) as *mut Dav1dThreadPicture;
+            ::core::mem::size_of::<Rav1dThreadPicture>(),
+        ) as *mut Rav1dThreadPicture;
         if ((*c).frame_thread.out_delayed).is_null() {
             return error(c, c_out, &mut thread_attr);
         }
     }
     let mut n: c_uint = 0 as c_int as c_uint;
     while n < (*c).n_fc {
-        let f: *mut Dav1dFrameContext =
-            &mut *((*c).fc).offset(n as isize) as *mut Dav1dFrameContext;
+        let f: *mut Rav1dFrameContext =
+            &mut *((*c).fc).offset(n as isize) as *mut Rav1dFrameContext;
         if (*c).n_tc > 1 as c_uint {
             if pthread_mutex_init(&mut (*f).task_thread.lock, 0 as *const pthread_mutexattr_t) != 0
             {
@@ -523,8 +523,8 @@ pub unsafe extern "C" fn dav1d_open(
     }
     let mut m: c_uint = 0 as c_int as c_uint;
     while m < (*c).n_tc {
-        let t: *mut Dav1dTaskContext = &mut *((*c).tc).offset(m as isize) as *mut Dav1dTaskContext;
-        (*t).f = &mut *((*c).fc).offset(0) as *mut Dav1dFrameContext;
+        let t: *mut Rav1dTaskContext = &mut *((*c).tc).offset(m as isize) as *mut Rav1dTaskContext;
+        (*t).f = &mut *((*c).fc).offset(0) as *mut Rav1dFrameContext;
         (*t).task_thread.ttd = &mut (*c).task_thread;
         (*t).c = c;
         memset(
@@ -599,7 +599,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
         let init = Dav1dData {
             data: 0 as *const u8,
             sz: 0,
-            r#ref: 0 as *mut Dav1dRef,
+            r#ref: 0 as *mut Rav1dRef,
             m: Dav1dDataProps {
                 timestamp: 0,
                 duration: 0,
@@ -607,7 +607,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
                 size: 0,
                 user_data: Dav1dUserData {
                     data: 0 as *const u8,
-                    r#ref: 0 as *mut Dav1dRef,
+                    r#ref: 0 as *mut Rav1dRef,
                 },
             },
         };
@@ -649,7 +649,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     dav1d_default_settings(&mut s);
     s.n_threads = 1 as c_int;
     s.logger.callback = None;
-    let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
+    let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
     res = dav1d_open(&mut c, &mut s);
     if res < 0 {
         return res;
@@ -717,9 +717,9 @@ unsafe extern "C" fn has_grain(pic: *const Dav1dPicture) -> c_int {
         as c_int;
 }
 
-unsafe extern "C" fn output_image(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> c_int {
+unsafe extern "C" fn output_image(c: *mut Rav1dContext, out: *mut Dav1dPicture) -> c_int {
     let mut res = 0;
-    let in_0: *mut Dav1dThreadPicture = if (*c).all_layers != 0 || (*c).max_spatial_id == 0 {
+    let in_0: *mut Rav1dThreadPicture = if (*c).all_layers != 0 || (*c).max_spatial_id == 0 {
         &mut (*c).out
     } else {
         &mut (*c).cache
@@ -737,7 +737,7 @@ unsafe extern "C" fn output_image(c: *mut Dav1dContext, out: *mut Dav1dPicture) 
     return res;
 }
 
-unsafe extern "C" fn output_picture_ready(c: *mut Dav1dContext, drain: c_int) -> c_int {
+unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) -> c_int {
     if (*c).cached_error != 0 {
         return 1 as c_int;
     }
@@ -765,13 +765,13 @@ unsafe extern "C" fn output_picture_ready(c: *mut Dav1dContext, drain: c_int) ->
     return !((*c).out.p.data[0]).is_null() as c_int;
 }
 
-unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> c_int {
+unsafe extern "C" fn drain_picture(c: *mut Rav1dContext, out: *mut Dav1dPicture) -> c_int {
     let mut drain_count: c_uint = 0 as c_int as c_uint;
     let mut drained = 0;
     loop {
         let next: c_uint = (*c).frame_thread.next;
-        let f: *mut Dav1dFrameContext =
-            &mut *((*c).fc).offset(next as isize) as *mut Dav1dFrameContext;
+        let f: *mut Rav1dFrameContext =
+            &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
         pthread_mutex_lock(&mut (*c).task_thread.lock);
         while (*f).n_tile_data > 0 {
             pthread_cond_wait(
@@ -779,8 +779,8 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
                 &mut (*(*f).task_thread.ttd).lock,
             );
         }
-        let out_delayed: *mut Dav1dThreadPicture =
-            &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Dav1dThreadPicture;
+        let out_delayed: *mut Rav1dThreadPicture =
+            &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Rav1dThreadPicture;
         if !((*out_delayed).p.data[0]).is_null()
             || ::core::intrinsics::atomic_load_seqcst(
                 &mut (*f).task_thread.error as *mut atomic_int,
@@ -852,7 +852,7 @@ unsafe extern "C" fn drain_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture)
     return -(11 as c_int);
 }
 
-unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> c_int {
+unsafe extern "C" fn gen_picture(c: *mut Rav1dContext) -> c_int {
     let mut res;
     let in_0: *mut Dav1dData = &mut (*c).in_0;
     if output_picture_ready(c, 0 as c_int) != 0 {
@@ -883,7 +883,7 @@ unsafe extern "C" fn gen_picture(c: *mut Dav1dContext) -> c_int {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_send_data(c: *mut Dav1dContext, in_0: *mut Dav1dData) -> c_int {
+pub unsafe extern "C" fn dav1d_send_data(c: *mut Rav1dContext, in_0: *mut Dav1dData) -> c_int {
     if c.is_null() {
         fprintf(
             stderr,
@@ -926,7 +926,7 @@ pub unsafe extern "C" fn dav1d_send_data(c: *mut Dav1dContext, in_0: *mut Dav1dD
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> c_int {
+pub unsafe extern "C" fn dav1d_get_picture(c: *mut Rav1dContext, out: *mut Dav1dPicture) -> c_int {
     if c.is_null() {
         fprintf(
             stderr,
@@ -967,7 +967,7 @@ pub unsafe extern "C" fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1d
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) -> c_int {
@@ -1036,7 +1036,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
+pub unsafe extern "C" fn dav1d_flush(c: *mut Rav1dContext) {
     dav1d_data_unref_internal(&mut (*c).in_0);
     if !((*c).out.p.frame_hdr).is_null() {
         dav1d_thread_picture_unref(&mut (*c).out);
@@ -1074,8 +1074,8 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
         pthread_mutex_lock(&mut (*c).task_thread.lock);
         let mut i_0: c_uint = 0 as c_int as c_uint;
         while i_0 < (*c).n_tc {
-            let tc: *mut Dav1dTaskContext =
-                &mut *((*c).tc).offset(i_0 as isize) as *mut Dav1dTaskContext;
+            let tc: *mut Rav1dTaskContext =
+                &mut *((*c).tc).offset(i_0 as isize) as *mut Rav1dTaskContext;
             while !(*tc).task_thread.flushed {
                 pthread_cond_wait(&mut (*tc).task_thread.td.cond, &mut (*c).task_thread.lock);
             }
@@ -1084,21 +1084,21 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
         let mut i_1: c_uint = 0 as c_int as c_uint;
         while i_1 < (*c).n_fc {
             let ref mut fresh1 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_head;
-            *fresh1 = 0 as *mut Dav1dTask;
+            *fresh1 = 0 as *mut Rav1dTask;
             let ref mut fresh2 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_tail;
-            *fresh2 = 0 as *mut Dav1dTask;
+            *fresh2 = 0 as *mut Rav1dTask;
             let ref mut fresh3 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_cur_prev;
-            *fresh3 = 0 as *mut Dav1dTask;
+            *fresh3 = 0 as *mut Rav1dTask;
             let ref mut fresh4 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
                 .head;
-            *fresh4 = 0 as *mut Dav1dTask;
+            *fresh4 = 0 as *mut Rav1dTask;
             let ref mut fresh5 = (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
                 .tail;
-            *fresh5 = 0 as *mut Dav1dTask;
+            *fresh5 = 0 as *mut Rav1dTask;
             *&mut (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
@@ -1118,14 +1118,14 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
             if next == (*c).n_fc {
                 next = 0 as c_int as c_uint;
             }
-            let f: *mut Dav1dFrameContext =
-                &mut *((*c).fc).offset(next as isize) as *mut Dav1dFrameContext;
+            let f: *mut Rav1dFrameContext =
+                &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
             dav1d_decode_frame_exit(&mut *f, -(1 as c_int));
             (*f).n_tile_data = 0 as c_int;
             (*f).task_thread.retval = 0 as c_int;
-            let out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
+            let out_delayed: *mut Rav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
                 .offset(next as isize)
-                as *mut Dav1dThreadPicture;
+                as *mut Rav1dThreadPicture;
             if !((*out_delayed).p.frame_hdr).is_null() {
                 dav1d_thread_picture_unref(out_delayed);
             }
@@ -1139,7 +1139,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
+pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Rav1dContext) {
     if c_out.is_null() {
         fprintf(
             stderr,
@@ -1153,8 +1153,8 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
 }
 
 #[cold]
-unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: c_int) {
-    let c: *mut Dav1dContext = *c_out;
+unsafe extern "C" fn close_internal(c_out: *mut *mut Rav1dContext, flush: c_int) {
+    let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
         return;
     }
@@ -1174,8 +1174,8 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: c_int)
             pthread_mutex_unlock(&mut (*ttd).lock);
             let mut n_0: c_uint = 0 as c_int as c_uint;
             while n_0 < (*c).n_tc {
-                let pf: *mut Dav1dTaskContext =
-                    &mut *((*c).tc).offset(n_0 as isize) as *mut Dav1dTaskContext;
+                let pf: *mut Rav1dTaskContext =
+                    &mut *((*c).tc).offset(n_0 as isize) as *mut Rav1dTaskContext;
                 if (*pf).task_thread.td.inited == 0 {
                     break;
                 }
@@ -1192,8 +1192,8 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: c_int)
     }
     let mut n_1: c_uint = 0 as c_int as c_uint;
     while !((*c).fc).is_null() && n_1 < (*c).n_fc {
-        let f: *mut Dav1dFrameContext =
-            &mut *((*c).fc).offset(n_1 as isize) as *mut Dav1dFrameContext;
+        let f: *mut Rav1dFrameContext =
+            &mut *((*c).fc).offset(n_1 as isize) as *mut Rav1dFrameContext;
         if (*c).n_fc > 1 as c_uint {
             freep(
                 &mut (*f).tile_thread.lowest_pixel_mem as *mut *mut [[c_int; 2]; 7] as *mut c_void,
@@ -1213,9 +1213,9 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: c_int)
             pthread_mutex_destroy(&mut (*f).task_thread.lock);
         }
         freep(&mut (*f).frame_thread.frame_progress as *mut *mut atomic_uint as *mut c_void);
-        freep(&mut (*f).task_thread.tasks as *mut *mut Dav1dTask as *mut c_void);
+        freep(&mut (*f).task_thread.tasks as *mut *mut Rav1dTask as *mut c_void);
         freep(
-            &mut *((*f).task_thread.tile_tasks).as_mut_ptr().offset(0) as *mut *mut Dav1dTask
+            &mut *((*f).task_thread.tile_tasks).as_mut_ptr().offset(0) as *mut *mut Rav1dTask
                 as *mut c_void,
         );
         dav1d_free_aligned((*f).ts as *mut c_void);
@@ -1281,7 +1281,7 @@ unsafe extern "C" fn close_internal(c_out: *mut *mut Dav1dContext, flush: c_int)
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_event_flags(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     flags: *mut Dav1dEventFlags,
 ) -> c_int {
     if c.is_null() {
@@ -1311,7 +1311,7 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     out: *mut Dav1dDataProps,
 ) -> c_int {
     if c.is_null() {

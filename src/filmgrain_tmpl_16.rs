@@ -8,7 +8,7 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::src::filmgrain::get_random_number;
 use crate::src::filmgrain::round2;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::filmgrain::GRAIN_WIDTH;
 use crate::src::tables::dav1d_gaussian_sequence;
 use libc::intptr_t;
@@ -1341,7 +1341,7 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased(
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
-unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
+unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Rav1dFilmGrainDSPContext) {
     let flags = dav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
@@ -1404,7 +1404,7 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Dav1dFilmGrainDSPContext) {
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
-unsafe extern "C" fn film_grain_dsp_init_arm(c: *mut Dav1dFilmGrainDSPContext) {
+unsafe extern "C" fn film_grain_dsp_init_arm(c: *mut Rav1dFilmGrainDSPContext) {
     let flags = dav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -1836,7 +1836,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
 }
 
 #[cold]
-pub unsafe fn dav1d_film_grain_dsp_init_16bpc(c: *mut Dav1dFilmGrainDSPContext) {
+pub unsafe fn dav1d_film_grain_dsp_init_16bpc(c: *mut Rav1dFilmGrainDSPContext) {
     (*c).generate_grain_y = Some(generate_grain_y_c_erased);
     (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         Some(generate_grain_uv_420_c_erased);

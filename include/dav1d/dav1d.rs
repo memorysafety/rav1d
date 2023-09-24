@@ -1,11 +1,13 @@
 use crate::include::dav1d::picture::Dav1dPicAllocator;
+use crate::src::internal::Rav1dContext;
+use crate::src::r#ref::Rav1dRef;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 
-pub use crate::src::internal::Dav1dContext;
-pub use crate::src::r#ref::Dav1dRef;
+pub type Dav1dContext = Rav1dContext;
+pub type Dav1dRef = Rav1dRef;
 
 #[derive(Clone)]
 #[repr(C)]

@@ -1354,7 +1354,7 @@ pub type resize_fn = unsafe extern "C" fn(
     c_int,
 ) -> ();
 #[repr(C)]
-pub struct Dav1dMCDSPContext {
+pub struct Rav1dMCDSPContext {
     pub mc: [mc_fn; 10],
     pub mc_scaled: [mc_scaled_fn; 10],
     pub mct: [mct_fn; 10],
@@ -2254,7 +2254,7 @@ extern "C" {
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
+unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
     let flags = dav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
@@ -2500,7 +2500,7 @@ unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe extern "C" fn mc_dsp_init_arm<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
+unsafe extern "C" fn mc_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
     let flags = dav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -2546,7 +2546,7 @@ unsafe extern "C" fn mc_dsp_init_arm<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
 }
 
 #[cold]
-pub unsafe extern "C" fn dav1d_mc_dsp_init<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
+pub unsafe extern "C" fn dav1d_mc_dsp_init<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
     (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = put_8tap_regular_c_erased::<BD>;
     (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = put_8tap_regular_smooth_c_erased::<BD>;
     (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = put_8tap_regular_sharp_c_erased::<BD>;

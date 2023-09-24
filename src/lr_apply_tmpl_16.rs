@@ -4,8 +4,8 @@ use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
 use crate::src::align::Align16;
-use crate::src::internal::Dav1dDSPContext;
-use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Rav1dDSPContext;
+use crate::src::internal::Rav1dFrameContext;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::looprestoration::looprestorationfilter_fn;
 use crate::src::looprestoration::LooprestorationParams;
@@ -36,7 +36,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
 }
 
 unsafe extern "C" fn lr_stripe(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     mut p: *mut pixel,
     mut left: *const [pixel; 4],
     x: c_int,
@@ -47,7 +47,7 @@ unsafe extern "C" fn lr_stripe(
     lr: *const Av1RestorationUnit,
     mut edges: LrEdgeFlags,
 ) {
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma
         & ((*f).sr_cur.p.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
@@ -164,7 +164,7 @@ unsafe extern "C" fn backup4xU(
 }
 
 unsafe extern "C" fn lr_sbrow(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     mut p: *mut pixel,
     y: c_int,
     w: c_int,
@@ -267,7 +267,7 @@ unsafe extern "C" fn lr_sbrow(
     }
 }
 
-pub unsafe fn dav1d_lr_sbrow_16bpc(f: *mut Dav1dFrameContext, dst: *const *mut pixel, sby: c_int) {
+pub unsafe fn dav1d_lr_sbrow_16bpc(f: *mut Rav1dFrameContext, dst: *const *mut pixel, sby: c_int) {
     let offset_y = 8 * (sby != 0) as c_int;
     let dst_stride: *const ptrdiff_t = ((*f).sr_cur.p.stride).as_mut_ptr();
     let restore_planes = (*f).lf.restore_planes;

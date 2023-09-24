@@ -5,7 +5,7 @@ use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align4;
 use crate::src::align::Align8;
-use crate::src::internal::Dav1dContext;
+use crate::src::internal::Rav1dContext;
 use crate::src::levels::N_BL_LEVELS;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
@@ -17,7 +17,7 @@ use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::r#ref::dav1d_ref_create_using_pool;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
-use crate::src::r#ref::Dav1dRef;
+use crate::src::r#ref::Rav1dRef;
 use crate::src::tables::dav1d_partition_type_count;
 use libc::memcpy;
 use libc::memset;
@@ -130,7 +130,7 @@ pub struct CdfModeContext {
 #[derive(Clone)]
 #[repr(C)]
 pub struct CdfThreadContext {
-    pub r#ref: *mut Dav1dRef,
+    pub r#ref: *mut Rav1dRef,
     pub data: CdfThreadContext_data,
     pub progress: *mut atomic_uint,
 }
@@ -5612,7 +5612,7 @@ unsafe extern "C" fn get_qcat_idx(q: c_int) -> c_int {
 }
 
 pub unsafe fn dav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: c_int) {
-    (*cdf).r#ref = 0 as *mut Dav1dRef;
+    (*cdf).r#ref = 0 as *mut Rav1dRef;
     (*cdf).data.qcat = get_qcat_idx(qidx) as c_uint;
 }
 
@@ -5649,7 +5649,7 @@ pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
 }
 
 pub unsafe fn dav1d_cdf_thread_alloc(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     cdf: *mut CdfThreadContext,
     have_frame_mt: c_int,
 ) -> c_int {

@@ -18,10 +18,10 @@ use crate::src::cdef_apply_tmpl_8::dav1d_cdef_brow_8bpc;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::CodedBlockInfo;
-use crate::src::internal::Dav1dDSPContext;
-use crate::src::internal::Dav1dFrameContext;
-use crate::src::internal::Dav1dTaskContext;
-use crate::src::internal::Dav1dTileState;
+use crate::src::internal::Rav1dDSPContext;
+use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dTaskContext;
+use crate::src::internal::Rav1dTileState;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I420_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
@@ -73,7 +73,7 @@ use crate::src::msac::dav1d_msac_decode_hi_tok;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
-use crate::src::picture::Dav1dThreadPicture;
+use crate::src::picture::Rav1dThreadPicture;
 use crate::src::recon::get_dc_sign_ctx;
 use crate::src::recon::get_lo_ctx;
 use crate::src::recon::get_skip_ctx;
@@ -109,7 +109,7 @@ pub type pixel = u8;
 pub type coef = i16;
 
 unsafe fn decode_coefs(
-    t: *mut Dav1dTaskContext,
+    t: *mut Rav1dTaskContext,
     a: &mut [u8],
     l: &mut [u8],
     tx: RectTxfmSize,
@@ -125,9 +125,9 @@ unsafe fn decode_coefs(
     let dc_sign;
     let mut dc_dq;
     let current_block: u64;
-    let ts: *mut Dav1dTileState = (*t).ts;
+    let ts: *mut Rav1dTileState = (*t).ts;
     let chroma = (plane != 0) as c_int;
-    let f: *const Dav1dFrameContext = (*t).f;
+    let f: *const Rav1dFrameContext = (*t).f;
     let lossless = (*(*f).frame_hdr).segmentation.lossless[(*b).seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = DEBUG_BLOCK_INFO(&*f, &*t) as c_int;
@@ -1275,7 +1275,7 @@ unsafe fn decode_coefs(
 }
 
 unsafe extern "C" fn read_coef_tree(
-    t: *mut Dav1dTaskContext,
+    t: *mut Rav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
     ytx: RectTxfmSize,
@@ -1285,9 +1285,9 @@ unsafe extern "C" fn read_coef_tree(
     y_off: c_int,
     mut dst: *mut pixel,
 ) {
-    let f: *const Dav1dFrameContext = (*t).f;
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let f: *const Rav1dFrameContext = (*t).f;
+    let ts: *mut Rav1dTileState = (*t).ts;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(ytx as isize) as *const TxfmInfo;
     let txw = (*t_dim).w as c_int;
@@ -1479,11 +1479,11 @@ unsafe extern "C" fn read_coef_tree(
 }
 
 pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
-    t: *mut Dav1dTaskContext,
+    t: *mut Rav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
 ) {
-    let f: *const Dav1dFrameContext = (*t).f;
+    let f: *const Rav1dFrameContext = (*t).f;
     let ss_ver =
         ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let ss_hor =
@@ -1522,7 +1522,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
         }
         return;
     }
-    let ts: *mut Dav1dTileState = (*t).ts;
+    let ts: *mut Rav1dTileState = (*t).ts;
     let w4 = cmp::min(bw4, (*f).bw - (*t).bx);
     let h4 = cmp::min(bh4, (*f).bh - (*t).by);
     let cw4 = w4 + ss_hor >> ss_hor;
@@ -1723,7 +1723,7 @@ pub unsafe extern "C" fn dav1d_read_coef_blocks_8bpc(
 }
 
 unsafe extern "C" fn mc(
-    t: *mut Dav1dTaskContext,
+    t: *mut Rav1dTaskContext,
     dst8: *mut pixel,
     dst16: *mut i16,
     dst_stride: ptrdiff_t,
@@ -1733,7 +1733,7 @@ unsafe extern "C" fn mc(
     by: c_int,
     pl: c_int,
     mv: mv,
-    refp: *const Dav1dThreadPicture,
+    refp: *const Rav1dThreadPicture,
     refidx: c_int,
     filter_2d: Filter2d,
 ) -> c_int {
@@ -1743,7 +1743,7 @@ unsafe extern "C" fn mc(
     {
         unreachable!();
     }
-    let f: *const Dav1dFrameContext = (*t).f;
+    let f: *const Rav1dFrameContext = (*t).f;
     let ss_ver = (pl != 0
         && (*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
         as c_int;
@@ -1826,7 +1826,7 @@ unsafe extern "C" fn mc(
             );
         }
     } else {
-        if !(refp != &(*f).sr_cur as *const Dav1dThreadPicture) {
+        if !(refp != &(*f).sr_cur as *const Rav1dThreadPicture) {
             unreachable!();
         }
         let orig_pos_y = (by * v_mul << 4) + mvy * ((1 as c_int) << (ss_ver == 0) as c_int);
@@ -1926,7 +1926,7 @@ unsafe extern "C" fn mc(
 }
 
 unsafe extern "C" fn obmc(
-    t: *mut Dav1dTaskContext,
+    t: *mut Rav1dTaskContext,
     dst: *mut pixel,
     dst_stride: ptrdiff_t,
     b_dim: *const u8,
@@ -1939,7 +1939,7 @@ unsafe extern "C" fn obmc(
     if !((*t).bx & 1 == 0 && (*t).by & 1 == 0) {
         unreachable!();
     }
-    let f: *const Dav1dFrameContext = (*t).f;
+    let f: *const Rav1dFrameContext = (*t).f;
     let r: *mut *mut refmvs_block = &mut *((*t).rt.r)
         .as_mut_ptr()
         .offset((((*t).by & 31) + 5) as isize)
@@ -2057,13 +2057,13 @@ unsafe extern "C" fn obmc(
 }
 
 unsafe extern "C" fn warp_affine(
-    t: *mut Dav1dTaskContext,
+    t: *mut Rav1dTaskContext,
     mut dst8: *mut pixel,
     mut dst16: *mut i16,
     dstride: ptrdiff_t,
     b_dim: *const u8,
     pl: c_int,
-    refp: *const Dav1dThreadPicture,
+    refp: *const Rav1dThreadPicture,
     wmp: *const Dav1dWarpedMotionParams,
 ) -> c_int {
     if (dst8 != 0 as *mut c_void as *mut pixel) as c_int
@@ -2072,8 +2072,8 @@ unsafe extern "C" fn warp_affine(
     {
         unreachable!();
     }
-    let f: *const Dav1dFrameContext = (*t).f;
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let f: *const Rav1dFrameContext = (*t).f;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let ss_ver = (pl != 0
         && (*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
         as c_int;
@@ -2172,14 +2172,14 @@ unsafe extern "C" fn warp_affine(
 }
 
 pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
-    t: *mut Dav1dTaskContext,
+    t: *mut Rav1dTaskContext,
     bs: BlockSize,
     intra_edge_flags: EdgeFlags,
     b: *const Av1Block,
 ) {
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let f: *const Dav1dFrameContext = (*t).f;
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let ts: *mut Rav1dTileState = (*t).ts;
+    let f: *const Rav1dFrameContext = (*t).f;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let bx4 = (*t).bx & 31;
     let by4 = (*t).by & 31;
     let ss_ver =
@@ -2913,13 +2913,13 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
 }
 
 pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
-    t: *mut Dav1dTaskContext,
+    t: *mut Rav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
 ) -> c_int {
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let f: *const Dav1dFrameContext = (*t).f;
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let ts: *mut Rav1dTileState = (*t).ts;
+    let f: *const Rav1dFrameContext = (*t).f;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let bx4 = (*t).bx & 31;
     let by4 = (*t).by & 31;
     let ss_ver =
@@ -3006,11 +3006,11 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
     } else if (*b).c2rust_unnamed.c2rust_unnamed_0.comp_type as c_int == COMP_INTER_NONE as c_int {
         let mut is_sub8x8;
         let mut r: *const *mut refmvs_block;
-        let refp: *const Dav1dThreadPicture = &*((*f).refp).as_ptr().offset(
+        let refp: *const Rav1dThreadPicture = &*((*f).refp).as_ptr().offset(
             *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                 .as_ptr()
                 .offset(0) as isize,
-        ) as *const Dav1dThreadPicture;
+        ) as *const Rav1dThreadPicture;
         let filter_2d: Filter2d = (*b).c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
         if cmp::min(bw4, bh4) > 1
             && ((*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV as c_int
@@ -3627,11 +3627,11 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
         let mut mask: *const u8 = 0 as *const u8;
         let mut i = 0;
         while i < 2 {
-            let refp_0: *const Dav1dThreadPicture = &*((*f).refp).as_ptr().offset(
+            let refp_0: *const Rav1dThreadPicture = &*((*f).refp).as_ptr().offset(
                 *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                     .as_ptr()
                     .offset(i as isize) as isize,
-            ) as *const Dav1dThreadPicture;
+            ) as *const Rav1dThreadPicture;
             if (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int
                 == GLOBALMV_GLOBALMV as c_int
                 && (*f).gmv_warp_allowed
@@ -3802,12 +3802,12 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
             while pl_7 < 2 {
                 let mut i_0 = 0;
                 while i_0 < 2 {
-                    let refp_1: *const Dav1dThreadPicture = &*((*f).refp).as_ptr().offset(
+                    let refp_1: *const Rav1dThreadPicture = &*((*f).refp).as_ptr().offset(
                         *((*b).c2rust_unnamed.c2rust_unnamed_0.r#ref)
                             .as_ptr()
                             .offset(i_0 as isize) as isize,
                     )
-                        as *const Dav1dThreadPicture;
+                        as *const Rav1dThreadPicture;
                     if (*b).c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int
                         == GLOBALMV_GLOBALMV as c_int
                         && cmp::min(cbw4, cbh4) > 1
@@ -4145,7 +4145,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
 }
 
 pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_8bpc(
-    f: *mut Dav1dFrameContext,
+    f: *mut Rav1dFrameContext,
     sby: c_int,
 ) {
     if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint == 0
@@ -4174,7 +4174,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_cols_8bpc(
 }
 
 pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_8bpc(
-    f: *mut Dav1dFrameContext,
+    f: *mut Rav1dFrameContext,
     sby: c_int,
 ) {
     let y = sby * (*f).sb_step * 4;
@@ -4198,8 +4198,8 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_deblock_rows_8bpc(
     }
 }
 
-pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext, sby: c_int) {
-    let f: *const Dav1dFrameContext = (*tc).f;
+pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Rav1dTaskContext, sby: c_int) {
+    let f: *const Rav1dFrameContext = (*tc).f;
     if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
         return;
     }
@@ -4240,7 +4240,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_cdef_8bpc(tc: *mut Dav1dTaskContext,
     dav1d_cdef_brow_8bpc(tc, p.as_ptr(), mask, start, end, 0 as c_int, sby);
 }
 
-pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(f: *mut Dav1dFrameContext, sby: c_int) {
+pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(f: *mut Rav1dFrameContext, sby: c_int) {
     let sbsz = (*f).sb_step;
     let y = sby * sbsz * 4;
     let ss_ver =
@@ -4297,7 +4297,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_resize_8bpc(f: *mut Dav1dFrameContex
     }
 }
 
-pub unsafe extern "C" fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, sby: c_int) {
+pub unsafe extern "C" fn dav1d_filter_sbrow_lr_8bpc(f: *mut Rav1dFrameContext, sby: c_int) {
     if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
         return;
     }
@@ -4314,7 +4314,7 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_lr_8bpc(f: *mut Dav1dFrameContext, s
     dav1d_lr_sbrow_8bpc(f, sr_p.as_ptr(), sby);
 }
 
-pub unsafe extern "C" fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby: c_int) {
+pub unsafe extern "C" fn dav1d_filter_sbrow_8bpc(f: *mut Rav1dFrameContext, sby: c_int) {
     dav1d_filter_sbrow_deblock_cols_8bpc(f, sby);
     dav1d_filter_sbrow_deblock_rows_8bpc(f, sby);
     if (*(*f).seq_hdr).cdef != 0 {
@@ -4328,9 +4328,9 @@ pub unsafe extern "C" fn dav1d_filter_sbrow_8bpc(f: *mut Dav1dFrameContext, sby:
     }
 }
 
-pub unsafe extern "C" fn dav1d_backup_ipred_edge_8bpc(t: *mut Dav1dTaskContext) {
-    let f: *const Dav1dFrameContext = (*t).f;
-    let ts: *mut Dav1dTileState = (*t).ts;
+pub unsafe extern "C" fn dav1d_backup_ipred_edge_8bpc(t: *mut Rav1dTaskContext) {
+    let f: *const Rav1dFrameContext = (*t).f;
+    let ts: *mut Rav1dTileState = (*t).ts;
     let sby = (*t).by >> (*f).sb_shift;
     let sby_off = (*f).sb128w * 128 * sby;
     let x_off = (*ts).tiling.col_start;

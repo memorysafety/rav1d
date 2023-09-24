@@ -100,7 +100,7 @@ pub type looprestorationfilter_fn = unsafe extern "C" fn(
 ) -> ();
 
 #[repr(C)]
-pub struct Dav1dLoopRestorationDSPContext {
+pub struct Rav1dLoopRestorationDSPContext {
     pub wiener: [looprestorationfilter_fn; 2],
     pub sgr: [looprestorationfilter_fn; 3],
 }
@@ -1631,7 +1631,7 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPContext, bpc: c_int) {
+fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dLoopRestorationDSPContext, bpc: c_int) {
     let flags = dav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
@@ -1692,7 +1692,7 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPCo
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-fn loop_restoration_dsp_init_arm<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPContext, bpc: c_int) {
+fn loop_restoration_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dLoopRestorationDSPContext, bpc: c_int) {
     let flags = dav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -1718,7 +1718,7 @@ fn loop_restoration_dsp_init_arm<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPCo
 
 #[cold]
 pub fn dav1d_loop_restoration_dsp_init<BD: BitDepth>(
-    c: &mut Dav1dLoopRestorationDSPContext,
+    c: &mut Rav1dLoopRestorationDSPContext,
     _bpc: c_int,
 ) {
     c.wiener[1] = wiener_c_erased::<BD>;

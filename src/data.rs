@@ -4,7 +4,7 @@ use crate::src::r#ref::dav1d_ref_create;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::dav1d_ref_wrap;
-use crate::src::r#ref::Dav1dRef;
+use crate::src::r#ref::Rav1dRef;
 use crate::stderr;
 use libc::fprintf;
 use libc::memset;
@@ -209,7 +209,7 @@ pub unsafe fn dav1d_data_props_unref_internal(props: *mut Dav1dDataProps) {
         );
         return;
     }
-    let mut user_data_ref: *mut Dav1dRef = (*props).user_data.r#ref;
+    let mut user_data_ref: *mut Rav1dRef = (*props).user_data.r#ref;
     dav1d_data_props_set_defaults(props);
     dav1d_ref_dec(&mut user_data_ref);
 }
@@ -225,7 +225,7 @@ pub unsafe fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
         );
         return;
     }
-    let mut user_data_ref: *mut Dav1dRef = (*buf).m.user_data.r#ref;
+    let mut user_data_ref: *mut Rav1dRef = (*buf).m.user_data.r#ref;
     if !((*buf).r#ref).is_null() {
         if ((*buf).data).is_null() {
             fprintf(

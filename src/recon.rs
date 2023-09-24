@@ -1,8 +1,8 @@
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::src::internal::Dav1dFrameContext;
-use crate::src::internal::Dav1dTaskContext;
+use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dTaskContext;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
@@ -40,23 +40,23 @@ use std::ffi::c_uint;
 use std::ops::BitOr;
 
 /// TODO: add feature and compile-time guard around this code
-pub unsafe fn DEBUG_BLOCK_INFO(f: &Dav1dFrameContext, t: &Dav1dTaskContext) -> bool {
+pub unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
     false && (*f.frame_hdr).frame_offset == 2 && t.by >= 0 && t.by < 4 && t.bx >= 8 && t.bx < 12
 }
 
 pub type recon_b_intra_fn = Option<
-    unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
+    unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 
 pub type recon_b_inter_fn =
-    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> c_int>;
+    Option<unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, *const Av1Block) -> c_int>;
 
-pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, c_int) -> ()>;
+pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Rav1dFrameContext, c_int) -> ()>;
 
-pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
+pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Rav1dTaskContext) -> ()>;
 
 pub type read_coef_blocks_fn =
-    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
+    Option<unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 
 #[inline]
 pub fn read_golomb(msac: &mut MsacContext) -> c_uint {

@@ -10,9 +10,9 @@ use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
-use crate::src::internal::Dav1dDSPContext;
-use crate::src::internal::Dav1dFrameContext;
-use crate::src::internal::Dav1dTaskContext;
+use crate::src::internal::Rav1dDSPContext;
+use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dTaskContext;
 use crate::src::lf_mask::Av1Filter;
 use libc::memcpy;
 use libc::ptrdiff_t;
@@ -156,7 +156,7 @@ unsafe extern "C" fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
 }
 
 pub unsafe fn dav1d_cdef_brow_16bpc(
-    tc: *mut Dav1dTaskContext,
+    tc: *mut Rav1dTaskContext,
     p: *const *mut pixel,
     lflvl: *const Av1Filter,
     by_start: c_int,
@@ -164,13 +164,13 @@ pub unsafe fn dav1d_cdef_brow_16bpc(
     sbrow_start: c_int,
     sby: c_int,
 ) {
-    let f: *mut Dav1dFrameContext = (*tc).f as *mut Dav1dFrameContext;
+    let f: *mut Rav1dFrameContext = (*tc).f as *mut Rav1dFrameContext;
     let bitdepth_min_8 = if 16 == 8 {
         0 as c_int
     } else {
         (*f).cur.p.bpc - 8
     };
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut edges: CdefEdgeFlags = (CDEF_HAVE_BOTTOM as c_int
         | (if by_start > 0 {
             CDEF_HAVE_TOP as c_int

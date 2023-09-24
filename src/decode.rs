@@ -69,12 +69,12 @@ use crate::src::env::get_poc_diff;
 use crate::src::env::get_tx_ctx;
 use crate::src::env::BlockContext;
 use crate::src::internal::CodedBlockInfo;
-use crate::src::internal::Dav1dContext;
-use crate::src::internal::Dav1dFrameContext;
-use crate::src::internal::Dav1dTaskContext;
-use crate::src::internal::Dav1dTaskContext_scratch_pal;
-use crate::src::internal::Dav1dTileGroup;
-use crate::src::internal::Dav1dTileState;
+use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dTaskContext;
+use crate::src::internal::Rav1dTaskContext_scratch_pal;
+use crate::src::internal::Rav1dTileGroup;
+use crate::src::internal::Rav1dTileState;
 use crate::src::internal::ScalableMotionParams;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeFlags;
@@ -176,7 +176,7 @@ use crate::src::picture::dav1d_picture_unref_internal;
 use crate::src::picture::dav1d_thread_picture_alloc;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
-use crate::src::picture::Dav1dThreadPicture;
+use crate::src::picture::Rav1dThreadPicture;
 use crate::src::qm::dav1d_qm_tbl;
 use crate::src::r#ref::dav1d_ref_create_using_pool;
 use crate::src::r#ref::dav1d_ref_dec;
@@ -302,7 +302,7 @@ fn init_quant_tables(
 }
 
 unsafe fn read_mv_component_diff(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     mv_comp: &mut CdfMvComponent,
     have_fp: bool,
 ) -> c_int {
@@ -362,7 +362,7 @@ unsafe fn read_mv_component_diff(
 }
 
 unsafe fn read_mv_residual(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     ref_mv: &mut mv,
     mv_cdf: &mut CdfMvContext,
     have_fp: bool,
@@ -388,7 +388,7 @@ unsafe fn read_mv_residual(
 }
 
 unsafe fn read_tx_tree(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     from: RectTxfmSize,
     depth: c_int,
     masks: &mut [u16; 2],
@@ -481,7 +481,7 @@ fn neg_deinterleave(diff: c_int, r#ref: c_int, max: c_int) -> c_int {
 }
 
 unsafe fn find_matching_ref(
-    t: &Dav1dTaskContext,
+    t: &Rav1dTaskContext,
     intra_edge_flags: EdgeFlags,
     bw4: c_int,
     bh4: c_int,
@@ -585,7 +585,7 @@ unsafe fn find_matching_ref(
 }
 
 unsafe fn derive_warpmv(
-    t: &Dav1dTaskContext,
+    t: &Rav1dTaskContext,
     bw4: c_int,
     bh4: c_int,
     masks: &[u64; 2],
@@ -709,7 +709,7 @@ fn findoddzero(buf: &[u8]) -> bool {
 }
 
 unsafe fn read_pal_plane(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     b: &mut Av1Block,
     pl: bool,
     sz_ctx: u8,
@@ -895,7 +895,7 @@ unsafe fn read_pal_plane(
 }
 
 unsafe fn read_pal_uv(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     b: &mut Av1Block,
     sz_ctx: u8,
     bx4: usize,
@@ -1022,8 +1022,8 @@ fn order_palette(
 }
 
 unsafe fn read_pal_indices(
-    ts: &mut Dav1dTileState,
-    scratch_pal: &mut Dav1dTaskContext_scratch_pal,
+    ts: &mut Rav1dTileState,
+    scratch_pal: &mut Rav1dTaskContext_scratch_pal,
     pal_idx: &mut [u8],
     b: &Av1Block,
     pl: bool,
@@ -1039,7 +1039,7 @@ unsafe fn read_pal_indices(
     let stride = bw4 * 4;
     pal_idx[0] = dav1d_msac_decode_uniform(&mut ts.msac, pal_sz as c_uint) as u8;
     let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz - 2];
-    let Dav1dTaskContext_scratch_pal {
+    let Rav1dTaskContext_scratch_pal {
         pal_order: order,
         pal_ctx: ctx,
     } = scratch_pal;
@@ -1078,7 +1078,7 @@ unsafe fn read_pal_indices(
 }
 
 unsafe fn read_vartx_tree(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     b: &mut Av1Block,
     bs: BlockSize,
     bx4: c_int,
@@ -1162,7 +1162,7 @@ unsafe fn read_vartx_tree(
 
 #[inline]
 unsafe fn get_prev_frame_segid(
-    f: &Dav1dFrameContext,
+    f: &Rav1dFrameContext,
     by: c_int,
     bx: c_int,
     w4: c_int,
@@ -1205,8 +1205,8 @@ unsafe fn get_prev_frame_segid(
 
 #[inline]
 unsafe fn splat_oneref_mv(
-    c: &Dav1dContext,
-    t: &mut Dav1dTaskContext,
+    c: &Rav1dContext,
+    t: &mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -1237,8 +1237,8 @@ unsafe fn splat_oneref_mv(
 
 #[inline]
 unsafe fn splat_intrabc_mv(
-    c: &Dav1dContext,
-    t: &mut Dav1dTaskContext,
+    c: &Rav1dContext,
+    t: &mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -1263,8 +1263,8 @@ unsafe fn splat_intrabc_mv(
 
 #[inline]
 unsafe fn splat_tworef_mv(
-    c: &Dav1dContext,
-    t: &mut Dav1dTaskContext,
+    c: &Rav1dContext,
+    t: &mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -1291,8 +1291,8 @@ unsafe fn splat_tworef_mv(
 
 #[inline]
 unsafe fn splat_intraref(
-    c: &Dav1dContext,
-    t: &mut Dav1dTaskContext,
+    c: &Rav1dContext,
+    t: &mut Rav1dTaskContext,
     bs: BlockSize,
     bw4: usize,
     bh4: usize,
@@ -1340,7 +1340,7 @@ fn mc_lowest_px(
 
 #[inline(always)]
 fn affine_lowest_px(
-    t: &Dav1dTaskContext,
+    t: &Rav1dTaskContext,
     dst: &mut c_int,
     b_dim: &[u8; 4],
     wmp: &Dav1dWarpedMotionParams,
@@ -1366,7 +1366,7 @@ fn affine_lowest_px(
 
 #[inline(never)]
 fn affine_lowest_px_luma(
-    t: &Dav1dTaskContext,
+    t: &Rav1dTaskContext,
     dst: &mut c_int,
     b_dim: &[u8; 4],
     wmp: &Dav1dWarpedMotionParams,
@@ -1376,7 +1376,7 @@ fn affine_lowest_px_luma(
 
 #[inline(never)]
 unsafe fn affine_lowest_px_chroma(
-    t: &Dav1dTaskContext,
+    t: &Rav1dTaskContext,
     dst: &mut c_int,
     b_dim: &[u8; 4],
     wmp: &Dav1dWarpedMotionParams,
@@ -1398,7 +1398,7 @@ unsafe fn affine_lowest_px_chroma(
 }
 
 unsafe fn obmc_lowest_px(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     dst: &mut [[c_int; 2]; 7],
     is_chroma: bool,
     b_dim: &[u8; 4],
@@ -1461,7 +1461,7 @@ unsafe fn obmc_lowest_px(
 }
 
 unsafe fn decode_b(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     bl: BlockLevel,
     bs: BlockSize,
     bp: BlockPartition,
@@ -3487,7 +3487,7 @@ unsafe fn decode_b(
     0
 }
 
-unsafe fn decode_sb(t: &mut Dav1dTaskContext, bl: BlockLevel, node: *const EdgeNode) -> c_int {
+unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeNode) -> c_int {
     let f = &*t.f;
     let ts = &mut *t.ts;
     let hsz = 16 >> bl;
@@ -3916,8 +3916,8 @@ static ss_size_mul: [[u8; 2]; 4] = {
 };
 
 unsafe fn setup_tile(
-    ts: &mut Dav1dTileState,
-    f: &Dav1dFrameContext,
+    ts: &mut Rav1dTileState,
+    f: &Rav1dFrameContext,
     data: &[u8],
     tile_row: usize,
     tile_col: usize,
@@ -4023,7 +4023,7 @@ unsafe fn setup_tile(
 }
 
 unsafe fn read_restoration_info(
-    t: &mut Dav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     lr: &mut Av1RestorationUnit,
     p: usize,
     frame_type: Dav1dRestorationType,
@@ -4060,7 +4060,7 @@ unsafe fn read_restoration_info(
         };
     }
 
-    fn msac_decode_lr_subexp(ts: &mut Dav1dTileState, r#ref: i8, k: u32, adjustment: i8) -> i8 {
+    fn msac_decode_lr_subexp(ts: &mut Rav1dTileState, r#ref: i8, k: u32, adjustment: i8) -> i8 {
         (dav1d_msac_decode_subexp(
             &mut ts.msac,
             (r#ref + adjustment) as libc::c_uint,
@@ -4126,15 +4126,15 @@ unsafe fn read_restoration_info(
     }
 }
 
-pub unsafe fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int {
-    let f: *const Dav1dFrameContext = (*t).f;
+pub unsafe fn dav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int {
+    let f: *const Rav1dFrameContext = (*t).f;
     let root_bl: BlockLevel = (if (*(*f).seq_hdr).sb128 != 0 {
         BL_128X128 as c_int
     } else {
         BL_64X64 as c_int
     }) as BlockLevel;
-    let ts: *mut Dav1dTileState = (*t).ts;
-    let c: *const Dav1dContext = (*f).c;
+    let ts: *mut Rav1dTileState = (*t).ts;
+    let c: *const Rav1dContext = (*f).c;
     let sb_step = (*f).sb_step;
     let tile_row = (*ts).tiling.row;
     let tile_col = (*ts).tiling.col;
@@ -4360,7 +4360,7 @@ pub unsafe fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int {
     return 0 as c_int;
 }
 
-pub unsafe fn dav1d_decode_frame_init(f: &mut Dav1dFrameContext) -> c_int {
+pub unsafe fn dav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int {
     let c = &*f.c;
 
     if f.sbh > f.lf.start_of_tile_row_sz {
@@ -4394,8 +4394,8 @@ pub unsafe fn dav1d_decode_frame_init(f: &mut Dav1dFrameContext) -> c_int {
             }
         }
         dav1d_free_aligned(f.ts as *mut c_void);
-        f.ts = dav1d_alloc_aligned(::core::mem::size_of::<Dav1dTileState>() * n_ts as usize, 32)
-            as *mut Dav1dTileState;
+        f.ts = dav1d_alloc_aligned(::core::mem::size_of::<Rav1dTileState>() * n_ts as usize, 32)
+            as *mut Rav1dTileState;
         if f.ts.is_null() {
             return -12;
         }
@@ -4807,7 +4807,7 @@ pub unsafe fn dav1d_decode_frame_init(f: &mut Dav1dFrameContext) -> c_int {
     0
 }
 
-pub unsafe fn dav1d_decode_frame_init_cdf(f: &mut Dav1dFrameContext) -> c_int {
+pub unsafe fn dav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> c_int {
     let c = &*f.c;
 
     if (*f.frame_hdr).refresh_context != 0 {
@@ -4902,12 +4902,12 @@ pub unsafe fn dav1d_decode_frame_init_cdf(f: &mut Dav1dFrameContext) -> c_int {
     0
 }
 
-unsafe fn dav1d_decode_frame_main(f: &mut Dav1dFrameContext) -> c_int {
+unsafe fn dav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> c_int {
     let c = &*f.c;
 
     assert!(c.n_tc == 1);
 
-    let t = &mut *c.tc.offset((f as *mut Dav1dFrameContext).offset_from(c.fc));
+    let t = &mut *c.tc.offset((f as *mut Rav1dFrameContext).offset_from(c.fc));
     t.f = f;
     t.frame_thread.pass = 0;
 
@@ -4971,7 +4971,7 @@ unsafe fn dav1d_decode_frame_main(f: &mut Dav1dFrameContext) -> c_int {
     0
 }
 
-pub unsafe fn dav1d_decode_frame_exit(f: &mut Dav1dFrameContext, retval: c_int) {
+pub unsafe fn dav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: c_int) {
     let c = &*f.c;
     if !f.sr_cur.p.data[0].is_null() {
         f.task_thread.error = 0;
@@ -5013,7 +5013,7 @@ pub unsafe fn dav1d_decode_frame_exit(f: &mut Dav1dFrameContext, retval: c_int) 
     f.task_thread.retval = retval;
 }
 
-pub unsafe fn dav1d_decode_frame(f: &mut Dav1dFrameContext) -> c_int {
+pub unsafe fn dav1d_decode_frame(f: &mut Rav1dFrameContext) -> c_int {
     assert!((*f.c).n_fc == 1);
     // if n_tc > 1 (but n_fc == 1), we could run init/exit in the task
     // threads also. Not sure it makes a measurable difference.
@@ -5061,7 +5061,7 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
     x0 & 0x3fff
 }
 
-pub unsafe fn dav1d_submit_frame(c: &mut Dav1dContext) -> c_int {
+pub unsafe fn dav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
     // wait for c->out_delayed[next] and move into c->out if visible
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
@@ -5128,9 +5128,9 @@ pub unsafe fn dav1d_submit_frame(c: &mut Dav1dContext) -> c_int {
     let bpc = 8 + 2 * (*f.seq_hdr).hbd;
 
     unsafe fn on_error(
-        f: &mut Dav1dFrameContext,
-        c: &mut Dav1dContext,
-        out_delayed: *mut Dav1dThreadPicture,
+        f: &mut Rav1dFrameContext,
+        c: &mut Rav1dContext,
+        out_delayed: *mut Rav1dThreadPicture,
     ) {
         f.task_thread.error = 1;
         dav1d_cdf_thread_unref(&mut f.in_cdf);
@@ -5297,10 +5297,10 @@ pub unsafe fn dav1d_submit_frame(c: &mut Dav1dContext) -> c_int {
 
     // FIXME qsort so tiles are in order (for frame threading)
     if f.n_tile_data_alloc < c.n_tile_data {
-        freep(&mut f.tile as *mut *mut Dav1dTileGroup as *mut c_void);
-        assert!(c.n_tile_data < i32::MAX / ::core::mem::size_of::<Dav1dTileGroup>() as c_int);
-        f.tile = malloc(c.n_tile_data as usize * ::core::mem::size_of::<Dav1dTileGroup>())
-            as *mut Dav1dTileGroup;
+        freep(&mut f.tile as *mut *mut Rav1dTileGroup as *mut c_void);
+        assert!(c.n_tile_data < i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_int);
+        f.tile = malloc(c.n_tile_data as usize * ::core::mem::size_of::<Rav1dTileGroup>())
+            as *mut Rav1dTileGroup;
         if f.tile.is_null() {
             f.n_tile_data = 0;
             f.n_tile_data_alloc = f.n_tile_data;

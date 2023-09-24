@@ -2,7 +2,7 @@ use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
-use crate::src::itx::Dav1dInvTxfmDSPContext;
+use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::ADST_FLIPADST;
@@ -130,7 +130,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_rust(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 #[rustfmt::skip]
-unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int) {
+unsafe extern "C" fn itx_dsp_init_x86(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
@@ -709,7 +709,7 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int) {
+unsafe extern "C" fn itx_dsp_init_arm(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
@@ -1040,7 +1040,7 @@ unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, bpc: c_int
 #[cold]
 #[rustfmt::skip]
 pub unsafe fn dav1d_itx_dsp_init_16bpc(
-    c: *mut Dav1dInvTxfmDSPContext,
+    c: *mut Rav1dInvTxfmDSPContext,
     mut _bpc: c_int,
 ) {
     // TODO(legare): Temporary import until init fns are deduplicated.

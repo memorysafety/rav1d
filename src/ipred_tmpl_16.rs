@@ -6,7 +6,7 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::src::ipred::get_upsample;
-use crate::src::ipred::Dav1dIntraPredDSPContext;
+use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
@@ -1520,7 +1520,7 @@ unsafe extern "C" fn pal_pred_rust(
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
-unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
+unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Rav1dIntraPredDSPContext) {
     use crate::src::ipred::*; // TODO(legare): Temporary import until init fns are deduplicated.
 
     let flags = dav1d_get_cpu_flags();
@@ -1603,7 +1603,7 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
-unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Dav1dIntraPredDSPContext) {
+unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Rav1dIntraPredDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::ipred::*;
 
@@ -2087,7 +2087,7 @@ unsafe fn ipred_z1_neon(
 }
 
 #[cold]
-pub unsafe fn dav1d_intra_pred_dsp_init_16bpc(c: *mut Dav1dIntraPredDSPContext) {
+pub unsafe fn dav1d_intra_pred_dsp_init_16bpc(c: *mut Rav1dIntraPredDSPContext) {
     (*c).intra_pred[DC_PRED as usize] = Some(ipred_dc_c_erased);
     (*c).intra_pred[DC_128_PRED as usize] = Some(ipred_dc_128_c_erased);
     (*c).intra_pred[TOP_DC_PRED as usize] = Some(ipred_dc_top_c_erased);

@@ -143,7 +143,7 @@ pub type itxfm_fn =
     Option<unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *mut DynCoef, c_int, c_int) -> ()>;
 
 #[repr(C)]
-pub struct Dav1dInvTxfmDSPContext {
+pub struct Rav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
 }
 
