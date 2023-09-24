@@ -3,10 +3,9 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Dav1dUserData;
 use crate::include::dav1d::data::Dav1dData;
-use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
 use crate::include::dav1d::dav1d::Dav1dLogger;
+use crate::include::dav1d::dav1d::Dav1dSettings;
 use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
 use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
@@ -123,23 +122,6 @@ extern "C" {
         __start_routine: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
         __arg: *mut c_void,
     ) -> c_int;
-}
-
-#[repr(C)]
-pub struct Dav1dSettings {
-    pub n_threads: c_int,
-    pub max_frame_delay: c_int,
-    pub apply_grain: c_int,
-    pub operating_point: c_int,
-    pub all_layers: c_int,
-    pub frame_size_limit: c_uint,
-    pub allocator: Dav1dPicAllocator,
-    pub logger: Dav1dLogger,
-    pub strict_std_compliance: c_int,
-    pub output_invisible_frames: c_int,
-    pub inloop_filters: Dav1dInloopFilterType,
-    pub decode_frame_type: Dav1dDecodeFrameType,
-    pub reserved: [u8; 16],
 }
 
 #[cold]
