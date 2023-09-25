@@ -89,8 +89,7 @@ static mut av1_intra_prediction_edges: [av1_intra_prediction_edge; 14] =
         needs_left_needs_top_needs_topleft_needs_topright_needs_bottomleft: [0; 1],
     }; N_IMPL_INTRA_PRED_MODES];
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
+pub unsafe fn dav1d_prepare_intra_edges_16bpc(
     x: c_int,
     have_left: c_int,
     y: c_int,

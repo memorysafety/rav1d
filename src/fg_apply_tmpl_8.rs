@@ -65,8 +65,7 @@ unsafe extern "C" fn generate_scaling(
     );
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
+pub unsafe fn dav1d_prep_grain_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
@@ -189,8 +188,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
+pub unsafe fn dav1d_apply_grain_row_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
@@ -298,8 +296,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_8bpc(
     };
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_apply_grain_8bpc(
+pub unsafe fn dav1d_apply_grain_8bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,

@@ -1842,9 +1842,8 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
     }
 }
 
-#[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_film_grain_dsp_init_16bpc(c: *mut Dav1dFilmGrainDSPContext) {
+pub unsafe fn dav1d_film_grain_dsp_init_16bpc(c: *mut Dav1dFilmGrainDSPContext) {
     (*c).generate_grain_y = Some(generate_grain_y_c_erased);
     (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         Some(generate_grain_uv_420_c_erased);

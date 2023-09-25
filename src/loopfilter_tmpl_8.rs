@@ -454,9 +454,8 @@ unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext)
     (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_neon;
 }
 
-#[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext) {
+pub unsafe fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext) {
     (*c).loop_filter_sb[0][0] = loop_filter_h_sb128y_c_erased;
     (*c).loop_filter_sb[0][1] = loop_filter_v_sb128y_c_erased;
     (*c).loop_filter_sb[1][0] = loop_filter_h_sb128uv_c_erased;
