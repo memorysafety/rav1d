@@ -25,6 +25,7 @@ use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::cpu::dav1d_init_cpu;
+use crate::src::cpu::dav1d_num_logical_processors;
 use crate::src::data::dav1d_data_create_internal;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_props_set_defaults;
@@ -33,6 +34,7 @@ use crate::src::data::dav1d_data_ref;
 use crate::src::data::dav1d_data_unref_internal;
 use crate::src::data::dav1d_data_wrap_internal;
 use crate::src::data::dav1d_data_wrap_user_data_internal;
+use crate::src::decode::dav1d_decode_frame_exit;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Dav1dContext;
@@ -44,6 +46,7 @@ use crate::src::intra_edge::dav1d_init_mode_tree;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_64X64;
+use crate::src::log::dav1d_log;
 use crate::src::log::dav1d_log_default_callback;
 use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_free_aligned;
@@ -51,8 +54,10 @@ use crate::src::mem::dav1d_freep_aligned;
 use crate::src::mem::dav1d_mem_pool_end;
 use crate::src::mem::dav1d_mem_pool_init;
 use crate::src::mem::freep;
+use crate::src::obu::dav1d_parse_obus;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
+use crate::src::picture::dav1d_picture_alloc_copy;
 use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_picture_move_ref;
 use crate::src::picture::dav1d_picture_ref;
@@ -65,8 +70,9 @@ use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::refmvs::dav1d_refmvs_clear;
+use crate::src::refmvs::dav1d_refmvs_dsp_init;
 use crate::src::refmvs::dav1d_refmvs_init;
-use crate::src::refmvs::Dav1dRefmvsDSPContext;
+use crate::src::thread_task::dav1d_task_delayed_fg;
 use crate::src::thread_task::dav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::stderr;
@@ -107,7 +113,6 @@ use libc::dlsym;
 use libc::sysconf;
 
 extern "C" {
-    fn dav1d_num_logical_processors(c: *mut Dav1dContext) -> c_int;
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_apply_grain_16bpc(
         dsp: *const Dav1dFilmGrainDSPContext,
@@ -120,31 +125,16 @@ extern "C" {
         out: *mut Dav1dPicture,
         in_0: *const Dav1dPicture,
     );
-    fn dav1d_picture_alloc_copy(
-        c: *mut Dav1dContext,
-        dst: *mut Dav1dPicture,
-        w: c_int,
-        src: *const Dav1dPicture,
-    ) -> c_int;
     fn pthread_create(
         __newthread: *mut pthread_t,
         __attr: *const pthread_attr_t,
         __start_routine: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
         __arg: *mut c_void,
     ) -> c_int;
-    fn dav1d_refmvs_dsp_init(dsp: *mut Dav1dRefmvsDSPContext);
     fn pthread_once(
         __once_control: *mut pthread_once_t,
         __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> c_int;
-    fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
-    fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, global: c_int) -> c_int;
-    fn dav1d_task_delayed_fg(
-        c: *mut Dav1dContext,
-        out: *mut Dav1dPicture,
-        in_0: *const Dav1dPicture,
-    );
-    fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: c_int);
 }
 
 #[repr(C)]
@@ -1210,7 +1200,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
             }
             let f: *mut Dav1dFrameContext =
                 &mut *((*c).fc).offset(next as isize) as *mut Dav1dFrameContext;
-            dav1d_decode_frame_exit(f, -(1 as c_int));
+            dav1d_decode_frame_exit(&mut *f, -(1 as c_int));
             (*f).n_tile_data = 0 as c_int;
             (*f).task_thread.retval = 0 as c_int;
             let out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)

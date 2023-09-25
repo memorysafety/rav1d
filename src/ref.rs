@@ -128,8 +128,7 @@ pub unsafe fn dav1d_ref_dec(pref: *mut *mut Dav1dRef) {
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_ref_is_writable(r#ref: *mut Dav1dRef) -> c_int {
+pub unsafe fn dav1d_ref_is_writable(r#ref: *mut Dav1dRef) -> c_int {
     return (::core::intrinsics::atomic_load_seqcst(&mut (*r#ref).ref_cnt as *mut atomic_int) == 1
         && !((*r#ref).data).is_null()) as c_int;
 }

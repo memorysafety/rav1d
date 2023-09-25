@@ -5,6 +5,10 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::dav1d_cdf_thread_update;
+use crate::src::decode::dav1d_decode_frame_exit;
+use crate::src::decode::dav1d_decode_frame_init;
+use crate::src::decode::dav1d_decode_frame_init_cdf;
+use crate::src::decode::dav1d_decode_tile_sbrow;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use crate::src::internal::Dav1dContext;
 use crate::src::internal::Dav1dFrameContext;
@@ -48,10 +52,6 @@ use libc::prctl;
 use libc::pthread_setname_np;
 
 extern "C" {
-    fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int;
-    fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> c_int;
-    fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int;
-    fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: c_int);
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_prep_grain_8bpc(
         dsp: *const Dav1dFilmGrainDSPContext,
@@ -461,8 +461,7 @@ unsafe extern "C" fn create_filter_sbrow(
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
+pub unsafe fn dav1d_task_create_tile_sbrow(
     f: *mut Dav1dFrameContext,
     pass: c_int,
     _cond_signal: c_int,
@@ -544,8 +543,7 @@ pub unsafe extern "C" fn dav1d_task_create_tile_sbrow(
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
+pub unsafe fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
     let c: *const Dav1dContext = (*f).c;
     ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.init_done, 0 as c_int);
     let t: *mut Dav1dTask = &mut (*f).task_thread.init_task;
@@ -557,8 +555,7 @@ pub unsafe extern "C" fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
     insert_task(f, t, 1 as c_int);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_task_delayed_fg(
+pub unsafe fn dav1d_task_delayed_fg(
     c: *mut Dav1dContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
@@ -744,7 +741,7 @@ unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: c_int) {
         &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint,
         FRAME_ERROR,
     );
-    dav1d_decode_frame_exit(f, error);
+    dav1d_decode_frame_exit(&mut *f, error);
     (*f).n_tile_data = 0 as c_int;
     pthread_cond_signal(&mut (*f).task_thread.cond);
 }
@@ -1222,7 +1219,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     if !((*c).n_fc > 1 as c_uint) {
                                         unreachable!();
                                     }
-                                    let res = dav1d_decode_frame_init(f);
+                                    let res = dav1d_decode_frame_init(&mut *f);
                                     let p1_3 = (if !((*f).in_cdf.progress).is_null() {
                                         ::core::intrinsics::atomic_load_seqcst((*f).in_cdf.progress)
                                     } else {
@@ -1252,7 +1249,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
                                     {
-                                        res_0 = dav1d_decode_frame_init_cdf(f);
+                                        res_0 = dav1d_decode_frame_init_cdf(&mut *f);
                                     }
                                     if (*(*f).frame_hdr).refresh_context != 0
                                         && !(*f).task_thread.update_set
@@ -1311,7 +1308,10 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                     {
                                                         unreachable!();
                                                     }
-                                                    dav1d_decode_frame_exit(f, -(12 as c_int));
+                                                    dav1d_decode_frame_exit(
+                                                        &mut *f,
+                                                        -(12 as c_int),
+                                                    );
                                                     (*f).n_tile_data = 0 as c_int;
                                                     pthread_cond_signal(&mut (*f).task_thread.cond);
                                                 } else {
@@ -1453,7 +1453,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                 ) != 0)
                                         {
                                             dav1d_decode_frame_exit(
-                                                f,
+                                                &mut *f,
                                                 if error_0 == 1 {
                                                     -(22 as c_int)
                                                 } else if error_0 != 0 {
@@ -1708,7 +1708,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     ) != 0
                                 {
                                     dav1d_decode_frame_exit(
-                                        f,
+                                        &mut *f,
                                         if error_0 == 1 {
                                             -(22 as c_int)
                                         } else if error_0 != 0 {
@@ -1773,7 +1773,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         ) != 0)
                                 {
                                     dav1d_decode_frame_exit(
-                                        f,
+                                        &mut *f,
                                         if error_0 == 1 {
                                             -(22 as c_int)
                                         } else if error_0 != 0 {

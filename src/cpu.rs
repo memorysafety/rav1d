@@ -66,7 +66,6 @@ pub extern "C" fn dav1d_set_cpu_flags_mask(mask: c_uint) {
     dav1d_cpu_flags_mask.store(mask, Ordering::SeqCst);
 }
 
-#[no_mangle]
 #[cold]
 pub(crate) fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> c_int {
     num_cpus::get() as c_int

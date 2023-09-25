@@ -69,6 +69,7 @@ use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_ref;
 use crate::src::data::dav1d_data_unref_internal;
+use crate::src::decode::dav1d_submit_frame;
 use crate::src::env::get_poc_diff;
 use crate::src::getbits::dav1d_bytealign_get_bits;
 use crate::src::getbits::dav1d_get_bit;
@@ -89,6 +90,7 @@ use crate::src::levels::OBU_META_HDR_MDCV;
 use crate::src::levels::OBU_META_ITUT_T35;
 use crate::src::levels::OBU_META_SCALABILITY;
 use crate::src::levels::OBU_META_TIMECODE;
+use crate::src::log::dav1d_log;
 use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
@@ -101,6 +103,7 @@ use crate::src::r#ref::dav1d_ref_create;
 use crate::src::r#ref::dav1d_ref_create_using_pool;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
+use crate::src::r#ref::dav1d_ref_is_writable;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::tables::dav1d_default_wm_params;
 use crate::src::thread_task::FRAME_ERROR;
@@ -117,11 +120,6 @@ use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn dav1d_submit_frame(c: *mut Dav1dContext) -> c_int;
-    fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
-}
 
 #[inline]
 unsafe extern "C" fn dav1d_get_bits_pos(c: *const GetBits) -> c_uint {
@@ -1635,12 +1633,7 @@ unsafe extern "C" fn dav1d_parse_obus_skip(
     return len.wrapping_add(init_byte_pos) as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_parse_obus(
-    c: *mut Dav1dContext,
-    in_0: *mut Dav1dData,
-    global: c_int,
-) -> c_int {
+pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, global: c_int) -> c_int {
     let mut gb: GetBits = GetBits {
         state: 0,
         bits_left: 0,
@@ -1940,6 +1933,8 @@ pub unsafe extern "C" fn dav1d_parse_obus(
                         return -(12 as c_int);
                     }
                 }
+                // ensure that the reference is writable
+                debug_assert!(dav1d_ref_is_writable((*c).frame_hdr_ref) != 0);
                 (*c).frame_hdr = (*(*c).frame_hdr_ref).data as *mut Dav1dFrameHeader;
                 memset(
                     (*c).frame_hdr as *mut c_void,
@@ -2273,7 +2268,7 @@ pub unsafe extern "C" fn dav1d_parse_obus(
             if (*c).n_tile_data == 0 {
                 return dav1d_parse_obus_error(c, in_0);
             }
-            res = dav1d_submit_frame(c);
+            res = dav1d_submit_frame(&mut *c);
             if res < 0 {
                 return res;
             }

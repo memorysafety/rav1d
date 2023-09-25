@@ -1659,9 +1659,8 @@ unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
     }
 }
 
-#[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
+pub unsafe fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
     (*c).load_tmvs = Some(load_tmvs_c);
     (*c).save_tmvs = Some(save_tmvs_c);
     (*c).splat_mv = Some(splat_mv_rust);

@@ -30,11 +30,11 @@ use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
 use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::cdf::dav1d_cdf_thread_alloc;
 use crate::src::cdf::dav1d_cdf_thread_copy;
 use crate::src::cdf::dav1d_cdf_thread_init_static;
 use crate::src::cdf::dav1d_cdf_thread_ref;
@@ -42,7 +42,6 @@ use crate::src::cdf::dav1d_cdf_thread_unref;
 use crate::src::cdf::dav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
-use crate::src::cdf::CdfThreadContext;
 use crate::src::ctx::CaseSet;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_unref_internal;
@@ -157,6 +156,7 @@ use crate::src::lf_mask::dav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
+use crate::src::log::dav1d_log;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
 use crate::src::mc::dav1d_mc_dsp_init;
@@ -174,9 +174,11 @@ use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::dav1d_msac_decode_uniform;
 use crate::src::msac::dav1d_msac_init;
+use crate::src::picture::dav1d_picture_alloc_copy;
 use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_picture_ref;
 use crate::src::picture::dav1d_picture_unref_internal;
+use crate::src::picture::dav1d_thread_picture_alloc;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
 use crate::src::picture::Dav1dThreadPicture;
@@ -210,6 +212,8 @@ use crate::src::tables::dav1d_wedge_ctx_lut;
 use crate::src::tables::dav1d_ymode_size_context;
 use crate::src::tables::interintra_allowed_mask;
 use crate::src::tables::wedge_allowed_mask;
+use crate::src::thread_task::dav1d_task_create_tile_sbrow;
+use crate::src::thread_task::dav1d_task_frame_init;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::src::thread_task::TILE_ERROR;
 use crate::src::warpmv::dav1d_find_affine_int;
@@ -249,11 +253,6 @@ extern "C" {
     fn dav1d_cdef_dsp_init_8bpc(c: *mut Dav1dCdefDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_cdef_dsp_init_16bpc(c: *mut Dav1dCdefDSPContext);
-    fn dav1d_cdf_thread_alloc(
-        c: *mut Dav1dContext,
-        cdf: *mut CdfThreadContext,
-        have_frame_mt: c_int,
-    ) -> c_int;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_film_grain_dsp_init_8bpc(c: *mut Dav1dFilmGrainDSPContext);
     #[cfg(feature = "bitdepth_16")]
@@ -270,17 +269,6 @@ extern "C" {
     fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Dav1dLoopFilterDSPContext);
-    fn dav1d_thread_picture_alloc(
-        c: *mut Dav1dContext,
-        f: *mut Dav1dFrameContext,
-        bpc: c_int,
-    ) -> c_int;
-    fn dav1d_picture_alloc_copy(
-        c: *mut Dav1dContext,
-        dst: *mut Dav1dPicture,
-        w: c_int,
-        src: *const Dav1dPicture,
-    ) -> c_int;
     #[cfg(feature = "bitdepth_8")]
     fn dav1d_recon_b_intra_8bpc(
         t: *mut Dav1dTaskContext,
@@ -339,13 +327,6 @@ extern "C" {
     fn dav1d_read_coef_blocks_8bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
     #[cfg(feature = "bitdepth_16")]
     fn dav1d_read_coef_blocks_16bpc(t: *mut Dav1dTaskContext, bs: BlockSize, b: *const Av1Block);
-    fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
-    fn dav1d_task_create_tile_sbrow(
-        f: *mut Dav1dFrameContext,
-        pass: c_int,
-        cond_signal: c_int,
-    ) -> c_int;
-    fn dav1d_task_frame_init(f: *mut Dav1dFrameContext);
 }
 
 fn init_quant_tables(
@@ -4203,8 +4184,7 @@ unsafe fn read_restoration_info(
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int {
+pub unsafe fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int {
     let f: *const Dav1dFrameContext = (*t).f;
     let root_bl: BlockLevel = (if (*(*f).seq_hdr).sb128 != 0 {
         BL_128X128 as c_int
@@ -4438,10 +4418,7 @@ pub unsafe extern "C" fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int {
-    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
-
+pub unsafe fn dav1d_decode_frame_init(f: &mut Dav1dFrameContext) -> c_int {
     let c = &*f.c;
 
     if f.sbh > f.lf.start_of_tile_row_sz {
@@ -4888,10 +4865,7 @@ pub unsafe extern "C" fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c
     0
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> c_int {
-    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
-
+pub unsafe fn dav1d_decode_frame_init_cdf(f: &mut Dav1dFrameContext) -> c_int {
     let c = &*f.c;
 
     if (*f.frame_hdr).refresh_context != 0 {
@@ -5055,9 +5029,7 @@ unsafe fn dav1d_decode_frame_main(f: &mut Dav1dFrameContext) -> c_int {
     0
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_decode_frame_exit(f: *mut Dav1dFrameContext, retval: c_int) {
-    let f = &mut *f; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
+pub unsafe fn dav1d_decode_frame_exit(f: &mut Dav1dFrameContext, retval: c_int) {
     let c = &*f.c;
     if !f.sr_cur.p.data[0].is_null() {
         f.task_thread.error = 0;
@@ -5147,10 +5119,7 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
     x0 & 0x3fff
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn dav1d_submit_frame(c: *mut Dav1dContext) -> c_int {
-    let c = &mut *c; // TODO(kkysen) propagate to arg once we deduplicate the fn decl
-
+pub unsafe fn dav1d_submit_frame(c: &mut Dav1dContext) -> c_int {
     // wait for c->out_delayed[next] and move into c->out if visible
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);

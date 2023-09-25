@@ -18,7 +18,6 @@ pub unsafe extern "C" fn dav1d_log_default_callback(
     vfprintf(stderr, format, ap.as_va_list());
 }
 
-#[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, args: ...) {
     if c.is_null() {
