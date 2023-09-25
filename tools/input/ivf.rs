@@ -50,19 +50,8 @@ pub struct Demuxer {
 
 pub type IvfInputContext = DemuxerPriv;
 
-static mut probe_data: [u8; 12] = [
-    'D' as i32 as u8,
-    'K' as i32 as u8,
-    'I' as i32 as u8,
-    'F' as i32 as u8,
-    0 as c_int as u8,
-    0 as c_int as u8,
-    0x20 as c_int as u8,
-    0 as c_int as u8,
-    'A' as i32 as u8,
-    'V' as i32 as u8,
-    '0' as i32 as u8,
-    '1' as i32 as u8,
+static probe_data: [u8; 12] = [
+    b'D', b'K', b'I', b'F', 0, 0, 0x20, 0, b'A', b'V', b'0', b'1',
 ];
 
 unsafe extern "C" fn ivf_probe(data: *const u8) -> c_int {
@@ -324,25 +313,22 @@ unsafe extern "C" fn ivf_close(c: *mut IvfInputContext) {
 }
 
 #[no_mangle]
-pub static mut ivf_demuxer: Demuxer = {
-    let init = Demuxer {
-        priv_data_size: ::core::mem::size_of::<IvfInputContext>() as c_ulong as c_int,
-        name: b"ivf\0" as *const u8 as *const c_char,
-        probe_sz: ::core::mem::size_of::<[u8; 12]>() as c_ulong as c_int,
-        probe: Some(ivf_probe as unsafe extern "C" fn(*const u8) -> c_int),
-        open: Some(
-            ivf_open
-                as unsafe extern "C" fn(
-                    *mut IvfInputContext,
-                    *const c_char,
-                    *mut c_uint,
-                    *mut c_uint,
-                    *mut c_uint,
-                ) -> c_int,
-        ),
-        read: Some(ivf_read as unsafe extern "C" fn(*mut IvfInputContext, *mut Dav1dData) -> c_int),
-        seek: Some(ivf_seek as unsafe extern "C" fn(*mut IvfInputContext, u64) -> c_int),
-        close: Some(ivf_close as unsafe extern "C" fn(*mut IvfInputContext) -> ()),
-    };
-    init
+pub static mut ivf_demuxer: Demuxer = Demuxer {
+    priv_data_size: ::core::mem::size_of::<IvfInputContext>() as c_ulong as c_int,
+    name: b"ivf\0" as *const u8 as *const c_char,
+    probe_sz: ::core::mem::size_of::<[u8; 12]>() as c_ulong as c_int,
+    probe: Some(ivf_probe as unsafe extern "C" fn(*const u8) -> c_int),
+    open: Some(
+        ivf_open
+            as unsafe extern "C" fn(
+                *mut IvfInputContext,
+                *const c_char,
+                *mut c_uint,
+                *mut c_uint,
+                *mut c_uint,
+            ) -> c_int,
+    ),
+    read: Some(ivf_read as unsafe extern "C" fn(*mut IvfInputContext, *mut Dav1dData) -> c_int),
+    seek: Some(ivf_seek as unsafe extern "C" fn(*mut IvfInputContext, u64) -> c_int),
+    close: Some(ivf_close as unsafe extern "C" fn(*mut IvfInputContext) -> ()),
 };

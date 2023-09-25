@@ -98,233 +98,209 @@ pub type arg = c_uint;
 
 pub type CpuMask = c_uint;
 
-static mut short_opts: [c_char; 11] =
+static short_opts: [c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"i:o:vql:s:\0") };
+
 static mut long_opts: [option; 25] = [
     {
-        let init = option {
+        option {
             name: b"input\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: 'i' as i32,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"output\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: 'o' as i32,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"quiet\0" as *const u8 as *const c_char,
             has_arg: 0 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: 'q' as i32,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"demuxer\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_DEMUXER as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"muxer\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_MUXER as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"version\0" as *const u8 as *const c_char,
             has_arg: 0 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: 'v' as i32,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"frametimes\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_FRAME_TIMES as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"limit\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: 'l' as i32,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"skip\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: 's' as i32,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"realtime\0" as *const u8 as *const c_char,
             has_arg: 2 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_REALTIME as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"realtimecache\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_REALTIME_CACHE as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"threads\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_THREADS as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"framedelay\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_FRAME_DELAY as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"verify\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_VERIFY as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"filmgrain\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_FILM_GRAIN as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"oppoint\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_OPPOINT as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"alllayers\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_ALL_LAYERS as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"sizelimit\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_SIZE_LIMIT as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"strict\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_STRICT_STD_COMPLIANCE as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"cpumask\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_CPU_MASK as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"negstride\0" as *const u8 as *const c_char,
             has_arg: 0 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_NEG_STRIDE as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"outputinvisible\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_OUTPUT_INVISIBLE as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"inloopfilters\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_INLOOP_FILTERS as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: b"decodeframetype\0" as *const u8 as *const c_char,
             has_arg: 1 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: ARG_DECODE_FRAME_TYPE as c_int,
-        };
-        init
+        }
     },
     {
-        let init = option {
+        option {
             name: 0 as *const c_char,
             has_arg: 0 as c_int,
             flag: 0 as *const c_int as *mut c_int,
             val: 0 as c_int,
-        };
-        init
+        }
     },
 ];
 
@@ -442,134 +418,118 @@ unsafe extern "C" fn parse_optional_fraction(
 
 static mut cpu_mask_tbl: [EnumParseTable; 6] = [
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"sse2\0" as *const u8 as *const c_char,
             val: X86_CPU_MASK_SSE2 as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"ssse3\0" as *const u8 as *const c_char,
             val: X86_CPU_MASK_SSSE3 as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"sse41\0" as *const u8 as *const c_char,
             val: X86_CPU_MASK_SSE41 as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"avx2\0" as *const u8 as *const c_char,
             val: X86_CPU_MASK_AVX2 as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"avx512icl\0" as *const u8 as *const c_char,
             val: X86_CPU_MASK_AVX512ICL as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"none\0" as *const u8 as *const c_char,
             val: 0 as c_int,
-        };
-        init
+        }
     },
 ];
+
 static mut inloop_filters_tbl: [EnumParseTable; 8] = [
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"none\0" as *const u8 as *const c_char,
             val: DAV1D_INLOOPFILTER_NONE as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"deblock\0" as *const u8 as *const c_char,
             val: DAV1D_INLOOPFILTER_DEBLOCK as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"nodeblock\0" as *const u8 as *const c_char,
             val: DAV1D_INLOOPFILTER_ALL as c_int - DAV1D_INLOOPFILTER_DEBLOCK as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"cdef\0" as *const u8 as *const c_char,
             val: DAV1D_INLOOPFILTER_CDEF as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"nocdef\0" as *const u8 as *const c_char,
             val: DAV1D_INLOOPFILTER_ALL as c_int - DAV1D_INLOOPFILTER_CDEF as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"restoration\0" as *const u8 as *const c_char,
             val: DAV1D_INLOOPFILTER_RESTORATION as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"norestoration\0" as *const u8 as *const c_char,
             val: DAV1D_INLOOPFILTER_ALL as c_int - DAV1D_INLOOPFILTER_RESTORATION as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"all\0" as *const u8 as *const c_char,
             val: DAV1D_INLOOPFILTER_ALL as c_int,
-        };
-        init
+        }
     },
 ];
+
 static mut decode_frame_type_tbl: [EnumParseTable; 4] = [
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"all\0" as *const u8 as *const c_char,
             val: DAV1D_DECODEFRAMETYPE_ALL as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"reference\0" as *const u8 as *const c_char,
             val: DAV1D_DECODEFRAMETYPE_REFERENCE as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"intra\0" as *const u8 as *const c_char,
             val: DAV1D_DECODEFRAMETYPE_INTRA as c_int,
-        };
-        init
+        }
     },
     {
-        let init = EnumParseTable {
+        EnumParseTable {
             str_0: b"key\0" as *const u8 as *const c_char,
             val: DAV1D_DECODEFRAMETYPE_KEY as c_int,
-        };
-        init
+        }
     },
 ];
 
