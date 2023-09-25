@@ -44,10 +44,6 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use rav1d::include::stdint::int64_t;
-use rav1d::include::stdint::uint32_t;
-use rav1d::include::stdint::uint64_t;
-use rav1d::include::stdint::uint8_t;
 use rav1d::src::lib::dav1d_close;
 use rav1d::src::lib::dav1d_flush;
 use rav1d::src::lib::dav1d_get_picture;
@@ -71,7 +67,7 @@ extern "C" {
         timebase: *mut libc::c_uint,
     ) -> libc::c_int;
     fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> libc::c_int;
-    fn input_seek(ctx: *mut DemuxerContext, pts: uint64_t) -> libc::c_int;
+    fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> libc::c_int;
     fn input_close(ctx: *mut DemuxerContext);
     fn parse(
         argc: libc::c_int,
@@ -115,7 +111,7 @@ unsafe extern "C" fn get_seed() -> libc::c_uint {
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as libc::c_uint;
 }
 
-static mut xs_state: [uint32_t; 4] = [0; 4];
+static mut xs_state: [u32; 4] = [0; 4];
 
 unsafe fn xor128_srand(seed: libc::c_uint) {
     xs_state[0] = seed;
@@ -125,12 +121,12 @@ unsafe fn xor128_srand(seed: libc::c_uint) {
 }
 
 unsafe fn xor128_rand() -> libc::c_int {
-    let x: uint32_t = xs_state[0];
-    let t: uint32_t = x ^ x << 11;
+    let x: u32 = xs_state[0];
+    let t: u32 = x ^ x << 11;
     xs_state[0] = xs_state[1];
     xs_state[1] = xs_state[2];
     xs_state[2] = xs_state[3];
-    let mut w: uint32_t = xs_state[3];
+    let mut w: u32 = xs_state[3];
     w = w ^ w >> 19 ^ (t ^ t >> 8);
     xs_state[3] = w;
     return w as libc::c_int >> 1;
@@ -199,7 +195,7 @@ unsafe extern "C" fn decode_rand(
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const uint8_t,
+                data: 0 as *const u8,
                 r#ref: 0 as *mut Dav1dRef,
             },
         },
@@ -254,7 +250,7 @@ unsafe extern "C" fn decode_all(
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const uint8_t,
+                data: 0 as *const u8,
                 r#ref: 0 as *mut Dav1dRef,
             },
         },
@@ -286,7 +282,7 @@ unsafe extern "C" fn decode_all(
 unsafe extern "C" fn seek(
     in_0: *mut DemuxerContext,
     c: *mut Dav1dContext,
-    pts: uint64_t,
+    pts: u64,
     data: *mut Dav1dData,
 ) -> libc::c_int {
     let mut res: libc::c_int;
@@ -428,7 +424,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let mut in_0: *mut DemuxerContext = 0 as *mut DemuxerContext;
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
-        data: 0 as *const uint8_t,
+        data: 0 as *const u8,
         sz: 0,
         r#ref: 0 as *mut Dav1dRef,
         m: Dav1dDataProps {
@@ -437,7 +433,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const uint8_t,
+                data: 0 as *const u8,
                 r#ref: 0 as *mut Dav1dRef,
             },
         },
@@ -448,7 +444,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
     let timebase: libc::c_double;
     let spf: libc::c_double;
     let fps: libc::c_double;
-    let mut pts: uint64_t;
+    let mut pts: u64;
     xor128_srand(get_seed());
     parse(argc, argv, &mut cli_settings, &mut lib_settings);
     if input_open(
@@ -483,7 +479,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                 (xor128_rand() as libc::c_uint).wrapping_rem(total) as libc::c_double
                     * spf
                     * 1000000000.0f64,
-            ) as uint64_t;
+            ) as u64;
             if !(seek(in_0, c, pts, &mut data) != 0) {
                 if decode_rand(in_0, c, &mut data, fps) != 0 {
                     current_block = 1928200949476507836;
@@ -495,8 +491,8 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         match current_block {
             1928200949476507836 => {}
             _ => {
-                pts = llround(data.m.timestamp as libc::c_double * timebase * 1000000000.0f64)
-                    as uint64_t;
+                pts =
+                    llround(data.m.timestamp as libc::c_double * timebase * 1000000000.0f64) as u64;
                 let mut i_0 = 0;
                 let mut tries = 0;
                 loop {
@@ -511,17 +507,18 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                     };
                     let diff: libc::c_float =
                         (xor128_rand() % 100 as libc::c_int) as libc::c_float / 100.0f32;
-                    let mut new_pts: int64_t = pts.wrapping_add((sign as uint64_t).wrapping_mul(
-                        llround(diff as libc::c_double * fps * spf * 1000000000.0f64) as uint64_t,
-                    )) as int64_t;
-                    let new_ts: int64_t =
-                        llround(new_pts as libc::c_double / (timebase * 1000000000.0f64))
-                            as int64_t;
-                    new_pts = llround(new_ts as libc::c_double * timebase * 1000000000.0f64)
-                        as uint64_t as int64_t;
+                    let mut new_pts: i64 = pts.wrapping_add(
+                        (sign as u64).wrapping_mul(llround(
+                            diff as libc::c_double * fps * spf * 1000000000.0f64,
+                        ) as u64),
+                    ) as i64;
+                    let new_ts: i64 =
+                        llround(new_pts as libc::c_double / (timebase * 1000000000.0f64)) as i64;
+                    new_pts = llround(new_ts as libc::c_double * timebase * 1000000000.0f64) as u64
+                        as i64;
                     if new_pts < 0
-                        || new_pts as uint64_t
-                            >= llround(total as libc::c_double * spf * 1000000000.0f64) as uint64_t
+                        || new_pts as u64
+                            >= llround(total as libc::c_double * spf * 1000000000.0f64) as u64
                     {
                         if seek(
                             in_0,
@@ -531,7 +528,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                                     as libc::c_double
                                     * spf
                                     * 1000000000.0f64,
-                            ) as uint64_t,
+                            ) as u64,
                             &mut data,
                         ) != 0
                         {
@@ -540,11 +537,11 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                         }
                         pts = llround(
                             data.m.timestamp as libc::c_double * timebase * 1000000000.0f64,
-                        ) as uint64_t;
+                        ) as u64;
                         tries += 1;
                     } else {
-                        if seek(in_0, c, new_pts as uint64_t, &mut data) != 0 {
-                            if seek(in_0, c, 0 as libc::c_int as uint64_t, &mut data) != 0 {
+                        if seek(in_0, c, new_pts as u64, &mut data) != 0 {
+                            if seek(in_0, c, 0 as libc::c_int as u64, &mut data) != 0 {
                                 current_block = 1928200949476507836;
                                 break;
                             }
@@ -555,7 +552,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                         }
                         pts = llround(
                             data.m.timestamp as libc::c_double * timebase * 1000000000.0f64,
-                        ) as uint64_t;
+                        ) as u64;
                     }
                     i_0 += 1;
                 }
@@ -575,7 +572,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                                     total.wrapping_sub(shift) as libc::c_double
                                         * spf
                                         * 1000000000.0f64,
-                                ) as uint64_t,
+                                ) as u64,
                                 &mut data,
                             ) != 0)
                             {
@@ -592,7 +589,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
                                     total.wrapping_sub(shift) as libc::c_double
                                         * spf
                                         * 1000000000.0f64,
-                                ) as uint64_t,
+                                ) as u64,
                                 &mut data,
                             ) != 0
                             {

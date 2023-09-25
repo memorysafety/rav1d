@@ -1,7 +1,5 @@
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::data::Dav1dData;
-use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::r#ref::dav1d_ref_create;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
@@ -14,7 +12,7 @@ extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
 }
 
-pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mut uint8_t {
+pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
     if buf.is_null() {
         fprintf(
             stderr,
@@ -25,27 +23,27 @@ pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: size_t) -> *mu
             ))
             .as_ptr(),
         );
-        return 0 as *mut uint8_t;
+        return 0 as *mut u8;
     }
-    if sz > libc::size_t::MAX / 2 {
-        return 0 as *mut uint8_t;
+    if sz > usize::MAX / 2 {
+        return 0 as *mut u8;
     }
     (*buf).r#ref = dav1d_ref_create(sz);
     if ((*buf).r#ref).is_null() {
-        return 0 as *mut uint8_t;
+        return 0 as *mut u8;
     }
-    (*buf).data = (*(*buf).r#ref).const_data as *const uint8_t;
+    (*buf).data = (*(*buf).r#ref).const_data as *const u8;
     (*buf).sz = sz;
     dav1d_data_props_set_defaults(&mut (*buf).m);
     (*buf).m.size = sz;
-    return (*(*buf).r#ref).data as *mut uint8_t;
+    return (*(*buf).r#ref).data as *mut u8;
 }
 
 pub unsafe fn dav1d_data_wrap_internal(
     buf: *mut Dav1dData,
-    ptr: *const uint8_t,
-    sz: size_t,
-    free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
+    ptr: *const u8,
+    sz: usize,
+    free_callback: Option<unsafe extern "C" fn(*const u8, *mut libc::c_void) -> ()>,
     cookie: *mut libc::c_void,
 ) -> libc::c_int {
     if buf.is_null() {
@@ -97,8 +95,8 @@ pub unsafe fn dav1d_data_wrap_internal(
 
 pub unsafe fn dav1d_data_wrap_user_data_internal(
     buf: *mut Dav1dData,
-    user_data: *const uint8_t,
-    free_callback: Option<unsafe extern "C" fn(*const uint8_t, *mut libc::c_void) -> ()>,
+    user_data: *const u8,
+    free_callback: Option<unsafe extern "C" fn(*const u8, *mut libc::c_void) -> ()>,
     cookie: *mut libc::c_void,
 ) -> libc::c_int {
     if buf.is_null() {

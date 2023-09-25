@@ -1,26 +1,24 @@
 use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
-use crate::include::stddef::*;
-use crate::include::stdint::*;
 
 #[repr(C)]
 pub struct GetBits {
-    pub state: uint64_t,
+    pub state: u64,
     pub bits_left: libc::c_int,
     pub error: libc::c_int,
-    pub ptr: *const uint8_t,
-    pub ptr_start: *const uint8_t,
-    pub ptr_end: *const uint8_t,
+    pub ptr: *const u8,
+    pub ptr_start: *const u8,
+    pub ptr_end: *const u8,
 }
 
-pub unsafe fn dav1d_init_get_bits(c: *mut GetBits, data: *const uint8_t, sz: size_t) {
+pub unsafe fn dav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: usize) {
     if sz == 0 {
         unreachable!();
     }
     (*c).ptr_start = data;
     (*c).ptr = (*c).ptr_start;
-    (*c).ptr_end = &*((*c).ptr_start).offset(sz as isize) as *const uint8_t;
-    (*c).state = 0 as libc::c_int as uint64_t;
+    (*c).ptr_end = &*((*c).ptr_start).offset(sz as isize) as *const u8;
+    (*c).state = 0 as libc::c_int as u64;
     (*c).bits_left = 0 as libc::c_int;
     (*c).error = 0 as libc::c_int;
 }
@@ -34,11 +32,11 @@ pub unsafe fn dav1d_get_bit(c: *mut GetBits) -> libc::c_uint {
             (*c).ptr = ((*c).ptr).offset(1);
             let state: libc::c_uint = *fresh0 as libc::c_uint;
             (*c).bits_left = 7 as libc::c_int;
-            (*c).state = (state as uint64_t) << 57;
+            (*c).state = (state as u64) << 57;
             return state >> 7;
         }
     }
-    let state_0: uint64_t = (*c).state;
+    let state_0: u64 = (*c).state;
     (*c).bits_left -= 1;
     (*c).state = state_0 << 1;
     return (state_0 >> 63) as libc::c_uint;
@@ -67,7 +65,7 @@ unsafe extern "C" fn refill(c: *mut GetBits, n: libc::c_int) {
             }
         }
     }
-    (*c).state |= (state as uint64_t) << 64 - (*c).bits_left;
+    (*c).state |= (state as u64) << 64 - (*c).bits_left;
 }
 
 pub unsafe fn dav1d_get_bits(c: *mut GetBits, n: libc::c_int) -> libc::c_uint {
@@ -76,10 +74,10 @@ pub unsafe fn dav1d_get_bits(c: *mut GetBits, n: libc::c_int) -> libc::c_uint {
     if n as libc::c_uint > (*c).bits_left as libc::c_uint {
         refill(c, n);
     }
-    let state: uint64_t = (*c).state;
+    let state: u64 = (*c).state;
     (*c).bits_left -= n;
     (*c).state = state << n;
-    return (state as uint64_t >> 64 - n) as libc::c_uint;
+    return (state as u64 >> 64 - n) as libc::c_uint;
 }
 
 pub unsafe fn dav1d_get_sbits(c: *mut GetBits, n: libc::c_int) -> libc::c_int {
@@ -88,26 +86,26 @@ pub unsafe fn dav1d_get_sbits(c: *mut GetBits, n: libc::c_int) -> libc::c_int {
     if n as libc::c_uint > (*c).bits_left as libc::c_uint {
         refill(c, n);
     }
-    let state: uint64_t = (*c).state;
+    let state: u64 = (*c).state;
     (*c).bits_left -= n;
     (*c).state = state << n;
-    return (state as int64_t >> 64 - n) as libc::c_int;
+    return (state as i64 >> 64 - n) as libc::c_int;
 }
 
 pub unsafe fn dav1d_get_uleb128(c: *mut GetBits) -> libc::c_uint {
-    let mut val: uint64_t = 0 as libc::c_int as uint64_t;
+    let mut val: u64 = 0 as libc::c_int as u64;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     let mut more: libc::c_uint;
     loop {
         let v = dav1d_get_bits(c, 8 as libc::c_int) as libc::c_int;
         more = (v & 0x80 as libc::c_int) as libc::c_uint;
-        val |= ((v & 0x7f as libc::c_int) as uint64_t) << i;
+        val |= ((v & 0x7f as libc::c_int) as u64) << i;
         i = i.wrapping_add(7 as libc::c_int as libc::c_uint);
         if !(more != 0 && i < 56 as libc::c_uint) {
             break;
         }
     }
-    if val > u32::MAX as uint64_t || more != 0 {
+    if val > u32::MAX as u64 || more != 0 {
         (*c).error = 1 as libc::c_int;
         return 0;
     }
@@ -199,5 +197,5 @@ pub unsafe fn dav1d_bytealign_get_bits(c: *mut GetBits) {
         unreachable!();
     }
     (*c).bits_left = 0 as libc::c_int;
-    (*c).state = 0 as libc::c_int as uint64_t;
+    (*c).state = 0 as libc::c_int as u64;
 }

@@ -3,8 +3,6 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::int8_t;
-use crate::include::stdint::uint8_t;
 use crate::src::align::Align8;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
@@ -37,23 +35,23 @@ use std::cmp::Ordering;
 
 #[repr(C)]
 pub struct BlockContext {
-    pub mode: Align8<[uint8_t; 32]>,
-    pub lcoef: Align8<[uint8_t; 32]>,
-    pub ccoef: Align8<[[uint8_t; 32]; 2]>,
-    pub seg_pred: Align8<[uint8_t; 32]>,
-    pub skip: Align8<[uint8_t; 32]>,
-    pub skip_mode: Align8<[uint8_t; 32]>,
-    pub intra: Align8<[uint8_t; 32]>,
-    pub comp_type: Align8<[uint8_t; 32]>,
-    pub r#ref: Align8<[[int8_t; 32]; 2]>,
-    pub filter: Align8<[[uint8_t; 32]; 2]>,
-    pub tx_intra: Align8<[int8_t; 32]>,
-    pub tx: Align8<[uint8_t; 32]>,
-    pub tx_lpf_y: Align8<[uint8_t; 32]>,
-    pub tx_lpf_uv: Align8<[uint8_t; 32]>,
-    pub partition: Align8<[uint8_t; 16]>,
-    pub uvmode: Align8<[uint8_t; 32]>,
-    pub pal_sz: Align8<[uint8_t; 32]>,
+    pub mode: Align8<[u8; 32]>,
+    pub lcoef: Align8<[u8; 32]>,
+    pub ccoef: Align8<[[u8; 32]; 2]>,
+    pub seg_pred: Align8<[u8; 32]>,
+    pub skip: Align8<[u8; 32]>,
+    pub skip_mode: Align8<[u8; 32]>,
+    pub intra: Align8<[u8; 32]>,
+    pub comp_type: Align8<[u8; 32]>,
+    pub r#ref: Align8<[[i8; 32]; 2]>,
+    pub filter: Align8<[[u8; 32]; 2]>,
+    pub tx_intra: Align8<[i8; 32]>,
+    pub tx: Align8<[u8; 32]>,
+    pub tx_lpf_y: Align8<[u8; 32]>,
+    pub tx_lpf_uv: Align8<[u8; 32]>,
+    pub partition: Align8<[u8; 16]>,
+    pub uvmode: Align8<[u8; 32]>,
+    pub pal_sz: Align8<[u8; 32]>,
 }
 
 #[inline]

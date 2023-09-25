@@ -4,7 +4,6 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
@@ -94,13 +93,13 @@ extern "C" {
 #[repr(C, packed)]
 pub struct refmvs_temporal_block {
     pub mv: mv,
-    pub r#ref: int8_t,
+    pub r#ref: i8,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub struct refmvs_refpair {
-    pub r#ref: [int8_t; 2],
+    pub r#ref: [i8; 2],
 }
 
 impl From<[i8; 2]> for refmvs_refpair {
@@ -121,8 +120,8 @@ pub struct refmvs_mvpair {
 pub struct refmvs_block_unaligned {
     pub mv: refmvs_mvpair,
     pub r#ref: refmvs_refpair,
-    pub bs: uint8_t,
-    pub mf: uint8_t,
+    pub bs: u8,
+    pub mf: u8,
 }
 
 /// In C, `struct refmvs_block` is both aligned and packed,
@@ -146,10 +145,10 @@ pub struct refmvs_frame {
     pub ih8: libc::c_int,
     pub sbsz: libc::c_int,
     pub use_ref_frame_mvs: libc::c_int,
-    pub sign_bias: [uint8_t; 7],
-    pub mfmv_sign: [uint8_t; 7],
-    pub pocdiff: [int8_t; 7],
-    pub mfmv_ref: [uint8_t; 3],
+    pub sign_bias: [u8; 7],
+    pub mfmv_sign: [u8; 7],
+    pub pocdiff: [i8; 7],
+    pub mfmv_ref: [u8; 3],
     pub mfmv_ref2cur: [libc::c_int; 3],
     pub mfmv_ref2ref: [[libc::c_int; 7]; 3],
     pub n_mfmvs: libc::c_int,
@@ -1137,7 +1136,7 @@ pub unsafe fn dav1d_refmvs_save_tmvs(
     row_end8 = cmp::min(row_end8, (*rf).ih8);
     col_end8 = cmp::min(col_end8, (*rf).iw8);
     let stride: ptrdiff_t = (*rf).rp_stride;
-    let ref_sign: *const uint8_t = ((*rf).mfmv_sign).as_ptr();
+    let ref_sign: *const u8 = ((*rf).mfmv_sign).as_ptr();
     let rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
 
     (*dsp).save_tmvs.expect("non-null function pointer")(
@@ -1290,7 +1289,7 @@ pub unsafe extern "C" fn load_tmvs_c(
                                     {
                                         (*rp_proj.offset(pos + pos_x as isize)).mv = (*rb).mv;
                                         (*rp_proj.offset(pos + pos_x as isize)).r#ref =
-                                            ref2ref as int8_t;
+                                            ref2ref as i8;
                                     }
                                     x_0 += 1;
                                     if x_0 >= col_end8i {
@@ -1432,11 +1431,11 @@ pub unsafe fn dav1d_refmvs_init_frame(
         let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as libc::c_int;
         (*rf).r = dav1d_alloc_aligned(
             (::core::mem::size_of::<refmvs_block>())
-                .wrapping_mul(35 as size_t)
-                .wrapping_mul(r_stride as size_t)
-                .wrapping_mul(n_tile_rows as size_t)
-                .wrapping_mul((1 + uses_2pass) as size_t),
-            64 as libc::c_int as size_t,
+                .wrapping_mul(35 as usize)
+                .wrapping_mul(r_stride as usize)
+                .wrapping_mul(n_tile_rows as usize)
+                .wrapping_mul((1 + uses_2pass) as usize),
+            64 as libc::c_int as usize,
         ) as *mut refmvs_block;
         if ((*rf).r).is_null() {
             return -(12 as libc::c_int);
@@ -1452,10 +1451,10 @@ pub unsafe fn dav1d_refmvs_init_frame(
         }
         (*rf).rp_proj = dav1d_alloc_aligned(
             (::core::mem::size_of::<refmvs_temporal_block>())
-                .wrapping_mul(16 as size_t)
-                .wrapping_mul(rp_stride as size_t)
-                .wrapping_mul(n_tile_rows as size_t),
-            64 as size_t,
+                .wrapping_mul(16 as usize)
+                .wrapping_mul(rp_stride as usize)
+                .wrapping_mul(n_tile_rows as usize),
+            64 as usize,
         ) as *mut refmvs_temporal_block;
         if ((*rf).rp_proj).is_null() {
             return -(12 as libc::c_int);
@@ -1475,8 +1474,8 @@ pub unsafe fn dav1d_refmvs_init_frame(
             *ref_poc.offset(i as isize) as libc::c_int,
             poc as libc::c_int,
         );
-        (*rf).sign_bias[i as usize] = (poc_diff > 0) as libc::c_int as uint8_t;
-        (*rf).mfmv_sign[i as usize] = (poc_diff < 0) as libc::c_int as uint8_t;
+        (*rf).sign_bias[i as usize] = (poc_diff > 0) as libc::c_int as u8;
+        (*rf).mfmv_sign[i as usize] = (poc_diff < 0) as libc::c_int as u8;
         (*rf).pocdiff[i as usize] = iclip(
             get_poc_diff(
                 (*seq_hdr).order_hint_n_bits,
@@ -1485,7 +1484,7 @@ pub unsafe fn dav1d_refmvs_init_frame(
             ),
             -(31 as libc::c_int),
             31 as libc::c_int,
-        ) as int8_t;
+        ) as i8;
         i += 1;
     }
     (*rf).n_mfmvs = 0 as libc::c_int;
@@ -1494,7 +1493,7 @@ pub unsafe fn dav1d_refmvs_init_frame(
         if !(*rp_ref.offset(0)).is_null() && (*ref_ref_poc.offset(0))[6] != *ref_poc.offset(3) {
             let fresh12 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh12 as usize] = 0 as libc::c_int as uint8_t;
+            (*rf).mfmv_ref[fresh12 as usize] = 0 as libc::c_int as u8;
             total = 3 as libc::c_int;
         }
         if !(*rp_ref.offset(4)).is_null()
@@ -1506,7 +1505,7 @@ pub unsafe fn dav1d_refmvs_init_frame(
         {
             let fresh13 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh13 as usize] = 4 as libc::c_int as uint8_t;
+            (*rf).mfmv_ref[fresh13 as usize] = 4 as libc::c_int as u8;
         }
         if !(*rp_ref.offset(5)).is_null()
             && get_poc_diff(
@@ -1517,7 +1516,7 @@ pub unsafe fn dav1d_refmvs_init_frame(
         {
             let fresh14 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh14 as usize] = 5 as libc::c_int as uint8_t;
+            (*rf).mfmv_ref[fresh14 as usize] = 5 as libc::c_int as u8;
         }
         if (*rf).n_mfmvs < total
             && !(*rp_ref.offset(6)).is_null()
@@ -1529,12 +1528,12 @@ pub unsafe fn dav1d_refmvs_init_frame(
         {
             let fresh15 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh15 as usize] = 6 as libc::c_int as uint8_t;
+            (*rf).mfmv_ref[fresh15 as usize] = 6 as libc::c_int as u8;
         }
         if (*rf).n_mfmvs < total && !(*rp_ref.offset(1)).is_null() {
             let fresh16 = (*rf).n_mfmvs;
             (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh16 as usize] = 1 as libc::c_int as uint8_t;
+            (*rf).mfmv_ref[fresh16 as usize] = 1 as libc::c_int as u8;
         }
         let mut n = 0;
         while n < (*rf).n_mfmvs {

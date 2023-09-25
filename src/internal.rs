@@ -17,11 +17,6 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int32_t;
-use crate::include::stdint::int8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint8_t;
 use crate::src::align::*;
 use crate::src::cdef::Dav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
@@ -105,15 +100,15 @@ pub struct Dav1dContext_frame_thread {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct TaskThreadData_grain_lut_scaling_8 {
-    pub grain_lut_8bpc: Align16<[[[int8_t; 82]; 74]; 3]>,
-    pub scaling_8bpc: Align64<[[uint8_t; 256]; 3]>,
+    pub grain_lut_8bpc: Align16<[[[i8; 82]; 74]; 3]>,
+    pub scaling_8bpc: Align64<[[u8; 256]; 3]>,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct TaskThreadData_grain_lut_scaling_16 {
-    pub grain_lut_16bpc: Align16<[[[int16_t; 82]; 74]; 3]>,
-    pub scaling_16bpc: Align64<[[uint8_t; 4096]; 3]>,
+    pub grain_lut_16bpc: Align16<[[[i16; 82]; 74]; 3]>,
+    pub scaling_16bpc: Align64<[[u8; 4096]; 3]>,
 }
 
 #[repr(C)]
@@ -283,8 +278,8 @@ impl Dav1dFrameContext_bd_fn {
 
 #[repr(C)]
 pub struct CodedBlockInfo {
-    pub eob: [int16_t; 3],
-    pub txtp: [uint8_t; 3],
+    pub eob: [i16; 3],
+    pub txtp: [u8; 3],
 }
 
 #[repr(C)]
@@ -296,8 +291,8 @@ pub struct Dav1dFrameContext_frame_thread {
     pub copy_lpf_progress: *mut atomic_uint,
     pub b: *mut Av1Block,
     pub cbi: *mut CodedBlockInfo,
-    pub pal: *mut [[uint16_t; 8]; 3],
-    pub pal_idx: *mut uint8_t,
+    pub pal: *mut [[u16; 8]; 3],
+    pub pal_idx: *mut u8,
     pub cf: *mut DynCoef,
     pub prog_sz: libc::c_int,
     pub pal_sz: libc::c_int,
@@ -308,7 +303,7 @@ pub struct Dav1dFrameContext_frame_thread {
 
 #[repr(C)]
 pub struct Dav1dFrameContext_lf {
-    pub level: *mut [uint8_t; 4],
+    pub level: *mut [u8; 4],
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
     pub mask_sz: libc::c_int,
@@ -319,14 +314,14 @@ pub struct Dav1dFrameContext_lf {
     pub re_sz: libc::c_int,
     pub lim_lut: Align16<Av1FilterLUT>,
     pub last_sharpness: libc::c_int,
-    pub lvl: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub tx_lpf_right_edge: [*mut uint8_t; 2],
-    pub cdef_line_buf: *mut uint8_t,
-    pub lr_line_buf: *mut uint8_t,
+    pub lvl: [[[[u8; 2]; 8]; 4]; 8],
+    pub tx_lpf_right_edge: [*mut u8; 2],
+    pub cdef_line_buf: *mut u8,
+    pub lr_line_buf: *mut u8,
     pub cdef_line: [[*mut DynPixel; 3]; 2],
     pub cdef_lpf_line: [*mut DynPixel; 3],
     pub lr_lpf_line: [*mut DynPixel; 3],
-    pub start_of_tile_row: *mut uint8_t,
+    pub start_of_tile_row: *mut u8,
     pub start_of_tile_row_sz: libc::c_int,
     pub need_cdef_lpf_copy: libc::c_int,
     pub p: [*mut DynPixel; 3],
@@ -387,11 +382,11 @@ pub struct Dav1dFrameContext {
     pub ref_mvs_ref: [*mut Dav1dRef; 7],
     pub cur_segmap_ref: *mut Dav1dRef,
     pub prev_segmap_ref: *mut Dav1dRef,
-    pub cur_segmap: *mut uint8_t,
-    pub prev_segmap: *const uint8_t,
+    pub cur_segmap: *mut u8,
+    pub prev_segmap: *const u8,
     pub refpoc: [libc::c_uint; 7],
     pub refrefpoc: [[libc::c_uint; 7]; 7],
-    pub gmv_warp_allowed: [uint8_t; 7],
+    pub gmv_warp_allowed: [u8; 7],
     pub in_cdf: CdfThreadContext,
     pub out_cdf: CdfThreadContext,
     pub tile: *mut Dav1dTileGroup,
@@ -418,12 +413,12 @@ pub struct Dav1dFrameContext {
     pub sb_shift: libc::c_int,
     pub sb_step: libc::c_int,
     pub sr_sb128w: libc::c_int,
-    pub dq: [[[uint16_t; 2]; 3]; 8],
-    pub qm: [[*const uint8_t; 3]; 19],
+    pub dq: [[[u16; 2]; 3]; 8],
+    pub qm: [[*const u8; 3]; 19],
     pub a: *mut BlockContext,
     pub a_sz: libc::c_int,
     pub rf: refmvs_frame,
-    pub jnt_weights: [[uint8_t; 7]; 7],
+    pub jnt_weights: [[u8; 7]; 7],
     pub bitdepth_max: libc::c_int,
     pub frame_thread: Dav1dFrameContext_frame_thread,
     pub lf: Dav1dFrameContext_lf,
@@ -443,7 +438,7 @@ pub struct Dav1dTileState_tiling {
 
 #[repr(C)]
 pub struct Dav1dTileState_frame_thread {
-    pub pal_idx: *mut uint8_t,
+    pub pal_idx: *mut u8,
     pub cf: *mut DynCoef,
 }
 
@@ -455,41 +450,41 @@ pub struct Dav1dTileState {
     pub progress: [atomic_int; 2],
     pub frame_thread: [Dav1dTileState_frame_thread; 2],
     pub lowest_pixel: *mut [[libc::c_int; 2]; 7],
-    pub dqmem: [[[uint16_t; 2]; 3]; 8],
-    pub dq: *const [[uint16_t; 2]; 3],
+    pub dqmem: [[[u16; 2]; 3]; 8],
+    pub dq: *const [[u16; 2]; 3],
     pub last_qidx: libc::c_int,
-    pub last_delta_lf: [int8_t; 4],
-    pub lflvlmem: [[[[uint8_t; 2]; 8]; 4]; 8],
-    pub lflvl: *const [[[uint8_t; 2]; 8]; 4],
+    pub last_delta_lf: [i8; 4],
+    pub lflvlmem: [[[[u8; 2]; 8]; 4]; 8],
+    pub lflvl: *const [[[u8; 2]; 8]; 4],
     pub lr_ref: [*mut Av1RestorationUnit; 3],
 }
 
 #[repr(C, align(64))]
 pub union Dav1dTaskContext_cf {
-    pub cf_8bpc: [int16_t; 1024],
-    pub cf_16bpc: [int32_t; 1024],
+    pub cf_8bpc: [i16; 1024],
+    pub cf_16bpc: [i32; 1024],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_compinter_seg_mask {
-    pub compinter: [[int16_t; 16384]; 2],
-    pub seg_mask: [uint8_t; 16384],
+    pub compinter: [[i16; 16384]; 2],
+    pub seg_mask: [u8; 16384],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub union Dav1dTaskContext_scratch_lap {
-    pub lap_8bpc: [uint8_t; 4096],
-    pub lap_16bpc: [uint16_t; 4096],
+    pub lap_8bpc: [u8; 4096],
+    pub lap_16bpc: [u16; 4096],
     pub c2rust_unnamed: Dav1dTaskContext_scratch_compinter_seg_mask,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub union Dav1dTaskContext_scratch_emu_edge {
-    pub emu_edge_8bpc: [uint8_t; 84160],
-    pub emu_edge_16bpc: [uint16_t; 84160],
+    pub emu_edge_8bpc: [u8; 84160],
+    pub emu_edge_16bpc: [u16; 84160],
 }
 
 #[derive(Clone, Copy)]
@@ -502,29 +497,29 @@ pub struct Dav1dTaskContext_scratch_lap_emu_edge {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_pal {
-    pub pal_order: [[uint8_t; 8]; 64],
-    pub pal_ctx: [uint8_t; 64],
+    pub pal_order: [[u8; 8]; 64],
+    pub pal_ctx: [u8; 64],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub union Dav1dTaskContext_scratch_levels_pal {
-    pub levels: [uint8_t; 1088],
+    pub levels: [u8; 1088],
     pub c2rust_unnamed: Dav1dTaskContext_scratch_pal,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_interintra_edge_8 {
-    pub interintra_8bpc: [uint8_t; 4096],
-    pub edge_8bpc: [uint8_t; 257],
+    pub interintra_8bpc: [u8; 4096],
+    pub edge_8bpc: [u8; 257],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_interintra_edge_16 {
-    pub interintra_16bpc: [uint16_t; 4096],
-    pub edge_16bpc: [uint16_t; 257],
+    pub interintra_16bpc: [u16; 4096],
+    pub edge_16bpc: [u16; 257],
 }
 
 #[derive(Clone, Copy)]
@@ -538,9 +533,9 @@ pub union Dav1dTaskContext_scratch_interintra_edge {
 #[repr(C)]
 pub struct Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub c2rust_unnamed: Dav1dTaskContext_scratch_levels_pal,
-    pub ac: [int16_t; 1024],
-    pub pal_idx: [uint8_t; 8192],
-    pub pal: [[uint16_t; 8]; 3],
+    pub ac: [i16; 1024],
+    pub pal_idx: [u8; 8192],
+    pub pal: [[u16; 8]; 3],
     pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge,
 }
 
@@ -575,14 +570,14 @@ pub struct Dav1dTaskContext {
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
     pub c2rust_unnamed: Dav1dTaskContext_cf,
-    pub al_pal: [[[[uint16_t; 8]; 3]; 32]; 2],
-    pub pal_sz_uv: [[uint8_t; 32]; 2],
-    pub txtp_map: [uint8_t; 1024],
+    pub al_pal: [[[[u16; 8]; 3]; 32]; 2],
+    pub pal_sz_uv: [[u8; 32]; 2],
+    pub txtp_map: [u8; 1024],
     pub scratch: Dav1dTaskContext_scratch,
     pub warpmv: Dav1dWarpedMotionParams,
     pub lf_mask: *mut Av1Filter,
     pub top_pre_cdef_toggle: libc::c_int,
-    pub cur_sb_cdef_idx_ptr: *mut int8_t,
+    pub cur_sb_cdef_idx_ptr: *mut i8,
     pub tl_4x4_filter: Filter2d,
     pub frame_thread: Dav1dTaskContext_frame_thread,
     pub task_thread: Dav1dTaskContext_task_thread,

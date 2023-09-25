@@ -1,10 +1,3 @@
-use crate::include::stddef::size_t;
-use crate::include::stdint::int8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint32_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stdint::uint8_t;
-
 pub type Dav1dObuType = libc::c_uint;
 pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
 pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
@@ -153,18 +146,18 @@ pub struct Dav1dContentLightLevel {
 
 #[repr(C)]
 pub struct Dav1dMasteringDisplay {
-    pub primaries: [[uint16_t; 2]; 3],
-    pub white_point: [uint16_t; 2],
-    pub max_luminance: uint32_t,
-    pub min_luminance: uint32_t,
+    pub primaries: [[u16; 2]; 3],
+    pub white_point: [u16; 2],
+    pub max_luminance: u32,
+    pub min_luminance: u32,
 }
 
 #[repr(C)]
 pub struct Dav1dITUTT35 {
-    pub country_code: uint8_t,
-    pub country_code_extension_byte: uint8_t,
-    pub payload_size: size_t,
-    pub payload: *mut uint8_t,
+    pub country_code: u8,
+    pub country_code_extension_byte: u8,
+    pub payload_size: usize,
+    pub payload: *mut u8,
 }
 
 #[derive(Clone, Copy)]
@@ -277,15 +270,15 @@ pub struct Dav1dLoopfilterModeRefDeltas {
 pub struct Dav1dFilmGrainData {
     pub seed: libc::c_uint,
     pub num_y_points: libc::c_int,
-    pub y_points: [[uint8_t; 2]; 14],
+    pub y_points: [[u8; 2]; 14],
     pub chroma_scaling_from_luma: libc::c_int,
     pub num_uv_points: [libc::c_int; 2],
-    pub uv_points: [[[uint8_t; 2]; 10]; 2],
+    pub uv_points: [[[u8; 2]; 10]; 2],
     pub scaling_shift: libc::c_int,
     pub ar_coeff_lag: libc::c_int,
-    pub ar_coeffs_y: [int8_t; 24],
-    pub ar_coeffs_uv: [[int8_t; 28]; 2],
-    pub ar_coeff_shift: uint64_t,
+    pub ar_coeffs_y: [i8; 24],
+    pub ar_coeffs_uv: [[i8; 28]; 2],
+    pub ar_coeff_shift: u64,
     pub grain_scale_shift: libc::c_int,
     pub uv_mult: [libc::c_int; 2],
     pub uv_luma_mult: [libc::c_int; 2],
@@ -324,8 +317,8 @@ pub struct Dav1dFrameHeader_tiling {
     pub max_log2_rows: libc::c_int,
     pub log2_rows: libc::c_int,
     pub rows: libc::c_int,
-    pub col_start_sb: [uint16_t; 65],
-    pub row_start_sb: [uint16_t; 65],
+    pub col_start_sb: [u16; 65],
+    pub row_start_sb: [u16; 65],
     pub update: libc::c_int,
 }
 

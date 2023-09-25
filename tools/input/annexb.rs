@@ -8,9 +8,6 @@ use rav1d::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
 use rav1d::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
 use rav1d::include::dav1d::headers::DAV1D_OBU_TD;
 use rav1d::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
-use rav1d::include::stddef::size_t;
-use rav1d::include::stdint::uint64_t;
-use rav1d::include::stdint::uint8_t;
 use rav1d::src::lib::dav1d_data_create;
 use rav1d::src::lib::dav1d_data_unref;
 use rav1d::stderr;
@@ -26,8 +23,8 @@ extern "C" {
 #[repr(C)]
 pub struct DemuxerPriv {
     pub f: *mut libc::FILE,
-    pub temporal_unit_size: size_t,
-    pub frame_unit_size: size_t,
+    pub temporal_unit_size: usize,
+    pub frame_unit_size: usize,
 }
 
 #[repr(C)]
@@ -35,7 +32,7 @@ pub struct Demuxer {
     pub priv_data_size: libc::c_int,
     pub name: *const libc::c_char,
     pub probe_sz: libc::c_int,
-    pub probe: Option<unsafe extern "C" fn(*const uint8_t) -> libc::c_int>,
+    pub probe: Option<unsafe extern "C" fn(*const u8) -> libc::c_int>,
     pub open: Option<
         unsafe extern "C" fn(
             *mut DemuxerPriv,
@@ -46,42 +43,38 @@ pub struct Demuxer {
         ) -> libc::c_int,
     >,
     pub read: Option<unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> libc::c_int>,
-    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
+    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, u64) -> libc::c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 
 pub type AnnexbInputContext = DemuxerPriv;
 
-unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut size_t) -> libc::c_int {
-    let mut val: uint64_t = 0 as libc::c_int as uint64_t;
+unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut usize) -> libc::c_int {
+    let mut val: u64 = 0 as libc::c_int as u64;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     let mut more: libc::c_uint;
     loop {
-        let mut v: uint8_t = 0;
-        if fread(&mut v as *mut uint8_t as *mut libc::c_void, 1, 1, f) < 1 {
+        let mut v: u8 = 0;
+        if fread(&mut v as *mut u8 as *mut libc::c_void, 1, 1, f) < 1 {
             return -(1 as libc::c_int);
         }
         more = (v as libc::c_int & 0x80 as libc::c_int) as libc::c_uint;
-        val |= ((v as libc::c_int & 0x7f as libc::c_int) as uint64_t)
+        val |= ((v as libc::c_int & 0x7f as libc::c_int) as u64)
             << i.wrapping_mul(7 as libc::c_int as libc::c_uint);
         i = i.wrapping_add(1);
         if !(more != 0 && i < 8 as libc::c_uint) {
             break;
         }
     }
-    if val > u32::MAX as uint64_t || more != 0 {
+    if val > u32::MAX as u64 || more != 0 {
         return -(1 as libc::c_int);
     }
-    *len = val as size_t;
+    *len = val as usize;
     return i as libc::c_int;
 }
 
-unsafe extern "C" fn leb(
-    mut ptr: *const uint8_t,
-    mut sz: libc::c_int,
-    len: *mut size_t,
-) -> libc::c_int {
-    let mut val: uint64_t = 0 as libc::c_int as uint64_t;
+unsafe extern "C" fn leb(mut ptr: *const u8, mut sz: libc::c_int, len: *mut usize) -> libc::c_int {
+    let mut val: u64 = 0 as libc::c_int as u64;
     let mut i: libc::c_uint = 0 as libc::c_int as libc::c_uint;
     let mut more: libc::c_uint;
     loop {
@@ -94,25 +87,25 @@ unsafe extern "C" fn leb(
         ptr = ptr.offset(1);
         let v = *fresh1 as libc::c_int;
         more = (v & 0x80 as libc::c_int) as libc::c_uint;
-        val |= ((v & 0x7f as libc::c_int) as uint64_t)
-            << i.wrapping_mul(7 as libc::c_int as libc::c_uint);
+        val |=
+            ((v & 0x7f as libc::c_int) as u64) << i.wrapping_mul(7 as libc::c_int as libc::c_uint);
         i = i.wrapping_add(1);
         if !(more != 0 && i < 8 as libc::c_uint) {
             break;
         }
     }
-    if val > u32::MAX as uint64_t || more != 0 {
+    if val > u32::MAX as u64 || more != 0 {
         return -(1 as libc::c_int);
     }
-    *len = val as size_t;
+    *len = val as usize;
     return i as libc::c_int;
 }
 
 #[inline]
 unsafe extern "C" fn parse_obu_header(
-    mut buf: *const uint8_t,
+    mut buf: *const u8,
     mut buf_size: libc::c_int,
-    obu_size: *mut size_t,
+    obu_size: *mut usize,
     type_0: *mut Dav1dObuType,
     allow_implicit_size: libc::c_int,
 ) -> libc::c_int {
@@ -145,14 +138,14 @@ unsafe extern "C" fn parse_obu_header(
             return -(1 as libc::c_int);
         }
     }
-    *obu_size = buf_size as size_t;
+    *obu_size = buf_size as usize;
     return buf_size + 1 + extension_flag;
 }
 
-unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
+unsafe extern "C" fn annexb_probe(data: *const u8) -> libc::c_int {
     let mut ret;
     let mut cnt = 0;
-    let mut temporal_unit_size: size_t = 0;
+    let mut temporal_unit_size: usize = 0;
     ret = leb(
         data.offset(cnt as isize),
         2048 - cnt,
@@ -162,24 +155,24 @@ unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
         return 0 as libc::c_int;
     }
     cnt += ret;
-    let mut frame_unit_size: size_t = 0;
+    let mut frame_unit_size: usize = 0;
     ret = leb(data.offset(cnt as isize), 2048 - cnt, &mut frame_unit_size);
-    if ret < 0 || frame_unit_size.wrapping_add(ret as size_t) > temporal_unit_size {
-        return 0 as libc::c_int;
-    }
-    cnt += ret;
-    temporal_unit_size = (temporal_unit_size as libc::c_ulong).wrapping_sub(ret as libc::c_ulong)
-        as size_t as size_t;
-    let mut obu_unit_size: size_t = 0;
-    ret = leb(data.offset(cnt as isize), 2048 - cnt, &mut obu_unit_size);
-    if ret < 0 || obu_unit_size.wrapping_add(ret as size_t) >= frame_unit_size {
+    if ret < 0 || frame_unit_size.wrapping_add(ret as usize) > temporal_unit_size {
         return 0 as libc::c_int;
     }
     cnt += ret;
     temporal_unit_size =
-        (temporal_unit_size).wrapping_sub(obu_unit_size.wrapping_add(ret as size_t));
-    frame_unit_size = (frame_unit_size).wrapping_sub(obu_unit_size.wrapping_add(ret as size_t));
-    let mut obu_size: size_t = 0;
+        (temporal_unit_size as libc::c_ulong).wrapping_sub(ret as libc::c_ulong) as usize as usize;
+    let mut obu_unit_size: usize = 0;
+    ret = leb(data.offset(cnt as isize), 2048 - cnt, &mut obu_unit_size);
+    if ret < 0 || obu_unit_size.wrapping_add(ret as usize) >= frame_unit_size {
+        return 0 as libc::c_int;
+    }
+    cnt += ret;
+    temporal_unit_size =
+        (temporal_unit_size).wrapping_sub(obu_unit_size.wrapping_add(ret as usize));
+    frame_unit_size = (frame_unit_size).wrapping_sub(obu_unit_size.wrapping_add(ret as usize));
+    let mut obu_size: usize = 0;
     let mut type_0: Dav1dObuType = 0 as Dav1dObuType;
     ret = parse_obu_header(
         data.offset(cnt as isize),
@@ -198,14 +191,14 @@ unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
     let mut seq = 0;
     while cnt < 2048 {
         ret = leb(data.offset(cnt as isize), 2048 - cnt, &mut obu_unit_size);
-        if ret < 0 || obu_unit_size.wrapping_add(ret as size_t) > frame_unit_size {
+        if ret < 0 || obu_unit_size.wrapping_add(ret as usize) > frame_unit_size {
             return 0 as libc::c_int;
         }
         cnt += ret;
         temporal_unit_size = (temporal_unit_size as libc::c_ulong)
-            .wrapping_sub(ret as libc::c_ulong) as size_t as size_t;
-        frame_unit_size = (frame_unit_size as libc::c_ulong).wrapping_sub(ret as libc::c_ulong)
-            as size_t as size_t;
+            .wrapping_sub(ret as libc::c_ulong) as usize as usize;
+        frame_unit_size =
+            (frame_unit_size as libc::c_ulong).wrapping_sub(ret as libc::c_ulong) as usize as usize;
         ret = parse_obu_header(
             data.offset(cnt as isize),
             cmp::min(2048 - cnt, obu_unit_size as libc::c_int),
@@ -226,7 +219,7 @@ unsafe extern "C" fn annexb_probe(data: *const uint8_t) -> libc::c_int {
             _ => {}
         }
         temporal_unit_size = temporal_unit_size.wrapping_sub(obu_unit_size);
-        frame_unit_size = frame_unit_size.wrapping_sub(obu_unit_size) as size_t as size_t;
+        frame_unit_size = frame_unit_size.wrapping_sub(obu_unit_size) as usize as usize;
         if frame_unit_size <= 0 {
             return 0 as libc::c_int;
         }
@@ -242,7 +235,7 @@ unsafe extern "C" fn annexb_open(
     timebase: *mut libc::c_uint,
 ) -> libc::c_int {
     let mut res;
-    let mut len: size_t = 0;
+    let mut len: usize = 0;
     (*c).f = fopen(file, b"rb\0" as *const u8 as *const libc::c_char);
     if ((*c).f).is_null() {
         fprintf(
@@ -271,7 +264,7 @@ unsafe extern "C" fn annexb_open(
 }
 
 unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dData) -> libc::c_int {
-    let mut len: size_t = 0;
+    let mut len: usize = 0;
     let mut res;
     if (*c).temporal_unit_size == 0 {
         res = leb128((*c).f, &mut (*c).temporal_unit_size);
@@ -281,25 +274,24 @@ unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dDat
     }
     if (*c).frame_unit_size == 0 {
         res = leb128((*c).f, &mut (*c).frame_unit_size);
-        if res < 0 || ((*c).frame_unit_size).wrapping_add(res as size_t) > (*c).temporal_unit_size {
+        if res < 0 || ((*c).frame_unit_size).wrapping_add(res as usize) > (*c).temporal_unit_size {
             return -(1 as libc::c_int);
         }
         (*c).temporal_unit_size = ((*c).temporal_unit_size as libc::c_ulong)
-            .wrapping_sub(res as libc::c_ulong) as size_t
-            as size_t;
+            .wrapping_sub(res as libc::c_ulong) as usize as usize;
     }
     res = leb128((*c).f, &mut len);
-    if res < 0 || len.wrapping_add(res as size_t) > (*c).frame_unit_size {
+    if res < 0 || len.wrapping_add(res as usize) > (*c).frame_unit_size {
         return -(1 as libc::c_int);
     }
-    let ptr: *mut uint8_t = dav1d_data_create(data, len);
+    let ptr: *mut u8 = dav1d_data_create(data, len);
     if ptr.is_null() {
         return -(1 as libc::c_int);
     }
     (*c).temporal_unit_size =
-        ((*c).temporal_unit_size).wrapping_sub(len.wrapping_add(res as size_t)) as size_t as size_t;
+        ((*c).temporal_unit_size).wrapping_sub(len.wrapping_add(res as usize)) as usize as usize;
     (*c).frame_unit_size =
-        ((*c).frame_unit_size).wrapping_sub(len.wrapping_add(res as size_t)) as size_t;
+        ((*c).frame_unit_size).wrapping_sub(len.wrapping_add(res as usize)) as usize;
     if fread(ptr as *mut libc::c_void, len, 1, (*c).f) != 1 {
         fprintf(
             stderr,
@@ -323,7 +315,7 @@ pub static mut annexb_demuxer: Demuxer = {
             as libc::c_int,
         name: b"annexb\0" as *const u8 as *const libc::c_char,
         probe_sz: 2048 as libc::c_int,
-        probe: Some(annexb_probe as unsafe extern "C" fn(*const uint8_t) -> libc::c_int),
+        probe: Some(annexb_probe as unsafe extern "C" fn(*const u8) -> libc::c_int),
         open: Some(
             annexb_open
                 as unsafe extern "C" fn(

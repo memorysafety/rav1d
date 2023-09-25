@@ -2,14 +2,7 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::int16_t;
 use std::cmp;
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-use crate::include::stddef::size_t;
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-use crate::include::stdint::uint16_t;
 
 pub type CdefEdgeFlags = libc::c_uint;
 pub const CDEF_HAVE_BOTTOM: CdefEdgeFlags = 8;
@@ -281,7 +274,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_padding4_8bpc_neon(
-        tmp: *mut uint16_t,
+        tmp: *mut u16,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
         left: *const LeftPixelRow2px<DynPixel>,
@@ -291,7 +284,7 @@ extern "C" {
         edges: CdefEdgeFlags,
     );
     pub(crate) fn dav1d_cdef_padding8_8bpc_neon(
-        tmp: *mut uint16_t,
+        tmp: *mut u16,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
         left: *const LeftPixelRow2px<DynPixel>,
@@ -303,24 +296,24 @@ extern "C" {
     pub(crate) fn dav1d_cdef_filter4_8bpc_neon(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
-        tmp: *const uint16_t,
+        tmp: *const u16,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
         damping: libc::c_int,
         h: libc::c_int,
-        edges: size_t,
+        edges: usize,
     );
     pub(crate) fn dav1d_cdef_filter8_8bpc_neon(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
-        tmp: *const uint16_t,
+        tmp: *const u16,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
         damping: libc::c_int,
         h: libc::c_int,
-        edges: size_t,
+        edges: usize,
     );
 }
 
@@ -487,7 +480,7 @@ extern "C" {
         bitdepth_max: libc::c_int,
     ) -> libc::c_int;
     pub(crate) fn dav1d_cdef_padding4_16bpc_neon(
-        tmp: *mut uint16_t,
+        tmp: *mut u16,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
         left: *const LeftPixelRow2px<DynPixel>,
@@ -497,7 +490,7 @@ extern "C" {
         edges: CdefEdgeFlags,
     );
     pub(crate) fn dav1d_cdef_padding8_16bpc_neon(
-        tmp: *mut uint16_t,
+        tmp: *mut u16,
         src: *const DynPixel,
         src_stride: ptrdiff_t,
         left: *const LeftPixelRow2px<DynPixel>,
@@ -509,25 +502,25 @@ extern "C" {
     pub(crate) fn dav1d_cdef_filter4_16bpc_neon(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
-        tmp: *const uint16_t,
+        tmp: *const u16,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
         damping: libc::c_int,
         h: libc::c_int,
-        edges: size_t,
+        edges: usize,
         bitdepth_max: libc::c_int,
     );
     pub(crate) fn dav1d_cdef_filter8_16bpc_neon(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
-        tmp: *const uint16_t,
+        tmp: *const u16,
         pri_strength: libc::c_int,
         sec_strength: libc::c_int,
         dir: libc::c_int,
         damping: libc::c_int,
         h: libc::c_int,
-        edges: size_t,
+        edges: usize,
         bitdepth_max: libc::c_int,
     );
 }
@@ -550,7 +543,7 @@ pub unsafe extern "C" fn constrain(
 
 #[inline]
 pub unsafe extern "C" fn fill(
-    mut tmp: *mut int16_t,
+    mut tmp: *mut i16,
     stride: ptrdiff_t,
     w: libc::c_int,
     h: libc::c_int,

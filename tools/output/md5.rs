@@ -4,9 +4,6 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use rav1d::include::stdint::uint32_t;
-use rav1d::include::stdint::uint64_t;
-use rav1d::include::stdint::uint8_t;
 use rav1d::src::lib::dav1d_picture_unref;
 use rav1d::stderr;
 use rav1d::stdout;
@@ -26,16 +23,16 @@ extern "C" {
 
 #[repr(C)]
 pub struct MuxerPriv {
-    pub abcd: [uint32_t; 4],
+    pub abcd: [u32; 4],
     pub c2rust_unnamed: C2RustUnnamed,
-    pub len: uint64_t,
+    pub len: u64,
     pub f: *mut libc::FILE,
 }
 
 #[repr(C)]
 pub union C2RustUnnamed {
-    pub data: [uint8_t; 64],
-    pub data32: [uint32_t; 16],
+    pub data: [u8; 64],
+    pub data32: [u32; 16],
 }
 
 #[repr(C)]
@@ -59,70 +56,70 @@ pub struct Muxer {
 
 pub type MD5Context = MuxerPriv;
 
-static mut k: [uint32_t; 64] = [
+static mut k: [u32; 64] = [
     0xd76aa478 as libc::c_uint,
     0xe8c7b756 as libc::c_uint,
-    0x242070db as libc::c_int as uint32_t,
+    0x242070db as libc::c_int as u32,
     0xc1bdceee as libc::c_uint,
     0xf57c0faf as libc::c_uint,
-    0x4787c62a as libc::c_int as uint32_t,
+    0x4787c62a as libc::c_int as u32,
     0xa8304613 as libc::c_uint,
     0xfd469501 as libc::c_uint,
-    0x698098d8 as libc::c_int as uint32_t,
+    0x698098d8 as libc::c_int as u32,
     0x8b44f7af as libc::c_uint,
     0xffff5bb1 as libc::c_uint,
     0x895cd7be as libc::c_uint,
-    0x6b901122 as libc::c_int as uint32_t,
+    0x6b901122 as libc::c_int as u32,
     0xfd987193 as libc::c_uint,
     0xa679438e as libc::c_uint,
-    0x49b40821 as libc::c_int as uint32_t,
+    0x49b40821 as libc::c_int as u32,
     0xf61e2562 as libc::c_uint,
     0xc040b340 as libc::c_uint,
-    0x265e5a51 as libc::c_int as uint32_t,
+    0x265e5a51 as libc::c_int as u32,
     0xe9b6c7aa as libc::c_uint,
     0xd62f105d as libc::c_uint,
-    0x2441453 as libc::c_int as uint32_t,
+    0x2441453 as libc::c_int as u32,
     0xd8a1e681 as libc::c_uint,
     0xe7d3fbc8 as libc::c_uint,
-    0x21e1cde6 as libc::c_int as uint32_t,
+    0x21e1cde6 as libc::c_int as u32,
     0xc33707d6 as libc::c_uint,
     0xf4d50d87 as libc::c_uint,
-    0x455a14ed as libc::c_int as uint32_t,
+    0x455a14ed as libc::c_int as u32,
     0xa9e3e905 as libc::c_uint,
     0xfcefa3f8 as libc::c_uint,
-    0x676f02d9 as libc::c_int as uint32_t,
+    0x676f02d9 as libc::c_int as u32,
     0x8d2a4c8a as libc::c_uint,
     0xfffa3942 as libc::c_uint,
     0x8771f681 as libc::c_uint,
-    0x6d9d6122 as libc::c_int as uint32_t,
+    0x6d9d6122 as libc::c_int as u32,
     0xfde5380c as libc::c_uint,
     0xa4beea44 as libc::c_uint,
-    0x4bdecfa9 as libc::c_int as uint32_t,
+    0x4bdecfa9 as libc::c_int as u32,
     0xf6bb4b60 as libc::c_uint,
     0xbebfbc70 as libc::c_uint,
-    0x289b7ec6 as libc::c_int as uint32_t,
+    0x289b7ec6 as libc::c_int as u32,
     0xeaa127fa as libc::c_uint,
     0xd4ef3085 as libc::c_uint,
-    0x4881d05 as libc::c_int as uint32_t,
+    0x4881d05 as libc::c_int as u32,
     0xd9d4d039 as libc::c_uint,
     0xe6db99e5 as libc::c_uint,
-    0x1fa27cf8 as libc::c_int as uint32_t,
+    0x1fa27cf8 as libc::c_int as u32,
     0xc4ac5665 as libc::c_uint,
     0xf4292244 as libc::c_uint,
-    0x432aff97 as libc::c_int as uint32_t,
+    0x432aff97 as libc::c_int as u32,
     0xab9423a7 as libc::c_uint,
     0xfc93a039 as libc::c_uint,
-    0x655b59c3 as libc::c_int as uint32_t,
+    0x655b59c3 as libc::c_int as u32,
     0x8f0ccc92 as libc::c_uint,
     0xffeff47d as libc::c_uint,
     0x85845dd1 as libc::c_uint,
-    0x6fa87e4f as libc::c_int as uint32_t,
+    0x6fa87e4f as libc::c_int as u32,
     0xfe2ce6e0 as libc::c_uint,
     0xa3014314 as libc::c_uint,
-    0x4e0811a1 as libc::c_int as uint32_t,
+    0x4e0811a1 as libc::c_int as u32,
     0xf7537e82 as libc::c_uint,
     0xbd3af235 as libc::c_uint,
-    0x2ad7d2bb as libc::c_int as uint32_t,
+    0x2ad7d2bb as libc::c_int as u32,
     0xeb86d391 as libc::c_uint,
 ];
 
@@ -146,24 +143,24 @@ unsafe extern "C" fn md5_open(
             return -(1 as libc::c_int);
         }
     }
-    (*md5).abcd[0] = 0x67452301 as libc::c_int as uint32_t;
+    (*md5).abcd[0] = 0x67452301 as libc::c_int as u32;
     (*md5).abcd[1] = 0xefcdab89 as libc::c_uint;
     (*md5).abcd[2] = 0x98badcfe as libc::c_uint;
-    (*md5).abcd[3] = 0x10325476 as libc::c_int as uint32_t;
-    (*md5).len = 0 as libc::c_int as uint64_t;
+    (*md5).abcd[3] = 0x10325476 as libc::c_int as u32;
+    (*md5).len = 0 as libc::c_int as u64;
     return 0 as libc::c_int;
 }
 
 #[inline]
-unsafe extern "C" fn leftrotate(x: uint32_t, c: libc::c_int) -> uint32_t {
+unsafe extern "C" fn leftrotate(x: u32, c: libc::c_int) -> u32 {
     return x << c | x >> 32 - c;
 }
 
-unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
-    let mut a: uint32_t = (*md5).abcd[0];
-    let mut b: uint32_t = (*md5).abcd[1];
-    let mut c: uint32_t = (*md5).abcd[2];
-    let mut d: uint32_t = (*md5).abcd[3];
+unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const u32) {
+    let mut a: u32 = (*md5).abcd[0];
+    let mut b: u32 = (*md5).abcd[1];
+    let mut c: u32 = (*md5).abcd[2];
+    let mut d: u32 = (*md5).abcd[3];
     a = b.wrapping_add(leftrotate(
         a.wrapping_add(b & c | !b & d)
             .wrapping_add(k[(0 + 0) as usize])
@@ -548,17 +545,13 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
             .wrapping_add(*data.offset((5 - 60 & 15) as isize)),
         21 as libc::c_int,
     ));
-    (*md5).abcd[0] = ((*md5).abcd[0] as libc::c_uint).wrapping_add(a) as uint32_t as uint32_t;
-    (*md5).abcd[1] = ((*md5).abcd[1] as libc::c_uint).wrapping_add(b) as uint32_t as uint32_t;
-    (*md5).abcd[2] = ((*md5).abcd[2] as libc::c_uint).wrapping_add(c) as uint32_t as uint32_t;
-    (*md5).abcd[3] = ((*md5).abcd[3] as libc::c_uint).wrapping_add(d) as uint32_t as uint32_t;
+    (*md5).abcd[0] = ((*md5).abcd[0] as libc::c_uint).wrapping_add(a) as u32 as u32;
+    (*md5).abcd[1] = ((*md5).abcd[1] as libc::c_uint).wrapping_add(b) as u32 as u32;
+    (*md5).abcd[2] = ((*md5).abcd[2] as libc::c_uint).wrapping_add(c) as u32 as u32;
+    (*md5).abcd[3] = ((*md5).abcd[3] as libc::c_uint).wrapping_add(d) as u32 as u32;
 }
 
-unsafe extern "C" fn md5_update(
-    md5: *mut MD5Context,
-    mut data: *const uint8_t,
-    mut len: libc::c_uint,
-) {
+unsafe extern "C" fn md5_update(md5: *mut MD5Context, mut data: *const u8, mut len: libc::c_uint) {
     if len == 0 {
         return;
     }
@@ -567,15 +560,13 @@ unsafe extern "C" fn md5_update(
         memcpy(
             &mut *((*md5).c2rust_unnamed.data)
                 .as_mut_ptr()
-                .offset(((*md5).len & 63) as isize) as *mut uint8_t
-                as *mut libc::c_void,
+                .offset(((*md5).len & 63) as isize) as *mut u8 as *mut libc::c_void,
             data as *const libc::c_void,
             tmp as libc::c_ulong,
         );
         len = len.wrapping_sub(tmp);
         data = data.offset(tmp as isize);
-        (*md5).len = ((*md5).len as libc::c_ulong).wrapping_add(tmp as libc::c_ulong) as uint64_t
-            as uint64_t;
+        (*md5).len = ((*md5).len as libc::c_ulong).wrapping_add(tmp as libc::c_ulong) as u64 as u64;
         if ((*md5).len & 63) == 0 {
             md5_body(md5, ((*md5).c2rust_unnamed.data32).as_mut_ptr());
         }
@@ -588,7 +579,7 @@ unsafe extern "C" fn md5_update(
         );
         md5_body(md5, ((*md5).c2rust_unnamed.data32).as_mut_ptr());
         (*md5).len = ((*md5).len as libc::c_ulong).wrapping_add(64 as libc::c_int as libc::c_ulong)
-            as uint64_t as uint64_t;
+            as u64 as u64;
         data = data.offset(64);
         len = len.wrapping_sub(64 as libc::c_int as libc::c_uint);
     }
@@ -598,8 +589,7 @@ unsafe extern "C" fn md5_update(
             data as *const libc::c_void,
             len as libc::c_ulong,
         );
-        (*md5).len = ((*md5).len as libc::c_ulong).wrapping_add(len as libc::c_ulong) as uint64_t
-            as uint64_t;
+        (*md5).len = ((*md5).len as libc::c_ulong).wrapping_add(len as libc::c_ulong) as u64 as u64;
     }
 }
 
@@ -607,7 +597,7 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> li
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
     let w = (*p).p.w;
     let h = (*p).p.h;
-    let mut yptr: *mut uint8_t = (*p).data[0] as *mut uint8_t;
+    let mut yptr: *mut u8 = (*p).data[0] as *mut u8;
     let mut y = 0;
     while y < h {
         md5_update(md5, yptr, (w << hbd) as libc::c_uint);
@@ -625,7 +615,7 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> li
         let ch = h + ss_ver >> ss_ver;
         let mut pl = 1;
         while pl <= 2 {
-            let mut uvptr: *mut uint8_t = (*p).data[pl as usize] as *mut uint8_t;
+            let mut uvptr: *mut u8 = (*p).data[pl as usize] as *mut u8;
             let mut y_0 = 0;
             while y_0 < ch {
                 md5_update(md5, uvptr, (cw << hbd) as libc::c_uint);
@@ -640,8 +630,8 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> li
 }
 
 unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
-    static mut bit: [uint8_t; 2] = [0x80 as libc::c_int as uint8_t, 0 as libc::c_int as uint8_t];
-    let len: uint64_t = (*md5).len << 3;
+    static mut bit: [u8; 2] = [0x80 as libc::c_int as u8, 0 as libc::c_int as u8];
+    let len: u64 = (*md5).len << 3;
     md5_update(
         md5,
         &*bit.as_ptr().offset(0),
@@ -656,7 +646,7 @@ unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
     }
     md5_update(
         md5,
-        &len as *const uint64_t as *const uint8_t,
+        &len as *const u64 as *const u8,
         8 as libc::c_int as libc::c_uint,
     );
 }
@@ -689,7 +679,7 @@ unsafe extern "C" fn md5_verify(
     if strlen(md5_str) < 32 as libc::c_ulong {
         return -(1 as libc::c_int);
     }
-    let mut abcd: [uint32_t; 4] = [0 as libc::c_int as uint32_t, 0, 0, 0];
+    let mut abcd: [u32; 4] = [0 as libc::c_int as u32, 0, 0, 0];
     let mut t: [libc::c_char; 3] = [0 as libc::c_int as libc::c_char, 0, 0];
     let mut i = 0;
     while i < 4 {
@@ -703,7 +693,7 @@ unsafe extern "C" fn md5_verify(
             );
             md5_str = md5_str.offset(2);
             abcd[i as usize] |=
-                (strtoul(t.as_mut_ptr(), &mut ignore, 16 as libc::c_int) as uint32_t) << j;
+                (strtoul(t.as_mut_ptr(), &mut ignore, 16 as libc::c_int) as u32) << j;
             j += 8 as libc::c_int;
         }
         i += 1;
@@ -711,7 +701,7 @@ unsafe extern "C" fn md5_verify(
     return (memcmp(
         abcd.as_mut_ptr() as *const libc::c_void,
         ((*md5).abcd).as_mut_ptr() as *const libc::c_void,
-        ::core::mem::size_of::<[uint32_t; 4]>() as libc::c_ulong,
+        ::core::mem::size_of::<[u32; 4]>() as libc::c_ulong,
     ) != 0) as libc::c_int;
 }
 

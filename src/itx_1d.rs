@@ -1,10 +1,9 @@
 use crate::include::common::intops::iclip;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 
 #[inline(never)]
 unsafe extern "C" fn inv_dct4_1d_internal_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -40,7 +39,7 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct4_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -50,7 +49,7 @@ pub unsafe extern "C" fn dav1d_inv_dct4_1d_c(
 
 #[inline(never)]
 unsafe extern "C" fn inv_dct8_1d_internal_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -101,7 +100,7 @@ unsafe extern "C" fn inv_dct8_1d_internal_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct8_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -111,7 +110,7 @@ pub unsafe extern "C" fn dav1d_inv_dct8_1d_c(
 
 #[inline(never)]
 unsafe extern "C" fn inv_dct16_1d_internal_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -208,7 +207,7 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct16_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -218,7 +217,7 @@ pub unsafe extern "C" fn dav1d_inv_dct16_1d_c(
 
 #[inline(never)]
 unsafe extern "C" fn inv_dct32_1d_internal_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -419,7 +418,7 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct32_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -429,7 +428,7 @@ pub unsafe extern "C" fn dav1d_inv_dct32_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -778,11 +777,11 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
 
 #[inline(never)]
 unsafe extern "C" fn inv_adst4_1d_internal_c(
-    in_0: *const int32_t,
+    in_0: *const i32,
     in_s: ptrdiff_t,
     _min: libc::c_int,
     _max: libc::c_int,
-    out: *mut int32_t,
+    out: *mut i32,
     out_s: ptrdiff_t,
 ) {
     if !(in_s > 0 && out_s != 0) {
@@ -812,11 +811,11 @@ unsafe extern "C" fn inv_adst4_1d_internal_c(
 
 #[inline(never)]
 unsafe extern "C" fn inv_adst8_1d_internal_c(
-    in_0: *const int32_t,
+    in_0: *const i32,
     in_s: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
-    out: *mut int32_t,
+    out: *mut i32,
     out_s: ptrdiff_t,
 ) {
     if !(in_s > 0 && out_s != 0) {
@@ -866,11 +865,11 @@ unsafe extern "C" fn inv_adst8_1d_internal_c(
 
 #[inline(never)]
 unsafe extern "C" fn inv_adst16_1d_internal_c(
-    in_0: *const int32_t,
+    in_0: *const i32,
     in_s: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
-    out: *mut int32_t,
+    out: *mut i32,
     out_s: ptrdiff_t,
 ) {
     if !(in_s > 0 && out_s != 0) {
@@ -984,7 +983,7 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -1001,7 +1000,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst4_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -1011,7 +1010,7 @@ pub unsafe extern "C" fn dav1d_inv_adst4_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst8_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -1021,7 +1020,7 @@ pub unsafe extern "C" fn dav1d_inv_adst8_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -1038,7 +1037,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -1055,7 +1054,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst16_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     min: libc::c_int,
     max: libc::c_int,
@@ -1065,7 +1064,7 @@ pub unsafe extern "C" fn dav1d_inv_adst16_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     _min: libc::c_int,
     _max: libc::c_int,
@@ -1083,7 +1082,7 @@ pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     _min: libc::c_int,
     _max: libc::c_int,
@@ -1101,7 +1100,7 @@ pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     _min: libc::c_int,
     _max: libc::c_int,
@@ -1119,7 +1118,7 @@ pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
-    c: *mut int32_t,
+    c: *mut i32,
     stride: ptrdiff_t,
     _min: libc::c_int,
     _max: libc::c_int,
@@ -1136,7 +1135,7 @@ pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_inv_wht4_1d_c(c: *mut int32_t, stride: ptrdiff_t) {
+pub unsafe extern "C" fn dav1d_inv_wht4_1d_c(c: *mut i32, stride: ptrdiff_t) {
     if !(stride > 0) {
         unreachable!();
     }

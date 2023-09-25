@@ -1,7 +1,3 @@
-use crate::include::stdint::int16_t;
-use crate::include::stdint::int8_t;
-use crate::include::stdint::uint16_t;
-use crate::include::stdint::uint8_t;
 use std::ops::Neg;
 
 pub type ObuMetaType = libc::c_uint;
@@ -249,29 +245,29 @@ pub const MM_TRANSLATION: MotionMode = 0;
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct Av1Block_intra {
-    pub y_mode: uint8_t,
-    pub uv_mode: uint8_t,
-    pub tx: uint8_t,
-    pub pal_sz: [uint8_t; 2],
-    pub y_angle: int8_t,
-    pub uv_angle: int8_t,
-    pub cfl_alpha: [int8_t; 2],
+    pub y_mode: u8,
+    pub uv_mode: u8,
+    pub tx: u8,
+    pub pal_sz: [u8; 2],
+    pub y_angle: i8,
+    pub uv_angle: i8,
+    pub cfl_alpha: [i8; 2],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1Block_inter_1d {
     pub mv: [mv; 2],
-    pub wedge_idx: uint8_t,
-    pub mask_sign: uint8_t,
-    pub interintra_mode: uint8_t,
+    pub wedge_idx: u8,
+    pub mask_sign: u8,
+    pub interintra_mode: u8,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1Block_inter_2d {
     pub mv2d: mv,
-    pub matrix: [int16_t; 4],
+    pub matrix: [i16; 4],
 }
 
 #[derive(Clone, Copy)]
@@ -285,16 +281,16 @@ pub union Av1Block_inter_nd {
 #[repr(C)]
 pub struct Av1Block_inter {
     pub c2rust_unnamed: Av1Block_inter_nd,
-    pub comp_type: uint8_t,
-    pub inter_mode: uint8_t,
-    pub motion_mode: uint8_t,
-    pub drl_idx: uint8_t,
-    pub r#ref: [int8_t; 2],
-    pub max_ytx: uint8_t,
-    pub filter2d: uint8_t,
-    pub interintra_type: uint8_t,
-    pub tx_split0: uint8_t,
-    pub tx_split1: uint16_t,
+    pub comp_type: u8,
+    pub inter_mode: u8,
+    pub motion_mode: u8,
+    pub drl_idx: u8,
+    pub r#ref: [i8; 2],
+    pub max_ytx: u8,
+    pub filter2d: u8,
+    pub interintra_type: u8,
+    pub tx_split0: u8,
+    pub tx_split1: u16,
 }
 
 #[repr(C)]
@@ -314,14 +310,14 @@ impl Default for Av1Block_intra_inter {
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Block {
-    pub bl: uint8_t,
-    pub bs: uint8_t,
-    pub bp: uint8_t,
-    pub intra: uint8_t,
-    pub seg_id: uint8_t,
-    pub skip_mode: uint8_t,
-    pub skip: uint8_t,
-    pub uvtx: uint8_t,
+    pub bl: u8,
+    pub bs: u8,
+    pub bp: u8,
+    pub intra: u8,
+    pub seg_id: u8,
+    pub skip_mode: u8,
+    pub skip: u8,
+    pub uvtx: u8,
     pub c2rust_unnamed: Av1Block_intra_inter,
 }
 
@@ -494,11 +490,11 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.filter2d
     }
 
-    pub unsafe fn r#ref(&self) -> [int8_t; 2] {
+    pub unsafe fn r#ref(&self) -> [i8; 2] {
         self.c2rust_unnamed.c2rust_unnamed_0.r#ref
     }
 
-    pub unsafe fn ref_mut(&mut self) -> &mut [int8_t; 2] {
+    pub unsafe fn ref_mut(&mut self) -> &mut [i8; 2] {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.r#ref
     }
 

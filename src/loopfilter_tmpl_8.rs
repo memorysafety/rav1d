@@ -2,7 +2,6 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
 use std::cmp;
@@ -13,7 +12,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
-pub type pixel = uint8_t;
+pub type pixel = u8;
 
 #[inline(never)]
 unsafe extern "C" fn loop_filter(
@@ -193,8 +192,8 @@ unsafe extern "C" fn loop_filter(
 unsafe extern "C" fn loop_filter_h_sb128y_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    vmask: *const uint32_t,
-    l: *const [uint8_t; 4],
+    vmask: *const u32,
+    l: *const [u8; 4],
     b4_stride: ptrdiff_t,
     lut: *const Av1FilterLUT,
     h: libc::c_int,
@@ -206,8 +205,8 @@ unsafe extern "C" fn loop_filter_h_sb128y_c_erased(
 unsafe fn loop_filter_h_sb128y_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
-    vmask: *const uint32_t,
-    mut l: *const [uint8_t; 4],
+    vmask: *const u32,
+    mut l: *const [u8; 4],
     b4_stride: ptrdiff_t,
     lut: *const Av1FilterLUT,
     _h: libc::c_int,
@@ -250,8 +249,8 @@ unsafe fn loop_filter_h_sb128y_rust(
 unsafe extern "C" fn loop_filter_v_sb128y_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    vmask: *const uint32_t,
-    l: *const [uint8_t; 4],
+    vmask: *const u32,
+    l: *const [u8; 4],
     b4_stride: ptrdiff_t,
     lut: *const Av1FilterLUT,
     w: libc::c_int,
@@ -263,8 +262,8 @@ unsafe extern "C" fn loop_filter_v_sb128y_c_erased(
 unsafe fn loop_filter_v_sb128y_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
-    vmask: *const uint32_t,
-    mut l: *const [uint8_t; 4],
+    vmask: *const u32,
+    mut l: *const [u8; 4],
     b4_stride: ptrdiff_t,
     lut: *const Av1FilterLUT,
     _w: libc::c_int,
@@ -307,8 +306,8 @@ unsafe fn loop_filter_v_sb128y_rust(
 unsafe extern "C" fn loop_filter_h_sb128uv_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    vmask: *const uint32_t,
-    l: *const [uint8_t; 4],
+    vmask: *const u32,
+    l: *const [u8; 4],
     b4_stride: ptrdiff_t,
     lut: *const Av1FilterLUT,
     h: libc::c_int,
@@ -320,8 +319,8 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c_erased(
 unsafe fn loop_filter_h_sb128uv_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
-    vmask: *const uint32_t,
-    mut l: *const [uint8_t; 4],
+    vmask: *const u32,
+    mut l: *const [u8; 4],
     b4_stride: ptrdiff_t,
     lut: *const Av1FilterLUT,
     _h: libc::c_int,
@@ -360,8 +359,8 @@ unsafe fn loop_filter_h_sb128uv_rust(
 unsafe extern "C" fn loop_filter_v_sb128uv_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    vmask: *const uint32_t,
-    l: *const [uint8_t; 4],
+    vmask: *const u32,
+    l: *const [u8; 4],
     b4_stride: ptrdiff_t,
     lut: *const Av1FilterLUT,
     w: libc::c_int,
@@ -373,8 +372,8 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c_erased(
 unsafe extern "C" fn loop_filter_v_sb128uv_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
-    vmask: *const uint32_t,
-    mut l: *const [uint8_t; 4],
+    vmask: *const u32,
+    mut l: *const [u8; 4],
     b4_stride: ptrdiff_t,
     lut: *const Av1FilterLUT,
     _w: libc::c_int,

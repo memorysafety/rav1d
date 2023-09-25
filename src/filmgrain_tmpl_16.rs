@@ -28,8 +28,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -58,8 +58,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -74,8 +74,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -98,8 +98,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -118,8 +118,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -141,8 +141,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -153,8 +153,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -169,8 +169,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -185,8 +185,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -201,8 +201,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -213,8 +213,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -229,8 +229,8 @@ extern "C" {
         src_row: *const DynPixel,
         stride: ptrdiff_t,
         data: *const Dav1dFilmGrainData,
-        pw: size_t,
-        scaling: *const uint8_t,
+        pw: usize,
+        scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
         bh: libc::c_int,
         row_num: libc::c_int,
@@ -267,7 +267,7 @@ extern "C" {
         dst: *mut pixel,
         src: *const pixel,
         stride: ptrdiff_t,
-        scaling: *const uint8_t,
+        scaling: *const u8,
         data: *const Dav1dFilmGrainData,
         grain_lut: *const [entry; 82],
         luma_row: *const pixel,
@@ -309,7 +309,7 @@ extern "C" {
         dst: *mut pixel,
         src: *const pixel,
         stride: ptrdiff_t,
-        scaling: *const uint8_t,
+        scaling: *const u8,
         scaling_shift: libc::c_int,
         grain_lut: *const [entry; 82],
         offsets: *const [libc::c_int; 2],
@@ -322,7 +322,7 @@ extern "C" {
         dst: *mut pixel,
         src: *const pixel,
         stride: ptrdiff_t,
-        scaling: *const uint8_t,
+        scaling: *const u8,
         data: *const Dav1dFilmGrainData,
         grain_lut: *const [entry; 82],
         luma_row: *const pixel,
@@ -338,7 +338,7 @@ extern "C" {
         dst: *mut pixel,
         src: *const pixel,
         stride: ptrdiff_t,
-        scaling: *const uint8_t,
+        scaling: *const u8,
         data: *const Dav1dFilmGrainData,
         grain_lut: *const [entry; 82],
         luma_row: *const pixel,
@@ -352,8 +352,8 @@ extern "C" {
     );
 }
 
-pub type pixel = uint16_t;
-pub type entry = int16_t;
+pub type pixel = u16;
+pub type entry = i16;
 
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
@@ -389,7 +389,7 @@ unsafe extern "C" fn generate_grain_y_rust(
             let value = get_random_number(11 as libc::c_int, &mut seed);
             (*buf.offset(y as isize))[x as usize] = round2(
                 dav1d_gaussian_sequence[value as usize] as libc::c_int,
-                shift as uint64_t,
+                shift as u64,
             ) as entry;
             x += 1;
         }
@@ -401,7 +401,7 @@ unsafe extern "C" fn generate_grain_y_rust(
     while y_0 < 73 {
         let mut x_0 = ar_pad;
         while x_0 < 82 - ar_pad {
-            let mut coeff: *const int8_t = ((*data).ar_coeffs_y).as_ptr();
+            let mut coeff: *const i8 = ((*data).ar_coeffs_y).as_ptr();
             let mut sum = 0;
             let mut dy = -ar_lag;
             while dy <= 0 {
@@ -465,7 +465,7 @@ unsafe extern "C" fn generate_grain_uv_c(
             let value = get_random_number(11 as libc::c_int, &mut seed);
             (*buf.offset(y as isize))[x as usize] = round2(
                 dav1d_gaussian_sequence[value as usize] as libc::c_int,
-                shift as uint64_t,
+                shift as u64,
             ) as entry;
             x += 1;
         }
@@ -477,7 +477,7 @@ unsafe extern "C" fn generate_grain_uv_c(
     while y_0 < chromaH {
         let mut x_0 = ar_pad;
         while x_0 < chromaW - ar_pad {
-            let mut coeff: *const int8_t = ((*data).ar_coeffs_uv[uv as usize]).as_ptr();
+            let mut coeff: *const i8 = ((*data).ar_coeffs_uv[uv as usize]).as_ptr();
             let mut sum = 0;
             let mut dy = -ar_lag;
             while dy <= 0 {
@@ -500,7 +500,7 @@ unsafe extern "C" fn generate_grain_uv_c(
                             }
                             i += 1;
                         }
-                        luma = round2(luma, (subx + suby) as uint64_t);
+                        luma = round2(luma, (subx + suby) as u64);
                         sum += luma * *coeff as libc::c_int;
                         break;
                     } else {
@@ -600,8 +600,8 @@ unsafe extern "C" fn fgy_32x32xn_c_erased(
     src_row: *const DynPixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -626,8 +626,8 @@ unsafe extern "C" fn fgy_32x32xn_rust(
     src_row: *const pixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -664,7 +664,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as size_t) < pw {
+    while (bx as usize) < pw {
         let bw = cmp::min(
             32 as libc::c_int,
             (pw as libc::c_int as libc::c_uint).wrapping_sub(bx) as libc::c_int,
@@ -722,7 +722,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
                     .offset(bx as isize);
                 let noise = round2(
                     *scaling.offset(*src as isize) as libc::c_int * grain,
-                    (*data).scaling_shift as uint64_t,
+                    (*data).scaling_shift as u64,
                 );
                 *dst = iclip(*src as libc::c_int + noise, min_value, max_value) as pixel;
                 x += 1;
@@ -751,7 +751,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
                 ) as libc::c_int;
                 grain_0 = round2(
                     old * w[x_0 as usize][0] + grain_0 * w[x_0 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 grain_0 = iclip(grain_0, grain_min, grain_max);
                 let src_0: *const pixel = src_row
@@ -764,7 +764,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
                     .offset(bx as isize);
                 let noise_0 = round2(
                     *scaling.offset(*src_0 as isize) as libc::c_int * grain_0,
-                    (*data).scaling_shift as uint64_t,
+                    (*data).scaling_shift as u64,
                 );
                 *dst_0 = iclip(*src_0 as libc::c_int + noise_0, min_value, max_value) as pixel;
                 x_0 += 1;
@@ -797,7 +797,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
                 ) as libc::c_int;
                 grain_1 = round2(
                     old_0 * w[y_0 as usize][0] + grain_1 * w[y_0 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 grain_1 = iclip(grain_1, grain_min, grain_max);
                 let src_1: *const pixel = src_row
@@ -810,7 +810,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
                     .offset(bx as isize);
                 let noise_1 = round2(
                     *scaling.offset(*src_1 as isize) as libc::c_int * grain_1,
-                    (*data).scaling_shift as uint64_t,
+                    (*data).scaling_shift as u64,
                 );
                 *dst_1 = iclip(*src_1 as libc::c_int + noise_1, min_value, max_value) as pixel;
                 x_1 += 1;
@@ -839,7 +839,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
                 ) as libc::c_int;
                 top = round2(
                     old_1 * w[x_2 as usize][0] + top * w[x_2 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 top = iclip(top, grain_min, grain_max);
                 let mut grain_2 = sample_lut(
@@ -864,12 +864,12 @@ unsafe extern "C" fn fgy_32x32xn_rust(
                 ) as libc::c_int;
                 grain_2 = round2(
                     old_1 * w[x_2 as usize][0] + grain_2 * w[x_2 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
                 grain_2 = round2(
                     top * w[y_0 as usize][0] + grain_2 * w[y_0 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
                 let src_2: *const pixel = src_row
@@ -882,7 +882,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
                     .offset(bx as isize);
                 let noise_2 = round2(
                     *scaling.offset(*src_2 as isize) as libc::c_int * grain_2,
-                    (*data).scaling_shift as uint64_t,
+                    (*data).scaling_shift as u64,
                 );
                 *dst_2 = iclip(*src_2 as libc::c_int + noise_2, min_value, max_value) as pixel;
                 x_2 += 1;
@@ -899,8 +899,8 @@ unsafe extern "C" fn fguv_32x32xn_c(
     src_row: *const pixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -947,8 +947,8 @@ unsafe extern "C" fn fguv_32x32xn_c(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as size_t) < pw {
-        let bw = cmp::min(32 >> sx, pw.wrapping_sub(bx as size_t) as libc::c_int);
+    while (bx as usize) < pw {
+        let bw = cmp::min(32 >> sx, pw.wrapping_sub(bx as usize) as libc::c_int);
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
@@ -1024,7 +1024,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 }
                 let noise = round2(
                     *scaling.offset(val as isize) as libc::c_int * grain,
-                    (*data).scaling_shift as uint64_t,
+                    (*data).scaling_shift as u64,
                 );
                 *dst = iclip(*src as libc::c_int + noise, min_value, max_value) as pixel;
                 x += 1;
@@ -1054,7 +1054,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 grain_0 = round2(
                     old * w[sx as usize][x_0 as usize][0]
                         + grain_0 * w[sx as usize][x_0 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 grain_0 = iclip(grain_0, grain_min, grain_max);
                 let lx_0 = (bx.wrapping_add(x_0 as libc::c_uint) << sx) as libc::c_int;
@@ -1087,7 +1087,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 }
                 let noise_0 = round2(
                     *scaling.offset(val_0 as isize) as libc::c_int * grain_0,
-                    (*data).scaling_shift as uint64_t,
+                    (*data).scaling_shift as u64,
                 );
                 *dst_0 = iclip(*src_0 as libc::c_int + noise_0, min_value, max_value) as pixel;
                 x_0 += 1;
@@ -1121,7 +1121,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 grain_1 = round2(
                     old_0 * w[sy as usize][y_0 as usize][0]
                         + grain_1 * w[sy as usize][y_0 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 grain_1 = iclip(grain_1, grain_min, grain_max);
                 let lx_1 = (bx.wrapping_add(x_1 as libc::c_uint) << sx) as libc::c_int;
@@ -1154,7 +1154,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 }
                 let noise_1 = round2(
                     *scaling.offset(val_1 as isize) as libc::c_int * grain_1,
-                    (*data).scaling_shift as uint64_t,
+                    (*data).scaling_shift as u64,
                 );
                 *dst_1 = iclip(*src_1 as libc::c_int + noise_1, min_value, max_value) as pixel;
                 x_1 += 1;
@@ -1183,7 +1183,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 ) as libc::c_int;
                 top = round2(
                     old_1 * w[sx as usize][x_2 as usize][0] + top * w[sx as usize][x_2 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 top = iclip(top, grain_min, grain_max);
                 let mut grain_2 = sample_lut(
@@ -1209,13 +1209,13 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 grain_2 = round2(
                     old_1 * w[sx as usize][x_2 as usize][0]
                         + grain_2 * w[sx as usize][x_2 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
                 grain_2 = round2(
                     top * w[sy as usize][y_0 as usize][0]
                         + grain_2 * w[sy as usize][y_0 as usize][1],
-                    5 as libc::c_int as uint64_t,
+                    5 as libc::c_int as u64,
                 );
                 grain_2 = iclip(grain_2, grain_min, grain_max);
                 let lx_2 = (bx.wrapping_add(x_2 as libc::c_uint) << sx) as libc::c_int;
@@ -1248,7 +1248,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
                 }
                 let noise_2 = round2(
                     *scaling.offset(val_2 as isize) as libc::c_int * grain_2,
-                    (*data).scaling_shift as uint64_t,
+                    (*data).scaling_shift as u64,
                 );
                 *dst_2 = iclip(*src_2 as libc::c_int + noise_2, min_value, max_value) as pixel;
                 x_2 += 1;
@@ -1264,8 +1264,8 @@ unsafe extern "C" fn fguv_32x32xn_420_c_erased(
     src_row: *const DynPixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1300,8 +1300,8 @@ unsafe extern "C" fn fguv_32x32xn_422_c_erased(
     src_row: *const DynPixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1336,8 +1336,8 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased(
     src_row: *const DynPixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1463,8 +1463,8 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased(
     src_row: *const DynPixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1490,8 +1490,8 @@ unsafe extern "C" fn fgy_32x32xn_neon(
     src_row: *const pixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1508,7 +1508,7 @@ unsafe extern "C" fn fgy_32x32xn_neon(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as size_t) < pw {
+    while (bx as usize) < pw {
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
@@ -1554,8 +1554,8 @@ unsafe extern "C" fn fguv_32x32xn_420_neon_erased(
     src_row: *const DynPixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1589,8 +1589,8 @@ unsafe extern "C" fn fguv_32x32xn_420_neon(
     src_row: *const pixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1611,7 +1611,7 @@ unsafe extern "C" fn fguv_32x32xn_420_neon(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as size_t) < pw {
+    while (bx as usize) < pw {
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
@@ -1663,8 +1663,8 @@ unsafe extern "C" fn fguv_32x32xn_422_neon_erased(
     src_row: *const DynPixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1698,8 +1698,8 @@ unsafe extern "C" fn fguv_32x32xn_422_neon(
     src_row: *const pixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1720,7 +1720,7 @@ unsafe extern "C" fn fguv_32x32xn_422_neon(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as size_t) < pw {
+    while (bx as usize) < pw {
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
@@ -1772,8 +1772,8 @@ unsafe extern "C" fn fguv_32x32xn_444_neon_erased(
     src_row: *const DynPixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1807,8 +1807,8 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
     src_row: *const pixel,
     stride: ptrdiff_t,
     data: *const Dav1dFilmGrainData,
-    pw: size_t,
-    scaling: *const uint8_t,
+    pw: usize,
+    scaling: *const u8,
     grain_lut: *const [entry; 82],
     bh: libc::c_int,
     row_num: libc::c_int,
@@ -1829,7 +1829,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
     }
     let mut offsets: [[libc::c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: libc::c_uint = 0 as libc::c_int as libc::c_uint;
-    while (bx as size_t) < pw {
+    while (bx as usize) < pw {
         if (*data).overlap_flag != 0 && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {

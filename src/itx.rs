@@ -4,7 +4,6 @@ use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::stddef::*;
-use crate::include::stdint::*;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_TX_TYPES_PLUS_LL;
 use std::cmp;
@@ -14,7 +13,7 @@ extern "C" {
 }
 
 pub type itx_1d_fn =
-    Option<unsafe extern "C" fn(*mut int32_t, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
+    Option<unsafe extern "C" fn(*mut i32, ptrdiff_t, libc::c_int, libc::c_int) -> ()>;
 
 pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
@@ -77,8 +76,8 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     }
     let row_clip_max = !row_clip_min;
     let col_clip_max = !col_clip_min;
-    let mut tmp: [int32_t; 4096] = [0; 4096];
-    let mut c: *mut int32_t = tmp.as_mut_ptr();
+    let mut tmp: [i32; 4096] = [0; 4096];
+    let mut c: *mut i32 = tmp.as_mut_ptr();
     let mut y_0 = 0;
     while y_0 < sh {
         if is_rect2 != 0 {
