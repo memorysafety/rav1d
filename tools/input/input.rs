@@ -59,8 +59,7 @@ static mut demuxers: [*const Demuxer; 4] = unsafe {
     ]
 };
 
-#[no_mangle]
-pub unsafe extern "C" fn input_open(
+pub unsafe fn input_open(
     c_out: *mut *mut DemuxerContext,
     name: *const c_char,
     filename: *const c_char,
@@ -181,13 +180,14 @@ pub unsafe extern "C" fn input_open(
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> c_int {
+pub unsafe fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> c_int {
     return ((*(*ctx).impl_0).read).expect("non-null function pointer")((*ctx).data, data);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> c_int {
+// TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
+// but are still marked as unused since `[[bin]]` are only supposed to be one file in `cargo`.
+#[allow(dead_code)]
+pub unsafe fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> c_int {
     return if ((*(*ctx).impl_0).seek).is_some() {
         ((*(*ctx).impl_0).seek).expect("non-null function pointer")((*ctx).data, pts)
     } else {
@@ -195,8 +195,7 @@ pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> c_int
     };
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn input_close(ctx: *mut DemuxerContext) {
+pub unsafe fn input_close(ctx: *mut DemuxerContext) {
     ((*(*ctx).impl_0).close).expect("non-null function pointer")((*ctx).data);
     free(ctx as *mut c_void);
 }

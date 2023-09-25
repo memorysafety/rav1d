@@ -1,5 +1,7 @@
 use libc::fprintf;
+use libc::getopt_long;
 use libc::memset;
+use libc::option;
 use libc::sprintf;
 use libc::strcat;
 use libc::strcmp;
@@ -34,23 +36,17 @@ use std::process::exit;
 extern "C" {
     static mut optarg: *mut c_char;
     static mut optind: c_int;
-    fn getopt_long(
-        ___argc: c_int,
-        ___argv: *const *mut c_char,
-        __shortopts: *const c_char,
-        __longopts: *const option,
-        __longind: *mut c_int,
-    ) -> c_int;
     fn vfprintf(_: *mut libc::FILE, _: *const c_char, _: ::core::ffi::VaList) -> c_int;
 }
 
-#[repr(C)]
-pub struct option {
-    pub name: *const c_char,
-    pub has_arg: c_int,
-    pub flag: *mut c_int,
-    pub val: c_int,
-}
+// TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
+// but are still marked as unused since `[[bin]]` are only supposed to be one file in `cargo`.
+pub type CLISettings_realtime = c_uint;
+#[allow(dead_code)]
+pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
+#[allow(dead_code)]
+pub const REALTIME_INPUT: CLISettings_realtime = 1;
+pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 
 #[repr(C)]
 pub struct CLISettings {
@@ -68,8 +64,6 @@ pub struct CLISettings {
     pub realtime_cache: c_uint,
     pub neg_stride: c_int,
 }
-
-pub type CLISettings_realtime = c_uint;
 
 #[repr(C)]
 pub struct EnumParseTable {
@@ -620,8 +614,7 @@ unsafe extern "C" fn parse_enum(
     return res;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn parse(
+pub unsafe fn parse(
     argc: c_int,
     argv: *const *mut c_char,
     cli_settings: *mut CLISettings,

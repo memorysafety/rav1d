@@ -89,8 +89,10 @@ unsafe extern "C" fn find_extension(f: *const c_char) -> *const c_char {
     };
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn output_open(
+// TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
+// but are still marked as unused since `[[bin]]` are only supposed to be one file in `cargo`.
+#[allow(dead_code)]
+pub unsafe fn output_open(
     c_out: *mut *mut MuxerContext,
     name: *const c_char,
     filename: *const c_char,
@@ -348,8 +350,10 @@ unsafe extern "C" fn assemble_filename(
     safe_strncat(filename, filename_size, ptr, strlen(ptr) as c_int);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPicture) -> c_int {
+// TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
+// but are still marked as unused since `[[bin]]` are only supposed to be one file in `cargo`.
+#[allow(dead_code)]
+pub unsafe fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPicture) -> c_int {
     let mut res;
     if (*ctx).one_file_per_frame != 0 && ((*(*ctx).impl_0).write_header).is_some() {
         let mut filename: [c_char; 1024] = [0; 1024];
@@ -379,16 +383,20 @@ pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPictu
     return 0 as c_int;
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn output_close(ctx: *mut MuxerContext) {
+// TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
+// but are still marked as unused since `[[bin]]` are only supposed to be one file in `cargo`.
+#[allow(dead_code)]
+pub unsafe fn output_close(ctx: *mut MuxerContext) {
     if (*ctx).one_file_per_frame == 0 && ((*(*ctx).impl_0).write_trailer).is_some() {
         ((*(*ctx).impl_0).write_trailer).expect("non-null function pointer")((*ctx).data);
     }
     free(ctx as *mut c_void);
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn output_verify(ctx: *mut MuxerContext, md5_str: *const c_char) -> c_int {
+// TODO(kkysen) These are used in `dav1d.rs` and `seek_stress.rs`
+// but are still marked as unused since `[[bin]]` are only supposed to be one file in `cargo`.
+#[allow(dead_code)]
+pub unsafe fn output_verify(ctx: *mut MuxerContext, md5_str: *const c_char) -> c_int {
     let res = if ((*(*ctx).impl_0).verify).is_some() {
         ((*(*ctx).impl_0).verify).expect("non-null function pointer")((*ctx).data, md5_str)
     } else {

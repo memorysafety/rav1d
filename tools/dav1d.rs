@@ -5,18 +5,32 @@
 
 mod input {
     mod annexb;
-    mod input;
+    pub mod input;
     mod ivf;
     mod section5;
 } // mod input
 mod output {
     mod md5;
     mod null;
-    mod output;
+    pub mod output;
     mod y4m2;
     mod yuv;
 } // mod output
 mod dav1d_cli_parse;
+
+use crate::dav1d_cli_parse::parse;
+use crate::dav1d_cli_parse::CLISettings;
+use crate::dav1d_cli_parse::REALTIME_CUSTOM;
+use crate::dav1d_cli_parse::REALTIME_DISABLE;
+use crate::input::input::input_close;
+use crate::input::input::input_open;
+use crate::input::input::input_read;
+use crate::input::input::DemuxerContext;
+use crate::output::output::output_close;
+use crate::output::output::output_open;
+use crate::output::output::output_verify;
+use crate::output::output::output_write;
+use crate::output::output::MuxerContext;
 use libc::fclose;
 use libc::fflush;
 use libc::fileno;
@@ -73,59 +87,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
-
-extern "C" {
-    pub type DemuxerContext;
-    pub type MuxerContext;
-    fn input_open(
-        c_out: *mut *mut DemuxerContext,
-        name: *const c_char,
-        filename: *const c_char,
-        fps: *mut c_uint,
-        num_frames: *mut c_uint,
-        timebase: *mut c_uint,
-    ) -> c_int;
-    fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> c_int;
-    fn input_close(ctx: *mut DemuxerContext);
-    fn output_open(
-        c: *mut *mut MuxerContext,
-        name: *const c_char,
-        filename: *const c_char,
-        p: *const Dav1dPictureParameters,
-        fps: *const c_uint,
-    ) -> c_int;
-    fn output_write(ctx: *mut MuxerContext, pic: *mut Dav1dPicture) -> c_int;
-    fn output_close(ctx: *mut MuxerContext);
-    fn output_verify(ctx: *mut MuxerContext, hash_string: *const c_char) -> c_int;
-    fn parse(
-        argc: c_int,
-        argv: *const *mut c_char,
-        cli_settings: *mut CLISettings,
-        lib_settings: *mut Dav1dSettings,
-    );
-}
-
-#[repr(C)]
-pub struct CLISettings {
-    pub outputfile: *const c_char,
-    pub inputfile: *const c_char,
-    pub demuxer: *const c_char,
-    pub muxer: *const c_char,
-    pub frametimes: *const c_char,
-    pub verify: *const c_char,
-    pub limit: c_uint,
-    pub skip: c_uint,
-    pub quiet: c_int,
-    pub realtime: CLISettings_realtime,
-    pub realtime_fps: c_double,
-    pub realtime_cache: c_uint,
-    pub neg_stride: c_int,
-}
-
-pub type CLISettings_realtime = c_uint;
-pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
-pub const REALTIME_INPUT: CLISettings_realtime = 1;
-pub const REALTIME_DISABLE: CLISettings_realtime = 0;
 
 unsafe extern "C" fn get_time_nanos() -> u64 {
     let mut ts: libc::timespec = libc::timespec {
