@@ -111,21 +111,6 @@ impl Dav1dWarpedMotionParams {
     }
 }
 
-impl Dav1dWarpedMotionParams {
-    pub(crate) fn into_rust(self) -> Rav1dWarpedMotionParams {
-        let Self {
-            type_0,
-            matrix,
-            abcd,
-        } = self;
-        Rav1dWarpedMotionParams {
-            type_0,
-            matrix,
-            abcd,
-        }
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dWarpedMotionParams {
@@ -153,6 +138,21 @@ impl Rav1dWarpedMotionParams {
     #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub const fn delta(&self) -> i16 {
         self.abcd[3]
+    }
+}
+
+impl From<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
+    fn from(value: Dav1dWarpedMotionParams) -> Self {
+        let Dav1dWarpedMotionParams {
+            type_0,
+            matrix,
+            abcd,
+        } = value;
+        Self {
+            type_0,
+            matrix,
+            abcd,
+        }
     }
 }
 
@@ -320,24 +320,23 @@ pub struct Dav1dContentLightLevel {
     pub max_frame_average_light_level: c_int,
 }
 
-impl Dav1dContentLightLevel {
-    #[allow(dead_code)] // TODO(kkysen) remove when we use this
-    pub(crate) fn into_rust(self) -> Rav1dContentLightLevel {
-        let Self {
-            max_content_light_level,
-            max_frame_average_light_level,
-        } = self;
-        Rav1dContentLightLevel {
-            max_content_light_level,
-            max_frame_average_light_level,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dContentLightLevel {
     pub max_content_light_level: c_int,
     pub max_frame_average_light_level: c_int,
+}
+
+impl From<Dav1dContentLightLevel> for Rav1dContentLightLevel {
+    fn from(value: Dav1dContentLightLevel) -> Self {
+        let Dav1dContentLightLevel {
+            max_content_light_level,
+            max_frame_average_light_level,
+        } = value;
+        Self {
+            max_content_light_level,
+            max_frame_average_light_level,
+        }
+    }
 }
 
 impl Rav1dContentLightLevel {
@@ -362,30 +361,29 @@ pub struct Dav1dMasteringDisplay {
     pub min_luminance: u32,
 }
 
-impl Dav1dMasteringDisplay {
-    #[allow(dead_code)] // TODO(kkysen) remove when we use this
-    pub(crate) fn into_rust(self) -> Rav1dMasteringDisplay {
-        let Self {
-            primaries,
-            white_point,
-            max_luminance,
-            min_luminance,
-        } = self;
-        Rav1dMasteringDisplay {
-            primaries,
-            white_point,
-            max_luminance,
-            min_luminance,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dMasteringDisplay {
     pub primaries: [[u16; 2]; 3],
     pub white_point: [u16; 2],
     pub max_luminance: u32,
     pub min_luminance: u32,
+}
+
+impl From<Dav1dMasteringDisplay> for Rav1dMasteringDisplay {
+    fn from(value: Dav1dMasteringDisplay) -> Self {
+        let Dav1dMasteringDisplay {
+            primaries,
+            white_point,
+            max_luminance,
+            min_luminance,
+        } = value;
+        Self {
+            primaries,
+            white_point,
+            max_luminance,
+            min_luminance,
+        }
+    }
 }
 
 impl Rav1dMasteringDisplay {
@@ -414,30 +412,29 @@ pub struct Dav1dITUTT35 {
     pub payload: *mut u8,
 }
 
-impl Dav1dITUTT35 {
-    #[allow(dead_code)] // TODO(kkysen) remove when we use this
-    pub(crate) fn into_rust(self) -> Rav1dITUTT35 {
-        let Self {
-            country_code,
-            country_code_extension_byte,
-            payload_size,
-            payload,
-        } = self;
-        Rav1dITUTT35 {
-            country_code,
-            country_code_extension_byte,
-            payload_size,
-            payload,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dITUTT35 {
     pub country_code: u8,
     pub country_code_extension_byte: u8,
     pub payload_size: usize,
     pub payload: *mut u8,
+}
+
+impl From<Dav1dITUTT35> for Rav1dITUTT35 {
+    fn from(value: Dav1dITUTT35) -> Self {
+        let Dav1dITUTT35 {
+            country_code,
+            country_code_extension_byte,
+            payload_size,
+            payload,
+        } = value;
+        Self {
+            country_code,
+            country_code_extension_byte,
+            payload_size,
+            payload,
+        }
+    }
 }
 
 impl Rav1dITUTT35 {
@@ -470,29 +467,6 @@ pub struct Dav1dSequenceHeaderOperatingPoint {
     pub display_model_param_present: c_int,
 }
 
-impl Dav1dSequenceHeaderOperatingPoint {
-    pub(crate) fn into_rust(self) -> Rav1dSequenceHeaderOperatingPoint {
-        let Self {
-            major_level,
-            minor_level,
-            initial_display_delay,
-            idc,
-            tier,
-            decoder_model_param_present,
-            display_model_param_present,
-        } = self;
-        Rav1dSequenceHeaderOperatingPoint {
-            major_level,
-            minor_level,
-            initial_display_delay,
-            idc,
-            tier,
-            decoder_model_param_present,
-            display_model_param_present,
-        }
-    }
-}
-
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeaderOperatingPoint {
@@ -503,6 +477,29 @@ pub(crate) struct Rav1dSequenceHeaderOperatingPoint {
     pub tier: c_int,
     pub decoder_model_param_present: c_int,
     pub display_model_param_present: c_int,
+}
+
+impl From<Dav1dSequenceHeaderOperatingPoint> for Rav1dSequenceHeaderOperatingPoint {
+    fn from(value: Dav1dSequenceHeaderOperatingPoint) -> Self {
+        let Dav1dSequenceHeaderOperatingPoint {
+            major_level,
+            minor_level,
+            initial_display_delay,
+            idc,
+            tier,
+            decoder_model_param_present,
+            display_model_param_present,
+        } = value;
+        Self {
+            major_level,
+            minor_level,
+            initial_display_delay,
+            idc,
+            tier,
+            decoder_model_param_present,
+            display_model_param_present,
+        }
+    }
 }
 
 impl Rav1dSequenceHeaderOperatingPoint {
@@ -536,27 +533,27 @@ pub struct Dav1dSequenceHeaderOperatingParameterInfo {
     pub low_delay_mode: c_int,
 }
 
-impl Dav1dSequenceHeaderOperatingParameterInfo {
-    pub(crate) fn into_rust(self) -> Rav1dSequenceHeaderOperatingParameterInfo {
-        let Self {
-            decoder_buffer_delay,
-            encoder_buffer_delay,
-            low_delay_mode,
-        } = self;
-        Rav1dSequenceHeaderOperatingParameterInfo {
-            decoder_buffer_delay,
-            encoder_buffer_delay,
-            low_delay_mode,
-        }
-    }
-}
-
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeaderOperatingParameterInfo {
     pub decoder_buffer_delay: c_int,
     pub encoder_buffer_delay: c_int,
     pub low_delay_mode: c_int,
+}
+
+impl From<Dav1dSequenceHeaderOperatingParameterInfo> for Rav1dSequenceHeaderOperatingParameterInfo {
+    fn from(value: Dav1dSequenceHeaderOperatingParameterInfo) -> Self {
+        let Dav1dSequenceHeaderOperatingParameterInfo {
+            decoder_buffer_delay,
+            encoder_buffer_delay,
+            low_delay_mode,
+        } = value;
+        Self {
+            decoder_buffer_delay,
+            encoder_buffer_delay,
+            low_delay_mode,
+        }
+    }
 }
 
 impl Rav1dSequenceHeaderOperatingParameterInfo {
@@ -631,121 +628,6 @@ pub struct Dav1dSequenceHeader {
     pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
 }
 
-impl Dav1dSequenceHeader {
-    pub(crate) fn into_rust(self) -> Rav1dSequenceHeader {
-        let Self {
-            profile,
-            max_width,
-            max_height,
-            layout,
-            pri,
-            trc,
-            mtrx,
-            chr,
-            hbd,
-            color_range,
-            num_operating_points,
-            operating_points,
-            still_picture,
-            reduced_still_picture_header,
-            timing_info_present,
-            num_units_in_tick,
-            time_scale,
-            equal_picture_interval,
-            num_ticks_per_picture,
-            decoder_model_info_present,
-            encoder_decoder_buffer_delay_length,
-            num_units_in_decoding_tick,
-            buffer_removal_delay_length,
-            frame_presentation_delay_length,
-            display_model_info_present,
-            width_n_bits,
-            height_n_bits,
-            frame_id_numbers_present,
-            delta_frame_id_n_bits,
-            frame_id_n_bits,
-            sb128,
-            filter_intra,
-            intra_edge_filter,
-            inter_intra,
-            masked_compound,
-            warped_motion,
-            dual_filter,
-            order_hint,
-            jnt_comp,
-            ref_frame_mvs,
-            screen_content_tools,
-            force_integer_mv,
-            order_hint_n_bits,
-            super_res,
-            cdef,
-            restoration,
-            ss_hor,
-            ss_ver,
-            monochrome,
-            color_description_present,
-            separate_uv_delta_q,
-            film_grain_present,
-            operating_parameter_info,
-        } = self;
-        Rav1dSequenceHeader {
-            profile,
-            max_width,
-            max_height,
-            layout,
-            pri,
-            trc,
-            mtrx,
-            chr,
-            hbd,
-            color_range,
-            num_operating_points,
-            operating_points: operating_points.map(|c| c.into_rust()),
-            still_picture,
-            reduced_still_picture_header,
-            timing_info_present,
-            num_units_in_tick,
-            time_scale,
-            equal_picture_interval,
-            num_ticks_per_picture,
-            decoder_model_info_present,
-            encoder_decoder_buffer_delay_length,
-            num_units_in_decoding_tick,
-            buffer_removal_delay_length,
-            frame_presentation_delay_length,
-            display_model_info_present,
-            width_n_bits,
-            height_n_bits,
-            frame_id_numbers_present,
-            delta_frame_id_n_bits,
-            frame_id_n_bits,
-            sb128,
-            filter_intra,
-            intra_edge_filter,
-            inter_intra,
-            masked_compound,
-            warped_motion,
-            dual_filter,
-            order_hint,
-            jnt_comp,
-            ref_frame_mvs,
-            screen_content_tools,
-            force_integer_mv,
-            order_hint_n_bits,
-            super_res,
-            cdef,
-            restoration,
-            ss_hor,
-            ss_ver,
-            monochrome,
-            color_description_present,
-            separate_uv_delta_q,
-            film_grain_present,
-            operating_parameter_info: operating_parameter_info.map(|c| c.into_rust()),
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeader {
     pub profile: c_int,
@@ -801,6 +683,121 @@ pub(crate) struct Rav1dSequenceHeader {
     pub separate_uv_delta_q: c_int,
     pub film_grain_present: c_int,
     pub operating_parameter_info: [Rav1dSequenceHeaderOperatingParameterInfo; 32],
+}
+
+impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
+    fn from(value: Dav1dSequenceHeader) -> Self {
+        let Dav1dSequenceHeader {
+            profile,
+            max_width,
+            max_height,
+            layout,
+            pri,
+            trc,
+            mtrx,
+            chr,
+            hbd,
+            color_range,
+            num_operating_points,
+            operating_points,
+            still_picture,
+            reduced_still_picture_header,
+            timing_info_present,
+            num_units_in_tick,
+            time_scale,
+            equal_picture_interval,
+            num_ticks_per_picture,
+            decoder_model_info_present,
+            encoder_decoder_buffer_delay_length,
+            num_units_in_decoding_tick,
+            buffer_removal_delay_length,
+            frame_presentation_delay_length,
+            display_model_info_present,
+            width_n_bits,
+            height_n_bits,
+            frame_id_numbers_present,
+            delta_frame_id_n_bits,
+            frame_id_n_bits,
+            sb128,
+            filter_intra,
+            intra_edge_filter,
+            inter_intra,
+            masked_compound,
+            warped_motion,
+            dual_filter,
+            order_hint,
+            jnt_comp,
+            ref_frame_mvs,
+            screen_content_tools,
+            force_integer_mv,
+            order_hint_n_bits,
+            super_res,
+            cdef,
+            restoration,
+            ss_hor,
+            ss_ver,
+            monochrome,
+            color_description_present,
+            separate_uv_delta_q,
+            film_grain_present,
+            operating_parameter_info,
+        } = value;
+        Self {
+            profile,
+            max_width,
+            max_height,
+            layout,
+            pri,
+            trc,
+            mtrx,
+            chr,
+            hbd,
+            color_range,
+            num_operating_points,
+            operating_points: operating_points.map(|c| c.into()),
+            still_picture,
+            reduced_still_picture_header,
+            timing_info_present,
+            num_units_in_tick,
+            time_scale,
+            equal_picture_interval,
+            num_ticks_per_picture,
+            decoder_model_info_present,
+            encoder_decoder_buffer_delay_length,
+            num_units_in_decoding_tick,
+            buffer_removal_delay_length,
+            frame_presentation_delay_length,
+            display_model_info_present,
+            width_n_bits,
+            height_n_bits,
+            frame_id_numbers_present,
+            delta_frame_id_n_bits,
+            frame_id_n_bits,
+            sb128,
+            filter_intra,
+            intra_edge_filter,
+            inter_intra,
+            masked_compound,
+            warped_motion,
+            dual_filter,
+            order_hint,
+            jnt_comp,
+            ref_frame_mvs,
+            screen_content_tools,
+            force_integer_mv,
+            order_hint_n_bits,
+            super_res,
+            cdef,
+            restoration,
+            ss_hor,
+            ss_ver,
+            monochrome,
+            color_description_present,
+            separate_uv_delta_q,
+            film_grain_present,
+            operating_parameter_info: operating_parameter_info.map(|c| c.into()),
+        }
+    }
 }
 
 impl Rav1dSequenceHeader {
@@ -931,31 +928,6 @@ pub struct Dav1dSegmentationData {
     pub globalmv: c_int,
 }
 
-impl Dav1dSegmentationData {
-    pub(crate) fn into_rust(self) -> Rav1dSegmentationData {
-        let Self {
-            delta_q,
-            delta_lf_y_v,
-            delta_lf_y_h,
-            delta_lf_u,
-            delta_lf_v,
-            r#ref,
-            skip,
-            globalmv,
-        } = self;
-        Rav1dSegmentationData {
-            delta_q,
-            delta_lf_y_v,
-            delta_lf_y_h,
-            delta_lf_u,
-            delta_lf_v,
-            r#ref,
-            skip,
-            globalmv,
-        }
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dSegmentationData {
@@ -967,6 +939,31 @@ pub(crate) struct Rav1dSegmentationData {
     pub r#ref: c_int,
     pub skip: c_int,
     pub globalmv: c_int,
+}
+
+impl From<Dav1dSegmentationData> for Rav1dSegmentationData {
+    fn from(value: Dav1dSegmentationData) -> Self {
+        let Dav1dSegmentationData {
+            delta_q,
+            delta_lf_y_v,
+            delta_lf_y_h,
+            delta_lf_u,
+            delta_lf_v,
+            r#ref,
+            skip,
+            globalmv,
+        } = value;
+        Self {
+            delta_q,
+            delta_lf_y_v,
+            delta_lf_y_h,
+            delta_lf_u,
+            delta_lf_v,
+            r#ref,
+            skip,
+            globalmv,
+        }
+    }
 }
 
 impl Rav1dSegmentationData {
@@ -1002,27 +999,27 @@ pub struct Dav1dSegmentationDataSet {
     pub last_active_segid: c_int,
 }
 
-impl Dav1dSegmentationDataSet {
-    pub(crate) fn into_rust(self) -> Rav1dSegmentationDataSet {
-        let Self {
-            d,
-            preskip,
-            last_active_segid,
-        } = self;
-        Rav1dSegmentationDataSet {
-            d: d.map(|c| c.into_rust()),
-            preskip,
-            last_active_segid,
-        }
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dSegmentationDataSet {
     pub d: [Rav1dSegmentationData; 8],
     pub preskip: c_int,
     pub last_active_segid: c_int,
+}
+
+impl From<Dav1dSegmentationDataSet> for Rav1dSegmentationDataSet {
+    fn from(value: Dav1dSegmentationDataSet) -> Self {
+        let Dav1dSegmentationDataSet {
+            d,
+            preskip,
+            last_active_segid,
+        } = value;
+        Self {
+            d: d.map(|c| c.into()),
+            preskip,
+            last_active_segid,
+        }
+    }
 }
 
 impl Rav1dSegmentationDataSet {
@@ -1047,24 +1044,24 @@ pub struct Dav1dLoopfilterModeRefDeltas {
     pub ref_delta: [c_int; 8],
 }
 
-impl Dav1dLoopfilterModeRefDeltas {
-    pub(crate) fn into_rust(self) -> Rav1dLoopfilterModeRefDeltas {
-        let Self {
-            mode_delta,
-            ref_delta,
-        } = self;
-        Rav1dLoopfilterModeRefDeltas {
-            mode_delta,
-            ref_delta,
-        }
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dLoopfilterModeRefDeltas {
     pub mode_delta: [c_int; 2],
     pub ref_delta: [c_int; 8],
+}
+
+impl From<Dav1dLoopfilterModeRefDeltas> for Rav1dLoopfilterModeRefDeltas {
+    fn from(value: Dav1dLoopfilterModeRefDeltas) -> Self {
+        let Dav1dLoopfilterModeRefDeltas {
+            mode_delta,
+            ref_delta,
+        } = value;
+        Self {
+            mode_delta,
+            ref_delta,
+        }
+    }
 }
 
 impl Rav1dLoopfilterModeRefDeltas {
@@ -1102,49 +1099,6 @@ pub struct Dav1dFilmGrainData {
     pub clip_to_restricted_range: c_int,
 }
 
-impl Dav1dFilmGrainData {
-    pub(crate) fn into_rust(self) -> Rav1dFilmGrainData {
-        let Self {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        } = self;
-        Rav1dFilmGrainData {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        }
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFilmGrainData {
@@ -1165,6 +1119,49 @@ pub(crate) struct Rav1dFilmGrainData {
     pub uv_offset: [c_int; 2],
     pub overlap_flag: c_int,
     pub clip_to_restricted_range: c_int,
+}
+
+impl From<Dav1dFilmGrainData> for Rav1dFilmGrainData {
+    fn from(value: Dav1dFilmGrainData) -> Self {
+        let Dav1dFilmGrainData {
+            seed,
+            num_y_points,
+            y_points,
+            chroma_scaling_from_luma,
+            num_uv_points,
+            uv_points,
+            scaling_shift,
+            ar_coeff_lag,
+            ar_coeffs_y,
+            ar_coeffs_uv,
+            ar_coeff_shift,
+            grain_scale_shift,
+            uv_mult,
+            uv_luma_mult,
+            uv_offset,
+            overlap_flag,
+            clip_to_restricted_range,
+        } = value;
+        Self {
+            seed,
+            num_y_points,
+            y_points,
+            chroma_scaling_from_luma,
+            num_uv_points,
+            uv_points,
+            scaling_shift,
+            ar_coeff_lag,
+            ar_coeffs_y,
+            ar_coeffs_uv,
+            ar_coeff_shift,
+            grain_scale_shift,
+            uv_mult,
+            uv_luma_mult,
+            uv_offset,
+            overlap_flag,
+            clip_to_restricted_range,
+        }
+    }
 }
 
 impl Rav1dFilmGrainData {
@@ -1217,26 +1214,26 @@ pub struct Dav1dFrameHeader_film_grain {
     pub update: c_int,
 }
 
-impl Dav1dFrameHeader_film_grain {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_film_grain {
-        let Self {
-            data,
-            present,
-            update,
-        } = self;
-        Rav1dFrameHeader_film_grain {
-            data: data.into_rust(),
-            present,
-            update,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_film_grain {
     pub data: Rav1dFilmGrainData,
     pub present: c_int,
     pub update: c_int,
+}
+
+impl From<Dav1dFrameHeader_film_grain> for Rav1dFrameHeader_film_grain {
+    fn from(value: Dav1dFrameHeader_film_grain) -> Self {
+        let Dav1dFrameHeader_film_grain {
+            data,
+            present,
+            update,
+        } = value;
+        Self {
+            data: data.into(),
+            present,
+            update,
+        }
+    }
 }
 
 impl Rav1dFrameHeader_film_grain {
@@ -1259,20 +1256,20 @@ pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: c_int,
 }
 
-impl Dav1dFrameHeaderOperatingPoint {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeaderOperatingPoint {
-        let Self {
-            buffer_removal_time,
-        } = self;
-        Rav1dFrameHeaderOperatingPoint {
-            buffer_removal_time,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: c_int,
+}
+
+impl From<Dav1dFrameHeaderOperatingPoint> for Rav1dFrameHeaderOperatingPoint {
+    fn from(value: Dav1dFrameHeaderOperatingPoint) -> Self {
+        let Dav1dFrameHeaderOperatingPoint {
+            buffer_removal_time,
+        } = value;
+        Self {
+            buffer_removal_time,
+        }
+    }
 }
 
 impl Rav1dFrameHeaderOperatingPoint {
@@ -1292,23 +1289,23 @@ pub struct Dav1dFrameHeader_super_res {
     pub enabled: c_int,
 }
 
-impl Dav1dFrameHeader_super_res {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_super_res {
-        let Self {
-            width_scale_denominator,
-            enabled,
-        } = self;
-        Rav1dFrameHeader_super_res {
-            width_scale_denominator,
-            enabled,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_super_res {
     pub width_scale_denominator: c_int,
     pub enabled: c_int,
+}
+
+impl From<Dav1dFrameHeader_super_res> for Rav1dFrameHeader_super_res {
+    fn from(value: Dav1dFrameHeader_super_res) -> Self {
+        let Dav1dFrameHeader_super_res {
+            width_scale_denominator,
+            enabled,
+        } = value;
+        Self {
+            width_scale_denominator,
+            enabled,
+        }
+    }
 }
 
 impl Rav1dFrameHeader_super_res {
@@ -1341,41 +1338,6 @@ pub struct Dav1dFrameHeader_tiling {
     pub update: c_int,
 }
 
-impl Dav1dFrameHeader_tiling {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_tiling {
-        let Self {
-            uniform,
-            n_bytes,
-            min_log2_cols,
-            max_log2_cols,
-            log2_cols,
-            cols,
-            min_log2_rows,
-            max_log2_rows,
-            log2_rows,
-            rows,
-            col_start_sb,
-            row_start_sb,
-            update,
-        } = self;
-        Rav1dFrameHeader_tiling {
-            uniform,
-            n_bytes,
-            min_log2_cols,
-            max_log2_cols,
-            log2_cols,
-            cols,
-            min_log2_rows,
-            max_log2_rows,
-            log2_rows,
-            rows,
-            col_start_sb,
-            row_start_sb,
-            update,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_tiling {
     pub uniform: c_int,
@@ -1391,6 +1353,41 @@ pub(crate) struct Rav1dFrameHeader_tiling {
     pub col_start_sb: [u16; 65],
     pub row_start_sb: [u16; 65],
     pub update: c_int,
+}
+
+impl From<Dav1dFrameHeader_tiling> for Rav1dFrameHeader_tiling {
+    fn from(value: Dav1dFrameHeader_tiling) -> Self {
+        let Dav1dFrameHeader_tiling {
+            uniform,
+            n_bytes,
+            min_log2_cols,
+            max_log2_cols,
+            log2_cols,
+            cols,
+            min_log2_rows,
+            max_log2_rows,
+            log2_rows,
+            rows,
+            col_start_sb,
+            row_start_sb,
+            update,
+        } = value;
+        Self {
+            uniform,
+            n_bytes,
+            min_log2_cols,
+            max_log2_cols,
+            log2_cols,
+            cols,
+            min_log2_rows,
+            max_log2_rows,
+            log2_rows,
+            rows,
+            col_start_sb,
+            row_start_sb,
+            update,
+        }
+    }
 }
 
 impl Rav1dFrameHeader_tiling {
@@ -1442,35 +1439,6 @@ pub struct Dav1dFrameHeader_quant {
     pub qm_v: c_int,
 }
 
-impl Dav1dFrameHeader_quant {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_quant {
-        let Self {
-            yac,
-            ydc_delta,
-            udc_delta,
-            uac_delta,
-            vdc_delta,
-            vac_delta,
-            qm,
-            qm_y,
-            qm_u,
-            qm_v,
-        } = self;
-        Rav1dFrameHeader_quant {
-            yac,
-            ydc_delta,
-            udc_delta,
-            uac_delta,
-            vdc_delta,
-            vac_delta,
-            qm,
-            qm_y,
-            qm_u,
-            qm_v,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_quant {
     pub yac: c_int,
@@ -1483,6 +1451,35 @@ pub(crate) struct Rav1dFrameHeader_quant {
     pub qm_y: c_int,
     pub qm_u: c_int,
     pub qm_v: c_int,
+}
+
+impl From<Dav1dFrameHeader_quant> for Rav1dFrameHeader_quant {
+    fn from(value: Dav1dFrameHeader_quant) -> Self {
+        let Dav1dFrameHeader_quant {
+            yac,
+            ydc_delta,
+            udc_delta,
+            uac_delta,
+            vdc_delta,
+            vac_delta,
+            qm,
+            qm_y,
+            qm_u,
+            qm_v,
+        } = value;
+        Self {
+            yac,
+            ydc_delta,
+            udc_delta,
+            uac_delta,
+            vdc_delta,
+            vac_delta,
+            qm,
+            qm_y,
+            qm_u,
+            qm_v,
+        }
+    }
 }
 
 impl Rav1dFrameHeader_quant {
@@ -1525,29 +1522,6 @@ pub struct Dav1dFrameHeader_segmentation {
     pub qidx: [c_int; 8],
 }
 
-impl Dav1dFrameHeader_segmentation {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_segmentation {
-        let Self {
-            enabled,
-            update_map,
-            temporal,
-            update_data,
-            seg_data,
-            lossless,
-            qidx,
-        } = self;
-        Rav1dFrameHeader_segmentation {
-            enabled,
-            update_map,
-            temporal,
-            update_data,
-            seg_data: seg_data.into_rust(),
-            lossless,
-            qidx,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_segmentation {
     pub enabled: c_int,
@@ -1557,6 +1531,29 @@ pub(crate) struct Rav1dFrameHeader_segmentation {
     pub seg_data: Rav1dSegmentationDataSet,
     pub lossless: [c_int; 8],
     pub qidx: [c_int; 8],
+}
+
+impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {
+    fn from(value: Dav1dFrameHeader_segmentation) -> Self {
+        let Dav1dFrameHeader_segmentation {
+            enabled,
+            update_map,
+            temporal,
+            update_data,
+            seg_data,
+            lossless,
+            qidx,
+        } = value;
+        Self {
+            enabled,
+            update_map,
+            temporal,
+            update_data,
+            seg_data: seg_data.into(),
+            lossless,
+            qidx,
+        }
+    }
 }
 
 impl Rav1dFrameHeader_segmentation {
@@ -1588,17 +1585,17 @@ pub struct Dav1dFrameHeader_delta_q {
     pub res_log2: c_int,
 }
 
-impl Dav1dFrameHeader_delta_q {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_delta_q {
-        let Self { present, res_log2 } = self;
-        Rav1dFrameHeader_delta_q { present, res_log2 }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta_q {
     pub present: c_int,
     pub res_log2: c_int,
+}
+
+impl From<Dav1dFrameHeader_delta_q> for Rav1dFrameHeader_delta_q {
+    fn from(value: Dav1dFrameHeader_delta_q) -> Self {
+        let Dav1dFrameHeader_delta_q { present, res_log2 } = value;
+        Self { present, res_log2 }
+    }
 }
 
 impl Rav1dFrameHeader_delta_q {
@@ -1615,26 +1612,26 @@ pub struct Dav1dFrameHeader_delta_lf {
     pub multi: c_int,
 }
 
-impl Dav1dFrameHeader_delta_lf {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_delta_lf {
-        let Self {
-            present,
-            res_log2,
-            multi,
-        } = self;
-        Rav1dFrameHeader_delta_lf {
-            present,
-            res_log2,
-            multi,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta_lf {
     pub present: c_int,
     pub res_log2: c_int,
     pub multi: c_int,
+}
+
+impl From<Dav1dFrameHeader_delta_lf> for Rav1dFrameHeader_delta_lf {
+    fn from(value: Dav1dFrameHeader_delta_lf) -> Self {
+        let Dav1dFrameHeader_delta_lf {
+            present,
+            res_log2,
+            multi,
+        } = value;
+        Self {
+            present,
+            res_log2,
+            multi,
+        }
+    }
 }
 
 impl Rav1dFrameHeader_delta_lf {
@@ -1658,20 +1655,20 @@ pub struct Dav1dFrameHeader_delta {
     pub lf: Dav1dFrameHeader_delta_lf,
 }
 
-impl Dav1dFrameHeader_delta {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_delta {
-        let Self { q, lf } = self;
-        Rav1dFrameHeader_delta {
-            q: q.into_rust(),
-            lf: lf.into_rust(),
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta {
     pub q: Rav1dFrameHeader_delta_q,
     pub lf: Rav1dFrameHeader_delta_lf,
+}
+
+impl From<Dav1dFrameHeader_delta> for Rav1dFrameHeader_delta {
+    fn from(value: Dav1dFrameHeader_delta) -> Self {
+        let Dav1dFrameHeader_delta { q, lf } = value;
+        Self {
+            q: q.into(),
+            lf: lf.into(),
+        }
+    }
 }
 
 impl Rav1dFrameHeader_delta {
@@ -1695,29 +1692,6 @@ pub struct Dav1dFrameHeader_loopfilter {
     pub sharpness: c_int,
 }
 
-impl Dav1dFrameHeader_loopfilter {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_loopfilter {
-        let Self {
-            level_y,
-            level_u,
-            level_v,
-            mode_ref_delta_enabled,
-            mode_ref_delta_update,
-            mode_ref_deltas,
-            sharpness,
-        } = self;
-        Rav1dFrameHeader_loopfilter {
-            level_y,
-            level_u,
-            level_v,
-            mode_ref_delta_enabled,
-            mode_ref_delta_update,
-            mode_ref_deltas: mode_ref_deltas.into_rust(),
-            sharpness,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_loopfilter {
     pub level_y: [c_int; 2],
@@ -1727,6 +1701,29 @@ pub(crate) struct Rav1dFrameHeader_loopfilter {
     pub mode_ref_delta_update: c_int,
     pub mode_ref_deltas: Rav1dLoopfilterModeRefDeltas,
     pub sharpness: c_int,
+}
+
+impl From<Dav1dFrameHeader_loopfilter> for Rav1dFrameHeader_loopfilter {
+    fn from(value: Dav1dFrameHeader_loopfilter) -> Self {
+        let Dav1dFrameHeader_loopfilter {
+            level_y,
+            level_u,
+            level_v,
+            mode_ref_delta_enabled,
+            mode_ref_delta_update,
+            mode_ref_deltas,
+            sharpness,
+        } = value;
+        Self {
+            level_y,
+            level_u,
+            level_v,
+            mode_ref_delta_enabled,
+            mode_ref_delta_update,
+            mode_ref_deltas: mode_ref_deltas.into(),
+            sharpness,
+        }
+    }
 }
 
 impl Rav1dFrameHeader_loopfilter {
@@ -1760,29 +1757,29 @@ pub struct Dav1dFrameHeader_cdef {
     pub uv_strength: [c_int; 8],
 }
 
-impl Dav1dFrameHeader_cdef {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_cdef {
-        let Self {
-            damping,
-            n_bits,
-            y_strength,
-            uv_strength,
-        } = self;
-        Rav1dFrameHeader_cdef {
-            damping,
-            n_bits,
-            y_strength,
-            uv_strength,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_cdef {
     pub damping: c_int,
     pub n_bits: c_int,
     pub y_strength: [c_int; 8],
     pub uv_strength: [c_int; 8],
+}
+
+impl From<Dav1dFrameHeader_cdef> for Rav1dFrameHeader_cdef {
+    fn from(value: Dav1dFrameHeader_cdef) -> Self {
+        let Dav1dFrameHeader_cdef {
+            damping,
+            n_bits,
+            y_strength,
+            uv_strength,
+        } = value;
+        Self {
+            damping,
+            n_bits,
+            y_strength,
+            uv_strength,
+        }
+    }
 }
 
 impl Rav1dFrameHeader_cdef {
@@ -1808,17 +1805,17 @@ pub struct Dav1dFrameHeader_restoration {
     pub unit_size: [c_int; 2],
 }
 
-impl Dav1dFrameHeader_restoration {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader_restoration {
-        let Self { type_0, unit_size } = self;
-        Rav1dFrameHeader_restoration { type_0, unit_size }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_restoration {
     pub type_0: [Rav1dRestorationType; 3],
     pub unit_size: [c_int; 2],
+}
+
+impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
+    fn from(value: Dav1dFrameHeader_restoration) -> Self {
+        let Dav1dFrameHeader_restoration { type_0, unit_size } = value;
+        Self { type_0, unit_size }
+    }
 }
 
 impl Rav1dFrameHeader_restoration {
@@ -1882,115 +1879,6 @@ pub struct Dav1dFrameHeader {
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }
 
-impl Dav1dFrameHeader {
-    pub(crate) fn into_rust(self) -> Rav1dFrameHeader {
-        let Self {
-            film_grain,
-            frame_type,
-            width,
-            height,
-            frame_offset,
-            temporal_id,
-            spatial_id,
-            show_existing_frame,
-            existing_frame_idx,
-            frame_id,
-            frame_presentation_delay,
-            show_frame,
-            showable_frame,
-            error_resilient_mode,
-            disable_cdf_update,
-            allow_screen_content_tools,
-            force_integer_mv,
-            frame_size_override,
-            primary_ref_frame,
-            buffer_removal_time_present,
-            operating_points,
-            refresh_frame_flags,
-            render_width,
-            render_height,
-            super_res,
-            have_render_size,
-            allow_intrabc,
-            frame_ref_short_signaling,
-            refidx,
-            hp,
-            subpel_filter_mode,
-            switchable_motion_mode,
-            use_ref_frame_mvs,
-            refresh_context,
-            tiling,
-            quant,
-            segmentation,
-            delta,
-            all_lossless,
-            loopfilter,
-            cdef,
-            restoration,
-            txfm_mode,
-            switchable_comp_refs,
-            skip_mode_allowed,
-            skip_mode_enabled,
-            skip_mode_refs,
-            warp_motion,
-            reduced_txtp_set,
-            gmv,
-        } = self;
-        Rav1dFrameHeader {
-            film_grain: film_grain.into_rust(),
-            frame_type,
-            width,
-            height,
-            frame_offset,
-            temporal_id,
-            spatial_id,
-            show_existing_frame,
-            existing_frame_idx,
-            frame_id,
-            frame_presentation_delay,
-            show_frame,
-            showable_frame,
-            error_resilient_mode,
-            disable_cdf_update,
-            allow_screen_content_tools,
-            force_integer_mv,
-            frame_size_override,
-            primary_ref_frame,
-            buffer_removal_time_present,
-            operating_points: operating_points.map(|c| c.into_rust()),
-            refresh_frame_flags,
-            render_width,
-            render_height,
-            super_res: super_res.into_rust(),
-            have_render_size,
-            allow_intrabc,
-            frame_ref_short_signaling,
-            refidx,
-            hp,
-            subpel_filter_mode,
-            switchable_motion_mode,
-            use_ref_frame_mvs,
-            refresh_context,
-            tiling: tiling.into_rust(),
-            quant: quant.into_rust(),
-            segmentation: segmentation.into_rust(),
-            delta: delta.into_rust(),
-            all_lossless,
-            loopfilter: loopfilter.into_rust(),
-            cdef: cdef.into_rust(),
-            restoration: restoration.into_rust(),
-            txfm_mode,
-            switchable_comp_refs,
-            skip_mode_allowed,
-            skip_mode_enabled,
-            skip_mode_refs,
-            warp_motion,
-            reduced_txtp_set,
-            gmv: gmv.map(|c| c.into_rust()),
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader {
     pub film_grain: Rav1dFrameHeader_film_grain,
@@ -2043,6 +1931,115 @@ pub(crate) struct Rav1dFrameHeader {
     pub warp_motion: c_int,
     pub reduced_txtp_set: c_int,
     pub gmv: [Rav1dWarpedMotionParams; 7],
+}
+
+impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
+    fn from(value: Dav1dFrameHeader) -> Self {
+        let Dav1dFrameHeader {
+            film_grain,
+            frame_type,
+            width,
+            height,
+            frame_offset,
+            temporal_id,
+            spatial_id,
+            show_existing_frame,
+            existing_frame_idx,
+            frame_id,
+            frame_presentation_delay,
+            show_frame,
+            showable_frame,
+            error_resilient_mode,
+            disable_cdf_update,
+            allow_screen_content_tools,
+            force_integer_mv,
+            frame_size_override,
+            primary_ref_frame,
+            buffer_removal_time_present,
+            operating_points,
+            refresh_frame_flags,
+            render_width,
+            render_height,
+            super_res,
+            have_render_size,
+            allow_intrabc,
+            frame_ref_short_signaling,
+            refidx,
+            hp,
+            subpel_filter_mode,
+            switchable_motion_mode,
+            use_ref_frame_mvs,
+            refresh_context,
+            tiling,
+            quant,
+            segmentation,
+            delta,
+            all_lossless,
+            loopfilter,
+            cdef,
+            restoration,
+            txfm_mode,
+            switchable_comp_refs,
+            skip_mode_allowed,
+            skip_mode_enabled,
+            skip_mode_refs,
+            warp_motion,
+            reduced_txtp_set,
+            gmv,
+        } = value;
+        Self {
+            film_grain: film_grain.into(),
+            frame_type,
+            width,
+            height,
+            frame_offset,
+            temporal_id,
+            spatial_id,
+            show_existing_frame,
+            existing_frame_idx,
+            frame_id,
+            frame_presentation_delay,
+            show_frame,
+            showable_frame,
+            error_resilient_mode,
+            disable_cdf_update,
+            allow_screen_content_tools,
+            force_integer_mv,
+            frame_size_override,
+            primary_ref_frame,
+            buffer_removal_time_present,
+            operating_points: operating_points.map(|c| c.into()),
+            refresh_frame_flags,
+            render_width,
+            render_height,
+            super_res: super_res.into(),
+            have_render_size,
+            allow_intrabc,
+            frame_ref_short_signaling,
+            refidx,
+            hp,
+            subpel_filter_mode,
+            switchable_motion_mode,
+            use_ref_frame_mvs,
+            refresh_context,
+            tiling: tiling.into(),
+            quant: quant.into(),
+            segmentation: segmentation.into(),
+            delta: delta.into(),
+            all_lossless,
+            loopfilter: loopfilter.into(),
+            cdef: cdef.into(),
+            restoration: restoration.into(),
+            txfm_mode,
+            switchable_comp_refs,
+            skip_mode_allowed,
+            skip_mode_enabled,
+            skip_mode_refs,
+            warp_motion,
+            reduced_txtp_set,
+            gmv: gmv.map(|c| c.into()),
+        }
+    }
 }
 
 impl Rav1dFrameHeader {

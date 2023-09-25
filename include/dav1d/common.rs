@@ -18,13 +18,6 @@ impl Default for Dav1dUserData {
     }
 }
 
-impl Dav1dUserData {
-    pub(crate) fn into_rust(self) -> Rav1dUserData {
-        let Self { data, r#ref } = self;
-        Rav1dUserData { data, r#ref }
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dUserData {
@@ -41,10 +34,17 @@ impl Default for Rav1dUserData {
     }
 }
 
-impl Rav1dUserData {
-    pub fn into_c(self) -> Dav1dUserData {
-        let Self { data, r#ref } = self;
-        Dav1dUserData { data, r#ref }
+impl From<Dav1dUserData> for Rav1dUserData {
+    fn from(value: Dav1dUserData) -> Self {
+        let Dav1dUserData { data, r#ref } = value;
+        Self { data, r#ref }
+    }
+}
+
+impl From<Rav1dUserData> for Dav1dUserData {
+    fn from(value: Rav1dUserData) -> Self {
+        let Rav1dUserData { data, r#ref } = value;
+        Self { data, r#ref }
     }
 }
 
@@ -58,25 +58,6 @@ pub struct Dav1dDataProps {
     pub user_data: Dav1dUserData,
 }
 
-impl Dav1dDataProps {
-    pub(crate) fn into_rust(self) -> Rav1dDataProps {
-        let Self {
-            timestamp,
-            duration,
-            offset,
-            size,
-            user_data,
-        } = self;
-        Rav1dDataProps {
-            timestamp,
-            duration,
-            offset,
-            size,
-            user_data: user_data.into_rust(),
-        }
-    }
-}
-
 #[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dDataProps {
@@ -85,6 +66,25 @@ pub(crate) struct Rav1dDataProps {
     pub offset: libc::off_t,
     pub size: usize,
     pub user_data: Rav1dUserData,
+}
+
+impl From<Dav1dDataProps> for Rav1dDataProps {
+    fn from(value: Dav1dDataProps) -> Self {
+        let Dav1dDataProps {
+            timestamp,
+            duration,
+            offset,
+            size,
+            user_data,
+        } = value;
+        Self {
+            timestamp,
+            duration,
+            offset,
+            size,
+            user_data: user_data.into(),
+        }
+    }
 }
 
 impl Rav1dDataProps {
@@ -101,7 +101,7 @@ impl Rav1dDataProps {
             duration,
             offset,
             size,
-            user_data: user_data.into_c(),
+            user_data: user_data.into(),
         }
     }
 }

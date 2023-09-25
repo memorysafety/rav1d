@@ -5603,7 +5603,7 @@ pub unsafe fn dav1d_cdf_thread_update(
     dst: *mut CdfContext,
     src: *const CdfContext,
 ) {
-    let hdr = hdr.read().into_rust();
+    let hdr = hdr.read().into();
     rav1d_cdf_thread_update(&hdr, dst, src)
 }
 

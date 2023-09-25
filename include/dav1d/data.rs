@@ -24,18 +24,6 @@ impl Default for Dav1dData {
     }
 }
 
-impl Dav1dData {
-    pub(crate) fn into_rust(self) -> Rav1dData {
-        let Self { data, sz, r#ref, m } = self;
-        Rav1dData {
-            data,
-            sz,
-            r#ref,
-            m: m.into_rust(),
-        }
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dData {
@@ -52,6 +40,18 @@ impl Default for Rav1dData {
             sz: Default::default(),
             r#ref: ptr::null_mut(),
             m: Default::default(),
+        }
+    }
+}
+
+impl From<Dav1dData> for Rav1dData {
+    fn from(value: Dav1dData) -> Self {
+        let Dav1dData { data, sz, r#ref, m } = value;
+        Self {
+            data,
+            sz,
+            r#ref,
+            m: m.into(),
         }
     }
 }

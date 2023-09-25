@@ -18,19 +18,19 @@ pub struct Dav1dLogger {
         Option<unsafe extern "C" fn(*mut c_void, *const c_char, ::core::ffi::VaList) -> ()>,
 }
 
-impl Dav1dLogger {
-    pub(crate) fn into_rust(self) -> Rav1dLogger {
-        let Self { cookie, callback } = self;
-        Rav1dLogger { cookie, callback }
-    }
-}
-
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dLogger {
     pub cookie: *mut c_void,
     pub callback:
         Option<unsafe extern "C" fn(*mut c_void, *const c_char, ::core::ffi::VaList) -> ()>,
+}
+
+impl From<Dav1dLogger> for Rav1dLogger {
+    fn from(value: Dav1dLogger) -> Self {
+        let Dav1dLogger { cookie, callback } = value;
+        Self { cookie, callback }
+    }
 }
 
 impl Rav1dLogger {
@@ -94,41 +94,6 @@ pub struct Dav1dSettings {
     pub reserved: [u8; 16],
 }
 
-impl Dav1dSettings {
-    pub(crate) fn into_rust(self) -> Rav1dSettings {
-        let Self {
-            n_threads,
-            max_frame_delay,
-            apply_grain,
-            operating_point,
-            all_layers,
-            frame_size_limit,
-            allocator,
-            logger,
-            strict_std_compliance,
-            output_invisible_frames,
-            inloop_filters,
-            decode_frame_type,
-            reserved,
-        } = self;
-        Rav1dSettings {
-            n_threads,
-            max_frame_delay,
-            apply_grain,
-            operating_point,
-            all_layers,
-            frame_size_limit,
-            allocator: allocator.into_rust(),
-            logger: logger.into_rust(),
-            strict_std_compliance,
-            output_invisible_frames,
-            inloop_filters,
-            decode_frame_type,
-            reserved,
-        }
-    }
-}
-
 #[repr(C)]
 pub(crate) struct Rav1dSettings {
     pub n_threads: c_int,
@@ -144,6 +109,41 @@ pub(crate) struct Rav1dSettings {
     pub inloop_filters: Rav1dInloopFilterType,
     pub decode_frame_type: Rav1dDecodeFrameType,
     pub reserved: [u8; 16],
+}
+
+impl From<Dav1dSettings> for Rav1dSettings {
+    fn from(value: Dav1dSettings) -> Self {
+        let Dav1dSettings {
+            n_threads,
+            max_frame_delay,
+            apply_grain,
+            operating_point,
+            all_layers,
+            frame_size_limit,
+            allocator,
+            logger,
+            strict_std_compliance,
+            output_invisible_frames,
+            inloop_filters,
+            decode_frame_type,
+            reserved,
+        } = value;
+        Self {
+            n_threads,
+            max_frame_delay,
+            apply_grain,
+            operating_point,
+            all_layers,
+            frame_size_limit,
+            allocator: allocator.into(),
+            logger: logger.into(),
+            strict_std_compliance,
+            output_invisible_frames,
+            inloop_filters,
+            decode_frame_type,
+            reserved,
+        }
+    }
 }
 
 impl Rav1dSettings {

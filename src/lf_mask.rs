@@ -636,7 +636,7 @@ pub fn dav1d_calc_lf_values(
         return;
     }
 
-    let mr_deltas = hdr.loopfilter.mode_ref_deltas.clone().into_rust();
+    let mr_deltas = hdr.loopfilter.mode_ref_deltas.clone().into();
     let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled != 0 {
         Some(&mr_deltas)
     } else {
