@@ -2,10 +2,7 @@
 #![allow(non_upper_case_globals)]
 #![feature(extern_types)]
 #![feature(c_variadic)]
-use crate::include::dav1d::dav1d::Dav1dRef;
-use crate::include::stddef::*;
-use crate::include::stdint::*;
-use ::rav1d::*;
+
 mod input {
     mod annexb;
     mod input;
@@ -20,8 +17,45 @@ mod output {
     mod yuv;
 } // mod output
 mod dav1d_cli_parse;
+use rav1d::include::dav1d::common::Dav1dDataProps;
+use rav1d::include::dav1d::common::Dav1dUserData;
+use rav1d::include::dav1d::data::Dav1dData;
+use rav1d::include::dav1d::dav1d::Dav1dContext;
+use rav1d::include::dav1d::dav1d::Dav1dLogger;
+use rav1d::include::dav1d::dav1d::Dav1dRef;
+use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
+use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
+use rav1d::include::dav1d::headers::Dav1dColorPrimaries;
+use rav1d::include::dav1d::headers::Dav1dContentLightLevel;
+use rav1d::include::dav1d::headers::Dav1dFrameHeader;
+use rav1d::include::dav1d::headers::Dav1dITUTT35;
+use rav1d::include::dav1d::headers::Dav1dMasteringDisplay;
+use rav1d::include::dav1d::headers::Dav1dSequenceHeader;
+use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
+use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
+use rav1d::include::dav1d::headers::Dav1dTransferCharacteristics;
+use rav1d::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
+use rav1d::include::dav1d::headers::DAV1D_MC_IDENTITY;
+use rav1d::include::dav1d::headers::DAV1D_OFF;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use rav1d::include::dav1d::picture::Dav1dPicAllocator;
+use rav1d::include::dav1d::picture::Dav1dPicture;
+use rav1d::include::dav1d::picture::Dav1dPictureParameters;
+use rav1d::include::stddef::*;
+use rav1d::include::stdint::*;
+use rav1d::src::lib::dav1d_close;
+use rav1d::src::lib::dav1d_data_unref;
+use rav1d::src::lib::dav1d_get_picture;
+use rav1d::src::lib::dav1d_open;
+use rav1d::src::lib::dav1d_parse_sequence_header;
+use rav1d::src::lib::dav1d_send_data;
+use rav1d::src::lib::dav1d_version;
+use rav1d::src::lib::Dav1dSettings;
+use rav1d::stderr;
+
 extern "C" {
-    pub type Dav1dContext;
     pub type DemuxerContext;
     pub type MuxerContext;
     fn malloc(_: size_t) -> *mut libc::c_void;
@@ -43,17 +77,6 @@ extern "C" {
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn strcpy(_: *mut libc::c_char, _: *const libc::c_char) -> *mut libc::c_char;
     fn isatty(__fd: libc::c_int) -> libc::c_int;
-    fn dav1d_data_unref(data: *mut Dav1dData);
-    fn dav1d_close(c_out: *mut *mut Dav1dContext);
-    fn dav1d_parse_sequence_header(
-        out: *mut Dav1dSequenceHeader,
-        buf: *const uint8_t,
-        sz: size_t,
-    ) -> libc::c_int;
-    fn dav1d_send_data(c: *mut Dav1dContext, in_0: *mut Dav1dData) -> libc::c_int;
-    fn dav1d_open(c_out: *mut *mut Dav1dContext, s: *const Dav1dSettings) -> libc::c_int;
-    fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> libc::c_int;
-    fn dav1d_version() -> *const libc::c_char;
     fn input_open(
         c_out: *mut *mut DemuxerContext,
         name: *const libc::c_char,
@@ -81,79 +104,7 @@ extern "C" {
         lib_settings: *mut Dav1dSettings,
     );
 }
-// NOTE: temporary code to support Linux and macOS, should be removed eventually
-cfg_if::cfg_if! {
-    if #[cfg(target_os = "linux")] {
-        extern "C" {
-            static mut stdout: *mut libc::FILE;
-            static mut stderr: *mut libc::FILE;
-        }
 
-        unsafe fn errno_location() -> *mut libc::c_int {
-            libc::__errno_location()
-        }
-    } else if #[cfg(target_os = "macos")] {
-        extern "C" {
-            #[link_name = "__stdoutp"]
-            static mut stdout: *mut libc::FILE;
-            #[link_name = "__stderrp"]
-            static mut stderr: *mut libc::FILE;
-        }
-
-        unsafe fn errno_location() -> *mut libc::c_int {
-            libc::__error()
-        }
-    }
-}
-
-use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::dav1d::common::Dav1dUserData;
-use crate::include::dav1d::headers::DAV1D_OFF;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use crate::include::dav1d::headers::Dav1dColorPrimaries;
-
-use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
-
-use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
-
-use crate::include::dav1d::data::Dav1dData;
-use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-use crate::include::dav1d::dav1d::Dav1dLogger;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dITUTT35;
-use crate::include::dav1d::headers::Dav1dMasteringDisplay;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
-use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
-use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
-use crate::include::dav1d::picture::Dav1dPicAllocator;
-use crate::include::dav1d::picture::Dav1dPicture;
-use crate::include::dav1d::picture::Dav1dPictureParameters;
-
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-#[repr(C)]
-pub struct Dav1dSettings {
-    pub n_threads: libc::c_int,
-    pub max_frame_delay: libc::c_int,
-    pub apply_grain: libc::c_int,
-    pub operating_point: libc::c_int,
-    pub all_layers: libc::c_int,
-    pub frame_size_limit: libc::c_uint,
-    pub allocator: Dav1dPicAllocator,
-    pub logger: Dav1dLogger,
-    pub strict_std_compliance: libc::c_int,
-    pub output_invisible_frames: libc::c_int,
-    pub inloop_filters: Dav1dInloopFilterType,
-    pub decode_frame_type: Dav1dDecodeFrameType,
-    pub reserved: [uint8_t; 16],
-}
 #[repr(C)]
 pub struct CLISettings {
     pub outputfile: *const libc::c_char,
@@ -170,10 +121,12 @@ pub struct CLISettings {
     pub realtime_cache: libc::c_uint,
     pub neg_stride: libc::c_int,
 }
+
 pub type CLISettings_realtime = libc::c_uint;
 pub const REALTIME_CUSTOM: CLISettings_realtime = 2;
 pub const REALTIME_INPUT: CLISettings_realtime = 1;
 pub const REALTIME_DISABLE: CLISettings_realtime = 0;
+
 unsafe extern "C" fn get_time_nanos() -> uint64_t {
     let mut ts: libc::timespec = libc::timespec {
         tv_sec: 0,
@@ -184,6 +137,7 @@ unsafe extern "C" fn get_time_nanos() -> uint64_t {
         .wrapping_mul(ts.tv_sec as libc::c_ulonglong)
         .wrapping_add(ts.tv_nsec as libc::c_ulonglong) as uint64_t;
 }
+
 unsafe extern "C" fn sleep_nanos(d: uint64_t) {
     // TODO: C version has Windows specific code path
     let ts: libc::timespec = {
@@ -195,6 +149,7 @@ unsafe extern "C" fn sleep_nanos(d: uint64_t) {
     };
     libc::nanosleep(&ts, std::ptr::null_mut::<libc::timespec>());
 }
+
 unsafe extern "C" fn synchronize(
     realtime: libc::c_int,
     cache: libc::c_uint,
@@ -227,6 +182,7 @@ unsafe extern "C" fn synchronize(
         fflush(frametimes);
     }
 }
+
 unsafe extern "C" fn print_stats(
     istty: libc::c_int,
     n: libc::c_uint,
@@ -292,6 +248,7 @@ unsafe extern "C" fn print_stats(
     }
     fputs(buf.as_mut_ptr(), stderr);
 }
+
 unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut libc::c_void) -> libc::c_int {
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
     let aligned_w = (*p).p.w + 127 & !(127 as libc::c_int);
@@ -344,9 +301,11 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut libc::c_void) -
     }) as *mut libc::c_void;
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut libc::c_void) {
     free((*p).allocator_data);
 }
+
 unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_int {
     let istty = isatty(fileno(stderr));
     let mut res;
@@ -774,6 +733,7 @@ unsafe fn main_0(argc: libc::c_int, argv: *const *mut libc::c_char) -> libc::c_i
         1 as libc::c_int
     };
 }
+
 pub fn main() {
     let mut args: Vec<*mut libc::c_char> = Vec::new();
     for arg in ::std::env::args() {

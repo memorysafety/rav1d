@@ -1,25 +1,24 @@
-use std::cmp;
-
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
+use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use crate::src::align::{Align1, Align16};
-use ::libc;
+use crate::src::align::Align1;
+use crate::src::align::Align16;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use std::cmp;
+
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
     fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
 }
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
-
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::dav1d::picture::Dav1dPicture;
 pub type pixel = uint16_t;
 pub type entry = int16_t;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -27,6 +26,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1;
 }
+
 unsafe extern "C" fn generate_scaling(
     bitdepth: libc::c_int,
     points: *const [uint8_t; 2],
@@ -103,6 +103,7 @@ unsafe extern "C" fn generate_scaling(
         i_0 += 1;
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_prep_grain_16bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
@@ -230,6 +231,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_16bpc(
         }
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
     dsp: *const Dav1dFilmGrainDSPContext,
@@ -344,6 +346,7 @@ pub unsafe extern "C" fn dav1d_apply_grain_row_16bpc(
         }
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_apply_grain_16bpc(
     dsp: *const Dav1dFilmGrainDSPContext,

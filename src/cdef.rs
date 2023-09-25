@@ -1,12 +1,13 @@
-use std::cmp;
-
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::stddef::ptrdiff_t;
+use crate::include::stdint::int16_t;
+use std::cmp;
+
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use crate::include::stddef::size_t;
-use crate::include::stdint::int16_t;
+
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use crate::include::stdint::uint16_t;
 
@@ -29,8 +30,10 @@ pub type cdef_fn = unsafe extern "C" fn(
     CdefEdgeFlags,
     libc::c_int,
 ) -> ();
+
 pub type cdef_dir_fn =
     unsafe extern "C" fn(*const DynPixel, ptrdiff_t, *mut libc::c_uint, libc::c_int) -> libc::c_int;
+
 #[repr(C)]
 pub struct Dav1dCdefDSPContext {
     pub dir: cdef_dir_fn,

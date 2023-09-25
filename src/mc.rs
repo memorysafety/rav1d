@@ -1,9 +1,6 @@
-use std::{cmp, iter};
-
+use crate::include::common::bitdepth::AsPrimitive;
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
-#[cfg(feature = "asm")]
-use crate::include::common::bitdepth::{bd_fn, BPC};
-use crate::include::common::bitdepth::{AsPrimitive, BitDepth};
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
@@ -27,6 +24,17 @@ use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
+use std::cmp;
+use std::iter;
+
+#[cfg(feature = "asm")]
+use crate::include::common::bitdepth::bd_fn;
+
+#[cfg(feature = "asm")]
+use crate::include::common::bitdepth::BPC;
+
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[inline(never)]
 unsafe fn put_rust<BD: BitDepth>(
@@ -1240,6 +1248,7 @@ pub type mc_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type mc_scaled_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -1253,6 +1262,7 @@ pub type mc_scaled_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type warp8x8_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -1263,6 +1273,7 @@ pub type warp8x8_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type mct_fn = unsafe extern "C" fn(
     *mut int16_t,
     *const DynPixel,
@@ -1273,6 +1284,7 @@ pub type mct_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type mct_scaled_fn = unsafe extern "C" fn(
     *mut int16_t,
     *const DynPixel,
@@ -1285,6 +1297,7 @@ pub type mct_scaled_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type warp8x8t_fn = unsafe extern "C" fn(
     *mut int16_t,
     ptrdiff_t,
@@ -1295,6 +1308,7 @@ pub type warp8x8t_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type avg_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -1304,6 +1318,7 @@ pub type avg_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type w_avg_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -1314,6 +1329,7 @@ pub type w_avg_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type mask_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -1324,6 +1340,7 @@ pub type mask_fn = unsafe extern "C" fn(
     *const uint8_t,
     libc::c_int,
 ) -> ();
+
 pub type w_mask_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -1335,6 +1352,7 @@ pub type w_mask_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type blend_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -1343,8 +1361,10 @@ pub type blend_fn = unsafe extern "C" fn(
     libc::c_int,
     *const uint8_t,
 ) -> ();
+
 pub type blend_dir_fn =
     unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const DynPixel, libc::c_int, libc::c_int) -> ();
+
 pub type emu_edge_fn = unsafe extern "C" fn(
     intptr_t,
     intptr_t,
@@ -1357,6 +1377,7 @@ pub type emu_edge_fn = unsafe extern "C" fn(
     *const DynPixel,
     ptrdiff_t,
 ) -> ();
+
 pub type resize_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -2515,9 +2536,6 @@ unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
         (*c).resize = bd_fn!(BD, resize, avx512icl);
     }
 }
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]

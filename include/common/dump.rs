@@ -1,8 +1,7 @@
+use crate::include::common::bitdepth::BitDepth;
 use std::fmt::Display;
 use std::io;
 use std::io::stdout;
-
-use crate::include::common::bitdepth::BitDepth;
 
 #[inline]
 pub unsafe fn hex_fdump<BD: BitDepth>(

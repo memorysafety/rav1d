@@ -1,9 +1,37 @@
+use crate::errno_location;
+use crate::include::dav1d::common::Dav1dDataProps;
+use crate::include::dav1d::dav1d::Dav1dEventFlags;
+use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
+use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_SEQUENCE;
+use crate::include::dav1d::headers::Dav1dContentLightLevel;
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::Dav1dITUTT35;
+use crate::include::dav1d::headers::Dav1dMasteringDisplay;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::picture::Dav1dPicAllocator;
+use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::data::dav1d_data_props_copy;
+use crate::src::data::dav1d_data_props_set_defaults;
+use crate::src::internal::Dav1dContext;
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::mem::dav1d_mem_pool_pop;
+use crate::src::mem::dav1d_mem_pool_push;
+use crate::src::mem::Dav1dMemPool;
+use crate::src::mem::Dav1dMemPoolBuffer;
+use crate::src::r#ref::dav1d_ref_dec;
+use crate::src::r#ref::dav1d_ref_inc;
+use crate::src::r#ref::dav1d_ref_wrap;
+use crate::src::r#ref::Dav1dRef;
+use crate::stderr;
+use libc::malloc;
 
-use crate::{errno_location, stderr};
-use ::libc;
-use ::libc::malloc;
 extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn free(_: *mut libc::c_void);
@@ -11,44 +39,11 @@ extern "C" {
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
     fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
 }
-use crate::include::dav1d::common::Dav1dDataProps;
 
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
-use crate::include::dav1d::headers::Dav1dITUTT35;
-use crate::include::dav1d::headers::Dav1dMasteringDisplay;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::picture::Dav1dPicture;
-use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
-use crate::src::data::dav1d_data_props_copy;
-use crate::src::data::dav1d_data_props_set_defaults;
-use crate::src::internal::Dav1dFrameContext;
-use crate::src::r#ref::dav1d_ref_dec;
-use crate::src::r#ref::dav1d_ref_wrap;
-use crate::src::r#ref::Dav1dRef;
-
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-
-use crate::include::dav1d::dav1d::Dav1dEventFlags;
-use crate::src::internal::Dav1dContext;
-
-use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
-use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_SEQUENCE;
-use crate::src::mem::dav1d_mem_pool_pop;
-use crate::src::mem::dav1d_mem_pool_push;
-use crate::src::mem::Dav1dMemPool;
-use crate::src::mem::Dav1dMemPoolBuffer;
 pub type PictureFlags = libc::c_uint;
 pub const PICTURE_FLAG_NEW_TEMPORAL_UNIT: PictureFlags = 4;
 pub const PICTURE_FLAG_NEW_OP_PARAMS_INFO: PictureFlags = 2;
 pub const PICTURE_FLAG_NEW_SEQUENCE: PictureFlags = 1;
-
-use crate::include::dav1d::picture::Dav1dPicAllocator;
 
 #[repr(C)]
 pub struct Dav1dThreadPicture {
@@ -65,7 +60,6 @@ pub struct pic_ctx_context {
     pub pic: Dav1dPicture,
     pub extra_ptr: *mut libc::c_void,
 }
-use crate::src::r#ref::dav1d_ref_inc;
 
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p: *mut Dav1dPicture,
@@ -135,6 +129,7 @@ pub unsafe extern "C" fn dav1d_default_picture_release(
         (*p).allocator_data as *mut Dav1dMemPoolBuffer,
     );
 }
+
 unsafe extern "C" fn free_buffer(_data: *const uint8_t, user_data: *mut libc::c_void) {
     let pic_ctx: *mut pic_ctx_context = user_data as *mut pic_ctx_context;
     ((*pic_ctx).allocator.release_picture_callback).expect("non-null function pointer")(
@@ -143,6 +138,7 @@ unsafe extern "C" fn free_buffer(_data: *const uint8_t, user_data: *mut libc::c_
     );
     free(pic_ctx as *mut libc::c_void);
 }
+
 unsafe extern "C" fn picture_alloc_with_edges(
     c: *mut Dav1dContext,
     p: *mut Dav1dPicture,
@@ -244,6 +240,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     }
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     c: *mut Dav1dContext,
@@ -299,6 +296,7 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     }
     return res;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_picture_alloc_copy(
     c: *mut Dav1dContext,

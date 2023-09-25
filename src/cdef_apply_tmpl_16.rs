@@ -1,44 +1,33 @@
-use std::cmp;
-
+use crate::include::common::intops::ulog2;
+use crate::include::dav1d::headers::Dav1dPixelLayout;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::align::Align16;
+use crate::src::cdef::CdefEdgeFlags;
+use crate::src::cdef::CDEF_HAVE_BOTTOM;
+use crate::src::cdef::CDEF_HAVE_LEFT;
+use crate::src::cdef::CDEF_HAVE_RIGHT;
+use crate::src::cdef::CDEF_HAVE_TOP;
+use crate::src::internal::Dav1dDSPContext;
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Dav1dTaskContext;
+use crate::src::lf_mask::Av1Filter;
+use std::cmp;
 
-use ::libc;
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: size_t) -> *mut libc::c_void;
 }
 
 pub type pixel = uint16_t;
 
-use crate::src::internal::Dav1dFrameContext;
-
-use crate::include::dav1d::headers::Dav1dPixelLayout;
-
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use crate::src::align::Align16;
-
-use crate::src::lf_mask::Av1Filter;
-
-use crate::src::internal::Dav1dTaskContext;
-
-use crate::src::internal::Dav1dDSPContext;
-
-use crate::src::cdef::CdefEdgeFlags;
-
-use crate::src::cdef::CDEF_HAVE_BOTTOM;
-use crate::src::cdef::CDEF_HAVE_LEFT;
-use crate::src::cdef::CDEF_HAVE_RIGHT;
-use crate::src::cdef::CDEF_HAVE_TOP;
-
 pub type Backup2x8Flags = libc::c_uint;
 pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
 pub const BACKUP_2X8_Y: Backup2x8Flags = 1;
 
-use crate::include::common::intops::ulog2;
 #[inline]
 unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
@@ -46,6 +35,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     }
     return x >> 1;
 }
+
 unsafe extern "C" fn backup2lines(
     dst: *const *mut pixel,
     src: *const *mut pixel,
@@ -112,6 +102,7 @@ unsafe extern "C" fn backup2lines(
         }
     }
 }
+
 unsafe extern "C" fn backup2x8(
     dst: *mut [[pixel; 2]; 8],
     src: *const *mut pixel,
@@ -163,6 +154,7 @@ unsafe extern "C" fn backup2x8(
         y_off += PXSTRIDE(*src_stride.offset(1));
     }
 }
+
 unsafe extern "C" fn adjust_strength(strength: libc::c_int, var: libc::c_uint) -> libc::c_int {
     if var == 0 {
         return 0 as libc::c_int;
@@ -174,6 +166,7 @@ unsafe extern "C" fn adjust_strength(strength: libc::c_int, var: libc::c_uint) -
     };
     return strength * (4 + i) + 8 >> 4;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_cdef_brow_16bpc(
     tc: *mut Dav1dTaskContext,

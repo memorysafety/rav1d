@@ -1,9 +1,10 @@
+use libc::size_t;
+use rav1d::include::dav1d::picture::Dav1dPicture;
+use rav1d::include::dav1d::picture::Dav1dPictureParameters;
+use rav1d::include::stdint::uint64_t;
+use rav1d::stderr;
 use std::cmp;
 
-use crate::stderr;
-use ::libc;
-use libc::size_t;
-use rav1d::include::stdint::uint64_t;
 extern "C" {
     pub type MuxerPriv;
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
@@ -20,8 +21,7 @@ extern "C" {
     static yuv_muxer: Muxer;
     static y4m2_muxer: Muxer;
 }
-use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
+
 #[repr(C)]
 pub struct MuxerContext {
     pub data: *mut MuxerPriv,
@@ -32,6 +32,7 @@ pub struct MuxerContext {
     pub framenum: libc::c_int,
     pub priv_data: [uint64_t; 0],
 }
+
 #[repr(C)]
 pub struct Muxer {
     pub priv_data_size: libc::c_int,
@@ -50,6 +51,7 @@ pub struct Muxer {
     pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
+
 static mut muxers: [*const Muxer; 5] = unsafe {
     [
         &null_muxer as *const Muxer,
@@ -59,6 +61,7 @@ static mut muxers: [*const Muxer; 5] = unsafe {
         0 as *const Muxer,
     ]
 };
+
 unsafe extern "C" fn find_extension(f: *const libc::c_char) -> *const libc::c_char {
     let l: size_t = strlen(f);
     if l == 0 {
@@ -82,6 +85,7 @@ unsafe extern "C" fn find_extension(f: *const libc::c_char) -> *const libc::c_ch
         0 as *const libc::c_char
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn output_open(
     c_out: *mut *mut MuxerContext,
@@ -198,6 +202,7 @@ pub unsafe extern "C" fn output_open(
     *c_out = c;
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn safe_strncat(
     dst: *mut libc::c_char,
     dst_len: libc::c_int,
@@ -222,6 +227,7 @@ unsafe extern "C" fn safe_strncat(
     );
     *dst.offset((dst_fill + to_copy) as isize) = 0 as libc::c_int as libc::c_char;
 }
+
 unsafe extern "C" fn assemble_field(
     dst: *mut libc::c_char,
     dst_len: libc::c_int,
@@ -266,6 +272,7 @@ unsafe extern "C" fn assemble_field(
         strlen(tmp.as_mut_ptr()) as libc::c_int,
     );
 }
+
 unsafe extern "C" fn assemble_filename(
     ctx: *mut MuxerContext,
     filename: *mut libc::c_char,
@@ -340,6 +347,7 @@ unsafe extern "C" fn assemble_filename(
     }
     safe_strncat(filename, filename_size, ptr, strlen(ptr) as libc::c_int);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut res;
@@ -370,6 +378,7 @@ pub unsafe extern "C" fn output_write(ctx: *mut MuxerContext, p: *mut Dav1dPictu
     }
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn output_close(ctx: *mut MuxerContext) {
     if (*ctx).one_file_per_frame == 0 && ((*(*ctx).impl_0).write_trailer).is_some() {
@@ -377,6 +386,7 @@ pub unsafe extern "C" fn output_close(ctx: *mut MuxerContext) {
     }
     free(ctx as *mut libc::c_void);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn output_verify(
     ctx: *mut MuxerContext,

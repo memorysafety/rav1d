@@ -1,7 +1,7 @@
 use crate::include::common::intops::iclip;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
+
 #[inline(never)]
 unsafe extern "C" fn inv_dct4_1d_internal_c(
     c: *mut int32_t,
@@ -37,6 +37,7 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
     *c.offset((2 * stride) as isize) = iclip(t1 - t2, min, max);
     *c.offset((3 * stride) as isize) = iclip(t0 - t3, min, max);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct4_1d_c(
     c: *mut int32_t,
@@ -46,6 +47,7 @@ pub unsafe extern "C" fn dav1d_inv_dct4_1d_c(
 ) {
     inv_dct4_1d_internal_c(c, stride, min, max, 0 as libc::c_int);
 }
+
 #[inline(never)]
 unsafe extern "C" fn inv_dct8_1d_internal_c(
     c: *mut int32_t,
@@ -96,6 +98,7 @@ unsafe extern "C" fn inv_dct8_1d_internal_c(
     *c.offset((6 * stride) as isize) = iclip(t1 - t6, min, max);
     *c.offset((7 * stride) as isize) = iclip(t0 - t7, min, max);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct8_1d_c(
     c: *mut int32_t,
@@ -105,6 +108,7 @@ pub unsafe extern "C" fn dav1d_inv_dct8_1d_c(
 ) {
     inv_dct8_1d_internal_c(c, stride, min, max, 0 as libc::c_int);
 }
+
 #[inline(never)]
 unsafe extern "C" fn inv_dct16_1d_internal_c(
     c: *mut int32_t,
@@ -201,6 +205,7 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
     *c.offset((14 * stride) as isize) = iclip(t1 - t14, min, max);
     *c.offset((15 * stride) as isize) = iclip(t0 - t15a, min, max);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct16_1d_c(
     c: *mut int32_t,
@@ -210,6 +215,7 @@ pub unsafe extern "C" fn dav1d_inv_dct16_1d_c(
 ) {
     inv_dct16_1d_internal_c(c, stride, min, max, 0 as libc::c_int);
 }
+
 #[inline(never)]
 unsafe extern "C" fn inv_dct32_1d_internal_c(
     c: *mut int32_t,
@@ -410,6 +416,7 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
     *c.offset((30 * stride) as isize) = iclip(t1 - t30a, min, max);
     *c.offset((31 * stride) as isize) = iclip(t0 - t31, min, max);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct32_1d_c(
     c: *mut int32_t,
@@ -419,6 +426,7 @@ pub unsafe extern "C" fn dav1d_inv_dct32_1d_c(
 ) {
     inv_dct32_1d_internal_c(c, stride, min, max, 0 as libc::c_int);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     c: *mut int32_t,
@@ -767,6 +775,7 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     *c.offset((62 * stride) as isize) = iclip(t1 - t62, min, max);
     *c.offset((63 * stride) as isize) = iclip(t0 - t63a, min, max);
 }
+
 #[inline(never)]
 unsafe extern "C" fn inv_adst4_1d_internal_c(
     in_0: *const int32_t,
@@ -800,6 +809,7 @@ unsafe extern "C" fn inv_adst4_1d_internal_c(
             + in2
             - in1;
 }
+
 #[inline(never)]
 unsafe extern "C" fn inv_adst8_1d_internal_c(
     in_0: *const int32_t,
@@ -853,6 +863,7 @@ unsafe extern "C" fn inv_adst8_1d_internal_c(
     *out.offset((2 * out_s) as isize) = (t6 + t7) * 181 + 128 >> 8;
     *out.offset((5 * out_s) as isize) = -((t6 - t7) * 181 + 128 >> 8);
 }
+
 #[inline(never)]
 unsafe extern "C" fn inv_adst16_1d_internal_c(
     in_0: *const int32_t,
@@ -970,6 +981,7 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
     *out.offset((5 * out_s) as isize) = -((t14a + t15a) * 181 + 128 >> 8);
     *out.offset((10 * out_s) as isize) = (t14a - t15a) * 181 + 128 >> 8;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
     c: *mut int32_t,
@@ -986,6 +998,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
         -stride,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst4_1d_c(
     c: *mut int32_t,
@@ -995,6 +1008,7 @@ pub unsafe extern "C" fn dav1d_inv_adst4_1d_c(
 ) {
     inv_adst4_1d_internal_c(c, stride, min, max, c, stride);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst8_1d_c(
     c: *mut int32_t,
@@ -1004,6 +1018,7 @@ pub unsafe extern "C" fn dav1d_inv_adst8_1d_c(
 ) {
     inv_adst8_1d_internal_c(c, stride, min, max, c, stride);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
     c: *mut int32_t,
@@ -1020,6 +1035,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
         -stride,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
     c: *mut int32_t,
@@ -1036,6 +1052,7 @@ pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
         -stride,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst16_1d_c(
     c: *mut int32_t,
@@ -1045,6 +1062,7 @@ pub unsafe extern "C" fn dav1d_inv_adst16_1d_c(
 ) {
     inv_adst16_1d_internal_c(c, stride, min, max, c, stride);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
     c: *mut int32_t,
@@ -1062,6 +1080,7 @@ pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
         i += 1;
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
     c: *mut int32_t,
@@ -1079,6 +1098,7 @@ pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
         i += 1;
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
     c: *mut int32_t,
@@ -1096,6 +1116,7 @@ pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
         i += 1;
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
     c: *mut int32_t,
@@ -1113,6 +1134,7 @@ pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
         i += 1;
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_wht4_1d_c(c: *mut int32_t, stride: ptrdiff_t) {
     if !(stride > 0) {

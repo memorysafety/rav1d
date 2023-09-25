@@ -1,11 +1,17 @@
-use std::cmp;
-
-use crate::errno_location;
-use crate::{stderr, stdout};
-use ::libc;
+use rav1d::errno_location;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use rav1d::include::dav1d::picture::Dav1dPicture;
+use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::include::stdint::uint32_t;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
+use rav1d::src::lib::dav1d_picture_unref;
+use rav1d::stderr;
+use rav1d::stdout;
+use std::cmp;
+
 extern "C" {
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
@@ -16,16 +22,8 @@ extern "C" {
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strlen(_: *const libc::c_char) -> libc::c_ulong;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }
 
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 #[repr(C)]
 pub struct MuxerPriv {
     pub abcd: [uint32_t; 4],
@@ -33,11 +31,13 @@ pub struct MuxerPriv {
     pub len: uint64_t,
     pub f: *mut libc::FILE,
 }
+
 #[repr(C)]
 pub union C2RustUnnamed {
     pub data: [uint8_t; 64],
     pub data32: [uint32_t; 16],
 }
+
 #[repr(C)]
 pub struct Muxer {
     pub priv_data_size: libc::c_int,
@@ -56,7 +56,9 @@ pub struct Muxer {
     pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
+
 pub type MD5Context = MuxerPriv;
+
 static mut k: [uint32_t; 64] = [
     0xd76aa478 as libc::c_uint,
     0xe8c7b756 as libc::c_uint,
@@ -123,6 +125,7 @@ static mut k: [uint32_t; 64] = [
     0x2ad7d2bb as libc::c_int as uint32_t,
     0xeb86d391 as libc::c_uint,
 ];
+
 unsafe extern "C" fn md5_open(
     md5: *mut MD5Context,
     file: *const libc::c_char,
@@ -150,10 +153,12 @@ unsafe extern "C" fn md5_open(
     (*md5).len = 0 as libc::c_int as uint64_t;
     return 0 as libc::c_int;
 }
+
 #[inline]
 unsafe extern "C" fn leftrotate(x: uint32_t, c: libc::c_int) -> uint32_t {
     return x << c | x >> 32 - c;
 }
+
 unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
     let mut a: uint32_t = (*md5).abcd[0];
     let mut b: uint32_t = (*md5).abcd[1];
@@ -548,6 +553,7 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const uint32_t) {
     (*md5).abcd[2] = ((*md5).abcd[2] as libc::c_uint).wrapping_add(c) as uint32_t as uint32_t;
     (*md5).abcd[3] = ((*md5).abcd[3] as libc::c_uint).wrapping_add(d) as uint32_t as uint32_t;
 }
+
 unsafe extern "C" fn md5_update(
     md5: *mut MD5Context,
     mut data: *const uint8_t,
@@ -596,6 +602,7 @@ unsafe extern "C" fn md5_update(
             as uint64_t;
     }
 }
+
 unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> libc::c_int {
     let hbd = ((*p).p.bpc > 8) as libc::c_int;
     let w = (*p).p.w;
@@ -631,6 +638,7 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> li
     dav1d_picture_unref(p);
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
     static mut bit: [uint8_t; 2] = [0x80 as libc::c_int as uint8_t, 0 as libc::c_int as uint8_t];
     let len: uint64_t = (*md5).len << 3;
@@ -652,6 +660,7 @@ unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
         8 as libc::c_int as libc::c_uint,
     );
 }
+
 unsafe extern "C" fn md5_close(md5: *mut MD5Context) {
     md5_finish(md5);
     let mut i = 0;
@@ -671,6 +680,7 @@ unsafe extern "C" fn md5_close(md5: *mut MD5Context) {
         fclose((*md5).f);
     }
 }
+
 unsafe extern "C" fn md5_verify(
     md5: *mut MD5Context,
     mut md5_str: *const libc::c_char,
@@ -704,6 +714,7 @@ unsafe extern "C" fn md5_verify(
         ::core::mem::size_of::<[uint32_t; 4]>() as libc::c_ulong,
     ) != 0) as libc::c_int;
 }
+
 #[no_mangle]
 pub static mut md5_muxer: Muxer = {
     let init = Muxer {

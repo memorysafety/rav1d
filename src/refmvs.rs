@@ -1,9 +1,25 @@
-use std::cmp;
-
+use crate::include::common::intops::apply_sign;
+use crate::include::common::intops::iclip;
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
+use crate::src::env::fix_mv_precision;
+use crate::src::env::get_gmv_2d;
+use crate::src::env::get_poc_diff;
+use crate::src::intra_edge::EdgeFlags;
+use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
+use crate::src::levels::mv;
+use crate::src::levels::BlockSize;
+use crate::src::mem::dav1d_alloc_aligned;
+use crate::src::mem::dav1d_freep_aligned;
+use crate::src::tables::dav1d_block_dimensions;
 use cfg_if::cfg_if;
-use libc;
+use std::cmp;
+
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
@@ -74,19 +90,6 @@ extern "C" {
         bh4: libc::c_int,
     );
 }
-
-use crate::src::tables::dav1d_block_dimensions;
-
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::src::levels::BlockSize;
-
-use crate::src::intra_edge::EdgeFlags;
-use crate::src::levels::mv;
-
-use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 
 #[repr(C, packed)]
 pub struct refmvs_temporal_block {
@@ -160,11 +163,13 @@ pub struct refmvs_frame {
     pub n_tile_threads: libc::c_int,
     pub n_frame_threads: libc::c_int,
 }
+
 #[repr(C)]
 pub struct refmvs_tile_range {
     pub start: libc::c_int,
     pub end: libc::c_int,
 }
+
 #[repr(C)]
 pub struct refmvs_tile {
     pub rf: *const refmvs_frame,
@@ -173,12 +178,14 @@ pub struct refmvs_tile {
     pub tile_col: refmvs_tile_range,
     pub tile_row: refmvs_tile_range,
 }
+
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct refmvs_candidate {
     pub mv: refmvs_mvpair,
     pub weight: libc::c_int,
 }
+
 pub type load_tmvs_fn = Option<
     unsafe extern "C" fn(
         *const refmvs_frame,
@@ -189,6 +196,7 @@ pub type load_tmvs_fn = Option<
         libc::c_int,
     ) -> (),
 >;
+
 pub type save_tmvs_fn = Option<
     unsafe extern "C" fn(
         *mut refmvs_temporal_block,
@@ -232,16 +240,6 @@ impl Dav1dRefmvsDSPContext {
         );
     }
 }
-
-use crate::include::common::intops::apply_sign;
-use crate::include::common::intops::iclip;
-use crate::src::env::fix_mv_precision;
-use crate::src::env::get_poc_diff;
-
-use crate::src::env::get_gmv_2d;
-use crate::src::mem::dav1d_freep_aligned;
-
-use crate::src::mem::dav1d_alloc_aligned;
 
 fn add_spatial_candidate(
     mvstack: &mut [refmvs_candidate],
@@ -1211,6 +1209,7 @@ pub unsafe fn dav1d_refmvs_tile_sbrow_init(
     (*rt).tile_col.start = tile_col_start4;
     (*rt).tile_col.end = cmp::min(tile_col_end4, (*rf).iw4);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn load_tmvs_c(
     rf: *const refmvs_frame,
@@ -1329,6 +1328,7 @@ pub unsafe extern "C" fn load_tmvs_c(
         n += 1;
     }
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn save_tmvs_c(
     mut rp: *mut refmvs_temporal_block,
@@ -1650,9 +1650,6 @@ unsafe extern "C" fn splat_mv_rust(
     }
 }
 
-#[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
-
 #[inline(always)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
@@ -1700,6 +1697,7 @@ unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
         (*c).splat_mv = Some(ffi::dav1d_splat_mv_neon);
     }
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {

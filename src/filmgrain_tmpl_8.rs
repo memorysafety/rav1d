@@ -1,8 +1,27 @@
-use std::cmp;
-
 use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
-use ::libc;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::iclip_u8;
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::stddef::ptrdiff_t;
+use crate::include::stddef::size_t;
+use crate::include::stdint::int8_t;
+use crate::include::stdint::intptr_t;
+use crate::include::stdint::uint64_t;
+use crate::include::stdint::uint8_t;
+use crate::src::filmgrain::get_random_number;
+use crate::src::filmgrain::round2;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use crate::src::filmgrain::GRAIN_WIDTH;
+use crate::src::tables::dav1d_gaussian_sequence;
+use std::cmp;
+
+#[cfg(feature = "asm")]
+use crate::src::cpu::dav1d_get_cpu_flags;
+
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
@@ -333,28 +352,9 @@ extern "C" {
     );
 }
 
-use crate::src::tables::dav1d_gaussian_sequence;
-
 pub type pixel = uint8_t;
-
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::stddef::ptrdiff_t;
-use crate::include::stddef::size_t;
-use crate::include::stdint::int8_t;
-use crate::include::stdint::intptr_t;
-use crate::include::stdint::uint64_t;
-use crate::include::stdint::uint8_t;
-
 pub type entry = int8_t;
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::iclip_u8;
-use crate::src::filmgrain::get_random_number;
-use crate::src::filmgrain::round2;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
-use crate::src::filmgrain::GRAIN_WIDTH;
+
 unsafe extern "C" fn generate_grain_y_c_erased(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     data: *const Dav1dFilmGrainData,
@@ -362,6 +362,7 @@ unsafe extern "C" fn generate_grain_y_c_erased(
 ) {
     generate_grain_y_rust(buf.cast(), data);
 }
+
 unsafe extern "C" fn generate_grain_y_rust(buf: *mut [entry; 82], data: *const Dav1dFilmGrainData) {
     let bitdepth_min_8 = 8 - 8;
     let mut seed: libc::c_uint = (*data).seed;
@@ -413,6 +414,7 @@ unsafe extern "C" fn generate_grain_y_rust(buf: *mut [entry; 82], data: *const D
         y_0 += 1;
     }
 }
+
 #[inline(never)]
 unsafe extern "C" fn generate_grain_uv_c(
     buf: *mut [entry; 82],
@@ -507,6 +509,7 @@ unsafe extern "C" fn generate_grain_uv_c(
         y_0 += 1;
     }
 }
+
 unsafe extern "C" fn generate_grain_uv_420_c_erased(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
@@ -523,6 +526,7 @@ unsafe extern "C" fn generate_grain_uv_420_c_erased(
         1 as libc::c_int,
     );
 }
+
 unsafe extern "C" fn generate_grain_uv_422_c_erased(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
@@ -539,6 +543,7 @@ unsafe extern "C" fn generate_grain_uv_422_c_erased(
         0 as libc::c_int,
     );
 }
+
 unsafe extern "C" fn generate_grain_uv_444_c_erased(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
@@ -555,6 +560,7 @@ unsafe extern "C" fn generate_grain_uv_444_c_erased(
         0 as libc::c_int,
     );
 }
+
 #[inline]
 unsafe extern "C" fn sample_lut(
     grain_lut: *const [entry; 82],
@@ -572,6 +578,7 @@ unsafe extern "C" fn sample_lut(
     return (*grain_lut.offset((offy + y + (32 >> suby) * by) as isize))
         [(offx + x + (32 >> subx) * bx) as usize];
 }
+
 unsafe extern "C" fn fgy_32x32xn_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
@@ -596,6 +603,7 @@ unsafe extern "C" fn fgy_32x32xn_c_erased(
         row_num,
     );
 }
+
 unsafe extern "C" fn fgy_32x32xn_rust(
     dst_row: *mut pixel,
     src_row: *const pixel,
@@ -866,6 +874,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
         bx = bx.wrapping_add(32 as libc::c_int as libc::c_uint);
     }
 }
+
 #[inline(never)]
 unsafe extern "C" fn fguv_32x32xn_c(
     dst_row: *mut pixel,
@@ -1222,6 +1231,7 @@ unsafe extern "C" fn fguv_32x32xn_c(
         bx = bx.wrapping_add((32 >> sx) as libc::c_uint);
     }
 }
+
 unsafe extern "C" fn fguv_32x32xn_420_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
@@ -1256,6 +1266,7 @@ unsafe extern "C" fn fguv_32x32xn_420_c_erased(
         1 as libc::c_int,
     );
 }
+
 unsafe extern "C" fn fguv_32x32xn_422_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
@@ -1290,6 +1301,7 @@ unsafe extern "C" fn fguv_32x32xn_422_c_erased(
         0 as libc::c_int,
     );
 }
+
 unsafe extern "C" fn fguv_32x32xn_444_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
@@ -1820,9 +1832,6 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
         bx = bx.wrapping_add((32 >> 0) as libc::c_uint);
     }
 }
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
 
 #[no_mangle]
 #[cold]

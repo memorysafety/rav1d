@@ -1,3 +1,226 @@
+use crate::include::common::attributes::ctz;
+use crate::include::common::bitdepth::DynCoef;
+use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::frame::is_inter_or_switch;
+use crate::include::common::frame::is_key_or_intra;
+use crate::include::common::intops::apply_sign64;
+use crate::include::common::intops::iclip;
+use crate::include::common::intops::iclip_u8;
+use crate::include::common::intops::ulog2;
+use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::include::dav1d::headers::Dav1dFrameHeader;
+use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Dav1dRestorationType;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Dav1dTxfmMode;
+use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
+use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
+use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
+use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
+use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::stdatomic::atomic_int;
+use crate::include::stdatomic::atomic_uint;
+use crate::include::stddef::*;
+use crate::include::stdint::*;
+use crate::src::align::Align16;
+use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::cdf::dav1d_cdf_thread_copy;
+use crate::src::cdf::dav1d_cdf_thread_init_static;
+use crate::src::cdf::dav1d_cdf_thread_ref;
+use crate::src::cdf::dav1d_cdf_thread_unref;
+use crate::src::cdf::dav1d_cdf_thread_update;
+use crate::src::cdf::CdfMvComponent;
+use crate::src::cdf::CdfMvContext;
+use crate::src::cdf::CdfThreadContext;
+use crate::src::ctx::CaseSet;
+use crate::src::data::dav1d_data_props_copy;
+use crate::src::data::dav1d_data_unref_internal;
+use crate::src::dequant_tables::dav1d_dq_tbl;
+use crate::src::env::av1_get_bwd_ref_1_ctx;
+use crate::src::env::av1_get_bwd_ref_ctx;
+use crate::src::env::av1_get_fwd_ref_1_ctx;
+use crate::src::env::av1_get_fwd_ref_2_ctx;
+use crate::src::env::av1_get_fwd_ref_ctx;
+use crate::src::env::av1_get_ref_ctx;
+use crate::src::env::av1_get_uni_p1_ctx;
+use crate::src::env::fix_mv_precision;
+use crate::src::env::gather_left_partition_prob;
+use crate::src::env::gather_top_partition_prob;
+use crate::src::env::get_comp_ctx;
+use crate::src::env::get_comp_dir_ctx;
+use crate::src::env::get_cur_frame_segid;
+use crate::src::env::get_drl_context;
+use crate::src::env::get_filter_ctx;
+use crate::src::env::get_gmv_2d;
+use crate::src::env::get_intra_ctx;
+use crate::src::env::get_jnt_comp_ctx;
+use crate::src::env::get_mask_comp_ctx;
+use crate::src::env::get_partition_ctx;
+use crate::src::env::get_poc_diff;
+use crate::src::env::get_tx_ctx;
+use crate::src::env::BlockContext;
+use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use crate::src::internal::CodedBlockInfo;
+use crate::src::internal::Dav1dContext;
+use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Dav1dTaskContext;
+use crate::src::internal::Dav1dTaskContext_scratch_pal;
+use crate::src::internal::Dav1dTileGroup;
+use crate::src::internal::Dav1dTileState;
+use crate::src::internal::ScalableMotionParams;
+use crate::src::intra_edge::EdgeBranch;
+use crate::src::intra_edge::EdgeFlags;
+use crate::src::intra_edge::EdgeNode;
+use crate::src::intra_edge::EdgeTip;
+use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
+use crate::src::ipred::Dav1dIntraPredDSPContext;
+use crate::src::itx::Dav1dInvTxfmDSPContext;
+use crate::src::levels::mv;
+use crate::src::levels::Av1Block;
+use crate::src::levels::BS_128x128;
+use crate::src::levels::BS_4x4;
+use crate::src::levels::BS_64x64;
+use crate::src::levels::BlockLevel;
+use crate::src::levels::BlockPartition;
+use crate::src::levels::BlockSize;
+use crate::src::levels::MotionMode;
+use crate::src::levels::RectTxfmSize;
+use crate::src::levels::TxfmSize;
+use crate::src::levels::BL_128X128;
+use crate::src::levels::BL_64X64;
+use crate::src::levels::BL_8X8;
+use crate::src::levels::CFL_PRED;
+use crate::src::levels::COMP_INTER_AVG;
+use crate::src::levels::COMP_INTER_NONE;
+use crate::src::levels::COMP_INTER_SEG;
+use crate::src::levels::COMP_INTER_WEDGE;
+use crate::src::levels::COMP_INTER_WEIGHTED_AVG;
+use crate::src::levels::DC_PRED;
+use crate::src::levels::FILTER_2D_BILINEAR;
+use crate::src::levels::FILTER_PRED;
+use crate::src::levels::GLOBALMV;
+use crate::src::levels::GLOBALMV_GLOBALMV;
+use crate::src::levels::INTER_INTRA_BLEND;
+use crate::src::levels::INTER_INTRA_NONE;
+use crate::src::levels::INTER_INTRA_WEDGE;
+use crate::src::levels::MM_OBMC;
+use crate::src::levels::MM_TRANSLATION;
+use crate::src::levels::MM_WARP;
+use crate::src::levels::MV_JOINT_H;
+use crate::src::levels::MV_JOINT_HV;
+use crate::src::levels::MV_JOINT_V;
+use crate::src::levels::NEARER_DRL;
+use crate::src::levels::NEARESTMV;
+use crate::src::levels::NEARESTMV_NEARESTMV;
+use crate::src::levels::NEAREST_DRL;
+use crate::src::levels::NEARISH_DRL;
+use crate::src::levels::NEARMV;
+use crate::src::levels::NEAR_DRL;
+use crate::src::levels::NEWMV;
+use crate::src::levels::NEWMV_NEWMV;
+use crate::src::levels::N_COMP_INTER_PRED_MODES;
+use crate::src::levels::N_INTER_INTRA_PRED_MODES;
+use crate::src::levels::N_INTRA_PRED_MODES;
+use crate::src::levels::N_MV_JOINTS;
+use crate::src::levels::N_RECT_TX_SIZES;
+use crate::src::levels::N_UV_INTRA_PRED_MODES;
+use crate::src::levels::PARTITION_H;
+use crate::src::levels::PARTITION_H4;
+use crate::src::levels::PARTITION_NONE;
+use crate::src::levels::PARTITION_SPLIT;
+use crate::src::levels::PARTITION_T_BOTTOM_SPLIT;
+use crate::src::levels::PARTITION_T_LEFT_SPLIT;
+use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
+use crate::src::levels::PARTITION_T_TOP_SPLIT;
+use crate::src::levels::PARTITION_V;
+use crate::src::levels::PARTITION_V4;
+use crate::src::levels::TX_4X4;
+use crate::src::levels::TX_64X64;
+use crate::src::levels::TX_8X8;
+use crate::src::levels::VERT_LEFT_PRED;
+use crate::src::levels::VERT_PRED;
+use crate::src::lf_mask::dav1d_calc_eih;
+use crate::src::lf_mask::dav1d_calc_lf_values;
+use crate::src::lf_mask::dav1d_create_lf_mask_inter;
+use crate::src::lf_mask::dav1d_create_lf_mask_intra;
+use crate::src::lf_mask::Av1Filter;
+use crate::src::lf_mask::Av1Restoration;
+use crate::src::lf_mask::Av1RestorationUnit;
+use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
+use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
+use crate::src::mc::dav1d_mc_dsp_init;
+use crate::src::mem::dav1d_alloc_aligned;
+use crate::src::mem::dav1d_free_aligned;
+use crate::src::mem::dav1d_freep_aligned;
+use crate::src::mem::freep;
+use crate::src::msac::dav1d_msac_decode_bool;
+use crate::src::msac::dav1d_msac_decode_bool_adapt;
+use crate::src::msac::dav1d_msac_decode_bool_equi;
+use crate::src::msac::dav1d_msac_decode_bools;
+use crate::src::msac::dav1d_msac_decode_subexp;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
+use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
+use crate::src::msac::dav1d_msac_decode_uniform;
+use crate::src::msac::dav1d_msac_init;
+use crate::src::picture::dav1d_picture_get_event_flags;
+use crate::src::picture::dav1d_picture_ref;
+use crate::src::picture::dav1d_picture_unref_internal;
+use crate::src::picture::dav1d_thread_picture_ref;
+use crate::src::picture::dav1d_thread_picture_unref;
+use crate::src::picture::Dav1dThreadPicture;
+use crate::src::qm::dav1d_qm_tbl;
+use crate::src::r#ref::dav1d_ref_create_using_pool;
+use crate::src::r#ref::dav1d_ref_dec;
+use crate::src::r#ref::dav1d_ref_inc;
+use crate::src::recon::DEBUG_BLOCK_INFO;
+use crate::src::refmvs::dav1d_refmvs_find;
+use crate::src::refmvs::dav1d_refmvs_init_frame;
+use crate::src::refmvs::dav1d_refmvs_save_tmvs;
+use crate::src::refmvs::dav1d_refmvs_tile_sbrow_init;
+use crate::src::refmvs::refmvs_block;
+use crate::src::refmvs::refmvs_block_unaligned;
+use crate::src::refmvs::refmvs_mvpair;
+use crate::src::refmvs::refmvs_refpair;
+use crate::src::refmvs::refmvs_temporal_block;
+use crate::src::tables::cfl_allowed_mask;
+use crate::src::tables::dav1d_al_part_ctx;
+use crate::src::tables::dav1d_block_dimensions;
+use crate::src::tables::dav1d_block_sizes;
+use crate::src::tables::dav1d_comp_inter_pred_modes;
+use crate::src::tables::dav1d_filter_2d;
+use crate::src::tables::dav1d_filter_dir;
+use crate::src::tables::dav1d_intra_mode_context;
+use crate::src::tables::dav1d_max_txfm_size_for_bs;
+use crate::src::tables::dav1d_partition_type_count;
+use crate::src::tables::dav1d_sgr_params;
+use crate::src::tables::dav1d_txfm_dimensions;
+use crate::src::tables::dav1d_wedge_ctx_lut;
+use crate::src::tables::dav1d_ymode_size_context;
+use crate::src::tables::interintra_allowed_mask;
+use crate::src::tables::wedge_allowed_mask;
+use crate::src::thread_task::FRAME_ERROR;
+use crate::src::thread_task::TILE_ERROR;
+use crate::src::warpmv::dav1d_find_affine_int;
+use crate::src::warpmv::dav1d_get_shear_params;
+use crate::src::warpmv::dav1d_set_affine_mv2d;
+use libc::pthread_cond_signal;
+use libc::pthread_cond_wait;
+use libc::pthread_mutex_lock;
+use libc::pthread_mutex_unlock;
 use std::array;
 use std::cmp;
 use std::iter;
@@ -9,27 +232,9 @@ use std::sync::atomic::Ordering;
 
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
+
 #[cfg(feature = "bitdepth_8")]
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::DynCoef;
-use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::frame::is_inter_or_switch;
-use crate::include::common::frame::is_key_or_intra;
-use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
-use crate::include::dav1d::headers::Dav1dTxfmMode;
-use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
-use crate::include::stddef::*;
-use crate::include::stdint::*;
-use crate::src::align::Align16;
-use crate::src::cdf::CdfMvComponent;
-use crate::src::cdf::CdfMvContext;
-use crate::src::ctx::CaseSet;
-use crate::src::looprestoration::dav1d_loop_restoration_dsp_init;
-use crate::src::mc::dav1d_mc_dsp_init;
-use crate::src::thread_task::FRAME_ERROR;
-use crate::src::thread_task::TILE_ERROR;
-
-use libc;
 
 extern "C" {
     fn memcpy(_: *mut libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> *mut libc::c_void;
@@ -138,254 +343,6 @@ extern "C" {
     ) -> libc::c_int;
     fn dav1d_task_frame_init(f: *mut Dav1dFrameContext);
 }
-
-use crate::src::dequant_tables::dav1d_dq_tbl;
-use crate::src::lf_mask::dav1d_calc_eih;
-use crate::src::lf_mask::dav1d_calc_lf_values;
-use crate::src::lf_mask::dav1d_create_lf_mask_inter;
-use crate::src::lf_mask::dav1d_create_lf_mask_intra;
-use crate::src::msac::dav1d_msac_decode_bool;
-use crate::src::msac::dav1d_msac_decode_bool_adapt;
-use crate::src::msac::dav1d_msac_decode_bool_equi;
-use crate::src::msac::dav1d_msac_decode_subexp;
-use crate::src::msac::dav1d_msac_decode_symbol_adapt16;
-use crate::src::msac::dav1d_msac_decode_symbol_adapt4;
-use crate::src::msac::dav1d_msac_decode_symbol_adapt8;
-use crate::src::msac::dav1d_msac_init;
-use crate::src::qm::dav1d_qm_tbl;
-use crate::src::refmvs::dav1d_refmvs_find;
-use crate::src::refmvs::dav1d_refmvs_init_frame;
-use crate::src::refmvs::dav1d_refmvs_save_tmvs;
-use crate::src::refmvs::dav1d_refmvs_tile_sbrow_init;
-use crate::src::tables::dav1d_al_part_ctx;
-use crate::src::tables::dav1d_block_dimensions;
-use crate::src::tables::dav1d_block_sizes;
-use crate::src::tables::dav1d_comp_inter_pred_modes;
-use crate::src::tables::dav1d_filter_2d;
-use crate::src::tables::dav1d_filter_dir;
-use crate::src::tables::dav1d_intra_mode_context;
-use crate::src::tables::dav1d_max_txfm_size_for_bs;
-use crate::src::tables::dav1d_partition_type_count;
-use crate::src::tables::dav1d_sgr_params;
-use crate::src::tables::dav1d_txfm_dimensions;
-use crate::src::tables::dav1d_wedge_ctx_lut;
-use crate::src::tables::dav1d_ymode_size_context;
-use crate::src::warpmv::dav1d_find_affine_int;
-use crate::src::warpmv::dav1d_get_shear_params;
-use crate::src::warpmv::dav1d_set_affine_mv2d;
-
-use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
-use crate::src::data::dav1d_data_props_copy;
-use crate::src::data::dav1d_data_unref_internal;
-
-use crate::src::internal::Dav1dFrameContext;
-
-use libc::pthread_cond_signal;
-use libc::pthread_cond_wait;
-use libc::pthread_mutex_lock;
-use libc::pthread_mutex_unlock;
-
-use crate::include::dav1d::picture::Dav1dPicture;
-
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
-
-use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-
-use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::Dav1dRestorationType;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-
-use crate::src::internal::CodedBlockInfo;
-
-use crate::src::levels::Av1Block;
-use crate::src::levels::MotionMode;
-use crate::src::lf_mask::Av1Filter;
-use crate::src::lf_mask::Av1Restoration;
-use crate::src::lf_mask::Av1RestorationUnit;
-
-use crate::src::levels::mv;
-
-use crate::src::env::BlockContext;
-use crate::src::refmvs::refmvs_block;
-use crate::src::refmvs::refmvs_block_unaligned;
-
-use crate::src::refmvs::refmvs_mvpair;
-use crate::src::refmvs::refmvs_refpair;
-use crate::src::refmvs::refmvs_temporal_block;
-
-use crate::src::levels::BlockSize;
-
-use crate::src::internal::Dav1dTaskContext;
-use crate::src::levels::BS_128x128;
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_64x64;
-
-use crate::src::levels::FILTER_2D_BILINEAR;
-
-use crate::src::internal::Dav1dTileState;
-
-use crate::src::internal::Dav1dContext;
-
-use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EdgeTip;
-
-use crate::src::intra_edge::EdgeBranch;
-use crate::src::intra_edge::EdgeNode;
-use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
-
-use crate::src::cdef::Dav1dCdefDSPContext;
-use crate::src::cdf::dav1d_cdf_thread_copy;
-use crate::src::cdf::dav1d_cdf_thread_init_static;
-use crate::src::cdf::dav1d_cdf_thread_ref;
-use crate::src::cdf::dav1d_cdf_thread_unref;
-use crate::src::cdf::dav1d_cdf_thread_update;
-use crate::src::cdf::CdfThreadContext;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
-
-use crate::src::ipred::Dav1dIntraPredDSPContext;
-use crate::src::itx::Dav1dInvTxfmDSPContext;
-use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
-
-use crate::src::internal::Dav1dTileGroup;
-use crate::src::picture::dav1d_picture_get_event_flags;
-use crate::src::picture::dav1d_picture_ref;
-use crate::src::picture::dav1d_picture_unref_internal;
-use crate::src::picture::dav1d_thread_picture_ref;
-use crate::src::picture::dav1d_thread_picture_unref;
-use crate::src::picture::Dav1dThreadPicture;
-
-use crate::src::internal::ScalableMotionParams;
-use crate::src::levels::BlockLevel;
-use crate::src::levels::TX_4X4;
-use crate::src::levels::TX_64X64;
-use crate::src::levels::TX_8X8;
-
-use crate::src::levels::RectTxfmSize;
-use crate::src::levels::TxfmSize;
-use crate::src::levels::BL_128X128;
-use crate::src::levels::BL_64X64;
-use crate::src::levels::BL_8X8;
-use crate::src::levels::FILTER_PRED;
-use crate::src::levels::N_RECT_TX_SIZES;
-
-use crate::src::levels::CFL_PRED;
-use crate::src::levels::DC_PRED;
-use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::levels::VERT_LEFT_PRED;
-use crate::src::levels::VERT_PRED;
-
-use crate::src::levels::BlockPartition;
-use crate::src::levels::N_INTER_INTRA_PRED_MODES;
-use crate::src::levels::PARTITION_H;
-use crate::src::levels::PARTITION_H4;
-use crate::src::levels::PARTITION_NONE;
-use crate::src::levels::PARTITION_SPLIT;
-use crate::src::levels::PARTITION_T_BOTTOM_SPLIT;
-use crate::src::levels::PARTITION_T_LEFT_SPLIT;
-use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
-use crate::src::levels::PARTITION_T_TOP_SPLIT;
-use crate::src::levels::PARTITION_V;
-use crate::src::levels::PARTITION_V4;
-
-use crate::src::levels::MV_JOINT_H;
-use crate::src::levels::MV_JOINT_HV;
-use crate::src::levels::MV_JOINT_V;
-use crate::src::levels::N_MV_JOINTS;
-
-use crate::src::levels::GLOBALMV;
-use crate::src::levels::NEARESTMV;
-use crate::src::levels::NEARMV;
-use crate::src::levels::NEWMV;
-
-use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::NEARER_DRL;
-use crate::src::levels::NEAREST_DRL;
-use crate::src::levels::NEARISH_DRL;
-use crate::src::levels::NEAR_DRL;
-use crate::src::levels::NEWMV_NEWMV;
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
-
-use crate::src::levels::NEARESTMV_NEARESTMV;
-
-use crate::src::levels::COMP_INTER_AVG;
-use crate::src::levels::COMP_INTER_NONE;
-use crate::src::levels::COMP_INTER_SEG;
-use crate::src::levels::COMP_INTER_WEDGE;
-use crate::src::levels::COMP_INTER_WEIGHTED_AVG;
-
-use crate::src::levels::INTER_INTRA_BLEND;
-use crate::src::levels::INTER_INTRA_NONE;
-use crate::src::levels::INTER_INTRA_WEDGE;
-
-use crate::include::common::attributes::ctz;
-use crate::src::levels::MM_OBMC;
-use crate::src::levels::MM_TRANSLATION;
-use crate::src::levels::MM_WARP;
-
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::iclip_u8;
-
-use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::ulog2;
-use crate::src::mem::dav1d_alloc_aligned;
-use crate::src::mem::dav1d_free_aligned;
-use crate::src::mem::dav1d_freep_aligned;
-use crate::src::mem::freep;
-use crate::src::r#ref::dav1d_ref_create_using_pool;
-use crate::src::r#ref::dav1d_ref_dec;
-use crate::src::r#ref::dav1d_ref_inc;
-
-use crate::src::tables::cfl_allowed_mask;
-use crate::src::tables::interintra_allowed_mask;
-use crate::src::tables::wedge_allowed_mask;
-
-use crate::src::env::av1_get_bwd_ref_1_ctx;
-use crate::src::env::av1_get_bwd_ref_ctx;
-use crate::src::env::av1_get_fwd_ref_1_ctx;
-use crate::src::env::av1_get_fwd_ref_2_ctx;
-use crate::src::env::av1_get_fwd_ref_ctx;
-use crate::src::env::av1_get_ref_ctx;
-use crate::src::env::av1_get_uni_p1_ctx;
-use crate::src::env::fix_mv_precision;
-use crate::src::env::gather_left_partition_prob;
-use crate::src::env::gather_top_partition_prob;
-use crate::src::env::get_comp_ctx;
-use crate::src::env::get_comp_dir_ctx;
-use crate::src::env::get_cur_frame_segid;
-use crate::src::env::get_drl_context;
-use crate::src::env::get_filter_ctx;
-use crate::src::env::get_gmv_2d;
-use crate::src::env::get_intra_ctx;
-use crate::src::env::get_jnt_comp_ctx;
-use crate::src::env::get_mask_comp_ctx;
-use crate::src::env::get_partition_ctx;
-use crate::src::env::get_poc_diff;
-use crate::src::env::get_tx_ctx;
-
-use crate::src::msac::dav1d_msac_decode_bools;
-use crate::src::msac::dav1d_msac_decode_uniform;
-
-use crate::src::internal::Dav1dTaskContext_scratch_pal;
-
-use crate::src::recon::DEBUG_BLOCK_INFO;
 
 fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,

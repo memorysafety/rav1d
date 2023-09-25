@@ -1,7 +1,14 @@
-use crate::errno_location;
-use crate::{stderr, stdout};
-use ::libc;
+use rav1d::errno_location;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
+use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use rav1d::include::dav1d::picture::Dav1dPicture;
+use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::include::stdint::uint8_t;
+use rav1d::src::lib::dav1d_picture_unref;
+use rav1d::stderr;
+use rav1d::stdout;
+
 extern "C" {
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
     fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
@@ -14,20 +21,13 @@ extern "C" {
     ) -> libc::c_ulong;
     fn strcmp(_: *const libc::c_char, _: *const libc::c_char) -> libc::c_int;
     fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn dav1d_picture_unref(p: *mut Dav1dPicture);
 }
 
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-
-use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 #[repr(C)]
 pub struct MuxerPriv {
     pub f: *mut libc::FILE,
 }
+
 #[repr(C)]
 pub struct Muxer {
     pub priv_data_size: libc::c_int,
@@ -46,7 +46,9 @@ pub struct Muxer {
     pub write_trailer: Option<unsafe extern "C" fn(*mut MuxerPriv) -> ()>,
     pub verify: Option<unsafe extern "C" fn(*mut MuxerPriv, *const libc::c_char) -> libc::c_int>,
 }
+
 pub type YuvOutputContext = MuxerPriv;
+
 unsafe extern "C" fn yuv_open(
     c: *mut YuvOutputContext,
     file: *const libc::c_char,
@@ -69,6 +71,7 @@ unsafe extern "C" fn yuv_open(
     }
     return 0 as libc::c_int;
 }
+
 unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -> libc::c_int {
     let mut current_block: u64;
     let mut ptr: *mut uint8_t;
@@ -151,11 +154,13 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
     );
     return -(1 as libc::c_int);
 }
+
 unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {
     if (*c).f != stdout {
         fclose((*c).f);
     }
 }
+
 #[no_mangle]
 pub static mut yuv_muxer: Muxer = {
     let init = Muxer {

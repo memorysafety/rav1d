@@ -1,6 +1,7 @@
+use crate::include::common::intops::inv_recenter;
+use crate::include::common::intops::ulog2;
 use crate::include::stddef::*;
 use crate::include::stdint::*;
-use ::libc;
 
 #[repr(C)]
 pub struct GetBits {
@@ -11,8 +12,6 @@ pub struct GetBits {
     pub ptr_start: *const uint8_t,
     pub ptr_end: *const uint8_t,
 }
-use crate::include::common::intops::inv_recenter;
-use crate::include::common::intops::ulog2;
 
 pub unsafe fn dav1d_init_get_bits(c: *mut GetBits, data: *const uint8_t, sz: size_t) {
     if sz == 0 {
@@ -44,6 +43,7 @@ pub unsafe fn dav1d_get_bit(c: *mut GetBits) -> libc::c_uint {
     (*c).state = state_0 << 1;
     return (state_0 >> 63) as libc::c_uint;
 }
+
 #[inline]
 unsafe extern "C" fn refill(c: *mut GetBits, n: libc::c_int) {
     if !((*c).bits_left >= 0 && (*c).bits_left < 32) {
@@ -149,6 +149,7 @@ pub unsafe fn dav1d_get_vlc(c: *mut GetBits) -> libc::c_uint {
         .wrapping_sub(1 as libc::c_int as libc::c_uint)
         .wrapping_add(dav1d_get_bits(c, n_bits));
 }
+
 unsafe extern "C" fn get_bits_subexp_u(
     c: *mut GetBits,
     r#ref: libc::c_uint,

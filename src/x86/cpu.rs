@@ -1,5 +1,5 @@
 use crate::include::stdint::*;
-use ::libc;
+
 extern "C" {
     fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: libc::c_ulong) -> libc::c_int;
     fn dav1d_cpu_cpuid(regs: *mut CpuidRegisters, leaf: libc::c_uint, subleaf: libc::c_uint);
@@ -23,12 +23,14 @@ pub struct CpuidRegisters {
     pub edx: uint32_t,
     pub ecx: uint32_t,
 }
+
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct C2RustUnnamed {
     pub max_leaf: uint32_t,
     pub vendor: [libc::c_char; 12],
 }
+
 #[repr(C)]
 pub union C2RustUnnamed_0 {
     pub r: CpuidRegisters,

@@ -25,6 +25,7 @@ pub unsafe extern "C" fn round2(x: libc::c_int, shift: uint64_t) -> libc::c_int 
 }
 
 pub const GRAIN_WIDTH: usize = 82;
+
 pub type generate_grain_y_fn = Option<
     unsafe extern "C" fn(
         *mut [DynEntry; GRAIN_WIDTH],
@@ -32,6 +33,7 @@ pub type generate_grain_y_fn = Option<
         libc::c_int,
     ) -> (),
 >;
+
 pub type generate_grain_uv_fn = Option<
     unsafe extern "C" fn(
         *mut [DynEntry; GRAIN_WIDTH],
@@ -41,6 +43,7 @@ pub type generate_grain_uv_fn = Option<
         libc::c_int,
     ) -> (),
 >;
+
 pub type fgy_32x32xn_fn = Option<
     unsafe extern "C" fn(
         *mut DynPixel,
@@ -55,6 +58,7 @@ pub type fgy_32x32xn_fn = Option<
         libc::c_int,
     ) -> (),
 >;
+
 pub type fguv_32x32xn_fn = Option<
     unsafe extern "C" fn(
         *mut DynPixel,
@@ -73,6 +77,7 @@ pub type fguv_32x32xn_fn = Option<
         libc::c_int,
     ) -> (),
 >;
+
 #[repr(C)]
 pub struct Dav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,

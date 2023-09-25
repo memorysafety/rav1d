@@ -1,6 +1,3 @@
-use std::cmp;
-use std::ops::BitOr;
-
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
@@ -37,6 +34,8 @@ use crate::src::msac::MsacContext;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_skip_ctx;
 use crate::src::tables::TxfmInfo;
+use std::cmp;
+use std::ops::BitOr;
 
 /// TODO: add feature and compile-time guard around this code
 pub unsafe fn DEBUG_BLOCK_INFO(f: &Dav1dFrameContext, t: &Dav1dTaskContext) -> bool {

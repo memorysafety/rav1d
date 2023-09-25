@@ -1,11 +1,10 @@
+use crate::src::internal::Dav1dContext;
 use crate::stderr;
-use ::libc;
+
 extern "C" {
     fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
     fn vfprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ::core::ffi::VaList) -> libc::c_int;
 }
-
-use crate::src::internal::Dav1dContext;
 
 #[cold]
 pub unsafe extern "C" fn dav1d_log_default_callback(
@@ -15,6 +14,7 @@ pub unsafe extern "C" fn dav1d_log_default_callback(
 ) {
     vfprintf(stderr, format, ap.as_va_list());
 }
+
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, args: ...) {

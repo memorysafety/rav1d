@@ -1,10 +1,10 @@
-use std::cmp;
-
-use crate::errno_location;
-use crate::stderr;
-use ::libc;
+use rav1d::errno_location;
+use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::stdint::uint64_t;
 use rav1d::include::stdint::uint8_t;
+use rav1d::stderr;
+use std::cmp;
+
 extern "C" {
     pub type DemuxerPriv;
     fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
@@ -25,13 +25,14 @@ extern "C" {
     static annexb_demuxer: Demuxer;
     static section5_demuxer: Demuxer;
 }
-use rav1d::include::dav1d::data::Dav1dData;
+
 #[repr(C)]
 pub struct DemuxerContext {
     pub data: *mut DemuxerPriv,
     pub impl_0: *const Demuxer,
     pub priv_data: [uint64_t; 0],
 }
+
 #[repr(C)]
 pub struct Demuxer {
     pub priv_data_size: libc::c_int,
@@ -51,6 +52,7 @@ pub struct Demuxer {
     pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, uint64_t) -> libc::c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
+
 static mut demuxers: [*const Demuxer; 4] = unsafe {
     [
         &ivf_demuxer as *const Demuxer,
@@ -59,6 +61,7 @@ static mut demuxers: [*const Demuxer; 4] = unsafe {
         0 as *const Demuxer,
     ]
 };
+
 #[no_mangle]
 pub unsafe extern "C" fn input_open(
     c_out: *mut *mut DemuxerContext,
@@ -185,10 +188,12 @@ pub unsafe extern "C" fn input_open(
     *c_out = c;
     return 0 as libc::c_int;
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn input_read(ctx: *mut DemuxerContext, data: *mut Dav1dData) -> libc::c_int {
     return ((*(*ctx).impl_0).read).expect("non-null function pointer")((*ctx).data, data);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: uint64_t) -> libc::c_int {
     return if ((*(*ctx).impl_0).seek).is_some() {
@@ -197,6 +202,7 @@ pub unsafe extern "C" fn input_seek(ctx: *mut DemuxerContext, pts: uint64_t) -> 
         -(1 as libc::c_int)
     };
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn input_close(ctx: *mut DemuxerContext) {
     ((*(*ctx).impl_0).close).expect("non-null function pointer")((*ctx).data);

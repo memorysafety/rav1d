@@ -24,6 +24,7 @@ pub type angular_ipred_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type cfl_ac_fn = unsafe extern "C" fn(
     *mut int16_t,
     *const DynPixel,
@@ -33,6 +34,7 @@ pub type cfl_ac_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type cfl_pred_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -43,6 +45,7 @@ pub type cfl_pred_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 pub type pal_pred_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -51,6 +54,7 @@ pub type pal_pred_fn = unsafe extern "C" fn(
     libc::c_int,
     libc::c_int,
 ) -> ();
+
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
     // TODO(legare): Remove `Option` once `dav1d_submit_frame` is no longer checking

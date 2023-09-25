@@ -5,8 +5,8 @@
 //! make them easier to use in common cases, e.g. [`From`] and
 //! [`Index`]/[`IndexMut`] (since it's usually array fields that require
 //! specific aligment for use with SIMD instructions).
-
-use std::ops::{Index, IndexMut};
+use std::ops::Index;
+use std::ops::IndexMut;
 
 macro_rules! def_align {
     ($align:literal, $name:ident) => {
