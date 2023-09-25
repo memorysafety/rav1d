@@ -267,7 +267,11 @@ unsafe extern "C" fn lr_sbrow(
     }
 }
 
-pub unsafe fn dav1d_lr_sbrow_16bpc(f: *mut Rav1dFrameContext, dst: *const *mut pixel, sby: c_int) {
+pub(crate) unsafe fn rav1d_lr_sbrow_16bpc(
+    f: *mut Rav1dFrameContext,
+    dst: *const *mut pixel,
+    sby: c_int,
+) {
     let offset_y = 8 * (sby != 0) as c_int;
     let dst_stride: *const ptrdiff_t = ((*f).sr_cur.p.stride).as_mut_ptr();
     let restore_planes = (*f).lf.restore_planes;

@@ -19,7 +19,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
+use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -1287,7 +1287,7 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Rav1dFilmGrainDSPContext) {
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
         return;
@@ -1350,7 +1350,7 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Rav1dFilmGrainDSPContext) {
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
 unsafe extern "C" fn film_grain_dsp_init_arm(c: *mut Rav1dFilmGrainDSPContext) {
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
         return;
@@ -1769,7 +1769,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon(
 }
 
 #[cold]
-pub unsafe fn dav1d_film_grain_dsp_init_8bpc(c: *mut Rav1dFilmGrainDSPContext) {
+pub unsafe fn rav1d_film_grain_dsp_init_8bpc(c: *mut Rav1dFilmGrainDSPContext) {
     (*c).generate_grain_y = Some(generate_grain_y_c_erased);
     (*c).generate_grain_uv[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         Some(generate_grain_uv_420_c_erased);

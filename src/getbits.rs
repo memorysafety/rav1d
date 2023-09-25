@@ -13,7 +13,7 @@ pub struct GetBits {
     pub ptr_end: *const u8,
 }
 
-pub unsafe fn dav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: usize) {
+pub unsafe fn rav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: usize) {
     if sz == 0 {
         unreachable!();
     }
@@ -25,7 +25,7 @@ pub unsafe fn dav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: usize) {
     (*c).error = 0 as c_int;
 }
 
-pub unsafe fn dav1d_get_bit(c: *mut GetBits) -> c_uint {
+pub unsafe fn rav1d_get_bit(c: *mut GetBits) -> c_uint {
     if (*c).bits_left == 0 {
         if (*c).ptr >= (*c).ptr_end {
             (*c).error = 1 as c_int;
@@ -70,7 +70,7 @@ unsafe extern "C" fn refill(c: *mut GetBits, n: c_int) {
     (*c).state |= (state as u64) << 64 - (*c).bits_left;
 }
 
-pub unsafe fn dav1d_get_bits(c: *mut GetBits, n: c_int) -> c_uint {
+pub unsafe fn rav1d_get_bits(c: *mut GetBits, n: c_int) -> c_uint {
     assert!(n > 0 && n <= 32);
     /* Unsigned cast avoids refill after eob */
     if n as c_uint > (*c).bits_left as c_uint {
@@ -82,7 +82,7 @@ pub unsafe fn dav1d_get_bits(c: *mut GetBits, n: c_int) -> c_uint {
     return (state as u64 >> 64 - n) as c_uint;
 }
 
-pub unsafe fn dav1d_get_sbits(c: *mut GetBits, n: c_int) -> c_int {
+pub unsafe fn rav1d_get_sbits(c: *mut GetBits, n: c_int) -> c_int {
     assert!(n > 0 && n <= 32);
     /* Unsigned cast avoids refill after eob */
     if n as c_uint > (*c).bits_left as c_uint {
@@ -94,12 +94,12 @@ pub unsafe fn dav1d_get_sbits(c: *mut GetBits, n: c_int) -> c_int {
     return (state as i64 >> 64 - n) as c_int;
 }
 
-pub unsafe fn dav1d_get_uleb128(c: *mut GetBits) -> c_uint {
+pub unsafe fn rav1d_get_uleb128(c: *mut GetBits) -> c_uint {
     let mut val: u64 = 0 as c_int as u64;
     let mut i: c_uint = 0 as c_int as c_uint;
     let mut more: c_uint;
     loop {
-        let v = dav1d_get_bits(c, 8 as c_int) as c_int;
+        let v = rav1d_get_bits(c, 8 as c_int) as c_int;
         more = (v & 0x80 as c_int) as c_uint;
         val |= ((v & 0x7f as c_int) as u64) << i;
         i = i.wrapping_add(7 as c_int as c_uint);
@@ -114,7 +114,7 @@ pub unsafe fn dav1d_get_uleb128(c: *mut GetBits) -> c_uint {
     return val as c_uint;
 }
 
-pub unsafe fn dav1d_get_uniform(c: *mut GetBits, max: c_uint) -> c_uint {
+pub unsafe fn rav1d_get_uniform(c: *mut GetBits, max: c_uint) -> c_uint {
     if !(max > 1 as c_uint) {
         unreachable!();
     }
@@ -123,16 +123,16 @@ pub unsafe fn dav1d_get_uniform(c: *mut GetBits, max: c_uint) -> c_uint {
         unreachable!();
     }
     let m: c_uint = ((1 as c_uint) << l).wrapping_sub(max);
-    let v: c_uint = dav1d_get_bits(c, l - 1);
+    let v: c_uint = rav1d_get_bits(c, l - 1);
     return if v < m {
         v
     } else {
-        (v << 1).wrapping_sub(m).wrapping_add(dav1d_get_bit(c))
+        (v << 1).wrapping_sub(m).wrapping_add(rav1d_get_bit(c))
     };
 }
 
-pub unsafe fn dav1d_get_vlc(c: *mut GetBits) -> c_uint {
-    if dav1d_get_bit(c) != 0 {
+pub unsafe fn rav1d_get_vlc(c: *mut GetBits) -> c_uint {
+    if rav1d_get_bit(c) != 0 {
         return 0 as c_int as c_uint;
     }
     let mut n_bits = 0;
@@ -141,13 +141,13 @@ pub unsafe fn dav1d_get_vlc(c: *mut GetBits) -> c_uint {
         if n_bits == 32 {
             return 0xffffffff as c_uint;
         }
-        if !(dav1d_get_bit(c) == 0) {
+        if !(rav1d_get_bit(c) == 0) {
             break;
         }
     }
     return ((1 as c_uint) << n_bits)
         .wrapping_sub(1 as c_int as c_uint)
-        .wrapping_add(dav1d_get_bits(c, n_bits));
+        .wrapping_add(rav1d_get_bits(c, n_bits));
 }
 
 unsafe extern "C" fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint) -> c_uint {
@@ -156,13 +156,13 @@ unsafe extern "C" fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint
     loop {
         let b = if i != 0 { 3 + i - 1 } else { 3 as c_int };
         if n < v.wrapping_add((3 * ((1 as c_int) << b)) as c_uint) {
-            v = v.wrapping_add(dav1d_get_uniform(
+            v = v.wrapping_add(rav1d_get_uniform(
                 c,
                 n.wrapping_sub(v).wrapping_add(1 as c_int as c_uint),
             ));
             break;
-        } else if dav1d_get_bit(c) == 0 {
-            v = v.wrapping_add(dav1d_get_bits(c, b));
+        } else if rav1d_get_bit(c) == 0 {
+            v = v.wrapping_add(rav1d_get_bits(c, b));
             break;
         } else {
             v = v.wrapping_add(((1 as c_int) << b) as c_uint);
@@ -176,7 +176,7 @@ unsafe extern "C" fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint
     };
 }
 
-pub unsafe fn dav1d_get_bits_subexp(c: *mut GetBits, r#ref: c_int, n: c_uint) -> c_int {
+pub unsafe fn rav1d_get_bits_subexp(c: *mut GetBits, r#ref: c_int, n: c_uint) -> c_int {
     return get_bits_subexp_u(
         c,
         (r#ref + ((1 as c_int) << n)) as c_uint,
@@ -185,7 +185,7 @@ pub unsafe fn dav1d_get_bits_subexp(c: *mut GetBits, r#ref: c_int, n: c_uint) ->
         - ((1 as c_int) << n);
 }
 
-pub unsafe fn dav1d_bytealign_get_bits(c: *mut GetBits) {
+pub unsafe fn rav1d_bytealign_get_bits(c: *mut GetBits) {
     if !((*c).bits_left <= 7) {
         unreachable!();
     }

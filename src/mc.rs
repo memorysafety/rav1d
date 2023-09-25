@@ -33,7 +33,7 @@ use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::BPC;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
+use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[inline(never)]
 unsafe fn put_rust<BD: BitDepth>(
@@ -83,7 +83,7 @@ unsafe fn filter_8tap<T: Into<i32>>(src: *const T, x: usize, f: &[i8; 8], stride
         .sum()
 }
 
-unsafe fn dav1d_filter_8tap_rnd<T: Into<i32>>(
+unsafe fn rav1d_filter_8tap_rnd<T: Into<i32>>(
     src: *const T,
     x: usize,
     f: &[i8; 8],
@@ -93,7 +93,7 @@ unsafe fn dav1d_filter_8tap_rnd<T: Into<i32>>(
     (filter_8tap(src, x, f, stride) + ((1 << sh) >> 1)) >> sh
 }
 
-unsafe fn dav1d_filter_8tap_rnd2<T: Into<i32>>(
+unsafe fn rav1d_filter_8tap_rnd2<T: Into<i32>>(
     src: *const T,
     x: usize,
     f: &[i8; 8],
@@ -104,7 +104,7 @@ unsafe fn dav1d_filter_8tap_rnd2<T: Into<i32>>(
     (filter_8tap(src, x, f, stride) + (rnd as i32)) >> sh
 }
 
-unsafe fn dav1d_filter_8tap_clip<BD: BitDepth, T: Into<i32>>(
+unsafe fn rav1d_filter_8tap_clip<BD: BitDepth, T: Into<i32>>(
     bd: BD,
     src: *const T,
     x: usize,
@@ -112,10 +112,10 @@ unsafe fn dav1d_filter_8tap_clip<BD: BitDepth, T: Into<i32>>(
     stride: usize,
     sh: u8,
 ) -> BD::Pixel {
-    bd.iclip_pixel(dav1d_filter_8tap_rnd(src, x, f, stride, sh))
+    bd.iclip_pixel(rav1d_filter_8tap_rnd(src, x, f, stride, sh))
 }
 
-unsafe fn dav1d_filter_8tap_clip2<BD: BitDepth, T: Into<i32>>(
+unsafe fn rav1d_filter_8tap_clip2<BD: BitDepth, T: Into<i32>>(
     bd: BD,
     src: *const T,
     x: usize,
@@ -124,7 +124,7 @@ unsafe fn dav1d_filter_8tap_clip2<BD: BitDepth, T: Into<i32>>(
     rnd: u8,
     sh: u8,
 ) -> BD::Pixel {
-    bd.iclip_pixel(dav1d_filter_8tap_rnd2(src, x, f, stride, rnd, sh))
+    bd.iclip_pixel(rav1d_filter_8tap_rnd2(src, x, f, stride, rnd, sh))
 }
 
 fn get_h_filter(mx: usize, w: usize, filter_type: Dav1dFilterMode) -> Option<&'static [i8; 8]> {
@@ -190,7 +190,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             src = src.offset(-((src_stride * 3) as isize));
             for _ in 0..tmp_h {
                 for x in 0..w {
-                    mid_ptr[x] = dav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits) as i16;
+                    mid_ptr[x] = rav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits) as i16;
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
@@ -200,7 +200,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             mid_ptr = &mut mid[128 * 3..];
             for _ in 0..h {
                 for x in 0..w {
-                    dst[x] = dav1d_filter_8tap_clip(
+                    dst[x] = rav1d_filter_8tap_clip(
                         bd,
                         mid_ptr.as_ptr(),
                         x,
@@ -218,7 +218,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             for _ in 0..h {
                 for x in 0..w {
                     dst[x] =
-                        dav1d_filter_8tap_clip2(bd, src.as_ptr(), x, fh, 1, intermediate_rnd, 6);
+                        rav1d_filter_8tap_clip2(bd, src.as_ptr(), x, fh, 1, intermediate_rnd, 6);
                 }
 
                 dst = &mut dst[dst_stride..];
@@ -229,7 +229,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
         let mut src = std::slice::from_raw_parts(src, src_stride * h);
         for _ in 0..h {
             for x in 0..w {
-                dst[x] = dav1d_filter_8tap_clip(bd, src.as_ptr(), x, fv, src_stride, 6);
+                dst[x] = rav1d_filter_8tap_clip(bd, src.as_ptr(), x, fv, src_stride, 6);
             }
 
             dst = &mut dst[dst_stride..];
@@ -272,7 +272,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         for x in 0..w {
             let fh = get_h_filter(imx >> 6, w, filter_type);
             mid_ptr[x] = match fh {
-                Some(fh) => dav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
+                Some(fh) => rav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
             };
             imx += dx;
@@ -290,7 +290,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         for x in 0..w {
             dst[x] = match fv {
                 Some(fv) => {
-                    dav1d_filter_8tap_clip(bd, mid_ptr.as_ptr(), x, fv, 128, 6 + intermediate_bits)
+                    rav1d_filter_8tap_clip(bd, mid_ptr.as_ptr(), x, fv, 128, 6 + intermediate_bits)
                 }
                 None => {
                     bd.iclip_pixel((i32::from(mid_ptr[x]) + intermediate_rnd) >> intermediate_bits)
@@ -330,7 +330,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             src = src.offset(-((src_stride * 3) as isize));
             for _ in 0..tmp_h {
                 for x in 0..w {
-                    mid_ptr[x] = dav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits) as i16;
+                    mid_ptr[x] = rav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits) as i16;
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
@@ -341,7 +341,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             for _ in 0..h {
                 for x in 0..w {
                     *tmp.offset(x as isize) =
-                        (dav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6)
+                        (rav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6)
                             - i32::from(BD::PREP_BIAS))
                         .try_into()
                         .unwrap();
@@ -354,7 +354,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             for _ in 0..h {
                 for x in 0..w {
                     *tmp.offset(x as isize) =
-                        (dav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits)
+                        (rav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits)
                             - i32::from(BD::PREP_BIAS)) as i16;
                 }
 
@@ -366,7 +366,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
         for _ in 0..h {
             for x in 0..w {
                 *tmp.offset(x as isize) =
-                    (dav1d_filter_8tap_rnd(src, x, fv, src_stride, 6 - intermediate_bits)
+                    (rav1d_filter_8tap_rnd(src, x, fv, src_stride, 6 - intermediate_bits)
                         - i32::from(BD::PREP_BIAS)) as i16;
             }
 
@@ -405,7 +405,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
         for x in 0..w {
             let fh = get_h_filter(imx >> 6, w, filter_type);
             mid_ptr[x] = match fh {
-                Some(fh) => dav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
+                Some(fh) => rav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
             };
             imx += dx;
@@ -422,7 +422,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
         let fv = get_v_filter(my >> 6, h, filter_type);
         for x in 0..w {
             *tmp.offset(x as isize) = ((match fv {
-                Some(fv) => dav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6),
+                Some(fv) => rav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6),
                 None => i32::from(mid_ptr[x]),
             }) - i32::from(BD::PREP_BIAS)) as i16;
         }
@@ -2255,7 +2255,7 @@ extern "C" {
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
         return;
@@ -2501,7 +2501,7 @@ unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 unsafe extern "C" fn mc_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
         return;
@@ -2546,7 +2546,7 @@ unsafe extern "C" fn mc_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
 }
 
 #[cold]
-pub unsafe extern "C" fn dav1d_mc_dsp_init<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
+pub unsafe extern "C" fn rav1d_mc_dsp_init<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
     (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = put_8tap_regular_c_erased::<BD>;
     (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = put_8tap_regular_smooth_c_erased::<BD>;
     (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = put_8tap_regular_sharp_c_erased::<BD>;

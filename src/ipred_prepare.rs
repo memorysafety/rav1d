@@ -120,7 +120,7 @@ static av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED
     b
 };
 
-pub unsafe fn dav1d_prepare_intra_edges<BD: BitDepth>(
+pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     x: c_int,
     have_left: c_int,
     y: c_int,

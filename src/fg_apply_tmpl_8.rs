@@ -3,7 +3,7 @@ use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use cfg_if::cfg_if;
@@ -65,10 +65,10 @@ unsafe extern "C" fn generate_scaling(
     );
 }
 
-pub unsafe fn dav1d_prep_grain_8bpc(
+pub(crate) unsafe fn rav1d_prep_grain_8bpc(
     dsp: *const Rav1dFilmGrainDSPContext,
-    out: *mut Dav1dPicture,
-    in_0: *const Dav1dPicture,
+    out: *mut Rav1dPicture,
+    in_0: *const Rav1dPicture,
     scaling: *mut [u8; 256],
     grain_lut: *mut [[entry; 82]; 74],
 ) {
@@ -188,10 +188,10 @@ pub unsafe fn dav1d_prep_grain_8bpc(
     }
 }
 
-pub unsafe fn dav1d_apply_grain_row_8bpc(
+pub(crate) unsafe fn rav1d_apply_grain_row_8bpc(
     dsp: *const Rav1dFilmGrainDSPContext,
-    out: *mut Dav1dPicture,
-    in_0: *const Dav1dPicture,
+    out: *mut Rav1dPicture,
+    in_0: *const Rav1dPicture,
     scaling: *const [u8; 256],
     grain_lut: *const [[entry; 82]; 74],
     row: c_int,
@@ -296,10 +296,10 @@ pub unsafe fn dav1d_apply_grain_row_8bpc(
     };
 }
 
-pub unsafe fn dav1d_apply_grain_8bpc(
+pub(crate) unsafe fn rav1d_apply_grain_8bpc(
     dsp: *const Rav1dFilmGrainDSPContext,
-    out: *mut Dav1dPicture,
-    in_0: *const Dav1dPicture,
+    out: *mut Rav1dPicture,
+    in_0: *const Rav1dPicture,
 ) {
     let mut grain_lut = Align16([[[0; 82]; 74]; 3]);
     cfg_if! {
@@ -314,7 +314,7 @@ pub unsafe fn dav1d_apply_grain_8bpc(
         }
     }
     let rows = (*out).p.h + 31 >> 5;
-    dav1d_prep_grain_8bpc(
+    rav1d_prep_grain_8bpc(
         dsp,
         out,
         in_0,
@@ -323,7 +323,7 @@ pub unsafe fn dav1d_apply_grain_8bpc(
     );
     let mut row = 0;
     while row < rows {
-        dav1d_apply_grain_row_8bpc(
+        rav1d_apply_grain_row_8bpc(
             dsp,
             out,
             in_0,

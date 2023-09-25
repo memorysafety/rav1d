@@ -1,8 +1,8 @@
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
-use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dRestorationType;
+use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::src::align::Align16;
@@ -354,7 +354,7 @@ fn mask_edges_chroma(
     );
 }
 
-pub unsafe fn dav1d_create_lf_mask_intra(
+pub unsafe fn rav1d_create_lf_mask_intra(
     lflvl: &mut Av1Filter,
     level_cache: *mut [u8; 4],
     b4_stride: ptrdiff_t,
@@ -366,7 +366,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     bs: BlockSize,
     ytx: RectTxfmSize,
     uvtx: RectTxfmSize,
-    layout: Dav1dPixelLayout,
+    layout: Rav1dPixelLayout,
     ay: &mut [u8],
     ly: &mut [u8],
     aluv: Option<(&mut [u8], &mut [u8])>,
@@ -450,7 +450,7 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     );
 }
 
-pub unsafe fn dav1d_create_lf_mask_inter(
+pub unsafe fn rav1d_create_lf_mask_inter(
     lflvl: &mut Av1Filter,
     level_cache: *mut [u8; 4],
     b4_stride: ptrdiff_t,
@@ -466,7 +466,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     max_ytx: RectTxfmSize,
     tx_masks: &[u16; 2],
     uvtx: RectTxfmSize,
-    layout: Dav1dPixelLayout,
+    layout: Rav1dPixelLayout,
     ay: &mut [u8],
     ly: &mut [u8],
     aluv: Option<(&mut [u8], &mut [u8])>,
@@ -562,7 +562,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     );
 }
 
-pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: c_int) {
+pub fn rav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: c_int) {
     // set E/I/H values from loopfilter level
     let sharp = filter_sharpness as u8;
     for level in 0..64 {
@@ -587,7 +587,7 @@ fn calc_lf_value(
     base_lvl: c_int,
     lf_delta: i8,
     seg_delta: c_int,
-    mr_delta: Option<&Dav1dLoopfilterModeRefDeltas>,
+    mr_delta: Option<&Rav1dLoopfilterModeRefDeltas>,
 ) {
     let base = iclip(
         iclip(base_lvl + lf_delta as c_int, 0, 63) + seg_delta,
@@ -615,7 +615,7 @@ fn calc_lf_value_chroma(
     base_lvl: c_int,
     lf_delta: i8,
     seg_delta: c_int,
-    mr_delta: Option<&Dav1dLoopfilterModeRefDeltas>,
+    mr_delta: Option<&Rav1dLoopfilterModeRefDeltas>,
 ) {
     if base_lvl == 0 {
         *lflvl_values = Default::default();
@@ -636,8 +636,9 @@ pub fn dav1d_calc_lf_values(
         return;
     }
 
+    let mr_deltas = hdr.loopfilter.mode_ref_deltas.clone().into_rust();
     let mr_deltas = if hdr.loopfilter.mode_ref_delta_enabled != 0 {
-        Some(&hdr.loopfilter.mode_ref_deltas)
+        Some(&mr_deltas)
     } else {
         None
     };

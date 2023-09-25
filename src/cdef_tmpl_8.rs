@@ -482,7 +482,7 @@ unsafe fn cdef_find_dir_rust(mut img: *const pixel, stride: ptrdiff_t, var: *mut
 }
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
+use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
@@ -490,7 +490,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Rav1dCdefDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::cdef::*;
 
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
         return;
@@ -545,7 +545,7 @@ unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Rav1dCdefDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::cdef::*;
 
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
         return;
@@ -660,7 +660,7 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased(
 }
 
 #[cold]
-pub unsafe fn dav1d_cdef_dsp_init_8bpc(c: *mut Rav1dCdefDSPContext) {
+pub unsafe fn rav1d_cdef_dsp_init_8bpc(c: *mut Rav1dCdefDSPContext) {
     (*c).dir = cdef_find_dir_c_erased;
     (*c).fb[0] = cdef_filter_block_8x8_c_erased;
     (*c).fb[1] = cdef_filter_block_4x8_c_erased;
