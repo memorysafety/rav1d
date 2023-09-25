@@ -1,6 +1,28 @@
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
+/// This is so we can store both `*mut D` and `*mut R`
+/// for maintaining `dav1d` ABI compatibility,
+/// where `D` is the `Dav1d*` type and `R` is the `Rav1d` type.
+pub(crate) struct DRav1d<R, D> {
+    pub rav1d: R,
+    pub dav1d: D,
+}
+
+impl<R, D> DRav1d<R, D>
+where
+    R: Clone + Into<D>,
+    D: Clone + Into<R>,
+{
+    pub fn update_rav1d(&mut self) {
+        self.rav1d = self.dav1d.clone().into();
+    }
+
+    pub fn update_dav1d(&mut self) {
+        self.dav1d = self.rav1d.clone().into();
+    }
+}
+
 pub type Dav1dObuType = c_uint;
 pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
 pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
@@ -1076,7 +1098,7 @@ impl From<Rav1dLoopfilterModeRefDeltas> for Dav1dLoopfilterModeRefDeltas {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFilmGrainData {
+pub struct Rav1dFilmGrainData {
     pub seed: c_uint,
     pub num_y_points: c_int,
     pub y_points: [[u8; 2]; 14],
@@ -1096,113 +1118,7 @@ pub struct Dav1dFilmGrainData {
     pub clip_to_restricted_range: c_int,
 }
 
-#[derive(Clone)]
-#[repr(C)]
-pub(crate) struct Rav1dFilmGrainData {
-    pub seed: c_uint,
-    pub num_y_points: c_int,
-    pub y_points: [[u8; 2]; 14],
-    pub chroma_scaling_from_luma: c_int,
-    pub num_uv_points: [c_int; 2],
-    pub uv_points: [[[u8; 2]; 10]; 2],
-    pub scaling_shift: c_int,
-    pub ar_coeff_lag: c_int,
-    pub ar_coeffs_y: [i8; 24],
-    pub ar_coeffs_uv: [[i8; 28]; 2],
-    pub ar_coeff_shift: u64,
-    pub grain_scale_shift: c_int,
-    pub uv_mult: [c_int; 2],
-    pub uv_luma_mult: [c_int; 2],
-    pub uv_offset: [c_int; 2],
-    pub overlap_flag: c_int,
-    pub clip_to_restricted_range: c_int,
-}
-
-impl From<Dav1dFilmGrainData> for Rav1dFilmGrainData {
-    fn from(value: Dav1dFilmGrainData) -> Self {
-        let Dav1dFilmGrainData {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        } = value;
-        Self {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        }
-    }
-}
-
-impl From<Rav1dFilmGrainData> for Dav1dFilmGrainData {
-    fn from(value: Rav1dFilmGrainData) -> Self {
-        let Rav1dFilmGrainData {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        } = value;
-        Self {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        }
-    }
-}
+pub type Dav1dFilmGrainData = Rav1dFilmGrainData;
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_film_grain {
@@ -1226,7 +1142,7 @@ impl From<Dav1dFrameHeader_film_grain> for Rav1dFrameHeader_film_grain {
             update,
         } = value;
         Self {
-            data: data.into(),
+            data,
             present,
             update,
         }
@@ -1241,7 +1157,7 @@ impl From<Rav1dFrameHeader_film_grain> for Dav1dFrameHeader_film_grain {
             update,
         } = value;
         Self {
-            data: data.into(),
+            data,
             present,
             update,
         }
