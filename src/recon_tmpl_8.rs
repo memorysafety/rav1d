@@ -1,3 +1,4 @@
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::dump::ac_dump;
@@ -26,9 +27,9 @@ use crate::src::intra_edge::EDGE_I420_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
+use crate::src::ipred_prepare::dav1d_prepare_intra_edges;
 use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
-use crate::src::ipred_prepare_tmpl_8::dav1d_prepare_intra_edges_8bpc;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
@@ -2320,7 +2321,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             top_sb_edge =
                                 top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
                         }
-                        m = dav1d_prepare_intra_edges_8bpc(
+                        m = dav1d_prepare_intra_edges::<BitDepth8>(
                             (*t).bx,
                             ((*t).bx > (*ts).tiling.col_start) as c_int,
                             (*t).by,
@@ -2337,6 +2338,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             (*t_dim).h as c_int,
                             (*(*f).seq_hdr).intra_edge_filter,
                             edge,
+                            BitDepth8::new(()),
                         );
                         ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
                             dst_0.cast(),
@@ -2524,7 +2526,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                             let ypos = (*t).by >> ss_ver;
                             let xstart = (*ts).tiling.col_start >> ss_hor;
                             let ystart = (*ts).tiling.row_start >> ss_ver;
-                            let m_0: IntraPredMode = dav1d_prepare_intra_edges_8bpc(
+                            let m_0: IntraPredMode = dav1d_prepare_intra_edges::<BitDepth8>(
                                 xpos,
                                 (xpos > xstart) as c_int,
                                 ypos,
@@ -2541,6 +2543,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 (*uv_t_dim).h as c_int,
                                 0 as c_int,
                                 edge,
+                                BitDepth8::new(()),
                             );
                             (*dsp).ipred.cfl_pred[m_0 as usize](
                                 uv_dst[pl as usize].cast(),
@@ -2722,7 +2725,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                 ypos_0 = (*t).by >> ss_ver;
                                 xstart_0 = (*ts).tiling.col_start >> ss_hor;
                                 ystart_0 = (*ts).tiling.row_start >> ss_ver;
-                                m_1 = dav1d_prepare_intra_edges_8bpc(
+                                m_1 = dav1d_prepare_intra_edges::<BitDepth8>(
                                     xpos_0,
                                     (xpos_0 > xstart_0) as c_int,
                                     ypos_0,
@@ -2739,6 +2742,7 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                                     (*uv_t_dim).h as c_int,
                                     (*(*f).seq_hdr).intra_edge_filter,
                                     edge,
+                                    BitDepth8::new(()),
                                 );
                                 angle_1 |= intra_edge_filter_flag;
                                 ((*dsp).ipred.intra_pred[m_1 as usize])
@@ -3114,7 +3118,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                 let sby = (*t).by >> (*f).sb_shift;
                 top_sb_edge = top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
             }
-            m = dav1d_prepare_intra_edges_8bpc(
+            m = dav1d_prepare_intra_edges::<BitDepth8>(
                 (*t).bx,
                 ((*t).bx > (*ts).tiling.col_start) as c_int,
                 (*t).by,
@@ -3131,6 +3135,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                 bh4,
                 0 as c_int,
                 tl_edge,
+                BitDepth8::new(()),
             );
             ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
                 tmp.cast(),
@@ -3554,7 +3559,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             top_sb_edge_0 =
                                 top_sb_edge_0.offset(((*f).sb128w * 128 * (sby_0 - 1)) as isize);
                         }
-                        m_0 = dav1d_prepare_intra_edges_8bpc(
+                        m_0 = dav1d_prepare_intra_edges::<BitDepth8>(
                             (*t).bx >> ss_hor,
                             ((*t).bx >> ss_hor > (*ts).tiling.col_start >> ss_hor) as c_int,
                             (*t).by >> ss_ver,
@@ -3571,6 +3576,7 @@ pub unsafe extern "C" fn dav1d_recon_b_inter_8bpc(
                             cbh4,
                             0 as c_int,
                             tl_edge_0,
+                            BitDepth8::new(()),
                         );
                         ((*dsp).ipred.intra_pred[m_0 as usize]).expect("non-null function pointer")(
                             tmp_0.cast(),

@@ -61,10 +61,6 @@ pub mod src {
     mod intra_edge;
     mod ipred;
     mod ipred_prepare;
-    #[cfg(feature = "bitdepth_16")]
-    mod ipred_prepare_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
-    mod ipred_prepare_tmpl_8;
     mod ipred_tmpl;
     #[cfg(feature = "bitdepth_16")]
     mod ipred_tmpl_16;
