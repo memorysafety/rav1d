@@ -1,6 +1,6 @@
 use crate::include::dav1d::headers::Dav1dPixelLayout;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::intra_edge::EdgeFlags;
@@ -144,8 +144,8 @@ pub fn get_skip_ctx(
 ) -> u8 {
     let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
-        let ss_ver = layout == DAV1D_PIXEL_LAYOUT_I420;
-        let ss_hor = layout != DAV1D_PIXEL_LAYOUT_I444;
+        let ss_ver = layout == RAV1D_PIXEL_LAYOUT_I420;
+        let ss_hor = layout != RAV1D_PIXEL_LAYOUT_I444;
         let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
             || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh;
         fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {

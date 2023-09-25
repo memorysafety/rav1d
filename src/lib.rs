@@ -11,10 +11,10 @@ use crate::include::dav1d::dav1d::Dav1dSettings;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dLogger;
 use crate::include::dav1d::dav1d::Rav1dSettings;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_KEY;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_ALL;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
+use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
+use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
+use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_ALL;
+use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_NONE;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
@@ -171,8 +171,8 @@ pub(crate) unsafe fn rav1d_default_settings(s: *mut Rav1dSettings) {
     (*s).frame_size_limit = 0 as c_int as c_uint;
     (*s).strict_std_compliance = 0 as c_int;
     (*s).output_invisible_frames = 0 as c_int;
-    (*s).inloop_filters = DAV1D_INLOOPFILTER_ALL;
-    (*s).decode_frame_type = DAV1D_DECODEFRAMETYPE_ALL;
+    (*s).inloop_filters = RAV1D_INLOOPFILTER_ALL;
+    (*s).decode_frame_type = RAV1D_DECODEFRAMETYPE_ALL;
 }
 
 #[no_mangle]
@@ -258,7 +258,7 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> c_int {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->n_threads >= 0 && s->n_threads <= DAV1D_MAX_THREADS\0" as *const u8
+            b"s->n_threads >= 0 && s->n_threads <= RAV1D_MAX_THREADS\0" as *const u8
                 as *const c_char,
             (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_frame_delay\0"))
                 .as_ptr(),
@@ -269,7 +269,7 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> c_int {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->max_frame_delay >= 0 && s->max_frame_delay <= DAV1D_MAX_FRAME_DELAY\0" as *const u8
+            b"s->max_frame_delay >= 0 && s->max_frame_delay <= RAV1D_MAX_FRAME_DELAY\0" as *const u8
                 as *const c_char,
             (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_frame_delay\0"))
                 .as_ptr(),
@@ -324,7 +324,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->n_threads >= 0 && s->n_threads <= DAV1D_MAX_THREADS\0" as *const u8
+            b"s->n_threads >= 0 && s->n_threads <= RAV1D_MAX_THREADS\0" as *const u8
                 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
@@ -334,7 +334,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->max_frame_delay >= 0 && s->max_frame_delay <= DAV1D_MAX_FRAME_DELAY\0" as *const u8
+            b"s->max_frame_delay >= 0 && s->max_frame_delay <= RAV1D_MAX_FRAME_DELAY\0" as *const u8
                 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
@@ -367,14 +367,14 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
         );
         return -(22 as c_int);
     }
-    if !((*s).decode_frame_type as c_uint >= DAV1D_DECODEFRAMETYPE_ALL as c_int as c_uint
-        && (*s).decode_frame_type as c_uint <= DAV1D_DECODEFRAMETYPE_KEY as c_int as c_uint)
+    if !((*s).decode_frame_type as c_uint >= RAV1D_DECODEFRAMETYPE_ALL as c_int as c_uint
+        && (*s).decode_frame_type as c_uint <= RAV1D_DECODEFRAMETYPE_KEY as c_int as c_uint)
     {
         fprintf(
             stderr,
             b"Input validation check '%s' failed in %s!\n\0" as *const u8
                 as *const c_char,
-            b"s->decode_frame_type >= DAV1D_DECODEFRAMETYPE_ALL && s->decode_frame_type <= DAV1D_DECODEFRAMETYPE_KEY\0"
+            b"s->decode_frame_type >= RAV1D_DECODEFRAMETYPE_ALL && s->decode_frame_type <= RAV1D_DECODEFRAMETYPE_KEY\0"
                 as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0"))
                 .as_ptr(),
@@ -676,8 +676,8 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
         },
         strict_std_compliance: 0,
         output_invisible_frames: 0,
-        inloop_filters: DAV1D_INLOOPFILTER_NONE,
-        decode_frame_type: DAV1D_DECODEFRAMETYPE_ALL,
+        inloop_filters: RAV1D_INLOOPFILTER_NONE,
+        decode_frame_type: RAV1D_DECODEFRAMETYPE_ALL,
         reserved: [0; 16],
     };
     rav1d_default_settings(&mut s);

@@ -1,7 +1,7 @@
 use crate::include::common::intops::apply_sign;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
 use crate::src::align::Align8;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
@@ -164,19 +164,19 @@ pub fn get_filter_ctx(
         if al.r#ref[0][b4 as usize] == r#ref || al.r#ref[1][b4 as usize] == r#ref {
             al.filter[dir as usize][b4 as usize]
         } else {
-            DAV1D_N_SWITCHABLE_FILTERS as u8
+            RAV1D_N_SWITCHABLE_FILTERS as u8
         }
     });
 
     (comp as u8) * 4
         + if a_filter == l_filter {
             a_filter
-        } else if a_filter == DAV1D_N_SWITCHABLE_FILTERS as u8 {
+        } else if a_filter == RAV1D_N_SWITCHABLE_FILTERS as u8 {
             l_filter
-        } else if l_filter == DAV1D_N_SWITCHABLE_FILTERS as u8 {
+        } else if l_filter == RAV1D_N_SWITCHABLE_FILTERS as u8 {
             a_filter
         } else {
-            DAV1D_N_SWITCHABLE_FILTERS as u8
+            RAV1D_N_SWITCHABLE_FILTERS as u8
         }
 }
 

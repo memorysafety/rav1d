@@ -1,6 +1,6 @@
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
@@ -5374,7 +5374,7 @@ pub(crate) unsafe fn rav1d_cdf_thread_update(
                 ::core::mem::size_of::<[u16; 4]>(),
             );
             (*dst).m.filter.0[k_16 as usize][j_27 as usize]
-                [(DAV1D_N_SWITCHABLE_FILTERS as c_int - 1) as usize] = 0 as c_int as u16;
+                [(RAV1D_N_SWITCHABLE_FILTERS as c_int - 1) as usize] = 0 as c_int as u16;
             j_27 += 1;
         }
         k_16 += 1;

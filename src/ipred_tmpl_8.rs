@@ -3,9 +3,9 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -1472,9 +1472,9 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Rav1dIntraPredDSPContext) {
     (*c).cfl_pred[TOP_DC_PRED as usize] = dav1d_ipred_cfl_top_8bpc_ssse3;
     (*c).cfl_pred[LEFT_DC_PRED as usize] = dav1d_ipred_cfl_left_8bpc_ssse3;
 
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = dav1d_ipred_cfl_ac_420_8bpc_ssse3;
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = dav1d_ipred_cfl_ac_422_8bpc_ssse3;
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = dav1d_ipred_cfl_ac_444_8bpc_ssse3;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = dav1d_ipred_cfl_ac_420_8bpc_ssse3;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = dav1d_ipred_cfl_ac_422_8bpc_ssse3;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = dav1d_ipred_cfl_ac_444_8bpc_ssse3;
 
     (*c).pal_pred = dav1d_pal_pred_8bpc_ssse3;
 
@@ -1504,9 +1504,9 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Rav1dIntraPredDSPContext) {
         (*c).cfl_pred[TOP_DC_PRED as usize] = dav1d_ipred_cfl_top_8bpc_avx2;
         (*c).cfl_pred[LEFT_DC_PRED as usize] = dav1d_ipred_cfl_left_8bpc_avx2;
 
-        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = dav1d_ipred_cfl_ac_420_8bpc_avx2;
-        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = dav1d_ipred_cfl_ac_422_8bpc_avx2;
-        (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = dav1d_ipred_cfl_ac_444_8bpc_avx2;
+        (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = dav1d_ipred_cfl_ac_420_8bpc_avx2;
+        (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = dav1d_ipred_cfl_ac_422_8bpc_avx2;
+        (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = dav1d_ipred_cfl_ac_444_8bpc_avx2;
 
         (*c).pal_pred = dav1d_pal_pred_8bpc_avx2;
 
@@ -1565,9 +1565,9 @@ unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Rav1dIntraPredDSPContext) {
     (*c).cfl_pred[TOP_DC_PRED as usize] = dav1d_ipred_cfl_top_8bpc_neon;
     (*c).cfl_pred[LEFT_DC_PRED as usize] = dav1d_ipred_cfl_left_8bpc_neon;
 
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = dav1d_ipred_cfl_ac_420_8bpc_neon;
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = dav1d_ipred_cfl_ac_422_8bpc_neon;
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = dav1d_ipred_cfl_ac_444_8bpc_neon;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = dav1d_ipred_cfl_ac_420_8bpc_neon;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = dav1d_ipred_cfl_ac_422_8bpc_neon;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = dav1d_ipred_cfl_ac_444_8bpc_neon;
 
     (*c).pal_pred = dav1d_pal_pred_8bpc_neon;
 }
@@ -2022,9 +2022,9 @@ pub unsafe fn rav1d_intra_pred_dsp_init_8bpc(c: *mut Rav1dIntraPredDSPContext) {
     (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased);
     (*c).intra_pred[FILTER_PRED as usize] = Some(ipred_filter_c_erased);
 
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = cfl_ac_420_c_erased;
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = cfl_ac_422_c_erased;
-    (*c).cfl_ac[(DAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = cfl_ac_444_c_erased;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = cfl_ac_420_c_erased;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = cfl_ac_422_c_erased;
+    (*c).cfl_ac[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = cfl_ac_444_c_erased;
     (*c).cfl_pred[DC_PRED as usize] = ipred_cfl_c_erased;
     (*c).cfl_pred[DC_128_PRED as usize] = ipred_cfl_128_c_erased;
     (*c).cfl_pred[TOP_DC_PRED as usize] = ipred_cfl_top_c_erased;

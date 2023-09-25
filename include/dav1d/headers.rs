@@ -28,7 +28,7 @@ pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
 pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
 
 pub(crate) type Rav1dTxfmMode = c_uint;
-pub(crate) const RAV1D_N_TX_MODES: usize = DAV1D_N_TX_MODES;
+pub(crate) const _RAV1D_N_TX_MODES: usize = DAV1D_N_TX_MODES;
 pub(crate) const RAV1D_TX_SWITCHABLE: Rav1dTxfmMode = DAV1D_TX_SWITCHABLE;
 pub(crate) const RAV1D_TX_LARGEST: Rav1dTxfmMode = DAV1D_TX_LARGEST;
 pub(crate) const RAV1D_TX_4X4_ONLY: Rav1dTxfmMode = DAV1D_TX_4X4_ONLY;
@@ -58,8 +58,8 @@ pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
 
 pub(crate) type Rav1dAdaptiveBoolean = c_uint;
 pub(crate) const RAV1D_ADAPTIVE: Rav1dAdaptiveBoolean = DAV1D_ADAPTIVE;
-pub(crate) const RAV1D_ON: Rav1dAdaptiveBoolean = DAV1D_ON;
-pub(crate) const RAV1D_OFF: Rav1dAdaptiveBoolean = DAV1D_OFF;
+pub(crate) const _RAV1D_ON: Rav1dAdaptiveBoolean = DAV1D_ON;
+pub(crate) const _RAV1D_OFF: Rav1dAdaptiveBoolean = DAV1D_OFF;
 
 pub type Dav1dRestorationType = u8;
 pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
@@ -135,18 +135,22 @@ pub(crate) struct Rav1dWarpedMotionParams {
 }
 
 impl Rav1dWarpedMotionParams {
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub const fn alpha(&self) -> i16 {
         self.abcd[0]
     }
 
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub const fn beta(&self) -> i16 {
         self.abcd[1]
     }
 
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub const fn gamma(&self) -> i16 {
         self.abcd[2]
     }
 
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub const fn delta(&self) -> i16 {
         self.abcd[3]
     }
@@ -207,17 +211,17 @@ pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = 2;
 pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = 1;
 
 pub(crate) type Rav1dColorPrimaries = c_uint;
-pub(crate) const RAV1D_COLOR_PRI_RESERVED: Rav1dColorPrimaries = DAV1D_COLOR_PRI_RESERVED;
-pub(crate) const RAV1D_COLOR_PRI_EBU3213: Rav1dColorPrimaries = DAV1D_COLOR_PRI_EBU3213;
-pub(crate) const RAV1D_COLOR_PRI_SMPTE432: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE432;
-pub(crate) const RAV1D_COLOR_PRI_SMPTE431: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE431;
-pub(crate) const RAV1D_COLOR_PRI_XYZ: Rav1dColorPrimaries = DAV1D_COLOR_PRI_XYZ;
-pub(crate) const RAV1D_COLOR_PRI_BT2020: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT2020;
-pub(crate) const RAV1D_COLOR_PRI_FILM: Rav1dColorPrimaries = DAV1D_COLOR_PRI_FILM;
-pub(crate) const RAV1D_COLOR_PRI_SMPTE240: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE240;
-pub(crate) const RAV1D_COLOR_PRI_BT601: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT601;
-pub(crate) const RAV1D_COLOR_PRI_BT470BG: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT470BG;
-pub(crate) const RAV1D_COLOR_PRI_BT470M: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT470M;
+pub(crate) const _RAV1D_COLOR_PRI_RESERVED: Rav1dColorPrimaries = DAV1D_COLOR_PRI_RESERVED;
+pub(crate) const _RAV1D_COLOR_PRI_EBU3213: Rav1dColorPrimaries = DAV1D_COLOR_PRI_EBU3213;
+pub(crate) const _RAV1D_COLOR_PRI_SMPTE432: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE432;
+pub(crate) const _RAV1D_COLOR_PRI_SMPTE431: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE431;
+pub(crate) const _RAV1D_COLOR_PRI_XYZ: Rav1dColorPrimaries = DAV1D_COLOR_PRI_XYZ;
+pub(crate) const _RAV1D_COLOR_PRI_BT2020: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT2020;
+pub(crate) const _RAV1D_COLOR_PRI_FILM: Rav1dColorPrimaries = DAV1D_COLOR_PRI_FILM;
+pub(crate) const _RAV1D_COLOR_PRI_SMPTE240: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE240;
+pub(crate) const _RAV1D_COLOR_PRI_BT601: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT601;
+pub(crate) const _RAV1D_COLOR_PRI_BT470BG: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT470BG;
+pub(crate) const _RAV1D_COLOR_PRI_BT470M: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT470M;
 pub(crate) const RAV1D_COLOR_PRI_UNKNOWN: Rav1dColorPrimaries = DAV1D_COLOR_PRI_UNKNOWN;
 pub(crate) const RAV1D_COLOR_PRI_BT709: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT709;
 
@@ -242,24 +246,24 @@ pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics = 2;
 pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics = 1;
 
 pub(crate) type Rav1dTransferCharacteristics = c_uint;
-pub(crate) const RAV1D_TRC_RESERVED: Rav1dTransferCharacteristics = DAV1D_TRC_RESERVED;
-pub(crate) const RAV1D_TRC_HLG: Rav1dTransferCharacteristics = DAV1D_TRC_HLG;
-pub(crate) const RAV1D_TRC_SMPTE428: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE428;
-pub(crate) const RAV1D_TRC_SMPTE2084: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE2084;
-pub(crate) const RAV1D_TRC_BT2020_12BIT: Rav1dTransferCharacteristics = DAV1D_TRC_BT2020_12BIT;
-pub(crate) const RAV1D_TRC_BT2020_10BIT: Rav1dTransferCharacteristics = DAV1D_TRC_BT2020_10BIT;
+pub(crate) const _RAV1D_TRC_RESERVED: Rav1dTransferCharacteristics = DAV1D_TRC_RESERVED;
+pub(crate) const _RAV1D_TRC_HLG: Rav1dTransferCharacteristics = DAV1D_TRC_HLG;
+pub(crate) const _RAV1D_TRC_SMPTE428: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE428;
+pub(crate) const _RAV1D_TRC_SMPTE2084: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE2084;
+pub(crate) const _RAV1D_TRC_BT2020_12BIT: Rav1dTransferCharacteristics = DAV1D_TRC_BT2020_12BIT;
+pub(crate) const _RAV1D_TRC_BT2020_10BIT: Rav1dTransferCharacteristics = DAV1D_TRC_BT2020_10BIT;
 pub(crate) const RAV1D_TRC_SRGB: Rav1dTransferCharacteristics = DAV1D_TRC_SRGB;
-pub(crate) const RAV1D_TRC_BT1361: Rav1dTransferCharacteristics = DAV1D_TRC_BT1361;
-pub(crate) const RAV1D_TRC_IEC61966: Rav1dTransferCharacteristics = DAV1D_TRC_IEC61966;
-pub(crate) const RAV1D_TRC_LOG100_SQRT10: Rav1dTransferCharacteristics = DAV1D_TRC_LOG100_SQRT10;
-pub(crate) const RAV1D_TRC_LOG100: Rav1dTransferCharacteristics = DAV1D_TRC_LOG100;
-pub(crate) const RAV1D_TRC_LINEAR: Rav1dTransferCharacteristics = DAV1D_TRC_LINEAR;
-pub(crate) const RAV1D_TRC_SMPTE240: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE240;
-pub(crate) const RAV1D_TRC_BT601: Rav1dTransferCharacteristics = DAV1D_TRC_BT601;
-pub(crate) const RAV1D_TRC_BT470BG: Rav1dTransferCharacteristics = DAV1D_TRC_BT470BG;
-pub(crate) const RAV1D_TRC_BT470M: Rav1dTransferCharacteristics = DAV1D_TRC_BT470M;
+pub(crate) const _RAV1D_TRC_BT1361: Rav1dTransferCharacteristics = DAV1D_TRC_BT1361;
+pub(crate) const _RAV1D_TRC_IEC61966: Rav1dTransferCharacteristics = DAV1D_TRC_IEC61966;
+pub(crate) const _RAV1D_TRC_LOG100_SQRT10: Rav1dTransferCharacteristics = DAV1D_TRC_LOG100_SQRT10;
+pub(crate) const _RAV1D_TRC_LOG100: Rav1dTransferCharacteristics = DAV1D_TRC_LOG100;
+pub(crate) const _RAV1D_TRC_LINEAR: Rav1dTransferCharacteristics = DAV1D_TRC_LINEAR;
+pub(crate) const _RAV1D_TRC_SMPTE240: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE240;
+pub(crate) const _RAV1D_TRC_BT601: Rav1dTransferCharacteristics = DAV1D_TRC_BT601;
+pub(crate) const _RAV1D_TRC_BT470BG: Rav1dTransferCharacteristics = DAV1D_TRC_BT470BG;
+pub(crate) const _RAV1D_TRC_BT470M: Rav1dTransferCharacteristics = DAV1D_TRC_BT470M;
 pub(crate) const RAV1D_TRC_UNKNOWN: Rav1dTransferCharacteristics = DAV1D_TRC_UNKNOWN;
-pub(crate) const RAV1D_TRC_BT709: Rav1dTransferCharacteristics = DAV1D_TRC_BT709;
+pub(crate) const _RAV1D_TRC_BT709: Rav1dTransferCharacteristics = DAV1D_TRC_BT709;
 
 pub type Dav1dMatrixCoefficients = c_uint;
 pub const DAV1D_MC_RESERVED: Dav1dMatrixCoefficients = 255;
@@ -279,20 +283,20 @@ pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = 1;
 pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = 0;
 
 pub(crate) type Rav1dMatrixCoefficients = c_uint;
-pub(crate) const RAV1D_MC_RESERVED: Rav1dMatrixCoefficients = DAV1D_MC_RESERVED;
-pub(crate) const RAV1D_MC_ICTCP: Rav1dMatrixCoefficients = DAV1D_MC_ICTCP;
-pub(crate) const RAV1D_MC_CHROMAT_CL: Rav1dMatrixCoefficients = DAV1D_MC_CHROMAT_CL;
-pub(crate) const RAV1D_MC_CHROMAT_NCL: Rav1dMatrixCoefficients = DAV1D_MC_CHROMAT_NCL;
-pub(crate) const RAV1D_MC_SMPTE2085: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE2085;
-pub(crate) const RAV1D_MC_BT2020_CL: Rav1dMatrixCoefficients = DAV1D_MC_BT2020_CL;
-pub(crate) const RAV1D_MC_BT2020_NCL: Rav1dMatrixCoefficients = DAV1D_MC_BT2020_NCL;
-pub(crate) const RAV1D_MC_SMPTE_YCGCO: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE_YCGCO;
-pub(crate) const RAV1D_MC_SMPTE240: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE240;
-pub(crate) const RAV1D_MC_BT601: Rav1dMatrixCoefficients = DAV1D_MC_BT601;
-pub(crate) const RAV1D_MC_BT470BG: Rav1dMatrixCoefficients = DAV1D_MC_BT470BG;
-pub(crate) const RAV1D_MC_FCC: Rav1dMatrixCoefficients = DAV1D_MC_FCC;
+pub(crate) const _RAV1D_MC_RESERVED: Rav1dMatrixCoefficients = DAV1D_MC_RESERVED;
+pub(crate) const _RAV1D_MC_ICTCP: Rav1dMatrixCoefficients = DAV1D_MC_ICTCP;
+pub(crate) const _RAV1D_MC_CHROMAT_CL: Rav1dMatrixCoefficients = DAV1D_MC_CHROMAT_CL;
+pub(crate) const _RAV1D_MC_CHROMAT_NCL: Rav1dMatrixCoefficients = DAV1D_MC_CHROMAT_NCL;
+pub(crate) const _RAV1D_MC_SMPTE2085: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE2085;
+pub(crate) const _RAV1D_MC_BT2020_CL: Rav1dMatrixCoefficients = DAV1D_MC_BT2020_CL;
+pub(crate) const _RAV1D_MC_BT2020_NCL: Rav1dMatrixCoefficients = DAV1D_MC_BT2020_NCL;
+pub(crate) const _RAV1D_MC_SMPTE_YCGCO: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE_YCGCO;
+pub(crate) const _RAV1D_MC_SMPTE240: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE240;
+pub(crate) const _RAV1D_MC_BT601: Rav1dMatrixCoefficients = DAV1D_MC_BT601;
+pub(crate) const _RAV1D_MC_BT470BG: Rav1dMatrixCoefficients = DAV1D_MC_BT470BG;
+pub(crate) const _RAV1D_MC_FCC: Rav1dMatrixCoefficients = DAV1D_MC_FCC;
 pub(crate) const RAV1D_MC_UNKNOWN: Rav1dMatrixCoefficients = DAV1D_MC_UNKNOWN;
-pub(crate) const RAV1D_MC_BT709: Rav1dMatrixCoefficients = DAV1D_MC_BT709;
+pub(crate) const _RAV1D_MC_BT709: Rav1dMatrixCoefficients = DAV1D_MC_BT709;
 pub(crate) const RAV1D_MC_IDENTITY: Rav1dMatrixCoefficients = DAV1D_MC_IDENTITY;
 
 pub type Dav1dChromaSamplePosition = c_uint;
@@ -301,8 +305,8 @@ pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
 pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
 
 pub(crate) type Rav1dChromaSamplePosition = c_uint;
-pub(crate) const RAV1D_CHR_COLOCATED: Rav1dChromaSamplePosition = DAV1D_CHR_COLOCATED;
-pub(crate) const RAV1D_CHR_VERTICAL: Rav1dChromaSamplePosition = DAV1D_CHR_VERTICAL;
+pub(crate) const _RAV1D_CHR_COLOCATED: Rav1dChromaSamplePosition = DAV1D_CHR_COLOCATED;
+pub(crate) const _RAV1D_CHR_VERTICAL: Rav1dChromaSamplePosition = DAV1D_CHR_VERTICAL;
 pub(crate) const RAV1D_CHR_UNKNOWN: Rav1dChromaSamplePosition = DAV1D_CHR_UNKNOWN;
 
 // Constants from Section 3. "Symbols and abbreviated terms"
@@ -317,6 +321,7 @@ pub struct Dav1dContentLightLevel {
 }
 
 impl Dav1dContentLightLevel {
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub(crate) fn into_rust(self) -> Rav1dContentLightLevel {
         let Self {
             max_content_light_level,
@@ -336,6 +341,7 @@ pub(crate) struct Rav1dContentLightLevel {
 }
 
 impl Rav1dContentLightLevel {
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub fn into_c(self) -> Dav1dContentLightLevel {
         let Self {
             max_content_light_level,
@@ -357,6 +363,7 @@ pub struct Dav1dMasteringDisplay {
 }
 
 impl Dav1dMasteringDisplay {
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub(crate) fn into_rust(self) -> Rav1dMasteringDisplay {
         let Self {
             primaries,
@@ -382,6 +389,7 @@ pub(crate) struct Rav1dMasteringDisplay {
 }
 
 impl Rav1dMasteringDisplay {
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub fn into_c(self) -> Dav1dMasteringDisplay {
         let Self {
             primaries,
@@ -407,6 +415,7 @@ pub struct Dav1dITUTT35 {
 }
 
 impl Dav1dITUTT35 {
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub(crate) fn into_rust(self) -> Rav1dITUTT35 {
         let Self {
             country_code,
@@ -432,6 +441,7 @@ pub(crate) struct Rav1dITUTT35 {
 }
 
 impl Rav1dITUTT35 {
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub fn into_c(self) -> Dav1dITUTT35 {
         let Self {
             country_code,
@@ -2036,6 +2046,7 @@ pub(crate) struct Rav1dFrameHeader {
 }
 
 impl Rav1dFrameHeader {
+    #[allow(dead_code)] // TODO(kkysen) remove when we use this
     pub fn into_c(self) -> Dav1dFrameHeader {
         let Self {
             film_grain,

@@ -6,14 +6,14 @@ use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_CDEF;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
-use crate::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
+use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
+use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
+use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
@@ -1485,9 +1485,9 @@ pub(crate) unsafe extern "C" fn rav1d_read_coef_blocks_8bpc(
 ) {
     let f: *const Rav1dFrameContext = (*t).f;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let ss_hor =
-        ((*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let bx4 = (*t).bx & 31;
     let by4 = (*t).by & 31;
     let cbx4 = bx4 >> ss_hor;
@@ -1497,7 +1497,7 @@ pub(crate) unsafe extern "C" fn rav1d_read_coef_blocks_8bpc(
     let bh4 = *b_dim.offset(1) as c_int;
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
-    let has_chroma = ((*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
+    let has_chroma = ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
         && (bw4 > ss_hor || (*t).bx & 1 != 0)
         && (bh4 > ss_ver || (*t).by & 1 != 0)) as c_int;
     if (*b).skip != 0 {
@@ -1745,10 +1745,10 @@ unsafe extern "C" fn mc(
     }
     let f: *const Rav1dFrameContext = (*t).f;
     let ss_ver = (pl != 0
-        && (*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
         as c_int;
     let ss_hor = (pl != 0
-        && (*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
         as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
@@ -1946,10 +1946,10 @@ unsafe extern "C" fn obmc(
         as *mut *mut refmvs_block;
     let lap: *mut pixel = ((*t).scratch.c2rust_unnamed.c2rust_unnamed.lap_8bpc).as_mut_ptr();
     let ss_ver = (pl != 0
-        && (*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
         as c_int;
     let ss_hor = (pl != 0
-        && (*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
         as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
@@ -2075,10 +2075,10 @@ unsafe extern "C" fn warp_affine(
     let f: *const Rav1dFrameContext = (*t).f;
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let ss_ver = (pl != 0
-        && (*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
         as c_int;
     let ss_hor = (pl != 0
-        && (*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
         as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
@@ -2183,9 +2183,9 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_intra_8bpc(
     let bx4 = (*t).bx & 31;
     let by4 = (*t).by & 31;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let ss_hor =
-        ((*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
@@ -2195,7 +2195,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_intra_8bpc(
     let h4 = cmp::min(bh4, (*f).bh - (*t).by);
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
-    let has_chroma = ((*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
+    let has_chroma = ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
         && (bw4 > ss_hor || (*t).bx & 1 != 0)
         && (bh4 > ss_ver || (*t).by & 1 != 0)) as c_int;
     let t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions
@@ -2923,9 +2923,9 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
     let bx4 = (*t).bx & 31;
     let by4 = (*t).by & 31;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let ss_hor =
-        ((*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
@@ -2933,14 +2933,14 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
     let bh4 = *b_dim.offset(1) as c_int;
     let w4 = cmp::min(bw4, (*f).bw - (*t).bx);
     let h4 = cmp::min(bh4, (*f).bh - (*t).by);
-    let has_chroma = ((*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
+    let has_chroma = ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
         && (bw4 > ss_hor || (*t).bx & 1 != 0)
         && (bh4 > ss_ver || (*t).by & 1 != 0)) as c_int;
     let chr_layout_idx =
-        (if (*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
+        (if (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
             0 as c_int as c_uint
         } else {
-            (DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint).wrapping_sub((*f).cur.p.layout as c_uint)
+            (RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint).wrapping_sub((*f).cur.p.layout as c_uint)
         }) as c_int;
     let mut res;
     let cbh4 = bh4 + ss_ver >> ss_ver;
@@ -3018,7 +3018,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                     as c_int
                     != 0
                 || (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int == MM_WARP as c_int
-                    && (*t).warpmv.type_0 as c_uint > DAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
+                    && (*t).warpmv.type_0 as c_uint > RAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
         {
             res = warp_affine(
                 t,
@@ -3419,7 +3419,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                         || (*b).c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int
                             == MM_WARP as c_int
                             && (*t).warpmv.type_0 as c_uint
-                                > DAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
+                                > RAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
                 {
                     let mut pl_4 = 0;
                     while pl_4 < 2 {
@@ -4148,7 +4148,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_cols_8bpc(
     f: *mut Rav1dFrameContext,
     sby: c_int,
 ) {
-    if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint == 0
+    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint == 0
         || (*(*f).frame_hdr).loopfilter.level_y[0] == 0
             && (*(*f).frame_hdr).loopfilter.level_y[1] == 0
     {
@@ -4156,7 +4156,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_cols_8bpc(
     }
     let y = sby * (*f).sb_step * 4;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let p: [*mut pixel; 3] = [
         ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize),
         ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
@@ -4179,7 +4179,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_rows_8bpc(
 ) {
     let y = sby * (*f).sb_step * 4;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let p: [*mut pixel; 3] = [
         ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize),
         ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
@@ -4187,7 +4187,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_rows_8bpc(
     ];
     let mask: *mut Av1Filter = ((*f).lf.mask)
         .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
-    if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
+    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
         && ((*(*f).frame_hdr).loopfilter.level_y[0] != 0
             || (*(*f).frame_hdr).loopfilter.level_y[1] != 0)
     {
@@ -4203,13 +4203,13 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_cdef_8bpc(
     sby: c_int,
 ) {
     let f: *const Rav1dFrameContext = (*tc).f;
-    if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
+    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
         return;
     }
     let sbsz = (*f).sb_step;
     let y = sby * sbsz * 4;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let p: [*mut pixel; 3] = [
         ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize),
         ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
@@ -4222,7 +4222,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_cdef_8bpc(
     let start = sby * sbsz;
     if sby != 0 {
         let ss_ver_0 =
-            ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+            ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
         let mut p_up: [*mut pixel; 3] = [
             (p[0]).offset(-((8 * (*f).cur.stride[0]) as isize)),
             (p[1]).offset(-((8 * (*f).cur.stride[1] >> ss_ver_0) as isize)),
@@ -4250,7 +4250,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_resize_8bpc(
     let sbsz = (*f).sb_step;
     let y = sby * sbsz * 4;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let p: [*const pixel; 3] = [
         ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize)
             as *const pixel,
@@ -4267,11 +4267,11 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_resize_8bpc(
             .offset((y as isize * (*f).sr_cur.p.stride[1] >> ss_ver) as isize),
     ];
     let has_chroma =
-        ((*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
     let mut pl = 0;
     while pl < 1 + 2 * has_chroma {
         let ss_ver_0 = (pl != 0
-            && (*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+            && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
             as c_int;
         let h_start = 8 * (sby != 0) as c_int >> ss_ver_0;
         let dst_stride: ptrdiff_t = (*f).sr_cur.p.stride[(pl != 0) as c_int as usize];
@@ -4282,7 +4282,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_resize_8bpc(
             (p[pl as usize]).offset(-((h_start as isize * src_stride) as isize));
         let h_end = 4 * (sbsz - 2 * ((sby + 1) < (*f).sbh) as c_int) >> ss_ver_0;
         let ss_hor = (pl != 0
-            && (*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+            && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
             as c_int;
         let dst_w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
         let src_w = 4 * (*f).bw + ss_hor >> ss_hor;
@@ -4304,12 +4304,12 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_resize_8bpc(
 }
 
 pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_lr_8bpc(f: *mut Rav1dFrameContext, sby: c_int) {
-    if (*(*f).c).inloop_filters as c_uint & DAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
+    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
         return;
     }
     let y = sby * (*f).sb_step * 4;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let sr_p: [*mut pixel; 3] = [
         ((*f).lf.sr_p[0] as *mut pixel).offset((y as isize * (*f).sr_cur.p.stride[0]) as isize),
         ((*f).lf.sr_p[1] as *mut pixel)
@@ -4349,11 +4349,11 @@ pub(crate) unsafe extern "C" fn rav1d_backup_ipred_edge_8bpc(t: *mut Rav1dTaskCo
         y as *const c_void,
         (4 * ((*ts).tiling.col_end - x_off)) as usize,
     );
-    if (*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
+    if (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
         let ss_ver =
-            ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+            ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
         let ss_hor =
-            ((*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+            ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
         let uv_off: ptrdiff_t = (x_off * 4 >> ss_hor) as isize
             + ((((*t).by + (*f).sb_step) * 4 >> ss_ver) - 1) as isize * (*f).cur.stride[1];
         let mut pl = 1;

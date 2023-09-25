@@ -3,8 +3,8 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::align::Align16;
 use crate::src::ctx::CaseSet;
 use crate::src::levels::BlockSize;
@@ -403,8 +403,8 @@ pub unsafe fn rav1d_create_lf_mask_intra(
         Some(aluv) => aluv,
     };
 
-    let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as usize;
-    let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
+    let ss_ver = (layout == RAV1D_PIXEL_LAYOUT_I420) as usize;
+    let ss_hor = (layout != RAV1D_PIXEL_LAYOUT_I444) as usize;
     let cbw4 = cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
         (b_dim[0] + ss_hor) >> ss_hor,
@@ -515,8 +515,8 @@ pub unsafe fn rav1d_create_lf_mask_inter(
         Some(aluv) => aluv,
     };
 
-    let ss_ver = (layout == DAV1D_PIXEL_LAYOUT_I420) as usize;
-    let ss_hor = (layout != DAV1D_PIXEL_LAYOUT_I444) as usize;
+    let ss_ver = (layout == RAV1D_PIXEL_LAYOUT_I420) as usize;
+    let ss_hor = (layout != RAV1D_PIXEL_LAYOUT_I444) as usize;
     let cbw4 = cmp::min(
         (iw + ss_hor >> ss_hor) - (bx >> ss_hor),
         (b_dim[0] + ss_hor) >> ss_hor,

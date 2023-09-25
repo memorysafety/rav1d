@@ -2,16 +2,16 @@ use crate::errno_location;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
-use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
-use crate::include::dav1d::dav1d::DAV1D_EVENT_FLAG_NEW_SEQUENCE;
+use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
+use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_SEQUENCE;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -75,9 +75,9 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let aligned_w = (*p).p.w + 127 & !(127 as c_int);
     let aligned_h = (*p).p.h + 127 & !(127 as c_int);
     let has_chroma =
-        ((*p).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
-    let ss_ver = ((*p).p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    let ss_hor = ((*p).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        ((*p).p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
+    let ss_ver = ((*p).p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_hor = ((*p).p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let mut y_stride: ptrdiff_t = (aligned_w << hbd) as ptrdiff_t;
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
         y_stride >> ss_hor
@@ -511,12 +511,12 @@ pub(crate) unsafe fn rav1d_picture_get_event_flags(
     let mut flags: Dav1dEventFlags = 0 as Dav1dEventFlags;
     if (*p).flags as c_uint & PICTURE_FLAG_NEW_SEQUENCE as c_int as c_uint != 0 {
         flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-            flags as c_uint | DAV1D_EVENT_FLAG_NEW_SEQUENCE as c_int as c_uint,
+            flags as c_uint | RAV1D_EVENT_FLAG_NEW_SEQUENCE as c_int as c_uint,
         );
     }
     if (*p).flags as c_uint & PICTURE_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint != 0 {
         flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-            flags as c_uint | DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint,
+            flags as c_uint | RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint,
         );
     }
     return flags;

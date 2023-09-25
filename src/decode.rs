@@ -14,22 +14,22 @@ use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_MAX_SEGMENTS;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
+use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
+use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
+use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
+use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
+use crate::include::dav1d::headers::RAV1D_RESTORATION_SWITCHABLE;
+use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
+use crate::include::dav1d::headers::RAV1D_TX_SWITCHABLE;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
@@ -693,9 +693,9 @@ unsafe fn derive_warpmv(
     wmp.type_0 = if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.bx, t.by)
         && !dav1d_get_shear_params(&mut wmp)
     {
-        DAV1D_WM_TYPE_AFFINE
+        RAV1D_WM_TYPE_AFFINE
     } else {
-        DAV1D_WM_TYPE_IDENTITY
+        RAV1D_WM_TYPE_IDENTITY
     };
     wmp
 }
@@ -1099,7 +1099,7 @@ unsafe fn read_vartx_tree(
     {
         b.uvtx = TX_4X4 as u8;
         *b.max_ytx_mut() = b.uvtx;
-        if txfm_mode == DAV1D_TX_SWITCHABLE {
+        if txfm_mode == RAV1D_TX_SWITCHABLE {
             CaseSet::<32, false>::many(
                 [&mut t.l, &mut *t.a],
                 [bh4 as usize, bw4 as usize],
@@ -1109,8 +1109,8 @@ unsafe fn read_vartx_tree(
                 },
             );
         }
-    } else if txfm_mode != DAV1D_TX_SWITCHABLE || b.skip != 0 {
-        if txfm_mode == DAV1D_TX_SWITCHABLE {
+    } else if txfm_mode != RAV1D_TX_SWITCHABLE || b.skip != 0 {
+        if txfm_mode == RAV1D_TX_SWITCHABLE {
             CaseSet::<32, false>::many(
                 [(&mut t.l, 1), (&mut *t.a, 0)],
                 [bh4 as usize, bw4 as usize],
@@ -1382,8 +1382,8 @@ unsafe fn affine_lowest_px_chroma(
     wmp: &Dav1dWarpedMotionParams,
 ) {
     let f = &*t.f;
-    assert!(f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400);
-    if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I444 {
+    assert!(f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400);
+    if f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I444 {
         affine_lowest_px_luma(t, dst, b_dim, wmp);
     } else {
         affine_lowest_px(
@@ -1391,7 +1391,7 @@ unsafe fn affine_lowest_px_chroma(
             dst,
             b_dim,
             wmp,
-            (f.cur.p.layout & DAV1D_PIXEL_LAYOUT_I420) as c_int,
+            (f.cur.p.layout & RAV1D_PIXEL_LAYOUT_I420) as c_int,
             1,
         );
     };
@@ -1410,8 +1410,8 @@ unsafe fn obmc_lowest_px(
     assert!(t.bx & 1 == 0 && t.by & 1 == 0);
     let f = &*t.f;
     let r = &t.rt.r[(t.by as usize & 31) + 5 - 1..];
-    let ss_ver = (is_chroma && f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as c_int;
-    let ss_hor = (is_chroma && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as c_int;
+    let ss_ver = (is_chroma && f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
+    let ss_hor = (is_chroma && f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     if t.by > (*t.ts).tiling.row_start
@@ -1494,8 +1494,8 @@ unsafe fn decode_b(
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
-    let ss_ver = (f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I420) as c_int;
-    let ss_hor = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as c_int;
+    let ss_ver = (f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
+    let ss_hor = (f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let bw4 = b_dim[0] as c_int;
@@ -1506,7 +1506,7 @@ unsafe fn decode_b(
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let have_left = t.bx > ts.tiling.col_start;
     let have_top = t.by > ts.tiling.row_start;
-    let has_chroma = f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400
+    let has_chroma = f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400
         && (bw4 > ss_hor || t.bx & 1 != 0)
         && (bh4 > ss_ver || t.by & 1 != 0);
 
@@ -1560,9 +1560,9 @@ unsafe fn decode_b(
                 && b.motion_mode() as MotionMode == MM_WARP
             {
                 if b.matrix()[0] == i16::MIN {
-                    t.warpmv.type_0 = DAV1D_WM_TYPE_IDENTITY;
+                    t.warpmv.type_0 = RAV1D_WM_TYPE_IDENTITY;
                 } else {
-                    t.warpmv.type_0 = DAV1D_WM_TYPE_AFFINE;
+                    t.warpmv.type_0 = RAV1D_WM_TYPE_AFFINE;
                     t.warpmv.matrix[2] = b.matrix()[0] as i32 + 0x10000;
                     t.warpmv.matrix[3] = b.matrix()[1] as i32;
                     t.warpmv.matrix[4] = b.matrix()[2] as i32;
@@ -1653,7 +1653,7 @@ unsafe fn decode_b(
             if !(f.prev_segmap).is_null() {
                 let seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
-                if seg_id >= DAV1D_MAX_SEGMENTS.into() {
+                if seg_id >= RAV1D_MAX_SEGMENTS.into() {
                     return -1;
                 }
                 b.seg_id = seg_id;
@@ -1674,7 +1674,7 @@ unsafe fn decode_b(
                 if !(f.prev_segmap).is_null() {
                     let seg_id =
                         get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
-                    if seg_id >= DAV1D_MAX_SEGMENTS.into() {
+                    if seg_id >= RAV1D_MAX_SEGMENTS.into() {
                         return -1;
                     }
                     b.seg_id = seg_id;
@@ -1687,7 +1687,7 @@ unsafe fn decode_b(
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_id[seg_ctx as usize],
-                    DAV1D_MAX_SEGMENTS as usize - 1,
+                    RAV1D_MAX_SEGMENTS as usize - 1,
                 );
                 let last_active_seg_id = frame_hdr.segmentation.seg_data.last_active_segid;
                 b.seg_id =
@@ -1696,7 +1696,7 @@ unsafe fn decode_b(
                 if b.seg_id as c_int > last_active_seg_id {
                     b.seg_id = 0; // error?
                 }
-                if b.seg_id >= DAV1D_MAX_SEGMENTS {
+                if b.seg_id >= RAV1D_MAX_SEGMENTS {
                     b.seg_id = 0; // error?
                 }
             }
@@ -1758,7 +1758,7 @@ unsafe fn decode_b(
             if !(f.prev_segmap).is_null() {
                 let seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
-                if seg_id >= DAV1D_MAX_SEGMENTS.into() {
+                if seg_id >= RAV1D_MAX_SEGMENTS.into() {
                     return -1;
                 }
                 b.seg_id = seg_id;
@@ -1774,7 +1774,7 @@ unsafe fn decode_b(
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_id[seg_ctx as usize],
-                    DAV1D_MAX_SEGMENTS as usize - 1,
+                    RAV1D_MAX_SEGMENTS as usize - 1,
                 );
                 let last_active_seg_id = (*f.frame_hdr).segmentation.seg_data.last_active_segid;
                 b.seg_id =
@@ -1784,7 +1784,7 @@ unsafe fn decode_b(
                     b.seg_id = 0; // error?
                 }
             }
-            if b.seg_id >= DAV1D_MAX_SEGMENTS {
+            if b.seg_id >= RAV1D_MAX_SEGMENTS {
                 b.seg_id = 0; // error?
             }
         }
@@ -1864,7 +1864,7 @@ unsafe fn decode_b(
 
             if frame_hdr.delta.lf.present != 0 {
                 let n_lfs = if frame_hdr.delta.lf.multi != 0 {
-                    if f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400 {
+                    if f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400 {
                         4
                     } else {
                         2
@@ -2160,7 +2160,7 @@ unsafe fn decode_b(
             *b.tx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
             let mut t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
-            if frame_hdr.txfm_mode == DAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
+            if frame_hdr.txfm_mode == RAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
                 let depth = rav1d_msac_decode_symbol_adapt4(
@@ -2242,8 +2242,8 @@ unsafe fn decode_b(
                     case.set(&mut dir.comp_type.0, COMP_INTER_NONE);
                     case.set(&mut dir.r#ref[0], -1);
                     case.set(&mut dir.r#ref[1], -1);
-                    case.set(&mut dir.filter.0[0], DAV1D_N_SWITCHABLE_FILTERS as u8);
-                    case.set(&mut dir.filter.0[1], DAV1D_N_SWITCHABLE_FILTERS as u8);
+                    case.set(&mut dir.filter.0[0], RAV1D_N_SWITCHABLE_FILTERS as u8);
+                    case.set(&mut dir.filter.0[1], RAV1D_N_SWITCHABLE_FILTERS as u8);
                 }
             },
         );
@@ -2662,7 +2662,7 @@ unsafe fn decode_b(
                 }
                 GLOBALMV => {
                     has_subpel_filter |=
-                        frame_hdr.gmv[b.r#ref()[idx] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
+                        frame_hdr.gmv[b.r#ref()[idx] as usize].type_0 == RAV1D_WM_TYPE_TRANSLATION;
                     b.mv_mut()[idx] = get_gmv_2d(
                         &frame_hdr.gmv[b.r#ref()[idx] as usize],
                         t.bx,
@@ -2868,7 +2868,7 @@ unsafe fn decode_b(
                         frame_hdr,
                     );
                     has_subpel_filter = cmp::min(bw4, bh4) == 1
-                        || frame_hdr.gmv[b.r#ref()[0] as usize].type_0 == DAV1D_WM_TYPE_TRANSLATION;
+                        || frame_hdr.gmv[b.r#ref()[0] as usize].type_0 == RAV1D_WM_TYPE_TRANSLATION;
                 } else {
                     has_subpel_filter = true;
                     if rav1d_msac_decode_bool_adapt(
@@ -3022,7 +3022,7 @@ unsafe fn decode_b(
                 // is not warped global motion
                 && !(frame_hdr.force_integer_mv == 0
                     && b.inter_mode() == GLOBALMV
-                    && frame_hdr.gmv[b.r#ref()[0] as usize].type_0 > DAV1D_WM_TYPE_TRANSLATION)
+                    && frame_hdr.gmv[b.r#ref()[0] as usize].type_0 > RAV1D_WM_TYPE_TRANSLATION)
                 // has overlappable neighbours
                 && (have_left && findoddzero(&t.l.intra.0[by4 as usize..][..h4 as usize])
                     || have_top && findoddzero(&(*t.a).intra.0[bx4 as usize..][..w4 as usize]))
@@ -3079,7 +3079,7 @@ unsafe fn decode_b(
                         );
                     }
                     if t.frame_thread.pass != 0 {
-                        if t.warpmv.type_0 == DAV1D_WM_TYPE_AFFINE {
+                        if t.warpmv.type_0 == RAV1D_WM_TYPE_AFFINE {
                             b.matrix_mut()[0] = (t.warpmv.matrix[2] - 0x10000) as i16;
                             b.matrix_mut()[1] = t.warpmv.matrix[3] as i16;
                             b.matrix_mut()[2] = t.warpmv.matrix[4] as i16;
@@ -3105,14 +3105,14 @@ unsafe fn decode_b(
         }
 
         // subpel filter
-        let filter = if frame_hdr.subpel_filter_mode == DAV1D_FILTER_SWITCHABLE {
+        let filter = if frame_hdr.subpel_filter_mode == RAV1D_FILTER_SWITCHABLE {
             if has_subpel_filter {
                 let comp = b.comp_type() != COMP_INTER_NONE;
                 let ctx1 = get_filter_ctx(&*t.a, &t.l, comp, false, b.r#ref()[0], by4, bx4);
                 let filter0 = rav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.filter.0[0][ctx1 as usize],
-                    DAV1D_N_SWITCHABLE_FILTERS as usize - 1,
+                    RAV1D_N_SWITCHABLE_FILTERS as usize - 1,
                 ) as Dav1dFilterMode;
                 if (*f.seq_hdr).dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&*t.a, &t.l, comp, true, b.r#ref()[0], by4, bx4);
@@ -3125,7 +3125,7 @@ unsafe fn decode_b(
                     let filter1 = rav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.filter.0[1][ctx2 as usize],
-                        DAV1D_N_SWITCHABLE_FILTERS as usize - 1,
+                        RAV1D_N_SWITCHABLE_FILTERS as usize - 1,
                     ) as Dav1dFilterMode;
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
@@ -3144,7 +3144,7 @@ unsafe fn decode_b(
                     [filter0; 2]
                 }
             } else {
-                [DAV1D_FILTER_8TAP_REGULAR; 2]
+                [RAV1D_FILTER_8TAP_REGULAR; 2]
             }
         } else {
             [frame_hdr.subpel_filter_mode; 2]
@@ -3289,7 +3289,7 @@ unsafe fn decode_b(
             if cmp::min(bw4, bh4) > 1
                 && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                     || b.motion_mode() == MM_WARP as u8
-                        && t.warpmv.type_0 > DAV1D_WM_TYPE_TRANSLATION)
+                        && t.warpmv.type_0 > RAV1D_WM_TYPE_TRANSLATION)
             {
                 affine_lowest_px_luma(
                     t,
@@ -3387,7 +3387,7 @@ unsafe fn decode_b(
                     && (b.inter_mode() == GLOBALMV
                         && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                         || b.motion_mode() == MM_WARP as u8
-                            && t.warpmv.type_0 > DAV1D_WM_TYPE_TRANSLATION)
+                            && t.warpmv.type_0 > RAV1D_WM_TYPE_TRANSLATION)
                 {
                     affine_lowest_px_chroma(
                         t,
@@ -3529,7 +3529,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
                 pc,
                 dav1d_partition_type_count[bl as usize].into(),
             ) as BlockPartition;
-            if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422
+            if f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I422
                 && (bp == PARTITION_V
                     || bp == PARTITION_V4
                     || bp == PARTITION_T_LEFT_SPLIT
@@ -3801,7 +3801,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         let is_split;
         if let Some(pc) = pc {
             is_split = rav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl));
-            if f.cur.p.layout == DAV1D_PIXEL_LAYOUT_I422 && !is_split {
+            if f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I422 && !is_split {
                 return 1;
             }
             if DEBUG_BLOCK_INFO(f, t) {
@@ -3899,7 +3899,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
         ccoef.fill(0x40);
     }
     for filter in &mut ctx.filter.0 {
-        filter.fill(DAV1D_N_SWITCHABLE_FILTERS as u8);
+        filter.fill(RAV1D_N_SWITCHABLE_FILTERS as u8);
     }
     ctx.seg_pred.0.fill(0);
     ctx.pal_sz.0.fill(0);
@@ -3908,10 +3908,10 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
 /// `{ Y+U+V, Y+U } * 4`
 static ss_size_mul: [[u8; 2]; 4] = {
     let mut a = [[0; 2]; 4];
-    a[DAV1D_PIXEL_LAYOUT_I400 as usize] = [4, 4];
-    a[DAV1D_PIXEL_LAYOUT_I420 as usize] = [6, 5];
-    a[DAV1D_PIXEL_LAYOUT_I422 as usize] = [8, 6];
-    a[DAV1D_PIXEL_LAYOUT_I444 as usize] = [12, 8];
+    a[RAV1D_PIXEL_LAYOUT_I400 as usize] = [4, 4];
+    a[RAV1D_PIXEL_LAYOUT_I420 as usize] = [6, 5];
+    a[RAV1D_PIXEL_LAYOUT_I422 as usize] = [8, 6];
+    a[RAV1D_PIXEL_LAYOUT_I444 as usize] = [12, 8];
     a
 };
 
@@ -3991,7 +3991,7 @@ unsafe fn setup_tile(
         }
 
         let lr_ref = if diff_width {
-            let ss_hor = (p != 0 && f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as c_int;
+            let ss_hor = (p != 0 && f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
             let d = (*f.frame_hdr).super_res.width_scale_denominator;
             let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
@@ -4032,22 +4032,22 @@ unsafe fn read_restoration_info(
     let ts = &mut *t.ts;
     let lr_ref = &*ts.lr_ref[p];
 
-    if frame_type == DAV1D_RESTORATION_SWITCHABLE {
+    if frame_type == RAV1D_RESTORATION_SWITCHABLE {
         let filter =
             rav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2);
         lr.r#type = if filter != 0 {
             if filter == 2 {
-                DAV1D_RESTORATION_SGRPROJ
+                RAV1D_RESTORATION_SGRPROJ
             } else {
-                DAV1D_RESTORATION_WIENER
+                RAV1D_RESTORATION_WIENER
             }
         } else {
-            DAV1D_RESTORATION_NONE
+            RAV1D_RESTORATION_NONE
         };
     } else {
         let r#type = rav1d_msac_decode_bool_adapt(
             &mut ts.msac,
-            if frame_type == DAV1D_RESTORATION_WIENER {
+            if frame_type == RAV1D_RESTORATION_WIENER {
                 &mut ts.cdf.m.restore_wiener.0
             } else {
                 &mut ts.cdf.m.restore_sgrproj.0
@@ -4056,7 +4056,7 @@ unsafe fn read_restoration_info(
         lr.r#type = if r#type {
             frame_type
         } else {
-            DAV1D_RESTORATION_NONE
+            RAV1D_RESTORATION_NONE
         };
     }
 
@@ -4069,7 +4069,7 @@ unsafe fn read_restoration_info(
         ) - adjustment as libc::c_int) as i8
     }
 
-    if lr.r#type == DAV1D_RESTORATION_WIENER {
+    if lr.r#type == RAV1D_RESTORATION_WIENER {
         lr.filter_v[0] = if p != 0 {
             0
         } else {
@@ -4100,7 +4100,7 @@ unsafe fn read_restoration_info(
                 ts.msac.rng,
             );
         }
-    } else if lr.r#type == DAV1D_RESTORATION_SGRPROJ {
+    } else if lr.r#type == RAV1D_RESTORATION_SGRPROJ {
         let idx = rav1d_msac_decode_bools(&mut ts.msac, 4) as u8;
         let sgr_params = &dav1d_sgr_params[idx.into()];
         lr.sgr_idx = idx;
@@ -4249,10 +4249,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
         while p < 3 {
             if !(((*f).lf.restore_planes >> p) as c_uint & 1 as c_uint == 0) {
                 let ss_ver = (p != 0
-                    && (*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+                    && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
                     as c_int;
                 let ss_hor = (p != 0
-                    && (*f).cur.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+                    && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
                     as c_int;
                 let unit_size_log2 =
                     (*(*f).frame_hdr).restoration.unit_size[(p != 0) as c_int as usize];
@@ -4346,7 +4346,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
         sb_step as usize,
     );
     let ss_ver_0 =
-        ((*f).cur.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     align_h >>= ss_ver_0;
     memcpy(
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
@@ -4682,7 +4682,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
         .type_0
         .iter()
         .enumerate()
-        .map(|(i, &r#type)| ((r#type != DAV1D_RESTORATION_NONE) as u8) << i)
+        .map(|(i, &r#type)| ((r#type != RAV1D_RESTORATION_NONE) as u8) << i)
         .sum::<u8>()
         .into();
     if (*f.frame_hdr).loopfilter.sharpness != f.lf.last_sharpness {
@@ -4799,7 +4799,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
     // to avoid having additional in-loop branches in various places.
     // We never dereference those pointers, so it doesn't really matter
     // what they point at, as long as the pointers are valid.
-    let has_chroma = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I400) as usize;
+    let has_chroma = (f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400) as usize;
     f.lf.mask_ptr = f.lf.mask;
     f.lf.p = array::from_fn(|i| f.cur.data[has_chroma * i].cast());
     f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[has_chroma * i].cast());
@@ -5273,7 +5273,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
                 f.svc[i][1].scale = 0;
                 f.svc[i][0].scale = f.svc[i][1].scale;
             }
-            f.gmv_warp_allowed[i] = ((*f.frame_hdr).gmv[i].type_0 > DAV1D_WM_TYPE_TRANSLATION
+            f.gmv_warp_allowed[i] = ((*f.frame_hdr).gmv[i].type_0 > RAV1D_WM_TYPE_TRANSLATION
                 && (*f.frame_hdr).force_integer_mv == 0
                 && !dav1d_get_shear_params(&mut (*f.frame_hdr).gmv[i])
                 && f.svc[i][0].scale == 0) as u8;
@@ -5335,7 +5335,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
     }
     if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
         f.resize_step[0] = scale_fac(f.cur.p.w, f.sr_cur.p.p.w);
-        let ss_hor = (f.cur.p.layout != DAV1D_PIXEL_LAYOUT_I444) as c_int;
+        let ss_hor = (f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
         let in_cw = f.cur.p.w + ss_hor >> ss_hor;
         let out_cw = f.sr_cur.p.p.w + ss_hor >> ss_hor;
         f.resize_step[1] = scale_fac(in_cw, out_cw);
