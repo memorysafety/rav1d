@@ -26,8 +26,6 @@ pub mod include {
     pub mod pthread;
     pub mod sched;
     pub mod stdatomic;
-    pub mod stddef;
-    pub mod stdint;
 } // mod include
 pub mod src {
     mod align;

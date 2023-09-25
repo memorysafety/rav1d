@@ -6,7 +6,6 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::stddef::*;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::Dav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -26,6 +25,7 @@ use crate::src::levels::Z3_PRED;
 use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
+use libc::ptrdiff_t;
 use std::cmp;
 
 #[cfg(feature = "asm")]

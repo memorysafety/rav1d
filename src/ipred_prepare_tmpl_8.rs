@@ -1,4 +1,3 @@
-use crate::include::stddef::*;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
@@ -16,6 +15,7 @@ use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
 use c2rust_bitfields::BitfieldStruct;
+use libc::ptrdiff_t;
 use std::cmp;
 
 extern "C" {

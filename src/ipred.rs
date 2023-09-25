@@ -1,5 +1,5 @@
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::stddef::ptrdiff_t;
+use libc::ptrdiff_t;
 
 #[inline]
 pub unsafe extern "C" fn get_upsample(

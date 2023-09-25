@@ -6,8 +6,6 @@ use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
-use crate::include::stddef::ptrdiff_t;
-use crate::include::stdint::intptr_t;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
@@ -22,6 +20,8 @@ use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
+use libc::intptr_t;
+use libc::ptrdiff_t;
 use std::cmp;
 use std::iter;
 
@@ -914,9 +914,9 @@ unsafe fn w_mask_rust<BD: BitDepth>(
 
 unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    dst_stride: libc::ptrdiff_t,
+    dst_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
-    src_stride: libc::ptrdiff_t,
+    src_stride: ptrdiff_t,
     abcd: *const i16,
     mut mx: libc::c_int,
     mut my: libc::c_int,
@@ -999,9 +999,9 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
 
 unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     mut tmp: *mut i16,
-    tmp_stride: libc::ptrdiff_t,
+    tmp_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
-    src_stride: libc::ptrdiff_t,
+    src_stride: ptrdiff_t,
     abcd: *const i16,
     mut mx: libc::c_int,
     mut my: libc::c_int,
@@ -1082,16 +1082,16 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
 }
 
 unsafe fn emu_edge_rust<BD: BitDepth>(
-    bw: libc::intptr_t,
-    bh: libc::intptr_t,
-    iw: libc::intptr_t,
-    ih: libc::intptr_t,
-    x: libc::intptr_t,
-    y: libc::intptr_t,
+    bw: intptr_t,
+    bh: intptr_t,
+    iw: intptr_t,
+    ih: intptr_t,
+    x: intptr_t,
+    y: intptr_t,
     mut dst: *mut BD::Pixel,
-    dst_stride: libc::ptrdiff_t,
+    dst_stride: ptrdiff_t,
     mut r#ref: *const BD::Pixel,
-    ref_stride: libc::ptrdiff_t,
+    ref_stride: ptrdiff_t,
 ) {
     r#ref = r#ref.offset(
         iclip(y as libc::c_int, 0 as libc::c_int, ih as libc::c_int - 1) as isize
@@ -1177,9 +1177,9 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
 
 unsafe fn resize_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    dst_stride: libc::ptrdiff_t,
+    dst_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
-    src_stride: libc::ptrdiff_t,
+    src_stride: ptrdiff_t,
     dst_w: libc::c_int,
     mut h: libc::c_int,
     src_w: libc::c_int,

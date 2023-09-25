@@ -1,6 +1,6 @@
+use libc::ptrdiff_t;
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
-use rav1d::include::stddef::ptrdiff_t;
 use rav1d::src::lib::dav1d_data_create;
 use rav1d::src::lib::dav1d_data_unref;
 use rav1d::stderr;

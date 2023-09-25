@@ -3,7 +3,6 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
-use crate::include::stddef::*;
 use crate::src::align::Align16;
 use crate::src::internal::Dav1dDSPContext;
 use crate::src::internal::Dav1dFrameContext;
@@ -19,6 +18,7 @@ use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
 use crate::src::tables::dav1d_sgr_params;
+use libc::ptrdiff_t;
 use std::cmp;
 
 extern "C" {

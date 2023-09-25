@@ -3,7 +3,6 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::ulog2;
-use crate::include::stddef::*;
 use crate::src::cdef::constrain;
 use crate::src::cdef::fill;
 use crate::src::cdef::CdefEdgeFlags;
@@ -13,6 +12,7 @@ use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
 use crate::src::tables::dav1d_cdef_directions;
+use libc::ptrdiff_t;
 use std::cmp;
 
 #[cfg(feature = "asm")]

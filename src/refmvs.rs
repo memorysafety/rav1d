@@ -3,7 +3,6 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
-use crate::include::stddef::*;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
@@ -15,6 +14,7 @@ use crate::src::mem::dav1d_alloc_aligned;
 use crate::src::mem::dav1d_freep_aligned;
 use crate::src::tables::dav1d_block_dimensions;
 use cfg_if::cfg_if;
+use libc::ptrdiff_t;
 use std::cmp;
 
 #[cfg(feature = "asm")]

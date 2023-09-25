@@ -17,6 +17,7 @@ mod output {
     mod yuv;
 } // mod output
 mod dav1d_cli_parse;
+use libc::ptrdiff_t;
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -43,7 +44,6 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use rav1d::include::stddef::*;
 use rav1d::src::lib::dav1d_close;
 use rav1d::src::lib::dav1d_data_unref;
 use rav1d::src::lib::dav1d_get_picture;

@@ -1,9 +1,9 @@
 use crate::include::common::attributes::clz;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
-use crate::include::stddef::*;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
+use libc::ptrdiff_t;
 use std::cmp;
 
 #[cfg(feature = "asm")]
