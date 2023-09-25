@@ -40,6 +40,9 @@ use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::WHT_WHT;
 use libc::ptrdiff_t;
+use std::ffi::c_int;
+use std::ffi::c_ulong;
+use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::dav1d_get_cpu_flags;
@@ -48,7 +51,7 @@ use crate::src::cpu::dav1d_get_cpu_flags;
 use cfg_if::cfg_if;
 
 extern "C" {
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: libc::c_ulong) -> *mut libc::c_void;
+    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
 }
 
 pub type pixel = u8;
@@ -58,8 +61,8 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     coeff: *mut DynCoef,
-    eob: libc::c_int,
-    _bitdepth_max: libc::c_int,
+    eob: c_int,
+    _bitdepth_max: c_int,
 ) {
     inv_txfm_add_wht_wht_4x4_rust(dst.cast(), stride, coeff.cast(), eob);
 }
@@ -68,7 +71,7 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
-    _eob: libc::c_int,
+    _eob: c_int,
 ) {
     use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
 
@@ -78,25 +81,25 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust(
     while y < 4 {
         let mut x = 0;
         while x < 4 {
-            *c.offset(x as isize) = *coeff.offset((y + x * 4) as isize) as libc::c_int >> 2;
+            *c.offset(x as isize) = *coeff.offset((y + x * 4) as isize) as c_int >> 2;
             x += 1;
         }
-        dav1d_inv_wht4_1d_c(c, 1 as libc::c_int as ptrdiff_t);
+        dav1d_inv_wht4_1d_c(c, 1 as c_int as ptrdiff_t);
         y += 1;
         c = c.offset(4);
     }
     memset(
-        coeff as *mut libc::c_void,
-        0 as libc::c_int,
-        (::core::mem::size_of::<coef>() as libc::c_ulong)
-            .wrapping_mul(4 as libc::c_int as libc::c_ulong)
-            .wrapping_mul(4 as libc::c_int as libc::c_ulong),
+        coeff as *mut c_void,
+        0 as c_int,
+        (::core::mem::size_of::<coef>() as c_ulong)
+            .wrapping_mul(4 as c_int as c_ulong)
+            .wrapping_mul(4 as c_int as c_ulong),
     );
     let mut x_0 = 0;
     while x_0 < 4 {
         dav1d_inv_wht4_1d_c(
             &mut *tmp.as_mut_ptr().offset(x_0 as isize),
-            4 as libc::c_int as ptrdiff_t,
+            4 as c_int as ptrdiff_t,
         );
         x_0 += 1;
     }
@@ -108,7 +111,7 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust(
             let fresh1 = c;
             c = c.offset(1);
             *dst.offset(x_1 as isize) =
-                iclip_u8(*dst.offset(x_1 as isize) as libc::c_int + *fresh1) as pixel;
+                iclip_u8(*dst.offset(x_1 as isize) as c_int + *fresh1) as pixel;
             x_1 += 1;
         }
         y_0 += 1;
@@ -119,7 +122,7 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 #[rustfmt::skip]
-unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, _bpc: libc::c_int) {
+unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, _bpc: c_int) {
     use crate::src::x86::cpu::*;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
@@ -624,7 +627,7 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, _bpc: libc
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 #[rustfmt::skip]
-unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut _bpc: libc::c_int) {
+unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut _bpc: c_int) {
     use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
@@ -798,7 +801,7 @@ unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut _bpc: 
 #[rustfmt::skip]
 pub unsafe extern "C" fn dav1d_itx_dsp_init_8bpc(
     c: *mut Dav1dInvTxfmDSPContext,
-    mut _bpc: libc::c_int,
+    mut _bpc: c_int,
 ) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;

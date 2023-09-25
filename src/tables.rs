@@ -117,6 +117,7 @@ use crate::src::levels::VERT_RIGHT_PRED;
 use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
+use std::ffi::c_uint;
 
 #[repr(C)]
 pub struct TxfmInfo {
@@ -705,7 +706,7 @@ pub static dav1d_wedge_ctx_lut: [u8; N_BS_SIZES] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 
-pub const cfl_allowed_mask: libc::c_uint = 0
+pub const cfl_allowed_mask: c_uint = 0
     | 1 << BS_32x32
     | 1 << BS_32x16
     | 1 << BS_32x8
@@ -722,7 +723,7 @@ pub const cfl_allowed_mask: libc::c_uint = 0
     | 1 << BS_4x4
     | 0;
 
-pub const wedge_allowed_mask: libc::c_uint = 0
+pub const wedge_allowed_mask: c_uint = 0
     | 1 << BS_32x32
     | 1 << BS_32x16
     | 1 << BS_32x8
@@ -734,7 +735,7 @@ pub const wedge_allowed_mask: libc::c_uint = 0
     | 1 << BS_8x8
     | 0;
 
-pub const interintra_allowed_mask: libc::c_uint = 0
+pub const interintra_allowed_mask: c_uint = 0
     | 1 << BS_32x32
     | 1 << BS_32x16
     | 1 << BS_16x32

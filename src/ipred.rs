@@ -1,56 +1,40 @@
 use crate::include::common::bitdepth::DynPixel;
 use libc::ptrdiff_t;
+use std::ffi::c_int;
 
 #[inline]
-pub unsafe extern "C" fn get_upsample(
-    wh: libc::c_int,
-    angle: libc::c_int,
-    is_sm: libc::c_int,
-) -> libc::c_int {
-    return (angle < 40 && wh <= 16 >> is_sm) as libc::c_int;
+pub unsafe extern "C" fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+    return (angle < 40 && wh <= 16 >> is_sm) as c_int;
 }
 
 pub type angular_ipred_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
     *const DynPixel,
-    libc::c_int,
-    libc::c_int,
-    libc::c_int,
-    libc::c_int,
-    libc::c_int,
-    libc::c_int,
+    c_int,
+    c_int,
+    c_int,
+    c_int,
+    c_int,
+    c_int,
 ) -> ();
 
-pub type cfl_ac_fn = unsafe extern "C" fn(
-    *mut i16,
-    *const DynPixel,
-    ptrdiff_t,
-    libc::c_int,
-    libc::c_int,
-    libc::c_int,
-    libc::c_int,
-) -> ();
+pub type cfl_ac_fn =
+    unsafe extern "C" fn(*mut i16, *const DynPixel, ptrdiff_t, c_int, c_int, c_int, c_int) -> ();
 
 pub type cfl_pred_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
     *const DynPixel,
-    libc::c_int,
-    libc::c_int,
+    c_int,
+    c_int,
     *const i16,
-    libc::c_int,
-    libc::c_int,
+    c_int,
+    c_int,
 ) -> ();
 
-pub type pal_pred_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const u16,
-    *const u8,
-    libc::c_int,
-    libc::c_int,
-) -> ();
+pub type pal_pred_fn =
+    unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const u16, *const u8, c_int, c_int) -> ();
 
 #[repr(C)]
 pub struct Dav1dIntraPredDSPContext {
@@ -70,12 +54,12 @@ macro_rules! decl_fn {
             dst: *mut DynPixel,
             stride: ptrdiff_t,
             topleft: *const DynPixel,
-            width: libc::c_int,
-            height: libc::c_int,
-            angle: libc::c_int,
-            max_width: libc::c_int,
-            max_height: libc::c_int,
-            bitdepth_max: libc::c_int,
+            width: c_int,
+            height: c_int,
+            angle: c_int,
+            max_width: c_int,
+            max_height: c_int,
+            bitdepth_max: c_int,
         );
     };
 
@@ -84,11 +68,11 @@ macro_rules! decl_fn {
             dst: *mut DynPixel,
             stride: ptrdiff_t,
             topleft: *const DynPixel,
-            width: libc::c_int,
-            height: libc::c_int,
+            width: c_int,
+            height: c_int,
             ac: *const i16,
-            alpha: libc::c_int,
-            bitdepth_max: libc::c_int,
+            alpha: c_int,
+            bitdepth_max: c_int,
         );
     };
 
@@ -97,10 +81,10 @@ macro_rules! decl_fn {
             ac: *mut i16,
             y: *const DynPixel,
             stride: ptrdiff_t,
-            w_pad: libc::c_int,
-            h_pad: libc::c_int,
-            cw: libc::c_int,
-            ch: libc::c_int,
+            w_pad: c_int,
+            h_pad: c_int,
+            cw: c_int,
+            ch: c_int,
         );
     };
 
@@ -110,8 +94,8 @@ macro_rules! decl_fn {
             stride: ptrdiff_t,
             pal: *const u16,
             idx: *const u8,
-            w: libc::c_int,
-            h: libc::c_int,
+            w: c_int,
+            h: c_int,
         );
     };
 }

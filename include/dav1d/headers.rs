@@ -1,4 +1,7 @@
-pub type Dav1dObuType = libc::c_uint;
+use std::ffi::c_int;
+use std::ffi::c_uint;
+
+pub type Dav1dObuType = c_uint;
 pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
 pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
 pub const DAV1D_OBU_FRAME: Dav1dObuType = 6;
@@ -8,7 +11,7 @@ pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = 3;
 pub const DAV1D_OBU_TD: Dav1dObuType = 2;
 pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = 1;
 
-pub type Dav1dTxfmMode = libc::c_uint;
+pub type Dav1dTxfmMode = c_uint;
 pub const DAV1D_N_TX_MODES: usize = 3;
 pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
 pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
@@ -23,7 +26,7 @@ pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
 pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
 pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
 
-pub type Dav1dAdaptiveBoolean = libc::c_uint;
+pub type Dav1dAdaptiveBoolean = c_uint;
 pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
 pub const DAV1D_ON: Dav1dAdaptiveBoolean = 1;
 pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
@@ -34,7 +37,7 @@ pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
 pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
 pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
 
-pub type Dav1dWarpedMotionType = libc::c_uint;
+pub type Dav1dWarpedMotionType = c_uint;
 pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
@@ -66,19 +69,19 @@ impl Dav1dWarpedMotionParams {
     }
 }
 
-pub type Dav1dPixelLayout = libc::c_uint;
+pub type Dav1dPixelLayout = c_uint;
 pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
 pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
 pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
 pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
 
-pub type Dav1dFrameType = libc::c_uint;
+pub type Dav1dFrameType = c_uint;
 pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
 pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
 pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
 pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
 
-pub type Dav1dColorPrimaries = libc::c_uint;
+pub type Dav1dColorPrimaries = c_uint;
 pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
 pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries = 22;
 pub const DAV1D_COLOR_PRI_SMPTE432: Dav1dColorPrimaries = 12;
@@ -93,7 +96,7 @@ pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = 4;
 pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = 2;
 pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = 1;
 
-pub type Dav1dTransferCharacteristics = libc::c_uint;
+pub type Dav1dTransferCharacteristics = c_uint;
 pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
 pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics = 18;
 pub const DAV1D_TRC_SMPTE428: Dav1dTransferCharacteristics = 17;
@@ -113,7 +116,7 @@ pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics = 4;
 pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics = 2;
 pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics = 1;
 
-pub type Dav1dMatrixCoefficients = libc::c_uint;
+pub type Dav1dMatrixCoefficients = c_uint;
 pub const DAV1D_MC_RESERVED: Dav1dMatrixCoefficients = 255;
 pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = 14;
 pub const DAV1D_MC_CHROMAT_CL: Dav1dMatrixCoefficients = 13;
@@ -130,7 +133,7 @@ pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients = 2;
 pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = 1;
 pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = 0;
 
-pub type Dav1dChromaSamplePosition = libc::c_uint;
+pub type Dav1dChromaSamplePosition = c_uint;
 pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
 pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
 pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
@@ -140,8 +143,8 @@ pub const DAV1D_MAX_SEGMENTS: u8 = 8;
 
 #[repr(C)]
 pub struct Dav1dContentLightLevel {
-    pub max_content_light_level: libc::c_int,
-    pub max_frame_average_light_level: libc::c_int,
+    pub max_content_light_level: c_int,
+    pub max_frame_average_light_level: c_int,
 }
 
 #[repr(C)]
@@ -163,201 +166,201 @@ pub struct Dav1dITUTT35 {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingPoint {
-    pub major_level: libc::c_int,
-    pub minor_level: libc::c_int,
-    pub initial_display_delay: libc::c_int,
-    pub idc: libc::c_int,
-    pub tier: libc::c_int,
-    pub decoder_model_param_present: libc::c_int,
-    pub display_model_param_present: libc::c_int,
+    pub major_level: c_int,
+    pub minor_level: c_int,
+    pub initial_display_delay: c_int,
+    pub idc: c_int,
+    pub tier: c_int,
+    pub decoder_model_param_present: c_int,
+    pub display_model_param_present: c_int,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingParameterInfo {
-    pub decoder_buffer_delay: libc::c_int,
-    pub encoder_buffer_delay: libc::c_int,
-    pub low_delay_mode: libc::c_int,
+    pub decoder_buffer_delay: c_int,
+    pub encoder_buffer_delay: c_int,
+    pub low_delay_mode: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dSequenceHeader {
-    pub profile: libc::c_int,
-    pub max_width: libc::c_int,
-    pub max_height: libc::c_int,
+    pub profile: c_int,
+    pub max_width: c_int,
+    pub max_height: c_int,
     pub layout: Dav1dPixelLayout,
     pub pri: Dav1dColorPrimaries,
     pub trc: Dav1dTransferCharacteristics,
     pub mtrx: Dav1dMatrixCoefficients,
     pub chr: Dav1dChromaSamplePosition,
-    pub hbd: libc::c_int,
-    pub color_range: libc::c_int,
-    pub num_operating_points: libc::c_int,
+    pub hbd: c_int,
+    pub color_range: c_int,
+    pub num_operating_points: c_int,
     pub operating_points: [Dav1dSequenceHeaderOperatingPoint; 32],
-    pub still_picture: libc::c_int,
-    pub reduced_still_picture_header: libc::c_int,
-    pub timing_info_present: libc::c_int,
-    pub num_units_in_tick: libc::c_int,
-    pub time_scale: libc::c_int,
-    pub equal_picture_interval: libc::c_int,
-    pub num_ticks_per_picture: libc::c_uint,
-    pub decoder_model_info_present: libc::c_int,
-    pub encoder_decoder_buffer_delay_length: libc::c_int,
-    pub num_units_in_decoding_tick: libc::c_int,
-    pub buffer_removal_delay_length: libc::c_int,
-    pub frame_presentation_delay_length: libc::c_int,
-    pub display_model_info_present: libc::c_int,
-    pub width_n_bits: libc::c_int,
-    pub height_n_bits: libc::c_int,
-    pub frame_id_numbers_present: libc::c_int,
-    pub delta_frame_id_n_bits: libc::c_int,
-    pub frame_id_n_bits: libc::c_int,
-    pub sb128: libc::c_int,
-    pub filter_intra: libc::c_int,
-    pub intra_edge_filter: libc::c_int,
-    pub inter_intra: libc::c_int,
-    pub masked_compound: libc::c_int,
-    pub warped_motion: libc::c_int,
-    pub dual_filter: libc::c_int,
-    pub order_hint: libc::c_int,
-    pub jnt_comp: libc::c_int,
-    pub ref_frame_mvs: libc::c_int,
+    pub still_picture: c_int,
+    pub reduced_still_picture_header: c_int,
+    pub timing_info_present: c_int,
+    pub num_units_in_tick: c_int,
+    pub time_scale: c_int,
+    pub equal_picture_interval: c_int,
+    pub num_ticks_per_picture: c_uint,
+    pub decoder_model_info_present: c_int,
+    pub encoder_decoder_buffer_delay_length: c_int,
+    pub num_units_in_decoding_tick: c_int,
+    pub buffer_removal_delay_length: c_int,
+    pub frame_presentation_delay_length: c_int,
+    pub display_model_info_present: c_int,
+    pub width_n_bits: c_int,
+    pub height_n_bits: c_int,
+    pub frame_id_numbers_present: c_int,
+    pub delta_frame_id_n_bits: c_int,
+    pub frame_id_n_bits: c_int,
+    pub sb128: c_int,
+    pub filter_intra: c_int,
+    pub intra_edge_filter: c_int,
+    pub inter_intra: c_int,
+    pub masked_compound: c_int,
+    pub warped_motion: c_int,
+    pub dual_filter: c_int,
+    pub order_hint: c_int,
+    pub jnt_comp: c_int,
+    pub ref_frame_mvs: c_int,
     pub screen_content_tools: Dav1dAdaptiveBoolean,
     pub force_integer_mv: Dav1dAdaptiveBoolean,
-    pub order_hint_n_bits: libc::c_int,
-    pub super_res: libc::c_int,
-    pub cdef: libc::c_int,
-    pub restoration: libc::c_int,
-    pub ss_hor: libc::c_int,
-    pub ss_ver: libc::c_int,
-    pub monochrome: libc::c_int,
-    pub color_description_present: libc::c_int,
-    pub separate_uv_delta_q: libc::c_int,
-    pub film_grain_present: libc::c_int,
+    pub order_hint_n_bits: c_int,
+    pub super_res: c_int,
+    pub cdef: c_int,
+    pub restoration: c_int,
+    pub ss_hor: c_int,
+    pub ss_ver: c_int,
+    pub monochrome: c_int,
+    pub color_description_present: c_int,
+    pub separate_uv_delta_q: c_int,
+    pub film_grain_present: c_int,
     pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dSegmentationData {
-    pub delta_q: libc::c_int,
-    pub delta_lf_y_v: libc::c_int,
-    pub delta_lf_y_h: libc::c_int,
-    pub delta_lf_u: libc::c_int,
-    pub delta_lf_v: libc::c_int,
-    pub r#ref: libc::c_int,
-    pub skip: libc::c_int,
-    pub globalmv: libc::c_int,
+    pub delta_q: c_int,
+    pub delta_lf_y_v: c_int,
+    pub delta_lf_y_h: c_int,
+    pub delta_lf_u: c_int,
+    pub delta_lf_v: c_int,
+    pub r#ref: c_int,
+    pub skip: c_int,
+    pub globalmv: c_int,
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dSegmentationDataSet {
     pub d: [Dav1dSegmentationData; 8],
-    pub preskip: libc::c_int,
-    pub last_active_segid: libc::c_int,
+    pub preskip: c_int,
+    pub last_active_segid: c_int,
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dLoopfilterModeRefDeltas {
-    pub mode_delta: [libc::c_int; 2],
-    pub ref_delta: [libc::c_int; 8],
+    pub mode_delta: [c_int; 2],
+    pub ref_delta: [c_int; 8],
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFilmGrainData {
-    pub seed: libc::c_uint,
-    pub num_y_points: libc::c_int,
+    pub seed: c_uint,
+    pub num_y_points: c_int,
     pub y_points: [[u8; 2]; 14],
-    pub chroma_scaling_from_luma: libc::c_int,
-    pub num_uv_points: [libc::c_int; 2],
+    pub chroma_scaling_from_luma: c_int,
+    pub num_uv_points: [c_int; 2],
     pub uv_points: [[[u8; 2]; 10]; 2],
-    pub scaling_shift: libc::c_int,
-    pub ar_coeff_lag: libc::c_int,
+    pub scaling_shift: c_int,
+    pub ar_coeff_lag: c_int,
     pub ar_coeffs_y: [i8; 24],
     pub ar_coeffs_uv: [[i8; 28]; 2],
     pub ar_coeff_shift: u64,
-    pub grain_scale_shift: libc::c_int,
-    pub uv_mult: [libc::c_int; 2],
-    pub uv_luma_mult: [libc::c_int; 2],
-    pub uv_offset: [libc::c_int; 2],
-    pub overlap_flag: libc::c_int,
-    pub clip_to_restricted_range: libc::c_int,
+    pub grain_scale_shift: c_int,
+    pub uv_mult: [c_int; 2],
+    pub uv_luma_mult: [c_int; 2],
+    pub uv_offset: [c_int; 2],
+    pub overlap_flag: c_int,
+    pub clip_to_restricted_range: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_film_grain {
     pub data: Dav1dFilmGrainData,
-    pub present: libc::c_int,
-    pub update: libc::c_int,
+    pub present: c_int,
+    pub update: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeaderOperatingPoint {
-    pub buffer_removal_time: libc::c_int,
+    pub buffer_removal_time: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_super_res {
-    pub width_scale_denominator: libc::c_int,
-    pub enabled: libc::c_int,
+    pub width_scale_denominator: c_int,
+    pub enabled: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_tiling {
-    pub uniform: libc::c_int,
-    pub n_bytes: libc::c_uint,
-    pub min_log2_cols: libc::c_int,
-    pub max_log2_cols: libc::c_int,
-    pub log2_cols: libc::c_int,
-    pub cols: libc::c_int,
-    pub min_log2_rows: libc::c_int,
-    pub max_log2_rows: libc::c_int,
-    pub log2_rows: libc::c_int,
-    pub rows: libc::c_int,
+    pub uniform: c_int,
+    pub n_bytes: c_uint,
+    pub min_log2_cols: c_int,
+    pub max_log2_cols: c_int,
+    pub log2_cols: c_int,
+    pub cols: c_int,
+    pub min_log2_rows: c_int,
+    pub max_log2_rows: c_int,
+    pub log2_rows: c_int,
+    pub rows: c_int,
     pub col_start_sb: [u16; 65],
     pub row_start_sb: [u16; 65],
-    pub update: libc::c_int,
+    pub update: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_quant {
-    pub yac: libc::c_int,
-    pub ydc_delta: libc::c_int,
-    pub udc_delta: libc::c_int,
-    pub uac_delta: libc::c_int,
-    pub vdc_delta: libc::c_int,
-    pub vac_delta: libc::c_int,
-    pub qm: libc::c_int,
-    pub qm_y: libc::c_int,
-    pub qm_u: libc::c_int,
-    pub qm_v: libc::c_int,
+    pub yac: c_int,
+    pub ydc_delta: c_int,
+    pub udc_delta: c_int,
+    pub uac_delta: c_int,
+    pub vdc_delta: c_int,
+    pub vac_delta: c_int,
+    pub qm: c_int,
+    pub qm_y: c_int,
+    pub qm_u: c_int,
+    pub qm_v: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_segmentation {
-    pub enabled: libc::c_int,
-    pub update_map: libc::c_int,
-    pub temporal: libc::c_int,
-    pub update_data: libc::c_int,
+    pub enabled: c_int,
+    pub update_map: c_int,
+    pub temporal: c_int,
+    pub update_data: c_int,
     pub seg_data: Dav1dSegmentationDataSet,
-    pub lossless: [libc::c_int; 8],
-    pub qidx: [libc::c_int; 8],
+    pub lossless: [c_int; 8],
+    pub qidx: [c_int; 8],
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_q {
-    pub present: libc::c_int,
-    pub res_log2: libc::c_int,
+    pub present: c_int,
+    pub res_log2: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_lf {
-    pub present: libc::c_int,
-    pub res_log2: libc::c_int,
-    pub multi: libc::c_int,
+    pub present: c_int,
+    pub res_log2: c_int,
+    pub multi: c_int,
 }
 
 #[repr(C)]
@@ -368,79 +371,79 @@ pub struct Dav1dFrameHeader_delta {
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_loopfilter {
-    pub level_y: [libc::c_int; 2],
-    pub level_u: libc::c_int,
-    pub level_v: libc::c_int,
-    pub mode_ref_delta_enabled: libc::c_int,
-    pub mode_ref_delta_update: libc::c_int,
+    pub level_y: [c_int; 2],
+    pub level_u: c_int,
+    pub level_v: c_int,
+    pub mode_ref_delta_enabled: c_int,
+    pub mode_ref_delta_update: c_int,
     pub mode_ref_deltas: Dav1dLoopfilterModeRefDeltas,
-    pub sharpness: libc::c_int,
+    pub sharpness: c_int,
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_cdef {
-    pub damping: libc::c_int,
-    pub n_bits: libc::c_int,
-    pub y_strength: [libc::c_int; 8],
-    pub uv_strength: [libc::c_int; 8],
+    pub damping: c_int,
+    pub n_bits: c_int,
+    pub y_strength: [c_int; 8],
+    pub uv_strength: [c_int; 8],
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader_restoration {
     pub type_0: [Dav1dRestorationType; 3],
-    pub unit_size: [libc::c_int; 2],
+    pub unit_size: [c_int; 2],
 }
 
 #[repr(C)]
 pub struct Dav1dFrameHeader {
     pub film_grain: Dav1dFrameHeader_film_grain,
     pub frame_type: Dav1dFrameType,
-    pub width: [libc::c_int; 2],
-    pub height: libc::c_int,
-    pub frame_offset: libc::c_int,
-    pub temporal_id: libc::c_int,
-    pub spatial_id: libc::c_int,
-    pub show_existing_frame: libc::c_int,
-    pub existing_frame_idx: libc::c_int,
-    pub frame_id: libc::c_int,
-    pub frame_presentation_delay: libc::c_int,
-    pub show_frame: libc::c_int,
-    pub showable_frame: libc::c_int,
-    pub error_resilient_mode: libc::c_int,
-    pub disable_cdf_update: libc::c_int,
-    pub allow_screen_content_tools: libc::c_int,
-    pub force_integer_mv: libc::c_int,
-    pub frame_size_override: libc::c_int,
-    pub primary_ref_frame: libc::c_int,
-    pub buffer_removal_time_present: libc::c_int,
+    pub width: [c_int; 2],
+    pub height: c_int,
+    pub frame_offset: c_int,
+    pub temporal_id: c_int,
+    pub spatial_id: c_int,
+    pub show_existing_frame: c_int,
+    pub existing_frame_idx: c_int,
+    pub frame_id: c_int,
+    pub frame_presentation_delay: c_int,
+    pub show_frame: c_int,
+    pub showable_frame: c_int,
+    pub error_resilient_mode: c_int,
+    pub disable_cdf_update: c_int,
+    pub allow_screen_content_tools: c_int,
+    pub force_integer_mv: c_int,
+    pub frame_size_override: c_int,
+    pub primary_ref_frame: c_int,
+    pub buffer_removal_time_present: c_int,
     pub operating_points: [Dav1dFrameHeaderOperatingPoint; 32],
-    pub refresh_frame_flags: libc::c_int,
-    pub render_width: libc::c_int,
-    pub render_height: libc::c_int,
+    pub refresh_frame_flags: c_int,
+    pub render_width: c_int,
+    pub render_height: c_int,
     pub super_res: Dav1dFrameHeader_super_res,
-    pub have_render_size: libc::c_int,
-    pub allow_intrabc: libc::c_int,
-    pub frame_ref_short_signaling: libc::c_int,
-    pub refidx: [libc::c_int; 7],
-    pub hp: libc::c_int,
+    pub have_render_size: c_int,
+    pub allow_intrabc: c_int,
+    pub frame_ref_short_signaling: c_int,
+    pub refidx: [c_int; 7],
+    pub hp: c_int,
     pub subpel_filter_mode: Dav1dFilterMode,
-    pub switchable_motion_mode: libc::c_int,
-    pub use_ref_frame_mvs: libc::c_int,
-    pub refresh_context: libc::c_int,
+    pub switchable_motion_mode: c_int,
+    pub use_ref_frame_mvs: c_int,
+    pub refresh_context: c_int,
     pub tiling: Dav1dFrameHeader_tiling,
     pub quant: Dav1dFrameHeader_quant,
     pub segmentation: Dav1dFrameHeader_segmentation,
     pub delta: Dav1dFrameHeader_delta,
-    pub all_lossless: libc::c_int,
+    pub all_lossless: c_int,
     pub loopfilter: Dav1dFrameHeader_loopfilter,
     pub cdef: Dav1dFrameHeader_cdef,
     pub restoration: Dav1dFrameHeader_restoration,
     pub txfm_mode: Dav1dTxfmMode,
-    pub switchable_comp_refs: libc::c_int,
-    pub skip_mode_allowed: libc::c_int,
-    pub skip_mode_enabled: libc::c_int,
-    pub skip_mode_refs: [libc::c_int; 2],
-    pub warp_motion: libc::c_int,
-    pub reduced_txtp_set: libc::c_int,
+    pub switchable_comp_refs: c_int,
+    pub skip_mode_allowed: c_int,
+    pub skip_mode_enabled: c_int,
+    pub skip_mode_refs: [c_int; 2],
+    pub warp_motion: c_int,
+    pub reduced_txtp_set: c_int,
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }

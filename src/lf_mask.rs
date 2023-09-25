@@ -14,6 +14,7 @@ use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
 use libc::ptrdiff_t;
 use std::cmp;
+use std::ffi::c_int;
 
 #[repr(C)]
 pub struct Av1FilterLUT {
@@ -358,10 +359,10 @@ pub unsafe fn dav1d_create_lf_mask_intra(
     level_cache: *mut [u8; 4],
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
-    bx: libc::c_int,
-    by: libc::c_int,
-    iw: libc::c_int,
-    ih: libc::c_int,
+    bx: c_int,
+    by: c_int,
+    iw: c_int,
+    ih: c_int,
     bs: BlockSize,
     ytx: RectTxfmSize,
     uvtx: RectTxfmSize,
@@ -456,10 +457,10 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     filter_level: &[[[u8; 2]; 8]; 4],
     r#ref: usize,
     is_gmv: bool,
-    bx: libc::c_int,
-    by: libc::c_int,
-    iw: libc::c_int,
-    ih: libc::c_int,
+    bx: c_int,
+    by: c_int,
+    iw: c_int,
+    ih: c_int,
     skip: bool,
     bs: BlockSize,
     max_ytx: RectTxfmSize,
@@ -561,7 +562,7 @@ pub unsafe fn dav1d_create_lf_mask_inter(
     );
 }
 
-pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int) {
+pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: c_int) {
     // set E/I/H values from loopfilter level
     let sharp = filter_sharpness as u8;
     for level in 0..64 {
@@ -583,19 +584,19 @@ pub fn dav1d_calc_eih(lim_lut: &mut Av1FilterLUT, filter_sharpness: libc::c_int)
 
 fn calc_lf_value(
     lflvl_values: &mut [[u8; 2]; 8],
-    base_lvl: libc::c_int,
+    base_lvl: c_int,
     lf_delta: i8,
-    seg_delta: libc::c_int,
+    seg_delta: c_int,
     mr_delta: Option<&Dav1dLoopfilterModeRefDeltas>,
 ) {
     let base = iclip(
-        iclip(base_lvl + lf_delta as libc::c_int, 0, 63) + seg_delta,
+        iclip(base_lvl + lf_delta as c_int, 0, 63) + seg_delta,
         0,
         63,
     );
 
     if let Some(mr_delta) = mr_delta {
-        let sh = (base >= 32) as libc::c_int;
+        let sh = (base >= 32) as c_int;
         lflvl_values[0] = [iclip(base + mr_delta.ref_delta[0] * (1 << sh), 0, 63) as u8; 2];
         for r in 1..8 {
             for m in 0..2 {
@@ -611,9 +612,9 @@ fn calc_lf_value(
 #[inline]
 fn calc_lf_value_chroma(
     lflvl_values: &mut [[u8; 2]; 8],
-    base_lvl: libc::c_int,
+    base_lvl: c_int,
     lf_delta: i8,
-    seg_delta: libc::c_int,
+    seg_delta: c_int,
     mr_delta: Option<&Dav1dLoopfilterModeRefDeltas>,
 ) {
     if base_lvl == 0 {

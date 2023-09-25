@@ -5,6 +5,7 @@ use crate::include::common::intops::u64log2;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::src::levels::mv;
+use std::ffi::c_int;
 
 static div_lut: [u16; 257] = [
     16384, 16320, 16257, 16194, 16132, 16070, 16009, 15948, 15888, 15828, 15768, 15709, 15650,
@@ -29,13 +30,13 @@ static div_lut: [u16; 257] = [
 ];
 
 #[inline]
-fn iclip_wmp(v: libc::c_int) -> libc::c_int {
+fn iclip_wmp(v: c_int) -> c_int {
     let cv = iclip(v, i16::MIN.into(), i16::MAX.into());
     apply_sign(cv.abs() + 32 >> 6, cv) * (1 << 6)
 }
 
 #[inline]
-fn resolve_divisor_32(d: u32) -> (libc::c_int, libc::c_int) {
+fn resolve_divisor_32(d: u32) -> (c_int, c_int) {
     let shift = ulog2(d);
     let e = d - (1 << shift);
     let f = if shift > 8 {
@@ -44,7 +45,7 @@ fn resolve_divisor_32(d: u32) -> (libc::c_int, libc::c_int) {
         e << 8 - shift
     };
     // Use f as lookup into the precomputed table of multipliers
-    (shift + 14, div_lut[f as usize] as libc::c_int)
+    (shift + 14, div_lut[f as usize] as c_int)
 }
 
 pub fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
@@ -61,21 +62,18 @@ pub fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
     let y = apply_sign(y, mat[2]);
     let v1 = mat[4] as i64 * 0x10000 * y as i64;
     let rnd = 1 << shift >> 1;
-    let gamma = iclip_wmp(apply_sign64(
-        (v1.abs() + rnd as i64 >> shift) as libc::c_int,
-        v1,
-    )) as i16;
+    let gamma = iclip_wmp(apply_sign64((v1.abs() + rnd as i64 >> shift) as c_int, v1)) as i16;
     let v2 = mat[3] as i64 * mat[4] as i64 * y as i64;
-    let delta = iclip_wmp(
-        mat[5] - apply_sign64((v2.abs() + rnd as i64 >> shift) as libc::c_int, v2) - 0x10000,
-    ) as i16;
+    let delta =
+        iclip_wmp(mat[5] - apply_sign64((v2.abs() + rnd as i64 >> shift) as c_int, v2) - 0x10000)
+            as i16;
     wm.abcd = [alpha, beta, gamma, delta];
 
     4 * (alpha as i32).abs() + 7 * (beta as i32).abs() >= 0x10000
         || 4 * (gamma as i32).abs() + 4 * (delta as i32).abs() >= 0x10000
 }
 
-fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
+fn resolve_divisor_64(d: u64) -> (c_int, c_int) {
     let shift = u64log2(d);
     let e = d - (1 << shift);
     let f = if shift > 8 {
@@ -84,28 +82,28 @@ fn resolve_divisor_64(d: u64) -> (libc::c_int, libc::c_int) {
         e << 8 - shift
     };
     // Use f as lookup into the precomputed table of multipliers
-    (shift + 14, div_lut[f as usize] as libc::c_int)
+    (shift + 14, div_lut[f as usize] as c_int)
 }
 
-fn get_mult_shift_ndiag(px: i64, idet: libc::c_int, shift: libc::c_int) -> libc::c_int {
+fn get_mult_shift_ndiag(px: i64, idet: c_int, shift: c_int) -> c_int {
     let v1 = px * idet as i64;
-    let v2 = apply_sign64((v1.abs() + (1 << shift >> 1) >> shift) as libc::c_int, v1);
+    let v2 = apply_sign64((v1.abs() + (1 << shift >> 1) >> shift) as c_int, v1);
     iclip(v2, -0x1fff, 0x1fff)
 }
 
-fn get_mult_shift_diag(px: i64, idet: libc::c_int, shift: libc::c_int) -> libc::c_int {
+fn get_mult_shift_diag(px: i64, idet: c_int, shift: c_int) -> c_int {
     let v1 = px * idet as i64;
-    let v2 = apply_sign64((v1.abs() + (1 << shift >> 1) >> shift) as libc::c_int, v1);
+    let v2 = apply_sign64((v1.abs() + (1 << shift >> 1) >> shift) as c_int, v1);
     iclip(v2, 0xe001, 0x11fff)
 }
 
 pub fn dav1d_set_affine_mv2d(
-    bw4: libc::c_int,
-    bh4: libc::c_int,
+    bw4: c_int,
+    bh4: c_int,
     mv: mv,
     wm: &mut Dav1dWarpedMotionParams,
-    bx4: libc::c_int,
-    by4: libc::c_int,
+    bx4: c_int,
+    by4: c_int,
 ) {
     let mat = &mut wm.matrix;
     let rsuy = 2 * bh4 - 1;
@@ -126,14 +124,14 @@ pub fn dav1d_set_affine_mv2d(
 }
 
 pub fn dav1d_find_affine_int(
-    pts: &[[[libc::c_int; 2]; 2]; 8],
+    pts: &[[[c_int; 2]; 2]; 8],
     np: usize,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
+    bw4: c_int,
+    bh4: c_int,
     mv: mv,
     wm: &mut Dav1dWarpedMotionParams,
-    bx4: libc::c_int,
-    by4: libc::c_int,
+    bx4: c_int,
+    by4: c_int,
 ) -> bool {
     let mat = &mut wm.matrix;
     let mut a = [[0, 0], [0, 0]];
@@ -143,8 +141,8 @@ pub fn dav1d_find_affine_int(
     let rsux = 2 * bw4 - 1;
     let suy = rsuy * 8;
     let sux = rsux * 8;
-    let duy = suy + mv.y as libc::c_int;
-    let dux = sux + mv.x as libc::c_int;
+    let duy = suy + mv.y as c_int;
+    let dux = sux + mv.x as c_int;
     let isuy = by4 * 4 + rsuy;
     let isux = bx4 * 4 + rsux;
 

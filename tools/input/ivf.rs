@@ -4,45 +4,52 @@ use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::src::lib::dav1d_data_create;
 use rav1d::src::lib::dav1d_data_unref;
 use rav1d::stderr;
+use std::ffi::c_char;
+use std::ffi::c_double;
+use std::ffi::c_int;
+use std::ffi::c_longlong;
+use std::ffi::c_uint;
+use std::ffi::c_ulong;
+use std::ffi::c_void;
 
 extern "C" {
-    fn llround(_: libc::c_double) -> libc::c_longlong;
-    fn fclose(__stream: *mut libc::FILE) -> libc::c_int;
-    fn fopen(_: *const libc::c_char, _: *const libc::c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn fread(_: *mut libc::c_void, _: usize, _: usize, _: *mut libc::FILE) -> libc::c_ulong;
-    fn fseeko(__stream: *mut libc::FILE, __off: libc::off_t, __whence: libc::c_int) -> libc::c_int;
+    fn llround(_: c_double) -> c_longlong;
+    fn fclose(__stream: *mut libc::FILE) -> c_int;
+    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
+    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
+    fn fread(_: *mut c_void, _: usize, _: usize, _: *mut libc::FILE) -> c_ulong;
+    fn fseeko(__stream: *mut libc::FILE, __off: libc::off_t, __whence: c_int) -> c_int;
     fn ftello(__stream: *mut libc::FILE) -> libc::off_t;
-    fn memcmp(_: *const libc::c_void, _: *const libc::c_void, _: usize) -> libc::c_int;
-    fn strerror(_: libc::c_int) -> *mut libc::c_char;
+    fn memcmp(_: *const c_void, _: *const c_void, _: usize) -> c_int;
+    fn strerror(_: c_int) -> *mut c_char;
 }
 
 #[repr(C)]
 pub struct DemuxerPriv {
     pub f: *mut libc::FILE,
-    pub broken: libc::c_int,
-    pub timebase: libc::c_double,
+    pub broken: c_int,
+    pub timebase: c_double,
     pub last_ts: u64,
     pub step: u64,
 }
 
 #[repr(C)]
 pub struct Demuxer {
-    pub priv_data_size: libc::c_int,
-    pub name: *const libc::c_char,
-    pub probe_sz: libc::c_int,
-    pub probe: Option<unsafe extern "C" fn(*const u8) -> libc::c_int>,
+    pub priv_data_size: c_int,
+    pub name: *const c_char,
+    pub probe_sz: c_int,
+    pub probe: Option<unsafe extern "C" fn(*const u8) -> c_int>,
     pub open: Option<
         unsafe extern "C" fn(
             *mut DemuxerPriv,
-            *const libc::c_char,
-            *mut libc::c_uint,
-            *mut libc::c_uint,
-            *mut libc::c_uint,
-        ) -> libc::c_int,
+            *const c_char,
+            *mut c_uint,
+            *mut c_uint,
+            *mut c_uint,
+        ) -> c_int,
     >,
-    pub read: Option<unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> libc::c_int>,
-    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, u64) -> libc::c_int>,
+    pub read: Option<unsafe extern "C" fn(*mut DemuxerPriv, *mut Dav1dData) -> c_int>,
+    pub seek: Option<unsafe extern "C" fn(*mut DemuxerPriv, u64) -> c_int>,
     pub close: Option<unsafe extern "C" fn(*mut DemuxerPriv) -> ()>,
 }
 
@@ -53,29 +60,29 @@ static mut probe_data: [u8; 12] = [
     'K' as i32 as u8,
     'I' as i32 as u8,
     'F' as i32 as u8,
-    0 as libc::c_int as u8,
-    0 as libc::c_int as u8,
-    0x20 as libc::c_int as u8,
-    0 as libc::c_int as u8,
+    0 as c_int as u8,
+    0 as c_int as u8,
+    0x20 as c_int as u8,
+    0 as c_int as u8,
     'A' as i32 as u8,
     'V' as i32 as u8,
     '0' as i32 as u8,
     '1' as i32 as u8,
 ];
 
-unsafe extern "C" fn ivf_probe(data: *const u8) -> libc::c_int {
+unsafe extern "C" fn ivf_probe(data: *const u8) -> c_int {
     return (memcmp(
-        data as *const libc::c_void,
-        probe_data.as_ptr() as *const libc::c_void,
+        data as *const c_void,
+        probe_data.as_ptr() as *const c_void,
         ::core::mem::size_of::<[u8; 12]>(),
-    ) == 0) as libc::c_int;
+    ) == 0) as c_int;
 }
 
-unsafe extern "C" fn rl32(p: *const u8) -> libc::c_uint {
-    return (*p.offset(3) as u32) << 24 as libc::c_uint
-        | ((*p.offset(2) as libc::c_int) << 16 as libc::c_uint) as libc::c_uint
-        | ((*p.offset(1) as libc::c_int) << 8 as libc::c_uint) as libc::c_uint
-        | *p.offset(0) as libc::c_uint;
+unsafe extern "C" fn rl32(p: *const u8) -> c_uint {
+    return (*p.offset(3) as u32) << 24 as c_uint
+        | ((*p.offset(2) as c_int) << 16 as c_uint) as c_uint
+        | ((*p.offset(1) as c_int) << 8 as c_uint) as c_uint
+        | *p.offset(0) as c_uint;
 }
 
 unsafe extern "C" fn rl64(p: *const u8) -> i64 {
@@ -84,97 +91,91 @@ unsafe extern "C" fn rl64(p: *const u8) -> i64 {
 
 unsafe extern "C" fn ivf_open(
     c: *mut IvfInputContext,
-    file: *const libc::c_char,
-    fps: *mut libc::c_uint,
-    num_frames: *mut libc::c_uint,
-    timebase: *mut libc::c_uint,
-) -> libc::c_int {
+    file: *const c_char,
+    fps: *mut c_uint,
+    num_frames: *mut c_uint,
+    timebase: *mut c_uint,
+) -> c_int {
     let mut hdr: [u8; 32] = [0; 32];
-    (*c).f = fopen(file, b"rb\0" as *const u8 as *const libc::c_char);
+    (*c).f = fopen(file, b"rb\0" as *const u8 as *const c_char);
     if ((*c).f).is_null() {
         fprintf(
             stderr,
-            b"Failed to open %s: %s\n\0" as *const u8 as *const libc::c_char,
+            b"Failed to open %s: %s\n\0" as *const u8 as *const c_char,
             file,
             strerror(*errno_location()),
         );
-        return -(1 as libc::c_int);
+        return -(1 as c_int);
     } else {
-        if fread(hdr.as_mut_ptr() as *mut libc::c_void, 32, 1, (*c).f)
-            != 1 as libc::c_int as libc::c_ulong
-        {
+        if fread(hdr.as_mut_ptr() as *mut c_void, 32, 1, (*c).f) != 1 as c_int as c_ulong {
             fprintf(
                 stderr,
-                b"Failed to read stream header: %s\n\0" as *const u8 as *const libc::c_char,
+                b"Failed to read stream header: %s\n\0" as *const u8 as *const c_char,
                 strerror(*errno_location()),
             );
             fclose((*c).f);
-            return -(1 as libc::c_int);
+            return -(1 as c_int);
         } else {
             if memcmp(
-                hdr.as_mut_ptr() as *const libc::c_void,
-                b"DKIF\0" as *const u8 as *const libc::c_char as *const libc::c_void,
+                hdr.as_mut_ptr() as *const c_void,
+                b"DKIF\0" as *const u8 as *const c_char as *const c_void,
                 4,
             ) != 0
             {
                 fprintf(
                     stderr,
                     b"%s is not an IVF file [tag=%.4s|0x%02x%02x%02x%02x]\n\0" as *const u8
-                        as *const libc::c_char,
+                        as *const c_char,
                     file,
                     hdr.as_mut_ptr(),
-                    hdr[0] as libc::c_int,
-                    hdr[1] as libc::c_int,
-                    hdr[2] as libc::c_int,
-                    hdr[3] as libc::c_int,
+                    hdr[0] as c_int,
+                    hdr[1] as c_int,
+                    hdr[2] as c_int,
+                    hdr[3] as c_int,
                 );
                 fclose((*c).f);
-                return -(1 as libc::c_int);
+                return -(1 as c_int);
             } else {
                 if memcmp(
-                    &mut *hdr.as_mut_ptr().offset(8) as *mut u8 as *const libc::c_void,
-                    b"AV01\0" as *const u8 as *const libc::c_char as *const libc::c_void,
+                    &mut *hdr.as_mut_ptr().offset(8) as *mut u8 as *const c_void,
+                    b"AV01\0" as *const u8 as *const c_char as *const c_void,
                     4,
                 ) != 0
                 {
                     fprintf(
                         stderr,
                         b"%s is not an AV1 file [tag=%.4s|0x%02x%02x%02x%02x]\n\0" as *const u8
-                            as *const libc::c_char,
+                            as *const c_char,
                         file,
                         &mut *hdr.as_mut_ptr().offset(8) as *mut u8,
-                        hdr[8] as libc::c_int,
-                        hdr[9] as libc::c_int,
-                        hdr[10] as libc::c_int,
-                        hdr[11] as libc::c_int,
+                        hdr[8] as c_int,
+                        hdr[9] as c_int,
+                        hdr[10] as c_int,
+                        hdr[11] as c_int,
                     );
                     fclose((*c).f);
-                    return -(1 as libc::c_int);
+                    return -(1 as c_int);
                 }
             }
         }
     }
     *timebase.offset(0) = rl32(&mut *hdr.as_mut_ptr().offset(16));
     *timebase.offset(1) = rl32(&mut *hdr.as_mut_ptr().offset(20));
-    let duration: libc::c_uint = rl32(&mut *hdr.as_mut_ptr().offset(24));
+    let duration: c_uint = rl32(&mut *hdr.as_mut_ptr().offset(24));
     let mut data: [u8; 8] = [0; 8];
-    (*c).broken = 0 as libc::c_int;
-    *num_frames = 0 as libc::c_int as libc::c_uint;
-    while !(fread(data.as_mut_ptr() as *mut libc::c_void, 4, 1, (*c).f)
-        != 1 as libc::c_int as libc::c_ulong)
-    {
+    (*c).broken = 0 as c_int;
+    *num_frames = 0 as c_int as c_uint;
+    while !(fread(data.as_mut_ptr() as *mut c_void, 4, 1, (*c).f) != 1 as c_int as c_ulong) {
         let sz: usize = rl32(data.as_mut_ptr()) as usize;
-        if fread(data.as_mut_ptr() as *mut libc::c_void, 8, 1, (*c).f)
-            != 1 as libc::c_int as libc::c_ulong
-        {
+        if fread(data.as_mut_ptr() as *mut c_void, 8, 1, (*c).f) != 1 as c_int as c_ulong {
             break;
         }
         let ts: u64 = rl64(data.as_mut_ptr()) as u64;
         if *num_frames != 0 && ts <= (*c).last_ts {
-            (*c).broken = 1 as libc::c_int;
+            (*c).broken = 1 as c_int;
         }
         (*c).last_ts = ts;
-        fseeko((*c).f, sz as libc::off_t, 1 as libc::c_int);
+        fseeko((*c).f, sz as libc::off_t, 1 as c_int);
         *num_frames = (*num_frames).wrapping_add(1);
     }
     let mut fps_num: u64 = (*timebase.offset(0) as u64).wrapping_mul(*num_frames as u64);
@@ -199,18 +200,18 @@ unsafe extern "C" fn ivf_open(
         }
     }
     if fps_num != 0 && fps_den != 0 {
-        *fps.offset(0) = fps_num as libc::c_uint;
-        *fps.offset(1) = fps_den as libc::c_uint;
+        *fps.offset(0) = fps_num as c_uint;
+        *fps.offset(1) = fps_den as c_uint;
     } else {
         let ref mut fresh0 = *fps.offset(1);
-        *fresh0 = 0 as libc::c_int as libc::c_uint;
+        *fresh0 = 0 as c_int as c_uint;
         *fps.offset(0) = *fresh0;
     }
-    (*c).timebase = *timebase.offset(0) as libc::c_double / *timebase.offset(1) as libc::c_double;
+    (*c).timebase = *timebase.offset(0) as c_double / *timebase.offset(1) as c_double;
     (*c).step = duration.wrapping_div(*num_frames) as u64;
     fseeko((*c).f, 32, 0);
-    (*c).last_ts = 0 as libc::c_int as u64;
-    return 0 as libc::c_int;
+    (*c).last_ts = 0 as c_int as u64;
+    return 0 as c_int;
 }
 
 #[inline]
@@ -220,28 +221,24 @@ unsafe extern "C" fn ivf_read_header(
     sz: *mut ptrdiff_t,
     off_: *mut libc::off_t,
     ts: *mut u64,
-) -> libc::c_int {
+) -> c_int {
     let mut data: [u8; 8] = [0; 8];
     let off: libc::off_t = ftello((*c).f);
     if !off_.is_null() {
         *off_ = off;
     }
-    if fread(data.as_mut_ptr() as *mut libc::c_void, 4, 1, (*c).f)
-        != 1 as libc::c_int as libc::c_ulong
-    {
-        return -(1 as libc::c_int);
+    if fread(data.as_mut_ptr() as *mut c_void, 4, 1, (*c).f) != 1 as c_int as c_ulong {
+        return -(1 as c_int);
     }
     *sz = rl32(data.as_mut_ptr()) as ptrdiff_t;
     if (*c).broken == 0 {
-        if fread(data.as_mut_ptr() as *mut libc::c_void, 8, 1, (*c).f)
-            != 1 as libc::c_int as libc::c_ulong
-        {
-            return -(1 as libc::c_int);
+        if fread(data.as_mut_ptr() as *mut c_void, 8, 1, (*c).f) != 1 as c_int as c_ulong {
+            return -(1 as c_int);
         }
         *ts = rl64(data.as_mut_ptr()) as u64;
     } else {
-        if fseeko((*c).f, 8 as libc::off_t, 1 as libc::c_int) != 0 {
-            return -(1 as libc::c_int);
+        if fseeko((*c).f, 8 as libc::off_t, 1 as c_int) != 0 {
+            return -(1 as c_int);
         }
         *ts = if off > 32 {
             ((*c).last_ts).wrapping_add((*c).step)
@@ -249,41 +246,40 @@ unsafe extern "C" fn ivf_read_header(
             0
         };
     }
-    return 0 as libc::c_int;
+    return 0 as c_int;
 }
 
-unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> libc::c_int {
+unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> c_int {
     let ptr: *mut u8;
     let mut sz: ptrdiff_t = 0;
     let mut off: libc::off_t = 0;
     let mut ts: u64 = 0;
     if ivf_read_header(c, &mut sz, &mut off, &mut ts) != 0 {
-        return -(1 as libc::c_int);
+        return -(1 as c_int);
     }
     ptr = dav1d_data_create(buf, sz as usize);
     if ptr.is_null() {
-        return -(1 as libc::c_int);
+        return -(1 as c_int);
     }
-    if fread(ptr as *mut libc::c_void, sz as usize, 1, (*c).f) != 1 as libc::c_int as libc::c_ulong
-    {
+    if fread(ptr as *mut c_void, sz as usize, 1, (*c).f) != 1 as c_int as c_ulong {
         fprintf(
             stderr,
-            b"Failed to read frame data: %s\n\0" as *const u8 as *const libc::c_char,
+            b"Failed to read frame data: %s\n\0" as *const u8 as *const c_char,
             strerror(*errno_location()),
         );
         dav1d_data_unref(buf);
-        return -(1 as libc::c_int);
+        return -(1 as c_int);
     }
     (*buf).m.offset = off;
     (*buf).m.timestamp = ts as i64;
     (*c).last_ts = ts;
-    return 0 as libc::c_int;
+    return 0 as c_int;
 }
 
-unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: u64) -> libc::c_int {
+unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: u64) -> c_int {
     let mut current_block: u64;
     let mut cur: u64 = 0;
-    let ts: u64 = llround(pts as libc::c_double * (*c).timebase / 1000000000.0f64) as u64;
+    let ts: u64 = llround(pts as c_double * (*c).timebase / 1000000000.0f64) as u64;
     if ts <= (*c).last_ts {
         if fseeko((*c).f, 32, 0) != 0 {
             current_block = 679495355492430298;
@@ -298,10 +294,10 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: u64) -> libc::c_int 
             679495355492430298 => {
                 fprintf(
                     stderr,
-                    b"Failed to seek: %s\n\0" as *const u8 as *const libc::c_char,
+                    b"Failed to seek: %s\n\0" as *const u8 as *const c_char,
                     strerror(*errno_location()),
                 );
-                return -(1 as libc::c_int);
+                return -(1 as c_int);
             }
             _ => {
                 let mut sz: ptrdiff_t = 0;
@@ -310,18 +306,13 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: u64) -> libc::c_int 
                     continue;
                 }
                 if cur >= ts {
-                    if fseeko(
-                        (*c).f,
-                        -(12 as libc::c_int) as libc::off_t,
-                        1 as libc::c_int,
-                    ) != 0
-                    {
+                    if fseeko((*c).f, -(12 as c_int) as libc::off_t, 1 as c_int) != 0 {
                         current_block = 679495355492430298;
                         continue;
                     }
-                    return 0 as libc::c_int;
+                    return 0 as c_int;
                 } else {
-                    if fseeko((*c).f, sz as libc::off_t, 1 as libc::c_int) != 0 {
+                    if fseeko((*c).f, sz as libc::off_t, 1 as c_int) != 0 {
                         current_block = 679495355492430298;
                         continue;
                     }
@@ -340,24 +331,22 @@ unsafe extern "C" fn ivf_close(c: *mut IvfInputContext) {
 #[no_mangle]
 pub static mut ivf_demuxer: Demuxer = {
     let init = Demuxer {
-        priv_data_size: ::core::mem::size_of::<IvfInputContext>() as libc::c_ulong as libc::c_int,
-        name: b"ivf\0" as *const u8 as *const libc::c_char,
-        probe_sz: ::core::mem::size_of::<[u8; 12]>() as libc::c_ulong as libc::c_int,
-        probe: Some(ivf_probe as unsafe extern "C" fn(*const u8) -> libc::c_int),
+        priv_data_size: ::core::mem::size_of::<IvfInputContext>() as c_ulong as c_int,
+        name: b"ivf\0" as *const u8 as *const c_char,
+        probe_sz: ::core::mem::size_of::<[u8; 12]>() as c_ulong as c_int,
+        probe: Some(ivf_probe as unsafe extern "C" fn(*const u8) -> c_int),
         open: Some(
             ivf_open
                 as unsafe extern "C" fn(
                     *mut IvfInputContext,
-                    *const libc::c_char,
-                    *mut libc::c_uint,
-                    *mut libc::c_uint,
-                    *mut libc::c_uint,
-                ) -> libc::c_int,
+                    *const c_char,
+                    *mut c_uint,
+                    *mut c_uint,
+                    *mut c_uint,
+                ) -> c_int,
         ),
-        read: Some(
-            ivf_read as unsafe extern "C" fn(*mut IvfInputContext, *mut Dav1dData) -> libc::c_int,
-        ),
-        seek: Some(ivf_seek as unsafe extern "C" fn(*mut IvfInputContext, u64) -> libc::c_int),
+        read: Some(ivf_read as unsafe extern "C" fn(*mut IvfInputContext, *mut Dav1dData) -> c_int),
+        seek: Some(ivf_seek as unsafe extern "C" fn(*mut IvfInputContext, u64) -> c_int),
         close: Some(ivf_close as unsafe extern "C" fn(*mut IvfInputContext) -> ()),
     };
     init

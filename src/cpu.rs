@@ -1,4 +1,6 @@
 use crate::src::internal::Dav1dContext;
+use std::ffi::c_int;
+use std::ffi::c_uint;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 
@@ -27,7 +29,7 @@ static dav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
 
 #[cfg(feature = "asm")]
 #[inline(always)]
-pub fn dav1d_get_cpu_flags() -> libc::c_uint {
+pub fn dav1d_get_cpu_flags() -> c_uint {
     let mut flags =
         dav1d_cpu_flags.load(Ordering::SeqCst) & dav1d_cpu_flags_mask.load(Ordering::SeqCst);
     cfg_if! {
@@ -60,12 +62,12 @@ pub unsafe fn dav1d_init_cpu() {
 
 #[no_mangle]
 #[cold]
-pub extern "C" fn dav1d_set_cpu_flags_mask(mask: libc::c_uint) {
+pub extern "C" fn dav1d_set_cpu_flags_mask(mask: c_uint) {
     dav1d_cpu_flags_mask.store(mask, Ordering::SeqCst);
 }
 
 #[no_mangle]
 #[cold]
-pub fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> libc::c_int {
-    num_cpus::get() as libc::c_int
+pub fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> c_int {
+    num_cpus::get() as c_int
 }

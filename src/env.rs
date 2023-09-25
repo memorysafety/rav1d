@@ -32,6 +32,8 @@ use crate::src::tables::TxfmInfo;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::cmp::Ordering;
+use std::ffi::c_int;
+use std::ffi::c_uint;
 
 #[repr(C)]
 pub struct BlockContext {
@@ -58,8 +60,8 @@ pub struct BlockContext {
 pub fn get_intra_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -84,8 +86,8 @@ pub fn get_tx_ctx(
     a: &BlockContext,
     l: &BlockContext,
     max_tx: &TxfmInfo,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
 ) -> u8 {
     (l.tx_intra[yb4 as usize] as i32 >= max_tx.lh as i32) as u8
         + (a.tx_intra[xb4 as usize] as i32 >= max_tx.lw as i32) as u8
@@ -96,8 +98,8 @@ pub fn get_partition_ctx(
     a: &BlockContext,
     l: &BlockContext,
     bl: BlockLevel,
-    yb8: libc::c_int,
-    xb8: libc::c_int,
+    yb8: c_int,
+    xb8: c_int,
 ) -> u8 {
     (a.partition[xb8 as usize] >> (4 - bl) & 1) + ((l.partition[yb8 as usize] >> (4 - bl) & 1) << 1)
 }
@@ -155,8 +157,8 @@ pub fn get_filter_ctx(
     comp: bool,
     dir: bool,
     r#ref: i8,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
 ) -> u8 {
     let [a_filter, l_filter] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
         if al.r#ref[0][b4 as usize] == r#ref || al.r#ref[1][b4 as usize] == r#ref {
@@ -182,8 +184,8 @@ pub fn get_filter_ctx(
 pub fn get_comp_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -194,11 +196,11 @@ pub fn get_comp_ctx(
                     4
                 } else {
                     // 4U means intra (-1) or bwd (>= 4)
-                    2 + (l.r#ref[0][yb4 as usize] as libc::c_uint >= 4) as u8
+                    2 + (l.r#ref[0][yb4 as usize] as c_uint >= 4) as u8
                 }
             } else if l.comp_type[yb4 as usize] != 0 {
                 // 4U means intra (-1) or bwd (>= 4)
-                2 + (a.r#ref[0][xb4 as usize] as libc::c_uint >= 4) as u8
+                2 + (a.r#ref[0][xb4 as usize] as c_uint >= 4) as u8
             } else {
                 ((l.r#ref[0][yb4 as usize] >= 4) ^ (a.r#ref[0][xb4 as usize] >= 4)) as u8
             }
@@ -224,8 +226,8 @@ pub fn get_comp_ctx(
 pub fn get_comp_dir_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -294,11 +296,7 @@ pub fn get_comp_dir_ctx(
 }
 
 #[inline]
-pub fn get_poc_diff(
-    order_hint_n_bits: libc::c_int,
-    poc0: libc::c_int,
-    poc1: libc::c_int,
-) -> libc::c_int {
+pub fn get_poc_diff(order_hint_n_bits: c_int, poc0: c_int, poc1: c_int) -> c_int {
     if order_hint_n_bits == 0 {
         return 0;
     }
@@ -309,27 +307,17 @@ pub fn get_poc_diff(
 
 #[inline]
 pub fn get_jnt_comp_ctx(
-    order_hint_n_bits: libc::c_int,
-    poc: libc::c_uint,
-    ref0poc: libc::c_uint,
-    ref1poc: libc::c_uint,
+    order_hint_n_bits: c_int,
+    poc: c_uint,
+    ref0poc: c_uint,
+    ref1poc: c_uint,
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
 ) -> u8 {
-    let d0 = get_poc_diff(
-        order_hint_n_bits,
-        ref0poc as libc::c_int,
-        poc as libc::c_int,
-    )
-    .abs();
-    let d1 = get_poc_diff(
-        order_hint_n_bits,
-        poc as libc::c_int,
-        ref1poc as libc::c_int,
-    )
-    .abs();
+    let d0 = get_poc_diff(order_hint_n_bits, ref0poc as c_int, poc as c_int).abs();
+    let d1 = get_poc_diff(order_hint_n_bits, poc as c_int, ref1poc as c_int).abs();
     let offset = (d0 == d1) as u8;
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
         (al.comp_type[b4 as usize] >= COMP_INTER_AVG || al.r#ref[0][b4 as usize] == 6) as u8
@@ -339,12 +327,7 @@ pub fn get_jnt_comp_ctx(
 }
 
 #[inline]
-pub fn get_mask_comp_ctx(
-    a: &BlockContext,
-    l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
-) -> u8 {
+pub fn get_mask_comp_ctx(a: &BlockContext, l: &BlockContext, yb4: c_int, xb4: c_int) -> u8 {
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
         if al.comp_type[b4 as usize] >= COMP_INTER_SEG {
             1
@@ -371,8 +354,8 @@ fn cmp_counts(c1: u8, c2: u8) -> u8 {
 pub fn av1_get_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -399,8 +382,8 @@ pub fn av1_get_ref_ctx(
 pub fn av1_get_fwd_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -434,8 +417,8 @@ pub fn av1_get_fwd_ref_ctx(
 pub fn av1_get_fwd_ref_1_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -466,8 +449,8 @@ pub fn av1_get_fwd_ref_1_ctx(
 pub fn av1_get_fwd_ref_2_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -498,8 +481,8 @@ pub fn av1_get_fwd_ref_2_ctx(
 pub fn av1_get_bwd_ref_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -532,8 +515,8 @@ pub fn av1_get_bwd_ref_ctx(
 pub fn av1_get_bwd_ref_1_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -564,8 +547,8 @@ pub fn av1_get_bwd_ref_1_ctx(
 pub fn av1_get_uni_p1_ctx(
     a: &BlockContext,
     l: &BlockContext,
-    yb4: libc::c_int,
-    xb4: libc::c_int,
+    yb4: c_int,
+    xb4: c_int,
     have_top: bool,
     have_left: bool,
 ) -> u8 {
@@ -599,9 +582,9 @@ pub fn av1_get_uni_p1_ctx(
 }
 
 #[inline]
-pub fn get_drl_context(ref_mv_stack: &[refmvs_candidate; 8], ref_idx: usize) -> libc::c_int {
+pub fn get_drl_context(ref_mv_stack: &[refmvs_candidate; 8], ref_idx: usize) -> c_int {
     if ref_mv_stack[ref_idx].weight >= 640 {
-        (ref_mv_stack[ref_idx + 1].weight < 640) as libc::c_int
+        (ref_mv_stack[ref_idx + 1].weight < 640) as c_int
     } else if ref_mv_stack[ref_idx + 1].weight < 640 {
         2
     } else {
@@ -611,8 +594,8 @@ pub fn get_drl_context(ref_mv_stack: &[refmvs_candidate; 8], ref_idx: usize) -> 
 
 #[inline]
 pub unsafe fn get_cur_frame_segid(
-    by: libc::c_int,
-    bx: libc::c_int,
+    by: c_int,
+    bx: c_int,
     have_top: bool,
     have_left: bool,
     // It's very difficult to make this safe (a slice),
@@ -669,10 +652,10 @@ pub fn fix_mv_precision(hdr: &Dav1dFrameHeader, mv: &mut mv) {
 #[inline]
 pub fn get_gmv_2d(
     gmv: &Dav1dWarpedMotionParams,
-    bx4: libc::c_int,
-    by4: libc::c_int,
-    bw4: libc::c_int,
-    bh4: libc::c_int,
+    bx4: c_int,
+    by4: c_int,
+    bw4: c_int,
+    bh4: c_int,
     hdr: &Dav1dFrameHeader,
 ) -> mv {
     match gmv.type_0 {
@@ -699,17 +682,11 @@ pub fn get_gmv_2d(
     let y = by4 * 4 + bh4 * 2 - 1;
     let xc = (gmv.matrix[2] - (1 << 16)) * x + gmv.matrix[3] * y + gmv.matrix[0];
     let yc = (gmv.matrix[5] - (1 << 16)) * y + gmv.matrix[4] * x + gmv.matrix[1];
-    let shift = 16 - (3 - (hdr.hp == 0) as libc::c_int);
+    let shift = 16 - (3 - (hdr.hp == 0) as c_int);
     let round = 1 << shift >> 1;
     let mut res = mv {
-        y: apply_sign(
-            yc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int,
-            yc,
-        ) as i16,
-        x: apply_sign(
-            xc.abs() + round >> shift << (hdr.hp == 0) as libc::c_int,
-            xc,
-        ) as i16,
+        y: apply_sign(yc.abs() + round >> shift << (hdr.hp == 0) as c_int, yc) as i16,
+        x: apply_sign(xc.abs() + round >> shift << (hdr.hp == 0) as c_int, xc) as i16,
     };
     if hdr.force_integer_mv != 0 {
         fix_int_mv_precision(&mut res);

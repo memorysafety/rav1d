@@ -1,10 +1,12 @@
 use cfg_if::cfg_if;
+use std::ffi::c_uint;
+use std::ffi::c_ulong;
 
-pub const DAV1D_ARM_CPU_FLAG_NEON: libc::c_uint = 1 << 0;
-pub const NEON_HWCAP: libc::c_ulong = 1 << 12;
+pub const DAV1D_ARM_CPU_FLAG_NEON: c_uint = 1 << 0;
+pub const NEON_HWCAP: c_ulong = 1 << 12;
 
 #[cold]
-pub unsafe fn dav1d_get_cpu_flags_arm() -> libc::c_uint {
+pub unsafe fn dav1d_get_cpu_flags_arm() -> c_uint {
     let mut flags = 0;
 
     cfg_if! {

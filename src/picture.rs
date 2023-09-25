@@ -30,16 +30,21 @@ use crate::src::r#ref::Dav1dRef;
 use crate::stderr;
 use libc::malloc;
 use libc::ptrdiff_t;
+use std::ffi::c_char;
+use std::ffi::c_int;
+use std::ffi::c_uint;
+use std::ffi::c_ulong;
+use std::ffi::c_void;
 
 extern "C" {
-    fn fprintf(_: *mut libc::FILE, _: *const libc::c_char, _: ...) -> libc::c_int;
-    fn free(_: *mut libc::c_void);
-    fn memset(_: *mut libc::c_void, _: libc::c_int, _: usize) -> *mut libc::c_void;
-    fn strerror(_: libc::c_int) -> *mut libc::c_char;
-    fn dav1d_log(c: *mut Dav1dContext, format: *const libc::c_char, _: ...);
+    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
+    fn free(_: *mut c_void);
+    fn memset(_: *mut c_void, _: c_int, _: usize) -> *mut c_void;
+    fn strerror(_: c_int) -> *mut c_char;
+    fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, _: ...);
 }
 
-pub type PictureFlags = libc::c_uint;
+pub type PictureFlags = c_uint;
 pub const PICTURE_FLAG_NEW_TEMPORAL_UNIT: PictureFlags = 4;
 pub const PICTURE_FLAG_NEW_OP_PARAMS_INFO: PictureFlags = 2;
 pub const PICTURE_FLAG_NEW_SEQUENCE: PictureFlags = 1;
@@ -57,26 +62,23 @@ pub struct Dav1dThreadPicture {
 pub struct pic_ctx_context {
     pub allocator: Dav1dPicAllocator,
     pub pic: Dav1dPicture,
-    pub extra_ptr: *mut libc::c_void,
+    pub extra_ptr: *mut c_void,
 }
 
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p: *mut Dav1dPicture,
-    cookie: *mut libc::c_void,
-) -> libc::c_int {
-    if !(::core::mem::size_of::<Dav1dMemPoolBuffer>() as libc::c_ulong <= 64 as libc::c_ulong) {
+    cookie: *mut c_void,
+) -> c_int {
+    if !(::core::mem::size_of::<Dav1dMemPoolBuffer>() as c_ulong <= 64 as c_ulong) {
         unreachable!();
     }
-    let hbd = ((*p).p.bpc > 8) as libc::c_int;
-    let aligned_w = (*p).p.w + 127 & !(127 as libc::c_int);
-    let aligned_h = (*p).p.h + 127 & !(127 as libc::c_int);
-    let has_chroma = ((*p).p.layout as libc::c_uint
-        != DAV1D_PIXEL_LAYOUT_I400 as libc::c_int as libc::c_uint)
-        as libc::c_int;
-    let ss_ver = ((*p).p.layout as libc::c_uint
-        == DAV1D_PIXEL_LAYOUT_I420 as libc::c_int as libc::c_uint) as libc::c_int;
-    let ss_hor = ((*p).p.layout as libc::c_uint
-        != DAV1D_PIXEL_LAYOUT_I444 as libc::c_int as libc::c_uint) as libc::c_int;
+    let hbd = ((*p).p.bpc > 8) as c_int;
+    let aligned_w = (*p).p.w + 127 & !(127 as c_int);
+    let aligned_h = (*p).p.h + 127 & !(127 as c_int);
+    let has_chroma =
+        ((*p).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
+    let ss_ver = ((*p).p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_hor = ((*p).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let mut y_stride: ptrdiff_t = (aligned_w << hbd) as ptrdiff_t;
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
         y_stride >> ss_hor
@@ -101,48 +103,45 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
             .wrapping_sub(::core::mem::size_of::<Dav1dMemPoolBuffer>()),
     );
     if buf.is_null() {
-        return -(12 as libc::c_int);
+        return -(12 as c_int);
     }
-    (*p).allocator_data = buf as *mut libc::c_void;
+    (*p).allocator_data = buf as *mut c_void;
     let data: *mut u8 = (*buf).data as *mut u8;
-    (*p).data[0] = data as *mut libc::c_void;
+    (*p).data[0] = data as *mut c_void;
     (*p).data[1] = (if has_chroma != 0 {
         data.offset(y_sz as isize)
     } else {
         0 as *mut u8
-    }) as *mut libc::c_void;
+    }) as *mut c_void;
     (*p).data[2] = (if has_chroma != 0 {
         data.offset(y_sz as isize).offset(uv_sz as isize)
     } else {
         0 as *mut u8
-    }) as *mut libc::c_void;
-    return 0 as libc::c_int;
+    }) as *mut c_void;
+    return 0 as c_int;
 }
 
-pub unsafe extern "C" fn dav1d_default_picture_release(
-    p: *mut Dav1dPicture,
-    cookie: *mut libc::c_void,
-) {
+pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut c_void) {
     dav1d_mem_pool_push(
         cookie as *mut Dav1dMemPool,
         (*p).allocator_data as *mut Dav1dMemPoolBuffer,
     );
 }
 
-unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut libc::c_void) {
+unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut c_void) {
     let pic_ctx: *mut pic_ctx_context = user_data as *mut pic_ctx_context;
     ((*pic_ctx).allocator.release_picture_callback).expect("non-null function pointer")(
         &mut (*pic_ctx).pic,
         (*pic_ctx).allocator.cookie,
     );
-    free(pic_ctx as *mut libc::c_void);
+    free(pic_ctx as *mut c_void);
 }
 
 unsafe extern "C" fn picture_alloc_with_edges(
     c: *mut Dav1dContext,
     p: *mut Dav1dPicture,
-    w: libc::c_int,
-    h: libc::c_int,
+    w: c_int,
+    h: c_int,
     seq_hdr: *mut Dav1dSequenceHeader,
     seq_hdr_ref: *mut Dav1dRef,
     frame_hdr: *mut Dav1dFrameHeader,
@@ -153,18 +152,18 @@ unsafe extern "C" fn picture_alloc_with_edges(
     mastering_display_ref: *mut Dav1dRef,
     itut_t35: *mut Dav1dITUTT35,
     itut_t35_ref: *mut Dav1dRef,
-    bpc: libc::c_int,
+    bpc: c_int,
     props: *const Dav1dDataProps,
     p_allocator: *mut Dav1dPicAllocator,
     extra: usize,
-    extra_ptr: *mut *mut libc::c_void,
-) -> libc::c_int {
+    extra_ptr: *mut *mut c_void,
+) -> c_int {
     if !((*p).data[0]).is_null() {
         dav1d_log(
             c,
-            b"Picture already allocated!\n\0" as *const u8 as *const libc::c_char,
+            b"Picture already allocated!\n\0" as *const u8 as *const c_char,
         );
-        return -(1 as libc::c_int);
+        return -(1 as c_int);
     }
     if !(bpc > 0 && bpc <= 16) {
         unreachable!();
@@ -173,7 +172,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
         malloc(extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>()))
             as *mut pic_ctx_context;
     if pic_ctx.is_null() {
-        return -(12 as libc::c_int);
+        return -(12 as c_int);
     }
     (*p).p.w = w;
     (*p).p.h = h;
@@ -190,28 +189,28 @@ unsafe extern "C" fn picture_alloc_with_edges(
         (*p_allocator).cookie,
     );
     if res < 0 {
-        free(pic_ctx as *mut libc::c_void);
+        free(pic_ctx as *mut c_void);
         return res;
     }
     (*pic_ctx).allocator = (*p_allocator).clone();
     (*pic_ctx).pic = (*p).clone();
     (*p).r#ref = dav1d_ref_wrap(
         (*p).data[0] as *const u8,
-        Some(free_buffer as unsafe extern "C" fn(*const u8, *mut libc::c_void) -> ()),
-        pic_ctx as *mut libc::c_void,
+        Some(free_buffer as unsafe extern "C" fn(*const u8, *mut c_void) -> ()),
+        pic_ctx as *mut c_void,
     );
     if ((*p).r#ref).is_null() {
         ((*p_allocator).release_picture_callback).expect("non-null function pointer")(
             p,
             (*p_allocator).cookie,
         );
-        free(pic_ctx as *mut libc::c_void);
+        free(pic_ctx as *mut c_void);
         dav1d_log(
             c,
-            b"Failed to wrap picture: %s\n\0" as *const u8 as *const libc::c_char,
+            b"Failed to wrap picture: %s\n\0" as *const u8 as *const c_char,
             strerror(*errno_location()),
         );
-        return -(12 as libc::c_int);
+        return -(12 as c_int);
     }
     (*p).seq_hdr_ref = seq_hdr_ref;
     if !seq_hdr_ref.is_null() {
@@ -223,7 +222,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     }
     dav1d_data_props_copy(&mut (*p).m, props);
     if extra != 0 && !extra_ptr.is_null() {
-        *extra_ptr = &mut (*pic_ctx).extra_ptr as *mut *mut libc::c_void as *mut libc::c_void;
+        *extra_ptr = &mut (*pic_ctx).extra_ptr as *mut *mut c_void as *mut c_void;
     }
     (*p).content_light_ref = content_light_ref;
     if !content_light_ref.is_null() {
@@ -237,17 +236,17 @@ unsafe extern "C" fn picture_alloc_with_edges(
     if !itut_t35_ref.is_null() {
         dav1d_ref_inc(itut_t35_ref);
     }
-    return 0 as libc::c_int;
+    return 0 as c_int;
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     c: *mut Dav1dContext,
     f: *mut Dav1dFrameContext,
-    bpc: libc::c_int,
-) -> libc::c_int {
+    bpc: c_int,
+) -> c_int {
     let p: *mut Dav1dThreadPicture = &mut (*f).sr_cur;
-    let have_frame_mt = ((*c).n_fc > 1 as libc::c_uint) as libc::c_int;
+    let have_frame_mt = ((*c).n_fc > 1 as c_uint) as c_int;
     let res = picture_alloc_with_edges(
         c,
         &mut (*p).p,
@@ -271,7 +270,7 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
         } else {
             0
         },
-        &mut (*p).progress as *mut *mut atomic_uint as *mut *mut libc::c_void,
+        &mut (*p).progress as *mut *mut atomic_uint as *mut *mut c_void,
     );
     if res != 0 {
         return res;
@@ -279,19 +278,19 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
     dav1d_ref_dec(&mut (*c).itut_t35_ref);
     (*c).itut_t35 = 0 as *mut Dav1dITUTT35;
     let flags_mask = if (*(*f).frame_hdr).show_frame != 0 || (*c).output_invisible_frames != 0 {
-        0 as libc::c_int
+        0 as c_int
     } else {
-        PICTURE_FLAG_NEW_SEQUENCE as libc::c_int | PICTURE_FLAG_NEW_OP_PARAMS_INFO as libc::c_int
+        PICTURE_FLAG_NEW_SEQUENCE as c_int | PICTURE_FLAG_NEW_OP_PARAMS_INFO as c_int
     };
     (*p).flags = (*c).frame_flags;
-    (*c).frame_flags = ::core::mem::transmute::<libc::c_uint, PictureFlags>(
-        (*c).frame_flags as libc::c_uint & flags_mask as libc::c_uint,
+    (*c).frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
+        (*c).frame_flags as c_uint & flags_mask as c_uint,
     );
     (*p).visible = (*(*f).frame_hdr).show_frame != 0;
     (*p).showable = (*(*f).frame_hdr).showable_frame != 0;
     if have_frame_mt != 0 {
-        *(&mut *((*p).progress).offset(0) as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;
-        *(&mut *((*p).progress).offset(1) as *mut atomic_uint) = 0 as libc::c_int as libc::c_uint;
+        *(&mut *((*p).progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
+        *(&mut *((*p).progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
     }
     return res;
 }
@@ -300,9 +299,9 @@ pub unsafe extern "C" fn dav1d_thread_picture_alloc(
 pub unsafe extern "C" fn dav1d_picture_alloc_copy(
     c: *mut Dav1dContext,
     dst: *mut Dav1dPicture,
-    w: libc::c_int,
+    w: c_int,
     src: *const Dav1dPicture,
-) -> libc::c_int {
+) -> c_int {
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
     let res = picture_alloc_with_edges(
         c,
@@ -322,8 +321,8 @@ pub unsafe extern "C" fn dav1d_picture_alloc_copy(
         (*src).p.bpc,
         &(*src).m,
         &mut (*pic_ctx).allocator,
-        0 as libc::c_int as usize,
-        0 as *mut *mut libc::c_void,
+        0 as c_int as usize,
+        0 as *mut *mut c_void,
     );
     return res;
 }
@@ -332,30 +331,27 @@ pub unsafe fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture
     if dst.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"dst != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_picture_ref\0"))
-                .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"dst != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
         );
         return;
     }
     if !((*dst).data[0]).is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"dst->data[0] == ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_picture_ref\0"))
-                .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"dst->data[0] == ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
         );
         return;
     }
     if src.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"src != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_picture_ref\0"))
-                .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"src != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
         );
         return;
     }
@@ -363,10 +359,9 @@ pub unsafe fn dav1d_picture_ref(dst: *mut Dav1dPicture, src: *const Dav1dPicture
         if ((*src).data[0]).is_null() {
             fprintf(
                 stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                    as *const libc::c_char,
-                b"src->data[0] != ((void*)0)\0" as *const u8 as *const libc::c_char,
-                (*::core::mem::transmute::<&[u8; 18], &[libc::c_char; 18]>(b"dav1d_picture_ref\0"))
+                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+                b"src->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
+                (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0"))
                     .as_ptr(),
             );
             return;
@@ -398,36 +393,30 @@ pub unsafe fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPict
     if dst.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"dst != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
-                b"dav1d_picture_move_ref\0",
-            ))
-            .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"dst != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"dav1d_picture_move_ref\0"))
+                .as_ptr(),
         );
         return;
     }
     if !((*dst).data[0]).is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"dst->data[0] == ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
-                b"dav1d_picture_move_ref\0",
-            ))
-            .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"dst->data[0] == ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"dav1d_picture_move_ref\0"))
+                .as_ptr(),
         );
         return;
     }
     if src.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"src != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
-                b"dav1d_picture_move_ref\0",
-            ))
-            .as_ptr(),
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"src != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"dav1d_picture_move_ref\0"))
+                .as_ptr(),
         );
         return;
     }
@@ -435,21 +424,18 @@ pub unsafe fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPict
         if ((*src).data[0]).is_null() {
             fprintf(
                 stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                    as *const libc::c_char,
-                b"src->data[0] != ((void*)0)\0" as *const u8 as *const libc::c_char,
-                (*::core::mem::transmute::<&[u8; 23], &[libc::c_char; 23]>(
-                    b"dav1d_picture_move_ref\0",
-                ))
-                .as_ptr(),
+                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+                b"src->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
+                (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"dav1d_picture_move_ref\0"))
+                    .as_ptr(),
             );
             return;
         }
     }
     *dst = (*src).clone();
     memset(
-        src as *mut libc::c_void,
-        0 as libc::c_int,
+        src as *mut c_void,
+        0 as c_int,
         ::core::mem::size_of::<Dav1dPicture>(),
     );
 }
@@ -475,8 +461,8 @@ pub unsafe fn dav1d_thread_picture_move_ref(
     (*dst).progress = (*src).progress;
     (*dst).flags = (*src).flags;
     memset(
-        src as *mut libc::c_void,
-        0 as libc::c_int,
+        src as *mut c_void,
+        0 as c_int,
         ::core::mem::size_of::<Dav1dThreadPicture>(),
     );
 }
@@ -485,9 +471,9 @@ pub unsafe fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
     if p.is_null() {
         fprintf(
             stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const libc::c_char,
-            b"p != ((void*)0)\0" as *const u8 as *const libc::c_char,
-            (*::core::mem::transmute::<&[u8; 29], &[libc::c_char; 29]>(
+            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+            b"p != ((void*)0)\0" as *const u8 as *const c_char,
+            (*::core::mem::transmute::<&[u8; 29], &[c_char; 29]>(
                 b"dav1d_picture_unref_internal\0",
             ))
             .as_ptr(),
@@ -498,10 +484,9 @@ pub unsafe fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
         if ((*p).data[0]).is_null() {
             fprintf(
                 stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                    as *const libc::c_char,
-                b"p->data[0] != ((void*)0)\0" as *const u8 as *const libc::c_char,
-                (*::core::mem::transmute::<&[u8; 29], &[libc::c_char; 29]>(
+                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
+                b"p->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
+                (*::core::mem::transmute::<&[u8; 29], &[c_char; 29]>(
                     b"dav1d_picture_unref_internal\0",
                 ))
                 .as_ptr(),
@@ -517,8 +502,8 @@ pub unsafe fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
     dav1d_ref_dec(&mut (*p).mastering_display_ref);
     dav1d_ref_dec(&mut (*p).itut_t35_ref);
     memset(
-        p as *mut libc::c_void,
-        0 as libc::c_int,
+        p as *mut c_void,
+        0 as c_int,
         ::core::mem::size_of::<Dav1dPicture>(),
     );
     dav1d_data_props_set_defaults(&mut (*p).m);
@@ -534,17 +519,14 @@ pub unsafe fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav
         return 0 as Dav1dEventFlags;
     }
     let mut flags: Dav1dEventFlags = 0 as Dav1dEventFlags;
-    if (*p).flags as libc::c_uint & PICTURE_FLAG_NEW_SEQUENCE as libc::c_int as libc::c_uint != 0 {
-        flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
-            flags as libc::c_uint | DAV1D_EVENT_FLAG_NEW_SEQUENCE as libc::c_int as libc::c_uint,
+    if (*p).flags as c_uint & PICTURE_FLAG_NEW_SEQUENCE as c_int as c_uint != 0 {
+        flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
+            flags as c_uint | DAV1D_EVENT_FLAG_NEW_SEQUENCE as c_int as c_uint,
         );
     }
-    if (*p).flags as libc::c_uint & PICTURE_FLAG_NEW_OP_PARAMS_INFO as libc::c_int as libc::c_uint
-        != 0
-    {
-        flags = ::core::mem::transmute::<libc::c_uint, Dav1dEventFlags>(
-            flags as libc::c_uint
-                | DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO as libc::c_int as libc::c_uint,
+    if (*p).flags as c_uint & PICTURE_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint != 0 {
+        flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
+            flags as c_uint | DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint,
         );
     }
     return flags;

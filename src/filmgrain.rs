@@ -3,32 +3,26 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use libc::intptr_t;
 use libc::ptrdiff_t;
+use std::ffi::c_int;
+use std::ffi::c_uint;
 
 #[inline]
-pub unsafe extern "C" fn get_random_number(
-    bits: libc::c_int,
-    state: *mut libc::c_uint,
-) -> libc::c_int {
-    let r = *state as libc::c_int;
-    let bit: libc::c_uint = ((r >> 0 ^ r >> 1 ^ r >> 3 ^ r >> 12) & 1) as libc::c_uint;
-    *state = (r >> 1) as libc::c_uint | bit << 15;
-    return (*state >> 16 - bits & (((1 as libc::c_int) << bits) - 1) as libc::c_uint)
-        as libc::c_int;
+pub unsafe extern "C" fn get_random_number(bits: c_int, state: *mut c_uint) -> c_int {
+    let r = *state as c_int;
+    let bit: c_uint = ((r >> 0 ^ r >> 1 ^ r >> 3 ^ r >> 12) & 1) as c_uint;
+    *state = (r >> 1) as c_uint | bit << 15;
+    return (*state >> 16 - bits & (((1 as c_int) << bits) - 1) as c_uint) as c_int;
 }
 
 #[inline]
-pub unsafe extern "C" fn round2(x: libc::c_int, shift: u64) -> libc::c_int {
-    return x + ((1 as libc::c_int) << shift >> 1) >> shift;
+pub unsafe extern "C" fn round2(x: c_int, shift: u64) -> c_int {
+    return x + ((1 as c_int) << shift >> 1) >> shift;
 }
 
 pub const GRAIN_WIDTH: usize = 82;
 
 pub type generate_grain_y_fn = Option<
-    unsafe extern "C" fn(
-        *mut [DynEntry; GRAIN_WIDTH],
-        *const Dav1dFilmGrainData,
-        libc::c_int,
-    ) -> (),
+    unsafe extern "C" fn(*mut [DynEntry; GRAIN_WIDTH], *const Dav1dFilmGrainData, c_int) -> (),
 >;
 
 pub type generate_grain_uv_fn = Option<
@@ -37,7 +31,7 @@ pub type generate_grain_uv_fn = Option<
         *const [DynEntry; GRAIN_WIDTH],
         *const Dav1dFilmGrainData,
         intptr_t,
-        libc::c_int,
+        c_int,
     ) -> (),
 >;
 
@@ -50,9 +44,9 @@ pub type fgy_32x32xn_fn = Option<
         usize,
         *const u8,
         *const [DynEntry; GRAIN_WIDTH],
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
+        c_int,
+        c_int,
+        c_int,
     ) -> (),
 >;
 
@@ -65,13 +59,13 @@ pub type fguv_32x32xn_fn = Option<
         usize,
         *const u8,
         *const [DynEntry; GRAIN_WIDTH],
-        libc::c_int,
-        libc::c_int,
+        c_int,
+        c_int,
         *const DynPixel,
         ptrdiff_t,
-        libc::c_int,
-        libc::c_int,
-        libc::c_int,
+        c_int,
+        c_int,
+        c_int,
     ) -> (),
 >;
 

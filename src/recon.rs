@@ -35,6 +35,8 @@ use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_skip_ctx;
 use crate::src::tables::TxfmInfo;
 use std::cmp;
+use std::ffi::c_int;
+use std::ffi::c_uint;
 use std::ops::BitOr;
 
 /// TODO: add feature and compile-time guard around this code
@@ -47,9 +49,9 @@ pub type recon_b_intra_fn = Option<
 >;
 
 pub type recon_b_inter_fn =
-    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> libc::c_int>;
+    Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> c_int>;
 
-pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, libc::c_int) -> ()>;
+pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Dav1dFrameContext, c_int) -> ()>;
 
 pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Dav1dTaskContext) -> ()>;
 
@@ -57,7 +59,7 @@ pub type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Dav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 
 #[inline]
-pub fn read_golomb(msac: &mut MsacContext) -> libc::c_uint {
+pub fn read_golomb(msac: &mut MsacContext) -> c_uint {
     let mut len = 0;
     let mut val = 1;
 
@@ -65,7 +67,7 @@ pub fn read_golomb(msac: &mut MsacContext) -> libc::c_uint {
         len += 1;
     }
     for _ in 0..len {
-        val = (val << 1) + dav1d_msac_decode_bool_equi(msac) as libc::c_uint;
+        val = (val << 1) + dav1d_msac_decode_bool_equi(msac) as c_uint;
     }
 
     val - 1
@@ -137,7 +139,7 @@ pub fn get_skip_ctx(
     bs: BlockSize,
     a: &[u8],
     l: &[u8],
-    chroma: libc::c_int,
+    chroma: c_int,
     layout: Dav1dPixelLayout,
 ) -> u8 {
     let b_dim = &dav1d_block_dimensions[bs as usize];
@@ -198,7 +200,7 @@ pub fn get_skip_ctx(
 // `tx: RectTxfmSize` arg is also `TxfmSize`.
 // `TxfmSize` and `RectTxfmSize` should be part of the same `enum`.
 #[inline]
-pub fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
+pub fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> c_uint {
     let mask = 0xc0c0c0c0c0c0c0c0 as u64;
     let mul = 0x101010101010101 as u64;
 
@@ -254,7 +256,7 @@ pub fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
         }
         RTX_16X8 => {
             let mut t = u32::read_ne(a) & mask as u32;
-            t += u16::read_ne(l) as libc::c_uint & mask as u32;
+            t += u16::read_ne(l) as c_uint & mask as u32;
             t = (t >> 6).wrapping_mul(mul as u32);
             (t >> 24) as i32 - 4 - 2
         }
@@ -325,14 +327,14 @@ pub fn get_dc_sign_ctx(tx: RectTxfmSize, a: &[u8], l: &[u8]) -> libc::c_uint {
         _ => unreachable!(),
     };
 
-    (s != 0) as libc::c_uint + (s > 0) as libc::c_uint
+    (s != 0) as c_uint + (s > 0) as c_uint
 }
 
 #[inline]
 pub fn get_lo_ctx(
     levels: &[u8],
     tx_class: TxClass,
-    hi_mag: &mut libc::c_uint,
+    hi_mag: &mut c_uint,
     ctx_offsets: Option<&[[u8; 5]; 5]>,
     x: usize,
     y: usize,
@@ -343,12 +345,12 @@ pub fn get_lo_ctx(
     let mut mag = level(0, 1) + level(1, 0);
     let offset = if tx_class == TX_CLASS_2D {
         mag += level(1, 1);
-        *hi_mag = mag as libc::c_uint;
+        *hi_mag = mag as c_uint;
         mag += level(0, 2) + level(2, 0);
         ctx_offsets.unwrap()[cmp::min(y, 4)][cmp::min(x, 4)] as usize
     } else {
         mag += level(0, 2);
-        *hi_mag = mag as libc::c_uint;
+        *hi_mag = mag as c_uint;
         mag += level(0, 3) + level(0, 4);
         26 + if y > 1 { 10 } else { y * 5 }
     };
