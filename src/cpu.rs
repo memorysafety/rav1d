@@ -29,7 +29,7 @@ static dav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
 
 #[cfg(feature = "asm")]
 #[inline(always)]
-pub fn dav1d_get_cpu_flags() -> c_uint {
+pub(crate) fn dav1d_get_cpu_flags() -> c_uint {
     let mut flags =
         dav1d_cpu_flags.load(Ordering::SeqCst) & dav1d_cpu_flags_mask.load(Ordering::SeqCst);
     cfg_if! {
@@ -45,7 +45,7 @@ pub fn dav1d_get_cpu_flags() -> c_uint {
 }
 
 #[cold]
-pub unsafe fn dav1d_init_cpu() {
+pub(crate) unsafe fn dav1d_init_cpu() {
     #[cfg(feature = "asm")]
     cfg_if! {
         if #[cfg(target_arch = "x86_64")] {
@@ -68,6 +68,6 @@ pub extern "C" fn dav1d_set_cpu_flags_mask(mask: c_uint) {
 
 #[no_mangle]
 #[cold]
-pub fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> c_int {
+pub(crate) fn dav1d_num_logical_processors(_c: *mut Dav1dContext) -> c_int {
     num_cpus::get() as c_int
 }
