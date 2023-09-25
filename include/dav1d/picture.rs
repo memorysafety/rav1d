@@ -38,10 +38,10 @@ impl From<Dav1dPictureParameters> for Rav1dPictureParameters {
     }
 }
 
-impl Rav1dPictureParameters {
-    pub fn into_c(self) -> Dav1dPictureParameters {
-        let Self { w, h, layout, bpc } = self;
-        Dav1dPictureParameters { w, h, layout, bpc }
+impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
+    fn from(value: Rav1dPictureParameters) -> Self {
+        let Rav1dPictureParameters { w, h, layout, bpc } = value;
+        Self { w, h, layout, bpc }
     }
 }
 
@@ -136,9 +136,9 @@ impl From<Dav1dPicture> for Rav1dPicture {
     }
 }
 
-impl Rav1dPicture {
-    pub fn into_c(self) -> Dav1dPicture {
-        let Self {
+impl From<Rav1dPicture> for Dav1dPicture {
+    fn from(value: Rav1dPicture) -> Self {
+        let Rav1dPicture {
             seq_hdr,
             frame_hdr,
             data,
@@ -157,14 +157,14 @@ impl Rav1dPicture {
             reserved_ref,
             r#ref,
             allocator_data,
-        } = self;
-        Dav1dPicture {
+        } = value;
+        Self {
             seq_hdr,
             frame_hdr,
             data,
             stride,
-            p: p.into_c(),
-            m: m.into_c(),
+            p: p.into(),
+            m: m.into(),
             content_light,
             mastering_display,
             itut_t35: itut_t35,
@@ -216,14 +216,14 @@ impl From<Dav1dPicAllocator> for Rav1dPicAllocator {
     }
 }
 
-impl Rav1dPicAllocator {
-    pub fn into_c(self) -> Dav1dPicAllocator {
-        let Self {
+impl From<Rav1dPicAllocator> for Dav1dPicAllocator {
+    fn from(value: Rav1dPicAllocator) -> Self {
+        let Rav1dPicAllocator {
             cookie,
             alloc_picture_callback,
             release_picture_callback,
-        } = self;
-        Dav1dPicAllocator {
+        } = value;
+        Self {
             cookie,
             alloc_picture_callback,
             release_picture_callback,
@@ -233,7 +233,7 @@ impl Rav1dPicAllocator {
 
 impl Rav1dPicAllocator {
     pub unsafe fn alloc_picture(&mut self, p: *mut Rav1dPicture) -> c_int {
-        let mut p_c = p.read().into_c();
+        let mut p_c = p.read().into();
         let result = self
             .alloc_picture_callback
             .expect("non-null function pointer")(&mut p_c, self.cookie);
@@ -242,7 +242,7 @@ impl Rav1dPicAllocator {
     }
 
     pub unsafe fn release_picture(&mut self, p: *mut Rav1dPicture) {
-        let mut p_c = p.read().into_c();
+        let mut p_c = p.read().into();
         self.release_picture_callback
             .expect("non-null function pointer")(&mut p_c, self.cookie);
         p.write(p_c.into());

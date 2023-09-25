@@ -33,10 +33,10 @@ impl From<Dav1dLogger> for Rav1dLogger {
     }
 }
 
-impl Rav1dLogger {
-    pub fn into_c(self) -> Dav1dLogger {
-        let Self { cookie, callback } = self;
-        Dav1dLogger { cookie, callback }
+impl From<Rav1dLogger> for Dav1dLogger {
+    fn from(value: Rav1dLogger) -> Self {
+        let Rav1dLogger { cookie, callback } = value;
+        Self { cookie, callback }
     }
 }
 
@@ -146,9 +146,9 @@ impl From<Dav1dSettings> for Rav1dSettings {
     }
 }
 
-impl Rav1dSettings {
-    pub fn into_c(self) -> Dav1dSettings {
-        let Self {
+impl From<Rav1dSettings> for Dav1dSettings {
+    fn from(value: Rav1dSettings) -> Self {
+        let Rav1dSettings {
             n_threads,
             max_frame_delay,
             apply_grain,
@@ -162,16 +162,16 @@ impl Rav1dSettings {
             inloop_filters,
             decode_frame_type,
             reserved,
-        } = self;
-        Dav1dSettings {
+        } = value;
+        Self {
             n_threads,
             max_frame_delay,
             apply_grain,
             operating_point,
             all_layers,
             frame_size_limit,
-            allocator: allocator.into_c(),
-            logger: logger.into_c(),
+            allocator: allocator.into(),
+            logger: logger.into(),
             strict_std_compliance,
             output_invisible_frames,
             inloop_filters,

@@ -87,16 +87,16 @@ impl From<Dav1dDataProps> for Rav1dDataProps {
     }
 }
 
-impl Rav1dDataProps {
-    pub fn into_c(self) -> Dav1dDataProps {
-        let Self {
+impl From<Rav1dDataProps> for Dav1dDataProps {
+    fn from(value: Rav1dDataProps) -> Self {
+        let Rav1dDataProps {
             timestamp,
             duration,
             offset,
             size,
             user_data,
-        } = self;
-        Dav1dDataProps {
+        } = value;
+        Self {
             timestamp,
             duration,
             offset,

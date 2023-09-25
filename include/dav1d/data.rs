@@ -56,14 +56,14 @@ impl From<Dav1dData> for Rav1dData {
     }
 }
 
-impl Rav1dData {
-    pub fn into_c(self) -> Dav1dData {
-        let Self { data, sz, r#ref, m } = self;
-        Dav1dData {
+impl From<Rav1dData> for Dav1dData {
+    fn from(value: Rav1dData) -> Self {
+        let Rav1dData { data, sz, r#ref, m } = value;
+        Self {
             data,
             sz,
             r#ref,
-            m: m.into_c(),
+            m: m.into(),
         }
     }
 }

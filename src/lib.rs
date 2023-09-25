@@ -184,7 +184,7 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
             rav1d_default_settings(&mut s);
             s
         }
-        .into_c(),
+        .into(),
     );
 }
 
@@ -750,7 +750,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 ) -> c_int {
     let mut out_rust = out.read().into();
     let result = rav1d_parse_sequence_header(&mut out_rust, ptr, sz);
-    out.write(out_rust.into_c());
+    out.write(out_rust.into());
     result
 }
 
@@ -974,7 +974,7 @@ pub(crate) unsafe fn rav1d_send_data(c: *mut Rav1dContext, in_0: *mut Rav1dData)
 pub unsafe extern "C" fn dav1d_send_data(c: *mut Rav1dContext, in_0: *mut Dav1dData) -> c_int {
     let mut in_rust = in_0.read().into();
     let result = rav1d_send_data(c, &mut in_rust);
-    in_0.write(in_rust.into_c());
+    in_0.write(in_rust.into());
     result
 }
 
@@ -1021,7 +1021,7 @@ pub(crate) unsafe fn rav1d_get_picture(c: *mut Rav1dContext, out: *mut Rav1dPict
 pub unsafe extern "C" fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> c_int {
     let mut out_rust = out.read().into();
     let result = rav1d_get_picture(c, &mut out_rust);
-    out.write(out_rust.into_c());
+    out.write(out_rust.into());
     result
 }
 
@@ -1103,7 +1103,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     let mut out_rust = out.read().into();
     let in_rust = in_0.read().into();
     let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
-    out.write(out_rust.into_c());
+    out.write(out_rust.into());
     result
 }
 
@@ -1438,7 +1438,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
 ) -> c_int {
     let mut out_rust = out.read().into();
     let result = rav1d_get_decode_error_data_props(c, &mut out_rust);
-    out.write(out_rust.into_c());
+    out.write(out_rust.into());
     result
 }
 
@@ -1450,7 +1450,7 @@ pub(crate) unsafe fn rav1d_picture_unref(p: *mut Rav1dPicture) {
 pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
     let mut p_rust = p.read().into();
     rav1d_picture_unref(&mut p_rust);
-    p.write(p_rust.into_c());
+    p.write(p_rust.into());
 }
 
 pub(crate) unsafe fn rav1d_data_create(buf: *mut Rav1dData, sz: usize) -> *mut u8 {
@@ -1461,7 +1461,7 @@ pub(crate) unsafe fn rav1d_data_create(buf: *mut Rav1dData, sz: usize) -> *mut u
 pub unsafe extern "C" fn dav1d_data_create(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
     let mut buf_rust = buf.read().into();
     let result = rav1d_data_create(&mut buf_rust, sz);
-    buf.write(buf_rust.into_c());
+    buf.write(buf_rust.into());
     result
 }
 
@@ -1485,7 +1485,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
 ) -> c_int {
     let mut buf_rust = buf.read().into();
     let result = rav1d_data_wrap(&mut buf_rust, ptr, sz, free_callback, user_data);
-    buf.write(buf_rust.into_c());
+    buf.write(buf_rust.into());
     result
 }
 
@@ -1507,7 +1507,7 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
 ) -> c_int {
     let mut buf_rust = buf.read().into();
     let result = rav1d_data_wrap_user_data(&mut buf_rust, user_data, free_callback, cookie);
-    buf.write(buf_rust.into_c());
+    buf.write(buf_rust.into());
     result
 }
 
@@ -1519,7 +1519,7 @@ pub(crate) unsafe fn rav1d_data_unref(buf: *mut Rav1dData) {
 pub unsafe extern "C" fn dav1d_data_unref(buf: *mut Dav1dData) {
     let mut buf_rust = buf.read().into();
     let result = rav1d_data_unref(&mut buf_rust);
-    buf.write(buf_rust.into_c());
+    buf.write(buf_rust.into());
     result
 }
 
@@ -1532,5 +1532,5 @@ pub(crate) unsafe extern "C" fn rav1d_data_props_unref(props: *mut Rav1dDataProp
 pub unsafe extern "C" fn dav1d_data_props_unref(props: *mut Dav1dDataProps) {
     let mut props_rust = props.read().into();
     rav1d_data_props_unref(&mut props_rust);
-    props.write(props_rust.into_c());
+    props.write(props_rust.into());
 }
