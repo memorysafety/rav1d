@@ -2265,8 +2265,9 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                     );
                 }
             }
-            let intra_flags =
-                sm_flag((*t).a, bx4) | sm_flag(&mut (*t).l, by4) | intra_edge_filter_flag;
+            let intra_flags = sm_flag(&*(*t).a, bx4 as usize)
+                | sm_flag(&mut (*t).l, by4 as usize)
+                | intra_edge_filter_flag;
             let sb_has_tr = (if (init_x + 16) < w4 {
                 1 as c_int as c_uint
             } else if init_y != 0 {
@@ -2640,7 +2641,8 @@ pub unsafe extern "C" fn dav1d_recon_b_intra_8bpc(
                         );
                     }
                 }
-                let sm_uv_fl = sm_uv_flag((*t).a, cbx4) | sm_uv_flag(&mut (*t).l, cby4);
+                let sm_uv_fl =
+                    sm_uv_flag(&*(*t).a, cbx4 as usize) | sm_uv_flag(&mut (*t).l, cby4 as usize);
                 let uv_sb_has_tr = (if init_x + 16 >> ss_hor < cw4 {
                     1 as c_int as c_uint
                 } else if init_y != 0 {
