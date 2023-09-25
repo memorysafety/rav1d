@@ -8,17 +8,13 @@ use crate::src::align::Align16;
 use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
 use cfg_if::cfg_if;
 use libc::intptr_t;
+use libc::memcpy;
+use libc::memset;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: c_ulong) -> *mut c_void;
-    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
-}
 
 pub type pixel = u8;
 pub type entry = i8;
@@ -32,13 +28,13 @@ unsafe extern "C" fn generate_scaling(
     let shift_x = 0;
     let scaling_size = 256;
     if num == 0 {
-        memset(scaling as *mut c_void, 0 as c_int, scaling_size as c_ulong);
+        memset(scaling as *mut c_void, 0 as c_int, scaling_size as usize);
         return;
     }
     memset(
         scaling as *mut c_void,
         (*points.offset(0))[1] as c_int,
-        (((*points.offset(0))[0] as c_int) << shift_x) as c_ulong,
+        (((*points.offset(0))[0] as c_int) << shift_x) as usize,
     );
     let mut i = 0;
     while i < num - 1 {
@@ -65,7 +61,7 @@ unsafe extern "C" fn generate_scaling(
     memset(
         &mut *scaling.offset(n as isize) as *mut u8 as *mut c_void,
         (*points.offset((num - 1) as isize))[1] as c_int,
-        (scaling_size - n) as c_ulong,
+        (scaling_size - n) as usize,
     );
 }
 
@@ -143,10 +139,10 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
                 ((*in_0).data[0] as *mut u8)
                     .offset(sz as isize)
                     .offset(-(stride as isize)) as *const c_void,
-                -sz as c_ulong,
+                -sz as usize,
             );
         } else {
-            memcpy((*out).data[0], (*in_0).data[0], sz as c_ulong);
+            memcpy((*out).data[0], (*in_0).data[0], sz as usize);
         }
     }
     if (*in_0).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
@@ -168,7 +164,7 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
                     ((*in_0).data[1] as *mut u8)
                         .offset(sz_0 as isize)
                         .offset(-(stride_0 as isize)) as *const c_void,
-                    -sz_0 as c_ulong,
+                    -sz_0 as usize,
                 );
             }
             if (*data).num_uv_points[1] == 0 {
@@ -179,15 +175,15 @@ pub unsafe extern "C" fn dav1d_prep_grain_8bpc(
                     ((*in_0).data[2] as *mut u8)
                         .offset(sz_0 as isize)
                         .offset(-(stride_0 as isize)) as *const c_void,
-                    -sz_0 as c_ulong,
+                    -sz_0 as usize,
                 );
             }
         } else {
             if (*data).num_uv_points[0] == 0 {
-                memcpy((*out).data[1], (*in_0).data[1], sz_0 as c_ulong);
+                memcpy((*out).data[1], (*in_0).data[1], sz_0 as usize);
             }
             if (*data).num_uv_points[1] == 0 {
-                memcpy((*out).data[2], (*in_0).data[2], sz_0 as c_ulong);
+                memcpy((*out).data[2], (*in_0).data[2], sz_0 as usize);
             }
         }
     }

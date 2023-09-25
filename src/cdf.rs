@@ -19,16 +19,12 @@ use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::Dav1dRef;
 use crate::src::tables::dav1d_partition_type_count;
+use libc::memcpy;
+use libc::memset;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: c_ulong) -> *mut c_void;
-    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
-}
 
 #[repr(C)]
 pub struct CdfContext {
@@ -4897,7 +4893,7 @@ pub unsafe fn dav1d_cdf_thread_update(
     memcpy(
         ((*dst).m.filter_intra).0.as_mut_ptr() as *mut c_void,
         ((*src).m.filter_intra).0.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+        ::core::mem::size_of::<[u16; 8]>(),
     );
     (*dst).m.filter_intra[4] = 0 as c_int as u16;
     let mut k = 0;
@@ -4907,7 +4903,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.uv_mode[k as usize][j as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).m.uv_mode[k as usize][j as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 16]>(),
             );
             (*dst).m.uv_mode[k as usize][j as usize]
                 [(N_UV_INTRA_PRED_MODES as c_int - 1 - (k == 0) as c_int) as usize] =
@@ -4921,7 +4917,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.angle_delta[j_0 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.angle_delta[j_0 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 8]>(),
         );
         (*dst).m.angle_delta[j_0 as usize][6] = 0 as c_int as u16;
         j_0 += 1;
@@ -4933,7 +4929,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.txsz[k_0 as usize][j_1 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).m.txsz[k_0 as usize][j_1 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 4]>(),
             );
             (*dst).m.txsz[k_0 as usize][j_1 as usize][cmp::min(k_0 + 1, 2 as c_int) as usize] =
                 0 as c_int as u16;
@@ -4948,7 +4944,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.txtp_intra1[k_1 as usize][j_2 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).m.txtp_intra1[k_1 as usize][j_2 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 8]>(),
             );
             (*dst).m.txtp_intra1[k_1 as usize][j_2 as usize][6] = 0 as c_int as u16;
             j_2 += 1;
@@ -4962,7 +4958,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.txtp_intra2[k_2 as usize][j_3 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).m.txtp_intra2[k_2 as usize][j_3 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 8]>(),
             );
             (*dst).m.txtp_intra2[k_2 as usize][j_3 as usize][4] = 0 as c_int as u16;
             j_3 += 1;
@@ -4982,7 +4978,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.partition[k_3 as usize][j_4 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).m.partition[k_3 as usize][j_4 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 16]>(),
             );
             (*dst).m.partition[k_3 as usize][j_4 as usize]
                 [dav1d_partition_type_count[k_3 as usize] as usize] = 0 as c_int as u16;
@@ -5008,7 +5004,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).coef.eob_bin_16[k_4 as usize][j_6 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).coef.eob_bin_16[k_4 as usize][j_6 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 8]>(),
             );
             (*dst).coef.eob_bin_16[k_4 as usize][j_6 as usize][4] = 0 as c_int as u16;
             j_6 += 1;
@@ -5022,7 +5018,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).coef.eob_bin_32[k_5 as usize][j_7 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).coef.eob_bin_32[k_5 as usize][j_7 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 8]>(),
             );
             (*dst).coef.eob_bin_32[k_5 as usize][j_7 as usize][5] = 0 as c_int as u16;
             j_7 += 1;
@@ -5036,7 +5032,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).coef.eob_bin_64[k_6 as usize][j_8 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).coef.eob_bin_64[k_6 as usize][j_8 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 8]>(),
             );
             (*dst).coef.eob_bin_64[k_6 as usize][j_8 as usize][6] = 0 as c_int as u16;
             j_8 += 1;
@@ -5050,7 +5046,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).coef.eob_bin_128[k_7 as usize][j_9 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).coef.eob_bin_128[k_7 as usize][j_9 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 8]>(),
             );
             (*dst).coef.eob_bin_128[k_7 as usize][j_9 as usize][7] = 0 as c_int as u16;
             j_9 += 1;
@@ -5064,7 +5060,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).coef.eob_bin_256[k_8 as usize][j_10 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).coef.eob_bin_256[k_8 as usize][j_10 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 16]>(),
             );
             (*dst).coef.eob_bin_256[k_8 as usize][j_10 as usize][8] = 0 as c_int as u16;
             j_10 += 1;
@@ -5076,7 +5072,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).coef.eob_bin_512[j_11 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).coef.eob_bin_512[j_11 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 16]>(),
         );
         (*dst).coef.eob_bin_512[j_11 as usize][9] = 0 as c_int as u16;
         j_11 += 1;
@@ -5086,7 +5082,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).coef.eob_bin_1024[j_12 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).coef.eob_bin_1024[j_12 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 16]>(),
         );
         (*dst).coef.eob_bin_1024[j_12 as usize][10] = 0 as c_int as u16;
         j_12 += 1;
@@ -5118,7 +5114,7 @@ pub unsafe fn dav1d_cdf_thread_update(
                         .as_mut_ptr() as *mut c_void,
                     ((*src).coef.eob_base_tok[l as usize][k_10 as usize][j_14 as usize]).as_ptr()
                         as *const c_void,
-                    ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+                    ::core::mem::size_of::<[u16; 4]>(),
                 );
                 (*dst).coef.eob_base_tok[l as usize][k_10 as usize][j_14 as usize][2] =
                     0 as c_int as u16;
@@ -5139,7 +5135,7 @@ pub unsafe fn dav1d_cdf_thread_update(
                         as *mut c_void,
                     ((*src).coef.base_tok[l_0 as usize][k_11 as usize][j_15 as usize]).as_ptr()
                         as *const c_void,
-                    ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+                    ::core::mem::size_of::<[u16; 4]>(),
                 );
                 (*dst).coef.base_tok[l_0 as usize][k_11 as usize][j_15 as usize][3] =
                     0 as c_int as u16;
@@ -5171,7 +5167,7 @@ pub unsafe fn dav1d_cdf_thread_update(
                         as *mut c_void,
                     ((*src).coef.br_tok[l_1 as usize][k_12 as usize][j_17 as usize]).as_ptr()
                         as *const c_void,
-                    ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+                    ::core::mem::size_of::<[u16; 4]>(),
                 );
                 (*dst).coef.br_tok[l_1 as usize][k_12 as usize][j_17 as usize][3] =
                     0 as c_int as u16;
@@ -5186,7 +5182,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.seg_id[j_18 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.seg_id[j_18 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 8]>(),
         );
         (*dst).m.seg_id[j_18 as usize][(8 - 1) as usize] = 0 as c_int as u16;
         j_18 += 1;
@@ -5194,7 +5190,7 @@ pub unsafe fn dav1d_cdf_thread_update(
     memcpy(
         ((*dst).m.cfl_sign).0.as_mut_ptr() as *mut c_void,
         ((*src).m.cfl_sign).0.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+        ::core::mem::size_of::<[u16; 8]>(),
     );
     (*dst).m.cfl_sign[7] = 0 as c_int as u16;
     let mut j_19 = 0;
@@ -5202,7 +5198,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.cfl_alpha[j_19 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.cfl_alpha[j_19 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 16]>(),
         );
         (*dst).m.cfl_alpha[j_19 as usize][15] = 0 as c_int as u16;
         j_19 += 1;
@@ -5214,13 +5210,13 @@ pub unsafe fn dav1d_cdf_thread_update(
     memcpy(
         ((*dst).m.restore_switchable).0.as_mut_ptr() as *mut c_void,
         ((*src).m.restore_switchable).0.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+        ::core::mem::size_of::<[u16; 4]>(),
     );
     (*dst).m.restore_switchable[2] = 0 as c_int as u16;
     memcpy(
         ((*dst).m.delta_q).0.as_mut_ptr() as *mut c_void,
         ((*src).m.delta_q).0.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+        ::core::mem::size_of::<[u16; 4]>(),
     );
     (*dst).m.delta_q[3] = 0 as c_int as u16;
     let mut j_20 = 0;
@@ -5228,7 +5224,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.delta_lf[j_20 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.delta_lf[j_20 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 4]>(),
         );
         (*dst).m.delta_lf[j_20 as usize][3] = 0 as c_int as u16;
         j_20 += 1;
@@ -5257,7 +5253,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.pal_sz[k_13 as usize][j_22 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).m.pal_sz[k_13 as usize][j_22 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 8]>(),
             );
             (*dst).m.pal_sz[k_13 as usize][j_22 as usize][6] = 0 as c_int as u16;
             j_22 += 1;
@@ -5275,7 +5271,7 @@ pub unsafe fn dav1d_cdf_thread_update(
                         as *mut c_void,
                     ((*src).m.color_map[l_2 as usize][k_14 as usize][j_23 as usize]).as_ptr()
                         as *const c_void,
-                    ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+                    ::core::mem::size_of::<[u16; 8]>(),
                 );
                 (*dst).m.color_map[l_2 as usize][k_14 as usize][j_23 as usize]
                     [(k_14 + 1) as usize] = 0 as c_int as u16;
@@ -5301,7 +5297,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.txtp_inter1[j_25 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.txtp_inter1[j_25 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 16]>(),
         );
         (*dst).m.txtp_inter1[j_25 as usize][15] = 0 as c_int as u16;
         j_25 += 1;
@@ -5309,7 +5305,7 @@ pub unsafe fn dav1d_cdf_thread_update(
     memcpy(
         ((*dst).m.txtp_inter2.0).as_mut_ptr() as *mut c_void,
         ((*src).m.txtp_inter2.0).as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+        ::core::mem::size_of::<[u16; 16]>(),
     );
     (*dst).m.txtp_inter2[11] = 0 as c_int as u16;
     let mut i_7 = 0;
@@ -5324,7 +5320,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).dmv.joint.0).as_mut_ptr() as *mut c_void,
             ((*src).dmv.joint.0).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 4]>(),
         );
         (*dst).dmv.joint[(N_MV_JOINTS as c_int - 1) as usize] = 0 as c_int as u16;
         let mut k_15 = 0;
@@ -5332,7 +5328,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).dmv.comp[k_15 as usize].classes.0).as_mut_ptr() as *mut c_void,
                 ((*src).dmv.comp[k_15 as usize].classes.0).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 16]>(),
             );
             (*dst).dmv.comp[k_15 as usize].classes[10] = 0 as c_int as u16;
             (*dst).dmv.comp[k_15 as usize].class0[0] = (*src).dmv.comp[k_15 as usize].class0[0];
@@ -5361,7 +5357,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.y_mode.0[j_26 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.y_mode.0[j_26 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 16]>(),
         );
         (*dst).m.y_mode.0[j_26 as usize][(N_INTRA_PRED_MODES as c_int - 1) as usize] =
             0 as c_int as u16;
@@ -5374,7 +5370,7 @@ pub unsafe fn dav1d_cdf_thread_update(
             memcpy(
                 ((*dst).m.filter.0[k_16 as usize][j_27 as usize]).as_mut_ptr() as *mut c_void,
                 ((*src).m.filter.0[k_16 as usize][j_27 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 4]>(),
             );
             (*dst).m.filter.0[k_16 as usize][j_27 as usize]
                 [(DAV1D_N_SWITCHABLE_FILTERS as c_int - 1) as usize] = 0 as c_int as u16;
@@ -5411,7 +5407,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.comp_inter_mode.0[j_28 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.comp_inter_mode.0[j_28 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 8]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 8]>(),
         );
         (*dst).m.comp_inter_mode.0[j_28 as usize]
             [(N_COMP_INTER_PRED_MODES as c_int - 1) as usize] = 0 as c_int as u16;
@@ -5458,7 +5454,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.wedge_idx.0[j_29 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.wedge_idx.0[j_29 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 16]>(),
         );
         (*dst).m.wedge_idx[j_29 as usize][15] = 0 as c_int as u16;
         j_29 += 1;
@@ -5530,7 +5526,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.interintra_mode[j_34 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.interintra_mode[j_34 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 4]>(),
         );
         (*dst).m.interintra_mode[j_34 as usize][3] = 0 as c_int as u16;
         j_34 += 1;
@@ -5540,7 +5536,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).m.motion_mode[j_35 as usize]).as_mut_ptr() as *mut c_void,
             ((*src).m.motion_mode[j_35 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 4]>(),
         );
         (*dst).m.motion_mode[j_35 as usize][2] = 0 as c_int as u16;
         j_35 += 1;
@@ -5554,7 +5550,7 @@ pub unsafe fn dav1d_cdf_thread_update(
     memcpy(
         ((*dst).mv.joint.0).as_mut_ptr() as *mut c_void,
         ((*src).mv.joint.0).as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+        ::core::mem::size_of::<[u16; 4]>(),
     );
     (*dst).mv.joint[(N_MV_JOINTS as c_int - 1) as usize] = 0 as c_int as u16;
     let mut k_17 = 0;
@@ -5562,7 +5558,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).mv.comp[k_17 as usize].classes.0).as_mut_ptr() as *mut c_void,
             ((*src).mv.comp[k_17 as usize].classes.0).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 16]>(),
         );
         (*dst).mv.comp[k_17 as usize].classes[10] = 0 as c_int as u16;
         (*dst).mv.comp[k_17 as usize].class0[0] = (*src).mv.comp[k_17 as usize].class0[0];
@@ -5580,7 +5576,7 @@ pub unsafe fn dav1d_cdf_thread_update(
                 ((*dst).mv.comp[k_17 as usize].class0_fp[j_36 as usize]).as_mut_ptr()
                     as *mut c_void,
                 ((*src).mv.comp[k_17 as usize].class0_fp[j_36 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+                ::core::mem::size_of::<[u16; 4]>(),
             );
             (*dst).mv.comp[k_17 as usize].class0_fp[j_36 as usize][3] = 0 as c_int as u16;
             j_36 += 1;
@@ -5588,7 +5584,7 @@ pub unsafe fn dav1d_cdf_thread_update(
         memcpy(
             ((*dst).mv.comp[k_17 as usize].classN_fp.0).as_mut_ptr() as *mut c_void,
             ((*src).mv.comp[k_17 as usize].classN_fp.0).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 4]>(),
         );
         (*dst).mv.comp[k_17 as usize].classN_fp[3] = 0 as c_int as u16;
         (*dst).mv.comp[k_17 as usize].class0_hp[0] = (*src).mv.comp[k_17 as usize].class0_hp[0];
@@ -5625,25 +5621,25 @@ pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
         memcpy(
             dst as *mut c_void,
             (*src).data.cdf as *const c_void,
-            ::core::mem::size_of::<CdfContext>() as c_ulong,
+            ::core::mem::size_of::<CdfContext>(),
         );
     } else {
         (*dst).m = av1_default_cdf.clone();
         memcpy(
             ((*dst).kfym.0).as_mut_ptr() as *mut c_void,
             default_kf_y_mode_cdf.0.as_ptr() as *const c_void,
-            ::core::mem::size_of::<[[[u16; 16]; 5]; 5]>() as c_ulong,
+            ::core::mem::size_of::<[[[u16; 16]; 5]; 5]>(),
         );
         (*dst).coef = av1_default_coef_cdf[(*src).data.qcat as usize].clone();
         memcpy(
             ((*dst).mv.joint.0).as_mut_ptr() as *mut c_void,
             default_mv_joint_cdf.0.as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 4]>(),
         );
         memcpy(
             ((*dst).dmv.joint.0).as_mut_ptr() as *mut c_void,
             default_mv_joint_cdf.0.as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>() as c_ulong,
+            ::core::mem::size_of::<[u16; 4]>(),
         );
         (*dst).dmv.comp[1] = default_mv_component_cdf.clone();
         (*dst).dmv.comp[0] = (*dst).dmv.comp[1].clone();
@@ -5684,7 +5680,7 @@ pub unsafe fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
     memset(
         &mut (*cdf).data as *mut CdfThreadContext_data as *mut c_void,
         0 as c_int,
-        (::core::mem::size_of::<CdfThreadContext>() as c_ulong).wrapping_sub(8 as c_ulong),
+        (::core::mem::size_of::<CdfThreadContext>()).wrapping_sub(8),
     );
     dav1d_ref_dec(&mut (*cdf).r#ref);
 }

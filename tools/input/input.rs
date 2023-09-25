@@ -1,3 +1,12 @@
+use libc::calloc;
+use libc::fclose;
+use libc::fopen;
+use libc::fprintf;
+use libc::fread;
+use libc::free;
+use libc::malloc;
+use libc::strcmp;
+use libc::strerror;
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::stderr;
@@ -5,20 +14,10 @@ use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 extern "C" {
     pub type DemuxerPriv;
-    fn fclose(__stream: *mut libc::FILE) -> c_int;
-    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn fread(_: *mut c_void, _: c_ulong, _: c_ulong, _: *mut libc::FILE) -> c_ulong;
-    fn malloc(_: c_ulong) -> *mut c_void;
-    fn calloc(_: c_ulong, _: c_ulong) -> *mut c_void;
-    fn free(_: *mut c_void);
-    fn strcmp(_: *const c_char, _: *const c_char) -> c_int;
-    fn strerror(_: c_int) -> *mut c_char;
     static ivf_demuxer: Demuxer;
     static annexb_demuxer: Demuxer;
     static section5_demuxer: Demuxer;
@@ -98,7 +97,7 @@ pub unsafe extern "C" fn input_open(
             probe_sz = cmp::max(probe_sz, (*demuxers[i as usize]).probe_sz);
             i += 1;
         }
-        let probe_data: *mut u8 = malloc(probe_sz as c_ulong) as *mut u8;
+        let probe_data: *mut u8 = malloc(probe_sz as usize) as *mut u8;
         if probe_data.is_null() {
             fprintf(
                 stderr,
@@ -120,12 +119,7 @@ pub unsafe extern "C" fn input_open(
                 -(5 as c_int)
             };
         }
-        res = (fread(
-            probe_data as *mut c_void,
-            1 as c_int as c_ulong,
-            probe_sz as c_ulong,
-            f,
-        ) != 0) as c_int;
+        res = (fread(probe_data as *mut c_void, 1, probe_sz as usize, f) != 0) as c_int;
         fclose(f);
         if res == 0 {
             free(probe_data as *mut c_void);
@@ -160,8 +154,8 @@ pub unsafe extern "C" fn input_open(
         }
     }
     c = calloc(
-        1 as c_int as c_ulong,
-        (16 as c_ulong).wrapping_add((*impl_0).priv_data_size as c_ulong),
+        1,
+        (16 as usize).wrapping_add((*impl_0).priv_data_size as usize),
     ) as *mut DemuxerContext;
     if c.is_null() {
         fprintf(

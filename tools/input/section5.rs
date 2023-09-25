@@ -1,3 +1,10 @@
+use libc::fclose;
+use libc::feof;
+use libc::fopen;
+use libc::fprintf;
+use libc::fread;
+use libc::fseeko;
+use libc::strerror;
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::headers::Dav1dObuType;
@@ -14,16 +21,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn fclose(__stream: *mut libc::FILE) -> c_int;
-    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn fread(_: *mut c_void, _: usize, _: usize, _: *mut libc::FILE) -> usize;
-    fn fseeko(__stream: *mut libc::FILE, __off: libc::off_t, __whence: c_int) -> c_int;
-    fn feof(__stream: *mut libc::FILE) -> c_int;
-    fn strerror(_: c_int) -> *mut c_char;
-}
 
 #[repr(C)]
 pub struct DemuxerPriv {

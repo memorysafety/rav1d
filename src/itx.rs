@@ -5,15 +5,11 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_TX_TYPES_PLUS_LL;
+use libc::memset;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
-}
 
 pub type itx_1d_fn = Option<unsafe extern "C" fn(*mut i32, ptrdiff_t, c_int, c_int) -> ()>;
 
@@ -108,9 +104,9 @@ pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
     memset(
         coeff as *mut c_void,
         0 as c_int,
-        (::core::mem::size_of::<BD::Coef>() as c_ulong)
-            .wrapping_mul(sw as c_ulong)
-            .wrapping_mul(sh as c_ulong),
+        ::core::mem::size_of::<BD::Coef>()
+            .wrapping_mul(sw as usize)
+            .wrapping_mul(sh as usize),
     );
     let mut i = 0;
     while i < w * sh {

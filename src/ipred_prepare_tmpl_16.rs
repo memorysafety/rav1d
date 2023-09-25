@@ -16,16 +16,12 @@ use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
 use c2rust_bitfields::BitfieldStruct;
+use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn memcpy(_: *mut c_void, _: *const c_void, _: c_ulong) -> *mut c_void;
-}
 
 pub type pixel = u16;
 
@@ -223,7 +219,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
             memcpy(
                 top as *mut c_void,
                 dst_top as *const c_void,
-                (px_have_1 << 1) as c_ulong,
+                (px_have_1 << 1) as usize,
             );
             if px_have_1 < sz_0 {
                 pixel_set(
@@ -254,7 +250,7 @@ pub unsafe extern "C" fn dav1d_prepare_intra_edges_16bpc(
                 memcpy(
                     top.offset(sz_0 as isize) as *mut c_void,
                     &*dst_top.offset(sz_0 as isize) as *const pixel as *const c_void,
-                    (px_have_2 << 1) as c_ulong,
+                    (px_have_2 << 1) as usize,
                 );
                 if px_have_2 < sz_0 {
                     pixel_set(

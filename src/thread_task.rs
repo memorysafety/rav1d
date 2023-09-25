@@ -27,29 +27,27 @@ use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
 use crate::src::picture::Dav1dThreadPicture;
-use cfg_if::cfg_if;
+use libc::memset;
 use libc::pthread_cond_signal;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
+use libc::realloc;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::process::abort;
+
+#[cfg(target_os = "linux")]
+use libc::prctl;
+
+#[cfg(target_os = "macos")]
+use libc::pthread_setname_np;
 
 extern "C" {
-    fn memset(_: *mut c_void, _: c_int, _: usize) -> *mut c_void;
-    fn realloc(_: *mut c_void, _: usize) -> *mut c_void;
-    fn abort() -> !;
-    cfg_if! {
-        if #[cfg(target_os = "linux")] {
-            fn prctl(__option: c_int, _: ...) -> c_int;
-        } else if #[cfg(target_os = "macos")] {
-            fn pthread_setname_np(name: *const c_char);
-        }
-    }
     fn dav1d_decode_frame_init(f: *mut Dav1dFrameContext) -> c_int;
     fn dav1d_decode_frame_init_cdf(f: *mut Dav1dFrameContext) -> c_int;
     fn dav1d_decode_tile_sbrow(t: *mut Dav1dTaskContext) -> c_int;

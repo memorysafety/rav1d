@@ -1,3 +1,4 @@
+use libc::memcmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -5,7 +6,6 @@ use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 extern "C" {
-    fn memcmp(_: *const c_void, _: *const c_void, _: c_ulong) -> c_int;
     fn dav1d_cpu_cpuid(regs: *mut CpuidRegisters, leaf: c_uint, subleaf: c_uint);
     #[cfg(target_arch = "x86_64")]
     fn dav1d_cpu_xgetbv(xcr: c_uint) -> u64;
@@ -99,7 +99,7 @@ pub unsafe fn dav1d_get_cpu_flags_x86() -> c_uint {
         if memcmp(
             (cpu.c2rust_unnamed.vendor).as_mut_ptr() as *const c_void,
             b"AuthenticAMD\0" as *const u8 as *const c_char as *const c_void,
-            ::core::mem::size_of::<[c_char; 12]>() as c_ulong,
+            ::core::mem::size_of::<[c_char; 12]>(),
         ) == 0
         {
             if flags & DAV1D_X86_CPU_FLAG_AVX2 as c_int as c_uint != 0

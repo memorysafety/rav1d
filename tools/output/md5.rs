@@ -1,3 +1,12 @@
+use libc::fclose;
+use libc::fopen;
+use libc::fprintf;
+use libc::memcmp;
+use libc::memcpy;
+use libc::strcmp;
+use libc::strerror;
+use libc::strlen;
+use libc::strtoul;
 use rav1d::errno_location;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
@@ -13,18 +22,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn fclose(__stream: *mut libc::FILE) -> c_int;
-    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn strtoul(_: *const c_char, _: *mut *mut c_char, _: c_int) -> c_ulong;
-    fn memcpy(_: *mut c_void, _: *const c_void, _: c_ulong) -> *mut c_void;
-    fn memcmp(_: *const c_void, _: *const c_void, _: c_ulong) -> c_int;
-    fn strcmp(_: *const c_char, _: *const c_char) -> c_int;
-    fn strlen(_: *const c_char) -> c_ulong;
-    fn strerror(_: c_int) -> *mut c_char;
-}
 
 #[repr(C)]
 pub struct MuxerPriv {
@@ -566,7 +563,7 @@ unsafe extern "C" fn md5_update(md5: *mut MD5Context, mut data: *const u8, mut l
                 .as_mut_ptr()
                 .offset(((*md5).len & 63) as isize) as *mut u8 as *mut c_void,
             data as *const c_void,
-            tmp as c_ulong,
+            tmp as usize,
         );
         len = len.wrapping_sub(tmp);
         data = data.offset(tmp as isize);
@@ -579,7 +576,7 @@ unsafe extern "C" fn md5_update(md5: *mut MD5Context, mut data: *const u8, mut l
         memcpy(
             ((*md5).c2rust_unnamed.data).as_mut_ptr() as *mut c_void,
             data as *const c_void,
-            64 as c_int as c_ulong,
+            64,
         );
         md5_body(md5, ((*md5).c2rust_unnamed.data32).as_mut_ptr());
         (*md5).len = ((*md5).len as c_ulong).wrapping_add(64 as c_int as c_ulong) as u64 as u64;
@@ -590,7 +587,7 @@ unsafe extern "C" fn md5_update(md5: *mut MD5Context, mut data: *const u8, mut l
         memcpy(
             ((*md5).c2rust_unnamed.data).as_mut_ptr() as *mut c_void,
             data as *const c_void,
-            len as c_ulong,
+            len as usize,
         );
         (*md5).len = ((*md5).len as c_ulong).wrapping_add(len as c_ulong) as u64 as u64;
     }
@@ -662,7 +659,7 @@ unsafe extern "C" fn md5_close(md5: *mut MD5Context) {
 
 unsafe extern "C" fn md5_verify(md5: *mut MD5Context, mut md5_str: *const c_char) -> c_int {
     md5_finish(md5);
-    if strlen(md5_str) < 32 as c_ulong {
+    if strlen(md5_str) < 32 {
         return -(1 as c_int);
     }
     let mut abcd: [u32; 4] = [0 as c_int as u32, 0, 0, 0];
@@ -672,11 +669,7 @@ unsafe extern "C" fn md5_verify(md5: *mut MD5Context, mut md5_str: *const c_char
         let mut j = 0;
         while j < 32 {
             let mut ignore: *mut c_char = 0 as *mut c_char;
-            memcpy(
-                t.as_mut_ptr() as *mut c_void,
-                md5_str as *const c_void,
-                2 as c_int as c_ulong,
-            );
+            memcpy(t.as_mut_ptr() as *mut c_void, md5_str as *const c_void, 2);
             md5_str = md5_str.offset(2);
             abcd[i as usize] |= (strtoul(t.as_mut_ptr(), &mut ignore, 16 as c_int) as u32) << j;
             j += 8 as c_int;
@@ -686,7 +679,7 @@ unsafe extern "C" fn md5_verify(md5: *mut MD5Context, mut md5_str: *const c_char
     return (memcmp(
         abcd.as_mut_ptr() as *const c_void,
         ((*md5).abcd).as_mut_ptr() as *const c_void,
-        ::core::mem::size_of::<[u32; 4]>() as c_ulong,
+        ::core::mem::size_of::<[u32; 4]>(),
     ) != 0) as c_int;
 }
 

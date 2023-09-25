@@ -1,3 +1,9 @@
+use libc::fclose;
+use libc::fopen;
+use libc::fprintf;
+use libc::fwrite;
+use libc::strcmp;
+use libc::strerror;
 use rav1d::errno_location;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
@@ -12,15 +18,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn fclose(__stream: *mut libc::FILE) -> c_int;
-    fn fopen(_: *const c_char, _: *const c_char) -> *mut libc::FILE;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn fwrite(_: *const c_void, _: c_ulong, _: c_ulong, _: *mut libc::FILE) -> c_ulong;
-    fn strcmp(_: *const c_char, _: *const c_char) -> c_int;
-    fn strerror(_: c_int) -> *mut c_char;
-}
 
 #[repr(C)]
 pub struct MuxerPriv {
@@ -81,13 +78,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
             current_block = 7095457783677275021;
             break;
         }
-        if fwrite(
-            ptr as *const c_void,
-            ((*p).p.w << hbd) as c_ulong,
-            1 as c_int as c_ulong,
-            (*c).f,
-        ) != 1 as c_int as c_ulong
-        {
+        if fwrite(ptr as *const c_void, ((*p).p.w << hbd) as usize, 1, (*c).f) != 1 {
             current_block = 11680617278722171943;
             break;
         }
@@ -112,13 +103,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
                     ptr = (*p).data[pl as usize] as *mut u8;
                     let mut y_0 = 0;
                     while y_0 < ch {
-                        if fwrite(
-                            ptr as *const c_void,
-                            (cw << hbd) as c_ulong,
-                            1 as c_int as c_ulong,
-                            (*c).f,
-                        ) != 1 as c_int as c_ulong
-                        {
+                        if fwrite(ptr as *const c_void, (cw << hbd) as usize, 1, (*c).f) != 1 {
                             current_block = 11680617278722171943;
                             break 's_40;
                         }

@@ -1,3 +1,6 @@
+use libc::free;
+use libc::malloc;
+use libc::posix_memalign;
 use libc::pthread_mutex_destroy;
 use libc::pthread_mutex_init;
 use libc::pthread_mutex_lock;
@@ -6,14 +9,7 @@ use libc::pthread_mutex_unlock;
 use libc::pthread_mutexattr_t;
 use libc::uintptr_t;
 use std::ffi::c_int;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn malloc(_: c_ulong) -> *mut c_void;
-    fn free(_: *mut c_void);
-    fn posix_memalign(__memptr: *mut *mut c_void, __alignment: usize, __size: usize) -> c_int;
-}
 
 #[repr(C)]
 pub struct Dav1dMemPool {
@@ -131,7 +127,7 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Dav1dMemPool, size: usize) -> *mut D
 #[cold]
 pub unsafe fn dav1d_mem_pool_init(ppool: *mut *mut Dav1dMemPool) -> c_int {
     let pool: *mut Dav1dMemPool =
-        malloc(::core::mem::size_of::<Dav1dMemPool>() as c_ulong) as *mut Dav1dMemPool;
+        malloc(::core::mem::size_of::<Dav1dMemPool>()) as *mut Dav1dMemPool;
     if !pool.is_null() {
         if pthread_mutex_init(&mut (*pool).lock, 0 as *const pthread_mutexattr_t) == 0 {
             (*pool).buf = 0 as *mut Dav1dMemPoolBuffer;

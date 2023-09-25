@@ -1,11 +1,11 @@
 use crate::src::internal::Dav1dContext;
 use crate::stderr;
+use libc::fprintf;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
 extern "C" {
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
     fn vfprintf(_: *mut libc::FILE, _: *const c_char, _: ::core::ffi::VaList) -> c_int;
 }
 

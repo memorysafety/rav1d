@@ -1,3 +1,12 @@
+use libc::fprintf;
+use libc::free;
+use libc::malloc;
+use libc::memcpy;
+use libc::snprintf;
+use libc::strchr;
+use libc::strcmp;
+use libc::strlen;
+use libc::strncmp;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::stderr;
@@ -11,15 +20,6 @@ use std::ffi::c_void;
 
 extern "C" {
     pub type MuxerPriv;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-    fn snprintf(_: *mut c_char, _: usize, _: *const c_char, _: ...) -> c_int;
-    fn malloc(_: usize) -> *mut c_void;
-    fn free(_: *mut c_void);
-    fn memcpy(_: *mut c_void, _: *const c_void, _: usize) -> *mut c_void;
-    fn strcmp(_: *const c_char, _: *const c_char) -> c_int;
-    fn strncmp(_: *const c_char, _: *const c_char, _: usize) -> c_int;
-    fn strchr(_: *const c_char, _: c_int) -> *mut c_char;
-    fn strlen(_: *const c_char) -> usize;
     static null_muxer: Muxer;
     static md5_muxer: Muxer;
     static yuv_muxer: Muxer;

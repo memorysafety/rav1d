@@ -6,15 +6,11 @@ use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::dav1d_ref_wrap;
 use crate::src::r#ref::Dav1dRef;
 use crate::stderr;
+use libc::fprintf;
+use libc::memset;
 use std::ffi::c_char;
 use std::ffi::c_int;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
-
-extern "C" {
-    fn memset(_: *mut c_void, _: c_int, _: c_ulong) -> *mut c_void;
-    fn fprintf(_: *mut libc::FILE, _: *const c_char, _: ...) -> c_int;
-}
 
 pub unsafe fn dav1d_data_create_internal(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
     if buf.is_null() {
@@ -194,7 +190,7 @@ pub unsafe fn dav1d_data_props_set_defaults(props: *mut Dav1dDataProps) {
     memset(
         props as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Dav1dDataProps>() as c_ulong,
+        ::core::mem::size_of::<Dav1dDataProps>(),
     );
     (*props).timestamp = i64::MIN;
     (*props).offset = -1;
@@ -248,7 +244,7 @@ pub unsafe fn dav1d_data_unref_internal(buf: *mut Dav1dData) {
     memset(
         buf as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Dav1dData>() as c_ulong,
+        ::core::mem::size_of::<Dav1dData>(),
     );
     dav1d_data_props_set_defaults(&mut (*buf).m);
     dav1d_ref_dec(&mut user_data_ref);
