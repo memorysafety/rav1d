@@ -38,7 +38,6 @@ unsafe extern "C" fn inv_dct4_1d_internal_c(
     *c.offset((3 * stride) as isize) = iclip(t0 - t3, min, max);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct4_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -99,7 +98,6 @@ unsafe extern "C" fn inv_dct8_1d_internal_c(
     *c.offset((7 * stride) as isize) = iclip(t0 - t7, min, max);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct8_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -206,7 +204,6 @@ unsafe extern "C" fn inv_dct16_1d_internal_c(
     *c.offset((15 * stride) as isize) = iclip(t0 - t15a, min, max);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct16_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -417,7 +414,6 @@ unsafe extern "C" fn inv_dct32_1d_internal_c(
     *c.offset((31 * stride) as isize) = iclip(t0 - t31, min, max);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct32_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -427,7 +423,6 @@ pub unsafe extern "C" fn dav1d_inv_dct32_1d_c(
     inv_dct32_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -982,7 +977,6 @@ unsafe extern "C" fn inv_adst16_1d_internal_c(
     *out.offset((10 * out_s) as isize) = (t14a - t15a) * 181 + 128 >> 8;
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -999,7 +993,6 @@ pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
     );
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst4_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1009,7 +1002,6 @@ pub unsafe extern "C" fn dav1d_inv_adst4_1d_c(
     inv_adst4_1d_internal_c(c, stride, min, max, c, stride);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst8_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1019,7 +1011,6 @@ pub unsafe extern "C" fn dav1d_inv_adst8_1d_c(
     inv_adst8_1d_internal_c(c, stride, min, max, c, stride);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1036,7 +1027,6 @@ pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
     );
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1053,7 +1043,6 @@ pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
     );
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_adst16_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1063,7 +1052,6 @@ pub unsafe extern "C" fn dav1d_inv_adst16_1d_c(
     inv_adst16_1d_internal_c(c, stride, min, max, c, stride);
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1081,7 +1069,6 @@ pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1099,7 +1086,6 @@ pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1117,7 +1103,6 @@ pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
     c: *mut i32,
     stride: ptrdiff_t,
@@ -1135,7 +1120,6 @@ pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
     }
 }
 
-#[no_mangle]
 pub unsafe extern "C" fn dav1d_inv_wht4_1d_c(c: *mut i32, stride: ptrdiff_t) {
     if !(stride > 0) {
         unreachable!();
