@@ -52,7 +52,7 @@ pub(crate) fn dav1d_get_cpu_flags() -> CpuFlags {
 }
 
 #[cold]
-pub(crate) unsafe fn dav1d_init_cpu() {
+pub(crate) fn dav1d_init_cpu() {
     #[cfg(feature = "asm")]
     cfg_if! {
         if #[cfg(target_arch = "x86_64")] {

@@ -143,7 +143,7 @@ pub struct Dav1dSettings {
 }
 
 #[cold]
-unsafe fn init_internal() {
+fn init_internal() {
     dav1d_init_cpu();
 }
 
