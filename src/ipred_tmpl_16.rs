@@ -34,7 +34,7 @@ use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
+use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -1522,13 +1522,10 @@ unsafe extern "C" fn pal_pred_rust(
 #[inline(always)]
 unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
     use crate::src::ipred::*; // TODO(legare): Temporary import until init fns are deduplicated.
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX2;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_AVX512ICL;
-    use crate::src::x86::cpu::DAV1D_X86_CPU_FLAG_SSSE3;
 
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+    if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
@@ -1560,7 +1557,7 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
 
     #[cfg(target_arch = "x86_64")]
     {
-        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
@@ -1590,7 +1587,7 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
 
         (*c).pal_pred = dav1d_pal_pred_16bpc_avx2;
 
-        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
@@ -1607,12 +1604,11 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Dav1dIntraPredDSPContext) {
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
 unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Dav1dIntraPredDSPContext) {
-    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::ipred::*;
 
     let flags = dav1d_get_cpu_flags();
-    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+    if !flags.contains(CpuFlags::NEON) {
         return;
     }
 

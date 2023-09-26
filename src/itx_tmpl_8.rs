@@ -45,7 +45,7 @@ use std::ffi::c_int;
 use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
+use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -119,19 +119,18 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust(
 #[inline(always)]
 #[rustfmt::skip]
 unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, _bpc: c_int) {
-    use crate::src::x86::cpu::*;
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+    if !flags.contains(CpuFlags::SSE2) {
         return;
     }
 
     (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(dav1d_inv_txfm_add_wht_wht_4x4_8bpc_sse2);
 
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+    if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
@@ -291,13 +290,13 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, _bpc: c_in
     (*c).itxfm_add[RTX_64X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x32_8bpc_ssse3);
     (*c).itxfm_add[TX_64X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x64_8bpc_ssse3);
 
-    if flags & DAV1D_X86_CPU_FLAG_SSE41 == 0 {
+    if !flags.contains(CpuFlags::SSE41) {
         return;
     }
 
     #[cfg(target_arch = "x86_64")]
     {
-        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
@@ -458,7 +457,7 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, _bpc: c_in
         (*c).itxfm_add[RTX_64X32 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x32_8bpc_avx2);
         (*c).itxfm_add[TX_64X64 as usize][DCT_DCT as usize] = Some(dav1d_inv_txfm_add_dct_dct_64x64_8bpc_avx2);
 
-        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
@@ -624,13 +623,12 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Dav1dInvTxfmDSPContext, _bpc: c_in
 #[inline(always)]
 #[rustfmt::skip]
 unsafe extern "C" fn itx_dsp_init_arm(c: *mut Dav1dInvTxfmDSPContext, mut _bpc: c_int) {
-    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
-    // TODO(legare): Temporary import until init fns are deduplicated.
+        // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+    if !flags.contains(CpuFlags::NEON) {
         return;
     }
 

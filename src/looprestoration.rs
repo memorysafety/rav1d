@@ -27,7 +27,7 @@ use libc::intptr_t;
 use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
+use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 extern "C" {
@@ -1632,11 +1632,9 @@ unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepth>(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPContext, bpc: c_int) {
-    use crate::src::x86::cpu::*;
-
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+    if !flags.contains(CpuFlags::SSE2) {
         return;
     }
 
@@ -1645,7 +1643,7 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPCo
         c.wiener[1] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_sse2);
     }
 
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+    if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
@@ -1660,7 +1658,7 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPCo
 
     #[cfg(target_arch = "x86_64")]
     {
-        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
@@ -1673,7 +1671,7 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPCo
             c.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx2);
         }
 
-        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
@@ -1695,11 +1693,9 @@ fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPCo
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 fn loop_restoration_dsp_init_arm<BD: BitDepth>(c: &mut Dav1dLoopRestorationDSPContext, bpc: c_int) {
-    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
-
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+    if !flags.contains(CpuFlags::NEON) {
         return;
     }
 

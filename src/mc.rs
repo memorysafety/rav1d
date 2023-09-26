@@ -26,9 +26,6 @@ use std::cmp;
 use std::ffi::c_int;
 use std::iter;
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use std::ffi::c_uint;
-
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::bd_fn;
 
@@ -36,7 +33,7 @@ use crate::include::common::bitdepth::bd_fn;
 use crate::include::common::bitdepth::BPC;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::dav1d_get_cpu_flags;
+use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
 
 #[inline(never)]
 unsafe fn put_rust<BD: BitDepth>(
@@ -2258,11 +2255,9 @@ extern "C" {
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
-    use crate::src::x86::cpu::*;
+    let flags = dav1d_get_cpu_flags();
 
-    let flags: c_uint = dav1d_get_cpu_flags();
-
-    if flags & DAV1D_X86_CPU_FLAG_SSE2 == 0 {
+    if !flags.contains(CpuFlags::SSE2) {
         return;
     }
 
@@ -2282,7 +2277,7 @@ unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
         (*c).warp8x8t = dav1d_warp_affine_8x8t_8bpc_sse2;
     }
 
-    if flags & DAV1D_X86_CPU_FLAG_SSSE3 == 0 {
+    if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
@@ -2358,7 +2353,7 @@ unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
     (*c).emu_edge = bd_fn!(BD, emu_edge, ssse3);
     (*c).resize = bd_fn!(BD, resize, ssse3);
 
-    if flags & DAV1D_X86_CPU_FLAG_SSE41 == 0 {
+    if !flags.contains(CpuFlags::SSE41) {
         return;
     }
 
@@ -2369,7 +2364,7 @@ unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
 
     #[cfg(target_arch = "x86_64")]
     {
-        if flags & DAV1D_X86_CPU_FLAG_AVX2 == 0 {
+        if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
@@ -2448,7 +2443,7 @@ unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
         (*c).emu_edge = bd_fn!(BD, emu_edge, avx2);
         (*c).resize = bd_fn!(BD, resize, avx2);
 
-        if flags & DAV1D_X86_CPU_FLAG_AVX512ICL == 0 {
+        if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
@@ -2506,11 +2501,9 @@ unsafe extern "C" fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 unsafe extern "C" fn mc_dsp_init_arm<BD: BitDepth>(c: *mut Dav1dMCDSPContext) {
-    use crate::src::arm::cpu::DAV1D_ARM_CPU_FLAG_NEON;
-
     let flags = dav1d_get_cpu_flags();
 
-    if flags & DAV1D_ARM_CPU_FLAG_NEON == 0 {
+    if !flags.contains(CpuFlags::NEON) {
         return;
     }
 

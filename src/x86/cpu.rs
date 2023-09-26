@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 use libc::memcmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
@@ -11,13 +12,16 @@ extern "C" {
     fn dav1d_cpu_xgetbv(xcr: c_uint) -> u64;
 }
 
-pub type CpuFlags = c_uint;
-pub const DAV1D_X86_CPU_FLAG_SLOW_GATHER: CpuFlags = 32;
-pub const DAV1D_X86_CPU_FLAG_AVX512ICL: CpuFlags = 16;
-pub const DAV1D_X86_CPU_FLAG_AVX2: CpuFlags = 8;
-pub const DAV1D_X86_CPU_FLAG_SSE41: CpuFlags = 4;
-pub const DAV1D_X86_CPU_FLAG_SSSE3: CpuFlags = 2;
-pub const DAV1D_X86_CPU_FLAG_SSE2: CpuFlags = 1;
+bitflags! {
+    pub struct CpuFlags: c_uint {
+        const SSE2 = 1 << 0;
+        const SSSE3 = 1 << 1;
+        const SSE41 = 1 << 2;
+        const AVX2 = 1 << 3;
+        const AVX512ICL = 1 << 4;
+        const SLOW_GATHER = 1 << 5;
+    }
+}
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -42,7 +46,7 @@ pub union C2RustUnnamed_0 {
 }
 
 #[cold]
-pub unsafe fn dav1d_get_cpu_flags_x86() -> c_uint {
+pub unsafe fn dav1d_get_cpu_flags_x86() -> CpuFlags {
     let mut cpu: C2RustUnnamed_0 = C2RustUnnamed_0 {
         r: CpuidRegisters {
             eax: 0,
@@ -52,7 +56,7 @@ pub unsafe fn dav1d_get_cpu_flags_x86() -> c_uint {
         },
     };
     dav1d_cpu_cpuid(&mut cpu.r, 0 as c_int as c_uint, 0 as c_int as c_uint);
-    let mut flags: c_uint = 0 as c_int as c_uint;
+    let mut flags = CpuFlags::empty();
     if cpu.c2rust_unnamed.max_leaf >= 1 as c_uint {
         let mut r: CpuidRegisters = CpuidRegisters {
             eax: 0,
@@ -66,11 +70,11 @@ pub unsafe fn dav1d_get_cpu_flags_x86() -> c_uint {
         let family: c_uint = (r.eax >> 8 & 0xf as c_int as c_uint)
             .wrapping_add(r.eax >> 20 & 0xff as c_int as c_uint);
         if r.edx & 0x6008000 as c_int as c_uint == 0x6008000 as c_int as c_uint {
-            flags |= DAV1D_X86_CPU_FLAG_SSE2 as c_int as c_uint;
+            flags |= CpuFlags::SSE2;
             if r.ecx & 0x201 as c_int as c_uint == 0x201 as c_int as c_uint {
-                flags |= DAV1D_X86_CPU_FLAG_SSSE3 as c_int as c_uint;
+                flags |= CpuFlags::SSSE3;
                 if r.ecx & 0x80000 as c_int as c_uint == 0x80000 as c_int as c_uint {
-                    flags |= DAV1D_X86_CPU_FLAG_SSE41 as c_int as c_uint;
+                    flags |= CpuFlags::SSE41;
                 }
             }
         }
@@ -83,12 +87,12 @@ pub unsafe fn dav1d_get_cpu_flags_x86() -> c_uint {
                 if cpu.c2rust_unnamed.max_leaf >= 7 as c_uint {
                     dav1d_cpu_cpuid(&mut r, 7 as c_int as c_uint, 0 as c_int as c_uint);
                     if r.ebx & 0x128 as c_int as c_uint == 0x128 as c_int as c_uint {
-                        flags |= DAV1D_X86_CPU_FLAG_AVX2 as c_int as c_uint;
+                        flags |= CpuFlags::AVX2;
                         if xcr0 & 0xe0 as c_int as c_ulong == 0xe0 as c_int as c_ulong {
                             if r.ebx & 0xd0230000 as c_uint == 0xd0230000 as c_uint
                                 && r.ecx & 0x5f42 as c_int as c_uint == 0x5f42 as c_int as c_uint
                             {
-                                flags |= DAV1D_X86_CPU_FLAG_AVX512ICL as c_int as c_uint;
+                                flags |= CpuFlags::AVX512ICL;
                             }
                         }
                     }
@@ -102,13 +106,13 @@ pub unsafe fn dav1d_get_cpu_flags_x86() -> c_uint {
             ::core::mem::size_of::<[c_char; 12]>(),
         ) == 0
         {
-            if flags & DAV1D_X86_CPU_FLAG_AVX2 as c_int as c_uint != 0
+            if flags.contains(CpuFlags::AVX2)
                 && (family < 0x19 as c_int as c_uint
                     || family == 0x19 as c_int as c_uint
                         && (model < 0x10 as c_int as c_uint
                             || model >= 0x20 as c_int as c_uint && model < 0x60 as c_int as c_uint))
             {
-                flags |= DAV1D_X86_CPU_FLAG_SLOW_GATHER as c_int as c_uint;
+                flags |= CpuFlags::SLOW_GATHER;
             }
         }
     }
