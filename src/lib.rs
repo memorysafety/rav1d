@@ -19,8 +19,6 @@ use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Dav1dPicture;
-use crate::include::pthread::pthread_once_init;
-use crate::include::pthread::pthread_once_t;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::dav1d_cdf_thread_unref;
@@ -104,6 +102,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::process::abort;
+use std::sync::Once;
 
 #[cfg(feature = "bitdepth_8")]
 use crate::src::fg_apply_tmpl_8::dav1d_apply_grain_8bpc;
@@ -123,10 +122,6 @@ extern "C" {
         __attr: *const pthread_attr_t,
         __start_routine: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
         __arg: *mut c_void,
-    ) -> c_int;
-    fn pthread_once(
-        __once_control: *mut pthread_once_t,
-        __init_routine: Option<unsafe extern "C" fn() -> ()>,
     ) -> c_int;
 }
 
@@ -148,7 +143,7 @@ pub struct Dav1dSettings {
 }
 
 #[cold]
-unsafe extern "C" fn init_internal() {
+unsafe fn init_internal() {
     dav1d_init_cpu();
 }
 
@@ -297,11 +292,8 @@ pub unsafe extern "C" fn dav1d_open(
         return -(12 as c_int);
     }
 
-    static mut initted: pthread_once_t = pthread_once_init();
-    pthread_once(
-        &mut initted,
-        Some(init_internal as unsafe extern "C" fn() -> ()),
-    );
+    static initted: Once = Once::new();
+    initted.call_once(|| init_internal());
     if c_out.is_null() {
         fprintf(
             stderr,
