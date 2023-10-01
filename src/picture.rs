@@ -4,10 +4,10 @@ use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
 use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_SEQUENCE;
-use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
+use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
@@ -144,7 +144,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     frame_hdr_ref: *mut Rav1dRef,
     content_light: *mut Rav1dContentLightLevel,
     content_light_ref: *mut Rav1dRef,
-    mastering_display: *mut Dav1dMasteringDisplay,
+    mastering_display: *mut Rav1dMasteringDisplay,
     mastering_display_ref: *mut Rav1dRef,
     itut_t35: *mut Rav1dITUTT35,
     itut_t35_ref: *mut Rav1dRef,
