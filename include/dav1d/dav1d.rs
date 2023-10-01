@@ -53,7 +53,7 @@ pub(crate) const RAV1D_INLOOPFILTER_RESTORATION: Rav1dInloopFilterType =
     DAV1D_INLOOPFILTER_RESTORATION;
 pub(crate) const RAV1D_INLOOPFILTER_CDEF: Rav1dInloopFilterType = DAV1D_INLOOPFILTER_CDEF;
 pub(crate) const RAV1D_INLOOPFILTER_DEBLOCK: Rav1dInloopFilterType = DAV1D_INLOOPFILTER_DEBLOCK;
-pub(crate) const RAV1D_INLOOPFILTER_NONE: Rav1dInloopFilterType = DAV1D_INLOOPFILTER_NONE;
+pub(crate) const _RAV1D_INLOOPFILTER_NONE: Rav1dInloopFilterType = DAV1D_INLOOPFILTER_NONE;
 
 pub type Dav1dDecodeFrameType = c_uint;
 pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType = 3;

@@ -9,12 +9,10 @@ use crate::include::dav1d::dav1d::Dav1dContext;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Dav1dSettings;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
-use crate::include::dav1d::dav1d::Rav1dLogger;
 use crate::include::dav1d::dav1d::Rav1dSettings;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_ALL;
-use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_NONE;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
@@ -26,7 +24,6 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
-use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
@@ -53,7 +50,6 @@ use crate::src::levels::Av1Block;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_64X64;
 use crate::src::log::rav1d_log;
-use crate::src::log::rav1d_log_default_callback;
 use crate::src::mem::freep;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
@@ -152,44 +148,30 @@ pub unsafe extern "C" fn dav1d_version() -> *const c_char {
     rav1d_version().as_ptr().cast()
 }
 
-#[cold]
-pub(crate) unsafe fn rav1d_default_settings(s: *mut Rav1dSettings) {
-    (*s).n_threads = 0 as c_int;
-    (*s).max_frame_delay = 0 as c_int;
-    (*s).apply_grain = 1 as c_int;
-    (*s).allocator.cookie = 0 as *mut c_void;
-    (*s).allocator.alloc_picture_callback = Some(
-        dav1d_default_picture_alloc
-            as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> c_int,
-    );
-    (*s).allocator.release_picture_callback = Some(
-        dav1d_default_picture_release as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> (),
-    );
-    (*s).logger.cookie = 0 as *mut c_void;
-    (*s).logger.callback = Some(
-        rav1d_log_default_callback
-            as unsafe extern "C" fn(*mut c_void, *const c_char, ::core::ffi::VaList) -> (),
-    );
-    (*s).operating_point = 0 as c_int;
-    (*s).all_layers = 1 as c_int;
-    (*s).frame_size_limit = 0 as c_int as c_uint;
-    (*s).strict_std_compliance = 0 as c_int;
-    (*s).output_invisible_frames = 0 as c_int;
-    (*s).inloop_filters = RAV1D_INLOOPFILTER_ALL;
-    (*s).decode_frame_type = RAV1D_DECODEFRAMETYPE_ALL;
+impl Default for Rav1dSettings {
+    fn default() -> Self {
+        Self {
+            n_threads: 0,
+            max_frame_delay: 0,
+            apply_grain: 1,
+            operating_point: 0,
+            all_layers: 1,
+            frame_size_limit: 0,
+            allocator: Default::default(),
+            logger: Default::default(),
+            strict_std_compliance: 0,
+            output_invisible_frames: 0,
+            inloop_filters: RAV1D_INLOOPFILTER_ALL,
+            decode_frame_type: RAV1D_DECODEFRAMETYPE_ALL,
+            reserved: Default::default(),
+        }
+    }
 }
 
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
-    s.write(
-        {
-            let mut s = s.read().into();
-            rav1d_default_settings(&mut s);
-            s
-        }
-        .into(),
-    );
+    s.write(Rav1dSettings::default().into());
 }
 
 #[cold]
@@ -662,29 +644,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
         );
         return -(22 as c_int);
     }
-    let mut s: Rav1dSettings = Rav1dSettings {
-        n_threads: 0,
-        max_frame_delay: 0,
-        apply_grain: 0,
-        operating_point: 0,
-        all_layers: 0,
-        frame_size_limit: 0,
-        allocator: Rav1dPicAllocator {
-            cookie: 0 as *mut c_void,
-            alloc_picture_callback: None,
-            release_picture_callback: None,
-        },
-        logger: Rav1dLogger {
-            cookie: 0 as *mut c_void,
-            callback: None,
-        },
-        strict_std_compliance: 0,
-        output_invisible_frames: 0,
-        inloop_filters: RAV1D_INLOOPFILTER_NONE,
-        decode_frame_type: RAV1D_DECODEFRAMETYPE_ALL,
-        reserved: [0; 16],
-    };
-    rav1d_default_settings(&mut s);
+    let mut s = Rav1dSettings::default();
     s.n_threads = 1 as c_int;
     s.logger.callback = None;
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
