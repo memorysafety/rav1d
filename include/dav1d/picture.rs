@@ -2,12 +2,12 @@ use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Dav1dRef;
 use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
@@ -60,7 +60,7 @@ pub struct Dav1dPicture {
     pub stride: [ptrdiff_t; 2],
     pub p: Dav1dPictureParameters,
     pub m: Dav1dDataProps,
-    pub content_light: *mut Dav1dContentLightLevel,
+    pub content_light: *mut Rav1dContentLightLevel,
     pub mastering_display: *mut Dav1dMasteringDisplay,
     pub itut_t35: *mut Dav1dITUTT35,
     pub reserved: [uintptr_t; 4],
@@ -83,7 +83,7 @@ pub(crate) struct Rav1dPicture {
     pub stride: [ptrdiff_t; 2],
     pub p: Rav1dPictureParameters,
     pub m: Rav1dDataProps,
-    pub content_light: *mut Dav1dContentLightLevel, // TODO(kkysen) make Rav1d
+    pub content_light: *mut Rav1dContentLightLevel,
     pub mastering_display: *mut Dav1dMasteringDisplay, // TODO(kkysen) make Rav1d
     pub itut_t35: *mut Rav1dITUTT35,
     pub reserved: [uintptr_t; 4],

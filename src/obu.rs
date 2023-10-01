@@ -8,7 +8,6 @@ use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Dav1dColorPrimaries;
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
@@ -23,6 +22,7 @@ use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -1731,7 +1731,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             {
                 (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
                 (*c).mastering_display = 0 as *mut Dav1dMasteringDisplay;
-                (*c).content_light = 0 as *mut Dav1dContentLightLevel;
+                (*c).content_light = 0 as *mut Rav1dContentLightLevel;
                 rav1d_ref_dec(&mut (*c).mastering_display_ref);
                 rav1d_ref_dec(&mut (*c).content_light_ref);
                 let mut i = 0;
@@ -1787,12 +1787,12 @@ pub(crate) unsafe fn rav1d_parse_obus(
             match meta_type as c_uint {
                 OBU_META_HDR_CLL => {
                     let mut ref_1: *mut Rav1dRef =
-                        rav1d_ref_create(::core::mem::size_of::<Dav1dContentLightLevel>());
+                        rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
                     if ref_1.is_null() {
                         return -(12 as c_int);
                     }
-                    let content_light: *mut Dav1dContentLightLevel =
-                        (*ref_1).data as *mut Dav1dContentLightLevel;
+                    let content_light: *mut Rav1dContentLightLevel =
+                        (*ref_1).data as *mut Rav1dContentLightLevel;
                     (*content_light).max_content_light_level =
                         rav1d_get_bits(&mut gb, 16 as c_int) as c_int;
                     (*content_light).max_frame_average_light_level =

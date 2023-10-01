@@ -337,42 +337,12 @@ pub const DAV1D_MAX_SEGMENTS: u8 = 8;
 pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
 
 #[repr(C)]
-pub struct Dav1dContentLightLevel {
+pub struct Rav1dContentLightLevel {
     pub max_content_light_level: c_int,
     pub max_frame_average_light_level: c_int,
 }
 
-#[repr(C)]
-pub(crate) struct Rav1dContentLightLevel {
-    pub max_content_light_level: c_int,
-    pub max_frame_average_light_level: c_int,
-}
-
-impl From<Dav1dContentLightLevel> for Rav1dContentLightLevel {
-    fn from(value: Dav1dContentLightLevel) -> Self {
-        let Dav1dContentLightLevel {
-            max_content_light_level,
-            max_frame_average_light_level,
-        } = value;
-        Self {
-            max_content_light_level,
-            max_frame_average_light_level,
-        }
-    }
-}
-
-impl From<Rav1dContentLightLevel> for Dav1dContentLightLevel {
-    fn from(value: Rav1dContentLightLevel) -> Self {
-        let Rav1dContentLightLevel {
-            max_content_light_level,
-            max_frame_average_light_level,
-        } = value;
-        Self {
-            max_content_light_level,
-            max_frame_average_light_level,
-        }
-    }
-}
+pub type Dav1dContentLightLevel = Rav1dContentLightLevel;
 
 #[repr(C)]
 pub struct Dav1dMasteringDisplay {
