@@ -25,6 +25,7 @@ use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
+use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dObuType;
 use crate::include::dav1d::headers::Rav1dSegmentationData;
@@ -1867,17 +1868,24 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         );
                     } else {
                         let ref_3: *mut Rav1dRef = rav1d_ref_create(
-                            (::core::mem::size_of::<Dav1dITUTT35>()).wrapping_add(
-                                (payload_size as usize).wrapping_mul(::core::mem::size_of::<u8>()),
-                            ),
+                            (::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+                                .wrapping_add(
+                                    (payload_size as usize)
+                                        .wrapping_mul(::core::mem::size_of::<u8>()),
+                                ),
                         );
                         if ref_3.is_null() {
                             return -(12 as c_int);
                         }
-                        let itut_t35_metadata: *mut Dav1dITUTT35 =
-                            (*ref_3).data as *mut Dav1dITUTT35;
-                        (*itut_t35_metadata).payload =
-                            &mut *itut_t35_metadata.offset(1) as *mut Dav1dITUTT35 as *mut u8;
+                        let itut_t32_metadatas =
+                            (*ref_3).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
+                        let itut_t35_metadata: *mut Rav1dITUTT35 =
+                            addr_of_mut!((*itut_t32_metadatas).rav1d);
+                        (*itut_t35_metadata).payload = (*ref_3)
+                            .data
+                            .cast::<u8>()
+                            .offset(::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
+                                as isize);
                         (*itut_t35_metadata).country_code = country_code as u8;
                         (*itut_t35_metadata).country_code_extension_byte =
                             country_code_extension_byte as u8;
@@ -1888,6 +1896,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                             i_2 += 1;
                         }
                         (*itut_t35_metadata).payload_size = payload_size as usize;
+                        (*itut_t32_metadatas).update_dav1d();
                         rav1d_ref_dec(&mut (*c).itut_t35_ref);
                         (*c).itut_t35 = itut_t35_metadata;
                         (*c).itut_t35_ref = ref_3;

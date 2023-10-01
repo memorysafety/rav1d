@@ -424,6 +424,7 @@ impl From<Rav1dMasteringDisplay> for Dav1dMasteringDisplay {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dITUTT35 {
     pub country_code: u8,
@@ -432,6 +433,7 @@ pub struct Dav1dITUTT35 {
     pub payload: *mut u8,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dITUTT35 {
     pub country_code: u8,

@@ -7,9 +7,9 @@ use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::dav1d::Rav1dLogger;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
-use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
@@ -180,7 +180,7 @@ pub struct Rav1dContext {
     pub(crate) mastering_display_ref: *mut Rav1dRef,
     pub(crate) mastering_display: *mut Dav1dMasteringDisplay, // TODO(kkysen) make Rav1d
     pub(crate) itut_t35_ref: *mut Rav1dRef,
-    pub(crate) itut_t35: *mut Dav1dITUTT35, // TODO(kkysen) make Rav1d
+    pub(crate) itut_t35: *mut Rav1dITUTT35,
     pub(crate) in_0: Rav1dData,
     pub(crate) out: Rav1dThreadPicture,
     pub(crate) cache: Rav1dThreadPicture,

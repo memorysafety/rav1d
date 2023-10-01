@@ -5,9 +5,9 @@ use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
 use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_SEQUENCE;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
-use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
@@ -146,7 +146,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     content_light_ref: *mut Rav1dRef,
     mastering_display: *mut Dav1dMasteringDisplay,
     mastering_display_ref: *mut Rav1dRef,
-    itut_t35: *mut Dav1dITUTT35,
+    itut_t35: *mut Rav1dITUTT35,
     itut_t35_ref: *mut Rav1dRef,
     bpc: c_int,
     props: *const Rav1dDataProps,
@@ -182,6 +182,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     rav1d_data_props_set_defaults(&mut (*p).m);
     (*p).seq_hdr_ref = seq_hdr_ref;
     (*p).frame_hdr_ref = frame_hdr_ref;
+    (*p).itut_t35_ref = itut_t35_ref;
     let res = (*p_allocator).alloc_picture(p);
     if res < 0 {
         free(pic_ctx as *mut c_void);
@@ -222,7 +223,6 @@ unsafe extern "C" fn picture_alloc_with_edges(
     if !mastering_display_ref.is_null() {
         rav1d_ref_inc(mastering_display_ref);
     }
-    (*p).itut_t35_ref = itut_t35_ref;
     if !itut_t35_ref.is_null() {
         rav1d_ref_inc(itut_t35_ref);
     }
@@ -265,7 +265,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         return res;
     }
     rav1d_ref_dec(&mut (*c).itut_t35_ref);
-    (*c).itut_t35 = 0 as *mut Dav1dITUTT35;
+    (*c).itut_t35 = 0 as *mut Rav1dITUTT35;
     let flags_mask = if (*(*f).frame_hdr).show_frame != 0 || (*c).output_invisible_frames != 0 {
         0 as c_int
     } else {
