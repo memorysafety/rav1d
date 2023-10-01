@@ -1,4 +1,4 @@
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SHARP;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SMOOTH;
@@ -745,7 +745,7 @@ pub const interintra_allowed_mask: c_uint = 0
     | 1 << BS_8x8
     | 0;
 
-pub static dav1d_default_wm_params: Dav1dWarpedMotionParams = Dav1dWarpedMotionParams {
+pub(crate) static dav1d_default_wm_params: Rav1dWarpedMotionParams = Rav1dWarpedMotionParams {
     type_0: RAV1D_WM_TYPE_IDENTITY,
     matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
     abcd: [0; 4],

@@ -7,11 +7,11 @@ use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::dav1d::Rav1dLogger;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
@@ -174,7 +174,7 @@ pub struct Rav1dContext {
     pub(crate) seq_hdr: *mut Dav1dSequenceHeader, // TODO(kkysen) make Rav1d
     pub(crate) frame_hdr_pool: *mut Rav1dMemPool,
     pub(crate) frame_hdr_ref: *mut Rav1dRef,
-    pub(crate) frame_hdr: *mut Dav1dFrameHeader, // TODO(kkysen) make Rav1d
+    pub(crate) frame_hdr: *mut Rav1dFrameHeader,
     pub(crate) content_light_ref: *mut Rav1dRef,
     pub(crate) content_light: *mut Dav1dContentLightLevel, // TODO(kkysen) make Rav1d
     pub(crate) mastering_display_ref: *mut Rav1dRef,
@@ -374,7 +374,7 @@ pub(crate) struct Rav1dFrameContext {
     pub seq_hdr_ref: *mut Rav1dRef,
     pub seq_hdr: *mut Dav1dSequenceHeader, // TODO(kkysen) make Rav1d
     pub frame_hdr_ref: *mut Rav1dRef,
-    pub frame_hdr: *mut Dav1dFrameHeader, // TODO(kkysen) make Rav1d
+    pub frame_hdr: *mut Rav1dFrameHeader,
     pub refp: [Rav1dThreadPicture; 7],
     pub cur: Rav1dPicture,
     pub sr_cur: Rav1dThreadPicture,
@@ -576,7 +576,7 @@ pub(crate) struct Rav1dTaskContext {
     pub pal_sz_uv: [[u8; 32]; 2],
     pub txtp_map: [u8; 1024],
     pub scratch: Rav1dTaskContext_scratch,
-    pub warpmv: Dav1dWarpedMotionParams,
+    pub warpmv: Rav1dWarpedMotionParams,
     pub lf_mask: *mut Av1Filter,
     pub top_pre_cdef_toggle: c_int,
     pub cur_sb_cdef_idx_ptr: *mut i8,

@@ -1120,6 +1120,7 @@ pub struct Rav1dFilmGrainData {
 
 pub type Dav1dFilmGrainData = Rav1dFilmGrainData;
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_film_grain {
     pub data: Dav1dFilmGrainData,
@@ -1127,6 +1128,7 @@ pub struct Dav1dFrameHeader_film_grain {
     pub update: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_film_grain {
     pub data: Rav1dFilmGrainData,
@@ -1164,11 +1166,13 @@ impl From<Rav1dFrameHeader_film_grain> for Dav1dFrameHeader_film_grain {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: c_int,
@@ -1196,12 +1200,14 @@ impl From<Rav1dFrameHeaderOperatingPoint> for Dav1dFrameHeaderOperatingPoint {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_super_res {
     pub width_scale_denominator: c_int,
     pub enabled: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_super_res {
     pub width_scale_denominator: c_int,
@@ -1234,6 +1240,7 @@ impl From<Rav1dFrameHeader_super_res> for Dav1dFrameHeader_super_res {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_tiling {
     pub uniform: c_int,
@@ -1251,6 +1258,7 @@ pub struct Dav1dFrameHeader_tiling {
     pub update: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_tiling {
     pub uniform: c_int,
@@ -1338,6 +1346,7 @@ impl From<Rav1dFrameHeader_tiling> for Dav1dFrameHeader_tiling {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_quant {
     pub yac: c_int,
@@ -1352,6 +1361,7 @@ pub struct Dav1dFrameHeader_quant {
     pub qm_v: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_quant {
     pub yac: c_int,
@@ -1424,6 +1434,7 @@ impl From<Rav1dFrameHeader_quant> for Dav1dFrameHeader_quant {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_segmentation {
     pub enabled: c_int,
@@ -1435,6 +1446,7 @@ pub struct Dav1dFrameHeader_segmentation {
     pub qidx: [c_int; 8],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_segmentation {
     pub enabled: c_int,
@@ -1492,12 +1504,14 @@ impl From<Rav1dFrameHeader_segmentation> for Dav1dFrameHeader_segmentation {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_q {
     pub present: c_int,
     pub res_log2: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta_q {
     pub present: c_int,
@@ -1518,6 +1532,7 @@ impl From<Rav1dFrameHeader_delta_q> for Dav1dFrameHeader_delta_q {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_lf {
     pub present: c_int,
@@ -1525,6 +1540,7 @@ pub struct Dav1dFrameHeader_delta_lf {
     pub multi: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta_lf {
     pub present: c_int,
@@ -1562,12 +1578,14 @@ impl From<Rav1dFrameHeader_delta_lf> for Dav1dFrameHeader_delta_lf {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta {
     pub q: Dav1dFrameHeader_delta_q,
     pub lf: Dav1dFrameHeader_delta_lf,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta {
     pub q: Rav1dFrameHeader_delta_q,
@@ -1594,6 +1612,7 @@ impl From<Rav1dFrameHeader_delta> for Dav1dFrameHeader_delta {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_loopfilter {
     pub level_y: [c_int; 2],
@@ -1605,6 +1624,7 @@ pub struct Dav1dFrameHeader_loopfilter {
     pub sharpness: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_loopfilter {
     pub level_y: [c_int; 2],
@@ -1662,6 +1682,7 @@ impl From<Rav1dFrameHeader_loopfilter> for Dav1dFrameHeader_loopfilter {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_cdef {
     pub damping: c_int,
@@ -1670,6 +1691,7 @@ pub struct Dav1dFrameHeader_cdef {
     pub uv_strength: [c_int; 8],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_cdef {
     pub damping: c_int,
@@ -1712,12 +1734,14 @@ impl From<Rav1dFrameHeader_cdef> for Dav1dFrameHeader_cdef {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_restoration {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [c_int; 2],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_restoration {
     pub type_0: [Rav1dRestorationType; 3],
@@ -1738,6 +1762,7 @@ impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader {
     pub film_grain: Dav1dFrameHeader_film_grain,
@@ -1792,6 +1817,7 @@ pub struct Dav1dFrameHeader {
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader {
     pub film_grain: Rav1dFrameHeader_film_grain,

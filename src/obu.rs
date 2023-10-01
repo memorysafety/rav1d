@@ -4,6 +4,7 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_INTRA;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_REFERENCE;
+use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Dav1dColorPrimaries;
@@ -11,24 +12,25 @@ use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dFrameType;
 use crate::include::dav1d::headers::Dav1dITUTT35;
-use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dRestorationType;
-use crate::include::dav1d::headers::Dav1dSegmentationData;
-use crate::include::dav1d::headers::Dav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
+use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dObuType;
+use crate::include::dav1d::headers::Rav1dSegmentationData;
+use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_ADAPTIVE;
 use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
@@ -395,7 +397,7 @@ unsafe extern "C" fn read_frame_size(
     use_ref: c_int,
 ) -> c_int {
     let seqhdr: *const Dav1dSequenceHeader = (*c).seq_hdr;
-    let hdr: *mut Dav1dFrameHeader = (*c).frame_hdr;
+    let hdr: *mut Rav1dFrameHeader = (*c).frame_hdr;
     if use_ref != 0 {
         let mut i = 0;
         while i < 7 {
@@ -476,7 +478,7 @@ unsafe extern "C" fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
     return k;
 }
 
-static default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = Dav1dLoopfilterModeRefDeltas {
+static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterModeRefDeltas {
     mode_delta: [0, 0],
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
@@ -491,7 +493,7 @@ unsafe extern "C" fn parse_frame_hdr_error(c: *mut Rav1dContext) -> c_int {
 
 unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> c_int {
     let seqhdr: *const Dav1dSequenceHeader = (*c).seq_hdr;
-    let hdr: *mut Dav1dFrameHeader = (*c).frame_hdr;
+    let hdr: *mut Rav1dFrameHeader = (*c).frame_hdr;
     (*hdr).show_existing_frame =
         ((*seqhdr).reduced_still_picture_header == 0 && rav1d_get_bit(gb) != 0) as c_int;
     if (*hdr).show_existing_frame != 0 {
@@ -502,7 +504,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         }
         if (*seqhdr).frame_id_numbers_present != 0 {
             (*hdr).frame_id = rav1d_get_bits(gb, (*seqhdr).frame_id_n_bits) as c_int;
-            let ref_frame_hdr: *mut Dav1dFrameHeader =
+            let ref_frame_hdr: *mut Rav1dFrameHeader =
                 (*c).refs[(*hdr).existing_frame_idx as usize].p.p.frame_hdr;
             if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != (*hdr).frame_id {
                 return parse_frame_hdr_error(c);
@@ -582,9 +584,9 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                 let seqop: *const Dav1dSequenceHeaderOperatingPoint =
                     &*((*seqhdr).operating_points).as_ptr().offset(i as isize)
                         as *const Dav1dSequenceHeaderOperatingPoint;
-                let op: *mut Dav1dFrameHeaderOperatingPoint =
+                let op: *mut Rav1dFrameHeaderOperatingPoint =
                     &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
-                        as *mut Dav1dFrameHeaderOperatingPoint;
+                        as *mut Rav1dFrameHeaderOperatingPoint;
                 if (*seqop).decoder_model_param_present != 0 {
                     let in_temporal_layer = (*seqop).idc >> (*hdr).temporal_id & 1;
                     let in_spatial_layer = (*seqop).idc >> (*hdr).spatial_id + 8 & 1;
@@ -774,7 +776,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                     - delta_ref_frame_id_minus_1
                     - 1
                     & ((1 as c_int) << (*seqhdr).frame_id_n_bits) - 1;
-                let ref_frame_hdr_0: *mut Dav1dFrameHeader = (*c).refs
+                let ref_frame_hdr_0: *mut Rav1dFrameHeader = (*c).refs
                     [(*hdr).refidx[i_9 as usize] as usize]
                     .p
                     .p
@@ -965,10 +967,10 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
             (*hdr).segmentation.seg_data.last_active_segid = -(1 as c_int);
             let mut i_10 = 0;
             while i_10 < 8 {
-                let seg: *mut Dav1dSegmentationData = &mut *((*hdr).segmentation.seg_data.d)
+                let seg: *mut Rav1dSegmentationData = &mut *((*hdr).segmentation.seg_data.d)
                     .as_mut_ptr()
                     .offset(i_10 as isize)
-                    as *mut Dav1dSegmentationData;
+                    as *mut Rav1dSegmentationData;
                 if rav1d_get_bit(gb) != 0 {
                     (*seg).delta_q = rav1d_get_sbits(gb, 9 as c_int);
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
@@ -1033,9 +1035,9 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         }
     } else {
         memset(
-            &mut (*hdr).segmentation.seg_data as *mut Dav1dSegmentationDataSet as *mut c_void,
+            &mut (*hdr).segmentation.seg_data as *mut Rav1dSegmentationDataSet as *mut c_void,
             0 as c_int,
-            ::core::mem::size_of::<Dav1dSegmentationDataSet>(),
+            ::core::mem::size_of::<Rav1dSegmentationDataSet>(),
         );
         let mut i_11 = 0;
         while i_11 < 8 {
@@ -1335,7 +1337,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
             if !((*hdr).gmv[i_19 as usize].type_0 as c_uint
                 == RAV1D_WM_TYPE_IDENTITY as c_int as c_uint)
             {
-                let ref_gmv: *const Dav1dWarpedMotionParams;
+                let ref_gmv: *const Rav1dWarpedMotionParams;
                 if (*hdr).primary_ref_frame == 7 {
                     ref_gmv = &dav1d_default_wm_params;
                 } else {
@@ -1350,7 +1352,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                         .gmv)
                         .as_mut_ptr()
                         .offset(i_19 as isize)
-                        as *mut Dav1dWarpedMotionParams;
+                        as *mut Rav1dWarpedMotionParams;
                 }
                 let mat: *mut i32 = ((*hdr).gmv[i_19 as usize].matrix).as_mut_ptr();
                 let ref_mat: *const i32 = ((*ref_gmv).matrix).as_ptr();
@@ -1540,6 +1542,12 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
             ::core::mem::size_of::<Dav1dFilmGrainData>(),
         );
     }
+
+    (*(*(*c).frame_hdr_ref)
+        .data
+        .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+    .update_dav1d();
+
     return 0 as c_int;
 }
 
@@ -1616,7 +1624,7 @@ unsafe extern "C" fn rav1d_parse_obus_skip(
         i += 1;
     }
     rav1d_ref_dec(&mut (*c).frame_hdr_ref);
-    (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+    (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
     (*c).n_tiles = 0 as c_int;
     return len.wrapping_add(init_byte_pos) as c_int;
 }
@@ -1703,7 +1711,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 return rav1d_parse_obus_error(c, in_0);
             }
             if ((*c).seq_hdr).is_null() {
-                (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
                 (*c).frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
                     (*c).frame_flags as c_uint | PICTURE_FLAG_NEW_SEQUENCE as c_int as c_uint,
                 );
@@ -1713,7 +1721,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 1100,
             ) != 0
             {
-                (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
                 (*c).mastering_display = 0 as *mut Dav1dMasteringDisplay;
                 (*c).content_light = 0 as *mut Dav1dContentLightLevel;
                 rav1d_ref_dec(&mut (*c).mastering_display_ref);
@@ -1919,7 +1927,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 if ((*c).frame_hdr_ref).is_null() {
                     (*c).frame_hdr_ref = rav1d_ref_create_using_pool(
                         (*c).frame_hdr_pool,
-                        ::core::mem::size_of::<Dav1dFrameHeader>(),
+                        ::core::mem::size_of::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>(),
                     );
                     if ((*c).frame_hdr_ref).is_null() {
                         return -(12 as c_int);
@@ -1927,17 +1935,19 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 }
                 // ensure that the reference is writable
                 debug_assert!(rav1d_ref_is_writable((*c).frame_hdr_ref) != 0);
-                (*c).frame_hdr = (*(*c).frame_hdr_ref).data as *mut Dav1dFrameHeader;
+                let frame_hdrs =
+                    (*(*c).frame_hdr_ref).data as *mut DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>;
                 memset(
-                    (*c).frame_hdr as *mut c_void,
+                    frame_hdrs as *mut c_void,
                     0 as c_int,
-                    ::core::mem::size_of::<Dav1dFrameHeader>(),
+                    ::core::mem::size_of::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>(),
                 );
+                (*c).frame_hdr = &mut (*frame_hdrs).rav1d;
                 (*(*c).frame_hdr).temporal_id = temporal_id;
                 (*(*c).frame_hdr).spatial_id = spatial_id;
                 res = parse_frame_hdr(c, &mut gb);
                 if res < 0 {
-                    (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                    (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
                     return rav1d_parse_obus_error(c, in_0);
                 }
                 let mut n = 0;
@@ -1950,7 +1960,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 if type_0 as c_uint != RAV1D_OBU_FRAME as c_int as c_uint {
                     rav1d_get_bit(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                        (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
                         return rav1d_parse_obus_error(c, in_0);
                     }
                 }
@@ -1965,14 +1975,14 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         (*(*c).frame_hdr).height,
                         (*c).frame_size_limit,
                     );
-                    (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                    (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
                     return -(34 as c_int);
                 }
                 if type_0 as c_uint != RAV1D_OBU_FRAME as c_int as c_uint {
                     current_block_188 = 8953117030348968745;
                 } else {
                     if (*(*c).frame_hdr).show_existing_frame != 0 {
-                        (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+                        (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
                         return rav1d_parse_obus_error(c, in_0);
                     }
                     rav1d_bytealign_get_bits(&mut gb);
@@ -2232,7 +2242,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     i_3 += 1;
                 }
             }
-            (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+            (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
         } else if (*c).n_tiles == (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows {
             match (*(*c).frame_hdr).frame_type as c_uint {
                 RAV1D_FRAME_TYPE_INTER | RAV1D_FRAME_TYPE_SWITCH => {
@@ -2267,7 +2277,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             if (*c).n_tile_data != 0 {
                 unreachable!();
             }
-            (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
+            (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
             (*c).n_tiles = 0 as c_int;
         }
     }

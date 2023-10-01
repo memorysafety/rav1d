@@ -8,12 +8,12 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dFrameHeader_tiling;
 use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
@@ -33,12 +33,12 @@ use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
-use crate::src::cdf::dav1d_cdf_thread_update;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
 use crate::src::cdf::rav1d_cdf_thread_init_static;
 use crate::src::cdf::rav1d_cdf_thread_ref;
 use crate::src::cdf::rav1d_cdf_thread_unref;
+use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
@@ -145,8 +145,8 @@ use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::VERT_LEFT_PRED;
 use crate::src::levels::VERT_PRED;
-use crate::src::lf_mask::dav1d_calc_lf_values;
 use crate::src::lf_mask::rav1d_calc_eih;
+use crate::src::lf_mask::rav1d_calc_lf_values;
 use crate::src::lf_mask::rav1d_create_lf_mask_inter;
 use crate::src::lf_mask::rav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1Filter;
@@ -211,9 +211,9 @@ use crate::src::thread_task::rav1d_task_create_tile_sbrow;
 use crate::src::thread_task::rav1d_task_frame_init;
 use crate::src::thread_task::FRAME_ERROR;
 use crate::src::thread_task::TILE_ERROR;
-use crate::src::warpmv::dav1d_find_affine_int;
-use crate::src::warpmv::dav1d_get_shear_params;
-use crate::src::warpmv::dav1d_set_affine_mv2d;
+use crate::src::warpmv::rav1d_find_affine_int;
+use crate::src::warpmv::rav1d_get_shear_params;
+use crate::src::warpmv::rav1d_set_affine_mv2d;
 use libc::free;
 use libc::malloc;
 use libc::memcpy;
@@ -273,7 +273,7 @@ use crate::{
 
 fn init_quant_tables(
     seq_hdr: &Dav1dSequenceHeader,
-    frame_hdr: &Dav1dFrameHeader,
+    frame_hdr: &Rav1dFrameHeader,
     qidx: c_int,
     dq: &mut [[[u16; 2]; 3]],
 ) {
@@ -590,8 +590,8 @@ unsafe fn derive_warpmv(
     bh4: c_int,
     masks: &[u64; 2],
     mv: mv,
-    mut wmp: Dav1dWarpedMotionParams,
-) -> Dav1dWarpedMotionParams {
+    mut wmp: Rav1dWarpedMotionParams,
+) -> Rav1dWarpedMotionParams {
     let mut pts = [[[0; 2 /* x, y */]; 2 /* in, out */]; 8];
     let mut np = 0;
     let r = |i: isize| {
@@ -690,8 +690,8 @@ unsafe fn derive_warpmv(
         }
     }
 
-    wmp.type_0 = if !dav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.bx, t.by)
-        && !dav1d_get_shear_params(&mut wmp)
+    wmp.type_0 = if !rav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.bx, t.by)
+        && !rav1d_get_shear_params(&mut wmp)
     {
         RAV1D_WM_TYPE_AFFINE
     } else {
@@ -1343,7 +1343,7 @@ fn affine_lowest_px(
     t: &Rav1dTaskContext,
     dst: &mut c_int,
     b_dim: &[u8; 4],
-    wmp: &Dav1dWarpedMotionParams,
+    wmp: &Rav1dWarpedMotionParams,
     ss_ver: c_int,
     ss_hor: c_int,
 ) {
@@ -1369,7 +1369,7 @@ fn affine_lowest_px_luma(
     t: &Rav1dTaskContext,
     dst: &mut c_int,
     b_dim: &[u8; 4],
-    wmp: &Dav1dWarpedMotionParams,
+    wmp: &Rav1dWarpedMotionParams,
 ) {
     affine_lowest_px(t, dst, b_dim, wmp, 0, 0);
 }
@@ -1379,7 +1379,7 @@ unsafe fn affine_lowest_px_chroma(
     t: &Rav1dTaskContext,
     dst: &mut c_int,
     b_dim: &[u8; 4],
-    wmp: &Dav1dWarpedMotionParams,
+    wmp: &Rav1dWarpedMotionParams,
 ) {
     let f = &*t.f;
     assert!(f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400);
@@ -1567,8 +1567,8 @@ unsafe fn decode_b(
                     t.warpmv.matrix[3] = b.matrix()[1] as i32;
                     t.warpmv.matrix[4] = b.matrix()[2] as i32;
                     t.warpmv.matrix[5] = b.matrix()[3] as i32 + 0x10000;
-                    dav1d_set_affine_mv2d(bw4, bh4, *b.mv2d(), &mut t.warpmv, t.bx, t.by);
-                    dav1d_get_shear_params(&mut t.warpmv);
+                    rav1d_set_affine_mv2d(bw4, bh4, *b.mv2d(), &mut t.warpmv, t.bx, t.by);
+                    rav1d_get_shear_params(&mut t.warpmv);
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
@@ -1913,7 +1913,7 @@ unsafe fn decode_b(
             ts.lflvl = f.lf.lvl.as_ptr();
         } else if ts.last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
-            dav1d_calc_lf_values(&mut ts.lflvlmem, frame_hdr, &ts.last_delta_lf);
+            rav1d_calc_lf_values(&mut ts.lflvlmem, frame_hdr, &ts.last_delta_lf);
             ts.lflvl = ts.lflvlmem.as_ptr();
         }
     }
@@ -4689,7 +4689,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
         rav1d_calc_eih(&mut f.lf.lim_lut.0, (*f.frame_hdr).loopfilter.sharpness);
         f.lf.last_sharpness = (*f.frame_hdr).loopfilter.sharpness;
     }
-    dav1d_calc_lf_values(&mut f.lf.lvl, &*f.frame_hdr, &[0, 0, 0, 0]);
+    rav1d_calc_lf_values(&mut f.lf.lvl, &*f.frame_hdr, &[0, 0, 0, 0]);
     slice::from_raw_parts_mut(f.lf.mask, num_sb128.try_into().unwrap()).fill_with(Default::default);
 
     let ipred_edge_sz = f.sbh * f.sb128w << hbd;
@@ -4920,7 +4920,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> c_int {
 
     // no threading - we explicitly interleave tile/sbrow decoding
     // and post-filtering, so that the full process runs in-line
-    let Dav1dFrameHeader_tiling { rows, cols, .. } = (*f.frame_hdr).tiling;
+    let Rav1dFrameHeader_tiling { rows, cols, .. } = (*f.frame_hdr).tiling;
     let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
     for (tile_row, (sbh_start_end, ts)) in iter::zip(
         (*f.frame_hdr).tiling.row_start_sb[..rows + 1].windows(2),
@@ -5042,7 +5042,7 @@ pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> c_int {
         } else {
             res = rav1d_decode_frame_main(f);
             if res == 0 && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set {
-                dav1d_cdf_thread_update(
+                rav1d_cdf_thread_update(
                     f.frame_hdr,
                     f.out_cdf.data.cdf,
                     &mut (*f.ts.offset((*f.frame_hdr).tiling.update as isize)).cdf,
@@ -5275,7 +5275,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
             }
             f.gmv_warp_allowed[i] = ((*f.frame_hdr).gmv[i].type_0 > RAV1D_WM_TYPE_TRANSLATION
                 && (*f.frame_hdr).force_integer_mv == 0
-                && !dav1d_get_shear_params(&mut (*f.frame_hdr).gmv[i])
+                && !rav1d_get_shear_params(&mut (*f.frame_hdr).gmv[i])
                 && f.svc[i][0].scale == 0) as u8;
         }
     }

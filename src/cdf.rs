@@ -1,4 +1,3 @@
-use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::stdatomic::atomic_uint;
@@ -5596,15 +5595,6 @@ pub(crate) unsafe fn rav1d_cdf_thread_update(
         (*dst).mv.comp[k_17 as usize].sign[1] = 0 as c_int as u16;
         k_17 += 1;
     }
-}
-
-pub unsafe fn dav1d_cdf_thread_update(
-    hdr: *const Dav1dFrameHeader,
-    dst: *mut CdfContext,
-    src: *const CdfContext,
-) {
-    let hdr = hdr.read().into();
-    rav1d_cdf_thread_update(&hdr, dst, src)
 }
 
 #[inline]

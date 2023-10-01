@@ -1,6 +1,6 @@
 use crate::include::common::intops::apply_sign;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
 use crate::src::align::Align8;
 use crate::src::levels::mv;
@@ -640,7 +640,7 @@ fn fix_int_mv_precision(mv: &mut mv) {
 }
 
 #[inline]
-pub fn fix_mv_precision(hdr: &Dav1dFrameHeader, mv: &mut mv) {
+pub(crate) fn fix_mv_precision(hdr: &Rav1dFrameHeader, mv: &mut mv) {
     if hdr.force_integer_mv != 0 {
         fix_int_mv_precision(mv);
     } else if (*hdr).hp == 0 {
@@ -650,13 +650,13 @@ pub fn fix_mv_precision(hdr: &Dav1dFrameHeader, mv: &mut mv) {
 }
 
 #[inline]
-pub fn get_gmv_2d(
-    gmv: &Dav1dWarpedMotionParams,
+pub(crate) fn get_gmv_2d(
+    gmv: &Rav1dWarpedMotionParams,
     bx4: c_int,
     by4: c_int,
     bw4: c_int,
     bh4: c_int,
-    hdr: &Dav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
 ) -> mv {
     match gmv.type_0 {
         2 => {

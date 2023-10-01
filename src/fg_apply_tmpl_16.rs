@@ -1,4 +1,5 @@
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
+use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
@@ -106,7 +107,7 @@ pub(crate) unsafe fn rav1d_prep_grain_16bpc(
     scaling: *mut [u8; 4096],
     grain_lut: *mut [[entry; 82]; 74],
 ) {
-    let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
+    let data: *const Rav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
     let bitdepth_max = ((1 as c_int) << (*out).p.bpc) - 1;
     ((*dsp).generate_grain_y).expect("non-null function pointer")(
         (*grain_lut.offset(0)).as_mut_ptr().cast(),
