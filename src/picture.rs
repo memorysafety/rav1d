@@ -7,8 +7,8 @@ use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_SEQUENCE;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
@@ -138,7 +138,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     p: *mut Rav1dPicture,
     w: c_int,
     h: c_int,
-    seq_hdr: *mut Dav1dSequenceHeader,
+    seq_hdr: *mut Rav1dSequenceHeader,
     seq_hdr_ref: *mut Rav1dRef,
     frame_hdr: *mut Rav1dFrameHeader,
     frame_hdr_ref: *mut Rav1dRef,
@@ -180,6 +180,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*p).p.layout = (*seq_hdr).layout;
     (*p).p.bpc = bpc;
     rav1d_data_props_set_defaults(&mut (*p).m);
+    (*p).seq_hdr_ref = seq_hdr_ref;
     (*p).frame_hdr_ref = frame_hdr_ref;
     let res = (*p_allocator).alloc_picture(p);
     if res < 0 {
@@ -203,7 +204,6 @@ unsafe extern "C" fn picture_alloc_with_edges(
         );
         return -(12 as c_int);
     }
-    (*p).seq_hdr_ref = seq_hdr_ref;
     if !seq_hdr_ref.is_null() {
         rav1d_ref_inc(seq_hdr_ref);
     }

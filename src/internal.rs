@@ -9,8 +9,8 @@ use crate::include::dav1d::dav1d::Rav1dLogger;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -171,7 +171,7 @@ pub struct Rav1dContext {
     pub(crate) n_tiles: c_int,
     pub(crate) seq_hdr_pool: *mut Rav1dMemPool,
     pub(crate) seq_hdr_ref: *mut Rav1dRef,
-    pub(crate) seq_hdr: *mut Dav1dSequenceHeader, // TODO(kkysen) make Rav1d
+    pub(crate) seq_hdr: *mut Rav1dSequenceHeader,
     pub(crate) frame_hdr_pool: *mut Rav1dMemPool,
     pub(crate) frame_hdr_ref: *mut Rav1dRef,
     pub(crate) frame_hdr: *mut Rav1dFrameHeader,
@@ -372,7 +372,7 @@ pub struct FrameTileThreadData {
 #[repr(C)]
 pub(crate) struct Rav1dFrameContext {
     pub seq_hdr_ref: *mut Rav1dRef,
-    pub seq_hdr: *mut Dav1dSequenceHeader, // TODO(kkysen) make Rav1d
+    pub seq_hdr: *mut Rav1dSequenceHeader,
     pub frame_hdr_ref: *mut Rav1dRef,
     pub frame_hdr: *mut Rav1dFrameHeader,
     pub refp: [Rav1dThreadPicture; 7],

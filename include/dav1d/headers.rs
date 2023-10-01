@@ -590,6 +590,7 @@ impl From<Rav1dSequenceHeaderOperatingParameterInfo> for Dav1dSequenceHeaderOper
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dSequenceHeader {
     pub profile: c_int,
@@ -647,6 +648,7 @@ pub struct Dav1dSequenceHeader {
     pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeader {
     pub profile: c_int,

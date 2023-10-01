@@ -1022,6 +1022,13 @@ pub(crate) unsafe fn rav1d_get_picture(c: *mut Rav1dContext, out: *mut Rav1dPict
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> c_int {
+    if let Some(mut seq_hdr_ref) = NonNull::new((*out).seq_hdr_ref) {
+        (*seq_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+        .update_rav1d();
+    }
     if let Some(mut frame_hdr_ref) = NonNull::new((*out).frame_hdr_ref) {
         (*frame_hdr_ref
             .as_mut()
@@ -1110,11 +1117,25 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) -> c_int {
+    if let Some(mut seq_hdr_ref) = NonNull::new((*in_0).seq_hdr_ref) {
+        (*seq_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+        .update_rav1d();
+    }
     if let Some(mut frame_hdr_ref) = NonNull::new((*in_0).frame_hdr_ref) {
         (*frame_hdr_ref
             .as_mut()
             .data
             .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+        .update_rav1d();
+    }
+    if let Some(mut seq_hdr_ref) = NonNull::new((*out).seq_hdr_ref) {
+        (*seq_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
         .update_rav1d();
     }
     if let Some(mut frame_hdr_ref) = NonNull::new((*out).frame_hdr_ref) {
@@ -1152,7 +1173,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         i += 1;
     }
     (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
-    (*c).seq_hdr = 0 as *mut Dav1dSequenceHeader;
+    (*c).seq_hdr = 0 as *mut Rav1dSequenceHeader;
     rav1d_ref_dec(&mut (*c).seq_hdr_ref);
     (*c).mastering_display = 0 as *mut Dav1dMasteringDisplay;
     (*c).content_light = 0 as *mut Dav1dContentLightLevel;

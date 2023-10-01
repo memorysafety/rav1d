@@ -20,7 +20,6 @@ use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
-use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
@@ -30,6 +29,9 @@ use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dObuType;
 use crate::include::dav1d::headers::Rav1dSegmentationData;
 use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
+use crate::include::dav1d::headers::Rav1dSequenceHeader;
+use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo;
+use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_ADAPTIVE;
 use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
@@ -122,6 +124,7 @@ use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::ptr::addr_of_mut;
 
 #[inline]
 unsafe extern "C" fn rav1d_get_bits_pos(c: *const GetBits) -> c_uint {
@@ -141,12 +144,12 @@ unsafe extern "C" fn parse_seq_hdr_error(c: *mut Rav1dContext) -> c_int {
 unsafe extern "C" fn parse_seq_hdr(
     c: *mut Rav1dContext,
     gb: *mut GetBits,
-    hdr: *mut Dav1dSequenceHeader,
+    hdr: *mut Rav1dSequenceHeader,
 ) -> c_int {
     memset(
         hdr as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Dav1dSequenceHeader>(),
+        ::core::mem::size_of::<Rav1dSequenceHeader>(),
     );
     (*hdr).profile = rav1d_get_bits(gb, 3 as c_int) as c_int;
     if (*hdr).profile > 2 {
@@ -200,9 +203,9 @@ unsafe extern "C" fn parse_seq_hdr(
             (rav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
         let mut i = 0;
         while i < (*hdr).num_operating_points {
-            let op: *mut Dav1dSequenceHeaderOperatingPoint =
+            let op: *mut Rav1dSequenceHeaderOperatingPoint =
                 &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
-                    as *mut Dav1dSequenceHeaderOperatingPoint;
+                    as *mut Rav1dSequenceHeaderOperatingPoint;
             (*op).idc = rav1d_get_bits(gb, 12 as c_int) as c_int;
             if (*op).idc != 0 && ((*op).idc & 0xff as c_int == 0 || (*op).idc & 0xf00 == 0) {
                 return parse_seq_hdr_error(c);
@@ -216,11 +219,11 @@ unsafe extern "C" fn parse_seq_hdr(
             if (*hdr).decoder_model_info_present != 0 {
                 (*op).decoder_model_param_present = rav1d_get_bit(gb) as c_int;
                 if (*op).decoder_model_param_present != 0 {
-                    let opi: *mut Dav1dSequenceHeaderOperatingParameterInfo = &mut *((*hdr)
+                    let opi: *mut Rav1dSequenceHeaderOperatingParameterInfo = &mut *((*hdr)
                         .operating_parameter_info)
                         .as_mut_ptr()
                         .offset(i as isize)
-                        as *mut Dav1dSequenceHeaderOperatingParameterInfo;
+                        as *mut Rav1dSequenceHeaderOperatingParameterInfo;
                     (*opi).decoder_buffer_delay =
                         rav1d_get_bits(gb, (*hdr).encoder_decoder_buffer_delay_length) as c_int;
                     (*opi).encoder_buffer_delay =
@@ -396,7 +399,7 @@ unsafe extern "C" fn read_frame_size(
     gb: *mut GetBits,
     use_ref: c_int,
 ) -> c_int {
-    let seqhdr: *const Dav1dSequenceHeader = (*c).seq_hdr;
+    let seqhdr: *const Rav1dSequenceHeader = (*c).seq_hdr;
     let hdr: *mut Rav1dFrameHeader = (*c).frame_hdr;
     if use_ref != 0 {
         let mut i = 0;
@@ -492,7 +495,7 @@ unsafe extern "C" fn parse_frame_hdr_error(c: *mut Rav1dContext) -> c_int {
 }
 
 unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> c_int {
-    let seqhdr: *const Dav1dSequenceHeader = (*c).seq_hdr;
+    let seqhdr: *const Rav1dSequenceHeader = (*c).seq_hdr;
     let hdr: *mut Rav1dFrameHeader = (*c).frame_hdr;
     (*hdr).show_existing_frame =
         ((*seqhdr).reduced_still_picture_header == 0 && rav1d_get_bit(gb) != 0) as c_int;
@@ -581,9 +584,9 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         if (*hdr).buffer_removal_time_present != 0 {
             let mut i = 0;
             while i < (*(*c).seq_hdr).num_operating_points {
-                let seqop: *const Dav1dSequenceHeaderOperatingPoint =
+                let seqop: *const Rav1dSequenceHeaderOperatingPoint =
                     &*((*seqhdr).operating_points).as_ptr().offset(i as isize)
-                        as *const Dav1dSequenceHeaderOperatingPoint;
+                        as *const Rav1dSequenceHeaderOperatingPoint;
                 let op: *mut Rav1dFrameHeaderOperatingPoint =
                     &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
                         as *mut Rav1dFrameHeaderOperatingPoint;
@@ -1695,13 +1698,17 @@ pub(crate) unsafe fn rav1d_parse_obus(
         RAV1D_OBU_SEQ_HDR => {
             let mut ref_0: *mut Rav1dRef = rav1d_ref_create_using_pool(
                 (*c).seq_hdr_pool,
-                ::core::mem::size_of::<Dav1dSequenceHeader>(),
+                ::core::mem::size_of::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>(),
             );
             if ref_0.is_null() {
                 return -(12 as c_int);
             }
-            let seq_hdr: *mut Dav1dSequenceHeader = (*ref_0).data as *mut Dav1dSequenceHeader;
+            let seq_hdrs = (*ref_0)
+                .data
+                .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>();
+            let seq_hdr: *mut Rav1dSequenceHeader = addr_of_mut!((*seq_hdrs).rav1d);
             res = parse_seq_hdr(c, &mut gb, seq_hdr);
+            (*seq_hdrs).update_dav1d();
             if res < 0 {
                 rav1d_ref_dec(&mut ref_0);
                 return rav1d_parse_obus_error(c, in_0);

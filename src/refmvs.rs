@@ -1,7 +1,7 @@
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
@@ -1374,9 +1374,9 @@ unsafe extern "C" fn save_tmvs_c(
     }
 }
 
-pub(crate) unsafe fn dav1d_refmvs_init_frame(
+pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf: *mut refmvs_frame,
-    seq_hdr: *const Dav1dSequenceHeader,
+    seq_hdr: *const Rav1dSequenceHeader,
     frm_hdr: *const Rav1dFrameHeader,
     ref_poc: *const c_uint,
     rp: *mut refmvs_temporal_block,

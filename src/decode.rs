@@ -9,10 +9,10 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Dav1dRestorationType;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
@@ -182,8 +182,8 @@ use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::recon::DEBUG_BLOCK_INFO;
-use crate::src::refmvs::dav1d_refmvs_init_frame;
 use crate::src::refmvs::rav1d_refmvs_find;
+use crate::src::refmvs::rav1d_refmvs_init_frame;
 use crate::src::refmvs::rav1d_refmvs_save_tmvs;
 use crate::src::refmvs::rav1d_refmvs_tile_sbrow_init;
 use crate::src::refmvs::refmvs_block;
@@ -272,7 +272,7 @@ use crate::{
 };
 
 fn init_quant_tables(
-    seq_hdr: &Dav1dSequenceHeader,
+    seq_hdr: &Rav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     qidx: c_int,
     dq: &mut [[[u16; 2]; 3]],
@@ -4723,7 +4723,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
 
     // init ref mvs
     if is_inter_or_switch(&*f.frame_hdr) || (*f.frame_hdr).allow_intrabc != 0 {
-        let ret = dav1d_refmvs_init_frame(
+        let ret = rav1d_refmvs_init_frame(
             &mut f.rf,
             f.seq_hdr,
             f.frame_hdr,

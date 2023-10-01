@@ -9,6 +9,7 @@ use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::src::r#ref::Rav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
@@ -75,7 +76,7 @@ pub struct Dav1dPicture {
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dPicture {
-    pub seq_hdr: *mut Dav1dSequenceHeader, // TODO(kkysen) make Rav1d
+    pub seq_hdr: *mut Rav1dSequenceHeader,
     pub frame_hdr: *mut Rav1dFrameHeader,
     pub data: [*mut c_void; 3],
     pub stride: [ptrdiff_t; 2],
@@ -117,9 +118,22 @@ impl From<Dav1dPicture> for Rav1dPicture {
             r#ref,
             allocator_data,
         } = value;
+        assert_eq!(seq_hdr.is_null(), seq_hdr_ref.is_null());
         assert_eq!(frame_hdr.is_null(), frame_hdr_ref.is_null());
         Self {
-            seq_hdr,
+            // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
+            seq_hdr: if seq_hdr.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe {
+                    addr_of_mut!(
+                        (*(seq_hdr_ref.read())
+                            .data
+                            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+                        .rav1d
+                    )
+                }
+            },
             // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
             frame_hdr: if frame_hdr.is_null() {
                 ptr::null_mut()
@@ -175,9 +189,22 @@ impl From<Rav1dPicture> for Dav1dPicture {
             r#ref,
             allocator_data,
         } = value;
+        assert_eq!(seq_hdr.is_null(), seq_hdr_ref.is_null());
         assert_eq!(frame_hdr.is_null(), frame_hdr_ref.is_null());
         Self {
-            seq_hdr,
+            // `.update_dav1d()` happens right after [`parse_seq_hdr`].
+            seq_hdr: if seq_hdr.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe {
+                    addr_of_mut!(
+                        (*(seq_hdr_ref.read())
+                            .data
+                            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+                        .dav1d
+                    )
+                }
+            },
             // `.update_dav1d()` happens in [`parse_frame_hdr`].
             frame_hdr: if frame_hdr.is_null() {
                 ptr::null_mut()
