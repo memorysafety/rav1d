@@ -16,6 +16,7 @@ pub mod include {
         pub(crate) mod dump;
         pub mod frame;
         pub(crate) mod intops;
+        pub(crate) mod validate;
     } // mod common
     pub mod dav1d {
         pub mod common;
