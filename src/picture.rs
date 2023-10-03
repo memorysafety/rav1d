@@ -1,4 +1,5 @@
 use crate::errno_location;
+use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
@@ -34,8 +35,6 @@ use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_wrap;
 use crate::src::r#ref::Rav1dRef;
-use crate::stderr;
-use libc::fprintf;
 use libc::free;
 use libc::malloc;
 use libc::memset;
@@ -331,42 +330,17 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
 }
 
 pub(crate) unsafe fn rav1d_picture_ref(dst: *mut Rav1dPicture, src: *const Rav1dPicture) {
-    if dst.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
-        );
+    if validate_input!(!dst.is_null()).is_err() {
         return;
     }
-    if !((*dst).data[0]).is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst->data[0] == ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
-        );
+    if validate_input!((*dst).data[0].is_null()).is_err() {
         return;
     }
-    if src.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"src != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
-        );
+    if validate_input!(!src.is_null()).is_err() {
         return;
     }
     if !((*src).r#ref).is_null() {
-        if ((*src).data[0]).is_null() {
-            fprintf(
-                stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-                b"src->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
-                (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0"))
-                    .as_ptr(),
-            );
+        if validate_input!(!(*src).data[0].is_null()).is_err() {
             return;
         }
         rav1d_ref_inc((*src).r#ref);
@@ -393,45 +367,17 @@ pub(crate) unsafe fn rav1d_picture_ref(dst: *mut Rav1dPicture, src: *const Rav1d
 }
 
 pub(crate) unsafe fn rav1d_picture_move_ref(dst: *mut Rav1dPicture, src: *mut Rav1dPicture) {
-    if dst.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"rav1d_picture_move_ref\0"))
-                .as_ptr(),
-        );
+    if validate_input!(!dst.is_null()).is_err() {
         return;
     }
-    if !((*dst).data[0]).is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst->data[0] == ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"rav1d_picture_move_ref\0"))
-                .as_ptr(),
-        );
+    if validate_input!((*dst).data[0].is_null()).is_err() {
         return;
     }
-    if src.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"src != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"rav1d_picture_move_ref\0"))
-                .as_ptr(),
-        );
+    if validate_input!(!src.is_null()).is_err() {
         return;
     }
     if !((*src).r#ref).is_null() {
-        if ((*src).data[0]).is_null() {
-            fprintf(
-                stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-                b"src->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
-                (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"rav1d_picture_move_ref\0"))
-                    .as_ptr(),
-            );
+        if validate_input!(!(*src).data[0].is_null()).is_err() {
             return;
         }
     }
@@ -471,29 +417,11 @@ pub(crate) unsafe fn rav1d_thread_picture_move_ref(
 }
 
 pub(crate) unsafe fn rav1d_picture_unref_internal(p: *mut Rav1dPicture) {
-    if p.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"p != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 29], &[c_char; 29]>(
-                b"dav1d_picture_unref_internal\0",
-            ))
-            .as_ptr(),
-        );
+    if validate_input!(!p.is_null()).is_err() {
         return;
     }
     if !((*p).r#ref).is_null() {
-        if ((*p).data[0]).is_null() {
-            fprintf(
-                stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-                b"p->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
-                (*::core::mem::transmute::<&[u8; 29], &[c_char; 29]>(
-                    b"dav1d_picture_unref_internal\0",
-                ))
-                .as_ptr(),
-            );
+        if validate_input!(!(*p).data[0].is_null()).is_err() {
             return;
         }
         rav1d_ref_dec(&mut (*p).r#ref);

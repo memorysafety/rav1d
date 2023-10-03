@@ -1,3 +1,4 @@
+use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::src::error::Rav1dError::EINVAL;
@@ -8,23 +9,14 @@ use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_wrap;
 use crate::src::r#ref::Rav1dRef;
-use crate::stderr;
-use libc::fprintf;
 use libc::memset;
-use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::ptr;
 
 pub(crate) unsafe fn rav1d_data_create_internal(buf: *mut Rav1dData, sz: usize) -> *mut u8 {
-    if buf.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"buf != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 27], &[c_char; 27]>(b"dav1d_data_create_internal\0"))
-                .as_ptr(),
-        );
-        return 0 as *mut u8;
+    if let Err(e) = validate_input!((!buf.is_null(), ptr::null_mut())) {
+        return e;
     }
     if sz > usize::MAX / 2 {
         return 0 as *mut u8;
@@ -47,36 +39,9 @@ pub(crate) unsafe fn rav1d_data_wrap_internal(
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     cookie: *mut c_void,
 ) -> Rav1dResult {
-    if buf.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"buf != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 25], &[c_char; 25]>(b"dav1d_data_wrap_internal\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if ptr.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"ptr != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 25], &[c_char; 25]>(b"dav1d_data_wrap_internal\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if free_callback.is_none() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"free_callback != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 25], &[c_char; 25]>(b"dav1d_data_wrap_internal\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
+    validate_input!((!buf.is_null(), EINVAL))?;
+    validate_input!((!ptr.is_null(), EINVAL))?;
+    validate_input!((free_callback.is_some(), EINVAL))?;
     (*buf).r#ref = rav1d_ref_wrap(ptr, free_callback, cookie);
     if ((*buf).r#ref).is_null() {
         return Err(ENOMEM);
@@ -94,30 +59,8 @@ pub(crate) unsafe fn rav1d_data_wrap_user_data_internal(
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     cookie: *mut c_void,
 ) -> Rav1dResult {
-    if buf.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"buf != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 35], &[c_char; 35]>(
-                b"dav1d_data_wrap_user_data_internal\0",
-            ))
-            .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if free_callback.is_none() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"free_callback != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 35], &[c_char; 35]>(
-                b"dav1d_data_wrap_user_data_internal\0",
-            ))
-            .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
+    validate_input!((!buf.is_null(), EINVAL))?;
+    validate_input!((free_callback.is_some(), EINVAL))?;
     (*buf).m.user_data.r#ref = rav1d_ref_wrap(user_data, free_callback, cookie);
     if ((*buf).m.user_data.r#ref).is_null() {
         return Err(ENOMEM);
@@ -127,41 +70,17 @@ pub(crate) unsafe fn rav1d_data_wrap_user_data_internal(
 }
 
 pub(crate) unsafe fn rav1d_data_ref(dst: *mut Rav1dData, src: *const Rav1dData) {
-    if dst.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 15], &[c_char; 15]>(b"rav1d_data_ref\0")).as_ptr(),
-        );
+    if validate_input!(!dst.is_null()).is_err() {
         return;
     }
-    if !((*dst).data).is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst->data == ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 15], &[c_char; 15]>(b"rav1d_data_ref\0")).as_ptr(),
-        );
+    if validate_input!((*dst).data.is_null()).is_err() {
         return;
     }
-    if src.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"src != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 15], &[c_char; 15]>(b"rav1d_data_ref\0")).as_ptr(),
-        );
+    if validate_input!(!src.is_null()).is_err() {
         return;
     }
     if !((*src).r#ref).is_null() {
-        if ((*src).data).is_null() {
-            fprintf(
-                stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-                b"src->data != ((void*)0)\0" as *const u8 as *const c_char,
-                (*::core::mem::transmute::<&[u8; 15], &[c_char; 15]>(b"rav1d_data_ref\0")).as_ptr(),
-            );
+        if validate_input!(!(*src).data.is_null()).is_err() {
             return;
         }
         rav1d_ref_inc((*src).r#ref);
@@ -200,16 +119,7 @@ pub(crate) unsafe fn rav1d_data_props_set_defaults(props: *mut Rav1dDataProps) {
 }
 
 pub(crate) unsafe fn rav1d_data_props_unref_internal(props: *mut Rav1dDataProps) {
-    if props.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"props != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 32], &[c_char; 32]>(
-                b"dav1d_data_props_unref_internal\0",
-            ))
-            .as_ptr(),
-        );
+    if validate_input!(!props.is_null()).is_err() {
         return;
     }
     let mut user_data_ref: *mut Rav1dRef = (*props).user_data.r#ref;
@@ -218,28 +128,12 @@ pub(crate) unsafe fn rav1d_data_props_unref_internal(props: *mut Rav1dDataProps)
 }
 
 pub(crate) unsafe fn rav1d_data_unref_internal(buf: *mut Rav1dData) {
-    if buf.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"buf != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 26], &[c_char; 26]>(b"dav1d_data_unref_internal\0"))
-                .as_ptr(),
-        );
+    if validate_input!(!buf.is_null()).is_err() {
         return;
     }
     let mut user_data_ref: *mut Rav1dRef = (*buf).m.user_data.r#ref;
     if !((*buf).r#ref).is_null() {
-        if ((*buf).data).is_null() {
-            fprintf(
-                stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-                b"buf->data != ((void*)0)\0" as *const u8 as *const c_char,
-                (*::core::mem::transmute::<&[u8; 26], &[c_char; 26]>(
-                    b"dav1d_data_unref_internal\0",
-                ))
-                .as_ptr(),
-            );
+        if validate_input!(!(*buf).data.is_null()).is_err() {
             return;
         }
         rav1d_ref_dec(&mut (*buf).r#ref);
