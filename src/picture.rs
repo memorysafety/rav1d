@@ -203,7 +203,7 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*pic_ctx).pic = (*p).clone();
     (*p).r#ref = rav1d_ref_wrap(
         (*p).data[0] as *const u8,
-        Some(free_buffer as unsafe extern "C" fn(*const u8, *mut c_void) -> ()),
+        Some(free_buffer),
         pic_ctx as *mut c_void,
     );
     if ((*p).r#ref).is_null() {

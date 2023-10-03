@@ -229,18 +229,8 @@ pub static mut y4m2_muxer: Muxer = Muxer {
     priv_data_size: ::core::mem::size_of::<Y4m2OutputContext>() as c_ulong as c_int,
     name: b"yuv4mpeg2\0" as *const u8 as *const c_char,
     extension: b"y4m\0" as *const u8 as *const c_char,
-    write_header: Some(
-        y4m2_open
-            as unsafe extern "C" fn(
-                *mut Y4m2OutputContext,
-                *const c_char,
-                *const Dav1dPictureParameters,
-                *const c_uint,
-            ) -> c_int,
-    ),
-    write_picture: Some(
-        y4m2_write as unsafe extern "C" fn(*mut Y4m2OutputContext, *mut Dav1dPicture) -> c_int,
-    ),
-    write_trailer: Some(y4m2_close as unsafe extern "C" fn(*mut Y4m2OutputContext) -> ()),
+    write_header: Some(y4m2_open),
+    write_picture: Some(y4m2_write),
+    write_trailer: Some(y4m2_close),
     verify: None,
 };

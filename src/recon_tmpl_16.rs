@@ -2051,13 +2051,8 @@ unsafe extern "C" fn obmc(
                     return res;
                 }
                 ((*(*f).dsp).mc.blend_v)(
-                    dst.offset(
-                        ((y * v_mul) as isize
-                            * (PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(
-                                dst_stride,
-                            )) as isize,
-                    )
-                    .cast(),
+                    dst.offset(((y * v_mul) as isize * (PXSTRIDE)(dst_stride)) as isize)
+                        .cast(),
                     dst_stride,
                     lap.cast(),
                     h_mul * ow4_0,

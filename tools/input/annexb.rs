@@ -310,20 +310,9 @@ pub static mut annexb_demuxer: Demuxer = Demuxer {
     priv_data_size: ::core::mem::size_of::<AnnexbInputContext>() as c_ulong as c_int,
     name: b"annexb\0" as *const u8 as *const c_char,
     probe_sz: 2048 as c_int,
-    probe: Some(annexb_probe as unsafe extern "C" fn(*const u8) -> c_int),
-    open: Some(
-        annexb_open
-            as unsafe extern "C" fn(
-                *mut AnnexbInputContext,
-                *const c_char,
-                *mut c_uint,
-                *mut c_uint,
-                *mut c_uint,
-            ) -> c_int,
-    ),
-    read: Some(
-        annexb_read as unsafe extern "C" fn(*mut AnnexbInputContext, *mut Dav1dData) -> c_int,
-    ),
+    probe: Some(annexb_probe),
+    open: Some(annexb_open),
+    read: Some(annexb_read),
     seek: None,
-    close: Some(annexb_close as unsafe extern "C" fn(*mut AnnexbInputContext) -> ()),
+    close: Some(annexb_close),
 };

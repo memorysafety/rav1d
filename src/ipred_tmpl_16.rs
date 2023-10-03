@@ -1324,12 +1324,8 @@ unsafe fn ipred_filter_rust(
             topleft = &*top.offset(-(1 as c_int) as isize) as *const pixel;
             x += 4 as c_int;
         }
-        top = &mut *dst
-            .offset((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(stride) as isize)
-            as *mut pixel;
-        dst = &mut *dst.offset(
-            ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(stride) * 2) as isize,
-        ) as *mut pixel;
+        top = &mut *dst.offset((PXSTRIDE)(stride) as isize) as *mut pixel;
+        dst = &mut *dst.offset(((PXSTRIDE)(stride) * 2) as isize) as *mut pixel;
         y += 2 as c_int;
     }
 }

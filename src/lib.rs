@@ -402,16 +402,8 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
     {
         return error(c, c_out, &mut thread_attr);
     }
-    if (*c).allocator.alloc_picture_callback
-        == Some(
-            dav1d_default_picture_alloc
-                as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> c_int,
-        )
-        && (*c).allocator.release_picture_callback
-            == Some(
-                dav1d_default_picture_release
-                    as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> (),
-            )
+    if (*c).allocator.alloc_picture_callback == Some(dav1d_default_picture_alloc)
+        && (*c).allocator.release_picture_callback == Some(dav1d_default_picture_release)
     {
         if !((*c).allocator.cookie).is_null() {
             return error(c, c_out, &mut thread_attr);
@@ -420,16 +412,8 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
             return error(c, c_out, &mut thread_attr);
         }
         (*c).allocator.cookie = (*c).picture_pool as *mut c_void;
-    } else if (*c).allocator.alloc_picture_callback
-        == Some(
-            dav1d_default_picture_alloc
-                as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> c_int,
-        )
-        || (*c).allocator.release_picture_callback
-            == Some(
-                dav1d_default_picture_release
-                    as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> (),
-            )
+    } else if (*c).allocator.alloc_picture_callback == Some(dav1d_default_picture_alloc)
+        || (*c).allocator.release_picture_callback == Some(dav1d_default_picture_release)
     {
         return error(c, c_out, &mut thread_attr);
     }
@@ -563,7 +547,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
             if pthread_create(
                 &mut (*t).task_thread.td.thread,
                 &mut thread_attr,
-                Some(rav1d_worker_task as unsafe extern "C" fn(*mut c_void) -> *mut c_void),
+                Some(rav1d_worker_task),
                 t as *mut c_void,
             ) != 0
             {
@@ -653,13 +637,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
         return res;
     }
     if !ptr.is_null() {
-        res = rav1d_data_wrap_internal(
-            &mut buf,
-            ptr,
-            sz,
-            Some(dummy_free as unsafe extern "C" fn(*const u8, *mut c_void) -> ()),
-            0 as *mut c_void,
-        );
+        res = rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void);
         if res < 0 {
             current_block = 10647346020414903899;
         } else {

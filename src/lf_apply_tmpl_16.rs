@@ -52,47 +52,31 @@ unsafe extern "C" fn backup_lpf(
         if row != 0 {
             let top = (4 as c_int) << sb128;
             memcpy(
-                &mut *dst.offset(
-                    ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                        * 0 as isize) as isize,
-                ) as *mut pixel as *mut c_void,
-                &mut *dst.offset(
-                    ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                        * top as isize) as isize,
-                ) as *mut pixel as *const c_void,
+                &mut *dst.offset(((PXSTRIDE)(dst_stride) * 0 as isize) as isize) as *mut pixel
+                    as *mut c_void,
+                &mut *dst.offset(((PXSTRIDE)(dst_stride) * top as isize) as isize) as *mut pixel
+                    as *const c_void,
                 (dst_w << 1) as usize,
             );
             memcpy(
-                &mut *dst.offset(
-                    ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                        * 1 as isize) as isize,
-                ) as *mut pixel as *mut c_void,
-                &mut *dst.offset(
-                    ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                        * (top + 1) as isize) as isize,
-                ) as *mut pixel as *const c_void,
+                &mut *dst.offset(((PXSTRIDE)(dst_stride) * 1 as isize) as isize) as *mut pixel
+                    as *mut c_void,
+                &mut *dst.offset(((PXSTRIDE)(dst_stride) * (top + 1) as isize) as isize)
+                    as *mut pixel as *const c_void,
                 (dst_w << 1) as usize,
             );
             memcpy(
-                &mut *dst.offset(
-                    ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                        * 2 as isize) as isize,
-                ) as *mut pixel as *mut c_void,
-                &mut *dst.offset(
-                    ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                        * (top + 2) as isize) as isize,
-                ) as *mut pixel as *const c_void,
+                &mut *dst.offset(((PXSTRIDE)(dst_stride) * 2 as isize) as isize) as *mut pixel
+                    as *mut c_void,
+                &mut *dst.offset(((PXSTRIDE)(dst_stride) * (top + 2) as isize) as isize)
+                    as *mut pixel as *const c_void,
                 (dst_w << 1) as usize,
             );
             memcpy(
-                &mut *dst.offset(
-                    ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                        * 3 as isize) as isize,
-                ) as *mut pixel as *mut c_void,
-                &mut *dst.offset(
-                    ((PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(dst_stride)
-                        * (top + 3) as isize) as isize,
-                ) as *mut pixel as *const c_void,
+                &mut *dst.offset(((PXSTRIDE)(dst_stride) * 3 as isize) as isize) as *mut pixel
+                    as *mut c_void,
+                &mut *dst.offset(((PXSTRIDE)(dst_stride) * (top + 3) as isize) as isize)
+                    as *mut pixel as *const c_void,
                 (dst_w << 1) as usize,
             );
         }
@@ -120,9 +104,8 @@ unsafe extern "C" fn backup_lpf(
             if n_lines == 3 {
                 memcpy(
                     dst as *mut c_void,
-                    &mut *dst.offset(-(PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(
-                        dst_stride,
-                    ) as isize) as *mut pixel as *const c_void,
+                    &mut *dst.offset(-(PXSTRIDE)(dst_stride) as isize) as *mut pixel
+                        as *const c_void,
                     (dst_w << 1) as usize,
                 );
                 dst = dst.offset(PXSTRIDE(dst_stride) as isize);
@@ -136,10 +119,8 @@ unsafe extern "C" fn backup_lpf(
                 memcpy(
                     dst as *mut c_void,
                     (if i == n_lines_0 {
-                        &mut *dst
-                            .offset(-(PXSTRIDE as unsafe extern "C" fn(ptrdiff_t) -> ptrdiff_t)(
-                                dst_stride,
-                            ) as isize) as *mut pixel as *const pixel
+                        &mut *dst.offset(-(PXSTRIDE)(dst_stride) as isize) as *mut pixel
+                            as *const pixel
                     } else {
                         src
                     }) as *const c_void,

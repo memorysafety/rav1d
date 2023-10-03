@@ -317,18 +317,9 @@ pub static mut ivf_demuxer: Demuxer = Demuxer {
     priv_data_size: ::core::mem::size_of::<IvfInputContext>() as c_ulong as c_int,
     name: b"ivf\0" as *const u8 as *const c_char,
     probe_sz: ::core::mem::size_of::<[u8; 12]>() as c_ulong as c_int,
-    probe: Some(ivf_probe as unsafe extern "C" fn(*const u8) -> c_int),
-    open: Some(
-        ivf_open
-            as unsafe extern "C" fn(
-                *mut IvfInputContext,
-                *const c_char,
-                *mut c_uint,
-                *mut c_uint,
-                *mut c_uint,
-            ) -> c_int,
-    ),
-    read: Some(ivf_read as unsafe extern "C" fn(*mut IvfInputContext, *mut Dav1dData) -> c_int),
-    seek: Some(ivf_seek as unsafe extern "C" fn(*mut IvfInputContext, u64) -> c_int),
-    close: Some(ivf_close as unsafe extern "C" fn(*mut IvfInputContext) -> ()),
+    probe: Some(ivf_probe),
+    open: Some(ivf_open),
+    read: Some(ivf_read),
+    seek: Some(ivf_seek),
+    close: Some(ivf_close),
 };

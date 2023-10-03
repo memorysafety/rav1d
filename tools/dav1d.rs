@@ -377,10 +377,8 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     }
     parse(argc, argv, &mut cli_settings, &mut lib_settings);
     if cli_settings.neg_stride != 0 {
-        lib_settings.allocator.alloc_picture_callback =
-            Some(picture_alloc as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> c_int);
-        lib_settings.allocator.release_picture_callback =
-            Some(picture_release as unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> ());
+        lib_settings.allocator.alloc_picture_callback = Some(picture_alloc);
+        lib_settings.allocator.release_picture_callback = Some(picture_release);
     }
     res = input_open(
         &mut in_0,

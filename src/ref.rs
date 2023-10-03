@@ -50,8 +50,7 @@ pub unsafe fn rav1d_ref_create(mut size: usize) -> *mut Rav1dRef {
     (*res).const_data = (*res).user_data;
     *&mut (*res).ref_cnt = 1 as c_int;
     (*res).free_ref = 0 as c_int;
-    (*res).free_callback =
-        Some(default_free_callback as unsafe extern "C" fn(*const u8, *mut c_void) -> ());
+    (*res).free_callback = Some(default_free_callback);
     return res;
 }
 
@@ -81,8 +80,7 @@ pub unsafe fn rav1d_ref_create_using_pool(
     (*res).const_data = pool as *const c_void;
     *&mut (*res).ref_cnt = 1 as c_int;
     (*res).free_ref = 0 as c_int;
-    (*res).free_callback =
-        Some(pool_free_callback as unsafe extern "C" fn(*const u8, *mut c_void) -> ());
+    (*res).free_callback = Some(pool_free_callback);
     (*res).user_data = buf as *mut c_void;
     return res;
 }
