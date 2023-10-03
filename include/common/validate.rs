@@ -65,9 +65,12 @@ macro_rules! validate_input {
 
         $condition.into_result().map_err(|e| {
             eprintln!(
-                "Input validation check '{}' failed in {}!",
+                "Input validation check `{}` failed in `fn {}` in `{}:{}:{}`!",
                 stringify!($condition),
                 func_name,
+                file!(),
+                line!(),
+                column!(),
             );
             $block;
             debug_abort();
