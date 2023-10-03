@@ -20,8 +20,8 @@ use crate::include::stdatomic::atomic_uint;
 use crate::src::data::rav1d_data_props_copy;
 use crate::src::data::rav1d_data_props_set_defaults;
 use crate::src::error::Dav1dResult;
+use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::ENOMEM;
-use crate::src::error::Rav1dError::EPERM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -174,8 +174,7 @@ unsafe fn picture_alloc_with_edges(
             c,
             b"Picture already allocated!\n\0" as *const u8 as *const c_char,
         );
-        // TODO(kkysen) Why was this `-1` in C? All others use `DAV1D_ERR(E*)`.
-        return Err(EPERM);
+        return Err(EGeneric);
     }
     if !(bpc > 0 && bpc <= 16) {
         unreachable!();

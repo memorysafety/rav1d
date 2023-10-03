@@ -9,9 +9,9 @@ use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::decode::rav1d_decode_frame_init;
 use crate::src::decode::rav1d_decode_frame_init_cdf;
 use crate::src::decode::rav1d_decode_tile_sbrow;
+use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
-use crate::src::error::Rav1dError::EPERM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -449,8 +449,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
                 (::core::mem::size_of::<Rav1dTask>()).wrapping_mul(alloc_num_tasks as usize);
             tasks = realloc((*f).task_thread.tile_tasks[0] as *mut c_void, size) as *mut Rav1dTask;
             if tasks.is_null() {
-                // TODO(kkysen) Why was this `-1` in C? All others use `DAV1D_ERR(E*)`.
-                return Err(EPERM);
+                return Err(EGeneric);
             }
             memset(tasks as *mut c_void, 0 as c_int, size);
             (*f).task_thread.tile_tasks[0] = tasks;
@@ -461,8 +460,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     tasks = tasks.offset((num_tasks * (pass & 1)) as isize);
     let mut pf_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
     if create_filter_sbrow(f, pass, &mut pf_t) != 0 {
-        // TODO(kkysen) Why was this `-1` in C? All others use `DAV1D_ERR(E*)`.
-        return Err(EPERM);
+        return Err(EGeneric);
     }
     let mut prev_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
     let mut tile_idx = 0;

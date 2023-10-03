@@ -5,9 +5,16 @@ use strum::FromRepr;
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
 #[non_exhaustive]
 pub enum Rav1dError {
-    /// Note that this forces `0` to be the niche,
+    /// This represents a generic `rav1d` error.
+    /// It has nothing to do with the other `errno`-based ones
+    /// (and that's why it's not all caps like the other ones).
+    ///
+    /// Normally `EPERM = 1`, but `dav1d` never uses `EPERM`,
+    /// but does use `-1`, as opposed to the normal `DAV1D_ERR(E*)`.
+    ///
+    /// Also Note that this forces `0` to be the niche,
     /// which is more optimal since `0` is no error for [`Dav1dResult`].
-    EPERM = 1,
+    EGeneric = 1,
 
     ENOENT = 2,
     EIO = 5,

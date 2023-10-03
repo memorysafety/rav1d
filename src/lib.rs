@@ -40,11 +40,11 @@ use crate::src::data::rav1d_data_wrap_internal;
 use crate::src::data::rav1d_data_wrap_user_data_internal;
 use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::error::Dav1dResult;
+use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::EAGAIN;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOENT;
 use crate::src::error::Rav1dError::ENOMEM;
-use crate::src::error::Rav1dError::EPERM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
@@ -1214,8 +1214,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             }
             let f: *mut Rav1dFrameContext =
                 &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
-            // TODO(kkysen) Why was this `-1` in C? All others use `DAV1D_ERR(E*)`.
-            rav1d_decode_frame_exit(&mut *f, Err(EPERM));
+            rav1d_decode_frame_exit(&mut *f, Err(EGeneric));
             (*f).n_tile_data = 0 as c_int;
             (*f).task_thread.retval = Ok(());
             let out_delayed: *mut Rav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
