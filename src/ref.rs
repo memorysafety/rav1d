@@ -21,7 +21,7 @@ pub struct Rav1dRef {
 }
 
 #[inline]
-pub unsafe extern "C" fn rav1d_ref_inc(r#ref: *mut Rav1dRef) {
+pub unsafe fn rav1d_ref_inc(r#ref: *mut Rav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*r#ref).ref_cnt, 1 as c_int);
 }
 

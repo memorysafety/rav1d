@@ -175,7 +175,7 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
 }
 
 #[cold]
-unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t) -> usize {
+unsafe fn get_stack_size_internal(_thread_attr: *const pthread_attr_t) -> usize {
     if 0 != 0 {
         // TODO(perl): migrate the compile-time guard expression for this:
         // #if defined(__linux__) && defined(HAVE_DLSYM) && defined(__GLIBC__)
@@ -200,7 +200,7 @@ unsafe extern "C" fn get_stack_size_internal(_thread_attr: *const pthread_attr_t
 }
 
 #[cold]
-unsafe extern "C" fn get_num_threads(
+unsafe fn get_num_threads(
     c: *mut Rav1dContext,
     s: *const Rav1dSettings,
     n_tc: *mut c_uint,
@@ -274,7 +274,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> c_int
 
 #[cold]
 pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSettings) -> c_int {
-    unsafe extern "C" fn error(
+    unsafe fn error(
         c: *mut Rav1dContext,
         c_out: *mut *mut Rav1dContext,
         thread_attr: *mut pthread_attr_t,
@@ -696,7 +696,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     result
 }
 
-unsafe extern "C" fn has_grain(pic: *const Rav1dPicture) -> c_int {
+unsafe fn has_grain(pic: *const Rav1dPicture) -> c_int {
     let fgdata: *const Dav1dFilmGrainData = &mut (*(*pic).frame_hdr).film_grain.data;
     return ((*fgdata).num_y_points != 0
         || (*fgdata).num_uv_points[0] != 0
@@ -705,7 +705,7 @@ unsafe extern "C" fn has_grain(pic: *const Rav1dPicture) -> c_int {
         as c_int;
 }
 
-unsafe extern "C" fn output_image(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> c_int {
+unsafe fn output_image(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> c_int {
     let mut res = 0;
     let in_0: *mut Rav1dThreadPicture = if (*c).all_layers != 0 || (*c).max_spatial_id == 0 {
         &mut (*c).out
@@ -840,7 +840,7 @@ unsafe extern "C" fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture)
     return -(11 as c_int);
 }
 
-unsafe extern "C" fn gen_picture(c: *mut Rav1dContext) -> c_int {
+unsafe fn gen_picture(c: *mut Rav1dContext) -> c_int {
     let mut res;
     let in_0: *mut Rav1dData = &mut (*c).in_0;
     if output_picture_ready(c, 0 as c_int) != 0 {
@@ -1239,7 +1239,7 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
 }
 
 #[cold]
-unsafe extern "C" fn close_internal(c_out: *mut *mut Rav1dContext, flush: c_int) {
+unsafe fn close_internal(c_out: *mut *mut Rav1dContext, flush: c_int) {
     let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
         return;
@@ -1528,8 +1528,7 @@ pub unsafe extern "C" fn dav1d_data_unref(buf: *mut Dav1dData) {
     result
 }
 
-#[no_mangle]
-pub(crate) unsafe extern "C" fn rav1d_data_props_unref(props: *mut Rav1dDataProps) {
+pub(crate) unsafe fn rav1d_data_props_unref(props: *mut Rav1dDataProps) {
     rav1d_data_props_unref_internal(props);
 }
 

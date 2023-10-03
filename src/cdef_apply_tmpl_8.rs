@@ -27,7 +27,7 @@ pub type Backup2x8Flags = c_uint;
 pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
 pub const BACKUP_2X8_Y: Backup2x8Flags = 1;
 
-unsafe extern "C" fn backup2lines(
+unsafe fn backup2lines(
     dst: *const *mut pixel,
     src: *const *mut pixel,
     stride: *const ptrdiff_t,
@@ -85,7 +85,7 @@ unsafe extern "C" fn backup2lines(
     }
 }
 
-unsafe extern "C" fn backup2x8(
+unsafe fn backup2x8(
     dst: *mut [[pixel; 2]; 8],
     src: *const *mut pixel,
     src_stride: *const ptrdiff_t,
@@ -135,7 +135,7 @@ unsafe extern "C" fn backup2x8(
     }
 }
 
-unsafe extern "C" fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
+unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
     if var == 0 {
         return 0 as c_int;
     }

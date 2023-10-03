@@ -62,14 +62,14 @@ unsafe extern "C" fn ivf_probe(data: *const u8) -> c_int {
     ) == 0) as c_int;
 }
 
-unsafe extern "C" fn rl32(p: *const u8) -> c_uint {
+unsafe fn rl32(p: *const u8) -> c_uint {
     return (*p.offset(3) as u32) << 24 as c_uint
         | ((*p.offset(2) as c_int) << 16 as c_uint) as c_uint
         | ((*p.offset(1) as c_int) << 8 as c_uint) as c_uint
         | *p.offset(0) as c_uint;
 }
 
-unsafe extern "C" fn rl64(p: *const u8) -> i64 {
+unsafe fn rl64(p: *const u8) -> i64 {
     return ((rl32(&*p.offset(4)) as u64) << 32 | rl32(p) as u64) as i64;
 }
 
@@ -200,7 +200,7 @@ unsafe extern "C" fn ivf_open(
 
 #[inline]
 
-unsafe extern "C" fn ivf_read_header(
+unsafe fn ivf_read_header(
     c: *mut IvfInputContext,
     sz: *mut ptrdiff_t,
     off_: *mut libc::off_t,

@@ -88,7 +88,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 
-unsafe extern "C" fn get_time_nanos() -> u64 {
+unsafe fn get_time_nanos() -> u64 {
     let mut ts: libc::timespec = libc::timespec {
         tv_sec: 0,
         tv_nsec: 0,
@@ -99,7 +99,7 @@ unsafe extern "C" fn get_time_nanos() -> u64 {
         .wrapping_add(ts.tv_nsec as c_ulonglong) as u64;
 }
 
-unsafe extern "C" fn sleep_nanos(d: u64) {
+unsafe fn sleep_nanos(d: u64) {
     // TODO: C version has Windows specific code path
     let ts: libc::timespec = {
         let init = libc::timespec {
@@ -111,7 +111,7 @@ unsafe extern "C" fn sleep_nanos(d: u64) {
     libc::nanosleep(&ts, std::ptr::null_mut::<libc::timespec>());
 }
 
-unsafe extern "C" fn synchronize(
+unsafe fn synchronize(
     realtime: c_int,
     cache: c_uint,
     n_out: c_uint,
@@ -144,13 +144,7 @@ unsafe extern "C" fn synchronize(
     }
 }
 
-unsafe extern "C" fn print_stats(
-    istty: c_int,
-    n: c_uint,
-    num: c_uint,
-    elapsed: u64,
-    i_fps: c_double,
-) {
+unsafe fn print_stats(istty: c_int, n: c_uint, num: c_uint, elapsed: u64, i_fps: c_double) {
     let mut buf: [c_char; 80] = [0; 80];
     let mut b: *mut c_char = buf.as_mut_ptr();
     let end: *mut c_char = buf.as_mut_ptr().offset(80);

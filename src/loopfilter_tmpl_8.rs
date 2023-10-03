@@ -17,7 +17,7 @@ use cfg_if::cfg_if;
 pub type pixel = u8;
 
 #[inline(never)]
-unsafe extern "C" fn loop_filter(
+unsafe fn loop_filter(
     mut dst: *mut pixel,
     mut E: c_int,
     mut I: c_int,
@@ -363,7 +363,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c_erased(
     loop_filter_v_sb128uv_rust(dst.cast(), stride, vmask, l, b4_stride, lut, w)
 }
 
-unsafe extern "C" fn loop_filter_v_sb128uv_rust(
+unsafe fn loop_filter_v_sb128uv_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     vmask: *const u32,
@@ -397,7 +397,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_rust(
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Rav1dLoopFilterDSPContext) {
+unsafe fn loop_filter_dsp_init_x86(c: *mut Rav1dLoopFilterDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::loopfilter::*;
 
@@ -436,7 +436,7 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Rav1dLoopFilterDSPContext)
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Rav1dLoopFilterDSPContext) {
+unsafe fn loop_filter_dsp_init_arm(c: *mut Rav1dLoopFilterDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::loopfilter::*;
 

@@ -65,7 +65,7 @@ pub const FRAME_ERROR: u32 = u32::MAX - 1;
 pub const TILE_ERROR: i32 = i32::MAX - 1;
 
 #[inline]
-unsafe extern "C" fn rav1d_set_thread_name(name: *const c_char) {
+unsafe fn rav1d_set_thread_name(name: *const c_char) {
     cfg_if::cfg_if! {
         if #[cfg(target_os = "linux")] {
             prctl(15 as c_int, name);
@@ -78,7 +78,7 @@ unsafe extern "C" fn rav1d_set_thread_name(name: *const c_char) {
 }
 
 #[inline]
-unsafe extern "C" fn reset_task_cur(
+unsafe fn reset_task_cur(
     c: *const Rav1dContext,
     ttd: *mut TaskThreadData,
     mut frame_idx: c_uint,
@@ -157,11 +157,7 @@ unsafe extern "C" fn reset_task_cur(
 }
 
 #[inline]
-unsafe extern "C" fn reset_task_cur_async(
-    ttd: *mut TaskThreadData,
-    mut frame_idx: c_uint,
-    n_frames: c_uint,
-) {
+unsafe fn reset_task_cur_async(ttd: *mut TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
     let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
     if frame_idx < first {
         frame_idx = frame_idx.wrapping_add(n_frames);
@@ -188,7 +184,7 @@ unsafe extern "C" fn reset_task_cur_async(
     }
 }
 
-unsafe extern "C" fn insert_tasks_between(
+unsafe fn insert_tasks_between(
     f: *mut Rav1dFrameContext,
     first: *mut Rav1dTask,
     last: *mut Rav1dTask,
@@ -223,7 +219,7 @@ unsafe extern "C" fn insert_tasks_between(
     }
 }
 
-unsafe extern "C" fn insert_tasks(
+unsafe fn insert_tasks(
     f: *mut Rav1dFrameContext,
     first: *mut Rav1dTask,
     last: *mut Rav1dTask,
@@ -307,12 +303,12 @@ unsafe extern "C" fn insert_tasks(
 }
 
 #[inline]
-unsafe extern "C" fn insert_task(f: *mut Rav1dFrameContext, t: *mut Rav1dTask, cond_signal: c_int) {
+unsafe fn insert_task(f: *mut Rav1dFrameContext, t: *mut Rav1dTask, cond_signal: c_int) {
     insert_tasks(f, t, t, cond_signal);
 }
 
 #[inline]
-unsafe extern "C" fn add_pending(f: *mut Rav1dFrameContext, t: *mut Rav1dTask) {
+unsafe fn add_pending(f: *mut Rav1dFrameContext, t: *mut Rav1dTask) {
     pthread_mutex_lock(&mut (*f).task_thread.pending_tasks.lock);
     (*t).next = 0 as *mut Rav1dTask;
     if ((*f).task_thread.pending_tasks.head).is_null() {
@@ -326,7 +322,7 @@ unsafe extern "C" fn add_pending(f: *mut Rav1dFrameContext, t: *mut Rav1dTask) {
 }
 
 #[inline]
-unsafe extern "C" fn merge_pending_frame(f: *mut Rav1dFrameContext) -> c_int {
+unsafe fn merge_pending_frame(f: *mut Rav1dFrameContext) -> c_int {
     let merge = ::core::intrinsics::atomic_load_seqcst(&mut (*f).task_thread.pending_tasks.merge);
     if merge != 0 {
         pthread_mutex_lock(&mut (*f).task_thread.pending_tasks.lock);
@@ -348,7 +344,7 @@ unsafe extern "C" fn merge_pending_frame(f: *mut Rav1dFrameContext) -> c_int {
 }
 
 #[inline]
-unsafe extern "C" fn merge_pending(c: *const Rav1dContext) -> c_int {
+unsafe fn merge_pending(c: *const Rav1dContext) -> c_int {
     let mut res = 0;
     let mut i: c_uint = 0 as c_int as c_uint;
     while i < (*c).n_fc {
@@ -358,7 +354,7 @@ unsafe extern "C" fn merge_pending(c: *const Rav1dContext) -> c_int {
     return res;
 }
 
-unsafe extern "C" fn create_filter_sbrow(
+unsafe fn create_filter_sbrow(
     f: *mut Rav1dFrameContext,
     pass: c_int,
     res_t: *mut *mut Rav1dTask,
@@ -547,7 +543,7 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
 }
 
 #[inline]
-unsafe extern "C" fn ensure_progress(
+unsafe fn ensure_progress(
     ttd: *mut TaskThreadData,
     f: *mut Rav1dFrameContext,
     t: *mut Rav1dTask,
@@ -569,11 +565,7 @@ unsafe extern "C" fn ensure_progress(
 }
 
 #[inline]
-unsafe extern "C" fn check_tile(
-    t: *mut Rav1dTask,
-    f: *mut Rav1dFrameContext,
-    frame_mt: c_int,
-) -> c_int {
+unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_int) -> c_int {
     let tp = ((*t).type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint) as c_int;
     let tile_idx = t.offset_from((*f).task_thread.tile_tasks[tp as usize]) as c_long as c_int;
     let ts: *mut Rav1dTileState = &mut *((*f).ts).offset(tile_idx as isize) as *mut Rav1dTileState;
@@ -654,10 +646,7 @@ unsafe extern "C" fn check_tile(
 }
 
 #[inline]
-unsafe extern "C" fn get_frame_progress(
-    c: *const Rav1dContext,
-    f: *const Rav1dFrameContext,
-) -> c_int {
+unsafe fn get_frame_progress(c: *const Rav1dContext, f: *const Rav1dFrameContext) -> c_int {
     let frame_prog: c_uint = if (*c).n_fc > 1 as c_uint {
         ::core::intrinsics::atomic_load_seqcst(
             &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint
@@ -688,7 +677,7 @@ unsafe extern "C" fn get_frame_progress(
 }
 
 #[inline]
-unsafe extern "C" fn abort_frame(f: *mut Rav1dFrameContext, error: c_int) {
+unsafe fn abort_frame(f: *mut Rav1dFrameContext, error: c_int) {
     ::core::intrinsics::atomic_store_seqcst(
         &mut (*f).task_thread.error,
         if error == -(22 as c_int) {
@@ -720,7 +709,7 @@ unsafe extern "C" fn abort_frame(f: *mut Rav1dFrameContext, error: c_int) {
 }
 
 #[inline]
-unsafe extern "C" fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
+unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
     let in_0 = (*ttd).delayed_fg.in_0;
     let out = (*ttd).delayed_fg.out;
     let mut off = 0;

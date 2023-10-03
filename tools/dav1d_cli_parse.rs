@@ -324,7 +324,7 @@ unsafe extern "C" fn usage(app: *const c_char, reason: *const c_char, args: ...)
     exit(1 as c_int);
 }
 
-unsafe extern "C" fn error(
+unsafe fn error(
     app: *const c_char,
     optarg_0: *const c_char,
     option: c_int,
@@ -365,11 +365,7 @@ unsafe extern "C" fn error(
     );
 }
 
-unsafe extern "C" fn parse_unsigned(
-    optarg_0: *const c_char,
-    option: c_int,
-    app: *const c_char,
-) -> c_uint {
+unsafe fn parse_unsigned(optarg_0: *const c_char, option: c_int, app: *const c_char) -> c_uint {
     let mut end: *mut c_char = 0 as *mut c_char;
     let res: c_uint = strtoul(optarg_0, &mut end, 0 as c_int) as c_uint;
     if *end as c_int != 0 || end == optarg_0 as *mut c_char {
@@ -383,7 +379,7 @@ unsafe extern "C" fn parse_unsigned(
     return res;
 }
 
-unsafe extern "C" fn parse_optional_fraction(
+unsafe fn parse_optional_fraction(
     optarg_0: *const c_char,
     option: c_int,
     app: *const c_char,
@@ -533,7 +529,7 @@ static mut decode_frame_type_tbl: [EnumParseTable; 4] = [
     },
 ];
 
-unsafe extern "C" fn parse_enum(
+unsafe fn parse_enum(
     optarg_0: *mut c_char,
     tbl: *const EnumParseTable,
     tbl_sz: c_int,

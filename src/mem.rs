@@ -26,7 +26,7 @@ pub struct Rav1dMemPoolBuffer {
 }
 
 #[inline]
-pub unsafe extern "C" fn rav1d_alloc_aligned(sz: usize, align: usize) -> *mut c_void {
+pub unsafe fn rav1d_alloc_aligned(sz: usize, align: usize) -> *mut c_void {
     if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
@@ -38,12 +38,12 @@ pub unsafe extern "C" fn rav1d_alloc_aligned(sz: usize, align: usize) -> *mut c_
 }
 
 #[inline]
-pub unsafe extern "C" fn rav1d_free_aligned(ptr: *mut c_void) {
+pub unsafe fn rav1d_free_aligned(ptr: *mut c_void) {
     free(ptr);
 }
 
 #[inline]
-pub unsafe extern "C" fn rav1d_freep_aligned(ptr: *mut c_void) {
+pub unsafe fn rav1d_freep_aligned(ptr: *mut c_void) {
     let mem: *mut *mut c_void = ptr as *mut *mut c_void;
     if !(*mem).is_null() {
         rav1d_free_aligned(*mem);
@@ -52,7 +52,7 @@ pub unsafe extern "C" fn rav1d_freep_aligned(ptr: *mut c_void) {
 }
 
 #[inline]
-pub unsafe extern "C" fn freep(ptr: *mut c_void) {
+pub unsafe fn freep(ptr: *mut c_void) {
     let mem: *mut *mut c_void = ptr as *mut *mut c_void;
     if !(*mem).is_null() {
         free(*mem);
@@ -61,7 +61,7 @@ pub unsafe extern "C" fn freep(ptr: *mut c_void) {
 }
 
 #[cold]
-unsafe extern "C" fn mem_pool_destroy(pool: *mut Rav1dMemPool) {
+unsafe fn mem_pool_destroy(pool: *mut Rav1dMemPool) {
     pthread_mutex_destroy(&mut (*pool).lock);
     free(pool as *mut c_void);
 }

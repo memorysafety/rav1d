@@ -54,7 +54,7 @@ pub type pixel = u16;
 pub type coef = i32;
 
 #[inline]
-unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
+unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
     }
@@ -71,7 +71,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased(
     inv_txfm_add_wht_wht_4x4_rust(dst.cast(), stride, coeff.cast(), eob, bitdepth_max);
 }
 
-unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_rust(
+unsafe fn inv_txfm_add_wht_wht_4x4_rust(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     coeff: *mut coef,
@@ -130,7 +130,7 @@ unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_rust(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 #[rustfmt::skip]
-unsafe extern "C" fn itx_dsp_init_x86(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
+unsafe fn itx_dsp_init_x86(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
@@ -709,7 +709,7 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe extern "C" fn itx_dsp_init_arm(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
+unsafe fn itx_dsp_init_arm(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 

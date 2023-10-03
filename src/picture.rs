@@ -144,7 +144,7 @@ unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut c_void) {
     free(pic_ctx as *mut c_void);
 }
 
-unsafe extern "C" fn picture_alloc_with_edges(
+unsafe fn picture_alloc_with_edges(
     c: *mut Rav1dContext,
     p: *mut Rav1dPicture,
     w: c_int,

@@ -21,19 +21,14 @@ pub type pixel = u16;
 pub type entry = i16;
 
 #[inline]
-unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
+unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1;
 }
 
-unsafe extern "C" fn generate_scaling(
-    bitdepth: c_int,
-    points: *const [u8; 2],
-    num: c_int,
-    scaling: *mut u8,
-) {
+unsafe fn generate_scaling(bitdepth: c_int, points: *const [u8; 2], num: c_int, scaling: *mut u8) {
     if !(bitdepth > 8) {
         unreachable!();
     }

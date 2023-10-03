@@ -73,7 +73,7 @@ unsafe extern "C" fn y4m2_open(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn write_header(c: *mut Y4m2OutputContext, p: *const Dav1dPicture) -> c_int {
+unsafe fn write_header(c: *mut Y4m2OutputContext, p: *const Dav1dPicture) -> c_int {
     static mut ss_names: [[*const c_char; 3]; 4] = [
         [
             b"mono\0" as *const u8 as *const c_char,

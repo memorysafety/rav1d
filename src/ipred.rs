@@ -3,7 +3,7 @@ use libc::ptrdiff_t;
 use std::ffi::c_int;
 
 #[inline]
-pub unsafe extern "C" fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+pub unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     return (angle < 40 && wh <= 16 >> is_sm) as c_int;
 }
 

@@ -1611,7 +1611,7 @@ unsafe extern "C" fn splat_mv_rust(
 
 #[inline(always)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
-unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
+unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
@@ -1646,7 +1646,7 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
 
 #[inline(always)]
 #[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), feature = "asm"))]
-unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
+unsafe fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
     let flags = rav1d_get_cpu_flags();
     if flags.contains(CpuFlags::NEON) {
         (*c).splat_mv = Some(ffi::dav1d_splat_mv_neon);

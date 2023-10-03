@@ -65,7 +65,7 @@ static mut muxers: [*const Muxer; 5] = unsafe {
     ]
 };
 
-unsafe extern "C" fn find_extension(f: *const c_char) -> *const c_char {
+unsafe fn find_extension(f: *const c_char) -> *const c_char {
     let l: usize = strlen(f);
     if l == 0 {
         return 0 as *const c_char;
@@ -205,12 +205,7 @@ pub unsafe fn output_open(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn safe_strncat(
-    dst: *mut c_char,
-    dst_len: c_int,
-    src: *const c_char,
-    src_len: c_int,
-) {
+unsafe fn safe_strncat(dst: *mut c_char, dst_len: c_int, src: *const c_char, src_len: c_int) {
     if src_len == 0 {
         return;
     }
@@ -230,7 +225,7 @@ unsafe extern "C" fn safe_strncat(
     *dst.offset((dst_fill + to_copy) as isize) = 0 as c_int as c_char;
 }
 
-unsafe extern "C" fn assemble_field(
+unsafe fn assemble_field(
     dst: *mut c_char,
     dst_len: c_int,
     fmt: *const c_char,
@@ -275,7 +270,7 @@ unsafe extern "C" fn assemble_field(
     );
 }
 
-unsafe extern "C" fn assemble_filename(
+unsafe fn assemble_filename(
     ctx: *mut MuxerContext,
     filename: *mut c_char,
     filename_size: c_int,

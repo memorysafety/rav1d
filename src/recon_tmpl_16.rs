@@ -109,7 +109,7 @@ pub type pixel = u16;
 pub type coef = i32;
 
 #[inline]
-unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
+unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
     }
@@ -1284,7 +1284,7 @@ unsafe fn decode_coefs(
     return eob;
 }
 
-unsafe extern "C" fn read_coef_tree(
+unsafe fn read_coef_tree(
     t: *mut Rav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
@@ -1732,7 +1732,7 @@ pub(crate) unsafe extern "C" fn rav1d_read_coef_blocks_16bpc(
     }
 }
 
-unsafe extern "C" fn mc(
+unsafe fn mc(
     t: *mut Rav1dTaskContext,
     dst8: *mut pixel,
     dst16: *mut i16,
@@ -1935,7 +1935,7 @@ unsafe extern "C" fn mc(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn obmc(
+unsafe fn obmc(
     t: *mut Rav1dTaskContext,
     dst: *mut pixel,
     dst_stride: ptrdiff_t,
@@ -2066,7 +2066,7 @@ unsafe extern "C" fn obmc(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn warp_affine(
+unsafe fn warp_affine(
     t: *mut Rav1dTaskContext,
     mut dst8: *mut pixel,
     mut dst16: *mut i16,

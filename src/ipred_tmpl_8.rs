@@ -130,13 +130,7 @@ extern "C" {
 pub type pixel = u8;
 
 #[inline(never)]
-unsafe extern "C" fn splat_dc(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    width: c_int,
-    height: c_int,
-    dc: c_int,
-) {
+unsafe fn splat_dc(mut dst: *mut pixel, stride: ptrdiff_t, width: c_int, height: c_int, dc: c_int) {
     if !(dc <= 0xff as c_int) {
         unreachable!();
     }
@@ -170,7 +164,7 @@ unsafe extern "C" fn splat_dc(
 }
 
 #[inline(never)]
-unsafe extern "C" fn cfl_pred(
+unsafe fn cfl_pred(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
     width: c_int,
@@ -194,7 +188,7 @@ unsafe extern "C" fn cfl_pred(
     }
 }
 
-unsafe extern "C" fn dc_gen_top(topleft: *const pixel, width: c_int) -> c_uint {
+unsafe fn dc_gen_top(topleft: *const pixel, width: c_int) -> c_uint {
     let mut dc: c_uint = (width >> 1) as c_uint;
     let mut i = 0;
     while i < width {
@@ -245,7 +239,7 @@ unsafe extern "C" fn ipred_cfl_top_c_erased(
     );
 }
 
-unsafe extern "C" fn dc_gen_left(topleft: *const pixel, height: c_int) -> c_uint {
+unsafe fn dc_gen_left(topleft: *const pixel, height: c_int) -> c_uint {
     let mut dc: c_uint = (height >> 1) as c_uint;
     let mut i = 0;
     while i < height {
@@ -289,7 +283,7 @@ unsafe extern "C" fn ipred_cfl_left_c_erased(
     cfl_pred(dst.cast(), stride, width, height, dc as c_int, ac, alpha);
 }
 
-unsafe extern "C" fn dc_gen(topleft: *const pixel, width: c_int, height: c_int) -> c_uint {
+unsafe fn dc_gen(topleft: *const pixel, width: c_int, height: c_int) -> c_uint {
     let mut dc: c_uint = (width + height >> 1) as c_uint;
     let mut i = 0;
     while i < width {
@@ -682,7 +676,7 @@ unsafe fn ipred_smooth_h_rust(
 }
 
 #[inline(never)]
-unsafe extern "C" fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     if is_sm != 0 {
         if wh <= 8 {
             if angle >= 64 {
@@ -738,7 +732,7 @@ unsafe extern "C" fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) 
 }
 
 #[inline(never)]
-unsafe extern "C" fn filter_edge(
+unsafe fn filter_edge(
     out: *mut pixel,
     sz: c_int,
     lim_from: c_int,
@@ -775,13 +769,7 @@ unsafe extern "C" fn filter_edge(
 }
 
 #[inline(never)]
-unsafe extern "C" fn upsample_edge(
-    out: *mut pixel,
-    hsz: c_int,
-    in_0: *const pixel,
-    from: c_int,
-    to: c_int,
-) {
+unsafe fn upsample_edge(out: *mut pixel, hsz: c_int, in_0: *const pixel, from: c_int, to: c_int) {
     static kernel: [i8; 4] = [-1, 9, 9, -1];
     let mut i;
     i = 0 as c_int;
@@ -1260,7 +1248,7 @@ unsafe fn ipred_filter_rust(
 }
 
 #[inline(never)]
-unsafe extern "C" fn cfl_ac_c(
+unsafe fn cfl_ac_c(
     mut ac: *mut i16,
     mut ypx: *const pixel,
     stride: ptrdiff_t,
@@ -1443,7 +1431,7 @@ unsafe fn pal_pred_rust(
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
-unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Rav1dIntraPredDSPContext) {
+unsafe fn intra_pred_dsp_init_x86(c: *mut Rav1dIntraPredDSPContext) {
     use crate::src::ipred::*; // TODO(legare): Temporary import until init fns are deduplicated.
 
     let flags = rav1d_get_cpu_flags();
@@ -1532,7 +1520,7 @@ unsafe extern "C" fn intra_pred_dsp_init_x86(c: *mut Rav1dIntraPredDSPContext) {
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
-unsafe extern "C" fn intra_pred_dsp_init_arm(c: *mut Rav1dIntraPredDSPContext) {
+unsafe fn intra_pred_dsp_init_arm(c: *mut Rav1dIntraPredDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::ipred::*;
 

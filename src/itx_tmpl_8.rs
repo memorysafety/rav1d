@@ -118,7 +118,7 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 #[rustfmt::skip]
-unsafe extern "C" fn itx_dsp_init_x86(c: *mut Rav1dInvTxfmDSPContext, _bpc: c_int) {
+unsafe fn itx_dsp_init_x86(c: *mut Rav1dInvTxfmDSPContext, _bpc: c_int) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
@@ -622,7 +622,7 @@ unsafe extern "C" fn itx_dsp_init_x86(c: *mut Rav1dInvTxfmDSPContext, _bpc: c_in
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 #[rustfmt::skip]
-unsafe extern "C" fn itx_dsp_init_arm(c: *mut Rav1dInvTxfmDSPContext, mut _bpc: c_int) {
+unsafe fn itx_dsp_init_arm(c: *mut Rav1dInvTxfmDSPContext, mut _bpc: c_int) {
         // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 

@@ -18,14 +18,14 @@ use std::ffi::c_void;
 pub type pixel = u16;
 
 #[inline]
-unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
+unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
     }
     return x >> 1;
 }
 
-unsafe extern "C" fn backup_lpf(
+unsafe fn backup_lpf(
     f: *const Rav1dFrameContext,
     mut dst: *mut pixel,
     dst_stride: ptrdiff_t,
@@ -294,7 +294,7 @@ pub(crate) unsafe fn rav1d_copy_lpf_16bpc(
 }
 
 #[inline]
-unsafe extern "C" fn filter_plane_cols_y(
+unsafe fn filter_plane_cols_y(
     f: *const Rav1dFrameContext,
     have_left: c_int,
     lvl: *const [u8; 4],
@@ -342,7 +342,7 @@ unsafe extern "C" fn filter_plane_cols_y(
 }
 
 #[inline]
-unsafe extern "C" fn filter_plane_rows_y(
+unsafe fn filter_plane_rows_y(
     f: *const Rav1dFrameContext,
     have_top: c_int,
     mut lvl: *const [u8; 4],
@@ -385,7 +385,7 @@ unsafe extern "C" fn filter_plane_rows_y(
 }
 
 #[inline]
-unsafe extern "C" fn filter_plane_cols_uv(
+unsafe fn filter_plane_cols_uv(
     f: *const Rav1dFrameContext,
     have_left: c_int,
     lvl: *const [u8; 4],
@@ -442,7 +442,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
 }
 
 #[inline]
-unsafe extern "C" fn filter_plane_rows_uv(
+unsafe fn filter_plane_rows_uv(
     f: *const Rav1dFrameContext,
     have_top: c_int,
     mut lvl: *const [u8; 4],
