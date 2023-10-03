@@ -1,3 +1,5 @@
+use crate::src::error::Rav1dError::ENOMEM;
+use crate::src::error::Rav1dResult;
 use libc::free;
 use libc::malloc;
 use libc::posix_memalign;
@@ -125,7 +127,7 @@ pub unsafe fn rav1d_mem_pool_pop(pool: *mut Rav1dMemPool, size: usize) -> *mut R
 }
 
 #[cold]
-pub unsafe fn rav1d_mem_pool_init(ppool: *mut *mut Rav1dMemPool) -> c_int {
+pub unsafe fn rav1d_mem_pool_init(ppool: *mut *mut Rav1dMemPool) -> Rav1dResult {
     let pool: *mut Rav1dMemPool =
         malloc(::core::mem::size_of::<Rav1dMemPool>()) as *mut Rav1dMemPool;
     if !pool.is_null() {
@@ -134,12 +136,12 @@ pub unsafe fn rav1d_mem_pool_init(ppool: *mut *mut Rav1dMemPool) -> c_int {
             (*pool).ref_cnt = 1 as c_int;
             (*pool).end = 0 as c_int;
             *ppool = pool;
-            return 0 as c_int;
+            return Ok(());
         }
         free(pool as *mut c_void);
     }
     *ppool = 0 as *mut Rav1dMemPool;
-    return -(12 as c_int);
+    return Err(ENOMEM);
 }
 
 #[cold]

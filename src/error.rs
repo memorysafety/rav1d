@@ -1,12 +1,13 @@
 use std::ffi::c_int;
+use std::ffi::c_uint;
 use strum::FromRepr;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
 #[non_exhaustive]
 pub enum Rav1dError {
-    /// Not actually used (yet), but this forces `0` to be the niche,
+    /// Note that this forces `0` to be the niche,
     /// which is more optimal since `0` is no error for [`Dav1dResult`].
-    _EPERM = 1,
+    EPERM = 1,
 
     ENOENT = 2,
     EIO = 5,
@@ -34,6 +35,16 @@ impl From<Rav1dResult> for Dav1dResult {
                 Err(e) => e as u8 as c_int,
             }),
         )
+    }
+}
+
+impl From<Rav1dResult<c_uint>> for Dav1dResult {
+    #[inline]
+    fn from(value: Rav1dResult<c_uint>) -> Self {
+        Dav1dResult(match value {
+            Ok(value) => value as c_int,
+            Err(e) => e as u8 as c_int,
+        })
     }
 }
 

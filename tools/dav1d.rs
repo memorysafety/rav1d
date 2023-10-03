@@ -81,6 +81,7 @@ use rav1d::src::lib::dav1d_parse_sequence_header;
 use rav1d::src::lib::dav1d_send_data;
 use rav1d::src::lib::dav1d_version;
 use rav1d::stderr;
+use rav1d::Dav1dResult;
 use std::ffi::c_char;
 use std::ffi::c_double;
 use std::ffi::c_int;
@@ -204,7 +205,7 @@ unsafe fn print_stats(istty: c_int, n: c_uint, num: c_uint, elapsed: u64, i_fps:
     fputs(buf.as_mut_ptr(), stderr);
 }
 
-unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> c_int {
+unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1dResult {
     let hbd = ((*p).p.bpc > 8) as c_int;
     let aligned_w = (*p).p.w + 127 & !(127 as c_int);
     let aligned_h = (*p).p.h + 127 & !(127 as c_int);
@@ -231,7 +232,7 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> c_in
     let pic_size: usize = y_sz.wrapping_add(2 * uv_sz);
     let buf: *mut u8 = malloc(pic_size.wrapping_add(64)) as *mut u8;
     if buf.is_null() {
-        return -(12 as c_int);
+        return Dav1dResult(-12);
     }
     (*p).allocator_data = buf as *mut c_void;
     let align_m1: ptrdiff_t = (64 - 1) as ptrdiff_t;
@@ -251,7 +252,7 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> c_in
     } else {
         0 as *mut u8
     }) as *mut c_void;
-    return 0 as c_int;
+    Dav1dResult(0)
 }
 
 unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut c_void) {
@@ -473,7 +474,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             }; 32],
         };
         let mut seq_skip: c_uint = 0 as c_int as c_uint;
-        while dav1d_parse_sequence_header(&mut seq, data.data, data.sz) != 0 {
+        while dav1d_parse_sequence_header(&mut seq, data.data, data.sz).0 != 0 {
             res = input_read(in_0, &mut data);
             if res < 0 {
                 input_close(in_0);
@@ -493,7 +494,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     if cli_settings.limit != 0 as c_int as c_uint && cli_settings.limit < total {
         total = cli_settings.limit;
     }
-    res = dav1d_open(&mut c, &mut lib_settings);
+    res = dav1d_open(&mut c, &mut lib_settings).0;
     if res != 0 {
         return 1 as c_int;
     }
@@ -524,7 +525,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             0 as c_int,
             ::core::mem::size_of::<Dav1dPicture>(),
         );
-        res = dav1d_send_data(c, &mut data);
+        res = dav1d_send_data(c, &mut data).0;
         if res < 0 {
             if res != -(11 as c_int) {
                 dav1d_data_unref(&mut data);
@@ -538,7 +539,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                 }
             }
         }
-        res = dav1d_get_picture(c, &mut p);
+        res = dav1d_get_picture(c, &mut p).0;
         if res < 0 {
             if res != -(11 as c_int) {
                 fprintf(
@@ -599,7 +600,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     }
     if res == 0 {
         while cli_settings.limit == 0 || n_out < cli_settings.limit {
-            res = dav1d_get_picture(c, &mut p);
+            res = dav1d_get_picture(c, &mut p).0;
             if res < 0 {
                 if res != -(11 as c_int) {
                     fprintf(

@@ -39,6 +39,13 @@ use crate::src::data::rav1d_data_unref_internal;
 use crate::src::data::rav1d_data_wrap_internal;
 use crate::src::data::rav1d_data_wrap_user_data_internal;
 use crate::src::decode::rav1d_decode_frame_exit;
+use crate::src::error::Dav1dResult;
+use crate::src::error::Rav1dError::EAGAIN;
+use crate::src::error::Rav1dError::EINVAL;
+use crate::src::error::Rav1dError::ENOENT;
+use crate::src::error::Rav1dError::ENOMEM;
+use crate::src::error::Rav1dError::EPERM;
+use crate::src::error::Rav1dResult;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -227,7 +234,7 @@ unsafe fn get_num_threads(
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> c_int {
+pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> Rav1dResult<c_uint> {
     let mut n_tc: c_uint = 0;
     let mut n_fc: c_uint = 0;
     if s.is_null() {
@@ -238,7 +245,7 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> c_int {
             (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_frame_delay\0"))
                 .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if !((*s).n_threads >= 0 && (*s).n_threads <= 256) {
         fprintf(
@@ -249,7 +256,7 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> c_int {
             (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_frame_delay\0"))
                 .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if !((*s).max_frame_delay >= 0 && (*s).max_frame_delay <= 256) {
         fprintf(
@@ -260,30 +267,33 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> c_int {
             (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_frame_delay\0"))
                 .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     get_num_threads(0 as *mut Rav1dContext, s, &mut n_tc, &mut n_fc);
-    return n_fc as c_int;
+    Ok(n_fc)
 }
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> c_int {
-    rav1d_get_frame_delay(&s.read().into())
+pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1dResult {
+    rav1d_get_frame_delay(&s.read().into()).into()
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSettings) -> c_int {
+pub(crate) unsafe fn rav1d_open(
+    c_out: *mut *mut Rav1dContext,
+    s: *const Rav1dSettings,
+) -> Rav1dResult {
     unsafe fn error(
         c: *mut Rav1dContext,
         c_out: *mut *mut Rav1dContext,
         thread_attr: *mut pthread_attr_t,
-    ) -> c_int {
+    ) -> Rav1dResult {
         if !c.is_null() {
             close_internal(c_out, 0 as c_int);
         }
         pthread_attr_destroy(thread_attr);
-        return -(12 as c_int);
+        return Err(ENOMEM);
     }
 
     static initted: Once = Once::new();
@@ -295,7 +305,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
             b"c_out != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if s.is_null() {
         fprintf(
@@ -304,7 +314,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
             b"s != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if !((*s).n_threads >= 0 && (*s).n_threads <= 256) {
         fprintf(
@@ -314,7 +324,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
                 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if !((*s).max_frame_delay >= 0 && (*s).max_frame_delay <= 256) {
         fprintf(
@@ -324,7 +334,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
                 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if ((*s).allocator.alloc_picture_callback).is_none() {
         fprintf(
@@ -333,7 +343,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
             b"s->allocator.alloc_picture_callback != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if ((*s).allocator.release_picture_callback).is_none() {
         fprintf(
@@ -342,7 +352,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
             b"s->allocator.release_picture_callback != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if !((*s).operating_point >= 0 && (*s).operating_point <= 31) {
         fprintf(
@@ -351,7 +361,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
             b"s->operating_point >= 0 && s->operating_point <= 31\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if !((*s).decode_frame_type as c_uint >= RAV1D_DECODEFRAMETYPE_ALL as c_int as c_uint
         && (*s).decode_frame_type as c_uint <= RAV1D_DECODEFRAMETYPE_KEY as c_int as c_uint)
@@ -365,11 +375,11 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
             (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0"))
                 .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     let mut thread_attr: pthread_attr_t = std::mem::zeroed();
     if pthread_attr_init(&mut thread_attr) != 0 {
-        return -(12 as c_int);
+        return Err(ENOMEM);
     }
     let stack_size: usize = 1024 * 1024 * get_stack_size_internal(&mut thread_attr);
     pthread_attr_setstacksize(&mut thread_attr, stack_size);
@@ -394,11 +404,11 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
     (*c).inloop_filters = (*s).inloop_filters;
     (*c).decode_frame_type = (*s).decode_frame_type;
     rav1d_data_props_set_defaults(&mut (*c).cached_error_props);
-    if rav1d_mem_pool_init(&mut (*c).seq_hdr_pool) != 0
-        || rav1d_mem_pool_init(&mut (*c).frame_hdr_pool) != 0
-        || rav1d_mem_pool_init(&mut (*c).segmap_pool) != 0
-        || rav1d_mem_pool_init(&mut (*c).refmvs_pool) != 0
-        || rav1d_mem_pool_init(&mut (*c).cdf_pool) != 0
+    if rav1d_mem_pool_init(&mut (*c).seq_hdr_pool).is_err()
+        || rav1d_mem_pool_init(&mut (*c).frame_hdr_pool).is_err()
+        || rav1d_mem_pool_init(&mut (*c).segmap_pool).is_err()
+        || rav1d_mem_pool_init(&mut (*c).refmvs_pool).is_err()
+        || rav1d_mem_pool_init(&mut (*c).cdf_pool).is_err()
     {
         return error(c, c_out, &mut thread_attr);
     }
@@ -408,7 +418,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
         if !((*c).allocator.cookie).is_null() {
             return error(c, c_out, &mut thread_attr);
         }
-        if rav1d_mem_pool_init(&mut (*c).picture_pool) != 0 {
+        if rav1d_mem_pool_init(&mut (*c).picture_pool).is_err() {
             return error(c, c_out, &mut thread_attr);
         }
         (*c).allocator.cookie = (*c).picture_pool as *mut c_void;
@@ -575,7 +585,7 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
         false,
     );
     pthread_attr_destroy(&mut thread_attr);
-    return 0 as c_int;
+    Ok(())
 }
 
 #[no_mangle]
@@ -583,8 +593,8 @@ pub(crate) unsafe fn rav1d_open(c_out: *mut *mut Rav1dContext, s: *const Rav1dSe
 pub unsafe extern "C" fn dav1d_open(
     c_out: *mut *mut Dav1dContext,
     s: *const Dav1dSettings,
-) -> c_int {
-    rav1d_open(c_out, &s.read().into())
+) -> Dav1dResult {
+    rav1d_open(c_out, &s.read().into()).into()
 }
 
 unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
@@ -597,7 +607,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     out: *mut Rav1dSequenceHeader,
     ptr: *const u8,
     sz: usize,
-) -> c_int {
+) -> Rav1dResult {
     let mut current_block: u64;
     let mut buf: Rav1dData = {
         let init = Rav1dData {
@@ -626,19 +636,19 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
             (*::core::mem::transmute::<&[u8; 28], &[c_char; 28]>(b"dav1d_parse_sequence_header\0"))
                 .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     let mut s = Rav1dSettings::default();
     s.n_threads = 1 as c_int;
     s.logger.callback = None;
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
     res = rav1d_open(&mut c, &mut s);
-    if res < 0 {
+    if res.is_err() {
         return res;
     }
     if !ptr.is_null() {
         res = rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void);
-        if res < 0 {
+        if res.is_err() {
             current_block = 10647346020414903899;
         } else {
             current_block = 5399440093318478209;
@@ -654,11 +664,11 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
             }
             _ => {
                 if buf.sz > 0 {
-                    res = rav1d_parse_obus(c, &mut buf, 1 as c_int);
-                    if res < 0 {
+                    let res = rav1d_parse_obus(c, &mut buf, 1 as c_int);
+                    let Ok(res) = res else {
                         current_block = 10647346020414903899;
                         continue;
-                    }
+                    };
                     if !(res as usize <= buf.sz) {
                         unreachable!();
                     }
@@ -666,7 +676,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
                     buf.data = (buf.data).offset(res as isize);
                     current_block = 5399440093318478209;
                 } else if ((*c).seq_hdr).is_null() {
-                    res = -(2 as c_int);
+                    res = Err(ENOENT);
                     current_block = 10647346020414903899;
                 } else {
                     memcpy(
@@ -674,7 +684,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
                         (*c).seq_hdr as *const c_void,
                         ::core::mem::size_of::<Dav1dSequenceHeader>(),
                     );
-                    res = 0 as c_int;
+                    res = Ok(());
                     current_block = 10647346020414903899;
                 }
             }
@@ -689,11 +699,11 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     out: *mut Dav1dSequenceHeader,
     ptr: *const u8,
     sz: usize,
-) -> c_int {
+) -> Dav1dResult {
     let mut out_rust = out.read().into();
     let result = rav1d_parse_sequence_header(&mut out_rust, ptr, sz);
     out.write(out_rust.into());
-    result
+    result.into()
 }
 
 unsafe fn has_grain(pic: *const Rav1dPicture) -> c_int {
@@ -705,8 +715,8 @@ unsafe fn has_grain(pic: *const Rav1dPicture) -> c_int {
         as c_int;
 }
 
-unsafe fn output_image(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> c_int {
-    let mut res = 0;
+unsafe fn output_image(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> Rav1dResult {
+    let mut res = Ok(());
     let in_0: *mut Rav1dThreadPicture = if (*c).all_layers != 0 || (*c).max_spatial_id == 0 {
         &mut (*c).out
     } else {
@@ -726,7 +736,7 @@ unsafe fn output_image(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> c_int {
 }
 
 unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) -> c_int {
-    if (*c).cached_error != 0 {
+    if (*c).cached_error.is_err() {
         return 1 as c_int;
     }
     if (*c).all_layers == 0 && (*c).max_spatial_id != 0 {
@@ -753,7 +763,7 @@ unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) ->
     return !((*c).out.p.data[0]).is_null() as c_int;
 }
 
-unsafe extern "C" fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> c_int {
+unsafe fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> Rav1dResult {
     let mut drain_count: c_uint = 0 as c_int as c_uint;
     let mut drained = 0;
     loop {
@@ -805,8 +815,8 @@ unsafe extern "C" fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture)
         }
         pthread_mutex_unlock(&mut (*c).task_thread.lock);
         let error = (*f).task_thread.retval;
-        if error != 0 {
-            (*f).task_thread.retval = 0 as c_int;
+        if error.is_err() {
+            (*f).task_thread.retval = Ok(());
             rav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*out_delayed).p.m);
             rav1d_thread_picture_unref(out_delayed);
             return error;
@@ -837,40 +847,39 @@ unsafe extern "C" fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture)
     if output_picture_ready(c, 1 as c_int) != 0 {
         return output_image(c, out);
     }
-    return -(11 as c_int);
+    return Err(EAGAIN);
 }
 
-unsafe fn gen_picture(c: *mut Rav1dContext) -> c_int {
+unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
     let mut res;
     let in_0: *mut Rav1dData = &mut (*c).in_0;
     if output_picture_ready(c, 0 as c_int) != 0 {
-        return 0 as c_int;
+        return Ok(());
     }
     while (*in_0).sz > 0 {
         res = rav1d_parse_obus(c, in_0, 0 as c_int);
-        if res < 0 {
-            rav1d_data_unref_internal(in_0);
-        } else {
-            if !(res as usize <= (*in_0).sz) {
-                unreachable!();
-            }
-            (*in_0).sz = ((*in_0).sz as c_ulong).wrapping_sub(res as c_ulong) as usize as usize;
-            (*in_0).data = ((*in_0).data).offset(res as isize);
-            if (*in_0).sz == 0 {
-                rav1d_data_unref_internal(in_0);
+        match res {
+            Err(_) => rav1d_data_unref_internal(in_0),
+            Ok(res) => {
+                if !(res as usize <= (*in_0).sz) {
+                    unreachable!();
+                }
+                (*in_0).sz = ((*in_0).sz as c_ulong).wrapping_sub(res as c_ulong) as usize as usize;
+                (*in_0).data = ((*in_0).data).offset(res as isize);
+                if (*in_0).sz == 0 {
+                    rav1d_data_unref_internal(in_0);
+                }
             }
         }
         if output_picture_ready(c, 0 as c_int) != 0 {
             break;
         }
-        if res < 0 {
-            return res;
-        }
+        res?;
     }
-    return 0 as c_int;
+    Ok(())
 }
 
-pub(crate) unsafe fn rav1d_send_data(c: *mut Rav1dContext, in_0: *mut Rav1dData) -> c_int {
+pub(crate) unsafe fn rav1d_send_data(c: *mut Rav1dContext, in_0: *mut Rav1dData) -> Rav1dResult {
     if c.is_null() {
         fprintf(
             stderr,
@@ -878,7 +887,7 @@ pub(crate) unsafe fn rav1d_send_data(c: *mut Rav1dContext, in_0: *mut Rav1dData)
             b"c != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 16], &[c_char; 16]>(b"dav1d_send_data\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if in_0.is_null() {
         fprintf(
@@ -887,7 +896,7 @@ pub(crate) unsafe fn rav1d_send_data(c: *mut Rav1dContext, in_0: *mut Rav1dData)
             b"in != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 16], &[c_char; 16]>(b"dav1d_send_data\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if !(((*in_0).data).is_null() || (*in_0).sz != 0) {
         fprintf(
@@ -896,31 +905,37 @@ pub(crate) unsafe fn rav1d_send_data(c: *mut Rav1dContext, in_0: *mut Rav1dData)
             b"in->data == NULL || in->sz\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 16], &[c_char; 16]>(b"dav1d_send_data\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if !((*in_0).data).is_null() {
         (*c).drain = 0 as c_int;
     }
     if !((*c).in_0.data).is_null() {
-        return -(11 as c_int);
+        return Err(EAGAIN);
     }
     rav1d_data_ref(&mut (*c).in_0, in_0);
     let res = gen_picture(c);
-    if res == 0 {
+    if res.is_ok() {
         rav1d_data_unref_internal(in_0);
     }
     return res;
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_send_data(c: *mut Rav1dContext, in_0: *mut Dav1dData) -> c_int {
+pub unsafe extern "C" fn dav1d_send_data(
+    c: *mut Rav1dContext,
+    in_0: *mut Dav1dData,
+) -> Dav1dResult {
     let mut in_rust = in_0.read().into();
     let result = rav1d_send_data(c, &mut in_rust);
     in_0.write(in_rust.into());
-    result
+    result.into()
 }
 
-pub(crate) unsafe fn rav1d_get_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> c_int {
+pub(crate) unsafe fn rav1d_get_picture(
+    c: *mut Rav1dContext,
+    out: *mut Rav1dPicture,
+) -> Rav1dResult {
     if c.is_null() {
         fprintf(
             stderr,
@@ -928,7 +943,7 @@ pub(crate) unsafe fn rav1d_get_picture(c: *mut Rav1dContext, out: *mut Rav1dPict
             b"c != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_get_picture\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if out.is_null() {
         fprintf(
@@ -937,17 +952,17 @@ pub(crate) unsafe fn rav1d_get_picture(c: *mut Rav1dContext, out: *mut Rav1dPict
             b"out != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_get_picture\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     let drain = (*c).drain;
     (*c).drain = 1 as c_int;
     let res = gen_picture(c);
-    if res < 0 {
+    if res.is_err() {
         return res;
     }
-    if (*c).cached_error != 0 {
+    if (*c).cached_error.is_err() {
         let res_0 = (*c).cached_error;
-        (*c).cached_error = 0 as c_int;
+        (*c).cached_error = Ok(());
         return res_0;
     }
     if output_picture_ready(c, ((*c).n_fc == 1 as c_uint) as c_int) != 0 {
@@ -956,11 +971,14 @@ pub(crate) unsafe fn rav1d_get_picture(c: *mut Rav1dContext, out: *mut Rav1dPict
     if (*c).n_fc > 1 as c_uint && drain != 0 {
         return drain_picture(c, out);
     }
-    return -(11 as c_int);
+    return Err(EAGAIN);
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> c_int {
+pub unsafe extern "C" fn dav1d_get_picture(
+    c: *mut Dav1dContext,
+    out: *mut Dav1dPicture,
+) -> Dav1dResult {
     if let Some(mut seq_hdr_ref) = NonNull::new((*out).seq_hdr_ref) {
         (*seq_hdr_ref
             .as_mut()
@@ -985,14 +1003,14 @@ pub unsafe extern "C" fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1d
     let mut out_rust = out.read().into();
     let result = rav1d_get_picture(c, &mut out_rust);
     out.write(out_rust.into());
-    result
+    result.into()
 }
 
 pub(crate) unsafe fn rav1d_apply_grain(
     c: *mut Rav1dContext,
     out: *mut Rav1dPicture,
     in_0: *const Rav1dPicture,
-) -> c_int {
+) -> Rav1dResult {
     if c.is_null() {
         fprintf(
             stderr,
@@ -1000,7 +1018,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
             b"c != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"rav1d_apply_grain\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if out.is_null() {
         fprintf(
@@ -1009,7 +1027,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
             b"out != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"rav1d_apply_grain\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if in_0.is_null() {
         fprintf(
@@ -1018,14 +1036,14 @@ pub(crate) unsafe fn rav1d_apply_grain(
             b"in != NULL\0" as *const u8 as *const c_char,
             (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"rav1d_apply_grain\0")).as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if has_grain(in_0) == 0 {
         rav1d_picture_ref(out, in_0);
-        return 0 as c_int;
+        return Ok(());
     }
     let res = rav1d_picture_alloc_copy(c, out, (*in_0).p.w, in_0);
-    if res < 0 {
+    if res.is_err() {
         rav1d_picture_unref_internal(out);
         return res;
     } else {
@@ -1053,7 +1071,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
                 }
             }
         }
-        return 0 as c_int;
+        return Ok(());
     };
 }
 
@@ -1062,7 +1080,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     c: *mut Dav1dContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
-) -> c_int {
+) -> Dav1dResult {
     if let Some(mut seq_hdr_ref) = NonNull::new((*in_0).seq_hdr_ref) {
         (*seq_hdr_ref
             .as_mut()
@@ -1109,7 +1127,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     let in_rust = in_0.read().into();
     let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
     out.write(out_rust.into());
-    result
+    result.into()
 }
 
 pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
@@ -1121,7 +1139,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         rav1d_thread_picture_unref(&mut (*c).cache);
     }
     (*c).drain = 0 as c_int;
-    (*c).cached_error = 0 as c_int;
+    (*c).cached_error = Ok(());
     let mut i = 0;
     while i < 8 {
         if !((*c).refs[i as usize].p.p.frame_hdr).is_null() {
@@ -1196,9 +1214,10 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             }
             let f: *mut Rav1dFrameContext =
                 &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
-            rav1d_decode_frame_exit(&mut *f, -(1 as c_int));
+            // TODO(kkysen) Why was this `-1` in C? All others use `DAV1D_ERR(E*)`.
+            rav1d_decode_frame_exit(&mut *f, Err(EPERM));
             (*f).n_tile_data = 0 as c_int;
-            (*f).task_thread.retval = 0 as c_int;
+            (*f).task_thread.retval = Ok(());
             let out_delayed: *mut Rav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
                 .offset(next as isize)
                 as *mut Rav1dThreadPicture;
@@ -1368,7 +1387,7 @@ unsafe fn close_internal(c_out: *mut *mut Rav1dContext, flush: c_int) {
 pub(crate) unsafe fn rav1d_get_event_flags(
     c: *mut Rav1dContext,
     flags: *mut Rav1dEventFlags,
-) -> c_int {
+) -> Rav1dResult {
     if c.is_null() {
         fprintf(
             stderr,
@@ -1377,7 +1396,7 @@ pub(crate) unsafe fn rav1d_get_event_flags(
             (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_event_flags\0"))
                 .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if flags.is_null() {
         fprintf(
@@ -1387,25 +1406,25 @@ pub(crate) unsafe fn rav1d_get_event_flags(
             (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_event_flags\0"))
                 .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     *flags = (*c).event_flags;
     (*c).event_flags = 0 as Dav1dEventFlags;
-    return 0 as c_int;
+    Ok(())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_event_flags(
     c: *mut Dav1dContext,
     flags: *mut Dav1dEventFlags,
-) -> c_int {
-    rav1d_get_event_flags(c, flags)
+) -> Dav1dResult {
+    rav1d_get_event_flags(c, flags).into()
 }
 
 pub(crate) unsafe fn rav1d_get_decode_error_data_props(
     c: *mut Rav1dContext,
     out: *mut Rav1dDataProps,
-) -> c_int {
+) -> Rav1dResult {
     if c.is_null() {
         fprintf(
             stderr,
@@ -1416,7 +1435,7 @@ pub(crate) unsafe fn rav1d_get_decode_error_data_props(
             ))
             .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     if out.is_null() {
         fprintf(
@@ -1428,23 +1447,23 @@ pub(crate) unsafe fn rav1d_get_decode_error_data_props(
             ))
             .as_ptr(),
         );
-        return -(22 as c_int);
+        return Err(EINVAL);
     }
     rav1d_data_props_unref_internal(out);
     *out = (*c).cached_error_props.clone();
     rav1d_data_props_set_defaults(&mut (*c).cached_error_props);
-    return 0 as c_int;
+    Ok(())
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     c: *mut Dav1dContext,
     out: *mut Dav1dDataProps,
-) -> c_int {
+) -> Dav1dResult {
     let mut out_rust = out.read().into();
     let result = rav1d_get_decode_error_data_props(c, &mut out_rust);
     out.write(out_rust.into());
-    result
+    result.into()
 }
 
 pub(crate) unsafe fn rav1d_picture_unref(p: *mut Rav1dPicture) {
@@ -1476,7 +1495,7 @@ pub(crate) unsafe fn rav1d_data_wrap(
     sz: usize,
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     user_data: *mut c_void,
-) -> c_int {
+) -> Rav1dResult {
     return rav1d_data_wrap_internal(buf, ptr, sz, free_callback, user_data);
 }
 
@@ -1487,11 +1506,11 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     sz: usize,
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     user_data: *mut c_void,
-) -> c_int {
+) -> Dav1dResult {
     let mut buf_rust = buf.read().into();
     let result = rav1d_data_wrap(&mut buf_rust, ptr, sz, free_callback, user_data);
     buf.write(buf_rust.into());
-    result
+    result.into()
 }
 
 pub(crate) unsafe fn rav1d_data_wrap_user_data(
@@ -1499,7 +1518,7 @@ pub(crate) unsafe fn rav1d_data_wrap_user_data(
     user_data: *const u8,
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     cookie: *mut c_void,
-) -> c_int {
+) -> Rav1dResult {
     return rav1d_data_wrap_user_data_internal(buf, user_data, free_callback, cookie);
 }
 
@@ -1509,11 +1528,11 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     user_data: *const u8,
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     cookie: *mut c_void,
-) -> c_int {
+) -> Dav1dResult {
     let mut buf_rust = buf.read().into();
     let result = rav1d_data_wrap_user_data(&mut buf_rust, user_data, free_callback, cookie);
     buf.write(buf_rust.into());
-    result
+    result.into()
 }
 
 pub(crate) unsafe fn rav1d_data_unref(buf: *mut Rav1dData) {

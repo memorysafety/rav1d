@@ -9,6 +9,10 @@ use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::decode::rav1d_decode_frame_init;
 use crate::src::decode::rav1d_decode_frame_init_cdf;
 use crate::src::decode::rav1d_decode_tile_sbrow;
+use crate::src::error::Rav1dError::EINVAL;
+use crate::src::error::Rav1dError::ENOMEM;
+use crate::src::error::Rav1dError::EPERM;
+use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTask;
@@ -434,7 +438,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     f: *mut Rav1dFrameContext,
     pass: c_int,
     _cond_signal: c_int,
-) -> c_int {
+) -> Rav1dResult {
     let mut tasks: *mut Rav1dTask = (*f).task_thread.tile_tasks[0];
     let uses_2pass = ((*(*f).c).n_fc > 1 as c_uint) as c_int;
     let num_tasks = (*(*f).frame_hdr).tiling.cols * (*(*f).frame_hdr).tiling.rows;
@@ -445,7 +449,8 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
                 (::core::mem::size_of::<Rav1dTask>()).wrapping_mul(alloc_num_tasks as usize);
             tasks = realloc((*f).task_thread.tile_tasks[0] as *mut c_void, size) as *mut Rav1dTask;
             if tasks.is_null() {
-                return -(1 as c_int);
+                // TODO(kkysen) Why was this `-1` in C? All others use `DAV1D_ERR(E*)`.
+                return Err(EPERM);
             }
             memset(tasks as *mut c_void, 0 as c_int, size);
             (*f).task_thread.tile_tasks[0] = tasks;
@@ -456,7 +461,8 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     tasks = tasks.offset((num_tasks * (pass & 1)) as isize);
     let mut pf_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
     if create_filter_sbrow(f, pass, &mut pf_t) != 0 {
-        return -(1 as c_int);
+        // TODO(kkysen) Why was this `-1` in C? All others use `DAV1D_ERR(E*)`.
+        return Err(EPERM);
     }
     let mut prev_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
     let mut tile_idx = 0;
@@ -509,7 +515,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.pending_tasks.merge, 1 as c_int);
     ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.init_done, 1 as c_int);
     pthread_mutex_unlock(&mut (*f).task_thread.pending_tasks.lock);
-    return 0 as c_int;
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_task_frame_init(f: *mut Rav1dFrameContext) {
@@ -677,10 +683,10 @@ unsafe fn get_frame_progress(c: *const Rav1dContext, f: *const Rav1dFrameContext
 }
 
 #[inline]
-unsafe fn abort_frame(f: *mut Rav1dFrameContext, error: c_int) {
+unsafe fn abort_frame(f: *mut Rav1dFrameContext, error: Rav1dResult) {
     ::core::intrinsics::atomic_store_seqcst(
         &mut (*f).task_thread.error,
-        if error == -(22 as c_int) {
+        if error == Err(EINVAL) {
             1 as c_int
         } else {
             -(1 as c_int)
@@ -1187,9 +1193,12 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     } else {
                                         1 as c_int as c_uint
                                     }) as c_int;
-                                    if res != 0 || p1_3 == TILE_ERROR {
+                                    if res.is_err() || p1_3 == TILE_ERROR {
                                         pthread_mutex_lock(&mut (*ttd).lock);
-                                        abort_frame(f, if res != 0 { res } else { -(22 as c_int) });
+                                        abort_frame(
+                                            f,
+                                            if res.is_err() { res } else { Err(EINVAL) },
+                                        );
                                         reset_task_cur(c, ttd, (*t).frame_idx);
                                         continue 's_18;
                                     } else {
@@ -1206,7 +1215,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     if !((*c).n_fc > 1 as c_uint) {
                                         unreachable!();
                                     }
-                                    let mut res_0 = -(22 as c_int);
+                                    let mut res_0 = Err(EINVAL);
                                     if ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
@@ -1218,11 +1227,15 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     {
                                         ::core::intrinsics::atomic_store_seqcst(
                                             (*f).out_cdf.progress,
-                                            (if res_0 < 0 { TILE_ERROR } else { 1 as c_int })
+                                            (if res_0.is_err() {
+                                                TILE_ERROR
+                                            } else {
+                                                1 as c_int
+                                            })
                                                 as c_uint,
                                         );
                                     }
-                                    if res_0 == 0 {
+                                    if res_0.is_ok() {
                                         if !((*c).n_fc > 1 as c_uint) {
                                             unreachable!();
                                         }
@@ -1230,7 +1243,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         while p_0 <= 2 {
                                             let res_1 =
                                                 rav1d_task_create_tile_sbrow(f, p_0, 0 as c_int);
-                                            if res_1 != 0 {
+                                            if res_1.is_err() {
                                                 pthread_mutex_lock(&mut (*ttd).lock);
                                                 ::core::intrinsics::atomic_store_seqcst(
                                                     &mut *((*f).task_thread.done)
@@ -1270,10 +1283,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                     {
                                                         unreachable!();
                                                     }
-                                                    rav1d_decode_frame_exit(
-                                                        &mut *f,
-                                                        -(12 as c_int),
-                                                    );
+                                                    rav1d_decode_frame_exit(&mut *f, Err(ENOMEM));
                                                     (*f).n_tile_data = 0 as c_int;
                                                     pthread_cond_signal(&mut (*f).task_thread.cond);
                                                 } else {
@@ -1417,11 +1427,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             rav1d_decode_frame_exit(
                                                 &mut *f,
                                                 if error_0 == 1 {
-                                                    -(22 as c_int)
+                                                    Err(EINVAL)
                                                 } else if error_0 != 0 {
-                                                    -(12 as c_int)
+                                                    Err(ENOMEM)
                                                 } else {
-                                                    0 as c_int
+                                                    Ok(())
                                                 },
                                             );
                                             (*f).n_tile_data = 0 as c_int;
@@ -1672,11 +1682,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     rav1d_decode_frame_exit(
                                         &mut *f,
                                         if error_0 == 1 {
-                                            -(22 as c_int)
+                                            Err(EINVAL)
                                         } else if error_0 != 0 {
-                                            -(12 as c_int)
+                                            Err(ENOMEM)
                                         } else {
-                                            0 as c_int
+                                            Ok(())
                                         },
                                     );
                                     (*f).n_tile_data = 0 as c_int;
@@ -1737,11 +1747,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     rav1d_decode_frame_exit(
                                         &mut *f,
                                         if error_0 == 1 {
-                                            -(22 as c_int)
+                                            Err(EINVAL)
                                         } else if error_0 != 0 {
-                                            -(12 as c_int)
+                                            Err(ENOMEM)
                                         } else {
-                                            0 as c_int
+                                            Ok(())
                                         },
                                     );
                                     (*f).n_tile_data = 0 as c_int;

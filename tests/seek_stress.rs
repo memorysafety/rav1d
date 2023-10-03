@@ -107,7 +107,7 @@ unsafe fn xor128_rand() -> c_int {
 unsafe fn decode_frame(p: *mut Dav1dPicture, c: *mut Dav1dContext, data: *mut Dav1dData) -> c_int {
     let mut res: c_int;
     libc::memset(p as *mut c_void, 0, ::core::mem::size_of::<Dav1dPicture>());
-    res = dav1d_send_data(c, data);
+    res = dav1d_send_data(c, data).0;
     if res < 0 {
         if res != -11 {
             libc::fprintf(
@@ -118,7 +118,7 @@ unsafe fn decode_frame(p: *mut Dav1dPicture, c: *mut Dav1dContext, data: *mut Da
             return res;
         }
     }
-    res = dav1d_get_picture(c, p);
+    res = dav1d_get_picture(c, p).0;
     if res < 0 {
         if res != -(11 as c_int) {
             libc::fprintf(
@@ -325,7 +325,7 @@ unsafe fn seek(
         if res != 0 {
             break;
         }
-        if !(dav1d_parse_sequence_header(&mut seq, (*data).data, (*data).sz) != 0) {
+        if !(dav1d_parse_sequence_header(&mut seq, (*data).data, (*data).sz).0 != 0) {
             break;
         }
     }
@@ -424,7 +424,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     {
         return libc::EXIT_SUCCESS;
     }
-    if dav1d_open(&mut c, &mut lib_settings) != 0 {
+    if dav1d_open(&mut c, &mut lib_settings).0 != 0 {
         return libc::EXIT_FAILURE;
     }
     timebase = i_timebase[1] as c_double / i_timebase[0] as c_double;

@@ -114,6 +114,8 @@ pub mod src {
 
 use std::ffi::c_int;
 
+pub use src::error::Dav1dResult;
+
 // NOTE: temporary code to support Linux and macOS, should be removed eventually
 cfg_if::cfg_if! {
     if #[cfg(target_os = "linux")] {

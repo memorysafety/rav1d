@@ -19,6 +19,10 @@ use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::data::rav1d_data_props_copy;
 use crate::src::data::rav1d_data_props_set_defaults;
+use crate::src::error::Dav1dResult;
+use crate::src::error::Rav1dError::ENOMEM;
+use crate::src::error::Rav1dError::EPERM;
+use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::log::rav1d_log;
@@ -68,7 +72,7 @@ pub(crate) struct pic_ctx_context {
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p: *mut Dav1dPicture,
     cookie: *mut c_void,
-) -> c_int {
+) -> Dav1dResult {
     if !(::core::mem::size_of::<Rav1dMemPoolBuffer>() as c_ulong <= 64 as c_ulong) {
         unreachable!();
     }
@@ -103,7 +107,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
             .wrapping_sub(::core::mem::size_of::<Rav1dMemPoolBuffer>()),
     );
     if buf.is_null() {
-        return -(12 as c_int);
+        return Rav1dResult::<()>::Err(ENOMEM).into();
     }
     (*p).allocator_data = buf as *mut c_void;
     let data: *mut u8 = (*buf).data as *mut u8;
@@ -118,7 +122,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     } else {
         0 as *mut u8
     }) as *mut c_void;
-    return 0 as c_int;
+    Rav1dResult::Ok(()).into()
 }
 
 pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut c_void) {
@@ -164,13 +168,14 @@ unsafe fn picture_alloc_with_edges(
     p_allocator: *mut Rav1dPicAllocator,
     extra: usize,
     extra_ptr: *mut *mut c_void,
-) -> c_int {
+) -> Rav1dResult {
     if !((*p).data[0]).is_null() {
         rav1d_log(
             c,
             b"Picture already allocated!\n\0" as *const u8 as *const c_char,
         );
-        return -(1 as c_int);
+        // TODO(kkysen) Why was this `-1` in C? All others use `DAV1D_ERR(E*)`.
+        return Err(EPERM);
     }
     if !(bpc > 0 && bpc <= 16) {
         unreachable!();
@@ -179,7 +184,7 @@ unsafe fn picture_alloc_with_edges(
         malloc(extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>()))
             as *mut pic_ctx_context;
     if pic_ctx.is_null() {
-        return -(12 as c_int);
+        return Err(ENOMEM);
     }
     (*p).p.w = w;
     (*p).p.h = h;
@@ -195,7 +200,7 @@ unsafe fn picture_alloc_with_edges(
     (*p).frame_hdr_ref = frame_hdr_ref;
     (*p).itut_t35_ref = itut_t35_ref;
     let res = (*p_allocator).alloc_picture(p);
-    if res < 0 {
+    if res.is_err() {
         free(pic_ctx as *mut c_void);
         return res;
     }
@@ -214,7 +219,7 @@ unsafe fn picture_alloc_with_edges(
             b"Failed to wrap picture: %s\n\0" as *const u8 as *const c_char,
             strerror(*errno_location()),
         );
-        return -(12 as c_int);
+        return Err(ENOMEM);
     }
     if !seq_hdr_ref.is_null() {
         rav1d_ref_inc(seq_hdr_ref);
@@ -237,14 +242,14 @@ unsafe fn picture_alloc_with_edges(
     if !itut_t35_ref.is_null() {
         rav1d_ref_inc(itut_t35_ref);
     }
-    return 0 as c_int;
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
     c: *mut Rav1dContext,
     f: *mut Rav1dFrameContext,
     bpc: c_int,
-) -> c_int {
+) -> Rav1dResult {
     let p: *mut Rav1dThreadPicture = &mut (*f).sr_cur;
     let have_frame_mt = ((*c).n_fc > 1 as c_uint) as c_int;
     let res = picture_alloc_with_edges(
@@ -272,7 +277,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         },
         &mut (*p).progress as *mut *mut atomic_uint as *mut *mut c_void,
     );
-    if res != 0 {
+    if res.is_err() {
         return res;
     }
     rav1d_ref_dec(&mut (*c).itut_t35_ref);
@@ -300,7 +305,7 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     dst: *mut Rav1dPicture,
     w: c_int,
     src: *const Rav1dPicture,
-) -> c_int {
+) -> Rav1dResult {
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
     let res = picture_alloc_with_edges(
         c,

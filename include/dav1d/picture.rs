@@ -11,6 +11,8 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
+use crate::src::error::Dav1dResult;
+use crate::src::error::Rav1dResult;
 use crate::src::r#ref::Rav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
@@ -268,7 +270,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
 pub struct Dav1dPicAllocator {
     pub cookie: *mut c_void,
     pub alloc_picture_callback:
-        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> c_int>,
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> Dav1dResult>,
     pub release_picture_callback:
         Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> ()>,
 }
@@ -278,7 +280,7 @@ pub struct Dav1dPicAllocator {
 pub(crate) struct Rav1dPicAllocator {
     pub cookie: *mut c_void,
     pub alloc_picture_callback:
-        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> c_int>,
+        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> Dav1dResult>,
     pub release_picture_callback:
         Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> ()>,
 }
@@ -314,13 +316,13 @@ impl From<Rav1dPicAllocator> for Dav1dPicAllocator {
 }
 
 impl Rav1dPicAllocator {
-    pub unsafe fn alloc_picture(&mut self, p: *mut Rav1dPicture) -> c_int {
+    pub unsafe fn alloc_picture(&mut self, p: *mut Rav1dPicture) -> Rav1dResult {
         let mut p_c = p.read().into();
         let result = self
             .alloc_picture_callback
             .expect("non-null function pointer")(&mut p_c, self.cookie);
         p.write(p_c.into());
-        result
+        result.try_into().unwrap()
     }
 
     pub unsafe fn release_picture(&mut self, p: *mut Rav1dPicture) {

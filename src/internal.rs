@@ -21,6 +21,7 @@ use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
 use crate::src::env::BlockContext;
+use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeFlags;
@@ -211,7 +212,7 @@ pub struct Rav1dContext {
     pub(crate) frame_flags: PictureFlags,
     pub(crate) event_flags: Rav1dEventFlags,
     pub(crate) cached_error_props: Rav1dDataProps,
-    pub(crate) cached_error: c_int,
+    pub(crate) cached_error: Rav1dResult,
     pub(crate) logger: Rav1dLogger,
     pub(crate) picture_pool: *mut Rav1dMemPool,
 }
@@ -353,7 +354,7 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub num_tile_tasks: c_int,
     pub init_done: atomic_int,
     pub done: [atomic_int; 2],
-    pub retval: c_int,
+    pub retval: Rav1dResult,
     pub update_set: bool,
     pub error: atomic_int,
     pub task_counter: atomic_int,
