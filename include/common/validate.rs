@@ -27,30 +27,56 @@ macro_rules! func_name {
 
 pub(crate) use func_name;
 
-macro_rules! validate_input {
-    ($condition:expr, $error:expr, $block:block) => {{
-        match $condition {
-            true => Ok(()),
-            false => {
-                let func_name = $crate::include::common::validate::func_name!();
-                eprintln!(
-                    "Input validation check '{}' failed in {}!",
-                    stringify!($condition),
-                    func_name
-                );
-                $block;
-                $crate::include::common::validate::debug_abort();
-                Err($error)
-            }
+pub trait ValidatedIntoResult<T, E> {
+    fn into_result(self) -> Result<T, E>;
+}
+
+impl<T, E> ValidatedIntoResult<T, E> for Result<T, E> {
+    fn into_result(self) -> Result<T, E> {
+        self
+    }
+}
+
+impl<E> ValidatedIntoResult<(), E> for (bool, E) {
+    fn into_result(self) -> Result<(), E> {
+        let (ok, e) = self;
+        if ok {
+            Ok(())
+        } else {
+            Err(e)
         }
+    }
+}
+
+impl ValidatedIntoResult<(), ()> for bool {
+    fn into_result(self) -> Result<(), ()> {
+        (self, ()).into_result()
+    }
+}
+
+macro_rules! validate_input {
+    ($condition:expr, $block:block) => {{
+        use $crate::include::common::validate::debug_abort;
+        use $crate::include::common::validate::func_name;
+        use $crate::include::common::validate::ValidatedIntoResult;
+
+        // Needs to be outside of the closure.
+        let func_name = func_name!();
+
+        $condition.into_result().map_err(|e| {
+            eprintln!(
+                "Input validation check '{}' failed in {}!",
+                stringify!($condition),
+                func_name,
+            );
+            $block;
+            debug_abort();
+            e
+        })
     }};
 
-    ($condition:expr, $error:expr) => {
-        validate_input!($condition, $error, {})
-    };
-
     ($condition:expr) => {
-        validate_input!($condition, ())
+        validate_input!($condition, {})
     };
 }
 
