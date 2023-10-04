@@ -329,61 +329,49 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     return res;
 }
 
-pub(crate) unsafe fn rav1d_picture_ref(dst: *mut Rav1dPicture, src: *const Rav1dPicture) {
-    if validate_input!(!dst.is_null()).is_err() {
+pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {
+    if validate_input!(dst.data[0].is_null()).is_err() {
         return;
     }
-    if validate_input!((*dst).data[0].is_null()).is_err() {
-        return;
-    }
-    if validate_input!(!src.is_null()).is_err() {
-        return;
-    }
-    if !((*src).r#ref).is_null() {
-        if validate_input!(!(*src).data[0].is_null()).is_err() {
+    if !src.r#ref.is_null() {
+        if validate_input!(!src.data[0].is_null()).is_err() {
             return;
         }
-        rav1d_ref_inc((*src).r#ref);
+        rav1d_ref_inc(src.r#ref);
     }
-    if !((*src).frame_hdr_ref).is_null() {
-        rav1d_ref_inc((*src).frame_hdr_ref);
+    if !src.frame_hdr_ref.is_null() {
+        rav1d_ref_inc(src.frame_hdr_ref);
     }
-    if !((*src).seq_hdr_ref).is_null() {
-        rav1d_ref_inc((*src).seq_hdr_ref);
+    if !src.seq_hdr_ref.is_null() {
+        rav1d_ref_inc(src.seq_hdr_ref);
     }
-    if !((*src).m.user_data.r#ref).is_null() {
-        rav1d_ref_inc((*src).m.user_data.r#ref);
+    if !src.m.user_data.r#ref.is_null() {
+        rav1d_ref_inc(src.m.user_data.r#ref);
     }
-    if !((*src).content_light_ref).is_null() {
-        rav1d_ref_inc((*src).content_light_ref);
+    if !src.content_light_ref.is_null() {
+        rav1d_ref_inc(src.content_light_ref);
     }
-    if !((*src).mastering_display_ref).is_null() {
-        rav1d_ref_inc((*src).mastering_display_ref);
+    if !src.mastering_display_ref.is_null() {
+        rav1d_ref_inc(src.mastering_display_ref);
     }
-    if !((*src).itut_t35_ref).is_null() {
-        rav1d_ref_inc((*src).itut_t35_ref);
+    if !src.itut_t35_ref.is_null() {
+        rav1d_ref_inc(src.itut_t35_ref);
     }
-    *dst = (*src).clone();
+    *dst = src.clone();
 }
 
-pub(crate) unsafe fn rav1d_picture_move_ref(dst: *mut Rav1dPicture, src: *mut Rav1dPicture) {
-    if validate_input!(!dst.is_null()).is_err() {
+pub(crate) unsafe fn rav1d_picture_move_ref(dst: &mut Rav1dPicture, src: &mut Rav1dPicture) {
+    if validate_input!(dst.data[0].is_null()).is_err() {
         return;
     }
-    if validate_input!((*dst).data[0].is_null()).is_err() {
-        return;
-    }
-    if validate_input!(!src.is_null()).is_err() {
-        return;
-    }
-    if !((*src).r#ref).is_null() {
-        if validate_input!(!(*src).data[0].is_null()).is_err() {
+    if !src.r#ref.is_null() {
+        if validate_input!(!src.data[0].is_null()).is_err() {
             return;
         }
     }
-    *dst = (*src).clone();
+    *dst = src.clone();
     memset(
-        src as *mut c_void,
+        src as *mut _ as *mut c_void,
         0 as c_int,
         ::core::mem::size_of::<Rav1dPicture>(),
     );
