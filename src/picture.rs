@@ -404,28 +404,25 @@ pub(crate) unsafe fn rav1d_thread_picture_move_ref(
     );
 }
 
-pub(crate) unsafe fn rav1d_picture_unref_internal(p: *mut Rav1dPicture) {
-    if validate_input!(!p.is_null()).is_err() {
-        return;
-    }
-    if !((*p).r#ref).is_null() {
-        if validate_input!(!(*p).data[0].is_null()).is_err() {
+pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
+    if !p.r#ref.is_null() {
+        if validate_input!(!p.data[0].is_null()).is_err() {
             return;
         }
-        rav1d_ref_dec(&mut (*p).r#ref);
+        rav1d_ref_dec(&mut p.r#ref);
     }
-    rav1d_ref_dec(&mut (*p).seq_hdr_ref);
-    rav1d_ref_dec(&mut (*p).frame_hdr_ref);
-    rav1d_ref_dec(&mut (*p).m.user_data.r#ref);
-    rav1d_ref_dec(&mut (*p).content_light_ref);
-    rav1d_ref_dec(&mut (*p).mastering_display_ref);
-    rav1d_ref_dec(&mut (*p).itut_t35_ref);
+    rav1d_ref_dec(&mut p.seq_hdr_ref);
+    rav1d_ref_dec(&mut p.frame_hdr_ref);
+    rav1d_ref_dec(&mut p.m.user_data.r#ref);
+    rav1d_ref_dec(&mut p.content_light_ref);
+    rav1d_ref_dec(&mut p.mastering_display_ref);
+    rav1d_ref_dec(&mut p.itut_t35_ref);
     memset(
-        p as *mut c_void,
+        p as *mut _ as *mut c_void,
         0 as c_int,
         ::core::mem::size_of::<Dav1dPicture>(),
     );
-    rav1d_data_props_set_defaults(&mut (*p).m);
+    rav1d_data_props_set_defaults(&mut p.m);
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {

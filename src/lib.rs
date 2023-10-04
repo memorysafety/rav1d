@@ -1265,15 +1265,19 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     .into()
 }
 
-pub(crate) unsafe fn rav1d_picture_unref(p: *mut Rav1dPicture) {
+pub(crate) unsafe fn rav1d_picture_unref(p: &mut Rav1dPicture) {
     rav1d_picture_unref_internal(p);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
-    let mut p_rust = p.read().into();
+    if validate_input!(!p.is_null()).is_err() {
+        return;
+    }
+    let p = &mut *p;
+    let mut p_rust = p.clone().into();
     rav1d_picture_unref(&mut p_rust);
-    p.write(p_rust.into());
+    *p = p_rust.into();
 }
 
 pub(crate) unsafe fn rav1d_data_create(buf: *mut Rav1dData, sz: usize) -> *mut u8 {
