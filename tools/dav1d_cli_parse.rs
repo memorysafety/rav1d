@@ -593,7 +593,7 @@ pub unsafe fn parse(
             long_opts.as_ptr(),
             0 as *mut c_int,
         );
-        if !(o != -(1 as c_int)) {
+        if !(o != -1) {
             break;
         }
         match o {

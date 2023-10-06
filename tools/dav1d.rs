@@ -46,6 +46,8 @@ use libc::snprintf;
 use libc::strcmp;
 use libc::strcpy;
 use libc::strerror;
+use libc::EAGAIN;
+use libc::EINVAL;
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -527,27 +529,27 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         );
         res = dav1d_send_data(c, &mut data).0;
         if res < 0 {
-            if res != -(11 as c_int) {
+            if res != -EAGAIN {
                 dav1d_data_unref(&mut data);
                 fprintf(
                     stderr,
                     b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                     strerror(-res),
                 );
-                if res != -(22 as c_int) {
+                if res != -EINVAL {
                     break;
                 }
             }
         }
         res = dav1d_get_picture(c, &mut p).0;
         if res < 0 {
-            if res != -(11 as c_int) {
+            if res != -EAGAIN {
                 fprintf(
                     stderr,
                     b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                     strerror(-res),
                 );
-                if res != -(22 as c_int) {
+                if res != -EINVAL {
                     break;
                 }
             }
@@ -602,13 +604,13 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         while cli_settings.limit == 0 || n_out < cli_settings.limit {
             res = dav1d_get_picture(c, &mut p).0;
             if res < 0 {
-                if res != -(11 as c_int) {
+                if res != -EAGAIN {
                     fprintf(
                         stderr,
                         b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
                         strerror(-res),
                     );
-                    if res != -(22 as c_int) {
+                    if res != -EINVAL {
                         break;
                     }
                 } else {

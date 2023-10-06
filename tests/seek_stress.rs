@@ -29,6 +29,7 @@ use crate::input::input::input_open;
 use crate::input::input::input_read;
 use crate::input::input::input_seek;
 use crate::input::input::DemuxerContext;
+use libc::EAGAIN;
 use rav1d::include::dav1d::common::Dav1dDataProps;
 use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
@@ -109,7 +110,7 @@ unsafe fn decode_frame(p: *mut Dav1dPicture, c: *mut Dav1dContext, data: *mut Da
     libc::memset(p as *mut c_void, 0, ::core::mem::size_of::<Dav1dPicture>());
     res = dav1d_send_data(c, data).0;
     if res < 0 {
-        if res != -11 {
+        if res != -EAGAIN {
             libc::fprintf(
                 stderr,
                 b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
@@ -120,7 +121,7 @@ unsafe fn decode_frame(p: *mut Dav1dPicture, c: *mut Dav1dContext, data: *mut Da
     }
     res = dav1d_get_picture(c, p).0;
     if res < 0 {
-        if res != -(11 as c_int) {
+        if res != -EAGAIN {
             libc::fprintf(
                 stderr,
                 b"Error decoding frame: %s\n\0" as *const u8 as *const c_char,
@@ -460,7 +461,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                         break;
                     }
                     let sign: c_int = if xor128_rand() & 1 != 0 {
-                        -(1 as c_int)
+                        -1
                     } else {
                         1 as c_int
                     };

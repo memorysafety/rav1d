@@ -7,6 +7,7 @@ use libc::ftello;
 use libc::memcmp;
 use libc::ptrdiff_t;
 use libc::strerror;
+use libc::ENOMEM;
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::src::lib::dav1d_data_create;
@@ -89,7 +90,7 @@ unsafe extern "C" fn ivf_open(
             file,
             strerror(*errno_location()),
         );
-        return -(1 as c_int);
+        return -1;
     } else {
         if fread(hdr.as_mut_ptr() as *mut c_void, 32, 1, (*c).f) != 1 {
             fprintf(
@@ -98,7 +99,7 @@ unsafe extern "C" fn ivf_open(
                 strerror(*errno_location()),
             );
             fclose((*c).f);
-            return -(1 as c_int);
+            return -1;
         } else {
             if memcmp(
                 hdr.as_mut_ptr() as *const c_void,
@@ -118,7 +119,7 @@ unsafe extern "C" fn ivf_open(
                     hdr[3] as c_int,
                 );
                 fclose((*c).f);
-                return -(1 as c_int);
+                return -1;
             } else {
                 if memcmp(
                     &mut *hdr.as_mut_ptr().offset(8) as *mut u8 as *const c_void,
@@ -138,7 +139,7 @@ unsafe extern "C" fn ivf_open(
                         hdr[11] as c_int,
                     );
                     fclose((*c).f);
-                    return -(1 as c_int);
+                    return -1;
                 }
             }
         }
@@ -212,17 +213,17 @@ unsafe fn ivf_read_header(
         *off_ = off;
     }
     if fread(data.as_mut_ptr() as *mut c_void, 4, 1, (*c).f) != 1 {
-        return -(1 as c_int);
+        return -1;
     }
     *sz = rl32(data.as_mut_ptr()) as ptrdiff_t;
     if (*c).broken == 0 {
         if fread(data.as_mut_ptr() as *mut c_void, 8, 1, (*c).f) != 1 {
-            return -(1 as c_int);
+            return -1;
         }
         *ts = rl64(data.as_mut_ptr()) as u64;
     } else {
         if fseeko((*c).f, 8 as libc::off_t, 1 as c_int) != 0 {
-            return -(1 as c_int);
+            return -1;
         }
         *ts = if off > 32 {
             ((*c).last_ts).wrapping_add((*c).step)
@@ -239,11 +240,11 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> c
     let mut off: libc::off_t = 0;
     let mut ts: u64 = 0;
     if ivf_read_header(c, &mut sz, &mut off, &mut ts) != 0 {
-        return -(1 as c_int);
+        return -1;
     }
     ptr = dav1d_data_create(buf, sz as usize);
     if ptr.is_null() {
-        return -(1 as c_int);
+        return -1;
     }
     if fread(ptr as *mut c_void, sz as usize, 1, (*c).f) != 1 {
         fprintf(
@@ -252,7 +253,7 @@ unsafe extern "C" fn ivf_read(c: *mut IvfInputContext, buf: *mut Dav1dData) -> c
             strerror(*errno_location()),
         );
         dav1d_data_unref(buf);
-        return -(1 as c_int);
+        return -1;
     }
     (*buf).m.offset = off;
     (*buf).m.timestamp = ts as i64;
@@ -281,7 +282,7 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: u64) -> c_int {
                     b"Failed to seek: %s\n\0" as *const u8 as *const c_char,
                     strerror(*errno_location()),
                 );
-                return -(1 as c_int);
+                return -1;
             }
             _ => {
                 let mut sz: ptrdiff_t = 0;
@@ -290,7 +291,7 @@ unsafe extern "C" fn ivf_seek(c: *mut IvfInputContext, pts: u64) -> c_int {
                     continue;
                 }
                 if cur >= ts {
-                    if fseeko((*c).f, -(12 as c_int) as libc::off_t, 1 as c_int) != 0 {
+                    if fseeko((*c).f, -ENOMEM as libc::off_t, 1 as c_int) != 0 {
                         current_block = 679495355492430298;
                         continue;
                     }

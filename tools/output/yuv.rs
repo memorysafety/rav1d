@@ -61,7 +61,7 @@ unsafe extern "C" fn yuv_open(
                 file,
                 strerror(*errno_location()),
             );
-            return -(1 as c_int);
+            return -1;
         }
     }
     return 0 as c_int;
@@ -131,7 +131,7 @@ unsafe extern "C" fn yuv_write(c: *mut YuvOutputContext, p: *mut Dav1dPicture) -
         b"Failed to write frame data: %s\n\0" as *const u8 as *const c_char,
         strerror(*errno_location()),
     );
-    return -(1 as c_int);
+    return -1;
 }
 
 unsafe extern "C" fn yuv_close(c: *mut YuvOutputContext) {

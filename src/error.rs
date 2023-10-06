@@ -3,6 +3,7 @@ use std::ffi::c_uint;
 use strum::FromRepr;
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[repr(u8)]
 #[non_exhaustive]
 pub enum Rav1dError {
     /// This represents a generic `rav1d` error.
@@ -16,13 +17,13 @@ pub enum Rav1dError {
     /// which is more optimal since `0` is no error for [`Dav1dResult`].
     EGeneric = 1,
 
-    ENOENT = 2,
-    EIO = 5,
-    EAGAIN = 11,
-    ENOMEM = 12,
-    EINVAL = 22,
-    ERANGE = 34,
-    ENOPROTOOPT = 92,
+    ENOENT = libc::ENOENT as u8,
+    EIO = libc::EIO as u8,
+    EAGAIN = libc::EAGAIN as u8,
+    ENOMEM = libc::ENOMEM as u8,
+    EINVAL = libc::EINVAL as u8,
+    ERANGE = libc::ERANGE as u8,
+    ENOPROTOOPT = libc::ENOPROTOOPT as u8,
 }
 
 pub type Rav1dResult<T = ()> = Result<T, Rav1dError>;
@@ -39,7 +40,7 @@ impl From<Rav1dResult> for Dav1dResult {
         Dav1dResult(
             -(match value {
                 Ok(()) => 0,
-                Err(e) => e as u8 as c_int,
+                Err(e) => e as c_int,
             }),
         )
     }
@@ -50,7 +51,7 @@ impl From<Rav1dResult<c_uint>> for Dav1dResult {
     fn from(value: Rav1dResult<c_uint>) -> Self {
         Dav1dResult(match value {
             Ok(value) => value as c_int,
-            Err(e) => e as u8 as c_int,
+            Err(e) => e as c_int,
         })
     }
 }
