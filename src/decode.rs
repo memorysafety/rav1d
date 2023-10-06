@@ -4065,12 +4065,8 @@ unsafe fn read_restoration_info(
     }
 
     fn msac_decode_lr_subexp(ts: &mut Rav1dTileState, r#ref: i8, k: u32, adjustment: i8) -> i8 {
-        (rav1d_msac_decode_subexp(
-            &mut ts.msac,
-            (r#ref + adjustment) as libc::c_uint,
-            8 << k,
-            k,
-        ) - adjustment as libc::c_int) as i8
+        (rav1d_msac_decode_subexp(&mut ts.msac, (r#ref + adjustment) as c_uint, 8 << k, k)
+            - adjustment as c_int) as i8
     }
 
     if lr.r#type == RAV1D_RESTORATION_WIENER {
