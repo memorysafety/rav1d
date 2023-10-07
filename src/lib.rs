@@ -223,7 +223,7 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
         cmp::min(s.max_frame_delay as c_uint, n_tc)
     } else {
         if n_tc < 50 {
-            fc_lut[n_tc.wrapping_sub(1) as usize].into()
+            fc_lut[n_tc as usize - 1].into()
         } else {
             8
         }
