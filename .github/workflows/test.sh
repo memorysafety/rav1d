@@ -33,6 +33,7 @@ fi
 
 test_args=(
     --no-rebuild
+    --print-errorlogs
     --timeout-multiplier $timeout_multiplier
     --suite testdata-8
     --suite testdata-10
