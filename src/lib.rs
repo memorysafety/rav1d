@@ -1,5 +1,4 @@
 use crate::include::common::bitdepth::DynCoef;
-use crate::include::common::intops::iclip;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -215,11 +214,11 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
         1, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     ];
-    let n_tc = (if s.n_threads != 0 {
-        s.n_threads
+    let n_tc = if s.n_threads != 0 {
+        s.n_threads as c_uint
     } else {
-        iclip(rav1d_num_logical_processors() as c_int, 1, 256)
-    }) as c_uint;
+        rav1d_num_logical_processors().clamp(1, 256) as c_uint
+    };
     let n_fc = if s.max_frame_delay != 0 {
         cmp::min(s.max_frame_delay as c_uint, n_tc)
     } else {
