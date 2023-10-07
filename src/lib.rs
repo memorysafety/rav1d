@@ -210,10 +210,6 @@ struct NumThreads {
 
 #[cold]
 fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
-    static fc_lut: [u8; 49] = [
-        1, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
-        6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-    ];
     let n_tc = if s.n_threads != 0 {
         s.n_threads as c_uint
     } else {
@@ -222,11 +218,7 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
     let n_fc = if s.max_frame_delay != 0 {
         cmp::min(s.max_frame_delay as c_uint, n_tc)
     } else {
-        if n_tc < 50 {
-            fc_lut[n_tc as usize - 1].into()
-        } else {
-            8
-        }
+        cmp::min((n_tc as f64).sqrt().ceil() as c_uint, 8)
     };
     NumThreads { n_fc, n_tc }
 }
