@@ -204,35 +204,39 @@ unsafe fn get_stack_size_internal(_thread_attr: *const pthread_attr_t) -> usize 
     return 0;
 }
 
+struct NumThreads {
+    n_tc: c_uint,
+    n_fc: c_uint,
+}
+
 #[cold]
-unsafe fn get_num_threads(s: &Rav1dSettings, n_tc: *mut c_uint, n_fc: *mut c_uint) {
+unsafe fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
     static fc_lut: [u8; 49] = [
         1, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     ];
-    *n_tc = (if s.n_threads != 0 {
+    let n_tc = (if s.n_threads != 0 {
         s.n_threads
     } else {
         iclip(rav1d_num_logical_processors() as c_int, 1, 256)
     }) as c_uint;
-    *n_fc = if s.max_frame_delay != 0 {
-        cmp::min(s.max_frame_delay as c_uint, *n_tc)
+    let n_fc = if s.max_frame_delay != 0 {
+        cmp::min(s.max_frame_delay as c_uint, n_tc)
     } else {
-        if *n_tc < 50 {
-            fc_lut[(*n_tc).wrapping_sub(1) as usize].into()
+        if n_tc < 50 {
+            fc_lut[n_tc.wrapping_sub(1) as usize].into()
         } else {
             8
         }
     };
+    NumThreads { n_fc, n_tc }
 }
 
 #[cold]
 pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<c_uint> {
-    let mut n_tc: c_uint = 0;
-    let mut n_fc: c_uint = 0;
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
-    get_num_threads(s, &mut n_tc, &mut n_fc);
+    let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
     Ok(n_fc)
 }
 
@@ -337,7 +341,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     }
     (*c).flush = &mut (*c).flush_mem;
     *(*c).flush = 0 as c_int;
-    get_num_threads(s, &mut (*c).n_tc, &mut (*c).n_fc);
+    let NumThreads { n_tc, n_fc } = get_num_threads(s);
+    (*c).n_tc = n_tc;
+    (*c).n_fc = n_fc;
     (*c).fc = rav1d_alloc_aligned(
         ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
         32 as c_int as usize,
