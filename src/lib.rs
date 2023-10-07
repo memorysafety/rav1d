@@ -210,7 +210,7 @@ struct NumThreads {
 }
 
 #[cold]
-unsafe fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
+fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
     static fc_lut: [u8; 49] = [
         1, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
