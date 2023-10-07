@@ -218,16 +218,16 @@ unsafe fn get_num_threads(
     *n_tc = (if (*s).n_threads != 0 {
         (*s).n_threads
     } else {
-        iclip(rav1d_num_logical_processors() as c_int, 1 as c_int, 256 as c_int)
+        iclip(rav1d_num_logical_processors() as c_int, 1, 256)
     }) as c_uint;
     *n_fc = if (*s).max_frame_delay != 0 {
         cmp::min((*s).max_frame_delay as c_uint, *n_tc)
     } else {
-        (if *n_tc < 50 as c_uint {
-            fc_lut[(*n_tc).wrapping_sub(1 as c_int as c_uint) as usize] as c_int
+        if *n_tc < 50 {
+            fc_lut[(*n_tc).wrapping_sub(1) as usize].into()
         } else {
-            8 as c_int
-        }) as c_uint
+            8
+        }
     };
 }
 
