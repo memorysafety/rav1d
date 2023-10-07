@@ -207,7 +207,7 @@ unsafe fn get_stack_size_internal(_thread_attr: *const pthread_attr_t) -> usize 
 #[cold]
 unsafe fn get_num_threads(
     _c: *mut Rav1dContext,
-    s: *const Rav1dSettings,
+    s: &Rav1dSettings,
     n_tc: *mut c_uint,
     n_fc: *mut c_uint,
 ) {
@@ -215,13 +215,13 @@ unsafe fn get_num_threads(
         1, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
     ];
-    *n_tc = (if (*s).n_threads != 0 {
-        (*s).n_threads
+    *n_tc = (if s.n_threads != 0 {
+        s.n_threads
     } else {
         iclip(rav1d_num_logical_processors() as c_int, 1, 256)
     }) as c_uint;
-    *n_fc = if (*s).max_frame_delay != 0 {
-        cmp::min((*s).max_frame_delay as c_uint, *n_tc)
+    *n_fc = if s.max_frame_delay != 0 {
+        cmp::min(s.max_frame_delay as c_uint, *n_tc)
     } else {
         if *n_tc < 50 {
             fc_lut[(*n_tc).wrapping_sub(1) as usize].into()
