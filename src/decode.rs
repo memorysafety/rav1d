@@ -4018,7 +4018,7 @@ unsafe fn setup_tile(
             sgr_weights: [-32, 31],
             ..*lr_ref
         };
-        ts.lr_ref[p] = lr_ref;
+        ts.lr_ref[p] = *lr_ref;
     }
 
     if (*f.c).n_tc > 1 {
@@ -4034,7 +4034,7 @@ unsafe fn read_restoration_info(
 ) {
     let f = &*t.f;
     let ts = &mut *t.ts;
-    let lr_ref = &*ts.lr_ref[p];
+    let lr_ref = ts.lr_ref[p];
 
     if frame_type == RAV1D_RESTORATION_SWITCHABLE {
         let filter =
@@ -4086,7 +4086,7 @@ unsafe fn read_restoration_info(
         lr.filter_h[1] = msac_decode_lr_subexp(ts, lr_ref.filter_h[1], 2, 23);
         lr.filter_h[2] = msac_decode_lr_subexp(ts, lr_ref.filter_h[2], 3, 17);
         lr.sgr_weights = lr_ref.sgr_weights;
-        ts.lr_ref[p] = lr;
+        ts.lr_ref[p] = *lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
                 "Post-lr_wiener[pl={},v[{},{},{}],h[{},{},{}]]: r={}",
@@ -4116,7 +4116,7 @@ unsafe fn read_restoration_info(
         };
         lr.filter_v = lr_ref.filter_v;
         lr.filter_h = lr_ref.filter_h;
-        ts.lr_ref[p] = lr;
+        ts.lr_ref[p] = *lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
                 "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",

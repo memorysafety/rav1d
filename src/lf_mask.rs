@@ -23,6 +23,7 @@ pub struct Av1FilterLUT {
     pub sharp: [u64; 2],
 }
 
+#[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Av1RestorationUnit {
     pub r#type: Dav1dRestorationType,

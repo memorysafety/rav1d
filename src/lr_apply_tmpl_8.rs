@@ -36,7 +36,7 @@ unsafe fn lr_stripe(
     plane: c_int,
     unit_w: c_int,
     row_h: c_int,
-    lr: *const Av1RestorationUnit,
+    lr: Av1RestorationUnit,
     mut edges: LrEdgeFlags,
 ) {
     let dsp: *const Rav1dDSPContext = (*f).dsp;
@@ -62,29 +62,29 @@ unsafe fn lr_stripe(
     let mut params: LooprestorationParams = LooprestorationParams {
         filter: [[0; 8]; 2].into(),
     };
-    if (*lr).r#type as c_int == RAV1D_RESTORATION_WIENER as c_int {
+    if lr.r#type as c_int == RAV1D_RESTORATION_WIENER as c_int {
         let filter: *mut [i16; 8] = (params.filter.0).as_mut_ptr();
         let ref mut fresh0 = (*filter.offset(0))[6];
-        *fresh0 = (*lr).filter_h[0] as i16;
+        *fresh0 = lr.filter_h[0] as i16;
         (*filter.offset(0))[0] = *fresh0;
         let ref mut fresh1 = (*filter.offset(0))[5];
-        *fresh1 = (*lr).filter_h[1] as i16;
+        *fresh1 = lr.filter_h[1] as i16;
         (*filter.offset(0))[1] = *fresh1;
         let ref mut fresh2 = (*filter.offset(0))[4];
-        *fresh2 = (*lr).filter_h[2] as i16;
+        *fresh2 = lr.filter_h[2] as i16;
         (*filter.offset(0))[2] = *fresh2;
         (*filter.offset(0))[3] = (-((*filter.offset(0))[0] as c_int
             + (*filter.offset(0))[1] as c_int
             + (*filter.offset(0))[2] as c_int)
             * 2) as i16;
         let ref mut fresh3 = (*filter.offset(1))[6];
-        *fresh3 = (*lr).filter_v[0] as i16;
+        *fresh3 = lr.filter_v[0] as i16;
         (*filter.offset(1))[0] = *fresh3;
         let ref mut fresh4 = (*filter.offset(1))[5];
-        *fresh4 = (*lr).filter_v[1] as i16;
+        *fresh4 = lr.filter_v[1] as i16;
         (*filter.offset(1))[1] = *fresh4;
         let ref mut fresh5 = (*filter.offset(1))[4];
-        *fresh5 = (*lr).filter_v[2] as i16;
+        *fresh5 = lr.filter_v[2] as i16;
         (*filter.offset(1))[2] = *fresh5;
         (*filter.offset(1))[3] = (128 as c_int
             - ((*filter.offset(1))[0] as c_int
@@ -94,15 +94,15 @@ unsafe fn lr_stripe(
         lr_fn = (*dsp).lr.wiener[((*filter.offset(0))[0] as c_int | (*filter.offset(1))[0] as c_int
             == 0) as c_int as usize];
     } else {
-        if !((*lr).r#type as c_int == RAV1D_RESTORATION_SGRPROJ as c_int) {
+        if !(lr.r#type as c_int == RAV1D_RESTORATION_SGRPROJ as c_int) {
             unreachable!();
         }
-        let sgr_params: *const u16 = (dav1d_sgr_params[(*lr).sgr_idx as usize]).as_ptr();
+        let sgr_params: *const u16 = (dav1d_sgr_params[lr.sgr_idx as usize]).as_ptr();
         params.sgr.s0 = *sgr_params.offset(0) as u32;
         params.sgr.s1 = *sgr_params.offset(1) as u32;
-        params.sgr.w0 = (*lr).sgr_weights[0] as i16;
+        params.sgr.w0 = lr.sgr_weights[0] as i16;
         params.sgr.w1 =
-            (128 as c_int - ((*lr).sgr_weights[0] as c_int + (*lr).sgr_weights[1] as c_int)) as i16;
+            (128 as c_int - (lr.sgr_weights[0] as c_int + lr.sgr_weights[1] as c_int)) as i16;
         lr_fn = (*dsp).lr.sgr[((*sgr_params.offset(0) != 0) as c_int
             + (*sgr_params.offset(1) != 0) as c_int * 2
             - 1) as usize];
@@ -175,7 +175,7 @@ unsafe fn lr_sbrow(
     let row_y = y + (8 >> ss_ver) * (y != 0) as c_int;
     let shift_hor = 7 - ss_hor;
     let mut pre_lr_border: Align16<[[[pixel; 4]; 136]; 2]> = Align16([[[0; 4]; 136]; 2]);
-    let mut lr: [*const Av1RestorationUnit; 2] = [0 as *const Av1RestorationUnit; 2];
+    let mut lr = [Av1RestorationUnit::default(); 2];
     let mut edges: LrEdgeFlags = ((if y > 0 {
         LR_HAVE_TOP as c_int
     } else {
@@ -188,24 +188,17 @@ unsafe fn lr_sbrow(
     aligned_unit_pos <<= ss_ver;
     let sb_idx = (aligned_unit_pos >> 7) * (*f).sr_sb128w;
     let unit_idx = (aligned_unit_pos >> 6 & 1) << 1;
-    lr[0] = &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
-        .as_mut_ptr()
-        .offset(plane as isize))
-    .as_mut_ptr()
-    .offset(unit_idx as isize) as *mut Av1RestorationUnit;
-    let mut restore = ((*lr[0]).r#type as c_int != RAV1D_RESTORATION_NONE as c_int) as c_int;
+    lr[0] = (*((*f).lf.lr_mask).offset(sb_idx as isize)).lr[plane as usize][unit_idx as usize];
+    let mut restore = (lr[0].r#type as c_int != RAV1D_RESTORATION_NONE as c_int) as c_int;
     let mut x = 0;
     let mut bit = 0;
     while x + max_unit_size <= w {
         let next_x = x + unit_size;
         let next_u_idx = unit_idx + (next_x >> shift_hor - 1 & 1);
-        lr[(bit == 0) as c_int as usize] =
-            &mut *(*((*((*f).lf.lr_mask).offset((sb_idx + (next_x >> shift_hor)) as isize)).lr)
-                .as_mut_ptr()
-                .offset(plane as isize))
-            .as_mut_ptr()
-            .offset(next_u_idx as isize) as *mut Av1RestorationUnit;
-        let restore_next = ((*lr[(bit == 0) as c_int as usize]).r#type as c_int
+        lr[(bit == 0) as c_int as usize] = (*((*f).lf.lr_mask)
+            .offset((sb_idx + (next_x >> shift_hor)) as isize))
+        .lr[plane as usize][next_u_idx as usize];
+        let restore_next = (lr[(bit == 0) as c_int as usize].r#type as c_int
             != RAV1D_RESTORATION_NONE as c_int) as c_int;
         if restore_next != 0 {
             backup4xU(
