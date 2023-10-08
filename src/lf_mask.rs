@@ -1,8 +1,8 @@
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::align::Align16;
@@ -26,7 +26,7 @@ pub struct Av1FilterLUT {
 #[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Av1RestorationUnit {
-    pub r#type: Dav1dRestorationType,
+    pub r#type: Rav1dRestorationType,
     pub filter_h: [i8; 3],
     pub filter_v: [i8; 3],
     pub sgr_idx: u8,

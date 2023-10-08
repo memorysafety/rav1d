@@ -8,10 +8,10 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
@@ -4030,7 +4030,7 @@ unsafe fn read_restoration_info(
     t: &mut Rav1dTaskContext,
     lr: &mut Av1RestorationUnit,
     p: usize,
-    frame_type: Dav1dRestorationType,
+    frame_type: Rav1dRestorationType,
 ) {
     let f = &*t.f;
     let ts = &mut *t.ts;
@@ -4263,7 +4263,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
                 if !(y as c_uint & mask != 0) {
                     let half_unit = unit_size >> 1;
                     if !(y != 0 && y + half_unit > h) {
-                        let frame_type: Dav1dRestorationType =
+                        let frame_type: Rav1dRestorationType =
                             (*(*f).frame_hdr).restoration.type_0[p as usize];
                         if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
                             let w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
