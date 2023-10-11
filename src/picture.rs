@@ -186,15 +186,11 @@ unsafe fn picture_alloc_with_edges(
     (*p).p.h = h;
     (*p).seq_hdr = seq_hdr;
     (*p).frame_hdr = frame_hdr;
-    (*p).content_light = content_light;
-    (*p).mastering_display = mastering_display;
-    (*p).itut_t35 = itut_t35;
     (*p).p.layout = (*seq_hdr).layout;
     (*p).p.bpc = bpc;
     rav1d_data_props_set_defaults(&mut (*p).m);
     (*p).seq_hdr_ref = seq_hdr_ref;
     (*p).frame_hdr_ref = frame_hdr_ref;
-    (*p).itut_t35_ref = itut_t35_ref;
     let res = (*p_allocator).alloc_picture(p);
     if res.is_err() {
         free(pic_ctx as *mut c_void);
@@ -223,22 +219,56 @@ unsafe fn picture_alloc_with_edges(
     if !frame_hdr_ref.is_null() {
         rav1d_ref_inc(frame_hdr_ref);
     }
-    rav1d_data_props_copy(&mut (*p).m, props);
+    rav1d_picture_copy_props(
+        p,
+        content_light,
+        content_light_ref,
+        mastering_display,
+        mastering_display_ref,
+        itut_t35,
+        itut_t35_ref,
+        props,
+    );
+
     if extra != 0 && !extra_ptr.is_null() {
         *extra_ptr = &mut (*pic_ctx).extra_ptr as *mut *mut c_void as *mut c_void;
     }
+
+    Ok(())
+}
+
+pub unsafe fn rav1d_picture_copy_props(
+    p: *mut Rav1dPicture,
+    content_light: *mut Rav1dContentLightLevel,
+    content_light_ref: *mut Rav1dRef,
+    mastering_display: *mut Rav1dMasteringDisplay,
+    mastering_display_ref: *mut Rav1dRef,
+    itut_t35: *mut Rav1dITUTT35,
+    itut_t35_ref: *mut Rav1dRef,
+    props: *const Rav1dDataProps,
+) {
+    rav1d_data_props_copy(&mut (*p).m, props);
+
+    rav1d_ref_dec(&mut (*p).content_light_ref);
     (*p).content_light_ref = content_light_ref;
+    (*p).content_light = content_light;
     if !content_light_ref.is_null() {
         rav1d_ref_inc(content_light_ref);
     }
+
+    rav1d_ref_dec(&mut (*p).mastering_display_ref);
     (*p).mastering_display_ref = mastering_display_ref;
+    (*p).mastering_display = mastering_display;
     if !mastering_display_ref.is_null() {
         rav1d_ref_inc(mastering_display_ref);
     }
+
+    rav1d_ref_dec(&mut (*p).itut_t35_ref);
+    (*p).itut_t35_ref = itut_t35_ref;
+    (*p).itut_t35 = itut_t35;
     if !itut_t35_ref.is_null() {
         rav1d_ref_inc(itut_t35_ref);
     }
-    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
