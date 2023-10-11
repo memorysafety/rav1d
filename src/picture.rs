@@ -175,9 +175,6 @@ unsafe extern "C" fn picture_alloc_with_edges(
     (*p).p.h = h;
     (*p).seq_hdr = seq_hdr;
     (*p).frame_hdr = frame_hdr;
-    (*p).content_light = content_light;
-    (*p).mastering_display = mastering_display;
-    (*p).itut_t35 = itut_t35;
     (*p).p.layout = (*seq_hdr).layout;
     (*p).p.bpc = bpc;
     dav1d_data_props_set_defaults(&mut (*p).m);
@@ -217,23 +214,56 @@ unsafe extern "C" fn picture_alloc_with_edges(
     if !frame_hdr_ref.is_null() {
         dav1d_ref_inc(frame_hdr_ref);
     }
-    dav1d_data_props_copy(&mut (*p).m, props);
+    dav1d_picture_copy_props(
+        p,
+        content_light,
+        content_light_ref,
+        mastering_display,
+        mastering_display_ref,
+        itut_t35,
+        itut_t35_ref,
+        props,
+    );
+
     if extra != 0 && !extra_ptr.is_null() {
         *extra_ptr = &mut (*pic_ctx).extra_ptr as *mut *mut c_void as *mut c_void;
     }
+
+    return 0 as c_int;
+}
+
+pub unsafe fn dav1d_picture_copy_props(
+    p: *mut Dav1dPicture,
+    content_light: *mut Dav1dContentLightLevel,
+    content_light_ref: *mut Dav1dRef,
+    mastering_display: *mut Dav1dMasteringDisplay,
+    mastering_display_ref: *mut Dav1dRef,
+    itut_t35: *mut Dav1dITUTT35,
+    itut_t35_ref: *mut Dav1dRef,
+    props: *const Dav1dDataProps,
+) {
+    dav1d_data_props_copy(&mut (*p).m, props);
+
+    dav1d_ref_dec(&mut (*p).content_light_ref);
     (*p).content_light_ref = content_light_ref;
+    (*p).content_light = content_light;
     if !content_light_ref.is_null() {
         dav1d_ref_inc(content_light_ref);
     }
+
+    dav1d_ref_dec(&mut (*p).mastering_display_ref);
     (*p).mastering_display_ref = mastering_display_ref;
+    (*p).mastering_display = mastering_display;
     if !mastering_display_ref.is_null() {
         dav1d_ref_inc(mastering_display_ref);
     }
+
+    dav1d_ref_dec(&mut (*p).itut_t35_ref);
     (*p).itut_t35_ref = itut_t35_ref;
+    (*p).itut_t35 = itut_t35;
     if !itut_t35_ref.is_null() {
         dav1d_ref_inc(itut_t35_ref);
     }
-    return 0 as c_int;
 }
 
 pub unsafe fn dav1d_thread_picture_alloc(
