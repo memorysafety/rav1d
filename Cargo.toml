@@ -1,5 +1,6 @@
 [workspace]
 members = []
+
 [package]
 name = "c2rust_out"
 authors = ["C2Rust"]
@@ -14,12 +15,15 @@ default-run = "dav1d"
 name = "rav1d"
 path = "lib.rs"
 crate-type = ["staticlib", "rlib"]
+
 [[bin]]
 path = "tools/dav1d.rs"
 name = "dav1d"
+
 [[bin]]
 path = "tests/seek_stress.rs"
 name = "seek_stress"
+
 [dependencies]
 bitflags = "2.4.0"
 cfg-if = "1.0.0"
