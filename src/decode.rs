@@ -4289,20 +4289,20 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
                                 x += 1;
                             }
                         } else {
-                            let x_0 = 4 * (*t).bx >> ss_hor;
-                            if !(x_0 as c_uint & mask != 0) {
-                                let w_0 = (*f).cur.p.w + ss_hor >> ss_hor;
-                                if !(x_0 != 0 && x_0 + half_unit > w_0) {
-                                    let sb_idx_0 = ((*t).by >> 5) * (*f).sr_sb128w + ((*t).bx >> 5);
-                                    let unit_idx_0 = (((*t).by & 16) >> 3) + (((*t).bx & 16) >> 4);
-                                    let lr_0: *mut Av1RestorationUnit =
-                                        &mut *(*((*((*f).lf.lr_mask).offset(sb_idx_0 as isize)).lr)
+                            let x = 4 * (*t).bx >> ss_hor;
+                            if !(x as c_uint & mask != 0) {
+                                let w = (*f).cur.p.w + ss_hor >> ss_hor;
+                                if !(x != 0 && x + half_unit > w) {
+                                    let sb_idx = ((*t).by >> 5) * (*f).sr_sb128w + ((*t).bx >> 5);
+                                    let unit_idx = (((*t).by & 16) >> 3) + (((*t).bx & 16) >> 4);
+                                    let lr: *mut Av1RestorationUnit =
+                                        &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
                                             .as_mut_ptr()
                                             .offset(p as isize))
                                         .as_mut_ptr()
-                                        .offset(unit_idx_0 as isize)
+                                        .offset(unit_idx as isize)
                                             as *mut Av1RestorationUnit;
-                                    read_restoration_info(&mut *t, &mut *lr_0, p, frame_type);
+                                    read_restoration_info(&mut *t, &mut *lr, p, frame_type);
                                 }
                             }
                         }
@@ -4345,17 +4345,17 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             .offset(((*t).by & 16) as isize) as *mut u8 as *const c_void,
         sb_step as usize,
     );
-    let ss_ver_0 =
+    let ss_ver =
         ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    align_h >>= ss_ver_0;
+    align_h >>= ss_ver;
     memcpy(
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
-            .offset((align_h * tile_col + ((*t).by >> ss_ver_0)) as isize) as *mut u8
+            .offset((align_h * tile_col + ((*t).by >> ss_ver)) as isize) as *mut u8
             as *mut c_void,
         &mut *((*t).l.tx_lpf_uv.0)
             .as_mut_ptr()
-            .offset((((*t).by & 16) >> ss_ver_0) as isize) as *mut u8 as *const c_void,
-        (sb_step >> ss_ver_0) as usize,
+            .offset((((*t).by & 16) >> ss_ver) as isize) as *mut u8 as *const c_void,
+        (sb_step >> ss_ver) as usize,
     );
     return 0 as c_int;
 }
