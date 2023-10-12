@@ -4128,11 +4128,11 @@ unsafe fn read_restoration_info(
 
 pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int {
     let f: *const Rav1dFrameContext = (*t).f;
-    let root_bl: BlockLevel = (if (*(*f).seq_hdr).sb128 != 0 {
-        BL_128X128 as c_int
+    let root_bl: BlockLevel = if (*(*f).seq_hdr).sb128 != 0 {
+        BL_128X128
     } else {
-        BL_64X64 as c_int
-    }) as BlockLevel;
+        BL_64X64
+    };
     let ts: *mut Rav1dTileState = (*t).ts;
     let c: *const Rav1dContext = (*f).c;
     let sb_step = (*f).sb_step;
@@ -4140,9 +4140,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
     let tile_col = (*ts).tiling.col;
     let col_sb_start = (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize] as c_int;
     let col_sb128_start = col_sb_start >> ((*(*f).seq_hdr).sb128 == 0) as c_int;
-    if (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0
-        || (*(*f).frame_hdr).allow_intrabc != 0
-    {
+    if (*(*f).frame_hdr).frame_type & 1 != 0 || (*(*f).frame_hdr).allow_intrabc != 0 {
         rav1d_refmvs_tile_sbrow_init(
             &mut (*t).rt,
             &(*f).rf,
@@ -4155,7 +4153,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             (*t).frame_thread.pass,
         );
     }
-    if (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0 && (*c).n_fc > 1 as c_uint {
+    if (*(*f).frame_hdr).frame_type & 1 != 0 && (*c).n_fc > 1 {
         let sby = (*t).by - (*ts).tiling.row_start >> (*f).sb_shift;
         let lowest_px: *mut [c_int; 2] = (*((*ts).lowest_pixel).offset(sby as isize)).as_mut_ptr();
         let mut n = 0;
@@ -4174,10 +4172,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
         (*t).frame_thread.pass,
     );
     if (*t).frame_thread.pass == 2 {
-        let off_2pass = if (*c).n_tc > 1 as c_uint {
+        let off_2pass = if (*c).n_tc > 1 {
             (*f).sb128w * (*(*f).frame_hdr).tiling.rows
         } else {
-            0 as c_int
+            0
         };
         (*t).bx = (*ts).tiling.col_start;
         (*t).a = ((*f).a)
@@ -4186,10 +4184,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             .offset((tile_row * (*f).sb128w) as isize);
         while (*t).bx < (*ts).tiling.col_end {
             if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
-                return 1 as c_int;
+                return 1;
             }
             if decode_sb(&mut *t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
-                return 1 as c_int;
+                return 1;
             }
             if (*t).bx & 16 != 0 || (*(*f).seq_hdr).sb128 != 0 {
                 (*t).a = ((*t).a).offset(1);
@@ -4197,12 +4195,12 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             (*t).bx += sb_step;
         }
         ((*f).bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
-        return 0 as c_int;
+        return 0;
     }
-    if (*ts).msac.cnt < -(15 as c_int) {
-        return 1 as c_int;
+    if (*ts).msac.cnt < -15 {
+        return 1;
     }
-    if (*(*f).c).n_tc > 1 as c_uint && (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
+    if (*(*f).c).n_tc > 1 && (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
         (*(*f).c)
             .refmvs_dsp
             .load_tmvs
@@ -4217,7 +4215,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
     }
     memset(
         ((*t).pal_sz_uv[1]).as_mut_ptr() as *mut c_void,
-        0 as c_int,
+        0,
         ::core::mem::size_of::<[u8; 32]>(),
     );
     let sb128y = (*t).by >> 5;
@@ -4230,35 +4228,30 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
         .offset(col_sb128_start as isize);
     while (*t).bx < (*ts).tiling.col_end {
         if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
-            return 1 as c_int;
+            return 1;
         }
-        if root_bl as c_uint == BL_128X128 as c_int as c_uint {
+        if root_bl == BL_128X128 {
             (*t).cur_sb_cdef_idx_ptr = ((*(*t).lf_mask).cdef_idx).as_mut_ptr();
-            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as c_int) as i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(1) = -(1 as c_int) as i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(2) = -(1 as c_int) as i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(3) = -(1 as c_int) as i8;
+            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -1;
+            *((*t).cur_sb_cdef_idx_ptr).offset(1) = -1;
+            *((*t).cur_sb_cdef_idx_ptr).offset(2) = -1;
+            *((*t).cur_sb_cdef_idx_ptr).offset(3) = -1;
         } else {
             (*t).cur_sb_cdef_idx_ptr = &mut *((*(*t).lf_mask).cdef_idx)
                 .as_mut_ptr()
                 .offset(((((*t).bx & 16) >> 4) + (((*t).by & 16) >> 3)) as isize)
                 as *mut i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as c_int) as i8;
+            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -1;
         }
         let mut p = 0;
         while p < 3 {
-            if !(((*f).lf.restore_planes >> p) as c_uint & 1 as c_uint == 0) {
-                let ss_ver = (p != 0
-                    && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
-                    as c_int;
-                let ss_hor = (p != 0
-                    && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
-                    as c_int;
-                let unit_size_log2 =
-                    (*(*f).frame_hdr).restoration.unit_size[(p != 0) as c_int as usize];
+            if !(((*f).lf.restore_planes >> p) & 1 == 0) {
+                let ss_ver = (p != 0 && (*f).cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
+                let ss_hor = (p != 0 && (*f).cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+                let unit_size_log2 = (*(*f).frame_hdr).restoration.unit_size[(p != 0) as usize];
                 let y = (*t).by * 4 >> ss_ver;
                 let h = (*f).cur.p.h + ss_ver >> ss_ver;
-                let unit_size = (1 as c_int) << unit_size_log2;
+                let unit_size = 1 << unit_size_log2;
                 let mask: c_uint = (unit_size - 1) as c_uint;
                 if !(y as c_uint & mask != 0) {
                     let half_unit = unit_size >> 1;
@@ -4267,7 +4260,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
                             (*(*f).frame_hdr).restoration.type_0[p as usize];
                         if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
                             let w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
-                            let n_units = cmp::max(1 as c_int, w + half_unit >> unit_size_log2);
+                            let n_units = cmp::max(1, w + half_unit >> unit_size_log2);
                             let d = (*(*f).frame_hdr).super_res.width_scale_denominator;
                             let rnd = unit_size * 8 - 1;
                             let shift = unit_size_log2 + 3;
@@ -4312,7 +4305,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             p += 1;
         }
         if decode_sb(&mut *t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
-            return 1 as c_int;
+            return 1;
         }
         if (*t).bx & 16 != 0 || (*(*f).seq_hdr).sb128 != 0 {
             (*t).a = ((*t).a).offset(1);
@@ -4321,8 +4314,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
         (*t).bx += sb_step;
     }
     if (*(*f).seq_hdr).ref_frame_mvs != 0
-        && (*(*f).c).n_tc > 1 as c_uint
-        && (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0
+        && (*(*f).c).n_tc > 1
+        && (*(*f).frame_hdr).frame_type & 1 != 0
     {
         rav1d_refmvs_save_tmvs(
             &(*(*f).c).refmvs_dsp,
@@ -4333,10 +4326,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             (*t).by + sb_step >> 1,
         );
     }
-    if (*t).frame_thread.pass != 1 as c_int {
+    if (*t).frame_thread.pass != 1 {
         ((*f).bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
     }
-    let mut align_h = (*f).bh + 31 & !(31 as c_int);
+    let mut align_h = (*f).bh + 31 & !31;
     memcpy(
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(0))
             .offset((align_h * tile_col + (*t).by) as isize) as *mut u8 as *mut c_void,
@@ -4345,8 +4338,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             .offset(((*t).by & 16) as isize) as *mut u8 as *const c_void,
         sb_step as usize,
     );
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_ver = ((*f).cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
     align_h >>= ss_ver;
     memcpy(
         &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
@@ -4357,7 +4349,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             .offset((((*t).by & 16) >> ss_ver) as isize) as *mut u8 as *const c_void,
         (sb_step >> ss_ver) as usize,
     );
-    return 0 as c_int;
+    return 0;
 }
 
 pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1dResult {
