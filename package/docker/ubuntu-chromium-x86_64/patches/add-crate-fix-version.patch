@@ -1,0 +1,27 @@
+diff --git a/third_party/rust/rav1d/v1/crate/Cargo.toml b/third_party/rust/rav1d/v1/crate/Cargo.toml
+--- a/third_party/rust/rav1d/v1/crate/Cargo.toml
++++ b/third_party/rust/rav1d/v1/crate/Cargo.toml
+@@ -1,7 +1,7 @@
+ [workspace]
+ members = []
+ [package]
+-name = "c2rust_out"
++name = "rav1d"
+ authors = ["C2Rust"]
+-version = "0.0.0"
++version = "1.0.0"
+ publish = false
+
+diff --git a/third_party/rust/third_party.toml b/third_party/rust/third_party.toml
+--- a/third_party/rust/third_party.toml
++++ b/third_party/rust/third_party.toml
+@@ -52,7 +52,8 @@
+ memoffset = { version = "0.6", features = [ "unstable_const" ] }
+ proc-macro2 = "1"
+ qr_code = "2"
+ quote = "1"
++rav1d = "1"
+ serde = "1"
+ static_assertions = "1"
+ syn = {version = "1", features = ["full"]}
+--
