@@ -9,21 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4682ae6287fcf752ecaabbfcc7b6f9b72aa33933dc23a554d853aea8eea8635"
 
 [[package]]
-name = "c2rust_out"
-version = "0.0.0"
-dependencies = [
- "bitflags",
- "cc",
- "cfg-if",
- "libc",
- "nasm-rs",
- "num_cpus",
- "paste",
- "raw-cpuid",
- "strum",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -94,6 +79,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5267fca4496028628a95160fc423a33e8b2e6af8a5302579e322e4b520293cae"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "rav1d"
+version = "0.0.0"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if",
+ "libc",
+ "nasm-rs",
+ "num_cpus",
+ "paste",
+ "raw-cpuid",
+ "strum",
 ]
 
 [[package]]

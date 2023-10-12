@@ -2,7 +2,7 @@
 members = []
 
 [package]
-name = "c2rust_out"
+name = "rav1d"
 authors = ["C2Rust"]
 version = "0.0.0"
 publish = false
@@ -12,7 +12,6 @@ autotests = false
 default-run = "dav1d"
 
 [lib]
-name = "rav1d"
 path = "lib.rs"
 crate-type = ["staticlib", "rlib"]
 
