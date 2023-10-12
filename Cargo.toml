@@ -4,7 +4,7 @@ members = []
 [package]
 name = "rav1d"
 authors = ["C2Rust"]
-version = "0.0.0"
+version = "0.2.0"
 publish = false
 edition = "2021"
 autobins = false
