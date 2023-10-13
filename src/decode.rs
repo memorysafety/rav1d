@@ -4155,12 +4155,12 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
     }
     if (*(*f).frame_hdr).frame_type & 1 != 0 && (*c).n_fc > 1 {
         let sby = (*t).by - (*ts).tiling.row_start >> (*f).sb_shift;
-        let lowest_px: *mut [c_int; 2] = (*((*ts).lowest_pixel).offset(sby as isize)).as_mut_ptr();
+        let lowest_px = &mut *(*ts).lowest_pixel.offset(sby as isize);
         let mut n = 0;
         while n < 7 {
             let mut m = 0;
             while m < 2 {
-                (*lowest_px.offset(n as isize))[m as usize] = i32::MIN;
+                lowest_px[n as usize][m as usize] = i32::MIN;
                 m += 1;
             }
             n += 1;
@@ -4178,10 +4178,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
             0
         };
         (*t).bx = (*ts).tiling.col_start;
-        (*t).a = ((*f).a)
-            .offset(off_2pass as isize)
-            .offset(col_sb128_start as isize)
-            .offset((tile_row * (*f).sb128w) as isize);
+        (*t).a = (*f)
+            .a
+            .offset((off_2pass + col_sb128_start + tile_row * (*f).sb128w) as isize);
         while (*t).bx < (*ts).tiling.col_end {
             if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
                 return 1;
@@ -4220,28 +4219,26 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
     );
     let sb128y = (*t).by >> 5;
     (*t).bx = (*ts).tiling.col_start;
-    (*t).a = ((*f).a)
-        .offset(col_sb128_start as isize)
-        .offset((tile_row * (*f).sb128w) as isize);
-    (*t).lf_mask = ((*f).lf.mask)
-        .offset((sb128y * (*f).sb128w) as isize)
-        .offset(col_sb128_start as isize);
+    (*t).a = (*f)
+        .a
+        .offset((col_sb128_start + tile_row * (*f).sb128w) as isize);
+    (*t).lf_mask = (*f)
+        .lf
+        .mask
+        .offset((sb128y * (*f).sb128w + col_sb128_start) as isize);
     while (*t).bx < (*ts).tiling.col_end {
         if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
             return 1;
         }
+        let cdef_idx = &mut (*(*t).lf_mask).cdef_idx;
         if root_bl == BL_128X128 {
-            (*t).cur_sb_cdef_idx_ptr = ((*(*t).lf_mask).cdef_idx).as_mut_ptr();
-            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -1;
-            *((*t).cur_sb_cdef_idx_ptr).offset(1) = -1;
-            *((*t).cur_sb_cdef_idx_ptr).offset(2) = -1;
-            *((*t).cur_sb_cdef_idx_ptr).offset(3) = -1;
+            *cdef_idx = [-1; 4];
+            (*t).cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
         } else {
-            (*t).cur_sb_cdef_idx_ptr = &mut *((*(*t).lf_mask).cdef_idx)
-                .as_mut_ptr()
-                .offset(((((*t).bx & 16) >> 4) + (((*t).by & 16) >> 3)) as isize)
-                as *mut i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -1;
+            let cdef_idx =
+                &mut cdef_idx[((((*t).bx & 16) >> 4) + (((*t).by & 16) >> 3)) as usize..];
+            cdef_idx[0] = -1;
+            (*t).cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
         }
         let mut p = 0;
         while p < 3 {
@@ -4271,13 +4268,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
                                 let px_x = x << unit_size_log2 + ss_hor;
                                 let sb_idx = ((*t).by >> 5) * (*f).sr_sb128w + (px_x >> 7);
                                 let unit_idx = (((*t).by & 16) >> 3) + ((px_x & 64) >> 6);
-                                let lr: *mut Av1RestorationUnit =
-                                    &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
-                                        .as_mut_ptr()
-                                        .offset(p as isize))
-                                    .as_mut_ptr()
-                                    .offset(unit_idx as isize)
-                                        as *mut Av1RestorationUnit;
+                                let lr: *mut Av1RestorationUnit = &mut (*((*f).lf.lr_mask)
+                                    .offset(sb_idx as isize))
+                                .lr[p][unit_idx as usize];
                                 read_restoration_info(&mut *t, &mut *lr, p, frame_type);
                                 x += 1;
                             }
@@ -4288,13 +4281,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
                                 if !(x != 0 && x + half_unit > w) {
                                     let sb_idx = ((*t).by >> 5) * (*f).sr_sb128w + ((*t).bx >> 5);
                                     let unit_idx = (((*t).by & 16) >> 3) + (((*t).bx & 16) >> 4);
-                                    let lr: *mut Av1RestorationUnit =
-                                        &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
-                                            .as_mut_ptr()
-                                            .offset(p as isize))
-                                        .as_mut_ptr()
-                                        .offset(unit_idx as isize)
-                                            as *mut Av1RestorationUnit;
+                                    let lr: *mut Av1RestorationUnit = &mut (*((*f).lf.lr_mask)
+                                        .offset(sb_idx as isize))
+                                    .lr[p][unit_idx as usize];
                                     read_restoration_info(&mut *t, &mut *lr, p, frame_type);
                                 }
                             }
@@ -4331,22 +4320,16 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
     }
     let mut align_h = (*f).bh + 31 & !31;
     memcpy(
-        &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(0))
-            .offset((align_h * tile_col + (*t).by) as isize) as *mut u8 as *mut c_void,
-        &mut *((*t).l.tx_lpf_y.0)
-            .as_mut_ptr()
-            .offset(((*t).by & 16) as isize) as *mut u8 as *const c_void,
+        (*f).lf.tx_lpf_right_edge[0].offset((align_h * tile_col + (*t).by) as isize) as *mut c_void,
+        (*t).l.tx_lpf_y.0[((*t).by & 16) as usize..].as_ptr() as *const c_void,
         sb_step as usize,
     );
     let ss_ver = ((*f).cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
     align_h >>= ss_ver;
     memcpy(
-        &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
-            .offset((align_h * tile_col + ((*t).by >> ss_ver)) as isize) as *mut u8
+        (*f).lf.tx_lpf_right_edge[1].offset((align_h * tile_col + ((*t).by >> ss_ver)) as isize)
             as *mut c_void,
-        &mut *((*t).l.tx_lpf_uv.0)
-            .as_mut_ptr()
-            .offset((((*t).by & 16) >> ss_ver) as isize) as *mut u8 as *const c_void,
+        (*t).l.tx_lpf_uv.0[(((*t).by & 16) >> ss_ver) as usize..].as_ptr() as *const c_void,
         (sb_step >> ss_ver) as usize,
     );
     return 0;
