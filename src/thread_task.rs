@@ -1327,7 +1327,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                 as c_int
                                     };
                                     if error_0 == 0 {
-                                        error_0 = rav1d_decode_tile_sbrow(&mut *tc) as c_int;
+                                        error_0 = match rav1d_decode_tile_sbrow(&mut *tc) {
+                                            Ok(()) => 0,
+                                            Err(()) => 1,
+                                        };
                                     }
                                     let progress = if error_0 != 0 { TILE_ERROR } else { 1 + sby };
                                     ::core::intrinsics::atomic_or_seqcst(

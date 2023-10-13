@@ -4124,7 +4124,7 @@ unsafe fn read_restoration_info(
     }
 }
 
-pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
+pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result<(), ()> {
     let f = &*t.f;
     let root_bl = if (*f.seq_hdr).sb128 != 0 {
         BL_128X128
@@ -4174,22 +4174,22 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
         for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
             t.bx = bx;
             if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
-                return true;
+                return Err(());
             }
             if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
-                return true;
+                return Err(());
             }
             if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
                 t.a = (t.a).offset(1);
             }
         }
         (f.bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
-        return false;
+        return Ok(());
     }
 
     // error out on symbol decoder overread
     if ts.msac.cnt < -15 {
-        return true;
+        return Err(());
     }
 
     if (*f.c).n_tc > 1 && (*f.frame_hdr).use_ref_frame_mvs != 0 {
@@ -4214,7 +4214,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.bx = bx;
         if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
-            return true;
+            return Err(());
         }
         let cdef_idx = &mut (*t.lf_mask).cdef_idx;
         if root_bl == BL_128X128 {
@@ -4289,7 +4289,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
             }
         }
         if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
-            return true;
+            return Err(());
         }
         if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
             t.a = (t.a).offset(1);
@@ -4335,7 +4335,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
                 [..(sb_step >> ss_ver).try_into().unwrap()],
         );
 
-    false
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1dResult {
@@ -4926,9 +4926,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
             }
             for tile in &mut ts[..] {
                 t.ts = tile;
-                if rav1d_decode_tile_sbrow(t) {
-                    return Err(EINVAL);
-                }
+                rav1d_decode_tile_sbrow(t).map_err(|()| EINVAL)?;
             }
             if is_inter_or_switch(&*f.frame_hdr) {
                 rav1d_refmvs_save_tmvs(
