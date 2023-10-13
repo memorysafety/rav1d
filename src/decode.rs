@@ -221,7 +221,6 @@ use crate::src::warpmv::rav1d_set_affine_mv2d;
 use libc::free;
 use libc::malloc;
 use libc::memcpy;
-use libc::memset;
 use libc::pthread_cond_signal;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
@@ -4207,11 +4206,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
             t.by + sb_step >> 1,
         );
     }
-    memset(
-        (t.pal_sz_uv[1]).as_mut_ptr() as *mut c_void,
-        0,
-        ::core::mem::size_of::<[u8; 32]>(),
-    );
+    t.pal_sz_uv[1] = Default::default();
     let sb128y = t.by >> 5;
     t.a = f.a.offset((col_sb128_start + tile_row * f.sb128w) as isize);
     t.lf_mask =
