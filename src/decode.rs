@@ -4226,49 +4226,53 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
             t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
         }
         for p in 0..3 {
-            if !((f.lf.restore_planes >> p) & 1 == 0) {
-                let ss_ver = (p != 0 && f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
-                let ss_hor = (p != 0 && f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
-                let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
-                let y = t.by * 4 >> ss_ver;
-                let h = f.cur.p.h + ss_ver >> ss_ver;
-                let unit_size = 1 << unit_size_log2;
-                let mask = (unit_size - 1) as c_uint;
-                if !(y as c_uint & mask != 0) {
-                    let half_unit = unit_size >> 1;
-                    if !(y != 0 && y + half_unit > h) {
-                        let frame_type = (*f.frame_hdr).restoration.type_0[p as usize];
-                        if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
-                            let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
-                            let n_units = cmp::max(1, w + half_unit >> unit_size_log2);
-                            let d = (*f.frame_hdr).super_res.width_scale_denominator;
-                            let rnd = unit_size * 8 - 1;
-                            let shift = unit_size_log2 + 3;
-                            let x0 = (4 * t.bx * d >> ss_hor) + rnd >> shift;
-                            let x1 = (4 * (t.bx + sb_step) * d >> ss_hor) + rnd >> shift;
-                            for x in x0..cmp::min(x1, n_units) {
-                                let px_x = x << unit_size_log2 + ss_hor;
-                                let sb_idx = (t.by >> 5) * f.sr_sb128w + (px_x >> 7);
-                                let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
-                                let lr = &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p]
-                                    [unit_idx as usize];
-                                read_restoration_info(&mut *t, &mut *lr, p, frame_type);
-                            }
-                        } else {
-                            let x = 4 * t.bx >> ss_hor;
-                            if !(x as c_uint & mask != 0) {
-                                let w = f.cur.p.w + ss_hor >> ss_hor;
-                                if !(x != 0 && x + half_unit > w) {
-                                    let sb_idx = (t.by >> 5) * f.sr_sb128w + (t.bx >> 5);
-                                    let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
-                                    let lr = &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p]
-                                        [unit_idx as usize];
-                                    read_restoration_info(&mut *t, &mut *lr, p, frame_type);
-                                }
-                            }
-                        }
-                    }
+            if (f.lf.restore_planes >> p) & 1 == 0 {
+                continue;
+            }
+            let ss_ver = (p != 0 && f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
+            let ss_hor = (p != 0 && f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+            let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
+            let y = t.by * 4 >> ss_ver;
+            let h = f.cur.p.h + ss_ver >> ss_ver;
+            let unit_size = 1 << unit_size_log2;
+            let mask = (unit_size - 1) as c_uint;
+            if y as c_uint & mask != 0 {
+                continue;
+            }
+            let half_unit = unit_size >> 1;
+            if y != 0 && y + half_unit > h {
+                continue;
+            }
+            let frame_type = (*f.frame_hdr).restoration.type_0[p as usize];
+            if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+                let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
+                let n_units = cmp::max(1, w + half_unit >> unit_size_log2);
+                let d = (*f.frame_hdr).super_res.width_scale_denominator;
+                let rnd = unit_size * 8 - 1;
+                let shift = unit_size_log2 + 3;
+                let x0 = (4 * t.bx * d >> ss_hor) + rnd >> shift;
+                let x1 = (4 * (t.bx + sb_step) * d >> ss_hor) + rnd >> shift;
+                for x in x0..cmp::min(x1, n_units) {
+                    let px_x = x << unit_size_log2 + ss_hor;
+                    let sb_idx = (t.by >> 5) * f.sr_sb128w + (px_x >> 7);
+                    let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
+                    let lr =
+                        &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize];
+                    read_restoration_info(&mut *t, &mut *lr, p, frame_type);
                 }
+            } else {
+                let x = 4 * t.bx >> ss_hor;
+                if x as c_uint & mask != 0 {
+                    continue;
+                }
+                let w = f.cur.p.w + ss_hor >> ss_hor;
+                if x != 0 && x + half_unit > w {
+                    continue;
+                }
+                let sb_idx = (t.by >> 5) * f.sr_sb128w + (t.bx >> 5);
+                let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
+                let lr = &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize];
+                read_restoration_info(&mut *t, &mut *lr, p, frame_type);
             }
         }
         if decode_sb(&mut *t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
