@@ -4128,7 +4128,7 @@ unsafe fn read_restoration_info(
 
 pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int {
     let f = &*t.f;
-    let root_bl: BlockLevel = if (*f.seq_hdr).sb128 != 0 {
+    let root_bl = if (*f.seq_hdr).sb128 != 0 {
         BL_128X128
     } else {
         BL_64X64
@@ -4244,12 +4244,11 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
                 let y = t.by * 4 >> ss_ver;
                 let h = f.cur.p.h + ss_ver >> ss_ver;
                 let unit_size = 1 << unit_size_log2;
-                let mask: c_uint = (unit_size - 1) as c_uint;
+                let mask = (unit_size - 1) as c_uint;
                 if !(y as c_uint & mask != 0) {
                     let half_unit = unit_size >> 1;
                     if !(y != 0 && y + half_unit > h) {
-                        let frame_type: Rav1dRestorationType =
-                            (*f.frame_hdr).restoration.type_0[p as usize];
+                        let frame_type = (*f.frame_hdr).restoration.type_0[p as usize];
                         if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
                             let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
                             let n_units = cmp::max(1, w + half_unit >> unit_size_log2);
@@ -4263,9 +4262,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
                                 let px_x = x << unit_size_log2 + ss_hor;
                                 let sb_idx = (t.by >> 5) * f.sr_sb128w + (px_x >> 7);
                                 let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
-                                let lr: *mut Av1RestorationUnit = &mut (*(f.lf.lr_mask)
-                                    .offset(sb_idx as isize))
-                                .lr[p][unit_idx as usize];
+                                let lr = &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p]
+                                    [unit_idx as usize];
                                 read_restoration_info(&mut *t, &mut *lr, p, frame_type);
                                 x += 1;
                             }
@@ -4276,9 +4274,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
                                 if !(x != 0 && x + half_unit > w) {
                                     let sb_idx = (t.by >> 5) * f.sr_sb128w + (t.bx >> 5);
                                     let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
-                                    let lr: *mut Av1RestorationUnit = &mut (*(f.lf.lr_mask)
-                                        .offset(sb_idx as isize))
-                                    .lr[p][unit_idx as usize];
+                                    let lr = &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p]
+                                        [unit_idx as usize];
                                     read_restoration_info(&mut *t, &mut *lr, p, frame_type);
                                 }
                             }
