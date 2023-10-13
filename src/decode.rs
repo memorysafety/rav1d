@@ -3489,7 +3489,11 @@ unsafe fn decode_b(
     0
 }
 
-unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeNode) -> c_int {
+unsafe fn decode_sb(
+    t: &mut Rav1dTaskContext,
+    bl: BlockLevel,
+    node: *const EdgeNode,
+) -> Result<(), ()> {
     let f = &*t.f;
     let ts = &mut *t.ts;
     let hsz = 16 >> bl;
@@ -3537,7 +3541,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
                     || bp == PARTITION_T_LEFT_SPLIT
                     || bp == PARTITION_T_RIGHT_SPLIT)
             {
-                return 1;
+                return Err(());
             }
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
@@ -3561,28 +3565,28 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
             PARTITION_NONE => {
                 let node = &*node;
                 if decode_b(t, bl, b[0], bp, node.o) != 0 {
-                    return -1;
+                    return Err(());
                 }
             }
             PARTITION_H => {
                 let node = &*node;
                 if decode_b(t, bl, b[0], bp, node.h[0]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by += hsz;
                 if decode_b(t, bl, b[0], bp, node.h[1]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by -= hsz;
             }
             PARTITION_V => {
                 let node = &*node;
                 if decode_b(t, bl, b[0], bp, node.v[0]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx += hsz;
                 if decode_b(t, bl, b[0], bp, node.v[1]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx -= hsz;
             }
@@ -3591,22 +3595,22 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
                     let tip = &*(node as *const EdgeTip);
                     assert!(hsz == 1);
                     if decode_b(t, bl, BS_4x4, bp, tip.split[0]) != 0 {
-                        return -1;
+                        return Err(());
                     }
                     let tl_filter = t.tl_4x4_filter;
                     t.bx += 1;
                     if decode_b(t, bl, BS_4x4, bp, tip.split[1]) != 0 {
-                        return -1;
+                        return Err(());
                     }
                     t.bx -= 1;
                     t.by += 1;
                     if decode_b(t, bl, BS_4x4, bp, tip.split[2]) != 0 {
-                        return -1;
+                        return Err(());
                     }
                     t.bx += 1;
                     t.tl_4x4_filter = tl_filter;
                     if decode_b(t, bl, BS_4x4, bp, tip.split[3]) != 0 {
-                        return -1;
+                        return Err(());
                     }
                     t.bx -= 1;
                     t.by -= 1;
@@ -3620,22 +3624,14 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
                     }
                 } else {
                     let branch = &*(node as *const EdgeBranch);
-                    if decode_sb(t, bl + 1, branch.split[0]) != 0 {
-                        return 1;
-                    }
+                    decode_sb(t, bl + 1, branch.split[0])?;
                     t.bx += hsz;
-                    if decode_sb(t, bl + 1, branch.split[1]) != 0 {
-                        return 1;
-                    }
+                    decode_sb(t, bl + 1, branch.split[1])?;
                     t.bx -= hsz;
                     t.by += hsz;
-                    if decode_sb(t, bl + 1, branch.split[2]) != 0 {
-                        return 1;
-                    }
+                    decode_sb(t, bl + 1, branch.split[2])?;
                     t.bx += hsz;
-                    if decode_sb(t, bl + 1, branch.split[3]) != 0 {
-                        return 1;
-                    }
+                    decode_sb(t, bl + 1, branch.split[3])?;
                     t.bx -= hsz;
                     t.by -= hsz;
                 }
@@ -3643,31 +3639,31 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
             PARTITION_T_TOP_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
                 if decode_b(t, bl, b[0], bp, branch.tts[0]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx += hsz;
                 if decode_b(t, bl, b[0], bp, branch.tts[1]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx -= hsz;
                 t.by += hsz;
                 if decode_b(t, bl, b[1], bp, branch.tts[2]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by -= hsz;
             }
             PARTITION_T_BOTTOM_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
                 if decode_b(t, bl, b[0], bp, branch.tbs[0]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by += hsz;
                 if decode_b(t, bl, b[1], bp, branch.tbs[1]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx += hsz;
                 if decode_b(t, bl, b[1], bp, branch.tbs[2]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx -= hsz;
                 t.by -= hsz;
@@ -3675,31 +3671,31 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
             PARTITION_T_LEFT_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
                 if decode_b(t, bl, b[0], bp, branch.tls[0]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by += hsz;
                 if decode_b(t, bl, b[0], bp, branch.tls[1]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by -= hsz;
                 t.bx += hsz;
                 if decode_b(t, bl, b[1], bp, branch.tls[2]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx -= hsz;
             }
             PARTITION_T_RIGHT_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
                 if decode_b(t, bl, b[0], bp, branch.trs[0]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx += hsz;
                 if decode_b(t, bl, b[1], bp, branch.trs[1]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by += hsz;
                 if decode_b(t, bl, b[1], bp, (*branch).trs[2]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by -= hsz;
                 t.bx -= hsz;
@@ -3707,20 +3703,20 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
             PARTITION_H4 => {
                 let branch = &*(node as *const EdgeBranch);
                 if decode_b(t, bl, b[0], bp, branch.h4[0]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by += hsz >> 1;
                 if decode_b(t, bl, b[0], bp, branch.h4[1]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by += hsz >> 1;
                 if decode_b(t, bl, b[0], bp, branch.h4[2]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.by += hsz >> 1;
                 if t.by < f.bh {
                     if decode_b(t, bl, b[0], bp, branch.h4[3]) != 0 {
-                        return -1;
+                        return Err(());
                     }
                 }
                 t.by -= hsz * 3 >> 1;
@@ -3728,20 +3724,20 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
             PARTITION_V4 => {
                 let branch = &*(node as *const EdgeBranch);
                 if decode_b(t, bl, b[0], bp, branch.v4[0]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx += hsz >> 1;
                 if decode_b(t, bl, b[0], bp, branch.v4[1]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx += hsz >> 1;
                 if decode_b(t, bl, b[0], bp, branch.v4[2]) != 0 {
-                    return -1;
+                    return Err(());
                 }
                 t.bx += hsz >> 1;
                 if t.bx < f.bw {
                     if decode_b(t, bl, b[0], bp, branch.v4[3]) != 0 {
-                        return -1;
+                        return Err(());
                     }
                 }
                 t.bx -= hsz * 3 >> 1;
@@ -3777,13 +3773,9 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         if is_split {
             let branch = &*(node as *const EdgeBranch);
             bp = PARTITION_SPLIT;
-            if decode_sb(t, bl + 1, branch.split[0]) != 0 {
-                return 1;
-            }
+            decode_sb(t, bl + 1, branch.split[0])?;
             t.bx += hsz;
-            if decode_sb(t, bl + 1, branch.split[1]) != 0 {
-                return 1;
-            }
+            decode_sb(t, bl + 1, branch.split[1])?;
             t.bx -= hsz;
         } else {
             bp = PARTITION_H;
@@ -3795,7 +3787,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
                 (*node).h[0],
             ) != 0
             {
-                return -1;
+                return Err(());
             }
         }
     } else {
@@ -3804,7 +3796,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         if let Some(pc) = pc {
             is_split = rav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl));
             if f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I422 && !is_split {
-                return 1;
+                return Err(());
             }
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
@@ -3831,13 +3823,9 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         if is_split {
             let branch = &*(node as *const EdgeBranch);
             bp = PARTITION_SPLIT;
-            if decode_sb(t, bl + 1, branch.split[0]) != 0 {
-                return 1;
-            }
+            decode_sb(t, bl + 1, branch.split[0])?;
             t.by += hsz;
-            if decode_sb(t, bl + 1, branch.split[2]) != 0 {
-                return 1;
-            }
+            decode_sb(t, bl + 1, branch.split[2])?;
             t.by -= hsz;
         } else {
             bp = PARTITION_V;
@@ -3849,7 +3837,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
                 (*node).v[0],
             ) != 0
             {
-                return -1;
+                return Err(());
             }
         }
     }
@@ -3868,7 +3856,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         );
     }
 
-    0
+    Ok(())
 }
 
 fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
@@ -4176,9 +4164,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
             if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
                 return Err(());
             }
-            if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
-                return Err(());
-            }
+            decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize])?;
             if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
                 t.a = (t.a).offset(1);
             }
@@ -4288,9 +4274,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
                 read_restoration_info(t, lr, p, frame_type);
             }
         }
-        if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
-            return Err(());
-        }
+        decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize])?;
         if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
             t.a = (t.a).offset(1);
             t.lf_mask = (t.lf_mask).offset(1);
