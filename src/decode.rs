@@ -4134,7 +4134,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
         BL_64X64
     };
     let ts = &mut *t.ts;
-    let c: *const Rav1dContext = f.c;
+    let c = &*f.c;
     let sb_step = f.sb_step;
     let tile_row = ts.tiling.row;
     let tile_col = ts.tiling.col;
@@ -4153,7 +4153,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
             t.frame_thread.pass,
         );
     }
-    if (*f.frame_hdr).frame_type & 1 != 0 && (*c).n_fc > 1 {
+    if (*f.frame_hdr).frame_type & 1 != 0 && c.n_fc > 1 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
         let mut n = 0;
@@ -4172,7 +4172,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
         t.frame_thread.pass,
     );
     if t.frame_thread.pass == 2 {
-        let off_2pass = if (*c).n_tc > 1 {
+        let off_2pass = if c.n_tc > 1 {
             f.sb128w * (*f.frame_hdr).tiling.rows
         } else {
             0
@@ -4181,10 +4181,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
         t.a =
             f.a.offset((off_2pass + col_sb128_start + tile_row * f.sb128w) as isize);
         while t.bx < ts.tiling.col_end {
-            if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
+            if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
                 return 1;
             }
-            if decode_sb(&mut *t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
+            if decode_sb(&mut *t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
                 return 1;
             }
             if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
@@ -4223,7 +4223,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
         f.lf.mask
             .offset((sb128y * f.sb128w + col_sb128_start) as isize);
     while t.bx < ts.tiling.col_end {
-        if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
+        if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
             return 1;
         }
         let cdef_idx = &mut (*t.lf_mask).cdef_idx;
@@ -4288,7 +4288,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
             }
             p += 1;
         }
-        if decode_sb(&mut *t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
+        if decode_sb(&mut *t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
             return 1;
         }
         if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
