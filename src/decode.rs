@@ -4155,12 +4155,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
     }
     if is_inter_or_switch(&*f.frame_hdr) && c.n_fc > 1 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
-        let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
-        for n in 0..7 {
-            for m in 0..2 {
-                lowest_px[n as usize][m as usize] = i32::MIN;
-            }
-        }
+        *ts.lowest_pixel.offset(sby as isize) = [[i32::MIN; 2]; 7];
     }
     reset_context(
         &mut t.l,
