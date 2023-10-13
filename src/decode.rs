@@ -4140,7 +4140,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
     let tile_col = ts.tiling.col;
     let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as c_int;
     let col_sb128_start = col_sb_start >> ((*f.seq_hdr).sb128 == 0) as c_int;
-    if (*f.frame_hdr).frame_type & 1 != 0 || (*f.frame_hdr).allow_intrabc != 0 {
+    if is_inter_or_switch(&*f.frame_hdr) || (*f.frame_hdr).allow_intrabc != 0 {
         rav1d_refmvs_tile_sbrow_init(
             &mut t.rt,
             &f.rf,
@@ -4153,7 +4153,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
             t.frame_thread.pass,
         );
     }
-    if (*f.frame_hdr).frame_type & 1 != 0 && c.n_fc > 1 {
+    if is_inter_or_switch(&*f.frame_hdr) && c.n_fc > 1 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
         let mut n = 0;
@@ -4168,7 +4168,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
     }
     reset_context(
         &mut t.l,
-        (*f.frame_hdr).frame_type & 1 == 0,
+        is_key_or_intra(&*f.frame_hdr),
         t.frame_thread.pass,
     );
     if t.frame_thread.pass == 2 {
