@@ -4126,7 +4126,7 @@ unsafe fn read_restoration_info(
     }
 }
 
-pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int {
+pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
     let f = &*t.f;
     let root_bl = if (*f.seq_hdr).sb128 != 0 {
         BL_128X128
@@ -4173,20 +4173,20 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
         for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
             t.bx = bx;
             if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
-                return 1;
+                return true;
             }
             if decode_sb(&mut *t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
-                return 1;
+                return true;
             }
             if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
                 t.a = (t.a).offset(1);
             }
         }
         (f.bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
-        return 0;
+        return false;
     }
     if ts.msac.cnt < -15 {
-        return 1;
+        return true;
     }
     if (*f.c).n_tc > 1 && (*f.frame_hdr).use_ref_frame_mvs != 0 {
         (*f.c)
@@ -4214,7 +4214,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.bx = bx;
         if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
-            return 1;
+            return true;
         }
         let cdef_idx = &mut (*t.lf_mask).cdef_idx;
         if root_bl == BL_128X128 {
@@ -4276,7 +4276,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
             }
         }
         if decode_sb(&mut *t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
-            return 1;
+            return true;
         }
         if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
             t.a = (t.a).offset(1);
@@ -4310,7 +4310,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> c_int 
         t.l.tx_lpf_uv.0[((t.by & 16) >> ss_ver) as usize..].as_ptr() as *const c_void,
         (sb_step >> ss_ver) as usize,
     );
-    return 0;
+    false
 }
 
 pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1dResult {
@@ -4901,7 +4901,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
             }
             for tile in &mut ts[..] {
                 t.ts = tile;
-                if rav1d_decode_tile_sbrow(t) != 0 {
+                if rav1d_decode_tile_sbrow(t) {
                     return Err(EINVAL);
                 }
             }
