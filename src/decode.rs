@@ -1468,7 +1468,7 @@ unsafe fn decode_b(
     bs: BlockSize,
     bp: BlockPartition,
     intra_edge_flags: EdgeFlags,
-) -> c_int {
+) -> Result<(), ()> {
     use std::fmt;
 
     /// Helper struct for printing a number as a signed hexidecimal value.
@@ -1592,7 +1592,7 @@ unsafe fn decode_b(
                 }
             }
             if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-                return -1;
+                return Err(());
             }
 
             let filter = &dav1d_filter_dir[b.filter2d() as usize];
@@ -1636,7 +1636,7 @@ unsafe fn decode_b(
             }
         }
 
-        return 0;
+        return Ok(());
     }
 
     let cw4 = w4 + ss_hor >> ss_hor;
@@ -1656,7 +1656,7 @@ unsafe fn decode_b(
                 let seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                    return -1;
+                    return Err(());
                 }
                 b.seg_id = seg_id;
             } else {
@@ -1677,7 +1677,7 @@ unsafe fn decode_b(
                     let seg_id =
                         get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                     if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                        return -1;
+                        return Err(());
                     }
                     b.seg_id = seg_id;
                 } else {
@@ -1761,7 +1761,7 @@ unsafe fn decode_b(
                 let seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                    return -1;
+                    return Err(());
                 }
                 b.seg_id = seg_id;
             } else {
@@ -2380,7 +2380,7 @@ unsafe fn decode_b(
         }
         // error out if mv still overlaps with the current superblock
         if src_bottom > sby && src_right > sbx {
-            return -1;
+            return Err(());
         }
 
         b.mv_mut()[0].x = ((src_left - t.bx * 4) * 8) as i16;
@@ -2405,7 +2405,7 @@ unsafe fn decode_b(
             f.bd_fn.read_coef_blocks(t, bs, b);
             *b.filter2d_mut() = FILTER_2D_BILINEAR as u8;
         } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-            return -1;
+            return Err(());
         }
 
         splat_intrabc_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
@@ -3159,7 +3159,7 @@ unsafe fn decode_b(
         if t.frame_thread.pass == 1 {
             f.bd_fn.read_coef_blocks(t, bs, b);
         } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-            return -1;
+            return Err(());
         }
 
         if frame_hdr.loopfilter.level_y != [0, 0] {
@@ -3486,7 +3486,7 @@ unsafe fn decode_b(
         }
     }
 
-    0
+    Ok(())
 }
 
 unsafe fn decode_sb(
@@ -3564,54 +3564,36 @@ unsafe fn decode_sb(
         match bp {
             PARTITION_NONE => {
                 let node = &*node;
-                if decode_b(t, bl, b[0], bp, node.o) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, node.o)?;
             }
             PARTITION_H => {
                 let node = &*node;
-                if decode_b(t, bl, b[0], bp, node.h[0]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, node.h[0])?;
                 t.by += hsz;
-                if decode_b(t, bl, b[0], bp, node.h[1]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, node.h[1])?;
                 t.by -= hsz;
             }
             PARTITION_V => {
                 let node = &*node;
-                if decode_b(t, bl, b[0], bp, node.v[0]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz;
-                if decode_b(t, bl, b[0], bp, node.v[1]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, node.v[1])?;
                 t.bx -= hsz;
             }
             PARTITION_SPLIT => {
                 if bl == BL_8X8 {
                     let tip = &*(node as *const EdgeTip);
                     assert!(hsz == 1);
-                    if decode_b(t, bl, BS_4x4, bp, tip.split[0]) != 0 {
-                        return Err(());
-                    }
+                    decode_b(t, bl, BS_4x4, bp, tip.split[0])?;
                     let tl_filter = t.tl_4x4_filter;
                     t.bx += 1;
-                    if decode_b(t, bl, BS_4x4, bp, tip.split[1]) != 0 {
-                        return Err(());
-                    }
+                    decode_b(t, bl, BS_4x4, bp, tip.split[1])?;
                     t.bx -= 1;
                     t.by += 1;
-                    if decode_b(t, bl, BS_4x4, bp, tip.split[2]) != 0 {
-                        return Err(());
-                    }
+                    decode_b(t, bl, BS_4x4, bp, tip.split[2])?;
                     t.bx += 1;
                     t.tl_4x4_filter = tl_filter;
-                    if decode_b(t, bl, BS_4x4, bp, tip.split[3]) != 0 {
-                        return Err(());
-                    }
+                    decode_b(t, bl, BS_4x4, bp, tip.split[3])?;
                     t.bx -= 1;
                     t.by -= 1;
                     if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {
@@ -3638,107 +3620,67 @@ unsafe fn decode_sb(
             }
             PARTITION_T_TOP_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.tts[0]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.tts[0])?;
                 t.bx += hsz;
-                if decode_b(t, bl, b[0], bp, branch.tts[1]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.tts[1])?;
                 t.bx -= hsz;
                 t.by += hsz;
-                if decode_b(t, bl, b[1], bp, branch.tts[2]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[1], bp, branch.tts[2])?;
                 t.by -= hsz;
             }
             PARTITION_T_BOTTOM_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.tbs[0]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.tbs[0])?;
                 t.by += hsz;
-                if decode_b(t, bl, b[1], bp, branch.tbs[1]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[1], bp, branch.tbs[1])?;
                 t.bx += hsz;
-                if decode_b(t, bl, b[1], bp, branch.tbs[2]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[1], bp, branch.tbs[2])?;
                 t.bx -= hsz;
                 t.by -= hsz;
             }
             PARTITION_T_LEFT_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.tls[0]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.tls[0])?;
                 t.by += hsz;
-                if decode_b(t, bl, b[0], bp, branch.tls[1]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.tls[1])?;
                 t.by -= hsz;
                 t.bx += hsz;
-                if decode_b(t, bl, b[1], bp, branch.tls[2]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[1], bp, branch.tls[2])?;
                 t.bx -= hsz;
             }
             PARTITION_T_RIGHT_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.trs[0]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.trs[0])?;
                 t.bx += hsz;
-                if decode_b(t, bl, b[1], bp, branch.trs[1]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[1], bp, branch.trs[1])?;
                 t.by += hsz;
-                if decode_b(t, bl, b[1], bp, (*branch).trs[2]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[1], bp, (*branch).trs[2])?;
                 t.by -= hsz;
                 t.bx -= hsz;
             }
             PARTITION_H4 => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.h4[0]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.h4[0])?;
                 t.by += hsz >> 1;
-                if decode_b(t, bl, b[0], bp, branch.h4[1]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.h4[1])?;
                 t.by += hsz >> 1;
-                if decode_b(t, bl, b[0], bp, branch.h4[2]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.h4[2])?;
                 t.by += hsz >> 1;
                 if t.by < f.bh {
-                    if decode_b(t, bl, b[0], bp, branch.h4[3]) != 0 {
-                        return Err(());
-                    }
+                    decode_b(t, bl, b[0], bp, branch.h4[3])?;
                 }
                 t.by -= hsz * 3 >> 1;
             }
             PARTITION_V4 => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.v4[0]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.v4[0])?;
                 t.bx += hsz >> 1;
-                if decode_b(t, bl, b[0], bp, branch.v4[1]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.v4[1])?;
                 t.bx += hsz >> 1;
-                if decode_b(t, bl, b[0], bp, branch.v4[2]) != 0 {
-                    return Err(());
-                }
+                decode_b(t, bl, b[0], bp, branch.v4[2])?;
                 t.bx += hsz >> 1;
                 if t.bx < f.bw {
-                    if decode_b(t, bl, b[0], bp, branch.v4[3]) != 0 {
-                        return Err(());
-                    }
+                    decode_b(t, bl, b[0], bp, branch.v4[3])?;
                 }
                 t.bx -= hsz * 3 >> 1;
             }
@@ -3779,16 +3721,13 @@ unsafe fn decode_sb(
             t.bx -= hsz;
         } else {
             bp = PARTITION_H;
-            if decode_b(
+            decode_b(
                 t,
                 bl,
                 dav1d_block_sizes[bl as usize][bp as usize][0],
                 bp,
                 (*node).h[0],
-            ) != 0
-            {
-                return Err(());
-            }
+            )?;
         }
     } else {
         assert!(have_v_split);
@@ -3829,16 +3768,13 @@ unsafe fn decode_sb(
             t.by -= hsz;
         } else {
             bp = PARTITION_V;
-            if decode_b(
+            decode_b(
                 t,
                 bl,
                 dav1d_block_sizes[bl as usize][bp as usize][0],
                 bp,
                 (*node).v[0],
-            ) != 0
-            {
-                return Err(());
-            }
+            )?;
         }
     }
 
