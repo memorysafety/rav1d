@@ -220,7 +220,6 @@ use crate::src::warpmv::rav1d_get_shear_params;
 use crate::src::warpmv::rav1d_set_affine_mv2d;
 use libc::free;
 use libc::malloc;
-use libc::memcpy;
 use libc::pthread_cond_signal;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
@@ -4317,19 +4316,24 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
     // up the initial value in neighbour tiles when running the loopfilter
     let mut align_h = f.bh + 31 & !31;
-    memcpy(
-        f.lf.tx_lpf_right_edge[0].offset((align_h * tile_col + t.by) as isize) as *mut c_void,
-        t.l.tx_lpf_y.0[(t.by & 16) as usize..].as_ptr() as *const c_void,
-        sb_step as usize,
-    );
+    slice::from_raw_parts_mut(
+        f.lf.tx_lpf_right_edge[0],
+        (align_h * tile_col + t.by + sb_step).try_into().unwrap(),
+    )[(align_h * tile_col + t.by).try_into().unwrap()..][..sb_step.try_into().unwrap()]
+        .copy_from_slice(&t.l.tx_lpf_y.0[(t.by & 16) as usize..][..sb_step.try_into().unwrap()]);
     let ss_ver = (f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
     align_h >>= ss_ver;
-    memcpy(
-        f.lf.tx_lpf_right_edge[1].offset((align_h * tile_col + (t.by >> ss_ver)) as isize)
-            as *mut c_void,
-        t.l.tx_lpf_uv.0[((t.by & 16) >> ss_ver) as usize..].as_ptr() as *const c_void,
-        (sb_step >> ss_ver) as usize,
-    );
+    slice::from_raw_parts_mut(
+        f.lf.tx_lpf_right_edge[1],
+        (align_h * tile_col + (t.by >> ss_ver) + (sb_step >> ss_ver))
+            .try_into()
+            .unwrap(),
+    )[(align_h * tile_col + (t.by >> ss_ver)).try_into().unwrap()..]
+        [..(sb_step >> ss_ver).try_into().unwrap()]
+        .copy_from_slice(
+            &t.l.tx_lpf_uv.0[((t.by & 16) >> ss_ver) as usize..]
+                [..(sb_step >> ss_ver).try_into().unwrap()],
+        );
 
     false
 }
