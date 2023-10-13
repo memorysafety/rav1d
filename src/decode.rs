@@ -4175,7 +4175,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
             if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
                 return true;
             }
-            if decode_sb(&mut *t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
+            if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
                 return true;
             }
             if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
@@ -4258,7 +4258,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
                     let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
                     let lr =
                         &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize];
-                    read_restoration_info(&mut *t, &mut *lr, p, frame_type);
+                    read_restoration_info(t, lr, p, frame_type);
                 }
             } else {
                 let x = 4 * t.bx >> ss_hor;
@@ -4272,10 +4272,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
                 let sb_idx = (t.by >> 5) * f.sr_sb128w + (t.bx >> 5);
                 let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
                 let lr = &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize];
-                read_restoration_info(&mut *t, &mut *lr, p, frame_type);
+                read_restoration_info(t, lr, p, frame_type);
             }
         }
-        if decode_sb(&mut *t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
+        if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
             return true;
         }
         if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
