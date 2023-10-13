@@ -1591,9 +1591,7 @@ unsafe fn decode_b(
                     }
                 }
             }
-            if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-                return Err(());
-            }
+            f.bd_fn.recon_b_inter(t, bs, b)?;
 
             let filter = &dav1d_filter_dir[b.filter2d() as usize];
             CaseSet::<32, false>::many(
@@ -2404,8 +2402,8 @@ unsafe fn decode_b(
         if t.frame_thread.pass == 1 {
             f.bd_fn.read_coef_blocks(t, bs, b);
             *b.filter2d_mut() = FILTER_2D_BILINEAR as u8;
-        } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-            return Err(());
+        } else {
+            f.bd_fn.recon_b_inter(t, bs, b)?;
         }
 
         splat_intrabc_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
@@ -3158,8 +3156,8 @@ unsafe fn decode_b(
         // reconstruction
         if t.frame_thread.pass == 1 {
             f.bd_fn.read_coef_blocks(t, bs, b);
-        } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-            return Err(());
+        } else {
+            f.bd_fn.recon_b_inter(t, bs, b)?;
         }
 
         if frame_hdr.loopfilter.level_y != [0, 0] {

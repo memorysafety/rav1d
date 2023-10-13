@@ -265,8 +265,11 @@ impl Rav1dFrameContext_bd_fn {
         context: *mut Rav1dTaskContext,
         block_size: BlockSize,
         block: *const Av1Block,
-    ) -> c_int {
-        self.recon_b_inter.expect("non-null function pointer")(context, block_size, block)
+    ) -> Result<(), ()> {
+        match self.recon_b_inter.expect("non-null function pointer")(context, block_size, block) {
+            0 => Ok(()),
+            _ => Err(()),
+        }
     }
 
     pub unsafe fn read_coef_blocks(
