@@ -7,6 +7,7 @@ use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
@@ -2386,6 +2387,128 @@ pub(crate) unsafe fn obmc<BD: BitDepth>(
             }
             y += step4_0;
         }
+    }
+    return 0 as c_int;
+}
+
+// TODO(kkysen) pub(crate) temporarily until recon is fully deduplicated
+pub(crate) unsafe fn warp_affine<BD: BitDepth>(
+    t: *mut Rav1dTaskContext,
+    mut dst8: *mut BD::Pixel,
+    mut dst16: *mut i16,
+    dstride: ptrdiff_t,
+    b_dim: *const u8,
+    pl: c_int,
+    refp: *const Rav1dThreadPicture,
+    wmp: *const Rav1dWarpedMotionParams,
+) -> c_int {
+    if (dst8 != 0 as *mut c_void as *mut BD::Pixel) as c_int
+        ^ (dst16 != 0 as *mut c_void as *mut i16) as c_int
+        == 0
+    {
+        unreachable!();
+    }
+    let f: *const Rav1dFrameContext = (*t).f;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
+    let ss_ver = (pl != 0
+        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+        as c_int;
+    let ss_hor = (pl != 0
+        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+        as c_int;
+    let h_mul = 4 >> ss_hor;
+    let v_mul = 4 >> ss_ver;
+    if !(*b_dim.offset(0) as c_int * h_mul & 7 == 0 && *b_dim.offset(1) as c_int * v_mul & 7 == 0) {
+        unreachable!();
+    }
+    let mat: *const i32 = ((*wmp).matrix).as_ptr();
+    let width = (*refp).p.p.w + ss_hor >> ss_hor;
+    let height = (*refp).p.p.h + ss_ver >> ss_ver;
+    let mut y = 0;
+    while y < *b_dim.offset(1) as c_int * v_mul {
+        let src_y = (*t).by * 4 + ((y + 4) << ss_ver);
+        let mat3_y: i64 = *mat.offset(3) as i64 * src_y as i64 + *mat.offset(0) as i64;
+        let mat5_y: i64 = *mat.offset(5) as i64 * src_y as i64 + *mat.offset(1) as i64;
+        let mut x = 0;
+        while x < *b_dim.offset(0) as c_int * h_mul {
+            let src_x = (*t).bx * 4 + ((x + 4) << ss_hor);
+            let mvx: i64 = *mat.offset(2) as i64 * src_x as i64 + mat3_y >> ss_hor;
+            let mvy: i64 = *mat.offset(4) as i64 * src_x as i64 + mat5_y >> ss_ver;
+            let dx = (mvx >> 16) as c_int - 4;
+            let mx = (mvx as c_int & 0xffff as c_int)
+                - (*wmp).alpha() as c_int * 4
+                - (*wmp).beta() as c_int * 7
+                & !(0x3f as c_int);
+            let dy = (mvy >> 16) as c_int - 4;
+            let my = (mvy as c_int & 0xffff as c_int)
+                - (*wmp).gamma() as c_int * 4
+                - (*wmp).delta() as c_int * 4
+                & !(0x3f as c_int);
+            let ref_ptr: *const BD::Pixel;
+            let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as c_int as usize];
+            if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
+                let emu_edge_buf: *mut BD::Pixel = match BD::BPC {
+                    BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc)
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>(),
+                    BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_16bpc)
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>(),
+                };
+                ((*(*f).dsp).mc.emu_edge)(
+                    15 as c_int as intptr_t,
+                    15 as c_int as intptr_t,
+                    width as intptr_t,
+                    height as intptr_t,
+                    (dx - 3) as intptr_t,
+                    (dy - 3) as intptr_t,
+                    emu_edge_buf.cast(),
+                    (32 as c_int as c_ulong)
+                        .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
+                        as ptrdiff_t,
+                    (*refp).p.data[pl as usize].cast(),
+                    ref_stride,
+                );
+                ref_ptr = &mut *emu_edge_buf.offset((32 * 3 + 3) as isize) as *mut BD::Pixel;
+                ref_stride = (32 as c_int as c_ulong)
+                    .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
+                    as ptrdiff_t;
+            } else {
+                ref_ptr = ((*refp).p.data[pl as usize] as *mut BD::Pixel)
+                    .offset((BD::pxstride(ref_stride as usize) as isize * dy as isize) as isize)
+                    .offset(dx as isize);
+            }
+            if !dst16.is_null() {
+                ((*dsp).mc.warp8x8t)(
+                    &mut *dst16.offset(x as isize),
+                    dstride,
+                    ref_ptr.cast(),
+                    ref_stride,
+                    ((*wmp).abcd).as_ptr(),
+                    mx,
+                    my,
+                    (*f).bitdepth_max,
+                );
+            } else {
+                ((*dsp).mc.warp8x8)(
+                    dst8.offset(x as isize).cast(),
+                    dstride,
+                    ref_ptr.cast(),
+                    ref_stride,
+                    ((*wmp).abcd).as_ptr(),
+                    mx,
+                    my,
+                    (*f).bitdepth_max,
+                );
+            }
+            x += 8 as c_int;
+        }
+        if !dst8.is_null() {
+            dst8 = dst8.offset(8 * BD::pxstride(dstride as usize) as isize);
+        } else {
+            dst16 = dst16.offset((8 * dstride) as isize);
+        }
+        y += 8 as c_int;
     }
     return 0 as c_int;
 }
