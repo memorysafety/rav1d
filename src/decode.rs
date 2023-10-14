@@ -185,6 +185,7 @@ use crate::src::qm::dav1d_qm_tbl;
 use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
+use crate::src::recon::rav1d_read_coef_blocks;
 use crate::src::recon::DEBUG_BLOCK_INFO;
 use crate::src::refmvs::rav1d_refmvs_find;
 use crate::src::refmvs::rav1d_refmvs_init_frame;
@@ -250,8 +251,7 @@ use crate::{
     src::recon_tmpl_8::rav1d_filter_sbrow_deblock_cols_8bpc,
     src::recon_tmpl_8::rav1d_filter_sbrow_deblock_rows_8bpc,
     src::recon_tmpl_8::rav1d_filter_sbrow_lr_8bpc,
-    src::recon_tmpl_8::rav1d_filter_sbrow_resize_8bpc,
-    src::recon_tmpl_8::rav1d_read_coef_blocks_8bpc, src::recon_tmpl_8::rav1d_recon_b_inter_8bpc,
+    src::recon_tmpl_8::rav1d_filter_sbrow_resize_8bpc, src::recon_tmpl_8::rav1d_recon_b_inter_8bpc,
     src::recon_tmpl_8::rav1d_recon_b_intra_8bpc,
 };
 
@@ -269,7 +269,6 @@ use crate::{
     src::recon_tmpl_16::rav1d_filter_sbrow_deblock_rows_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_lr_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_resize_16bpc,
-    src::recon_tmpl_16::rav1d_read_coef_blocks_16bpc,
     src::recon_tmpl_16::rav1d_recon_b_inter_16bpc, src::recon_tmpl_16::rav1d_recon_b_intra_16bpc,
 };
 
@@ -5107,7 +5106,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize_8bpc);
             f.bd_fn.filter_sbrow_lr = Some(rav1d_filter_sbrow_lr_8bpc);
             f.bd_fn.backup_ipred_edge = Some(rav1d_backup_ipred_edge_8bpc);
-            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks_8bpc);
+            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks::<BitDepth8>);
         }
     } else {
         #[cfg(feature = "bitdepth_16")]
@@ -5121,7 +5120,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize_16bpc);
             f.bd_fn.filter_sbrow_lr = Some(rav1d_filter_sbrow_lr_16bpc);
             f.bd_fn.backup_ipred_edge = Some(rav1d_backup_ipred_edge_16bpc);
-            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks_16bpc);
+            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks::<BitDepth16>);
         }
     }
 
