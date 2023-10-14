@@ -4,7 +4,6 @@ use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
-use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
@@ -29,7 +28,6 @@ use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::ipred_prepare::rav1d_prepare_intra_edges;
 use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
-use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
@@ -55,6 +53,7 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply_tmpl_8::rav1d_lr_sbrow_8bpc;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::recon::decode_coefs;
+use crate::src::recon::mc;
 use crate::src::recon::read_coef_tree;
 use crate::src::recon::DEBUG_BLOCK_INFO;
 use crate::src::refmvs::refmvs_block;
@@ -71,216 +70,12 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
-use std::ffi::c_longlong;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 pub type pixel = u8;
 pub type coef = i16;
-
-unsafe fn mc(
-    t: *mut Rav1dTaskContext,
-    dst8: *mut pixel,
-    dst16: *mut i16,
-    dst_stride: ptrdiff_t,
-    bw4: c_int,
-    bh4: c_int,
-    bx: c_int,
-    by: c_int,
-    pl: c_int,
-    mv: mv,
-    refp: *const Rav1dThreadPicture,
-    refidx: c_int,
-    filter_2d: Filter2d,
-) -> c_int {
-    if (dst8 != 0 as *mut c_void as *mut pixel) as c_int
-        ^ (dst16 != 0 as *mut c_void as *mut i16) as c_int
-        == 0
-    {
-        unreachable!();
-    }
-    let f: *const Rav1dFrameContext = (*t).f;
-    let ss_ver = (pl != 0
-        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
-        as c_int;
-    let ss_hor = (pl != 0
-        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
-        as c_int;
-    let h_mul = 4 >> ss_hor;
-    let v_mul = 4 >> ss_ver;
-    let mvx = mv.x as c_int;
-    let mvy = mv.y as c_int;
-    let mx = mvx & 15 >> (ss_hor == 0) as c_int;
-    let my = mvy & 15 >> (ss_ver == 0) as c_int;
-    let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as c_int as usize];
-    let r#ref: *const pixel;
-    if (*refp).p.p.w == (*f).cur.p.w && (*refp).p.p.h == (*f).cur.p.h {
-        let dx = bx * h_mul + (mvx >> 3 + ss_hor);
-        let dy = by * v_mul + (mvy >> 3 + ss_ver);
-        let w;
-        let h;
-        if (*refp).p.data[0] != (*f).cur.data[0] {
-            w = (*f).cur.p.w + ss_hor >> ss_hor;
-            h = (*f).cur.p.h + ss_ver >> ss_ver;
-        } else {
-            w = (*f).bw * 4 >> ss_hor;
-            h = (*f).bh * 4 >> ss_ver;
-        }
-        if dx < (mx != 0) as c_int * 3
-            || dy < (my != 0) as c_int * 3
-            || dx + bw4 * h_mul + (mx != 0) as c_int * 4 > w
-            || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
-        {
-            let emu_edge_buf: *mut pixel =
-                ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc).as_mut_ptr();
-            ((*(*f).dsp).mc.emu_edge)(
-                (bw4 * h_mul + (mx != 0) as c_int * 7) as intptr_t,
-                (bh4 * v_mul + (my != 0) as c_int * 7) as intptr_t,
-                w as intptr_t,
-                h as intptr_t,
-                (dx - (mx != 0) as c_int * 3) as intptr_t,
-                (dy - (my != 0) as c_int * 3) as intptr_t,
-                emu_edge_buf.cast(),
-                (192 as c_int as c_ulong).wrapping_mul(::core::mem::size_of::<pixel>() as c_ulong)
-                    as ptrdiff_t,
-                (*refp).p.data[pl as usize].cast(),
-                ref_stride,
-            );
-            r#ref = &mut *emu_edge_buf
-                .offset((192 * (my != 0) as c_int * 3 + (mx != 0) as c_int * 3) as isize)
-                as *mut pixel;
-            ref_stride = (192 as c_int as c_ulong)
-                .wrapping_mul(::core::mem::size_of::<pixel>() as c_ulong)
-                as ptrdiff_t;
-        } else {
-            r#ref = ((*refp).p.data[pl as usize] as *mut pixel)
-                .offset((ref_stride * dy as isize) as isize)
-                .offset(dx as isize);
-        }
-        if !dst8.is_null() {
-            (*(*f).dsp).mc.mc[filter_2d as usize](
-                dst8.cast(),
-                dst_stride,
-                r#ref.cast(),
-                ref_stride,
-                bw4 * h_mul,
-                bh4 * v_mul,
-                mx << (ss_hor == 0) as c_int,
-                my << (ss_ver == 0) as c_int,
-                8,
-            );
-        } else {
-            (*(*f).dsp).mc.mct[filter_2d as usize](
-                dst16,
-                r#ref.cast(),
-                ref_stride,
-                bw4 * h_mul,
-                bh4 * v_mul,
-                mx << (ss_hor == 0) as c_int,
-                my << (ss_ver == 0) as c_int,
-                8,
-            );
-        }
-    } else {
-        if !(refp != &(*f).sr_cur as *const Rav1dThreadPicture) {
-            unreachable!();
-        }
-        let orig_pos_y = (by * v_mul << 4) + mvy * ((1 as c_int) << (ss_ver == 0) as c_int);
-        let orig_pos_x = (bx * h_mul << 4) + mvx * ((1 as c_int) << (ss_hor == 0) as c_int);
-        let pos_y;
-        let pos_x;
-        let tmp: i64 = orig_pos_x as i64 * (*f).svc[refidx as usize][0].scale as i64
-            + (((*f).svc[refidx as usize][0].scale - 0x4000 as c_int) * 8) as i64;
-        pos_x = apply_sign64(
-            ((tmp as c_longlong).abs() + 128 as c_longlong >> 8) as c_int,
-            tmp,
-        ) + 32;
-        let tmp_0: i64 = orig_pos_y as i64 * (*f).svc[refidx as usize][1].scale as i64
-            + (((*f).svc[refidx as usize][1].scale - 0x4000 as c_int) * 8) as i64;
-        pos_y = apply_sign64(
-            ((tmp_0 as c_longlong).abs() + 128 as c_longlong >> 8) as c_int,
-            tmp_0,
-        ) + 32;
-        let left = pos_x >> 10;
-        let top = pos_y >> 10;
-        let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx as usize][0].step >> 10) + 1;
-        let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx as usize][1].step >> 10) + 1;
-        if DEBUG_BLOCK_INFO(&*f, &*t) {
-            printf(
-                b"Off %dx%d [%d,%d,%d], size %dx%d [%d,%d]\n\0" as *const u8 as *const c_char,
-                left,
-                top,
-                orig_pos_x,
-                (*f).svc[refidx as usize][0].scale,
-                refidx,
-                right - left,
-                bottom - top,
-                (*f).svc[refidx as usize][0].step,
-                (*f).svc[refidx as usize][1].step,
-            );
-        }
-        let w_0 = (*refp).p.p.w + ss_hor >> ss_hor;
-        let h_0 = (*refp).p.p.h + ss_ver >> ss_ver;
-        if left < 3 || top < 3 || right + 4 > w_0 || bottom + 4 > h_0 {
-            let emu_edge_buf_0: *mut pixel =
-                ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc).as_mut_ptr();
-            ((*(*f).dsp).mc.emu_edge)(
-                (right - left + 7) as intptr_t,
-                (bottom - top + 7) as intptr_t,
-                w_0 as intptr_t,
-                h_0 as intptr_t,
-                (left - 3) as intptr_t,
-                (top - 3) as intptr_t,
-                emu_edge_buf_0.cast(),
-                (320 as c_int as c_ulong).wrapping_mul(::core::mem::size_of::<pixel>() as c_ulong)
-                    as ptrdiff_t,
-                (*refp).p.data[pl as usize].cast(),
-                ref_stride,
-            );
-            r#ref = &mut *emu_edge_buf_0.offset((320 * 3 + 3) as isize) as *mut pixel;
-            ref_stride = (320 as c_int as c_ulong)
-                .wrapping_mul(::core::mem::size_of::<pixel>() as c_ulong)
-                as ptrdiff_t;
-            if DEBUG_BLOCK_INFO(&*f, &*t) {
-                printf(b"Emu\n\0" as *const u8 as *const c_char);
-            }
-        } else {
-            r#ref = ((*refp).p.data[pl as usize] as *mut pixel)
-                .offset((ref_stride * top as isize) as isize)
-                .offset(left as isize);
-        }
-        if !dst8.is_null() {
-            (*(*f).dsp).mc.mc_scaled[filter_2d as usize](
-                dst8.cast(),
-                dst_stride,
-                r#ref.cast(),
-                ref_stride,
-                bw4 * h_mul,
-                bh4 * v_mul,
-                pos_x & 0x3ff as c_int,
-                pos_y & 0x3ff as c_int,
-                (*f).svc[refidx as usize][0].step,
-                (*f).svc[refidx as usize][1].step,
-                8,
-            );
-        } else {
-            (*(*f).dsp).mc.mct_scaled[filter_2d as usize](
-                dst16,
-                r#ref.cast(),
-                ref_stride,
-                bw4 * h_mul,
-                bh4 * v_mul,
-                pos_x & 0x3ff as c_int,
-                pos_y & 0x3ff as c_int,
-                (*f).svc[refidx as usize][0].step,
-                (*f).svc[refidx as usize][1].step,
-                8,
-            );
-        }
-    }
-    return 0 as c_int;
-}
 
 unsafe fn obmc(
     t: *mut Rav1dTaskContext,
@@ -325,7 +120,7 @@ unsafe fn obmc(
             if (*a_r).0.r#ref.r#ref[0] as c_int > 0 {
                 let ow4 = cmp::min(step4, *b_dim.offset(0) as c_int);
                 let oh4 = cmp::min(*b_dim.offset(1) as c_int, 16 as c_int) >> 1;
-                res = mc(
+                res = mc::<BitDepth8>(
                     t,
                     lap,
                     0 as *mut i16,
@@ -373,7 +168,7 @@ unsafe fn obmc(
             if (*l_r).0.r#ref.r#ref[0] as c_int > 0 {
                 let ow4_0 = cmp::min(*b_dim.offset(0) as c_int, 16 as c_int) >> 1;
                 let oh4_0 = cmp::min(step4_0, *b_dim.offset(1) as c_int);
-                res = mc(
+                res = mc::<BitDepth8>(
                     t,
                     lap,
                     0 as *mut i16,
@@ -1310,7 +1105,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
         if (*(*f).frame_hdr).super_res.enabled != 0 {
             unreachable!();
         }
-        res = mc(
+        res = mc::<BitDepth8>(
             t,
             dst,
             0 as *mut i16,
@@ -1335,7 +1130,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
         if has_chroma != 0 {
             let mut pl = 1;
             while pl < 3 {
-                res = mc(
+                res = mc::<BitDepth8>(
                     t,
                     ((*f).cur.data[pl as usize] as *mut pixel).offset(uvdstoff as isize),
                     0 as *mut i16,
@@ -1399,7 +1194,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                 return res;
             }
         } else {
-            res = mc(
+            res = mc::<BitDepth8>(
                 t,
                 dst,
                 0 as *mut i16,
@@ -1577,7 +1372,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                 if bw4 == 1 && bh4 == ss_ver {
                     let mut pl_0 = 0;
                     while pl_0 < 2 {
-                        res = mc(
+                        res = mc::<BitDepth8>(
                             t,
                             ((*f).cur.data[(1 + pl_0) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize),
@@ -1634,7 +1429,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                         as Filter2d;
                     let mut pl_1 = 0;
                     while pl_1 < 2 {
-                        res = mc(
+                        res = mc::<BitDepth8>(
                             t,
                             ((*f).cur.data[(1 + pl_1) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize)
@@ -1687,7 +1482,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                         as Filter2d;
                     let mut pl_2 = 0;
                     while pl_2 < 2 {
-                        res = mc(
+                        res = mc::<BitDepth8>(
                             t,
                             ((*f).cur.data[(1 + pl_2) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize)
@@ -1738,7 +1533,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                 }
                 let mut pl_3 = 0;
                 while pl_3 < 2 {
-                    res = mc(
+                    res = mc::<BitDepth8>(
                         t,
                         ((*f).cur.data[(1 + pl_3) as usize] as *mut pixel)
                             .offset(uvdstoff as isize)
@@ -1809,7 +1604,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                 } else {
                     let mut pl_5 = 0;
                     while pl_5 < 2 {
-                        res = mc(
+                        res = mc::<BitDepth8>(
                             t,
                             ((*f).cur.data[(1 + pl_5) as usize] as *mut pixel)
                                 .offset(uvdstoff as isize),
@@ -2014,7 +1809,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                     return res;
                 }
             } else {
-                res = mc(
+                res = mc::<BitDepth8>(
                     t,
                     0 as *mut pixel,
                     (*tmp_1.offset(i as isize)).as_mut_ptr(),
@@ -2191,7 +1986,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_8bpc(
                             return res;
                         }
                     } else {
-                        res = mc(
+                        res = mc::<BitDepth8>(
                             t,
                             0 as *mut pixel,
                             (*tmp_1.offset(i_0 as isize)).as_mut_ptr(),
