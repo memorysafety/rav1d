@@ -9,6 +9,7 @@ use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
+use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
@@ -118,6 +119,7 @@ use crate::{
     src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc, src::lf_apply_tmpl_8::rav1d_copy_lpf_8bpc,
     src::lf_apply_tmpl_8::rav1d_loopfilter_sbrow_cols_8bpc,
     src::lf_apply_tmpl_8::rav1d_loopfilter_sbrow_rows_8bpc,
+    src::lr_apply_tmpl_8::rav1d_lr_sbrow_8bpc,
 };
 
 #[cfg(feature = "bitdepth_16")]
@@ -125,6 +127,7 @@ use crate::{
     src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc, src::lf_apply_tmpl_16::rav1d_copy_lpf_16bpc,
     src::lf_apply_tmpl_16::rav1d_loopfilter_sbrow_cols_16bpc,
     src::lf_apply_tmpl_16::rav1d_loopfilter_sbrow_rows_16bpc,
+    src::lr_apply_tmpl_16::rav1d_lr_sbrow_16bpc,
 };
 
 /// TODO: add feature and compile-time guard around this code
@@ -4848,4 +4851,28 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         );
         pl += 1;
     }
+}
+
+pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_lr<BD: BitDepth>(
+    f: *mut Rav1dFrameContext,
+    sby: c_int,
+) {
+    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
+        return;
+    }
+    let y = sby * (*f).sb_step * 4;
+    let ss_ver =
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let sr_p: [*mut BD::Pixel; 3] = [
+        ((*f).lf.sr_p[0] as *mut BD::Pixel)
+            .offset(y as isize * BD::pxstride((*f).sr_cur.p.stride[0] as usize) as isize),
+        ((*f).lf.sr_p[1] as *mut BD::Pixel)
+            .offset(y as isize * BD::pxstride((*f).sr_cur.p.stride[1] as usize) as isize >> ss_ver),
+        ((*f).lf.sr_p[2] as *mut BD::Pixel)
+            .offset(y as isize * BD::pxstride((*f).sr_cur.p.stride[1] as usize) as isize >> ss_ver),
+    ];
+    match BD::BPC {
+        BPC::BPC8 => rav1d_lr_sbrow_8bpc(f, sr_p.as_ptr().cast(), sby),
+        BPC::BPC16 => rav1d_lr_sbrow_16bpc(f, sr_p.as_ptr().cast(), sby),
+    };
 }

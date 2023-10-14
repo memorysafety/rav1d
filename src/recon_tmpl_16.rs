@@ -1,15 +1,14 @@
 use crate::include::common::bitdepth::BitDepth16;
-use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
-use crate::src::lr_apply_tmpl_16::rav1d_lr_sbrow_16bpc;
 use crate::src::recon::rav1d_filter_sbrow_cdef;
 use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
 use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
+use crate::src::recon::rav1d_filter_sbrow_lr;
 use crate::src::recon::rav1d_filter_sbrow_resize;
 use libc::memcpy;
 use libc::ptrdiff_t;
@@ -27,23 +26,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     return x >> 1;
 }
 
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_lr_16bpc(f: *mut Rav1dFrameContext, sby: c_int) {
-    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
-        return;
-    }
-    let y = sby * (*f).sb_step * 4;
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    let sr_p: [*mut pixel; 3] = [
-        ((*f).lf.sr_p[0] as *mut pixel).offset(y as isize * PXSTRIDE((*f).sr_cur.p.stride[0])),
-        ((*f).lf.sr_p[1] as *mut pixel)
-            .offset(y as isize * PXSTRIDE((*f).sr_cur.p.stride[1]) >> ss_ver),
-        ((*f).lf.sr_p[2] as *mut pixel)
-            .offset(y as isize * PXSTRIDE((*f).sr_cur.p.stride[1]) >> ss_ver),
-    ];
-    rav1d_lr_sbrow_16bpc(f, sr_p.as_ptr(), sby);
-}
-
 pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_16bpc(f: *mut Rav1dFrameContext, sby: c_int) {
     rav1d_filter_sbrow_deblock_cols::<BitDepth16>(f, sby);
     rav1d_filter_sbrow_deblock_rows::<BitDepth16>(f, sby);
@@ -54,7 +36,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_16bpc(f: *mut Rav1dFrameConte
         rav1d_filter_sbrow_resize::<BitDepth16>(f, sby);
     }
     if (*f).lf.restore_planes != 0 {
-        rav1d_filter_sbrow_lr_16bpc(f, sby);
+        rav1d_filter_sbrow_lr::<BitDepth16>(f, sby);
     }
 }
 
