@@ -105,7 +105,8 @@ pub trait BitDepth: Clone + Copy {
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>
         + ToPrimitive<c_uint>
-        + Add<Output = Self::Coef>;
+        + Add<Output = Self::Coef>
+        + Display;
 
     type BitDepthMax;
 

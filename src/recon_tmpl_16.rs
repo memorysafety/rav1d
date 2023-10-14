@@ -55,6 +55,7 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply_tmpl_16::rav1d_lr_sbrow_16bpc;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::recon::decode_coefs;
+use crate::src::recon::read_coef_tree;
 use crate::src::recon::DEBUG_BLOCK_INFO;
 use crate::src::refmvs::refmvs_block;
 use crate::src::tables::dav1d_block_dimensions;
@@ -84,210 +85,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
         unreachable!();
     }
     return x >> 1;
-}
-
-unsafe fn read_coef_tree(
-    t: *mut Rav1dTaskContext,
-    bs: BlockSize,
-    b: *const Av1Block,
-    ytx: RectTxfmSize,
-    depth: c_int,
-    tx_split: *const u16,
-    x_off: c_int,
-    y_off: c_int,
-    mut dst: *mut pixel,
-) {
-    let f: *const Rav1dFrameContext = (*t).f;
-    let ts: *mut Rav1dTileState = (*t).ts;
-    let dsp: *const Rav1dDSPContext = (*f).dsp;
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(ytx as isize) as *const TxfmInfo;
-    let txw = (*t_dim).w as c_int;
-    let txh = (*t_dim).h as c_int;
-    if depth < 2
-        && *tx_split.offset(depth as isize) as c_int != 0
-        && *tx_split.offset(depth as isize) as c_int & (1 as c_int) << y_off * 4 + x_off != 0
-    {
-        let sub: RectTxfmSize = (*t_dim).sub as RectTxfmSize;
-        let sub_t_dim: *const TxfmInfo =
-            &*dav1d_txfm_dimensions.as_ptr().offset(sub as isize) as *const TxfmInfo;
-        let txsw = (*sub_t_dim).w as c_int;
-        let txsh = (*sub_t_dim).h as c_int;
-        read_coef_tree(
-            t,
-            bs,
-            b,
-            sub,
-            depth + 1,
-            tx_split,
-            x_off * 2 + 0,
-            y_off * 2 + 0,
-            dst,
-        );
-        (*t).bx += txsw;
-        if txw >= txh && (*t).bx < (*f).bw {
-            read_coef_tree(
-                t,
-                bs,
-                b,
-                sub,
-                depth + 1,
-                tx_split,
-                x_off * 2 + 1,
-                y_off * 2 + 0,
-                if !dst.is_null() {
-                    &mut *dst.offset((4 * txsw) as isize)
-                } else {
-                    0 as *mut pixel
-                },
-            );
-        }
-        (*t).bx -= txsw;
-        (*t).by += txsh;
-        if txh >= txw && (*t).by < (*f).bh {
-            if !dst.is_null() {
-                dst = dst.offset(((4 * txsh) as isize * PXSTRIDE((*f).cur.stride[0])) as isize);
-            }
-            read_coef_tree(
-                t,
-                bs,
-                b,
-                sub,
-                depth + 1,
-                tx_split,
-                x_off * 2 + 0,
-                y_off * 2 + 1,
-                dst,
-            );
-            (*t).bx += txsw;
-            if txw >= txh && (*t).bx < (*f).bw {
-                read_coef_tree(
-                    t,
-                    bs,
-                    b,
-                    sub,
-                    depth + 1,
-                    tx_split,
-                    x_off * 2 + 1,
-                    y_off * 2 + 1,
-                    if !dst.is_null() {
-                        &mut *dst.offset((4 * txsw) as isize)
-                    } else {
-                        0 as *mut pixel
-                    },
-                );
-            }
-            (*t).bx -= txsw;
-        }
-        (*t).by -= txsh;
-    } else {
-        let bx4 = (*t).bx & 31;
-        let by4 = (*t).by & 31;
-        let mut txtp: TxfmType = DCT_DCT;
-        let mut cf_ctx: u8 = 0;
-        let eob;
-        let cf: *mut coef;
-        let mut cbi: *mut CodedBlockInfo = 0 as *mut CodedBlockInfo;
-        if (*t).frame_thread.pass != 0 {
-            let p = (*t).frame_thread.pass & 1;
-            if ((*ts).frame_thread[p as usize].cf).is_null() {
-                unreachable!();
-            }
-            cf = (*ts).frame_thread[p as usize].cf as *mut coef;
-            (*ts).frame_thread[p as usize].cf = ((*ts).frame_thread[p as usize].cf as *mut coef)
-                .offset(
-                    (cmp::min((*t_dim).w as c_int, 8 as c_int)
-                        * cmp::min((*t_dim).h as c_int, 8 as c_int)
-                        * 16) as isize,
-                ) as *mut DynCoef;
-            cbi = &mut *((*f).frame_thread.cbi)
-                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
-                as *mut CodedBlockInfo;
-        } else {
-            cf = ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr();
-        }
-        if (*t).frame_thread.pass != 2 as c_int {
-            eob = decode_coefs::<BitDepth16>(
-                t,
-                &mut (*(*t).a).lcoef.0[bx4 as usize..],
-                &mut (*t).l.lcoef.0[by4 as usize..],
-                ytx,
-                bs,
-                b,
-                0 as c_int,
-                0 as c_int,
-                cf,
-                &mut txtp,
-                &mut cf_ctx,
-            );
-            if DEBUG_BLOCK_INFO(&*f, &*t) {
-                printf(
-                    b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8 as *const c_char,
-                    ytx as c_uint,
-                    txtp as c_uint,
-                    eob,
-                    (*ts).msac.rng,
-                );
-            }
-            CaseSet::<16, true>::many(
-                [&mut (*t).l, &mut *(*t).a],
-                [
-                    cmp::min(txh, (*f).bh - (*t).by) as usize,
-                    cmp::min(txw, (*f).bw - (*t).bx) as usize,
-                ],
-                [by4 as usize, bx4 as usize],
-                |case, dir| {
-                    case.set(&mut dir.lcoef.0, cf_ctx);
-                },
-            );
-            let txtp_map = &mut (*t).txtp_map[(by4 * 32 + bx4) as usize..];
-            CaseSet::<16, false>::one((), txw as usize, 0, |case, ()| {
-                for txtp_map in txtp_map.chunks_mut(32).take(txh as usize) {
-                    case.set(txtp_map, txtp);
-                }
-            });
-            if (*t).frame_thread.pass == 1 {
-                (*cbi).eob[0] = eob as i16;
-                (*cbi).txtp[0] = txtp as u8;
-            }
-        } else {
-            eob = (*cbi).eob[0] as c_int;
-            txtp = (*cbi).txtp[0] as TxfmType;
-        }
-        if (*t).frame_thread.pass & 1 == 0 {
-            if dst.is_null() {
-                unreachable!();
-            }
-            if eob >= 0 {
-                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                    coef_dump(
-                        cf,
-                        cmp::min((*t_dim).h as usize, 8) * 4,
-                        cmp::min((*t_dim).w as usize, 8) * 4,
-                        3,
-                        "dq",
-                    );
-                }
-                ((*dsp).itx.itxfm_add[ytx as usize][txtp as usize])
-                    .expect("non-null function pointer")(
-                    dst.cast(),
-                    (*f).cur.stride[0],
-                    cf.cast(),
-                    eob,
-                    (*f).bitdepth_max,
-                );
-                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
-                    hex_dump::<BitDepth16>(
-                        dst,
-                        (*f).cur.stride[0] as usize,
-                        (*t_dim).w as usize * 4,
-                        (*t_dim).h as usize * 4,
-                        "recon",
-                    );
-                }
-            }
-        }
-    };
 }
 
 pub(crate) unsafe extern "C" fn rav1d_read_coef_blocks_16bpc(
@@ -378,7 +175,7 @@ pub(crate) unsafe extern "C" fn rav1d_read_coef_blocks_16bpc(
                 (*t).bx += init_x;
                 while x < sub_w4 {
                     if (*b).intra == 0 {
-                        read_coef_tree(
+                        read_coef_tree::<BitDepth16>(
                             t,
                             bs,
                             b,
@@ -2812,7 +2609,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter_16bpc(
                 x = init_x;
                 (*t).bx += init_x;
                 while x < cmp::min(w4, init_x + 16) {
-                    read_coef_tree(
+                    read_coef_tree::<BitDepth16>(
                         t,
                         bs,
                         b,

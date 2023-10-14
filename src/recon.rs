@@ -1,9 +1,16 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::DynCoef;
+use crate::include::common::bitdepth::BPC;
+use crate::include::common::dump::coef_dump;
+use crate::include::common::dump::hex_dump;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
+use crate::src::internal::CodedBlockInfo;
+use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
@@ -1031,7 +1038,8 @@ pub(crate) unsafe fn decode_coefs<BD: BitDepth>(
                             );
                         }
                         level_0[0] = (tok + ((3 as c_int) << 6)) as u8;
-                        *cf.offset(rc_i_0 as isize) = ((tok << 11) as c_uint | rc).as_::<BD::Coef>();
+                        *cf.offset(rc_i_0 as isize) =
+                            ((tok << 11) as c_uint | rc).as_::<BD::Coef>();
                         rc = rc_i_0;
                     } else {
                         tok *= 0x17ff41 as c_int;
@@ -1254,7 +1262,8 @@ pub(crate) unsafe fn decode_coefs<BD: BitDepth>(
                             );
                         }
                         level_1[0] = (tok + ((3 as c_int) << 6)) as u8;
-                        *cf.offset(rc_i_1 as isize) = ((tok << 11) as c_uint | rc).as_::<BD::Coef>();
+                        *cf.offset(rc_i_1 as isize) =
+                            ((tok << 11) as c_uint | rc).as_::<BD::Coef>();
                         rc = rc_i_1;
                     } else {
                         tok *= 0x17ff41 as c_int;
@@ -1498,7 +1507,8 @@ pub(crate) unsafe fn decode_coefs<BD: BitDepth>(
                 cul_level = cul_level.wrapping_add(tok_0);
                 dq >>= dq_shift;
                 dq_sat = cmp::min(dq, (cf_max + sign) as c_uint) as c_int;
-                *cf.offset(rc as isize) = (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>();
+                *cf.offset(rc as isize) =
+                    (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>();
                 rc = rc_tok & 0x3ff as c_int as c_uint;
                 if !(rc != 0) {
                     break;
@@ -1543,7 +1553,8 @@ pub(crate) unsafe fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cul_level = cul_level.wrapping_add(tok_1);
-                *cf.offset(rc as isize) = (if sign_0 != 0 { -dq_0 } else { dq_0 }).as_::<BD::Coef>();
+                *cf.offset(rc as isize) =
+                    (if sign_0 != 0 { -dq_0 } else { dq_0 }).as_::<BD::Coef>();
                 rc = rc_tok_0 & 0x3ff as c_int as c_uint;
                 if !(rc != 0) {
                     break;
@@ -1554,4 +1565,214 @@ pub(crate) unsafe fn decode_coefs<BD: BitDepth>(
     }
     *res_ctx = (cmp::min(cul_level, 63 as c_int as c_uint) | dc_sign_level) as u8;
     return eob;
+}
+
+// TODO(kkysen) pub(crate) temporarily until recon is fully deduplicated
+pub(crate) unsafe fn read_coef_tree<BD: BitDepth>(
+    t: *mut Rav1dTaskContext,
+    bs: BlockSize,
+    b: *const Av1Block,
+    ytx: RectTxfmSize,
+    depth: c_int,
+    tx_split: *const u16,
+    x_off: c_int,
+    y_off: c_int,
+    mut dst: *mut BD::Pixel,
+) {
+    let f: *const Rav1dFrameContext = (*t).f;
+    let ts: *mut Rav1dTileState = (*t).ts;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
+    let t_dim: *const TxfmInfo =
+        &*dav1d_txfm_dimensions.as_ptr().offset(ytx as isize) as *const TxfmInfo;
+    let txw = (*t_dim).w as c_int;
+    let txh = (*t_dim).h as c_int;
+    if depth < 2
+        && *tx_split.offset(depth as isize) as c_int != 0
+        && *tx_split.offset(depth as isize) as c_int & (1 as c_int) << y_off * 4 + x_off != 0
+    {
+        let sub: RectTxfmSize = (*t_dim).sub as RectTxfmSize;
+        let sub_t_dim: *const TxfmInfo =
+            &*dav1d_txfm_dimensions.as_ptr().offset(sub as isize) as *const TxfmInfo;
+        let txsw = (*sub_t_dim).w as c_int;
+        let txsh = (*sub_t_dim).h as c_int;
+        read_coef_tree::<BD>(
+            t,
+            bs,
+            b,
+            sub,
+            depth + 1,
+            tx_split,
+            x_off * 2 + 0,
+            y_off * 2 + 0,
+            dst,
+        );
+        (*t).bx += txsw;
+        if txw >= txh && (*t).bx < (*f).bw {
+            read_coef_tree::<BD>(
+                t,
+                bs,
+                b,
+                sub,
+                depth + 1,
+                tx_split,
+                x_off * 2 + 1,
+                y_off * 2 + 0,
+                if !dst.is_null() {
+                    &mut *dst.offset((4 * txsw) as isize)
+                } else {
+                    0 as *mut BD::Pixel
+                },
+            );
+        }
+        (*t).bx -= txsw;
+        (*t).by += txsh;
+        if txh >= txw && (*t).by < (*f).bh {
+            if !dst.is_null() {
+                dst = dst.offset(
+                    (4 * txsh) as isize * BD::pxstride((*f).cur.stride[0] as usize) as isize,
+                );
+            }
+            read_coef_tree::<BD>(
+                t,
+                bs,
+                b,
+                sub,
+                depth + 1,
+                tx_split,
+                x_off * 2 + 0,
+                y_off * 2 + 1,
+                dst,
+            );
+            (*t).bx += txsw;
+            if txw >= txh && (*t).bx < (*f).bw {
+                read_coef_tree::<BD>(
+                    t,
+                    bs,
+                    b,
+                    sub,
+                    depth + 1,
+                    tx_split,
+                    x_off * 2 + 1,
+                    y_off * 2 + 1,
+                    if !dst.is_null() {
+                        &mut *dst.offset((4 * txsw) as isize)
+                    } else {
+                        0 as *mut BD::Pixel
+                    },
+                );
+            }
+            (*t).bx -= txsw;
+        }
+        (*t).by -= txsh;
+    } else {
+        let bx4 = (*t).bx & 31;
+        let by4 = (*t).by & 31;
+        let mut txtp: TxfmType = DCT_DCT;
+        let mut cf_ctx: u8 = 0;
+        let eob;
+        let cf: *mut BD::Coef;
+        let mut cbi: *mut CodedBlockInfo = 0 as *mut CodedBlockInfo;
+        if (*t).frame_thread.pass != 0 {
+            let p = (*t).frame_thread.pass & 1;
+            if ((*ts).frame_thread[p as usize].cf).is_null() {
+                unreachable!();
+            }
+            cf = (*ts).frame_thread[p as usize].cf as *mut BD::Coef;
+            (*ts).frame_thread[p as usize].cf = ((*ts).frame_thread[p as usize].cf as *mut BD::Coef)
+                .offset(
+                    (cmp::min((*t_dim).w as c_int, 8 as c_int)
+                        * cmp::min((*t_dim).h as c_int, 8 as c_int)
+                        * 16) as isize,
+                ) as *mut DynCoef;
+            cbi = &mut *((*f).frame_thread.cbi)
+                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
+                as *mut CodedBlockInfo;
+        } else {
+            cf = match BD::BPC {
+                BPC::BPC8 => (*t).c2rust_unnamed.cf_8bpc.as_mut_ptr().cast::<BD::Coef>(),
+                BPC::BPC16 => (*t).c2rust_unnamed.cf_16bpc.as_mut_ptr().cast::<BD::Coef>(),
+            };
+        }
+        if (*t).frame_thread.pass != 2 as c_int {
+            eob = decode_coefs::<BD>(
+                t,
+                &mut (*(*t).a).lcoef.0[bx4 as usize..],
+                &mut (*t).l.lcoef.0[by4 as usize..],
+                ytx,
+                bs,
+                b,
+                0 as c_int,
+                0 as c_int,
+                cf,
+                &mut txtp,
+                &mut cf_ctx,
+            );
+            if DEBUG_BLOCK_INFO(&*f, &*t) {
+                printf(
+                    b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8 as *const c_char,
+                    ytx as c_uint,
+                    txtp as c_uint,
+                    eob,
+                    (*ts).msac.rng,
+                );
+            }
+            CaseSet::<16, true>::many(
+                [&mut (*t).l, &mut *(*t).a],
+                [
+                    cmp::min(txh, (*f).bh - (*t).by) as usize,
+                    cmp::min(txw, (*f).bw - (*t).bx) as usize,
+                ],
+                [by4 as usize, bx4 as usize],
+                |case, dir| {
+                    case.set(&mut dir.lcoef.0, cf_ctx);
+                },
+            );
+            let txtp_map = &mut (*t).txtp_map[(by4 * 32 + bx4) as usize..];
+            CaseSet::<16, false>::one((), txw as usize, 0, |case, ()| {
+                for txtp_map in txtp_map.chunks_mut(32).take(txh as usize) {
+                    case.set(txtp_map, txtp);
+                }
+            });
+            if (*t).frame_thread.pass == 1 {
+                (*cbi).eob[0] = eob as i16;
+                (*cbi).txtp[0] = txtp as u8;
+            }
+        } else {
+            eob = (*cbi).eob[0] as c_int;
+            txtp = (*cbi).txtp[0] as TxfmType;
+        }
+        if (*t).frame_thread.pass & 1 == 0 {
+            if dst.is_null() {
+                unreachable!();
+            }
+            if eob >= 0 {
+                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
+                    coef_dump(
+                        cf,
+                        cmp::min((*t_dim).h as usize, 8) * 4,
+                        cmp::min((*t_dim).w as usize, 8) * 4,
+                        3,
+                        "dq",
+                    );
+                }
+                ((*dsp).itx.itxfm_add[ytx as usize][txtp as usize])
+                    .expect("non-null function pointer")(
+                    dst.cast(),
+                    (*f).cur.stride[0],
+                    cf.cast(),
+                    eob,
+                    (*f).bitdepth_max,
+                );
+                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
+                    hex_dump::<BD>(
+                        dst,
+                        (*f).cur.stride[0] as usize,
+                        (*t_dim).w as usize * 4,
+                        (*t_dim).h as usize * 4,
+                        "recon",
+                    );
+                }
+            }
+        }
+    };
 }
