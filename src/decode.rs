@@ -186,8 +186,9 @@ use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::recon::rav1d_read_coef_blocks;
-use crate::src::recon::DEBUG_BLOCK_INFO;
+use crate::src::recon::rav1d_recon_b_inter;
 use crate::src::recon::rav1d_recon_b_intra;
+use crate::src::recon::DEBUG_BLOCK_INFO;
 use crate::src::refmvs::rav1d_refmvs_find;
 use crate::src::refmvs::rav1d_refmvs_init_frame;
 use crate::src::refmvs::rav1d_refmvs_save_tmvs;
@@ -252,7 +253,7 @@ use crate::{
     src::recon_tmpl_8::rav1d_filter_sbrow_deblock_cols_8bpc,
     src::recon_tmpl_8::rav1d_filter_sbrow_deblock_rows_8bpc,
     src::recon_tmpl_8::rav1d_filter_sbrow_lr_8bpc,
-    src::recon_tmpl_8::rav1d_filter_sbrow_resize_8bpc, src::recon_tmpl_8::rav1d_recon_b_inter_8bpc,
+    src::recon_tmpl_8::rav1d_filter_sbrow_resize_8bpc,
 };
 
 #[cfg(feature = "bitdepth_16")]
@@ -269,7 +270,6 @@ use crate::{
     src::recon_tmpl_16::rav1d_filter_sbrow_deblock_rows_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_lr_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_resize_16bpc,
-    src::recon_tmpl_16::rav1d_recon_b_inter_16bpc,
 };
 
 fn init_quant_tables(
@@ -5097,7 +5097,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if (*f.seq_hdr).hbd == 0 {
         #[cfg(feature = "bitdepth_8")]
         {
-            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter_8bpc);
+            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter::<BitDepth8>);
             f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra::<BitDepth8>);
             f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow_8bpc);
             f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols_8bpc);
@@ -5111,7 +5111,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     } else {
         #[cfg(feature = "bitdepth_16")]
         {
-            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter_16bpc);
+            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter::<BitDepth16>);
             f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra::<BitDepth16>);
             f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow_16bpc);
             f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols_16bpc);
