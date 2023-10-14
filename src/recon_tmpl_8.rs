@@ -1,6 +1,5 @@
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
-use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
@@ -9,11 +8,10 @@ use crate::src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
-use crate::src::lf_apply_tmpl_8::rav1d_copy_lpf_8bpc;
-use crate::src::lf_apply_tmpl_8::rav1d_loopfilter_sbrow_rows_8bpc;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply_tmpl_8::rav1d_lr_sbrow_8bpc;
 use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
+use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
 use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -22,31 +20,6 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 
 pub type pixel = u8;
-
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_rows_8bpc(
-    f: *mut Rav1dFrameContext,
-    sby: c_int,
-) {
-    let y = sby * (*f).sb_step * 4;
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    let p: [*mut pixel; 3] = [
-        ((*f).lf.p[0] as *mut pixel).offset((y as isize * (*f).cur.stride[0]) as isize),
-        ((*f).lf.p[1] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
-        ((*f).lf.p[2] as *mut pixel).offset((y as isize * (*f).cur.stride[1] >> ss_ver) as isize),
-    ];
-    let mask: *mut Av1Filter = ((*f).lf.mask)
-        .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
-    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
-        && ((*(*f).frame_hdr).loopfilter.level_y[0] != 0
-            || (*(*f).frame_hdr).loopfilter.level_y[1] != 0)
-    {
-        rav1d_loopfilter_sbrow_rows_8bpc(f, p.as_ptr(), mask, sby);
-    }
-    if (*(*f).seq_hdr).cdef != 0 || (*f).lf.restore_planes != 0 {
-        rav1d_copy_lpf_8bpc(f, p.as_ptr(), sby);
-    }
-}
 
 pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_cdef_8bpc(
     tc: *mut Rav1dTaskContext,
@@ -172,7 +145,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_lr_8bpc(f: *mut Rav1dFrameCon
 
 pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_8bpc(f: *mut Rav1dFrameContext, sby: c_int) {
     rav1d_filter_sbrow_deblock_cols::<BitDepth8>(f, sby);
-    rav1d_filter_sbrow_deblock_rows_8bpc(f, sby);
+    rav1d_filter_sbrow_deblock_rows::<BitDepth8>(f, sby);
     if (*(*f).seq_hdr).cdef != 0 {
         rav1d_filter_sbrow_cdef_8bpc((*(*f).c).tc, sby);
     }
