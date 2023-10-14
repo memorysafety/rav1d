@@ -7,6 +7,7 @@ use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
@@ -114,14 +115,14 @@ use std::ops::BitOr;
 
 #[cfg(feature = "bitdepth_8")]
 use crate::{
-    src::lf_apply_tmpl_8::rav1d_copy_lpf_8bpc,
+    src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc, src::lf_apply_tmpl_8::rav1d_copy_lpf_8bpc,
     src::lf_apply_tmpl_8::rav1d_loopfilter_sbrow_cols_8bpc,
     src::lf_apply_tmpl_8::rav1d_loopfilter_sbrow_rows_8bpc,
 };
 
 #[cfg(feature = "bitdepth_16")]
 use crate::{
-    src::lf_apply_tmpl_16::rav1d_copy_lpf_16bpc,
+    src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc, src::lf_apply_tmpl_16::rav1d_copy_lpf_16bpc,
     src::lf_apply_tmpl_16::rav1d_loopfilter_sbrow_cols_16bpc,
     src::lf_apply_tmpl_16::rav1d_loopfilter_sbrow_rows_16bpc,
 };
@@ -4708,4 +4709,74 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
             BPC::BPC16 => rav1d_copy_lpf_16bpc(f, p.as_ptr().cast(), sby),
         };
     }
+}
+
+pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
+    tc: *mut Rav1dTaskContext,
+    sby: c_int,
+) {
+    let f: *const Rav1dFrameContext = (*tc).f;
+    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
+        return;
+    }
+    let sbsz = (*f).sb_step;
+    let y = sby * sbsz * 4;
+    let ss_ver =
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let p: [*mut BD::Pixel; 3] = [
+        ((*f).lf.p[0] as *mut BD::Pixel)
+            .offset((y as isize * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize),
+        ((*f).lf.p[1] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        ),
+        ((*f).lf.p[2] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        ),
+    ];
+    let prev_mask: *mut Av1Filter = ((*f).lf.mask)
+        .offset(((sby - 1 >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
+    let mask: *mut Av1Filter = ((*f).lf.mask)
+        .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
+    let start = sby * sbsz;
+    if sby != 0 {
+        let ss_ver_0 =
+            ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        let mut p_up: [*mut BD::Pixel; 3] = [
+            (p[0]).offset(-((8 * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize)),
+            (p[1]).offset(
+                -((8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver_0) as isize),
+            ),
+            (p[2]).offset(
+                -((8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver_0) as isize),
+            ),
+        ];
+        match BD::BPC {
+            BPC::BPC8 => rav1d_cdef_brow_8bpc(
+                tc,
+                p_up.as_mut_ptr().cast(),
+                prev_mask,
+                start - 2,
+                start,
+                1 as c_int,
+                sby,
+            ),
+            BPC::BPC16 => rav1d_cdef_brow_16bpc(
+                tc,
+                p_up.as_mut_ptr().cast(),
+                prev_mask,
+                start - 2,
+                start,
+                1 as c_int,
+                sby,
+            ),
+        };
+    }
+    let n_blks = sbsz - 2 * ((sby + 1) < (*f).sbh) as c_int;
+    let end = cmp::min(start + n_blks, (*f).bh);
+    match BD::BPC {
+        BPC::BPC8 => rav1d_cdef_brow_8bpc(tc, p.as_ptr().cast(), mask, start, end, 0 as c_int, sby),
+        BPC::BPC16 => {
+            rav1d_cdef_brow_16bpc(tc, p.as_ptr().cast(), mask, start, end, 0 as c_int, sby)
+        }
+    };
 }

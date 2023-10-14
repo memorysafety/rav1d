@@ -1,15 +1,13 @@
 use crate::include::common::bitdepth::BitDepth16;
-use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
-use crate::src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
-use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply_tmpl_16::rav1d_lr_sbrow_16bpc;
+use crate::src::recon::rav1d_filter_sbrow_cdef;
 use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
 use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
 use libc::memcpy;
@@ -27,53 +25,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
         unreachable!();
     }
     return x >> 1;
-}
-
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_cdef_16bpc(
-    tc: *mut Rav1dTaskContext,
-    sby: c_int,
-) {
-    let f: *const Rav1dFrameContext = (*tc).f;
-    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
-        return;
-    }
-    let sbsz = (*f).sb_step;
-    let y = sby * sbsz * 4;
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    let p: [*mut pixel; 3] = [
-        ((*f).lf.p[0] as *mut pixel).offset((y as isize * PXSTRIDE((*f).cur.stride[0])) as isize),
-        ((*f).lf.p[1] as *mut pixel)
-            .offset((y as isize * PXSTRIDE((*f).cur.stride[1]) >> ss_ver) as isize),
-        ((*f).lf.p[2] as *mut pixel)
-            .offset((y as isize * PXSTRIDE((*f).cur.stride[1]) >> ss_ver) as isize),
-    ];
-    let prev_mask: *mut Av1Filter = ((*f).lf.mask)
-        .offset(((sby - 1 >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
-    let mask: *mut Av1Filter = ((*f).lf.mask)
-        .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
-    let start = sby * sbsz;
-    if sby != 0 {
-        let ss_ver_0 =
-            ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-        let mut p_up: [*mut pixel; 3] = [
-            (p[0]).offset(-((8 * PXSTRIDE((*f).cur.stride[0])) as isize)),
-            (p[1]).offset(-((8 * PXSTRIDE((*f).cur.stride[1]) >> ss_ver_0) as isize)),
-            (p[2]).offset(-((8 * PXSTRIDE((*f).cur.stride[1]) >> ss_ver_0) as isize)),
-        ];
-        rav1d_cdef_brow_16bpc(
-            tc,
-            p_up.as_mut_ptr() as *const *mut pixel,
-            prev_mask,
-            start - 2,
-            start,
-            1 as c_int,
-            sby,
-        );
-    }
-    let n_blks = sbsz - 2 * ((sby + 1) < (*f).sbh) as c_int;
-    let end = cmp::min(start + n_blks, (*f).bh);
-    rav1d_cdef_brow_16bpc(tc, p.as_ptr(), mask, start, end, 0 as c_int, sby);
 }
 
 pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_resize_16bpc(
@@ -159,7 +110,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_16bpc(f: *mut Rav1dFrameConte
     rav1d_filter_sbrow_deblock_cols::<BitDepth16>(f, sby);
     rav1d_filter_sbrow_deblock_rows::<BitDepth16>(f, sby);
     if (*(*f).seq_hdr).cdef != 0 {
-        rav1d_filter_sbrow_cdef_16bpc((*(*f).c).tc, sby);
+        rav1d_filter_sbrow_cdef::<BitDepth16>((*(*f).c).tc, sby);
     }
     if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
         rav1d_filter_sbrow_resize_16bpc(f, sby);
