@@ -7,6 +7,7 @@ use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
@@ -74,6 +75,7 @@ use crate::src::levels::TX_CLASS_2D;
 use crate::src::levels::TX_CLASS_H;
 use crate::src::levels::TX_CLASS_V;
 use crate::src::levels::WHT_WHT;
+use crate::src::lf_mask::Av1Filter;
 use crate::src::msac::rav1d_msac_decode_bool_adapt;
 use crate::src::msac::rav1d_msac_decode_bool_equi;
 use crate::src::msac::rav1d_msac_decode_bools;
@@ -109,6 +111,12 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::ops::BitOr;
+
+#[cfg(feature = "bitdepth_8")]
+use crate::src::lf_apply_tmpl_8::rav1d_loopfilter_sbrow_cols_8bpc;
+
+#[cfg(feature = "bitdepth_16")]
+use crate::src::lf_apply_tmpl_16::rav1d_loopfilter_sbrow_cols_16bpc;
 
 /// TODO: add feature and compile-time guard around this code
 pub(crate) unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
@@ -4613,4 +4621,47 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter<BD: BitDepth>(
         init_y += 16 as c_int;
     }
     return 0 as c_int;
+}
+
+pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
+    f: *mut Rav1dFrameContext,
+    sby: c_int,
+) {
+    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint == 0
+        || (*(*f).frame_hdr).loopfilter.level_y[0] == 0
+            && (*(*f).frame_hdr).loopfilter.level_y[1] == 0
+    {
+        return;
+    }
+    let y = sby * (*f).sb_step * 4;
+    let ss_ver =
+        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let p: [*mut BD::Pixel; 3] = [
+        ((*f).lf.p[0] as *mut BD::Pixel)
+            .offset((y as isize * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize),
+        ((*f).lf.p[1] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        ),
+        ((*f).lf.p[2] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        ),
+    ];
+    let mask: *mut Av1Filter = ((*f).lf.mask)
+        .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
+    match BD::BPC {
+        BPC::BPC8 => rav1d_loopfilter_sbrow_cols_8bpc(
+            f,
+            p.as_ptr().cast(),
+            mask,
+            sby,
+            *((*f).lf.start_of_tile_row).offset(sby as isize) as c_int,
+        ),
+        BPC::BPC16 => rav1d_loopfilter_sbrow_cols_16bpc(
+            f,
+            p.as_ptr().cast(),
+            mask,
+            sby,
+            *((*f).lf.start_of_tile_row).offset(sby as isize) as c_int,
+        ),
+    };
 }

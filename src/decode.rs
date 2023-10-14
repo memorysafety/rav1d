@@ -185,6 +185,7 @@ use crate::src::qm::dav1d_qm_tbl;
 use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
+use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
 use crate::src::recon::rav1d_read_coef_blocks;
 use crate::src::recon::rav1d_recon_b_inter;
 use crate::src::recon::rav1d_recon_b_intra;
@@ -250,7 +251,6 @@ use crate::{
     src::loopfilter_tmpl_8::rav1d_loop_filter_dsp_init_8bpc,
     src::recon_tmpl_8::rav1d_backup_ipred_edge_8bpc, src::recon_tmpl_8::rav1d_filter_sbrow_8bpc,
     src::recon_tmpl_8::rav1d_filter_sbrow_cdef_8bpc,
-    src::recon_tmpl_8::rav1d_filter_sbrow_deblock_cols_8bpc,
     src::recon_tmpl_8::rav1d_filter_sbrow_deblock_rows_8bpc,
     src::recon_tmpl_8::rav1d_filter_sbrow_lr_8bpc,
     src::recon_tmpl_8::rav1d_filter_sbrow_resize_8bpc,
@@ -266,7 +266,6 @@ use crate::{
     src::recon_tmpl_16::rav1d_backup_ipred_edge_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_cdef_16bpc,
-    src::recon_tmpl_16::rav1d_filter_sbrow_deblock_cols_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_deblock_rows_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_lr_16bpc,
     src::recon_tmpl_16::rav1d_filter_sbrow_resize_16bpc,
@@ -5100,7 +5099,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter::<BitDepth8>);
             f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra::<BitDepth8>);
             f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow_8bpc);
-            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols_8bpc);
+            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols::<BitDepth8>);
             f.bd_fn.filter_sbrow_deblock_rows = Some(rav1d_filter_sbrow_deblock_rows_8bpc);
             f.bd_fn.filter_sbrow_cdef = Some(rav1d_filter_sbrow_cdef_8bpc);
             f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize_8bpc);
@@ -5114,7 +5113,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter::<BitDepth16>);
             f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra::<BitDepth16>);
             f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow_16bpc);
-            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols_16bpc);
+            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols::<BitDepth16>);
             f.bd_fn.filter_sbrow_deblock_rows = Some(rav1d_filter_sbrow_deblock_rows_16bpc);
             f.bd_fn.filter_sbrow_cdef = Some(rav1d_filter_sbrow_cdef_16bpc);
             f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize_16bpc);
