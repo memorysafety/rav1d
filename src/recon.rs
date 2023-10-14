@@ -5,6 +5,7 @@ use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
+use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
@@ -61,8 +62,10 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::MsacContext;
 use crate::src::picture::Rav1dThreadPicture;
+use crate::src::refmvs::refmvs_block;
 use crate::src::scan::dav1d_scans;
 use crate::src::tables::dav1d_block_dimensions;
+use crate::src::tables::dav1d_filter_2d;
 use crate::src::tables::dav1d_filter_mode_to_y_mode;
 use crate::src::tables::dav1d_lo_ctx_offsets;
 use crate::src::tables::dav1d_skip_ctx;
@@ -2243,6 +2246,145 @@ pub(crate) unsafe fn mc<BD: BitDepth>(
                 (*f).svc[refidx as usize][1].step,
                 (*f).bitdepth_max,
             );
+        }
+    }
+    return 0 as c_int;
+}
+
+// TODO(kkysen) pub(crate) temporarily until recon is fully deduplicated
+pub(crate) unsafe fn obmc<BD: BitDepth>(
+    t: *mut Rav1dTaskContext,
+    dst: *mut BD::Pixel,
+    dst_stride: ptrdiff_t,
+    b_dim: *const u8,
+    pl: c_int,
+    bx4: c_int,
+    by4: c_int,
+    w4: c_int,
+    h4: c_int,
+) -> c_int {
+    if !((*t).bx & 1 == 0 && (*t).by & 1 == 0) {
+        unreachable!();
+    }
+    let f: *const Rav1dFrameContext = (*t).f;
+    let r: *mut *mut refmvs_block = &mut *((*t).rt.r)
+        .as_mut_ptr()
+        .offset((((*t).by & 31) + 5) as isize)
+        as *mut *mut refmvs_block;
+    let lap: *mut BD::Pixel = match BD::BPC {
+        BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed.lap_8bpc)
+            .as_mut_ptr()
+            .cast::<BD::Pixel>(),
+        BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed.lap_16bpc)
+            .as_mut_ptr()
+            .cast::<BD::Pixel>(),
+    };
+    let ss_ver = (pl != 0
+        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+        as c_int;
+    let ss_hor = (pl != 0
+        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+        as c_int;
+    let h_mul = 4 >> ss_hor;
+    let v_mul = 4 >> ss_ver;
+    let mut res;
+    if (*t).by > (*(*t).ts).tiling.row_start
+        && (pl == 0 || *b_dim.offset(0) as c_int * h_mul + *b_dim.offset(1) as c_int * v_mul >= 16)
+    {
+        let mut i = 0;
+        let mut x = 0;
+        while x < w4 && i < cmp::min(*b_dim.offset(2) as c_int, 4 as c_int) {
+            let a_r: *const refmvs_block = &mut *(*r.offset(-(1 as c_int) as isize))
+                .offset(((*t).bx + x + 1) as isize)
+                as *mut refmvs_block;
+            let a_b_dim: *const u8 = (dav1d_block_dimensions[(*a_r).0.bs as usize]).as_ptr();
+            let step4 = iclip(*a_b_dim.offset(0) as c_int, 2 as c_int, 16 as c_int);
+            if (*a_r).0.r#ref.r#ref[0] as c_int > 0 {
+                let ow4 = cmp::min(step4, *b_dim.offset(0) as c_int);
+                let oh4 = cmp::min(*b_dim.offset(1) as c_int, 16 as c_int) >> 1;
+                res = mc::<BD>(
+                    t,
+                    lap,
+                    0 as *mut i16,
+                    ((ow4 * h_mul) as c_ulong)
+                        .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
+                        as ptrdiff_t,
+                    ow4,
+                    oh4 * 3 + 3 >> 2,
+                    (*t).bx + x,
+                    (*t).by,
+                    pl,
+                    (*a_r).0.mv.mv[0],
+                    &*((*f).refp)
+                        .as_ptr()
+                        .offset((*((*a_r).0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
+                    (*a_r).0.r#ref.r#ref[0] as c_int - 1,
+                    dav1d_filter_2d[(*(*t).a).filter[1][(bx4 + x + 1) as usize] as usize]
+                        [(*(*t).a).filter[0][(bx4 + x + 1) as usize] as usize]
+                        as Filter2d,
+                );
+                if res != 0 {
+                    return res;
+                }
+                ((*(*f).dsp).mc.blend_h)(
+                    dst.offset((x * h_mul) as isize).cast(),
+                    dst_stride,
+                    lap.cast(),
+                    h_mul * ow4,
+                    v_mul * oh4,
+                );
+                i += 1;
+            }
+            x += step4;
+        }
+    }
+    if (*t).bx > (*(*t).ts).tiling.col_start {
+        let mut i_0 = 0;
+        let mut y = 0;
+        while y < h4 && i_0 < cmp::min(*b_dim.offset(3) as c_int, 4 as c_int) {
+            let l_r: *const refmvs_block = &mut *(*r.offset((y + 1) as isize))
+                .offset(((*t).bx - 1) as isize)
+                as *mut refmvs_block;
+            let l_b_dim: *const u8 = (dav1d_block_dimensions[(*l_r).0.bs as usize]).as_ptr();
+            let step4_0 = iclip(*l_b_dim.offset(1) as c_int, 2 as c_int, 16 as c_int);
+            if (*l_r).0.r#ref.r#ref[0] as c_int > 0 {
+                let ow4_0 = cmp::min(*b_dim.offset(0) as c_int, 16 as c_int) >> 1;
+                let oh4_0 = cmp::min(step4_0, *b_dim.offset(1) as c_int);
+                res = mc::<BD>(
+                    t,
+                    lap,
+                    0 as *mut i16,
+                    ((h_mul * ow4_0) as c_ulong)
+                        .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
+                        as ptrdiff_t,
+                    ow4_0,
+                    oh4_0,
+                    (*t).bx,
+                    (*t).by + y,
+                    pl,
+                    (*l_r).0.mv.mv[0],
+                    &*((*f).refp)
+                        .as_ptr()
+                        .offset((*((*l_r).0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
+                    (*l_r).0.r#ref.r#ref[0] as c_int - 1,
+                    dav1d_filter_2d[(*t).l.filter[1][(by4 + y + 1) as usize] as usize]
+                        [(*t).l.filter[0][(by4 + y + 1) as usize] as usize]
+                        as Filter2d,
+                );
+                if res != 0 {
+                    return res;
+                }
+                ((*(*f).dsp).mc.blend_v)(
+                    dst.offset((y * v_mul) as isize * BD::pxstride(dst_stride as usize) as isize)
+                        .cast(),
+                    dst_stride,
+                    lap.cast(),
+                    h_mul * ow4_0,
+                    v_mul * oh4_0,
+                );
+                i_0 += 1;
+            }
+            y += step4_0;
         }
     }
     return 0 as c_int;
