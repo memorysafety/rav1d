@@ -1,15 +1,9 @@
-use crate::include::common::bitdepth::BitDepth16;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
-use crate::src::recon::rav1d_filter_sbrow_cdef;
-use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
-use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
-use crate::src::recon::rav1d_filter_sbrow_lr;
-use crate::src::recon::rav1d_filter_sbrow_resize;
 use libc::memcpy;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
@@ -24,20 +18,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
         unreachable!();
     }
     return x >> 1;
-}
-
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_16bpc(f: *mut Rav1dFrameContext, sby: c_int) {
-    rav1d_filter_sbrow_deblock_cols::<BitDepth16>(f, sby);
-    rav1d_filter_sbrow_deblock_rows::<BitDepth16>(f, sby);
-    if (*(*f).seq_hdr).cdef != 0 {
-        rav1d_filter_sbrow_cdef::<BitDepth16>((*(*f).c).tc, sby);
-    }
-    if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
-        rav1d_filter_sbrow_resize::<BitDepth16>(f, sby);
-    }
-    if (*f).lf.restore_planes != 0 {
-        rav1d_filter_sbrow_lr::<BitDepth16>(f, sby);
-    }
 }
 
 pub(crate) unsafe extern "C" fn rav1d_backup_ipred_edge_16bpc(t: *mut Rav1dTaskContext) {

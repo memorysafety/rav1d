@@ -4876,3 +4876,20 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_lr<BD: BitDepth>(
         BPC::BPC16 => rav1d_lr_sbrow_16bpc(f, sr_p.as_ptr().cast(), sby),
     };
 }
+
+pub(crate) unsafe extern "C" fn rav1d_filter_sbrow<BD: BitDepth>(
+    f: *mut Rav1dFrameContext,
+    sby: c_int,
+) {
+    rav1d_filter_sbrow_deblock_cols::<BD>(f, sby);
+    rav1d_filter_sbrow_deblock_rows::<BD>(f, sby);
+    if (*(*f).seq_hdr).cdef != 0 {
+        rav1d_filter_sbrow_cdef::<BD>((*(*f).c).tc, sby);
+    }
+    if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
+        rav1d_filter_sbrow_resize::<BD>(f, sby);
+    }
+    if (*f).lf.restore_planes != 0 {
+        rav1d_filter_sbrow_lr::<BD>(f, sby);
+    }
+}
