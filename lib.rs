@@ -99,10 +99,6 @@ pub mod src {
     mod picture;
     mod qm;
     mod recon;
-    #[cfg(feature = "bitdepth_16")]
-    mod recon_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
-    mod recon_tmpl_8;
     pub(crate) mod r#ref;
     mod refmvs;
     mod scan;

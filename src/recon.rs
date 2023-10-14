@@ -113,6 +113,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::ops::BitOr;
+use std::slice;
 
 #[cfg(feature = "bitdepth_8")]
 use crate::{
@@ -4891,5 +4892,61 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow<BD: BitDepth>(
     }
     if (*f).lf.restore_planes != 0 {
         rav1d_filter_sbrow_lr::<BD>(f, sby);
+    }
+}
+
+pub(crate) unsafe extern "C" fn rav1d_backup_ipred_edge<BD: BitDepth>(t: *mut Rav1dTaskContext) {
+    let f: *const Rav1dFrameContext = (*t).f;
+    let ts: *mut Rav1dTileState = (*t).ts;
+    let sby = (*t).by >> (*f).sb_shift;
+    let sby_off = (*f).sb128w * 128 * sby;
+    let x_off = (*ts).tiling.col_start;
+    let y: *const BD::Pixel = ((*f).cur.data[0] as *const BD::Pixel)
+        .offset((x_off * 4) as isize)
+        .offset(
+            ((((*t).by + (*f).sb_step) * 4 - 1) as isize
+                * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize,
+        );
+    BD::pixel_copy(
+        &mut slice::from_raw_parts_mut(
+            (*f).ipred_edge[0].cast(),
+            (sby_off + x_off * 4 + (4 * ((*ts).tiling.col_end - x_off)))
+                .try_into()
+                .unwrap(),
+        )[(sby_off + x_off * 4).try_into().unwrap()..],
+        slice::from_raw_parts(y, (4 * ((*ts).tiling.col_end - x_off)).try_into().unwrap()),
+        (4 * ((*ts).tiling.col_end - x_off)).try_into().unwrap(),
+    );
+    if (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
+        let ss_ver =
+            ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        let ss_hor =
+            ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        let uv_off: ptrdiff_t = (x_off * 4 >> ss_hor) as isize
+            + ((((*t).by + (*f).sb_step) * 4 >> ss_ver) - 1) as isize
+                * BD::pxstride((*f).cur.stride[1] as usize) as isize;
+        let mut pl = 1;
+        while pl <= 2 {
+            BD::pixel_copy(
+                &mut slice::from_raw_parts_mut(
+                    (*f).ipred_edge[pl as usize].cast(),
+                    (sby_off
+                        + (x_off * 4 >> ss_hor)
+                        + (4 * ((*ts).tiling.col_end - x_off) >> ss_hor))
+                        .try_into()
+                        .unwrap(),
+                )[(sby_off + (x_off * 4 >> ss_hor)).try_into().unwrap()..],
+                &slice::from_raw_parts(
+                    (*f).cur.data[pl as usize].cast(),
+                    (uv_off + (4 * ((*ts).tiling.col_end - x_off) >> ss_hor) as isize)
+                        .try_into()
+                        .unwrap(),
+                )[uv_off.try_into().unwrap()..],
+                (4 * ((*ts).tiling.col_end - x_off) >> ss_hor)
+                    .try_into()
+                    .unwrap(),
+            );
+            pl += 1;
+        }
     }
 }
