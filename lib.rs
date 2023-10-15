@@ -48,6 +48,7 @@ pub mod src {
     mod dequant_tables;
     mod env;
     pub(crate) mod error;
+    mod fg_apply;
     #[cfg(feature = "bitdepth_16")]
     mod fg_apply_tmpl_16;
     #[cfg(feature = "bitdepth_8")]
