@@ -1575,7 +1575,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     {
                                         ((*f).bd_fn.filter_sbrow_cdef)
                                             .expect("non-null function pointer")(
-                                            tc, sby
+                                            &mut *tc, sby
                                         );
                                     }
                                     reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);

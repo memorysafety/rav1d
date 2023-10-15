@@ -242,7 +242,7 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: Option<unsafe fn(*mut Rav1dTaskContext, c_int) -> ()>,
+    pub filter_sbrow_cdef: Option<unsafe fn(&mut Rav1dTaskContext, c_int) -> ()>,
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
@@ -252,7 +252,7 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
 impl Rav1dFrameContext_bd_fn {
     pub unsafe fn recon_b_intra(
         &self,
-        context: *mut Rav1dTaskContext,
+        context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         flags: EdgeFlags,
         block: *const Av1Block,
@@ -262,7 +262,7 @@ impl Rav1dFrameContext_bd_fn {
 
     pub unsafe fn recon_b_inter(
         &self,
-        context: *mut Rav1dTaskContext,
+        context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         block: *const Av1Block,
     ) -> Result<(), ()> {
@@ -274,7 +274,7 @@ impl Rav1dFrameContext_bd_fn {
 
     pub unsafe fn read_coef_blocks(
         &self,
-        context: *mut Rav1dTaskContext,
+        context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         block: *const Av1Block,
     ) {
