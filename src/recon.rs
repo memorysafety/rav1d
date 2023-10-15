@@ -2291,14 +2291,7 @@ unsafe fn obmc<BD: BitDepth>(
         .as_mut_ptr()
         .offset((((*t).by & 31) + 5) as isize)
         as *mut *mut refmvs_block;
-    let lap: *mut BD::Pixel = match BD::BPC {
-        BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed.lap_8bpc)
-            .as_mut_ptr()
-            .cast::<BD::Pixel>(),
-        BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed.lap_16bpc)
-            .as_mut_ptr()
-            .cast::<BD::Pixel>(),
-    };
+    let lap = BD::select_mut(&mut (*t).scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
     let ss_ver = (pl != 0
         && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
         as c_int;

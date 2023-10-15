@@ -506,11 +506,16 @@ pub struct Rav1dTaskContext_scratch_compinter_seg_mask {
     pub seg_mask: [u8; 16384],
 }
 
+pub struct Lap;
+
+impl BitDepthDependentType for Lap {
+    type T<BD: BitDepth> = [BD::Pixel; 128 * 32];
+}
+
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub union Rav1dTaskContext_scratch_lap {
-    pub lap_8bpc: [u8; 4096],
-    pub lap_16bpc: [u16; 4096],
+    pub lap: BitDepthUnion<Lap>,
     pub c2rust_unnamed: Rav1dTaskContext_scratch_compinter_seg_mask,
 }
 
