@@ -115,22 +115,16 @@ pub(crate) struct Rav1dContext_frame_thread {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct TaskThreadData_grain_lut_scaling_8 {
-    pub grain_lut_8bpc: Align16<[[[i8; 82]; 74]; 3]>,
-    pub scaling_8bpc: Align64<[[u8; 256]; 3]>,
+pub struct GrainLutScalingBD<BD: BitDepth> {
+    pub grain_lut: Align16<[[[BD::GrainLut; 82]; 73 + 1]; 3]>,
+    // TODO(kkysen) can use `BD::SCALING_LEN`` directly with `#![feature(generic_const_exprs)]` when stabilized
+    pub scaling: Align64<[BD::Scaling; 3]>,
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub struct TaskThreadData_grain_lut_scaling_16 {
-    pub grain_lut_16bpc: Align16<[[[i16; 82]; 74]; 3]>,
-    pub scaling_16bpc: Align64<[[u8; 4096]; 3]>,
-}
+pub struct GrainLutScaling;
 
-#[repr(C)]
-pub union TaskThreadData_grain_lut_scaling {
-    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
-    pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
+impl BitDepthDependentType for GrainLutScaling {
+    type T<BD: BitDepth> = GrainLutScalingBD<BD>;
 }
 
 #[repr(C)]
@@ -141,7 +135,7 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub out: *mut Rav1dPicture,
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
-    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
+    pub grain_lut_scaling: BitDepthUnion<GrainLutScaling>,
 }
 
 #[repr(C)]

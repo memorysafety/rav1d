@@ -174,6 +174,11 @@ pub trait BitDepth: Clone + Copy {
         T: BitDepthDependentType,
         T::T<BitDepth8>: Copy,
         T::T<BitDepth16>: Copy;
+
+    type GrainLut;
+    type Scaling;
+
+    const SCALING_LEN: usize;
 }
 
 #[derive(Clone, Copy)]
@@ -251,6 +256,11 @@ impl BitDepth for BitDepth8 {
     {
         bd.bpc8
     }
+
+    type GrainLut = i8;
+    type Scaling = [u8; Self::SCALING_LEN];
+
+    const SCALING_LEN: usize = 256;
 }
 
 #[derive(Clone, Copy)]
@@ -331,6 +341,11 @@ impl BitDepth for BitDepth16 {
     {
         bd.bpc16
     }
+
+    type GrainLut = i16;
+    type Scaling = [u8; Self::SCALING_LEN];
+
+    const SCALING_LEN: usize = 4096;
 }
 
 pub struct DisplayPixel8(<BitDepth8 as BitDepth>::Pixel);
