@@ -156,6 +156,24 @@ pub trait BitDepth: Clone + Copy {
     fn get_intermediate_bits(&self) -> u8;
 
     const PREP_BIAS: i16;
+
+    unsafe fn select<T>(bd: &BitDepthUnion<T>) -> &T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy;
+
+    unsafe fn select_mut<T>(bd: &mut BitDepthUnion<T>) -> &mut T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy;
+
+    unsafe fn select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy;
 }
 
 #[derive(Clone, Copy)]
@@ -206,6 +224,33 @@ impl BitDepth for BitDepth8 {
 
     /// Output in interval `[-5132, 9212]`; fits in [`i16`] as is.
     const PREP_BIAS: i16 = 0;
+
+    unsafe fn select<T>(bd: &BitDepthUnion<T>) -> &T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy,
+    {
+        &bd.bpc8
+    }
+
+    unsafe fn select_mut<T>(bd: &mut BitDepthUnion<T>) -> &mut T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy,
+    {
+        &mut bd.bpc8
+    }
+
+    unsafe fn select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy,
+    {
+        bd.bpc8
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -259,6 +304,33 @@ impl BitDepth for BitDepth16 {
     /// Output in interval `[-20588, 36956]` (10-bit), `[-20602, 36983]` (12-bit)
     /// Subtract a bias to ensure the output fits in [`i16`].
     const PREP_BIAS: i16 = 8192;
+
+    unsafe fn select<T>(bd: &BitDepthUnion<T>) -> &T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy,
+    {
+        &bd.bpc16
+    }
+
+    unsafe fn select_mut<T>(bd: &mut BitDepthUnion<T>) -> &mut T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy,
+    {
+        &mut bd.bpc16
+    }
+
+    unsafe fn select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
+    where
+        T: BitDepthDependentType,
+        T::T<BitDepth8>: Copy,
+        T::T<BitDepth16>: Copy,
+    {
+        bd.bpc16
+    }
 }
 
 pub struct DisplayPixel8(<BitDepth8 as BitDepth>::Pixel);
@@ -288,6 +360,39 @@ pub struct DynEntry(c_void);
 
 pub type LeftPixelRow<Pixel> = [Pixel; 4];
 pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
+
+pub trait BitDepthDependentType {
+    type T<BD: BitDepth>;
+}
+
+// #[derive(Clone, Copy)]
+pub union BitDepthUnion<T: BitDepthDependentType>
+where
+    T::T<BitDepth8>: Copy,
+    T::T<BitDepth16>: Copy,
+{
+    bpc8: T::T<BitDepth8>,
+    bpc16: T::T<BitDepth16>,
+}
+
+// Implemented manually to not require `T: Copy`.
+impl<T: BitDepthDependentType> Copy for BitDepthUnion<T>
+where
+    T::T<BitDepth8>: Copy,
+    T::T<BitDepth16>: Copy,
+{
+}
+
+// Implemented manually to not require `T: Clone`.
+impl<T: BitDepthDependentType> Clone for BitDepthUnion<T>
+where
+    T::T<BitDepth8>: Copy,
+    T::T<BitDepth16>: Copy,
+{
+    fn clone(&self) -> Self {
+        *self
+    }
+}
 
 #[cfg(feature = "asm")]
 macro_rules! bd_fn {
