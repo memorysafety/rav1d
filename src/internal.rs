@@ -1,3 +1,4 @@
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -46,6 +47,16 @@ use crate::src::picture::Rav1dThreadPicture;
 use crate::src::r#ref::Rav1dRef;
 use crate::src::recon::backup_ipred_edge_fn;
 use crate::src::recon::filter_sbrow_fn;
+use crate::src::recon::rav1d_backup_ipred_edge;
+use crate::src::recon::rav1d_filter_sbrow;
+use crate::src::recon::rav1d_filter_sbrow_cdef;
+use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
+use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
+use crate::src::recon::rav1d_filter_sbrow_lr;
+use crate::src::recon::rav1d_filter_sbrow_resize;
+use crate::src::recon::rav1d_read_coef_blocks;
+use crate::src::recon::rav1d_recon_b_inter;
+use crate::src::recon::rav1d_recon_b_intra;
 use crate::src::recon::read_coef_blocks_fn;
 use crate::src::recon::recon_b_inter_fn;
 use crate::src::recon::recon_b_intra_fn;
@@ -250,6 +261,21 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
 }
 
 impl Rav1dFrameContext_bd_fn {
+    pub fn new<BD: BitDepth>() -> Self {
+        Self {
+            recon_b_inter: rav1d_recon_b_inter::<BD>,
+            recon_b_intra: rav1d_recon_b_intra::<BD>,
+            filter_sbrow: rav1d_filter_sbrow::<BD>,
+            filter_sbrow_deblock_cols: rav1d_filter_sbrow_deblock_cols::<BD>,
+            filter_sbrow_deblock_rows: rav1d_filter_sbrow_deblock_rows::<BD>,
+            filter_sbrow_cdef: rav1d_filter_sbrow_cdef::<BD>,
+            filter_sbrow_resize: rav1d_filter_sbrow_resize::<BD>,
+            filter_sbrow_lr: rav1d_filter_sbrow_lr::<BD>,
+            backup_ipred_edge: rav1d_backup_ipred_edge::<BD>,
+            read_coef_blocks: rav1d_read_coef_blocks::<BD>,
+        }
+    }
+
     pub unsafe fn recon_b_intra(
         &self,
         context: &mut Rav1dTaskContext,

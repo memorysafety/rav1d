@@ -75,6 +75,7 @@ use crate::src::error::Rav1dResult;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameContext_bd_fn;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
 use crate::src::internal::Rav1dTileGroup;
@@ -185,16 +186,6 @@ use crate::src::qm::dav1d_qm_tbl;
 use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
-use crate::src::recon::rav1d_backup_ipred_edge;
-use crate::src::recon::rav1d_filter_sbrow;
-use crate::src::recon::rav1d_filter_sbrow_cdef;
-use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
-use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
-use crate::src::recon::rav1d_filter_sbrow_lr;
-use crate::src::recon::rav1d_filter_sbrow_resize;
-use crate::src::recon::rav1d_read_coef_blocks;
-use crate::src::recon::rav1d_recon_b_inter;
-use crate::src::recon::rav1d_recon_b_intra;
 use crate::src::recon::DEBUG_BLOCK_INFO;
 use crate::src::refmvs::rav1d_refmvs_find;
 use crate::src::refmvs::rav1d_refmvs_init_frame;
@@ -5091,30 +5082,12 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if (*f.seq_hdr).hbd == 0 {
         #[cfg(feature = "bitdepth_8")]
         {
-            f.bd_fn.recon_b_inter = rav1d_recon_b_inter::<BitDepth8>;
-            f.bd_fn.recon_b_intra = rav1d_recon_b_intra::<BitDepth8>;
-            f.bd_fn.filter_sbrow = rav1d_filter_sbrow::<BitDepth8>;
-            f.bd_fn.filter_sbrow_deblock_cols = rav1d_filter_sbrow_deblock_cols::<BitDepth8>;
-            f.bd_fn.filter_sbrow_deblock_rows = rav1d_filter_sbrow_deblock_rows::<BitDepth8>;
-            f.bd_fn.filter_sbrow_cdef = rav1d_filter_sbrow_cdef::<BitDepth8>;
-            f.bd_fn.filter_sbrow_resize = rav1d_filter_sbrow_resize::<BitDepth8>;
-            f.bd_fn.filter_sbrow_lr = rav1d_filter_sbrow_lr::<BitDepth8>;
-            f.bd_fn.backup_ipred_edge = rav1d_backup_ipred_edge::<BitDepth8>;
-            f.bd_fn.read_coef_blocks = rav1d_read_coef_blocks::<BitDepth8>;
+            f.bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth8>();
         }
     } else {
         #[cfg(feature = "bitdepth_16")]
         {
-            f.bd_fn.recon_b_inter = rav1d_recon_b_inter::<BitDepth16>;
-            f.bd_fn.recon_b_intra = rav1d_recon_b_intra::<BitDepth16>;
-            f.bd_fn.filter_sbrow = rav1d_filter_sbrow::<BitDepth16>;
-            f.bd_fn.filter_sbrow_deblock_cols = rav1d_filter_sbrow_deblock_cols::<BitDepth16>;
-            f.bd_fn.filter_sbrow_deblock_rows = rav1d_filter_sbrow_deblock_rows::<BitDepth16>;
-            f.bd_fn.filter_sbrow_cdef = rav1d_filter_sbrow_cdef::<BitDepth16>;
-            f.bd_fn.filter_sbrow_resize = rav1d_filter_sbrow_resize::<BitDepth16>;
-            f.bd_fn.filter_sbrow_lr = rav1d_filter_sbrow_lr::<BitDepth16>;
-            f.bd_fn.backup_ipred_edge = rav1d_backup_ipred_edge::<BitDepth16>;
-            f.bd_fn.read_coef_blocks = rav1d_read_coef_blocks::<BitDepth16>;
+            f.bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth16>();
         }
     }
 
