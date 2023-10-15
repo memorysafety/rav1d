@@ -1566,9 +1566,9 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
                 break;
             }
 
-            if ((c->n_itut_t35 + 1) > INT_MAX / (int)sizeof(*c->itut_t35)) goto error;
+            if ((c->n_itut_t35 + 1) > INT_MAX / (int)sizeof(*c->itut_t35)) return dav1d_parse_obus_error(c, in);
             struct Dav1dITUTT35 *itut_t35 = realloc(c->itut_t35, (c->n_itut_t35 + 1) * sizeof(*c->itut_t35));
-            if (!itut_t35) goto error;
+            if (!itut_t35) return dav1d_parse_obus_error(c, in);
             c->itut_t35 = itut_t35;
             memset(c->itut_t35 + c->n_itut_t35, 0, sizeof(*c->itut_t35));
 
@@ -1576,12 +1576,12 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
             if (!c->n_itut_t35) {
                 assert(!c->itut_t35_ref);
                 itut_t35_ctx = malloc(sizeof(struct itut_t35_ctx_context));
-                if (!itut_t35_ctx) goto error;
+                if (!itut_t35_ctx) return dav1d_parse_obus_error(c, in);
                 c->itut_t35_ref = dav1d_ref_wrap((uint8_t *)c->itut_t35, dav1d_picture_free_itut_t35,
                                                  itut_t35_ctx);
                 if (!c->itut_t35_ref) {
                     free(itut_t35_ctx);
-                    goto error;
+                    return dav1d_parse_obus_error(c, in);
                 }
             } else {
                 assert(c->itut_t35_ref && atomic_load(&c->itut_t35_ref->ref_cnt) == 1);
@@ -1593,7 +1593,7 @@ int dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
 
             Dav1dITUTT35 *const itut_t35_metadata = &c->itut_t35[c->n_itut_t35];
             itut_t35_metadata->payload = malloc(payload_size);
-            if (!itut_t35_metadata->payload) goto error;
+            if (!itut_t35_metadata->payload) return dav1d_parse_obus_error(c, in);
 
             itut_t35_metadata->country_code = country_code;
             itut_t35_metadata->country_code_extension_byte = country_code_extension_byte;
