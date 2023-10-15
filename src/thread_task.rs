@@ -1461,7 +1461,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     {
                                         ((*f).bd_fn.filter_sbrow_deblock_cols)
                                             .expect("non-null function pointer")(
-                                            f, sby
+                                            &mut *f, sby
                                         );
                                     }
                                     if ensure_progress(
@@ -1516,7 +1516,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 {
                                     ((*f).bd_fn.filter_sbrow_deblock_rows)
                                         .expect("non-null function pointer")(
-                                        f, sby
+                                        &mut *f, sby
                                     );
                                 }
                                 if (*(*f).frame_hdr).loopfilter.level_y[0] != 0
@@ -1600,7 +1600,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     {
                                         ((*f).bd_fn.filter_sbrow_resize)
                                             .expect("non-null function pointer")(
-                                            f, sby
+                                            &mut *f, sby
                                         );
                                     }
                                 }
@@ -1617,7 +1617,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 {
                                     ((*f).bd_fn.filter_sbrow_lr)
                                         .expect("non-null function pointer")(
-                                        f, sby
+                                        &mut *f, sby
                                     );
                                 }
                                 current_block = 18238912670629178022;

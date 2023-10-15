@@ -142,7 +142,7 @@ pub(crate) type recon_b_intra_fn =
 pub(crate) type recon_b_inter_fn =
     Option<unsafe fn(&mut Rav1dTaskContext, BlockSize, *const Av1Block) -> c_int>;
 
-pub(crate) type filter_sbrow_fn = Option<unsafe fn(*mut Rav1dFrameContext, c_int) -> ()>;
+pub(crate) type filter_sbrow_fn = Option<unsafe fn(&mut Rav1dFrameContext, c_int) -> ()>;
 
 pub(crate) type backup_ipred_edge_fn = Option<unsafe fn(&mut Rav1dTaskContext) -> ()>;
 
@@ -4620,77 +4620,73 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
-    f: *mut Rav1dFrameContext,
+    f: &mut Rav1dFrameContext,
     sby: c_int,
 ) {
-    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint == 0
-        || (*(*f).frame_hdr).loopfilter.level_y[0] == 0
-            && (*(*f).frame_hdr).loopfilter.level_y[1] == 0
+    if (*f.c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint == 0
+        || (*f.frame_hdr).loopfilter.level_y[0] == 0 && (*f.frame_hdr).loopfilter.level_y[1] == 0
     {
         return;
     }
-    let y = sby * (*f).sb_step * 4;
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let y = sby * f.sb_step * 4;
+    let ss_ver = (f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let p: [*mut BD::Pixel; 3] = [
-        ((*f).lf.p[0] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize),
-        ((*f).lf.p[1] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        (f.lf.p[0] as *mut BD::Pixel)
+            .offset((y as isize * BD::pxstride(f.cur.stride[0] as usize) as isize) as isize),
+        (f.lf.p[1] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
-        ((*f).lf.p[2] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        (f.lf.p[2] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
     ];
-    let mask: *mut Av1Filter = ((*f).lf.mask)
-        .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
+    let mask: *mut Av1Filter =
+        (f.lf.mask).offset(((sby >> ((*f.seq_hdr).sb128 == 0) as c_int) * f.sb128w) as isize);
     match BD::BPC {
         BPC::BPC8 => rav1d_loopfilter_sbrow_cols_8bpc(
             f,
             p.as_ptr().cast(),
             mask,
             sby,
-            *((*f).lf.start_of_tile_row).offset(sby as isize) as c_int,
+            *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
         ),
         BPC::BPC16 => rav1d_loopfilter_sbrow_cols_16bpc(
             f,
             p.as_ptr().cast(),
             mask,
             sby,
-            *((*f).lf.start_of_tile_row).offset(sby as isize) as c_int,
+            *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
         ),
     };
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
-    f: *mut Rav1dFrameContext,
+    f: &mut Rav1dFrameContext,
     sby: c_int,
 ) {
-    let y = sby * (*f).sb_step * 4;
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let y = sby * f.sb_step * 4;
+    let ss_ver = (f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let p: [*mut BD::Pixel; 3] = [
-        ((*f).lf.p[0] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize),
-        ((*f).lf.p[1] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        (f.lf.p[0] as *mut BD::Pixel)
+            .offset((y as isize * BD::pxstride(f.cur.stride[0] as usize) as isize) as isize),
+        (f.lf.p[1] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
-        ((*f).lf.p[2] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        (f.lf.p[2] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
     ];
-    let mask: *mut Av1Filter = ((*f).lf.mask)
-        .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
-    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
-        && ((*(*f).frame_hdr).loopfilter.level_y[0] != 0
-            || (*(*f).frame_hdr).loopfilter.level_y[1] != 0)
+    let mask: *mut Av1Filter =
+        (f.lf.mask).offset(((sby >> ((*f.seq_hdr).sb128 == 0) as c_int) * f.sb128w) as isize);
+    if (*f.c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
+        && ((*f.frame_hdr).loopfilter.level_y[0] != 0 || (*f.frame_hdr).loopfilter.level_y[1] != 0)
     {
         match BD::BPC {
             BPC::BPC8 => rav1d_loopfilter_sbrow_rows_8bpc(f, p.as_ptr().cast(), mask, sby),
             BPC::BPC16 => rav1d_loopfilter_sbrow_rows_16bpc(f, p.as_ptr().cast(), mask, sby),
         };
     }
-    if (*(*f).seq_hdr).cdef != 0 || (*f).lf.restore_planes != 0 {
+    if (*f.seq_hdr).cdef != 0 || f.lf.restore_planes != 0 {
         match BD::BPC {
             BPC::BPC8 => rav1d_copy_lpf_8bpc(f, p.as_ptr().cast(), sby),
             BPC::BPC16 => rav1d_copy_lpf_16bpc(f, p.as_ptr().cast(), sby),
@@ -4766,59 +4762,55 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: &mut Rav1dTaskCon
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
-    f: *mut Rav1dFrameContext,
+    f: &mut Rav1dFrameContext,
     sby: c_int,
 ) {
-    let sbsz = (*f).sb_step;
+    let sbsz = f.sb_step;
     let y = sby * sbsz * 4;
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_ver = (f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let p: [*const BD::Pixel; 3] = [
-        ((*f).lf.p[0] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize)
+        (f.lf.p[0] as *mut BD::Pixel)
+            .offset((y as isize * BD::pxstride(f.cur.stride[0] as usize) as isize) as isize)
             as *const BD::Pixel,
-        ((*f).lf.p[1] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        (f.lf.p[1] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ) as *const BD::Pixel,
-        ((*f).lf.p[2] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
+        (f.lf.p[2] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ) as *const BD::Pixel,
     ];
     let sr_p: [*mut BD::Pixel; 3] = [
-        ((*f).lf.sr_p[0] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).sr_cur.p.stride[0] as usize) as isize) as isize,
+        (f.lf.sr_p[0] as *mut BD::Pixel)
+            .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[0] as usize) as isize) as isize),
+        (f.lf.sr_p[1] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride(f.sr_cur.p.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
-        ((*f).lf.sr_p[1] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).sr_cur.p.stride[1] as usize) as isize >> ss_ver)
-                as isize,
-        ),
-        ((*f).lf.sr_p[2] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride((*f).sr_cur.p.stride[1] as usize) as isize >> ss_ver)
-                as isize,
+        (f.lf.sr_p[2] as *mut BD::Pixel).offset(
+            (y as isize * BD::pxstride(f.sr_cur.p.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
     ];
     let has_chroma =
-        ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
+        (f.cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
     let mut pl = 0;
     while pl < 1 + 2 * has_chroma {
         let ss_ver_0 = (pl != 0
-            && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+            && f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
             as c_int;
         let h_start = 8 * (sby != 0) as c_int >> ss_ver_0;
-        let dst_stride: ptrdiff_t = (*f).sr_cur.p.stride[(pl != 0) as c_int as usize];
+        let dst_stride: ptrdiff_t = f.sr_cur.p.stride[(pl != 0) as c_int as usize];
         let dst: *mut BD::Pixel = (sr_p[pl as usize])
             .offset(-((h_start as isize * BD::pxstride(dst_stride as usize) as isize) as isize));
-        let src_stride: ptrdiff_t = (*f).cur.stride[(pl != 0) as c_int as usize];
+        let src_stride: ptrdiff_t = f.cur.stride[(pl != 0) as c_int as usize];
         let src: *const BD::Pixel = (p[pl as usize])
             .offset(-(h_start as isize * BD::pxstride(src_stride as usize) as isize));
-        let h_end = 4 * (sbsz - 2 * ((sby + 1) < (*f).sbh) as c_int) >> ss_ver_0;
+        let h_end = 4 * (sbsz - 2 * ((sby + 1) < f.sbh) as c_int) >> ss_ver_0;
         let ss_hor = (pl != 0
-            && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+            && f.cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
             as c_int;
-        let dst_w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
-        let src_w = 4 * (*f).bw + ss_hor >> ss_hor;
-        let img_h = (*f).cur.p.h - sbsz * 4 * sby + ss_ver_0 >> ss_ver_0;
-        ((*(*f).dsp).mc.resize)(
+        let dst_w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
+        let src_w = 4 * f.bw + ss_hor >> ss_hor;
+        let img_h = f.cur.p.h - sbsz * 4 * sby + ss_ver_0 >> ss_ver_0;
+        ((*f.dsp).mc.resize)(
             dst.cast(),
             dst_stride,
             src.cast(),
@@ -4826,28 +4818,27 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
             dst_w,
             cmp::min(img_h, h_end) + h_start,
             src_w,
-            (*f).resize_step[(pl != 0) as c_int as usize],
-            (*f).resize_start[(pl != 0) as c_int as usize],
-            (*f).bitdepth_max,
+            f.resize_step[(pl != 0) as c_int as usize],
+            f.resize_start[(pl != 0) as c_int as usize],
+            f.bitdepth_max,
         );
         pl += 1;
     }
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(f: *mut Rav1dFrameContext, sby: c_int) {
-    if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
+pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(f: &mut Rav1dFrameContext, sby: c_int) {
+    if (*f.c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
         return;
     }
-    let y = sby * (*f).sb_step * 4;
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let y = sby * f.sb_step * 4;
+    let ss_ver = (f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let sr_p: [*mut BD::Pixel; 3] = [
-        ((*f).lf.sr_p[0] as *mut BD::Pixel)
-            .offset(y as isize * BD::pxstride((*f).sr_cur.p.stride[0] as usize) as isize),
-        ((*f).lf.sr_p[1] as *mut BD::Pixel)
-            .offset(y as isize * BD::pxstride((*f).sr_cur.p.stride[1] as usize) as isize >> ss_ver),
-        ((*f).lf.sr_p[2] as *mut BD::Pixel)
-            .offset(y as isize * BD::pxstride((*f).sr_cur.p.stride[1] as usize) as isize >> ss_ver),
+        (f.lf.sr_p[0] as *mut BD::Pixel)
+            .offset(y as isize * BD::pxstride(f.sr_cur.p.stride[0] as usize) as isize),
+        (f.lf.sr_p[1] as *mut BD::Pixel)
+            .offset(y as isize * BD::pxstride(f.sr_cur.p.stride[1] as usize) as isize >> ss_ver),
+        (f.lf.sr_p[2] as *mut BD::Pixel)
+            .offset(y as isize * BD::pxstride(f.sr_cur.p.stride[1] as usize) as isize >> ss_ver),
     ];
     match BD::BPC {
         BPC::BPC8 => rav1d_lr_sbrow_8bpc(f, sr_p.as_ptr().cast(), sby),
@@ -4855,16 +4846,16 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(f: *mut Rav1dFrameConte
     };
 }
 
-pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(f: *mut Rav1dFrameContext, sby: c_int) {
+pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(f: &mut Rav1dFrameContext, sby: c_int) {
     rav1d_filter_sbrow_deblock_cols::<BD>(f, sby);
     rav1d_filter_sbrow_deblock_rows::<BD>(f, sby);
-    if (*(*f).seq_hdr).cdef != 0 {
-        rav1d_filter_sbrow_cdef::<BD>(&mut *(*(*f).c).tc, sby);
+    if (*f.seq_hdr).cdef != 0 {
+        rav1d_filter_sbrow_cdef::<BD>(&mut *(*f.c).tc, sby);
     }
-    if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
+    if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
         rav1d_filter_sbrow_resize::<BD>(f, sby);
     }
-    if (*f).lf.restore_planes != 0 {
+    if f.lf.restore_planes != 0 {
         rav1d_filter_sbrow_lr::<BD>(f, sby);
     }
 }
