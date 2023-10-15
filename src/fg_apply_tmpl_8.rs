@@ -1,147 +1,20 @@
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
-use crate::src::fg_apply::generate_scaling;
+use crate::src::fg_apply::rav1d_prep_grain;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use cfg_if::cfg_if;
-use libc::intptr_t;
-use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 
 pub type pixel = u8;
 pub type entry = i8;
-
-pub(crate) unsafe fn rav1d_prep_grain_8bpc(
-    dsp: *const Rav1dFilmGrainDSPContext,
-    out: *mut Rav1dPicture,
-    in_0: *const Rav1dPicture,
-    scaling: *mut [u8; 256],
-    grain_lut: *mut [[entry; 82]; 74],
-) {
-    let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
-    ((*dsp).generate_grain_y).expect("non-null function pointer")(
-        (*grain_lut.offset(0)).as_mut_ptr().cast(),
-        data,
-        8,
-    );
-    if (*data).num_uv_points[0] != 0 || (*data).chroma_scaling_from_luma != 0 {
-        ((*dsp).generate_grain_uv
-            [((*in_0).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
-            .expect("non-null function pointer")(
-            (*grain_lut.offset(1)).as_mut_ptr().cast(),
-            (*grain_lut.offset(0)).as_mut_ptr().cast(),
-            data,
-            0 as c_int as intptr_t,
-            8,
-        );
-    }
-    if (*data).num_uv_points[1] != 0 || (*data).chroma_scaling_from_luma != 0 {
-        ((*dsp).generate_grain_uv
-            [((*in_0).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
-            .expect("non-null function pointer")(
-            (*grain_lut.offset(2)).as_mut_ptr().cast(),
-            (*grain_lut.offset(0)).as_mut_ptr().cast(),
-            data,
-            1 as c_int as intptr_t,
-            8,
-        );
-    }
-    if (*data).num_y_points != 0 || (*data).chroma_scaling_from_luma != 0 {
-        generate_scaling::<BitDepth8>(
-            (*in_0).p.bpc,
-            ((*data).y_points).as_ptr(),
-            (*data).num_y_points,
-            (*scaling.offset(0)).as_mut_ptr(),
-        );
-    }
-    if (*data).num_uv_points[0] != 0 {
-        generate_scaling::<BitDepth8>(
-            (*in_0).p.bpc,
-            ((*data).uv_points[0]).as_ptr(),
-            (*data).num_uv_points[0],
-            (*scaling.offset(1)).as_mut_ptr(),
-        );
-    }
-    if (*data).num_uv_points[1] != 0 {
-        generate_scaling::<BitDepth8>(
-            (*in_0).p.bpc,
-            ((*data).uv_points[1]).as_ptr(),
-            (*data).num_uv_points[1],
-            (*scaling.offset(2)).as_mut_ptr(),
-        );
-    }
-    if !((*out).stride[0] == (*in_0).stride[0]) {
-        unreachable!();
-    }
-    if (*data).num_y_points == 0 {
-        let stride: ptrdiff_t = (*out).stride[0];
-        let sz: ptrdiff_t = (*out).p.h as isize * stride;
-        if sz < 0 {
-            memcpy(
-                ((*out).data[0] as *mut u8)
-                    .offset(sz as isize)
-                    .offset(-(stride as isize)) as *mut c_void,
-                ((*in_0).data[0] as *mut u8)
-                    .offset(sz as isize)
-                    .offset(-(stride as isize)) as *const c_void,
-                -sz as usize,
-            );
-        } else {
-            memcpy((*out).data[0], (*in_0).data[0], sz as usize);
-        }
-    }
-    if (*in_0).p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
-        && (*data).chroma_scaling_from_luma == 0
-    {
-        if !((*out).stride[1] == (*in_0).stride[1]) {
-            unreachable!();
-        }
-        let ss_ver =
-            ((*in_0).p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-        let stride_0: ptrdiff_t = (*out).stride[1];
-        let sz_0: ptrdiff_t = ((*out).p.h + ss_ver >> ss_ver) as isize * stride_0;
-        if sz_0 < 0 {
-            if (*data).num_uv_points[0] == 0 {
-                memcpy(
-                    ((*out).data[1] as *mut u8)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *mut c_void,
-                    ((*in_0).data[1] as *mut u8)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *const c_void,
-                    -sz_0 as usize,
-                );
-            }
-            if (*data).num_uv_points[1] == 0 {
-                memcpy(
-                    ((*out).data[2] as *mut u8)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *mut c_void,
-                    ((*in_0).data[2] as *mut u8)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *const c_void,
-                    -sz_0 as usize,
-                );
-            }
-        } else {
-            if (*data).num_uv_points[0] == 0 {
-                memcpy((*out).data[1], (*in_0).data[1], sz_0 as usize);
-            }
-            if (*data).num_uv_points[1] == 0 {
-                memcpy((*out).data[2], (*in_0).data[2], sz_0 as usize);
-            }
-        }
-    }
-}
 
 pub(crate) unsafe fn rav1d_apply_grain_row_8bpc(
     dsp: *const Rav1dFilmGrainDSPContext,
@@ -269,7 +142,7 @@ pub(crate) unsafe fn rav1d_apply_grain_8bpc(
         }
     }
     let rows = (*out).p.h + 31 >> 5;
-    rav1d_prep_grain_8bpc(
+    rav1d_prep_grain::<BitDepth8>(
         dsp,
         out,
         in_0,
