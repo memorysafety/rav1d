@@ -2120,14 +2120,8 @@ unsafe fn mc<BD: BitDepth>(
             || dx + bw4 * h_mul + (mx != 0) as c_int * 4 > w
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
         {
-            let emu_edge_buf: *mut BD::Pixel = match BD::BPC {
-                BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-                BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_16bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-            };
+            let emu_edge_buf =
+                BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
             ((*(*f).dsp).mc.emu_edge)(
                 (bw4 * h_mul + (mx != 0) as c_int * 7) as intptr_t,
                 (bh4 * v_mul + (my != 0) as c_int * 7) as intptr_t,
@@ -2218,14 +2212,8 @@ unsafe fn mc<BD: BitDepth>(
         let w = (*refp).p.p.w + ss_hor >> ss_hor;
         let h = (*refp).p.p.h + ss_ver >> ss_ver;
         if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
-            let emu_edge_buf: *mut BD::Pixel = match BD::BPC {
-                BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-                BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_16bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-            };
+            let emu_edge_buf =
+                BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
             ((*(*f).dsp).mc.emu_edge)(
                 (right - left + 7) as intptr_t,
                 (bottom - top + 7) as intptr_t,
@@ -2477,14 +2465,8 @@ unsafe fn warp_affine<BD: BitDepth>(
             let ref_ptr: *const BD::Pixel;
             let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as c_int as usize];
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
-                let emu_edge_buf: *mut BD::Pixel = match BD::BPC {
-                    BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc)
-                        .as_mut_ptr()
-                        .cast::<BD::Pixel>(),
-                    BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_16bpc)
-                        .as_mut_ptr()
-                        .cast::<BD::Pixel>(),
-                };
+                let emu_edge_buf =
+                    BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
                 ((*(*f).dsp).mc.emu_edge)(
                     15 as c_int as intptr_t,
                     15 as c_int as intptr_t,

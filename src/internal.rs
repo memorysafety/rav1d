@@ -1,4 +1,6 @@
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepthDependentType;
+use crate::include::common::bitdepth::BitDepthUnion;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -512,18 +514,18 @@ pub union Rav1dTaskContext_scratch_lap {
     pub c2rust_unnamed: Rav1dTaskContext_scratch_compinter_seg_mask,
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub union Rav1dTaskContext_scratch_emu_edge {
-    pub emu_edge_8bpc: [u8; 84160],
-    pub emu_edge_16bpc: [u16; 84160],
+// stride=192 for non-SVC, or 320 for SVC
+pub struct EmuEdge;
+
+impl BitDepthDependentType for EmuEdge {
+    type T<BD: BitDepth> = [BD::Pixel; 320 * (256 + 7)];
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Rav1dTaskContext_scratch_lap_emu_edge {
     pub c2rust_unnamed: Rav1dTaskContext_scratch_lap,
-    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_emu_edge,
+    pub emu_edge: BitDepthUnion<EmuEdge>,
 }
 
 #[derive(Clone, Copy)]
