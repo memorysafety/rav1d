@@ -1734,10 +1734,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
                 as *mut CodedBlockInfo;
         } else {
-            cf = match BD::BPC {
-                BPC::BPC8 => (*t).c2rust_unnamed.cf_8bpc.as_mut_ptr().cast::<BD::Coef>(),
-                BPC::BPC16 => (*t).c2rust_unnamed.cf_16bpc.as_mut_ptr().cast::<BD::Coef>(),
-            };
+            cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
         }
         if (*t).frame_thread.pass != 2 as c_int {
             eob = decode_coefs::<BD>(
@@ -2743,14 +2740,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             txtp = (*cbi).txtp[0] as TxfmType;
                         } else {
                             let mut cf_ctx: u8 = 0;
-                            cf = match BD::BPC {
-                                BPC::BPC8 => {
-                                    (t.c2rust_unnamed.cf_8bpc).as_mut_ptr().cast::<BD::Coef>()
-                                }
-                                BPC::BPC16 => {
-                                    (t.c2rust_unnamed.cf_16bpc).as_mut_ptr().cast::<BD::Coef>()
-                                }
-                            };
+                            cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
                             eob = decode_coefs::<BD>(
                                 t,
                                 &mut (*t.a).lcoef.0[(bx4 + x) as usize..],
@@ -3172,14 +3162,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     txtp = (*cbi).txtp[(pl + 1) as usize] as TxfmType;
                                 } else {
                                     let mut cf_ctx: u8 = 0;
-                                    cf = match BD::BPC {
-                                        BPC::BPC8 => (t.c2rust_unnamed.cf_8bpc)
-                                            .as_mut_ptr()
-                                            .cast::<BD::Coef>(),
-                                        BPC::BPC16 => (t.c2rust_unnamed.cf_16bpc)
-                                            .as_mut_ptr()
-                                            .cast::<BD::Coef>(),
-                                    };
+                                    cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
                                     eob = decode_coefs::<BD>(
                                         t,
                                         &mut (*t.a).ccoef.0[pl as usize][(cbx4 + x) as usize..],
@@ -4398,14 +4381,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 txtp = (*cbi).txtp[(1 + pl) as usize] as TxfmType;
                             } else {
                                 let mut cf_ctx: u8 = 0;
-                                cf = match BD::BPC {
-                                    BPC::BPC8 => {
-                                        t.c2rust_unnamed.cf_8bpc.as_mut_ptr().cast::<BD::Coef>()
-                                    }
-                                    BPC::BPC16 => {
-                                        t.c2rust_unnamed.cf_16bpc.as_mut_ptr().cast::<BD::Coef>()
-                                    }
-                                };
+                                cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
                                 txtp = t.txtp_map
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
                                     as TxfmType;

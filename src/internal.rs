@@ -493,10 +493,10 @@ pub struct Rav1dTileState {
     pub lr_ref: [Av1RestorationUnit; 3],
 }
 
-#[repr(C, align(64))]
-pub union Rav1dTaskContext_cf {
-    pub cf_8bpc: [i16; 1024],
-    pub cf_16bpc: [i32; 1024],
+pub struct Cf;
+
+impl BitDepthDependentType for Cf {
+    type T<BD: BitDepth> = Align64<[BD::Coef; 32 * 32]>;
 }
 
 #[derive(Clone, Copy)]
@@ -600,7 +600,7 @@ pub(crate) struct Rav1dTaskContext {
     pub l: BlockContext,
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
-    pub c2rust_unnamed: Rav1dTaskContext_cf,
+    pub cf: BitDepthUnion<Cf>,
     pub al_pal: [[[[u16; 8]; 3]; 32]; 2],
     pub pal_sz_uv: [[u8; 32]; 2],
     pub txtp_map: [u8; 1024],

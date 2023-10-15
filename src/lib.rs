@@ -1,3 +1,5 @@
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
@@ -27,6 +29,7 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
+use crate::src::align::Align64;
 use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
@@ -425,11 +428,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         (*t).f = &mut *((*c).fc).offset(0) as *mut Rav1dFrameContext;
         (*t).task_thread.ttd = &mut (*c).task_thread;
         (*t).c = c;
-        memset(
-            ((*t).c2rust_unnamed.cf_16bpc).as_mut_ptr() as *mut c_void,
-            0 as c_int,
-            ::core::mem::size_of::<[i32; 1024]>(),
-        );
+        *BitDepth16::select_mut(&mut (*t).cf) = Align64([0; 32 * 32]);
         if (*c).n_tc > 1 as c_uint {
             if pthread_mutex_init(
                 &mut (*t).task_thread.td.lock,
