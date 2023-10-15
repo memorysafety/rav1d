@@ -136,19 +136,18 @@ pub(crate) unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContex
     false && (*f.frame_hdr).frame_offset == 2 && t.by >= 0 && t.by < 4 && t.bx >= 8 && t.bx < 12
 }
 
-pub(crate) type recon_b_intra_fn = Option<
-    unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
->;
+pub(crate) type recon_b_intra_fn =
+    Option<unsafe fn(*mut Rav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> ()>;
 
 pub(crate) type recon_b_inter_fn =
-    Option<unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, *const Av1Block) -> c_int>;
+    Option<unsafe fn(*mut Rav1dTaskContext, BlockSize, *const Av1Block) -> c_int>;
 
-pub(crate) type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Rav1dFrameContext, c_int) -> ()>;
+pub(crate) type filter_sbrow_fn = Option<unsafe fn(*mut Rav1dFrameContext, c_int) -> ()>;
 
-pub(crate) type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Rav1dTaskContext) -> ()>;
+pub(crate) type backup_ipred_edge_fn = Option<unsafe fn(*mut Rav1dTaskContext) -> ()>;
 
 pub(crate) type read_coef_blocks_fn =
-    Option<unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
+    Option<unsafe fn(*mut Rav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 
 #[inline]
 fn read_golomb(msac: &mut MsacContext) -> c_uint {
@@ -1830,7 +1829,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     };
 }
 
-pub(crate) unsafe extern "C" fn rav1d_read_coef_blocks<BD: BitDepth>(
+pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     t: *mut Rav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
@@ -2551,7 +2550,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     return 0 as c_int;
 }
 
-pub(crate) unsafe extern "C" fn rav1d_recon_b_intra<BD: BitDepth>(
+pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     t: *mut Rav1dTaskContext,
     bs: BlockSize,
     intra_edge_flags: EdgeFlags,
@@ -3331,7 +3330,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_intra<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe extern "C" fn rav1d_recon_b_inter<BD: BitDepth>(
+pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     t: *mut Rav1dTaskContext,
     bs: BlockSize,
     b: *const Av1Block,
@@ -4636,7 +4635,7 @@ pub(crate) unsafe extern "C" fn rav1d_recon_b_inter<BD: BitDepth>(
     return 0 as c_int;
 }
 
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
+pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     f: *mut Rav1dFrameContext,
     sby: c_int,
 ) {
@@ -4679,7 +4678,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     };
 }
 
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
+pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     f: *mut Rav1dFrameContext,
     sby: c_int,
 ) {
@@ -4715,10 +4714,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
-    tc: *mut Rav1dTaskContext,
-    sby: c_int,
-) {
+pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: *mut Rav1dTaskContext, sby: c_int) {
     let f: *const Rav1dFrameContext = (*tc).f;
     if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
         return;
@@ -4785,7 +4781,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     };
 }
 
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_resize<BD: BitDepth>(
+pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     f: *mut Rav1dFrameContext,
     sby: c_int,
 ) {
@@ -4854,10 +4850,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_lr<BD: BitDepth>(
-    f: *mut Rav1dFrameContext,
-    sby: c_int,
-) {
+pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(f: *mut Rav1dFrameContext, sby: c_int) {
     if (*(*f).c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
         return;
     }
@@ -4878,10 +4871,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     };
 }
 
-pub(crate) unsafe extern "C" fn rav1d_filter_sbrow<BD: BitDepth>(
-    f: *mut Rav1dFrameContext,
-    sby: c_int,
-) {
+pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(f: *mut Rav1dFrameContext, sby: c_int) {
     rav1d_filter_sbrow_deblock_cols::<BD>(f, sby);
     rav1d_filter_sbrow_deblock_rows::<BD>(f, sby);
     if (*(*f).seq_hdr).cdef != 0 {
@@ -4895,7 +4885,7 @@ pub(crate) unsafe extern "C" fn rav1d_filter_sbrow<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe extern "C" fn rav1d_backup_ipred_edge<BD: BitDepth>(t: *mut Rav1dTaskContext) {
+pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(t: *mut Rav1dTaskContext) {
     let f: *const Rav1dFrameContext = (*t).f;
     let ts: *mut Rav1dTileState = (*t).ts;
     let sby = (*t).by >> (*f).sb_shift;
