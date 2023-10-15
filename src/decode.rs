@@ -4096,7 +4096,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
                 t.a = (t.a).offset(1);
             }
         }
-        (f.bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
+        (f.bd_fn.backup_ipred_edge)(t);
         return Ok(());
     }
 
@@ -4221,7 +4221,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
 
     // backup pre-loopfilter pixels for intra prediction of the next sbrow
     if t.frame_thread.pass != 1 {
-        (f.bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
+        (f.bd_fn.backup_ipred_edge)(t);
     }
 
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
@@ -4851,7 +4851,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
             }
 
             // loopfilter + cdef + restoration
-            (f.bd_fn.filter_sbrow).expect("non-null function pointer")(f, sby);
+            (f.bd_fn.filter_sbrow)(f, sby);
         }
     }
 
@@ -5091,30 +5091,30 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if (*f.seq_hdr).hbd == 0 {
         #[cfg(feature = "bitdepth_8")]
         {
-            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter::<BitDepth8>);
-            f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra::<BitDepth8>);
-            f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow::<BitDepth8>);
-            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols::<BitDepth8>);
-            f.bd_fn.filter_sbrow_deblock_rows = Some(rav1d_filter_sbrow_deblock_rows::<BitDepth8>);
-            f.bd_fn.filter_sbrow_cdef = Some(rav1d_filter_sbrow_cdef::<BitDepth8>);
-            f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize::<BitDepth8>);
-            f.bd_fn.filter_sbrow_lr = Some(rav1d_filter_sbrow_lr::<BitDepth8>);
-            f.bd_fn.backup_ipred_edge = Some(rav1d_backup_ipred_edge::<BitDepth8>);
-            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks::<BitDepth8>);
+            f.bd_fn.recon_b_inter = rav1d_recon_b_inter::<BitDepth8>;
+            f.bd_fn.recon_b_intra = rav1d_recon_b_intra::<BitDepth8>;
+            f.bd_fn.filter_sbrow = rav1d_filter_sbrow::<BitDepth8>;
+            f.bd_fn.filter_sbrow_deblock_cols = rav1d_filter_sbrow_deblock_cols::<BitDepth8>;
+            f.bd_fn.filter_sbrow_deblock_rows = rav1d_filter_sbrow_deblock_rows::<BitDepth8>;
+            f.bd_fn.filter_sbrow_cdef = rav1d_filter_sbrow_cdef::<BitDepth8>;
+            f.bd_fn.filter_sbrow_resize = rav1d_filter_sbrow_resize::<BitDepth8>;
+            f.bd_fn.filter_sbrow_lr = rav1d_filter_sbrow_lr::<BitDepth8>;
+            f.bd_fn.backup_ipred_edge = rav1d_backup_ipred_edge::<BitDepth8>;
+            f.bd_fn.read_coef_blocks = rav1d_read_coef_blocks::<BitDepth8>;
         }
     } else {
         #[cfg(feature = "bitdepth_16")]
         {
-            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter::<BitDepth16>);
-            f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra::<BitDepth16>);
-            f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow::<BitDepth16>);
-            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols::<BitDepth16>);
-            f.bd_fn.filter_sbrow_deblock_rows = Some(rav1d_filter_sbrow_deblock_rows::<BitDepth16>);
-            f.bd_fn.filter_sbrow_cdef = Some(rav1d_filter_sbrow_cdef::<BitDepth16>);
-            f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize::<BitDepth16>);
-            f.bd_fn.filter_sbrow_lr = Some(rav1d_filter_sbrow_lr::<BitDepth16>);
-            f.bd_fn.backup_ipred_edge = Some(rav1d_backup_ipred_edge::<BitDepth16>);
-            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks::<BitDepth16>);
+            f.bd_fn.recon_b_inter = rav1d_recon_b_inter::<BitDepth16>;
+            f.bd_fn.recon_b_intra = rav1d_recon_b_intra::<BitDepth16>;
+            f.bd_fn.filter_sbrow = rav1d_filter_sbrow::<BitDepth16>;
+            f.bd_fn.filter_sbrow_deblock_cols = rav1d_filter_sbrow_deblock_cols::<BitDepth16>;
+            f.bd_fn.filter_sbrow_deblock_rows = rav1d_filter_sbrow_deblock_rows::<BitDepth16>;
+            f.bd_fn.filter_sbrow_cdef = rav1d_filter_sbrow_cdef::<BitDepth16>;
+            f.bd_fn.filter_sbrow_resize = rav1d_filter_sbrow_resize::<BitDepth16>;
+            f.bd_fn.filter_sbrow_lr = rav1d_filter_sbrow_lr::<BitDepth16>;
+            f.bd_fn.backup_ipred_edge = rav1d_backup_ipred_edge::<BitDepth16>;
+            f.bd_fn.read_coef_blocks = rav1d_read_coef_blocks::<BitDepth16>;
         }
     }
 

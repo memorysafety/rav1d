@@ -242,7 +242,7 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: Option<unsafe fn(&mut Rav1dTaskContext, c_int) -> ()>,
+    pub filter_sbrow_cdef: unsafe fn(&mut Rav1dTaskContext, c_int) -> (),
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
@@ -257,7 +257,7 @@ impl Rav1dFrameContext_bd_fn {
         flags: EdgeFlags,
         block: &Av1Block,
     ) {
-        self.recon_b_intra.expect("non-null function pointer")(context, block_size, flags, block);
+        (self.recon_b_intra)(context, block_size, flags, block);
     }
 
     pub unsafe fn recon_b_inter(
@@ -266,7 +266,7 @@ impl Rav1dFrameContext_bd_fn {
         block_size: BlockSize,
         block: &Av1Block,
     ) -> Result<(), ()> {
-        match self.recon_b_inter.expect("non-null function pointer")(context, block_size, block) {
+        match (self.recon_b_inter)(context, block_size, block) {
             0 => Ok(()),
             _ => Err(()),
         }
@@ -278,7 +278,7 @@ impl Rav1dFrameContext_bd_fn {
         block_size: BlockSize,
         block: &Av1Block,
     ) {
-        self.read_coef_blocks.expect("non-null function pointer")(context, block_size, block);
+        (self.read_coef_blocks)(context, block_size, block);
     }
 }
 

@@ -137,17 +137,15 @@ pub(crate) unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContex
 }
 
 pub(crate) type recon_b_intra_fn =
-    Option<unsafe fn(&mut Rav1dTaskContext, BlockSize, EdgeFlags, &Av1Block) -> ()>;
+    unsafe fn(&mut Rav1dTaskContext, BlockSize, EdgeFlags, &Av1Block) -> ();
 
-pub(crate) type recon_b_inter_fn =
-    Option<unsafe fn(&mut Rav1dTaskContext, BlockSize, &Av1Block) -> c_int>;
+pub(crate) type recon_b_inter_fn = unsafe fn(&mut Rav1dTaskContext, BlockSize, &Av1Block) -> c_int;
 
-pub(crate) type filter_sbrow_fn = Option<unsafe fn(&mut Rav1dFrameContext, c_int) -> ()>;
+pub(crate) type filter_sbrow_fn = unsafe fn(&mut Rav1dFrameContext, c_int) -> ();
 
-pub(crate) type backup_ipred_edge_fn = Option<unsafe fn(&mut Rav1dTaskContext) -> ()>;
+pub(crate) type backup_ipred_edge_fn = unsafe fn(&mut Rav1dTaskContext) -> ();
 
-pub(crate) type read_coef_blocks_fn =
-    Option<unsafe fn(&mut Rav1dTaskContext, BlockSize, &Av1Block) -> ()>;
+pub(crate) type read_coef_blocks_fn = unsafe fn(&mut Rav1dTaskContext, BlockSize, &Av1Block) -> ();
 
 #[inline]
 fn read_golomb(msac: &mut MsacContext) -> c_uint {

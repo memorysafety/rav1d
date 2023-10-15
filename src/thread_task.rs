@@ -1459,10 +1459,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
                                     {
-                                        ((*f).bd_fn.filter_sbrow_deblock_cols)
-                                            .expect("non-null function pointer")(
-                                            &mut *f, sby
-                                        );
+                                        ((*f).bd_fn.filter_sbrow_deblock_cols)(&mut *f, sby);
                                     }
                                     if ensure_progress(
                                         ttd,
@@ -1514,10 +1511,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     &mut (*f).task_thread.error as *mut atomic_int,
                                 ) == 0
                                 {
-                                    ((*f).bd_fn.filter_sbrow_deblock_rows)
-                                        .expect("non-null function pointer")(
-                                        &mut *f, sby
-                                    );
+                                    ((*f).bd_fn.filter_sbrow_deblock_rows)(&mut *f, sby);
                                 }
                                 if (*(*f).frame_hdr).loopfilter.level_y[0] != 0
                                     || (*(*f).frame_hdr).loopfilter.level_y[1] != 0
@@ -1573,10 +1567,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
                                     {
-                                        ((*f).bd_fn.filter_sbrow_cdef)
-                                            .expect("non-null function pointer")(
-                                            &mut *tc, sby
-                                        );
+                                        ((*f).bd_fn.filter_sbrow_cdef)(&mut *tc, sby);
                                     }
                                     reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
                                     if ::core::intrinsics::atomic_or_seqcst(
@@ -1598,10 +1589,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
                                     {
-                                        ((*f).bd_fn.filter_sbrow_resize)
-                                            .expect("non-null function pointer")(
-                                            &mut *f, sby
-                                        );
+                                        ((*f).bd_fn.filter_sbrow_resize)(&mut *f, sby);
                                     }
                                 }
                                 current_block = 563177965161376451;
@@ -1615,10 +1603,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 ) == 0
                                     && (*f).lf.restore_planes != 0
                                 {
-                                    ((*f).bd_fn.filter_sbrow_lr)
-                                        .expect("non-null function pointer")(
-                                        &mut *f, sby
-                                    );
+                                    ((*f).bd_fn.filter_sbrow_lr)(&mut *f, sby);
                                 }
                                 current_block = 18238912670629178022;
                             }
