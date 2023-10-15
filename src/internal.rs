@@ -116,7 +116,7 @@ pub(crate) struct Rav1dContext_frame_thread {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct GrainLutScalingBD<BD: BitDepth> {
-    pub grain_lut: Align16<[[[BD::GrainLut; 82]; 73 + 1]; 3]>,
+    pub grain_lut: Align16<[[[BD::Entry; 82]; 73 + 1]; 3]>,
     // TODO(kkysen) can use `BD::SCALING_LEN`` directly with `#![feature(generic_const_exprs)]` when stabilized
     pub scaling: Align64<[BD::Scaling; 3]>,
 }

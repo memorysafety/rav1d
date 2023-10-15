@@ -108,6 +108,11 @@ pub trait BitDepth: Clone + Copy {
         + Add<Output = Self::Coef>
         + Display;
 
+    type Entry;
+
+    type Scaling: AsRef<[u8]> + AsMut<[u8]>;
+    const SCALING_SIZE: usize;
+
     type BitDepthMax;
 
     type DisplayPixel: Display;
@@ -174,11 +179,6 @@ pub trait BitDepth: Clone + Copy {
         T: BitDepthDependentType,
         T::T<BitDepth8>: Copy,
         T::T<BitDepth16>: Copy;
-
-    type GrainLut;
-    type Scaling;
-
-    const SCALING_LEN: usize;
 }
 
 #[derive(Clone, Copy)]
@@ -194,6 +194,11 @@ impl BitDepth for BitDepth8 {
     type Pixel = u8;
 
     type Coef = i16;
+
+    type Entry = i8;
+
+    type Scaling = [u8; Self::SCALING_SIZE];
+    const SCALING_SIZE: usize = 256;
 
     type BitDepthMax = ();
 
@@ -256,11 +261,6 @@ impl BitDepth for BitDepth8 {
     {
         bd.bpc8
     }
-
-    type GrainLut = i8;
-    type Scaling = [u8; Self::SCALING_LEN];
-
-    const SCALING_LEN: usize = 256;
 }
 
 #[derive(Clone, Copy)]
@@ -275,6 +275,11 @@ impl BitDepth for BitDepth16 {
     type Pixel = u16;
 
     type Coef = i32;
+
+    type Entry = i16;
+
+    type Scaling = [u8; Self::SCALING_SIZE];
+    const SCALING_SIZE: usize = 4096;
 
     type BitDepthMax = Self::Pixel;
 
@@ -341,11 +346,6 @@ impl BitDepth for BitDepth16 {
     {
         bd.bpc16
     }
-
-    type GrainLut = i16;
-    type Scaling = [u8; Self::SCALING_LEN];
-
-    const SCALING_LEN: usize = 4096;
 }
 
 pub struct DisplayPixel8(<BitDepth8 as BitDepth>::Pixel);
