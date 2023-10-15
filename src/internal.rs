@@ -255,7 +255,7 @@ impl Rav1dFrameContext_bd_fn {
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         flags: EdgeFlags,
-        block: *const Av1Block,
+        block: &Av1Block,
     ) {
         self.recon_b_intra.expect("non-null function pointer")(context, block_size, flags, block);
     }
@@ -264,7 +264,7 @@ impl Rav1dFrameContext_bd_fn {
         &self,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
-        block: *const Av1Block,
+        block: &Av1Block,
     ) -> Result<(), ()> {
         match self.recon_b_inter.expect("non-null function pointer")(context, block_size, block) {
             0 => Ok(()),
@@ -276,7 +276,7 @@ impl Rav1dFrameContext_bd_fn {
         &self,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
-        block: *const Av1Block,
+        block: &Av1Block,
     ) {
         self.read_coef_blocks.expect("non-null function pointer")(context, block_size, block);
     }
