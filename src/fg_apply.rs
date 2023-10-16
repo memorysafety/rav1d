@@ -102,7 +102,7 @@ unsafe fn generate_scaling<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
-    dsp: *const Rav1dFilmGrainDSPContext,
+    dsp: &Rav1dFilmGrainDSPContext,
     out: *mut Rav1dPicture,
     r#in: *const Rav1dPicture,
     scaling: *mut BD::Scaling,
@@ -110,13 +110,13 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
 ) {
     let data: *const Rav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
     let bitdepth_max = ((1 as c_int) << (*out).p.bpc) - 1;
-    ((*dsp).generate_grain_y).expect("non-null function pointer")(
+    (dsp.generate_grain_y).expect("non-null function pointer")(
         (*grain_lut.offset(0)).as_mut_ptr().cast(),
         data,
         bitdepth_max,
     );
     if (*data).num_uv_points[0] != 0 || (*data).chroma_scaling_from_luma != 0 {
-        ((*dsp).generate_grain_uv
+        (dsp.generate_grain_uv
             [((*r#in).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
             .expect("non-null function pointer")(
             (*grain_lut.offset(1)).as_mut_ptr().cast(),
@@ -127,7 +127,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         );
     }
     if (*data).num_uv_points[1] != 0 || (*data).chroma_scaling_from_luma != 0 {
-        ((*dsp).generate_grain_uv
+        (dsp.generate_grain_uv
             [((*r#in).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
             .expect("non-null function pointer")(
             (*grain_lut.offset(2)).as_mut_ptr().cast(),
@@ -226,7 +226,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
-    dsp: *const Rav1dFilmGrainDSPContext,
+    dsp: &Rav1dFilmGrainDSPContext,
     out: *mut Rav1dPicture,
     r#in: *const Rav1dPicture,
     scaling: *const BD::Scaling,
@@ -243,7 +243,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let bitdepth_max = ((1 as c_int) << (*out).p.bpc) - 1;
     if (*data).num_y_points != 0 {
         let bh = cmp::min((*out).p.h - row * 32, 32 as c_int);
-        ((*dsp).fgy_32x32xn).expect("non-null function pointer")(
+        (dsp.fgy_32x32xn).expect("non-null function pointer")(
             ((*out).data[0] as *mut BD::Pixel)
                 .offset(
                     ((row * 32) as isize * BD::pxstride((*out).stride[0] as usize) as isize)
@@ -283,7 +283,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if (*data).chroma_scaling_from_luma != 0 {
         let mut pl = 0;
         while pl < 2 {
-            ((*dsp).fguv_32x32xn
+            (dsp.fguv_32x32xn
                 [((*r#in).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
                 .expect("non-null function pointer")(
                 ((*out).data[(1 + pl) as usize] as *mut BD::Pixel)
@@ -311,7 +311,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         let mut pl = 0;
         while pl < 2 {
             if (*data).num_uv_points[pl as usize] != 0 {
-                ((*dsp).fguv_32x32xn
+                (dsp.fguv_32x32xn
                     [((*r#in).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
                     .expect("non-null function pointer")(
                     ((*out).data[(1 + pl) as usize] as *mut BD::Pixel)
@@ -340,7 +340,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
-    dsp: *const Rav1dFilmGrainDSPContext,
+    dsp: &Rav1dFilmGrainDSPContext,
     out: *mut Rav1dPicture,
     r#in: *const Rav1dPicture,
 ) {
