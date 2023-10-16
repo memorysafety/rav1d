@@ -199,7 +199,7 @@ impl BitDepth for BitDepth8 {
     type Entry = i8;
 
     type Scaling = [u8; Self::SCALING_SIZE];
-    const SCALING_SIZE: usize = 256;
+    const SCALING_SIZE: usize = 1 << 8;
 
     type BitDepthMax = ();
 
@@ -280,7 +280,7 @@ impl BitDepth for BitDepth16 {
     type Entry = i16;
 
     type Scaling = [u8; Self::SCALING_SIZE];
-    const SCALING_SIZE: usize = 4096;
+    const SCALING_SIZE: usize = 1 << 12;
 
     type BitDepthMax = Self::Pixel;
 
