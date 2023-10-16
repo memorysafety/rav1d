@@ -13,7 +13,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
-fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]]) -> BD::Scaling {
+fn generate_scaling<BD: BitDepth>(bitdepth: usize, points: &[[u8; 2]]) -> BD::Scaling {
     let mut scaling_array = ArrayDefault::default();
     if points.is_empty() {
         return scaling_array;
@@ -28,7 +28,7 @@ fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]]) -> BD::Sc
         }
     };
     let scaling = scaling_array.as_mut();
-    scaling[..((points[0][0] as c_int) << shift_x) as usize].fill(points[0][1]);
+    scaling[..(points[0][0] as usize) << shift_x].fill(points[0][1]);
     for ps in points.windows(2) {
         // TODO(kkysen) use array_windows when stabilized
         let [p0, p1] = ps.try_into().unwrap();
@@ -46,8 +46,8 @@ fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]]) -> BD::Sc
             d += delta;
         }
     }
-    let n = (points[points.len() - 1][0] as c_int) << shift_x;
-    scaling[n as usize..][..(scaling_size - n) as usize].fill(points[points.len() - 1][1]);
+    let n = (points[points.len() - 1][0] as usize) << shift_x;
+    scaling[n..][..scaling_size - n].fill(points[points.len() - 1][1]);
 
     if BD::BPC != BPC::BPC8 {
         let pad = 1 << shift_x;
@@ -106,21 +106,17 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             bitdepth_max,
         );
     }
+    let bpc = r#in.p.bpc as usize;
     if data.num_y_points != 0 || data.chroma_scaling_from_luma != 0 {
-        scaling[0] =
-            generate_scaling::<BD>(r#in.p.bpc, &data.y_points[..data.num_y_points as usize]);
+        scaling[0] = generate_scaling::<BD>(bpc, &data.y_points[..data.num_y_points as usize]);
     }
     if data.num_uv_points[0] != 0 {
-        scaling[1] = generate_scaling::<BD>(
-            r#in.p.bpc,
-            &data.uv_points[0][..data.num_uv_points[0] as usize],
-        );
+        scaling[1] =
+            generate_scaling::<BD>(bpc, &data.uv_points[0][..data.num_uv_points[0] as usize]);
     }
     if data.num_uv_points[1] != 0 {
-        scaling[2] = generate_scaling::<BD>(
-            r#in.p.bpc,
-            &data.uv_points[1][..data.num_uv_points[1] as usize],
-        );
+        scaling[2] =
+            generate_scaling::<BD>(bpc, &data.uv_points[1][..data.num_uv_points[1] as usize]);
     }
     assert!(out.stride[0] == r#in.stride[0]);
     if data.num_y_points == 0 {
