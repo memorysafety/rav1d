@@ -29,9 +29,7 @@ unsafe fn generate_scaling<BD: BitDepth>(
     let (shift_x, scaling_size) = match BD::BPC {
         BPC::BPC8 => (0, 256),
         BPC::BPC16 => {
-            if !(bitdepth > 8) {
-                unreachable!();
-            }
+            assert!(bitdepth > 8);
             let shift_x = bitdepth - 8;
             let scaling_size = (1 as c_int) << bitdepth;
             (shift_x, scaling_size)
@@ -53,9 +51,7 @@ unsafe fn generate_scaling<BD: BitDepth>(
         let ey = (*points.offset((i + 1) as isize))[1] as c_int;
         let dx = ex - bx;
         let dy = ey - by;
-        if !(dx > 0) {
-            unreachable!();
-        }
+        assert!(dx > 0);
         let delta = dy * ((0x10000 + (dx >> 1)) / dx);
         let mut d = 0x8000 as c_int;
         for x in 0..dx {
@@ -151,9 +147,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             (*scaling.offset(2)).as_mut().as_mut_ptr(),
         );
     }
-    if !(out.stride[0] == r#in.stride[0]) {
-        unreachable!();
-    }
+    assert!(out.stride[0] == r#in.stride[0]);
     if (*data).num_y_points == 0 {
         let stride: ptrdiff_t = out.stride[0];
         let sz: ptrdiff_t = out.p.h as isize * stride;
@@ -174,9 +168,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     if r#in.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
         && (*data).chroma_scaling_from_luma == 0
     {
-        if !(out.stride[1] == r#in.stride[1]) {
-            unreachable!();
-        }
+        assert!(out.stride[1] == r#in.stride[1]);
         let ss_ver =
             (r#in.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
         let stride: ptrdiff_t = out.stride[1];
