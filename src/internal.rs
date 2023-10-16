@@ -115,16 +115,16 @@ pub(crate) struct Rav1dContext_frame_thread {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct GrainLutScalingBD<BD: BitDepth> {
+pub struct GrainBD<BD: BitDepth> {
     pub grain_lut: Align16<[[[BD::Entry; 82]; 73 + 1]; 3]>,
     // TODO(kkysen) can use `BD::SCALING_LEN`` directly with `#![feature(generic_const_exprs)]` when stabilized
     pub scaling: Align64<[BD::Scaling; 3]>,
 }
 
-pub struct GrainLutScaling;
+pub struct Grain;
 
-impl BitDepthDependentType for GrainLutScaling {
-    type T<BD: BitDepth> = GrainLutScalingBD<BD>;
+impl BitDepthDependentType for Grain {
+    type T<BD: BitDepth> = GrainBD<BD>;
 }
 
 #[repr(C)]
@@ -135,7 +135,7 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub out: *mut Rav1dPicture,
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
-    pub grain_lut_scaling: BitDepthUnion<GrainLutScaling>,
+    pub grain: BitDepthUnion<Grain>,
 }
 
 #[repr(C)]
