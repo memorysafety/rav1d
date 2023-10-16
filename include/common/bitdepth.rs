@@ -77,6 +77,16 @@ impl_FromPrimitive!(isize => {, ...});
 impl_FromPrimitive!(f32 => {, ...});
 impl_FromPrimitive!(f64 => {, ...});
 
+pub trait ArrayDefault {
+    fn default() -> Self;
+}
+
+impl<T: Default + Copy, const N: usize> ArrayDefault for [T; N] {
+    fn default() -> Self {
+        [T::default(); N]
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BPC {
     BPC8,
@@ -108,9 +118,9 @@ pub trait BitDepth: Clone + Copy {
         + Add<Output = Self::Coef>
         + Display;
 
-    type Entry;
+    type Entry: Copy + Default;
 
-    type Scaling: AsRef<[u8]> + AsMut<[u8]>;
+    type Scaling: AsRef<[u8]> + AsMut<[u8]> + ArrayDefault + Copy;
     const SCALING_SIZE: usize;
 
     type BitDepthMax;

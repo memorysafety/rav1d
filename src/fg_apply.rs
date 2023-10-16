@@ -1,3 +1,4 @@
+use crate::include::common::bitdepth::ArrayDefault;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
@@ -7,6 +8,8 @@ use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::src::align::Align16;
+use crate::src::align::Align64;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use libc::intptr_t;
 use libc::memcpy;
@@ -334,4 +337,36 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             pl_0 += 1;
         }
     };
+}
+
+pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
+    dsp: *const Rav1dFilmGrainDSPContext,
+    out: *mut Rav1dPicture,
+    in_0: *const Rav1dPicture,
+) {
+    let mut grain_lut = Align16([[[Default::default(); 82]; 74]; 3]);
+    // Only `x86_64` [`BitDepth8`] needs [`Align64`],
+    // but it shouldn't be a problem to over-align.
+    // [`GrainLutScaling::scaling`] over-aligns, for example.
+    let mut scaling = Align64([ArrayDefault::default(); 3]);
+    let rows = (*out).p.h + 31 >> 5;
+    rav1d_prep_grain::<BD>(
+        dsp,
+        out,
+        in_0,
+        scaling.0.as_mut_ptr(),
+        grain_lut.0.as_mut_ptr(),
+    );
+    let mut row = 0;
+    while row < rows {
+        rav1d_apply_grain_row::<BD>(
+            dsp,
+            out,
+            in_0,
+            scaling.0.as_mut_ptr() as *const BD::Scaling,
+            grain_lut.0.as_mut_ptr() as *const [[BD::Entry; 82]; 74],
+            row,
+        );
+        row += 1;
+    }
 }

@@ -49,10 +49,6 @@ pub mod src {
     mod env;
     pub(crate) mod error;
     mod fg_apply;
-    #[cfg(feature = "bitdepth_16")]
-    mod fg_apply_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
-    mod fg_apply_tmpl_8;
     mod filmgrain;
     #[cfg(feature = "bitdepth_16")]
     mod filmgrain_tmpl_16;
