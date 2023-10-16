@@ -77,6 +77,9 @@ impl_FromPrimitive!(isize => {, ...});
 impl_FromPrimitive!(f32 => {, ...});
 impl_FromPrimitive!(f64 => {, ...});
 
+/// [`Default`] isn't `impl`emented for all arrays `[T; N]`
+/// because they were implemented before `const` generics
+/// and thus only for low values of `N`.
 pub trait ArrayDefault {
     fn default() -> Self;
 }
