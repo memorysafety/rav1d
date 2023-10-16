@@ -734,7 +734,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                     rav1d_prep_grain::<BitDepth8>(
                         &(*((*c).dsp).as_ptr().offset(0)).fg,
                         &mut *out,
-                        in_0,
+                        &*in_0,
                         grain_lut_scaling.scaling.0.as_mut_ptr(),
                         grain_lut_scaling.grain_lut.0.as_mut_ptr(),
                     );
@@ -746,7 +746,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                     rav1d_prep_grain::<BitDepth16>(
                         &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                         &mut *out,
-                        in_0,
+                        &*in_0,
                         grain_lut_scaling.scaling.0.as_mut_ptr(),
                         grain_lut_scaling.grain_lut.0.as_mut_ptr(),
                     );
@@ -789,7 +789,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                 rav1d_apply_grain_row::<BitDepth8>(
                     &(*((*c).dsp).as_ptr().offset(0)).fg,
                     &mut *out,
-                    in_0,
+                    &*in_0,
                     grain_lut_scaling.scaling.0.as_mut_ptr(),
                     grain_lut_scaling.grain_lut.0.as_mut_ptr(),
                     row,
@@ -802,7 +802,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                 rav1d_apply_grain_row::<BitDepth16>(
                     &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                     &mut *out,
-                    in_0,
+                    &*in_0,
                     grain_lut_scaling.scaling.0.as_mut_ptr(),
                     grain_lut_scaling.grain_lut.0.as_mut_ptr(),
                     row,
