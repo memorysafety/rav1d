@@ -20,6 +20,7 @@ pub unsafe fn round2(x: c_int, shift: u64) -> c_int {
 }
 
 pub const GRAIN_WIDTH: usize = 82;
+pub const GRAIN_HEIGHT: usize = 73;
 
 pub type generate_grain_y_fn = Option<
     unsafe extern "C" fn(*mut [DynEntry; GRAIN_WIDTH], *const Dav1dFilmGrainData, c_int) -> (),

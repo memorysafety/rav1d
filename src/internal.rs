@@ -26,6 +26,7 @@ use crate::src::cdf::CdfThreadContext;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
+use crate::src::filmgrain::GRAIN_HEIGHT;
 use crate::src::filmgrain::GRAIN_WIDTH;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeFlags;
@@ -117,7 +118,7 @@ pub(crate) struct Rav1dContext_frame_thread {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct GrainBD<BD: BitDepth> {
-    pub grain_lut: Align16<[[[BD::Entry; GRAIN_WIDTH]; 73 + 1]; 3]>,
+    pub grain_lut: Align16<[[[BD::Entry; GRAIN_WIDTH]; GRAIN_HEIGHT + 1]; 3]>,
     // TODO(kkysen) can use `BD::SCALING_LEN` directly with `#![feature(generic_const_exprs)]` when stabilized
     pub scaling: Align64<[BD::Scaling; 3]>,
 }
