@@ -13,7 +13,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
-unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], scaling: *mut u8) {
+unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], scaling: &mut [u8]) {
     let (shift_x, scaling_size) = match BD::BPC {
         BPC::BPC8 => (0, 256),
         BPC::BPC16 => {
@@ -24,11 +24,15 @@ unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], sc
         }
     };
     if points.is_empty() {
-        memset(scaling as *mut c_void, 0, scaling_size as usize);
+        memset(
+            scaling.as_mut_ptr() as *mut c_void,
+            0,
+            scaling_size as usize,
+        );
         return;
     }
     memset(
-        scaling as *mut c_void,
+        scaling.as_mut_ptr() as *mut c_void,
         points[0][1] as c_int,
         ((points[0][0] as c_int) << shift_x) as usize,
     );
@@ -45,13 +49,13 @@ unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], sc
         let delta = dy * ((0x10000 + (dx >> 1)) / dx);
         let mut d = 0x8000;
         for x in 0..dx {
-            *scaling.offset((bx + x << shift_x) as isize) = (by + (d >> 16)) as u8;
+            scaling[(bx + x << shift_x) as usize] = (by + (d >> 16)) as u8;
             d += delta;
         }
     }
     let n = (points[points.len() - 1][0] as c_int) << shift_x;
     memset(
-        scaling.offset(n as isize) as *mut c_void,
+        scaling[n as usize..].as_mut_ptr() as *mut c_void,
         points[points.len() - 1][1] as c_int,
         (scaling_size - n) as usize,
     );
@@ -66,13 +70,13 @@ unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], sc
             let ex = (p1[0] as c_int) << shift_x;
             let dx = ex - bx;
             for x in (0..dx).step_by(pad as usize) {
-                let range = *scaling.offset((bx + x + pad) as isize) as c_int
-                    - *scaling.offset((bx + x) as isize) as c_int;
+                let range =
+                    scaling[(bx + x + pad) as usize] as c_int - scaling[(bx + x) as usize] as c_int;
                 let mut r = rnd;
                 for n in 1..pad {
                     r += range;
-                    *scaling.offset((bx + x + n) as isize) =
-                        (*scaling.offset((bx + x) as isize) as c_int + (r >> shift_x)) as u8;
+                    scaling[(bx + x + n) as usize] =
+                        (scaling[(bx + x) as usize] as c_int + (r >> shift_x)) as u8;
                 }
             }
         }
@@ -115,21 +119,21 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         generate_scaling::<BD>(
             r#in.p.bpc,
             &data.y_points[..data.num_y_points as usize],
-            scaling[0].as_mut().as_mut_ptr(),
+            scaling[0].as_mut(),
         );
     }
     if data.num_uv_points[0] != 0 {
         generate_scaling::<BD>(
             r#in.p.bpc,
             &data.uv_points[0][..data.num_uv_points[0] as usize],
-            scaling[1].as_mut().as_mut_ptr(),
+            scaling[1].as_mut(),
         );
     }
     if data.num_uv_points[1] != 0 {
         generate_scaling::<BD>(
             r#in.p.bpc,
             &data.uv_points[1][..data.num_uv_points[1] as usize],
-            scaling[2].as_mut().as_mut_ptr(),
+            scaling[2].as_mut(),
         );
     }
     assert!(out.stride[0] == r#in.stride[0]);
