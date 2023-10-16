@@ -77,26 +77,26 @@ unsafe fn generate_scaling<BD: BitDepth>(
     if BD::BPC != BPC::BPC8 {
         let pad = (1 as c_int) << shift_x;
         let rnd = pad >> 1;
-        let mut i_0 = 0;
-        while i_0 < num - 1 {
-            let bx_0 = ((*points.offset(i_0 as isize))[0] as c_int) << shift_x;
-            let ex_0 = ((*points.offset((i_0 + 1) as isize))[0] as c_int) << shift_x;
-            let dx_0 = ex_0 - bx_0;
-            let mut x_0 = 0;
-            while x_0 < dx_0 {
-                let range = *scaling.offset((bx_0 + x_0 + pad) as isize) as c_int
-                    - *scaling.offset((bx_0 + x_0) as isize) as c_int;
-                let mut n_0 = 1;
+        let mut i = 0;
+        while i < num - 1 {
+            let bx = ((*points.offset(i as isize))[0] as c_int) << shift_x;
+            let ex = ((*points.offset((i + 1) as isize))[0] as c_int) << shift_x;
+            let dx = ex - bx;
+            let mut x = 0;
+            while x < dx {
+                let range = *scaling.offset((bx + x + pad) as isize) as c_int
+                    - *scaling.offset((bx + x) as isize) as c_int;
+                let mut n = 1;
                 let mut r = rnd;
-                while n_0 < pad {
+                while n < pad {
                     r += range;
-                    *scaling.offset((bx_0 + x_0 + n_0) as isize) =
-                        (*scaling.offset((bx_0 + x_0) as isize) as c_int + (r >> shift_x)) as u8;
-                    n_0 += 1;
+                    *scaling.offset((bx + x + n) as isize) =
+                        (*scaling.offset((bx + x) as isize) as c_int + (r >> shift_x)) as u8;
+                    n += 1;
                 }
-                x_0 += pad;
+                x += pad;
             }
-            i_0 += 1;
+            i += 1;
         }
     }
 }
@@ -189,37 +189,37 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         }
         let ss_ver =
             ((*in_0).p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-        let stride_0: ptrdiff_t = (*out).stride[1];
-        let sz_0: ptrdiff_t = ((*out).p.h + ss_ver >> ss_ver) as isize * stride_0;
-        if sz_0 < 0 {
+        let stride: ptrdiff_t = (*out).stride[1];
+        let sz: ptrdiff_t = ((*out).p.h + ss_ver >> ss_ver) as isize * stride;
+        if sz < 0 {
             if (*data).num_uv_points[0] == 0 {
                 memcpy(
                     ((*out).data[1] as *mut u8)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *mut c_void,
+                        .offset(sz as isize)
+                        .offset(-(stride as isize)) as *mut c_void,
                     ((*in_0).data[1] as *mut u8)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *const c_void,
-                    -sz_0 as usize,
+                        .offset(sz as isize)
+                        .offset(-(stride as isize)) as *const c_void,
+                    -sz as usize,
                 );
             }
             if (*data).num_uv_points[1] == 0 {
                 memcpy(
                     ((*out).data[2] as *mut u8)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *mut c_void,
+                        .offset(sz as isize)
+                        .offset(-(stride as isize)) as *mut c_void,
                     ((*in_0).data[2] as *mut u8)
-                        .offset(sz_0 as isize)
-                        .offset(-(stride_0 as isize)) as *const c_void,
-                    -sz_0 as usize,
+                        .offset(sz as isize)
+                        .offset(-(stride as isize)) as *const c_void,
+                    -sz as usize,
                 );
             }
         } else {
             if (*data).num_uv_points[0] == 0 {
-                memcpy((*out).data[1], (*in_0).data[1], sz_0 as usize);
+                memcpy((*out).data[1], (*in_0).data[1], sz as usize);
             }
             if (*data).num_uv_points[1] == 0 {
-                memcpy((*out).data[2], (*in_0).data[2], sz_0 as usize);
+                memcpy((*out).data[2], (*in_0).data[2], sz as usize);
             }
         }
     }
@@ -267,11 +267,11 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     {
         return;
     }
-    let bh_0 = cmp::min((*out).p.h - row * 32, 32 as c_int) + ss_y >> ss_y;
+    let bh = cmp::min((*out).p.h - row * 32, 32 as c_int) + ss_y >> ss_y;
     if (*out).p.w & ss_x != 0 {
         let mut ptr: *mut BD::Pixel = luma_src;
         let mut y = 0;
-        while y < bh_0 {
+        while y < bh {
             *ptr.offset((*out).p.w as isize) = *ptr.offset(((*out).p.w - 1) as isize);
             ptr =
                 ptr.offset(((BD::pxstride((*in_0).stride[0] as usize) as isize) << ss_y) as isize);
@@ -297,7 +297,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                 cpw as usize,
                 (*scaling.offset(0)).as_ref().as_ptr(),
                 (*grain_lut.offset((1 + pl) as isize)).as_ptr().cast(),
-                bh_0,
+                bh,
                 row,
                 luma_src.cast(),
                 (*in_0).stride[0],
@@ -308,33 +308,33 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             pl += 1;
         }
     } else {
-        let mut pl_0 = 0;
-        while pl_0 < 2 {
-            if (*data).num_uv_points[pl_0 as usize] != 0 {
+        let mut pl = 0;
+        while pl < 2 {
+            if (*data).num_uv_points[pl as usize] != 0 {
                 ((*dsp).fguv_32x32xn
                     [((*in_0).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
                     .expect("non-null function pointer")(
-                    ((*out).data[(1 + pl_0) as usize] as *mut BD::Pixel)
+                    ((*out).data[(1 + pl) as usize] as *mut BD::Pixel)
                         .offset(uv_off as isize)
                         .cast(),
-                    ((*in_0).data[(1 + pl_0) as usize] as *const BD::Pixel)
+                    ((*in_0).data[(1 + pl) as usize] as *const BD::Pixel)
                         .offset(uv_off as isize)
                         .cast(),
                     (*in_0).stride[1],
                     data,
                     cpw as usize,
-                    (*scaling.offset((1 + pl_0) as isize)).as_ref().as_ptr(),
-                    (*grain_lut.offset((1 + pl_0) as isize)).as_ptr().cast(),
-                    bh_0,
+                    (*scaling.offset((1 + pl) as isize)).as_ref().as_ptr(),
+                    (*grain_lut.offset((1 + pl) as isize)).as_ptr().cast(),
+                    bh,
                     row,
                     luma_src.cast(),
                     (*in_0).stride[0],
-                    pl_0,
+                    pl,
                     is_id,
                     bitdepth_max,
                 );
             }
-            pl_0 += 1;
+            pl += 1;
         }
     };
 }
