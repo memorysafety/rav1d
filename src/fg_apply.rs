@@ -46,8 +46,7 @@ unsafe fn generate_scaling<BD: BitDepth>(
         (*points.offset(0))[1] as c_int,
         (((*points.offset(0))[0] as c_int) << shift_x) as usize,
     );
-    let mut i = 0;
-    while i < num - 1 {
+    for i in 0..num - 1 {
         let bx = (*points.offset(i as isize))[0] as c_int;
         let by = (*points.offset(i as isize))[1] as c_int;
         let ex = (*points.offset((i + 1) as isize))[0] as c_int;
@@ -58,14 +57,11 @@ unsafe fn generate_scaling<BD: BitDepth>(
             unreachable!();
         }
         let delta = dy * ((0x10000 + (dx >> 1)) / dx);
-        let mut x = 0;
         let mut d = 0x8000 as c_int;
-        while x < dx {
+        for x in 0..dx {
             *scaling.offset((bx + x << shift_x) as isize) = (by + (d >> 16)) as u8;
             d += delta;
-            x += 1;
         }
-        i += 1;
     }
     let n = ((*points.offset((num - 1) as isize))[0] as c_int) << shift_x;
     memset(
@@ -77,26 +73,20 @@ unsafe fn generate_scaling<BD: BitDepth>(
     if BD::BPC != BPC::BPC8 {
         let pad = (1 as c_int) << shift_x;
         let rnd = pad >> 1;
-        let mut i = 0;
-        while i < num - 1 {
+        for i in 0..num - 1 {
             let bx = ((*points.offset(i as isize))[0] as c_int) << shift_x;
             let ex = ((*points.offset((i + 1) as isize))[0] as c_int) << shift_x;
             let dx = ex - bx;
-            let mut x = 0;
-            while x < dx {
+            for x in (0..dx).step_by(pad as usize) {
                 let range = *scaling.offset((bx + x + pad) as isize) as c_int
                     - *scaling.offset((bx + x) as isize) as c_int;
-                let mut n = 1;
                 let mut r = rnd;
-                while n < pad {
+                for n in 1..pad {
                     r += range;
                     *scaling.offset((bx + x + n) as isize) =
                         (*scaling.offset((bx + x) as isize) as c_int + (r >> shift_x)) as u8;
-                    n += 1;
                 }
-                x += pad;
             }
-            i += 1;
         }
     }
 }
@@ -269,18 +259,15 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let bh = cmp::min(out.p.h - row * 32, 32 as c_int) + ss_y >> ss_y;
     if out.p.w & ss_x != 0 {
         let mut ptr: *mut BD::Pixel = luma_src;
-        let mut y = 0;
-        while y < bh {
+        for _ in 0..bh {
             *ptr.offset(out.p.w as isize) = *ptr.offset((out.p.w - 1) as isize);
             ptr = ptr.offset(((BD::pxstride(r#in.stride[0] as usize) as isize) << ss_y) as isize);
-            y += 1;
         }
     }
     let uv_off: ptrdiff_t =
         (row * 32) as isize * BD::pxstride(out.stride[1] as usize) as isize >> ss_y;
     if (*data).chroma_scaling_from_luma != 0 {
-        let mut pl = 0;
-        while pl < 2 {
+        for pl in 0..2 {
             (dsp.fguv_32x32xn
                 [(r#in.p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
                 .expect("non-null function pointer")(
@@ -303,11 +290,9 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                 is_id,
                 bitdepth_max,
             );
-            pl += 1;
         }
     } else {
-        let mut pl = 0;
-        while pl < 2 {
+        for pl in 0..2 {
             if (*data).num_uv_points[pl as usize] != 0 {
                 (dsp.fguv_32x32xn
                     [(r#in.p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
@@ -332,7 +317,6 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                     bitdepth_max,
                 );
             }
-            pl += 1;
         }
     };
 }
@@ -355,8 +339,7 @@ pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
         scaling.0.as_mut_ptr(),
         grain_lut.0.as_mut_ptr(),
     );
-    let mut row = 0;
-    while row < rows {
+    for row in 0..rows {
         rav1d_apply_grain_row::<BD>(
             dsp,
             out,
@@ -365,6 +348,5 @@ pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
             grain_lut.0.as_mut_ptr() as *const [[BD::Entry; 82]; 74],
             row,
         );
-        row += 1;
     }
 }
