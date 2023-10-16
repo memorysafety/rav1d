@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::GrainBD;
 use libc::memcpy;
@@ -12,7 +13,11 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
-fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], scaling: &mut [u8]) {
+fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]]) -> BD::Scaling {
+    let mut scaling_array = ArrayDefault::default();
+    if points.is_empty() {
+        return scaling_array;
+    }
     let (shift_x, scaling_size) = match BD::BPC {
         BPC::BPC8 => (0, 256),
         BPC::BPC16 => {
@@ -22,10 +27,7 @@ fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], scaling: 
             (shift_x, scaling_size)
         }
     };
-    if points.is_empty() {
-        scaling[..scaling_size as usize].fill(0);
-        return;
-    }
+    let scaling = scaling_array.as_mut();
     scaling[..((points[0][0] as c_int) << shift_x) as usize].fill(points[0][1]);
     for ps in points.windows(2) {
         // TODO(kkysen) use array_windows when stabilized
@@ -68,6 +70,8 @@ fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], scaling: 
             }
         }
     }
+
+    scaling_array
 }
 
 pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
@@ -103,24 +107,19 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         );
     }
     if data.num_y_points != 0 || data.chroma_scaling_from_luma != 0 {
-        generate_scaling::<BD>(
-            r#in.p.bpc,
-            &data.y_points[..data.num_y_points as usize],
-            scaling[0].as_mut(),
-        );
+        scaling[0] =
+            generate_scaling::<BD>(r#in.p.bpc, &data.y_points[..data.num_y_points as usize]);
     }
     if data.num_uv_points[0] != 0 {
-        generate_scaling::<BD>(
+        scaling[1] = generate_scaling::<BD>(
             r#in.p.bpc,
             &data.uv_points[0][..data.num_uv_points[0] as usize],
-            scaling[1].as_mut(),
         );
     }
     if data.num_uv_points[1] != 0 {
-        generate_scaling::<BD>(
+        scaling[2] = generate_scaling::<BD>(
             r#in.p.bpc,
             &data.uv_points[1][..data.num_uv_points[1] as usize],
-            scaling[2].as_mut(),
         );
     }
     assert!(out.stride[0] == r#in.stride[0]);
