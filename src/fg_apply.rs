@@ -8,7 +8,6 @@ use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::GrainBD;
 use libc::memcpy;
-use libc::memset;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
@@ -24,18 +23,10 @@ unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], sc
         }
     };
     if points.is_empty() {
-        memset(
-            scaling.as_mut_ptr() as *mut c_void,
-            0,
-            scaling_size as usize,
-        );
+        scaling[..scaling_size as usize].fill(0);
         return;
     }
-    memset(
-        scaling.as_mut_ptr() as *mut c_void,
-        points[0][1] as c_int,
-        ((points[0][0] as c_int) << shift_x) as usize,
-    );
+    scaling[..((points[0][0] as c_int) << shift_x) as usize].fill(points[0][1]);
     for ps in points.windows(2) {
         // TODO(kkysen) use array_windows when stabilized
         let [p0, p1] = ps.try_into().unwrap();
@@ -54,11 +45,7 @@ unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], sc
         }
     }
     let n = (points[points.len() - 1][0] as c_int) << shift_x;
-    memset(
-        scaling[n as usize..].as_mut_ptr() as *mut c_void,
-        points[points.len() - 1][1] as c_int,
-        (scaling_size - n) as usize,
-    );
+    scaling[n as usize..][..(scaling_size - n) as usize].fill(points[points.len() - 1][1]);
 
     if BD::BPC != BPC::BPC8 {
         let pad = 1 << shift_x;
