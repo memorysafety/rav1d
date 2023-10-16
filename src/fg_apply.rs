@@ -11,7 +11,6 @@ use crate::src::align::Align64;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use libc::memcpy;
 use libc::memset;
-use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
@@ -141,8 +140,8 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     }
     assert!(out.stride[0] == r#in.stride[0]);
     if data.num_y_points == 0 {
-        let stride: ptrdiff_t = out.stride[0];
-        let sz: ptrdiff_t = out.p.h as isize * stride;
+        let stride = out.stride[0];
+        let sz = out.p.h as isize * stride;
         if sz < 0 {
             memcpy(
                 (out.data[0] as *mut u8)
@@ -160,8 +159,8 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     if r#in.p.layout != RAV1D_PIXEL_LAYOUT_I400 && data.chroma_scaling_from_luma == 0 {
         assert!(out.stride[1] == r#in.stride[1]);
         let ss_ver = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
-        let stride: ptrdiff_t = out.stride[1];
-        let sz: ptrdiff_t = (out.p.h + ss_ver >> ss_ver) as isize * stride;
+        let stride = out.stride[1];
+        let sz = (out.p.h + ss_ver >> ss_ver) as isize * stride;
         if sz < 0 {
             if data.num_uv_points[0] == 0 {
                 memcpy(
@@ -209,7 +208,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let ss_x = (r#in.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
     let cpw = out.p.w + ss_x >> ss_x;
     let is_id = ((*out.seq_hdr).mtrx == RAV1D_MC_IDENTITY) as c_int;
-    let luma_src: *mut BD::Pixel = (r#in.data[0] as *mut BD::Pixel)
+    let luma_src = (r#in.data[0] as *mut BD::Pixel)
         .offset(((row * 32) as isize * BD::pxstride(r#in.stride[0] as usize) as isize) as isize);
     let bitdepth_max = (1 << out.p.bpc) - 1;
     if data.num_y_points != 0 {
@@ -239,14 +238,13 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     }
     let bh = cmp::min(out.p.h - row * 32, 32) + ss_y >> ss_y;
     if out.p.w & ss_x != 0 {
-        let mut ptr: *mut BD::Pixel = luma_src;
+        let mut ptr = luma_src;
         for _ in 0..bh {
             *ptr.offset(out.p.w as isize) = *ptr.offset((out.p.w - 1) as isize);
             ptr = ptr.offset(((BD::pxstride(r#in.stride[0] as usize) as isize) << ss_y) as isize);
         }
     }
-    let uv_off: ptrdiff_t =
-        (row * 32) as isize * BD::pxstride(out.stride[1] as usize) as isize >> ss_y;
+    let uv_off = (row * 32) as isize * BD::pxstride(out.stride[1] as usize) as isize >> ss_y;
     if data.chroma_scaling_from_luma != 0 {
         for pl in 0..2 {
             (dsp.fguv_32x32xn[r#in.p.layout as usize - 1]).expect("non-null function pointer")(
