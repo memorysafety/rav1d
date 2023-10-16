@@ -12,7 +12,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
-unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], scaling: &mut [u8]) {
+fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], scaling: &mut [u8]) {
     let (shift_x, scaling_size) = match BD::BPC {
         BPC::BPC8 => (0, 256),
         BPC::BPC16 => {
