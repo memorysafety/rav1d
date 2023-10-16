@@ -736,7 +736,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                         &mut *out,
                         &*in_0,
                         grain_lut_scaling.scaling.0.as_mut_ptr(),
-                        grain_lut_scaling.grain_lut.0.as_mut_ptr(),
+                        &mut grain_lut_scaling.grain_lut,
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
@@ -748,7 +748,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                         &mut *out,
                         &*in_0,
                         grain_lut_scaling.scaling.0.as_mut_ptr(),
-                        grain_lut_scaling.grain_lut.0.as_mut_ptr(),
+                        &mut grain_lut_scaling.grain_lut,
                     );
                 }
                 _ => {
@@ -791,7 +791,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                     &mut *out,
                     &*in_0,
                     grain_lut_scaling.scaling.0.as_mut_ptr(),
-                    grain_lut_scaling.grain_lut.0.as_mut_ptr(),
+                    &grain_lut_scaling.grain_lut,
                     row,
                 );
             }
@@ -804,7 +804,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                     &mut *out,
                     &*in_0,
                     grain_lut_scaling.scaling.0.as_mut_ptr(),
-                    grain_lut_scaling.grain_lut.0.as_mut_ptr(),
+                    &grain_lut_scaling.grain_lut,
                     row,
                 );
             }
