@@ -15,7 +15,7 @@ use std::ffi::c_void;
 
 unsafe fn generate_scaling<BD: BitDepth>(
     bitdepth: c_int,
-    points: *const [u8; 2],
+    points: &[[u8; 2]],
     num: c_int,
     scaling: *mut u8,
 ) {
@@ -34,14 +34,14 @@ unsafe fn generate_scaling<BD: BitDepth>(
     }
     memset(
         scaling as *mut c_void,
-        (*points.offset(0))[1] as c_int,
-        (((*points.offset(0))[0] as c_int) << shift_x) as usize,
+        points[0][1] as c_int,
+        ((points[0][0] as c_int) << shift_x) as usize,
     );
     for i in 0..num - 1 {
-        let bx = (*points.offset(i as isize))[0] as c_int;
-        let by = (*points.offset(i as isize))[1] as c_int;
-        let ex = (*points.offset((i + 1) as isize))[0] as c_int;
-        let ey = (*points.offset((i + 1) as isize))[1] as c_int;
+        let bx = points[i as usize][0] as c_int;
+        let by = points[i as usize][1] as c_int;
+        let ex = points[(i + 1) as usize][0] as c_int;
+        let ey = points[(i + 1) as usize][1] as c_int;
         let dx = ex - bx;
         let dy = ey - by;
         assert!(dx > 0);
@@ -52,10 +52,10 @@ unsafe fn generate_scaling<BD: BitDepth>(
             d += delta;
         }
     }
-    let n = ((*points.offset((num - 1) as isize))[0] as c_int) << shift_x;
+    let n = (points[(num - 1) as usize][0] as c_int) << shift_x;
     memset(
         scaling.offset(n as isize) as *mut c_void,
-        (*points.offset((num - 1) as isize))[1] as c_int,
+        points[(num - 1) as usize][1] as c_int,
         (scaling_size - n) as usize,
     );
 
@@ -63,8 +63,8 @@ unsafe fn generate_scaling<BD: BitDepth>(
         let pad = 1 << shift_x;
         let rnd = pad >> 1;
         for i in 0..num - 1 {
-            let bx = ((*points.offset(i as isize))[0] as c_int) << shift_x;
-            let ex = ((*points.offset((i + 1) as isize))[0] as c_int) << shift_x;
+            let bx = (points[i as usize][0] as c_int) << shift_x;
+            let ex = (points[(i + 1) as usize][0] as c_int) << shift_x;
             let dx = ex - bx;
             for x in (0..dx).step_by(pad as usize) {
                 let range = *scaling.offset((bx + x + pad) as isize) as c_int
@@ -115,7 +115,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     if data.num_y_points != 0 || data.chroma_scaling_from_luma != 0 {
         generate_scaling::<BD>(
             r#in.p.bpc,
-            (data.y_points).as_ptr(),
+            &data.y_points,
             data.num_y_points,
             scaling[0].as_mut().as_mut_ptr(),
         );
@@ -123,7 +123,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     if data.num_uv_points[0] != 0 {
         generate_scaling::<BD>(
             r#in.p.bpc,
-            (data.uv_points[0]).as_ptr(),
+            &data.uv_points[0],
             data.num_uv_points[0],
             scaling[1].as_mut().as_mut_ptr(),
         );
@@ -131,7 +131,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     if data.num_uv_points[1] != 0 {
         generate_scaling::<BD>(
             r#in.p.bpc,
-            (data.uv_points[1]).as_ptr(),
+            &data.uv_points[1],
             data.num_uv_points[1],
             scaling[2].as_mut().as_mut_ptr(),
         );
