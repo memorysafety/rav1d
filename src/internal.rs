@@ -117,8 +117,18 @@ pub(crate) struct Rav1dContext_frame_thread {
 #[repr(C)]
 pub struct GrainBD<BD: BitDepth> {
     pub grain_lut: Align16<[[[BD::Entry; 82]; 73 + 1]; 3]>,
-    // TODO(kkysen) can use `BD::SCALING_LEN`` directly with `#![feature(generic_const_exprs)]` when stabilized
+    // TODO(kkysen) can use `BD::SCALING_LEN` directly with `#![feature(generic_const_exprs)]` when stabilized
     pub scaling: Align64<[BD::Scaling; 3]>,
+}
+
+// Implemented manually since we don't require `BD: Default`.
+impl<BD: BitDepth> Default for GrainBD<BD> {
+    fn default() -> Self {
+        Self {
+            grain_lut: Default::default(),
+            scaling: Default::default(),
+        }
+    }
 }
 
 pub struct Grain;

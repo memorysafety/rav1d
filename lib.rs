@@ -28,7 +28,7 @@ pub mod include {
     pub(crate) mod stdatomic;
 } // mod include
 pub mod src {
-    mod align;
+    pub mod align;
     mod cdef;
     #[cfg(feature = "bitdepth_16")]
     mod cdef_apply_tmpl_16;

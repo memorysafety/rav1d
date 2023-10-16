@@ -1,4 +1,3 @@
-use crate::include::common::bitdepth::ArrayDefault;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
@@ -8,6 +7,7 @@ use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
 use crate::src::align::Align64;
+use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use libc::memcpy;
 use libc::memset;

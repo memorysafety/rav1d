@@ -1,4 +1,5 @@
 use crate::include::common::intops::clip;
+use crate::src::align::ArrayDefault;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
@@ -77,19 +78,6 @@ impl_FromPrimitive!(isize => {, ...});
 impl_FromPrimitive!(f32 => {, ...});
 impl_FromPrimitive!(f64 => {, ...});
 
-/// [`Default`] isn't `impl`emented for all arrays `[T; N]`
-/// because they were implemented before `const` generics
-/// and thus only for low values of `N`.
-pub trait ArrayDefault {
-    fn default() -> Self;
-}
-
-impl<T: Default + Copy, const N: usize> ArrayDefault for [T; N] {
-    fn default() -> Self {
-        [T::default(); N]
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BPC {
     BPC8,
@@ -121,7 +109,7 @@ pub trait BitDepth: Clone + Copy {
         + Add<Output = Self::Coef>
         + Display;
 
-    type Entry: Copy + Default;
+    type Entry: Copy + Default + ArrayDefault;
 
     type Scaling: AsRef<[u8]> + AsMut<[u8]> + ArrayDefault + Copy;
     const SCALING_SIZE: usize;
