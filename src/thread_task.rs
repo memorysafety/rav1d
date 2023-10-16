@@ -729,26 +729,20 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
             match (*out).p.bpc {
                 #[cfg(feature = "bitdepth_8")]
                 8 => {
-                    let grain_lut_scaling =
-                        BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain);
                     rav1d_prep_grain::<BitDepth8>(
                         &(*((*c).dsp).as_ptr().offset(0)).fg,
                         &mut *out,
                         &*in_0,
-                        &mut grain_lut_scaling.scaling,
-                        &mut grain_lut_scaling.grain_lut,
+                        BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain),
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
                 10 | 12 => {
-                    let grain_lut_scaling =
-                        BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain);
                     rav1d_prep_grain::<BitDepth16>(
                         &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                         &mut *out,
                         &*in_0,
-                        &mut grain_lut_scaling.scaling,
-                        &mut grain_lut_scaling.grain_lut,
+                        BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain),
                     );
                 }
                 _ => {
@@ -784,27 +778,21 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
         match (*out).p.bpc {
             #[cfg(feature = "bitdepth_8")]
             8 => {
-                let grain_lut_scaling =
-                    BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain);
                 rav1d_apply_grain_row::<BitDepth8>(
                     &(*((*c).dsp).as_ptr().offset(0)).fg,
                     &mut *out,
                     &*in_0,
-                    &grain_lut_scaling.scaling,
-                    &grain_lut_scaling.grain_lut,
+                    BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain),
                     row,
                 );
             }
             #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
-                let grain_lut_scaling =
-                    BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain);
                 rav1d_apply_grain_row::<BitDepth16>(
                     &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                     &mut *out,
                     &*in_0,
-                    &grain_lut_scaling.scaling,
-                    &grain_lut_scaling.grain_lut,
+                    BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain),
                     row,
                 );
             }

@@ -5,10 +5,8 @@ use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::align::Align16;
-use crate::src::align::Align64;
-use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
+use crate::src::internal::GrainBD;
 use libc::memcpy;
 use libc::memset;
 use std::cmp;
@@ -86,9 +84,9 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     dsp: &Rav1dFilmGrainDSPContext,
     out: &mut Rav1dPicture,
     r#in: &Rav1dPicture,
-    scaling: &mut Align64<[BD::Scaling; 3]>,
-    grain_lut: &mut Align16<[[[BD::Entry; 82]; 74]; 3]>,
+    grain: &mut GrainBD<BD>,
 ) {
+    let GrainBD { grain_lut, scaling } = grain;
     let data = &mut (*out.frame_hdr).film_grain.data;
     let bitdepth_max = (1 << out.p.bpc) - 1;
     (dsp.generate_grain_y).expect("non-null function pointer")(
@@ -199,10 +197,10 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     dsp: &Rav1dFilmGrainDSPContext,
     out: &mut Rav1dPicture,
     r#in: &Rav1dPicture,
-    scaling: &Align64<[BD::Scaling; 3]>,
-    grain_lut: &Align16<[[[BD::Entry; 82]; 74]; 3]>,
+    grain: &GrainBD<BD>,
     row: c_int,
 ) {
+    let GrainBD { grain_lut, scaling } = grain;
     let data = &mut (*out.frame_hdr).film_grain.data;
     let ss_y = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
     let ss_x = (r#in.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
@@ -301,27 +299,10 @@ pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
     out: &mut Rav1dPicture,
     r#in: &Rav1dPicture,
 ) {
-    let mut grain_lut = Align16([[[Default::default(); 82]; 74]; 3]);
-    // Only `x86_64` [`BitDepth8`] needs [`Align64`],
-    // but it shouldn't be a problem to over-align.
-    // [`GrainLutScaling::scaling`] over-aligns, for example.
-    let mut scaling = Align64([ArrayDefault::default(); 3]);
+    let mut grain = Default::default();
     let rows = out.p.h + 31 >> 5;
-    rav1d_prep_grain::<BD>(
-        dsp,
-        out,
-        r#in,
-        &mut scaling,
-        &mut grain_lut,
-    );
+    rav1d_prep_grain::<BD>(dsp, out, r#in, &mut grain);
     for row in 0..rows {
-        rav1d_apply_grain_row::<BD>(
-            dsp,
-            out,
-            r#in,
-            &scaling,
-            &grain_lut,
-            row,
-        );
+        rav1d_apply_grain_row::<BD>(dsp, out, r#in, &grain, row);
     }
 }
