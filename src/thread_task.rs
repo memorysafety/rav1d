@@ -735,7 +735,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                         &(*((*c).dsp).as_ptr().offset(0)).fg,
                         &mut *out,
                         &*in_0,
-                        grain_lut_scaling.scaling.0.as_mut_ptr(),
+                        &mut grain_lut_scaling.scaling,
                         &mut grain_lut_scaling.grain_lut,
                     );
                 }
@@ -747,7 +747,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                         &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                         &mut *out,
                         &*in_0,
-                        grain_lut_scaling.scaling.0.as_mut_ptr(),
+                        &mut grain_lut_scaling.scaling,
                         &mut grain_lut_scaling.grain_lut,
                     );
                 }
@@ -790,7 +790,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                     &(*((*c).dsp).as_ptr().offset(0)).fg,
                     &mut *out,
                     &*in_0,
-                    grain_lut_scaling.scaling.0.as_mut_ptr(),
+                    &grain_lut_scaling.scaling,
                     &grain_lut_scaling.grain_lut,
                     row,
                 );
@@ -803,7 +803,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                     &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                     &mut *out,
                     &*in_0,
-                    grain_lut_scaling.scaling.0.as_mut_ptr(),
+                    &grain_lut_scaling.scaling,
                     &grain_lut_scaling.grain_lut,
                     row,
                 );

@@ -86,7 +86,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     dsp: &Rav1dFilmGrainDSPContext,
     out: &mut Rav1dPicture,
     r#in: &Rav1dPicture,
-    scaling: *mut BD::Scaling,
+    scaling: &mut Align64<[BD::Scaling; 3]>,
     grain_lut: &mut Align16<[[[BD::Entry; 82]; 74]; 3]>,
 ) {
     let data = &mut (*out.frame_hdr).film_grain.data;
@@ -119,7 +119,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             r#in.p.bpc,
             (data.y_points).as_ptr(),
             data.num_y_points,
-            (*scaling.offset(0)).as_mut().as_mut_ptr(),
+            scaling[0].as_mut().as_mut_ptr(),
         );
     }
     if data.num_uv_points[0] != 0 {
@@ -127,7 +127,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             r#in.p.bpc,
             (data.uv_points[0]).as_ptr(),
             data.num_uv_points[0],
-            (*scaling.offset(1)).as_mut().as_mut_ptr(),
+            scaling[1].as_mut().as_mut_ptr(),
         );
     }
     if data.num_uv_points[1] != 0 {
@@ -135,7 +135,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             r#in.p.bpc,
             (data.uv_points[1]).as_ptr(),
             data.num_uv_points[1],
-            (*scaling.offset(2)).as_mut().as_mut_ptr(),
+            scaling[2].as_mut().as_mut_ptr(),
         );
     }
     assert!(out.stride[0] == r#in.stride[0]);
@@ -199,7 +199,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     dsp: &Rav1dFilmGrainDSPContext,
     out: &mut Rav1dPicture,
     r#in: &Rav1dPicture,
-    scaling: *const BD::Scaling,
+    scaling: &Align64<[BD::Scaling; 3]>,
     grain_lut: &Align16<[[[BD::Entry; 82]; 74]; 3]>,
     row: c_int,
 ) {
@@ -223,7 +223,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             out.stride[0],
             data,
             out.p.w as usize,
-            (*scaling.offset(0)).as_ref().as_ptr(),
+            scaling[0].as_ref().as_ptr(),
             grain_lut[0].as_ptr().cast(),
             bh,
             row,
@@ -257,7 +257,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                 r#in.stride[1],
                 data,
                 cpw as usize,
-                (*scaling.offset(0)).as_ref().as_ptr(),
+                scaling[0].as_ref().as_ptr(),
                 grain_lut[(1 + pl) as usize].as_ptr().cast(),
                 bh,
                 row,
@@ -281,7 +281,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                     r#in.stride[1],
                     data,
                     cpw as usize,
-                    (*scaling.offset((1 + pl) as isize)).as_ref().as_ptr(),
+                    scaling[(1 + pl) as usize].as_ref().as_ptr(),
                     grain_lut[(1 + pl) as usize].as_ptr().cast(),
                     bh,
                     row,
@@ -311,7 +311,7 @@ pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
         dsp,
         out,
         r#in,
-        scaling.0.as_mut_ptr(),
+        &mut scaling,
         &mut grain_lut,
     );
     for row in 0..rows {
@@ -319,7 +319,7 @@ pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
             dsp,
             out,
             r#in,
-            scaling.0.as_ptr(),
+            &scaling,
             &grain_lut,
             row,
         );
