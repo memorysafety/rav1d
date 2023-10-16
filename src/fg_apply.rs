@@ -32,11 +32,13 @@ unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], sc
         points[0][1] as c_int,
         ((points[0][0] as c_int) << shift_x) as usize,
     );
-    for i in 0..points.len() - 1 {
-        let bx = points[i][0] as c_int;
-        let by = points[i][1] as c_int;
-        let ex = points[i + 1][0] as c_int;
-        let ey = points[i + 1][1] as c_int;
+    for ps in points.windows(2) {
+        // TODO(kkysen) use array_windows when stabilized
+        let [p0, p1] = ps.try_into().unwrap();
+        let bx = p0[0] as c_int;
+        let by = p0[1] as c_int;
+        let ex = p1[0] as c_int;
+        let ey = p1[1] as c_int;
         let dx = ex - bx;
         let dy = ey - by;
         assert!(dx > 0);
@@ -57,9 +59,11 @@ unsafe fn generate_scaling<BD: BitDepth>(bitdepth: c_int, points: &[[u8; 2]], sc
     if BD::BPC != BPC::BPC8 {
         let pad = 1 << shift_x;
         let rnd = pad >> 1;
-        for i in 0..points.len() - 1 {
-            let bx = (points[i][0] as c_int) << shift_x;
-            let ex = (points[i + 1][0] as c_int) << shift_x;
+        for ps in points.windows(2) {
+            // TODO(kkysen) use array_windows when stabilized
+            let [p0, p1] = ps.try_into().unwrap();
+            let bx = (p0[0] as c_int) << shift_x;
+            let ex = (p1[0] as c_int) << shift_x;
             let dx = ex - bx;
             for x in (0..dx).step_by(pad as usize) {
                 let range = *scaling.offset((bx + x + pad) as isize) as c_int
