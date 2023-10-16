@@ -1,14 +1,18 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
+use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use libc::intptr_t;
 use libc::memcpy;
 use libc::memset;
 use libc::ptrdiff_t;
+use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
@@ -216,4 +220,118 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             }
         }
     }
+}
+
+pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
+    dsp: *const Rav1dFilmGrainDSPContext,
+    out: *mut Rav1dPicture,
+    in_0: *const Rav1dPicture,
+    scaling: *const BD::Scaling,
+    grain_lut: *const [[BD::Entry; 82]; 74],
+    row: c_int,
+) {
+    let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
+    let ss_y = ((*in_0).p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_x = ((*in_0).p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+    let cpw = (*out).p.w + ss_x >> ss_x;
+    let is_id = ((*(*out).seq_hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint) as c_int;
+    let luma_src: *mut BD::Pixel = ((*in_0).data[0] as *mut BD::Pixel)
+        .offset(((row * 32) as isize * BD::pxstride((*in_0).stride[0] as usize) as isize) as isize);
+    let bitdepth_max = ((1 as c_int) << (*out).p.bpc) - 1;
+    if (*data).num_y_points != 0 {
+        let bh = cmp::min((*out).p.h - row * 32, 32 as c_int);
+        ((*dsp).fgy_32x32xn).expect("non-null function pointer")(
+            ((*out).data[0] as *mut BD::Pixel)
+                .offset(
+                    ((row * 32) as isize * BD::pxstride((*out).stride[0] as usize) as isize)
+                        as isize,
+                )
+                .cast(),
+            luma_src.cast(),
+            (*out).stride[0],
+            data,
+            (*out).p.w as usize,
+            (*scaling.offset(0)).as_ref().as_ptr(),
+            (*grain_lut.offset(0)).as_ptr().cast(),
+            bh,
+            row,
+            bitdepth_max,
+        );
+    }
+    if (*data).num_uv_points[0] == 0
+        && (*data).num_uv_points[1] == 0
+        && (*data).chroma_scaling_from_luma == 0
+    {
+        return;
+    }
+    let bh_0 = cmp::min((*out).p.h - row * 32, 32 as c_int) + ss_y >> ss_y;
+    if (*out).p.w & ss_x != 0 {
+        let mut ptr: *mut BD::Pixel = luma_src;
+        let mut y = 0;
+        while y < bh_0 {
+            *ptr.offset((*out).p.w as isize) = *ptr.offset(((*out).p.w - 1) as isize);
+            ptr =
+                ptr.offset(((BD::pxstride((*in_0).stride[0] as usize) as isize) << ss_y) as isize);
+            y += 1;
+        }
+    }
+    let uv_off: ptrdiff_t =
+        (row * 32) as isize * BD::pxstride((*out).stride[1] as usize) as isize >> ss_y;
+    if (*data).chroma_scaling_from_luma != 0 {
+        let mut pl = 0;
+        while pl < 2 {
+            ((*dsp).fguv_32x32xn
+                [((*in_0).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
+                .expect("non-null function pointer")(
+                ((*out).data[(1 + pl) as usize] as *mut BD::Pixel)
+                    .offset(uv_off as isize)
+                    .cast(),
+                ((*in_0).data[(1 + pl) as usize] as *const BD::Pixel)
+                    .offset(uv_off as isize)
+                    .cast(),
+                (*in_0).stride[1],
+                data,
+                cpw as usize,
+                (*scaling.offset(0)).as_ref().as_ptr(),
+                (*grain_lut.offset((1 + pl) as isize)).as_ptr().cast(),
+                bh_0,
+                row,
+                luma_src.cast(),
+                (*in_0).stride[0],
+                pl,
+                is_id,
+                bitdepth_max,
+            );
+            pl += 1;
+        }
+    } else {
+        let mut pl_0 = 0;
+        while pl_0 < 2 {
+            if (*data).num_uv_points[pl_0 as usize] != 0 {
+                ((*dsp).fguv_32x32xn
+                    [((*in_0).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
+                    .expect("non-null function pointer")(
+                    ((*out).data[(1 + pl_0) as usize] as *mut BD::Pixel)
+                        .offset(uv_off as isize)
+                        .cast(),
+                    ((*in_0).data[(1 + pl_0) as usize] as *const BD::Pixel)
+                        .offset(uv_off as isize)
+                        .cast(),
+                    (*in_0).stride[1],
+                    data,
+                    cpw as usize,
+                    (*scaling.offset((1 + pl_0) as isize)).as_ref().as_ptr(),
+                    (*grain_lut.offset((1 + pl_0) as isize)).as_ptr().cast(),
+                    bh_0,
+                    row,
+                    luma_src.cast(),
+                    (*in_0).stride[0],
+                    pl_0,
+                    is_id,
+                    bitdepth_max,
+                );
+            }
+            pl_0 += 1;
+        }
+    };
 }
