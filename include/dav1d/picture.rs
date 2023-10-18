@@ -1,17 +1,23 @@
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Dav1dRef;
+use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dITUTT35;
+use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::src::r#ref::Rav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::ptr;
+use std::ptr::addr_of_mut;
 
 #[derive(Clone)]
 #[repr(C)]
@@ -71,15 +77,15 @@ pub struct Dav1dPicture {
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dPicture {
-    pub seq_hdr: *mut Dav1dSequenceHeader, // TODO(kkysen) make Rav1d
-    pub frame_hdr: *mut Dav1dFrameHeader,  // TODO(kkysen) make Rav1d
+    pub seq_hdr: *mut Rav1dSequenceHeader,
+    pub frame_hdr: *mut Rav1dFrameHeader,
     pub data: [*mut c_void; 3],
     pub stride: [ptrdiff_t; 2],
     pub p: Rav1dPictureParameters,
     pub m: Rav1dDataProps,
     pub content_light: *mut Dav1dContentLightLevel, // TODO(kkysen) make Rav1d
     pub mastering_display: *mut Dav1dMasteringDisplay, // TODO(kkysen) make Rav1d
-    pub itut_t35: *mut Dav1dITUTT35,                // TODO(kkysen) make Rav1d
+    pub itut_t35: *mut Rav1dITUTT35,
     pub reserved: [uintptr_t; 4],
     pub frame_hdr_ref: *mut Rav1dRef,
     pub seq_hdr_ref: *mut Rav1dRef,
@@ -113,16 +119,54 @@ impl From<Dav1dPicture> for Rav1dPicture {
             r#ref,
             allocator_data,
         } = value;
+        assert_eq!(seq_hdr.is_null(), seq_hdr_ref.is_null());
+        assert_eq!(frame_hdr.is_null(), frame_hdr_ref.is_null());
         Self {
-            seq_hdr,
-            frame_hdr,
+            // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
+            seq_hdr: if seq_hdr.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe {
+                    addr_of_mut!(
+                        (*(seq_hdr_ref.read())
+                            .data
+                            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+                        .rav1d
+                    )
+                }
+            },
+            // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
+            frame_hdr: if frame_hdr.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe {
+                    addr_of_mut!(
+                        (*(frame_hdr_ref.read())
+                            .data
+                            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+                        .rav1d
+                    )
+                }
+            },
             data,
             stride,
             p: p.into(),
             m: m.into(),
             content_light,
             mastering_display,
-            itut_t35: itut_t35,
+            // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
+            itut_t35: if itut_t35.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe {
+                    addr_of_mut!(
+                        (*(itut_t35_ref.read())
+                            .data
+                            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+                        .rav1d
+                    )
+                }
+            },
             reserved,
             frame_hdr_ref,
             seq_hdr_ref,
@@ -158,16 +202,54 @@ impl From<Rav1dPicture> for Dav1dPicture {
             r#ref,
             allocator_data,
         } = value;
+        assert_eq!(seq_hdr.is_null(), seq_hdr_ref.is_null());
+        assert_eq!(frame_hdr.is_null(), frame_hdr_ref.is_null());
         Self {
-            seq_hdr,
-            frame_hdr,
+            // `.update_dav1d()` happens right after [`parse_seq_hdr`].
+            seq_hdr: if seq_hdr.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe {
+                    addr_of_mut!(
+                        (*(seq_hdr_ref.read())
+                            .data
+                            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+                        .dav1d
+                    )
+                }
+            },
+            // `.update_dav1d()` happens in [`parse_frame_hdr`].
+            frame_hdr: if frame_hdr.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe {
+                    addr_of_mut!(
+                        (*(frame_hdr_ref.read())
+                            .data
+                            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+                        .dav1d
+                    )
+                }
+            },
             data,
             stride,
             p: p.into(),
             m: m.into(),
             content_light,
             mastering_display,
-            itut_t35: itut_t35,
+            // `.update_dav1d()` happens in [`rav1d_parse_obus`].
+            itut_t35: if itut_t35.is_null() {
+                ptr::null_mut()
+            } else {
+                unsafe {
+                    addr_of_mut!(
+                        (*(itut_t35_ref.read())
+                            .data
+                            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+                        .dav1d
+                    )
+                }
+            },
             reserved,
             frame_hdr_ref,
             seq_hdr_ref,

@@ -1,6 +1,28 @@
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
+/// This is so we can store both `*mut D` and `*mut R`
+/// for maintaining `dav1d` ABI compatibility,
+/// where `D` is the `Dav1d*` type and `R` is the `Rav1d` type.
+pub(crate) struct DRav1d<R, D> {
+    pub rav1d: R,
+    pub dav1d: D,
+}
+
+impl<R, D> DRav1d<R, D>
+where
+    R: Clone + Into<D>,
+    D: Clone + Into<R>,
+{
+    pub fn update_rav1d(&mut self) {
+        self.rav1d = self.dav1d.clone().into();
+    }
+
+    pub fn update_dav1d(&mut self) {
+        self.dav1d = self.rav1d.clone().into();
+    }
+}
+
 pub type Dav1dObuType = c_uint;
 pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
 pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
@@ -402,6 +424,7 @@ impl From<Rav1dMasteringDisplay> for Dav1dMasteringDisplay {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dITUTT35 {
     pub country_code: u8,
@@ -410,6 +433,7 @@ pub struct Dav1dITUTT35 {
     pub payload: *mut u8,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dITUTT35 {
     pub country_code: u8,
@@ -568,6 +592,7 @@ impl From<Rav1dSequenceHeaderOperatingParameterInfo> for Dav1dSequenceHeaderOper
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dSequenceHeader {
     pub profile: c_int,
@@ -625,6 +650,7 @@ pub struct Dav1dSequenceHeader {
     pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeader {
     pub profile: c_int,
@@ -1076,7 +1102,7 @@ impl From<Rav1dLoopfilterModeRefDeltas> for Dav1dLoopfilterModeRefDeltas {
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dFilmGrainData {
+pub struct Rav1dFilmGrainData {
     pub seed: c_uint,
     pub num_y_points: c_int,
     pub y_points: [[u8; 2]; 14],
@@ -1095,115 +1121,10 @@ pub struct Dav1dFilmGrainData {
     pub overlap_flag: c_int,
     pub clip_to_restricted_range: c_int,
 }
+
+pub type Dav1dFilmGrainData = Rav1dFilmGrainData;
 
 #[derive(Clone)]
-#[repr(C)]
-pub(crate) struct Rav1dFilmGrainData {
-    pub seed: c_uint,
-    pub num_y_points: c_int,
-    pub y_points: [[u8; 2]; 14],
-    pub chroma_scaling_from_luma: c_int,
-    pub num_uv_points: [c_int; 2],
-    pub uv_points: [[[u8; 2]; 10]; 2],
-    pub scaling_shift: c_int,
-    pub ar_coeff_lag: c_int,
-    pub ar_coeffs_y: [i8; 24],
-    pub ar_coeffs_uv: [[i8; 28]; 2],
-    pub ar_coeff_shift: u64,
-    pub grain_scale_shift: c_int,
-    pub uv_mult: [c_int; 2],
-    pub uv_luma_mult: [c_int; 2],
-    pub uv_offset: [c_int; 2],
-    pub overlap_flag: c_int,
-    pub clip_to_restricted_range: c_int,
-}
-
-impl From<Dav1dFilmGrainData> for Rav1dFilmGrainData {
-    fn from(value: Dav1dFilmGrainData) -> Self {
-        let Dav1dFilmGrainData {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        } = value;
-        Self {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        }
-    }
-}
-
-impl From<Rav1dFilmGrainData> for Dav1dFilmGrainData {
-    fn from(value: Rav1dFilmGrainData) -> Self {
-        let Rav1dFilmGrainData {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        } = value;
-        Self {
-            seed,
-            num_y_points,
-            y_points,
-            chroma_scaling_from_luma,
-            num_uv_points,
-            uv_points,
-            scaling_shift,
-            ar_coeff_lag,
-            ar_coeffs_y,
-            ar_coeffs_uv,
-            ar_coeff_shift,
-            grain_scale_shift,
-            uv_mult,
-            uv_luma_mult,
-            uv_offset,
-            overlap_flag,
-            clip_to_restricted_range,
-        }
-    }
-}
-
 #[repr(C)]
 pub struct Dav1dFrameHeader_film_grain {
     pub data: Dav1dFilmGrainData,
@@ -1211,6 +1132,7 @@ pub struct Dav1dFrameHeader_film_grain {
     pub update: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_film_grain {
     pub data: Rav1dFilmGrainData,
@@ -1226,7 +1148,7 @@ impl From<Dav1dFrameHeader_film_grain> for Rav1dFrameHeader_film_grain {
             update,
         } = value;
         Self {
-            data: data.into(),
+            data,
             present,
             update,
         }
@@ -1241,18 +1163,20 @@ impl From<Rav1dFrameHeader_film_grain> for Dav1dFrameHeader_film_grain {
             update,
         } = value;
         Self {
-            data: data.into(),
+            data,
             present,
             update,
         }
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: c_int,
@@ -1280,12 +1204,14 @@ impl From<Rav1dFrameHeaderOperatingPoint> for Dav1dFrameHeaderOperatingPoint {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_super_res {
     pub width_scale_denominator: c_int,
     pub enabled: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_super_res {
     pub width_scale_denominator: c_int,
@@ -1318,6 +1244,7 @@ impl From<Rav1dFrameHeader_super_res> for Dav1dFrameHeader_super_res {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_tiling {
     pub uniform: c_int,
@@ -1335,6 +1262,7 @@ pub struct Dav1dFrameHeader_tiling {
     pub update: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_tiling {
     pub uniform: c_int,
@@ -1422,6 +1350,7 @@ impl From<Rav1dFrameHeader_tiling> for Dav1dFrameHeader_tiling {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_quant {
     pub yac: c_int,
@@ -1436,6 +1365,7 @@ pub struct Dav1dFrameHeader_quant {
     pub qm_v: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_quant {
     pub yac: c_int,
@@ -1508,6 +1438,7 @@ impl From<Rav1dFrameHeader_quant> for Dav1dFrameHeader_quant {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_segmentation {
     pub enabled: c_int,
@@ -1519,6 +1450,7 @@ pub struct Dav1dFrameHeader_segmentation {
     pub qidx: [c_int; 8],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_segmentation {
     pub enabled: c_int,
@@ -1576,12 +1508,14 @@ impl From<Rav1dFrameHeader_segmentation> for Dav1dFrameHeader_segmentation {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_q {
     pub present: c_int,
     pub res_log2: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta_q {
     pub present: c_int,
@@ -1602,6 +1536,7 @@ impl From<Rav1dFrameHeader_delta_q> for Dav1dFrameHeader_delta_q {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta_lf {
     pub present: c_int,
@@ -1609,6 +1544,7 @@ pub struct Dav1dFrameHeader_delta_lf {
     pub multi: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta_lf {
     pub present: c_int,
@@ -1646,12 +1582,14 @@ impl From<Rav1dFrameHeader_delta_lf> for Dav1dFrameHeader_delta_lf {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_delta {
     pub q: Dav1dFrameHeader_delta_q,
     pub lf: Dav1dFrameHeader_delta_lf,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_delta {
     pub q: Rav1dFrameHeader_delta_q,
@@ -1678,6 +1616,7 @@ impl From<Rav1dFrameHeader_delta> for Dav1dFrameHeader_delta {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_loopfilter {
     pub level_y: [c_int; 2],
@@ -1689,6 +1628,7 @@ pub struct Dav1dFrameHeader_loopfilter {
     pub sharpness: c_int,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_loopfilter {
     pub level_y: [c_int; 2],
@@ -1746,6 +1686,7 @@ impl From<Rav1dFrameHeader_loopfilter> for Dav1dFrameHeader_loopfilter {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_cdef {
     pub damping: c_int,
@@ -1754,6 +1695,7 @@ pub struct Dav1dFrameHeader_cdef {
     pub uv_strength: [c_int; 8],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_cdef {
     pub damping: c_int,
@@ -1796,12 +1738,14 @@ impl From<Rav1dFrameHeader_cdef> for Dav1dFrameHeader_cdef {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader_restoration {
     pub type_0: [Dav1dRestorationType; 3],
     pub unit_size: [c_int; 2],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader_restoration {
     pub type_0: [Rav1dRestorationType; 3],
@@ -1822,6 +1766,7 @@ impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
     }
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dFrameHeader {
     pub film_grain: Dav1dFrameHeader_film_grain,
@@ -1876,6 +1821,7 @@ pub struct Dav1dFrameHeader {
     pub gmv: [Dav1dWarpedMotionParams; 7],
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeader {
     pub film_grain: Rav1dFrameHeader_film_grain,

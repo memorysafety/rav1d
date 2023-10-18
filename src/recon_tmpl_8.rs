@@ -9,7 +9,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
@@ -2064,7 +2064,7 @@ unsafe extern "C" fn warp_affine(
     b_dim: *const u8,
     pl: c_int,
     refp: *const Rav1dThreadPicture,
-    wmp: *const Dav1dWarpedMotionParams,
+    wmp: *const Rav1dWarpedMotionParams,
 ) -> c_int {
     if (dst8 != 0 as *mut c_void as *mut pixel) as c_int
         ^ (dst16 != 0 as *mut c_void as *mut i16) as c_int

@@ -4,7 +4,7 @@ use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
-use crate::src::cdf::dav1d_cdf_thread_update;
+use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::decode::rav1d_decode_frame_init;
 use crate::src::decode::rav1d_decode_frame_init_cdf;
@@ -1387,7 +1387,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             && (*(*f).frame_hdr).tiling.update == tile_idx
                                         {
                                             if error_0 == 0 {
-                                                dav1d_cdf_thread_update(
+                                                rav1d_cdf_thread_update(
                                                     (*f).frame_hdr,
                                                     (*f).out_cdf.data.cdf,
                                                     &mut (*((*f).ts).offset(

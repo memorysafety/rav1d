@@ -15,12 +15,15 @@ use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_ALL;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_NONE;
+use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
@@ -108,6 +111,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::process::abort;
+use std::ptr::NonNull;
 use std::sync::Once;
 
 #[cfg(feature = "bitdepth_8")]
@@ -1019,6 +1023,27 @@ pub(crate) unsafe fn rav1d_get_picture(c: *mut Rav1dContext, out: *mut Rav1dPict
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_picture(c: *mut Dav1dContext, out: *mut Dav1dPicture) -> c_int {
+    if let Some(mut seq_hdr_ref) = NonNull::new((*out).seq_hdr_ref) {
+        (*seq_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+        .update_rav1d();
+    }
+    if let Some(mut frame_hdr_ref) = NonNull::new((*out).frame_hdr_ref) {
+        (*frame_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+        .update_rav1d();
+    }
+    if let Some(mut itut_t35_ref) = NonNull::new((*out).itut_t35_ref) {
+        (*itut_t35_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+        .update_rav1d();
+    }
     let mut out_rust = out.read().into();
     let result = rav1d_get_picture(c, &mut out_rust);
     out.write(out_rust.into());
@@ -1100,6 +1125,48 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) -> c_int {
+    if let Some(mut seq_hdr_ref) = NonNull::new((*in_0).seq_hdr_ref) {
+        (*seq_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+        .update_rav1d();
+    }
+    if let Some(mut frame_hdr_ref) = NonNull::new((*in_0).frame_hdr_ref) {
+        (*frame_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+        .update_rav1d();
+    }
+    if let Some(mut itut_t35_ref) = NonNull::new((*in_0).itut_t35_ref) {
+        (*itut_t35_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+        .update_rav1d();
+    }
+    if let Some(mut seq_hdr_ref) = NonNull::new((*out).seq_hdr_ref) {
+        (*seq_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+        .update_rav1d();
+    }
+    if let Some(mut frame_hdr_ref) = NonNull::new((*out).frame_hdr_ref) {
+        (*frame_hdr_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+        .update_rav1d();
+    }
+    if let Some(mut itut_t35_ref) = NonNull::new((*out).itut_t35_ref) {
+        (*itut_t35_ref
+            .as_mut()
+            .data
+            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+        .update_rav1d();
+    }
     let mut out_rust = out.read().into();
     let in_rust = in_0.read().into();
     let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
@@ -1127,12 +1194,12 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i as isize));
         i += 1;
     }
-    (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-    (*c).seq_hdr = 0 as *mut Dav1dSequenceHeader;
+    (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
+    (*c).seq_hdr = 0 as *mut Rav1dSequenceHeader;
     rav1d_ref_dec(&mut (*c).seq_hdr_ref);
     (*c).mastering_display = 0 as *mut Dav1dMasteringDisplay;
     (*c).content_light = 0 as *mut Dav1dContentLightLevel;
-    (*c).itut_t35 = 0 as *mut Dav1dITUTT35;
+    (*c).itut_t35 = 0 as *mut Rav1dITUTT35;
     rav1d_ref_dec(&mut (*c).mastering_display_ref);
     rav1d_ref_dec(&mut (*c).content_light_ref);
     rav1d_ref_dec(&mut (*c).itut_t35_ref);

@@ -17,3 +17,5 @@ target/
 /tests/large
 
 /retranspile/
+
+.gdb_history

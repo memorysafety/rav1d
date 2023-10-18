@@ -1,6 +1,6 @@
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dRestorationType;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
@@ -624,9 +624,9 @@ fn calc_lf_value_chroma(
     };
 }
 
-pub fn dav1d_calc_lf_values(
+pub(crate) fn rav1d_calc_lf_values(
     lflvl_values: &mut [[[[u8; 2]; 8]; 4]; 8],
-    hdr: &Dav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
     lf_delta: &[i8; 4],
 ) {
     let n_seg = if hdr.segmentation.enabled != 0 { 8 } else { 1 };

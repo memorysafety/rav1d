@@ -1,7 +1,7 @@
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dSequenceHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
@@ -140,8 +140,8 @@ pub struct refmvs_block_unaligned {
 pub struct refmvs_block(pub refmvs_block_unaligned);
 
 #[repr(C)]
-pub struct refmvs_frame {
-    pub frm_hdr: *const Dav1dFrameHeader,
+pub(crate) struct refmvs_frame {
+    pub frm_hdr: *const Rav1dFrameHeader,
     pub iw4: c_int,
     pub ih4: c_int,
     pub iw8: c_int,
@@ -173,7 +173,7 @@ pub struct refmvs_tile_range {
 }
 
 #[repr(C)]
-pub struct refmvs_tile {
+pub(crate) struct refmvs_tile {
     pub rf: *const refmvs_frame,
     pub r: [*mut refmvs_block; 37],
     pub rp_proj: *mut refmvs_temporal_block,
@@ -188,7 +188,7 @@ pub struct refmvs_candidate {
     pub weight: c_int,
 }
 
-pub type load_tmvs_fn =
+pub(crate) type load_tmvs_fn =
     Option<unsafe extern "C" fn(*const refmvs_frame, c_int, c_int, c_int, c_int, c_int) -> ()>;
 
 pub type save_tmvs_fn = Option<
@@ -209,7 +209,7 @@ pub type splat_mv_fn = Option<
 >;
 
 #[repr(C)]
-pub struct Rav1dRefmvsDSPContext {
+pub(crate) struct Rav1dRefmvsDSPContext {
     pub load_tmvs: load_tmvs_fn,
     pub save_tmvs: save_tmvs_fn,
     pub splat_mv: splat_mv_fn,
@@ -662,7 +662,7 @@ fn add_single_extended_candidate(
 /// enabled) or at the start of each interleaved sbrow (when tile column
 /// threading is disabled), we call load_tmvs(), which will project the MVs to
 /// their respective position in the current frame.
-pub unsafe fn rav1d_refmvs_find(
+pub(crate) unsafe fn rav1d_refmvs_find(
     rt: &refmvs_tile,
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
@@ -1096,7 +1096,7 @@ pub unsafe fn rav1d_refmvs_find(
 
 // cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
 // into buffers for use in future frame's temporal MV prediction
-pub unsafe fn rav1d_refmvs_save_tmvs(
+pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     dsp: *const Rav1dRefmvsDSPContext,
     rt: *const refmvs_tile,
     col_start8: c_int,
@@ -1129,7 +1129,7 @@ pub unsafe fn rav1d_refmvs_save_tmvs(
     );
 }
 
-pub unsafe fn rav1d_refmvs_tile_sbrow_init(
+pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     rt: *mut refmvs_tile,
     rf: *const refmvs_frame,
     tile_col_start4: c_int,
@@ -1374,10 +1374,10 @@ unsafe extern "C" fn save_tmvs_c(
     }
 }
 
-pub unsafe fn dav1d_refmvs_init_frame(
+pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf: *mut refmvs_frame,
-    seq_hdr: *const Dav1dSequenceHeader,
-    frm_hdr: *const Dav1dFrameHeader,
+    seq_hdr: *const Rav1dSequenceHeader,
+    frm_hdr: *const Rav1dFrameHeader,
     ref_poc: *const c_uint,
     rp: *mut refmvs_temporal_block,
     ref_ref_poc: *const [c_uint; 7],
@@ -1545,14 +1545,14 @@ pub unsafe fn dav1d_refmvs_init_frame(
     return 0 as c_int;
 }
 
-pub unsafe fn rav1d_refmvs_init(rf: *mut refmvs_frame) {
+pub(crate) unsafe fn rav1d_refmvs_init(rf: *mut refmvs_frame) {
     (*rf).r = 0 as *mut refmvs_block;
     (*rf).r_stride = 0 as c_int as ptrdiff_t;
     (*rf).rp_proj = 0 as *mut refmvs_temporal_block;
     (*rf).rp_stride = 0 as c_int as ptrdiff_t;
 }
 
-pub unsafe fn rav1d_refmvs_clear(rf: *mut refmvs_frame) {
+pub(crate) unsafe fn rav1d_refmvs_clear(rf: *mut refmvs_frame) {
     if !((*rf).r).is_null() {
         rav1d_freep_aligned(&mut (*rf).r as *mut *mut refmvs_block as *mut c_void);
     }
@@ -1654,7 +1654,7 @@ unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
 }
 
 #[cold]
-pub unsafe fn rav1d_refmvs_dsp_init(c: *mut Rav1dRefmvsDSPContext) {
+pub(crate) unsafe fn rav1d_refmvs_dsp_init(c: *mut Rav1dRefmvsDSPContext) {
     (*c).load_tmvs = Some(load_tmvs_c);
     (*c).save_tmvs = Some(save_tmvs_c);
     (*c).splat_mv = Some(splat_mv_rust);

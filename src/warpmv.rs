@@ -3,7 +3,7 @@ use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::u64log2;
 use crate::include::common::intops::ulog2;
-use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::src::levels::mv;
 use std::ffi::c_int;
 
@@ -48,7 +48,7 @@ fn resolve_divisor_32(d: u32) -> (c_int, c_int) {
     (shift + 14, div_lut[f as usize] as c_int)
 }
 
-pub fn dav1d_get_shear_params(wm: &mut Dav1dWarpedMotionParams) -> bool {
+pub(crate) fn rav1d_get_shear_params(wm: &mut Rav1dWarpedMotionParams) -> bool {
     let mat = &wm.matrix;
 
     if mat[2] <= 0 {
@@ -97,11 +97,11 @@ fn get_mult_shift_diag(px: i64, idet: c_int, shift: c_int) -> c_int {
     iclip(v2, 0xe001, 0x11fff)
 }
 
-pub fn dav1d_set_affine_mv2d(
+pub(crate) fn rav1d_set_affine_mv2d(
     bw4: c_int,
     bh4: c_int,
     mv: mv,
-    wm: &mut Dav1dWarpedMotionParams,
+    wm: &mut Rav1dWarpedMotionParams,
     bx4: c_int,
     by4: c_int,
 ) {
@@ -123,13 +123,13 @@ pub fn dav1d_set_affine_mv2d(
     );
 }
 
-pub fn dav1d_find_affine_int(
+pub(crate) fn rav1d_find_affine_int(
     pts: &[[[c_int; 2]; 2]; 8],
     np: usize,
     bw4: c_int,
     bh4: c_int,
     mv: mv,
-    wm: &mut Dav1dWarpedMotionParams,
+    wm: &mut Rav1dWarpedMotionParams,
     bx4: c_int,
     by4: c_int,
 ) -> bool {
