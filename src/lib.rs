@@ -17,7 +17,6 @@ use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_ALL;
 use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
@@ -589,7 +588,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 }
 
 unsafe fn has_grain(pic: *const Rav1dPicture) -> c_int {
-    let fgdata: *const Dav1dFilmGrainData = &(*(*pic).frame_hdr).film_grain.data;
+    let fgdata = &(*(*pic).frame_hdr).film_grain.data;
     return ((*fgdata).num_y_points != 0
         || (*fgdata).num_uv_points[0] != 0
         || (*fgdata).num_uv_points[1] != 0

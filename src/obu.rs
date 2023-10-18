@@ -8,7 +8,6 @@ use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Dav1dColorPrimaries;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dFrameType;
@@ -21,6 +20,7 @@ use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
+use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -1431,7 +1431,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 .clone();
             (*hdr).film_grain.data.seed = seed;
         } else {
-            let fgd: *mut Dav1dFilmGrainData = &mut (*hdr).film_grain.data;
+            let fgd = &mut (*hdr).film_grain.data;
             (*fgd).seed = seed;
             (*fgd).num_y_points = rav1d_get_bits(gb, 4 as c_int) as c_int;
             if (*fgd).num_y_points > 14 {
@@ -1541,9 +1541,9 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
         }
     } else {
         memset(
-            &mut (*hdr).film_grain.data as *mut Dav1dFilmGrainData as *mut c_void,
+            &mut (*hdr).film_grain.data as *mut Rav1dFilmGrainData as *mut c_void,
             0 as c_int,
-            ::core::mem::size_of::<Dav1dFilmGrainData>(),
+            ::core::mem::size_of::<Rav1dFilmGrainData>(),
         );
     }
 
