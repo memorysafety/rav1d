@@ -90,7 +90,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         &data_c,
         bitdepth_max,
     );
-    if data.num_uv_points[0] != 0 || data.chroma_scaling_from_luma != 0 {
+    if data.num_uv_points[0] != 0 || data.chroma_scaling_from_luma {
         (dsp.generate_grain_uv[r#in.p.layout as usize - 1]).expect("non-null function pointer")(
             grain_lut[1].as_mut_ptr().cast(),
             grain_lut[0].as_mut_ptr().cast(),
@@ -99,7 +99,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             bitdepth_max,
         );
     }
-    if data.num_uv_points[1] != 0 || data.chroma_scaling_from_luma != 0 {
+    if data.num_uv_points[1] != 0 || data.chroma_scaling_from_luma {
         (dsp.generate_grain_uv[r#in.p.layout as usize - 1]).expect("non-null function pointer")(
             grain_lut[2].as_mut_ptr().cast(),
             grain_lut[0].as_mut_ptr().cast(),
@@ -136,7 +136,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         }
     }
 
-    if r#in.p.layout != RAV1D_PIXEL_LAYOUT_I400 && data.chroma_scaling_from_luma == 0 {
+    if r#in.p.layout != RAV1D_PIXEL_LAYOUT_I400 && !data.chroma_scaling_from_luma {
         assert!(out.stride[1] == r#in.stride[1]);
         let ss_ver = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
         let stride = out.stride[1];
@@ -214,10 +214,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         );
     }
 
-    if data.num_uv_points[0] == 0
-        && data.num_uv_points[1] == 0
-        && data.chroma_scaling_from_luma == 0
-    {
+    if data.num_uv_points[0] == 0 && data.num_uv_points[1] == 0 && !data.chroma_scaling_from_luma {
         return;
     }
 
@@ -233,7 +230,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     }
 
     let uv_off = (row * 32) as isize * BD::pxstride(out.stride[1] as usize) as isize >> ss_y;
-    if data.chroma_scaling_from_luma != 0 {
+    if data.chroma_scaling_from_luma {
         for pl in 0..2 {
             (dsp.fguv_32x32xn[r#in.p.layout as usize - 1]).expect("non-null function pointer")(
                 (out.data[1 + pl] as *mut BD::Pixel)

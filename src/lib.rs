@@ -592,7 +592,7 @@ unsafe fn has_grain(pic: *const Rav1dPicture) -> c_int {
     return ((*fgdata).num_y_points != 0
         || (*fgdata).num_uv_points[0] != 0
         || (*fgdata).num_uv_points[1] != 0
-        || (*fgdata).clip_to_restricted_range != 0 && (*fgdata).chroma_scaling_from_luma != 0)
+        || (*fgdata).clip_to_restricted_range != 0 && (*fgdata).chroma_scaling_from_luma)
         as c_int;
 }
 

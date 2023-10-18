@@ -1449,10 +1449,9 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 (*fgd).y_points[i_21 as usize][1] = rav1d_get_bits(gb, 8 as c_int) as u8;
                 i_21 += 1;
             }
-            (*fgd).chroma_scaling_from_luma =
-                ((*seqhdr).monochrome == 0 && rav1d_get_bit(gb) != 0) as c_int;
+            (*fgd).chroma_scaling_from_luma = (*seqhdr).monochrome == 0 && rav1d_get_bit(gb) != 0;
             if (*seqhdr).monochrome != 0
-                || (*fgd).chroma_scaling_from_luma != 0
+                || (*fgd).chroma_scaling_from_luma
                 || (*seqhdr).ss_ver == 1 && (*seqhdr).ss_hor == 1 && (*fgd).num_y_points == 0
             {
                 (*fgd).num_uv_points[1] = 0 as c_int;
@@ -1502,8 +1501,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
             }
             let mut pl_0 = 0;
             while pl_0 < 2 {
-                if (*fgd).num_uv_points[pl_0 as usize] != 0 || (*fgd).chroma_scaling_from_luma != 0
-                {
+                if (*fgd).num_uv_points[pl_0 as usize] != 0 || (*fgd).chroma_scaling_from_luma {
                     let num_uv_pos: c_int = num_y_pos + ((*fgd).num_y_points != 0) as c_int;
                     let mut i_24 = 0;
                     while i_24 < num_uv_pos {
