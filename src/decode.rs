@@ -1468,7 +1468,7 @@ unsafe fn decode_b(
     bs: BlockSize,
     bp: BlockPartition,
     intra_edge_flags: EdgeFlags,
-) -> c_int {
+) -> Result<(), ()> {
     use std::fmt;
 
     /// Helper struct for printing a number as a signed hexidecimal value.
@@ -1591,9 +1591,7 @@ unsafe fn decode_b(
                     }
                 }
             }
-            if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-                return -1;
-            }
+            f.bd_fn.recon_b_inter(t, bs, b)?;
 
             let filter = &dav1d_filter_dir[b.filter2d() as usize];
             CaseSet::<32, false>::many(
@@ -1636,7 +1634,7 @@ unsafe fn decode_b(
             }
         }
 
-        return 0;
+        return Ok(());
     }
 
     let cw4 = w4 + ss_hor >> ss_hor;
@@ -1656,7 +1654,7 @@ unsafe fn decode_b(
                 let seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                    return -1;
+                    return Err(());
                 }
                 b.seg_id = seg_id;
             } else {
@@ -1677,7 +1675,7 @@ unsafe fn decode_b(
                     let seg_id =
                         get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                     if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                        return -1;
+                        return Err(());
                     }
                     b.seg_id = seg_id;
                 } else {
@@ -1761,7 +1759,7 @@ unsafe fn decode_b(
                 let seg_id =
                     get_prev_frame_segid(f, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= RAV1D_MAX_SEGMENTS.into() {
-                    return -1;
+                    return Err(());
                 }
                 b.seg_id = seg_id;
             } else {
@@ -2380,7 +2378,7 @@ unsafe fn decode_b(
         }
         // error out if mv still overlaps with the current superblock
         if src_bottom > sby && src_right > sbx {
-            return -1;
+            return Err(());
         }
 
         b.mv_mut()[0].x = ((src_left - t.bx * 4) * 8) as i16;
@@ -2404,8 +2402,8 @@ unsafe fn decode_b(
         if t.frame_thread.pass == 1 {
             f.bd_fn.read_coef_blocks(t, bs, b);
             *b.filter2d_mut() = FILTER_2D_BILINEAR as u8;
-        } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-            return -1;
+        } else {
+            f.bd_fn.recon_b_inter(t, bs, b)?;
         }
 
         splat_intrabc_mv(&*f.c, t, bs, b, bw4 as usize, bh4 as usize);
@@ -3158,8 +3156,8 @@ unsafe fn decode_b(
         // reconstruction
         if t.frame_thread.pass == 1 {
             f.bd_fn.read_coef_blocks(t, bs, b);
-        } else if f.bd_fn.recon_b_inter(t, bs, b) != 0 {
-            return -1;
+        } else {
+            f.bd_fn.recon_b_inter(t, bs, b)?;
         }
 
         if frame_hdr.loopfilter.level_y != [0, 0] {
@@ -3486,10 +3484,14 @@ unsafe fn decode_b(
         }
     }
 
-    0
+    Ok(())
 }
 
-unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeNode) -> c_int {
+unsafe fn decode_sb(
+    t: &mut Rav1dTaskContext,
+    bl: BlockLevel,
+    node: *const EdgeNode,
+) -> Result<(), ()> {
     let f = &*t.f;
     let ts = &mut *t.ts;
     let hsz = 16 >> bl;
@@ -3537,7 +3539,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
                     || bp == PARTITION_T_LEFT_SPLIT
                     || bp == PARTITION_T_RIGHT_SPLIT)
             {
-                return 1;
+                return Err(());
             }
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
@@ -3560,54 +3562,36 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         match bp {
             PARTITION_NONE => {
                 let node = &*node;
-                if decode_b(t, bl, b[0], bp, node.o) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, node.o)?;
             }
             PARTITION_H => {
                 let node = &*node;
-                if decode_b(t, bl, b[0], bp, node.h[0]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, node.h[0])?;
                 t.by += hsz;
-                if decode_b(t, bl, b[0], bp, node.h[1]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, node.h[1])?;
                 t.by -= hsz;
             }
             PARTITION_V => {
                 let node = &*node;
-                if decode_b(t, bl, b[0], bp, node.v[0]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz;
-                if decode_b(t, bl, b[0], bp, node.v[1]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, node.v[1])?;
                 t.bx -= hsz;
             }
             PARTITION_SPLIT => {
                 if bl == BL_8X8 {
                     let tip = &*(node as *const EdgeTip);
                     assert!(hsz == 1);
-                    if decode_b(t, bl, BS_4x4, bp, tip.split[0]) != 0 {
-                        return -1;
-                    }
+                    decode_b(t, bl, BS_4x4, bp, tip.split[0])?;
                     let tl_filter = t.tl_4x4_filter;
                     t.bx += 1;
-                    if decode_b(t, bl, BS_4x4, bp, tip.split[1]) != 0 {
-                        return -1;
-                    }
+                    decode_b(t, bl, BS_4x4, bp, tip.split[1])?;
                     t.bx -= 1;
                     t.by += 1;
-                    if decode_b(t, bl, BS_4x4, bp, tip.split[2]) != 0 {
-                        return -1;
-                    }
+                    decode_b(t, bl, BS_4x4, bp, tip.split[2])?;
                     t.bx += 1;
                     t.tl_4x4_filter = tl_filter;
-                    if decode_b(t, bl, BS_4x4, bp, tip.split[3]) != 0 {
-                        return -1;
-                    }
+                    decode_b(t, bl, BS_4x4, bp, tip.split[3])?;
                     t.bx -= 1;
                     t.by -= 1;
                     if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {
@@ -3620,129 +3604,81 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
                     }
                 } else {
                     let branch = &*(node as *const EdgeBranch);
-                    if decode_sb(t, bl + 1, branch.split[0]) != 0 {
-                        return 1;
-                    }
+                    decode_sb(t, bl + 1, branch.split[0])?;
                     t.bx += hsz;
-                    if decode_sb(t, bl + 1, branch.split[1]) != 0 {
-                        return 1;
-                    }
+                    decode_sb(t, bl + 1, branch.split[1])?;
                     t.bx -= hsz;
                     t.by += hsz;
-                    if decode_sb(t, bl + 1, branch.split[2]) != 0 {
-                        return 1;
-                    }
+                    decode_sb(t, bl + 1, branch.split[2])?;
                     t.bx += hsz;
-                    if decode_sb(t, bl + 1, branch.split[3]) != 0 {
-                        return 1;
-                    }
+                    decode_sb(t, bl + 1, branch.split[3])?;
                     t.bx -= hsz;
                     t.by -= hsz;
                 }
             }
             PARTITION_T_TOP_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.tts[0]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.tts[0])?;
                 t.bx += hsz;
-                if decode_b(t, bl, b[0], bp, branch.tts[1]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.tts[1])?;
                 t.bx -= hsz;
                 t.by += hsz;
-                if decode_b(t, bl, b[1], bp, branch.tts[2]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[1], bp, branch.tts[2])?;
                 t.by -= hsz;
             }
             PARTITION_T_BOTTOM_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.tbs[0]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.tbs[0])?;
                 t.by += hsz;
-                if decode_b(t, bl, b[1], bp, branch.tbs[1]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[1], bp, branch.tbs[1])?;
                 t.bx += hsz;
-                if decode_b(t, bl, b[1], bp, branch.tbs[2]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[1], bp, branch.tbs[2])?;
                 t.bx -= hsz;
                 t.by -= hsz;
             }
             PARTITION_T_LEFT_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.tls[0]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.tls[0])?;
                 t.by += hsz;
-                if decode_b(t, bl, b[0], bp, branch.tls[1]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.tls[1])?;
                 t.by -= hsz;
                 t.bx += hsz;
-                if decode_b(t, bl, b[1], bp, branch.tls[2]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[1], bp, branch.tls[2])?;
                 t.bx -= hsz;
             }
             PARTITION_T_RIGHT_SPLIT => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.trs[0]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.trs[0])?;
                 t.bx += hsz;
-                if decode_b(t, bl, b[1], bp, branch.trs[1]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[1], bp, branch.trs[1])?;
                 t.by += hsz;
-                if decode_b(t, bl, b[1], bp, (*branch).trs[2]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[1], bp, (*branch).trs[2])?;
                 t.by -= hsz;
                 t.bx -= hsz;
             }
             PARTITION_H4 => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.h4[0]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.h4[0])?;
                 t.by += hsz >> 1;
-                if decode_b(t, bl, b[0], bp, branch.h4[1]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.h4[1])?;
                 t.by += hsz >> 1;
-                if decode_b(t, bl, b[0], bp, branch.h4[2]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.h4[2])?;
                 t.by += hsz >> 1;
                 if t.by < f.bh {
-                    if decode_b(t, bl, b[0], bp, branch.h4[3]) != 0 {
-                        return -1;
-                    }
+                    decode_b(t, bl, b[0], bp, branch.h4[3])?;
                 }
                 t.by -= hsz * 3 >> 1;
             }
             PARTITION_V4 => {
                 let branch = &*(node as *const EdgeBranch);
-                if decode_b(t, bl, b[0], bp, branch.v4[0]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.v4[0])?;
                 t.bx += hsz >> 1;
-                if decode_b(t, bl, b[0], bp, branch.v4[1]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.v4[1])?;
                 t.bx += hsz >> 1;
-                if decode_b(t, bl, b[0], bp, branch.v4[2]) != 0 {
-                    return -1;
-                }
+                decode_b(t, bl, b[0], bp, branch.v4[2])?;
                 t.bx += hsz >> 1;
                 if t.bx < f.bw {
-                    if decode_b(t, bl, b[0], bp, branch.v4[3]) != 0 {
-                        return -1;
-                    }
+                    decode_b(t, bl, b[0], bp, branch.v4[3])?;
                 }
                 t.bx -= hsz * 3 >> 1;
             }
@@ -3777,26 +3713,19 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         if is_split {
             let branch = &*(node as *const EdgeBranch);
             bp = PARTITION_SPLIT;
-            if decode_sb(t, bl + 1, branch.split[0]) != 0 {
-                return 1;
-            }
+            decode_sb(t, bl + 1, branch.split[0])?;
             t.bx += hsz;
-            if decode_sb(t, bl + 1, branch.split[1]) != 0 {
-                return 1;
-            }
+            decode_sb(t, bl + 1, branch.split[1])?;
             t.bx -= hsz;
         } else {
             bp = PARTITION_H;
-            if decode_b(
+            decode_b(
                 t,
                 bl,
                 dav1d_block_sizes[bl as usize][bp as usize][0],
                 bp,
                 (*node).h[0],
-            ) != 0
-            {
-                return -1;
-            }
+            )?;
         }
     } else {
         assert!(have_v_split);
@@ -3804,7 +3733,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         if let Some(pc) = pc {
             is_split = rav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl));
             if f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I422 && !is_split {
-                return 1;
+                return Err(());
             }
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
@@ -3831,26 +3760,19 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         if is_split {
             let branch = &*(node as *const EdgeBranch);
             bp = PARTITION_SPLIT;
-            if decode_sb(t, bl + 1, branch.split[0]) != 0 {
-                return 1;
-            }
+            decode_sb(t, bl + 1, branch.split[0])?;
             t.by += hsz;
-            if decode_sb(t, bl + 1, branch.split[2]) != 0 {
-                return 1;
-            }
+            decode_sb(t, bl + 1, branch.split[2])?;
             t.by -= hsz;
         } else {
             bp = PARTITION_V;
-            if decode_b(
+            decode_b(
                 t,
                 bl,
                 dav1d_block_sizes[bl as usize][bp as usize][0],
                 bp,
                 (*node).v[0],
-            ) != 0
-            {
-                return -1;
-            }
+            )?;
         }
     }
 
@@ -3868,7 +3790,7 @@ unsafe fn decode_sb(t: &mut Rav1dTaskContext, bl: BlockLevel, node: *const EdgeN
         );
     }
 
-    0
+    Ok(())
 }
 
 fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
@@ -4124,7 +4046,7 @@ unsafe fn read_restoration_info(
     }
 }
 
-pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
+pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result<(), ()> {
     let f = &*t.f;
     let root_bl = if (*f.seq_hdr).sb128 != 0 {
         BL_128X128
@@ -4174,22 +4096,20 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
         for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
             t.bx = bx;
             if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
-                return true;
+                return Err(());
             }
-            if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
-                return true;
-            }
+            decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize])?;
             if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
                 t.a = (t.a).offset(1);
             }
         }
         (f.bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
-        return false;
+        return Ok(());
     }
 
     // error out on symbol decoder overread
     if ts.msac.cnt < -15 {
-        return true;
+        return Err(());
     }
 
     if (*f.c).n_tc > 1 && (*f.frame_hdr).use_ref_frame_mvs != 0 {
@@ -4214,7 +4134,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.bx = bx;
         if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
-            return true;
+            return Err(());
         }
         let cdef_idx = &mut (*t.lf_mask).cdef_idx;
         if root_bl == BL_128X128 {
@@ -4288,9 +4208,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
                 read_restoration_info(t, lr, p, frame_type);
             }
         }
-        if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
-            return true;
-        }
+        decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize])?;
         if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
             t.a = (t.a).offset(1);
             t.lf_mask = (t.lf_mask).offset(1);
@@ -4335,7 +4253,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
                 [..(sb_step >> ss_ver).try_into().unwrap()],
         );
 
-    false
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1dResult {
@@ -4926,9 +4844,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
             }
             for tile in &mut ts[..] {
                 t.ts = tile;
-                if rav1d_decode_tile_sbrow(t) {
-                    return Err(EINVAL);
-                }
+                rav1d_decode_tile_sbrow(t).map_err(|()| EINVAL)?;
             }
             if is_inter_or_switch(&*f.frame_hdr) {
                 rav1d_refmvs_save_tmvs(
