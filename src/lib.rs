@@ -1,5 +1,6 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
@@ -49,6 +50,7 @@ use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOENT;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
+use crate::src::fg_apply;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -116,12 +118,6 @@ use std::ffi::c_void;
 use std::process::abort;
 use std::ptr::NonNull;
 use std::sync::Once;
-
-#[cfg(feature = "bitdepth_8")]
-use crate::src::fg_apply_tmpl_8::rav1d_apply_grain_8bpc;
-
-#[cfg(feature = "bitdepth_16")]
-use crate::src::fg_apply_tmpl_16::rav1d_apply_grain_16bpc;
 
 #[cfg(target_os = "linux")]
 use libc::dlsym;
@@ -878,11 +874,15 @@ pub(crate) unsafe fn rav1d_apply_grain(
             match out.p.bpc {
                 #[cfg(feature = "bitdepth_8")]
                 8 => {
-                    rav1d_apply_grain_8bpc(&mut (*(c.dsp).as_mut_ptr().offset(0)).fg, out, in_0);
+                    fg_apply::rav1d_apply_grain::<BitDepth8>(
+                        &mut (*(c.dsp).as_mut_ptr().offset(0)).fg,
+                        out,
+                        in_0,
+                    );
                 }
                 #[cfg(feature = "bitdepth_16")]
                 10 | 12 => {
-                    rav1d_apply_grain_16bpc(
+                    fg_apply::rav1d_apply_grain::<BitDepth16>(
                         &mut (*(c.dsp).as_mut_ptr().offset(((out.p.bpc >> 1) - 4) as isize)).fg,
                         out,
                         in_0,

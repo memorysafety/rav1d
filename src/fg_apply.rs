@@ -1,3 +1,6 @@
+use crate::include::common::bitdepth::ArrayDefault;
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BPC;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
@@ -5,8 +8,8 @@ use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::align::Align1;
 use crate::src::align::Align16;
+use crate::src::align::Align64;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use libc::intptr_t;
 use libc::memcpy;
@@ -17,23 +20,23 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 
-pub type pixel = u16;
-pub type entry = i16;
-
-#[inline]
-unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 != 0 {
-        unreachable!();
-    }
-    return x >> 1;
-}
-
-unsafe fn generate_scaling(bitdepth: c_int, points: *const [u8; 2], num: c_int, scaling: *mut u8) {
-    if !(bitdepth > 8) {
-        unreachable!();
-    }
-    let shift_x = bitdepth - 8;
-    let scaling_size = (1 as c_int) << bitdepth;
+unsafe fn generate_scaling<BD: BitDepth>(
+    bitdepth: c_int,
+    points: *const [u8; 2],
+    num: c_int,
+    scaling: *mut u8,
+) {
+    let (shift_x, scaling_size) = match BD::BPC {
+        BPC::BPC8 => (0, 256),
+        BPC::BPC16 => {
+            if !(bitdepth > 8) {
+                unreachable!();
+            }
+            let shift_x = bitdepth - 8;
+            let scaling_size = (1 as c_int) << bitdepth;
+            (shift_x, scaling_size)
+        }
+    };
     if num == 0 {
         memset(scaling as *mut c_void, 0 as c_int, scaling_size as usize);
         return;
@@ -70,37 +73,40 @@ unsafe fn generate_scaling(bitdepth: c_int, points: *const [u8; 2], num: c_int, 
         (*points.offset((num - 1) as isize))[1] as c_int,
         (scaling_size - n) as usize,
     );
-    let pad = (1 as c_int) << shift_x;
-    let rnd = pad >> 1;
-    let mut i_0 = 0;
-    while i_0 < num - 1 {
-        let bx_0 = ((*points.offset(i_0 as isize))[0] as c_int) << shift_x;
-        let ex_0 = ((*points.offset((i_0 + 1) as isize))[0] as c_int) << shift_x;
-        let dx_0 = ex_0 - bx_0;
-        let mut x_0 = 0;
-        while x_0 < dx_0 {
-            let range = *scaling.offset((bx_0 + x_0 + pad) as isize) as c_int
-                - *scaling.offset((bx_0 + x_0) as isize) as c_int;
-            let mut n_0 = 1;
-            let mut r = rnd;
-            while n_0 < pad {
-                r += range;
-                *scaling.offset((bx_0 + x_0 + n_0) as isize) =
-                    (*scaling.offset((bx_0 + x_0) as isize) as c_int + (r >> shift_x)) as u8;
-                n_0 += 1;
+
+    if BD::BPC != BPC::BPC8 {
+        let pad = (1 as c_int) << shift_x;
+        let rnd = pad >> 1;
+        let mut i_0 = 0;
+        while i_0 < num - 1 {
+            let bx_0 = ((*points.offset(i_0 as isize))[0] as c_int) << shift_x;
+            let ex_0 = ((*points.offset((i_0 + 1) as isize))[0] as c_int) << shift_x;
+            let dx_0 = ex_0 - bx_0;
+            let mut x_0 = 0;
+            while x_0 < dx_0 {
+                let range = *scaling.offset((bx_0 + x_0 + pad) as isize) as c_int
+                    - *scaling.offset((bx_0 + x_0) as isize) as c_int;
+                let mut n_0 = 1;
+                let mut r = rnd;
+                while n_0 < pad {
+                    r += range;
+                    *scaling.offset((bx_0 + x_0 + n_0) as isize) =
+                        (*scaling.offset((bx_0 + x_0) as isize) as c_int + (r >> shift_x)) as u8;
+                    n_0 += 1;
+                }
+                x_0 += pad;
             }
-            x_0 += pad;
+            i_0 += 1;
         }
-        i_0 += 1;
     }
 }
 
-pub(crate) unsafe fn rav1d_prep_grain_16bpc(
+pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     dsp: *const Rav1dFilmGrainDSPContext,
     out: *mut Rav1dPicture,
     in_0: *const Rav1dPicture,
-    scaling: *mut [u8; 4096],
-    grain_lut: *mut [[entry; 82]; 74],
+    scaling: *mut BD::Scaling,
+    grain_lut: *mut [[BD::Entry; 82]; 74],
 ) {
     let data: *const Rav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
     let bitdepth_max = ((1 as c_int) << (*out).p.bpc) - 1;
@@ -132,27 +138,27 @@ pub(crate) unsafe fn rav1d_prep_grain_16bpc(
         );
     }
     if (*data).num_y_points != 0 || (*data).chroma_scaling_from_luma != 0 {
-        generate_scaling(
+        generate_scaling::<BD>(
             (*in_0).p.bpc,
             ((*data).y_points).as_ptr(),
             (*data).num_y_points,
-            (*scaling.offset(0)).as_mut_ptr(),
+            (*scaling.offset(0)).as_mut().as_mut_ptr(),
         );
     }
     if (*data).num_uv_points[0] != 0 {
-        generate_scaling(
+        generate_scaling::<BD>(
             (*in_0).p.bpc,
             ((*data).uv_points[0]).as_ptr(),
             (*data).num_uv_points[0],
-            (*scaling.offset(1)).as_mut_ptr(),
+            (*scaling.offset(1)).as_mut().as_mut_ptr(),
         );
     }
     if (*data).num_uv_points[1] != 0 {
-        generate_scaling(
+        generate_scaling::<BD>(
             (*in_0).p.bpc,
             ((*data).uv_points[1]).as_ptr(),
             (*data).num_uv_points[1],
-            (*scaling.offset(2)).as_mut_ptr(),
+            (*scaling.offset(2)).as_mut().as_mut_ptr(),
         );
     }
     if !((*out).stride[0] == (*in_0).stride[0]) {
@@ -219,12 +225,12 @@ pub(crate) unsafe fn rav1d_prep_grain_16bpc(
     }
 }
 
-pub(crate) unsafe fn rav1d_apply_grain_row_16bpc(
+pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     dsp: *const Rav1dFilmGrainDSPContext,
     out: *mut Rav1dPicture,
     in_0: *const Rav1dPicture,
-    scaling: *const [u8; 4096],
-    grain_lut: *const [[entry; 82]; 74],
+    scaling: *const BD::Scaling,
+    grain_lut: *const [[BD::Entry; 82]; 74],
     row: c_int,
 ) {
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
@@ -232,20 +238,23 @@ pub(crate) unsafe fn rav1d_apply_grain_row_16bpc(
     let ss_x = ((*in_0).p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let cpw = (*out).p.w + ss_x >> ss_x;
     let is_id = ((*(*out).seq_hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint) as c_int;
-    let luma_src: *mut pixel = ((*in_0).data[0] as *mut pixel)
-        .offset(((row * 32) as isize * PXSTRIDE((*in_0).stride[0])) as isize);
+    let luma_src: *mut BD::Pixel = ((*in_0).data[0] as *mut BD::Pixel)
+        .offset(((row * 32) as isize * BD::pxstride((*in_0).stride[0] as usize) as isize) as isize);
     let bitdepth_max = ((1 as c_int) << (*out).p.bpc) - 1;
     if (*data).num_y_points != 0 {
         let bh = cmp::min((*out).p.h - row * 32, 32 as c_int);
         ((*dsp).fgy_32x32xn).expect("non-null function pointer")(
-            ((*out).data[0] as *mut pixel)
-                .offset(((row * 32) as isize * PXSTRIDE((*out).stride[0])) as isize)
+            ((*out).data[0] as *mut BD::Pixel)
+                .offset(
+                    ((row * 32) as isize * BD::pxstride((*out).stride[0] as usize) as isize)
+                        as isize,
+                )
                 .cast(),
             luma_src.cast(),
             (*out).stride[0],
             data,
             (*out).p.w as usize,
-            (*scaling.offset(0)).as_ptr(),
+            (*scaling.offset(0)).as_ref().as_ptr(),
             (*grain_lut.offset(0)).as_ptr().cast(),
             bh,
             row,
@@ -260,31 +269,33 @@ pub(crate) unsafe fn rav1d_apply_grain_row_16bpc(
     }
     let bh_0 = cmp::min((*out).p.h - row * 32, 32 as c_int) + ss_y >> ss_y;
     if (*out).p.w & ss_x != 0 {
-        let mut ptr: *mut pixel = luma_src;
+        let mut ptr: *mut BD::Pixel = luma_src;
         let mut y = 0;
         while y < bh_0 {
             *ptr.offset((*out).p.w as isize) = *ptr.offset(((*out).p.w - 1) as isize);
-            ptr = ptr.offset((PXSTRIDE((*in_0).stride[0]) << ss_y) as isize);
+            ptr =
+                ptr.offset(((BD::pxstride((*in_0).stride[0] as usize) as isize) << ss_y) as isize);
             y += 1;
         }
     }
-    let uv_off: ptrdiff_t = (row * 32) as isize * PXSTRIDE((*out).stride[1]) >> ss_y;
+    let uv_off: ptrdiff_t =
+        (row * 32) as isize * BD::pxstride((*out).stride[1] as usize) as isize >> ss_y;
     if (*data).chroma_scaling_from_luma != 0 {
         let mut pl = 0;
         while pl < 2 {
             ((*dsp).fguv_32x32xn
                 [((*in_0).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
                 .expect("non-null function pointer")(
-                ((*out).data[(1 + pl) as usize] as *mut pixel)
+                ((*out).data[(1 + pl) as usize] as *mut BD::Pixel)
                     .offset(uv_off as isize)
                     .cast(),
-                ((*in_0).data[(1 + pl) as usize] as *const pixel)
+                ((*in_0).data[(1 + pl) as usize] as *const BD::Pixel)
                     .offset(uv_off as isize)
                     .cast(),
                 (*in_0).stride[1],
                 data,
                 cpw as usize,
-                (*scaling.offset(0)).as_ptr(),
+                (*scaling.offset(0)).as_ref().as_ptr(),
                 (*grain_lut.offset((1 + pl) as isize)).as_ptr().cast(),
                 bh_0,
                 row,
@@ -303,16 +314,16 @@ pub(crate) unsafe fn rav1d_apply_grain_row_16bpc(
                 ((*dsp).fguv_32x32xn
                     [((*in_0).p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize])
                     .expect("non-null function pointer")(
-                    ((*out).data[(1 + pl_0) as usize] as *mut pixel)
+                    ((*out).data[(1 + pl_0) as usize] as *mut BD::Pixel)
                         .offset(uv_off as isize)
                         .cast(),
-                    ((*in_0).data[(1 + pl_0) as usize] as *const pixel)
+                    ((*in_0).data[(1 + pl_0) as usize] as *const BD::Pixel)
                         .offset(uv_off as isize)
                         .cast(),
                     (*in_0).stride[1],
                     data,
                     cpw as usize,
-                    (*scaling.offset((1 + pl_0) as isize)).as_ptr(),
+                    (*scaling.offset((1 + pl_0) as isize)).as_ref().as_ptr(),
                     (*grain_lut.offset((1 + pl_0) as isize)).as_ptr().cast(),
                     bh_0,
                     row,
@@ -328,15 +339,18 @@ pub(crate) unsafe fn rav1d_apply_grain_row_16bpc(
     };
 }
 
-pub(crate) unsafe fn rav1d_apply_grain_16bpc(
+pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
     dsp: *const Rav1dFilmGrainDSPContext,
     out: *mut Rav1dPicture,
     in_0: *const Rav1dPicture,
 ) {
-    let mut grain_lut = Align16([[[0; 82]; 74]; 3]);
-    let mut scaling = Align1([[0; 4096]; 3]);
+    let mut grain_lut = Align16([[[Default::default(); 82]; 74]; 3]);
+    // Only `x86_64` [`BitDepth8`] needs [`Align64`],
+    // but it shouldn't be a problem to over-align.
+    // [`GrainLutScaling::scaling`] over-aligns, for example.
+    let mut scaling = Align64([ArrayDefault::default(); 3]);
     let rows = (*out).p.h + 31 >> 5;
-    rav1d_prep_grain_16bpc(
+    rav1d_prep_grain::<BD>(
         dsp,
         out,
         in_0,
@@ -345,12 +359,12 @@ pub(crate) unsafe fn rav1d_apply_grain_16bpc(
     );
     let mut row = 0;
     while row < rows {
-        rav1d_apply_grain_row_16bpc(
+        rav1d_apply_grain_row::<BD>(
             dsp,
             out,
             in_0,
-            scaling.0.as_mut_ptr() as *const [u8; 4096],
-            grain_lut.0.as_mut_ptr() as *const [[entry; 82]; 74],
+            scaling.0.as_mut_ptr() as *const BD::Scaling,
+            grain_lut.0.as_mut_ptr() as *const [[BD::Entry; 82]; 74],
             row,
         );
         row += 1;

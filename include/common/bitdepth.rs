@@ -77,6 +77,19 @@ impl_FromPrimitive!(isize => {, ...});
 impl_FromPrimitive!(f32 => {, ...});
 impl_FromPrimitive!(f64 => {, ...});
 
+/// [`Default`] isn't `impl`emented for all arrays `[T; N]`
+/// because they were implemented before `const` generics
+/// and thus only for low values of `N`.
+pub trait ArrayDefault {
+    fn default() -> Self;
+}
+
+impl<T: Default + Copy, const N: usize> ArrayDefault for [T; N] {
+    fn default() -> Self {
+        [T::default(); N]
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BPC {
     BPC8,
@@ -107,6 +120,11 @@ pub trait BitDepth: Clone + Copy {
         + ToPrimitive<c_uint>
         + Add<Output = Self::Coef>
         + Display;
+
+    type Entry: Copy + Default;
+
+    type Scaling: AsRef<[u8]> + AsMut<[u8]> + ArrayDefault + Copy;
+    const SCALING_SIZE: usize;
 
     type BitDepthMax;
 
@@ -174,11 +192,6 @@ pub trait BitDepth: Clone + Copy {
         T: BitDepthDependentType,
         T::T<BitDepth8>: Copy,
         T::T<BitDepth16>: Copy;
-
-    type GrainLut;
-    type Scaling;
-
-    const SCALING_LEN: usize;
 }
 
 #[derive(Clone, Copy)]
@@ -194,6 +207,11 @@ impl BitDepth for BitDepth8 {
     type Pixel = u8;
 
     type Coef = i16;
+
+    type Entry = i8;
+
+    type Scaling = [u8; Self::SCALING_SIZE];
+    const SCALING_SIZE: usize = 256;
 
     type BitDepthMax = ();
 
@@ -256,11 +274,6 @@ impl BitDepth for BitDepth8 {
     {
         bd.bpc8
     }
-
-    type GrainLut = i8;
-    type Scaling = [u8; Self::SCALING_LEN];
-
-    const SCALING_LEN: usize = 256;
 }
 
 #[derive(Clone, Copy)]
@@ -275,6 +288,11 @@ impl BitDepth for BitDepth16 {
     type Pixel = u16;
 
     type Coef = i32;
+
+    type Entry = i16;
+
+    type Scaling = [u8; Self::SCALING_SIZE];
+    const SCALING_SIZE: usize = 4096;
 
     type BitDepthMax = Self::Pixel;
 
@@ -341,11 +359,6 @@ impl BitDepth for BitDepth16 {
     {
         bd.bpc16
     }
-
-    type GrainLut = i16;
-    type Scaling = [u8; Self::SCALING_LEN];
-
-    const SCALING_LEN: usize = 4096;
 }
 
 pub struct DisplayPixel8(<BitDepth8 as BitDepth>::Pixel);

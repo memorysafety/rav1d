@@ -16,6 +16,8 @@ use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
+use crate::src::fg_apply::rav1d_apply_grain_row;
+use crate::src::fg_apply::rav1d_prep_grain;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTask;
@@ -50,17 +52,6 @@ use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::process::abort;
-
-#[cfg(feature = "bitdepth_8")]
-use crate::{
-    src::fg_apply_tmpl_8::rav1d_apply_grain_row_8bpc, src::fg_apply_tmpl_8::rav1d_prep_grain_8bpc,
-};
-
-#[cfg(feature = "bitdepth_16")]
-use crate::{
-    src::fg_apply_tmpl_16::rav1d_apply_grain_row_16bpc,
-    src::fg_apply_tmpl_16::rav1d_prep_grain_16bpc,
-};
 
 #[cfg(target_os = "linux")]
 use libc::prctl;
@@ -740,7 +731,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                 8 => {
                     let grain_lut_scaling =
                         BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain_lut_scaling);
-                    rav1d_prep_grain_8bpc(
+                    rav1d_prep_grain::<BitDepth8>(
                         &(*((*c).dsp).as_ptr().offset(0)).fg,
                         out,
                         in_0,
@@ -752,7 +743,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                 10 | 12 => {
                     let grain_lut_scaling =
                         BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain_lut_scaling);
-                    rav1d_prep_grain_16bpc(
+                    rav1d_prep_grain::<BitDepth16>(
                         &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                         out,
                         in_0,
@@ -795,7 +786,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
             8 => {
                 let grain_lut_scaling =
                     BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain_lut_scaling);
-                rav1d_apply_grain_row_8bpc(
+                rav1d_apply_grain_row::<BitDepth8>(
                     &(*((*c).dsp).as_ptr().offset(0)).fg,
                     out,
                     in_0,
@@ -808,7 +799,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
             10 | 12 => {
                 let grain_lut_scaling =
                     BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain_lut_scaling);
-                rav1d_apply_grain_row_16bpc(
+                rav1d_apply_grain_row::<BitDepth16>(
                     &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
                     out,
                     in_0,
