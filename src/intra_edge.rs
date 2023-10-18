@@ -194,7 +194,7 @@ unsafe fn init_mode_node(
     };
 }
 
-pub unsafe fn dav1d_init_mode_tree(
+pub unsafe fn rav1d_init_mode_tree(
     root_node: *mut EdgeNode,
     nt: &mut [EdgeTip],
     allow_sb128: bool,

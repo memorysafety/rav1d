@@ -26,7 +26,7 @@ pub struct Rav1dMemPoolBuffer {
 }
 
 #[inline]
-pub unsafe extern "C" fn dav1d_alloc_aligned(sz: usize, align: usize) -> *mut c_void {
+pub unsafe extern "C" fn rav1d_alloc_aligned(sz: usize, align: usize) -> *mut c_void {
     if align & align.wrapping_sub(1) != 0 {
         unreachable!();
     }
@@ -38,15 +38,15 @@ pub unsafe extern "C" fn dav1d_alloc_aligned(sz: usize, align: usize) -> *mut c_
 }
 
 #[inline]
-pub unsafe extern "C" fn dav1d_free_aligned(ptr: *mut c_void) {
+pub unsafe extern "C" fn rav1d_free_aligned(ptr: *mut c_void) {
     free(ptr);
 }
 
 #[inline]
-pub unsafe extern "C" fn dav1d_freep_aligned(ptr: *mut c_void) {
+pub unsafe extern "C" fn rav1d_freep_aligned(ptr: *mut c_void) {
     let mem: *mut *mut c_void = ptr as *mut *mut c_void;
     if !(*mem).is_null() {
-        dav1d_free_aligned(*mem);
+        rav1d_free_aligned(*mem);
         *mem = 0 as *mut c_void;
     }
 }
@@ -66,7 +66,7 @@ unsafe extern "C" fn mem_pool_destroy(pool: *mut Rav1dMemPool) {
     free(pool as *mut c_void);
 }
 
-pub unsafe fn dav1d_mem_pool_push(pool: *mut Rav1dMemPool, buf: *mut Rav1dMemPoolBuffer) {
+pub unsafe fn rav1d_mem_pool_push(pool: *mut Rav1dMemPool, buf: *mut Rav1dMemPoolBuffer) {
     pthread_mutex_lock(&mut (*pool).lock);
     (*pool).ref_cnt -= 1;
     let ref_cnt = (*pool).ref_cnt;
@@ -79,14 +79,14 @@ pub unsafe fn dav1d_mem_pool_push(pool: *mut Rav1dMemPool, buf: *mut Rav1dMemPoo
         }
     } else {
         pthread_mutex_unlock(&mut (*pool).lock);
-        dav1d_free_aligned((*buf).data);
+        rav1d_free_aligned((*buf).data);
         if ref_cnt == 0 {
             mem_pool_destroy(pool);
         }
     };
 }
 
-pub unsafe fn dav1d_mem_pool_pop(pool: *mut Rav1dMemPool, size: usize) -> *mut Rav1dMemPoolBuffer {
+pub unsafe fn rav1d_mem_pool_pop(pool: *mut Rav1dMemPool, size: usize) -> *mut Rav1dMemPoolBuffer {
     if size & ::core::mem::size_of::<*mut c_void>().wrapping_sub(1) != 0 {
         unreachable!();
     }
@@ -101,11 +101,11 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Rav1dMemPool, size: usize) -> *mut R
         if (buf as uintptr_t).wrapping_sub(data as uintptr_t) == size {
             return buf;
         }
-        dav1d_free_aligned(data as *mut c_void);
+        rav1d_free_aligned(data as *mut c_void);
     } else {
         pthread_mutex_unlock(&mut (*pool).lock);
     }
-    data = dav1d_alloc_aligned(
+    data = rav1d_alloc_aligned(
         size.wrapping_add(::core::mem::size_of::<Rav1dMemPoolBuffer>()),
         64,
     ) as *mut u8;
@@ -125,7 +125,7 @@ pub unsafe fn dav1d_mem_pool_pop(pool: *mut Rav1dMemPool, size: usize) -> *mut R
 }
 
 #[cold]
-pub unsafe fn dav1d_mem_pool_init(ppool: *mut *mut Rav1dMemPool) -> c_int {
+pub unsafe fn rav1d_mem_pool_init(ppool: *mut *mut Rav1dMemPool) -> c_int {
     let pool: *mut Rav1dMemPool =
         malloc(::core::mem::size_of::<Rav1dMemPool>()) as *mut Rav1dMemPool;
     if !pool.is_null() {
@@ -143,7 +143,7 @@ pub unsafe fn dav1d_mem_pool_init(ppool: *mut *mut Rav1dMemPool) -> c_int {
 }
 
 #[cold]
-pub unsafe fn dav1d_mem_pool_end(pool: *mut Rav1dMemPool) {
+pub unsafe fn rav1d_mem_pool_end(pool: *mut Rav1dMemPool) {
     if !pool.is_null() {
         pthread_mutex_lock(&mut (*pool).lock);
         let mut buf: *mut Rav1dMemPoolBuffer = (*pool).buf;
@@ -155,7 +155,7 @@ pub unsafe fn dav1d_mem_pool_end(pool: *mut Rav1dMemPool) {
         while !buf.is_null() {
             let data: *mut c_void = (*buf).data;
             buf = (*buf).next;
-            dav1d_free_aligned(data);
+            rav1d_free_aligned(data);
         }
         if ref_cnt == 0 {
             mem_pool_destroy(pool);

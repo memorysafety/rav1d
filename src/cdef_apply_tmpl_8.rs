@@ -1,9 +1,9 @@
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::align::Align16;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::cdef::CDEF_HAVE_BOTTOM;
@@ -47,10 +47,10 @@ unsafe extern "C" fn backup2lines(
             (2 * y_stride) as usize,
         );
     }
-    if layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
+    if layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
         let uv_stride: ptrdiff_t = *stride.offset(1);
         if uv_stride < 0 {
-            let uv_off = if layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint {
+            let uv_off = if layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint {
                 3 as c_int
             } else {
                 7 as c_int
@@ -66,7 +66,7 @@ unsafe extern "C" fn backup2lines(
                 (-(2) * uv_stride) as usize,
             );
         } else {
-            let uv_off_0 = if layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint {
+            let uv_off_0 = if layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint {
                 2 as c_int
             } else {
                 6 as c_int
@@ -107,13 +107,13 @@ unsafe extern "C" fn backup2x8(
             y_off += *src_stride.offset(0);
         }
     }
-    if layout as c_uint == DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
+    if layout as c_uint == RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
         || flag as c_uint & BACKUP_2X8_UV as c_int as c_uint == 0
     {
         return;
     }
-    let ss_ver = (layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    let ss_hor = (layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+    let ss_ver = (layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_hor = (layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     x_off >>= ss_hor;
     y_off = 0 as c_int as ptrdiff_t;
     let mut y_0 = 0;
@@ -147,7 +147,7 @@ unsafe extern "C" fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
     return strength * (4 + i) + 8 >> 4;
 }
 
-pub unsafe fn dav1d_cdef_brow_8bpc(
+pub(crate) unsafe fn rav1d_cdef_brow_8bpc(
     tc: *mut Rav1dTaskContext,
     p: *const *mut pixel,
     lflvl: *const Av1Filter,
@@ -175,12 +175,12 @@ pub unsafe fn dav1d_cdef_brow_8bpc(
     let damping = (*(*f).frame_hdr).cdef.damping + bitdepth_min_8;
     let layout: Dav1dPixelLayout = (*f).cur.p.layout;
     let uv_idx =
-        (DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint).wrapping_sub(layout as c_uint) as c_int;
-    let ss_ver = (layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    let ss_hor = (layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        (RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint).wrapping_sub(layout as c_uint) as c_int;
+    let ss_ver = (layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_hor = (layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     static uv_dirs: [[u8; 8]; 2] = [[0, 1, 2, 3, 4, 5, 6, 7], [7, 0, 2, 4, 5, 6, 6, 6]];
     let uv_dir: *const u8 = (uv_dirs
-        [(layout as c_uint == DAV1D_PIXEL_LAYOUT_I422 as c_int as c_uint) as c_int as usize])
+        [(layout as c_uint == RAV1D_PIXEL_LAYOUT_I422 as c_int as c_uint) as c_int as usize])
         .as_ptr();
     let have_tt = ((*(*f).c).n_tc > 1 as c_uint) as c_int;
     let sb128 = (*(*f).seq_hdr).sb128;
@@ -410,7 +410,7 @@ pub unsafe fn dav1d_cdef_brow_8bpc(
                             );
                         }
                         if !(uv_lvl == 0) {
-                            if !(layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) {
+                            if !(layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) {
                                 unreachable!();
                             }
                             uvdir = if uv_pri_lvl != 0 {

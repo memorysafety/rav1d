@@ -10,7 +10,7 @@ extern "C" {
 }
 
 #[cold]
-pub unsafe extern "C" fn dav1d_log_default_callback(
+pub unsafe extern "C" fn rav1d_log_default_callback(
     _cookie: *mut c_void,
     format: *const c_char,
     mut ap: ::core::ffi::VaList,
@@ -19,7 +19,7 @@ pub unsafe extern "C" fn dav1d_log_default_callback(
 }
 
 #[cold]
-pub unsafe extern "C" fn dav1d_log(c: *mut Rav1dContext, format: *const c_char, args: ...) {
+pub unsafe extern "C" fn rav1d_log(c: *mut Rav1dContext, format: *const c_char, args: ...) {
     if c.is_null() {
         fprintf(
             stderr,

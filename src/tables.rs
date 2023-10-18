@@ -1,10 +1,10 @@
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SHARP;
-use crate::include::dav1d::headers::DAV1D_FILTER_8TAP_SMOOTH;
-use crate::include::dav1d::headers::DAV1D_FILTER_BILINEAR;
-use crate::include::dav1d::headers::DAV1D_N_FILTERS;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
+use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
+use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SHARP;
+use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SMOOTH;
+use crate::include::dav1d::headers::RAV1D_FILTER_BILINEAR;
+use crate::include::dav1d::headers::RAV1D_N_FILTERS;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::src::align::Align16;
 use crate::src::align::Align4;
 use crate::src::align::Align64;
@@ -632,7 +632,7 @@ pub static dav1d_tx_type_class: [u8; N_TX_TYPES_PLUS_LL] = [
     TX_CLASS_2D as u8,
 ];
 
-pub static dav1d_filter_2d: [[u8; DAV1D_N_FILTERS]; DAV1D_N_FILTERS] = [
+pub static dav1d_filter_2d: [[u8; RAV1D_N_FILTERS]; RAV1D_N_FILTERS] = [
     [
         FILTER_2D_8TAP_REGULAR as u8,
         FILTER_2D_8TAP_REGULAR_SMOOTH as u8,
@@ -656,39 +656,39 @@ pub static dav1d_filter_2d: [[u8; DAV1D_N_FILTERS]; DAV1D_N_FILTERS] = [
 
 pub static dav1d_filter_dir: [[u8; 2]; N_2D_FILTERS] = [
     [
-        DAV1D_FILTER_8TAP_REGULAR as u8,
-        DAV1D_FILTER_8TAP_REGULAR as u8,
+        RAV1D_FILTER_8TAP_REGULAR as u8,
+        RAV1D_FILTER_8TAP_REGULAR as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_SMOOTH as u8,
-        DAV1D_FILTER_8TAP_REGULAR as u8,
+        RAV1D_FILTER_8TAP_SMOOTH as u8,
+        RAV1D_FILTER_8TAP_REGULAR as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_SHARP as u8,
-        DAV1D_FILTER_8TAP_REGULAR as u8,
+        RAV1D_FILTER_8TAP_SHARP as u8,
+        RAV1D_FILTER_8TAP_REGULAR as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_REGULAR as u8,
-        DAV1D_FILTER_8TAP_SHARP as u8,
+        RAV1D_FILTER_8TAP_REGULAR as u8,
+        RAV1D_FILTER_8TAP_SHARP as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_SMOOTH as u8,
-        DAV1D_FILTER_8TAP_SHARP as u8,
+        RAV1D_FILTER_8TAP_SMOOTH as u8,
+        RAV1D_FILTER_8TAP_SHARP as u8,
     ],
-    [DAV1D_FILTER_8TAP_SHARP as u8, DAV1D_FILTER_8TAP_SHARP as u8],
+    [RAV1D_FILTER_8TAP_SHARP as u8, RAV1D_FILTER_8TAP_SHARP as u8],
     [
-        DAV1D_FILTER_8TAP_REGULAR as u8,
-        DAV1D_FILTER_8TAP_SMOOTH as u8,
-    ],
-    [
-        DAV1D_FILTER_8TAP_SMOOTH as u8,
-        DAV1D_FILTER_8TAP_SMOOTH as u8,
+        RAV1D_FILTER_8TAP_REGULAR as u8,
+        RAV1D_FILTER_8TAP_SMOOTH as u8,
     ],
     [
-        DAV1D_FILTER_8TAP_SHARP as u8,
-        DAV1D_FILTER_8TAP_SMOOTH as u8,
+        RAV1D_FILTER_8TAP_SMOOTH as u8,
+        RAV1D_FILTER_8TAP_SMOOTH as u8,
     ],
-    [DAV1D_FILTER_BILINEAR as u8, DAV1D_FILTER_BILINEAR as u8],
+    [
+        RAV1D_FILTER_8TAP_SHARP as u8,
+        RAV1D_FILTER_8TAP_SMOOTH as u8,
+    ],
+    [RAV1D_FILTER_BILINEAR as u8, RAV1D_FILTER_BILINEAR as u8],
 ];
 
 pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
@@ -746,7 +746,7 @@ pub const interintra_allowed_mask: c_uint = 0
     | 0;
 
 pub static dav1d_default_wm_params: Dav1dWarpedMotionParams = Dav1dWarpedMotionParams {
-    type_0: DAV1D_WM_TYPE_IDENTITY,
+    type_0: RAV1D_WM_TYPE_IDENTITY,
     matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
     abcd: [0; 4],
 };

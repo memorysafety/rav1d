@@ -1,5 +1,6 @@
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::DAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
@@ -14,9 +15,9 @@ use crate::src::levels::N_MV_JOINTS;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::r#ref::dav1d_ref_create_using_pool;
-use crate::src::r#ref::dav1d_ref_dec;
-use crate::src::r#ref::dav1d_ref_inc;
+use crate::src::r#ref::rav1d_ref_create_using_pool;
+use crate::src::r#ref::rav1d_ref_dec;
+use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::Rav1dRef;
 use crate::src::tables::dav1d_partition_type_count;
 use libc::memcpy;
@@ -4879,8 +4880,8 @@ static av1_default_coef_cdf: [CdfCoefContext; 4] = [
     },
 ];
 
-pub unsafe fn dav1d_cdf_thread_update(
-    hdr: *const Dav1dFrameHeader,
+pub(crate) unsafe fn rav1d_cdf_thread_update(
+    hdr: *const Rav1dFrameHeader,
     dst: *mut CdfContext,
     src: *const CdfContext,
 ) {
@@ -5373,7 +5374,7 @@ pub unsafe fn dav1d_cdf_thread_update(
                 ::core::mem::size_of::<[u16; 4]>(),
             );
             (*dst).m.filter.0[k_16 as usize][j_27 as usize]
-                [(DAV1D_N_SWITCHABLE_FILTERS as c_int - 1) as usize] = 0 as c_int as u16;
+                [(RAV1D_N_SWITCHABLE_FILTERS as c_int - 1) as usize] = 0 as c_int as u16;
             j_27 += 1;
         }
         k_16 += 1;
@@ -5597,6 +5598,15 @@ pub unsafe fn dav1d_cdf_thread_update(
     }
 }
 
+pub unsafe fn dav1d_cdf_thread_update(
+    hdr: *const Dav1dFrameHeader,
+    dst: *mut CdfContext,
+    src: *const CdfContext,
+) {
+    let hdr = hdr.read().into();
+    rav1d_cdf_thread_update(&hdr, dst, src)
+}
+
 #[inline]
 unsafe extern "C" fn get_qcat_idx(q: c_int) -> c_int {
     if q <= 20 {
@@ -5611,12 +5621,12 @@ unsafe extern "C" fn get_qcat_idx(q: c_int) -> c_int {
     return 3 as c_int;
 }
 
-pub unsafe fn dav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: c_int) {
+pub unsafe fn rav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: c_int) {
     (*cdf).r#ref = 0 as *mut Rav1dRef;
     (*cdf).data.qcat = get_qcat_idx(qidx) as c_uint;
 }
 
-pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadContext) {
+pub unsafe fn rav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadContext) {
     if !((*src).r#ref).is_null() {
         memcpy(
             dst as *mut c_void,
@@ -5648,12 +5658,12 @@ pub unsafe fn dav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
     };
 }
 
-pub unsafe fn dav1d_cdf_thread_alloc(
+pub unsafe fn rav1d_cdf_thread_alloc(
     c: *mut Rav1dContext,
     cdf: *mut CdfThreadContext,
     have_frame_mt: c_int,
 ) -> c_int {
-    (*cdf).r#ref = dav1d_ref_create_using_pool(
+    (*cdf).r#ref = rav1d_ref_create_using_pool(
         (*c).cdf_pool,
         (::core::mem::size_of::<CdfContext>()).wrapping_add(::core::mem::size_of::<atomic_uint>()),
     );
@@ -5668,18 +5678,18 @@ pub unsafe fn dav1d_cdf_thread_alloc(
     return 0 as c_int;
 }
 
-pub unsafe fn dav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext) {
+pub unsafe fn rav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext) {
     *dst = (*src).clone();
     if !((*src).r#ref).is_null() {
-        dav1d_ref_inc((*src).r#ref);
+        rav1d_ref_inc((*src).r#ref);
     }
 }
 
-pub unsafe fn dav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
+pub unsafe fn rav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
     memset(
         &mut (*cdf).data as *mut CdfThreadContext_data as *mut c_void,
         0 as c_int,
         (::core::mem::size_of::<CdfThreadContext>()).wrapping_sub(8),
     );
-    dav1d_ref_dec(&mut (*cdf).r#ref);
+    rav1d_ref_dec(&mut (*cdf).r#ref);
 }

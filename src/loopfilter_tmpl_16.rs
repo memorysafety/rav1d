@@ -9,7 +9,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
+use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -473,7 +473,7 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Rav1dLoopFilterDSPContext)
     // TODO(legare): Temporarily import until init fns are deduplicated.
     use crate::src::loopfilter::*;
 
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
         return;
@@ -512,7 +512,7 @@ unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Rav1dLoopFilterDSPContext)
     // TODO(legare): Temporarily import until init fns are deduplicated.
     use crate::src::loopfilter::*;
 
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
         return;
@@ -525,7 +525,7 @@ unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Rav1dLoopFilterDSPContext)
 }
 
 #[cold]
-pub unsafe fn dav1d_loop_filter_dsp_init_16bpc(c: *mut Rav1dLoopFilterDSPContext) {
+pub unsafe fn rav1d_loop_filter_dsp_init_16bpc(c: *mut Rav1dLoopFilterDSPContext) {
     (*c).loop_filter_sb[0][0] = loop_filter_h_sb128y_c_erased;
     (*c).loop_filter_sb[0][1] = loop_filter_v_sb128y_c_erased;
     (*c).loop_filter_sb[1][0] = loop_filter_h_sb128uv_c_erased;

@@ -1,9 +1,9 @@
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
-use crate::include::dav1d::data::Dav1dData;
+use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_INTRA;
-use crate::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_REFERENCE;
+use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_INTRA;
+use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_REFERENCE;
 use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Dav1dColorPrimaries;
@@ -17,7 +17,6 @@ use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
-use crate::include::dav1d::headers::Dav1dObuType;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Dav1dSegmentationData;
@@ -29,57 +28,58 @@ use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
-use crate::include::dav1d::headers::DAV1D_ADAPTIVE;
-use crate::include::dav1d::headers::DAV1D_CHR_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_BT709;
-use crate::include::dav1d::headers::DAV1D_COLOR_PRI_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_FILTER_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTER;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_INTRA;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_KEY;
-use crate::include::dav1d::headers::DAV1D_FRAME_TYPE_SWITCH;
-use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
-use crate::include::dav1d::headers::DAV1D_MC_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_OBU_FRAME;
-use crate::include::dav1d::headers::DAV1D_OBU_FRAME_HDR;
-use crate::include::dav1d::headers::DAV1D_OBU_METADATA;
-use crate::include::dav1d::headers::DAV1D_OBU_PADDING;
-use crate::include::dav1d::headers::DAV1D_OBU_REDUNDANT_FRAME_HDR;
-use crate::include::dav1d::headers::DAV1D_OBU_SEQ_HDR;
-use crate::include::dav1d::headers::DAV1D_OBU_TD;
-use crate::include::dav1d::headers::DAV1D_OBU_TILE_GRP;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::DAV1D_TRC_SRGB;
-use crate::include::dav1d::headers::DAV1D_TRC_UNKNOWN;
-use crate::include::dav1d::headers::DAV1D_TX_4X4_ONLY;
-use crate::include::dav1d::headers::DAV1D_TX_LARGEST;
-use crate::include::dav1d::headers::DAV1D_TX_SWITCHABLE;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_AFFINE;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_IDENTITY;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_ROT_ZOOM;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::headers::Rav1dObuType;
+use crate::include::dav1d::headers::RAV1D_ADAPTIVE;
+use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
+use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
+use crate::include::dav1d::headers::RAV1D_COLOR_PRI_UNKNOWN;
+use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
+use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTER;
+use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTRA;
+use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_KEY;
+use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_SWITCH;
+use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
+use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
+use crate::include::dav1d::headers::RAV1D_OBU_FRAME;
+use crate::include::dav1d::headers::RAV1D_OBU_FRAME_HDR;
+use crate::include::dav1d::headers::RAV1D_OBU_METADATA;
+use crate::include::dav1d::headers::RAV1D_OBU_PADDING;
+use crate::include::dav1d::headers::RAV1D_OBU_REDUNDANT_FRAME_HDR;
+use crate::include::dav1d::headers::RAV1D_OBU_SEQ_HDR;
+use crate::include::dav1d::headers::RAV1D_OBU_TD;
+use crate::include::dav1d::headers::RAV1D_OBU_TILE_GRP;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
+use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
+use crate::include::dav1d::headers::RAV1D_TRC_UNKNOWN;
+use crate::include::dav1d::headers::RAV1D_TX_4X4_ONLY;
+use crate::include::dav1d::headers::RAV1D_TX_LARGEST;
+use crate::include::dav1d::headers::RAV1D_TX_SWITCHABLE;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_ROT_ZOOM;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
-use crate::src::cdf::dav1d_cdf_thread_ref;
-use crate::src::cdf::dav1d_cdf_thread_unref;
-use crate::src::data::dav1d_data_props_copy;
-use crate::src::data::dav1d_data_ref;
-use crate::src::data::dav1d_data_unref_internal;
-use crate::src::decode::dav1d_submit_frame;
+use crate::src::cdf::rav1d_cdf_thread_ref;
+use crate::src::cdf::rav1d_cdf_thread_unref;
+use crate::src::data::rav1d_data_props_copy;
+use crate::src::data::rav1d_data_ref;
+use crate::src::data::rav1d_data_unref_internal;
+use crate::src::decode::rav1d_submit_frame;
 use crate::src::env::get_poc_diff;
-use crate::src::getbits::dav1d_bytealign_get_bits;
-use crate::src::getbits::dav1d_get_bit;
-use crate::src::getbits::dav1d_get_bits;
-use crate::src::getbits::dav1d_get_bits_subexp;
-use crate::src::getbits::dav1d_get_sbits;
-use crate::src::getbits::dav1d_get_uleb128;
-use crate::src::getbits::dav1d_get_uniform;
-use crate::src::getbits::dav1d_get_vlc;
-use crate::src::getbits::dav1d_init_get_bits;
+use crate::src::getbits::rav1d_bytealign_get_bits;
+use crate::src::getbits::rav1d_get_bit;
+use crate::src::getbits::rav1d_get_bits;
+use crate::src::getbits::rav1d_get_bits_subexp;
+use crate::src::getbits::rav1d_get_sbits;
+use crate::src::getbits::rav1d_get_uleb128;
+use crate::src::getbits::rav1d_get_uniform;
+use crate::src::getbits::rav1d_get_vlc;
+use crate::src::getbits::rav1d_init_get_bits;
 use crate::src::getbits::GetBits;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -90,20 +90,20 @@ use crate::src::levels::OBU_META_HDR_MDCV;
 use crate::src::levels::OBU_META_ITUT_T35;
 use crate::src::levels::OBU_META_SCALABILITY;
 use crate::src::levels::OBU_META_TIMECODE;
-use crate::src::log::dav1d_log;
-use crate::src::picture::dav1d_picture_get_event_flags;
-use crate::src::picture::dav1d_thread_picture_ref;
-use crate::src::picture::dav1d_thread_picture_unref;
+use crate::src::log::rav1d_log;
+use crate::src::picture::rav1d_picture_get_event_flags;
+use crate::src::picture::rav1d_thread_picture_ref;
+use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::picture::PICTURE_FLAG_NEW_OP_PARAMS_INFO;
 use crate::src::picture::PICTURE_FLAG_NEW_SEQUENCE;
 use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
-use crate::src::r#ref::dav1d_ref_create;
-use crate::src::r#ref::dav1d_ref_create_using_pool;
-use crate::src::r#ref::dav1d_ref_dec;
-use crate::src::r#ref::dav1d_ref_inc;
-use crate::src::r#ref::dav1d_ref_is_writable;
+use crate::src::r#ref::rav1d_ref_create;
+use crate::src::r#ref::rav1d_ref_create_using_pool;
+use crate::src::r#ref::rav1d_ref_dec;
+use crate::src::r#ref::rav1d_ref_inc;
+use crate::src::r#ref::rav1d_ref_is_writable;
 use crate::src::r#ref::Rav1dRef;
 use crate::src::tables::dav1d_default_wm_params;
 use crate::src::thread_task::FRAME_ERROR;
@@ -122,14 +122,14 @@ use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 #[inline]
-unsafe extern "C" fn dav1d_get_bits_pos(c: *const GetBits) -> c_uint {
+unsafe extern "C" fn rav1d_get_bits_pos(c: *const GetBits) -> c_uint {
     return (((*c).ptr).offset_from((*c).ptr_start) as c_long as c_uint)
         .wrapping_mul(8 as c_int as c_uint)
         .wrapping_sub((*c).bits_left as c_uint);
 }
 
 unsafe extern "C" fn parse_seq_hdr_error(c: *mut Rav1dContext) -> c_int {
-    dav1d_log(
+    rav1d_log(
         c,
         b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
     );
@@ -146,73 +146,73 @@ unsafe extern "C" fn parse_seq_hdr(
         0 as c_int,
         ::core::mem::size_of::<Dav1dSequenceHeader>(),
     );
-    (*hdr).profile = dav1d_get_bits(gb, 3 as c_int) as c_int;
+    (*hdr).profile = rav1d_get_bits(gb, 3 as c_int) as c_int;
     if (*hdr).profile > 2 {
         return parse_seq_hdr_error(c);
     }
-    (*hdr).still_picture = dav1d_get_bit(gb) as c_int;
-    (*hdr).reduced_still_picture_header = dav1d_get_bit(gb) as c_int;
+    (*hdr).still_picture = rav1d_get_bit(gb) as c_int;
+    (*hdr).reduced_still_picture_header = rav1d_get_bit(gb) as c_int;
     if (*hdr).reduced_still_picture_header != 0 && (*hdr).still_picture == 0 {
         return parse_seq_hdr_error(c);
     }
     if (*hdr).reduced_still_picture_header != 0 {
         (*hdr).num_operating_points = 1 as c_int;
-        (*hdr).operating_points[0].major_level = dav1d_get_bits(gb, 3 as c_int) as c_int;
-        (*hdr).operating_points[0].minor_level = dav1d_get_bits(gb, 2 as c_int) as c_int;
+        (*hdr).operating_points[0].major_level = rav1d_get_bits(gb, 3 as c_int) as c_int;
+        (*hdr).operating_points[0].minor_level = rav1d_get_bits(gb, 2 as c_int) as c_int;
         (*hdr).operating_points[0].initial_display_delay = 10 as c_int;
     } else {
-        (*hdr).timing_info_present = dav1d_get_bit(gb) as c_int;
+        (*hdr).timing_info_present = rav1d_get_bit(gb) as c_int;
         if (*hdr).timing_info_present != 0 {
-            (*hdr).num_units_in_tick = dav1d_get_bits(gb, 32 as c_int) as c_int;
-            (*hdr).time_scale = dav1d_get_bits(gb, 32 as c_int) as c_int;
+            (*hdr).num_units_in_tick = rav1d_get_bits(gb, 32 as c_int) as c_int;
+            (*hdr).time_scale = rav1d_get_bits(gb, 32 as c_int) as c_int;
             if (*c).strict_std_compliance != 0
                 && ((*hdr).num_units_in_tick == 0 || (*hdr).time_scale == 0)
             {
                 return parse_seq_hdr_error(c);
             }
-            (*hdr).equal_picture_interval = dav1d_get_bit(gb) as c_int;
+            (*hdr).equal_picture_interval = rav1d_get_bit(gb) as c_int;
             if (*hdr).equal_picture_interval != 0 {
-                let num_ticks_per_picture: c_uint = dav1d_get_vlc(gb);
+                let num_ticks_per_picture: c_uint = rav1d_get_vlc(gb);
                 if num_ticks_per_picture == 0xffffffff as c_uint {
                     return parse_seq_hdr_error(c);
                 }
                 (*hdr).num_ticks_per_picture =
                     num_ticks_per_picture.wrapping_add(1 as c_int as c_uint);
             }
-            (*hdr).decoder_model_info_present = dav1d_get_bit(gb) as c_int;
+            (*hdr).decoder_model_info_present = rav1d_get_bit(gb) as c_int;
             if (*hdr).decoder_model_info_present != 0 {
                 (*hdr).encoder_decoder_buffer_delay_length =
-                    (dav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
-                (*hdr).num_units_in_decoding_tick = dav1d_get_bits(gb, 32 as c_int) as c_int;
+                    (rav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+                (*hdr).num_units_in_decoding_tick = rav1d_get_bits(gb, 32 as c_int) as c_int;
                 if (*c).strict_std_compliance != 0 && (*hdr).num_units_in_decoding_tick == 0 {
                     return parse_seq_hdr_error(c);
                 }
                 (*hdr).buffer_removal_delay_length =
-                    (dav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+                    (rav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
                 (*hdr).frame_presentation_delay_length =
-                    (dav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+                    (rav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
             }
         }
-        (*hdr).display_model_info_present = dav1d_get_bit(gb) as c_int;
+        (*hdr).display_model_info_present = rav1d_get_bit(gb) as c_int;
         (*hdr).num_operating_points =
-            (dav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+            (rav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
         let mut i = 0;
         while i < (*hdr).num_operating_points {
             let op: *mut Dav1dSequenceHeaderOperatingPoint =
                 &mut *((*hdr).operating_points).as_mut_ptr().offset(i as isize)
                     as *mut Dav1dSequenceHeaderOperatingPoint;
-            (*op).idc = dav1d_get_bits(gb, 12 as c_int) as c_int;
+            (*op).idc = rav1d_get_bits(gb, 12 as c_int) as c_int;
             if (*op).idc != 0 && ((*op).idc & 0xff as c_int == 0 || (*op).idc & 0xf00 == 0) {
                 return parse_seq_hdr_error(c);
             }
             (*op).major_level =
-                (2 as c_int as c_uint).wrapping_add(dav1d_get_bits(gb, 3 as c_int)) as c_int;
-            (*op).minor_level = dav1d_get_bits(gb, 2 as c_int) as c_int;
+                (2 as c_int as c_uint).wrapping_add(rav1d_get_bits(gb, 3 as c_int)) as c_int;
+            (*op).minor_level = rav1d_get_bits(gb, 2 as c_int) as c_int;
             if (*op).major_level > 3 {
-                (*op).tier = dav1d_get_bit(gb) as c_int;
+                (*op).tier = rav1d_get_bit(gb) as c_int;
             }
             if (*hdr).decoder_model_info_present != 0 {
-                (*op).decoder_model_param_present = dav1d_get_bit(gb) as c_int;
+                (*op).decoder_model_param_present = rav1d_get_bit(gb) as c_int;
                 if (*op).decoder_model_param_present != 0 {
                     let opi: *mut Dav1dSequenceHeaderOperatingParameterInfo = &mut *((*hdr)
                         .operating_parameter_info)
@@ -220,17 +220,17 @@ unsafe extern "C" fn parse_seq_hdr(
                         .offset(i as isize)
                         as *mut Dav1dSequenceHeaderOperatingParameterInfo;
                     (*opi).decoder_buffer_delay =
-                        dav1d_get_bits(gb, (*hdr).encoder_decoder_buffer_delay_length) as c_int;
+                        rav1d_get_bits(gb, (*hdr).encoder_decoder_buffer_delay_length) as c_int;
                     (*opi).encoder_buffer_delay =
-                        dav1d_get_bits(gb, (*hdr).encoder_decoder_buffer_delay_length) as c_int;
-                    (*opi).low_delay_mode = dav1d_get_bit(gb) as c_int;
+                        rav1d_get_bits(gb, (*hdr).encoder_decoder_buffer_delay_length) as c_int;
+                    (*opi).low_delay_mode = rav1d_get_bit(gb) as c_int;
                 }
             }
             if (*hdr).display_model_info_present != 0 {
-                (*op).display_model_param_present = dav1d_get_bit(gb) as c_int;
+                (*op).display_model_param_present = rav1d_get_bit(gb) as c_int;
             }
             (*op).initial_display_delay = (if (*op).display_model_param_present != 0 {
-                (dav1d_get_bits(gb, 4 as c_int)).wrapping_add(1 as c_int as c_uint)
+                (rav1d_get_bits(gb, 4 as c_int)).wrapping_add(1 as c_int as c_uint)
             } else {
                 10 as c_int as c_uint
             }) as c_int;
@@ -250,142 +250,142 @@ unsafe extern "C" fn parse_seq_hdr(
         0 as c_int
     };
     (*hdr).width_n_bits =
-        (dav1d_get_bits(gb, 4 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+        (rav1d_get_bits(gb, 4 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
     (*hdr).height_n_bits =
-        (dav1d_get_bits(gb, 4 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+        (rav1d_get_bits(gb, 4 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
     (*hdr).max_width =
-        (dav1d_get_bits(gb, (*hdr).width_n_bits)).wrapping_add(1 as c_int as c_uint) as c_int;
+        (rav1d_get_bits(gb, (*hdr).width_n_bits)).wrapping_add(1 as c_int as c_uint) as c_int;
     (*hdr).max_height =
-        (dav1d_get_bits(gb, (*hdr).height_n_bits)).wrapping_add(1 as c_int as c_uint) as c_int;
+        (rav1d_get_bits(gb, (*hdr).height_n_bits)).wrapping_add(1 as c_int as c_uint) as c_int;
     if (*hdr).reduced_still_picture_header == 0 {
-        (*hdr).frame_id_numbers_present = dav1d_get_bit(gb) as c_int;
+        (*hdr).frame_id_numbers_present = rav1d_get_bit(gb) as c_int;
         if (*hdr).frame_id_numbers_present != 0 {
             (*hdr).delta_frame_id_n_bits =
-                (dav1d_get_bits(gb, 4 as c_int)).wrapping_add(2 as c_int as c_uint) as c_int;
-            (*hdr).frame_id_n_bits = (dav1d_get_bits(gb, 3 as c_int))
+                (rav1d_get_bits(gb, 4 as c_int)).wrapping_add(2 as c_int as c_uint) as c_int;
+            (*hdr).frame_id_n_bits = (rav1d_get_bits(gb, 3 as c_int))
                 .wrapping_add((*hdr).delta_frame_id_n_bits as c_uint)
                 .wrapping_add(1 as c_int as c_uint) as c_int;
         }
     }
-    (*hdr).sb128 = dav1d_get_bit(gb) as c_int;
-    (*hdr).filter_intra = dav1d_get_bit(gb) as c_int;
-    (*hdr).intra_edge_filter = dav1d_get_bit(gb) as c_int;
+    (*hdr).sb128 = rav1d_get_bit(gb) as c_int;
+    (*hdr).filter_intra = rav1d_get_bit(gb) as c_int;
+    (*hdr).intra_edge_filter = rav1d_get_bit(gb) as c_int;
     if (*hdr).reduced_still_picture_header != 0 {
-        (*hdr).screen_content_tools = DAV1D_ADAPTIVE;
-        (*hdr).force_integer_mv = DAV1D_ADAPTIVE;
+        (*hdr).screen_content_tools = RAV1D_ADAPTIVE;
+        (*hdr).force_integer_mv = RAV1D_ADAPTIVE;
     } else {
-        (*hdr).inter_intra = dav1d_get_bit(gb) as c_int;
-        (*hdr).masked_compound = dav1d_get_bit(gb) as c_int;
-        (*hdr).warped_motion = dav1d_get_bit(gb) as c_int;
-        (*hdr).dual_filter = dav1d_get_bit(gb) as c_int;
-        (*hdr).order_hint = dav1d_get_bit(gb) as c_int;
+        (*hdr).inter_intra = rav1d_get_bit(gb) as c_int;
+        (*hdr).masked_compound = rav1d_get_bit(gb) as c_int;
+        (*hdr).warped_motion = rav1d_get_bit(gb) as c_int;
+        (*hdr).dual_filter = rav1d_get_bit(gb) as c_int;
+        (*hdr).order_hint = rav1d_get_bit(gb) as c_int;
         if (*hdr).order_hint != 0 {
-            (*hdr).jnt_comp = dav1d_get_bit(gb) as c_int;
-            (*hdr).ref_frame_mvs = dav1d_get_bit(gb) as c_int;
+            (*hdr).jnt_comp = rav1d_get_bit(gb) as c_int;
+            (*hdr).ref_frame_mvs = rav1d_get_bit(gb) as c_int;
         }
-        (*hdr).screen_content_tools = (if dav1d_get_bit(gb) != 0 {
-            DAV1D_ADAPTIVE as c_int as c_uint
+        (*hdr).screen_content_tools = (if rav1d_get_bit(gb) != 0 {
+            RAV1D_ADAPTIVE as c_int as c_uint
         } else {
-            dav1d_get_bit(gb)
+            rav1d_get_bit(gb)
         }) as Dav1dAdaptiveBoolean;
         (*hdr).force_integer_mv = (if (*hdr).screen_content_tools as c_uint != 0 {
-            if dav1d_get_bit(gb) != 0 {
-                DAV1D_ADAPTIVE as c_int as c_uint
+            if rav1d_get_bit(gb) != 0 {
+                RAV1D_ADAPTIVE as c_int as c_uint
             } else {
-                dav1d_get_bit(gb)
+                rav1d_get_bit(gb)
             }
         } else {
             2 as c_int as c_uint
         }) as Dav1dAdaptiveBoolean;
         if (*hdr).order_hint != 0 {
             (*hdr).order_hint_n_bits =
-                (dav1d_get_bits(gb, 3 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+                (rav1d_get_bits(gb, 3 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
         }
     }
-    (*hdr).super_res = dav1d_get_bit(gb) as c_int;
-    (*hdr).cdef = dav1d_get_bit(gb) as c_int;
-    (*hdr).restoration = dav1d_get_bit(gb) as c_int;
-    (*hdr).hbd = dav1d_get_bit(gb) as c_int;
+    (*hdr).super_res = rav1d_get_bit(gb) as c_int;
+    (*hdr).cdef = rav1d_get_bit(gb) as c_int;
+    (*hdr).restoration = rav1d_get_bit(gb) as c_int;
+    (*hdr).hbd = rav1d_get_bit(gb) as c_int;
     if (*hdr).profile == 2 && (*hdr).hbd != 0 {
-        (*hdr).hbd = ((*hdr).hbd as c_uint).wrapping_add(dav1d_get_bit(gb)) as c_int as c_int;
+        (*hdr).hbd = ((*hdr).hbd as c_uint).wrapping_add(rav1d_get_bit(gb)) as c_int as c_int;
     }
     if (*hdr).profile != 1 as c_int {
-        (*hdr).monochrome = dav1d_get_bit(gb) as c_int;
+        (*hdr).monochrome = rav1d_get_bit(gb) as c_int;
     }
-    (*hdr).color_description_present = dav1d_get_bit(gb) as c_int;
+    (*hdr).color_description_present = rav1d_get_bit(gb) as c_int;
     if (*hdr).color_description_present != 0 {
-        (*hdr).pri = dav1d_get_bits(gb, 8 as c_int) as Dav1dColorPrimaries;
-        (*hdr).trc = dav1d_get_bits(gb, 8 as c_int) as Dav1dTransferCharacteristics;
-        (*hdr).mtrx = dav1d_get_bits(gb, 8 as c_int) as Dav1dMatrixCoefficients;
+        (*hdr).pri = rav1d_get_bits(gb, 8 as c_int) as Dav1dColorPrimaries;
+        (*hdr).trc = rav1d_get_bits(gb, 8 as c_int) as Dav1dTransferCharacteristics;
+        (*hdr).mtrx = rav1d_get_bits(gb, 8 as c_int) as Dav1dMatrixCoefficients;
     } else {
-        (*hdr).pri = DAV1D_COLOR_PRI_UNKNOWN;
-        (*hdr).trc = DAV1D_TRC_UNKNOWN;
-        (*hdr).mtrx = DAV1D_MC_UNKNOWN;
+        (*hdr).pri = RAV1D_COLOR_PRI_UNKNOWN;
+        (*hdr).trc = RAV1D_TRC_UNKNOWN;
+        (*hdr).mtrx = RAV1D_MC_UNKNOWN;
     }
     if (*hdr).monochrome != 0 {
-        (*hdr).color_range = dav1d_get_bit(gb) as c_int;
-        (*hdr).layout = DAV1D_PIXEL_LAYOUT_I400;
+        (*hdr).color_range = rav1d_get_bit(gb) as c_int;
+        (*hdr).layout = RAV1D_PIXEL_LAYOUT_I400;
         (*hdr).ss_ver = 1 as c_int;
         (*hdr).ss_hor = (*hdr).ss_ver;
-        (*hdr).chr = DAV1D_CHR_UNKNOWN;
-    } else if (*hdr).pri as c_uint == DAV1D_COLOR_PRI_BT709 as c_int as c_uint
-        && (*hdr).trc as c_uint == DAV1D_TRC_SRGB as c_int as c_uint
-        && (*hdr).mtrx as c_uint == DAV1D_MC_IDENTITY as c_int as c_uint
+        (*hdr).chr = RAV1D_CHR_UNKNOWN;
+    } else if (*hdr).pri as c_uint == RAV1D_COLOR_PRI_BT709 as c_int as c_uint
+        && (*hdr).trc as c_uint == RAV1D_TRC_SRGB as c_int as c_uint
+        && (*hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint
     {
-        (*hdr).layout = DAV1D_PIXEL_LAYOUT_I444;
+        (*hdr).layout = RAV1D_PIXEL_LAYOUT_I444;
         (*hdr).color_range = 1 as c_int;
         if (*hdr).profile != 1 && !((*hdr).profile == 2 && (*hdr).hbd == 2) {
             return parse_seq_hdr_error(c);
         }
     } else {
-        (*hdr).color_range = dav1d_get_bit(gb) as c_int;
+        (*hdr).color_range = rav1d_get_bit(gb) as c_int;
         match (*hdr).profile {
             0 => {
-                (*hdr).layout = DAV1D_PIXEL_LAYOUT_I420;
+                (*hdr).layout = RAV1D_PIXEL_LAYOUT_I420;
                 (*hdr).ss_ver = 1 as c_int;
                 (*hdr).ss_hor = (*hdr).ss_ver;
             }
             1 => {
-                (*hdr).layout = DAV1D_PIXEL_LAYOUT_I444;
+                (*hdr).layout = RAV1D_PIXEL_LAYOUT_I444;
             }
             2 => {
                 if (*hdr).hbd == 2 {
-                    (*hdr).ss_hor = dav1d_get_bit(gb) as c_int;
+                    (*hdr).ss_hor = rav1d_get_bit(gb) as c_int;
                     if (*hdr).ss_hor != 0 {
-                        (*hdr).ss_ver = dav1d_get_bit(gb) as c_int;
+                        (*hdr).ss_ver = rav1d_get_bit(gb) as c_int;
                     }
                 } else {
                     (*hdr).ss_hor = 1 as c_int;
                 }
                 (*hdr).layout = (if (*hdr).ss_hor != 0 {
                     if (*hdr).ss_ver != 0 {
-                        DAV1D_PIXEL_LAYOUT_I420 as c_int
+                        RAV1D_PIXEL_LAYOUT_I420 as c_int
                     } else {
-                        DAV1D_PIXEL_LAYOUT_I422 as c_int
+                        RAV1D_PIXEL_LAYOUT_I422 as c_int
                     }
                 } else {
-                    DAV1D_PIXEL_LAYOUT_I444 as c_int
+                    RAV1D_PIXEL_LAYOUT_I444 as c_int
                 }) as Dav1dPixelLayout;
             }
             _ => {}
         }
         (*hdr).chr = (if (*hdr).ss_hor & (*hdr).ss_ver != 0 {
-            dav1d_get_bits(gb, 2 as c_int)
+            rav1d_get_bits(gb, 2 as c_int)
         } else {
-            DAV1D_CHR_UNKNOWN as c_int as c_uint
+            RAV1D_CHR_UNKNOWN as c_int as c_uint
         }) as Dav1dChromaSamplePosition;
     }
     if (*c).strict_std_compliance != 0
-        && (*hdr).mtrx as c_uint == DAV1D_MC_IDENTITY as c_int as c_uint
-        && (*hdr).layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint
+        && (*hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint
+        && (*hdr).layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint
     {
         return parse_seq_hdr_error(c);
     }
     if (*hdr).monochrome == 0 {
-        (*hdr).separate_uv_delta_q = dav1d_get_bit(gb) as c_int;
+        (*hdr).separate_uv_delta_q = rav1d_get_bit(gb) as c_int;
     }
-    (*hdr).film_grain_present = dav1d_get_bit(gb) as c_int;
-    dav1d_get_bit(gb);
+    (*hdr).film_grain_present = rav1d_get_bit(gb) as c_int;
+    rav1d_get_bit(gb);
     return 0 as c_int;
 }
 
@@ -399,7 +399,7 @@ unsafe extern "C" fn read_frame_size(
     if use_ref != 0 {
         let mut i = 0;
         while i < 7 {
-            if dav1d_get_bit(gb) != 0 {
+            if rav1d_get_bit(gb) != 0 {
                 let r#ref: *const Rav1dThreadPicture = &mut (*((*c).refs)
                     .as_mut_ptr()
                     .offset(*((*(*c).frame_hdr).refidx).as_mut_ptr().offset(i as isize) as isize))
@@ -412,10 +412,10 @@ unsafe extern "C" fn read_frame_size(
                 (*hdr).render_width = (*(*r#ref).p.frame_hdr).render_width;
                 (*hdr).render_height = (*(*r#ref).p.frame_hdr).render_height;
                 (*hdr).super_res.enabled =
-                    ((*seqhdr).super_res != 0 && dav1d_get_bit(gb) != 0) as c_int;
+                    ((*seqhdr).super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
                 if (*hdr).super_res.enabled != 0 {
                     (*hdr).super_res.width_scale_denominator = (9 as c_int as c_uint)
-                        .wrapping_add(dav1d_get_bits(gb, 3 as c_int))
+                        .wrapping_add(rav1d_get_bits(gb, 3 as c_int))
                         as c_int;
                     let d = (*hdr).super_res.width_scale_denominator;
                     (*hdr).width[0] = cmp::max(
@@ -432,18 +432,18 @@ unsafe extern "C" fn read_frame_size(
         }
     }
     if (*hdr).frame_size_override != 0 {
-        (*hdr).width[1] = (dav1d_get_bits(gb, (*seqhdr).width_n_bits))
+        (*hdr).width[1] = (rav1d_get_bits(gb, (*seqhdr).width_n_bits))
             .wrapping_add(1 as c_int as c_uint) as c_int;
-        (*hdr).height = (dav1d_get_bits(gb, (*seqhdr).height_n_bits))
+        (*hdr).height = (rav1d_get_bits(gb, (*seqhdr).height_n_bits))
             .wrapping_add(1 as c_int as c_uint) as c_int;
     } else {
         (*hdr).width[1] = (*seqhdr).max_width;
         (*hdr).height = (*seqhdr).max_height;
     }
-    (*hdr).super_res.enabled = ((*seqhdr).super_res != 0 && dav1d_get_bit(gb) != 0) as c_int;
+    (*hdr).super_res.enabled = ((*seqhdr).super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
     if (*hdr).super_res.enabled != 0 {
         (*hdr).super_res.width_scale_denominator =
-            (9 as c_int as c_uint).wrapping_add(dav1d_get_bits(gb, 3 as c_int)) as c_int;
+            (9 as c_int as c_uint).wrapping_add(rav1d_get_bits(gb, 3 as c_int)) as c_int;
         let d_0 = (*hdr).super_res.width_scale_denominator;
         (*hdr).width[0] = cmp::max(
             ((*hdr).width[1] * 8 + (d_0 >> 1)) / d_0,
@@ -453,12 +453,12 @@ unsafe extern "C" fn read_frame_size(
         (*hdr).super_res.width_scale_denominator = 8 as c_int;
         (*hdr).width[0] = (*hdr).width[1];
     }
-    (*hdr).have_render_size = dav1d_get_bit(gb) as c_int;
+    (*hdr).have_render_size = rav1d_get_bit(gb) as c_int;
     if (*hdr).have_render_size != 0 {
         (*hdr).render_width =
-            (dav1d_get_bits(gb, 16 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+            (rav1d_get_bits(gb, 16 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
         (*hdr).render_height =
-            (dav1d_get_bits(gb, 16 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
+            (rav1d_get_bits(gb, 16 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
     } else {
         (*hdr).render_width = (*hdr).width[1];
         (*hdr).render_height = (*hdr).height;
@@ -482,7 +482,7 @@ static default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = Dav1dLoopfilterMo
 };
 
 unsafe extern "C" fn parse_frame_hdr_error(c: *mut Rav1dContext) -> c_int {
-    dav1d_log(
+    rav1d_log(
         c,
         b"Error parsing frame header\n\0" as *const u8 as *const c_char,
     );
@@ -493,15 +493,15 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
     let seqhdr: *const Dav1dSequenceHeader = (*c).seq_hdr;
     let hdr: *mut Dav1dFrameHeader = (*c).frame_hdr;
     (*hdr).show_existing_frame =
-        ((*seqhdr).reduced_still_picture_header == 0 && dav1d_get_bit(gb) != 0) as c_int;
+        ((*seqhdr).reduced_still_picture_header == 0 && rav1d_get_bit(gb) != 0) as c_int;
     if (*hdr).show_existing_frame != 0 {
-        (*hdr).existing_frame_idx = dav1d_get_bits(gb, 3 as c_int) as c_int;
+        (*hdr).existing_frame_idx = rav1d_get_bits(gb, 3 as c_int) as c_int;
         if (*seqhdr).decoder_model_info_present != 0 && (*seqhdr).equal_picture_interval == 0 {
             (*hdr).frame_presentation_delay =
-                dav1d_get_bits(gb, (*seqhdr).frame_presentation_delay_length) as c_int;
+                rav1d_get_bits(gb, (*seqhdr).frame_presentation_delay_length) as c_int;
         }
         if (*seqhdr).frame_id_numbers_present != 0 {
-            (*hdr).frame_id = dav1d_get_bits(gb, (*seqhdr).frame_id_n_bits) as c_int;
+            (*hdr).frame_id = rav1d_get_bits(gb, (*seqhdr).frame_id_n_bits) as c_int;
             let ref_frame_hdr: *mut Dav1dFrameHeader =
                 (*c).refs[(*hdr).existing_frame_idx as usize].p.p.frame_hdr;
             if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != (*hdr).frame_id {
@@ -511,39 +511,39 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         return 0 as c_int;
     }
     (*hdr).frame_type = (if (*seqhdr).reduced_still_picture_header != 0 {
-        DAV1D_FRAME_TYPE_KEY as c_int as c_uint
+        RAV1D_FRAME_TYPE_KEY as c_int as c_uint
     } else {
-        dav1d_get_bits(gb, 2 as c_int)
+        rav1d_get_bits(gb, 2 as c_int)
     }) as Dav1dFrameType;
     (*hdr).show_frame =
-        ((*seqhdr).reduced_still_picture_header != 0 || dav1d_get_bit(gb) != 0) as c_int;
+        ((*seqhdr).reduced_still_picture_header != 0 || rav1d_get_bit(gb) != 0) as c_int;
     if (*hdr).show_frame != 0 {
         if (*seqhdr).decoder_model_info_present != 0 && (*seqhdr).equal_picture_interval == 0 {
             (*hdr).frame_presentation_delay =
-                dav1d_get_bits(gb, (*seqhdr).frame_presentation_delay_length) as c_int;
+                rav1d_get_bits(gb, (*seqhdr).frame_presentation_delay_length) as c_int;
         }
         (*hdr).showable_frame =
-            ((*hdr).frame_type as c_uint != DAV1D_FRAME_TYPE_KEY as c_int as c_uint) as c_int;
+            ((*hdr).frame_type as c_uint != RAV1D_FRAME_TYPE_KEY as c_int as c_uint) as c_int;
     } else {
-        (*hdr).showable_frame = dav1d_get_bit(gb) as c_int;
+        (*hdr).showable_frame = rav1d_get_bit(gb) as c_int;
     }
     (*hdr).error_resilient_mode = ((*hdr).frame_type as c_uint
-        == DAV1D_FRAME_TYPE_KEY as c_int as c_uint
+        == RAV1D_FRAME_TYPE_KEY as c_int as c_uint
         && (*hdr).show_frame != 0
-        || (*hdr).frame_type as c_uint == DAV1D_FRAME_TYPE_SWITCH as c_int as c_uint
+        || (*hdr).frame_type as c_uint == RAV1D_FRAME_TYPE_SWITCH as c_int as c_uint
         || (*seqhdr).reduced_still_picture_header != 0
-        || dav1d_get_bit(gb) != 0) as c_int;
-    (*hdr).disable_cdf_update = dav1d_get_bit(gb) as c_int;
+        || rav1d_get_bit(gb) != 0) as c_int;
+    (*hdr).disable_cdf_update = rav1d_get_bit(gb) as c_int;
     (*hdr).allow_screen_content_tools =
-        (if (*seqhdr).screen_content_tools as c_uint == DAV1D_ADAPTIVE as c_int as c_uint {
-            dav1d_get_bit(gb)
+        (if (*seqhdr).screen_content_tools as c_uint == RAV1D_ADAPTIVE as c_int as c_uint {
+            rav1d_get_bit(gb)
         } else {
             (*seqhdr).screen_content_tools as c_uint
         }) as c_int;
     if (*hdr).allow_screen_content_tools != 0 {
         (*hdr).force_integer_mv =
-            (if (*seqhdr).force_integer_mv as c_uint == DAV1D_ADAPTIVE as c_int as c_uint {
-                dav1d_get_bit(gb)
+            (if (*seqhdr).force_integer_mv as c_uint == RAV1D_ADAPTIVE as c_int as c_uint {
+                rav1d_get_bit(gb)
             } else {
                 (*seqhdr).force_integer_mv as c_uint
             }) as c_int;
@@ -554,28 +554,28 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         (*hdr).force_integer_mv = 1 as c_int;
     }
     if (*seqhdr).frame_id_numbers_present != 0 {
-        (*hdr).frame_id = dav1d_get_bits(gb, (*seqhdr).frame_id_n_bits) as c_int;
+        (*hdr).frame_id = rav1d_get_bits(gb, (*seqhdr).frame_id_n_bits) as c_int;
     }
     (*hdr).frame_size_override = (if (*seqhdr).reduced_still_picture_header != 0 {
         0 as c_int as c_uint
-    } else if (*hdr).frame_type as c_uint == DAV1D_FRAME_TYPE_SWITCH as c_int as c_uint {
+    } else if (*hdr).frame_type as c_uint == RAV1D_FRAME_TYPE_SWITCH as c_int as c_uint {
         1 as c_int as c_uint
     } else {
-        dav1d_get_bit(gb)
+        rav1d_get_bit(gb)
     }) as c_int;
     (*hdr).frame_offset = (if (*seqhdr).order_hint != 0 {
-        dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits)
+        rav1d_get_bits(gb, (*seqhdr).order_hint_n_bits)
     } else {
         0 as c_int as c_uint
     }) as c_int;
     (*hdr).primary_ref_frame =
         (if (*hdr).error_resilient_mode == 0 && (*hdr).frame_type as c_uint & 1 as c_uint != 0 {
-            dav1d_get_bits(gb, 3 as c_int)
+            rav1d_get_bits(gb, 3 as c_int)
         } else {
             7 as c_int as c_uint
         }) as c_int;
     if (*seqhdr).decoder_model_info_present != 0 {
-        (*hdr).buffer_removal_time_present = dav1d_get_bit(gb) as c_int;
+        (*hdr).buffer_removal_time_present = rav1d_get_bit(gb) as c_int;
         if (*hdr).buffer_removal_time_present != 0 {
             let mut i = 0;
             while i < (*(*c).seq_hdr).num_operating_points {
@@ -590,7 +590,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                     let in_spatial_layer = (*seqop).idc >> (*hdr).spatial_id + 8 & 1;
                     if (*seqop).idc == 0 || in_temporal_layer != 0 && in_spatial_layer != 0 {
                         (*op).buffer_removal_time =
-                            dav1d_get_bits(gb, (*seqhdr).buffer_removal_delay_length) as c_int;
+                            rav1d_get_bits(gb, (*seqhdr).buffer_removal_delay_length) as c_int;
                     }
                 }
                 i += 1;
@@ -599,12 +599,12 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
     }
     if (*hdr).frame_type as c_uint & 1 as c_uint == 0 {
         (*hdr).refresh_frame_flags = (if (*hdr).frame_type as c_uint
-            == DAV1D_FRAME_TYPE_KEY as c_int as c_uint
+            == RAV1D_FRAME_TYPE_KEY as c_int as c_uint
             && (*hdr).show_frame != 0
         {
             0xff as c_int as c_uint
         } else {
-            dav1d_get_bits(gb, 8 as c_int)
+            rav1d_get_bits(gb, 8 as c_int)
         }) as c_int;
         if (*hdr).refresh_frame_flags != 0xff as c_int
             && (*hdr).error_resilient_mode != 0
@@ -612,12 +612,12 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         {
             let mut i_0 = 0;
             while i_0 < 8 {
-                dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits);
+                rav1d_get_bits(gb, (*seqhdr).order_hint_n_bits);
                 i_0 += 1;
             }
         }
         if (*c).strict_std_compliance != 0
-            && (*hdr).frame_type as c_uint == DAV1D_FRAME_TYPE_INTRA as c_int as c_uint
+            && (*hdr).frame_type as c_uint == RAV1D_FRAME_TYPE_INTRA as c_int as c_uint
             && (*hdr).refresh_frame_flags == 0xff as c_int
         {
             return parse_frame_hdr_error(c);
@@ -627,30 +627,30 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         }
         (*hdr).allow_intrabc = ((*hdr).allow_screen_content_tools != 0
             && (*hdr).super_res.enabled == 0
-            && dav1d_get_bit(gb) != 0) as c_int;
+            && rav1d_get_bit(gb) != 0) as c_int;
         (*hdr).use_ref_frame_mvs = 0 as c_int;
     } else {
         (*hdr).allow_intrabc = 0 as c_int;
         (*hdr).refresh_frame_flags =
-            (if (*hdr).frame_type as c_uint == DAV1D_FRAME_TYPE_SWITCH as c_int as c_uint {
+            (if (*hdr).frame_type as c_uint == RAV1D_FRAME_TYPE_SWITCH as c_int as c_uint {
                 0xff as c_int as c_uint
             } else {
-                dav1d_get_bits(gb, 8 as c_int)
+                rav1d_get_bits(gb, 8 as c_int)
             }) as c_int;
         if (*hdr).error_resilient_mode != 0 && (*seqhdr).order_hint != 0 {
             let mut i_1 = 0;
             while i_1 < 8 {
-                dav1d_get_bits(gb, (*seqhdr).order_hint_n_bits);
+                rav1d_get_bits(gb, (*seqhdr).order_hint_n_bits);
                 i_1 += 1;
             }
         }
         (*hdr).frame_ref_short_signaling =
-            ((*seqhdr).order_hint != 0 && dav1d_get_bit(gb) != 0) as c_int;
+            ((*seqhdr).order_hint != 0 && rav1d_get_bit(gb) != 0) as c_int;
         if (*hdr).frame_ref_short_signaling != 0 {
-            (*hdr).refidx[0] = dav1d_get_bits(gb, 3 as c_int) as c_int;
+            (*hdr).refidx[0] = rav1d_get_bits(gb, 3 as c_int) as c_int;
             (*hdr).refidx[2] = -(1 as c_int);
             (*hdr).refidx[1] = (*hdr).refidx[2];
-            (*hdr).refidx[3] = dav1d_get_bits(gb, 3 as c_int) as c_int;
+            (*hdr).refidx[3] = rav1d_get_bits(gb, 3 as c_int) as c_int;
             (*hdr).refidx[6] = -(1 as c_int);
             (*hdr).refidx[5] = (*hdr).refidx[6];
             (*hdr).refidx[4] = (*hdr).refidx[5];
@@ -764,11 +764,11 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         let mut i_9 = 0;
         while i_9 < 7 {
             if (*hdr).frame_ref_short_signaling == 0 {
-                (*hdr).refidx[i_9 as usize] = dav1d_get_bits(gb, 3 as c_int) as c_int;
+                (*hdr).refidx[i_9 as usize] = rav1d_get_bits(gb, 3 as c_int) as c_int;
             }
             if (*seqhdr).frame_id_numbers_present != 0 {
                 let delta_ref_frame_id_minus_1: c_int =
-                    dav1d_get_bits(gb, (*seqhdr).delta_frame_id_n_bits) as c_int;
+                    rav1d_get_bits(gb, (*seqhdr).delta_frame_id_n_bits) as c_int;
                 let ref_frame_id: c_int = (*hdr).frame_id
                     + ((1 as c_int) << (*seqhdr).frame_id_n_bits)
                     - delta_ref_frame_id_minus_1
@@ -790,23 +790,23 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         if read_frame_size(c, gb, use_ref) < 0 {
             return parse_frame_hdr_error(c);
         }
-        (*hdr).hp = ((*hdr).force_integer_mv == 0 && dav1d_get_bit(gb) != 0) as c_int;
-        (*hdr).subpel_filter_mode = (if dav1d_get_bit(gb) != 0 {
-            DAV1D_FILTER_SWITCHABLE as c_int as c_uint
+        (*hdr).hp = ((*hdr).force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
+        (*hdr).subpel_filter_mode = (if rav1d_get_bit(gb) != 0 {
+            RAV1D_FILTER_SWITCHABLE as c_int as c_uint
         } else {
-            dav1d_get_bits(gb, 2 as c_int)
+            rav1d_get_bits(gb, 2 as c_int)
         }) as Dav1dFilterMode;
-        (*hdr).switchable_motion_mode = dav1d_get_bit(gb) as c_int;
+        (*hdr).switchable_motion_mode = rav1d_get_bit(gb) as c_int;
         (*hdr).use_ref_frame_mvs = ((*hdr).error_resilient_mode == 0
             && (*seqhdr).ref_frame_mvs != 0
             && (*seqhdr).order_hint != 0
             && (*hdr).frame_type as c_uint & 1 as c_uint != 0
-            && dav1d_get_bit(gb) != 0) as c_int;
+            && rav1d_get_bit(gb) != 0) as c_int;
     }
     (*hdr).refresh_context = ((*seqhdr).reduced_still_picture_header == 0
         && (*hdr).disable_cdf_update == 0
-        && dav1d_get_bit(gb) == 0) as c_int;
-    (*hdr).tiling.uniform = dav1d_get_bit(gb) as c_int;
+        && rav1d_get_bit(gb) == 0) as c_int;
+    (*hdr).tiling.uniform = rav1d_get_bit(gb) as c_int;
     let sbsz_min1: c_int = ((64 as c_int) << (*seqhdr).sb128) - 1;
     let sbsz_log2 = 6 + (*seqhdr).sb128;
     let sbw: c_int = (*hdr).width[0] + sbsz_min1 >> sbsz_log2;
@@ -822,7 +822,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
     );
     if (*hdr).tiling.uniform != 0 {
         (*hdr).tiling.log2_cols = (*hdr).tiling.min_log2_cols;
-        while (*hdr).tiling.log2_cols < (*hdr).tiling.max_log2_cols && dav1d_get_bit(gb) != 0 {
+        while (*hdr).tiling.log2_cols < (*hdr).tiling.max_log2_cols && rav1d_get_bit(gb) != 0 {
             (*hdr).tiling.log2_cols += 1;
         }
         let tile_w = 1 + (sbw - 1 >> (*hdr).tiling.log2_cols);
@@ -836,7 +836,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         (*hdr).tiling.min_log2_rows =
             cmp::max(min_log2_tiles - (*hdr).tiling.log2_cols, 0 as c_int);
         (*hdr).tiling.log2_rows = (*hdr).tiling.min_log2_rows;
-        while (*hdr).tiling.log2_rows < (*hdr).tiling.max_log2_rows && dav1d_get_bit(gb) != 0 {
+        while (*hdr).tiling.log2_rows < (*hdr).tiling.max_log2_rows && rav1d_get_bit(gb) != 0 {
             (*hdr).tiling.log2_rows += 1;
         }
         let tile_h = 1 + (sbh - 1 >> (*hdr).tiling.log2_rows);
@@ -855,7 +855,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         while sbx_0 < sbw && (*hdr).tiling.cols < 64 {
             let tile_width_sb: c_int = cmp::min(sbw - sbx_0, max_tile_width_sb);
             let tile_w_0: c_int = (if tile_width_sb > 1 {
-                (1 as c_int as c_uint).wrapping_add(dav1d_get_uniform(gb, tile_width_sb as c_uint))
+                (1 as c_int as c_uint).wrapping_add(rav1d_get_uniform(gb, tile_width_sb as c_uint))
             } else {
                 1 as c_int as c_uint
             }) as c_int;
@@ -874,7 +874,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         while sby_0 < sbh && (*hdr).tiling.rows < 64 {
             let tile_height_sb: c_int = cmp::min(sbh - sby_0, max_tile_height_sb);
             let tile_h_0: c_int = (if tile_height_sb > 1 {
-                (1 as c_int as c_uint).wrapping_add(dav1d_get_uniform(gb, tile_height_sb as c_uint))
+                (1 as c_int as c_uint).wrapping_add(rav1d_get_uniform(gb, tile_height_sb as c_uint))
             } else {
                 1 as c_int as c_uint
             }) as c_int;
@@ -888,45 +888,45 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
     (*hdr).tiling.row_start_sb[(*hdr).tiling.rows as usize] = sbh as u16;
     if (*hdr).tiling.log2_cols != 0 || (*hdr).tiling.log2_rows != 0 {
         (*hdr).tiling.update =
-            dav1d_get_bits(gb, (*hdr).tiling.log2_cols + (*hdr).tiling.log2_rows) as c_int;
+            rav1d_get_bits(gb, (*hdr).tiling.log2_cols + (*hdr).tiling.log2_rows) as c_int;
         if (*hdr).tiling.update >= (*hdr).tiling.cols * (*hdr).tiling.rows {
             return parse_frame_hdr_error(c);
         }
-        (*hdr).tiling.n_bytes = (dav1d_get_bits(gb, 2 as c_int)).wrapping_add(1 as c_int as c_uint);
+        (*hdr).tiling.n_bytes = (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(1 as c_int as c_uint);
     } else {
         (*hdr).tiling.update = 0 as c_int;
         (*hdr).tiling.n_bytes = (*hdr).tiling.update as c_uint;
     }
-    (*hdr).quant.yac = dav1d_get_bits(gb, 8 as c_int) as c_int;
-    (*hdr).quant.ydc_delta = if dav1d_get_bit(gb) != 0 {
-        dav1d_get_sbits(gb, 7 as c_int)
+    (*hdr).quant.yac = rav1d_get_bits(gb, 8 as c_int) as c_int;
+    (*hdr).quant.ydc_delta = if rav1d_get_bit(gb) != 0 {
+        rav1d_get_sbits(gb, 7 as c_int)
     } else {
         0 as c_int
     };
     if (*seqhdr).monochrome == 0 {
         let diff_uv_delta: c_int = (if (*seqhdr).separate_uv_delta_q != 0 {
-            dav1d_get_bit(gb)
+            rav1d_get_bit(gb)
         } else {
             0 as c_int as c_uint
         }) as c_int;
-        (*hdr).quant.udc_delta = if dav1d_get_bit(gb) != 0 {
-            dav1d_get_sbits(gb, 7 as c_int)
+        (*hdr).quant.udc_delta = if rav1d_get_bit(gb) != 0 {
+            rav1d_get_sbits(gb, 7 as c_int)
         } else {
             0 as c_int
         };
-        (*hdr).quant.uac_delta = if dav1d_get_bit(gb) != 0 {
-            dav1d_get_sbits(gb, 7 as c_int)
+        (*hdr).quant.uac_delta = if rav1d_get_bit(gb) != 0 {
+            rav1d_get_sbits(gb, 7 as c_int)
         } else {
             0 as c_int
         };
         if diff_uv_delta != 0 {
-            (*hdr).quant.vdc_delta = if dav1d_get_bit(gb) != 0 {
-                dav1d_get_sbits(gb, 7 as c_int)
+            (*hdr).quant.vdc_delta = if rav1d_get_bit(gb) != 0 {
+                rav1d_get_sbits(gb, 7 as c_int)
             } else {
                 0 as c_int
             };
-            (*hdr).quant.vac_delta = if dav1d_get_bit(gb) != 0 {
-                dav1d_get_sbits(gb, 7 as c_int)
+            (*hdr).quant.vac_delta = if rav1d_get_bit(gb) != 0 {
+                rav1d_get_sbits(gb, 7 as c_int)
             } else {
                 0 as c_int
             };
@@ -935,30 +935,30 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
             (*hdr).quant.vac_delta = (*hdr).quant.uac_delta;
         }
     }
-    (*hdr).quant.qm = dav1d_get_bit(gb) as c_int;
+    (*hdr).quant.qm = rav1d_get_bit(gb) as c_int;
     if (*hdr).quant.qm != 0 {
-        (*hdr).quant.qm_y = dav1d_get_bits(gb, 4 as c_int) as c_int;
-        (*hdr).quant.qm_u = dav1d_get_bits(gb, 4 as c_int) as c_int;
+        (*hdr).quant.qm_y = rav1d_get_bits(gb, 4 as c_int) as c_int;
+        (*hdr).quant.qm_u = rav1d_get_bits(gb, 4 as c_int) as c_int;
         (*hdr).quant.qm_v = if (*seqhdr).separate_uv_delta_q != 0 {
-            dav1d_get_bits(gb, 4 as c_int) as c_int
+            rav1d_get_bits(gb, 4 as c_int) as c_int
         } else {
             (*hdr).quant.qm_u
         };
     }
-    (*hdr).segmentation.enabled = dav1d_get_bit(gb) as c_int;
+    (*hdr).segmentation.enabled = rav1d_get_bit(gb) as c_int;
     if (*hdr).segmentation.enabled != 0 {
         if (*hdr).primary_ref_frame == 7 {
             (*hdr).segmentation.update_map = 1 as c_int;
             (*hdr).segmentation.temporal = 0 as c_int;
             (*hdr).segmentation.update_data = 1 as c_int;
         } else {
-            (*hdr).segmentation.update_map = dav1d_get_bit(gb) as c_int;
+            (*hdr).segmentation.update_map = rav1d_get_bit(gb) as c_int;
             (*hdr).segmentation.temporal = (if (*hdr).segmentation.update_map != 0 {
-                dav1d_get_bit(gb)
+                rav1d_get_bit(gb)
             } else {
                 0 as c_int as c_uint
             }) as c_int;
-            (*hdr).segmentation.update_data = dav1d_get_bit(gb) as c_int;
+            (*hdr).segmentation.update_data = rav1d_get_bit(gb) as c_int;
         }
         if (*hdr).segmentation.update_data != 0 {
             (*hdr).segmentation.seg_data.preskip = 0 as c_int;
@@ -969,49 +969,49 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                     .as_mut_ptr()
                     .offset(i_10 as isize)
                     as *mut Dav1dSegmentationData;
-                if dav1d_get_bit(gb) != 0 {
-                    (*seg).delta_q = dav1d_get_sbits(gb, 9 as c_int);
+                if rav1d_get_bit(gb) != 0 {
+                    (*seg).delta_q = rav1d_get_sbits(gb, 9 as c_int);
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
                 } else {
                     (*seg).delta_q = 0 as c_int;
                 }
-                if dav1d_get_bit(gb) != 0 {
-                    (*seg).delta_lf_y_v = dav1d_get_sbits(gb, 7 as c_int);
+                if rav1d_get_bit(gb) != 0 {
+                    (*seg).delta_lf_y_v = rav1d_get_sbits(gb, 7 as c_int);
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
                 } else {
                     (*seg).delta_lf_y_v = 0 as c_int;
                 }
-                if dav1d_get_bit(gb) != 0 {
-                    (*seg).delta_lf_y_h = dav1d_get_sbits(gb, 7 as c_int);
+                if rav1d_get_bit(gb) != 0 {
+                    (*seg).delta_lf_y_h = rav1d_get_sbits(gb, 7 as c_int);
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
                 } else {
                     (*seg).delta_lf_y_h = 0 as c_int;
                 }
-                if dav1d_get_bit(gb) != 0 {
-                    (*seg).delta_lf_u = dav1d_get_sbits(gb, 7 as c_int);
+                if rav1d_get_bit(gb) != 0 {
+                    (*seg).delta_lf_u = rav1d_get_sbits(gb, 7 as c_int);
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
                 } else {
                     (*seg).delta_lf_u = 0 as c_int;
                 }
-                if dav1d_get_bit(gb) != 0 {
-                    (*seg).delta_lf_v = dav1d_get_sbits(gb, 7 as c_int);
+                if rav1d_get_bit(gb) != 0 {
+                    (*seg).delta_lf_v = rav1d_get_sbits(gb, 7 as c_int);
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
                 } else {
                     (*seg).delta_lf_v = 0 as c_int;
                 }
-                if dav1d_get_bit(gb) != 0 {
-                    (*seg).r#ref = dav1d_get_bits(gb, 3 as c_int) as c_int;
+                if rav1d_get_bit(gb) != 0 {
+                    (*seg).r#ref = rav1d_get_bits(gb, 3 as c_int) as c_int;
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
                     (*hdr).segmentation.seg_data.preskip = 1 as c_int;
                 } else {
                     (*seg).r#ref = -(1 as c_int);
                 }
-                (*seg).skip = dav1d_get_bit(gb) as c_int;
+                (*seg).skip = rav1d_get_bit(gb) as c_int;
                 if (*seg).skip != 0 {
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
                     (*hdr).segmentation.seg_data.preskip = 1 as c_int;
                 }
-                (*seg).globalmv = dav1d_get_bit(gb) as c_int;
+                (*seg).globalmv = rav1d_get_bit(gb) as c_int;
                 if (*seg).globalmv != 0 {
                     (*hdr).segmentation.seg_data.last_active_segid = i_10;
                     (*hdr).segmentation.seg_data.preskip = 1 as c_int;
@@ -1044,25 +1044,25 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         }
     }
     (*hdr).delta.q.present = (if (*hdr).quant.yac != 0 {
-        dav1d_get_bit(gb)
+        rav1d_get_bit(gb)
     } else {
         0 as c_int as c_uint
     }) as c_int;
     (*hdr).delta.q.res_log2 = (if (*hdr).delta.q.present != 0 {
-        dav1d_get_bits(gb, 2 as c_int)
+        rav1d_get_bits(gb, 2 as c_int)
     } else {
         0 as c_int as c_uint
     }) as c_int;
     (*hdr).delta.lf.present = ((*hdr).delta.q.present != 0
         && (*hdr).allow_intrabc == 0
-        && dav1d_get_bit(gb) != 0) as c_int;
+        && rav1d_get_bit(gb) != 0) as c_int;
     (*hdr).delta.lf.res_log2 = (if (*hdr).delta.lf.present != 0 {
-        dav1d_get_bits(gb, 2 as c_int)
+        rav1d_get_bits(gb, 2 as c_int)
     } else {
         0 as c_int as c_uint
     }) as c_int;
     (*hdr).delta.lf.multi = (if (*hdr).delta.lf.present != 0 {
-        dav1d_get_bit(gb)
+        rav1d_get_bit(gb)
     } else {
         0 as c_int as c_uint
     }) as c_int;
@@ -1094,15 +1094,15 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         (*hdr).loopfilter.mode_ref_delta_update = 1 as c_int;
         (*hdr).loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
     } else {
-        (*hdr).loopfilter.level_y[0] = dav1d_get_bits(gb, 6 as c_int) as c_int;
-        (*hdr).loopfilter.level_y[1] = dav1d_get_bits(gb, 6 as c_int) as c_int;
+        (*hdr).loopfilter.level_y[0] = rav1d_get_bits(gb, 6 as c_int) as c_int;
+        (*hdr).loopfilter.level_y[1] = rav1d_get_bits(gb, 6 as c_int) as c_int;
         if (*seqhdr).monochrome == 0
             && ((*hdr).loopfilter.level_y[0] != 0 || (*hdr).loopfilter.level_y[1] != 0)
         {
-            (*hdr).loopfilter.level_u = dav1d_get_bits(gb, 6 as c_int) as c_int;
-            (*hdr).loopfilter.level_v = dav1d_get_bits(gb, 6 as c_int) as c_int;
+            (*hdr).loopfilter.level_u = rav1d_get_bits(gb, 6 as c_int) as c_int;
+            (*hdr).loopfilter.level_v = rav1d_get_bits(gb, 6 as c_int) as c_int;
         }
-        (*hdr).loopfilter.sharpness = dav1d_get_bits(gb, 3 as c_int) as c_int;
+        (*hdr).loopfilter.sharpness = rav1d_get_bits(gb, 3 as c_int) as c_int;
         if (*hdr).primary_ref_frame == 7 {
             (*hdr).loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
         } else {
@@ -1115,23 +1115,23 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                 .mode_ref_deltas
                 .clone();
         }
-        (*hdr).loopfilter.mode_ref_delta_enabled = dav1d_get_bit(gb) as c_int;
+        (*hdr).loopfilter.mode_ref_delta_enabled = rav1d_get_bit(gb) as c_int;
         if (*hdr).loopfilter.mode_ref_delta_enabled != 0 {
-            (*hdr).loopfilter.mode_ref_delta_update = dav1d_get_bit(gb) as c_int;
+            (*hdr).loopfilter.mode_ref_delta_update = rav1d_get_bit(gb) as c_int;
             if (*hdr).loopfilter.mode_ref_delta_update != 0 {
                 let mut i_13 = 0;
                 while i_13 < 8 {
-                    if dav1d_get_bit(gb) != 0 {
+                    if rav1d_get_bit(gb) != 0 {
                         (*hdr).loopfilter.mode_ref_deltas.ref_delta[i_13 as usize] =
-                            dav1d_get_sbits(gb, 7 as c_int);
+                            rav1d_get_sbits(gb, 7 as c_int);
                     }
                     i_13 += 1;
                 }
                 let mut i_14 = 0;
                 while i_14 < 2 {
-                    if dav1d_get_bit(gb) != 0 {
+                    if rav1d_get_bit(gb) != 0 {
                         (*hdr).loopfilter.mode_ref_deltas.mode_delta[i_14 as usize] =
-                            dav1d_get_sbits(gb, 7 as c_int);
+                            rav1d_get_sbits(gb, 7 as c_int);
                     }
                     i_14 += 1;
                 }
@@ -1140,13 +1140,13 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
     }
     if (*hdr).all_lossless == 0 && (*seqhdr).cdef != 0 && (*hdr).allow_intrabc == 0 {
         (*hdr).cdef.damping =
-            (dav1d_get_bits(gb, 2 as c_int)).wrapping_add(3 as c_int as c_uint) as c_int;
-        (*hdr).cdef.n_bits = dav1d_get_bits(gb, 2 as c_int) as c_int;
+            (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(3 as c_int as c_uint) as c_int;
+        (*hdr).cdef.n_bits = rav1d_get_bits(gb, 2 as c_int) as c_int;
         let mut i_15 = 0;
         while i_15 < (1 as c_int) << (*hdr).cdef.n_bits {
-            (*hdr).cdef.y_strength[i_15 as usize] = dav1d_get_bits(gb, 6 as c_int) as c_int;
+            (*hdr).cdef.y_strength[i_15 as usize] = rav1d_get_bits(gb, 6 as c_int) as c_int;
             if (*seqhdr).monochrome == 0 {
-                (*hdr).cdef.uv_strength[i_15 as usize] = dav1d_get_bits(gb, 6 as c_int) as c_int;
+                (*hdr).cdef.uv_strength[i_15 as usize] = rav1d_get_bits(gb, 6 as c_int) as c_int;
             }
             i_15 += 1;
         }
@@ -1159,12 +1159,12 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         && (*seqhdr).restoration != 0
         && (*hdr).allow_intrabc == 0
     {
-        (*hdr).restoration.type_0[0] = dav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
+        (*hdr).restoration.type_0[0] = rav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
         if (*seqhdr).monochrome == 0 {
-            (*hdr).restoration.type_0[1] = dav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
-            (*hdr).restoration.type_0[2] = dav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
+            (*hdr).restoration.type_0[1] = rav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
+            (*hdr).restoration.type_0[2] = rav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
         } else {
-            (*hdr).restoration.type_0[2] = DAV1D_RESTORATION_NONE;
+            (*hdr).restoration.type_0[2] = RAV1D_RESTORATION_NONE;
             (*hdr).restoration.type_0[1] = (*hdr).restoration.type_0[2];
         }
         if (*hdr).restoration.type_0[0] as c_uint != 0
@@ -1172,11 +1172,11 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
             || (*hdr).restoration.type_0[2] as c_uint != 0
         {
             (*hdr).restoration.unit_size[0] = 6 + (*seqhdr).sb128;
-            if dav1d_get_bit(gb) != 0 {
+            if rav1d_get_bit(gb) != 0 {
                 (*hdr).restoration.unit_size[0] += 1;
                 if (*seqhdr).sb128 == 0 {
                     (*hdr).restoration.unit_size[0] = ((*hdr).restoration.unit_size[0] as c_uint)
-                        .wrapping_add(dav1d_get_bit(gb))
+                        .wrapping_add(rav1d_get_bit(gb))
                         as c_int as c_int;
                 }
             }
@@ -1187,26 +1187,26 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                 && (*seqhdr).ss_ver == 1
             {
                 (*hdr).restoration.unit_size[1] = ((*hdr).restoration.unit_size[1] as c_uint)
-                    .wrapping_sub(dav1d_get_bit(gb))
+                    .wrapping_sub(rav1d_get_bit(gb))
                     as c_int as c_int;
             }
         } else {
             (*hdr).restoration.unit_size[0] = 8 as c_int;
         }
     } else {
-        (*hdr).restoration.type_0[0] = DAV1D_RESTORATION_NONE;
-        (*hdr).restoration.type_0[1] = DAV1D_RESTORATION_NONE;
-        (*hdr).restoration.type_0[2] = DAV1D_RESTORATION_NONE;
+        (*hdr).restoration.type_0[0] = RAV1D_RESTORATION_NONE;
+        (*hdr).restoration.type_0[1] = RAV1D_RESTORATION_NONE;
+        (*hdr).restoration.type_0[2] = RAV1D_RESTORATION_NONE;
     }
     (*hdr).txfm_mode = (if (*hdr).all_lossless != 0 {
-        DAV1D_TX_4X4_ONLY as c_int
-    } else if dav1d_get_bit(gb) != 0 {
-        DAV1D_TX_SWITCHABLE as c_int
+        RAV1D_TX_4X4_ONLY as c_int
+    } else if rav1d_get_bit(gb) != 0 {
+        RAV1D_TX_SWITCHABLE as c_int
     } else {
-        DAV1D_TX_LARGEST as c_int
+        RAV1D_TX_LARGEST as c_int
     }) as Dav1dTxfmMode;
     (*hdr).switchable_comp_refs = (if (*hdr).frame_type as c_uint & 1 as c_uint != 0 {
-        dav1d_get_bit(gb)
+        rav1d_get_bit(gb)
     } else {
         0 as c_int as c_uint
     }) as c_int;
@@ -1306,15 +1306,15 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         }
     }
     (*hdr).skip_mode_enabled = (if (*hdr).skip_mode_allowed != 0 {
-        dav1d_get_bit(gb)
+        rav1d_get_bit(gb)
     } else {
         0 as c_int as c_uint
     }) as c_int;
     (*hdr).warp_motion = ((*hdr).error_resilient_mode == 0
         && (*hdr).frame_type as c_uint & 1 as c_uint != 0
         && (*seqhdr).warped_motion != 0
-        && dav1d_get_bit(gb) != 0) as c_int;
-    (*hdr).reduced_txtp_set = dav1d_get_bit(gb) as c_int;
+        && rav1d_get_bit(gb) != 0) as c_int;
+    (*hdr).reduced_txtp_set = rav1d_get_bit(gb) as c_int;
     let mut i_18 = 0;
     while i_18 < 7 {
         (*hdr).gmv[i_18 as usize] = dav1d_default_wm_params.clone();
@@ -1323,17 +1323,17 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
     if (*hdr).frame_type as c_uint & 1 as c_uint != 0 {
         let mut i_19 = 0;
         while i_19 < 7 {
-            (*hdr).gmv[i_19 as usize].type_0 = (if dav1d_get_bit(gb) == 0 {
-                DAV1D_WM_TYPE_IDENTITY as c_int
-            } else if dav1d_get_bit(gb) != 0 {
-                DAV1D_WM_TYPE_ROT_ZOOM as c_int
-            } else if dav1d_get_bit(gb) != 0 {
-                DAV1D_WM_TYPE_TRANSLATION as c_int
+            (*hdr).gmv[i_19 as usize].type_0 = (if rav1d_get_bit(gb) == 0 {
+                RAV1D_WM_TYPE_IDENTITY as c_int
+            } else if rav1d_get_bit(gb) != 0 {
+                RAV1D_WM_TYPE_ROT_ZOOM as c_int
+            } else if rav1d_get_bit(gb) != 0 {
+                RAV1D_WM_TYPE_TRANSLATION as c_int
             } else {
-                DAV1D_WM_TYPE_AFFINE as c_int
+                RAV1D_WM_TYPE_AFFINE as c_int
             }) as Dav1dWarpedMotionType;
             if !((*hdr).gmv[i_19 as usize].type_0 as c_uint
-                == DAV1D_WM_TYPE_IDENTITY as c_int as c_uint)
+                == RAV1D_WM_TYPE_IDENTITY as c_int as c_uint)
             {
                 let ref_gmv: *const Dav1dWarpedMotionParams;
                 if (*hdr).primary_ref_frame == 7 {
@@ -1357,16 +1357,16 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                 let bits: c_int;
                 let shift: c_int;
                 if (*hdr).gmv[i_19 as usize].type_0 as c_uint
-                    >= DAV1D_WM_TYPE_ROT_ZOOM as c_int as c_uint
+                    >= RAV1D_WM_TYPE_ROT_ZOOM as c_int as c_uint
                 {
                     *mat.offset(2) = ((1 as c_int) << 16)
-                        + 2 * dav1d_get_bits_subexp(
+                        + 2 * rav1d_get_bits_subexp(
                             gb,
                             *ref_mat.offset(2) - ((1 as c_int) << 16) >> 1,
                             12 as c_int as c_uint,
                         );
                     *mat.offset(3) = 2 as c_int
-                        * dav1d_get_bits_subexp(gb, *ref_mat.offset(3) >> 1, 12 as c_int as c_uint);
+                        * rav1d_get_bits_subexp(gb, *ref_mat.offset(3) >> 1, 12 as c_int as c_uint);
                     bits = 12 as c_int;
                     shift = 10 as c_int;
                 } else {
@@ -1374,12 +1374,12 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                     shift = 13 + ((*hdr).hp == 0) as c_int;
                 }
                 if (*hdr).gmv[i_19 as usize].type_0 as c_uint
-                    == DAV1D_WM_TYPE_AFFINE as c_int as c_uint
+                    == RAV1D_WM_TYPE_AFFINE as c_int as c_uint
                 {
                     *mat.offset(4) = 2 as c_int
-                        * dav1d_get_bits_subexp(gb, *ref_mat.offset(4) >> 1, 12 as c_int as c_uint);
+                        * rav1d_get_bits_subexp(gb, *ref_mat.offset(4) >> 1, 12 as c_int as c_uint);
                     *mat.offset(5) = ((1 as c_int) << 16)
-                        + 2 * dav1d_get_bits_subexp(
+                        + 2 * rav1d_get_bits_subexp(
                             gb,
                             *ref_mat.offset(5) - ((1 as c_int) << 16) >> 1,
                             12 as c_int as c_uint,
@@ -1389,10 +1389,10 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                     *mat.offset(5) = *mat.offset(2);
                 }
                 *mat.offset(0) =
-                    dav1d_get_bits_subexp(gb, *ref_mat.offset(0) >> shift, bits as c_uint)
+                    rav1d_get_bits_subexp(gb, *ref_mat.offset(0) >> shift, bits as c_uint)
                         * ((1 as c_int) << shift);
                 *mat.offset(1) =
-                    dav1d_get_bits_subexp(gb, *ref_mat.offset(1) >> shift, bits as c_uint)
+                    rav1d_get_bits_subexp(gb, *ref_mat.offset(1) >> shift, bits as c_uint)
                         * ((1 as c_int) << shift);
             }
             i_19 += 1;
@@ -1400,14 +1400,14 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
     }
     (*hdr).film_grain.present = ((*seqhdr).film_grain_present != 0
         && ((*hdr).show_frame != 0 || (*hdr).showable_frame != 0)
-        && dav1d_get_bit(gb) != 0) as c_int;
+        && rav1d_get_bit(gb) != 0) as c_int;
     if (*hdr).film_grain.present != 0 {
-        let seed: c_uint = dav1d_get_bits(gb, 16 as c_int);
+        let seed: c_uint = rav1d_get_bits(gb, 16 as c_int);
         (*hdr).film_grain.update = ((*hdr).frame_type as c_uint
-            != DAV1D_FRAME_TYPE_INTER as c_int as c_uint
-            || dav1d_get_bit(gb) != 0) as c_int;
+            != RAV1D_FRAME_TYPE_INTER as c_int as c_uint
+            || rav1d_get_bit(gb) != 0) as c_int;
         if (*hdr).film_grain.update == 0 {
-            let refidx: c_int = dav1d_get_bits(gb, 3 as c_int) as c_int;
+            let refidx: c_int = rav1d_get_bits(gb, 3 as c_int) as c_int;
             let mut i_20: c_int;
             i_20 = 0 as c_int;
             while i_20 < 7 {
@@ -1427,24 +1427,24 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
         } else {
             let fgd: *mut Dav1dFilmGrainData = &mut (*hdr).film_grain.data;
             (*fgd).seed = seed;
-            (*fgd).num_y_points = dav1d_get_bits(gb, 4 as c_int) as c_int;
+            (*fgd).num_y_points = rav1d_get_bits(gb, 4 as c_int) as c_int;
             if (*fgd).num_y_points > 14 {
                 return parse_frame_hdr_error(c);
             }
             let mut i_21 = 0;
             while i_21 < (*fgd).num_y_points {
-                (*fgd).y_points[i_21 as usize][0] = dav1d_get_bits(gb, 8 as c_int) as u8;
+                (*fgd).y_points[i_21 as usize][0] = rav1d_get_bits(gb, 8 as c_int) as u8;
                 if i_21 != 0
                     && (*fgd).y_points[(i_21 - 1) as usize][0] as c_int
                         >= (*fgd).y_points[i_21 as usize][0] as c_int
                 {
                     return parse_frame_hdr_error(c);
                 }
-                (*fgd).y_points[i_21 as usize][1] = dav1d_get_bits(gb, 8 as c_int) as u8;
+                (*fgd).y_points[i_21 as usize][1] = rav1d_get_bits(gb, 8 as c_int) as u8;
                 i_21 += 1;
             }
             (*fgd).chroma_scaling_from_luma =
-                ((*seqhdr).monochrome == 0 && dav1d_get_bit(gb) != 0) as c_int;
+                ((*seqhdr).monochrome == 0 && rav1d_get_bit(gb) != 0) as c_int;
             if (*seqhdr).monochrome != 0
                 || (*fgd).chroma_scaling_from_luma != 0
                 || (*seqhdr).ss_ver == 1 && (*seqhdr).ss_hor == 1 && (*fgd).num_y_points == 0
@@ -1454,14 +1454,14 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
             } else {
                 let mut pl = 0;
                 while pl < 2 {
-                    (*fgd).num_uv_points[pl as usize] = dav1d_get_bits(gb, 4 as c_int) as c_int;
+                    (*fgd).num_uv_points[pl as usize] = rav1d_get_bits(gb, 4 as c_int) as c_int;
                     if (*fgd).num_uv_points[pl as usize] > 10 {
                         return parse_frame_hdr_error(c);
                     }
                     let mut i_22 = 0;
                     while i_22 < (*fgd).num_uv_points[pl as usize] {
                         (*fgd).uv_points[pl as usize][i_22 as usize][0] =
-                            dav1d_get_bits(gb, 8 as c_int) as u8;
+                            rav1d_get_bits(gb, 8 as c_int) as u8;
                         if i_22 != 0
                             && (*fgd).uv_points[pl as usize][(i_22 - 1) as usize][0] as c_int
                                 >= (*fgd).uv_points[pl as usize][i_22 as usize][0] as c_int
@@ -1469,7 +1469,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                             return parse_frame_hdr_error(c);
                         }
                         (*fgd).uv_points[pl as usize][i_22 as usize][1] =
-                            dav1d_get_bits(gb, 8 as c_int) as u8;
+                            rav1d_get_bits(gb, 8 as c_int) as u8;
                         i_22 += 1;
                     }
                     pl += 1;
@@ -1483,14 +1483,14 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                 return parse_frame_hdr_error(c);
             }
             (*fgd).scaling_shift =
-                (dav1d_get_bits(gb, 2 as c_int)).wrapping_add(8 as c_int as c_uint) as c_int;
-            (*fgd).ar_coeff_lag = dav1d_get_bits(gb, 2 as c_int) as c_int;
+                (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(8 as c_int as c_uint) as c_int;
+            (*fgd).ar_coeff_lag = rav1d_get_bits(gb, 2 as c_int) as c_int;
             let num_y_pos = 2 * (*fgd).ar_coeff_lag * ((*fgd).ar_coeff_lag + 1);
             if (*fgd).num_y_points != 0 {
                 let mut i_23 = 0;
                 while i_23 < num_y_pos {
                     (*fgd).ar_coeffs_y[i_23 as usize] =
-                        (dav1d_get_bits(gb, 8 as c_int)).wrapping_sub(128 as c_int as c_uint) as i8;
+                        (rav1d_get_bits(gb, 8 as c_int)).wrapping_sub(128 as c_int as c_uint) as i8;
                     i_23 += 1;
                 }
             }
@@ -1502,7 +1502,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                     let mut i_24 = 0;
                     while i_24 < num_uv_pos {
                         (*fgd).ar_coeffs_uv[pl_0 as usize][i_24 as usize] =
-                            (dav1d_get_bits(gb, 8 as c_int)).wrapping_sub(128 as c_int as c_uint)
+                            (rav1d_get_bits(gb, 8 as c_int)).wrapping_sub(128 as c_int as c_uint)
                                 as i8;
                         i_24 += 1;
                     }
@@ -1513,25 +1513,25 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
                 pl_0 += 1;
             }
             (*fgd).ar_coeff_shift =
-                (dav1d_get_bits(gb, 2 as c_int)).wrapping_add(6 as c_int as c_uint) as u64;
-            (*fgd).grain_scale_shift = dav1d_get_bits(gb, 2 as c_int) as c_int;
+                (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(6 as c_int as c_uint) as u64;
+            (*fgd).grain_scale_shift = rav1d_get_bits(gb, 2 as c_int) as c_int;
             let mut pl_1 = 0;
             while pl_1 < 2 {
                 if (*fgd).num_uv_points[pl_1 as usize] != 0 {
-                    (*fgd).uv_mult[pl_1 as usize] = (dav1d_get_bits(gb, 8 as c_int))
+                    (*fgd).uv_mult[pl_1 as usize] = (rav1d_get_bits(gb, 8 as c_int))
                         .wrapping_sub(128 as c_int as c_uint)
                         as c_int;
-                    (*fgd).uv_luma_mult[pl_1 as usize] = (dav1d_get_bits(gb, 8 as c_int))
+                    (*fgd).uv_luma_mult[pl_1 as usize] = (rav1d_get_bits(gb, 8 as c_int))
                         .wrapping_sub(128 as c_int as c_uint)
                         as c_int;
-                    (*fgd).uv_offset[pl_1 as usize] = (dav1d_get_bits(gb, 9 as c_int))
+                    (*fgd).uv_offset[pl_1 as usize] = (rav1d_get_bits(gb, 9 as c_int))
                         .wrapping_sub(256 as c_int as c_uint)
                         as c_int;
                 }
                 pl_1 += 1;
             }
-            (*fgd).overlap_flag = dav1d_get_bit(gb) as c_int;
-            (*fgd).clip_to_restricted_range = dav1d_get_bit(gb) as c_int;
+            (*fgd).overlap_flag = rav1d_get_bit(gb) as c_int;
+            (*fgd).clip_to_restricted_range = rav1d_get_bit(gb) as c_int;
         }
     } else {
         memset(
@@ -1546,15 +1546,15 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
 unsafe extern "C" fn parse_tile_hdr(c: *mut Rav1dContext, gb: *mut GetBits) {
     let n_tiles = (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows;
     let have_tile_pos = (if n_tiles > 1 {
-        dav1d_get_bit(gb)
+        rav1d_get_bit(gb)
     } else {
         0 as c_int as c_uint
     }) as c_int;
     if have_tile_pos != 0 {
         let n_bits = (*(*c).frame_hdr).tiling.log2_cols + (*(*c).frame_hdr).tiling.log2_rows;
         (*((*c).tile).offset((*c).n_tile_data as isize)).start =
-            dav1d_get_bits(gb, n_bits) as c_int;
-        (*((*c).tile).offset((*c).n_tile_data as isize)).end = dav1d_get_bits(gb, n_bits) as c_int;
+            rav1d_get_bits(gb, n_bits) as c_int;
+        (*((*c).tile).offset((*c).n_tile_data as isize)).end = rav1d_get_bits(gb, n_bits) as c_int;
     } else {
         (*((*c).tile).offset((*c).n_tile_data as isize)).start = 0 as c_int;
         (*((*c).tile).offset((*c).n_tile_data as isize)).end = n_tiles - 1;
@@ -1568,18 +1568,18 @@ unsafe extern "C" fn check_for_overrun(
     obu_len: c_uint,
 ) -> c_int {
     if (*gb).error != 0 {
-        dav1d_log(
+        rav1d_log(
             c,
             b"Overrun in OBU bit buffer\n\0" as *const u8 as *const c_char,
         );
         return 1 as c_int;
     }
-    let pos: c_uint = dav1d_get_bits_pos(gb);
+    let pos: c_uint = rav1d_get_bits_pos(gb);
     if !(init_bit_pos <= pos) {
         unreachable!();
     }
     if pos.wrapping_sub(init_bit_pos) > (8 as c_int as c_uint).wrapping_mul(obu_len) {
-        dav1d_log(
+        rav1d_log(
             c,
             b"Overrun in OBU bit buffer into next OBU\n\0" as *const u8 as *const c_char,
         );
@@ -1588,16 +1588,16 @@ unsafe extern "C" fn check_for_overrun(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn dav1d_parse_obus_error(c: *mut Rav1dContext, in_0: *mut Dav1dData) -> c_int {
-    dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*in_0).m);
-    dav1d_log(
+unsafe extern "C" fn rav1d_parse_obus_error(c: *mut Rav1dContext, in_0: *mut Rav1dData) -> c_int {
+    rav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*in_0).m);
+    rav1d_log(
         c,
         b"Error parsing OBU data\n\0" as *const u8 as *const c_char,
     );
     return -(22 as c_int);
 }
 
-unsafe extern "C" fn dav1d_parse_obus_skip(
+unsafe extern "C" fn rav1d_parse_obus_skip(
     c: *mut Rav1dContext,
     len: c_uint,
     init_byte_pos: c_uint,
@@ -1605,23 +1605,27 @@ unsafe extern "C" fn dav1d_parse_obus_skip(
     let mut i = 0;
     while i < 8 {
         if (*(*c).frame_hdr).refresh_frame_flags & (1 as c_int) << i != 0 {
-            dav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
+            rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
             (*c).refs[i as usize].p.p.frame_hdr = (*c).frame_hdr;
             (*c).refs[i as usize].p.p.seq_hdr = (*c).seq_hdr;
             (*c).refs[i as usize].p.p.frame_hdr_ref = (*c).frame_hdr_ref;
             (*c).refs[i as usize].p.p.seq_hdr_ref = (*c).seq_hdr_ref;
-            dav1d_ref_inc((*c).frame_hdr_ref);
-            dav1d_ref_inc((*c).seq_hdr_ref);
+            rav1d_ref_inc((*c).frame_hdr_ref);
+            rav1d_ref_inc((*c).seq_hdr_ref);
         }
         i += 1;
     }
-    dav1d_ref_dec(&mut (*c).frame_hdr_ref);
+    rav1d_ref_dec(&mut (*c).frame_hdr_ref);
     (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
     (*c).n_tiles = 0 as c_int;
     return len.wrapping_add(init_byte_pos) as c_int;
 }
 
-pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, global: c_int) -> c_int {
+pub(crate) unsafe fn rav1d_parse_obus(
+    c: *mut Rav1dContext,
+    in_0: *mut Rav1dData,
+    global: c_int,
+) -> c_int {
     let mut gb: GetBits = GetBits {
         state: 0,
         bits_left: 0,
@@ -1631,30 +1635,30 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
         ptr_end: 0 as *const u8,
     };
     let mut res: c_int;
-    dav1d_init_get_bits(&mut gb, (*in_0).data, (*in_0).sz);
-    dav1d_get_bit(&mut gb);
-    let type_0: Dav1dObuType = dav1d_get_bits(&mut gb, 4 as c_int) as Dav1dObuType;
-    let has_extension: c_int = dav1d_get_bit(&mut gb) as c_int;
-    let has_length_field: c_int = dav1d_get_bit(&mut gb) as c_int;
-    dav1d_get_bit(&mut gb);
+    rav1d_init_get_bits(&mut gb, (*in_0).data, (*in_0).sz);
+    rav1d_get_bit(&mut gb);
+    let type_0: Rav1dObuType = rav1d_get_bits(&mut gb, 4 as c_int) as Rav1dObuType;
+    let has_extension: c_int = rav1d_get_bit(&mut gb) as c_int;
+    let has_length_field: c_int = rav1d_get_bit(&mut gb) as c_int;
+    rav1d_get_bit(&mut gb);
     let mut temporal_id = 0;
     let mut spatial_id = 0;
     if has_extension != 0 {
-        temporal_id = dav1d_get_bits(&mut gb, 3 as c_int) as c_int;
-        spatial_id = dav1d_get_bits(&mut gb, 2 as c_int) as c_int;
-        dav1d_get_bits(&mut gb, 3 as c_int);
+        temporal_id = rav1d_get_bits(&mut gb, 3 as c_int) as c_int;
+        spatial_id = rav1d_get_bits(&mut gb, 2 as c_int) as c_int;
+        rav1d_get_bits(&mut gb, 3 as c_int);
     }
     let len: c_uint = if has_length_field != 0 {
-        dav1d_get_uleb128(&mut gb)
+        rav1d_get_uleb128(&mut gb)
     } else {
         ((*in_0).sz as c_uint)
             .wrapping_sub(1 as c_int as c_uint)
             .wrapping_sub(has_extension as c_uint)
     };
     if gb.error != 0 {
-        return dav1d_parse_obus_error(c, in_0);
+        return rav1d_parse_obus_error(c, in_0);
     }
-    let init_bit_pos: c_uint = dav1d_get_bits_pos(&mut gb);
+    let init_bit_pos: c_uint = rav1d_get_bits_pos(&mut gb);
     let init_byte_pos: c_uint = init_bit_pos >> 3;
     if !(init_bit_pos & 7 as c_uint == 0 as c_uint) {
         unreachable!();
@@ -1663,10 +1667,10 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
         unreachable!();
     }
     if len as usize > ((*in_0).sz).wrapping_sub(init_byte_pos as usize) {
-        return dav1d_parse_obus_error(c, in_0);
+        return rav1d_parse_obus_error(c, in_0);
     }
-    if type_0 as c_uint != DAV1D_OBU_SEQ_HDR as c_int as c_uint
-        && type_0 as c_uint != DAV1D_OBU_TD as c_int as c_uint
+    if type_0 as c_uint != RAV1D_OBU_SEQ_HDR as c_int as c_uint
+        && type_0 as c_uint != RAV1D_OBU_TD as c_int as c_uint
         && has_extension != 0
         && (*c).operating_point_idc != 0 as c_int as c_uint
     {
@@ -1680,8 +1684,8 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
     }
     let mut current_block_188: u64;
     match type_0 as c_uint {
-        DAV1D_OBU_SEQ_HDR => {
-            let mut ref_0: *mut Rav1dRef = dav1d_ref_create_using_pool(
+        RAV1D_OBU_SEQ_HDR => {
+            let mut ref_0: *mut Rav1dRef = rav1d_ref_create_using_pool(
                 (*c).seq_hdr_pool,
                 ::core::mem::size_of::<Dav1dSequenceHeader>(),
             );
@@ -1691,12 +1695,12 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
             let seq_hdr: *mut Dav1dSequenceHeader = (*ref_0).data as *mut Dav1dSequenceHeader;
             res = parse_seq_hdr(c, &mut gb, seq_hdr);
             if res < 0 {
-                dav1d_ref_dec(&mut ref_0);
-                return dav1d_parse_obus_error(c, in_0);
+                rav1d_ref_dec(&mut ref_0);
+                return rav1d_parse_obus_error(c, in_0);
             }
             if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                dav1d_ref_dec(&mut ref_0);
-                return dav1d_parse_obus_error(c, in_0);
+                rav1d_ref_dec(&mut ref_0);
+                return rav1d_parse_obus_error(c, in_0);
             }
             if ((*c).seq_hdr).is_null() {
                 (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
@@ -1712,18 +1716,18 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
                 (*c).mastering_display = 0 as *mut Dav1dMasteringDisplay;
                 (*c).content_light = 0 as *mut Dav1dContentLightLevel;
-                dav1d_ref_dec(&mut (*c).mastering_display_ref);
-                dav1d_ref_dec(&mut (*c).content_light_ref);
+                rav1d_ref_dec(&mut (*c).mastering_display_ref);
+                rav1d_ref_dec(&mut (*c).content_light_ref);
                 let mut i = 0;
                 while i < 8 {
                     if !((*c).refs[i as usize].p.p.frame_hdr).is_null() {
-                        dav1d_thread_picture_unref(
+                        rav1d_thread_picture_unref(
                             &mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p,
                         );
                     }
-                    dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
-                    dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
-                    dav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i as isize));
+                    rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
+                    rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
+                    rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i as isize));
                     i += 1;
                 }
                 (*c).frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
@@ -1739,57 +1743,57 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                     (*c).frame_flags as c_uint | PICTURE_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint,
                 );
             }
-            dav1d_ref_dec(&mut (*c).seq_hdr_ref);
+            rav1d_ref_dec(&mut (*c).seq_hdr_ref);
             (*c).seq_hdr_ref = ref_0;
             (*c).seq_hdr = seq_hdr;
             current_block_188 = 8953117030348968745;
         }
-        DAV1D_OBU_REDUNDANT_FRAME_HDR => {
+        RAV1D_OBU_REDUNDANT_FRAME_HDR => {
             if !((*c).frame_hdr).is_null() {
                 current_block_188 = 8953117030348968745;
             } else {
                 current_block_188 = 14065157188459580465;
             }
         }
-        DAV1D_OBU_FRAME | DAV1D_OBU_FRAME_HDR => {
+        RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
             current_block_188 = 14065157188459580465;
         }
-        DAV1D_OBU_TILE_GRP => {
+        RAV1D_OBU_TILE_GRP => {
             current_block_188 = 17787701279558130514;
         }
-        DAV1D_OBU_METADATA => {
-            let meta_type: ObuMetaType = dav1d_get_uleb128(&mut gb) as ObuMetaType;
+        RAV1D_OBU_METADATA => {
+            let meta_type: ObuMetaType = rav1d_get_uleb128(&mut gb) as ObuMetaType;
             let meta_type_len: c_int =
-                ((dav1d_get_bits_pos(&mut gb)).wrapping_sub(init_bit_pos) >> 3) as c_int;
+                ((rav1d_get_bits_pos(&mut gb)).wrapping_sub(init_bit_pos) >> 3) as c_int;
             if gb.error != 0 {
-                return dav1d_parse_obus_error(c, in_0);
+                return rav1d_parse_obus_error(c, in_0);
             }
             match meta_type as c_uint {
                 OBU_META_HDR_CLL => {
                     let mut ref_1: *mut Rav1dRef =
-                        dav1d_ref_create(::core::mem::size_of::<Dav1dContentLightLevel>());
+                        rav1d_ref_create(::core::mem::size_of::<Dav1dContentLightLevel>());
                     if ref_1.is_null() {
                         return -(12 as c_int);
                     }
                     let content_light: *mut Dav1dContentLightLevel =
                         (*ref_1).data as *mut Dav1dContentLightLevel;
                     (*content_light).max_content_light_level =
-                        dav1d_get_bits(&mut gb, 16 as c_int) as c_int;
+                        rav1d_get_bits(&mut gb, 16 as c_int) as c_int;
                     (*content_light).max_frame_average_light_level =
-                        dav1d_get_bits(&mut gb, 16 as c_int) as c_int;
-                    dav1d_get_bit(&mut gb);
-                    dav1d_bytealign_get_bits(&mut gb);
+                        rav1d_get_bits(&mut gb, 16 as c_int) as c_int;
+                    rav1d_get_bit(&mut gb);
+                    rav1d_bytealign_get_bits(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        dav1d_ref_dec(&mut ref_1);
-                        return dav1d_parse_obus_error(c, in_0);
+                        rav1d_ref_dec(&mut ref_1);
+                        return rav1d_parse_obus_error(c, in_0);
                     }
-                    dav1d_ref_dec(&mut (*c).content_light_ref);
+                    rav1d_ref_dec(&mut (*c).content_light_ref);
                     (*c).content_light = content_light;
                     (*c).content_light_ref = ref_1;
                 }
                 OBU_META_HDR_MDCV => {
                     let mut ref_2: *mut Rav1dRef =
-                        dav1d_ref_create(::core::mem::size_of::<Dav1dMasteringDisplay>());
+                        rav1d_ref_create(::core::mem::size_of::<Dav1dMasteringDisplay>());
                     if ref_2.is_null() {
                         return -(12 as c_int);
                     }
@@ -1798,24 +1802,24 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                     let mut i_1 = 0;
                     while i_1 < 3 {
                         (*mastering_display).primaries[i_1 as usize][0] =
-                            dav1d_get_bits(&mut gb, 16 as c_int) as u16;
+                            rav1d_get_bits(&mut gb, 16 as c_int) as u16;
                         (*mastering_display).primaries[i_1 as usize][1] =
-                            dav1d_get_bits(&mut gb, 16 as c_int) as u16;
+                            rav1d_get_bits(&mut gb, 16 as c_int) as u16;
                         i_1 += 1;
                     }
                     (*mastering_display).white_point[0] =
-                        dav1d_get_bits(&mut gb, 16 as c_int) as u16;
+                        rav1d_get_bits(&mut gb, 16 as c_int) as u16;
                     (*mastering_display).white_point[1] =
-                        dav1d_get_bits(&mut gb, 16 as c_int) as u16;
-                    (*mastering_display).max_luminance = dav1d_get_bits(&mut gb, 32 as c_int);
-                    (*mastering_display).min_luminance = dav1d_get_bits(&mut gb, 32 as c_int);
-                    dav1d_get_bit(&mut gb);
-                    dav1d_bytealign_get_bits(&mut gb);
+                        rav1d_get_bits(&mut gb, 16 as c_int) as u16;
+                    (*mastering_display).max_luminance = rav1d_get_bits(&mut gb, 32 as c_int);
+                    (*mastering_display).min_luminance = rav1d_get_bits(&mut gb, 32 as c_int);
+                    rav1d_get_bit(&mut gb);
+                    rav1d_bytealign_get_bits(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        dav1d_ref_dec(&mut ref_2);
-                        return dav1d_parse_obus_error(c, in_0);
+                        rav1d_ref_dec(&mut ref_2);
+                        return rav1d_parse_obus_error(c, in_0);
                     }
-                    dav1d_ref_dec(&mut (*c).mastering_display_ref);
+                    rav1d_ref_dec(&mut (*c).mastering_display_ref);
                     (*c).mastering_display = mastering_display;
                     (*c).mastering_display_ref = ref_2;
                 }
@@ -1834,20 +1838,20 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                     payload_size -= 1;
                     payload_size -= meta_type_len;
                     let mut country_code_extension_byte = 0;
-                    let country_code: c_int = dav1d_get_bits(&mut gb, 8 as c_int) as c_int;
+                    let country_code: c_int = rav1d_get_bits(&mut gb, 8 as c_int) as c_int;
                     payload_size -= 1;
                     if country_code == 0xff as c_int {
-                        country_code_extension_byte = dav1d_get_bits(&mut gb, 8 as c_int) as c_int;
+                        country_code_extension_byte = rav1d_get_bits(&mut gb, 8 as c_int) as c_int;
                         payload_size -= 1;
                     }
                     if payload_size <= 0 {
-                        dav1d_log(
+                        rav1d_log(
                             c,
                             b"Malformed ITU-T T.35 metadata message format\n\0" as *const u8
                                 as *const c_char,
                         );
                     } else {
-                        let ref_3: *mut Rav1dRef = dav1d_ref_create(
+                        let ref_3: *mut Rav1dRef = rav1d_ref_create(
                             (::core::mem::size_of::<Dav1dITUTT35>()).wrapping_add(
                                 (payload_size as usize).wrapping_mul(::core::mem::size_of::<u8>()),
                             ),
@@ -1865,18 +1869,18 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                         let mut i_2 = 0;
                         while i_2 < payload_size {
                             *((*itut_t35_metadata).payload).offset(i_2 as isize) =
-                                dav1d_get_bits(&mut gb, 8 as c_int) as u8;
+                                rav1d_get_bits(&mut gb, 8 as c_int) as u8;
                             i_2 += 1;
                         }
                         (*itut_t35_metadata).payload_size = payload_size as usize;
-                        dav1d_ref_dec(&mut (*c).itut_t35_ref);
+                        rav1d_ref_dec(&mut (*c).itut_t35_ref);
                         (*c).itut_t35 = itut_t35_metadata;
                         (*c).itut_t35_ref = ref_3;
                     }
                 }
                 OBU_META_SCALABILITY | OBU_META_TIMECODE => {}
                 _ => {
-                    dav1d_log(
+                    rav1d_log(
                         c,
                         b"Unknown Metadata OBU type %d\n\0" as *const u8 as *const c_char,
                         meta_type as c_uint,
@@ -1885,17 +1889,17 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
             }
             current_block_188 = 8953117030348968745;
         }
-        DAV1D_OBU_TD => {
+        RAV1D_OBU_TD => {
             (*c).frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
                 (*c).frame_flags as c_uint | PICTURE_FLAG_NEW_TEMPORAL_UNIT as c_int as c_uint,
             );
             current_block_188 = 8953117030348968745;
         }
-        DAV1D_OBU_PADDING => {
+        RAV1D_OBU_PADDING => {
             current_block_188 = 8953117030348968745;
         }
         _ => {
-            dav1d_log(
+            rav1d_log(
                 c,
                 b"Unknown OBU type %d of size %u\n\0" as *const u8 as *const c_char,
                 type_0 as c_uint,
@@ -1910,10 +1914,10 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 current_block_188 = 8953117030348968745;
             } else {
                 if ((*c).seq_hdr).is_null() {
-                    return dav1d_parse_obus_error(c, in_0);
+                    return rav1d_parse_obus_error(c, in_0);
                 }
                 if ((*c).frame_hdr_ref).is_null() {
-                    (*c).frame_hdr_ref = dav1d_ref_create_using_pool(
+                    (*c).frame_hdr_ref = rav1d_ref_create_using_pool(
                         (*c).frame_hdr_pool,
                         ::core::mem::size_of::<Dav1dFrameHeader>(),
                     );
@@ -1922,7 +1926,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                     }
                 }
                 // ensure that the reference is writable
-                debug_assert!(dav1d_ref_is_writable((*c).frame_hdr_ref) != 0);
+                debug_assert!(rav1d_ref_is_writable((*c).frame_hdr_ref) != 0);
                 (*c).frame_hdr = (*(*c).frame_hdr_ref).data as *mut Dav1dFrameHeader;
                 memset(
                     (*c).frame_hdr as *mut c_void,
@@ -1934,27 +1938,27 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 res = parse_frame_hdr(c, &mut gb);
                 if res < 0 {
                     (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                    return dav1d_parse_obus_error(c, in_0);
+                    return rav1d_parse_obus_error(c, in_0);
                 }
                 let mut n = 0;
                 while n < (*c).n_tile_data {
-                    dav1d_data_unref_internal(&mut (*((*c).tile).offset(n as isize)).data);
+                    rav1d_data_unref_internal(&mut (*((*c).tile).offset(n as isize)).data);
                     n += 1;
                 }
                 (*c).n_tile_data = 0 as c_int;
                 (*c).n_tiles = 0 as c_int;
-                if type_0 as c_uint != DAV1D_OBU_FRAME as c_int as c_uint {
-                    dav1d_get_bit(&mut gb);
+                if type_0 as c_uint != RAV1D_OBU_FRAME as c_int as c_uint {
+                    rav1d_get_bit(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                         (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                        return dav1d_parse_obus_error(c, in_0);
+                        return rav1d_parse_obus_error(c, in_0);
                     }
                 }
                 if (*c).frame_size_limit != 0
                     && (*(*c).frame_hdr).width[1] as i64 * (*(*c).frame_hdr).height as i64
                         > (*c).frame_size_limit as i64
                 {
-                    dav1d_log(
+                    rav1d_log(
                         c,
                         b"Frame size %dx%d exceeds limit %u\n\0" as *const u8 as *const c_char,
                         (*(*c).frame_hdr).width[1],
@@ -1964,14 +1968,14 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                     (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
                     return -(34 as c_int);
                 }
-                if type_0 as c_uint != DAV1D_OBU_FRAME as c_int as c_uint {
+                if type_0 as c_uint != RAV1D_OBU_FRAME as c_int as c_uint {
                     current_block_188 = 8953117030348968745;
                 } else {
                     if (*(*c).frame_hdr).show_existing_frame != 0 {
                         (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
-                        return dav1d_parse_obus_error(c, in_0);
+                        return rav1d_parse_obus_error(c, in_0);
                     }
-                    dav1d_bytealign_get_bits(&mut gb);
+                    rav1d_bytealign_get_bits(&mut gb);
                     current_block_188 = 17787701279558130514;
                 }
             }
@@ -1982,13 +1986,13 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
         17787701279558130514 => {
             if !(global != 0) {
                 if ((*c).frame_hdr).is_null() {
-                    return dav1d_parse_obus_error(c, in_0);
+                    return rav1d_parse_obus_error(c, in_0);
                 }
                 if (*c).n_tile_data_alloc < (*c).n_tile_data + 1 {
                     if (*c).n_tile_data + 1
                         > i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_ulong as c_int
                     {
-                        return dav1d_parse_obus_error(c, in_0);
+                        return rav1d_parse_obus_error(c, in_0);
                     }
                     let tile: *mut Rav1dTileGroup = realloc(
                         (*c).tile as *mut c_void,
@@ -1996,7 +2000,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                             .wrapping_mul(::core::mem::size_of::<Rav1dTileGroup>()),
                     ) as *mut Rav1dTileGroup;
                     if tile.is_null() {
-                        return dav1d_parse_obus_error(c, in_0);
+                        return rav1d_parse_obus_error(c, in_0);
                     }
                     (*c).tile = tile;
                     memset(
@@ -2007,19 +2011,19 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                     (*c).n_tile_data_alloc = (*c).n_tile_data + 1;
                 }
                 parse_tile_hdr(c, &mut gb);
-                dav1d_bytealign_get_bits(&mut gb);
+                rav1d_bytealign_get_bits(&mut gb);
                 if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                    return dav1d_parse_obus_error(c, in_0);
+                    return rav1d_parse_obus_error(c, in_0);
                 }
                 let pkt_bytelen: c_uint = init_byte_pos.wrapping_add(len);
-                let bit_pos: c_uint = dav1d_get_bits_pos(&mut gb);
+                let bit_pos: c_uint = rav1d_get_bits_pos(&mut gb);
                 if !(bit_pos & 7 as c_uint == 0 as c_uint) {
                     unreachable!();
                 }
                 if !(pkt_bytelen >= bit_pos >> 3) {
                     unreachable!();
                 }
-                dav1d_data_ref(
+                rav1d_data_ref(
                     &mut (*((*c).tile).offset((*c).n_tile_data as isize)).data,
                     in_0,
                 );
@@ -2033,12 +2037,12 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 {
                     let mut i_0 = 0;
                     while i_0 <= (*c).n_tile_data {
-                        dav1d_data_unref_internal(&mut (*((*c).tile).offset(i_0 as isize)).data);
+                        rav1d_data_unref_internal(&mut (*((*c).tile).offset(i_0 as isize)).data);
                         i_0 += 1;
                     }
                     (*c).n_tile_data = 0 as c_int;
                     (*c).n_tiles = 0 as c_int;
-                    return dav1d_parse_obus_error(c, in_0);
+                    return rav1d_parse_obus_error(c, in_0);
                 }
                 (*c).n_tiles += 1 as c_int + (*((*c).tile).offset((*c).n_tile_data as isize)).end
                     - (*((*c).tile).offset((*c).n_tile_data as isize)).start;
@@ -2055,7 +2059,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 .frame_hdr)
                 .is_null()
             {
-                return dav1d_parse_obus_error(c, in_0);
+                return rav1d_parse_obus_error(c, in_0);
             }
             match (*(*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
                 .p
@@ -2063,18 +2067,18 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 .frame_hdr)
                 .frame_type as c_uint
             {
-                DAV1D_FRAME_TYPE_INTER | DAV1D_FRAME_TYPE_SWITCH => {
+                RAV1D_FRAME_TYPE_INTER | RAV1D_FRAME_TYPE_SWITCH => {
                     if (*c).decode_frame_type as c_uint
-                        > DAV1D_DECODEFRAMETYPE_REFERENCE as c_int as c_uint
+                        > RAV1D_DECODEFRAMETYPE_REFERENCE as c_int as c_uint
                     {
-                        return dav1d_parse_obus_skip(c, len, init_byte_pos);
+                        return rav1d_parse_obus_skip(c, len, init_byte_pos);
                     }
                 }
-                DAV1D_FRAME_TYPE_INTRA => {
+                RAV1D_FRAME_TYPE_INTRA => {
                     if (*c).decode_frame_type as c_uint
-                        > DAV1D_DECODEFRAMETYPE_INTRA as c_int as c_uint
+                        > RAV1D_DECODEFRAMETYPE_INTRA as c_int as c_uint
                     {
-                        return dav1d_parse_obus_skip(c, len, init_byte_pos);
+                        return rav1d_parse_obus_skip(c, len, init_byte_pos);
                     }
                 }
                 _ => {}
@@ -2085,27 +2089,27 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 .data[0])
                 .is_null()
             {
-                return dav1d_parse_obus_error(c, in_0);
+                return rav1d_parse_obus_error(c, in_0);
             }
             if (*c).strict_std_compliance != 0
                 && !(*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
                     .p
                     .showable
             {
-                return dav1d_parse_obus_error(c, in_0);
+                return rav1d_parse_obus_error(c, in_0);
             }
             if (*c).n_fc == 1 as c_uint {
-                dav1d_thread_picture_ref(
+                rav1d_thread_picture_ref(
                     &mut (*c).out,
                     &mut (*((*c).refs)
                         .as_mut_ptr()
                         .offset((*(*c).frame_hdr).existing_frame_idx as isize))
                     .p,
                 );
-                dav1d_data_props_copy(&mut (*c).out.p.m, &mut (*in_0).m);
+                rav1d_data_props_copy(&mut (*c).out.p.m, &mut (*in_0).m);
                 (*c).event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
                     (*c).event_flags as c_uint
-                        | dav1d_picture_get_event_flags(
+                        | rav1d_picture_get_event_flags(
                             &mut (*((*c).refs)
                                 .as_mut_ptr()
                                 .offset((*(*c).frame_hdr).existing_frame_idx as isize))
@@ -2164,8 +2168,8 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 if error != 0 {
                     (*c).cached_error = error;
                     (*f).task_thread.retval = 0 as c_int;
-                    dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*out_delayed).p.m);
-                    dav1d_thread_picture_unref(out_delayed);
+                    rav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*out_delayed).p.m);
+                    rav1d_thread_picture_unref(out_delayed);
                 } else if !((*out_delayed).p.data[0]).is_null() {
                     let progress: c_uint = ::core::intrinsics::atomic_load_relaxed(
                         &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
@@ -2173,15 +2177,15 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                     if ((*out_delayed).visible || (*c).output_invisible_frames != 0)
                         && progress != FRAME_ERROR
                     {
-                        dav1d_thread_picture_ref(&mut (*c).out, out_delayed);
+                        rav1d_thread_picture_ref(&mut (*c).out, out_delayed);
                         (*c).event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
                             (*c).event_flags as c_uint
-                                | dav1d_picture_get_event_flags(out_delayed) as c_uint,
+                                | rav1d_picture_get_event_flags(out_delayed) as c_uint,
                         );
                     }
-                    dav1d_thread_picture_unref(out_delayed);
+                    rav1d_thread_picture_unref(out_delayed);
                 }
-                dav1d_thread_picture_ref(
+                rav1d_thread_picture_ref(
                     out_delayed,
                     &mut (*((*c).refs)
                         .as_mut_ptr()
@@ -2189,7 +2193,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                     .p,
                 );
                 (*out_delayed).visible = true;
-                dav1d_data_props_copy(&mut (*out_delayed).p.m, &mut (*in_0).m);
+                rav1d_data_props_copy(&mut (*out_delayed).p.m, &mut (*in_0).m);
                 pthread_mutex_unlock(&mut (*c).task_thread.lock);
             }
             if (*(*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
@@ -2197,7 +2201,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 .p
                 .frame_hdr)
                 .frame_type as c_uint
-                == DAV1D_FRAME_TYPE_KEY as c_int as c_uint
+                == RAV1D_FRAME_TYPE_KEY as c_int as c_uint
             {
                 let r: c_int = (*(*c).frame_hdr).existing_frame_idx;
                 (*c).refs[r as usize].p.showable = false;
@@ -2205,25 +2209,25 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
                 while i_3 < 8 {
                     if !(i_3 == r) {
                         if !((*c).refs[i_3 as usize].p.p.frame_hdr).is_null() {
-                            dav1d_thread_picture_unref(
+                            rav1d_thread_picture_unref(
                                 &mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).p,
                             );
                         }
-                        dav1d_thread_picture_ref(
+                        rav1d_thread_picture_ref(
                             &mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).p,
                             &mut (*((*c).refs).as_mut_ptr().offset(r as isize)).p,
                         );
-                        dav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i_3 as isize));
-                        dav1d_cdf_thread_ref(
+                        rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i_3 as isize));
+                        rav1d_cdf_thread_ref(
                             &mut *((*c).cdf).as_mut_ptr().offset(i_3 as isize),
                             &mut *((*c).cdf).as_mut_ptr().offset(r as isize),
                         );
-                        dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).segmap);
+                        rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).segmap);
                         (*c).refs[i_3 as usize].segmap = (*c).refs[r as usize].segmap;
                         if !((*c).refs[r as usize].segmap).is_null() {
-                            dav1d_ref_inc((*c).refs[r as usize].segmap);
+                            rav1d_ref_inc((*c).refs[r as usize].segmap);
                         }
-                        dav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).refmvs);
+                        rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i_3 as isize)).refmvs);
                     }
                     i_3 += 1;
                 }
@@ -2231,32 +2235,32 @@ pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, globa
             (*c).frame_hdr = 0 as *mut Dav1dFrameHeader;
         } else if (*c).n_tiles == (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows {
             match (*(*c).frame_hdr).frame_type as c_uint {
-                DAV1D_FRAME_TYPE_INTER | DAV1D_FRAME_TYPE_SWITCH => {
+                RAV1D_FRAME_TYPE_INTER | RAV1D_FRAME_TYPE_SWITCH => {
                     if (*c).decode_frame_type as c_uint
-                        > DAV1D_DECODEFRAMETYPE_REFERENCE as c_int as c_uint
+                        > RAV1D_DECODEFRAMETYPE_REFERENCE as c_int as c_uint
                         || (*c).decode_frame_type as c_uint
-                            == DAV1D_DECODEFRAMETYPE_REFERENCE as c_int as c_uint
+                            == RAV1D_DECODEFRAMETYPE_REFERENCE as c_int as c_uint
                             && (*(*c).frame_hdr).refresh_frame_flags == 0
                     {
-                        return dav1d_parse_obus_skip(c, len, init_byte_pos);
+                        return rav1d_parse_obus_skip(c, len, init_byte_pos);
                     }
                 }
-                DAV1D_FRAME_TYPE_INTRA => {
+                RAV1D_FRAME_TYPE_INTRA => {
                     if (*c).decode_frame_type as c_uint
-                        > DAV1D_DECODEFRAMETYPE_INTRA as c_int as c_uint
+                        > RAV1D_DECODEFRAMETYPE_INTRA as c_int as c_uint
                         || (*c).decode_frame_type as c_uint
-                            == DAV1D_DECODEFRAMETYPE_REFERENCE as c_int as c_uint
+                            == RAV1D_DECODEFRAMETYPE_REFERENCE as c_int as c_uint
                             && (*(*c).frame_hdr).refresh_frame_flags == 0
                     {
-                        return dav1d_parse_obus_skip(c, len, init_byte_pos);
+                        return rav1d_parse_obus_skip(c, len, init_byte_pos);
                     }
                 }
                 _ => {}
             }
             if (*c).n_tile_data == 0 {
-                return dav1d_parse_obus_error(c, in_0);
+                return rav1d_parse_obus_error(c, in_0);
             }
-            res = dav1d_submit_frame(&mut *c);
+            res = rav1d_submit_frame(&mut *c);
             if res < 0 {
                 return res;
             }

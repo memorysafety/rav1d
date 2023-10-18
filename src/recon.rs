@@ -1,6 +1,6 @@
 use crate::include::dav1d::headers::Dav1dPixelLayout;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::intra_edge::EdgeFlags;
@@ -29,7 +29,7 @@ use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
 use crate::src::levels::TX_CLASS_2D;
-use crate::src::msac::dav1d_msac_decode_bool_equi;
+use crate::src::msac::rav1d_msac_decode_bool_equi;
 use crate::src::msac::MsacContext;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_skip_ctx;
@@ -40,22 +40,22 @@ use std::ffi::c_uint;
 use std::ops::BitOr;
 
 /// TODO: add feature and compile-time guard around this code
-pub unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
+pub(crate) unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
     false && (*f.frame_hdr).frame_offset == 2 && t.by >= 0 && t.by < 4 && t.bx >= 8 && t.bx < 12
 }
 
-pub type recon_b_intra_fn = Option<
+pub(crate) type recon_b_intra_fn = Option<
     unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, EdgeFlags, *const Av1Block) -> (),
 >;
 
-pub type recon_b_inter_fn =
+pub(crate) type recon_b_inter_fn =
     Option<unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, *const Av1Block) -> c_int>;
 
-pub type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Rav1dFrameContext, c_int) -> ()>;
+pub(crate) type filter_sbrow_fn = Option<unsafe extern "C" fn(*mut Rav1dFrameContext, c_int) -> ()>;
 
-pub type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Rav1dTaskContext) -> ()>;
+pub(crate) type backup_ipred_edge_fn = Option<unsafe extern "C" fn(*mut Rav1dTaskContext) -> ()>;
 
-pub type read_coef_blocks_fn =
+pub(crate) type read_coef_blocks_fn =
     Option<unsafe extern "C" fn(*mut Rav1dTaskContext, BlockSize, *const Av1Block) -> ()>;
 
 #[inline]
@@ -63,11 +63,11 @@ pub fn read_golomb(msac: &mut MsacContext) -> c_uint {
     let mut len = 0;
     let mut val = 1;
 
-    while !dav1d_msac_decode_bool_equi(msac) && len < 32 {
+    while !rav1d_msac_decode_bool_equi(msac) && len < 32 {
         len += 1;
     }
     for _ in 0..len {
-        val = (val << 1) + dav1d_msac_decode_bool_equi(msac) as c_uint;
+        val = (val << 1) + rav1d_msac_decode_bool_equi(msac) as c_uint;
     }
 
     val - 1
@@ -144,8 +144,8 @@ pub fn get_skip_ctx(
 ) -> u8 {
     let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
-        let ss_ver = layout == DAV1D_PIXEL_LAYOUT_I420;
-        let ss_hor = layout != DAV1D_PIXEL_LAYOUT_I444;
+        let ss_ver = layout == RAV1D_PIXEL_LAYOUT_I420;
+        let ss_hor = layout != RAV1D_PIXEL_LAYOUT_I444;
         let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
             || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh;
         fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {

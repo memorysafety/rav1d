@@ -1,8 +1,8 @@
 use crate::include::stdatomic::atomic_int;
-use crate::src::mem::dav1d_alloc_aligned;
-use crate::src::mem::dav1d_free_aligned;
-use crate::src::mem::dav1d_mem_pool_pop;
-use crate::src::mem::dav1d_mem_pool_push;
+use crate::src::mem::rav1d_alloc_aligned;
+use crate::src::mem::rav1d_free_aligned;
+use crate::src::mem::rav1d_mem_pool_pop;
+use crate::src::mem::rav1d_mem_pool_push;
 use crate::src::mem::Rav1dMemPool;
 use crate::src::mem::Rav1dMemPoolBuffer;
 use libc::free;
@@ -21,7 +21,7 @@ pub struct Rav1dRef {
 }
 
 #[inline]
-pub unsafe extern "C" fn dav1d_ref_inc(r#ref: *mut Rav1dRef) {
+pub unsafe extern "C" fn rav1d_ref_inc(r#ref: *mut Rav1dRef) {
     ::core::intrinsics::atomic_xadd_relaxed(&mut (*r#ref).ref_cnt, 1 as c_int);
 }
 
@@ -29,15 +29,15 @@ unsafe extern "C" fn default_free_callback(data: *const u8, user_data: *mut c_vo
     if !(data == user_data as *const u8) {
         unreachable!();
     }
-    dav1d_free_aligned(user_data);
+    rav1d_free_aligned(user_data);
 }
 
-pub unsafe fn dav1d_ref_create(mut size: usize) -> *mut Rav1dRef {
+pub unsafe fn rav1d_ref_create(mut size: usize) -> *mut Rav1dRef {
     size = size
         .wrapping_add(::core::mem::size_of::<*mut c_void>())
         .wrapping_sub(1)
         & !(::core::mem::size_of::<*mut c_void>()).wrapping_sub(1);
-    let data: *mut u8 = dav1d_alloc_aligned(
+    let data: *mut u8 = rav1d_alloc_aligned(
         size.wrapping_add(::core::mem::size_of::<Rav1dRef>()),
         64 as c_int as usize,
     ) as *mut u8;
@@ -56,13 +56,13 @@ pub unsafe fn dav1d_ref_create(mut size: usize) -> *mut Rav1dRef {
 }
 
 unsafe extern "C" fn pool_free_callback(data: *const u8, user_data: *mut c_void) {
-    dav1d_mem_pool_push(
+    rav1d_mem_pool_push(
         data as *mut Rav1dMemPool,
         user_data as *mut Rav1dMemPoolBuffer,
     );
 }
 
-pub unsafe fn dav1d_ref_create_using_pool(
+pub unsafe fn rav1d_ref_create_using_pool(
     pool: *mut Rav1dMemPool,
     mut size: usize,
 ) -> *mut Rav1dRef {
@@ -71,7 +71,7 @@ pub unsafe fn dav1d_ref_create_using_pool(
         .wrapping_sub(1)
         & !(::core::mem::size_of::<*mut c_void>()).wrapping_sub(1);
     let buf: *mut Rav1dMemPoolBuffer =
-        dav1d_mem_pool_pop(pool, size.wrapping_add(::core::mem::size_of::<Rav1dRef>()));
+        rav1d_mem_pool_pop(pool, size.wrapping_add(::core::mem::size_of::<Rav1dRef>()));
     if buf.is_null() {
         return 0 as *mut Rav1dRef;
     }
@@ -87,7 +87,7 @@ pub unsafe fn dav1d_ref_create_using_pool(
     return res;
 }
 
-pub unsafe fn dav1d_ref_wrap(
+pub unsafe fn rav1d_ref_wrap(
     ptr: *const u8,
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     user_data: *mut c_void,
@@ -105,7 +105,7 @@ pub unsafe fn dav1d_ref_wrap(
     return res;
 }
 
-pub unsafe fn dav1d_ref_dec(pref: *mut *mut Rav1dRef) {
+pub unsafe fn rav1d_ref_dec(pref: *mut *mut Rav1dRef) {
     if pref.is_null() {
         unreachable!();
     }
@@ -128,7 +128,7 @@ pub unsafe fn dav1d_ref_dec(pref: *mut *mut Rav1dRef) {
     }
 }
 
-pub unsafe fn dav1d_ref_is_writable(r#ref: *mut Rav1dRef) -> c_int {
+pub unsafe fn rav1d_ref_is_writable(r#ref: *mut Rav1dRef) -> c_int {
     return (::core::intrinsics::atomic_load_seqcst(&mut (*r#ref).ref_cnt as *mut atomic_int) == 1
         && !((*r#ref).data).is_null()) as c_int;
 }

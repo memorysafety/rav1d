@@ -1,19 +1,19 @@
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::dav1d::common::Dav1dDataProps;
-use crate::include::dav1d::data::Dav1dData;
-use crate::include::dav1d::dav1d::Dav1dDecodeFrameType;
-use crate::include::dav1d::dav1d::Dav1dEventFlags;
-use crate::include::dav1d::dav1d::Dav1dInloopFilterType;
-use crate::include::dav1d::dav1d::Dav1dLogger;
+use crate::include::dav1d::common::Rav1dDataProps;
+use crate::include::dav1d::data::Rav1dData;
+use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
+use crate::include::dav1d::dav1d::Rav1dEventFlags;
+use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
+use crate::include::dav1d::dav1d::Rav1dLogger;
 use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dWarpedMotionParams;
-use crate::include::dav1d::picture::Dav1dPicAllocator;
-use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::dav1d::picture::Rav1dPicAllocator;
+use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::*;
@@ -72,29 +72,29 @@ pub struct Rav1dDSPContext {
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Rav1dTileGroup {
-    pub data: Dav1dData,
+pub(crate) struct Rav1dTileGroup {
+    pub data: Rav1dData,
     pub start: c_int,
     pub end: c_int,
 }
 
 pub type TaskType = c_uint;
-pub const DAV1D_TASK_TYPE_FG_APPLY: TaskType = 12;
-pub const DAV1D_TASK_TYPE_FG_PREP: TaskType = 11;
-pub const DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS: TaskType = 10;
-pub const DAV1D_TASK_TYPE_LOOP_RESTORATION: TaskType = 9;
-pub const DAV1D_TASK_TYPE_SUPER_RESOLUTION: TaskType = 8;
-pub const DAV1D_TASK_TYPE_CDEF: TaskType = 7;
-pub const DAV1D_TASK_TYPE_DEBLOCK_ROWS: TaskType = 6;
-pub const DAV1D_TASK_TYPE_DEBLOCK_COLS: TaskType = 5;
-pub const DAV1D_TASK_TYPE_TILE_RECONSTRUCTION: TaskType = 4;
-pub const DAV1D_TASK_TYPE_ENTROPY_PROGRESS: TaskType = 3;
-pub const DAV1D_TASK_TYPE_TILE_ENTROPY: TaskType = 2;
-pub const DAV1D_TASK_TYPE_INIT_CDF: TaskType = 1;
-pub const DAV1D_TASK_TYPE_INIT: TaskType = 0;
+pub const RAV1D_TASK_TYPE_FG_APPLY: TaskType = 12;
+pub const RAV1D_TASK_TYPE_FG_PREP: TaskType = 11;
+pub const RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS: TaskType = 10;
+pub const RAV1D_TASK_TYPE_LOOP_RESTORATION: TaskType = 9;
+pub const RAV1D_TASK_TYPE_SUPER_RESOLUTION: TaskType = 8;
+pub const RAV1D_TASK_TYPE_CDEF: TaskType = 7;
+pub const RAV1D_TASK_TYPE_DEBLOCK_ROWS: TaskType = 6;
+pub const RAV1D_TASK_TYPE_DEBLOCK_COLS: TaskType = 5;
+pub const RAV1D_TASK_TYPE_TILE_RECONSTRUCTION: TaskType = 4;
+pub const RAV1D_TASK_TYPE_ENTROPY_PROGRESS: TaskType = 3;
+pub const RAV1D_TASK_TYPE_TILE_ENTROPY: TaskType = 2;
+pub const RAV1D_TASK_TYPE_INIT_CDF: TaskType = 1;
+pub const RAV1D_TASK_TYPE_INIT: TaskType = 0;
 
 #[repr(C)]
-pub struct Rav1dContext_frame_thread {
+pub(crate) struct Rav1dContext_frame_thread {
     pub out_delayed: *mut Rav1dThreadPicture,
     pub next: c_uint,
 }
@@ -120,18 +120,18 @@ pub union TaskThreadData_grain_lut_scaling {
 }
 
 #[repr(C)]
-pub struct TaskThreadData_delayed_fg {
+pub(crate) struct TaskThreadData_delayed_fg {
     pub exec: c_int,
     pub cond: pthread_cond_t,
-    pub in_0: *const Dav1dPicture,
-    pub out: *mut Dav1dPicture,
+    pub in_0: *const Rav1dPicture,
+    pub out: *mut Rav1dPicture,
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
     pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
 }
 
 #[repr(C)]
-pub struct TaskThreadData {
+pub(crate) struct TaskThreadData {
     pub lock: pthread_mutex_t,
     pub cond: pthread_cond_t,
     pub first: atomic_uint,
@@ -143,7 +143,7 @@ pub struct TaskThreadData {
 }
 
 #[repr(C)]
-pub struct Rav1dContext_refs {
+pub(crate) struct Rav1dContext_refs {
     pub p: Rav1dThreadPicture,
     pub segmap: *mut Rav1dRef,
     pub refmvs: *mut Rav1dRef,
@@ -171,17 +171,17 @@ pub struct Rav1dContext {
     pub(crate) n_tiles: c_int,
     pub(crate) seq_hdr_pool: *mut Rav1dMemPool,
     pub(crate) seq_hdr_ref: *mut Rav1dRef,
-    pub(crate) seq_hdr: *mut Dav1dSequenceHeader,
+    pub(crate) seq_hdr: *mut Dav1dSequenceHeader, // TODO(kkysen) make Rav1d
     pub(crate) frame_hdr_pool: *mut Rav1dMemPool,
     pub(crate) frame_hdr_ref: *mut Rav1dRef,
-    pub(crate) frame_hdr: *mut Dav1dFrameHeader,
+    pub(crate) frame_hdr: *mut Dav1dFrameHeader, // TODO(kkysen) make Rav1d
     pub(crate) content_light_ref: *mut Rav1dRef,
-    pub(crate) content_light: *mut Dav1dContentLightLevel,
+    pub(crate) content_light: *mut Dav1dContentLightLevel, // TODO(kkysen) make Rav1d
     pub(crate) mastering_display_ref: *mut Rav1dRef,
-    pub(crate) mastering_display: *mut Dav1dMasteringDisplay,
+    pub(crate) mastering_display: *mut Dav1dMasteringDisplay, // TODO(kkysen) make Rav1d
     pub(crate) itut_t35_ref: *mut Rav1dRef,
-    pub(crate) itut_t35: *mut Dav1dITUTT35,
-    pub(crate) in_0: Dav1dData,
+    pub(crate) itut_t35: *mut Dav1dITUTT35, // TODO(kkysen) make Rav1d
+    pub(crate) in_0: Rav1dData,
     pub(crate) out: Rav1dThreadPicture,
     pub(crate) cache: Rav1dThreadPicture,
     pub(crate) flush_mem: atomic_int,
@@ -196,7 +196,7 @@ pub struct Rav1dContext {
     pub(crate) dsp: [Rav1dDSPContext; 3],
     pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,
     pub(crate) intra_edge: Rav1dContext_intra_edge,
-    pub(crate) allocator: Dav1dPicAllocator,
+    pub(crate) allocator: Rav1dPicAllocator,
     pub(crate) apply_grain: c_int,
     pub(crate) operating_point: c_int,
     pub(crate) operating_point_idc: c_uint,
@@ -205,14 +205,14 @@ pub struct Rav1dContext {
     pub(crate) frame_size_limit: c_uint,
     pub(crate) strict_std_compliance: c_int,
     pub(crate) output_invisible_frames: c_int,
-    pub(crate) inloop_filters: Dav1dInloopFilterType,
-    pub(crate) decode_frame_type: Dav1dDecodeFrameType,
+    pub(crate) inloop_filters: Rav1dInloopFilterType,
+    pub(crate) decode_frame_type: Rav1dDecodeFrameType,
     pub(crate) drain: c_int,
     pub(crate) frame_flags: PictureFlags,
-    pub(crate) event_flags: Dav1dEventFlags,
-    pub(crate) cached_error_props: Dav1dDataProps,
+    pub(crate) event_flags: Rav1dEventFlags,
+    pub(crate) cached_error_props: Rav1dDataProps,
     pub(crate) cached_error: c_int,
-    pub(crate) logger: Dav1dLogger,
+    pub(crate) logger: Rav1dLogger,
     pub(crate) picture_pool: *mut Rav1dMemPool,
 }
 
@@ -235,7 +235,7 @@ pub struct ScalableMotionParams {
 }
 
 #[repr(C)]
-pub struct Rav1dFrameContext_bd_fn {
+pub(crate) struct Rav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
     pub recon_b_inter: recon_b_inter_fn,
     pub filter_sbrow: filter_sbrow_fn,
@@ -342,7 +342,7 @@ pub struct Rav1dFrameContext_task_thread_pending_tasks {
 }
 
 #[repr(C)]
-pub struct Rav1dFrameContext_task_thread {
+pub(crate) struct Rav1dFrameContext_task_thread {
     pub lock: pthread_mutex_t,
     pub cond: pthread_cond_t,
     pub ttd: *mut TaskThreadData,
@@ -370,13 +370,13 @@ pub struct FrameTileThreadData {
 }
 
 #[repr(C)]
-pub struct Rav1dFrameContext {
+pub(crate) struct Rav1dFrameContext {
     pub seq_hdr_ref: *mut Rav1dRef,
-    pub seq_hdr: *mut Dav1dSequenceHeader,
+    pub seq_hdr: *mut Dav1dSequenceHeader, // TODO(kkysen) make Rav1d
     pub frame_hdr_ref: *mut Rav1dRef,
-    pub frame_hdr: *mut Dav1dFrameHeader,
+    pub frame_hdr: *mut Dav1dFrameHeader, // TODO(kkysen) make Rav1d
     pub refp: [Rav1dThreadPicture; 7],
-    pub cur: Dav1dPicture,
+    pub cur: Rav1dPicture,
     pub sr_cur: Rav1dThreadPicture,
     pub mvs_ref: *mut Rav1dRef,
     pub mvs: *mut refmvs_temporal_block,
@@ -553,7 +553,7 @@ pub struct Rav1dTaskContext_frame_thread {
 }
 
 #[repr(C)]
-pub struct Rav1dTaskContext_task_thread {
+pub(crate) struct Rav1dTaskContext_task_thread {
     pub td: thread_data,
     pub ttd: *mut TaskThreadData,
     pub fttd: *mut FrameTileThreadData,
@@ -562,7 +562,7 @@ pub struct Rav1dTaskContext_task_thread {
 }
 
 #[repr(C)]
-pub struct Rav1dTaskContext {
+pub(crate) struct Rav1dTaskContext {
     pub c: *const Rav1dContext,
     pub f: *const Rav1dFrameContext,
     pub ts: *mut Rav1dTileState,

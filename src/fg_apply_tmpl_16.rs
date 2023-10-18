@@ -1,9 +1,9 @@
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
-use crate::include::dav1d::headers::DAV1D_MC_IDENTITY;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::picture::Dav1dPicture;
+use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align1;
 use crate::src::align::Align16;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -99,10 +99,10 @@ unsafe extern "C" fn generate_scaling(
     }
 }
 
-pub unsafe fn dav1d_prep_grain_16bpc(
+pub(crate) unsafe fn rav1d_prep_grain_16bpc(
     dsp: *const Rav1dFilmGrainDSPContext,
-    out: *mut Dav1dPicture,
-    in_0: *const Dav1dPicture,
+    out: *mut Rav1dPicture,
+    in_0: *const Rav1dPicture,
     scaling: *mut [u8; 4096],
     grain_lut: *mut [[entry; 82]; 74],
 ) {
@@ -179,14 +179,14 @@ pub unsafe fn dav1d_prep_grain_16bpc(
             memcpy((*out).data[0], (*in_0).data[0], sz as usize);
         }
     }
-    if (*in_0).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
+    if (*in_0).p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
         && (*data).chroma_scaling_from_luma == 0
     {
         if !((*out).stride[1] == (*in_0).stride[1]) {
             unreachable!();
         }
         let ss_ver =
-            ((*in_0).p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+            ((*in_0).p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
         let stride_0: ptrdiff_t = (*out).stride[1];
         let sz_0: ptrdiff_t = ((*out).p.h + ss_ver >> ss_ver) as isize * stride_0;
         if sz_0 < 0 {
@@ -223,19 +223,19 @@ pub unsafe fn dav1d_prep_grain_16bpc(
     }
 }
 
-pub unsafe fn dav1d_apply_grain_row_16bpc(
+pub(crate) unsafe fn rav1d_apply_grain_row_16bpc(
     dsp: *const Rav1dFilmGrainDSPContext,
-    out: *mut Dav1dPicture,
-    in_0: *const Dav1dPicture,
+    out: *mut Rav1dPicture,
+    in_0: *const Rav1dPicture,
     scaling: *const [u8; 4096],
     grain_lut: *const [[entry; 82]; 74],
     row: c_int,
 ) {
     let data: *const Dav1dFilmGrainData = &mut (*(*out).frame_hdr).film_grain.data;
-    let ss_y = ((*in_0).p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    let ss_x = ((*in_0).p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+    let ss_y = ((*in_0).p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_x = ((*in_0).p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let cpw = (*out).p.w + ss_x >> ss_x;
-    let is_id = ((*(*out).seq_hdr).mtrx as c_uint == DAV1D_MC_IDENTITY as c_int as c_uint) as c_int;
+    let is_id = ((*(*out).seq_hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint) as c_int;
     let luma_src: *mut pixel = ((*in_0).data[0] as *mut pixel)
         .offset(((row * 32) as isize * PXSTRIDE((*in_0).stride[0])) as isize);
     let bitdepth_max = ((1 as c_int) << (*out).p.bpc) - 1;
@@ -332,15 +332,15 @@ pub unsafe fn dav1d_apply_grain_row_16bpc(
     };
 }
 
-pub unsafe fn dav1d_apply_grain_16bpc(
+pub(crate) unsafe fn rav1d_apply_grain_16bpc(
     dsp: *const Rav1dFilmGrainDSPContext,
-    out: *mut Dav1dPicture,
-    in_0: *const Dav1dPicture,
+    out: *mut Rav1dPicture,
+    in_0: *const Rav1dPicture,
 ) {
     let mut grain_lut = Align16([[[0; 82]; 74]; 3]);
     let mut scaling = Align1([[0; 4096]; 3]);
     let rows = (*out).p.h + 31 >> 5;
-    dav1d_prep_grain_16bpc(
+    rav1d_prep_grain_16bpc(
         dsp,
         out,
         in_0,
@@ -349,7 +349,7 @@ pub unsafe fn dav1d_apply_grain_16bpc(
     );
     let mut row = 0;
     while row < rows {
-        dav1d_apply_grain_row_16bpc(
+        rav1d_apply_grain_row_16bpc(
             dsp,
             out,
             in_0,

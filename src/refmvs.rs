@@ -2,7 +2,7 @@ use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::DAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
@@ -10,8 +10,8 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
-use crate::src::mem::dav1d_alloc_aligned;
-use crate::src::mem::dav1d_freep_aligned;
+use crate::src::mem::rav1d_alloc_aligned;
+use crate::src::mem::rav1d_freep_aligned;
 use crate::src::tables::dav1d_block_dimensions;
 use cfg_if::cfg_if;
 use libc::ptrdiff_t;
@@ -21,7 +21,7 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
-use crate::src::cpu::{dav1d_get_cpu_flags, CpuFlags};
+use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
@@ -662,7 +662,7 @@ fn add_single_extended_candidate(
 /// enabled) or at the start of each interleaved sbrow (when tile column
 /// threading is disabled), we call load_tmvs(), which will project the MVs to
 /// their respective position in the current frame.
-pub unsafe fn dav1d_refmvs_find(
+pub unsafe fn rav1d_refmvs_find(
     rt: &refmvs_tile,
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
@@ -696,7 +696,7 @@ pub unsafe fn dav1d_refmvs_find(
             &*rf.frm_hdr,
         );
         gmv[0] =
-            if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
+            if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].type_0 > RAV1D_WM_TYPE_TRANSLATION {
                 tgmv[0]
             } else {
                 mv::INVALID
@@ -715,7 +715,7 @@ pub unsafe fn dav1d_refmvs_find(
             &*rf.frm_hdr,
         );
         gmv[1] =
-            if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].type_0 > DAV1D_WM_TYPE_TRANSLATION {
+            if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].type_0 > RAV1D_WM_TYPE_TRANSLATION {
                 tgmv[1]
             } else {
                 mv::INVALID
@@ -1096,7 +1096,7 @@ pub unsafe fn dav1d_refmvs_find(
 
 // cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
 // into buffers for use in future frame's temporal MV prediction
-pub unsafe fn dav1d_refmvs_save_tmvs(
+pub unsafe fn rav1d_refmvs_save_tmvs(
     dsp: *const Rav1dRefmvsDSPContext,
     rt: *const refmvs_tile,
     col_start8: c_int,
@@ -1129,7 +1129,7 @@ pub unsafe fn dav1d_refmvs_save_tmvs(
     );
 }
 
-pub unsafe fn dav1d_refmvs_tile_sbrow_init(
+pub unsafe fn rav1d_refmvs_tile_sbrow_init(
     rt: *mut refmvs_tile,
     rf: *const refmvs_frame,
     tile_col_start4: c_int,
@@ -1399,10 +1399,10 @@ pub unsafe fn dav1d_refmvs_init_frame(
     };
     if r_stride != (*rf).r_stride || n_tile_rows != (*rf).n_tile_rows {
         if !((*rf).r).is_null() {
-            dav1d_freep_aligned(&mut (*rf).r as *mut *mut refmvs_block as *mut c_void);
+            rav1d_freep_aligned(&mut (*rf).r as *mut *mut refmvs_block as *mut c_void);
         }
         let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as c_int;
-        (*rf).r = dav1d_alloc_aligned(
+        (*rf).r = rav1d_alloc_aligned(
             (::core::mem::size_of::<refmvs_block>())
                 .wrapping_mul(35 as usize)
                 .wrapping_mul(r_stride as usize)
@@ -1418,11 +1418,11 @@ pub unsafe fn dav1d_refmvs_init_frame(
     let rp_stride: ptrdiff_t = r_stride >> 1;
     if rp_stride != (*rf).rp_stride || n_tile_rows != (*rf).n_tile_rows {
         if !((*rf).rp_proj).is_null() {
-            dav1d_freep_aligned(
+            rav1d_freep_aligned(
                 &mut (*rf).rp_proj as *mut *mut refmvs_temporal_block as *mut c_void,
             );
         }
-        (*rf).rp_proj = dav1d_alloc_aligned(
+        (*rf).rp_proj = rav1d_alloc_aligned(
             (::core::mem::size_of::<refmvs_temporal_block>())
                 .wrapping_mul(16 as usize)
                 .wrapping_mul(rp_stride as usize)
@@ -1545,19 +1545,19 @@ pub unsafe fn dav1d_refmvs_init_frame(
     return 0 as c_int;
 }
 
-pub unsafe fn dav1d_refmvs_init(rf: *mut refmvs_frame) {
+pub unsafe fn rav1d_refmvs_init(rf: *mut refmvs_frame) {
     (*rf).r = 0 as *mut refmvs_block;
     (*rf).r_stride = 0 as c_int as ptrdiff_t;
     (*rf).rp_proj = 0 as *mut refmvs_temporal_block;
     (*rf).rp_stride = 0 as c_int as ptrdiff_t;
 }
 
-pub unsafe fn dav1d_refmvs_clear(rf: *mut refmvs_frame) {
+pub unsafe fn rav1d_refmvs_clear(rf: *mut refmvs_frame) {
     if !((*rf).r).is_null() {
-        dav1d_freep_aligned(&mut (*rf).r as *mut *mut refmvs_block as *mut c_void);
+        rav1d_freep_aligned(&mut (*rf).r as *mut *mut refmvs_block as *mut c_void);
     }
     if !((*rf).rp_proj).is_null() {
-        dav1d_freep_aligned(&mut (*rf).rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
+        rav1d_freep_aligned(&mut (*rf).rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
     }
 }
 
@@ -1612,7 +1612,7 @@ unsafe extern "C" fn splat_mv_rust(
 #[inline(always)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
         return;
@@ -1647,14 +1647,14 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
 #[inline(always)]
 #[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), feature = "asm"))]
 unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
-    let flags = dav1d_get_cpu_flags();
+    let flags = rav1d_get_cpu_flags();
     if flags.contains(CpuFlags::NEON) {
         (*c).splat_mv = Some(ffi::dav1d_splat_mv_neon);
     }
 }
 
 #[cold]
-pub unsafe fn dav1d_refmvs_dsp_init(c: *mut Rav1dRefmvsDSPContext) {
+pub unsafe fn rav1d_refmvs_dsp_init(c: *mut Rav1dRefmvsDSPContext) {
     (*c).load_tmvs = Some(load_tmvs_c);
     (*c).save_tmvs = Some(save_tmvs_c);
     (*c).splat_mv = Some(splat_mv_rust);

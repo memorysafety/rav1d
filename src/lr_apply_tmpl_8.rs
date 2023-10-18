@@ -1,8 +1,8 @@
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::DAV1D_RESTORATION_WIENER;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
+use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
+use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
 use crate::src::align::Align16;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -42,7 +42,7 @@ unsafe extern "C" fn lr_stripe(
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        & ((*f).sr_cur.p.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let stride: ptrdiff_t = (*f).sr_cur.p.stride[chroma as usize];
     let sby =
         y + (if y != 0 {
@@ -62,7 +62,7 @@ unsafe extern "C" fn lr_stripe(
     let mut params: LooprestorationParams = LooprestorationParams {
         filter: [[0; 8]; 2].into(),
     };
-    if (*lr).r#type as c_int == DAV1D_RESTORATION_WIENER as c_int {
+    if (*lr).r#type as c_int == RAV1D_RESTORATION_WIENER as c_int {
         let filter: *mut [i16; 8] = (params.filter.0).as_mut_ptr();
         let ref mut fresh0 = (*filter.offset(0))[6];
         *fresh0 = (*lr).filter_h[0] as i16;
@@ -94,7 +94,7 @@ unsafe extern "C" fn lr_stripe(
         lr_fn = (*dsp).lr.wiener[((*filter.offset(0))[0] as c_int | (*filter.offset(1))[0] as c_int
             == 0) as c_int as usize];
     } else {
-        if !((*lr).r#type as c_int == DAV1D_RESTORATION_SGRPROJ as c_int) {
+        if !((*lr).r#type as c_int == RAV1D_RESTORATION_SGRPROJ as c_int) {
             unreachable!();
         }
         let sgr_params: *const u16 = (dav1d_sgr_params[(*lr).sgr_idx as usize]).as_ptr();
@@ -164,9 +164,9 @@ unsafe extern "C" fn lr_sbrow(
 ) {
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        & ((*f).sr_cur.p.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
     let ss_hor = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        & ((*f).sr_cur.p.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
     let p_stride: ptrdiff_t = (*f).sr_cur.p.stride[chroma as usize];
     let unit_size_log2 = (*(*f).frame_hdr).restoration.unit_size[(plane != 0) as c_int as usize];
     let unit_size = (1 as c_int) << unit_size_log2;
@@ -193,7 +193,7 @@ unsafe extern "C" fn lr_sbrow(
         .offset(plane as isize))
     .as_mut_ptr()
     .offset(unit_idx as isize) as *mut Av1RestorationUnit;
-    let mut restore = ((*lr[0]).r#type as c_int != DAV1D_RESTORATION_NONE as c_int) as c_int;
+    let mut restore = ((*lr[0]).r#type as c_int != RAV1D_RESTORATION_NONE as c_int) as c_int;
     let mut x = 0;
     let mut bit = 0;
     while x + max_unit_size <= w {
@@ -206,7 +206,7 @@ unsafe extern "C" fn lr_sbrow(
             .as_mut_ptr()
             .offset(next_u_idx as isize) as *mut Av1RestorationUnit;
         let restore_next = ((*lr[(bit == 0) as c_int as usize]).r#type as c_int
-            != DAV1D_RESTORATION_NONE as c_int) as c_int;
+            != RAV1D_RESTORATION_NONE as c_int) as c_int;
         if restore_next != 0 {
             backup4xU(
                 (pre_lr_border[bit as usize]).as_mut_ptr(),
@@ -257,7 +257,11 @@ unsafe extern "C" fn lr_sbrow(
     }
 }
 
-pub unsafe fn dav1d_lr_sbrow_8bpc(f: *mut Rav1dFrameContext, dst: *const *mut pixel, sby: c_int) {
+pub(crate) unsafe fn rav1d_lr_sbrow_8bpc(
+    f: *mut Rav1dFrameContext,
+    dst: *const *mut pixel,
+    sby: c_int,
+) {
     let offset_y = 8 * (sby != 0) as c_int;
     let dst_stride: *const ptrdiff_t = ((*f).sr_cur.p.stride).as_mut_ptr();
     let restore_planes = (*f).lf.restore_planes;
@@ -280,9 +284,9 @@ pub unsafe fn dav1d_lr_sbrow_8bpc(f: *mut Rav1dFrameContext, dst: *const *mut pi
     }
     if restore_planes & (LR_RESTORE_U as c_int | LR_RESTORE_V as c_int) != 0 {
         let ss_ver = ((*f).sr_cur.p.p.layout as c_uint
-            == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+            == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
         let ss_hor = ((*f).sr_cur.p.p.layout as c_uint
-            != DAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+            != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
         let h_0 = (*f).sr_cur.p.p.h + ss_ver >> ss_ver;
         let w_0 = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
         let next_row_y_0 = (sby + 1) << 6 - ss_ver + (*(*f).seq_hdr).sb128;
