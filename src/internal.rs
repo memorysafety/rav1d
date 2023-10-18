@@ -459,7 +459,7 @@ pub struct Rav1dTileState {
     pub last_delta_lf: [i8; 4],
     pub lflvlmem: [[[[u8; 2]; 8]; 4]; 8],
     pub lflvl: *const [[[u8; 2]; 8]; 4],
-    pub lr_ref: [*mut Av1RestorationUnit; 3],
+    pub lr_ref: [Av1RestorationUnit; 3],
 }
 
 #[repr(C, align(64))]

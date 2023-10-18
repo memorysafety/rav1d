@@ -8,10 +8,10 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
@@ -4018,7 +4018,7 @@ unsafe fn setup_tile(
             sgr_weights: [-32, 31],
             ..*lr_ref
         };
-        ts.lr_ref[p] = lr_ref;
+        ts.lr_ref[p] = *lr_ref;
     }
 
     if (*f.c).n_tc > 1 {
@@ -4030,11 +4030,11 @@ unsafe fn read_restoration_info(
     t: &mut Rav1dTaskContext,
     lr: &mut Av1RestorationUnit,
     p: usize,
-    frame_type: Dav1dRestorationType,
+    frame_type: Rav1dRestorationType,
 ) {
     let f = &*t.f;
     let ts = &mut *t.ts;
-    let lr_ref = &*ts.lr_ref[p];
+    let lr_ref = ts.lr_ref[p];
 
     if frame_type == RAV1D_RESTORATION_SWITCHABLE {
         let filter =
@@ -4086,7 +4086,7 @@ unsafe fn read_restoration_info(
         lr.filter_h[1] = msac_decode_lr_subexp(ts, lr_ref.filter_h[1], 2, 23);
         lr.filter_h[2] = msac_decode_lr_subexp(ts, lr_ref.filter_h[2], 3, 17);
         lr.sgr_weights = lr_ref.sgr_weights;
-        ts.lr_ref[p] = lr;
+        ts.lr_ref[p] = *lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
                 "Post-lr_wiener[pl={},v[{},{},{}],h[{},{},{}]]: r={}",
@@ -4116,7 +4116,7 @@ unsafe fn read_restoration_info(
         };
         lr.filter_v = lr_ref.filter_v;
         lr.filter_h = lr_ref.filter_h;
-        ts.lr_ref[p] = lr;
+        ts.lr_ref[p] = *lr;
         if DEBUG_BLOCK_INFO(f, t) {
             println!(
                 "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",
@@ -4263,7 +4263,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
                 if !(y as c_uint & mask != 0) {
                     let half_unit = unit_size >> 1;
                     if !(y != 0 && y + half_unit > h) {
-                        let frame_type: Dav1dRestorationType =
+                        let frame_type: Rav1dRestorationType =
                             (*(*f).frame_hdr).restoration.type_0[p as usize];
                         if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
                             let w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;

@@ -15,7 +15,6 @@ use crate::include::dav1d::headers::Dav1dFrameType;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
-use crate::include::dav1d::headers::Dav1dRestorationType;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
@@ -28,6 +27,7 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dObuType;
+use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSegmentationData;
 use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
@@ -1165,10 +1165,10 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
         && (*seqhdr).restoration != 0
         && (*hdr).allow_intrabc == 0
     {
-        (*hdr).restoration.type_0[0] = rav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
+        (*hdr).restoration.type_0[0] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
         if (*seqhdr).monochrome == 0 {
-            (*hdr).restoration.type_0[1] = rav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
-            (*hdr).restoration.type_0[2] = rav1d_get_bits(gb, 2 as c_int) as Dav1dRestorationType;
+            (*hdr).restoration.type_0[1] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
+            (*hdr).restoration.type_0[2] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
         } else {
             (*hdr).restoration.type_0[2] = RAV1D_RESTORATION_NONE;
             (*hdr).restoration.type_0[1] = (*hdr).restoration.type_0[2];
