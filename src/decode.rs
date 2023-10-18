@@ -220,8 +220,6 @@ use crate::src::warpmv::rav1d_get_shear_params;
 use crate::src::warpmv::rav1d_set_affine_mv2d;
 use libc::free;
 use libc::malloc;
-use libc::memcpy;
-use libc::memset;
 use libc::pthread_cond_signal;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
@@ -4126,238 +4124,218 @@ unsafe fn read_restoration_info(
     }
 }
 
-pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int {
-    let f: *const Rav1dFrameContext = (*t).f;
-    let root_bl: BlockLevel = (if (*(*f).seq_hdr).sb128 != 0 {
-        BL_128X128 as c_int
+pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> bool {
+    let f = &*t.f;
+    let root_bl = if (*f.seq_hdr).sb128 != 0 {
+        BL_128X128
     } else {
-        BL_64X64 as c_int
-    }) as BlockLevel;
-    let ts: *mut Rav1dTileState = (*t).ts;
-    let c: *const Rav1dContext = (*f).c;
-    let sb_step = (*f).sb_step;
-    let tile_row = (*ts).tiling.row;
-    let tile_col = (*ts).tiling.col;
-    let col_sb_start = (*(*f).frame_hdr).tiling.col_start_sb[tile_col as usize] as c_int;
-    let col_sb128_start = col_sb_start >> ((*(*f).seq_hdr).sb128 == 0) as c_int;
-    if (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0
-        || (*(*f).frame_hdr).allow_intrabc != 0
-    {
+        BL_64X64
+    };
+    let ts = &mut *t.ts;
+    let c = &*f.c;
+    let sb_step = f.sb_step;
+    let tile_row = ts.tiling.row;
+    let tile_col = ts.tiling.col;
+    let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as c_int;
+    let col_sb128_start = col_sb_start >> ((*f.seq_hdr).sb128 == 0) as c_int;
+
+    if is_inter_or_switch(&*f.frame_hdr) || (*f.frame_hdr).allow_intrabc != 0 {
         rav1d_refmvs_tile_sbrow_init(
-            &mut (*t).rt,
-            &(*f).rf,
-            (*ts).tiling.col_start,
-            (*ts).tiling.col_end,
-            (*ts).tiling.row_start,
-            (*ts).tiling.row_end,
-            (*t).by >> (*f).sb_shift,
-            (*ts).tiling.row,
-            (*t).frame_thread.pass,
+            &mut t.rt,
+            &f.rf,
+            ts.tiling.col_start,
+            ts.tiling.col_end,
+            ts.tiling.row_start,
+            ts.tiling.row_end,
+            t.by >> f.sb_shift,
+            ts.tiling.row,
+            t.frame_thread.pass,
         );
     }
-    if (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0 && (*c).n_fc > 1 as c_uint {
-        let sby = (*t).by - (*ts).tiling.row_start >> (*f).sb_shift;
-        let lowest_px: *mut [c_int; 2] = (*((*ts).lowest_pixel).offset(sby as isize)).as_mut_ptr();
-        let mut n = 0;
-        while n < 7 {
-            let mut m = 0;
-            while m < 2 {
-                (*lowest_px.offset(n as isize))[m as usize] = i32::MIN;
-                m += 1;
-            }
-            n += 1;
-        }
+
+    if is_inter_or_switch(&*f.frame_hdr) && c.n_fc > 1 {
+        let sby = t.by - ts.tiling.row_start >> f.sb_shift;
+        *ts.lowest_pixel.offset(sby as isize) = [[i32::MIN; 2]; 7];
     }
+
     reset_context(
-        &mut (*t).l,
-        (*(*f).frame_hdr).frame_type & 1 == 0,
-        (*t).frame_thread.pass,
+        &mut t.l,
+        is_key_or_intra(&*f.frame_hdr),
+        t.frame_thread.pass,
     );
-    if (*t).frame_thread.pass == 2 {
-        let off_2pass = if (*c).n_tc > 1 as c_uint {
-            (*f).sb128w * (*(*f).frame_hdr).tiling.rows
+    if t.frame_thread.pass == 2 {
+        let off_2pass = if c.n_tc > 1 {
+            f.sb128w * (*f.frame_hdr).tiling.rows
         } else {
-            0 as c_int
+            0
         };
-        (*t).bx = (*ts).tiling.col_start;
-        (*t).a = ((*f).a)
-            .offset(off_2pass as isize)
-            .offset(col_sb128_start as isize)
-            .offset((tile_row * (*f).sb128w) as isize);
-        while (*t).bx < (*ts).tiling.col_end {
-            if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
-                return 1 as c_int;
+        t.a =
+            f.a.offset((off_2pass + col_sb128_start + tile_row * f.sb128w) as isize);
+        for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
+            t.bx = bx;
+            if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
+                return true;
             }
-            if decode_sb(&mut *t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
-                return 1 as c_int;
+            if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
+                return true;
             }
-            if (*t).bx & 16 != 0 || (*(*f).seq_hdr).sb128 != 0 {
-                (*t).a = ((*t).a).offset(1);
+            if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
+                t.a = (t.a).offset(1);
             }
-            (*t).bx += sb_step;
         }
-        ((*f).bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
-        return 0 as c_int;
+        (f.bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
+        return false;
     }
-    if (*ts).msac.cnt < -(15 as c_int) {
-        return 1 as c_int;
+
+    // error out on symbol decoder overread
+    if ts.msac.cnt < -15 {
+        return true;
     }
-    if (*(*f).c).n_tc > 1 as c_uint && (*(*f).frame_hdr).use_ref_frame_mvs != 0 {
-        (*(*f).c)
+
+    if (*f.c).n_tc > 1 && (*f.frame_hdr).use_ref_frame_mvs != 0 {
+        (*f.c)
             .refmvs_dsp
             .load_tmvs
             .expect("non-null function pointer")(
-            &(*f).rf,
-            (*ts).tiling.row,
-            (*ts).tiling.col_start >> 1,
-            (*ts).tiling.col_end >> 1,
-            (*t).by >> 1,
-            (*t).by + sb_step >> 1,
+            &f.rf,
+            ts.tiling.row,
+            ts.tiling.col_start >> 1,
+            ts.tiling.col_end >> 1,
+            t.by >> 1,
+            t.by + sb_step >> 1,
         );
     }
-    memset(
-        ((*t).pal_sz_uv[1]).as_mut_ptr() as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<[u8; 32]>(),
-    );
-    let sb128y = (*t).by >> 5;
-    (*t).bx = (*ts).tiling.col_start;
-    (*t).a = ((*f).a)
-        .offset(col_sb128_start as isize)
-        .offset((tile_row * (*f).sb128w) as isize);
-    (*t).lf_mask = ((*f).lf.mask)
-        .offset((sb128y * (*f).sb128w) as isize)
-        .offset(col_sb128_start as isize);
-    while (*t).bx < (*ts).tiling.col_end {
-        if ::core::intrinsics::atomic_load_acquire((*c).flush) != 0 {
-            return 1 as c_int;
+    t.pal_sz_uv[1] = Default::default();
+    let sb128y = t.by >> 5;
+    t.a = f.a.offset((col_sb128_start + tile_row * f.sb128w) as isize);
+    t.lf_mask =
+        f.lf.mask
+            .offset((sb128y * f.sb128w + col_sb128_start) as isize);
+    for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
+        t.bx = bx;
+        if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
+            return true;
         }
-        if root_bl as c_uint == BL_128X128 as c_int as c_uint {
-            (*t).cur_sb_cdef_idx_ptr = ((*(*t).lf_mask).cdef_idx).as_mut_ptr();
-            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as c_int) as i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(1) = -(1 as c_int) as i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(2) = -(1 as c_int) as i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(3) = -(1 as c_int) as i8;
+        let cdef_idx = &mut (*t.lf_mask).cdef_idx;
+        if root_bl == BL_128X128 {
+            *cdef_idx = [-1; 4];
+            t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
         } else {
-            (*t).cur_sb_cdef_idx_ptr = &mut *((*(*t).lf_mask).cdef_idx)
-                .as_mut_ptr()
-                .offset(((((*t).bx & 16) >> 4) + (((*t).by & 16) >> 3)) as isize)
-                as *mut i8;
-            *((*t).cur_sb_cdef_idx_ptr).offset(0) = -(1 as c_int) as i8;
+            let cdef_idx = &mut cdef_idx[(((t.bx & 16) >> 4) + ((t.by & 16) >> 3)) as usize..];
+            cdef_idx[0] = -1;
+            t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
         }
-        let mut p = 0;
-        while p < 3 {
-            if !(((*f).lf.restore_planes >> p) as c_uint & 1 as c_uint == 0) {
-                let ss_ver = (p != 0
-                    && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
-                    as c_int;
-                let ss_hor = (p != 0
-                    && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
-                    as c_int;
-                let unit_size_log2 =
-                    (*(*f).frame_hdr).restoration.unit_size[(p != 0) as c_int as usize];
-                let y = (*t).by * 4 >> ss_ver;
-                let h = (*f).cur.p.h + ss_ver >> ss_ver;
-                let unit_size = (1 as c_int) << unit_size_log2;
-                let mask: c_uint = (unit_size - 1) as c_uint;
-                if !(y as c_uint & mask != 0) {
-                    let half_unit = unit_size >> 1;
-                    if !(y != 0 && y + half_unit > h) {
-                        let frame_type: Rav1dRestorationType =
-                            (*(*f).frame_hdr).restoration.type_0[p as usize];
-                        if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
-                            let w = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
-                            let n_units = cmp::max(1 as c_int, w + half_unit >> unit_size_log2);
-                            let d = (*(*f).frame_hdr).super_res.width_scale_denominator;
-                            let rnd = unit_size * 8 - 1;
-                            let shift = unit_size_log2 + 3;
-                            let x0 = (4 * (*t).bx * d >> ss_hor) + rnd >> shift;
-                            let x1 = (4 * ((*t).bx + sb_step) * d >> ss_hor) + rnd >> shift;
-                            let mut x = x0;
-                            while x < cmp::min(x1, n_units) {
-                                let px_x = x << unit_size_log2 + ss_hor;
-                                let sb_idx = ((*t).by >> 5) * (*f).sr_sb128w + (px_x >> 7);
-                                let unit_idx = (((*t).by & 16) >> 3) + ((px_x & 64) >> 6);
-                                let lr: *mut Av1RestorationUnit =
-                                    &mut *(*((*((*f).lf.lr_mask).offset(sb_idx as isize)).lr)
-                                        .as_mut_ptr()
-                                        .offset(p as isize))
-                                    .as_mut_ptr()
-                                    .offset(unit_idx as isize)
-                                        as *mut Av1RestorationUnit;
-                                read_restoration_info(&mut *t, &mut *lr, p, frame_type);
-                                x += 1;
-                            }
-                        } else {
-                            let x_0 = 4 * (*t).bx >> ss_hor;
-                            if !(x_0 as c_uint & mask != 0) {
-                                let w_0 = (*f).cur.p.w + ss_hor >> ss_hor;
-                                if !(x_0 != 0 && x_0 + half_unit > w_0) {
-                                    let sb_idx_0 = ((*t).by >> 5) * (*f).sr_sb128w + ((*t).bx >> 5);
-                                    let unit_idx_0 = (((*t).by & 16) >> 3) + (((*t).bx & 16) >> 4);
-                                    let lr_0: *mut Av1RestorationUnit =
-                                        &mut *(*((*((*f).lf.lr_mask).offset(sb_idx_0 as isize)).lr)
-                                            .as_mut_ptr()
-                                            .offset(p as isize))
-                                        .as_mut_ptr()
-                                        .offset(unit_idx_0 as isize)
-                                            as *mut Av1RestorationUnit;
-                                    read_restoration_info(&mut *t, &mut *lr_0, p, frame_type);
-                                }
-                            }
-                        }
-                    }
-                }
+        // Restoration filter
+        for p in 0..3 {
+            if (f.lf.restore_planes >> p) & 1 == 0 {
+                continue;
             }
-            p += 1;
+
+            let ss_ver = (p != 0 && f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
+            let ss_hor = (p != 0 && f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+            let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
+            let y = t.by * 4 >> ss_ver;
+            let h = f.cur.p.h + ss_ver >> ss_ver;
+
+            let unit_size = 1 << unit_size_log2;
+            let mask = (unit_size - 1) as c_uint;
+            if y as c_uint & mask != 0 {
+                continue;
+            }
+            let half_unit = unit_size >> 1;
+            // Round half up at frame boundaries,
+            // if there's more than one restoration unit.
+            if y != 0 && y + half_unit > h {
+                continue;
+            }
+
+            let frame_type = (*f.frame_hdr).restoration.type_0[p as usize];
+
+            if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+                let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
+                let n_units = cmp::max(1, w + half_unit >> unit_size_log2);
+
+                let d = (*f.frame_hdr).super_res.width_scale_denominator;
+                let rnd = unit_size * 8 - 1;
+                let shift = unit_size_log2 + 3;
+                let x0 = (4 * t.bx * d >> ss_hor) + rnd >> shift;
+                let x1 = (4 * (t.bx + sb_step) * d >> ss_hor) + rnd >> shift;
+
+                for x in x0..cmp::min(x1, n_units) {
+                    let px_x = x << unit_size_log2 + ss_hor;
+                    let sb_idx = (t.by >> 5) * f.sr_sb128w + (px_x >> 7);
+                    let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
+                    let lr =
+                        &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize];
+
+                    read_restoration_info(t, lr, p, frame_type);
+                }
+            } else {
+                let x = 4 * t.bx >> ss_hor;
+                if x as c_uint & mask != 0 {
+                    continue;
+                }
+                let w = f.cur.p.w + ss_hor >> ss_hor;
+                // Round half up at frame boundaries,
+                // if there's more than one restoration unit.
+                if x != 0 && x + half_unit > w {
+                    continue;
+                }
+                let sb_idx = (t.by >> 5) * f.sr_sb128w + (t.bx >> 5);
+                let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
+                let lr = &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize];
+
+                read_restoration_info(t, lr, p, frame_type);
+            }
         }
-        if decode_sb(&mut *t, root_bl, (*c).intra_edge.root[root_bl as usize]) != 0 {
-            return 1 as c_int;
+        if decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize]) != 0 {
+            return true;
         }
-        if (*t).bx & 16 != 0 || (*(*f).seq_hdr).sb128 != 0 {
-            (*t).a = ((*t).a).offset(1);
-            (*t).lf_mask = ((*t).lf_mask).offset(1);
+        if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
+            t.a = (t.a).offset(1);
+            t.lf_mask = (t.lf_mask).offset(1);
         }
-        (*t).bx += sb_step;
     }
-    if (*(*f).seq_hdr).ref_frame_mvs != 0
-        && (*(*f).c).n_tc > 1 as c_uint
-        && (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0
-    {
+
+    if (*f.seq_hdr).ref_frame_mvs != 0 && (*f.c).n_tc > 1 && (*f.frame_hdr).frame_type & 1 != 0 {
         rav1d_refmvs_save_tmvs(
-            &(*(*f).c).refmvs_dsp,
-            &mut (*t).rt,
-            (*ts).tiling.col_start >> 1,
-            (*ts).tiling.col_end >> 1,
-            (*t).by >> 1,
-            (*t).by + sb_step >> 1,
+            &(*f.c).refmvs_dsp,
+            &mut t.rt,
+            ts.tiling.col_start >> 1,
+            ts.tiling.col_end >> 1,
+            t.by >> 1,
+            t.by + sb_step >> 1,
         );
     }
-    if (*t).frame_thread.pass != 1 as c_int {
-        ((*f).bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
+
+    // backup pre-loopfilter pixels for intra prediction of the next sbrow
+    if t.frame_thread.pass != 1 {
+        (f.bd_fn.backup_ipred_edge).expect("non-null function pointer")(t);
     }
-    let mut align_h = (*f).bh + 31 & !(31 as c_int);
-    memcpy(
-        &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(0))
-            .offset((align_h * tile_col + (*t).by) as isize) as *mut u8 as *mut c_void,
-        &mut *((*t).l.tx_lpf_y.0)
-            .as_mut_ptr()
-            .offset(((*t).by & 16) as isize) as *mut u8 as *const c_void,
-        sb_step as usize,
-    );
-    let ss_ver_0 =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-    align_h >>= ss_ver_0;
-    memcpy(
-        &mut *(*((*f).lf.tx_lpf_right_edge).as_ptr().offset(1))
-            .offset((align_h * tile_col + ((*t).by >> ss_ver_0)) as isize) as *mut u8
-            as *mut c_void,
-        &mut *((*t).l.tx_lpf_uv.0)
-            .as_mut_ptr()
-            .offset((((*t).by & 16) >> ss_ver_0) as isize) as *mut u8 as *const c_void,
-        (sb_step >> ss_ver_0) as usize,
-    );
-    return 0 as c_int;
+
+    // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
+    // up the initial value in neighbour tiles when running the loopfilter
+    let mut align_h = f.bh + 31 & !31;
+    slice::from_raw_parts_mut(
+        f.lf.tx_lpf_right_edge[0],
+        (align_h * tile_col + t.by + sb_step).try_into().unwrap(),
+    )[(align_h * tile_col + t.by).try_into().unwrap()..][..sb_step.try_into().unwrap()]
+        .copy_from_slice(&t.l.tx_lpf_y.0[(t.by & 16) as usize..][..sb_step.try_into().unwrap()]);
+    let ss_ver = (f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
+    align_h >>= ss_ver;
+    slice::from_raw_parts_mut(
+        f.lf.tx_lpf_right_edge[1],
+        (align_h * tile_col + (t.by >> ss_ver) + (sb_step >> ss_ver))
+            .try_into()
+            .unwrap(),
+    )[(align_h * tile_col + (t.by >> ss_ver)).try_into().unwrap()..]
+        [..(sb_step >> ss_ver).try_into().unwrap()]
+        .copy_from_slice(
+            &t.l.tx_lpf_uv.0[((t.by & 16) >> ss_ver) as usize..]
+                [..(sb_step >> ss_ver).try_into().unwrap()],
+        );
+
+    false
 }
 
 pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1dResult {
@@ -4948,7 +4926,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
             }
             for tile in &mut ts[..] {
                 t.ts = tile;
-                if rav1d_decode_tile_sbrow(t) != 0 {
+                if rav1d_decode_tile_sbrow(t) {
                     return Err(EINVAL);
                 }
             }
