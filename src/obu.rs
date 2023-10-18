@@ -8,13 +8,11 @@ use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Dav1dColorPrimaries;
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dFrameType;
 use crate::include::dav1d::headers::Dav1dITUTT35;
-use crate::include::dav1d::headers::Dav1dMasteringDisplay;
 use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
 use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dRestorationType;
@@ -23,10 +21,12 @@ use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
+use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
+use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dObuType;
 use crate::include::dav1d::headers::Rav1dSegmentationData;
 use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
@@ -1730,8 +1730,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
             ) != 0
             {
                 (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
-                (*c).mastering_display = 0 as *mut Dav1dMasteringDisplay;
-                (*c).content_light = 0 as *mut Dav1dContentLightLevel;
+                (*c).mastering_display = 0 as *mut Rav1dMasteringDisplay;
+                (*c).content_light = 0 as *mut Rav1dContentLightLevel;
                 rav1d_ref_dec(&mut (*c).mastering_display_ref);
                 rav1d_ref_dec(&mut (*c).content_light_ref);
                 let mut i = 0;
@@ -1787,12 +1787,12 @@ pub(crate) unsafe fn rav1d_parse_obus(
             match meta_type as c_uint {
                 OBU_META_HDR_CLL => {
                     let mut ref_1: *mut Rav1dRef =
-                        rav1d_ref_create(::core::mem::size_of::<Dav1dContentLightLevel>());
+                        rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
                     if ref_1.is_null() {
                         return -(12 as c_int);
                     }
-                    let content_light: *mut Dav1dContentLightLevel =
-                        (*ref_1).data as *mut Dav1dContentLightLevel;
+                    let content_light: *mut Rav1dContentLightLevel =
+                        (*ref_1).data as *mut Rav1dContentLightLevel;
                     (*content_light).max_content_light_level =
                         rav1d_get_bits(&mut gb, 16 as c_int) as c_int;
                     (*content_light).max_frame_average_light_level =
@@ -1809,12 +1809,12 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 }
                 OBU_META_HDR_MDCV => {
                     let mut ref_2: *mut Rav1dRef =
-                        rav1d_ref_create(::core::mem::size_of::<Dav1dMasteringDisplay>());
+                        rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
                     if ref_2.is_null() {
                         return -(12 as c_int);
                     }
-                    let mastering_display: *mut Dav1dMasteringDisplay =
-                        (*ref_2).data as *mut Dav1dMasteringDisplay;
+                    let mastering_display: *mut Rav1dMasteringDisplay =
+                        (*ref_2).data as *mut Rav1dMasteringDisplay;
                     let mut i_1 = 0;
                     while i_1 < 3 {
                         (*mastering_display).primaries[i_1 as usize][0] =

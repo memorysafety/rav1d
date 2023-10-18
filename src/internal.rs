@@ -6,10 +6,10 @@ use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::dav1d::Rav1dLogger;
-use crate::include::dav1d::headers::Dav1dContentLightLevel;
-use crate::include::dav1d::headers::Dav1dMasteringDisplay;
+use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
+use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
@@ -176,9 +176,9 @@ pub struct Rav1dContext {
     pub(crate) frame_hdr_ref: *mut Rav1dRef,
     pub(crate) frame_hdr: *mut Rav1dFrameHeader,
     pub(crate) content_light_ref: *mut Rav1dRef,
-    pub(crate) content_light: *mut Dav1dContentLightLevel, // TODO(kkysen) make Rav1d
+    pub(crate) content_light: *mut Rav1dContentLightLevel,
     pub(crate) mastering_display_ref: *mut Rav1dRef,
-    pub(crate) mastering_display: *mut Dav1dMasteringDisplay, // TODO(kkysen) make Rav1d
+    pub(crate) mastering_display: *mut Rav1dMasteringDisplay,
     pub(crate) itut_t35_ref: *mut Rav1dRef,
     pub(crate) itut_t35: *mut Rav1dITUTT35,
     pub(crate) in_0: Rav1dData,
