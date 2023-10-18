@@ -80,7 +80,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     grain: &mut GrainBD<BD>,
 ) {
     let GrainBD { grain_lut, scaling } = grain;
-    let data = &mut (*out.frame_hdr).film_grain.data;
+    let data = &(*out.frame_hdr).film_grain.data;
     let bitdepth_max = (1 << out.p.bpc) - 1;
 
     // Generate grain LUTs as needed
@@ -183,7 +183,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
 ) {
     // Synthesize grain for the affected planes
     let GrainBD { grain_lut, scaling } = grain;
-    let data = &mut (*out.frame_hdr).film_grain.data;
+    let data = &(*out.frame_hdr).film_grain.data;
     let ss_y = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
     let ss_x = (r#in.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
     let cpw = out.p.w + ss_x >> ss_x;

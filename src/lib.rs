@@ -589,7 +589,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 }
 
 unsafe fn has_grain(pic: *const Rav1dPicture) -> c_int {
-    let fgdata: *const Dav1dFilmGrainData = &mut (*(*pic).frame_hdr).film_grain.data;
+    let fgdata: *const Dav1dFilmGrainData = &(*(*pic).frame_hdr).film_grain.data;
     return ((*fgdata).num_y_points != 0
         || (*fgdata).num_uv_points[0] != 0
         || (*fgdata).num_uv_points[1] != 0
