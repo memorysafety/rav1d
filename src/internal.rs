@@ -26,6 +26,8 @@ use crate::src::cdf::CdfThreadContext;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
+use crate::src::filmgrain::GRAIN_HEIGHT;
+use crate::src::filmgrain::GRAIN_WIDTH;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeNode;
@@ -115,16 +117,26 @@ pub(crate) struct Rav1dContext_frame_thread {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct GrainLutScalingBD<BD: BitDepth> {
-    pub grain_lut: Align16<[[[BD::Entry; 82]; 73 + 1]; 3]>,
-    // TODO(kkysen) can use `BD::SCALING_LEN`` directly with `#![feature(generic_const_exprs)]` when stabilized
+pub struct GrainBD<BD: BitDepth> {
+    pub grain_lut: Align16<[[[BD::Entry; GRAIN_WIDTH]; GRAIN_HEIGHT + 1]; 3]>,
+    // TODO(kkysen) can use `BD::SCALING_LEN` directly with `#![feature(generic_const_exprs)]` when stabilized
     pub scaling: Align64<[BD::Scaling; 3]>,
 }
 
-pub struct GrainLutScaling;
+// Implemented manually since we don't require `BD: Default`.
+impl<BD: BitDepth> Default for GrainBD<BD> {
+    fn default() -> Self {
+        Self {
+            grain_lut: Default::default(),
+            scaling: Default::default(),
+        }
+    }
+}
 
-impl BitDepthDependentType for GrainLutScaling {
-    type T<BD: BitDepth> = GrainLutScalingBD<BD>;
+pub struct Grain;
+
+impl BitDepthDependentType for Grain {
+    type T<BD: BitDepth> = GrainBD<BD>;
 }
 
 #[repr(C)]
@@ -135,7 +147,7 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub out: *mut Rav1dPicture,
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
-    pub grain_lut_scaling: BitDepthUnion<GrainLutScaling>,
+    pub grain: BitDepthUnion<Grain>,
 }
 
 #[repr(C)]

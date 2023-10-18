@@ -8,6 +8,36 @@
 use std::ops::Index;
 use std::ops::IndexMut;
 
+/// [`Default`] isn't `impl`emented for all arrays `[T; N]`
+/// because they were implemented before `const` generics
+/// and thus only for low values of `N`.
+pub trait ArrayDefault {
+    fn default() -> Self;
+}
+
+impl<T: ArrayDefault + Copy, const N: usize> ArrayDefault for [T; N] {
+    fn default() -> Self {
+        [T::default(); N]
+    }
+}
+
+macro_rules! impl_ArrayDefault {
+    ($T:ty) => {
+        impl ArrayDefault for $T {
+            fn default() -> Self {
+                <Self as Default>::default()
+            }
+        }
+    };
+}
+
+// We want this to be implemented for all `T: Default` where `T` is not `[_; _]`,
+// but we can't do that, so we can just add individual
+// `impl`s here for types we need it for.
+impl_ArrayDefault!(u8);
+impl_ArrayDefault!(i8);
+impl_ArrayDefault!(i16);
+
 macro_rules! def_align {
     ($align:literal, $name:ident) => {
         #[derive(Clone, Copy)]
@@ -31,6 +61,18 @@ macro_rules! def_align {
         impl<T: IndexMut<usize>> IndexMut<usize> for $name<T> {
             fn index_mut(&mut self, index: usize) -> &mut Self::Output {
                 &mut self.0[index]
+            }
+        }
+
+        impl<T: ArrayDefault> ArrayDefault for $name<T> {
+            fn default() -> Self {
+                Self(T::default())
+            }
+        }
+
+        impl<T: ArrayDefault> Default for $name<T> {
+            fn default() -> Self {
+                <Self as ArrayDefault>::default()
             }
         }
     };
