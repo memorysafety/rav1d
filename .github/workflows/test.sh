@@ -31,22 +31,22 @@ else
         $seek_stress_test_rust_path
 fi
 
+test_args=(
+    --no-rebuild
+    --print-errorlogs
+    --timeout-multiplier $timeout_multiplier
+    --suite testdata-8
+    --suite testdata-10
+    --suite testdata-12
+    --suite testdata-multi
+)
+
+export RUST_BACKTRACE=1
+
 if [[ -z $seek_stress_test_rust_path ]]; then
-    # stress test binary not provided; don't include seek stress tests
-    cd build && meson test --no-rebuild \
-    --suite testdata-8 \
-    --suite testdata-10 \
-    --suite testdata-12 \
-    --suite testdata-multi \
-    --timeout-multiplier $timeout_multiplier
+    : # stress test binary not provided; don't include seek stress tests
 else
-    cd build && meson test --no-rebuild \
-    --suite testdata-8 \
-    --suite testdata-10 \
-    --suite testdata-12 \
-    --suite testdata-multi \
-    --suite testdata_seek-stress \
-    --timeout-multiplier $timeout_multiplier
+    test_args+=(--suite testdata_seek-stress)
 fi
 
-
+cd build && meson test "${test_args[@]}"
