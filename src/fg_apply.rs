@@ -32,17 +32,17 @@ fn generate_scaling<BD: BitDepth>(bitdepth: usize, points: &[[u8; 2]]) -> BD::Sc
     for ps in points.windows(2) {
         // TODO(kkysen) use array_windows when stabilized
         let [p0, p1] = ps.try_into().unwrap();
-        let bx = p0[0] as c_int;
-        let by = p0[1] as c_int;
-        let ex = p1[0] as c_int;
-        let ey = p1[1] as c_int;
+        let bx = p0[0] as usize;
+        let by = p0[1] as isize;
+        let ex = p1[0] as usize;
+        let ey = p1[1] as isize;
         let dx = ex - bx;
         let dy = ey - by;
         assert!(dx > 0);
-        let delta = dy * ((0x10000 + (dx >> 1)) / dx);
+        let delta = dy * ((0x10000 + (dx >> 1)) / dx) as isize;
         let mut d = 0x8000;
         for x in 0..dx {
-            scaling[(bx + x << shift_x) as usize] = (by + (d >> 16)) as u8;
+            scaling[bx + x << shift_x] = (by + (d >> 16)) as u8;
             d += delta;
         }
     }
@@ -55,17 +55,15 @@ fn generate_scaling<BD: BitDepth>(bitdepth: usize, points: &[[u8; 2]]) -> BD::Sc
         for ps in points.windows(2) {
             // TODO(kkysen) use array_windows when stabilized
             let [p0, p1] = ps.try_into().unwrap();
-            let bx = (p0[0] as c_int) << shift_x;
-            let ex = (p1[0] as c_int) << shift_x;
+            let bx = (p0[0] as usize) << shift_x;
+            let ex = (p1[0] as usize) << shift_x;
             let dx = ex - bx;
-            for x in (0..dx).step_by(pad as usize) {
-                let range =
-                    scaling[(bx + x + pad) as usize] as c_int - scaling[(bx + x) as usize] as c_int;
-                let mut r = rnd;
+            for x in (0..dx).step_by(pad) {
+                let range = scaling[bx + x + pad] as isize - scaling[(bx + x) as usize] as isize;
+                let mut r = rnd as isize;
                 for n in 1..pad {
                     r += range;
-                    scaling[(bx + x + n) as usize] =
-                        (scaling[(bx + x) as usize] as c_int + (r >> shift_x)) as u8;
+                    scaling[bx + x + n] = (scaling[bx + x] as isize + (r >> shift_x)) as u8;
                 }
             }
         }
