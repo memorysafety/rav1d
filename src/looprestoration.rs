@@ -377,16 +377,18 @@ unsafe fn wiener_rust<BD: BitDepth>(
 ///
 /// Example for a 4x4 block:
 ///
-///     x x x x x x x x x x
-///     x c c c c c c c c x
-///     x i s s s s s s i x
-///     x i s s s s s s i x
-///     x i s s s s s s i x
-///     x i s s s s s s i x
-///     x i s s s s s s i x
-///     x i s s s s s s i x
-///     x c c c c c c c c x
-///     x x x x x x x x x x
+/// ```text
+/// x x x x x x x x x x
+/// x c c c c c c c c x
+/// x i s s s s s s i x
+/// x i s s s s s s i x
+/// x i s s s s s s i x
+/// x i s s s s s s i x
+/// x i s s s s s s i x
+/// x i s s s s s s i x
+/// x c c c c c c c c x
+/// x x x x x x x x x x
+/// ```
 ///
 /// * s: Pixel summed and stored
 /// * i: Pixel summed and stored (between loops)
@@ -467,16 +469,18 @@ fn boxsum3<BD: BitDepth>(
 ///
 /// Example for a 4x4 block:
 ///
-///     c c c c c c c c c c
-///     c c c c c c c c c c
-///     i i s s s s s s i i
-///     i i s s s s s s i i
-///     i i s s s s s s i i
-///     i i s s s s s s i i
-///     i i s s s s s s i i
-///     i i s s s s s s i i
-///     c c c c c c c c c c
-///     c c c c c c c c c c
+/// ```text
+/// c c c c c c c c c c
+/// c c c c c c c c c c
+/// i i s s s s s s i i
+/// i i s s s s s s i i
+/// i i s s s s s s i i
+/// i i s s s s s s i i
+/// i i s s s s s s i i
+/// i i s s s s s s i i
+/// c c c c c c c c c c
+/// c c c c c c c c c c
+/// ```
 ///
 /// * s: Pixel summed and stored
 /// * i: Pixel summed and stored (between loops)
