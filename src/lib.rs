@@ -1,5 +1,6 @@
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::intops::iclip;
+use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::common::Rav1dUserData;
@@ -84,12 +85,9 @@ use crate::src::refmvs::rav1d_refmvs_init;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
-use crate::stderr;
 use cfg_if::cfg_if;
 use libc::calloc;
-use libc::fprintf;
 use libc::free;
-use libc::memcpy;
 use libc::memset;
 use libc::pthread_attr_destroy;
 use libc::pthread_attr_init;
@@ -234,41 +232,11 @@ unsafe fn get_num_threads(
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> Rav1dResult<c_uint> {
+pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<c_uint> {
     let mut n_tc: c_uint = 0;
     let mut n_fc: c_uint = 0;
-    if s.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_frame_delay\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if !((*s).n_threads >= 0 && (*s).n_threads <= 256) {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->n_threads >= 0 && s->n_threads <= RAV1D_MAX_THREADS\0" as *const u8
-                as *const c_char,
-            (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_frame_delay\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if !((*s).max_frame_delay >= 0 && (*s).max_frame_delay <= 256) {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->max_frame_delay >= 0 && s->max_frame_delay <= RAV1D_MAX_FRAME_DELAY\0" as *const u8
-                as *const c_char,
-            (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_frame_delay\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
+    validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
+    validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     get_num_threads(0 as *mut Rav1dContext, s, &mut n_tc, &mut n_fc);
     Ok(n_fc)
 }
@@ -276,17 +244,18 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: *const Rav1dSettings) -> Rav1dResu
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1dResult {
-    rav1d_get_frame_delay(&s.read().into()).into()
+    (|| {
+        validate_input!((!s.is_null(), EINVAL))?;
+        rav1d_get_frame_delay(&s.read().into())
+    })()
+    .into()
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_open(
-    c_out: *mut *mut Rav1dContext,
-    s: *const Rav1dSettings,
-) -> Rav1dResult {
+pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
     unsafe fn error(
         c: *mut Rav1dContext,
-        c_out: *mut *mut Rav1dContext,
+        c_out: &mut *mut Rav1dContext,
         thread_attr: *mut pthread_attr_t,
     ) -> Rav1dResult {
         if !c.is_null() {
@@ -298,85 +267,16 @@ pub(crate) unsafe fn rav1d_open(
 
     static initted: Once = Once::new();
     initted.call_once(|| init_internal());
-    if c_out.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"c_out != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if s.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if !((*s).n_threads >= 0 && (*s).n_threads <= 256) {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->n_threads >= 0 && s->n_threads <= RAV1D_MAX_THREADS\0" as *const u8
-                as *const c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if !((*s).max_frame_delay >= 0 && (*s).max_frame_delay <= 256) {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->max_frame_delay >= 0 && s->max_frame_delay <= RAV1D_MAX_FRAME_DELAY\0" as *const u8
-                as *const c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if ((*s).allocator.alloc_picture_callback).is_none() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->allocator.alloc_picture_callback != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if ((*s).allocator.release_picture_callback).is_none() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->allocator.release_picture_callback != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if !((*s).operating_point >= 0 && (*s).operating_point <= 31) {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"s->operating_point >= 0 && s->operating_point <= 31\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if !((*s).decode_frame_type as c_uint >= RAV1D_DECODEFRAMETYPE_ALL as c_int as c_uint
-        && (*s).decode_frame_type as c_uint <= RAV1D_DECODEFRAMETYPE_KEY as c_int as c_uint)
-    {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8
-                as *const c_char,
-            b"s->decode_frame_type >= RAV1D_DECODEFRAMETYPE_ALL && s->decode_frame_type <= RAV1D_DECODEFRAMETYPE_KEY\0"
-                as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"dav1d_open\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
+    validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
+    validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
+    validate_input!((s.allocator.alloc_picture_callback.is_some(), EINVAL))?;
+    validate_input!((s.allocator.release_picture_callback.is_some(), EINVAL))?;
+    validate_input!((s.operating_point >= 0 && s.operating_point <= 31, EINVAL))?;
+    validate_input!((
+        s.decode_frame_type >= RAV1D_DECODEFRAMETYPE_ALL
+            && s.decode_frame_type <= RAV1D_DECODEFRAMETYPE_KEY,
+        EINVAL
+    ))?;
     let mut thread_attr: pthread_attr_t = std::mem::zeroed();
     if pthread_attr_init(&mut thread_attr) != 0 {
         return Err(ENOMEM);
@@ -393,16 +293,16 @@ pub(crate) unsafe fn rav1d_open(
         0 as c_int,
         ::core::mem::size_of::<Rav1dContext>(),
     );
-    (*c).allocator = (*s).allocator.clone();
-    (*c).logger = (*s).logger.clone();
-    (*c).apply_grain = (*s).apply_grain;
-    (*c).operating_point = (*s).operating_point;
-    (*c).all_layers = (*s).all_layers;
-    (*c).frame_size_limit = (*s).frame_size_limit;
-    (*c).strict_std_compliance = (*s).strict_std_compliance;
-    (*c).output_invisible_frames = (*s).output_invisible_frames;
-    (*c).inloop_filters = (*s).inloop_filters;
-    (*c).decode_frame_type = (*s).decode_frame_type;
+    (*c).allocator = s.allocator.clone();
+    (*c).logger = s.logger.clone();
+    (*c).apply_grain = s.apply_grain;
+    (*c).operating_point = s.operating_point;
+    (*c).all_layers = s.all_layers;
+    (*c).frame_size_limit = s.frame_size_limit;
+    (*c).strict_std_compliance = s.strict_std_compliance;
+    (*c).output_invisible_frames = s.output_invisible_frames;
+    (*c).inloop_filters = s.inloop_filters;
+    (*c).decode_frame_type = s.decode_frame_type;
     rav1d_data_props_set_defaults(&mut (*c).cached_error_props);
     if rav1d_mem_pool_init(&mut (*c).seq_hdr_pool).is_err()
         || rav1d_mem_pool_init(&mut (*c).frame_hdr_pool).is_err()
@@ -428,14 +328,14 @@ pub(crate) unsafe fn rav1d_open(
         return error(c, c_out, &mut thread_attr);
     }
     if (::core::mem::size_of::<usize>() as c_ulong) < 8 as c_ulong
-        && ((*s).frame_size_limit).wrapping_sub(1 as c_int as c_uint) >= (8192 * 8192) as c_uint
+        && (s.frame_size_limit).wrapping_sub(1 as c_int as c_uint) >= (8192 * 8192) as c_uint
     {
         (*c).frame_size_limit = (8192 * 8192) as c_uint;
-        if (*s).frame_size_limit != 0 {
+        if s.frame_size_limit != 0 {
             rav1d_log(
                 c,
                 b"Frame size limit reduced from %u to %u.\n\0" as *const u8 as *const c_char,
-                (*s).frame_size_limit,
+                s.frame_size_limit,
                 (*c).frame_size_limit,
             );
         }
@@ -594,7 +494,12 @@ pub unsafe extern "C" fn dav1d_open(
     c_out: *mut *mut Dav1dContext,
     s: *const Dav1dSettings,
 ) -> Dav1dResult {
-    rav1d_open(c_out, &s.read().into()).into()
+    (|| {
+        validate_input!((!c_out.is_null(), EINVAL))?;
+        validate_input!((!s.is_null(), EINVAL))?;
+        rav1d_open(&mut *c_out, &s.read().into())
+    })()
+    .into()
 }
 
 unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
@@ -604,7 +509,7 @@ unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
 }
 
 pub(crate) unsafe fn rav1d_parse_sequence_header(
-    out: *mut Rav1dSequenceHeader,
+    out: &mut Rav1dSequenceHeader,
     ptr: *const u8,
     sz: usize,
 ) -> Rav1dResult {
@@ -628,16 +533,6 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
         init
     };
     let mut res;
-    if out.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"out != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 28], &[c_char; 28]>(b"dav1d_parse_sequence_header\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
     let mut s = Rav1dSettings::default();
     s.n_threads = 1 as c_int;
     s.logger.callback = None;
@@ -679,11 +574,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
                     res = Err(ENOENT);
                     current_block = 10647346020414903899;
                 } else {
-                    memcpy(
-                        out as *mut c_void,
-                        (*c).seq_hdr as *const c_void,
-                        ::core::mem::size_of::<Dav1dSequenceHeader>(),
-                    );
+                    *out = (*(*c).seq_hdr).clone();
                     res = Ok(());
                     current_block = 10647346020414903899;
                 }
@@ -700,10 +591,14 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     ptr: *const u8,
     sz: usize,
 ) -> Dav1dResult {
-    let mut out_rust = out.read().into();
-    let result = rav1d_parse_sequence_header(&mut out_rust, ptr, sz);
-    out.write(out_rust.into());
-    result.into()
+    (|| {
+        validate_input!((!out.is_null(), EINVAL))?;
+        let mut out_rust = out.read().into();
+        let result = rav1d_parse_sequence_header(&mut out_rust, ptr, sz);
+        out.write(out_rust.into());
+        result
+    })()
+    .into()
 }
 
 unsafe fn has_grain(pic: *const Rav1dPicture) -> c_int {
@@ -715,22 +610,22 @@ unsafe fn has_grain(pic: *const Rav1dPicture) -> c_int {
         as c_int;
 }
 
-unsafe fn output_image(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> Rav1dResult {
+unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
     let mut res = Ok(());
-    let in_0: *mut Rav1dThreadPicture = if (*c).all_layers != 0 || (*c).max_spatial_id == 0 {
-        &mut (*c).out
+    let in_0: *mut Rav1dThreadPicture = if c.all_layers != 0 || c.max_spatial_id == 0 {
+        &mut c.out
     } else {
-        &mut (*c).cache
+        &mut c.cache
     };
-    if (*c).apply_grain == 0 || has_grain(&mut (*in_0).p) == 0 {
+    if c.apply_grain == 0 || has_grain(&mut (*in_0).p) == 0 {
         rav1d_picture_move_ref(out, &mut (*in_0).p);
         rav1d_thread_picture_unref(in_0);
     } else {
         res = rav1d_apply_grain(c, out, &mut (*in_0).p);
         rav1d_thread_picture_unref(in_0);
     }
-    if (*c).all_layers == 0 && (*c).max_spatial_id != 0 && !((*c).out.p.data[0]).is_null() {
-        rav1d_thread_picture_move_ref(in_0, &mut (*c).out);
+    if c.all_layers == 0 && c.max_spatial_id != 0 && !(c.out.p.data[0]).is_null() {
+        rav1d_thread_picture_move_ref(in_0, &mut c.out);
     }
     return res;
 }
@@ -763,14 +658,14 @@ unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) ->
     return !((*c).out.p.data[0]).is_null() as c_int;
 }
 
-unsafe fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> Rav1dResult {
+unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
     let mut drain_count: c_uint = 0 as c_int as c_uint;
     let mut drained = 0;
     loop {
-        let next: c_uint = (*c).frame_thread.next;
+        let next: c_uint = c.frame_thread.next;
         let f: *mut Rav1dFrameContext =
-            &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
-        pthread_mutex_lock(&mut (*c).task_thread.lock);
+            &mut *(c.fc).offset(next as isize) as *mut Rav1dFrameContext;
+        pthread_mutex_lock(&mut c.task_thread.lock);
         while (*f).n_tile_data > 0 {
             pthread_cond_wait(
                 &mut (*f).task_thread.cond,
@@ -778,46 +673,46 @@ unsafe fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> Rav1dRe
             );
         }
         let out_delayed: *mut Rav1dThreadPicture =
-            &mut *((*c).frame_thread.out_delayed).offset(next as isize) as *mut Rav1dThreadPicture;
+            &mut *(c.frame_thread.out_delayed).offset(next as isize) as *mut Rav1dThreadPicture;
         if !((*out_delayed).p.data[0]).is_null()
             || ::core::intrinsics::atomic_load_seqcst(
                 &mut (*f).task_thread.error as *mut atomic_int,
             ) != 0
         {
             let mut first: c_uint =
-                ::core::intrinsics::atomic_load_seqcst(&mut (*c).task_thread.first);
-            if first.wrapping_add(1 as c_uint) < (*c).n_fc {
-                ::core::intrinsics::atomic_xadd_seqcst(&mut (*c).task_thread.first, 1 as c_uint);
+                ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
+            if first.wrapping_add(1 as c_uint) < c.n_fc {
+                ::core::intrinsics::atomic_xadd_seqcst(&mut c.task_thread.first, 1 as c_uint);
             } else {
                 ::core::intrinsics::atomic_store_seqcst(
-                    &mut (*c).task_thread.first,
+                    &mut c.task_thread.first,
                     0 as c_int as c_uint,
                 );
             }
             let fresh0 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
-                &mut (*c).task_thread.reset_task_cur,
+                &mut c.task_thread.reset_task_cur,
                 *&mut first,
                 u32::MAX,
             );
             *&mut first = fresh0.0;
             fresh0.1;
-            if (*c).task_thread.cur != 0 && (*c).task_thread.cur < (*c).n_fc {
-                (*c).task_thread.cur = ((*c).task_thread.cur).wrapping_sub(1);
+            if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
+                c.task_thread.cur = (c.task_thread.cur).wrapping_sub(1);
             }
             drained = 1 as c_int;
         } else if drained != 0 {
-            pthread_mutex_unlock(&mut (*c).task_thread.lock);
+            pthread_mutex_unlock(&mut c.task_thread.lock);
             break;
         }
-        (*c).frame_thread.next = ((*c).frame_thread.next).wrapping_add(1);
-        if (*c).frame_thread.next == (*c).n_fc {
-            (*c).frame_thread.next = 0 as c_int as c_uint;
+        c.frame_thread.next = (c.frame_thread.next).wrapping_add(1);
+        if c.frame_thread.next == c.n_fc {
+            c.frame_thread.next = 0 as c_int as c_uint;
         }
-        pthread_mutex_unlock(&mut (*c).task_thread.lock);
+        pthread_mutex_unlock(&mut c.task_thread.lock);
         let error = (*f).task_thread.retval;
         if error.is_err() {
             (*f).task_thread.retval = Ok(());
-            rav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*out_delayed).p.m);
+            rav1d_data_props_copy(&mut c.cached_error_props, &mut (*out_delayed).p.m);
             rav1d_thread_picture_unref(out_delayed);
             return error;
         }
@@ -825,13 +720,11 @@ unsafe fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> Rav1dRe
             let progress: c_uint = ::core::intrinsics::atomic_load_relaxed(
                 &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
             );
-            if ((*out_delayed).visible || (*c).output_invisible_frames != 0)
-                && progress != FRAME_ERROR
+            if ((*out_delayed).visible || c.output_invisible_frames != 0) && progress != FRAME_ERROR
             {
-                rav1d_thread_picture_ref(&mut (*c).out, out_delayed);
-                (*c).event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-                    (*c).event_flags as c_uint
-                        | rav1d_picture_get_event_flags(out_delayed) as c_uint,
+                rav1d_thread_picture_ref(&mut c.out, out_delayed);
+                c.event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
+                    c.event_flags as c_uint | rav1d_picture_get_event_flags(out_delayed) as c_uint,
                 );
             }
             rav1d_thread_picture_unref(out_delayed);
@@ -840,7 +733,7 @@ unsafe fn drain_picture(c: *mut Rav1dContext, out: *mut Rav1dPicture) -> Rav1dRe
             }
         }
         drain_count = drain_count.wrapping_add(1);
-        if !(drain_count < (*c).n_fc) {
+        if !(drain_count < c.n_fc) {
             break;
         }
     }
@@ -879,41 +772,15 @@ unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_send_data(c: *mut Rav1dContext, in_0: *mut Rav1dData) -> Rav1dResult {
-    if c.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"c != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 16], &[c_char; 16]>(b"dav1d_send_data\0")).as_ptr(),
-        );
-        return Err(EINVAL);
+pub(crate) unsafe fn rav1d_send_data(c: &mut Rav1dContext, in_0: &mut Rav1dData) -> Rav1dResult {
+    validate_input!((in_0.data.is_null() || in_0.sz != 0, EINVAL))?;
+    if !in_0.data.is_null() {
+        c.drain = 0 as c_int;
     }
-    if in_0.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"in != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 16], &[c_char; 16]>(b"dav1d_send_data\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if !(((*in_0).data).is_null() || (*in_0).sz != 0) {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"in->data == NULL || in->sz\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 16], &[c_char; 16]>(b"dav1d_send_data\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if !((*in_0).data).is_null() {
-        (*c).drain = 0 as c_int;
-    }
-    if !((*c).in_0.data).is_null() {
+    if !c.in_0.data.is_null() {
         return Err(EAGAIN);
     }
-    rav1d_data_ref(&mut (*c).in_0, in_0);
+    rav1d_data_ref(&mut c.in_0, in_0);
     let res = gen_picture(c);
     if res.is_ok() {
         rav1d_data_unref_internal(in_0);
@@ -926,49 +793,36 @@ pub unsafe extern "C" fn dav1d_send_data(
     c: *mut Rav1dContext,
     in_0: *mut Dav1dData,
 ) -> Dav1dResult {
-    let mut in_rust = in_0.read().into();
-    let result = rav1d_send_data(c, &mut in_rust);
-    in_0.write(in_rust.into());
-    result.into()
+    (|| {
+        validate_input!((!c.is_null(), EINVAL))?;
+        validate_input!((!in_0.is_null(), EINVAL))?;
+        let mut in_rust = in_0.read().into();
+        let result = rav1d_send_data(&mut *c, &mut in_rust);
+        in_0.write(in_rust.into());
+        result
+    })()
+    .into()
 }
 
 pub(crate) unsafe fn rav1d_get_picture(
-    c: *mut Rav1dContext,
-    out: *mut Rav1dPicture,
+    c: &mut Rav1dContext,
+    out: &mut Rav1dPicture,
 ) -> Rav1dResult {
-    if c.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"c != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_get_picture\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if out.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"out != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_get_picture\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    let drain = (*c).drain;
-    (*c).drain = 1 as c_int;
+    let drain = c.drain;
+    c.drain = 1 as c_int;
     let res = gen_picture(c);
     if res.is_err() {
         return res;
     }
-    if (*c).cached_error.is_err() {
-        let res_0 = (*c).cached_error;
-        (*c).cached_error = Ok(());
+    if c.cached_error.is_err() {
+        let res_0 = c.cached_error;
+        c.cached_error = Ok(());
         return res_0;
     }
-    if output_picture_ready(c, ((*c).n_fc == 1 as c_uint) as c_int) != 0 {
+    if output_picture_ready(c, (c.n_fc == 1 as c_uint) as c_int) != 0 {
         return output_image(c, out);
     }
-    if (*c).n_fc > 1 as c_uint && drain != 0 {
+    if c.n_fc > 1 as c_uint && drain != 0 {
         return drain_picture(c, out);
     }
     return Err(EAGAIN);
@@ -979,89 +833,66 @@ pub unsafe extern "C" fn dav1d_get_picture(
     c: *mut Dav1dContext,
     out: *mut Dav1dPicture,
 ) -> Dav1dResult {
-    if let Some(mut seq_hdr_ref) = NonNull::new((*out).seq_hdr_ref) {
-        (*seq_hdr_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
-        .update_rav1d();
-    }
-    if let Some(mut frame_hdr_ref) = NonNull::new((*out).frame_hdr_ref) {
-        (*frame_hdr_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-        .update_rav1d();
-    }
-    if let Some(mut itut_t35_ref) = NonNull::new((*out).itut_t35_ref) {
-        (*itut_t35_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-        .update_rav1d();
-    }
-    let mut out_rust = out.read().into();
-    let result = rav1d_get_picture(c, &mut out_rust);
-    out.write(out_rust.into());
-    result.into()
+    (|| {
+        validate_input!((!c.is_null(), EINVAL))?;
+        validate_input!((!out.is_null(), EINVAL))?;
+        let c = &mut *c;
+        let out = &mut *out;
+        if let Some(mut seq_hdr_ref) = NonNull::new(out.seq_hdr_ref) {
+            (*seq_hdr_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+            .update_rav1d();
+        }
+        if let Some(mut frame_hdr_ref) = NonNull::new(out.frame_hdr_ref) {
+            (*frame_hdr_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+            .update_rav1d();
+        }
+        if let Some(mut itut_t35_ref) = NonNull::new(out.itut_t35_ref) {
+            (*itut_t35_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+            .update_rav1d();
+        }
+        let mut out_rust = out.clone().into();
+        let result = rav1d_get_picture(c, &mut out_rust);
+        *out = out_rust.into();
+        result
+    })()
+    .into()
 }
 
 pub(crate) unsafe fn rav1d_apply_grain(
-    c: *mut Rav1dContext,
-    out: *mut Rav1dPicture,
-    in_0: *const Rav1dPicture,
+    c: &mut Rav1dContext,
+    out: &mut Rav1dPicture,
+    in_0: &Rav1dPicture,
 ) -> Rav1dResult {
-    if c.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"c != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"rav1d_apply_grain\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if out.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"out != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"rav1d_apply_grain\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if in_0.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"in != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"rav1d_apply_grain\0")).as_ptr(),
-        );
-        return Err(EINVAL);
-    }
     if has_grain(in_0) == 0 {
         rav1d_picture_ref(out, in_0);
         return Ok(());
     }
-    let res = rav1d_picture_alloc_copy(c, out, (*in_0).p.w, in_0);
+    let res = rav1d_picture_alloc_copy(c, out, in_0.p.w, in_0);
     if res.is_err() {
         rav1d_picture_unref_internal(out);
         return res;
     } else {
-        if (*c).n_tc > 1 as c_uint {
+        if c.n_tc > 1 as c_uint {
             rav1d_task_delayed_fg(c, out, in_0);
         } else {
-            match (*out).p.bpc {
+            match out.p.bpc {
                 #[cfg(feature = "bitdepth_8")]
                 8 => {
-                    rav1d_apply_grain_8bpc(&mut (*((*c).dsp).as_mut_ptr().offset(0)).fg, out, in_0);
+                    rav1d_apply_grain_8bpc(&mut (*(c.dsp).as_mut_ptr().offset(0)).fg, out, in_0);
                 }
                 #[cfg(feature = "bitdepth_16")]
                 10 | 12 => {
                     rav1d_apply_grain_16bpc(
-                        &mut (*((*c).dsp)
-                            .as_mut_ptr()
-                            .offset((((*out).p.bpc >> 1) - 4) as isize))
-                        .fg,
+                        &mut (*(c.dsp).as_mut_ptr().offset(((out.p.bpc >> 1) - 4) as isize)).fg,
                         out,
                         in_0,
                     );
@@ -1081,53 +912,62 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) -> Dav1dResult {
-    if let Some(mut seq_hdr_ref) = NonNull::new((*in_0).seq_hdr_ref) {
-        (*seq_hdr_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
-        .update_rav1d();
-    }
-    if let Some(mut frame_hdr_ref) = NonNull::new((*in_0).frame_hdr_ref) {
-        (*frame_hdr_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-        .update_rav1d();
-    }
-    if let Some(mut itut_t35_ref) = NonNull::new((*in_0).itut_t35_ref) {
-        (*itut_t35_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-        .update_rav1d();
-    }
-    if let Some(mut seq_hdr_ref) = NonNull::new((*out).seq_hdr_ref) {
-        (*seq_hdr_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
-        .update_rav1d();
-    }
-    if let Some(mut frame_hdr_ref) = NonNull::new((*out).frame_hdr_ref) {
-        (*frame_hdr_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-        .update_rav1d();
-    }
-    if let Some(mut itut_t35_ref) = NonNull::new((*out).itut_t35_ref) {
-        (*itut_t35_ref
-            .as_mut()
-            .data
-            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-        .update_rav1d();
-    }
-    let mut out_rust = out.read().into();
-    let in_rust = in_0.read().into();
-    let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
-    out.write(out_rust.into());
-    result.into()
+    (|| {
+        validate_input!((!c.is_null(), EINVAL))?;
+        validate_input!((!out.is_null(), EINVAL))?;
+        validate_input!((!in_0.is_null(), EINVAL))?;
+        let c = &mut *c;
+        let out = &mut *out;
+        let in_0 = &*in_0;
+        if let Some(mut seq_hdr_ref) = NonNull::new(in_0.seq_hdr_ref) {
+            (*seq_hdr_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+            .update_rav1d();
+        }
+        if let Some(mut frame_hdr_ref) = NonNull::new(in_0.frame_hdr_ref) {
+            (*frame_hdr_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+            .update_rav1d();
+        }
+        if let Some(mut itut_t35_ref) = NonNull::new(in_0.itut_t35_ref) {
+            (*itut_t35_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+            .update_rav1d();
+        }
+        if let Some(mut seq_hdr_ref) = NonNull::new(out.seq_hdr_ref) {
+            (*seq_hdr_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
+            .update_rav1d();
+        }
+        if let Some(mut frame_hdr_ref) = NonNull::new(out.frame_hdr_ref) {
+            (*frame_hdr_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
+            .update_rav1d();
+        }
+        if let Some(mut itut_t35_ref) = NonNull::new(out.itut_t35_ref) {
+            (*itut_t35_ref
+                .as_mut()
+                .data
+                .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
+            .update_rav1d();
+        }
+        let mut out_rust = out.clone().into();
+        let in_rust = in_0.clone().into();
+        let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
+        *out = out_rust.into();
+        result
+    })()
+    .into()
 }
 
 pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
@@ -1237,27 +1077,21 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_close(c_out: *mut *mut Rav1dContext) {
-    if c_out.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"c_out != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 12], &[c_char; 12]>(b"dav1d_close\0")).as_ptr(),
-        );
-        return;
-    }
+pub(crate) unsafe fn rav1d_close(c_out: &mut *mut Rav1dContext) {
     close_internal(c_out, 1 as c_int);
 }
 
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
-    rav1d_close(c_out)
+    if validate_input!(!c_out.is_null()).is_err() {
+        return;
+    }
+    rav1d_close(&mut *c_out)
 }
 
 #[cold]
-unsafe fn close_internal(c_out: *mut *mut Rav1dContext, flush: c_int) {
+unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
         return;
@@ -1380,35 +1214,15 @@ unsafe fn close_internal(c_out: *mut *mut Rav1dContext, flush: c_int) {
     rav1d_mem_pool_end((*c).refmvs_pool);
     rav1d_mem_pool_end((*c).cdf_pool);
     rav1d_mem_pool_end((*c).picture_pool);
-    rav1d_freep_aligned(c_out as *mut c_void);
+    rav1d_freep_aligned(c_out as *mut _ as *mut c_void);
 }
 
 pub(crate) unsafe fn rav1d_get_event_flags(
-    c: *mut Rav1dContext,
-    flags: *mut Rav1dEventFlags,
+    c: &mut Rav1dContext,
+    flags: &mut Rav1dEventFlags,
 ) -> Rav1dResult {
-    if c.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"c != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_event_flags\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if flags.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"flags != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 22], &[c_char; 22]>(b"dav1d_get_event_flags\0"))
-                .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    *flags = (*c).event_flags;
-    (*c).event_flags = 0 as Dav1dEventFlags;
+    *flags = c.event_flags;
+    c.event_flags = 0 as Dav1dEventFlags;
     Ok(())
 }
 
@@ -1417,40 +1231,21 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     c: *mut Dav1dContext,
     flags: *mut Dav1dEventFlags,
 ) -> Dav1dResult {
-    rav1d_get_event_flags(c, flags).into()
+    (|| {
+        validate_input!((!c.is_null(), EINVAL))?;
+        validate_input!((!flags.is_null(), EINVAL))?;
+        rav1d_get_event_flags(&mut *c, &mut *flags)
+    })()
+    .into()
 }
 
 pub(crate) unsafe fn rav1d_get_decode_error_data_props(
-    c: *mut Rav1dContext,
-    out: *mut Rav1dDataProps,
+    c: &mut Rav1dContext,
+    out: &mut Rav1dDataProps,
 ) -> Rav1dResult {
-    if c.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"c != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 34], &[c_char; 34]>(
-                b"dav1d_get_decode_error_data_props\0",
-            ))
-            .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
-    if out.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"out != NULL\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 34], &[c_char; 34]>(
-                b"dav1d_get_decode_error_data_props\0",
-            ))
-            .as_ptr(),
-        );
-        return Err(EINVAL);
-    }
     rav1d_data_props_unref_internal(out);
-    *out = (*c).cached_error_props.clone();
-    rav1d_data_props_set_defaults(&mut (*c).cached_error_props);
+    *out = c.cached_error_props.clone();
+    rav1d_data_props_set_defaults(&mut c.cached_error_props);
     Ok(())
 }
 
@@ -1459,21 +1254,30 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     c: *mut Dav1dContext,
     out: *mut Dav1dDataProps,
 ) -> Dav1dResult {
-    let mut out_rust = out.read().into();
-    let result = rav1d_get_decode_error_data_props(c, &mut out_rust);
-    out.write(out_rust.into());
-    result.into()
+    (|| {
+        validate_input!((!c.is_null(), EINVAL))?;
+        validate_input!((!out.is_null(), EINVAL))?;
+        let mut out_rust = out.read().into();
+        let result = rav1d_get_decode_error_data_props(&mut *c, &mut out_rust);
+        out.write(out_rust.into());
+        result
+    })()
+    .into()
 }
 
-pub(crate) unsafe fn rav1d_picture_unref(p: *mut Rav1dPicture) {
+pub(crate) unsafe fn rav1d_picture_unref(p: &mut Rav1dPicture) {
     rav1d_picture_unref_internal(p);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
-    let mut p_rust = p.read().into();
+    if validate_input!(!p.is_null()).is_err() {
+        return;
+    }
+    let p = &mut *p;
+    let mut p_rust = p.clone().into();
     rav1d_picture_unref(&mut p_rust);
-    p.write(p_rust.into());
+    *p = p_rust.into();
 }
 
 pub(crate) unsafe fn rav1d_data_create(buf: *mut Rav1dData, sz: usize) -> *mut u8 {

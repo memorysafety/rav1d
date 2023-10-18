@@ -1,4 +1,5 @@
 use crate::errno_location;
+use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
@@ -34,8 +35,6 @@ use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_wrap;
 use crate::src::r#ref::Rav1dRef;
-use crate::stderr;
-use libc::fprintf;
 use libc::free;
 use libc::malloc;
 use libc::memset;
@@ -330,114 +329,49 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     return res;
 }
 
-pub(crate) unsafe fn rav1d_picture_ref(dst: *mut Rav1dPicture, src: *const Rav1dPicture) {
-    if dst.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
-        );
+pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {
+    if validate_input!(dst.data[0].is_null()).is_err() {
         return;
     }
-    if !((*dst).data[0]).is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst->data[0] == ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
-        );
-        return;
-    }
-    if src.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"src != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0")).as_ptr(),
-        );
-        return;
-    }
-    if !((*src).r#ref).is_null() {
-        if ((*src).data[0]).is_null() {
-            fprintf(
-                stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-                b"src->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
-                (*::core::mem::transmute::<&[u8; 18], &[c_char; 18]>(b"dav1d_picture_ref\0"))
-                    .as_ptr(),
-            );
+    if !src.r#ref.is_null() {
+        if validate_input!(!src.data[0].is_null()).is_err() {
             return;
         }
-        rav1d_ref_inc((*src).r#ref);
+        rav1d_ref_inc(src.r#ref);
     }
-    if !((*src).frame_hdr_ref).is_null() {
-        rav1d_ref_inc((*src).frame_hdr_ref);
+    if !src.frame_hdr_ref.is_null() {
+        rav1d_ref_inc(src.frame_hdr_ref);
     }
-    if !((*src).seq_hdr_ref).is_null() {
-        rav1d_ref_inc((*src).seq_hdr_ref);
+    if !src.seq_hdr_ref.is_null() {
+        rav1d_ref_inc(src.seq_hdr_ref);
     }
-    if !((*src).m.user_data.r#ref).is_null() {
-        rav1d_ref_inc((*src).m.user_data.r#ref);
+    if !src.m.user_data.r#ref.is_null() {
+        rav1d_ref_inc(src.m.user_data.r#ref);
     }
-    if !((*src).content_light_ref).is_null() {
-        rav1d_ref_inc((*src).content_light_ref);
+    if !src.content_light_ref.is_null() {
+        rav1d_ref_inc(src.content_light_ref);
     }
-    if !((*src).mastering_display_ref).is_null() {
-        rav1d_ref_inc((*src).mastering_display_ref);
+    if !src.mastering_display_ref.is_null() {
+        rav1d_ref_inc(src.mastering_display_ref);
     }
-    if !((*src).itut_t35_ref).is_null() {
-        rav1d_ref_inc((*src).itut_t35_ref);
+    if !src.itut_t35_ref.is_null() {
+        rav1d_ref_inc(src.itut_t35_ref);
     }
-    *dst = (*src).clone();
+    *dst = src.clone();
 }
 
-pub(crate) unsafe fn rav1d_picture_move_ref(dst: *mut Rav1dPicture, src: *mut Rav1dPicture) {
-    if dst.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"rav1d_picture_move_ref\0"))
-                .as_ptr(),
-        );
+pub(crate) unsafe fn rav1d_picture_move_ref(dst: &mut Rav1dPicture, src: &mut Rav1dPicture) {
+    if validate_input!(dst.data[0].is_null()).is_err() {
         return;
     }
-    if !((*dst).data[0]).is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"dst->data[0] == ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"rav1d_picture_move_ref\0"))
-                .as_ptr(),
-        );
-        return;
-    }
-    if src.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"src != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"rav1d_picture_move_ref\0"))
-                .as_ptr(),
-        );
-        return;
-    }
-    if !((*src).r#ref).is_null() {
-        if ((*src).data[0]).is_null() {
-            fprintf(
-                stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-                b"src->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
-                (*::core::mem::transmute::<&[u8; 23], &[c_char; 23]>(b"rav1d_picture_move_ref\0"))
-                    .as_ptr(),
-            );
+    if !src.r#ref.is_null() {
+        if validate_input!(!src.data[0].is_null()).is_err() {
             return;
         }
     }
-    *dst = (*src).clone();
+    *dst = src.clone();
     memset(
-        src as *mut c_void,
+        src as *mut _ as *mut c_void,
         0 as c_int,
         ::core::mem::size_of::<Rav1dPicture>(),
     );
@@ -470,46 +404,25 @@ pub(crate) unsafe fn rav1d_thread_picture_move_ref(
     );
 }
 
-pub(crate) unsafe fn rav1d_picture_unref_internal(p: *mut Rav1dPicture) {
-    if p.is_null() {
-        fprintf(
-            stderr,
-            b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-            b"p != ((void*)0)\0" as *const u8 as *const c_char,
-            (*::core::mem::transmute::<&[u8; 29], &[c_char; 29]>(
-                b"dav1d_picture_unref_internal\0",
-            ))
-            .as_ptr(),
-        );
-        return;
-    }
-    if !((*p).r#ref).is_null() {
-        if ((*p).data[0]).is_null() {
-            fprintf(
-                stderr,
-                b"Input validation check '%s' failed in %s!\n\0" as *const u8 as *const c_char,
-                b"p->data[0] != ((void*)0)\0" as *const u8 as *const c_char,
-                (*::core::mem::transmute::<&[u8; 29], &[c_char; 29]>(
-                    b"dav1d_picture_unref_internal\0",
-                ))
-                .as_ptr(),
-            );
+pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
+    if !p.r#ref.is_null() {
+        if validate_input!(!p.data[0].is_null()).is_err() {
             return;
         }
-        rav1d_ref_dec(&mut (*p).r#ref);
+        rav1d_ref_dec(&mut p.r#ref);
     }
-    rav1d_ref_dec(&mut (*p).seq_hdr_ref);
-    rav1d_ref_dec(&mut (*p).frame_hdr_ref);
-    rav1d_ref_dec(&mut (*p).m.user_data.r#ref);
-    rav1d_ref_dec(&mut (*p).content_light_ref);
-    rav1d_ref_dec(&mut (*p).mastering_display_ref);
-    rav1d_ref_dec(&mut (*p).itut_t35_ref);
+    rav1d_ref_dec(&mut p.seq_hdr_ref);
+    rav1d_ref_dec(&mut p.frame_hdr_ref);
+    rav1d_ref_dec(&mut p.m.user_data.r#ref);
+    rav1d_ref_dec(&mut p.content_light_ref);
+    rav1d_ref_dec(&mut p.mastering_display_ref);
+    rav1d_ref_dec(&mut p.itut_t35_ref);
     memset(
-        p as *mut c_void,
+        p as *mut _ as *mut c_void,
         0 as c_int,
         ::core::mem::size_of::<Dav1dPicture>(),
     );
-    rav1d_data_props_set_defaults(&mut (*p).m);
+    rav1d_data_props_set_defaults(&mut p.m);
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
