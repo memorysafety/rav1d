@@ -1734,10 +1734,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
                 as *mut CodedBlockInfo;
         } else {
-            cf = match BD::BPC {
-                BPC::BPC8 => (*t).c2rust_unnamed.cf_8bpc.as_mut_ptr().cast::<BD::Coef>(),
-                BPC::BPC16 => (*t).c2rust_unnamed.cf_16bpc.as_mut_ptr().cast::<BD::Coef>(),
-            };
+            cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
         }
         if (*t).frame_thread.pass != 2 as c_int {
             eob = decode_coefs::<BD>(
@@ -2120,14 +2117,8 @@ unsafe fn mc<BD: BitDepth>(
             || dx + bw4 * h_mul + (mx != 0) as c_int * 4 > w
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
         {
-            let emu_edge_buf: *mut BD::Pixel = match BD::BPC {
-                BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-                BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_16bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-            };
+            let emu_edge_buf =
+                BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
             ((*(*f).dsp).mc.emu_edge)(
                 (bw4 * h_mul + (mx != 0) as c_int * 7) as intptr_t,
                 (bh4 * v_mul + (my != 0) as c_int * 7) as intptr_t,
@@ -2218,14 +2209,8 @@ unsafe fn mc<BD: BitDepth>(
         let w = (*refp).p.p.w + ss_hor >> ss_hor;
         let h = (*refp).p.p.h + ss_ver >> ss_ver;
         if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
-            let emu_edge_buf: *mut BD::Pixel = match BD::BPC {
-                BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-                BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_16bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-            };
+            let emu_edge_buf =
+                BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
             ((*(*f).dsp).mc.emu_edge)(
                 (right - left + 7) as intptr_t,
                 (bottom - top + 7) as intptr_t,
@@ -2303,14 +2288,7 @@ unsafe fn obmc<BD: BitDepth>(
         .as_mut_ptr()
         .offset((((*t).by & 31) + 5) as isize)
         as *mut *mut refmvs_block;
-    let lap: *mut BD::Pixel = match BD::BPC {
-        BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed.lap_8bpc)
-            .as_mut_ptr()
-            .cast::<BD::Pixel>(),
-        BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed.lap_16bpc)
-            .as_mut_ptr()
-            .cast::<BD::Pixel>(),
-    };
+    let lap = BD::select_mut(&mut (*t).scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
     let ss_ver = (pl != 0
         && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
         as c_int;
@@ -2477,14 +2455,8 @@ unsafe fn warp_affine<BD: BitDepth>(
             let ref_ptr: *const BD::Pixel;
             let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as c_int as usize];
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
-                let emu_edge_buf: *mut BD::Pixel = match BD::BPC {
-                    BPC::BPC8 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_8bpc)
-                        .as_mut_ptr()
-                        .cast::<BD::Pixel>(),
-                    BPC::BPC16 => ((*t).scratch.c2rust_unnamed.c2rust_unnamed_0.emu_edge_16bpc)
-                        .as_mut_ptr()
-                        .cast::<BD::Pixel>(),
-                };
+                let emu_edge_buf =
+                    BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
                 ((*(*f).dsp).mc.emu_edge)(
                     15 as c_int as intptr_t,
                     15 as c_int as intptr_t,
@@ -2579,25 +2551,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
         as *const TxfmInfo;
     let uv_t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(b.uvtx as isize) as *const TxfmInfo;
-    let edge: *mut BD::Pixel = (match BD::BPC {
-        BPC::BPC8 => (t
-            .scratch
-            .c2rust_unnamed_0
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .edge_8bpc)
-            .as_mut_ptr()
-            .cast::<BD::Pixel>(),
-        BPC::BPC16 => (t
-            .scratch
-            .c2rust_unnamed_0
-            .c2rust_unnamed_0
-            .c2rust_unnamed_0
-            .edge_16bpc)
-            .as_mut_ptr()
-            .cast::<BD::Pixel>(),
-    })
-    .offset(128);
+    let edge = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
+        .0
+        .edge[128..]
+        .as_mut_ptr();
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let intra_edge_filter_flag = (*(*f).seq_hdr).intra_edge_filter << 10;
@@ -2783,14 +2740,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             txtp = (*cbi).txtp[0] as TxfmType;
                         } else {
                             let mut cf_ctx: u8 = 0;
-                            cf = match BD::BPC {
-                                BPC::BPC8 => {
-                                    (t.c2rust_unnamed.cf_8bpc).as_mut_ptr().cast::<BD::Coef>()
-                                }
-                                BPC::BPC16 => {
-                                    (t.c2rust_unnamed.cf_16bpc).as_mut_ptr().cast::<BD::Coef>()
-                                }
-                            };
+                            cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
                             eob = decode_coefs::<BD>(
                                 t,
                                 &mut (*t.a).lcoef.0[(bx4 + x) as usize..],
@@ -3212,14 +3162,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     txtp = (*cbi).txtp[(pl + 1) as usize] as TxfmType;
                                 } else {
                                     let mut cf_ctx: u8 = 0;
-                                    cf = match BD::BPC {
-                                        BPC::BPC8 => (t.c2rust_unnamed.cf_8bpc)
-                                            .as_mut_ptr()
-                                            .cast::<BD::Coef>(),
-                                        BPC::BPC16 => (t.c2rust_unnamed.cf_16bpc)
-                                            .as_mut_ptr()
-                                            .cast::<BD::Coef>(),
-                                    };
+                                    cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
                                     eob = decode_coefs::<BD>(
                                         t,
                                         &mut (*t.a).ccoef.0[pl as usize][(cbx4 + x) as usize..],
@@ -3490,25 +3433,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
         if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
-            let tl_edge: *mut BD::Pixel = (match BD::BPC {
-                BPC::BPC8 => (t
-                    .scratch
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .edge_8bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-                BPC::BPC16 => (t
-                    .scratch
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed_0
-                    .edge_16bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-            })
-            .offset(32);
+            let tl_edge = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
+                .0
+                .edge[32..]
+                .as_mut_ptr();
             let mut m: IntraPredMode = (if b
                 .c2rust_unnamed
                 .c2rust_unnamed_0
@@ -3525,24 +3453,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     .c2rust_unnamed
                     .interintra_mode as c_int
             }) as IntraPredMode;
-            let tmp: *mut BD::Pixel = match BD::BPC {
-                BPC::BPC8 => (t
-                    .scratch
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .interintra_8bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-                BPC::BPC16 => (t
-                    .scratch
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed_0
-                    .interintra_16bpc)
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>(),
-            };
+            let tmp = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
+                .0
+                .interintra
+                .as_mut_ptr();
             let mut angle = 0;
             let mut top_sb_edge: *const BD::Pixel = 0 as *const BD::Pixel;
             if t.by & (*f).sb_step - 1 == 0 {
@@ -3934,43 +3848,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     };
                     let mut pl = 0;
                     while pl < 2 {
-                        let tmp: *mut BD::Pixel = match BD::BPC {
-                            BPC::BPC8 => (t
-                                .scratch
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed
-                                .interintra_8bpc)
-                                .as_mut_ptr()
-                                .cast::<BD::Pixel>(),
-                            BPC::BPC16 => (t
-                                .scratch
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed_0
-                                .interintra_16bpc)
-                                .as_mut_ptr()
-                                .cast::<BD::Pixel>(),
-                        };
-                        let tl_edge: *mut BD::Pixel = (match BD::BPC {
-                            BPC::BPC8 => (t
-                                .scratch
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed
-                                .edge_8bpc)
-                                .as_mut_ptr()
-                                .cast::<BD::Pixel>(),
-                            BPC::BPC16 => (t
-                                .scratch
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed_0
-                                .edge_16bpc)
-                                .as_mut_ptr()
-                                .cast::<BD::Pixel>(),
-                        })
-                        .offset(32);
+                        let tmp = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
+                            .0
+                            .interintra
+                            .as_mut_ptr();
+                        let tl_edge =
+                            BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
+                                .0
+                                .edge[32..]
+                                .as_mut_ptr();
                         let mut m: IntraPredMode = (if b
                             .c2rust_unnamed
                             .c2rust_unnamed_0
@@ -4495,14 +4381,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 txtp = (*cbi).txtp[(1 + pl) as usize] as TxfmType;
                             } else {
                                 let mut cf_ctx: u8 = 0;
-                                cf = match BD::BPC {
-                                    BPC::BPC8 => {
-                                        t.c2rust_unnamed.cf_8bpc.as_mut_ptr().cast::<BD::Coef>()
-                                    }
-                                    BPC::BPC16 => {
-                                        t.c2rust_unnamed.cf_16bpc.as_mut_ptr().cast::<BD::Coef>()
-                                    }
-                                };
+                                cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
                                 txtp = t.txtp_map
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
                                     as TxfmType;

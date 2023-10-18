@@ -1,4 +1,6 @@
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepthDependentType;
+use crate::include::common::bitdepth::BitDepthUnion;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -113,22 +115,16 @@ pub(crate) struct Rav1dContext_frame_thread {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct TaskThreadData_grain_lut_scaling_8 {
-    pub grain_lut_8bpc: Align16<[[[i8; 82]; 74]; 3]>,
-    pub scaling_8bpc: Align64<[[u8; 256]; 3]>,
+pub struct GrainLutScalingBD<BD: BitDepth> {
+    pub grain_lut: Align16<[[[BD::GrainLut; 82]; 73 + 1]; 3]>,
+    // TODO(kkysen) can use `BD::SCALING_LEN`` directly with `#![feature(generic_const_exprs)]` when stabilized
+    pub scaling: Align64<[BD::Scaling; 3]>,
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub struct TaskThreadData_grain_lut_scaling_16 {
-    pub grain_lut_16bpc: Align16<[[[i16; 82]; 74]; 3]>,
-    pub scaling_16bpc: Align64<[[u8; 4096]; 3]>,
-}
+pub struct GrainLutScaling;
 
-#[repr(C)]
-pub union TaskThreadData_grain_lut_scaling {
-    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling_8,
-    pub c2rust_unnamed_0: TaskThreadData_grain_lut_scaling_16,
+impl BitDepthDependentType for GrainLutScaling {
+    type T<BD: BitDepth> = GrainLutScalingBD<BD>;
 }
 
 #[repr(C)]
@@ -139,7 +135,7 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub out: *mut Rav1dPicture,
     pub type_0: TaskType,
     pub progress: [atomic_int; 2],
-    pub c2rust_unnamed: TaskThreadData_grain_lut_scaling,
+    pub grain_lut_scaling: BitDepthUnion<GrainLutScaling>,
 }
 
 #[repr(C)]
@@ -491,10 +487,10 @@ pub struct Rav1dTileState {
     pub lr_ref: [Av1RestorationUnit; 3],
 }
 
-#[repr(C, align(64))]
-pub union Rav1dTaskContext_cf {
-    pub cf_8bpc: [i16; 1024],
-    pub cf_16bpc: [i32; 1024],
+pub struct Cf;
+
+impl BitDepthDependentType for Cf {
+    type T<BD: BitDepth> = Align64<[BD::Coef; 32 * 32]>;
 }
 
 #[derive(Clone, Copy)]
@@ -504,26 +500,31 @@ pub struct Rav1dTaskContext_scratch_compinter_seg_mask {
     pub seg_mask: [u8; 16384],
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub union Rav1dTaskContext_scratch_lap {
-    pub lap_8bpc: [u8; 4096],
-    pub lap_16bpc: [u16; 4096],
-    pub c2rust_unnamed: Rav1dTaskContext_scratch_compinter_seg_mask,
+pub struct Lap;
+
+impl BitDepthDependentType for Lap {
+    type T<BD: BitDepth> = [BD::Pixel; 128 * 32];
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub union Rav1dTaskContext_scratch_emu_edge {
-    pub emu_edge_8bpc: [u8; 84160],
-    pub emu_edge_16bpc: [u16; 84160],
+pub union Rav1dTaskContext_scratch_lap {
+    pub lap: BitDepthUnion<Lap>,
+    pub c2rust_unnamed: Rav1dTaskContext_scratch_compinter_seg_mask,
+}
+
+// stride=192 for non-SVC, or 320 for SVC
+pub struct EmuEdge;
+
+impl BitDepthDependentType for EmuEdge {
+    type T<BD: BitDepth> = [BD::Pixel; 320 * (256 + 7)];
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Rav1dTaskContext_scratch_lap_emu_edge {
     pub c2rust_unnamed: Rav1dTaskContext_scratch_lap,
-    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_emu_edge,
+    pub emu_edge: BitDepthUnion<EmuEdge>,
 }
 
 #[derive(Clone, Copy)]
@@ -542,23 +543,15 @@ pub union Rav1dTaskContext_scratch_levels_pal {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Rav1dTaskContext_scratch_interintra_edge_8 {
-    pub interintra_8bpc: [u8; 4096],
-    pub edge_8bpc: [u8; 257],
+pub struct InterIntraEdgeBD<BD: BitDepth> {
+    pub interintra: [BD::Pixel; 64 * 64],
+    pub edge: [BD::Pixel; 257],
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub struct Rav1dTaskContext_scratch_interintra_edge_16 {
-    pub interintra_16bpc: [u16; 4096],
-    pub edge_16bpc: [u16; 257],
-}
+pub struct InterIntraEdge;
 
-#[derive(Clone, Copy)]
-#[repr(C, align(64))]
-pub union Rav1dTaskContext_scratch_interintra_edge {
-    pub c2rust_unnamed: Rav1dTaskContext_scratch_interintra_edge_8,
-    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_interintra_edge_16,
+impl BitDepthDependentType for InterIntraEdge {
+    type T<BD: BitDepth> = Align64<InterIntraEdgeBD<BD>>;
 }
 
 #[derive(Clone, Copy)]
@@ -568,7 +561,7 @@ pub struct Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub ac: [i16; 1024],
     pub pal_idx: [u8; 8192],
     pub pal: [[u16; 8]; 3],
-    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_interintra_edge,
+    pub interintra_edge: BitDepthUnion<InterIntraEdge>,
 }
 
 #[repr(C, align(64))]
@@ -601,7 +594,7 @@ pub(crate) struct Rav1dTaskContext {
     pub l: BlockContext,
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
-    pub c2rust_unnamed: Rav1dTaskContext_cf,
+    pub cf: BitDepthUnion<Cf>,
     pub al_pal: [[[[u16; 8]; 3]; 32]; 2],
     pub pal_sz_uv: [[u8; 32]; 2],
     pub txtp_map: [u8; 1024],
