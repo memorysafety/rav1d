@@ -98,17 +98,9 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         );
     }
     let bd = BD::from_c((1 << r#in.p.bpc) - 1);
-    if data.num_y_points != 0 || data.chroma_scaling_from_luma != 0 {
-        scaling[0] = generate_scaling::<BD>(bd, &data.y_points[..data.num_y_points as usize]);
-    }
-    if data.num_uv_points[0] != 0 {
-        scaling[1] =
-            generate_scaling::<BD>(bd, &data.uv_points[0][..data.num_uv_points[0] as usize]);
-    }
-    if data.num_uv_points[1] != 0 {
-        scaling[2] =
-            generate_scaling::<BD>(bd, &data.uv_points[1][..data.num_uv_points[1] as usize]);
-    }
+    scaling[0] = generate_scaling::<BD>(bd, &data.y_points[..data.num_y_points as usize]);
+    scaling[1] = generate_scaling::<BD>(bd, &data.uv_points[0][..data.num_uv_points[0] as usize]);
+    scaling[2] = generate_scaling::<BD>(bd, &data.uv_points[1][..data.num_uv_points[1] as usize]);
     assert!(out.stride[0] == r#in.stride[0]);
     if data.num_y_points == 0 {
         let stride = out.stride[0];
