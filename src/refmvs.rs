@@ -209,13 +209,13 @@ pub type splat_mv_fn = Option<
 >;
 
 #[repr(C)]
-pub struct Dav1dRefmvsDSPContext {
+pub struct Rav1dRefmvsDSPContext {
     pub load_tmvs: load_tmvs_fn,
     pub save_tmvs: save_tmvs_fn,
     pub splat_mv: splat_mv_fn,
 }
 
-impl Dav1dRefmvsDSPContext {
+impl Rav1dRefmvsDSPContext {
     pub unsafe fn splat_mv(
         &self,
         rr: &mut [*mut refmvs_block],
@@ -1097,7 +1097,7 @@ pub unsafe fn dav1d_refmvs_find(
 // cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
 // into buffers for use in future frame's temporal MV prediction
 pub unsafe fn dav1d_refmvs_save_tmvs(
-    dsp: *const Dav1dRefmvsDSPContext,
+    dsp: *const Rav1dRefmvsDSPContext,
     rt: *const refmvs_tile,
     col_start8: c_int,
     mut col_end8: c_int,
@@ -1611,7 +1611,7 @@ unsafe extern "C" fn splat_mv_rust(
 
 #[inline(always)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
-unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
+unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
     let flags = dav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
@@ -1646,7 +1646,7 @@ unsafe extern "C" fn refmvs_dsp_init_x86(c: *mut Dav1dRefmvsDSPContext) {
 
 #[inline(always)]
 #[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), feature = "asm"))]
-unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
+unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
     let flags = dav1d_get_cpu_flags();
     if flags.contains(CpuFlags::NEON) {
         (*c).splat_mv = Some(ffi::dav1d_splat_mv_neon);
@@ -1654,7 +1654,7 @@ unsafe extern "C" fn refmvs_dsp_init_arm(c: *mut Dav1dRefmvsDSPContext) {
 }
 
 #[cold]
-pub unsafe fn dav1d_refmvs_dsp_init(c: *mut Dav1dRefmvsDSPContext) {
+pub unsafe fn dav1d_refmvs_dsp_init(c: *mut Rav1dRefmvsDSPContext) {
     (*c).load_tmvs = Some(load_tmvs_c);
     (*c).save_tmvs = Some(save_tmvs_c);
     (*c).splat_mv = Some(splat_mv_rust);

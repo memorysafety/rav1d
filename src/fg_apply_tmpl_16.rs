@@ -6,7 +6,7 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::src::align::Align1;
 use crate::src::align::Align16;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use libc::intptr_t;
 use libc::memcpy;
 use libc::memset;
@@ -100,7 +100,7 @@ unsafe extern "C" fn generate_scaling(
 }
 
 pub unsafe fn dav1d_prep_grain_16bpc(
-    dsp: *const Dav1dFilmGrainDSPContext,
+    dsp: *const Rav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
     scaling: *mut [u8; 4096],
@@ -224,7 +224,7 @@ pub unsafe fn dav1d_prep_grain_16bpc(
 }
 
 pub unsafe fn dav1d_apply_grain_row_16bpc(
-    dsp: *const Dav1dFilmGrainDSPContext,
+    dsp: *const Rav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
     scaling: *const [u8; 4096],
@@ -333,7 +333,7 @@ pub unsafe fn dav1d_apply_grain_row_16bpc(
 }
 
 pub unsafe fn dav1d_apply_grain_16bpc(
-    dsp: *const Dav1dFilmGrainDSPContext,
+    dsp: *const Rav1dFilmGrainDSPContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) {

@@ -70,7 +70,7 @@ pub type fguv_32x32xn_fn = Option<
 >;
 
 #[repr(C)]
-pub struct Dav1dFilmGrainDSPContext {
+pub struct Rav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y_fn,
     pub generate_grain_uv: [generate_grain_uv_fn; 3],
     pub fgy_32x32xn: fgy_32x32xn_fn,

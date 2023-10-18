@@ -17,17 +17,17 @@ use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::data::dav1d_data_props_copy;
 use crate::src::data::dav1d_data_props_set_defaults;
-use crate::src::internal::Dav1dContext;
-use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dFrameContext;
 use crate::src::log::dav1d_log;
 use crate::src::mem::dav1d_mem_pool_pop;
 use crate::src::mem::dav1d_mem_pool_push;
-use crate::src::mem::Dav1dMemPool;
-use crate::src::mem::Dav1dMemPoolBuffer;
+use crate::src::mem::Rav1dMemPool;
+use crate::src::mem::Rav1dMemPoolBuffer;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::dav1d_ref_wrap;
-use crate::src::r#ref::Dav1dRef;
+use crate::src::r#ref::Rav1dRef;
 use crate::stderr;
 use libc::fprintf;
 use libc::free;
@@ -47,7 +47,7 @@ pub const PICTURE_FLAG_NEW_OP_PARAMS_INFO: PictureFlags = 2;
 pub const PICTURE_FLAG_NEW_SEQUENCE: PictureFlags = 1;
 
 #[repr(C)]
-pub struct Dav1dThreadPicture {
+pub struct Rav1dThreadPicture {
     pub p: Dav1dPicture,
     pub visible: bool,
     pub showable: bool,
@@ -66,7 +66,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p: *mut Dav1dPicture,
     cookie: *mut c_void,
 ) -> c_int {
-    if !(::core::mem::size_of::<Dav1dMemPoolBuffer>() as c_ulong <= 64 as c_ulong) {
+    if !(::core::mem::size_of::<Rav1dMemPoolBuffer>() as c_ulong <= 64 as c_ulong) {
         unreachable!();
     }
     let hbd = ((*p).p.bpc > 8) as c_int;
@@ -93,11 +93,11 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let y_sz: usize = (y_stride * aligned_h as isize) as usize;
     let uv_sz: usize = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size: usize = y_sz.wrapping_add(2usize.wrapping_mul(uv_sz));
-    let buf: *mut Dav1dMemPoolBuffer = dav1d_mem_pool_pop(
-        cookie as *mut Dav1dMemPool,
+    let buf: *mut Rav1dMemPoolBuffer = dav1d_mem_pool_pop(
+        cookie as *mut Rav1dMemPool,
         pic_size
             .wrapping_add(64)
-            .wrapping_sub(::core::mem::size_of::<Dav1dMemPoolBuffer>()),
+            .wrapping_sub(::core::mem::size_of::<Rav1dMemPoolBuffer>()),
     );
     if buf.is_null() {
         return -(12 as c_int);
@@ -120,8 +120,8 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
 
 pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut c_void) {
     dav1d_mem_pool_push(
-        cookie as *mut Dav1dMemPool,
-        (*p).allocator_data as *mut Dav1dMemPoolBuffer,
+        cookie as *mut Rav1dMemPool,
+        (*p).allocator_data as *mut Rav1dMemPoolBuffer,
     );
 }
 
@@ -135,20 +135,20 @@ unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut c_void) {
 }
 
 unsafe extern "C" fn picture_alloc_with_edges(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     p: *mut Dav1dPicture,
     w: c_int,
     h: c_int,
     seq_hdr: *mut Dav1dSequenceHeader,
-    seq_hdr_ref: *mut Dav1dRef,
+    seq_hdr_ref: *mut Rav1dRef,
     frame_hdr: *mut Dav1dFrameHeader,
-    frame_hdr_ref: *mut Dav1dRef,
+    frame_hdr_ref: *mut Rav1dRef,
     content_light: *mut Dav1dContentLightLevel,
-    content_light_ref: *mut Dav1dRef,
+    content_light_ref: *mut Rav1dRef,
     mastering_display: *mut Dav1dMasteringDisplay,
-    mastering_display_ref: *mut Dav1dRef,
+    mastering_display_ref: *mut Rav1dRef,
     itut_t35: *mut Dav1dITUTT35,
-    itut_t35_ref: *mut Dav1dRef,
+    itut_t35_ref: *mut Rav1dRef,
     bpc: c_int,
     props: *const Dav1dDataProps,
     p_allocator: *mut Dav1dPicAllocator,
@@ -237,11 +237,11 @@ unsafe extern "C" fn picture_alloc_with_edges(
 }
 
 pub unsafe fn dav1d_thread_picture_alloc(
-    c: *mut Dav1dContext,
-    f: *mut Dav1dFrameContext,
+    c: *mut Rav1dContext,
+    f: *mut Rav1dFrameContext,
     bpc: c_int,
 ) -> c_int {
-    let p: *mut Dav1dThreadPicture = &mut (*f).sr_cur;
+    let p: *mut Rav1dThreadPicture = &mut (*f).sr_cur;
     let have_frame_mt = ((*c).n_fc > 1 as c_uint) as c_int;
     let res = picture_alloc_with_edges(
         c,
@@ -292,7 +292,7 @@ pub unsafe fn dav1d_thread_picture_alloc(
 }
 
 pub unsafe fn dav1d_picture_alloc_copy(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     dst: *mut Dav1dPicture,
     w: c_int,
     src: *const Dav1dPicture,
@@ -436,8 +436,8 @@ pub unsafe fn dav1d_picture_move_ref(dst: *mut Dav1dPicture, src: *mut Dav1dPict
 }
 
 pub unsafe fn dav1d_thread_picture_ref(
-    dst: *mut Dav1dThreadPicture,
-    src: *const Dav1dThreadPicture,
+    dst: *mut Rav1dThreadPicture,
+    src: *const Rav1dThreadPicture,
 ) {
     dav1d_picture_ref(&mut (*dst).p, &(*src).p);
     (*dst).visible = (*src).visible;
@@ -447,8 +447,8 @@ pub unsafe fn dav1d_thread_picture_ref(
 }
 
 pub unsafe fn dav1d_thread_picture_move_ref(
-    dst: *mut Dav1dThreadPicture,
-    src: *mut Dav1dThreadPicture,
+    dst: *mut Rav1dThreadPicture,
+    src: *mut Rav1dThreadPicture,
 ) {
     dav1d_picture_move_ref(&mut (*dst).p, &mut (*src).p);
     (*dst).visible = (*src).visible;
@@ -458,7 +458,7 @@ pub unsafe fn dav1d_thread_picture_move_ref(
     memset(
         src as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Dav1dThreadPicture>(),
+        ::core::mem::size_of::<Rav1dThreadPicture>(),
     );
 }
 
@@ -504,12 +504,12 @@ pub unsafe fn dav1d_picture_unref_internal(p: *mut Dav1dPicture) {
     dav1d_data_props_set_defaults(&mut (*p).m);
 }
 
-pub unsafe fn dav1d_thread_picture_unref(p: *mut Dav1dThreadPicture) {
+pub unsafe fn dav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
     dav1d_picture_unref_internal(&mut (*p).p);
     (*p).progress = 0 as *mut atomic_uint;
 }
 
-pub unsafe fn dav1d_picture_get_event_flags(p: *const Dav1dThreadPicture) -> Dav1dEventFlags {
+pub unsafe fn dav1d_picture_get_event_flags(p: *const Rav1dThreadPicture) -> Dav1dEventFlags {
     if (*p).flags as u64 == 0 {
         return 0 as Dav1dEventFlags;
     }

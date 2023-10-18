@@ -75,7 +75,7 @@ pub const Z1_PRED: IntraPredMode = 6;
 pub const DC_128_PRED: IntraPredMode = 5;
 pub const TOP_DC_PRED: IntraPredMode = 4;
 pub const LEFT_DC_PRED: IntraPredMode = 3;
-pub const N_IMPL_INTRA_PRED_MODES: usize = 14; // TODO(kkysen) symbolicate in struct Dav1dIntraPredDSPContext::intra_pred once deduplicated
+pub const N_IMPL_INTRA_PRED_MODES: usize = 14; // TODO(kkysen) symbolicate in struct Rav1dIntraPredDSPContext::intra_pred once deduplicated
 pub const N_UV_INTRA_PRED_MODES: usize = 14;
 pub const CFL_PRED: IntraPredMode = 13;
 pub const N_INTRA_PRED_MODES: usize = 13;
@@ -140,7 +140,7 @@ pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
 
 pub type Filter2d = c_uint;
-pub const N_2D_FILTERS: usize = 10; // TODO(kkysen) symbolicate in struct Dav1dMCDSPContext once deduplicated
+pub const N_2D_FILTERS: usize = 10; // TODO(kkysen) symbolicate in struct Rav1dMCDSPContext once deduplicated
 pub const FILTER_2D_BILINEAR: Filter2d = 9;
 pub const FILTER_2D_8TAP_SMOOTH_SHARP: Filter2d = 8;
 pub const FILTER_2D_8TAP_SMOOTH: Filter2d = 7;

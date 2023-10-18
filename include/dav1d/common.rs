@@ -1,4 +1,4 @@
-use crate::src::r#ref::Dav1dRef;
+use crate::include::dav1d::dav1d::Dav1dRef;
 use std::ptr;
 
 #[derive(Clone)]

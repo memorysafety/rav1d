@@ -2,8 +2,8 @@ use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use crate::src::env::BlockContext;
-use crate::src::internal::Dav1dDSPContext;
-use crate::src::internal::Dav1dFrameContext;
+use crate::src::internal::Rav1dDSPContext;
+use crate::src::internal::Rav1dFrameContext;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
@@ -26,7 +26,7 @@ unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
 }
 
 unsafe extern "C" fn backup_lpf(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     mut dst: *mut pixel,
     dst_stride: ptrdiff_t,
     mut src: *const pixel,
@@ -156,7 +156,7 @@ unsafe extern "C" fn backup_lpf(
     };
 }
 
-pub unsafe fn dav1d_copy_lpf_16bpc(f: *mut Dav1dFrameContext, src: *const *mut pixel, sby: c_int) {
+pub unsafe fn dav1d_copy_lpf_16bpc(f: *mut Rav1dFrameContext, src: *const *mut pixel, sby: c_int) {
     let have_tt = ((*(*f).c).n_tc > 1 as c_uint) as c_int;
     let resize = ((*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1]) as c_int;
     let offset = 8 * (sby != 0) as c_int;
@@ -310,7 +310,7 @@ pub unsafe fn dav1d_copy_lpf_16bpc(f: *mut Dav1dFrameContext, src: *const *mut p
 
 #[inline]
 unsafe extern "C" fn filter_plane_cols_y(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     have_left: c_int,
     lvl: *const [u8; 4],
     b4_stride: ptrdiff_t,
@@ -321,7 +321,7 @@ unsafe extern "C" fn filter_plane_cols_y(
     starty4: c_int,
     endy4: c_int,
 ) {
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut x = 0;
     while x < w {
         if !(have_left == 0 && x == 0) {
@@ -358,7 +358,7 @@ unsafe extern "C" fn filter_plane_cols_y(
 
 #[inline]
 unsafe extern "C" fn filter_plane_rows_y(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     have_top: c_int,
     mut lvl: *const [u8; 4],
     b4_stride: ptrdiff_t,
@@ -369,7 +369,7 @@ unsafe extern "C" fn filter_plane_rows_y(
     starty4: c_int,
     endy4: c_int,
 ) {
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut y = starty4;
     while y < endy4 {
         if !(have_top == 0 && y == 0) {
@@ -401,7 +401,7 @@ unsafe extern "C" fn filter_plane_rows_y(
 
 #[inline]
 unsafe extern "C" fn filter_plane_cols_uv(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     have_left: c_int,
     lvl: *const [u8; 4],
     b4_stride: ptrdiff_t,
@@ -414,7 +414,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
     endy4: c_int,
     ss_ver: c_int,
 ) {
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut x = 0;
     while x < w {
         if !(have_left == 0 && x == 0) {
@@ -458,7 +458,7 @@ unsafe extern "C" fn filter_plane_cols_uv(
 
 #[inline]
 unsafe extern "C" fn filter_plane_rows_uv(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     have_top: c_int,
     mut lvl: *const [u8; 4],
     b4_stride: ptrdiff_t,
@@ -471,7 +471,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
     endy4: c_int,
     ss_hor: c_int,
 ) {
-    let dsp: *const Dav1dDSPContext = (*f).dsp;
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut off_l: ptrdiff_t = 0 as c_int as ptrdiff_t;
     let mut y = starty4;
     while y < endy4 {
@@ -511,7 +511,7 @@ unsafe extern "C" fn filter_plane_rows_uv(
 }
 
 pub unsafe fn dav1d_loopfilter_sbrow_cols_16bpc(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     p: *const *mut pixel,
     lflvl: *mut Av1Filter,
     sby: c_int,
@@ -716,7 +716,7 @@ pub unsafe fn dav1d_loopfilter_sbrow_cols_16bpc(
 }
 
 pub unsafe fn dav1d_loopfilter_sbrow_rows_16bpc(
-    f: *const Dav1dFrameContext,
+    f: *const Rav1dFrameContext,
     p: *const *mut pixel,
     lflvl: *mut Av1Filter,
     sby: c_int,

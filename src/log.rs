@@ -1,4 +1,4 @@
-use crate::src::internal::Dav1dContext;
+use crate::src::internal::Rav1dContext;
 use crate::stderr;
 use libc::fprintf;
 use std::ffi::c_char;
@@ -19,7 +19,7 @@ pub unsafe extern "C" fn dav1d_log_default_callback(
 }
 
 #[cold]
-pub unsafe extern "C" fn dav1d_log(c: *mut Dav1dContext, format: *const c_char, args: ...) {
+pub unsafe extern "C" fn dav1d_log(c: *mut Rav1dContext, format: *const c_char, args: ...) {
     if c.is_null() {
         fprintf(
             stderr,

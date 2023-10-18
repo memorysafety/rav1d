@@ -9,11 +9,11 @@ use crate::src::decode::dav1d_decode_frame_exit;
 use crate::src::decode::dav1d_decode_frame_init;
 use crate::src::decode::dav1d_decode_frame_init_cdf;
 use crate::src::decode::dav1d_decode_tile_sbrow;
-use crate::src::internal::Dav1dContext;
-use crate::src::internal::Dav1dFrameContext;
-use crate::src::internal::Dav1dTask;
-use crate::src::internal::Dav1dTaskContext;
-use crate::src::internal::Dav1dTileState;
+use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dTask;
+use crate::src::internal::Rav1dTaskContext;
+use crate::src::internal::Rav1dTileState;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskType;
 use crate::src::internal::DAV1D_TASK_TYPE_CDEF;
@@ -29,7 +29,7 @@ use crate::src::internal::DAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
 use crate::src::internal::DAV1D_TASK_TYPE_SUPER_RESOLUTION;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_ENTROPY;
 use crate::src::internal::DAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
-use crate::src::picture::Dav1dThreadPicture;
+use crate::src::picture::Rav1dThreadPicture;
 use libc::memset;
 use libc::pthread_cond_signal;
 use libc::pthread_cond_wait;
@@ -79,7 +79,7 @@ unsafe extern "C" fn dav1d_set_thread_name(name: *const c_char) {
 
 #[inline]
 unsafe extern "C" fn reset_task_cur(
-    c: *const Dav1dContext,
+    c: *const Rav1dContext,
     ttd: *mut TaskThreadData,
     mut frame_idx: c_uint,
 ) -> c_int {
@@ -150,7 +150,7 @@ unsafe extern "C" fn reset_task_cur(
             .offset(first.wrapping_add(i).wrapping_rem((*c).n_fc) as isize))
         .task_thread
         .task_cur_prev;
-        *fresh0 = 0 as *mut Dav1dTask;
+        *fresh0 = 0 as *mut Rav1dTask;
         i = i.wrapping_add(1);
     }
     return 1 as c_int;
@@ -189,11 +189,11 @@ unsafe extern "C" fn reset_task_cur_async(
 }
 
 unsafe extern "C" fn insert_tasks_between(
-    f: *mut Dav1dFrameContext,
-    first: *mut Dav1dTask,
-    last: *mut Dav1dTask,
-    a: *mut Dav1dTask,
-    b: *mut Dav1dTask,
+    f: *mut Rav1dFrameContext,
+    first: *mut Rav1dTask,
+    last: *mut Rav1dTask,
+    a: *mut Rav1dTask,
+    b: *mut Rav1dTask,
     cond_signal: c_int,
 ) {
     let ttd: *mut TaskThreadData = (*f).task_thread.ttd;
@@ -224,13 +224,13 @@ unsafe extern "C" fn insert_tasks_between(
 }
 
 unsafe extern "C" fn insert_tasks(
-    f: *mut Dav1dFrameContext,
-    first: *mut Dav1dTask,
-    last: *mut Dav1dTask,
+    f: *mut Rav1dFrameContext,
+    first: *mut Rav1dTask,
+    last: *mut Rav1dTask,
     cond_signal: c_int,
 ) {
-    let mut t_ptr: *mut Dav1dTask;
-    let mut prev_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
+    let mut t_ptr: *mut Rav1dTask;
+    let mut prev_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
     let mut current_block_34: u64;
     t_ptr = (*f).task_thread.task_head;
     while !t_ptr.is_null() {
@@ -303,18 +303,18 @@ unsafe extern "C" fn insert_tasks(
         prev_t = t_ptr;
         t_ptr = (*t_ptr).next;
     }
-    insert_tasks_between(f, first, last, prev_t, 0 as *mut Dav1dTask, cond_signal);
+    insert_tasks_between(f, first, last, prev_t, 0 as *mut Rav1dTask, cond_signal);
 }
 
 #[inline]
-unsafe extern "C" fn insert_task(f: *mut Dav1dFrameContext, t: *mut Dav1dTask, cond_signal: c_int) {
+unsafe extern "C" fn insert_task(f: *mut Rav1dFrameContext, t: *mut Rav1dTask, cond_signal: c_int) {
     insert_tasks(f, t, t, cond_signal);
 }
 
 #[inline]
-unsafe extern "C" fn add_pending(f: *mut Dav1dFrameContext, t: *mut Dav1dTask) {
+unsafe extern "C" fn add_pending(f: *mut Rav1dFrameContext, t: *mut Rav1dTask) {
     pthread_mutex_lock(&mut (*f).task_thread.pending_tasks.lock);
-    (*t).next = 0 as *mut Dav1dTask;
+    (*t).next = 0 as *mut Rav1dTask;
     if ((*f).task_thread.pending_tasks.head).is_null() {
         (*f).task_thread.pending_tasks.head = t;
     } else {
@@ -326,20 +326,20 @@ unsafe extern "C" fn add_pending(f: *mut Dav1dFrameContext, t: *mut Dav1dTask) {
 }
 
 #[inline]
-unsafe extern "C" fn merge_pending_frame(f: *mut Dav1dFrameContext) -> c_int {
+unsafe extern "C" fn merge_pending_frame(f: *mut Rav1dFrameContext) -> c_int {
     let merge = ::core::intrinsics::atomic_load_seqcst(&mut (*f).task_thread.pending_tasks.merge);
     if merge != 0 {
         pthread_mutex_lock(&mut (*f).task_thread.pending_tasks.lock);
-        let mut t: *mut Dav1dTask = (*f).task_thread.pending_tasks.head;
-        (*f).task_thread.pending_tasks.head = 0 as *mut Dav1dTask;
-        (*f).task_thread.pending_tasks.tail = 0 as *mut Dav1dTask;
+        let mut t: *mut Rav1dTask = (*f).task_thread.pending_tasks.head;
+        (*f).task_thread.pending_tasks.head = 0 as *mut Rav1dTask;
+        (*f).task_thread.pending_tasks.tail = 0 as *mut Rav1dTask;
         ::core::intrinsics::atomic_store_seqcst(
             &mut (*f).task_thread.pending_tasks.merge,
             0 as c_int,
         );
         pthread_mutex_unlock(&mut (*f).task_thread.pending_tasks.lock);
         while !t.is_null() {
-            let tmp: *mut Dav1dTask = (*t).next;
+            let tmp: *mut Rav1dTask = (*t).next;
             insert_task(f, t, 0 as c_int);
             t = tmp;
         }
@@ -348,7 +348,7 @@ unsafe extern "C" fn merge_pending_frame(f: *mut Dav1dFrameContext) -> c_int {
 }
 
 #[inline]
-unsafe extern "C" fn merge_pending(c: *const Dav1dContext) -> c_int {
+unsafe extern "C" fn merge_pending(c: *const Rav1dContext) -> c_int {
     let mut res = 0;
     let mut i: c_uint = 0 as c_int as c_uint;
     while i < (*c).n_fc {
@@ -359,21 +359,21 @@ unsafe extern "C" fn merge_pending(c: *const Dav1dContext) -> c_int {
 }
 
 unsafe extern "C" fn create_filter_sbrow(
-    f: *mut Dav1dFrameContext,
+    f: *mut Rav1dFrameContext,
     pass: c_int,
-    res_t: *mut *mut Dav1dTask,
+    res_t: *mut *mut Rav1dTask,
 ) -> c_int {
     let has_deblock = ((*(*f).frame_hdr).loopfilter.level_y[0] != 0
         || (*(*f).frame_hdr).loopfilter.level_y[1] != 0) as c_int;
     let has_cdef = (*(*f).seq_hdr).cdef;
     let has_resize = ((*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1]) as c_int;
     let has_lr = (*f).lf.restore_planes;
-    let mut tasks: *mut Dav1dTask = (*f).task_thread.tasks;
+    let mut tasks: *mut Rav1dTask = (*f).task_thread.tasks;
     let uses_2pass = ((*(*f).c).n_fc > 1 as c_uint) as c_int;
     let num_tasks = (*f).sbh * (1 + uses_2pass);
     if num_tasks > (*f).task_thread.num_tasks {
-        let size: usize = (::core::mem::size_of::<Dav1dTask>()).wrapping_mul(num_tasks as usize);
-        tasks = realloc((*f).task_thread.tasks as *mut c_void, size) as *mut Dav1dTask;
+        let size: usize = (::core::mem::size_of::<Rav1dTask>()).wrapping_mul(num_tasks as usize);
+        tasks = realloc((*f).task_thread.tasks as *mut c_void, size) as *mut Rav1dTask;
         if tasks.is_null() {
             return -(1 as c_int);
         }
@@ -414,7 +414,7 @@ unsafe extern "C" fn create_filter_sbrow(
         );
     }
     (*f).frame_thread.next_tile_row[(pass & 1) as usize] = 0 as c_int;
-    let t: *mut Dav1dTask = &mut *tasks.offset(0) as *mut Dav1dTask;
+    let t: *mut Rav1dTask = &mut *tasks.offset(0) as *mut Rav1dTask;
     (*t).sby = 0 as c_int;
     (*t).recon_progress = 1 as c_int;
     (*t).deblock_progress = 0 as c_int;
@@ -435,19 +435,19 @@ unsafe extern "C" fn create_filter_sbrow(
 }
 
 pub unsafe fn dav1d_task_create_tile_sbrow(
-    f: *mut Dav1dFrameContext,
+    f: *mut Rav1dFrameContext,
     pass: c_int,
     _cond_signal: c_int,
 ) -> c_int {
-    let mut tasks: *mut Dav1dTask = (*f).task_thread.tile_tasks[0];
+    let mut tasks: *mut Rav1dTask = (*f).task_thread.tile_tasks[0];
     let uses_2pass = ((*(*f).c).n_fc > 1 as c_uint) as c_int;
     let num_tasks = (*(*f).frame_hdr).tiling.cols * (*(*f).frame_hdr).tiling.rows;
     if pass < 2 {
         let alloc_num_tasks = num_tasks * (1 + uses_2pass);
         if alloc_num_tasks > (*f).task_thread.num_tile_tasks {
             let size: usize =
-                (::core::mem::size_of::<Dav1dTask>()).wrapping_mul(alloc_num_tasks as usize);
-            tasks = realloc((*f).task_thread.tile_tasks[0] as *mut c_void, size) as *mut Dav1dTask;
+                (::core::mem::size_of::<Rav1dTask>()).wrapping_mul(alloc_num_tasks as usize);
+            tasks = realloc((*f).task_thread.tile_tasks[0] as *mut c_void, size) as *mut Rav1dTask;
             if tasks.is_null() {
                 return -(1 as c_int);
             }
@@ -458,21 +458,21 @@ pub unsafe fn dav1d_task_create_tile_sbrow(
         (*f).task_thread.tile_tasks[1] = tasks.offset(num_tasks as isize);
     }
     tasks = tasks.offset((num_tasks * (pass & 1)) as isize);
-    let mut pf_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
+    let mut pf_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
     if create_filter_sbrow(f, pass, &mut pf_t) != 0 {
         return -(1 as c_int);
     }
-    let mut prev_t: *mut Dav1dTask = 0 as *mut Dav1dTask;
+    let mut prev_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
     let mut tile_idx = 0;
     while tile_idx < num_tasks {
-        let ts: *mut Dav1dTileState =
-            &mut *((*f).ts).offset(tile_idx as isize) as *mut Dav1dTileState;
-        let t: *mut Dav1dTask = &mut *tasks.offset(tile_idx as isize) as *mut Dav1dTask;
+        let ts: *mut Rav1dTileState =
+            &mut *((*f).ts).offset(tile_idx as isize) as *mut Rav1dTileState;
+        let t: *mut Rav1dTask = &mut *tasks.offset(tile_idx as isize) as *mut Rav1dTask;
         (*t).sby = (*ts).tiling.row_start >> (*f).sb_shift;
         if !pf_t.is_null() && (*t).sby != 0 {
             (*prev_t).next = pf_t;
             prev_t = pf_t;
-            pf_t = 0 as *mut Dav1dTask;
+            pf_t = 0 as *mut Rav1dTask;
         }
         (*t).recon_progress = 0 as c_int;
         (*t).deblock_progress = 0 as c_int;
@@ -493,7 +493,7 @@ pub unsafe fn dav1d_task_create_tile_sbrow(
         (*prev_t).next = pf_t;
         prev_t = pf_t;
     }
-    (*prev_t).next = 0 as *mut Dav1dTask;
+    (*prev_t).next = 0 as *mut Rav1dTask;
     ::core::intrinsics::atomic_store_seqcst(
         &mut *((*f).task_thread.done)
             .as_mut_ptr()
@@ -505,9 +505,9 @@ pub unsafe fn dav1d_task_create_tile_sbrow(
         unreachable!();
     }
     if ((*f).task_thread.pending_tasks.head).is_null() {
-        (*f).task_thread.pending_tasks.head = &mut *tasks.offset(0) as *mut Dav1dTask;
+        (*f).task_thread.pending_tasks.head = &mut *tasks.offset(0) as *mut Rav1dTask;
     } else {
-        (*(*f).task_thread.pending_tasks.tail).next = &mut *tasks.offset(0) as *mut Dav1dTask;
+        (*(*f).task_thread.pending_tasks.tail).next = &mut *tasks.offset(0) as *mut Rav1dTask;
     }
     (*f).task_thread.pending_tasks.tail = prev_t;
     ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.pending_tasks.merge, 1 as c_int);
@@ -516,10 +516,10 @@ pub unsafe fn dav1d_task_create_tile_sbrow(
     return 0 as c_int;
 }
 
-pub unsafe fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
-    let c: *const Dav1dContext = (*f).c;
+pub unsafe fn dav1d_task_frame_init(f: *mut Rav1dFrameContext) {
+    let c: *const Rav1dContext = (*f).c;
     ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.init_done, 0 as c_int);
-    let t: *mut Dav1dTask = &mut (*f).task_thread.init_task;
+    let t: *mut Rav1dTask = &mut (*f).task_thread.init_task;
     (*t).type_0 = DAV1D_TASK_TYPE_INIT;
     (*t).frame_idx = f.offset_from((*c).fc) as c_long as c_int as c_uint;
     (*t).sby = 0 as c_int;
@@ -529,7 +529,7 @@ pub unsafe fn dav1d_task_frame_init(f: *mut Dav1dFrameContext) {
 }
 
 pub unsafe fn dav1d_task_delayed_fg(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) {
@@ -549,8 +549,8 @@ pub unsafe fn dav1d_task_delayed_fg(
 #[inline]
 unsafe extern "C" fn ensure_progress(
     ttd: *mut TaskThreadData,
-    f: *mut Dav1dFrameContext,
-    t: *mut Dav1dTask,
+    f: *mut Rav1dFrameContext,
+    t: *mut Rav1dTask,
     type_0: TaskType,
     state: *mut atomic_int,
     target: *mut c_int,
@@ -570,13 +570,13 @@ unsafe extern "C" fn ensure_progress(
 
 #[inline]
 unsafe extern "C" fn check_tile(
-    t: *mut Dav1dTask,
-    f: *mut Dav1dFrameContext,
+    t: *mut Rav1dTask,
+    f: *mut Rav1dFrameContext,
     frame_mt: c_int,
 ) -> c_int {
     let tp = ((*t).type_0 as c_uint == DAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint) as c_int;
     let tile_idx = t.offset_from((*f).task_thread.tile_tasks[tp as usize]) as c_long as c_int;
-    let ts: *mut Dav1dTileState = &mut *((*f).ts).offset(tile_idx as isize) as *mut Dav1dTileState;
+    let ts: *mut Rav1dTileState = &mut *((*f).ts).offset(tile_idx as isize) as *mut Rav1dTileState;
     let p1 = ::core::intrinsics::atomic_load_seqcst(
         &mut *((*ts).progress).as_mut_ptr().offset(tp as isize) as *mut atomic_int,
     );
@@ -596,7 +596,7 @@ unsafe extern "C" fn check_tile(
         error |= ::core::intrinsics::atomic_or_seqcst(&mut (*f).task_thread.error, error);
     }
     if error == 0 && frame_mt != 0 && (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0 {
-        let p: *const Dav1dThreadPicture = &mut (*f).sr_cur;
+        let p: *const Rav1dThreadPicture = &mut (*f).sr_cur;
         let ss_ver =
             ((*p).p.p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
         let p_b: c_uint = (((*t).sby + 1) << (*f).sb_shift + 2) as c_uint;
@@ -655,8 +655,8 @@ unsafe extern "C" fn check_tile(
 
 #[inline]
 unsafe extern "C" fn get_frame_progress(
-    c: *const Dav1dContext,
-    f: *const Dav1dFrameContext,
+    c: *const Rav1dContext,
+    f: *const Rav1dFrameContext,
 ) -> c_int {
     let frame_prog: c_uint = if (*c).n_fc > 1 as c_uint {
         ::core::intrinsics::atomic_load_seqcst(
@@ -688,7 +688,7 @@ unsafe extern "C" fn get_frame_progress(
 }
 
 #[inline]
-unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: c_int) {
+unsafe extern "C" fn abort_frame(f: *mut Rav1dFrameContext, error: c_int) {
     ::core::intrinsics::atomic_store_seqcst(
         &mut (*f).task_thread.error,
         if error == -(22 as c_int) {
@@ -720,7 +720,7 @@ unsafe extern "C" fn abort_frame(f: *mut Dav1dFrameContext, error: c_int) {
 }
 
 #[inline]
-unsafe extern "C" fn delayed_fg_task(c: *const Dav1dContext, ttd: *mut TaskThreadData) {
+unsafe extern "C" fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
     let in_0: *const Dav1dPicture = (*ttd).delayed_fg.in_0;
     let out: *mut Dav1dPicture = (*ttd).delayed_fg.out;
     let mut off = 0;
@@ -900,12 +900,12 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
     let mut flush;
     let mut error_0;
     let mut sby;
-    let mut f: *mut Dav1dFrameContext;
-    let mut t: *mut Dav1dTask;
-    let mut prev_t: *mut Dav1dTask;
+    let mut f: *mut Rav1dFrameContext;
+    let mut t: *mut Rav1dTask;
+    let mut prev_t: *mut Rav1dTask;
     let mut current_block: u64;
-    let tc: *mut Dav1dTaskContext = data as *mut Dav1dTaskContext;
-    let c: *const Dav1dContext = (*tc).c;
+    let tc: *mut Rav1dTaskContext = data as *mut Rav1dTaskContext;
+    let c: *const Rav1dContext = (*tc).c;
     let ttd: *mut TaskThreadData = (*tc).task_thread.ttd;
     dav1d_set_thread_name(b"dav1d-worker\0" as *const u8 as *const c_char);
     pthread_mutex_lock(&mut (*ttd).lock);
@@ -916,9 +916,9 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                 delayed_fg_task(c, ttd);
                 continue;
             } else {
-                f = 0 as *mut Dav1dFrameContext;
-                t = 0 as *mut Dav1dTask;
-                prev_t = 0 as *mut Dav1dTask;
+                f = 0 as *mut Rav1dFrameContext;
+                t = 0 as *mut Rav1dTask;
+                prev_t = 0 as *mut Rav1dTask;
                 if (*c).n_fc > 1 as c_uint {
                     let mut i: c_uint = 0 as c_int as c_uint;
                     loop {
@@ -930,7 +930,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
                         f = &mut *((*c).fc)
                             .offset(first.wrapping_add(i).wrapping_rem((*c).n_fc) as isize)
-                            as *mut Dav1dFrameContext;
+                            as *mut Rav1dFrameContext;
                         if !(::core::intrinsics::atomic_load_seqcst(
                             &mut (*f).task_thread.init_done as *mut atomic_int,
                         ) != 0)
@@ -975,7 +975,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 f = &mut *((*c).fc).offset(
                                     first_0.wrapping_add((*ttd).cur).wrapping_rem((*c).n_fc)
                                         as isize,
-                                ) as *mut Dav1dFrameContext;
+                                ) as *mut Rav1dFrameContext;
                                 merge_pending_frame(f);
                                 prev_t = (*f).task_thread.task_cur_prev;
                                 t = if !prev_t.is_null() {
@@ -1045,10 +1045,10 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                             current_block = 3222590281903869779;
                                                             break;
                                                         }
-                                                        let ts: *mut Dav1dTileState = &mut *((*f)
+                                                        let ts: *mut Rav1dTileState = &mut *((*f)
                                                             .ts)
                                                             .offset((tile_row_base + tc_0) as isize)
-                                                            as *mut Dav1dTileState;
+                                                            as *mut Rav1dTileState;
                                                         let p2 =
                                                             ::core::intrinsics::atomic_load_seqcst(
                                                                 &mut *((*ts).progress)
@@ -1070,9 +1070,9 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                         5395695591151878490 => {}
                                                         _ => {
                                                             if ((*t).sby + 1) < (*f).sbh {
-                                                                let next_t: *mut Dav1dTask = &mut *t
+                                                                let next_t: *mut Rav1dTask = &mut *t
                                                                     .offset(1)
-                                                                    as *mut Dav1dTask;
+                                                                    as *mut Rav1dTask;
                                                                 *next_t = (*t).clone();
                                                                 (*next_t).sby += 1;
                                                                 let ntr =
@@ -1164,7 +1164,7 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             {
                                 (*ttd).cur = ((*ttd).cur).wrapping_add(1);
                             }
-                            (*t).next = 0 as *mut Dav1dTask;
+                            (*t).next = 0 as *mut Rav1dTask;
                             ::core::intrinsics::atomic_store_seqcst(
                                 &mut (*ttd).cond_signaled,
                                 1 as c_int,
@@ -1314,9 +1314,9 @@ pub unsafe extern "C" fn dav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         .offset_from((*f).task_thread.tile_tasks[p_1 as usize])
                                         as c_long
                                         as c_int;
-                                    let ts_0: *mut Dav1dTileState = &mut *((*f).ts)
+                                    let ts_0: *mut Rav1dTileState = &mut *((*f).ts)
                                         .offset(tile_idx as isize)
-                                        as *mut Dav1dTileState;
+                                        as *mut Rav1dTileState;
                                     (*tc).ts = ts_0;
                                     (*tc).by = sby << (*f).sb_shift;
                                     let uses_2pass = ((*c).n_fc > 1 as c_uint) as c_int;

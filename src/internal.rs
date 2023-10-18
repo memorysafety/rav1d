@@ -17,17 +17,17 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::*;
-use crate::src::cdef::Dav1dCdefDSPContext;
+use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
 use crate::src::env::BlockContext;
-use crate::src::filmgrain::Dav1dFilmGrainDSPContext;
+use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeTip;
-use crate::src::ipred::Dav1dIntraPredDSPContext;
-use crate::src::itx::Dav1dInvTxfmDSPContext;
+use crate::src::ipred::Rav1dIntraPredDSPContext;
+use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
@@ -35,14 +35,14 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
-use crate::src::looprestoration::Dav1dLoopRestorationDSPContext;
-use crate::src::mc::Dav1dMCDSPContext;
-use crate::src::mem::Dav1dMemPool;
+use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
+use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
+use crate::src::mc::Rav1dMCDSPContext;
+use crate::src::mem::Rav1dMemPool;
 use crate::src::msac::MsacContext;
-use crate::src::picture::Dav1dThreadPicture;
 use crate::src::picture::PictureFlags;
-use crate::src::r#ref::Dav1dRef;
+use crate::src::picture::Rav1dThreadPicture;
+use crate::src::r#ref::Rav1dRef;
 use crate::src::recon::backup_ipred_edge_fn;
 use crate::src::recon::filter_sbrow_fn;
 use crate::src::recon::read_coef_blocks_fn;
@@ -51,7 +51,7 @@ use crate::src::recon::recon_b_intra_fn;
 use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
-use crate::src::refmvs::Dav1dRefmvsDSPContext;
+use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::thread_data::thread_data;
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
@@ -60,19 +60,19 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 
 #[repr(C)]
-pub struct Dav1dDSPContext {
-    pub fg: Dav1dFilmGrainDSPContext,
-    pub ipred: Dav1dIntraPredDSPContext,
-    pub mc: Dav1dMCDSPContext,
-    pub itx: Dav1dInvTxfmDSPContext,
-    pub lf: Dav1dLoopFilterDSPContext,
-    pub cdef: Dav1dCdefDSPContext,
-    pub lr: Dav1dLoopRestorationDSPContext,
+pub struct Rav1dDSPContext {
+    pub fg: Rav1dFilmGrainDSPContext,
+    pub ipred: Rav1dIntraPredDSPContext,
+    pub mc: Rav1dMCDSPContext,
+    pub itx: Rav1dInvTxfmDSPContext,
+    pub lf: Rav1dLoopFilterDSPContext,
+    pub cdef: Rav1dCdefDSPContext,
+    pub lr: Rav1dLoopRestorationDSPContext,
 }
 
 #[derive(Clone, Default)]
 #[repr(C)]
-pub struct Dav1dTileGroup {
+pub struct Rav1dTileGroup {
     pub data: Dav1dData,
     pub start: c_int,
     pub end: c_int,
@@ -94,8 +94,8 @@ pub const DAV1D_TASK_TYPE_INIT_CDF: TaskType = 1;
 pub const DAV1D_TASK_TYPE_INIT: TaskType = 0;
 
 #[repr(C)]
-pub struct Dav1dContext_frame_thread {
-    pub out_delayed: *mut Dav1dThreadPicture,
+pub struct Rav1dContext_frame_thread {
+    pub out_delayed: *mut Rav1dThreadPicture,
     pub next: c_uint,
 }
 
@@ -143,15 +143,15 @@ pub struct TaskThreadData {
 }
 
 #[repr(C)]
-pub struct Dav1dContext_refs {
-    pub p: Dav1dThreadPicture,
-    pub segmap: *mut Dav1dRef,
-    pub refmvs: *mut Dav1dRef,
+pub struct Rav1dContext_refs {
+    pub p: Rav1dThreadPicture,
+    pub segmap: *mut Rav1dRef,
+    pub refmvs: *mut Rav1dRef,
     pub refpoc: [c_uint; 7],
 }
 
 #[repr(C)]
-pub struct Dav1dContext_intra_edge {
+pub struct Rav1dContext_intra_edge {
     pub root: [*mut EdgeNode; 2],
     pub branch_sb128: [EdgeBranch; 85],
     pub branch_sb64: [EdgeBranch; 21],
@@ -160,42 +160,42 @@ pub struct Dav1dContext_intra_edge {
 }
 
 #[repr(C)]
-pub struct Dav1dContext {
-    pub(crate) fc: *mut Dav1dFrameContext,
+pub struct Rav1dContext {
+    pub(crate) fc: *mut Rav1dFrameContext,
     pub(crate) n_fc: c_uint,
-    pub(crate) tc: *mut Dav1dTaskContext,
+    pub(crate) tc: *mut Rav1dTaskContext,
     pub(crate) n_tc: c_uint,
-    pub(crate) tile: *mut Dav1dTileGroup,
+    pub(crate) tile: *mut Rav1dTileGroup,
     pub(crate) n_tile_data_alloc: c_int,
     pub(crate) n_tile_data: c_int,
     pub(crate) n_tiles: c_int,
-    pub(crate) seq_hdr_pool: *mut Dav1dMemPool,
-    pub(crate) seq_hdr_ref: *mut Dav1dRef,
+    pub(crate) seq_hdr_pool: *mut Rav1dMemPool,
+    pub(crate) seq_hdr_ref: *mut Rav1dRef,
     pub(crate) seq_hdr: *mut Dav1dSequenceHeader,
-    pub(crate) frame_hdr_pool: *mut Dav1dMemPool,
-    pub(crate) frame_hdr_ref: *mut Dav1dRef,
+    pub(crate) frame_hdr_pool: *mut Rav1dMemPool,
+    pub(crate) frame_hdr_ref: *mut Rav1dRef,
     pub(crate) frame_hdr: *mut Dav1dFrameHeader,
-    pub(crate) content_light_ref: *mut Dav1dRef,
+    pub(crate) content_light_ref: *mut Rav1dRef,
     pub(crate) content_light: *mut Dav1dContentLightLevel,
-    pub(crate) mastering_display_ref: *mut Dav1dRef,
+    pub(crate) mastering_display_ref: *mut Rav1dRef,
     pub(crate) mastering_display: *mut Dav1dMasteringDisplay,
-    pub(crate) itut_t35_ref: *mut Dav1dRef,
+    pub(crate) itut_t35_ref: *mut Rav1dRef,
     pub(crate) itut_t35: *mut Dav1dITUTT35,
     pub(crate) in_0: Dav1dData,
-    pub(crate) out: Dav1dThreadPicture,
-    pub(crate) cache: Dav1dThreadPicture,
+    pub(crate) out: Rav1dThreadPicture,
+    pub(crate) cache: Rav1dThreadPicture,
     pub(crate) flush_mem: atomic_int,
     pub(crate) flush: *mut atomic_int,
-    pub(crate) frame_thread: Dav1dContext_frame_thread,
+    pub(crate) frame_thread: Rav1dContext_frame_thread,
     pub(crate) task_thread: TaskThreadData,
-    pub(crate) segmap_pool: *mut Dav1dMemPool,
-    pub(crate) refmvs_pool: *mut Dav1dMemPool,
-    pub(crate) refs: [Dav1dContext_refs; 8],
-    pub(crate) cdf_pool: *mut Dav1dMemPool,
+    pub(crate) segmap_pool: *mut Rav1dMemPool,
+    pub(crate) refmvs_pool: *mut Rav1dMemPool,
+    pub(crate) refs: [Rav1dContext_refs; 8],
+    pub(crate) cdf_pool: *mut Rav1dMemPool,
     pub(crate) cdf: [CdfThreadContext; 8],
-    pub(crate) dsp: [Dav1dDSPContext; 3],
-    pub(crate) refmvs_dsp: Dav1dRefmvsDSPContext,
-    pub(crate) intra_edge: Dav1dContext_intra_edge,
+    pub(crate) dsp: [Rav1dDSPContext; 3],
+    pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,
+    pub(crate) intra_edge: Rav1dContext_intra_edge,
     pub(crate) allocator: Dav1dPicAllocator,
     pub(crate) apply_grain: c_int,
     pub(crate) operating_point: c_int,
@@ -213,19 +213,19 @@ pub struct Dav1dContext {
     pub(crate) cached_error_props: Dav1dDataProps,
     pub(crate) cached_error: c_int,
     pub(crate) logger: Dav1dLogger,
-    pub(crate) picture_pool: *mut Dav1dMemPool,
+    pub(crate) picture_pool: *mut Rav1dMemPool,
 }
 
 #[derive(Clone)]
 #[repr(C)]
-pub struct Dav1dTask {
+pub struct Rav1dTask {
     pub frame_idx: c_uint,
     pub type_0: TaskType,
     pub sby: c_int,
     pub recon_progress: c_int,
     pub deblock_progress: c_int,
     pub deps_skip: c_int,
-    pub next: *mut Dav1dTask,
+    pub next: *mut Rav1dTask,
 }
 
 #[repr(C)]
@@ -235,23 +235,23 @@ pub struct ScalableMotionParams {
 }
 
 #[repr(C)]
-pub struct Dav1dFrameContext_bd_fn {
+pub struct Rav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
     pub recon_b_inter: recon_b_inter_fn,
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Dav1dTaskContext, c_int) -> ()>,
+    pub filter_sbrow_cdef: Option<unsafe extern "C" fn(*mut Rav1dTaskContext, c_int) -> ()>,
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
     pub read_coef_blocks: read_coef_blocks_fn,
 }
 
-impl Dav1dFrameContext_bd_fn {
+impl Rav1dFrameContext_bd_fn {
     pub unsafe fn recon_b_intra(
         &self,
-        context: *mut Dav1dTaskContext,
+        context: *mut Rav1dTaskContext,
         block_size: BlockSize,
         flags: EdgeFlags,
         block: *const Av1Block,
@@ -261,7 +261,7 @@ impl Dav1dFrameContext_bd_fn {
 
     pub unsafe fn recon_b_inter(
         &self,
-        context: *mut Dav1dTaskContext,
+        context: *mut Rav1dTaskContext,
         block_size: BlockSize,
         block: *const Av1Block,
     ) -> c_int {
@@ -270,7 +270,7 @@ impl Dav1dFrameContext_bd_fn {
 
     pub unsafe fn read_coef_blocks(
         &self,
-        context: *mut Dav1dTaskContext,
+        context: *mut Rav1dTaskContext,
         block_size: BlockSize,
         block: *const Av1Block,
     ) {
@@ -285,7 +285,7 @@ pub struct CodedBlockInfo {
 }
 
 #[repr(C)]
-pub struct Dav1dFrameContext_frame_thread {
+pub struct Rav1dFrameContext_frame_thread {
     pub next_tile_row: [c_int; 2],
     pub entropy_progress: atomic_int,
     pub deblock_progress: atomic_int,
@@ -304,7 +304,7 @@ pub struct Dav1dFrameContext_frame_thread {
 }
 
 #[repr(C)]
-pub struct Dav1dFrameContext_lf {
+pub struct Rav1dFrameContext_lf {
     pub level: *mut [u8; 4],
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
@@ -334,21 +334,21 @@ pub struct Dav1dFrameContext_lf {
 }
 
 #[repr(C)]
-pub struct Dav1dFrameContext_task_thread_pending_tasks {
+pub struct Rav1dFrameContext_task_thread_pending_tasks {
     pub merge: atomic_int,
     pub lock: pthread_mutex_t,
-    pub head: *mut Dav1dTask,
-    pub tail: *mut Dav1dTask,
+    pub head: *mut Rav1dTask,
+    pub tail: *mut Rav1dTask,
 }
 
 #[repr(C)]
-pub struct Dav1dFrameContext_task_thread {
+pub struct Rav1dFrameContext_task_thread {
     pub lock: pthread_mutex_t,
     pub cond: pthread_cond_t,
     pub ttd: *mut TaskThreadData,
-    pub tasks: *mut Dav1dTask,
-    pub tile_tasks: [*mut Dav1dTask; 2],
-    pub init_task: Dav1dTask,
+    pub tasks: *mut Rav1dTask,
+    pub tile_tasks: [*mut Rav1dTask; 2],
+    pub init_task: Rav1dTask,
     pub num_tasks: c_int,
     pub num_tile_tasks: c_int,
     pub init_done: atomic_int,
@@ -357,10 +357,10 @@ pub struct Dav1dFrameContext_task_thread {
     pub update_set: bool,
     pub error: atomic_int,
     pub task_counter: atomic_int,
-    pub task_head: *mut Dav1dTask,
-    pub task_tail: *mut Dav1dTask,
-    pub task_cur_prev: *mut Dav1dTask,
-    pub pending_tasks: Dav1dFrameContext_task_thread_pending_tasks,
+    pub task_head: *mut Rav1dTask,
+    pub task_tail: *mut Rav1dTask,
+    pub task_cur_prev: *mut Rav1dTask,
+    pub pending_tasks: Rav1dFrameContext_task_thread_pending_tasks,
 }
 
 #[repr(C)]
@@ -370,20 +370,20 @@ pub struct FrameTileThreadData {
 }
 
 #[repr(C)]
-pub struct Dav1dFrameContext {
-    pub seq_hdr_ref: *mut Dav1dRef,
+pub struct Rav1dFrameContext {
+    pub seq_hdr_ref: *mut Rav1dRef,
     pub seq_hdr: *mut Dav1dSequenceHeader,
-    pub frame_hdr_ref: *mut Dav1dRef,
+    pub frame_hdr_ref: *mut Rav1dRef,
     pub frame_hdr: *mut Dav1dFrameHeader,
-    pub refp: [Dav1dThreadPicture; 7],
+    pub refp: [Rav1dThreadPicture; 7],
     pub cur: Dav1dPicture,
-    pub sr_cur: Dav1dThreadPicture,
-    pub mvs_ref: *mut Dav1dRef,
+    pub sr_cur: Rav1dThreadPicture,
+    pub mvs_ref: *mut Rav1dRef,
     pub mvs: *mut refmvs_temporal_block,
     pub ref_mvs: [*mut refmvs_temporal_block; 7],
-    pub ref_mvs_ref: [*mut Dav1dRef; 7],
-    pub cur_segmap_ref: *mut Dav1dRef,
-    pub prev_segmap_ref: *mut Dav1dRef,
+    pub ref_mvs_ref: [*mut Rav1dRef; 7],
+    pub cur_segmap_ref: *mut Rav1dRef,
+    pub prev_segmap_ref: *mut Rav1dRef,
     pub cur_segmap: *mut u8,
     pub prev_segmap: *const u8,
     pub refpoc: [c_uint; 7],
@@ -391,17 +391,17 @@ pub struct Dav1dFrameContext {
     pub gmv_warp_allowed: [u8; 7],
     pub in_cdf: CdfThreadContext,
     pub out_cdf: CdfThreadContext,
-    pub tile: *mut Dav1dTileGroup,
+    pub tile: *mut Rav1dTileGroup,
     pub n_tile_data_alloc: c_int,
     pub n_tile_data: c_int,
     pub svc: [[ScalableMotionParams; 2]; 7],
     pub resize_step: [c_int; 2],
     pub resize_start: [c_int; 2],
-    pub c: *const Dav1dContext,
-    pub ts: *mut Dav1dTileState,
+    pub c: *const Rav1dContext,
+    pub ts: *mut Rav1dTileState,
     pub n_ts: c_int,
-    pub dsp: *const Dav1dDSPContext,
-    pub bd_fn: Dav1dFrameContext_bd_fn,
+    pub dsp: *const Rav1dDSPContext,
+    pub bd_fn: Rav1dFrameContext_bd_fn,
     pub ipred_edge_sz: c_int,
     pub ipred_edge: [*mut DynPixel; 3],
     pub b4_stride: ptrdiff_t,
@@ -422,14 +422,14 @@ pub struct Dav1dFrameContext {
     pub rf: refmvs_frame,
     pub jnt_weights: [[u8; 7]; 7],
     pub bitdepth_max: c_int,
-    pub frame_thread: Dav1dFrameContext_frame_thread,
-    pub lf: Dav1dFrameContext_lf,
-    pub task_thread: Dav1dFrameContext_task_thread,
+    pub frame_thread: Rav1dFrameContext_frame_thread,
+    pub lf: Rav1dFrameContext_lf,
+    pub task_thread: Rav1dFrameContext_task_thread,
     pub tile_thread: FrameTileThreadData,
 }
 
 #[repr(C)]
-pub struct Dav1dTileState_tiling {
+pub struct Rav1dTileState_tiling {
     pub col_start: c_int,
     pub col_end: c_int,
     pub row_start: c_int,
@@ -439,18 +439,18 @@ pub struct Dav1dTileState_tiling {
 }
 
 #[repr(C)]
-pub struct Dav1dTileState_frame_thread {
+pub struct Rav1dTileState_frame_thread {
     pub pal_idx: *mut u8,
     pub cf: *mut DynCoef,
 }
 
 #[repr(C)]
-pub struct Dav1dTileState {
+pub struct Rav1dTileState {
     pub cdf: CdfContext,
     pub msac: MsacContext,
-    pub tiling: Dav1dTileState_tiling,
+    pub tiling: Rav1dTileState_tiling,
     pub progress: [atomic_int; 2],
-    pub frame_thread: [Dav1dTileState_frame_thread; 2],
+    pub frame_thread: [Rav1dTileState_frame_thread; 2],
     pub lowest_pixel: *mut [[c_int; 2]; 7],
     pub dqmem: [[[u16; 2]; 3]; 8],
     pub dq: *const [[u16; 2]; 3],
@@ -462,98 +462,98 @@ pub struct Dav1dTileState {
 }
 
 #[repr(C, align(64))]
-pub union Dav1dTaskContext_cf {
+pub union Rav1dTaskContext_cf {
     pub cf_8bpc: [i16; 1024],
     pub cf_16bpc: [i32; 1024],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Dav1dTaskContext_scratch_compinter_seg_mask {
+pub struct Rav1dTaskContext_scratch_compinter_seg_mask {
     pub compinter: [[i16; 16384]; 2],
     pub seg_mask: [u8; 16384],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub union Dav1dTaskContext_scratch_lap {
+pub union Rav1dTaskContext_scratch_lap {
     pub lap_8bpc: [u8; 4096],
     pub lap_16bpc: [u16; 4096],
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_compinter_seg_mask,
+    pub c2rust_unnamed: Rav1dTaskContext_scratch_compinter_seg_mask,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub union Dav1dTaskContext_scratch_emu_edge {
+pub union Rav1dTaskContext_scratch_emu_edge {
     pub emu_edge_8bpc: [u8; 84160],
     pub emu_edge_16bpc: [u16; 84160],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Dav1dTaskContext_scratch_lap_emu_edge {
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap,
-    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_emu_edge,
+pub struct Rav1dTaskContext_scratch_lap_emu_edge {
+    pub c2rust_unnamed: Rav1dTaskContext_scratch_lap,
+    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_emu_edge,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Dav1dTaskContext_scratch_pal {
+pub struct Rav1dTaskContext_scratch_pal {
     pub pal_order: [[u8; 8]; 64],
     pub pal_ctx: [u8; 64],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub union Dav1dTaskContext_scratch_levels_pal {
+pub union Rav1dTaskContext_scratch_levels_pal {
     pub levels: [u8; 1088],
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_pal,
+    pub c2rust_unnamed: Rav1dTaskContext_scratch_pal,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Dav1dTaskContext_scratch_interintra_edge_8 {
+pub struct Rav1dTaskContext_scratch_interintra_edge_8 {
     pub interintra_8bpc: [u8; 4096],
     pub edge_8bpc: [u8; 257],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Dav1dTaskContext_scratch_interintra_edge_16 {
+pub struct Rav1dTaskContext_scratch_interintra_edge_16 {
     pub interintra_16bpc: [u16; 4096],
     pub edge_16bpc: [u16; 257],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C, align(64))]
-pub union Dav1dTaskContext_scratch_interintra_edge {
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_interintra_edge_8,
-    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge_16,
+pub union Rav1dTaskContext_scratch_interintra_edge {
+    pub c2rust_unnamed: Rav1dTaskContext_scratch_interintra_edge_8,
+    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_interintra_edge_16,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_levels_pal,
+pub struct Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
+    pub c2rust_unnamed: Rav1dTaskContext_scratch_levels_pal,
     pub ac: [i16; 1024],
     pub pal_idx: [u8; 8192],
     pub pal: [[u16; 8]; 3],
-    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_interintra_edge,
+    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_interintra_edge,
 }
 
 #[repr(C, align(64))]
-pub union Dav1dTaskContext_scratch {
-    pub c2rust_unnamed: Dav1dTaskContext_scratch_lap_emu_edge,
-    pub c2rust_unnamed_0: Dav1dTaskContext_scratch_levels_pal_ac_interintra_edge,
+pub union Rav1dTaskContext_scratch {
+    pub c2rust_unnamed: Rav1dTaskContext_scratch_lap_emu_edge,
+    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge,
 }
 
 #[repr(C)]
-pub struct Dav1dTaskContext_frame_thread {
+pub struct Rav1dTaskContext_frame_thread {
     pub pass: c_int,
 }
 
 #[repr(C)]
-pub struct Dav1dTaskContext_task_thread {
+pub struct Rav1dTaskContext_task_thread {
     pub td: thread_data,
     pub ttd: *mut TaskThreadData,
     pub fttd: *mut FrameTileThreadData,
@@ -562,25 +562,25 @@ pub struct Dav1dTaskContext_task_thread {
 }
 
 #[repr(C)]
-pub struct Dav1dTaskContext {
-    pub c: *const Dav1dContext,
-    pub f: *const Dav1dFrameContext,
-    pub ts: *mut Dav1dTileState,
+pub struct Rav1dTaskContext {
+    pub c: *const Rav1dContext,
+    pub f: *const Rav1dFrameContext,
+    pub ts: *mut Rav1dTileState,
     pub bx: c_int,
     pub by: c_int,
     pub l: BlockContext,
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
-    pub c2rust_unnamed: Dav1dTaskContext_cf,
+    pub c2rust_unnamed: Rav1dTaskContext_cf,
     pub al_pal: [[[[u16; 8]; 3]; 32]; 2],
     pub pal_sz_uv: [[u8; 32]; 2],
     pub txtp_map: [u8; 1024],
-    pub scratch: Dav1dTaskContext_scratch,
+    pub scratch: Rav1dTaskContext_scratch,
     pub warpmv: Dav1dWarpedMotionParams,
     pub lf_mask: *mut Av1Filter,
     pub top_pre_cdef_toggle: c_int,
     pub cur_sb_cdef_idx_ptr: *mut i8,
     pub tl_4x4_filter: Filter2d,
-    pub frame_thread: Dav1dTaskContext_frame_thread,
-    pub task_thread: Dav1dTaskContext_task_thread,
+    pub frame_thread: Rav1dTaskContext_frame_thread,
+    pub task_thread: Rav1dTaskContext_task_thread,
 }

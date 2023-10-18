@@ -37,7 +37,7 @@ pub type pal_pred_fn =
     unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const u16, *const u8, c_int, c_int) -> ();
 
 #[repr(C)]
-pub struct Dav1dIntraPredDSPContext {
+pub struct Rav1dIntraPredDSPContext {
     // TODO(legare): Remove `Option` once `dav1d_submit_frame` is no longer checking
     // this field with `is_none`.
     pub intra_pred: [Option<angular_ipred_fn>; 14],

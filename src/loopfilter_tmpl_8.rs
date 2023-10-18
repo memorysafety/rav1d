@@ -2,7 +2,7 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::src::lf_mask::Av1FilterLUT;
-use crate::src::loopfilter::Dav1dLoopFilterDSPContext;
+use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -397,7 +397,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_rust(
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext) {
+unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Rav1dLoopFilterDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::loopfilter::*;
 
@@ -436,7 +436,7 @@ unsafe extern "C" fn loop_filter_dsp_init_x86(c: *mut Dav1dLoopFilterDSPContext)
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext) {
+unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Rav1dLoopFilterDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::loopfilter::*;
 
@@ -453,7 +453,7 @@ unsafe extern "C" fn loop_filter_dsp_init_arm(c: *mut Dav1dLoopFilterDSPContext)
 }
 
 #[cold]
-pub unsafe fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Dav1dLoopFilterDSPContext) {
+pub unsafe fn dav1d_loop_filter_dsp_init_8bpc(c: *mut Rav1dLoopFilterDSPContext) {
     (*c).loop_filter_sb[0][0] = loop_filter_h_sb128y_c_erased;
     (*c).loop_filter_sb[0][1] = loop_filter_v_sb128y_c_erased;
     (*c).loop_filter_sb[1][0] = loop_filter_h_sb128uv_c_erased;

@@ -81,9 +81,9 @@ use crate::src::getbits::dav1d_get_uniform;
 use crate::src::getbits::dav1d_get_vlc;
 use crate::src::getbits::dav1d_init_get_bits;
 use crate::src::getbits::GetBits;
-use crate::src::internal::Dav1dContext;
-use crate::src::internal::Dav1dFrameContext;
-use crate::src::internal::Dav1dTileGroup;
+use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dTileGroup;
 use crate::src::levels::ObuMetaType;
 use crate::src::levels::OBU_META_HDR_CLL;
 use crate::src::levels::OBU_META_HDR_MDCV;
@@ -94,8 +94,8 @@ use crate::src::log::dav1d_log;
 use crate::src::picture::dav1d_picture_get_event_flags;
 use crate::src::picture::dav1d_thread_picture_ref;
 use crate::src::picture::dav1d_thread_picture_unref;
-use crate::src::picture::Dav1dThreadPicture;
 use crate::src::picture::PictureFlags;
+use crate::src::picture::Rav1dThreadPicture;
 use crate::src::picture::PICTURE_FLAG_NEW_OP_PARAMS_INFO;
 use crate::src::picture::PICTURE_FLAG_NEW_SEQUENCE;
 use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
@@ -104,7 +104,7 @@ use crate::src::r#ref::dav1d_ref_create_using_pool;
 use crate::src::r#ref::dav1d_ref_dec;
 use crate::src::r#ref::dav1d_ref_inc;
 use crate::src::r#ref::dav1d_ref_is_writable;
-use crate::src::r#ref::Dav1dRef;
+use crate::src::r#ref::Rav1dRef;
 use crate::src::tables::dav1d_default_wm_params;
 use crate::src::thread_task::FRAME_ERROR;
 use libc::memcmp;
@@ -128,7 +128,7 @@ unsafe extern "C" fn dav1d_get_bits_pos(c: *const GetBits) -> c_uint {
         .wrapping_sub((*c).bits_left as c_uint);
 }
 
-unsafe extern "C" fn parse_seq_hdr_error(c: *mut Dav1dContext) -> c_int {
+unsafe extern "C" fn parse_seq_hdr_error(c: *mut Rav1dContext) -> c_int {
     dav1d_log(
         c,
         b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
@@ -137,7 +137,7 @@ unsafe extern "C" fn parse_seq_hdr_error(c: *mut Dav1dContext) -> c_int {
 }
 
 unsafe extern "C" fn parse_seq_hdr(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     gb: *mut GetBits,
     hdr: *mut Dav1dSequenceHeader,
 ) -> c_int {
@@ -390,7 +390,7 @@ unsafe extern "C" fn parse_seq_hdr(
 }
 
 unsafe extern "C" fn read_frame_size(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     gb: *mut GetBits,
     use_ref: c_int,
 ) -> c_int {
@@ -400,7 +400,7 @@ unsafe extern "C" fn read_frame_size(
         let mut i = 0;
         while i < 7 {
             if dav1d_get_bit(gb) != 0 {
-                let r#ref: *const Dav1dThreadPicture = &mut (*((*c).refs)
+                let r#ref: *const Rav1dThreadPicture = &mut (*((*c).refs)
                     .as_mut_ptr()
                     .offset(*((*(*c).frame_hdr).refidx).as_mut_ptr().offset(i as isize) as isize))
                 .p;
@@ -481,7 +481,7 @@ static default_mode_ref_deltas: Dav1dLoopfilterModeRefDeltas = Dav1dLoopfilterMo
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
-unsafe extern "C" fn parse_frame_hdr_error(c: *mut Dav1dContext) -> c_int {
+unsafe extern "C" fn parse_frame_hdr_error(c: *mut Rav1dContext) -> c_int {
     dav1d_log(
         c,
         b"Error parsing frame header\n\0" as *const u8 as *const c_char,
@@ -489,7 +489,7 @@ unsafe extern "C" fn parse_frame_hdr_error(c: *mut Dav1dContext) -> c_int {
     return -(22 as c_int);
 }
 
-unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> c_int {
+unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> c_int {
     let seqhdr: *const Dav1dSequenceHeader = (*c).seq_hdr;
     let hdr: *mut Dav1dFrameHeader = (*c).frame_hdr;
     (*hdr).show_existing_frame =
@@ -1543,7 +1543,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Dav1dContext, gb: *mut GetBits) -> 
     return 0 as c_int;
 }
 
-unsafe extern "C" fn parse_tile_hdr(c: *mut Dav1dContext, gb: *mut GetBits) {
+unsafe extern "C" fn parse_tile_hdr(c: *mut Rav1dContext, gb: *mut GetBits) {
     let n_tiles = (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows;
     let have_tile_pos = (if n_tiles > 1 {
         dav1d_get_bit(gb)
@@ -1562,7 +1562,7 @@ unsafe extern "C" fn parse_tile_hdr(c: *mut Dav1dContext, gb: *mut GetBits) {
 }
 
 unsafe extern "C" fn check_for_overrun(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     gb: *mut GetBits,
     init_bit_pos: c_uint,
     obu_len: c_uint,
@@ -1588,7 +1588,7 @@ unsafe extern "C" fn check_for_overrun(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn dav1d_parse_obus_error(c: *mut Dav1dContext, in_0: *mut Dav1dData) -> c_int {
+unsafe extern "C" fn dav1d_parse_obus_error(c: *mut Rav1dContext, in_0: *mut Dav1dData) -> c_int {
     dav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*in_0).m);
     dav1d_log(
         c,
@@ -1598,7 +1598,7 @@ unsafe extern "C" fn dav1d_parse_obus_error(c: *mut Dav1dContext, in_0: *mut Dav
 }
 
 unsafe extern "C" fn dav1d_parse_obus_skip(
-    c: *mut Dav1dContext,
+    c: *mut Rav1dContext,
     len: c_uint,
     init_byte_pos: c_uint,
 ) -> c_int {
@@ -1621,7 +1621,7 @@ unsafe extern "C" fn dav1d_parse_obus_skip(
     return len.wrapping_add(init_byte_pos) as c_int;
 }
 
-pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, global: c_int) -> c_int {
+pub unsafe fn dav1d_parse_obus(c: *mut Rav1dContext, in_0: *mut Dav1dData, global: c_int) -> c_int {
     let mut gb: GetBits = GetBits {
         state: 0,
         bits_left: 0,
@@ -1681,7 +1681,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, globa
     let mut current_block_188: u64;
     match type_0 as c_uint {
         DAV1D_OBU_SEQ_HDR => {
-            let mut ref_0: *mut Dav1dRef = dav1d_ref_create_using_pool(
+            let mut ref_0: *mut Rav1dRef = dav1d_ref_create_using_pool(
                 (*c).seq_hdr_pool,
                 ::core::mem::size_of::<Dav1dSequenceHeader>(),
             );
@@ -1766,7 +1766,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, globa
             }
             match meta_type as c_uint {
                 OBU_META_HDR_CLL => {
-                    let mut ref_1: *mut Dav1dRef =
+                    let mut ref_1: *mut Rav1dRef =
                         dav1d_ref_create(::core::mem::size_of::<Dav1dContentLightLevel>());
                     if ref_1.is_null() {
                         return -(12 as c_int);
@@ -1788,7 +1788,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, globa
                     (*c).content_light_ref = ref_1;
                 }
                 OBU_META_HDR_MDCV => {
-                    let mut ref_2: *mut Dav1dRef =
+                    let mut ref_2: *mut Rav1dRef =
                         dav1d_ref_create(::core::mem::size_of::<Dav1dMasteringDisplay>());
                     if ref_2.is_null() {
                         return -(12 as c_int);
@@ -1847,7 +1847,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, globa
                                 as *const c_char,
                         );
                     } else {
-                        let ref_3: *mut Dav1dRef = dav1d_ref_create(
+                        let ref_3: *mut Rav1dRef = dav1d_ref_create(
                             (::core::mem::size_of::<Dav1dITUTT35>()).wrapping_add(
                                 (payload_size as usize).wrapping_mul(::core::mem::size_of::<u8>()),
                             ),
@@ -1986,15 +1986,15 @@ pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, globa
                 }
                 if (*c).n_tile_data_alloc < (*c).n_tile_data + 1 {
                     if (*c).n_tile_data + 1
-                        > i32::MAX / ::core::mem::size_of::<Dav1dTileGroup>() as c_ulong as c_int
+                        > i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_ulong as c_int
                     {
                         return dav1d_parse_obus_error(c, in_0);
                     }
-                    let tile: *mut Dav1dTileGroup = realloc(
+                    let tile: *mut Rav1dTileGroup = realloc(
                         (*c).tile as *mut c_void,
                         (((*c).n_tile_data + 1) as usize)
-                            .wrapping_mul(::core::mem::size_of::<Dav1dTileGroup>()),
-                    ) as *mut Dav1dTileGroup;
+                            .wrapping_mul(::core::mem::size_of::<Rav1dTileGroup>()),
+                    ) as *mut Rav1dTileGroup;
                     if tile.is_null() {
                         return dav1d_parse_obus_error(c, in_0);
                     }
@@ -2002,7 +2002,7 @@ pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, globa
                     memset(
                         ((*c).tile).offset((*c).n_tile_data as isize) as *mut c_void,
                         0 as c_int,
-                        ::core::mem::size_of::<Dav1dTileGroup>(),
+                        ::core::mem::size_of::<Rav1dTileGroup>(),
                     );
                     (*c).n_tile_data_alloc = (*c).n_tile_data + 1;
                 }
@@ -2120,17 +2120,17 @@ pub unsafe fn dav1d_parse_obus(c: *mut Dav1dContext, in_0: *mut Dav1dData, globa
                 if (*c).frame_thread.next == (*c).n_fc {
                     (*c).frame_thread.next = 0 as c_int as c_uint;
                 }
-                let f: *mut Dav1dFrameContext =
-                    &mut *((*c).fc).offset(next as isize) as *mut Dav1dFrameContext;
+                let f: *mut Rav1dFrameContext =
+                    &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
                 while (*f).n_tile_data > 0 {
                     pthread_cond_wait(
                         &mut (*f).task_thread.cond,
                         &mut (*(*f).task_thread.ttd).lock,
                     );
                 }
-                let out_delayed: *mut Dav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
+                let out_delayed: *mut Rav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
                     .offset(next as isize)
-                    as *mut Dav1dThreadPicture;
+                    as *mut Rav1dThreadPicture;
                 if !((*out_delayed).p.data[0]).is_null()
                     || ::core::intrinsics::atomic_load_seqcst(
                         &mut (*f).task_thread.error as *mut atomic_int,
