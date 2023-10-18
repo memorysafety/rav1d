@@ -42,6 +42,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::ptr;
 
 pub type PictureFlags = c_uint;
 pub const PICTURE_FLAG_NEW_TEMPORAL_UNIT: PictureFlags = 4;
@@ -125,6 +126,16 @@ pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, coo
         cookie as *mut Rav1dMemPool,
         (*p).allocator_data as *mut Rav1dMemPoolBuffer,
     );
+}
+
+impl Default for Rav1dPicAllocator {
+    fn default() -> Self {
+        Self {
+            cookie: ptr::null_mut(),
+            alloc_picture_callback: Some(dav1d_default_picture_alloc),
+            release_picture_callback: Some(dav1d_default_picture_release),
+        }
+    }
 }
 
 unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut c_void) {
