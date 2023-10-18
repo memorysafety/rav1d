@@ -185,6 +185,16 @@ use crate::src::qm::dav1d_qm_tbl;
 use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
+use crate::src::recon::rav1d_backup_ipred_edge;
+use crate::src::recon::rav1d_filter_sbrow;
+use crate::src::recon::rav1d_filter_sbrow_cdef;
+use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
+use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
+use crate::src::recon::rav1d_filter_sbrow_lr;
+use crate::src::recon::rav1d_filter_sbrow_resize;
+use crate::src::recon::rav1d_read_coef_blocks;
+use crate::src::recon::rav1d_recon_b_inter;
+use crate::src::recon::rav1d_recon_b_intra;
 use crate::src::recon::DEBUG_BLOCK_INFO;
 use crate::src::refmvs::rav1d_refmvs_find;
 use crate::src::refmvs::rav1d_refmvs_init_frame;
@@ -245,14 +255,6 @@ use crate::{
     src::filmgrain_tmpl_8::rav1d_film_grain_dsp_init_8bpc,
     src::ipred_tmpl_8::rav1d_intra_pred_dsp_init_8bpc, src::itx_tmpl_8::rav1d_itx_dsp_init_8bpc,
     src::loopfilter_tmpl_8::rav1d_loop_filter_dsp_init_8bpc,
-    src::recon_tmpl_8::rav1d_backup_ipred_edge_8bpc, src::recon_tmpl_8::rav1d_filter_sbrow_8bpc,
-    src::recon_tmpl_8::rav1d_filter_sbrow_cdef_8bpc,
-    src::recon_tmpl_8::rav1d_filter_sbrow_deblock_cols_8bpc,
-    src::recon_tmpl_8::rav1d_filter_sbrow_deblock_rows_8bpc,
-    src::recon_tmpl_8::rav1d_filter_sbrow_lr_8bpc,
-    src::recon_tmpl_8::rav1d_filter_sbrow_resize_8bpc,
-    src::recon_tmpl_8::rav1d_read_coef_blocks_8bpc, src::recon_tmpl_8::rav1d_recon_b_inter_8bpc,
-    src::recon_tmpl_8::rav1d_recon_b_intra_8bpc,
 };
 
 #[cfg(feature = "bitdepth_16")]
@@ -262,15 +264,6 @@ use crate::{
     src::ipred_tmpl_16::rav1d_intra_pred_dsp_init_16bpc,
     src::itx_tmpl_16::rav1d_itx_dsp_init_16bpc,
     src::loopfilter_tmpl_16::rav1d_loop_filter_dsp_init_16bpc,
-    src::recon_tmpl_16::rav1d_backup_ipred_edge_16bpc,
-    src::recon_tmpl_16::rav1d_filter_sbrow_16bpc,
-    src::recon_tmpl_16::rav1d_filter_sbrow_cdef_16bpc,
-    src::recon_tmpl_16::rav1d_filter_sbrow_deblock_cols_16bpc,
-    src::recon_tmpl_16::rav1d_filter_sbrow_deblock_rows_16bpc,
-    src::recon_tmpl_16::rav1d_filter_sbrow_lr_16bpc,
-    src::recon_tmpl_16::rav1d_filter_sbrow_resize_16bpc,
-    src::recon_tmpl_16::rav1d_read_coef_blocks_16bpc,
-    src::recon_tmpl_16::rav1d_recon_b_inter_16bpc, src::recon_tmpl_16::rav1d_recon_b_intra_16bpc,
 };
 
 fn init_quant_tables(
@@ -5098,30 +5091,30 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if (*f.seq_hdr).hbd == 0 {
         #[cfg(feature = "bitdepth_8")]
         {
-            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter_8bpc);
-            f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra_8bpc);
-            f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow_8bpc);
-            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols_8bpc);
-            f.bd_fn.filter_sbrow_deblock_rows = Some(rav1d_filter_sbrow_deblock_rows_8bpc);
-            f.bd_fn.filter_sbrow_cdef = Some(rav1d_filter_sbrow_cdef_8bpc);
-            f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize_8bpc);
-            f.bd_fn.filter_sbrow_lr = Some(rav1d_filter_sbrow_lr_8bpc);
-            f.bd_fn.backup_ipred_edge = Some(rav1d_backup_ipred_edge_8bpc);
-            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks_8bpc);
+            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter::<BitDepth8>);
+            f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra::<BitDepth8>);
+            f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow::<BitDepth8>);
+            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols::<BitDepth8>);
+            f.bd_fn.filter_sbrow_deblock_rows = Some(rav1d_filter_sbrow_deblock_rows::<BitDepth8>);
+            f.bd_fn.filter_sbrow_cdef = Some(rav1d_filter_sbrow_cdef::<BitDepth8>);
+            f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize::<BitDepth8>);
+            f.bd_fn.filter_sbrow_lr = Some(rav1d_filter_sbrow_lr::<BitDepth8>);
+            f.bd_fn.backup_ipred_edge = Some(rav1d_backup_ipred_edge::<BitDepth8>);
+            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks::<BitDepth8>);
         }
     } else {
         #[cfg(feature = "bitdepth_16")]
         {
-            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter_16bpc);
-            f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra_16bpc);
-            f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow_16bpc);
-            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols_16bpc);
-            f.bd_fn.filter_sbrow_deblock_rows = Some(rav1d_filter_sbrow_deblock_rows_16bpc);
-            f.bd_fn.filter_sbrow_cdef = Some(rav1d_filter_sbrow_cdef_16bpc);
-            f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize_16bpc);
-            f.bd_fn.filter_sbrow_lr = Some(rav1d_filter_sbrow_lr_16bpc);
-            f.bd_fn.backup_ipred_edge = Some(rav1d_backup_ipred_edge_16bpc);
-            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks_16bpc);
+            f.bd_fn.recon_b_inter = Some(rav1d_recon_b_inter::<BitDepth16>);
+            f.bd_fn.recon_b_intra = Some(rav1d_recon_b_intra::<BitDepth16>);
+            f.bd_fn.filter_sbrow = Some(rav1d_filter_sbrow::<BitDepth16>);
+            f.bd_fn.filter_sbrow_deblock_cols = Some(rav1d_filter_sbrow_deblock_cols::<BitDepth16>);
+            f.bd_fn.filter_sbrow_deblock_rows = Some(rav1d_filter_sbrow_deblock_rows::<BitDepth16>);
+            f.bd_fn.filter_sbrow_cdef = Some(rav1d_filter_sbrow_cdef::<BitDepth16>);
+            f.bd_fn.filter_sbrow_resize = Some(rav1d_filter_sbrow_resize::<BitDepth16>);
+            f.bd_fn.filter_sbrow_lr = Some(rav1d_filter_sbrow_lr::<BitDepth16>);
+            f.bd_fn.backup_ipred_edge = Some(rav1d_backup_ipred_edge::<BitDepth16>);
+            f.bd_fn.read_coef_blocks = Some(rav1d_read_coef_blocks::<BitDepth16>);
         }
     }
 
