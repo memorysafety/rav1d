@@ -5,79 +5,64 @@ use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::GrainBD;
 use libc::memcpy;
-use libc::memset;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
-unsafe fn generate_scaling<BD: BitDepth>(
-    bitdepth: c_int,
-    points: *const [u8; 2],
-    num: c_int,
-    scaling: *mut u8,
-) {
-    let (shift_x, scaling_size) = match BD::BPC {
-        BPC::BPC8 => (0, 256),
-        BPC::BPC16 => {
-            assert!(bitdepth > 8);
-            let shift_x = bitdepth - 8;
-            let scaling_size = 1 << bitdepth;
-            (shift_x, scaling_size)
-        }
-    };
-    if num == 0 {
-        memset(scaling as *mut c_void, 0, scaling_size as usize);
-        return;
+fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
+    let mut scaling_array = ArrayDefault::default();
+    if points.is_empty() {
+        return scaling_array;
     }
-    memset(
-        scaling as *mut c_void,
-        (*points.offset(0))[1] as c_int,
-        (((*points.offset(0))[0] as c_int) << shift_x) as usize,
-    );
-    for i in 0..num - 1 {
-        let bx = (*points.offset(i as isize))[0] as c_int;
-        let by = (*points.offset(i as isize))[1] as c_int;
-        let ex = (*points.offset((i + 1) as isize))[0] as c_int;
-        let ey = (*points.offset((i + 1) as isize))[1] as c_int;
+    let shift_x = bd.bitdepth() - 8;
+    let scaling_size = 1 << bd.bitdepth();
+    let scaling = scaling_array.as_mut();
+    scaling[..(points[0][0] as usize) << shift_x].fill(points[0][1]);
+    for ps in points.windows(2) {
+        // TODO(kkysen) use array_windows when stabilized
+        let [p0, p1] = ps.try_into().unwrap();
+        let bx = p0[0] as usize;
+        let by = p0[1] as isize;
+        let ex = p1[0] as usize;
+        let ey = p1[1] as isize;
         let dx = ex - bx;
         let dy = ey - by;
         assert!(dx > 0);
-        let delta = dy * ((0x10000 + (dx >> 1)) / dx);
+        let delta = dy * ((0x10000 + (dx >> 1)) / dx) as isize;
         let mut d = 0x8000;
         for x in 0..dx {
-            *scaling.offset((bx + x << shift_x) as isize) = (by + (d >> 16)) as u8;
+            scaling[bx + x << shift_x] = (by + (d >> 16)) as u8;
             d += delta;
         }
     }
-    let n = ((*points.offset((num - 1) as isize))[0] as c_int) << shift_x;
-    memset(
-        scaling.offset(n as isize) as *mut c_void,
-        (*points.offset((num - 1) as isize))[1] as c_int,
-        (scaling_size - n) as usize,
-    );
+    let n = (points[points.len() - 1][0] as usize) << shift_x;
+    scaling[n..][..scaling_size - n].fill(points[points.len() - 1][1]);
 
     if BD::BPC != BPC::BPC8 {
         let pad = 1 << shift_x;
         let rnd = pad >> 1;
-        for i in 0..num - 1 {
-            let bx = ((*points.offset(i as isize))[0] as c_int) << shift_x;
-            let ex = ((*points.offset((i + 1) as isize))[0] as c_int) << shift_x;
+        for ps in points.windows(2) {
+            // TODO(kkysen) use array_windows when stabilized
+            let [p0, p1] = ps.try_into().unwrap();
+            let bx = (p0[0] as usize) << shift_x;
+            let ex = (p1[0] as usize) << shift_x;
             let dx = ex - bx;
-            for x in (0..dx).step_by(pad as usize) {
-                let range = *scaling.offset((bx + x + pad) as isize) as c_int
-                    - *scaling.offset((bx + x) as isize) as c_int;
-                let mut r = rnd;
+            for x in (0..dx).step_by(pad) {
+                let range = scaling[bx + x + pad] as isize - scaling[(bx + x) as usize] as isize;
+                let mut r = rnd as isize;
                 for n in 1..pad {
                     r += range;
-                    *scaling.offset((bx + x + n) as isize) =
-                        (*scaling.offset((bx + x) as isize) as c_int + (r >> shift_x)) as u8;
+                    scaling[bx + x + n] = (scaling[bx + x] as isize + (r >> shift_x)) as u8;
                 }
             }
         }
     }
+
+    scaling_array
 }
 
 pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
@@ -112,30 +97,10 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             bitdepth_max,
         );
     }
-    if data.num_y_points != 0 || data.chroma_scaling_from_luma != 0 {
-        generate_scaling::<BD>(
-            r#in.p.bpc,
-            (data.y_points).as_ptr(),
-            data.num_y_points,
-            scaling[0].as_mut().as_mut_ptr(),
-        );
-    }
-    if data.num_uv_points[0] != 0 {
-        generate_scaling::<BD>(
-            r#in.p.bpc,
-            (data.uv_points[0]).as_ptr(),
-            data.num_uv_points[0],
-            scaling[1].as_mut().as_mut_ptr(),
-        );
-    }
-    if data.num_uv_points[1] != 0 {
-        generate_scaling::<BD>(
-            r#in.p.bpc,
-            (data.uv_points[1]).as_ptr(),
-            data.num_uv_points[1],
-            scaling[2].as_mut().as_mut_ptr(),
-        );
-    }
+    let bd = BD::from_c((1 << r#in.p.bpc) - 1);
+    scaling[0] = generate_scaling::<BD>(bd, &data.y_points[..data.num_y_points as usize]);
+    scaling[1] = generate_scaling::<BD>(bd, &data.uv_points[0][..data.num_uv_points[0] as usize]);
+    scaling[2] = generate_scaling::<BD>(bd, &data.uv_points[1][..data.num_uv_points[1] as usize]);
     assert!(out.stride[0] == r#in.stride[0]);
     if data.num_y_points == 0 {
         let stride = out.stride[0];
