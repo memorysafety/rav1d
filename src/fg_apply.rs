@@ -211,46 +211,46 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if data.chroma_scaling_from_luma != 0 {
         for pl in 0..2 {
             (dsp.fguv_32x32xn[r#in.p.layout as usize - 1]).expect("non-null function pointer")(
-                (out.data[(1 + pl) as usize] as *mut BD::Pixel)
+                (out.data[1 + pl] as *mut BD::Pixel)
                     .offset(uv_off as isize)
                     .cast(),
-                (r#in.data[(1 + pl) as usize] as *const BD::Pixel)
+                (r#in.data[1 + pl] as *const BD::Pixel)
                     .offset(uv_off as isize)
                     .cast(),
                 r#in.stride[1],
                 data,
                 cpw as usize,
                 scaling[0].as_ref().as_ptr(),
-                grain_lut[(1 + pl) as usize].as_ptr().cast(),
+                grain_lut[1 + pl].as_ptr().cast(),
                 bh,
                 row,
                 luma_src.cast(),
                 r#in.stride[0],
-                pl,
+                pl as c_int,
                 is_id,
                 bitdepth_max,
             );
         }
     } else {
         for pl in 0..2 {
-            if data.num_uv_points[pl as usize] != 0 {
+            if data.num_uv_points[pl] != 0 {
                 (dsp.fguv_32x32xn[r#in.p.layout as usize - 1]).expect("non-null function pointer")(
-                    (out.data[(1 + pl) as usize] as *mut BD::Pixel)
+                    (out.data[1 + pl] as *mut BD::Pixel)
                         .offset(uv_off as isize)
                         .cast(),
-                    (r#in.data[(1 + pl) as usize] as *const BD::Pixel)
+                    (r#in.data[1 + pl] as *const BD::Pixel)
                         .offset(uv_off as isize)
                         .cast(),
                     r#in.stride[1],
                     data,
                     cpw as usize,
-                    scaling[(1 + pl) as usize].as_ref().as_ptr(),
-                    grain_lut[(1 + pl) as usize].as_ptr().cast(),
+                    scaling[1 + pl].as_ref().as_ptr(),
+                    grain_lut[1 + pl].as_ptr().cast(),
                     bh,
                     row,
                     luma_src.cast(),
                     r#in.stride[0],
-                    pl,
+                    pl as c_int,
                     is_id,
                     bitdepth_max,
                 );
