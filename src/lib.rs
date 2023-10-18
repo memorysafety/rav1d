@@ -1,5 +1,4 @@
 use crate::include::common::bitdepth::DynCoef;
-use crate::include::common::intops::iclip;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -204,40 +203,31 @@ unsafe fn get_stack_size_internal(_thread_attr: *const pthread_attr_t) -> usize 
     return 0;
 }
 
-#[cold]
-unsafe fn get_num_threads(
-    c: *mut Rav1dContext,
-    s: *const Rav1dSettings,
-    n_tc: *mut c_uint,
-    n_fc: *mut c_uint,
-) {
-    static fc_lut: [u8; 49] = [
-        1, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6,
-        6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-    ];
-    *n_tc = (if (*s).n_threads != 0 {
-        (*s).n_threads
-    } else {
-        iclip(rav1d_num_logical_processors(c), 1 as c_int, 256 as c_int)
-    }) as c_uint;
-    *n_fc = if (*s).max_frame_delay != 0 {
-        cmp::min((*s).max_frame_delay as c_uint, *n_tc)
-    } else {
-        (if *n_tc < 50 as c_uint {
-            fc_lut[(*n_tc).wrapping_sub(1 as c_int as c_uint) as usize] as c_int
-        } else {
-            8 as c_int
-        }) as c_uint
-    };
+struct NumThreads {
+    n_tc: usize,
+    n_fc: usize,
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<c_uint> {
-    let mut n_tc: c_uint = 0;
-    let mut n_fc: c_uint = 0;
+fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
+    let n_tc = if s.n_threads != 0 {
+        s.n_threads as usize
+    } else {
+        rav1d_num_logical_processors().clamp(1, 256)
+    };
+    let n_fc = if s.max_frame_delay != 0 {
+        cmp::min(s.max_frame_delay as usize, n_tc)
+    } else {
+        cmp::min((n_tc as f64).sqrt().ceil() as usize, 8)
+    };
+    NumThreads { n_fc, n_tc }
+}
+
+#[cold]
+pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
-    get_num_threads(0 as *mut Rav1dContext, s, &mut n_tc, &mut n_fc);
+    let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
     Ok(n_fc)
 }
 
@@ -246,7 +236,7 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<c_u
 pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1dResult {
     (|| {
         validate_input!((!s.is_null(), EINVAL))?;
-        rav1d_get_frame_delay(&s.read().into())
+        rav1d_get_frame_delay(&s.read().into()).map(|frame_delay| frame_delay as c_uint)
     })()
     .into()
 }
@@ -342,7 +332,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     }
     (*c).flush = &mut (*c).flush_mem;
     *(*c).flush = 0 as c_int;
-    get_num_threads(c, s, &mut (*c).n_tc, &mut (*c).n_fc);
+    let NumThreads { n_tc, n_fc } = get_num_threads(s);
+    (*c).n_tc = n_tc as c_uint;
+    (*c).n_fc = n_fc as c_uint;
     (*c).fc = rav1d_alloc_aligned(
         ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
         32 as c_int as usize,

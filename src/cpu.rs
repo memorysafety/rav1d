@@ -1,7 +1,5 @@
 use crate::src::const_fn::const_for;
-use crate::src::internal::Rav1dContext;
 use bitflags::bitflags;
-use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
@@ -208,6 +206,6 @@ pub extern "C" fn dav1d_set_cpu_flags_mask(mask: c_uint) {
 }
 
 #[cold]
-pub(crate) fn rav1d_num_logical_processors(_c: *mut Rav1dContext) -> c_int {
-    num_cpus::get() as c_int
+pub(crate) fn rav1d_num_logical_processors() -> usize {
+    num_cpus::get()
 }
