@@ -528,7 +528,7 @@ extern "C" {
 }
 
 #[inline]
-pub unsafe extern "C" fn constrain(diff: c_int, threshold: c_int, shift: c_int) -> c_int {
+pub unsafe fn constrain(diff: c_int, threshold: c_int, shift: c_int) -> c_int {
     let adiff = diff.abs();
     return apply_sign(
         cmp::min(adiff, cmp::max(0 as c_int, threshold - (adiff >> shift))),
@@ -537,7 +537,7 @@ pub unsafe extern "C" fn constrain(diff: c_int, threshold: c_int, shift: c_int) 
 }
 
 #[inline]
-pub unsafe extern "C" fn fill(mut tmp: *mut i16, stride: ptrdiff_t, w: c_int, h: c_int) {
+pub unsafe fn fill(mut tmp: *mut i16, stride: ptrdiff_t, w: c_int, h: c_int) {
     let mut y = 0;
     while y < h {
         let mut x = 0;

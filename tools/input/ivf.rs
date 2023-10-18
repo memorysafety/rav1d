@@ -62,14 +62,14 @@ unsafe extern "C" fn ivf_probe(data: *const u8) -> c_int {
     ) == 0) as c_int;
 }
 
-unsafe extern "C" fn rl32(p: *const u8) -> c_uint {
+unsafe fn rl32(p: *const u8) -> c_uint {
     return (*p.offset(3) as u32) << 24 as c_uint
         | ((*p.offset(2) as c_int) << 16 as c_uint) as c_uint
         | ((*p.offset(1) as c_int) << 8 as c_uint) as c_uint
         | *p.offset(0) as c_uint;
 }
 
-unsafe extern "C" fn rl64(p: *const u8) -> i64 {
+unsafe fn rl64(p: *const u8) -> i64 {
     return ((rl32(&*p.offset(4)) as u64) << 32 | rl32(p) as u64) as i64;
 }
 
@@ -200,7 +200,7 @@ unsafe extern "C" fn ivf_open(
 
 #[inline]
 
-unsafe extern "C" fn ivf_read_header(
+unsafe fn ivf_read_header(
     c: *mut IvfInputContext,
     sz: *mut ptrdiff_t,
     off_: *mut libc::off_t,
@@ -317,18 +317,9 @@ pub static mut ivf_demuxer: Demuxer = Demuxer {
     priv_data_size: ::core::mem::size_of::<IvfInputContext>() as c_ulong as c_int,
     name: b"ivf\0" as *const u8 as *const c_char,
     probe_sz: ::core::mem::size_of::<[u8; 12]>() as c_ulong as c_int,
-    probe: Some(ivf_probe as unsafe extern "C" fn(*const u8) -> c_int),
-    open: Some(
-        ivf_open
-            as unsafe extern "C" fn(
-                *mut IvfInputContext,
-                *const c_char,
-                *mut c_uint,
-                *mut c_uint,
-                *mut c_uint,
-            ) -> c_int,
-    ),
-    read: Some(ivf_read as unsafe extern "C" fn(*mut IvfInputContext, *mut Dav1dData) -> c_int),
-    seek: Some(ivf_seek as unsafe extern "C" fn(*mut IvfInputContext, u64) -> c_int),
-    close: Some(ivf_close as unsafe extern "C" fn(*mut IvfInputContext) -> ()),
+    probe: Some(ivf_probe),
+    open: Some(ivf_open),
+    read: Some(ivf_read),
+    seek: Some(ivf_seek),
+    close: Some(ivf_close),
 };

@@ -40,9 +40,7 @@ pub static mut null_muxer: Muxer = Muxer {
     name: b"null\0" as *const u8 as *const c_char,
     extension: b"null\0" as *const u8 as *const c_char,
     write_header: None,
-    write_picture: Some(
-        null_write as unsafe extern "C" fn(*mut NullOutputContext, *mut Dav1dPicture) -> c_int,
-    ),
+    write_picture: Some(null_write),
     write_trailer: None,
     verify: None,
 };

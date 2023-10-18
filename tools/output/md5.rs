@@ -97,11 +97,11 @@ unsafe extern "C" fn md5_open(
 }
 
 #[inline]
-unsafe extern "C" fn leftrotate(x: u32, c: c_int) -> u32 {
+unsafe fn leftrotate(x: u32, c: c_int) -> u32 {
     return x << c | x >> 32 - c;
 }
 
-unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const u32) {
+unsafe fn md5_body(md5: *mut MD5Context, data: *const u32) {
     let mut a: u32 = (*md5).abcd[0];
     let mut b: u32 = (*md5).abcd[1];
     let mut c: u32 = (*md5).abcd[2];
@@ -496,7 +496,7 @@ unsafe extern "C" fn md5_body(md5: *mut MD5Context, data: *const u32) {
     (*md5).abcd[3] = ((*md5).abcd[3] as c_uint).wrapping_add(d) as u32 as u32;
 }
 
-unsafe extern "C" fn md5_update(md5: *mut MD5Context, mut data: *const u8, mut len: c_uint) {
+unsafe fn md5_update(md5: *mut MD5Context, mut data: *const u8, mut len: c_uint) {
     if len == 0 {
         return;
     }
@@ -571,7 +571,7 @@ unsafe extern "C" fn md5_write(md5: *mut MD5Context, p: *mut Dav1dPicture) -> c_
     return 0 as c_int;
 }
 
-unsafe extern "C" fn md5_finish(md5: *mut MD5Context) {
+unsafe fn md5_finish(md5: *mut MD5Context) {
     static bit: [u8; 2] = [0x80, 0];
     let len: u64 = (*md5).len << 3;
     md5_update(md5, &*bit.as_ptr().offset(0), 1 as c_int as c_uint);
@@ -632,18 +632,8 @@ pub static mut md5_muxer: Muxer = Muxer {
     priv_data_size: ::core::mem::size_of::<MD5Context>() as c_ulong as c_int,
     name: b"md5\0" as *const u8 as *const c_char,
     extension: b"md5\0" as *const u8 as *const c_char,
-    write_header: Some(
-        md5_open
-            as unsafe extern "C" fn(
-                *mut MD5Context,
-                *const c_char,
-                *const Dav1dPictureParameters,
-                *const c_uint,
-            ) -> c_int,
-    ),
-    write_picture: Some(
-        md5_write as unsafe extern "C" fn(*mut MD5Context, *mut Dav1dPicture) -> c_int,
-    ),
-    write_trailer: Some(md5_close as unsafe extern "C" fn(*mut MD5Context) -> ()),
-    verify: Some(md5_verify as unsafe extern "C" fn(*mut MD5Context, *const c_char) -> c_int),
+    write_header: Some(md5_open),
+    write_picture: Some(md5_write),
+    write_trailer: Some(md5_close),
+    verify: Some(md5_verify),
 };

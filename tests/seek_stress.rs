@@ -71,7 +71,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 
-unsafe extern "C" fn get_seed() -> c_uint {
+unsafe fn get_seed() -> c_uint {
     let mut ts: libc::timespec = libc::timespec {
         tv_sec: 0,
         tv_nsec: 0,
@@ -104,11 +104,7 @@ unsafe fn xor128_rand() -> c_int {
 }
 
 #[inline]
-unsafe extern "C" fn decode_frame(
-    p: *mut Dav1dPicture,
-    c: *mut Dav1dContext,
-    data: *mut Dav1dData,
-) -> c_int {
+unsafe fn decode_frame(p: *mut Dav1dPicture, c: *mut Dav1dContext, data: *mut Dav1dData) -> c_int {
     let mut res: c_int;
     libc::memset(p as *mut c_void, 0, ::core::mem::size_of::<Dav1dPicture>());
     res = dav1d_send_data(c, data);
@@ -138,7 +134,7 @@ unsafe extern "C" fn decode_frame(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn decode_rand(
+unsafe fn decode_rand(
     in_0: *mut DemuxerContext,
     c: *mut Dav1dContext,
     data: *mut Dav1dData,
@@ -194,7 +190,7 @@ unsafe extern "C" fn decode_rand(
     return res;
 }
 
-unsafe extern "C" fn decode_all(
+unsafe fn decode_all(
     in_0: *mut DemuxerContext,
     c: *mut Dav1dContext,
     data: *mut Dav1dData,
@@ -246,7 +242,7 @@ unsafe extern "C" fn decode_all(
     return res;
 }
 
-unsafe extern "C" fn seek(
+unsafe fn seek(
     in_0: *mut DemuxerContext,
     c: *mut Dav1dContext,
     pts: u64,

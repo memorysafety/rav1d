@@ -27,7 +27,7 @@ use std::ffi::c_void;
 
 pub type pixel = u8;
 
-unsafe extern "C" fn lr_stripe(
+unsafe fn lr_stripe(
     f: *const Rav1dFrameContext,
     mut p: *mut pixel,
     mut left: *const [pixel; 4],
@@ -139,7 +139,7 @@ unsafe extern "C" fn lr_stripe(
     }
 }
 
-unsafe extern "C" fn backup4xU(
+unsafe fn backup4xU(
     mut dst: *mut [pixel; 4],
     mut src: *const pixel,
     src_stride: ptrdiff_t,
@@ -153,7 +153,7 @@ unsafe extern "C" fn backup4xU(
     }
 }
 
-unsafe extern "C" fn lr_sbrow(
+unsafe fn lr_sbrow(
     f: *const Rav1dFrameContext,
     mut p: *mut pixel,
     y: c_int,

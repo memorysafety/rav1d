@@ -3,7 +3,7 @@ use libc::ptrdiff_t;
 use std::ffi::c_int;
 
 #[inline(never)]
-unsafe extern "C" fn inv_dct4_1d_internal_c(
+unsafe fn inv_dct4_1d_internal_c(
     c: *mut i32,
     stride: ptrdiff_t,
     min: c_int,
@@ -48,7 +48,7 @@ pub unsafe extern "C" fn dav1d_inv_dct4_1d_c(
 }
 
 #[inline(never)]
-unsafe extern "C" fn inv_dct8_1d_internal_c(
+unsafe fn inv_dct8_1d_internal_c(
     c: *mut i32,
     stride: ptrdiff_t,
     min: c_int,
@@ -108,7 +108,7 @@ pub unsafe extern "C" fn dav1d_inv_dct8_1d_c(
 }
 
 #[inline(never)]
-unsafe extern "C" fn inv_dct16_1d_internal_c(
+unsafe fn inv_dct16_1d_internal_c(
     c: *mut i32,
     stride: ptrdiff_t,
     min: c_int,
@@ -214,7 +214,7 @@ pub unsafe extern "C" fn dav1d_inv_dct16_1d_c(
 }
 
 #[inline(never)]
-unsafe extern "C" fn inv_dct32_1d_internal_c(
+unsafe fn inv_dct32_1d_internal_c(
     c: *mut i32,
     stride: ptrdiff_t,
     min: c_int,
@@ -772,7 +772,7 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
 }
 
 #[inline(never)]
-unsafe extern "C" fn inv_adst4_1d_internal_c(
+unsafe fn inv_adst4_1d_internal_c(
     in_0: *const i32,
     in_s: ptrdiff_t,
     _min: c_int,
@@ -806,7 +806,7 @@ unsafe extern "C" fn inv_adst4_1d_internal_c(
 }
 
 #[inline(never)]
-unsafe extern "C" fn inv_adst8_1d_internal_c(
+unsafe fn inv_adst8_1d_internal_c(
     in_0: *const i32,
     in_s: ptrdiff_t,
     min: c_int,
@@ -860,7 +860,7 @@ unsafe extern "C" fn inv_adst8_1d_internal_c(
 }
 
 #[inline(never)]
-unsafe extern "C" fn inv_adst16_1d_internal_c(
+unsafe fn inv_adst16_1d_internal_c(
     in_0: *const i32,
     in_s: ptrdiff_t,
     min: c_int,
@@ -1120,7 +1120,7 @@ pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
     }
 }
 
-pub unsafe extern "C" fn dav1d_inv_wht4_1d_c(c: *mut i32, stride: ptrdiff_t) {
+pub unsafe fn dav1d_inv_wht4_1d_c(c: *mut i32, stride: ptrdiff_t) {
     if !(stride > 0) {
         unreachable!();
     }

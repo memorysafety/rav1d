@@ -19,12 +19,7 @@ use std::ffi::c_void;
 pub type pixel = u8;
 pub type entry = i8;
 
-unsafe extern "C" fn generate_scaling(
-    _bitdepth: c_int,
-    points: *const [u8; 2],
-    num: c_int,
-    scaling: *mut u8,
-) {
+unsafe fn generate_scaling(_bitdepth: c_int, points: *const [u8; 2], num: c_int, scaling: *mut u8) {
     let shift_x = 0;
     let scaling_size = 256;
     if num == 0 {

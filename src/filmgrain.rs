@@ -7,7 +7,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 
 #[inline]
-pub unsafe extern "C" fn get_random_number(bits: c_int, state: *mut c_uint) -> c_int {
+pub unsafe fn get_random_number(bits: c_int, state: *mut c_uint) -> c_int {
     let r = *state as c_int;
     let bit: c_uint = ((r >> 0 ^ r >> 1 ^ r >> 3 ^ r >> 12) & 1) as c_uint;
     *state = (r >> 1) as c_uint | bit << 15;
@@ -15,7 +15,7 @@ pub unsafe extern "C" fn get_random_number(bits: c_int, state: *mut c_uint) -> c
 }
 
 #[inline]
-pub unsafe extern "C" fn round2(x: c_int, shift: u64) -> c_int {
+pub unsafe fn round2(x: c_int, shift: u64) -> c_int {
     return x + ((1 as c_int) << shift >> 1) >> shift;
 }
 

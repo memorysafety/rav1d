@@ -49,7 +49,7 @@ pub struct Demuxer {
 
 pub type Section5InputContext = DemuxerPriv;
 
-unsafe extern "C" fn leb(mut ptr: *const u8, mut sz: c_int, len: *mut usize) -> c_int {
+unsafe fn leb(mut ptr: *const u8, mut sz: c_int, len: *mut usize) -> c_int {
     let mut val: u64 = 0 as c_int as u64;
     let mut i: c_uint = 0 as c_int as c_uint;
     let mut more: c_uint;
@@ -77,7 +77,7 @@ unsafe extern "C" fn leb(mut ptr: *const u8, mut sz: c_int, len: *mut usize) -> 
 }
 
 #[inline]
-unsafe extern "C" fn parse_obu_header(
+unsafe fn parse_obu_header(
     mut buf: *const u8,
     mut buf_size: c_int,
     obu_size: *mut usize,
@@ -117,7 +117,7 @@ unsafe extern "C" fn parse_obu_header(
     return buf_size + 1 + extension_flag;
 }
 
-unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut usize) -> c_int {
+unsafe fn leb128(f: *mut libc::FILE, len: *mut usize) -> c_int {
     let mut val: u64 = 0 as c_int as u64;
     let mut i: c_uint = 0 as c_int as c_uint;
     let mut more: c_uint;
@@ -322,20 +322,9 @@ pub static mut section5_demuxer: Demuxer = Demuxer {
     priv_data_size: ::core::mem::size_of::<Section5InputContext>() as c_ulong as c_int,
     name: b"section5\0" as *const u8 as *const c_char,
     probe_sz: 2048 as c_int,
-    probe: Some(section5_probe as unsafe extern "C" fn(*const u8) -> c_int),
-    open: Some(
-        section5_open
-            as unsafe extern "C" fn(
-                *mut Section5InputContext,
-                *const c_char,
-                *mut c_uint,
-                *mut c_uint,
-                *mut c_uint,
-            ) -> c_int,
-    ),
-    read: Some(
-        section5_read as unsafe extern "C" fn(*mut Section5InputContext, *mut Dav1dData) -> c_int,
-    ),
+    probe: Some(section5_probe),
+    open: Some(section5_open),
+    read: Some(section5_read),
     seek: None,
-    close: Some(section5_close as unsafe extern "C" fn(*mut Section5InputContext) -> ()),
+    close: Some(section5_close),
 };

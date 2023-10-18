@@ -45,7 +45,7 @@ pub unsafe fn rav1d_get_bit(c: *mut GetBits) -> c_uint {
 }
 
 #[inline]
-unsafe extern "C" fn refill(c: *mut GetBits, n: c_int) {
+unsafe fn refill(c: *mut GetBits, n: c_int) {
     if !((*c).bits_left >= 0 && (*c).bits_left < 32) {
         unreachable!();
     }
@@ -150,7 +150,7 @@ pub unsafe fn rav1d_get_vlc(c: *mut GetBits) -> c_uint {
         .wrapping_add(rav1d_get_bits(c, n_bits));
 }
 
-unsafe extern "C" fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint) -> c_uint {
+unsafe fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint) -> c_uint {
     let mut v: c_uint = 0 as c_int as c_uint;
     let mut i = 0;
     loop {

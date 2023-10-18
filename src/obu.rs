@@ -128,13 +128,13 @@ use std::ffi::c_void;
 use std::ptr::addr_of_mut;
 
 #[inline]
-unsafe extern "C" fn rav1d_get_bits_pos(c: *const GetBits) -> c_uint {
+unsafe fn rav1d_get_bits_pos(c: *const GetBits) -> c_uint {
     return (((*c).ptr).offset_from((*c).ptr_start) as c_long as c_uint)
         .wrapping_mul(8 as c_int as c_uint)
         .wrapping_sub((*c).bits_left as c_uint);
 }
 
-unsafe extern "C" fn parse_seq_hdr_error(c: *mut Rav1dContext) -> c_int {
+unsafe fn parse_seq_hdr_error(c: *mut Rav1dContext) -> c_int {
     rav1d_log(
         c,
         b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
@@ -142,7 +142,7 @@ unsafe extern "C" fn parse_seq_hdr_error(c: *mut Rav1dContext) -> c_int {
     return -(22 as c_int);
 }
 
-unsafe extern "C" fn parse_seq_hdr(
+unsafe fn parse_seq_hdr(
     c: *mut Rav1dContext,
     gb: *mut GetBits,
     hdr: *mut Rav1dSequenceHeader,
@@ -395,11 +395,7 @@ unsafe extern "C" fn parse_seq_hdr(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn read_frame_size(
-    c: *mut Rav1dContext,
-    gb: *mut GetBits,
-    use_ref: c_int,
-) -> c_int {
+unsafe fn read_frame_size(c: *mut Rav1dContext, gb: *mut GetBits, use_ref: c_int) -> c_int {
     let seqhdr: *const Rav1dSequenceHeader = (*c).seq_hdr;
     let hdr: *mut Rav1dFrameHeader = (*c).frame_hdr;
     if use_ref != 0 {
@@ -473,7 +469,7 @@ unsafe extern "C" fn read_frame_size(
 }
 
 #[inline]
-unsafe extern "C" fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
+unsafe fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
     let mut k;
     k = 0 as c_int;
     while sz << k < tgt {
@@ -487,7 +483,7 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
-unsafe extern "C" fn parse_frame_hdr_error(c: *mut Rav1dContext) -> c_int {
+unsafe fn parse_frame_hdr_error(c: *mut Rav1dContext) -> c_int {
     rav1d_log(
         c,
         b"Error parsing frame header\n\0" as *const u8 as *const c_char,
@@ -495,7 +491,7 @@ unsafe extern "C" fn parse_frame_hdr_error(c: *mut Rav1dContext) -> c_int {
     return -(22 as c_int);
 }
 
-unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> c_int {
+unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> c_int {
     let seqhdr: *const Rav1dSequenceHeader = (*c).seq_hdr;
     let hdr: *mut Rav1dFrameHeader = (*c).frame_hdr;
     (*hdr).show_existing_frame =
@@ -1555,7 +1551,7 @@ unsafe extern "C" fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> 
     return 0 as c_int;
 }
 
-unsafe extern "C" fn parse_tile_hdr(c: *mut Rav1dContext, gb: *mut GetBits) {
+unsafe fn parse_tile_hdr(c: *mut Rav1dContext, gb: *mut GetBits) {
     let n_tiles = (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows;
     let have_tile_pos = (if n_tiles > 1 {
         rav1d_get_bit(gb)
@@ -1573,7 +1569,7 @@ unsafe extern "C" fn parse_tile_hdr(c: *mut Rav1dContext, gb: *mut GetBits) {
     };
 }
 
-unsafe extern "C" fn check_for_overrun(
+unsafe fn check_for_overrun(
     c: *mut Rav1dContext,
     gb: *mut GetBits,
     init_bit_pos: c_uint,
@@ -1600,7 +1596,7 @@ unsafe extern "C" fn check_for_overrun(
     return 0 as c_int;
 }
 
-unsafe extern "C" fn rav1d_parse_obus_error(c: *mut Rav1dContext, in_0: *mut Rav1dData) -> c_int {
+unsafe fn rav1d_parse_obus_error(c: *mut Rav1dContext, in_0: *mut Rav1dData) -> c_int {
     rav1d_data_props_copy(&mut (*c).cached_error_props, &mut (*in_0).m);
     rav1d_log(
         c,
@@ -1609,11 +1605,7 @@ unsafe extern "C" fn rav1d_parse_obus_error(c: *mut Rav1dContext, in_0: *mut Rav
     return -(22 as c_int);
 }
 
-unsafe extern "C" fn rav1d_parse_obus_skip(
-    c: *mut Rav1dContext,
-    len: c_uint,
-    init_byte_pos: c_uint,
-) -> c_int {
+unsafe fn rav1d_parse_obus_skip(c: *mut Rav1dContext, len: c_uint, init_byte_pos: c_uint) -> c_int {
     let mut i = 0;
     while i < 8 {
         if (*(*c).frame_hdr).refresh_frame_flags & (1 as c_int) << i != 0 {

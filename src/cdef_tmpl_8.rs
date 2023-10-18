@@ -24,7 +24,7 @@ use cfg_if::cfg_if;
 
 pub type pixel = u8;
 
-unsafe extern "C" fn padding(
+unsafe fn padding(
     mut tmp: *mut i16,
     tmp_stride: ptrdiff_t,
     mut src: *const pixel,
@@ -126,7 +126,7 @@ unsafe extern "C" fn padding(
 }
 
 #[inline(never)]
-unsafe extern "C" fn cdef_filter_block_c(
+unsafe fn cdef_filter_block_c(
     mut dst: *mut pixel,
     dst_stride: ptrdiff_t,
     left: *const [pixel; 2],
@@ -486,7 +486,7 @@ use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Rav1dCdefDSPContext) {
+unsafe fn cdef_dsp_init_x86(c: *mut Rav1dCdefDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::cdef::*;
 
@@ -541,7 +541,7 @@ unsafe extern "C" fn cdef_dsp_init_x86(c: *mut Rav1dCdefDSPContext) {
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn cdef_dsp_init_arm(c: *mut Rav1dCdefDSPContext) {
+unsafe fn cdef_dsp_init_arm(c: *mut Rav1dCdefDSPContext) {
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::cdef::*;
 

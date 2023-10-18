@@ -5598,7 +5598,7 @@ pub(crate) unsafe fn rav1d_cdf_thread_update(
 }
 
 #[inline]
-unsafe extern "C" fn get_qcat_idx(q: c_int) -> c_int {
+unsafe fn get_qcat_idx(q: c_int) -> c_int {
     if q <= 20 {
         return 0 as c_int;
     }

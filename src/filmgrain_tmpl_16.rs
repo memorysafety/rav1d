@@ -359,7 +359,7 @@ pub type pixel = u16;
 pub type entry = i16;
 
 #[inline]
-unsafe extern "C" fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
+unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
     if x & 1 != 0 {
         unreachable!();
     }
@@ -374,7 +374,7 @@ unsafe extern "C" fn generate_grain_y_c_erased(
     generate_grain_y_rust(buf.cast(), data, bitdepth_max)
 }
 
-unsafe extern "C" fn generate_grain_y_rust(
+unsafe fn generate_grain_y_rust(
     buf: *mut [entry; 82],
     data: *const Dav1dFilmGrainData,
     bitdepth_max: c_int,
@@ -431,7 +431,7 @@ unsafe extern "C" fn generate_grain_y_rust(
 }
 
 #[inline(never)]
-unsafe extern "C" fn generate_grain_uv_c(
+unsafe fn generate_grain_uv_c(
     buf: *mut [entry; 82],
     buf_y: *const [entry; 82],
     data: *const Dav1dFilmGrainData,
@@ -572,7 +572,7 @@ unsafe extern "C" fn generate_grain_uv_444_c_erased(
 }
 
 #[inline]
-unsafe extern "C" fn sample_lut(
+unsafe fn sample_lut(
     grain_lut: *const [entry; 82],
     offsets: *const [c_int; 2],
     subx: c_int,
@@ -615,7 +615,7 @@ unsafe extern "C" fn fgy_32x32xn_c_erased(
     );
 }
 
-unsafe extern "C" fn fgy_32x32xn_rust(
+unsafe fn fgy_32x32xn_rust(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
@@ -882,7 +882,7 @@ unsafe extern "C" fn fgy_32x32xn_rust(
 }
 
 #[inline(never)]
-unsafe extern "C" fn fguv_32x32xn_c(
+unsafe fn fguv_32x32xn_c(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
@@ -1341,7 +1341,7 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased(
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
-unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Rav1dFilmGrainDSPContext) {
+unsafe fn film_grain_dsp_init_x86(c: *mut Rav1dFilmGrainDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
@@ -1404,7 +1404,7 @@ unsafe extern "C" fn film_grain_dsp_init_x86(c: *mut Rav1dFilmGrainDSPContext) {
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
-unsafe extern "C" fn film_grain_dsp_init_arm(c: *mut Rav1dFilmGrainDSPContext) {
+unsafe fn film_grain_dsp_init_arm(c: *mut Rav1dFilmGrainDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -1453,7 +1453,7 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn fgy_32x32xn_neon(
+unsafe fn fgy_32x32xn_neon(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
@@ -1550,7 +1550,7 @@ unsafe extern "C" fn fguv_32x32xn_420_neon_erased(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn fguv_32x32xn_420_neon(
+unsafe fn fguv_32x32xn_420_neon(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
@@ -1657,7 +1657,7 @@ unsafe extern "C" fn fguv_32x32xn_422_neon_erased(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn fguv_32x32xn_422_neon(
+unsafe fn fguv_32x32xn_422_neon(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
@@ -1764,7 +1764,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon_erased(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe extern "C" fn fguv_32x32xn_444_neon(
+unsafe fn fguv_32x32xn_444_neon(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,

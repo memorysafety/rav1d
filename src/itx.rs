@@ -13,7 +13,7 @@ use std::ffi::c_void;
 
 pub type itx_1d_fn = Option<unsafe extern "C" fn(*mut i32, ptrdiff_t, c_int, c_int) -> ()>;
 
-pub unsafe extern "C" fn inv_txfm_add_rust<BD: BitDepth>(
+pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     coeff: *mut BD::Coef,

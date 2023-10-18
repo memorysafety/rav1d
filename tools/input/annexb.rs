@@ -51,7 +51,7 @@ pub struct Demuxer {
 
 pub type AnnexbInputContext = DemuxerPriv;
 
-unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut usize) -> c_int {
+unsafe fn leb128(f: *mut libc::FILE, len: *mut usize) -> c_int {
     let mut val: u64 = 0 as c_int as u64;
     let mut i: c_uint = 0 as c_int as c_uint;
     let mut more: c_uint;
@@ -74,7 +74,7 @@ unsafe extern "C" fn leb128(f: *mut libc::FILE, len: *mut usize) -> c_int {
     return i as c_int;
 }
 
-unsafe extern "C" fn leb(mut ptr: *const u8, mut sz: c_int, len: *mut usize) -> c_int {
+unsafe fn leb(mut ptr: *const u8, mut sz: c_int, len: *mut usize) -> c_int {
     let mut val: u64 = 0 as c_int as u64;
     let mut i: c_uint = 0 as c_int as c_uint;
     let mut more: c_uint;
@@ -102,7 +102,7 @@ unsafe extern "C" fn leb(mut ptr: *const u8, mut sz: c_int, len: *mut usize) -> 
 }
 
 #[inline]
-unsafe extern "C" fn parse_obu_header(
+unsafe fn parse_obu_header(
     mut buf: *const u8,
     mut buf_size: c_int,
     obu_size: *mut usize,
@@ -310,20 +310,9 @@ pub static mut annexb_demuxer: Demuxer = Demuxer {
     priv_data_size: ::core::mem::size_of::<AnnexbInputContext>() as c_ulong as c_int,
     name: b"annexb\0" as *const u8 as *const c_char,
     probe_sz: 2048 as c_int,
-    probe: Some(annexb_probe as unsafe extern "C" fn(*const u8) -> c_int),
-    open: Some(
-        annexb_open
-            as unsafe extern "C" fn(
-                *mut AnnexbInputContext,
-                *const c_char,
-                *mut c_uint,
-                *mut c_uint,
-                *mut c_uint,
-            ) -> c_int,
-    ),
-    read: Some(
-        annexb_read as unsafe extern "C" fn(*mut AnnexbInputContext, *mut Dav1dData) -> c_int,
-    ),
+    probe: Some(annexb_probe),
+    open: Some(annexb_open),
+    read: Some(annexb_read),
     seek: None,
-    close: Some(annexb_close as unsafe extern "C" fn(*mut AnnexbInputContext) -> ()),
+    close: Some(annexb_close),
 };

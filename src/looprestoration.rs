@@ -1577,7 +1577,7 @@ unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-unsafe extern "C" fn sgr_filter_mix_neon<BD: BitDepth>(
+unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     left: *const [BD::Pixel; 4],
