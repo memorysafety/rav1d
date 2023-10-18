@@ -5,6 +5,8 @@ use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align4;
 use crate::src::align::Align8;
+use crate::src::error::Rav1dError::ENOMEM;
+use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::levels::N_BL_LEVELS;
 use crate::src::levels::N_BS_SIZES;
@@ -5652,20 +5654,20 @@ pub unsafe fn rav1d_cdf_thread_alloc(
     c: *mut Rav1dContext,
     cdf: *mut CdfThreadContext,
     have_frame_mt: c_int,
-) -> c_int {
+) -> Rav1dResult {
     (*cdf).r#ref = rav1d_ref_create_using_pool(
         (*c).cdf_pool,
         (::core::mem::size_of::<CdfContext>()).wrapping_add(::core::mem::size_of::<atomic_uint>()),
     );
     if ((*cdf).r#ref).is_null() {
-        return -(12 as c_int);
+        return Err(ENOMEM);
     }
     (*cdf).data.cdf = (*(*cdf).r#ref).data as *mut CdfContext;
     if have_frame_mt != 0 {
         (*cdf).progress = &mut *((*cdf).data.cdf).offset(1) as *mut CdfContext as *mut atomic_uint;
         *(*cdf).progress = 0 as c_int as c_uint;
     }
-    return 0 as c_int;
+    Ok(())
 }
 
 pub unsafe fn rav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext) {

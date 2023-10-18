@@ -46,6 +46,7 @@ pub mod src {
     mod decode;
     mod dequant_tables;
     mod env;
+    pub(crate) mod error;
     #[cfg(feature = "bitdepth_16")]
     mod fg_apply_tmpl_16;
     #[cfg(feature = "bitdepth_8")]
@@ -112,6 +113,8 @@ pub mod src {
 } // mod src
 
 use std::ffi::c_int;
+
+pub use src::error::Dav1dResult;
 
 // NOTE: temporary code to support Linux and macOS, should be removed eventually
 cfg_if::cfg_if! {

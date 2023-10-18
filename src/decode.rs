@@ -68,6 +68,10 @@ use crate::src::env::get_partition_ctx;
 use crate::src::env::get_poc_diff;
 use crate::src::env::get_tx_ctx;
 use crate::src::env::BlockContext;
+use crate::src::error::Rav1dError::EINVAL;
+use crate::src::error::Rav1dError::ENOMEM;
+use crate::src::error::Rav1dError::ENOPROTOOPT;
+use crate::src::error::Rav1dResult;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -4360,7 +4364,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: *mut Rav1dTaskContext) -> c_int 
     return 0 as c_int;
 }
 
-pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int {
+pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1dResult {
     let c = &*f.c;
 
     if f.sbh > f.lf.start_of_tile_row_sz {
@@ -4368,7 +4372,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
         f.lf.start_of_tile_row = malloc(f.sbh as usize * ::core::mem::size_of::<u8>()) as *mut u8;
         if f.lf.start_of_tile_row.is_null() {
             f.lf.start_of_tile_row_sz = 0;
-            return -12;
+            return Err(ENOMEM);
         }
         f.lf.start_of_tile_row_sz = f.sbh;
     }
@@ -4390,14 +4394,14 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
                 malloc(::core::mem::size_of::<c_int>() * n_ts as usize) as *mut c_int;
             if f.frame_thread.tile_start_off.is_null() {
                 f.n_ts = 0;
-                return -12;
+                return Err(ENOMEM);
             }
         }
         rav1d_free_aligned(f.ts as *mut c_void);
         f.ts = rav1d_alloc_aligned(::core::mem::size_of::<Rav1dTileState>() * n_ts as usize, 32)
             as *mut Rav1dTileState;
         if f.ts.is_null() {
-            return -12;
+            return Err(ENOMEM);
         }
         f.n_ts = n_ts;
     }
@@ -4408,7 +4412,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
         f.a = malloc(::core::mem::size_of::<BlockContext>() * a_sz as usize) as *mut BlockContext;
         if f.a.is_null() {
             f.a_sz = 0;
-            return -12;
+            return Err(ENOMEM);
         }
         f.a_sz = a_sz;
     }
@@ -4447,7 +4451,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
                     as *mut [[c_int; 2]; 7];
             if f.tile_thread.lowest_pixel_mem.is_null() {
                 f.tile_thread.lowest_pixel_mem_sz = 0;
-                return -12;
+                return Err(ENOMEM);
             }
             f.tile_thread.lowest_pixel_mem_sz = lowest_pixel_mem_sz;
         }
@@ -4470,7 +4474,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
                 rav1d_alloc_aligned(cf_sz as usize * 128 * 128 / 2, 64) as *mut DynCoef;
             if f.frame_thread.cf.is_null() {
                 f.frame_thread.cf_sz = 0;
-                return -12;
+                return Err(ENOMEM);
             }
             slice::from_raw_parts_mut(
                 f.frame_thread.cf.cast::<u8>(),
@@ -4491,7 +4495,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
                 ) as *mut [[u16; 8]; 3];
                 if f.frame_thread.pal.is_null() {
                     f.frame_thread.pal_sz = 0;
-                    return -12;
+                    return Err(ENOMEM);
                 }
                 f.frame_thread.pal_sz = num_sb128;
             }
@@ -4505,7 +4509,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
                 ) as *mut u8;
                 if f.frame_thread.pal_idx.is_null() {
                     f.frame_thread.pal_idx_sz = 0;
-                    return -12;
+                    return Err(ENOMEM);
                 }
                 f.frame_thread.pal_idx_sz = pal_idx_sz;
             }
@@ -4536,7 +4540,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
         if ptr.is_null() {
             f.lf.cdef_buf_plane_sz[1] = 0;
             f.lf.cdef_buf_plane_sz[0] = f.lf.cdef_buf_plane_sz[1];
-            return -12;
+            return Err(ENOMEM);
         }
 
         ptr = ptr.offset(32);
@@ -4609,7 +4613,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
         if ptr.is_null() {
             f.lf.lr_buf_plane_sz[1] = 0;
             f.lf.lr_buf_plane_sz[0] = f.lf.lr_buf_plane_sz[1];
-            return -12;
+            return Err(ENOMEM);
         }
 
         ptr = ptr.offset(64);
@@ -4646,7 +4650,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
             as *mut [u8; 4];
         if f.lf.mask.is_null() || f.lf.level.is_null() {
             f.lf.mask_sz = 0;
-            return -12;
+            return Err(ENOMEM);
         }
         if c.n_fc > 1 {
             freep(&mut f.frame_thread.b as *mut *mut Av1Block as *mut c_void);
@@ -4659,7 +4663,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
                     as *mut CodedBlockInfo;
             if f.frame_thread.b.is_null() || f.frame_thread.cbi.is_null() {
                 f.lf.mask_sz = 0;
-                return -12;
+                return Err(ENOMEM);
             }
         }
         f.lf.mask_sz = num_sb128;
@@ -4673,7 +4677,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
             as *mut Av1Restoration;
         if f.lf.lr_mask.is_null() {
             f.lf.lr_mask_sz = 0;
-            return -12;
+            return Err(ENOMEM);
         }
         f.lf.lr_mask_sz = lr_mask_sz;
     }
@@ -4702,7 +4706,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
         let ptr = f.ipred_edge[0] as *mut u8;
         if ptr.is_null() {
             f.ipred_edge_sz = 0;
-            return -12;
+            return Err(ENOMEM);
         }
         f.ipred_edge[1] = ptr.offset(ipred_edge_sz as isize * 128 * 1) as *mut DynPixel;
         f.ipred_edge[2] = ptr.offset(ipred_edge_sz as isize * 128 * 2) as *mut DynPixel;
@@ -4715,7 +4719,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
         f.lf.tx_lpf_right_edge[0] = malloc(re_sz as usize * 32 * 2) as *mut u8;
         if f.lf.tx_lpf_right_edge[0].is_null() {
             f.lf.re_sz = 0;
-            return -12;
+            return Err(ENOMEM);
         }
         f.lf.tx_lpf_right_edge[1] = f.lf.tx_lpf_right_edge[0].offset((re_sz * 32) as isize);
         f.lf.re_sz = re_sz;
@@ -4734,8 +4738,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
             (*f.c).n_tc as c_int,
             (*f.c).n_fc as c_int,
         );
-        if ret < 0 {
-            return -12;
+        if ret.is_err() {
+            return Err(ENOMEM);
         }
     }
 
@@ -4804,10 +4808,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> c_int
     f.lf.p = array::from_fn(|i| f.cur.data[has_chroma * i].cast());
     f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[has_chroma * i].cast());
 
-    0
+    Ok(())
 }
 
-pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> c_int {
+pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> Rav1dResult {
     let c = &*f.c;
 
     if (*f.frame_hdr).refresh_context != 0 {
@@ -4851,7 +4855,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> c
                 data.len()
             } else {
                 if n_bytes > data.len() {
-                    return -22;
+                    return Err(EINVAL);
                 }
                 let (cur_data, rest_data) = data.split_at(n_bytes);
                 let tile_sz = cur_data
@@ -4862,7 +4866,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> c
                     + 1;
                 data = rest_data;
                 if tile_sz > data.len() {
-                    return -22;
+                    return Err(EINVAL);
                 }
                 tile_sz
             };
@@ -4899,10 +4903,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> c
         }
     }
 
-    0
+    Ok(())
 }
 
-unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> c_int {
+unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
     let c = &*f.c;
 
     assert!(c.n_tc == 1);
@@ -4949,7 +4953,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> c_int {
             for tile in &mut ts[..] {
                 t.ts = tile;
                 if rav1d_decode_tile_sbrow(t) != 0 {
-                    return -22;
+                    return Err(EINVAL);
                 }
             }
             if is_inter_or_switch(&*f.frame_hdr) {
@@ -4968,15 +4972,15 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> c_int {
         }
     }
 
-    0
+    Ok(())
 }
 
-pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: c_int) {
+pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: Rav1dResult) {
     let c = &*f.c;
     if !f.sr_cur.p.data[0].is_null() {
         f.task_thread.error = 0;
     }
-    if c.n_fc > 1 && retval != 0 && !f.frame_thread.cf.is_null() {
+    if c.n_fc > 1 && retval.is_err() && !f.frame_thread.cf.is_null() {
         slice::from_raw_parts_mut(
             f.frame_thread.cf.cast::<u8>(),
             usize::try_from(f.frame_thread.cf_sz).unwrap() * 128 * 128 / 2,
@@ -4997,7 +5001,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
         if !f.out_cdf.progress.is_null() {
             ::core::intrinsics::atomic_store_seqcst(
                 f.out_cdf.progress,
-                if retval == 0 { 1 } else { TILE_ERROR as u32 },
+                if retval.is_ok() { 1 } else { TILE_ERROR as u32 },
             );
         }
         rav1d_cdf_thread_unref(&mut f.out_cdf);
@@ -5013,21 +5017,21 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
     f.task_thread.retval = retval;
 }
 
-pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> c_int {
+pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> Rav1dResult {
     assert!((*f.c).n_fc == 1);
     // if n_tc > 1 (but n_fc == 1), we could run init/exit in the task
     // threads also. Not sure it makes a measurable difference.
     let mut res = rav1d_decode_frame_init(f);
-    if res == 0 {
+    if res.is_ok() {
         res = rav1d_decode_frame_init_cdf(f);
     }
     // wait until all threads have completed
-    if res == 0 {
+    if res.is_ok() {
         if (*f.c).n_tc > 1 {
             res = rav1d_task_create_tile_sbrow(f, 0, 1);
             pthread_mutex_lock(&mut (*f.task_thread.ttd).lock);
             pthread_cond_signal(&mut (*f.task_thread.ttd).cond);
-            if res == 0 {
+            if res.is_ok() {
                 while f.task_thread.done[0] == 0
                 // TODO(kkysen) Make `.task_counter` an `AtomicI32`, but that requires recursively removing `impl Copy`s.
                     || (*(addr_of_mut!(f.task_thread.task_counter) as *mut AtomicI32))
@@ -5041,7 +5045,7 @@ pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> c_int {
             res = f.task_thread.retval;
         } else {
             res = rav1d_decode_frame_main(f);
-            if res == 0 && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set {
+            if res.is_ok() && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set {
                 rav1d_cdf_thread_update(
                     f.frame_hdr,
                     f.out_cdf.data.cdf,
@@ -5061,7 +5065,7 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
     x0 & 0x3fff
 }
 
-pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
+pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // wait for c->out_delayed[next] and move into c->out if visible
     let (f, out_delayed) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
@@ -5096,8 +5100,8 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
             }
         }
         let error = f.task_thread.retval;
-        if error != 0 {
-            f.task_thread.retval = 0;
+        if error.is_err() {
+            f.task_thread.retval = Ok(());
             c.cached_error = error;
             rav1d_data_props_copy(&mut c.cached_error_props, &mut out_delayed.p.m);
             rav1d_thread_picture_unref(out_delayed);
@@ -5197,7 +5201,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
                     8 + 2 * (*f.seq_hdr).hbd,
                 );
                 on_error(f, c, out_delayed);
-                return -92;
+                return Err(ENOPROTOOPT);
             }
         }
     }
@@ -5241,7 +5245,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
             let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
             if c.refs[pri_ref].p.p.data[0].is_null() {
                 on_error(f, c, out_delayed);
-                return -22;
+                return Err(EINVAL);
             }
         }
         for i in 0..7 {
@@ -5258,7 +5262,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
                     rav1d_thread_picture_unref(&mut f.refp[j]);
                 }
                 on_error(f, c, out_delayed);
-                return -22;
+                return Err(EINVAL);
             }
             rav1d_thread_picture_ref(&mut f.refp[i], &mut c.refs[refidx].p);
             ref_coded_width[i] = (*c.refs[refidx].p.p.frame_hdr).width[0];
@@ -5289,7 +5293,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
     }
     if (*f.frame_hdr).refresh_context != 0 {
         let res = rav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.n_fc > 1) as c_int);
-        if res < 0 {
+        if res.is_err() {
             on_error(f, c, out_delayed);
             return res;
         }
@@ -5305,7 +5309,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
             f.n_tile_data = 0;
             f.n_tile_data_alloc = f.n_tile_data;
             on_error(f, c, out_delayed);
-            return -12;
+            return Err(ENOMEM);
         }
         f.n_tile_data_alloc = c.n_tile_data;
     }
@@ -5319,14 +5323,14 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
 
     // allocate frame
     let res = rav1d_thread_picture_alloc(c, f, bpc);
-    if res < 0 {
+    if res.is_err() {
         on_error(f, c, out_delayed);
         return res;
     }
 
     if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
         let res = rav1d_picture_alloc_copy(c, &mut f.cur, (*f.frame_hdr).width[0], &mut f.sr_cur.p);
-        if res < 0 {
+        if res.is_err() {
             on_error(f, c, out_delayed);
             return res;
         }
@@ -5384,7 +5388,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
         );
         if f.mvs_ref.is_null() {
             on_error(f, c, out_delayed);
-            return -12;
+            return Err(ENOMEM);
         }
         f.mvs = (*f.mvs_ref).data.cast::<refmvs_temporal_block>();
         if (*f.frame_hdr).allow_intrabc == 0 {
@@ -5453,7 +5457,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
             if f.cur_segmap_ref.is_null() {
                 rav1d_ref_dec(&mut f.prev_segmap_ref);
                 on_error(f, c, out_delayed);
-                return -12;
+                return Err(ENOMEM);
             }
             f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
         } else if !f.prev_segmap_ref.is_null() {
@@ -5469,7 +5473,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
             f.cur_segmap_ref = rav1d_ref_create_using_pool(c.segmap_pool, segmap_size);
             if f.cur_segmap_ref.is_null() {
                 on_error(f, c, out_delayed);
-                return -12;
+                return Err(ENOMEM);
             }
             f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
             slice::from_raw_parts_mut(f.cur_segmap, segmap_size).fill(0);
@@ -5514,7 +5518,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
 
     if c.n_fc == 1 {
         let res = rav1d_decode_frame(f);
-        if res < 0 {
+        if res.is_err() {
             rav1d_thread_picture_unref(&mut c.out);
             for i in 0..8 {
                 if refresh_frame_flags & (1 << i) != 0 {
@@ -5534,5 +5538,5 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> c_int {
         pthread_mutex_unlock(&mut c.task_thread.lock);
     }
 
-    0
+    Ok(())
 }

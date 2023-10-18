@@ -7,6 +7,8 @@ use libc::free;
 use libc::malloc;
 use libc::strcmp;
 use libc::strerror;
+use libc::ENOMEM;
+use libc::ENOPROTOOPT;
 use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::stderr;
@@ -87,7 +89,7 @@ pub unsafe fn input_open(
                 b"Failed to find demuxer named \"%s\"\n\0" as *const u8 as *const c_char,
                 name,
             );
-            return -(92 as c_int);
+            return -ENOPROTOOPT;
         }
     } else {
         let mut probe_sz = 0;
@@ -102,7 +104,7 @@ pub unsafe fn input_open(
                 stderr,
                 b"Failed to allocate memory\n\0" as *const u8 as *const c_char,
             );
-            return -(12 as c_int);
+            return -ENOMEM;
         }
         let f: *mut libc::FILE = fopen(filename, b"rb\0" as *const u8 as *const c_char);
         if f.is_null() {
@@ -149,7 +151,7 @@ pub unsafe fn input_open(
                 b"Failed to probe demuxer for file %s\n\0" as *const u8 as *const c_char,
                 filename,
             );
-            return -(92 as c_int);
+            return -ENOPROTOOPT;
         }
     }
     c = calloc(
@@ -161,7 +163,7 @@ pub unsafe fn input_open(
             stderr,
             b"Failed to allocate memory\n\0" as *const u8 as *const c_char,
         );
-        return -(12 as c_int);
+        return -ENOMEM;
     }
     (*c).impl_0 = impl_0;
     (*c).data = ((*c).priv_data).as_mut_ptr() as *mut DemuxerPriv;
@@ -191,7 +193,7 @@ pub unsafe fn input_seek(ctx: *mut DemuxerContext, pts: u64) -> c_int {
     return if ((*(*ctx).impl_0).seek).is_some() {
         ((*(*ctx).impl_0).seek).expect("non-null function pointer")((*ctx).data, pts)
     } else {
-        -(1 as c_int)
+        -1
     };
 }
 

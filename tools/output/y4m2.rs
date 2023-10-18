@@ -64,7 +64,7 @@ unsafe extern "C" fn y4m2_open(
                 file,
                 strerror(*errno_location()),
             );
-            return -(1 as c_int);
+            return -1;
         }
     }
     (*c).first = 1 as c_int;
@@ -215,7 +215,7 @@ unsafe extern "C" fn y4m2_write(c: *mut Y4m2OutputContext, p: *mut Dav1dPicture)
         b"Failed to write frame data: %s\n\0" as *const u8 as *const c_char,
         strerror(*errno_location()),
     );
-    return -(1 as c_int);
+    return -1;
 }
 
 unsafe extern "C" fn y4m2_close(c: *mut Y4m2OutputContext) {

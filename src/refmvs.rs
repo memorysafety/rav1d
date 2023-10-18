@@ -6,6 +6,8 @@ use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
+use crate::src::error::Rav1dError::ENOMEM;
+use crate::src::error::Rav1dResult;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::mv;
@@ -1384,7 +1386,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rp_ref: *const *mut refmvs_temporal_block,
     n_tile_threads: c_int,
     n_frame_threads: c_int,
-) -> c_int {
+) -> Rav1dResult {
     (*rf).sbsz = (16 as c_int) << (*seq_hdr).sb128;
     (*rf).frm_hdr = frm_hdr;
     (*rf).iw8 = (*frm_hdr).width[0] + 7 >> 3;
@@ -1411,7 +1413,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             64 as c_int as usize,
         ) as *mut refmvs_block;
         if ((*rf).r).is_null() {
-            return -(12 as c_int);
+            return Err(ENOMEM);
         }
         (*rf).r_stride = r_stride;
     }
@@ -1430,7 +1432,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             64 as usize,
         ) as *mut refmvs_temporal_block;
         if ((*rf).rp_proj).is_null() {
-            return -(12 as c_int);
+            return Err(ENOMEM);
         }
         (*rf).rp_stride = rp_stride;
     }
@@ -1542,7 +1544,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         }
     }
     (*rf).use_ref_frame_mvs = ((*rf).n_mfmvs > 0) as c_int;
-    return 0 as c_int;
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_refmvs_init(rf: *mut refmvs_frame) {

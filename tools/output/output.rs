@@ -7,6 +7,8 @@ use libc::strchr;
 use libc::strcmp;
 use libc::strlen;
 use libc::strncmp;
+use libc::ENOMEM;
+use libc::ENOPROTOOPT;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::stderr;
@@ -81,7 +83,7 @@ unsafe fn find_extension(f: *const c_char) -> *const c_char {
     return if step < end
         && step > f
         && *step as c_int == '.' as i32
-        && *step.offset(-(1 as c_int) as isize) as c_int != '/' as i32
+        && *step.offset(-1 as isize) as c_int != '/' as i32
     {
         &*step.offset(1) as *const c_char
     } else {
@@ -126,7 +128,7 @@ pub unsafe fn output_open(
                 b"Failed to find muxer named \"%s\"\n\0" as *const u8 as *const c_char,
                 name,
             );
-            return -(92 as c_int);
+            return -ENOPROTOOPT;
         }
     } else if strcmp(filename, b"/dev/null\0" as *const u8 as *const c_char) == 0 {
         impl_0 = muxers[0];
@@ -138,7 +140,7 @@ pub unsafe fn output_open(
                 b"No extension found for file %s\n\0" as *const u8 as *const c_char,
                 filename,
             );
-            return -(1 as c_int);
+            return -1;
         }
         i = 0 as c_int as c_uint;
         while !(muxers[i as usize]).is_null() {
@@ -155,7 +157,7 @@ pub unsafe fn output_open(
                 b"Failed to find muxer for extension \"%s\"\n\0" as *const u8 as *const c_char,
                 ext,
             );
-            return -(92 as c_int);
+            return -ENOPROTOOPT;
         }
     }
     c = malloc((48 as usize).wrapping_add((*impl_0).priv_data_size as usize)) as *mut MuxerContext;
@@ -164,7 +166,7 @@ pub unsafe fn output_open(
             stderr,
             b"Failed to allocate memory\n\0" as *const u8 as *const c_char,
         );
-        return -(12 as c_int);
+        return -ENOMEM;
     }
     (*c).impl_0 = impl_0;
     (*c).data = ((*c).priv_data).as_mut_ptr() as *mut MuxerPriv;

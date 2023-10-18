@@ -85,7 +85,7 @@ unsafe extern "C" fn md5_open(
                 file,
                 strerror(*errno_location()),
             );
-            return -(1 as c_int);
+            return -1;
         }
     }
     (*md5).abcd[0] = 0x67452301 as c_int as u32;
@@ -604,7 +604,7 @@ unsafe extern "C" fn md5_close(md5: *mut MD5Context) {
 unsafe extern "C" fn md5_verify(md5: *mut MD5Context, mut md5_str: *const c_char) -> c_int {
     md5_finish(md5);
     if strlen(md5_str) < 32 {
-        return -(1 as c_int);
+        return -1;
     }
     let mut abcd: [u32; 4] = [0 as c_int as u32, 0, 0, 0];
     let mut t: [c_char; 3] = [0 as c_int as c_char, 0, 0];

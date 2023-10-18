@@ -58,7 +58,7 @@ unsafe fn leb128(f: *mut libc::FILE, len: *mut usize) -> c_int {
     loop {
         let mut v: u8 = 0;
         if fread(&mut v as *mut u8 as *mut c_void, 1, 1, f) < 1 {
-            return -(1 as c_int);
+            return -1;
         }
         more = (v as c_int & 0x80 as c_int) as c_uint;
         val |= ((v as c_int & 0x7f as c_int) as u64) << i.wrapping_mul(7 as c_int as c_uint);
@@ -68,7 +68,7 @@ unsafe fn leb128(f: *mut libc::FILE, len: *mut usize) -> c_int {
         }
     }
     if val > u32::MAX as u64 || more != 0 {
-        return -(1 as c_int);
+        return -1;
     }
     *len = val as usize;
     return i as c_int;
@@ -82,7 +82,7 @@ unsafe fn leb(mut ptr: *const u8, mut sz: c_int, len: *mut usize) -> c_int {
         let fresh0 = sz;
         sz = sz - 1;
         if fresh0 == 0 {
-            return -(1 as c_int);
+            return -1;
         }
         let fresh1 = ptr;
         ptr = ptr.offset(1);
@@ -95,7 +95,7 @@ unsafe fn leb(mut ptr: *const u8, mut sz: c_int, len: *mut usize) -> c_int {
         }
     }
     if val > u32::MAX as u64 || more != 0 {
-        return -(1 as c_int);
+        return -1;
     }
     *len = val as usize;
     return i as c_int;
@@ -113,10 +113,10 @@ unsafe fn parse_obu_header(
     let extension_flag;
     let has_size_flag;
     if buf_size == 0 {
-        return -(1 as c_int);
+        return -1;
     }
     if *buf as c_int & 0x80 as c_int != 0 {
-        return -(1 as c_int);
+        return -1;
     }
     *type_0 = ((*buf as c_int & 0x78 as c_int) >> 3) as Dav1dObuType;
     extension_flag = (*buf as c_int & 0x4 as c_int) >> 2;
@@ -130,12 +130,12 @@ unsafe fn parse_obu_header(
     if has_size_flag != 0 {
         ret = leb(buf, buf_size, obu_size);
         if ret < 0 {
-            return -(1 as c_int);
+            return -1;
         }
         return *obu_size as c_int + ret + 1 + extension_flag;
     } else {
         if allow_implicit_size == 0 {
-            return -(1 as c_int);
+            return -1;
         }
     }
     *obu_size = buf_size as usize;
@@ -241,7 +241,7 @@ unsafe extern "C" fn annexb_open(
             file,
             strerror(*errno_location()),
         );
-        return -(1 as c_int);
+        return -1;
     }
     *fps.offset(0) = 25 as c_int as c_uint;
     *fps.offset(1) = 1 as c_int as c_uint;
@@ -266,24 +266,24 @@ unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dDat
     if (*c).temporal_unit_size == 0 {
         res = leb128((*c).f, &mut (*c).temporal_unit_size);
         if res < 0 {
-            return -(1 as c_int);
+            return -1;
         }
     }
     if (*c).frame_unit_size == 0 {
         res = leb128((*c).f, &mut (*c).frame_unit_size);
         if res < 0 || ((*c).frame_unit_size).wrapping_add(res as usize) > (*c).temporal_unit_size {
-            return -(1 as c_int);
+            return -1;
         }
         (*c).temporal_unit_size =
             ((*c).temporal_unit_size as c_ulong).wrapping_sub(res as c_ulong) as usize as usize;
     }
     res = leb128((*c).f, &mut len);
     if res < 0 || len.wrapping_add(res as usize) > (*c).frame_unit_size {
-        return -(1 as c_int);
+        return -1;
     }
     let ptr: *mut u8 = dav1d_data_create(data, len);
     if ptr.is_null() {
-        return -(1 as c_int);
+        return -1;
     }
     (*c).temporal_unit_size =
         ((*c).temporal_unit_size).wrapping_sub(len.wrapping_add(res as usize)) as usize as usize;
@@ -296,7 +296,7 @@ unsafe extern "C" fn annexb_read(c: *mut AnnexbInputContext, data: *mut Dav1dDat
             strerror(*errno_location()),
         );
         dav1d_data_unref(data);
-        return -(1 as c_int);
+        return -1;
     }
     return 0 as c_int;
 }
