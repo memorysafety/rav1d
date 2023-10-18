@@ -13,20 +13,13 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
-fn generate_scaling<BD: BitDepth>(bitdepth: usize, points: &[[u8; 2]]) -> BD::Scaling {
+fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
     let mut scaling_array = ArrayDefault::default();
     if points.is_empty() {
         return scaling_array;
     }
-    let (shift_x, scaling_size) = match BD::BPC {
-        BPC::BPC8 => (0, 256),
-        BPC::BPC16 => {
-            assert!(bitdepth > 8);
-            let shift_x = bitdepth - 8;
-            let scaling_size = 1 << bitdepth;
-            (shift_x, scaling_size)
-        }
-    };
+    let shift_x = bd.bitdepth() - 8;
+    let scaling_size = 1 << bd.bitdepth();
     let scaling = scaling_array.as_mut();
     scaling[..(points[0][0] as usize) << shift_x].fill(points[0][1]);
     for ps in points.windows(2) {
@@ -104,17 +97,17 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             bitdepth_max,
         );
     }
-    let bpc = r#in.p.bpc as usize;
+    let bd = BD::from_c((1 << r#in.p.bpc) - 1);
     if data.num_y_points != 0 || data.chroma_scaling_from_luma != 0 {
-        scaling[0] = generate_scaling::<BD>(bpc, &data.y_points[..data.num_y_points as usize]);
+        scaling[0] = generate_scaling::<BD>(bd, &data.y_points[..data.num_y_points as usize]);
     }
     if data.num_uv_points[0] != 0 {
         scaling[1] =
-            generate_scaling::<BD>(bpc, &data.uv_points[0][..data.num_uv_points[0] as usize]);
+            generate_scaling::<BD>(bd, &data.uv_points[0][..data.num_uv_points[0] as usize]);
     }
     if data.num_uv_points[1] != 0 {
         scaling[2] =
-            generate_scaling::<BD>(bpc, &data.uv_points[1][..data.num_uv_points[1] as usize]);
+            generate_scaling::<BD>(bd, &data.uv_points[1][..data.num_uv_points[1] as usize]);
     }
     assert!(out.stride[0] == r#in.stride[0]);
     if data.num_y_points == 0 {
