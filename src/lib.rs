@@ -156,7 +156,7 @@ impl Default for Rav1dSettings {
         Self {
             n_threads: 0,
             max_frame_delay: 0,
-            apply_grain: 1,
+            apply_grain: true,
             operating_point: 0,
             all_layers: 1,
             frame_size_limit: 0,
@@ -283,7 +283,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     );
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
-    (*c).apply_grain = s.apply_grain != 0;
+    (*c).apply_grain = s.apply_grain;
     (*c).operating_point = s.operating_point;
     (*c).all_layers = s.all_layers != 0;
     (*c).frame_size_limit = s.frame_size_limit;

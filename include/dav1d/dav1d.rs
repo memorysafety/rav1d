@@ -98,7 +98,7 @@ pub struct Dav1dSettings {
 pub(crate) struct Rav1dSettings {
     pub n_threads: c_int,
     pub max_frame_delay: c_int,
-    pub apply_grain: c_int,
+    pub apply_grain: bool,
     pub operating_point: c_int,
     pub all_layers: c_int,
     pub frame_size_limit: c_uint,
@@ -130,7 +130,7 @@ impl From<Dav1dSettings> for Rav1dSettings {
         Self {
             n_threads,
             max_frame_delay,
-            apply_grain,
+            apply_grain: apply_grain != 0,
             operating_point,
             all_layers,
             frame_size_limit,
@@ -163,7 +163,7 @@ impl From<Rav1dSettings> for Dav1dSettings {
         Self {
             n_threads,
             max_frame_delay,
-            apply_grain,
+            apply_grain: apply_grain as c_int,
             operating_point,
             all_layers,
             frame_size_limit,
