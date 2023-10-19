@@ -217,7 +217,7 @@ pub struct Rav1dContext {
     pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,
     pub(crate) intra_edge: Rav1dContext_intra_edge,
     pub(crate) allocator: Rav1dPicAllocator,
-    pub(crate) apply_grain: c_int,
+    pub(crate) apply_grain: bool,
     pub(crate) operating_point: c_int,
     pub(crate) operating_point_idc: c_uint,
     pub(crate) all_layers: bool,
