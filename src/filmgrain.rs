@@ -12,6 +12,694 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 
+#[cfg(all(
+    feature = "bitdepth_8",
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64")
+))]
+use crate::include::common::bitdepth::BitDepth8;
+
+#[cfg(all(
+    feature = "bitdepth_16",
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64")
+))]
+use crate::include::common::bitdepth::BitDepth16;
+
+#[cfg(all(
+    feature = "bitdepth_8",
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64")
+))]
+extern "C" {
+    pub(crate) fn dav1d_generate_grain_y_8bpc_ssse3(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_420_8bpc_ssse3(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fgy_32x32xn_8bpc_ssse3(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i420_8bpc_ssse3(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_422_8bpc_ssse3(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_444_8bpc_ssse3(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i444_8bpc_ssse3(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i422_8bpc_ssse3(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+}
+
+#[cfg(all(feature = "bitdepth_8", feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    pub(crate) fn dav1d_fguv_32x32xn_i422_8bpc_avx512icl(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i444_8bpc_avx512icl(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_y_8bpc_avx2(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_420_8bpc_avx2(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_422_8bpc_avx2(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_444_8bpc_avx2(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fgy_32x32xn_8bpc_avx2(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i420_8bpc_avx2(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i422_8bpc_avx2(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i444_8bpc_avx2(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i420_8bpc_avx512icl(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fgy_32x32xn_8bpc_avx512icl(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        bitdepth_max: c_int,
+    );
+}
+
+#[cfg(all(
+    feature = "bitdepth_8",
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64")
+))]
+extern "C" {
+    pub(crate) fn dav1d_fguv_32x32_420_8bpc_neon(
+        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        src: *const <BitDepth8 as BitDepth>::Pixel,
+        stride: ptrdiff_t,
+        scaling: *const u8,
+        data: *const Rav1dFilmGrainData,
+        grain_lut: *const [<BitDepth8 as BitDepth>::Entry; GRAIN_WIDTH],
+        luma_row: *const <BitDepth8 as BitDepth>::Pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_422_8bpc_neon(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_444_8bpc_neon(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_y_8bpc_neon(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_420_8bpc_neon(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fgy_32x32_8bpc_neon(
+        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        src: *const <BitDepth8 as BitDepth>::Pixel,
+        stride: ptrdiff_t,
+        scaling: *const u8,
+        scaling_shift: c_int,
+        grain_lut: *const [<BitDepth8 as BitDepth>::Entry; GRAIN_WIDTH],
+        offsets: *const [c_int; 2],
+        h: c_int,
+        clip: ptrdiff_t,
+        type_0: ptrdiff_t,
+    );
+    pub(crate) fn dav1d_fguv_32x32_422_8bpc_neon(
+        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        src: *const <BitDepth8 as BitDepth>::Pixel,
+        stride: ptrdiff_t,
+        scaling: *const u8,
+        data: *const Rav1dFilmGrainData,
+        grain_lut: *const [<BitDepth8 as BitDepth>::Entry; GRAIN_WIDTH],
+        luma_row: *const <BitDepth8 as BitDepth>::Pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+    );
+    pub(crate) fn dav1d_fguv_32x32_444_8bpc_neon(
+        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        src: *const <BitDepth8 as BitDepth>::Pixel,
+        stride: ptrdiff_t,
+        scaling: *const u8,
+        data: *const Rav1dFilmGrainData,
+        grain_lut: *const [<BitDepth8 as BitDepth>::Entry; GRAIN_WIDTH],
+        luma_row: *const <BitDepth8 as BitDepth>::Pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+    );
+}
+
+#[cfg(all(
+    feature = "bitdepth_16",
+    feature = "asm",
+    any(target_arch = "x86", target_arch = "x86_64")
+))]
+extern "C" {
+    pub(crate) fn dav1d_fguv_32x32xn_i422_16bpc_ssse3(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_444_16bpc_ssse3(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_422_16bpc_ssse3(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i420_16bpc_ssse3(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fgy_32x32xn_16bpc_ssse3(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_420_16bpc_ssse3(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_y_16bpc_ssse3(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i444_16bpc_ssse3(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+}
+
+#[cfg(all(feature = "bitdepth_16", feature = "asm", target_arch = "x86_64"))]
+extern "C" {
+    pub(crate) fn dav1d_fguv_32x32xn_i422_16bpc_avx512icl(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_444_16bpc_avx2(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fgy_32x32xn_16bpc_avx2(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i420_16bpc_avx2(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i422_16bpc_avx2(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i444_16bpc_avx2(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fgy_32x32xn_16bpc_avx512icl(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i420_16bpc_avx512icl(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32xn_i444_16bpc_avx512icl(
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_420_16bpc_avx2(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_y_16bpc_avx2(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_422_16bpc_avx2(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+}
+
+#[cfg(all(
+    feature = "bitdepth_16",
+    feature = "asm",
+    any(target_arch = "arm", target_arch = "aarch64")
+))]
+extern "C" {
+    pub(crate) fn dav1d_fguv_32x32_420_16bpc_neon(
+        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        src: *const <BitDepth16 as BitDepth>::Pixel,
+        stride: ptrdiff_t,
+        scaling: *const u8,
+        data: *const Rav1dFilmGrainData,
+        grain_lut: *const [<BitDepth16 as BitDepth>::Entry; GRAIN_WIDTH],
+        luma_row: *const <BitDepth16 as BitDepth>::Pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_422_16bpc_neon(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_444_16bpc_neon(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_y_16bpc_neon(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_generate_grain_uv_420_16bpc_neon(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fgy_32x32_16bpc_neon(
+        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        src: *const <BitDepth16 as BitDepth>::Pixel,
+        stride: ptrdiff_t,
+        scaling: *const u8,
+        scaling_shift: c_int,
+        grain_lut: *const [<BitDepth16 as BitDepth>::Entry; GRAIN_WIDTH],
+        offsets: *const [c_int; 2],
+        h: c_int,
+        clip: ptrdiff_t,
+        type_0: ptrdiff_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32_422_16bpc_neon(
+        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        src: *const <BitDepth16 as BitDepth>::Pixel,
+        stride: ptrdiff_t,
+        scaling: *const u8,
+        data: *const Rav1dFilmGrainData,
+        grain_lut: *const [<BitDepth16 as BitDepth>::Entry; GRAIN_WIDTH],
+        luma_row: *const <BitDepth16 as BitDepth>::Pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+        bitdepth_max: c_int,
+    );
+    pub(crate) fn dav1d_fguv_32x32_444_16bpc_neon(
+        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        src: *const <BitDepth16 as BitDepth>::Pixel,
+        stride: ptrdiff_t,
+        scaling: *const u8,
+        data: *const Rav1dFilmGrainData,
+        grain_lut: *const [<BitDepth16 as BitDepth>::Entry; GRAIN_WIDTH],
+        luma_row: *const <BitDepth16 as BitDepth>::Pixel,
+        luma_stride: ptrdiff_t,
+        offsets: *const [c_int; 2],
+        h: ptrdiff_t,
+        uv: ptrdiff_t,
+        is_id: ptrdiff_t,
+        type_0: ptrdiff_t,
+        bitdepth_max: c_int,
+    );
+}
+
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
 
