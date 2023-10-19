@@ -420,7 +420,7 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
     memset(
         p as *mut _ as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Dav1dPicture>(),
+        ::core::mem::size_of::<Rav1dPicture>(),
     );
     rav1d_data_props_set_defaults(&mut p.m);
 }
