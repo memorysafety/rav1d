@@ -108,7 +108,6 @@ pub(crate) struct Rav1dSettings {
     pub output_invisible_frames: c_int,
     pub inloop_filters: Rav1dInloopFilterType,
     pub decode_frame_type: Rav1dDecodeFrameType,
-    pub reserved: [u8; 16],
 }
 
 impl From<Dav1dSettings> for Rav1dSettings {
@@ -126,7 +125,7 @@ impl From<Dav1dSettings> for Rav1dSettings {
             output_invisible_frames,
             inloop_filters,
             decode_frame_type,
-            reserved,
+            reserved: _,
         } = value;
         Self {
             n_threads,
@@ -141,7 +140,6 @@ impl From<Dav1dSettings> for Rav1dSettings {
             output_invisible_frames,
             inloop_filters,
             decode_frame_type,
-            reserved,
         }
     }
 }
@@ -161,7 +159,6 @@ impl From<Rav1dSettings> for Dav1dSettings {
             output_invisible_frames,
             inloop_filters,
             decode_frame_type,
-            reserved,
         } = value;
         Self {
             n_threads,
@@ -176,7 +173,7 @@ impl From<Rav1dSettings> for Dav1dSettings {
             output_invisible_frames,
             inloop_filters,
             decode_frame_type,
-            reserved,
+            reserved: Default::default(),
         }
     }
 }
