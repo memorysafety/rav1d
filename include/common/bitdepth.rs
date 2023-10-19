@@ -99,7 +99,8 @@ pub trait BitDepth: Clone + Copy {
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>
-        + ToPrimitive<c_uint>;
+        + ToPrimitive<c_uint>
+        + ToPrimitive<isize>;
 
     type Coef: Copy
         + FromPrimitive<c_int>
