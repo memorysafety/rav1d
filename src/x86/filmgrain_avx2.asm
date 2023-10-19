@@ -882,7 +882,7 @@ cglobal fgy_32x32xn_8bpc, 6, 13, 15, dst, src, stride, fg_data, w, scaling, \
 %define base r9-pd_m65536
     lea              r9, [pd_m65536]
     mov             r6d, [fg_dataq+FGData.scaling_shift]
-    mov             r7d, [fg_dataq+FGData.clip_to_restricted_range]
+    movzx           r7d, byte [fg_dataq+FGData.clip_to_restricted_range]
     mov            sbyd, sbym
     mov        overlapd, [fg_dataq+FGData.overlap_flag]
     vpbroadcastd     m8, [base+pd_m65536]
@@ -1311,7 +1311,7 @@ cglobal fguv_32x32xn_i%1_8bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling,
 %define base r11-pd_m65536
     lea             r11, [pd_m65536]
     mov             r6d, [fg_dataq+FGData.scaling_shift]
-    mov             r7d, [fg_dataq+FGData.clip_to_restricted_range]
+    movzx           r7d, byte [fg_dataq+FGData.clip_to_restricted_range]
     mov             r9d, is_idm
     mov            sbyd, sbym
     mov        overlapd, [fg_dataq+FGData.overlap_flag]

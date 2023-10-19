@@ -1584,7 +1584,7 @@ function fguv_32x32_\layout\()_8bpc_neon, export=1
         ldp             x10, x11, [sp, #48]    // uv, is_id
 
         ldr             w13, [x4, #FGD_SCALING_SHIFT]
-        ldr             w12, [x4, #FGD_CLIP_TO_RESTRICTED_RANGE]
+        ldrb            w12, [x4, #FGD_CLIP_TO_RESTRICTED_RANGE]
         neg             w13, w13               // -scaling_shift
 
         // !csfl

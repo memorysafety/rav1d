@@ -1462,7 +1462,7 @@ cglobal fgy_32x32xn_16bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling, gra
 %endif
     mov             r6d, [fg_dataq+FGData.scaling_shift]
     SPLATW           m3, [base+mul_bits+r6*2-14]
-    mov             r6d, [fg_dataq+FGData.clip_to_restricted_range]
+    movzx           r6d, byte [fg_dataq+FGData.clip_to_restricted_range]
 %if ARCH_X86_32
     DECLARE_REG_TMP   0, 3
 %else
@@ -2274,7 +2274,7 @@ cglobal fguv_32x32xn_i%1_16bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling
 %endif
     mov             r6d, [fg_dataq+FGData.scaling_shift]
     SPLATW           m3, [base+mul_bits+r6*2-14]
-    mov             r6d, [fg_dataq+FGData.clip_to_restricted_range]
+    movzx           r6d, byte [fg_dataq+FGData.clip_to_restricted_range]
 %if STACK_ALIGNMENT >= mmsize
     mov             t0d, r13m               ; bdmax
 %endif

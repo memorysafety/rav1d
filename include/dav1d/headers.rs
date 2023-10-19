@@ -1051,7 +1051,7 @@ pub struct Rav1dFilmGrainData {
     pub uv_luma_mult: [c_int; 2],
     pub uv_offset: [c_int; 2],
     pub overlap_flag: c_int,
-    pub clip_to_restricted_range: c_int,
+    pub clip_to_restricted_range: bool,
 }
 
 #[derive(Clone)]
@@ -1114,7 +1114,7 @@ impl From<Dav1dFilmGrainData> for Rav1dFilmGrainData {
             uv_luma_mult,
             uv_offset,
             overlap_flag,
-            clip_to_restricted_range,
+            clip_to_restricted_range: clip_to_restricted_range != 0,
         }
     }
 }
@@ -1157,7 +1157,7 @@ impl From<Rav1dFilmGrainData> for Dav1dFilmGrainData {
             uv_luma_mult,
             uv_offset,
             overlap_flag,
-            clip_to_restricted_range,
+            clip_to_restricted_range: clip_to_restricted_range as c_int,
         }
     }
 }

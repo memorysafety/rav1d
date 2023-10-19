@@ -634,7 +634,7 @@ unsafe fn fgy_32x32xn_rust(
     let grain_max = grain_ctr - 1;
     let min_value;
     let max_value;
-    if (*data).clip_to_restricted_range != 0 {
+    if (*data).clip_to_restricted_range {
         min_value = (16 as c_int) << bitdepth_min_8;
         max_value = (235 as c_int) << bitdepth_min_8;
     } else {
@@ -907,7 +907,7 @@ unsafe fn fguv_32x32xn_c(
     let grain_max = grain_ctr - 1;
     let min_value;
     let max_value;
-    if (*data).clip_to_restricted_range != 0 {
+    if (*data).clip_to_restricted_range {
         min_value = (16 as c_int) << bitdepth_min_8;
         max_value = (if is_id != 0 {
             235 as c_int
