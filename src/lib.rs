@@ -162,7 +162,7 @@ impl Default for Rav1dSettings {
             frame_size_limit: 0,
             allocator: Default::default(),
             logger: Default::default(),
-            strict_std_compliance: 0,
+            strict_std_compliance: false,
             output_invisible_frames: 0,
             inloop_filters: RAV1D_INLOOPFILTER_ALL,
             decode_frame_type: RAV1D_DECODEFRAMETYPE_ALL,
