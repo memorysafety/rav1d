@@ -220,7 +220,7 @@ pub struct Rav1dContext {
     pub(crate) apply_grain: c_int,
     pub(crate) operating_point: c_int,
     pub(crate) operating_point_idc: c_uint,
-    pub(crate) all_layers: c_int,
+    pub(crate) all_layers: bool,
     pub(crate) max_spatial_id: c_int,
     pub(crate) frame_size_limit: c_uint,
     pub(crate) strict_std_compliance: c_int,
