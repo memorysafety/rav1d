@@ -415,6 +415,7 @@ where
 macro_rules! bd_fn {
     ($decl_fn:path, $BD:ty, $name:ident, $asm:ident) => {{
         use paste::paste;
+        use $crate::include::common::bitdepth::BPC;
 
         paste! {
             match BD::BPC {
@@ -424,14 +425,11 @@ macro_rules! bd_fn {
         }
     }};
 
-    ($BD:ty, $name:ident, $asm:ident) => {
-        bd_fn!(
-            crate::include::common::bitdepth::fn_identity,
-            $BD,
-            $name,
-            $asm
-        )
-    };
+    ($BD:ty, $name:ident, $asm:ident) => {{
+        use $crate::include::common::bitdepth::fn_identity;
+
+        bd_fn!(fn_identity, $BD, $name, $asm)
+    }};
 }
 
 #[cfg(feature = "asm")]
