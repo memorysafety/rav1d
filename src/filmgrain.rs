@@ -623,9 +623,8 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
 #[inline(never)]
-pub(crate) unsafe fn fguv_32x32xn_c<BD: BitDepth>(
+unsafe fn fguv_32x32xn_c<BD: BitDepth>(
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -989,4 +988,115 @@ pub(crate) unsafe fn fguv_32x32xn_c<BD: BitDepth>(
         }
         bx = bx.wrapping_add((32 >> sx) as c_uint);
     }
+}
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn fguv_32x32xn_420_c_erased<BD: BitDepth>(
+    dst_row: *mut DynPixel,
+    src_row: *const DynPixel,
+    stride: ptrdiff_t,
+    data: *const Rav1dFilmGrainData,
+    pw: usize,
+    scaling: *const u8,
+    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    bh: c_int,
+    row_num: c_int,
+    luma_row: *const DynPixel,
+    luma_stride: ptrdiff_t,
+    uv_pl: c_int,
+    is_id: c_int,
+    bitdepth_max: c_int,
+) {
+    fguv_32x32xn_c::<BD>(
+        dst_row.cast(),
+        src_row.cast(),
+        stride,
+        data,
+        pw,
+        scaling,
+        grain_lut.cast(),
+        bh,
+        row_num,
+        luma_row.cast(),
+        luma_stride,
+        uv_pl,
+        is_id,
+        1 as c_int,
+        1 as c_int,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn fguv_32x32xn_422_c_erased<BD: BitDepth>(
+    dst_row: *mut DynPixel,
+    src_row: *const DynPixel,
+    stride: ptrdiff_t,
+    data: *const Rav1dFilmGrainData,
+    pw: usize,
+    scaling: *const u8,
+    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    bh: c_int,
+    row_num: c_int,
+    luma_row: *const DynPixel,
+    luma_stride: ptrdiff_t,
+    uv_pl: c_int,
+    is_id: c_int,
+    bitdepth_max: c_int,
+) {
+    fguv_32x32xn_c::<BD>(
+        dst_row.cast(),
+        src_row.cast(),
+        stride,
+        data,
+        pw,
+        scaling,
+        grain_lut.cast(),
+        bh,
+        row_num,
+        luma_row.cast(),
+        luma_stride,
+        uv_pl,
+        is_id,
+        1 as c_int,
+        0 as c_int,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn fguv_32x32xn_444_c_erased<BD: BitDepth>(
+    dst_row: *mut DynPixel,
+    src_row: *const DynPixel,
+    stride: ptrdiff_t,
+    data: *const Rav1dFilmGrainData,
+    pw: usize,
+    scaling: *const u8,
+    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    bh: c_int,
+    row_num: c_int,
+    luma_row: *const DynPixel,
+    luma_stride: ptrdiff_t,
+    uv_pl: c_int,
+    is_id: c_int,
+    bitdepth_max: c_int,
+) {
+    fguv_32x32xn_c::<BD>(
+        dst_row.cast(),
+        src_row.cast(),
+        stride,
+        data,
+        pw,
+        scaling,
+        grain_lut.cast(),
+        bh,
+        row_num,
+        luma_row.cast(),
+        luma_stride,
+        uv_pl,
+        is_id,
+        0 as c_int,
+        0 as c_int,
+        BD::from_c(bitdepth_max),
+    );
 }

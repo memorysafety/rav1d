@@ -1,4 +1,3 @@
-use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
@@ -6,7 +5,9 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
-use crate::src::filmgrain::fguv_32x32xn_c;
+use crate::src::filmgrain::fguv_32x32xn_420_c_erased;
+use crate::src::filmgrain::fguv_32x32xn_422_c_erased;
+use crate::src::filmgrain::fguv_32x32xn_444_c_erased;
 use crate::src::filmgrain::fgy_32x32xn_c_erased;
 use crate::src::filmgrain::generate_grain_uv_420_c_erased;
 use crate::src::filmgrain::generate_grain_uv_422_c_erased;
@@ -362,114 +363,6 @@ pub type pixel = u8;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub type entry = i8;
-
-unsafe extern "C" fn fguv_32x32xn_420_c_erased(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
-    stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
-    pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
-    bh: c_int,
-    row_num: c_int,
-    luma_row: *const DynPixel,
-    luma_stride: ptrdiff_t,
-    uv_pl: c_int,
-    is_id: c_int,
-    _bitdepth_max: c_int,
-) {
-    fguv_32x32xn_c::<BitDepth8>(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling,
-        grain_lut.cast(),
-        bh,
-        row_num,
-        luma_row.cast(),
-        luma_stride,
-        uv_pl,
-        is_id,
-        1 as c_int,
-        1 as c_int,
-        BitDepth8::new(()),
-    );
-}
-
-unsafe extern "C" fn fguv_32x32xn_422_c_erased(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
-    stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
-    pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
-    bh: c_int,
-    row_num: c_int,
-    luma_row: *const DynPixel,
-    luma_stride: ptrdiff_t,
-    uv_pl: c_int,
-    is_id: c_int,
-    _bitdepth_max: c_int,
-) {
-    fguv_32x32xn_c::<BitDepth8>(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling,
-        grain_lut.cast(),
-        bh,
-        row_num,
-        luma_row.cast(),
-        luma_stride,
-        uv_pl,
-        is_id,
-        1 as c_int,
-        0 as c_int,
-        BitDepth8::new(()),
-    );
-}
-
-unsafe extern "C" fn fguv_32x32xn_444_c_erased(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
-    stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
-    pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
-    bh: c_int,
-    row_num: c_int,
-    luma_row: *const DynPixel,
-    luma_stride: ptrdiff_t,
-    uv_pl: c_int,
-    is_id: c_int,
-    _bitdepth_max: c_int,
-) {
-    fguv_32x32xn_c::<BitDepth8>(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling,
-        grain_lut.cast(),
-        bh,
-        row_num,
-        luma_row.cast(),
-        luma_stride,
-        uv_pl,
-        is_id,
-        0 as c_int,
-        0 as c_int,
-        BitDepth8::new(()),
-    );
-}
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
@@ -966,9 +859,12 @@ pub unsafe fn rav1d_film_grain_dsp_init_8bpc(c: *mut Rav1dFilmGrainDSPContext) {
         Some(generate_grain_uv_444_c_erased::<BitDepth8>);
 
     (*c).fgy_32x32xn = Some(fgy_32x32xn_c_erased::<BitDepth8>);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(fguv_32x32xn_420_c_erased);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] = Some(fguv_32x32xn_422_c_erased);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] = Some(fguv_32x32xn_444_c_erased);
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+        Some(fguv_32x32xn_420_c_erased::<BitDepth8>);
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+        Some(fguv_32x32xn_422_c_erased::<BitDepth8>);
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+        Some(fguv_32x32xn_444_c_erased::<BitDepth8>);
 
     #[cfg(feature = "asm")]
     cfg_if! {
