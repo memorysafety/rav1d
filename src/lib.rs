@@ -158,7 +158,7 @@ impl Default for Rav1dSettings {
             max_frame_delay: 0,
             apply_grain: true,
             operating_point: 0,
-            all_layers: 1,
+            all_layers: true,
             frame_size_limit: 0,
             allocator: Default::default(),
             logger: Default::default(),
@@ -285,7 +285,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).logger = s.logger.clone();
     (*c).apply_grain = s.apply_grain;
     (*c).operating_point = s.operating_point;
-    (*c).all_layers = s.all_layers != 0;
+    (*c).all_layers = s.all_layers;
     (*c).frame_size_limit = s.frame_size_limit;
     (*c).strict_std_compliance = s.strict_std_compliance;
     (*c).output_invisible_frames = s.output_invisible_frames;
