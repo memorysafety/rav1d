@@ -15,13 +15,19 @@ use std::ffi::c_void;
 
 fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
     let mut scaling_array = ArrayDefault::default();
+
     if points.is_empty() {
         return scaling_array;
     }
+
     let shift_x = bd.bitdepth() - 8;
     let scaling_size = 1 << bd.bitdepth();
     let scaling = scaling_array.as_mut();
+
+    // Fill up the preceding entries with the initial value
     scaling[..(points[0][0] as usize) << shift_x].fill(points[0][1]);
+
+    // Linearly interpolate the values in the middle
     for ps in points.windows(2) {
         // TODO(kkysen) use array_windows when stabilized
         let [p0, p1] = ps.try_into().unwrap();
@@ -39,6 +45,8 @@ fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
             d += delta;
         }
     }
+
+    // Fill up the remaining entries with the final value
     let n = (points[points.len() - 1][0] as usize) << shift_x;
     scaling[n..][..scaling_size - n].fill(points[points.len() - 1][1]);
 
