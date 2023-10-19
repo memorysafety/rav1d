@@ -163,7 +163,7 @@ impl Default for Rav1dSettings {
             allocator: Default::default(),
             logger: Default::default(),
             strict_std_compliance: false,
-            output_invisible_frames: 0,
+            output_invisible_frames: false,
             inloop_filters: RAV1D_INLOOPFILTER_ALL,
             decode_frame_type: RAV1D_DECODEFRAMETYPE_ALL,
         }
@@ -713,8 +713,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             let progress: c_uint = ::core::intrinsics::atomic_load_relaxed(
                 &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
             );
-            if ((*out_delayed).visible || c.output_invisible_frames != 0) && progress != FRAME_ERROR
-            {
+            if ((*out_delayed).visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
                     c.event_flags as c_uint | rav1d_picture_get_event_flags(out_delayed) as c_uint,

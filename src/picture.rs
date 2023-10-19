@@ -280,7 +280,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     }
     rav1d_ref_dec(&mut (*c).itut_t35_ref);
     (*c).itut_t35 = 0 as *mut Rav1dITUTT35;
-    let flags_mask = if (*(*f).frame_hdr).show_frame != 0 || (*c).output_invisible_frames != 0 {
+    let flags_mask = if (*(*f).frame_hdr).show_frame != 0 || (*c).output_invisible_frames {
         0 as c_int
     } else {
         PICTURE_FLAG_NEW_SEQUENCE as c_int | PICTURE_FLAG_NEW_OP_PARAMS_INFO as c_int

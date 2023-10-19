@@ -105,7 +105,7 @@ pub(crate) struct Rav1dSettings {
     pub allocator: Rav1dPicAllocator,
     pub logger: Rav1dLogger,
     pub strict_std_compliance: bool,
-    pub output_invisible_frames: c_int,
+    pub output_invisible_frames: bool,
     pub inloop_filters: Rav1dInloopFilterType,
     pub decode_frame_type: Rav1dDecodeFrameType,
 }
@@ -137,7 +137,7 @@ impl From<Dav1dSettings> for Rav1dSettings {
             allocator: allocator.into(),
             logger: logger.into(),
             strict_std_compliance: strict_std_compliance != 0,
-            output_invisible_frames,
+            output_invisible_frames: output_invisible_frames != 0,
             inloop_filters,
             decode_frame_type,
         }
@@ -170,7 +170,7 @@ impl From<Rav1dSettings> for Dav1dSettings {
             allocator: allocator.into(),
             logger: logger.into(),
             strict_std_compliance: strict_std_compliance as c_int,
-            output_invisible_frames,
+            output_invisible_frames: output_invisible_frames as c_int,
             inloop_filters,
             decode_frame_type,
             reserved: Default::default(),

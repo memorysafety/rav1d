@@ -224,7 +224,7 @@ pub struct Rav1dContext {
     pub(crate) max_spatial_id: bool,
     pub(crate) frame_size_limit: c_uint,
     pub(crate) strict_std_compliance: bool,
-    pub(crate) output_invisible_frames: c_int,
+    pub(crate) output_invisible_frames: bool,
     pub(crate) inloop_filters: Rav1dInloopFilterType,
     pub(crate) decode_frame_type: Rav1dDecodeFrameType,
     pub(crate) drain: c_int,
