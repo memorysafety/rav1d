@@ -289,6 +289,7 @@ pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
 ) {
     let mut grain = Default::default();
     let rows = out.p.h + 31 >> 5;
+
     rav1d_prep_grain::<BD>(dsp, out, r#in, &mut grain);
     for row in 0..rows {
         rav1d_apply_grain_row::<BD>(dsp, out, r#in, &grain, row);
