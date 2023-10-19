@@ -25,6 +25,7 @@ pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
 
 const SUB_GRAIN_WIDTH: usize = 44;
+const SUB_GRAIN_HEIGHT: usize = 38;
 
 pub type generate_grain_y_fn = Option<
     unsafe extern "C" fn(*mut [DynEntry; GRAIN_WIDTH], *const Rav1dFilmGrainData, c_int) -> (),
@@ -303,7 +304,7 @@ unsafe fn generate_grain_uv_c<BD: BitDepth>(
         GRAIN_WIDTH as c_int
     };
     let chromaH = if suby != 0 {
-        38 as c_int
+        SUB_GRAIN_HEIGHT as c_int
     } else {
         GRAIN_HEIGHT as c_int
     };
