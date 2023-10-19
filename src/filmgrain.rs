@@ -12,6 +12,14 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+use crate::{
+    include::common::bitdepth::bd_fn, include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420,
+    include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422,
+    include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444, src::cpu::rav1d_get_cpu_flags,
+    src::cpu::CpuFlags,
+};
+
 #[cfg(all(
     feature = "bitdepth_8",
     feature = "asm",
@@ -1787,4 +1795,68 @@ pub(crate) unsafe extern "C" fn fguv_32x32xn_444_c_erased<BD: BitDepth>(
         0 as c_int,
         BD::from_c(bitdepth_max),
     );
+}
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[inline(always)]
+pub(crate) unsafe fn film_grain_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
+    let flags = rav1d_get_cpu_flags();
+
+    if !flags.contains(CpuFlags::SSSE3) {
+        return;
+    }
+
+    (*c).generate_grain_y = Some(bd_fn!(BD, generate_grain_y, ssse3));
+    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+        Some(bd_fn!(BD, generate_grain_uv_420, ssse3));
+    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+        Some(bd_fn!(BD, generate_grain_uv_422, ssse3));
+    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+        Some(bd_fn!(BD, generate_grain_uv_444, ssse3));
+
+    (*c).fgy_32x32xn = Some(bd_fn!(BD, fgy_32x32xn, ssse3));
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+        Some(bd_fn!(BD, fguv_32x32xn_i420, ssse3));
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+        Some(bd_fn!(BD, fguv_32x32xn_i422, ssse3));
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+        Some(bd_fn!(BD, fguv_32x32xn_i444, ssse3));
+
+    #[cfg(target_arch = "x86_64")]
+    {
+        if !flags.contains(CpuFlags::AVX2) {
+            return;
+        }
+
+        (*c).generate_grain_y = Some(bd_fn!(BD, generate_grain_y, avx2));
+        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+            Some(bd_fn!(BD, generate_grain_uv_420, avx2));
+        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+            Some(bd_fn!(BD, generate_grain_uv_422, avx2));
+        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+            Some(bd_fn!(BD, generate_grain_uv_444, avx2));
+
+        if !flags.contains(CpuFlags::SLOW_GATHER) {
+            (*c).fgy_32x32xn = Some(bd_fn!(BD, fgy_32x32xn, avx2));
+            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+                Some(bd_fn!(BD, fguv_32x32xn_i420, avx2));
+            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+                Some(bd_fn!(BD, fguv_32x32xn_i422, avx2));
+            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+                Some(bd_fn!(BD, fguv_32x32xn_i444, avx2));
+        }
+
+        if !flags.contains(CpuFlags::AVX512ICL) {
+            return;
+        }
+
+        (*c).fgy_32x32xn = Some(bd_fn!(BD, fgy_32x32xn, avx512icl));
+        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+            Some(bd_fn!(BD, fguv_32x32xn_i420, avx512icl));
+        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+            Some(bd_fn!(BD, fguv_32x32xn_i422, avx512icl));
+        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+            Some(bd_fn!(BD, fguv_32x32xn_i444, avx512icl));
+    }
 }

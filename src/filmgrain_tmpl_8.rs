@@ -16,31 +16,7 @@ use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use ::{libc::ptrdiff_t, std::ffi::c_int, std::ffi::c_uint};
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-use crate::{
-    src::filmgrain::dav1d_fguv_32x32xn_i420_8bpc_ssse3,
-    src::filmgrain::dav1d_fguv_32x32xn_i422_8bpc_ssse3,
-    src::filmgrain::dav1d_fguv_32x32xn_i444_8bpc_ssse3,
-    src::filmgrain::dav1d_fgy_32x32xn_8bpc_ssse3,
-    src::filmgrain::dav1d_generate_grain_uv_420_8bpc_ssse3,
-    src::filmgrain::dav1d_generate_grain_uv_422_8bpc_ssse3,
-    src::filmgrain::dav1d_generate_grain_uv_444_8bpc_ssse3,
-    src::filmgrain::dav1d_generate_grain_y_8bpc_ssse3,
-};
-
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-use crate::{
-    src::filmgrain::dav1d_fguv_32x32xn_i420_8bpc_avx2,
-    src::filmgrain::dav1d_fguv_32x32xn_i420_8bpc_avx512icl,
-    src::filmgrain::dav1d_fguv_32x32xn_i422_8bpc_avx2,
-    src::filmgrain::dav1d_fguv_32x32xn_i422_8bpc_avx512icl,
-    src::filmgrain::dav1d_fguv_32x32xn_i444_8bpc_avx2,
-    src::filmgrain::dav1d_fguv_32x32xn_i444_8bpc_avx512icl,
-    src::filmgrain::dav1d_fgy_32x32xn_8bpc_avx2, src::filmgrain::dav1d_fgy_32x32xn_8bpc_avx512icl,
-    src::filmgrain::dav1d_generate_grain_uv_420_8bpc_avx2,
-    src::filmgrain::dav1d_generate_grain_uv_422_8bpc_avx2,
-    src::filmgrain::dav1d_generate_grain_uv_444_8bpc_avx2,
-    src::filmgrain::dav1d_generate_grain_y_8bpc_avx2,
-};
+use crate::src::filmgrain::film_grain_dsp_init_x86;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use crate::{
@@ -55,7 +31,7 @@ use crate::{
     src::filmgrain::GRAIN_WIDTH,
 };
 
-#[cfg(feature = "asm")]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
@@ -66,69 +42,6 @@ pub type pixel = u8;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub type entry = i8;
-
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-#[inline(always)]
-unsafe fn film_grain_dsp_init_x86(c: *mut Rav1dFilmGrainDSPContext) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::SSSE3) {
-        return;
-    }
-
-    (*c).generate_grain_y = Some(dav1d_generate_grain_y_8bpc_ssse3);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        Some(dav1d_generate_grain_uv_420_8bpc_ssse3);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        Some(dav1d_generate_grain_uv_422_8bpc_ssse3);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        Some(dav1d_generate_grain_uv_444_8bpc_ssse3);
-
-    (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_8bpc_ssse3);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        Some(dav1d_fguv_32x32xn_i420_8bpc_ssse3);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        Some(dav1d_fguv_32x32xn_i422_8bpc_ssse3);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        Some(dav1d_fguv_32x32xn_i444_8bpc_ssse3);
-
-    #[cfg(target_arch = "x86_64")]
-    {
-        if !flags.contains(CpuFlags::AVX2) {
-            return;
-        }
-
-        (*c).generate_grain_y = Some(dav1d_generate_grain_y_8bpc_avx2);
-        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-            Some(dav1d_generate_grain_uv_420_8bpc_avx2);
-        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-            Some(dav1d_generate_grain_uv_422_8bpc_avx2);
-        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-            Some(dav1d_generate_grain_uv_444_8bpc_avx2);
-
-        if !flags.contains(CpuFlags::SLOW_GATHER) {
-            (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_8bpc_avx2);
-            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-                Some(dav1d_fguv_32x32xn_i420_8bpc_avx2);
-            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-                Some(dav1d_fguv_32x32xn_i422_8bpc_avx2);
-            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-                Some(dav1d_fguv_32x32xn_i444_8bpc_avx2);
-        }
-
-        if !flags.contains(CpuFlags::AVX512ICL) {
-            return;
-        }
-
-        (*c).fgy_32x32xn = Some(dav1d_fgy_32x32xn_8bpc_avx512icl);
-        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-            Some(dav1d_fguv_32x32xn_i420_8bpc_avx512icl);
-        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-            Some(dav1d_fguv_32x32xn_i422_8bpc_avx512icl);
-        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-            Some(dav1d_fguv_32x32xn_i444_8bpc_avx512icl);
-    }
-}
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
@@ -572,7 +485,7 @@ pub unsafe fn rav1d_film_grain_dsp_init_8bpc(c: *mut Rav1dFilmGrainDSPContext) {
     #[cfg(feature = "asm")]
     cfg_if! {
         if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            film_grain_dsp_init_x86(c);
+            film_grain_dsp_init_x86::<BitDepth8>(c);
         } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
             film_grain_dsp_init_arm(c);
         }
