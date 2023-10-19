@@ -228,7 +228,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
     let mut y = 0;
-    while y < 73 {
+    while y < GRAIN_HEIGHT {
         let mut x = 0;
         while x < GRAIN_WIDTH {
             let value = get_random_number(11 as c_int, &mut seed);
@@ -244,7 +244,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     let ar_pad = 3;
     let ar_lag = (*data).ar_coeff_lag;
     let mut y_0 = ar_pad;
-    while y_0 < 73 {
+    while y_0 < GRAIN_HEIGHT as c_int {
         let mut x_0 = ar_pad;
         while x_0 < GRAIN_WIDTH as c_int - ar_pad {
             let mut coeff: *const i8 = ((*data).ar_coeffs_y).as_ptr();
@@ -300,7 +300,11 @@ unsafe fn generate_grain_uv_c<BD: BitDepth>(
     } else {
         GRAIN_WIDTH as c_int
     };
-    let chromaH = if suby != 0 { 38 as c_int } else { 73 as c_int };
+    let chromaH = if suby != 0 {
+        38 as c_int
+    } else {
+        GRAIN_HEIGHT as c_int
+    };
     let mut y = 0;
     while y < chromaH {
         let mut x = 0;
