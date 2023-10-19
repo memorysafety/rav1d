@@ -587,12 +587,14 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     .into()
 }
 
-unsafe fn has_grain(pic: &Rav1dPicture) -> bool {
-    let fgdata = &(*pic.frame_hdr).film_grain.data;
-    fgdata.num_y_points != 0
-        || fgdata.num_uv_points[0] != 0
-        || fgdata.num_uv_points[1] != 0
-        || fgdata.clip_to_restricted_range && fgdata.chroma_scaling_from_luma
+impl Rav1dPicture {
+    unsafe fn has_grain(&self) -> bool {
+        let fgdata = &(*self.frame_hdr).film_grain.data;
+        fgdata.num_y_points != 0
+            || fgdata.num_uv_points[0] != 0
+            || fgdata.num_uv_points[1] != 0
+            || fgdata.clip_to_restricted_range && fgdata.chroma_scaling_from_luma
+    }
 }
 
 unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
@@ -602,7 +604,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     } else {
         &mut c.cache
     };
-    if c.apply_grain == 0 || !has_grain(&mut (*in_0).p) {
+    if c.apply_grain == 0 || !(*in_0).p.has_grain() {
         rav1d_picture_move_ref(out, &mut (*in_0).p);
         rav1d_thread_picture_unref(in_0);
     } else {
@@ -857,7 +859,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
     out: &mut Rav1dPicture,
     in_0: &Rav1dPicture,
 ) -> Rav1dResult {
-    if !has_grain(in_0) {
+    if !in_0.has_grain() {
         rav1d_picture_ref(out, in_0);
         return Ok(());
     }
