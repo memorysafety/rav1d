@@ -614,7 +614,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
         rav1d_picture_move_ref(out, &mut (*r#in).p);
         rav1d_thread_picture_unref(r#in);
     } else {
-        res = rav1d_apply_grain(c, out, &mut (*r#in).p);
+        res = rav1d_apply_grain(c, out, &(*r#in).p);
         rav1d_thread_picture_unref(r#in);
     }
     if c.all_layers == 0 && c.max_spatial_id != 0 && !(c.out.p.data[0]).is_null() {
