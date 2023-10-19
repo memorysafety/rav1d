@@ -50,10 +50,6 @@ pub mod src {
     pub(crate) mod error;
     mod fg_apply;
     mod filmgrain;
-    #[cfg(feature = "bitdepth_16")]
-    mod filmgrain_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
-    mod filmgrain_tmpl_8;
     mod getbits;
     // TODO(kkysen) Temporarily `pub(crate)` due to a `pub use` until TAIT.
     pub(super) mod internal;

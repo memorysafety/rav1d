@@ -4,6 +4,9 @@ use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
+use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::src::tables::dav1d_gaussian_sequence;
 use libc::intptr_t;
 use libc::ptrdiff_t;
@@ -13,12 +16,10 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 
 #[cfg(feature = "asm")]
-use crate::{
-    include::common::bitdepth::bd_fn, include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420,
-    include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422,
-    include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444, src::cpu::rav1d_get_cpu_flags,
-    src::cpu::CpuFlags,
-};
+use cfg_if::cfg_if;
+
+#[cfg(feature = "asm")]
+use crate::{include::common::bitdepth::bd_fn, src::cpu::rav1d_get_cpu_flags, src::cpu::CpuFlags};
 
 #[cfg(all(
     feature = "bitdepth_8",
@@ -770,8 +771,7 @@ unsafe fn round2(x: c_int, shift: u64) -> c_int {
     return x + ((1 as c_int) << shift >> 1) >> shift;
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
+unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     data: *const Rav1dFilmGrainData,
     bitdepth_max: c_int,
@@ -927,8 +927,7 @@ unsafe fn generate_grain_uv_c<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn generate_grain_uv_420_c_erased<BD: BitDepth>(
+unsafe extern "C" fn generate_grain_uv_420_c_erased<BD: BitDepth>(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
     data: *const Rav1dFilmGrainData,
@@ -946,8 +945,7 @@ pub(crate) unsafe extern "C" fn generate_grain_uv_420_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn generate_grain_uv_422_c_erased<BD: BitDepth>(
+unsafe extern "C" fn generate_grain_uv_422_c_erased<BD: BitDepth>(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
     data: *const Rav1dFilmGrainData,
@@ -965,8 +963,7 @@ pub(crate) unsafe extern "C" fn generate_grain_uv_422_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn generate_grain_uv_444_c_erased<BD: BitDepth>(
+unsafe extern "C" fn generate_grain_uv_444_c_erased<BD: BitDepth>(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
     data: *const Rav1dFilmGrainData,
@@ -1002,8 +999,7 @@ unsafe fn sample_lut<BD: BitDepth>(
         [(offx + x + (32 >> subx) * bx) as usize];
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
+unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -1675,8 +1671,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn fguv_32x32xn_420_c_erased<BD: BitDepth>(
+unsafe extern "C" fn fguv_32x32xn_420_c_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -1712,8 +1707,7 @@ pub(crate) unsafe extern "C" fn fguv_32x32xn_420_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn fguv_32x32xn_422_c_erased<BD: BitDepth>(
+unsafe extern "C" fn fguv_32x32xn_422_c_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -1749,8 +1743,7 @@ pub(crate) unsafe extern "C" fn fguv_32x32xn_422_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn fguv_32x32xn_444_c_erased<BD: BitDepth>(
+unsafe extern "C" fn fguv_32x32xn_444_c_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -1786,10 +1779,9 @@ pub(crate) unsafe extern "C" fn fguv_32x32xn_444_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-pub(crate) unsafe fn film_grain_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
+unsafe fn film_grain_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
@@ -2260,10 +2252,9 @@ unsafe fn fguv_32x32xn_444_neon<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
-pub(crate) unsafe fn film_grain_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
+unsafe fn film_grain_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -2285,4 +2276,32 @@ pub(crate) unsafe fn film_grain_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dFilmGrai
         Some(fguv_32x32xn_422_neon_erased::<BD>);
     (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
         Some(fguv_32x32xn_444_neon_erased::<BD>);
+}
+
+#[cold]
+pub unsafe fn rav1d_film_grain_dsp_init<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
+    (*c).generate_grain_y = Some(generate_grain_y_c_erased::<BD>);
+    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+        Some(generate_grain_uv_420_c_erased::<BD>);
+    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+        Some(generate_grain_uv_422_c_erased::<BD>);
+    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+        Some(generate_grain_uv_444_c_erased::<BD>);
+
+    (*c).fgy_32x32xn = Some(fgy_32x32xn_c_erased::<BD>);
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+        Some(fguv_32x32xn_420_c_erased::<BD>);
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+        Some(fguv_32x32xn_422_c_erased::<BD>);
+    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+        Some(fguv_32x32xn_444_c_erased::<BD>);
+
+    #[cfg(feature = "asm")]
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            film_grain_dsp_init_x86::<BD>(c);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            film_grain_dsp_init_arm::<BD>(c);
+        }
+    }
 }
