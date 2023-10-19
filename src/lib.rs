@@ -21,6 +21,7 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
+use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
@@ -587,13 +588,18 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     .into()
 }
 
+impl Rav1dFilmGrainData {
+    fn has_grain(&self) -> bool {
+        self.num_y_points != 0
+            || self.num_uv_points[0] != 0
+            || self.num_uv_points[1] != 0
+            || self.clip_to_restricted_range && self.chroma_scaling_from_luma
+    }
+}
+
 impl Rav1dPicture {
     unsafe fn has_grain(&self) -> bool {
-        let fgdata = &(*self.frame_hdr).film_grain.data;
-        fgdata.num_y_points != 0
-            || fgdata.num_uv_points[0] != 0
-            || fgdata.num_uv_points[1] != 0
-            || fgdata.clip_to_restricted_range && fgdata.chroma_scaling_from_luma
+        (*self.frame_hdr).film_grain.data.has_grain()
     }
 }
 
