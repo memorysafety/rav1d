@@ -1037,6 +1037,8 @@ pub struct Rav1dFilmGrainData {
     pub num_y_points: c_int,
     pub y_points: [[u8; 2]; 14],
     pub chroma_scaling_from_luma: bool,
+    // 3 bytes of padding, so the above has the same size
+    // as [`c_int`] and the same little-endian layout.
     pub num_uv_points: [c_int; 2],
     pub uv_points: [[[u8; 2]; 10]; 2],
     pub scaling_shift: c_int,

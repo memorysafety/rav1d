@@ -27,7 +27,8 @@ struc FGData
     .seed:                                 resd 1
     .num_y_points:                         resd 1
     .y_points:                             resb 14 * 2
-    .chroma_scaling_from_luma:             resd 1
+    .chroma_scaling_from_luma:             resb 1
+    .padding_for_chroma_scaling_from_luma  resb 3
     .num_uv_points:                        resd 2
     .uv_points:                            resb 2 * 10 * 2
     .scaling_shift:                        resd 1

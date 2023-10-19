@@ -1,6 +1,6 @@
 use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
+use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use libc::intptr_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
@@ -23,14 +23,14 @@ pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
 
 pub type generate_grain_y_fn = Option<
-    unsafe extern "C" fn(*mut [DynEntry; GRAIN_WIDTH], *const Dav1dFilmGrainData, c_int) -> (),
+    unsafe extern "C" fn(*mut [DynEntry; GRAIN_WIDTH], *const Rav1dFilmGrainData, c_int) -> (),
 >;
 
 pub type generate_grain_uv_fn = Option<
     unsafe extern "C" fn(
         *mut [DynEntry; GRAIN_WIDTH],
         *const [DynEntry; GRAIN_WIDTH],
-        *const Dav1dFilmGrainData,
+        *const Rav1dFilmGrainData,
         intptr_t,
         c_int,
     ) -> (),
@@ -41,7 +41,7 @@ pub type fgy_32x32xn_fn = Option<
         *mut DynPixel,
         *const DynPixel,
         ptrdiff_t,
-        *const Dav1dFilmGrainData,
+        *const Rav1dFilmGrainData,
         usize,
         *const u8,
         *const [DynEntry; GRAIN_WIDTH],
@@ -56,7 +56,7 @@ pub type fguv_32x32xn_fn = Option<
         *mut DynPixel,
         *const DynPixel,
         ptrdiff_t,
-        *const Dav1dFilmGrainData,
+        *const Rav1dFilmGrainData,
         usize,
         *const u8,
         *const [DynEntry; GRAIN_WIDTH],
