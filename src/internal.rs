@@ -221,7 +221,7 @@ pub struct Rav1dContext {
     pub(crate) operating_point: c_int,
     pub(crate) operating_point_idc: c_uint,
     pub(crate) all_layers: bool,
-    pub(crate) max_spatial_id: c_int,
+    pub(crate) max_spatial_id: bool,
     pub(crate) frame_size_limit: c_uint,
     pub(crate) strict_std_compliance: c_int,
     pub(crate) output_invisible_frames: c_int,
