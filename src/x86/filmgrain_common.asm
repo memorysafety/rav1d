@@ -28,7 +28,9 @@ struc FGData
     .num_y_points:                         resd 1
     .y_points:                             resb 14 * 2
     .chroma_scaling_from_luma:             resb 1
-    .padding_for_chroma_scaling_from_luma  resb 3
+    .overlap_flag:                         resb 1
+    .clip_to_restricted_range:             resb 1
+    .padding_for_chroma_scaling_from_luma  resb 1
     .num_uv_points:                        resd 2
     .uv_points:                            resb 2 * 10 * 2
     .scaling_shift:                        resd 1
@@ -40,8 +42,6 @@ struc FGData
     .uv_mult:                              resd 2
     .uv_luma_mult:                         resd 2
     .uv_offset:                            resd 2
-    .overlap_flag:                         resb 1
-    .clip_to_restricted_range:             resb 1
 endstruc
 
 cextern gaussian_sequence
