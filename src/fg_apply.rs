@@ -82,6 +82,8 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     let GrainBD { grain_lut, scaling } = grain;
     let data = &mut (*out.frame_hdr).film_grain.data;
     let bitdepth_max = (1 << out.p.bpc) - 1;
+
+    // Generate grain LUTs as needed
     (dsp.generate_grain_y).expect("non-null function pointer")(
         grain_lut[0].as_mut_ptr().cast(),
         data,
@@ -105,10 +107,15 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             bitdepth_max,
         );
     }
+
+    // Generate scaling LUTs as needed
     let bd = BD::from_c((1 << r#in.p.bpc) - 1);
     scaling[0] = generate_scaling::<BD>(bd, &data.y_points[..data.num_y_points as usize]);
     scaling[1] = generate_scaling::<BD>(bd, &data.uv_points[0][..data.num_uv_points[0] as usize]);
     scaling[2] = generate_scaling::<BD>(bd, &data.uv_points[1][..data.num_uv_points[1] as usize]);
+
+    // Copy over the non-modified planes
+    // TODO: eliminate in favor of per-plane refs
     assert!(out.stride[0] == r#in.stride[0]);
     if data.num_y_points == 0 {
         let stride = out.stride[0];
@@ -127,6 +134,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             memcpy(out.data[0], r#in.data[0], sz as usize);
         }
     }
+
     if r#in.p.layout != RAV1D_PIXEL_LAYOUT_I400 && data.chroma_scaling_from_luma == 0 {
         assert!(out.stride[1] == r#in.stride[1]);
         let ss_ver = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
