@@ -627,7 +627,7 @@ unsafe fn fgy_32x32xn_rust(
     row_num: c_int,
     bitdepth_max: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let bitdepth_min_8 = 32 - clz(bitdepth_max as c_uint) - 8;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
@@ -662,7 +662,7 @@ unsafe fn fgy_32x32xn_rust(
             32 as c_int,
             (pw as c_int as c_uint).wrapping_sub(bx) as c_int,
         );
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -675,12 +675,12 @@ unsafe fn fgy_32x32xn_rust(
                 get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i_1 as isize));
             i_1 += 1;
         }
-        let ystart = if (*data).overlap_flag != 0 && row_num != 0 {
+        let ystart = if (*data).overlap_flag && row_num != 0 {
             cmp::min(2 as c_int, bh)
         } else {
             0 as c_int
         };
-        let xstart = if (*data).overlap_flag != 0 && bx != 0 {
+        let xstart = if (*data).overlap_flag && bx != 0 {
             cmp::min(2 as c_int, bw)
         } else {
             0 as c_int
@@ -900,7 +900,7 @@ unsafe fn fguv_32x32xn_c(
     sy: c_int,
     bitdepth_max: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let bitdepth_min_8 = 32 - clz(bitdepth_max as c_uint) - 8;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
@@ -936,7 +936,7 @@ unsafe fn fguv_32x32xn_c(
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
         let bw = cmp::min(32 >> sx, pw.wrapping_sub(bx as usize) as c_int);
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -949,12 +949,12 @@ unsafe fn fguv_32x32xn_c(
                 get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i_1 as isize));
             i_1 += 1;
         }
-        let ystart = if (*data).overlap_flag != 0 && row_num != 0 {
+        let ystart = if (*data).overlap_flag && row_num != 0 {
             cmp::min(2 >> sy, bh)
         } else {
             0 as c_int
         };
-        let xstart = if (*data).overlap_flag != 0 && bx != 0 {
+        let xstart = if (*data).overlap_flag && bx != 0 {
             cmp::min(2 >> sx, bw)
         } else {
             0 as c_int
@@ -1465,7 +1465,7 @@ unsafe fn fgy_32x32xn_neon(
     row_num: c_int,
     bitdepth_max: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let mut seed: [c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1477,7 +1477,7 @@ unsafe fn fgy_32x32xn_neon(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -1491,10 +1491,10 @@ unsafe fn fgy_32x32xn_neon(
             i_1 += 1;
         }
         let mut type_0 = 0;
-        if (*data).overlap_flag != 0 && row_num != 0 {
+        if (*data).overlap_flag && row_num != 0 {
             type_0 |= 1 as c_int;
         }
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             type_0 |= 2 as c_int;
         }
         dav1d_fgy_32x32_16bpc_neon(
@@ -1566,7 +1566,7 @@ unsafe fn fguv_32x32xn_420_neon(
     is_id: c_int,
     bitdepth_max: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let mut seed: [c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1578,7 +1578,7 @@ unsafe fn fguv_32x32xn_420_neon(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -1592,10 +1592,10 @@ unsafe fn fguv_32x32xn_420_neon(
             i_1 += 1;
         }
         let mut type_0 = 0;
-        if (*data).overlap_flag != 0 && row_num != 0 {
+        if (*data).overlap_flag && row_num != 0 {
             type_0 |= 1 as c_int;
         }
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             type_0 |= 2 as c_int;
         }
         if (*data).chroma_scaling_from_luma {
@@ -1673,7 +1673,7 @@ unsafe fn fguv_32x32xn_422_neon(
     is_id: c_int,
     bitdepth_max: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let mut seed: [c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1685,7 +1685,7 @@ unsafe fn fguv_32x32xn_422_neon(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -1699,10 +1699,10 @@ unsafe fn fguv_32x32xn_422_neon(
             i_1 += 1;
         }
         let mut type_0 = 0;
-        if (*data).overlap_flag != 0 && row_num != 0 {
+        if (*data).overlap_flag && row_num != 0 {
             type_0 |= 1 as c_int;
         }
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             type_0 |= 2 as c_int;
         }
         if (*data).chroma_scaling_from_luma {
@@ -1780,7 +1780,7 @@ unsafe fn fguv_32x32xn_444_neon(
     is_id: c_int,
     bitdepth_max: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let mut seed: [c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1792,7 +1792,7 @@ unsafe fn fguv_32x32xn_444_neon(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -1806,10 +1806,10 @@ unsafe fn fguv_32x32xn_444_neon(
             i_1 += 1;
         }
         let mut type_0 = 0;
-        if (*data).overlap_flag != 0 && row_num != 0 {
+        if (*data).overlap_flag && row_num != 0 {
             type_0 |= 1 as c_int;
         }
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             type_0 |= 2 as c_int;
         }
         if (*data).chroma_scaling_from_luma {

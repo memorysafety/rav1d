@@ -38,6 +38,6 @@
 #define FGD_UV_MULT                      188
 #define FGD_UV_LUMA_MULT                 196
 #define FGD_UV_OFFSET                    204
-#define FGD_CLIP_TO_RESTRICTED_RANGE     216
+#define FGD_CLIP_TO_RESTRICTED_RANGE     213
 
 #endif /* ARM_ASM_OFFSETS_H */

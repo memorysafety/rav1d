@@ -40,7 +40,7 @@ struc FGData
     .uv_mult:                              resd 2
     .uv_luma_mult:                         resd 2
     .uv_offset:                            resd 2
-    .overlap_flag:                         resd 1
+    .overlap_flag:                         resb 1
     .clip_to_restricted_range:             resb 1
 endstruc
 

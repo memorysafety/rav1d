@@ -1534,7 +1534,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 }
                 pl_1 += 1;
             }
-            (*fgd).overlap_flag = rav1d_get_bit(gb) as c_int;
+            (*fgd).overlap_flag = rav1d_get_bit(gb) != 0;
             (*fgd).clip_to_restricted_range = rav1d_get_bit(gb) != 0;
         }
     } else {

@@ -2360,7 +2360,7 @@ cglobal fguv_32x32xn_i%1_16bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling
 %endif
 
     mov            sbyd, r8m
-    mov             t0d, [fg_dataq+FGData.overlap_flag]
+    movzx           t0d, byte [fg_dataq+FGData.overlap_flag]
     test            t0d, t0d
     jz %%no_vertical_overlap
     test           sbyd, sbyd

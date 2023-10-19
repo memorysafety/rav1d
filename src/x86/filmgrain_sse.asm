@@ -1336,7 +1336,7 @@ cglobal fgy_32x32xn_8bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling, grai
 %endif
 
     mov            sbyd, r8m
-    mov        overlapd, [fg_dataq+FGData.overlap_flag] ; left_overlap: overlap & 1
+    movzx      overlapd, byte [fg_dataq+FGData.overlap_flag] ; left_overlap: overlap & 1
     test       overlapd, overlapd
     jz .no_vertical_overlap
     mova             m6, [base+pw_1024]
@@ -2145,7 +2145,7 @@ cglobal fguv_32x32xn_i%1_8bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling,
 %endif
 
     mov            sbyd, r8m
-    mov        overlapd, [fg_dataq+FGData.overlap_flag] ; left_overlap: overlap & 1
+    movzx      overlapd, byte [fg_dataq+FGData.overlap_flag] ; left_overlap: overlap & 1
     test       overlapd, overlapd
     jz %%no_vertical_overlap
 %if ARCH_X86_32
