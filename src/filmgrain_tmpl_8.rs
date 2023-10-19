@@ -13,6 +13,7 @@ use crate::src::filmgrain::generate_grain_uv_444_c_erased;
 use crate::src::filmgrain::generate_grain_y_c_erased;
 use crate::src::filmgrain::get_random_number;
 use crate::src::filmgrain::round2;
+use crate::src::filmgrain::sample_lut;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::filmgrain::GRAIN_WIDTH;
 use libc::intptr_t;
@@ -358,24 +359,6 @@ extern "C" {
 pub type pixel = u8;
 pub type entry = i8;
 
-#[inline]
-unsafe fn sample_lut(
-    grain_lut: *const [entry; GRAIN_WIDTH],
-    offsets: *const [c_int; 2],
-    subx: c_int,
-    suby: c_int,
-    bx: c_int,
-    by: c_int,
-    x: c_int,
-    y: c_int,
-) -> entry {
-    let randval = (*offsets.offset(bx as isize))[by as usize];
-    let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
-    let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as c_int));
-    return (*grain_lut.offset((offy + y + (32 >> suby) * by) as isize))
-        [(offx + x + (32 >> subx) * bx) as usize];
-}
-
 unsafe extern "C" fn fgy_32x32xn_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
@@ -475,7 +458,7 @@ unsafe fn fgy_32x32xn_rust(
         while y < bh {
             let mut x = xstart;
             while x < bw {
-                let grain = sample_lut(
+                let grain = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -502,7 +485,7 @@ unsafe fn fgy_32x32xn_rust(
             }
             let mut x_0 = 0;
             while x_0 < xstart {
-                let mut grain_0 = sample_lut(
+                let mut grain_0 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -512,7 +495,7 @@ unsafe fn fgy_32x32xn_rust(
                     x_0,
                     y,
                 ) as c_int;
-                let old = sample_lut(
+                let old = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -548,7 +531,7 @@ unsafe fn fgy_32x32xn_rust(
         while y_0 < ystart {
             let mut x_1 = xstart;
             while x_1 < bw {
-                let mut grain_1 = sample_lut(
+                let mut grain_1 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -558,7 +541,7 @@ unsafe fn fgy_32x32xn_rust(
                     x_1,
                     y_0,
                 ) as c_int;
-                let old_0 = sample_lut(
+                let old_0 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -590,7 +573,7 @@ unsafe fn fgy_32x32xn_rust(
             }
             let mut x_2 = 0;
             while x_2 < xstart {
-                let mut top = sample_lut(
+                let mut top = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -600,7 +583,7 @@ unsafe fn fgy_32x32xn_rust(
                     x_2,
                     y_0,
                 ) as c_int;
-                let mut old_1 = sample_lut(
+                let mut old_1 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -615,7 +598,7 @@ unsafe fn fgy_32x32xn_rust(
                     5 as c_int as u64,
                 );
                 top = iclip(top, grain_min, grain_max);
-                let mut grain_2 = sample_lut(
+                let mut grain_2 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -625,7 +608,7 @@ unsafe fn fgy_32x32xn_rust(
                     x_2,
                     y_0,
                 ) as c_int;
-                old_1 = sample_lut(
+                old_1 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     0 as c_int,
@@ -748,7 +731,7 @@ unsafe fn fguv_32x32xn_c(
         while y < bh {
             let mut x = xstart;
             while x < bw {
-                let grain = sample_lut(
+                let grain = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,
@@ -791,7 +774,7 @@ unsafe fn fguv_32x32xn_c(
             }
             let mut x_0 = 0;
             while x_0 < xstart {
-                let mut grain_0 = sample_lut(
+                let mut grain_0 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,
@@ -801,7 +784,7 @@ unsafe fn fguv_32x32xn_c(
                     x_0,
                     y,
                 ) as c_int;
-                let old = sample_lut(
+                let old = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,
@@ -854,7 +837,7 @@ unsafe fn fguv_32x32xn_c(
         while y_0 < ystart {
             let mut x_1 = xstart;
             while x_1 < bw {
-                let mut grain_1 = sample_lut(
+                let mut grain_1 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,
@@ -864,7 +847,7 @@ unsafe fn fguv_32x32xn_c(
                     x_1,
                     y_0,
                 ) as c_int;
-                let old_0 = sample_lut(
+                let old_0 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,
@@ -913,7 +896,7 @@ unsafe fn fguv_32x32xn_c(
             }
             let mut x_2 = 0;
             while x_2 < xstart {
-                let mut top = sample_lut(
+                let mut top = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,
@@ -923,7 +906,7 @@ unsafe fn fguv_32x32xn_c(
                     x_2,
                     y_0,
                 ) as c_int;
-                let mut old_1 = sample_lut(
+                let mut old_1 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,
@@ -938,7 +921,7 @@ unsafe fn fguv_32x32xn_c(
                     5 as c_int as u64,
                 );
                 top = iclip(top, grain_min, grain_max);
-                let mut grain_2 = sample_lut(
+                let mut grain_2 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,
@@ -948,7 +931,7 @@ unsafe fn fguv_32x32xn_c(
                     x_2,
                     y_0,
                 ) as c_int;
-                old_1 = sample_lut(
+                old_1 = sample_lut::<BitDepth8>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
                     sx,

@@ -297,3 +297,22 @@ pub(crate) unsafe extern "C" fn generate_grain_uv_444_c_erased<BD: BitDepth>(
         BD::from_c(bitdepth_max),
     );
 }
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+#[inline]
+pub(crate) unsafe fn sample_lut<BD: BitDepth>(
+    grain_lut: *const [BD::Entry; GRAIN_WIDTH],
+    offsets: *const [c_int; 2],
+    subx: c_int,
+    suby: c_int,
+    bx: c_int,
+    by: c_int,
+    x: c_int,
+    y: c_int,
+) -> BD::Entry {
+    let randval = (*offsets.offset(bx as isize))[by as usize];
+    let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
+    let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as c_int));
+    return (*grain_lut.offset((offy + y + (32 >> suby) * by) as isize))
+        [(offx + x + (32 >> subx) * bx) as usize];
+}
