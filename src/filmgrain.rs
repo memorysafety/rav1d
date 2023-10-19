@@ -150,3 +150,94 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
         y_0 += 1;
     }
 }
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+#[inline(never)]
+pub(crate) unsafe fn generate_grain_uv_c<BD: BitDepth>(
+    buf: *mut [BD::Entry; GRAIN_WIDTH],
+    buf_y: *const [BD::Entry; GRAIN_WIDTH],
+    data: *const Rav1dFilmGrainData,
+    uv: intptr_t,
+    subx: c_int,
+    suby: c_int,
+    bd: BD,
+) {
+    let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
+    let mut seed: c_uint = (*data).seed
+        ^ (if uv != 0 {
+            0x49d8 as c_int
+        } else {
+            0xb524 as c_int
+        }) as c_uint;
+    let shift = 4 - bitdepth_min_8 + (*data).grain_scale_shift;
+    let grain_ctr = (128 as c_int) << bitdepth_min_8;
+    let grain_min = -grain_ctr;
+    let grain_max = grain_ctr - 1;
+    let chromaW = if subx != 0 { 44 as c_int } else { 82 as c_int };
+    let chromaH = if suby != 0 { 38 as c_int } else { 73 as c_int };
+    let mut y = 0;
+    while y < chromaH {
+        let mut x = 0;
+        while x < chromaW {
+            let value = get_random_number(11 as c_int, &mut seed);
+            (*buf.offset(y as isize))[x as usize] = round2(
+                dav1d_gaussian_sequence[value as usize] as c_int,
+                shift as u64,
+            )
+            .as_::<BD::Entry>();
+            x += 1;
+        }
+        y += 1;
+    }
+    let ar_pad = 3;
+    let ar_lag = (*data).ar_coeff_lag;
+    let mut y_0 = ar_pad;
+    while y_0 < chromaH {
+        let mut x_0 = ar_pad;
+        while x_0 < chromaW - ar_pad {
+            let mut coeff: *const i8 = ((*data).ar_coeffs_uv[uv as usize]).as_ptr();
+            let mut sum = 0;
+            let mut dy = -ar_lag;
+            while dy <= 0 {
+                let mut dx = -ar_lag;
+                while dx <= ar_lag {
+                    if dx == 0 && dy == 0 {
+                        if (*data).num_y_points == 0 {
+                            break;
+                        }
+                        let mut luma = 0;
+                        let lumaX = (x_0 - ar_pad << subx) + ar_pad;
+                        let lumaY = (y_0 - ar_pad << suby) + ar_pad;
+                        let mut i = 0;
+                        while i <= suby {
+                            let mut j = 0;
+                            while j <= subx {
+                                luma += (*buf_y.offset((lumaY + i) as isize))[(lumaX + j) as usize]
+                                    .as_::<c_int>();
+                                j += 1;
+                            }
+                            i += 1;
+                        }
+                        luma = round2(luma, (subx + suby) as u64);
+                        sum += luma * *coeff as c_int;
+                        break;
+                    } else {
+                        let fresh1 = coeff;
+                        coeff = coeff.offset(1);
+                        sum += *fresh1 as c_int
+                            * (*buf.offset((y_0 + dy) as isize))[(x_0 + dx) as usize]
+                                .as_::<c_int>();
+                        dx += 1;
+                    }
+                }
+                dy += 1;
+            }
+            let grain = (*buf.offset(y_0 as isize))[x_0 as usize].as_::<c_int>()
+                + round2(sum, (*data).ar_coeff_shift);
+            (*buf.offset(y_0 as isize))[x_0 as usize] =
+                iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+            x_0 += 1;
+        }
+        y_0 += 1;
+    }
+}
