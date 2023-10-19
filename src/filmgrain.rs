@@ -24,6 +24,8 @@ use crate::{include::common::bitdepth::bd_fn, src::cpu::rav1d_get_cpu_flags, src
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
 
+const SUB_GRAIN_WIDTH: usize = 44;
+
 pub type generate_grain_y_fn = Option<
     unsafe extern "C" fn(*mut [DynEntry; GRAIN_WIDTH], *const Rav1dFilmGrainData, c_int) -> (),
 >;
@@ -296,7 +298,7 @@ unsafe fn generate_grain_uv_c<BD: BitDepth>(
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
     let chromaW = if subx != 0 {
-        44 as c_int
+        SUB_GRAIN_WIDTH as c_int
     } else {
         GRAIN_WIDTH as c_int
     };
