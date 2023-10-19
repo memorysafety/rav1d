@@ -1,28 +1,28 @@
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::iclip_u8;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::src::filmgrain::fguv_32x32xn_c;
 use crate::src::filmgrain::fgy_32x32xn_c_erased;
 use crate::src::filmgrain::generate_grain_uv_420_c_erased;
 use crate::src::filmgrain::generate_grain_uv_422_c_erased;
 use crate::src::filmgrain::generate_grain_uv_444_c_erased;
 use crate::src::filmgrain::generate_grain_y_c_erased;
-use crate::src::filmgrain::get_random_number;
-use crate::src::filmgrain::round2;
-use crate::src::filmgrain::sample_lut;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::filmgrain::GRAIN_WIDTH;
 use libc::intptr_t;
 use libc::ptrdiff_t;
-use std::cmp;
 use std::ffi::c_int;
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+use crate::src::filmgrain::get_random_number;
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
@@ -357,349 +357,11 @@ extern "C" {
     );
 }
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 pub type pixel = u8;
-pub type entry = i8;
 
-#[inline(never)]
-unsafe fn fguv_32x32xn_c(
-    dst_row: *mut pixel,
-    src_row: *const pixel,
-    stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
-    pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [entry; GRAIN_WIDTH],
-    bh: c_int,
-    row_num: c_int,
-    luma_row: *const pixel,
-    luma_stride: ptrdiff_t,
-    uv: c_int,
-    is_id: c_int,
-    sx: c_int,
-    sy: c_int,
-) {
-    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
-    let bitdepth_min_8 = 8 - 8;
-    let grain_ctr = (128 as c_int) << bitdepth_min_8;
-    let grain_min = -grain_ctr;
-    let grain_max = grain_ctr - 1;
-    let min_value;
-    let max_value;
-    if (*data).clip_to_restricted_range {
-        min_value = (16 as c_int) << bitdepth_min_8;
-        max_value = (if is_id != 0 {
-            235 as c_int
-        } else {
-            240 as c_int
-        }) << bitdepth_min_8;
-    } else {
-        min_value = 0 as c_int;
-        max_value = 0xff as c_int;
-    }
-    let mut seed: [c_uint; 2] = [0; 2];
-    let mut i = 0;
-    while i < rows {
-        seed[i as usize] = (*data).seed;
-        seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
-        seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
-        i += 1;
-    }
-    if !((stride as c_ulong).wrapping_rem(
-        (32 as c_int as c_ulong).wrapping_mul(::core::mem::size_of::<pixel>() as c_ulong),
-    ) == 0 as c_ulong)
-    {
-        unreachable!();
-    }
-    let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
-    let mut bx: c_uint = 0 as c_int as c_uint;
-    while (bx as usize) < pw {
-        let bw = cmp::min(32 >> sx, pw.wrapping_sub(bx as usize) as c_int);
-        if (*data).overlap_flag && bx != 0 {
-            let mut i_0 = 0;
-            while i_0 < rows {
-                offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
-                i_0 += 1;
-            }
-        }
-        let mut i_1 = 0;
-        while i_1 < rows {
-            offsets[0][i_1 as usize] =
-                get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i_1 as isize));
-            i_1 += 1;
-        }
-        let ystart = if (*data).overlap_flag && row_num != 0 {
-            cmp::min(2 >> sy, bh)
-        } else {
-            0 as c_int
-        };
-        let xstart = if (*data).overlap_flag && bx != 0 {
-            cmp::min(2 >> sx, bw)
-        } else {
-            0 as c_int
-        };
-        static w: [[[c_int; 2]; 2]; 2] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
-        let mut y = ystart;
-        while y < bh {
-            let mut x = xstart;
-            while x < bw {
-                let grain = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    0 as c_int,
-                    x,
-                    y,
-                ) as c_int;
-                let lx = (bx.wrapping_add(x as c_uint) << sx) as c_int;
-                let ly = y << sy;
-                let luma: *const pixel = luma_row
-                    .offset((ly as isize * luma_stride) as isize)
-                    .offset(lx as isize);
-                let mut avg: pixel = *luma.offset(0);
-                if sx != 0 {
-                    avg = (avg as c_int + *luma.offset(1) as c_int + 1 >> 1) as pixel;
-                }
-                let src: *const pixel = src_row
-                    .offset((y as isize * stride) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
-                let dst: *mut pixel = dst_row
-                    .offset((y as isize * stride) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
-                let mut val = avg as c_int;
-                if !(*data).chroma_scaling_from_luma {
-                    let combined = avg as c_int * (*data).uv_luma_mult[uv as usize]
-                        + *src as c_int * (*data).uv_mult[uv as usize];
-                    val = iclip_u8(
-                        (combined >> 6)
-                            + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                    );
-                }
-                let noise = round2(
-                    *scaling.offset(val as isize) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst = iclip(*src as c_int + noise, min_value, max_value) as pixel;
-                x += 1;
-            }
-            let mut x_0 = 0;
-            while x_0 < xstart {
-                let mut grain_0 = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    0 as c_int,
-                    x_0,
-                    y,
-                ) as c_int;
-                let old = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    1 as c_int,
-                    0 as c_int,
-                    x_0,
-                    y,
-                ) as c_int;
-                grain_0 = round2(
-                    old * w[sx as usize][x_0 as usize][0]
-                        + grain_0 * w[sx as usize][x_0 as usize][1],
-                    5 as c_int as u64,
-                );
-                grain_0 = iclip(grain_0, grain_min, grain_max);
-                let lx_0 = (bx.wrapping_add(x_0 as c_uint) << sx) as c_int;
-                let ly_0 = y << sy;
-                let luma_0: *const pixel = luma_row
-                    .offset((ly_0 as isize * luma_stride) as isize)
-                    .offset(lx_0 as isize);
-                let mut avg_0: pixel = *luma_0.offset(0);
-                if sx != 0 {
-                    avg_0 = (avg_0 as c_int + *luma_0.offset(1) as c_int + 1 >> 1) as pixel;
-                }
-                let src_0: *const pixel = src_row
-                    .offset((y as isize * stride) as isize)
-                    .offset(bx.wrapping_add(x_0 as c_uint) as isize);
-                let dst_0: *mut pixel = dst_row
-                    .offset((y as isize * stride) as isize)
-                    .offset(bx.wrapping_add(x_0 as c_uint) as isize);
-                let mut val_0 = avg_0 as c_int;
-                if !(*data).chroma_scaling_from_luma {
-                    let combined_0 = avg_0 as c_int * (*data).uv_luma_mult[uv as usize]
-                        + *src_0 as c_int * (*data).uv_mult[uv as usize];
-                    val_0 = iclip_u8(
-                        (combined_0 >> 6)
-                            + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                    );
-                }
-                let noise_0 = round2(
-                    *scaling.offset(val_0 as isize) as c_int * grain_0,
-                    (*data).scaling_shift as u64,
-                );
-                *dst_0 = iclip(*src_0 as c_int + noise_0, min_value, max_value) as pixel;
-                x_0 += 1;
-            }
-            y += 1;
-        }
-        let mut y_0 = 0;
-        while y_0 < ystart {
-            let mut x_1 = xstart;
-            while x_1 < bw {
-                let mut grain_1 = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    0 as c_int,
-                    x_1,
-                    y_0,
-                ) as c_int;
-                let old_0 = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    1 as c_int,
-                    x_1,
-                    y_0,
-                ) as c_int;
-                grain_1 = round2(
-                    old_0 * w[sy as usize][y_0 as usize][0]
-                        + grain_1 * w[sy as usize][y_0 as usize][1],
-                    5 as c_int as u64,
-                );
-                grain_1 = iclip(grain_1, grain_min, grain_max);
-                let lx_1 = (bx.wrapping_add(x_1 as c_uint) << sx) as c_int;
-                let ly_1 = y_0 << sy;
-                let luma_1: *const pixel = luma_row
-                    .offset((ly_1 as isize * luma_stride) as isize)
-                    .offset(lx_1 as isize);
-                let mut avg_1: pixel = *luma_1.offset(0);
-                if sx != 0 {
-                    avg_1 = (avg_1 as c_int + *luma_1.offset(1) as c_int + 1 >> 1) as pixel;
-                }
-                let src_1: *const pixel = src_row
-                    .offset((y_0 as isize * stride) as isize)
-                    .offset(bx.wrapping_add(x_1 as c_uint) as isize);
-                let dst_1: *mut pixel = dst_row
-                    .offset((y_0 as isize * stride) as isize)
-                    .offset(bx.wrapping_add(x_1 as c_uint) as isize);
-                let mut val_1 = avg_1 as c_int;
-                if !(*data).chroma_scaling_from_luma {
-                    let combined_1 = avg_1 as c_int * (*data).uv_luma_mult[uv as usize]
-                        + *src_1 as c_int * (*data).uv_mult[uv as usize];
-                    val_1 = iclip_u8(
-                        (combined_1 >> 6)
-                            + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                    );
-                }
-                let noise_1 = round2(
-                    *scaling.offset(val_1 as isize) as c_int * grain_1,
-                    (*data).scaling_shift as u64,
-                );
-                *dst_1 = iclip(*src_1 as c_int + noise_1, min_value, max_value) as pixel;
-                x_1 += 1;
-            }
-            let mut x_2 = 0;
-            while x_2 < xstart {
-                let mut top = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    1 as c_int,
-                    x_2,
-                    y_0,
-                ) as c_int;
-                let mut old_1 = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    1 as c_int,
-                    1 as c_int,
-                    x_2,
-                    y_0,
-                ) as c_int;
-                top = round2(
-                    old_1 * w[sx as usize][x_2 as usize][0] + top * w[sx as usize][x_2 as usize][1],
-                    5 as c_int as u64,
-                );
-                top = iclip(top, grain_min, grain_max);
-                let mut grain_2 = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    0 as c_int,
-                    x_2,
-                    y_0,
-                ) as c_int;
-                old_1 = sample_lut::<BitDepth8>(
-                    grain_lut,
-                    offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    1 as c_int,
-                    0 as c_int,
-                    x_2,
-                    y_0,
-                ) as c_int;
-                grain_2 = round2(
-                    old_1 * w[sx as usize][x_2 as usize][0]
-                        + grain_2 * w[sx as usize][x_2 as usize][1],
-                    5 as c_int as u64,
-                );
-                grain_2 = iclip(grain_2, grain_min, grain_max);
-                grain_2 = round2(
-                    top * w[sy as usize][y_0 as usize][0]
-                        + grain_2 * w[sy as usize][y_0 as usize][1],
-                    5 as c_int as u64,
-                );
-                grain_2 = iclip(grain_2, grain_min, grain_max);
-                let lx_2 = (bx.wrapping_add(x_2 as c_uint) << sx) as c_int;
-                let ly_2 = y_0 << sy;
-                let luma_2: *const pixel = luma_row
-                    .offset((ly_2 as isize * luma_stride) as isize)
-                    .offset(lx_2 as isize);
-                let mut avg_2: pixel = *luma_2.offset(0);
-                if sx != 0 {
-                    avg_2 = (avg_2 as c_int + *luma_2.offset(1) as c_int + 1 >> 1) as pixel;
-                }
-                let src_2: *const pixel = src_row
-                    .offset((y_0 as isize * stride) as isize)
-                    .offset(bx.wrapping_add(x_2 as c_uint) as isize);
-                let dst_2: *mut pixel = dst_row
-                    .offset((y_0 as isize * stride) as isize)
-                    .offset(bx.wrapping_add(x_2 as c_uint) as isize);
-                let mut val_2 = avg_2 as c_int;
-                if !(*data).chroma_scaling_from_luma {
-                    let combined_2 = avg_2 as c_int * (*data).uv_luma_mult[uv as usize]
-                        + *src_2 as c_int * (*data).uv_mult[uv as usize];
-                    val_2 = iclip_u8(
-                        (combined_2 >> 6)
-                            + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                    );
-                }
-                let noise_2 = round2(
-                    *scaling.offset(val_2 as isize) as c_int * grain_2,
-                    (*data).scaling_shift as u64,
-                );
-                *dst_2 = iclip(*src_2 as c_int + noise_2, min_value, max_value) as pixel;
-                x_2 += 1;
-            }
-            y_0 += 1;
-        }
-        bx = bx.wrapping_add((32 >> sx) as c_uint);
-    }
-}
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+pub type entry = i8;
 
 unsafe extern "C" fn fguv_32x32xn_420_c_erased(
     dst_row: *mut DynPixel,
@@ -717,7 +379,7 @@ unsafe extern "C" fn fguv_32x32xn_420_c_erased(
     is_id: c_int,
     _bitdepth_max: c_int,
 ) {
-    fguv_32x32xn_c(
+    fguv_32x32xn_c::<BitDepth8>(
         dst_row.cast(),
         src_row.cast(),
         stride,
@@ -733,6 +395,7 @@ unsafe extern "C" fn fguv_32x32xn_420_c_erased(
         is_id,
         1 as c_int,
         1 as c_int,
+        BitDepth8::new(()),
     );
 }
 
@@ -752,7 +415,7 @@ unsafe extern "C" fn fguv_32x32xn_422_c_erased(
     is_id: c_int,
     _bitdepth_max: c_int,
 ) {
-    fguv_32x32xn_c(
+    fguv_32x32xn_c::<BitDepth8>(
         dst_row.cast(),
         src_row.cast(),
         stride,
@@ -768,6 +431,7 @@ unsafe extern "C" fn fguv_32x32xn_422_c_erased(
         is_id,
         1 as c_int,
         0 as c_int,
+        BitDepth8::new(()),
     );
 }
 
@@ -787,7 +451,7 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased(
     is_id: c_int,
     _bitdepth_max: c_int,
 ) {
-    fguv_32x32xn_c(
+    fguv_32x32xn_c::<BitDepth8>(
         dst_row.cast(),
         src_row.cast(),
         stride,
@@ -803,6 +467,7 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased(
         is_id,
         0 as c_int,
         0 as c_int,
+        BitDepth8::new(()),
     );
 }
 
