@@ -1,4 +1,5 @@
 use crate::include::common::attributes::clz;
+use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
@@ -6,6 +7,7 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::src::filmgrain::generate_grain_y_c_erased;
 use crate::src::filmgrain::get_random_number;
 use crate::src::filmgrain::round2;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -364,70 +366,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
         unreachable!();
     }
     return x >> 1;
-}
-
-unsafe extern "C" fn generate_grain_y_c_erased(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
-    bitdepth_max: c_int,
-) {
-    generate_grain_y_rust(buf.cast(), data, bitdepth_max)
-}
-
-unsafe fn generate_grain_y_rust(
-    buf: *mut [entry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
-    bitdepth_max: c_int,
-) {
-    let bitdepth_min_8 = 32 - clz(bitdepth_max as c_uint) - 8;
-    let mut seed: c_uint = (*data).seed;
-    let shift = 4 - bitdepth_min_8 + (*data).grain_scale_shift;
-    let grain_ctr = (128 as c_int) << bitdepth_min_8;
-    let grain_min = -grain_ctr;
-    let grain_max = grain_ctr - 1;
-    let mut y = 0;
-    while y < 73 {
-        let mut x = 0;
-        while x < 82 {
-            let value = get_random_number(11 as c_int, &mut seed);
-            (*buf.offset(y as isize))[x as usize] = round2(
-                dav1d_gaussian_sequence[value as usize] as c_int,
-                shift as u64,
-            ) as entry;
-            x += 1;
-        }
-        y += 1;
-    }
-    let ar_pad = 3;
-    let ar_lag = (*data).ar_coeff_lag;
-    let mut y_0 = ar_pad;
-    while y_0 < 73 {
-        let mut x_0 = ar_pad;
-        while x_0 < 82 - ar_pad {
-            let mut coeff: *const i8 = ((*data).ar_coeffs_y).as_ptr();
-            let mut sum = 0;
-            let mut dy = -ar_lag;
-            while dy <= 0 {
-                let mut dx = -ar_lag;
-                while dx <= ar_lag {
-                    if dx == 0 && dy == 0 {
-                        break;
-                    }
-                    let fresh0 = coeff;
-                    coeff = coeff.offset(1);
-                    sum += *fresh0 as c_int
-                        * (*buf.offset((y_0 + dy) as isize))[(x_0 + dx) as usize] as c_int;
-                    dx += 1;
-                }
-                dy += 1;
-            }
-            let grain = (*buf.offset(y_0 as isize))[x_0 as usize] as c_int
-                + round2(sum, (*data).ar_coeff_shift);
-            (*buf.offset(y_0 as isize))[x_0 as usize] = iclip(grain, grain_min, grain_max) as entry;
-            x_0 += 1;
-        }
-        y_0 += 1;
-    }
 }
 
 #[inline(never)]
@@ -1837,7 +1775,7 @@ unsafe fn fguv_32x32xn_444_neon(
 
 #[cold]
 pub unsafe fn rav1d_film_grain_dsp_init_16bpc(c: *mut Rav1dFilmGrainDSPContext) {
-    (*c).generate_grain_y = Some(generate_grain_y_c_erased);
+    (*c).generate_grain_y = Some(generate_grain_y_c_erased::<BitDepth16>);
     (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         Some(generate_grain_uv_420_c_erased);
     (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =

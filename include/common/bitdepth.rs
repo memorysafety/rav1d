@@ -109,7 +109,7 @@ pub trait BitDepth: Clone + Copy {
         + Add<Output = Self::Coef>
         + Display;
 
-    type Entry: Copy + Default + ArrayDefault;
+    type Entry: Copy + Default + ArrayDefault + FromPrimitive<c_int> + ToPrimitive<c_int>;
 
     type Scaling: AsRef<[u8]> + AsMut<[u8]> + ArrayDefault + Copy;
     const SCALING_SIZE: usize;
