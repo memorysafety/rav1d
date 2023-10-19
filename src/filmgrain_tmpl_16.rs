@@ -1,5 +1,4 @@
 use crate::include::common::attributes::clz;
-use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
@@ -8,7 +7,9 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
-use crate::src::filmgrain::generate_grain_uv_c;
+use crate::src::filmgrain::generate_grain_uv_420_c_erased;
+use crate::src::filmgrain::generate_grain_uv_422_c_erased;
+use crate::src::filmgrain::generate_grain_uv_444_c_erased;
 use crate::src::filmgrain::generate_grain_y_c_erased;
 use crate::src::filmgrain::get_random_number;
 use crate::src::filmgrain::round2;
@@ -367,60 +368,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
         unreachable!();
     }
     return x >> 1;
-}
-
-unsafe extern "C" fn generate_grain_uv_420_c_erased(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
-    uv: intptr_t,
-    bitdepth_max: c_int,
-) {
-    generate_grain_uv_c::<BitDepth16>(
-        buf.cast(),
-        buf_y.cast(),
-        data,
-        uv,
-        1 as c_int,
-        1 as c_int,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn generate_grain_uv_422_c_erased(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
-    uv: intptr_t,
-    bitdepth_max: c_int,
-) {
-    generate_grain_uv_c::<BitDepth16>(
-        buf.cast(),
-        buf_y.cast(),
-        data,
-        uv,
-        1 as c_int,
-        0 as c_int,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn generate_grain_uv_444_c_erased(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
-    uv: intptr_t,
-    bitdepth_max: c_int,
-) {
-    generate_grain_uv_c::<BitDepth16>(
-        buf.cast(),
-        buf_y.cast(),
-        data,
-        uv,
-        0 as c_int,
-        0 as c_int,
-        BitDepth16::from_c(bitdepth_max),
-    );
 }
 
 #[inline]
@@ -1691,11 +1638,11 @@ unsafe fn fguv_32x32xn_444_neon(
 pub unsafe fn rav1d_film_grain_dsp_init_16bpc(c: *mut Rav1dFilmGrainDSPContext) {
     (*c).generate_grain_y = Some(generate_grain_y_c_erased::<BitDepth16>);
     (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        Some(generate_grain_uv_420_c_erased);
+        Some(generate_grain_uv_420_c_erased::<BitDepth16>);
     (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        Some(generate_grain_uv_422_c_erased);
+        Some(generate_grain_uv_422_c_erased::<BitDepth16>);
     (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        Some(generate_grain_uv_444_c_erased);
+        Some(generate_grain_uv_444_c_erased::<BitDepth16>);
 
     (*c).fgy_32x32xn = Some(fgy_32x32xn_c_erased);
     (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] = Some(fguv_32x32xn_420_c_erased);

@@ -151,9 +151,8 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) temporarily pub until mod is deduplicated
 #[inline(never)]
-pub(crate) unsafe fn generate_grain_uv_c<BD: BitDepth>(
+unsafe fn generate_grain_uv_c<BD: BitDepth>(
     buf: *mut [BD::Entry; GRAIN_WIDTH],
     buf_y: *const [BD::Entry; GRAIN_WIDTH],
     data: *const Rav1dFilmGrainData,
@@ -240,4 +239,61 @@ pub(crate) unsafe fn generate_grain_uv_c<BD: BitDepth>(
         }
         y_0 += 1;
     }
+}
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn generate_grain_uv_420_c_erased<BD: BitDepth>(
+    buf: *mut [DynEntry; GRAIN_WIDTH],
+    buf_y: *const [DynEntry; GRAIN_WIDTH],
+    data: *const Rav1dFilmGrainData,
+    uv: intptr_t,
+    bitdepth_max: c_int,
+) {
+    generate_grain_uv_c::<BD>(
+        buf.cast(),
+        buf_y.cast(),
+        data,
+        uv,
+        1 as c_int,
+        1 as c_int,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn generate_grain_uv_422_c_erased<BD: BitDepth>(
+    buf: *mut [DynEntry; GRAIN_WIDTH],
+    buf_y: *const [DynEntry; GRAIN_WIDTH],
+    data: *const Rav1dFilmGrainData,
+    uv: intptr_t,
+    bitdepth_max: c_int,
+) {
+    generate_grain_uv_c::<BD>(
+        buf.cast(),
+        buf_y.cast(),
+        data,
+        uv,
+        1 as c_int,
+        0 as c_int,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(kkysen) temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn generate_grain_uv_444_c_erased<BD: BitDepth>(
+    buf: *mut [DynEntry; GRAIN_WIDTH],
+    buf_y: *const [DynEntry; GRAIN_WIDTH],
+    data: *const Rav1dFilmGrainData,
+    uv: intptr_t,
+    bitdepth_max: c_int,
+) {
+    generate_grain_uv_c::<BD>(
+        buf.cast(),
+        buf_y.cast(),
+        data,
+        uv,
+        0 as c_int,
+        0 as c_int,
+        BD::from_c(bitdepth_max),
+    );
 }
