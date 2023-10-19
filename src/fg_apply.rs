@@ -181,6 +181,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     grain: &GrainBD<BD>,
     row: c_int,
 ) {
+    // Synthesize grain for the affected planes
     let GrainBD { grain_lut, scaling } = grain;
     let data = &mut (*out.frame_hdr).film_grain.data;
     let ss_y = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
@@ -190,6 +191,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let luma_src = (r#in.data[0] as *mut BD::Pixel)
         .offset(((row * 32) as isize * BD::pxstride(r#in.stride[0] as usize) as isize) as isize);
     let bitdepth_max = (1 << out.p.bpc) - 1;
+
     if data.num_y_points != 0 {
         let bh = cmp::min(out.p.h - row * 32, 32);
         (dsp.fgy_32x32xn).expect("non-null function pointer")(
@@ -209,13 +211,17 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             bitdepth_max,
         );
     }
+
     if data.num_uv_points[0] == 0
         && data.num_uv_points[1] == 0
         && data.chroma_scaling_from_luma == 0
     {
         return;
     }
+
     let bh = cmp::min(out.p.h - row * 32, 32) + ss_y >> ss_y;
+
+    // extend padding pixels
     if out.p.w & ss_x != 0 {
         let mut ptr = luma_src;
         for _ in 0..bh {
@@ -223,6 +229,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             ptr = ptr.offset(((BD::pxstride(r#in.stride[0] as usize) as isize) << ss_y) as isize);
         }
     }
+
     let uv_off = (row * 32) as isize * BD::pxstride(out.stride[1] as usize) as isize >> ss_y;
     if data.chroma_scaling_from_luma != 0 {
         for pl in 0..2 {
