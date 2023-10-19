@@ -612,11 +612,10 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     };
     if !c.apply_grain || !(*r#in).p.has_grain() {
         rav1d_picture_move_ref(out, &mut (*r#in).p);
-        rav1d_thread_picture_unref(r#in);
     } else {
         res = rav1d_apply_grain(c, out, &(*r#in).p);
-        rav1d_thread_picture_unref(r#in);
     }
+    rav1d_thread_picture_unref(r#in);
     if !c.all_layers && c.max_spatial_id && !(c.out.p.data[0]).is_null() {
         rav1d_thread_picture_move_ref(r#in, &mut c.out);
     }
