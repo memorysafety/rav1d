@@ -376,7 +376,12 @@ unsafe fn generate_grain_uv_c<BD: BitDepth>(
     }
 }
 
-unsafe extern "C" fn generate_grain_uv_420_c_erased<BD: BitDepth>(
+unsafe extern "C" fn generate_grain_uv_c_erased<
+    BD: BitDepth,
+    const NM: usize,
+    const IS_SUBX: bool,
+    const IS_SUBY: bool,
+>(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
     data: *const Rav1dFilmGrainData,
@@ -388,44 +393,8 @@ unsafe extern "C" fn generate_grain_uv_420_c_erased<BD: BitDepth>(
         buf_y.cast(),
         data,
         uv,
-        true,
-        true,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn generate_grain_uv_422_c_erased<BD: BitDepth>(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
-    uv: intptr_t,
-    bitdepth_max: c_int,
-) {
-    generate_grain_uv_c::<BD>(
-        buf.cast(),
-        buf_y.cast(),
-        data,
-        uv,
-        true,
-        false,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn generate_grain_uv_444_c_erased<BD: BitDepth>(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
-    uv: intptr_t,
-    bitdepth_max: c_int,
-) {
-    generate_grain_uv_c::<BD>(
-        buf.cast(),
-        buf_y.cast(),
-        data,
-        uv,
-        false,
-        false,
+        IS_SUBX,
+        IS_SUBY,
         BD::from_c(bitdepth_max),
     );
 }
@@ -1120,7 +1089,12 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
     }
 }
 
-unsafe extern "C" fn fguv_32x32xn_420_c_erased<BD: BitDepth>(
+unsafe extern "C" fn fguv_32x32xn_c_erased<
+    BD: BitDepth,
+    const NM: usize,
+    const IS_SX: bool,
+    const IS_SY: bool,
+>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -1150,80 +1124,8 @@ unsafe extern "C" fn fguv_32x32xn_420_c_erased<BD: BitDepth>(
         luma_stride,
         uv_pl,
         is_id,
-        true,
-        true,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn fguv_32x32xn_422_c_erased<BD: BitDepth>(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
-    stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
-    pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
-    bh: c_int,
-    row_num: c_int,
-    luma_row: *const DynPixel,
-    luma_stride: ptrdiff_t,
-    uv_pl: c_int,
-    is_id: c_int,
-    bitdepth_max: c_int,
-) {
-    fguv_32x32xn_c::<BD>(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling,
-        grain_lut.cast(),
-        bh,
-        row_num,
-        luma_row.cast(),
-        luma_stride,
-        uv_pl,
-        is_id,
-        true,
-        false,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn fguv_32x32xn_444_c_erased<BD: BitDepth>(
-    dst_row: *mut DynPixel,
-    src_row: *const DynPixel,
-    stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
-    pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
-    bh: c_int,
-    row_num: c_int,
-    luma_row: *const DynPixel,
-    luma_stride: ptrdiff_t,
-    uv_pl: c_int,
-    is_id: c_int,
-    bitdepth_max: c_int,
-) {
-    fguv_32x32xn_c::<BD>(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling,
-        grain_lut.cast(),
-        bh,
-        row_num,
-        luma_row.cast(),
-        luma_stride,
-        uv_pl,
-        is_id,
-        false,
-        false,
+        IS_SX,
+        IS_SY,
         BD::from_c(bitdepth_max),
     );
 }
@@ -1784,19 +1686,19 @@ unsafe fn film_grain_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext
 pub unsafe fn rav1d_film_grain_dsp_init<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
     (*c).generate_grain_y = Some(generate_grain_y_c_erased::<BD>);
     (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        Some(generate_grain_uv_420_c_erased::<BD>);
+        Some(generate_grain_uv_c_erased::<BD, 420, true, true>);
     (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        Some(generate_grain_uv_422_c_erased::<BD>);
+        Some(generate_grain_uv_c_erased::<BD, 422, true, false>);
     (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        Some(generate_grain_uv_444_c_erased::<BD>);
+        Some(generate_grain_uv_c_erased::<BD, 444, false, false>);
 
     (*c).fgy_32x32xn = Some(fgy_32x32xn_c_erased::<BD>);
     (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        Some(fguv_32x32xn_420_c_erased::<BD>);
+        Some(fguv_32x32xn_c_erased::<BD, 420, true, true>);
     (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        Some(fguv_32x32xn_422_c_erased::<BD>);
+        Some(fguv_32x32xn_c_erased::<BD, 422, true, false>);
     (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        Some(fguv_32x32xn_444_c_erased::<BD>);
+        Some(fguv_32x32xn_c_erased::<BD, 444, false, false>);
 
     #[cfg(feature = "asm")]
     cfg_if! {
