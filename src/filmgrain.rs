@@ -29,50 +29,54 @@ const SUB_GRAIN_WIDTH: usize = 44;
 const SUB_GRAIN_HEIGHT: usize = 38;
 
 pub type generate_grain_y_fn = Option<
-    unsafe extern "C" fn(*mut [DynEntry; GRAIN_WIDTH], *const Rav1dFilmGrainData, c_int) -> (),
+    unsafe extern "C" fn(
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        bitdepth_max: c_int,
+    ) -> (),
 >;
 
 pub type generate_grain_uv_fn = Option<
     unsafe extern "C" fn(
-        *mut [DynEntry; GRAIN_WIDTH],
-        *const [DynEntry; GRAIN_WIDTH],
-        *const Rav1dFilmGrainData,
-        intptr_t,
-        c_int,
+        buf: *mut [DynEntry; GRAIN_WIDTH],
+        buf_y: *const [DynEntry; GRAIN_WIDTH],
+        data: *const Rav1dFilmGrainData,
+        uv: intptr_t,
+        bitdepth_max: c_int,
     ) -> (),
 >;
 
 pub type fgy_32x32xn_fn = Option<
     unsafe extern "C" fn(
-        *mut DynPixel,
-        *const DynPixel,
-        ptrdiff_t,
-        *const Rav1dFilmGrainData,
-        usize,
-        *const u8,
-        *const [DynEntry; GRAIN_WIDTH],
-        c_int,
-        c_int,
-        c_int,
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        bitdepth_max: c_int,
     ) -> (),
 >;
 
 pub type fguv_32x32xn_fn = Option<
     unsafe extern "C" fn(
-        *mut DynPixel,
-        *const DynPixel,
-        ptrdiff_t,
-        *const Rav1dFilmGrainData,
-        usize,
-        *const u8,
-        *const [DynEntry; GRAIN_WIDTH],
-        c_int,
-        c_int,
-        *const DynPixel,
-        ptrdiff_t,
-        c_int,
-        c_int,
-        c_int,
+        dst_row: *mut DynPixel,
+        src_row: *const DynPixel,
+        stride: ptrdiff_t,
+        data: *const Rav1dFilmGrainData,
+        pw: usize,
+        scaling: *const u8,
+        grain_lut: *const [DynEntry; GRAIN_WIDTH],
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const DynPixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bitdepth_max: c_int,
     ) -> (),
 >;
 
