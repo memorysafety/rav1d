@@ -209,7 +209,7 @@ fn get_random_number(bits: c_int, state: &mut c_uint) -> c_int {
 }
 
 #[inline]
-unsafe fn round2(x: c_int, shift: u64) -> c_int {
+fn round2(x: c_int, shift: u64) -> c_int {
     x + ((1 as c_int) << shift >> 1) >> shift
 }
 
