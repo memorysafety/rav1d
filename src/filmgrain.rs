@@ -205,12 +205,12 @@ fn get_random_number(bits: c_int, state: &mut c_uint) -> c_int {
     let bit: c_uint = ((r >> 0 ^ r >> 1 ^ r >> 3 ^ r >> 12) & 1) as c_uint;
     *state = (r >> 1) as c_uint | bit << 15;
 
-    return (*state >> 16 - bits & (((1 as c_int) << bits) - 1) as c_uint) as c_int;
+    (*state >> 16 - bits & (((1 as c_int) << bits) - 1) as c_uint) as c_int
 }
 
 #[inline]
 unsafe fn round2(x: c_int, shift: u64) -> c_int {
-    return x + ((1 as c_int) << shift >> 1) >> shift;
+    x + ((1 as c_int) << shift >> 1) >> shift
 }
 
 unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
@@ -405,8 +405,8 @@ unsafe fn sample_lut<BD: BitDepth>(
     let randval = (*offsets.offset(bx as isize))[by as usize];
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as c_int));
-    return (*grain_lut.offset((offy + y + (BLOCK_SIZE as c_int >> suby) * by) as isize))
-        [(offx + x + (BLOCK_SIZE as c_int >> subx) * bx) as usize];
+    (*grain_lut.offset((offy + y + (BLOCK_SIZE as c_int >> suby) * by) as isize))
+        [(offx + x + (BLOCK_SIZE as c_int >> subx) * bx) as usize]
 }
 
 unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
