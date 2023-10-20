@@ -283,10 +283,12 @@ unsafe fn generate_grain_uv_c<BD: BitDepth>(
     buf_y: *const [BD::Entry; GRAIN_WIDTH],
     data: *const Rav1dFilmGrainData,
     uv: intptr_t,
-    subx: c_int,
-    suby: c_int,
+    is_subx: bool,
+    is_suby: bool,
     bd: BD,
 ) {
+    let [subx, suby] = [is_subx, is_suby].map(|it| it as c_int);
+
     let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
     let mut seed: c_uint = (*data).seed
         ^ (if uv != 0 {
@@ -298,12 +300,12 @@ unsafe fn generate_grain_uv_c<BD: BitDepth>(
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
-    let chromaW = if subx != 0 {
+    let chromaW = if is_subx {
         SUB_GRAIN_WIDTH as c_int
     } else {
         GRAIN_WIDTH as c_int
     };
-    let chromaH = if suby != 0 {
+    let chromaH = if is_suby {
         SUB_GRAIN_HEIGHT as c_int
     } else {
         GRAIN_HEIGHT as c_int
@@ -386,8 +388,8 @@ unsafe extern "C" fn generate_grain_uv_420_c_erased<BD: BitDepth>(
         buf_y.cast(),
         data,
         uv,
-        1 as c_int,
-        1 as c_int,
+        true,
+        true,
         BD::from_c(bitdepth_max),
     );
 }
@@ -404,8 +406,8 @@ unsafe extern "C" fn generate_grain_uv_422_c_erased<BD: BitDepth>(
         buf_y.cast(),
         data,
         uv,
-        1 as c_int,
-        0 as c_int,
+        true,
+        false,
         BD::from_c(bitdepth_max),
     );
 }
@@ -422,8 +424,8 @@ unsafe extern "C" fn generate_grain_uv_444_c_erased<BD: BitDepth>(
         buf_y.cast(),
         data,
         uv,
-        0 as c_int,
-        0 as c_int,
+        false,
+        false,
         BD::from_c(bitdepth_max),
     );
 }
@@ -432,13 +434,15 @@ unsafe extern "C" fn generate_grain_uv_444_c_erased<BD: BitDepth>(
 unsafe fn sample_lut<BD: BitDepth>(
     grain_lut: *const [BD::Entry; GRAIN_WIDTH],
     offsets: *const [c_int; 2],
-    subx: c_int,
-    suby: c_int,
-    bx: c_int,
-    by: c_int,
+    is_subx: bool,
+    is_suby: bool,
+    is_bx: bool,
+    is_by: bool,
     x: c_int,
     y: c_int,
 ) -> BD::Entry {
+    let [subx, suby, bx, by] = [is_subx, is_suby, is_bx, is_by].map(|it| it as c_int);
+
     let randval = (*offsets.offset(bx as isize))[by as usize];
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as c_int));
@@ -550,10 +554,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
+                    false,
+                    false,
+                    false,
+                    false,
                     x,
                     y,
                 )
@@ -579,10 +583,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
+                    false,
+                    false,
+                    false,
+                    false,
                     x,
                     y,
                 )
@@ -590,10 +594,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let old = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    1 as c_int,
-                    0 as c_int,
+                    false,
+                    false,
+                    true,
+                    false,
                     x,
                     y,
                 )
@@ -628,10 +632,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
+                    false,
+                    false,
+                    false,
+                    false,
                     x,
                     y,
                 )
@@ -639,10 +643,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let old = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
-                    1 as c_int,
+                    false,
+                    false,
+                    false,
+                    true,
                     x,
                     y,
                 )
@@ -673,10 +677,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let mut top = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
-                    1 as c_int,
+                    false,
+                    false,
+                    false,
+                    true,
                     x,
                     y,
                 )
@@ -684,10 +688,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let mut old = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    1 as c_int,
-                    1 as c_int,
+                    false,
+                    false,
+                    true,
+                    true,
                     x,
                     y,
                 )
@@ -700,10 +704,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
-                    0 as c_int,
+                    false,
+                    false,
+                    false,
+                    false,
                     x,
                     y,
                 )
@@ -711,10 +715,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 old = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    0 as c_int,
-                    0 as c_int,
-                    1 as c_int,
-                    0 as c_int,
+                    false,
+                    false,
+                    true,
+                    false,
                     x,
                     y,
                 )
@@ -766,10 +770,12 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
     luma_stride: ptrdiff_t,
     uv: c_int,
     is_id: c_int,
-    sx: c_int,
-    sy: c_int,
+    is_sx: bool,
+    is_sy: bool,
     bd: BD,
 ) {
+    let [sx, sy] = [is_sx, is_sy].map(|it| it as c_int);
+
     let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let bitdepth_min_8 = bd.bitdepth() - 8;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
@@ -837,10 +843,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 let grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    0 as c_int,
+                    is_sx,
+                    is_sy,
+                    false,
+                    false,
                     x,
                     y,
                 )
@@ -851,7 +857,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                     .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
                     .offset(lx as isize);
                 let mut avg: BD::Pixel = *luma.offset(0);
-                if sx != 0 {
+                if is_sx {
                     avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
                         .as_::<BD::Pixel>();
                 }
@@ -868,7 +874,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                     val = iclip(
                         (combined >> 6)
                             + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                        0 as c_int,
+                        0,
                         bd.bitdepth_max().as_::<c_int>(),
                     );
                 }
@@ -885,10 +891,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    0 as c_int,
+                    is_sx,
+                    is_sy,
+                    false,
+                    false,
                     x,
                     y,
                 )
@@ -896,10 +902,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 let old = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    1 as c_int,
-                    0 as c_int,
+                    is_sx,
+                    is_sy,
+                    true,
+                    false,
                     x,
                     y,
                 )
@@ -932,7 +938,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                     val = iclip(
                         (combined >> 6)
                             + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                        0 as c_int,
+                        0,
                         bd.bitdepth_max().as_::<c_int>(),
                     );
                 }
@@ -953,10 +959,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    0 as c_int,
+                    is_sx,
+                    is_sy,
+                    false,
+                    false,
                     x,
                     y,
                 )
@@ -964,10 +970,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 let old = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    1 as c_int,
+                    is_sx,
+                    is_sy,
+                    false,
+                    true,
                     x,
                     y,
                 )
@@ -983,7 +989,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                     .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
                     .offset(lx as isize);
                 let mut avg: BD::Pixel = *luma.offset(0);
-                if sx != 0 {
+                if is_sx {
                     avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
                         .as_::<BD::Pixel>();
                 }
@@ -1000,7 +1006,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                     val = iclip(
                         (combined >> 6)
                             + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                        0 as c_int,
+                        0,
                         bd.bitdepth_max().as_::<c_int>(),
                     );
                 }
@@ -1017,10 +1023,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 let mut top = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    1 as c_int,
+                    is_sx,
+                    is_sy,
+                    false,
+                    true,
                     x,
                     y,
                 )
@@ -1028,10 +1034,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 let mut old = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    1 as c_int,
-                    1 as c_int,
+                    is_sx,
+                    is_sy,
+                    true,
+                    true,
                     x,
                     y,
                 )
@@ -1044,10 +1050,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    0 as c_int,
-                    0 as c_int,
+                    is_sx,
+                    is_sy,
+                    false,
+                    false,
                     x,
                     y,
                 )
@@ -1055,10 +1061,10 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                 old = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
-                    sx,
-                    sy,
-                    1 as c_int,
-                    0 as c_int,
+                    is_sx,
+                    is_sy,
+                    true,
+                    false,
                     x,
                     y,
                 )
@@ -1079,7 +1085,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                     .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
                     .offset(lx as isize);
                 let mut avg: BD::Pixel = *luma.offset(0);
-                if sx != 0 {
+                if is_sx {
                     avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
                         .as_::<BD::Pixel>();
                 }
@@ -1096,7 +1102,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
                     val = iclip(
                         (combined >> 6)
                             + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                        0 as c_int,
+                        0,
                         bd.bitdepth_max().as_::<c_int>(),
                     );
                 }
@@ -1144,8 +1150,8 @@ unsafe extern "C" fn fguv_32x32xn_420_c_erased<BD: BitDepth>(
         luma_stride,
         uv_pl,
         is_id,
-        1 as c_int,
-        1 as c_int,
+        true,
+        true,
         BD::from_c(bitdepth_max),
     );
 }
@@ -1180,8 +1186,8 @@ unsafe extern "C" fn fguv_32x32xn_422_c_erased<BD: BitDepth>(
         luma_stride,
         uv_pl,
         is_id,
-        1 as c_int,
-        0 as c_int,
+        true,
+        false,
         BD::from_c(bitdepth_max),
     );
 }
@@ -1216,8 +1222,8 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased<BD: BitDepth>(
         luma_stride,
         uv_pl,
         is_id,
-        0 as c_int,
-        0 as c_int,
+        false,
+        false,
         BD::from_c(bitdepth_max),
     );
 }
