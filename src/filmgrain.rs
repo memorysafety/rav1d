@@ -284,7 +284,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe fn generate_grain_uv_c<BD: BitDepth>(
+unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     buf: *mut [BD::Entry; GRAIN_WIDTH],
     buf_y: *const [BD::Entry; GRAIN_WIDTH],
     data: *const Rav1dFilmGrainData,
@@ -403,7 +403,7 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     uv: intptr_t,
     bitdepth_max: c_int,
 ) {
-    generate_grain_uv_c::<BD>(
+    generate_grain_uv_rust::<BD>(
         buf.cast(),
         buf_y.cast(),
         data,
@@ -766,7 +766,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe fn fguv_32x32xn_c<BD: BitDepth>(
+unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -1175,7 +1175,7 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     is_id: c_int,
     bitdepth_max: c_int,
 ) {
-    fguv_32x32xn_c::<BD>(
+    fguv_32x32xn_rust::<BD>(
         dst_row.cast(),
         src_row.cast(),
         stride,
