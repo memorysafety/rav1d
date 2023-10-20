@@ -202,7 +202,7 @@ macro_rules! decl_fguv_32x32xn_fn {
 #[inline]
 fn get_random_number(bits: c_int, state: &mut c_uint) -> c_int {
     let r = *state as c_int;
-    let bit: c_uint = ((r >> 0 ^ r >> 1 ^ r >> 3 ^ r >> 12) & 1) as c_uint;
+    let bit = ((r >> 0 ^ r >> 1 ^ r >> 3 ^ r >> 12) & 1) as c_uint;
     *state = (r >> 1) as c_uint | bit << 15;
 
     (*state >> 16 - bits & (((1 as c_int) << bits) - 1) as c_uint) as c_int
