@@ -506,6 +506,22 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
 
         static w: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
 
+        let add_noise_y = |x, y, grain| {
+            let src: *const BD::Pixel = src_row
+                .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
+                .offset(x as isize)
+                .offset(bx as isize);
+            let dst: *mut BD::Pixel = dst_row
+                .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
+                .offset(x as isize)
+                .offset(bx as isize);
+            let noise = round2(
+                *scaling.offset((*src).as_::<isize>()) as c_int * grain,
+                (*data).scaling_shift as u64,
+            );
+            *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+        };
+
         for y in ystart..bh {
             // Non-overlapped image region (straightforward)
             for x in xstart..bw {
@@ -520,20 +536,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     y,
                 )
                 .as_::<c_int>();
-                let src: *const BD::Pixel = src_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(x as isize)
-                    .offset(bx as isize);
-                let dst: *mut BD::Pixel = dst_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(x as isize)
-                    .offset(bx as isize);
-                let noise = round2(
-                    *scaling.offset((*src).as_::<isize>()) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst =
-                    iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+                add_noise_y(x, y, grain);
             }
 
             // Special case for overlapped column
@@ -565,20 +568,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let src: *const BD::Pixel = src_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(x as isize)
-                    .offset(bx as isize);
-                let dst: *mut BD::Pixel = dst_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(x as isize)
-                    .offset(bx as isize);
-                let noise = round2(
-                    *scaling.offset((*src).as_::<isize>()) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst =
-                    iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+                add_noise_y(x, y, grain);
             }
         }
         for y in 0..ystart {
@@ -611,20 +601,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let src: *const BD::Pixel = src_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(x as isize)
-                    .offset(bx as isize);
-                let dst: *mut BD::Pixel = dst_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(x as isize)
-                    .offset(bx as isize);
-                let noise = round2(
-                    *scaling.offset((*src).as_::<isize>()) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst =
-                    iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+                add_noise_y(x, y, grain);
             }
 
             // Special case for doubly-overlapped corner
@@ -693,20 +670,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let src: *const BD::Pixel = src_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(x as isize)
-                    .offset(bx as isize);
-                let dst: *mut BD::Pixel = dst_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(x as isize)
-                    .offset(bx as isize);
-                let noise = round2(
-                    *scaling.offset((*src).as_::<isize>()) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst =
-                    iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+                add_noise_y(x, y, grain);
             }
         }
     }
@@ -797,6 +761,42 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         };
 
         static w: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
+
+        let add_noise_uv = |x, y, grain| {
+            let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
+            let ly = y << sy;
+            let luma: *const BD::Pixel = luma_row
+                .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
+                .offset(lx as isize);
+            let mut avg: BD::Pixel = *luma.offset(0);
+            if is_sx {
+                avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
+                    .as_::<BD::Pixel>();
+            }
+            let src: *const BD::Pixel = src_row
+                .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
+                .offset(bx.wrapping_add(x as usize) as isize);
+            let dst: *mut BD::Pixel = dst_row
+                .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
+                .offset(bx.wrapping_add(x as usize) as isize);
+            let mut val = avg.as_::<c_int>();
+            if !(*data).chroma_scaling_from_luma {
+                let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
+                    + (*src).as_::<c_int>() * (*data).uv_mult[uv as usize];
+                val = iclip(
+                    (combined >> 6)
+                        + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
+                    0,
+                    bd.bitdepth_max().as_::<c_int>(),
+                );
+            }
+            let noise = round2(
+                *scaling.offset(val as isize) as c_int * grain,
+                (*data).scaling_shift as u64,
+            );
+            *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+        };
+
         for y in ystart..bh {
             // Non-overlapped image region (straightforward)
             for x in xstart..bw {
@@ -811,39 +811,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     y,
                 )
                 .as_::<c_int>();
-                let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
-                let ly = y << sy;
-                let luma: *const BD::Pixel = luma_row
-                    .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
-                    .offset(lx as isize);
-                let mut avg: BD::Pixel = *luma.offset(0);
-                if is_sx {
-                    avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
-                        .as_::<BD::Pixel>();
-                }
-                let src: *const BD::Pixel = src_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as usize) as isize);
-                let dst: *mut BD::Pixel = dst_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as usize) as isize);
-                let mut val = avg.as_::<c_int>();
-                if !(*data).chroma_scaling_from_luma {
-                    let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
-                        + (*src).as_::<c_int>() * (*data).uv_mult[uv as usize];
-                    val = iclip(
-                        (combined >> 6)
-                            + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                        0,
-                        bd.bitdepth_max().as_::<c_int>(),
-                    );
-                }
-                let noise = round2(
-                    *scaling.offset(val as isize) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst =
-                    iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+                add_noise_uv(x, y, grain);
             }
 
             // Special case for overlapped column
@@ -875,39 +843,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
-                let ly = y << sy;
-                let luma: *const BD::Pixel = luma_row
-                    .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
-                    .offset(lx as isize);
-                let mut avg: BD::Pixel = *luma.offset(0);
-                if sx != 0 {
-                    avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
-                        .as_::<BD::Pixel>();
-                }
-                let src: *const BD::Pixel = src_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as usize) as isize);
-                let dst: *mut BD::Pixel = dst_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as usize) as isize);
-                let mut val = avg.as_::<c_int>();
-                if !(*data).chroma_scaling_from_luma {
-                    let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
-                        + (*src).as_::<c_int>() * (*data).uv_mult[uv as usize];
-                    val = iclip(
-                        (combined >> 6)
-                            + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                        0,
-                        bd.bitdepth_max().as_::<c_int>(),
-                    );
-                }
-                let noise = round2(
-                    *scaling.offset(val as isize) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst =
-                    iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+                add_noise_uv(x, y, grain);
             }
         }
         for y in 0..ystart {
@@ -940,39 +876,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
-                let ly = y << sy;
-                let luma: *const BD::Pixel = luma_row
-                    .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
-                    .offset(lx as isize);
-                let mut avg: BD::Pixel = *luma.offset(0);
-                if is_sx {
-                    avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
-                        .as_::<BD::Pixel>();
-                }
-                let src: *const BD::Pixel = src_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as usize) as isize);
-                let dst: *mut BD::Pixel = dst_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as usize) as isize);
-                let mut val = avg.as_::<c_int>();
-                if !(*data).chroma_scaling_from_luma {
-                    let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
-                        + (*src).as_::<c_int>() * (*data).uv_mult[uv as usize];
-                    val = iclip(
-                        (combined >> 6)
-                            + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                        0,
-                        bd.bitdepth_max().as_::<c_int>(),
-                    );
-                }
-                let noise = round2(
-                    *scaling.offset(val as isize) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst =
-                    iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+                add_noise_uv(x, y, grain);
             }
 
             // Special case for doubly-overlapped corner
@@ -1041,39 +945,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
-                let ly = y << sy;
-                let luma: *const BD::Pixel = luma_row
-                    .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
-                    .offset(lx as isize);
-                let mut avg: BD::Pixel = *luma.offset(0);
-                if is_sx {
-                    avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
-                        .as_::<BD::Pixel>();
-                }
-                let src: *const BD::Pixel = src_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as usize) as isize);
-                let dst: *mut BD::Pixel = dst_row
-                    .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as usize) as isize);
-                let mut val = avg.as_::<c_int>();
-                if !(*data).chroma_scaling_from_luma {
-                    let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
-                        + (*src).as_::<c_int>() * (*data).uv_mult[uv as usize];
-                    val = iclip(
-                        (combined >> 6)
-                            + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
-                        0,
-                        bd.bitdepth_max().as_::<c_int>(),
-                    );
-                }
-                let noise = round2(
-                    *scaling.offset(val as isize) as c_int * grain,
-                    (*data).scaling_shift as u64,
-                );
-                *dst =
-                    iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+                add_noise_uv(x, y, grain);
             }
         }
     }
