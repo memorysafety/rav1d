@@ -501,9 +501,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         i += 1;
     }
 
-    if !((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0) {
-        unreachable!();
-    }
+    assert!((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0);
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
@@ -816,9 +814,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         i += 1;
     }
 
-    if !((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0) {
-        unreachable!();
-    }
+    assert!((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0);
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
