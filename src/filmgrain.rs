@@ -13,7 +13,6 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -23,6 +22,8 @@ use crate::{include::common::bitdepth::bd_fn, src::cpu::rav1d_get_cpu_flags, src
 
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
+
+const BLOCK_SIZE: usize = 32;
 
 const SUB_GRAIN_WIDTH: usize = 44;
 const SUB_GRAIN_HEIGHT: usize = 38;
@@ -415,8 +416,8 @@ unsafe fn sample_lut<BD: BitDepth>(
     let randval = (*offsets.offset(bx as isize))[by as usize];
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as c_int));
-    return (*grain_lut.offset((offy + y + (32 >> suby) * by) as isize))
-        [(offx + x + (32 >> subx) * bx) as usize];
+    return (*grain_lut.offset((offy + y + (BLOCK_SIZE as c_int >> suby) * by) as isize))
+        [(offx + x + (BLOCK_SIZE as c_int >> subx) * bx) as usize];
 }
 
 unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
@@ -479,17 +480,14 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
         i += 1;
     }
-    if !((stride as c_ulong).wrapping_rem(
-        (32 as c_int as c_ulong).wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong),
-    ) == 0 as c_ulong)
-    {
+    if !((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0) {
         unreachable!();
     }
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
         let bw = cmp::min(
-            32 as c_int,
+            BLOCK_SIZE as c_int,
             (pw as c_int as c_uint).wrapping_sub(bx) as c_int,
         );
         if (*data).overlap_flag && bx != 0 {
@@ -720,7 +718,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
             }
             y += 1;
         }
-        bx = bx.wrapping_add(32 as c_int as c_uint);
+        bx = bx.wrapping_add(BLOCK_SIZE as c_uint);
     }
 }
 
@@ -771,16 +769,16 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
         i += 1;
     }
-    if !((stride as c_ulong).wrapping_rem(
-        (32 as c_int as c_ulong).wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong),
-    ) == 0 as c_ulong)
-    {
+    if !((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0) {
         unreachable!();
     }
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        let bw = cmp::min(32 >> sx, pw.wrapping_sub(bx as usize) as c_int);
+        let bw = cmp::min(
+            BLOCK_SIZE as c_int >> sx,
+            pw.wrapping_sub(bx as usize) as c_int,
+        );
         if (*data).overlap_flag && bx != 0 {
             let mut i = 0;
             while i < rows {
@@ -1085,7 +1083,7 @@ unsafe fn fguv_32x32xn_c<BD: BitDepth>(
             }
             y += 1;
         }
-        bx = bx.wrapping_add((32 >> sx) as c_uint);
+        bx = bx.wrapping_add((BLOCK_SIZE >> sx) as c_uint);
     }
 }
 
@@ -1319,7 +1317,7 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
             r#type as ptrdiff_t,
             bd.into_c(),
         );
-        bx = bx.wrapping_add(32 as c_int as c_uint);
+        bx = bx.wrapping_add(BLOCK_SIZE as c_uint);
     }
 }
 
@@ -1438,7 +1436,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
             r#type as ptrdiff_t,
             bd.into_c(),
         );
-        bx = bx.wrapping_add((32 >> sx) as c_uint);
+        bx = bx.wrapping_add((BLOCK_SIZE >> sx) as c_uint);
     }
 }
 
