@@ -421,7 +421,8 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
 ) {
     let dst_row = dst_row.cast();
     let src_row = src_row.cast();
-    let scaling = scaling.cast();
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let scaling = unsafe { &*scaling.cast() };
     // Safety: Casting back to the original type from the `fn` ptr call.
     let grain_lut = unsafe { &*grain_lut.cast() };
     let bd = BD::from_c(bitdepth_max);
@@ -436,7 +437,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     stride: ptrdiff_t,
     data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const BD::Scaling,
+    scaling: &BD::Scaling,
     grain_lut: &GrainLut<BD::Entry>,
     bh: c_int,
     row_num: c_int,
@@ -511,7 +512,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 .offset(x as isize)
                 .offset(bx as isize);
             let noise = round2(
-                (*scaling).as_ref()[(*src).to::<usize>()] as c_int * grain,
+                scaling.as_ref()[(*src).to::<usize>()] as c_int * grain,
                 data.scaling_shift,
             );
             *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
@@ -599,7 +600,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     stride: ptrdiff_t,
     data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const BD::Scaling,
+    scaling: &BD::Scaling,
     grain_lut: &GrainLut<BD::Entry>,
     bh: c_int,
     row_num: c_int,
@@ -707,7 +708,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 );
             }
             let noise = round2(
-                (*scaling).as_ref()[val as usize] as c_int * grain,
+                scaling.as_ref()[val as usize] as c_int * grain,
                 data.scaling_shift,
             );
             *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
@@ -813,7 +814,8 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
 ) {
     let dst_row = dst_row.cast();
     let src_row = src_row.cast();
-    let scaling = scaling.cast();
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let scaling = unsafe { &*scaling.cast() };
     // Safety: Casting back to the original type from the `fn` ptr call.
     let grain_lut = unsafe { &*grain_lut.cast() };
     let luma_row = luma_row.cast();
