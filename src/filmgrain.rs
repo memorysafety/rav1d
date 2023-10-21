@@ -13,6 +13,9 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::ops::Add;
+use std::ops::Shl;
+use std::ops::Shr;
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -209,8 +212,12 @@ fn get_random_number(bits: u8, state: &mut c_uint) -> c_int {
 }
 
 #[inline]
-fn round2(x: c_int, shift: u64) -> c_int {
-    (x + (1 << shift >> 1)) >> shift
+fn round2<T, B>(x: T, shift: B) -> T
+where
+    T: Add<Output = T> + From<u8> + Shl<B, Output = T> + Shr<B, Output = T> + Shr<u8, Output = T>,
+    B: Copy,
+{
+    (x + (T::from(1) << shift >> 1)) >> shift
 }
 
 unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
@@ -236,11 +243,8 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     for y in 0..GRAIN_HEIGHT {
         for x in 0..GRAIN_WIDTH {
             let value = get_random_number(11, &mut seed);
-            (*buf.offset(y as isize))[x as usize] = round2(
-                dav1d_gaussian_sequence[value as usize] as c_int,
-                shift as u64,
-            )
-            .as_::<BD::Entry>();
+            (*buf.offset(y as isize))[x as usize] =
+                round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>();
         }
     }
 
@@ -309,11 +313,8 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     for y in 0..chromaH {
         for x in 0..chromaW {
             let value = get_random_number(11, &mut seed);
-            (*buf.offset(y as isize))[x as usize] = round2(
-                dav1d_gaussian_sequence[value as usize] as c_int,
-                shift as u64,
-            )
-            .as_::<BD::Entry>();
+            (*buf.offset(y as isize))[x as usize] =
+                round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>();
         }
     }
 
@@ -341,7 +342,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                                     .as_::<c_int>();
                             }
                         }
-                        luma = round2(luma, (subx + suby) as u64);
+                        luma = round2(luma, subx + suby);
 
                         sum += luma * *coeff as c_int;
                         break;
@@ -517,7 +518,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 .offset(bx as isize);
             let noise = round2(
                 *scaling.offset((*src).as_::<isize>()) as c_int * grain,
-                (*data).scaling_shift as u64,
+                (*data).scaling_shift,
             );
             *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
         };
@@ -563,10 +564,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     y,
                 )
                 .as_::<c_int>();
-                grain = round2(
-                    old * w[x as usize][0] + grain * w[x as usize][1],
-                    5 as c_int as u64,
-                );
+                grain = round2(old * w[x as usize][0] + grain * w[x as usize][1], 5);
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_y(x, y, grain);
             }
@@ -596,10 +594,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     y,
                 )
                 .as_::<c_int>();
-                grain = round2(
-                    old * w[y as usize][0] + grain * w[y as usize][1],
-                    5 as c_int as u64,
-                );
+                grain = round2(old * w[y as usize][0] + grain * w[y as usize][1], 5);
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_y(x, y, grain);
             }
@@ -629,10 +624,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     y,
                 )
                 .as_::<c_int>();
-                top = round2(
-                    old * w[x as usize][0] + top * w[x as usize][1],
-                    5 as c_int as u64,
-                );
+                top = round2(old * w[x as usize][0] + top * w[x as usize][1], 5);
                 top = iclip(top, grain_min, grain_max);
 
                 // Blend the current pixel with the left block
@@ -660,15 +652,9 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 .as_::<c_int>();
 
                 // Mix the row rows together and apply grain
-                grain = round2(
-                    old * w[x as usize][0] + grain * w[x as usize][1],
-                    5 as c_int as u64,
-                );
+                grain = round2(old * w[x as usize][0] + grain * w[x as usize][1], 5);
                 grain = iclip(grain, grain_min, grain_max);
-                grain = round2(
-                    top * w[y as usize][0] + grain * w[y as usize][1],
-                    5 as c_int as u64,
-                );
+                grain = round2(top * w[y as usize][0] + grain * w[y as usize][1], 5);
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_y(x, y, grain);
             }
@@ -792,7 +778,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
             }
             let noise = round2(
                 *scaling.offset(val as isize) as c_int * grain,
-                (*data).scaling_shift as u64,
+                (*data).scaling_shift,
             );
             *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
         };
@@ -840,7 +826,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 .as_::<c_int>();
                 grain = round2(
                     old * w[sx as usize][x as usize][0] + grain * w[sx as usize][x as usize][1],
-                    5 as c_int as u64,
+                    5,
                 );
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_uv(x, y, grain);
@@ -873,7 +859,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 .as_::<c_int>();
                 grain = round2(
                     old * w[sy as usize][y as usize][0] + grain * w[sy as usize][y as usize][1],
-                    5 as c_int as u64,
+                    5,
                 );
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_uv(x, y, grain);
@@ -906,7 +892,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 .as_::<c_int>();
                 top = round2(
                     old * w[sx as usize][x as usize][0] + top * w[sx as usize][x as usize][1],
-                    5 as c_int as u64,
+                    5,
                 );
                 top = iclip(top, grain_min, grain_max);
 
@@ -937,12 +923,12 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 // Mix the row rows together and apply to image
                 grain = round2(
                     old * w[sx as usize][x as usize][0] + grain * w[sx as usize][x as usize][1],
-                    5 as c_int as u64,
+                    5,
                 );
                 grain = iclip(grain, grain_min, grain_max);
                 grain = round2(
                     top * w[sy as usize][y as usize][0] + grain * w[sy as usize][y as usize][1],
-                    5 as c_int as u64,
+                    5,
                 );
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_uv(x, y, grain);
