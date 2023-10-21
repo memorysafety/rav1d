@@ -95,13 +95,13 @@ pub trait BitDepth: Clone + Copy {
         + Shr<u8, Output = Self::Pixel>
         + From<u8>
         + Into<u16>
+        + Into<usize>
         + Into<i32>
         + TryFrom<i32>
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>
-        + ToPrimitive<c_uint>
-        + ToPrimitive<isize>;
+        + ToPrimitive<c_uint>;
 
     type Coef: Copy
         + FromPrimitive<c_int>
@@ -380,6 +380,9 @@ pub struct DynCoef(c_void);
 
 #[repr(transparent)]
 pub struct DynEntry(c_void);
+
+#[repr(transparent)]
+pub struct DynScaling([u8; 1]);
 
 pub type LeftPixelRow<Pixel> = [Pixel; 4];
 pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
