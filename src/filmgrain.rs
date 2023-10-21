@@ -224,7 +224,9 @@ unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     data: &Rav1dFilmGrainData,
     bitdepth_max: c_int,
 ) {
-    generate_grain_y_rust(buf.cast(), data, BD::from_c(bitdepth_max))
+    let buf = buf.cast();
+    let bd = BD::from_c(bitdepth_max);
+    generate_grain_y_rust(buf, data, bd)
 }
 
 unsafe fn generate_grain_y_rust<BD: BitDepth>(
@@ -373,15 +375,10 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     uv: intptr_t,
     bitdepth_max: c_int,
 ) {
-    generate_grain_uv_rust::<BD>(
-        buf.cast(),
-        buf_y.cast(),
-        data,
-        uv,
-        IS_SUBX,
-        IS_SUBY,
-        BD::from_c(bitdepth_max),
-    );
+    let buf = buf.cast();
+    let buf_y = buf_y.cast();
+    let bd = BD::from_c(bitdepth_max);
+    generate_grain_uv_rust(buf, buf_y, data, uv, IS_SUBX, IS_SUBY, bd)
 }
 
 /// Sample from the correct block of a grain LUT,
@@ -419,18 +416,14 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     row_num: c_int,
     bitdepth_max: c_int,
 ) {
+    let dst_row = dst_row.cast();
+    let src_row = src_row.cast();
+    let scaling = scaling.cast();
+    let grain_lut = grain_lut.cast();
+    let bd = BD::from_c(bitdepth_max);
     fgy_32x32xn_rust(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling.cast(),
-        grain_lut.cast(),
-        bh,
-        row_num,
-        BD::from_c(bitdepth_max),
-    );
+        dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd,
+    )
 }
 
 unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
@@ -814,24 +807,30 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     is_id: c_int,
     bitdepth_max: c_int,
 ) {
-    fguv_32x32xn_rust::<BD>(
-        dst_row.cast(),
-        src_row.cast(),
+    let dst_row = dst_row.cast();
+    let src_row = src_row.cast();
+    let scaling = scaling.cast();
+    let grain_lut = grain_lut.cast();
+    let luma_row = luma_row.cast();
+    let bd = BD::from_c(bitdepth_max);
+    fguv_32x32xn_rust(
+        dst_row,
+        src_row,
         stride,
         data,
         pw,
-        scaling.cast(),
-        grain_lut.cast(),
+        scaling,
+        grain_lut,
         bh,
         row_num,
-        luma_row.cast(),
+        luma_row,
         luma_stride,
         uv_pl,
         is_id,
         IS_SX,
         IS_SY,
-        BD::from_c(bitdepth_max),
-    );
+        bd,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
@@ -910,18 +909,14 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
     row_num: c_int,
     bitdepth_max: c_int,
 ) {
+    let dst_row = dst_row.cast();
+    let src_row = src_row.cast();
+    let scaling = scaling.cast();
+    let grain_lut = grain_lut.cast();
+    let bd = BD::from_c(bitdepth_max);
     fgy_32x32xn_neon(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling.cast(),
-        grain_lut.cast(),
-        bh,
-        row_num,
-        BD::from_c(bitdepth_max),
-    );
+        dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -1010,22 +1005,28 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
     is_id: c_int,
     bitdepth_max: c_int,
 ) {
-    fguv_32x32xn_neon::<BD, NM, IS_SX, IS_SY>(
-        dst_row.cast(),
-        src_row.cast(),
+    let dst_row = dst_row.cast();
+    let src_row = src_row.cast();
+    let scaling = scaling.cast();
+    let grain_lut = grain_lut.cast();
+    let luma_row = luma_row.cast();
+    let bd = BD::from_c(bitdepth_max);
+    fguv_32x32xn_neon::<_, NM, IS_SX, IS_SY>(
+        dst_row,
+        src_row,
         stride,
         data,
         pw,
-        scaling.cast(),
-        grain_lut.cast(),
+        scaling,
+        grain_lut,
         bh,
         row_num,
-        luma_row.cast(),
+        luma_row,
         luma_stride,
         uv,
         is_id,
-        BD::from_c(bitdepth_max),
-    );
+        bd,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
