@@ -1136,7 +1136,7 @@ impl Rav1dFilmGrainDSPContext {
     }
 
     #[cold]
-    pub unsafe fn new<BD: BitDepth>() -> Self {
+    pub fn new<BD: BitDepth>() -> Self {
         let mut c = Self::new_c::<BD>();
         #[cfg(feature = "asm")]
         {
