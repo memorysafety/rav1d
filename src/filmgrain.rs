@@ -210,7 +210,7 @@ fn get_random_number(bits: u8, state: &mut c_uint) -> c_int {
 
 #[inline]
 fn round2(x: c_int, shift: u64) -> c_int {
-    x + ((1 as c_int) << shift >> 1) >> shift
+    (x + (1 << shift >> 1)) >> shift
 }
 
 unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
