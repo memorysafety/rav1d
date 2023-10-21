@@ -395,16 +395,16 @@ fn sample_lut<BD: BitDepth>(
     is_suby: bool,
     is_bx: bool,
     is_by: bool,
-    x: c_int,
-    y: c_int,
+    x: usize,
+    y: usize,
 ) -> BD::Entry {
     let [subx, suby, bx, by] = [is_subx, is_suby, is_bx, is_by].map(|it| it as usize);
 
     let randval = offsets[bx][by];
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & ((1 << 4) - 1)));
-    grain_lut[(offy + y) as usize + (BLOCK_SIZE >> suby) * by]
-        [(offx + x) as usize + (BLOCK_SIZE >> subx) * bx]
+    grain_lut[offy as usize + y + (BLOCK_SIZE >> suby) * by]
+        [offx as usize + x + (BLOCK_SIZE >> subx) * bx]
 }
 
 unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
@@ -443,6 +443,8 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     row_num: c_int,
     bd: BD,
 ) {
+    let bh = bh as usize;
+
     let rows = 1 + (data.overlap_flag && row_num > 0) as c_int;
     let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
@@ -490,9 +492,9 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
 
         // x/y block offsets to compensate for overlapped regions
         let ystart = if data.overlap_flag && row_num != 0 {
-            cmp::min(2 as c_int, bh)
+            cmp::min(2, bh)
         } else {
-            0 as c_int
+            0
         };
         let xstart = if data.overlap_flag && bx != 0 {
             cmp::min(2, bw)
@@ -521,23 +523,18 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         for y in ystart..bh {
             // Non-overlapped image region (straightforward)
             for x in xstart..bw {
-                let grain = sample_lut::<BD>(
-                    grain_lut, &offsets, false, false, false, false, x as c_int, y,
-                )
-                .as_::<c_int>();
+                let grain = sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y)
+                    .as_::<c_int>();
                 add_noise_y(x, y, grain);
             }
 
             // Special case for overlapped column
             for x in 0..xstart {
-                let mut grain = sample_lut::<BD>(
-                    grain_lut, &offsets, false, false, false, false, x as c_int, y,
-                )
-                .as_::<c_int>();
-                let old = sample_lut::<BD>(
-                    grain_lut, &offsets, false, false, true, false, x as c_int, y,
-                )
-                .as_::<c_int>();
+                let mut grain =
+                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y)
+                        .as_::<c_int>();
+                let old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, false, x, y)
+                    .as_::<c_int>();
                 grain = round2(old * w[x as usize][0] + grain * w[x as usize][1], 5);
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_y(x, y, grain);
@@ -546,14 +543,11 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         for y in 0..ystart {
             // Special case for overlapped row (sans corner)
             for x in xstart..bw {
-                let mut grain = sample_lut::<BD>(
-                    grain_lut, &offsets, false, false, false, false, x as c_int, y,
-                )
-                .as_::<c_int>();
-                let old = sample_lut::<BD>(
-                    grain_lut, &offsets, false, false, false, true, x as c_int, y,
-                )
-                .as_::<c_int>();
+                let mut grain =
+                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y)
+                        .as_::<c_int>();
+                let old = sample_lut::<BD>(grain_lut, &offsets, false, false, false, true, x, y)
+                    .as_::<c_int>();
                 grain = round2(old * w[y as usize][0] + grain * w[y as usize][1], 5);
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_y(x, y, grain);
@@ -562,25 +556,20 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
             // Special case for doubly-overlapped corner
             for x in 0..xstart {
                 // Blend the top pixel with the top left block
-                let mut top = sample_lut::<BD>(
-                    grain_lut, &offsets, false, false, false, true, x as c_int, y,
-                )
-                .as_::<c_int>();
-                let mut old =
-                    sample_lut::<BD>(grain_lut, &offsets, false, false, true, true, x as c_int, y)
+                let mut top =
+                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, true, x, y)
                         .as_::<c_int>();
+                let mut old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, true, x, y)
+                    .as_::<c_int>();
                 top = round2(old * w[x as usize][0] + top * w[x as usize][1], 5);
                 top = iclip(top, grain_min, grain_max);
 
                 // Blend the current pixel with the left block
-                let mut grain = sample_lut::<BD>(
-                    grain_lut, &offsets, false, false, false, false, x as c_int, y,
-                )
-                .as_::<c_int>();
-                old = sample_lut::<BD>(
-                    grain_lut, &offsets, false, false, true, false, x as c_int, y,
-                )
-                .as_::<c_int>();
+                let mut grain =
+                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y)
+                        .as_::<c_int>();
+                old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, false, x, y)
+                    .as_::<c_int>();
 
                 // Mix the row rows together and apply grain
                 grain = round2(old * w[x as usize][0] + grain * w[x as usize][1], 5);
@@ -612,6 +601,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     is_sy: bool,
     bd: BD,
 ) {
+    let bh = bh as usize;
     let [sx, sy] = [is_sx, is_sy].map(|it| it as c_int);
 
     let rows = 1 + (data.overlap_flag && row_num > 0) as c_int;
@@ -648,10 +638,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 
     // process this row in BLOCK_SIZE^2 blocks (subsampled)
     for bx in (0..pw).step_by(BLOCK_SIZE >> sx) {
-        let bw = cmp::min(
-            BLOCK_SIZE as c_int >> sx,
-            pw.wrapping_sub(bx as usize) as c_int,
-        );
+        let bw = cmp::min(BLOCK_SIZE >> sx, pw - bx);
         if data.overlap_flag && bx != 0 {
             // shift previous offsets left
             for i in 0..rows {
@@ -669,12 +656,12 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         let ystart = if data.overlap_flag && row_num != 0 {
             cmp::min(2 >> sy, bh)
         } else {
-            0 as c_int
+            0
         };
         let xstart = if data.overlap_flag && bx != 0 {
             cmp::min(2 >> sx, bw)
         } else {
-            0 as c_int
+            0
         };
 
         static w: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
