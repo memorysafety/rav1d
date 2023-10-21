@@ -224,13 +224,14 @@ unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     data: &Rav1dFilmGrainData,
     bitdepth_max: c_int,
 ) {
-    let buf = buf.cast();
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let buf = unsafe { &mut *buf.cast() };
     let bd = BD::from_c(bitdepth_max);
     generate_grain_y_rust(buf, data, bd)
 }
 
 unsafe fn generate_grain_y_rust<BD: BitDepth>(
-    buf: *mut GrainLut<BD::Entry>,
+    buf: &mut GrainLut<BD::Entry>,
     data: &Rav1dFilmGrainData,
     bd: BD,
 ) {
@@ -244,7 +245,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     for y in 0..GRAIN_HEIGHT {
         for x in 0..GRAIN_WIDTH {
             let value = get_random_number(11, &mut seed);
-            (*buf)[y as usize][x as usize] =
+            buf[y as usize][x as usize] =
                 round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>();
         }
     }
@@ -263,22 +264,22 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
                     }
                     let fresh0 = coeff;
                     coeff = coeff.offset(1);
-                    sum += *fresh0 as c_int
-                        * (*buf)[(y + dy) as usize][(x + dx) as usize].as_::<c_int>();
+                    sum +=
+                        *fresh0 as c_int * buf[(y + dy) as usize][(x + dx) as usize].as_::<c_int>();
                 }
             }
 
             let grain =
-                (*buf)[y as usize][x as usize].as_::<c_int>() + round2(sum, data.ar_coeff_shift);
-            (*buf)[y as usize][x as usize] = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+                buf[y as usize][x as usize].as_::<c_int>() + round2(sum, data.ar_coeff_shift);
+            buf[y as usize][x as usize] = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
     }
 }
 
 #[inline(never)]
 unsafe fn generate_grain_uv_rust<BD: BitDepth>(
-    buf: *mut GrainLut<BD::Entry>,
-    buf_y: *const GrainLut<BD::Entry>,
+    buf: &mut GrainLut<BD::Entry>,
+    buf_y: &GrainLut<BD::Entry>,
     data: &Rav1dFilmGrainData,
     uv: intptr_t,
     is_subx: bool,
@@ -313,7 +314,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     for y in 0..chromaH {
         for x in 0..chromaW {
             let value = get_random_number(11, &mut seed);
-            (*buf)[y as usize][x as usize] =
+            buf[y as usize][x as usize] =
                 round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>();
         }
     }
@@ -338,7 +339,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         let lumaY = (y - ar_pad << suby) + ar_pad;
                         for i in 0..=suby {
                             for j in 0..=subx {
-                                luma += (*buf_y)[(lumaY + i) as usize][(lumaX + j) as usize]
+                                luma += buf_y[(lumaY + i) as usize][(lumaX + j) as usize]
                                     .as_::<c_int>();
                             }
                         }
@@ -351,14 +352,14 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         coeff = coeff.offset(1);
 
                         sum += *fresh1 as c_int
-                            * (*buf)[(y + dy) as usize][(x + dx) as usize].as_::<c_int>();
+                            * buf[(y + dy) as usize][(x + dx) as usize].as_::<c_int>();
                     }
                 }
             }
 
             let grain =
-                (*buf)[y as usize][x as usize].as_::<c_int>() + round2(sum, data.ar_coeff_shift);
-            (*buf)[y as usize][x as usize] = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+                buf[y as usize][x as usize].as_::<c_int>() + round2(sum, data.ar_coeff_shift);
+            buf[y as usize][x as usize] = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
     }
 }
@@ -375,8 +376,10 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     uv: intptr_t,
     bitdepth_max: c_int,
 ) {
-    let buf = buf.cast();
-    let buf_y = buf_y.cast();
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let buf = unsafe { &mut *buf.cast() };
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let buf_y = unsafe { &*buf_y.cast() };
     let bd = BD::from_c(bitdepth_max);
     generate_grain_uv_rust(buf, buf_y, data, uv, IS_SUBX, IS_SUBY, bd)
 }
@@ -386,7 +389,7 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
 /// provided by the offsets cache.
 #[inline]
 unsafe fn sample_lut<BD: BitDepth>(
-    grain_lut: *const GrainLut<BD::Entry>,
+    grain_lut: &GrainLut<BD::Entry>,
     offsets: &[[c_int; 2]; 2],
     is_subx: bool,
     is_suby: bool,
@@ -400,7 +403,7 @@ unsafe fn sample_lut<BD: BitDepth>(
     let randval = offsets[bx as usize][by as usize];
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as c_int));
-    (*grain_lut)[(offy + y + (BLOCK_SIZE as c_int >> suby) * by) as usize]
+    grain_lut[(offy + y + (BLOCK_SIZE as c_int >> suby) * by) as usize]
         [(offx + x + (BLOCK_SIZE as c_int >> subx) * bx) as usize]
 }
 
@@ -419,7 +422,8 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     let dst_row = dst_row.cast();
     let src_row = src_row.cast();
     let scaling = scaling.cast();
-    let grain_lut = grain_lut.cast();
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let grain_lut = unsafe { &*grain_lut.cast() };
     let bd = BD::from_c(bitdepth_max);
     fgy_32x32xn_rust(
         dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd,
@@ -433,7 +437,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     data: &Rav1dFilmGrainData,
     pw: usize,
     scaling: *const BD::Scaling,
-    grain_lut: *const GrainLut<BD::Entry>,
+    grain_lut: &GrainLut<BD::Entry>,
     bh: c_int,
     row_num: c_int,
     bd: BD,
@@ -596,7 +600,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     data: &Rav1dFilmGrainData,
     pw: usize,
     scaling: *const BD::Scaling,
-    grain_lut: *const GrainLut<BD::Entry>,
+    grain_lut: &GrainLut<BD::Entry>,
     bh: c_int,
     row_num: c_int,
     luma_row: *const BD::Pixel,
@@ -810,7 +814,8 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     let dst_row = dst_row.cast();
     let src_row = src_row.cast();
     let scaling = scaling.cast();
-    let grain_lut = grain_lut.cast();
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let grain_lut = unsafe { &*grain_lut.cast() };
     let luma_row = luma_row.cast();
     let bd = BD::from_c(bitdepth_max);
     fguv_32x32xn_rust(
