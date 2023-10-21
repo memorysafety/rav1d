@@ -1099,23 +1099,49 @@ unsafe fn film_grain_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext
         fguv_32x32xn_neon_erased::<BD, 444, false, false>;
 }
 
+impl Rav1dFilmGrainDSPContext {
+    fn new_c<BD: BitDepth>() -> Self {
+        let mut c = Self {
+            generate_grain_y: generate_grain_y_c_erased::<BD>,
+            generate_grain_uv: [
+                generate_grain_uv_c_erased::<BD, 420, true, true>, // RAV1D_PIXEL_LAYOUT_I420 - 1
+                generate_grain_uv_c_erased::<BD, 422, true, false>, // RAV1D_PIXEL_LAYOUT_I422 - 1
+                generate_grain_uv_c_erased::<BD, 444, false, false>, // RAV1D_PIXEL_LAYOUT_I444 - 1
+            ],
+            fgy_32x32xn: fgy_32x32xn_c_erased::<BD>,
+            fguv_32x32xn: [
+                fguv_32x32xn_c_erased::<BD, 420, true, true>, // RAV1D_PIXEL_LAYOUT_I420 - 1
+                fguv_32x32xn_c_erased::<BD, 422, true, false>, // RAV1D_PIXEL_LAYOUT_I422 - 1
+                fguv_32x32xn_c_erased::<BD, 444, false, false>, // RAV1D_PIXEL_LAYOUT_I444 - 1
+            ],
+        };
+
+        // TODO(kkysen) We should use something like `enum_map!`,
+        // but this ensures we have the correct order.
+        // Also, `fn`s don't `impl Default`,
+        // so we can't use that for the initial value above.
+
+        c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+            generate_grain_uv_c_erased::<BD, 420, true, true>;
+        c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+            generate_grain_uv_c_erased::<BD, 422, true, false>;
+        c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+            generate_grain_uv_c_erased::<BD, 444, false, false>;
+
+        c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+            fguv_32x32xn_c_erased::<BD, 420, true, true>;
+        c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+            fguv_32x32xn_c_erased::<BD, 422, true, false>;
+        c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+            fguv_32x32xn_c_erased::<BD, 444, false, false>;
+
+        c
+    }
+}
+
 #[cold]
 pub unsafe fn rav1d_film_grain_dsp_init<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
-    c.generate_grain_y = generate_grain_y_c_erased::<BD>;
-    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        generate_grain_uv_c_erased::<BD, 420, true, true>;
-    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        generate_grain_uv_c_erased::<BD, 422, true, false>;
-    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        generate_grain_uv_c_erased::<BD, 444, false, false>;
-
-    c.fgy_32x32xn = fgy_32x32xn_c_erased::<BD>;
-    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
-        fguv_32x32xn_c_erased::<BD, 420, true, true>;
-    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
-        fguv_32x32xn_c_erased::<BD, 422, true, false>;
-    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
-        fguv_32x32xn_c_erased::<BD, 444, false, false>;
+    *c = Rav1dFilmGrainDSPContext::new_c::<BD>();
 
     #[cfg(feature = "asm")]
     cfg_if! {
