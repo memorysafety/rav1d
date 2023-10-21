@@ -21,9 +21,6 @@ use std::ops::Shr;
 use to_method::To;
 
 #[cfg(feature = "asm")]
-use cfg_if::cfg_if;
-
-#[cfg(feature = "asm")]
 use crate::{include::common::bitdepth::bd_fn, src::cpu::rav1d_get_cpu_flags, src::cpu::CpuFlags};
 
 pub const GRAIN_WIDTH: usize = 82;
@@ -1137,18 +1134,21 @@ impl Rav1dFilmGrainDSPContext {
 
         c
     }
-}
 
-#[cold]
-pub unsafe fn rav1d_film_grain_dsp_init<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
-    *c = Rav1dFilmGrainDSPContext::new_c::<BD>();
-
-    #[cfg(feature = "asm")]
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            film_grain_dsp_init_x86::<BD>(c);
-        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-            film_grain_dsp_init_arm::<BD>(c);
+    #[cold]
+    pub unsafe fn new<BD: BitDepth>() -> Self {
+        let mut c = Self::new_c::<BD>();
+        #[cfg(feature = "asm")]
+        {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            {
+                film_grain_dsp_init_x86::<BD>(&mut c);
+            }
+            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+            {
+                film_grain_dsp_init_arm::<BD>(&mut c);
+            }
         }
+        c
     }
 }
