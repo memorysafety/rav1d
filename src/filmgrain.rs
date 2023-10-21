@@ -801,27 +801,27 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-unsafe fn film_grain_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
+unsafe fn film_grain_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
-    (*c).generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, ssse3);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+    c.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, ssse3);
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, ssse3);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
         bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, ssse3);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
         bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, ssse3);
 
-    (*c).fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, ssse3);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+    c.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, ssse3);
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, ssse3);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
         bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, ssse3);
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
         bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, ssse3);
 
     #[cfg(target_arch = "x86_64")]
@@ -830,21 +830,21 @@ unsafe fn film_grain_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext
             return;
         }
 
-        (*c).generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, avx2);
-        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+        c.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, avx2);
+        c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
             bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, avx2);
-        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+        c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
             bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, avx2);
-        (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+        c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
             bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, avx2);
 
         if !flags.contains(CpuFlags::SLOW_GATHER) {
-            (*c).fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx2);
-            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+            c.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx2);
+            c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
                 bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, avx2);
-            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+            c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
                 bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, avx2);
-            (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+            c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
                 bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx2);
         }
 
@@ -852,12 +852,12 @@ unsafe fn film_grain_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext
             return;
         }
 
-        (*c).fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx512icl);
-        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+        c.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx512icl);
+        c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
             bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, avx512icl);
-        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+        c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
             bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, avx512icl);
-        (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+        c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
             bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx512icl);
     }
 }
@@ -1075,46 +1075,46 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe fn film_grain_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
+unsafe fn film_grain_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
         return;
     }
 
-    (*c).generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, neon);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+    c.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, neon);
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, neon);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
         bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, neon);
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
         bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, neon);
 
-    (*c).fgy_32x32xn = fgy_32x32xn_neon_erased::<BD>;
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+    c.fgy_32x32xn = fgy_32x32xn_neon_erased::<BD>;
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         fguv_32x32xn_neon_erased::<BD, 420, true, true>;
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
         fguv_32x32xn_neon_erased::<BD, 422, true, false>;
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
         fguv_32x32xn_neon_erased::<BD, 444, false, false>;
 }
 
 #[cold]
-pub unsafe fn rav1d_film_grain_dsp_init<BD: BitDepth>(c: *mut Rav1dFilmGrainDSPContext) {
-    (*c).generate_grain_y = generate_grain_y_c_erased::<BD>;
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+pub unsafe fn rav1d_film_grain_dsp_init<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
+    c.generate_grain_y = generate_grain_y_c_erased::<BD>;
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         generate_grain_uv_c_erased::<BD, 420, true, true>;
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
         generate_grain_uv_c_erased::<BD, 422, true, false>;
-    (*c).generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+    c.generate_grain_uv[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
         generate_grain_uv_c_erased::<BD, 444, false, false>;
 
-    (*c).fgy_32x32xn = fgy_32x32xn_c_erased::<BD>;
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
+    c.fgy_32x32xn = fgy_32x32xn_c_erased::<BD>;
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I420 - 1) as usize] =
         fguv_32x32xn_c_erased::<BD, 420, true, true>;
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I422 - 1) as usize] =
         fguv_32x32xn_c_erased::<BD, 422, true, false>;
-    (*c).fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
+    c.fguv_32x32xn[(RAV1D_PIXEL_LAYOUT_I444 - 1) as usize] =
         fguv_32x32xn_c_erased::<BD, 444, false, false>;
 
     #[cfg(feature = "asm")]
