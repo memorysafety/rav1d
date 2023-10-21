@@ -798,7 +798,7 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-unsafe fn film_grain_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
+fn film_grain_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
@@ -1072,7 +1072,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe fn film_grain_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
+fn film_grain_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dFilmGrainDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
