@@ -400,11 +400,10 @@ fn sample_lut<BD: BitDepth>(
 ) -> BD::Entry {
     let [subx, suby, bx, by] = [is_subx, is_suby, is_bx, is_by].map(|it| it as usize);
 
-    let randval = offsets[bx][by];
+    let randval = offsets[bx][by] as usize;
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & ((1 << 4) - 1)));
-    grain_lut[offy as usize + y + (BLOCK_SIZE >> suby) * by]
-        [offx as usize + x + (BLOCK_SIZE >> subx) * bx]
+    grain_lut[offy + y + (BLOCK_SIZE >> suby) * by][offx + x + (BLOCK_SIZE >> subx) * bx]
 }
 
 unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
