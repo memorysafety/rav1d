@@ -94,6 +94,7 @@ pub trait BitDepth: Clone + Copy {
         + Mul<Output = Self::Pixel>
         + Shr<u8, Output = Self::Pixel>
         + From<u8>
+        + Into<u16>
         + Into<i32>
         + TryFrom<i32>
         + FromPrimitive<c_int>

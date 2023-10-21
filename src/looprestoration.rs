@@ -13,6 +13,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::Add;
+use to_method::To;
 
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
 use std::ffi::c_void;
@@ -339,11 +340,11 @@ unsafe fn wiener_rust<BD: BitDepth>(
             let mut sum = 1 << bitdepth + 6;
 
             if BD::BPC == BPC::BPC8 {
-                sum += tmp[i + 3].into() * 128;
+                sum += tmp[i + 3].to::<i32>() * 128;
             }
 
             for (&tmp, &filter) in std::iter::zip(&tmp[i..i + 7], &filter[0][..7]) {
-                sum += tmp.into() * filter as c_int;
+                sum += tmp.to::<i32>() * filter as c_int;
             }
 
             hor[i] = iclip(sum + rounding_off_h >> round_bits_h, 0, clip_limit - 1) as u16;
