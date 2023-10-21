@@ -200,7 +200,7 @@ macro_rules! decl_fguv_32x32xn_fn {
 }
 
 #[inline]
-fn get_random_number(bits: c_int, state: &mut c_uint) -> c_int {
+fn get_random_number(bits: u8, state: &mut c_uint) -> c_int {
     let r = *state;
     let bit = (r >> 0 ^ r >> 1 ^ r >> 3 ^ r >> 12) & 1;
     *state = (r >> 1) | bit << 15;
@@ -235,7 +235,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
 
     for y in 0..GRAIN_HEIGHT {
         for x in 0..GRAIN_WIDTH {
-            let value = get_random_number(11 as c_int, &mut seed);
+            let value = get_random_number(11, &mut seed);
             (*buf.offset(y as isize))[x as usize] = round2(
                 dav1d_gaussian_sequence[value as usize] as c_int,
                 shift as u64,
@@ -308,7 +308,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
 
     for y in 0..chromaH {
         for x in 0..chromaW {
-            let value = get_random_number(11 as c_int, &mut seed);
+            let value = get_random_number(11, &mut seed);
             (*buf.offset(y as isize))[x as usize] = round2(
                 dav1d_gaussian_sequence[value as usize] as c_int,
                 shift as u64,
@@ -489,7 +489,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         // update current offsets
         for i in 0..rows {
             offsets[0][i as usize] =
-                get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i as isize));
+                get_random_number(8, &mut *seed.as_mut_ptr().offset(i as isize));
         }
 
         // x/y block offsets to compensate for overlapped regions
@@ -745,7 +745,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         // update current offsets
         for i in 0..rows {
             offsets[0][i as usize] =
-                get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i as isize));
+                get_random_number(8, &mut *seed.as_mut_ptr().offset(i as isize));
         }
 
         // x/y block offsets to compensate for overlapped regions
@@ -1119,7 +1119,7 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
         // update current offsets
         for i in 0..rows {
             offsets[0][i as usize] =
-                get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i as isize));
+                get_random_number(8, &mut *seed.as_mut_ptr().offset(i as isize));
         }
 
         let mut r#type = 0;
@@ -1229,7 +1229,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
         // update current offsets
         for i in 0..rows {
             offsets[0][i as usize] =
-                get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i as isize));
+                get_random_number(8, &mut *seed.as_mut_ptr().offset(i as isize));
         }
 
         let mut r#type = 0;
