@@ -397,13 +397,14 @@ fn sample_lut<BD: BitDepth>(
     is_by: bool,
     x: usize,
     y: usize,
-) -> BD::Entry {
+) -> i32 {
     let [subx, suby, bx, by] = [is_subx, is_suby, is_bx, is_by].map(|it| it as usize);
 
     let randval = offsets[bx][by] as usize;
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & ((1 << 4) - 1)));
     grain_lut[offy + y + (BLOCK_SIZE >> suby) * by][offx + x + (BLOCK_SIZE >> subx) * bx]
+        .as_::<i32>()
 }
 
 unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
@@ -521,18 +522,15 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         for y in ystart..bh {
             // Non-overlapped image region (straightforward)
             for x in xstart..bw {
-                let grain = sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y)
-                    .as_::<c_int>();
+                let grain = sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y);
                 add_noise_y(x, y, grain);
             }
 
             // Special case for overlapped column
             for x in 0..xstart {
                 let mut grain =
-                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y)
-                        .as_::<c_int>();
-                let old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, false, x, y)
-                    .as_::<c_int>();
+                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y);
+                let old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, false, x, y);
                 grain = round2(old * w[x as usize][0] + grain * w[x as usize][1], 5);
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_y(x, y, grain);
@@ -542,10 +540,8 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
             // Special case for overlapped row (sans corner)
             for x in xstart..bw {
                 let mut grain =
-                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y)
-                        .as_::<c_int>();
-                let old = sample_lut::<BD>(grain_lut, &offsets, false, false, false, true, x, y)
-                    .as_::<c_int>();
+                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y);
+                let old = sample_lut::<BD>(grain_lut, &offsets, false, false, false, true, x, y);
                 grain = round2(old * w[y as usize][0] + grain * w[y as usize][1], 5);
                 grain = iclip(grain, grain_min, grain_max);
                 add_noise_y(x, y, grain);
@@ -555,19 +551,15 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
             for x in 0..xstart {
                 // Blend the top pixel with the top left block
                 let mut top =
-                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, true, x, y)
-                        .as_::<c_int>();
-                let mut old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, true, x, y)
-                    .as_::<c_int>();
+                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, true, x, y);
+                let mut old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, true, x, y);
                 top = round2(old * w[x as usize][0] + top * w[x as usize][1], 5);
                 top = iclip(top, grain_min, grain_max);
 
                 // Blend the current pixel with the left block
                 let mut grain =
-                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y)
-                        .as_::<c_int>();
-                old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, false, x, y)
-                    .as_::<c_int>();
+                    sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y);
+                old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, false, x, y);
 
                 // Mix the row rows together and apply grain
                 grain = round2(old * w[x as usize][0] + grain * w[x as usize][1], 5);
@@ -701,18 +693,15 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         for y in ystart..bh {
             // Non-overlapped image region (straightforward)
             for x in xstart..bw {
-                let grain = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y)
-                    .as_::<c_int>();
+                let grain = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y);
                 add_noise_uv(x, y, grain);
             }
 
             // Special case for overlapped column
             for x in 0..xstart {
                 let mut grain =
-                    sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y)
-                        .as_::<c_int>();
-                let old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, false, x, y)
-                    .as_::<c_int>();
+                    sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y);
+                let old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, false, x, y);
                 grain = round2(
                     old * w[sx as usize][x as usize][0] + grain * w[sx as usize][x as usize][1],
                     5,
@@ -725,10 +714,8 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
             // Special case for overlapped row (sans corner)
             for x in xstart..bw {
                 let mut grain =
-                    sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y)
-                        .as_::<c_int>();
-                let old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, true, x, y)
-                    .as_::<c_int>();
+                    sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y);
+                let old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, true, x, y);
                 grain = round2(
                     old * w[sy as usize][y as usize][0] + grain * w[sy as usize][y as usize][1],
                     5,
@@ -741,10 +728,8 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
             for x in 0..xstart {
                 // Blend the top pixel with the top left block
                 let mut top =
-                    sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, true, x, y)
-                        .as_::<c_int>();
-                let mut old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, true, x, y)
-                    .as_::<c_int>();
+                    sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, true, x, y);
+                let mut old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, true, x, y);
                 top = round2(
                     old * w[sx as usize][x as usize][0] + top * w[sx as usize][x as usize][1],
                     5,
@@ -753,10 +738,8 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 
                 // Blend the current pixel with the left block
                 let mut grain =
-                    sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y)
-                        .as_::<c_int>();
-                old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, false, x, y)
-                    .as_::<c_int>();
+                    sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y);
+                old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, false, x, y);
 
                 // Mix the row rows together and apply to image
                 grain = round2(
