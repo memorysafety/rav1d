@@ -388,7 +388,7 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
 /// while taking into account the offsets
 /// provided by the offsets cache.
 #[inline]
-unsafe fn sample_lut<BD: BitDepth>(
+fn sample_lut<BD: BitDepth>(
     grain_lut: &GrainLut<BD::Entry>,
     offsets: &[[c_int; 2]; 2],
     is_subx: bool,
