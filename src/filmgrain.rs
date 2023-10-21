@@ -402,7 +402,7 @@ fn sample_lut<BD: BitDepth>(
 
     let randval = offsets[bx][by];
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
-    let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as c_int));
+    let offy = 3 + (2 >> suby) * (3 + (randval & 0xF));
     grain_lut[(offy + y) as usize + (BLOCK_SIZE >> suby) * by]
         [(offx + x) as usize + (BLOCK_SIZE >> subx) * bx]
 }
