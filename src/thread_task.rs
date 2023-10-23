@@ -1367,6 +1367,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                         as *mut atomic_int,
                                                 ) != 0)
                                         {
+                                            error_0 = ::core::intrinsics::atomic_load_seqcst(
+                                                &mut (*f).task_thread.error,
+                                            );
                                             rav1d_decode_frame_exit(
                                                 &mut *f,
                                                 if error_0 == 1 {
@@ -1607,6 +1610,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             as *mut atomic_int,
                                     ) != 0
                                 {
+                                    error_0 = ::core::intrinsics::atomic_load_seqcst(
+                                        &mut (*f).task_thread.error,
+                                    );
                                     rav1d_decode_frame_exit(
                                         &mut *f,
                                         if error_0 == 1 {
@@ -1672,6 +1678,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                 as *mut atomic_int,
                                         ) != 0)
                                 {
+                                    error_0 = ::core::intrinsics::atomic_load_seqcst(
+                                        &mut (*f).task_thread.error,
+                                    );
                                     rav1d_decode_frame_exit(
                                         &mut *f,
                                         if error_0 == 1 {
