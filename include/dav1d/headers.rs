@@ -1,3 +1,4 @@
+use crate::src::enum_map::EnumKey;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
@@ -206,6 +207,14 @@ pub(crate) enum Rav1dPixelLayout {
     I420,
     I422,
     I444,
+}
+
+impl EnumKey<4> for Rav1dPixelLayout {
+    const VALUES: [Self; 4] = [Self::I400, Self::I420, Self::I422, Self::I444];
+
+    fn as_usize(self) -> usize {
+        self as usize
+    }
 }
 
 impl BitAnd for Rav1dPixelLayout {

@@ -31,7 +31,6 @@ where
 {
     /// Create an [`EnumMap`] from an existing array
     /// where the array's indices correspond to `K`'s values `as usize`.
-    #[allow(dead_code)]
     pub const fn new(array: [V; N]) -> Self {
         Self {
             array,
@@ -46,7 +45,7 @@ where
     V: DefaultValue,
 {
     /// Create an [`EnumMap`] with default values when `V: ` [`DefaultValue`].
-    #[allow(dead_code)]
+    #[allow(dead_code)] // TODO(kkysen) remove when used
     pub const fn default() -> Self {
         Self {
             array: [V::DEFAULT; N],
@@ -87,7 +86,6 @@ where
 /// but it also doesn't yet work in `const` contexts.
 ///
 /// [`MaybeUninit`]: std::mem::MaybeUninit
-#[allow(unused_macros)]
 macro_rules! enum_map {
     ($K:ty => $V:ty; match key { $($t:tt)* }) => {{
         use $crate::src::enum_map::EnumKey;
@@ -106,5 +104,4 @@ macro_rules! enum_map {
     }};
 }
 
-#[allow(unused_imports)]
 pub(crate) use enum_map;
