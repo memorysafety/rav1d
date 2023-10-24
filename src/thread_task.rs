@@ -3,7 +3,7 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
@@ -588,7 +588,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
     if error == 0 && frame_mt != 0 && (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0 {
         let p: *const Rav1dThreadPicture = &mut (*f).sr_cur;
         let ss_ver =
-            ((*p).p.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+            ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
         let p_b: c_uint = (((*t).sby + 1) << (*f).sb_shift + 2) as c_uint;
         let tile_sby = (*t).sby - ((*ts).tiling.row_start >> (*f).sb_shift);
         let lowest_px: *const [c_int; 2] =

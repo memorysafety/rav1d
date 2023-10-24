@@ -1,5 +1,6 @@
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::ops::BitAnd;
 
 /// This is so we can store both `*mut D` and `*mut R`
 /// for maintaining `dav1d` ABI compatibility,
@@ -199,11 +200,48 @@ pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
 pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
 pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
 
-pub(crate) type Rav1dPixelLayout = c_uint;
-pub(crate) const RAV1D_PIXEL_LAYOUT_I444: Rav1dPixelLayout = DAV1D_PIXEL_LAYOUT_I444;
-pub(crate) const RAV1D_PIXEL_LAYOUT_I422: Rav1dPixelLayout = DAV1D_PIXEL_LAYOUT_I422;
-pub(crate) const RAV1D_PIXEL_LAYOUT_I420: Rav1dPixelLayout = DAV1D_PIXEL_LAYOUT_I420;
-pub(crate) const RAV1D_PIXEL_LAYOUT_I400: Rav1dPixelLayout = DAV1D_PIXEL_LAYOUT_I400;
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Rav1dPixelLayout {
+    I400,
+    I420,
+    I422,
+    I444,
+}
+
+impl BitAnd for Rav1dPixelLayout {
+    type Output = bool;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        (self as usize & rhs as usize) != 0
+    }
+}
+
+impl TryFrom<Dav1dPixelLayout> for Rav1dPixelLayout {
+    type Error = ();
+
+    fn try_from(value: Dav1dPixelLayout) -> Result<Self, Self::Error> {
+        use Rav1dPixelLayout::*;
+        Ok(match value {
+            DAV1D_PIXEL_LAYOUT_I400 => I400,
+            DAV1D_PIXEL_LAYOUT_I420 => I420,
+            DAV1D_PIXEL_LAYOUT_I422 => I422,
+            DAV1D_PIXEL_LAYOUT_I444 => I444,
+            _ => return Err(()),
+        })
+    }
+}
+
+impl From<Rav1dPixelLayout> for Dav1dPixelLayout {
+    fn from(value: Rav1dPixelLayout) -> Self {
+        use Rav1dPixelLayout::*;
+        match value {
+            I400 => DAV1D_PIXEL_LAYOUT_I400,
+            I420 => DAV1D_PIXEL_LAYOUT_I420,
+            I422 => DAV1D_PIXEL_LAYOUT_I422,
+            I444 => DAV1D_PIXEL_LAYOUT_I444,
+        }
+    }
+}
 
 pub type Dav1dFrameType = c_uint;
 pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
@@ -699,7 +737,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             profile,
             max_width,
             max_height,
-            layout,
+            layout: layout.try_into().unwrap(),
             pri,
             trc,
             mtrx,
@@ -814,7 +852,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             profile,
             max_width,
             max_height,
-            layout,
+            layout: layout.into(),
             pri,
             trc,
             mtrx,

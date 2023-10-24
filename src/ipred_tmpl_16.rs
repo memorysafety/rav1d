@@ -2,9 +2,7 @@ use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -1545,9 +1543,9 @@ unsafe fn intra_pred_dsp_init_x86(c: *mut Rav1dIntraPredDSPContext) {
     (*c).cfl_pred[TOP_DC_PRED as usize] = dav1d_ipred_cfl_top_16bpc_ssse3;
     (*c).cfl_pred[LEFT_DC_PRED as usize] = dav1d_ipred_cfl_left_16bpc_ssse3;
 
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I420 as usize - 1] = dav1d_ipred_cfl_ac_420_16bpc_ssse3;
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I422 as usize - 1] = dav1d_ipred_cfl_ac_422_16bpc_ssse3;
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I444 as usize - 1] = dav1d_ipred_cfl_ac_444_16bpc_ssse3;
+    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = dav1d_ipred_cfl_ac_420_16bpc_ssse3;
+    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = dav1d_ipred_cfl_ac_422_16bpc_ssse3;
+    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = dav1d_ipred_cfl_ac_444_16bpc_ssse3;
 
     (*c).pal_pred = dav1d_pal_pred_16bpc_ssse3;
 
@@ -1577,9 +1575,9 @@ unsafe fn intra_pred_dsp_init_x86(c: *mut Rav1dIntraPredDSPContext) {
         (*c).cfl_pred[TOP_DC_PRED as usize] = dav1d_ipred_cfl_top_16bpc_avx2;
         (*c).cfl_pred[LEFT_DC_PRED as usize] = dav1d_ipred_cfl_left_16bpc_avx2;
 
-        (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I420 as usize - 1] = dav1d_ipred_cfl_ac_420_16bpc_avx2;
-        (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I422 as usize - 1] = dav1d_ipred_cfl_ac_422_16bpc_avx2;
-        (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I444 as usize - 1] = dav1d_ipred_cfl_ac_444_16bpc_avx2;
+        (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = dav1d_ipred_cfl_ac_420_16bpc_avx2;
+        (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = dav1d_ipred_cfl_ac_422_16bpc_avx2;
+        (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = dav1d_ipred_cfl_ac_444_16bpc_avx2;
 
         (*c).pal_pred = dav1d_pal_pred_16bpc_avx2;
 
@@ -1631,9 +1629,9 @@ unsafe fn intra_pred_dsp_init_arm(c: *mut Rav1dIntraPredDSPContext) {
     (*c).cfl_pred[TOP_DC_PRED as usize] = dav1d_ipred_cfl_top_16bpc_neon;
     (*c).cfl_pred[LEFT_DC_PRED as usize] = dav1d_ipred_cfl_left_16bpc_neon;
 
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I420 as usize - 1] = dav1d_ipred_cfl_ac_420_16bpc_neon;
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I422 as usize - 1] = dav1d_ipred_cfl_ac_422_16bpc_neon;
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I444 as usize - 1] = dav1d_ipred_cfl_ac_444_16bpc_neon;
+    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = dav1d_ipred_cfl_ac_420_16bpc_neon;
+    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = dav1d_ipred_cfl_ac_422_16bpc_neon;
+    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = dav1d_ipred_cfl_ac_444_16bpc_neon;
 
     (*c).pal_pred = dav1d_pal_pred_16bpc_neon;
 }
@@ -2099,9 +2097,9 @@ pub unsafe fn rav1d_intra_pred_dsp_init_16bpc(c: *mut Rav1dIntraPredDSPContext) 
     (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased);
     (*c).intra_pred[FILTER_PRED as usize] = Some(ipred_filter_c_erased);
 
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I420 as usize - 1] = cfl_ac_420_c_erased;
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I422 as usize - 1] = cfl_ac_422_c_erased;
-    (*c).cfl_ac[RAV1D_PIXEL_LAYOUT_I444 as usize - 1] = cfl_ac_444_c_erased;
+    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = cfl_ac_420_c_erased;
+    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = cfl_ac_422_c_erased;
+    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = cfl_ac_444_c_erased;
     (*c).cfl_pred[DC_PRED as usize] = ipred_cfl_c_erased;
 
     (*c).cfl_pred[DC_128_PRED as usize] = ipred_cfl_128_c_erased;

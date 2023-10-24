@@ -10,6 +10,7 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dResult;
@@ -35,21 +36,31 @@ pub struct Dav1dPictureParameters {
 pub(crate) struct Rav1dPictureParameters {
     pub w: c_int,
     pub h: c_int,
-    pub layout: Dav1dPixelLayout,
+    pub layout: Rav1dPixelLayout,
     pub bpc: c_int,
 }
 
 impl From<Dav1dPictureParameters> for Rav1dPictureParameters {
     fn from(value: Dav1dPictureParameters) -> Self {
         let Dav1dPictureParameters { w, h, layout, bpc } = value;
-        Self { w, h, layout, bpc }
+        Self {
+            w,
+            h,
+            layout: layout.try_into().unwrap(),
+            bpc,
+        }
     }
 }
 
 impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
     fn from(value: Rav1dPictureParameters) -> Self {
         let Rav1dPictureParameters { w, h, layout, bpc } = value;
-        Self { w, h, layout, bpc }
+        Self {
+            w,
+            h,
+            layout: layout.into(),
+            bpc,
+        }
     }
 }
 

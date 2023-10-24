@@ -1,9 +1,7 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -132,9 +130,9 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         }
     }
 
-    if r#in.p.layout != RAV1D_PIXEL_LAYOUT_I400 && !data.chroma_scaling_from_luma {
+    if r#in.p.layout != Rav1dPixelLayout::I400 && !data.chroma_scaling_from_luma {
         assert!(out.stride[1] == r#in.stride[1]);
-        let ss_ver = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
+        let ss_ver = (r#in.p.layout == Rav1dPixelLayout::I420) as c_int;
         let stride = out.stride[1];
         let sz = (out.p.h + ss_ver >> ss_ver) as isize * stride;
         if sz < 0 {
@@ -182,8 +180,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let GrainBD { grain_lut, scaling } = grain;
     let data = &(*out.frame_hdr).film_grain.data;
     let data_c = &data.clone().into();
-    let ss_y = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
-    let ss_x = (r#in.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+    let ss_y = (r#in.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cpw = out.p.w + ss_x >> ss_x;
     let is_id = ((*out.seq_hdr).mtrx == RAV1D_MC_IDENTITY) as c_int;
     let luma_src = (r#in.data[0] as *mut BD::Pixel)
