@@ -233,34 +233,26 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
 
-    let mut y = 0;
-    while y < GRAIN_HEIGHT {
-        let mut x = 0;
-        while x < GRAIN_WIDTH {
+    for y in 0..GRAIN_HEIGHT {
+        for x in 0..GRAIN_WIDTH {
             let value = get_random_number(11 as c_int, &mut seed);
             (*buf.offset(y as isize))[x as usize] = round2(
                 dav1d_gaussian_sequence[value as usize] as c_int,
                 shift as u64,
             )
             .as_::<BD::Entry>();
-            x += 1;
         }
-        y += 1;
     }
 
     let ar_pad = 3;
     let ar_lag = (*data).ar_coeff_lag;
 
-    let mut y = ar_pad;
-    while y < GRAIN_HEIGHT as c_int {
-        let mut x = ar_pad;
-        while x < GRAIN_WIDTH as c_int - ar_pad {
+    for y in ar_pad..GRAIN_HEIGHT as c_int {
+        for x in ar_pad..GRAIN_WIDTH as c_int - ar_pad {
             let mut coeff: *const i8 = ((*data).ar_coeffs_y).as_ptr();
             let mut sum = 0;
-            let mut dy = -ar_lag;
-            while dy <= 0 {
-                let mut dx = -ar_lag;
-                while dx <= ar_lag {
+            for dy in -ar_lag..=0 {
+                for dx in -ar_lag..=ar_lag {
                     if dx == 0 && dy == 0 {
                         break;
                     }
@@ -268,18 +260,14 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
                     coeff = coeff.offset(1);
                     sum += *fresh0 as c_int
                         * (*buf.offset((y + dy) as isize))[(x + dx) as usize].as_::<c_int>();
-                    dx += 1;
                 }
-                dy += 1;
             }
 
             let grain = (*buf.offset(y as isize))[x as usize].as_::<c_int>()
                 + round2(sum, (*data).ar_coeff_shift);
             (*buf.offset(y as isize))[x as usize] =
                 iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
-            x += 1;
         }
-        y += 1;
     }
 }
 
@@ -318,34 +306,26 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
         GRAIN_HEIGHT as c_int
     };
 
-    let mut y = 0;
-    while y < chromaH {
-        let mut x = 0;
-        while x < chromaW {
+    for y in 0..chromaH {
+        for x in 0..chromaW {
             let value = get_random_number(11 as c_int, &mut seed);
             (*buf.offset(y as isize))[x as usize] = round2(
                 dav1d_gaussian_sequence[value as usize] as c_int,
                 shift as u64,
             )
             .as_::<BD::Entry>();
-            x += 1;
         }
-        y += 1;
     }
 
     let ar_pad = 3;
     let ar_lag = (*data).ar_coeff_lag;
 
-    let mut y = ar_pad;
-    while y < chromaH {
-        let mut x = ar_pad;
-        while x < chromaW - ar_pad {
+    for y in ar_pad..chromaH {
+        for x in ar_pad..chromaW - ar_pad {
             let mut coeff: *const i8 = ((*data).ar_coeffs_uv[uv as usize]).as_ptr();
             let mut sum = 0;
-            let mut dy = -ar_lag;
-            while dy <= 0 {
-                let mut dx = -ar_lag;
-                while dx <= ar_lag {
+            for dy in -ar_lag..=0 {
+                for dx in -ar_lag..=ar_lag {
                     // For the final (current) pixel, we need to add in the
                     // contribution from the luma grain texture.
                     if dx == 0 && dy == 0 {
@@ -355,15 +335,11 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         let mut luma = 0;
                         let lumaX = (x - ar_pad << subx) + ar_pad;
                         let lumaY = (y - ar_pad << suby) + ar_pad;
-                        let mut i = 0;
-                        while i <= suby {
-                            let mut j = 0;
-                            while j <= subx {
+                        for i in 0..=suby {
+                            for j in 0..=subx {
                                 luma += (*buf_y.offset((lumaY + i) as isize))[(lumaX + j) as usize]
                                     .as_::<c_int>();
-                                j += 1;
                             }
-                            i += 1;
                         }
                         luma = round2(luma, (subx + suby) as u64);
 
@@ -375,19 +351,15 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
 
                         sum += *fresh1 as c_int
                             * (*buf.offset((y + dy) as isize))[(x + dx) as usize].as_::<c_int>();
-                        dx += 1;
                     }
                 }
-                dy += 1;
             }
 
             let grain = (*buf.offset(y as isize))[x as usize].as_::<c_int>()
                 + round2(sum, (*data).ar_coeff_shift);
             (*buf.offset(y as isize))[x as usize] =
                 iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
-            x += 1;
         }
-        y += 1;
     }
 }
 
@@ -493,12 +465,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
 
     // seed[0] contains the current row, seed[1] contains the previous
     let mut seed: [c_uint; 2] = [0; 2];
-    let mut i = 0;
-    while i < rows {
+    for i in 0..rows {
         seed[i as usize] = (*data).seed;
         seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
-        i += 1;
     }
 
     assert!((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0);
@@ -506,28 +476,20 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
     // process this row in BLOCK_SIZE^2 blocks
-    let mut bx: c_uint = 0 as c_int as c_uint;
-    while (bx as usize) < pw {
-        let bw = cmp::min(
-            BLOCK_SIZE as c_int,
-            (pw as c_int as c_uint).wrapping_sub(bx) as c_int,
-        );
+    for bx in (0..pw).step_by(BLOCK_SIZE) {
+        let bw = cmp::min(BLOCK_SIZE, pw - bx);
 
         if (*data).overlap_flag && bx != 0 {
             // shift previous offsets left
-            let mut i = 0;
-            while i < rows {
+            for i in 0..rows {
                 offsets[1][i as usize] = offsets[0][i as usize];
-                i += 1;
             }
         }
 
         // update current offsets
-        let mut i = 0;
-        while i < rows {
+        for i in 0..rows {
             offsets[0][i as usize] =
                 get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i as isize));
-            i += 1;
         }
 
         // x/y block offsets to compensate for overlapped regions
@@ -537,18 +499,16 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
             0 as c_int
         };
         let xstart = if (*data).overlap_flag && bx != 0 {
-            cmp::min(2 as c_int, bw)
+            cmp::min(2, bw)
         } else {
-            0 as c_int
+            0
         };
 
         static w: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
 
-        let mut y = ystart;
-        while y < bh {
+        for y in ystart..bh {
             // Non-overlapped image region (straightforward)
-            let mut x = xstart;
-            while x < bw {
+            for x in xstart..bw {
                 let grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
@@ -556,7 +516,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     false,
                     false,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -574,12 +534,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 );
                 *dst =
                     iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
-                x += 1;
             }
 
             // Special case for overlapped column
-            let mut x = 0;
-            while x < xstart {
+            for x in 0..xstart {
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
@@ -587,7 +545,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     false,
                     false,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -598,7 +556,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     true,
                     false,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -621,15 +579,11 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 );
                 *dst =
                     iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
-                x += 1;
             }
-            y += 1;
         }
-        let mut y = 0;
-        while y < ystart {
+        for y in 0..ystart {
             // Special case for overlapped row (sans corner)
-            let mut x = xstart;
-            while x < bw {
+            for x in xstart..bw {
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
@@ -637,7 +591,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     false,
                     false,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -648,7 +602,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     false,
                     true,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -671,12 +625,10 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 );
                 *dst =
                     iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
-                x += 1;
             }
 
             // Special case for doubly-overlapped corner
-            let mut x = 0;
-            while x < xstart {
+            for x in 0..xstart {
                 // Blend the top pixel with the top left block
                 let mut top = sample_lut::<BD>(
                     grain_lut,
@@ -685,7 +637,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     false,
                     true,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -696,7 +648,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     true,
                     true,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -714,7 +666,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     false,
                     false,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -725,7 +677,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                     false,
                     true,
                     false,
-                    x,
+                    x as c_int,
                     y,
                 )
                 .as_::<c_int>();
@@ -755,11 +707,8 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 );
                 *dst =
                     iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
-                x += 1;
             }
-            y += 1;
         }
-        bx = bx.wrapping_add(BLOCK_SIZE as c_uint);
     }
 }
 
@@ -806,12 +755,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 
     // seed[0] contains the current row, seed[1] contains the previous
     let mut seed: [c_uint; 2] = [0; 2];
-    let mut i = 0;
-    while i < rows {
+    for i in 0..rows {
         seed[i as usize] = (*data).seed;
         seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
-        i += 1;
     }
 
     assert!((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0);
@@ -819,27 +766,22 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
     // process this row in BLOCK_SIZE^2 blocks (subsampled)
-    let mut bx: c_uint = 0 as c_int as c_uint;
-    while (bx as usize) < pw {
+    for bx in (0..pw).step_by(BLOCK_SIZE >> sx) {
         let bw = cmp::min(
             BLOCK_SIZE as c_int >> sx,
             pw.wrapping_sub(bx as usize) as c_int,
         );
         if (*data).overlap_flag && bx != 0 {
             // shift previous offsets left
-            let mut i = 0;
-            while i < rows {
+            for i in 0..rows {
                 offsets[1][i as usize] = offsets[0][i as usize];
-                i += 1;
             }
         }
 
         // update current offsets
-        let mut i = 0;
-        while i < rows {
+        for i in 0..rows {
             offsets[0][i as usize] =
                 get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i as isize));
-            i += 1;
         }
 
         // x/y block offsets to compensate for overlapped regions
@@ -855,11 +797,9 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         };
 
         static w: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
-        let mut y = ystart;
-        while y < bh {
+        for y in ystart..bh {
             // Non-overlapped image region (straightforward)
-            let mut x = xstart;
-            while x < bw {
+            for x in xstart..bw {
                 let grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
@@ -871,7 +811,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     y,
                 )
                 .as_::<c_int>();
-                let lx = (bx.wrapping_add(x as c_uint) << sx) as c_int;
+                let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
                 let ly = y << sy;
                 let luma: *const BD::Pixel = luma_row
                     .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
@@ -883,10 +823,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 }
                 let src: *const BD::Pixel = src_row
                     .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
+                    .offset(bx.wrapping_add(x as usize) as isize);
                 let dst: *mut BD::Pixel = dst_row
                     .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
+                    .offset(bx.wrapping_add(x as usize) as isize);
                 let mut val = avg.as_::<c_int>();
                 if !(*data).chroma_scaling_from_luma {
                     let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
@@ -904,12 +844,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 );
                 *dst =
                     iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
-                x += 1;
             }
 
             // Special case for overlapped column
-            let mut x = 0;
-            while x < xstart {
+            for x in 0..xstart {
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
@@ -937,7 +875,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let lx = (bx.wrapping_add(x as c_uint) << sx) as c_int;
+                let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
                 let ly = y << sy;
                 let luma: *const BD::Pixel = luma_row
                     .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
@@ -949,10 +887,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 }
                 let src: *const BD::Pixel = src_row
                     .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
+                    .offset(bx.wrapping_add(x as usize) as isize);
                 let dst: *mut BD::Pixel = dst_row
                     .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
+                    .offset(bx.wrapping_add(x as usize) as isize);
                 let mut val = avg.as_::<c_int>();
                 if !(*data).chroma_scaling_from_luma {
                     let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
@@ -970,15 +908,11 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 );
                 *dst =
                     iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
-                x += 1;
             }
-            y += 1;
         }
-        let mut y = 0;
-        while y < ystart {
+        for y in 0..ystart {
             // Special case for overlapped row (sans corner)
-            let mut x = xstart;
-            while x < bw {
+            for x in xstart..bw {
                 let mut grain = sample_lut::<BD>(
                     grain_lut,
                     offsets.as_mut_ptr() as *const [c_int; 2],
@@ -1006,7 +940,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let lx = (bx.wrapping_add(x as c_uint) << sx) as c_int;
+                let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
                 let ly = y << sy;
                 let luma: *const BD::Pixel = luma_row
                     .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
@@ -1018,10 +952,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 }
                 let src: *const BD::Pixel = src_row
                     .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
+                    .offset(bx.wrapping_add(x as usize) as isize);
                 let dst: *mut BD::Pixel = dst_row
                     .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
+                    .offset(bx.wrapping_add(x as usize) as isize);
                 let mut val = avg.as_::<c_int>();
                 if !(*data).chroma_scaling_from_luma {
                     let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
@@ -1039,12 +973,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 );
                 *dst =
                     iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
-                x += 1;
             }
 
             // Special case for doubly-overlapped corner
-            let mut x = 0;
-            while x < xstart {
+            for x in 0..xstart {
                 // Blend the top pixel with the top left block
                 let mut top = sample_lut::<BD>(
                     grain_lut,
@@ -1109,7 +1041,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     5 as c_int as u64,
                 );
                 grain = iclip(grain, grain_min, grain_max);
-                let lx = (bx.wrapping_add(x as c_uint) << sx) as c_int;
+                let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
                 let ly = y << sy;
                 let luma: *const BD::Pixel = luma_row
                     .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
@@ -1121,10 +1053,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 }
                 let src: *const BD::Pixel = src_row
                     .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
+                    .offset(bx.wrapping_add(x as usize) as isize);
                 let dst: *mut BD::Pixel = dst_row
                     .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                    .offset(bx.wrapping_add(x as c_uint) as isize);
+                    .offset(bx.wrapping_add(x as usize) as isize);
                 let mut val = avg.as_::<c_int>();
                 if !(*data).chroma_scaling_from_luma {
                     let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
@@ -1142,11 +1074,8 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 );
                 *dst =
                     iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
-                x += 1;
             }
-            y += 1;
         }
-        bx = bx.wrapping_add((BLOCK_SIZE >> sx) as c_uint);
     }
 }
 
@@ -1298,34 +1227,27 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
 
     // seed[0] contains the current row, seed[1] contains the previous
     let mut seed: [c_uint; 2] = [0; 2];
-    let mut i = 0;
-    while i < rows {
+    for i in 0..rows {
         seed[i as usize] = (*data).seed;
         seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
-        i += 1;
     }
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
     // process this row in BLOCK_SIZE^2 blocks
-    let mut bx: c_uint = 0 as c_int as c_uint;
-    while (bx as usize) < pw {
+    for bx in (0..pw).step_by(BLOCK_SIZE) {
         if (*data).overlap_flag && bx != 0 {
             // shift previous offsets left
-            let mut i = 0;
-            while i < rows {
+            for i in 0..rows {
                 offsets[1][i as usize] = offsets[0][i as usize];
-                i += 1;
             }
         }
 
         // update current offsets
-        let mut i = 0;
-        while i < rows {
+        for i in 0..rows {
             offsets[0][i as usize] =
                 get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i as isize));
-            i += 1;
         }
 
         let mut r#type = 0;
@@ -1349,7 +1271,6 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
             r#type as ptrdiff_t,
             bd.into_c(),
         );
-        bx = bx.wrapping_add(BLOCK_SIZE as c_uint);
     }
 }
 
@@ -1416,34 +1337,27 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 
     // seed[0] contains the current row, seed[1] contains the previous
     let mut seed: [c_uint; 2] = [0; 2];
-    let mut i = 0;
-    while i < rows {
+    for i in 0..rows {
         seed[i as usize] = (*data).seed;
         seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
-        i += 1;
     }
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
     // process this row in BLOCK_SIZE^2 blocks (subsampled)
-    let mut bx: c_uint = 0 as c_int as c_uint;
-    while (bx as usize) < pw {
+    for bx in (0..pw).step_by(BLOCK_SIZE >> sx) {
         if (*data).overlap_flag && bx != 0 {
             // shift previous offsets left
-            let mut i = 0;
-            while i < rows {
+            for i in 0..rows {
                 offsets[1][i as usize] = offsets[0][i as usize];
-                i += 1;
             }
         }
 
         // update current offsets
-        let mut i = 0;
-        while i < rows {
+        for i in 0..rows {
             offsets[0][i as usize] =
                 get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i as isize));
-            i += 1;
         }
 
         let mut r#type = 0;
@@ -1477,7 +1391,6 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
             r#type as ptrdiff_t,
             bd.into_c(),
         );
-        bx = bx.wrapping_add((BLOCK_SIZE >> sx) as c_uint);
     }
 }
 
