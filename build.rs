@@ -83,11 +83,8 @@ mod asm {
             defines.push(define);
         };
 
-        // TODO(kkysen) incorrect, dav1d defines these for all arches
-        if matches!(arch, Arch::Arm(..)) {
-            define(Define::bool("CONFIG_ASM", true));
-            define(Define::bool("CONFIG_LOG", true));
-        }
+        define(Define::bool("CONFIG_ASM", true));
+        define(Define::bool("CONFIG_LOG", true)); // TODO(kkysen) should be configurable
 
         // TODO(kkysen) incorrect since we may cross compile
         if (matches!(arch, Arch::X86(..)) && cfg!(target_os = "macos"))
