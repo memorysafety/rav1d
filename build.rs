@@ -112,11 +112,14 @@ mod asm {
             define(Define::bool("ARCH_AARCH64", arch == ArchArm::Arm64));
         }
 
-        if arch == Arch::X86(ArchX86::X86_32) {
-            define(Define::new("STACK_ALIGNMENT", 4));
-        }
-        if arch == Arch::X86(ArchX86::X86_64) {
-            define(Define::new("STACK_ALIGNMENT", 16));
+        if let Arch::X86(arch) = arch {
+            define(Define::new(
+                "STACK_ALIGNMENT",
+                match arch {
+                    ArchX86::X86_32 => 4,
+                    ArchX86::X86_64 => 16,
+                },
+            ));
         }
 
         if matches!(arch, Arch::X86(..)) {
