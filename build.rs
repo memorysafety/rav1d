@@ -244,6 +244,7 @@ mod asm {
                 .flatten()
                 .collect::<PathBuf>();
             path.set_extension(asm_extension);
+            println!("cargo:rerun-if-changed={}", path.to_str().unwrap());
             path
         });
 
@@ -253,7 +254,7 @@ mod asm {
             let mut nasm = nasm_rs::Build::new();
             nasm.min_version(2, 14, 0);
             nasm.files(asm_file_paths);
-            nasm.flag(&format!("-I{}/", out_dir.as_os_str().to_str().unwrap()));
+            nasm.flag(&format!("-I{}/", out_dir.to_str().unwrap()));
             nasm.flag("-Isrc/");
             let obj = nasm.compile_objects().unwrap_or_else(|e| {
                 println!("cargo:warning={e}");
