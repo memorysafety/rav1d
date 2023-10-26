@@ -7,22 +7,20 @@ mod asm {
 
     pub fn main() {
         let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-
-        if arch == "x86_64" {
-            println!("cargo:rustc-cfg={}", "nasm_x86_64");
-            build_nasm_files(true)
-        } else if arch == "x86" {
-            println!("cargo:rustc-cfg={}", "nasm_x86");
-            build_nasm_files(false)
-        } else if arch == "aarch64" {
-            println!("cargo:rustc-cfg={}", "asm_neon");
-            build_asm_files(true)
-        } else if arch == "arm" {
-            println!("cargo:rustc-cfg={}", "asm_neon");
-            build_asm_files(false)
-        } else {
-            panic!("unknown arch: {}", arch);
-        }
+        let rustc_cfg = match arch.as_str() {
+            "x86_64" => "nasm_x86_64",
+            "x86" => "nasm_x86",
+            "aarch64" | "arm" => "asm_neon",
+            _ => panic!("unknown arch: {arch}"),
+        };
+        println!("cargo:rustc-cfg={rustc_cfg}");
+        match arch.as_str() {
+            "x86_64" => build_nasm_files(true),
+            "x86" => build_nasm_files(false),
+            "aarch64" => build_asm_files(true),
+            "arm" => build_asm_files(false),
+            _ => unreachable!(),
+        };
     }
 
     fn build_nasm_files(x86_64: bool) {
