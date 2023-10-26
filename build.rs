@@ -142,73 +142,73 @@ mod asm {
         fs::write(&config_path, &config_contents).unwrap();
 
         let x86_generic = &[
-            "cdef_avx2.asm",
-            "cdef_sse.asm",
-            "itx_avx2.asm",
-            "itx_avx512.asm",
-            "itx_sse.asm",
-            "looprestoration_avx2.asm",
-            "msac.asm",
-            "refmvs.asm",
+            "cdef_avx2",
+            "cdef_sse",
+            "itx_avx2",
+            "itx_avx512",
+            "itx_sse",
+            "looprestoration_avx2",
+            "msac",
+            "refmvs",
         ][..];
         let x86_bpc8 = &[
-            "cdef_avx512.asm",
-            "filmgrain_avx2.asm",
-            "filmgrain_avx512.asm",
-            "filmgrain_sse.asm",
-            "ipred_avx2.asm",
-            "ipred_avx512.asm",
-            "ipred_sse.asm",
-            "loopfilter_avx2.asm",
-            "loopfilter_avx512.asm",
-            "loopfilter_sse.asm",
-            "looprestoration_avx512.asm",
-            "looprestoration_sse.asm",
-            "mc_avx2.asm",
-            "mc_avx512.asm",
-            "mc_sse.asm",
+            "cdef_avx512",
+            "filmgrain_avx2",
+            "filmgrain_avx512",
+            "filmgrain_sse",
+            "ipred_avx2",
+            "ipred_avx512",
+            "ipred_sse",
+            "loopfilter_avx2",
+            "loopfilter_avx512",
+            "loopfilter_sse",
+            "looprestoration_avx512",
+            "looprestoration_sse",
+            "mc_avx2",
+            "mc_avx512",
+            "mc_sse",
         ][..];
         let x86_bpc16 = &[
-            "cdef16_avx2.asm",
-            "cdef16_avx512.asm",
-            "cdef16_sse.asm",
-            "filmgrain16_avx2.asm",
-            "filmgrain16_avx512.asm",
-            "filmgrain16_sse.asm",
-            "ipred16_avx2.asm",
-            "ipred16_avx512.asm",
-            "ipred16_sse.asm",
-            "itx16_avx2.asm",
-            "itx16_avx512.asm",
-            "itx16_sse.asm",
-            "loopfilter16_avx2.asm",
-            "loopfilter16_avx512.asm",
-            "loopfilter16_sse.asm",
-            "looprestoration16_avx2.asm",
-            "looprestoration16_avx512.asm",
-            "looprestoration16_sse.asm",
-            "mc16_avx2.asm",
-            "mc16_avx512.asm",
-            "mc16_sse.asm",
+            "cdef16_avx2",
+            "cdef16_avx512",
+            "cdef16_sse",
+            "filmgrain16_avx2",
+            "filmgrain16_avx512",
+            "filmgrain16_sse",
+            "ipred16_avx2",
+            "ipred16_avx512",
+            "ipred16_sse",
+            "itx16_avx2",
+            "itx16_avx512",
+            "itx16_sse",
+            "loopfilter16_avx2",
+            "loopfilter16_avx512",
+            "loopfilter16_sse",
+            "looprestoration16_avx2",
+            "looprestoration16_avx512",
+            "looprestoration16_sse",
+            "mc16_avx2",
+            "mc16_avx512",
+            "mc16_sse",
         ][..];
 
-        let arm_generic = &["itx.S", "msac.S", "refmvs.S", "looprestoration_common.S"][..];
+        let arm_generic = &["itx", "msac", "refmvs", "looprestoration_common"][..];
         let arm_bpc8 = &[
-            "cdef.S",
-            "filmgrain.S",
-            "ipred.S",
-            "loopfilter.S",
-            "looprestoration.S",
-            "mc.S",
+            "cdef",
+            "filmgrain",
+            "ipred",
+            "loopfilter",
+            "looprestoration",
+            "mc",
         ][..];
         let arm_bpc16 = &[
-            "cdef16.S",
-            "filmgrain16.S",
-            "ipred16.S",
-            "itx16.S",
-            "loopfilter16.S",
-            "looprestoration16.S",
-            "mc16.S",
+            "cdef16",
+            "filmgrain16",
+            "ipred16",
+            "itx16",
+            "loopfilter16",
+            "looprestoration16",
+            "mc16",
         ][..];
 
         // TODO(kkysen) Should not compile avx on x86.
@@ -233,12 +233,15 @@ mod asm {
             Arch::X86(..) => ["x86", "."],
             Arch::Arm(..) => ["arm", pointer_width],
         };
+        let asm_extension = if use_nasm { "asm" } else { "S" };
 
         let asm_file_paths = asm_file_names.iter().flat_map(|a| *a).map(|file_name| {
-            [&["src"], &asm_file_dir[..], &[file_name]]
+            let mut path = [&["src"], &asm_file_dir[..], &[file_name]]
                 .into_iter()
                 .flatten()
-                .collect::<PathBuf>()
+                .collect::<PathBuf>();
+            path.set_extension(asm_extension);
+            path
         });
 
         let rav1dasm = "rav1dasm";
