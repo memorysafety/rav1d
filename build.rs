@@ -110,13 +110,12 @@ mod asm {
         }
 
         if let Arch::X86(arch) = arch {
-            define(Define::new(
-                "STACK_ALIGNMENT",
-                match arch {
-                    ArchX86::X86_32 => 4,
-                    ArchX86::X86_64 => 16,
-                },
-            ));
+            let stack_alignment = if arch == ArchX86::X86_64 || os == "linux" || vendor == "apple" {
+                16
+            } else {
+                4
+            };
+            define(Define::new("STACK_ALIGNMENT", stack_alignment));
         }
 
         if matches!(arch, Arch::X86(..)) {
