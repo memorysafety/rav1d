@@ -6,6 +6,39 @@ mod asm {
     use std::fmt::Display;
     use std::fs;
     use std::path::PathBuf;
+    use std::str::FromStr;
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Arch {
+        X86(ArchX86),
+        Arm(ArchArm),
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum ArchX86 {
+        X86_32,
+        X86_64,
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum ArchArm {
+        Arm32,
+        Arm64,
+    }
+
+    impl FromStr for Arch {
+        type Err = String;
+
+        fn from_str(arch: &str) -> Result<Self, Self::Err> {
+            Ok(match arch {
+                "x86" => Self::X86(ArchX86::X86_32),
+                "x86_64" => Self::X86(ArchX86::X86_64),
+                "arm" => Self::Arm(ArchArm::Arm32),
+                "aarch64" => Self::Arm(ArchArm::Arm64),
+                _ => return Err(format!("unexpected arch: {arch}")),
+            })
+        }
+    }
 
     struct Define {
         name: &'static str,
@@ -28,19 +61,20 @@ mod asm {
     pub fn main() {
         let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-        let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+        let arch = env::var("CARGO_CFG_TARGET_ARCH")
+            .unwrap()
+            .parse::<Arch>()
+            .unwrap();
         let vendor = env::var("CARGO_CFG_TARGET_VENDOR").unwrap();
         let pointer_width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
 
-        let arch = arch.as_str();
         let vendor = vendor.as_str();
         let pointer_width = pointer_width.as_str();
 
         let rustc_cfg = match arch {
-            "x86_64" => "nasm_x86_64",
-            "x86" => "nasm_x86",
-            "aarch64" | "arm" => "asm_neon",
-            _ => panic!("unknown arch: {arch}"),
+            Arch::X86(ArchX86::X86_32) => "nasm_x86",
+            Arch::X86(ArchX86::X86_64) => "nasm_x86_64",
+            Arch::Arm(..) => "asm_neon",
         };
         println!("cargo:rustc-cfg={rustc_cfg}");
 
@@ -50,50 +84,49 @@ mod asm {
         };
 
         // TODO(kkysen) incorrect, dav1d defines these for all arches
-        if arch == "arm" || arch == "aarch64" {
+        if matches!(arch, Arch::Arm(..)) {
             define(Define::bool("CONFIG_ASM", true));
             define(Define::bool("CONFIG_LOG", true));
         }
 
         // TODO(kkysen) incorrect since we may cross compile
-        if ((arch == "x86" || arch == "x86_64") && cfg!(target_os = "macos"))
-            || ((arch == "arm" || arch == "aarch64") && vendor == "apple")
+        if (matches!(arch, Arch::X86(..)) && cfg!(target_os = "macos"))
+            || (matches!(arch, Arch::Arm(..)) && vendor == "apple")
         {
             define(Define::bool("PREFIX", true));
         }
 
-        if arch == "x86" || arch == "x86_64" {
+        if matches!(arch, Arch::X86(..)) {
             define(Define::new("private_prefix", "dav1d"));
         }
-        if arch == "arm" || arch == "aarch64" {
+        if matches!(arch, Arch::Arm(..)) {
             define(Define::new("PRIVATE_PREFIX", "dav1d_"));
         }
 
-        if arch == "x86" || arch == "x86_64" {
-            define(Define::bool("ARCH_X86_32", arch == "x86"));
-            define(Define::bool("ARCH_X86_64", arch == "x86_64"));
+        if let Arch::X86(arch) = arch {
+            define(Define::bool("ARCH_X86_32", arch == ArchX86::X86_32));
+            define(Define::bool("ARCH_X86_64", arch == ArchX86::X86_64));
         }
-        if arch == "arm" || arch == "aarch64" {
-            define(Define::bool("ARCH_ARM", arch == "arm"));
-            define(Define::bool("ARCH_AARCH64", arch == "aarch64"));
+        if let Arch::Arm(arch) = arch {
+            define(Define::bool("ARCH_ARM", arch == ArchArm::Arm32));
+            define(Define::bool("ARCH_AARCH64", arch == ArchArm::Arm64));
         }
 
-        if arch == "x86" {
+        if arch == Arch::X86(ArchX86::X86_32) {
             define(Define::new("STACK_ALIGNMENT", 4));
         }
-        if arch == "x86_64" {
+        if arch == Arch::X86(ArchX86::X86_64) {
             define(Define::new("STACK_ALIGNMENT", 16));
         }
 
-        if arch == "x86" || arch == "x86_64" {
+        if matches!(arch, Arch::X86(..)) {
             define(Define::bool("PIC", true));
             define(Define::bool("FORCE_VEX_ENCODING", false)); // TODO(kkysen) incorrect, not what dav1d does
         }
 
         let use_nasm = match arch {
-            "x86" | "x86_64" => true,
-            "arm" | "aarch64" => false,
-            _ => unreachable!(),
+            Arch::X86(..) => true,
+            Arch::Arm(..) => false,
         };
 
         let define_prefix = if use_nasm { "%" } else { " #" };
@@ -180,33 +213,25 @@ mod asm {
 
         // TODO(kkysen) Should not compile avx on x86.
         let asm_file_names = match arch {
-            "x86" | "x86_64" => [
+            Arch::X86(..) => [
                 x86_generic,
                 #[cfg(feature = "bitdepth_8")]
                 x86_bpc8,
                 #[cfg(feature = "bitdepth_16")]
                 x86_bpc16,
             ],
-            "arm" | "aarch64" => [
+            Arch::Arm(..) => [
                 arm_generic,
                 #[cfg(feature = "bitdepth_8")]
                 arm_bpc8,
                 #[cfg(feature = "bitdepth_16")]
                 arm_bpc16,
             ],
-            _ => [
-                &[][..],
-                #[cfg(feature = "bitdepth_8")]
-                &[][..],
-                #[cfg(feature = "bitdepth_16")]
-                &[][..],
-            ],
         };
 
         let asm_file_dir = match arch {
-            "x86" | "x86_64" => ["x86", "."],
-            "arm" | "aarch64" => ["arm", pointer_width],
-            _ => unreachable!(),
+            Arch::X86(..) => ["x86", "."],
+            Arch::Arm(..) => ["arm", pointer_width],
         };
 
         let asm_file_paths = asm_file_names.iter().flat_map(|a| *a).map(|file_name| {
