@@ -65,9 +65,11 @@ mod asm {
             .unwrap()
             .parse::<Arch>()
             .unwrap();
+        let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
         let vendor = env::var("CARGO_CFG_TARGET_VENDOR").unwrap();
         let pointer_width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
 
+        let os = os.as_str();
         let vendor = vendor.as_str();
         let pointer_width = pointer_width.as_str();
 
@@ -86,10 +88,7 @@ mod asm {
         define(Define::bool("CONFIG_ASM", true));
         define(Define::bool("CONFIG_LOG", true)); // TODO(kkysen) should be configurable
 
-        // TODO(kkysen) incorrect since we may cross compile
-        if (matches!(arch, Arch::X86(..)) && cfg!(target_os = "macos"))
-            || (matches!(arch, Arch::Arm(..)) && vendor == "apple")
-        {
+        if vendor == "apple" || (os == "windows" && matches!(arch, Arch::X86(..))) {
             define(Define::bool("PREFIX", true));
         }
 
