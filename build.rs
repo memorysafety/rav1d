@@ -144,55 +144,62 @@ mod asm {
         let config_path = out_dir.join(config_file_name);
         fs::write(&config_path, &config_contents).unwrap();
 
-        let x86_generic = &[
+        // Note that avx* is never (at runtime) supported on x86.
+        let x86_generic = &["cdef_sse", "itx_sse", "msac", "refmvs"][..];
+        let x86_64_generic = &[
             "cdef_avx2",
-            "cdef_sse",
             "itx_avx2",
             "itx_avx512",
-            "itx_sse",
             "looprestoration_avx2",
-            "msac",
-            "refmvs",
         ][..];
         let x86_bpc8 = &[
+            "filmgrain_sse",
+            "ipred_sse",
+            "loopfilter_sse",
+            "looprestoration_sse",
+            "mc_sse",
+        ][..];
+        let x86_64_bpc8 = &[
             "cdef_avx512",
             "filmgrain_avx2",
             "filmgrain_avx512",
-            "filmgrain_sse",
             "ipred_avx2",
             "ipred_avx512",
-            "ipred_sse",
             "loopfilter_avx2",
             "loopfilter_avx512",
-            "loopfilter_sse",
             "looprestoration_avx512",
-            "looprestoration_sse",
             "mc_avx2",
             "mc_avx512",
-            "mc_sse",
         ][..];
         let x86_bpc16 = &[
+            "cdef16_sse",
+            "filmgrain16_sse",
+            "ipred16_sse",
+            "itx16_sse",
+            "loopfilter16_sse",
+            "looprestoration16_sse",
+            "mc16_sse",
+            // TODO(kkysen) avx2 shouldn't be in x86,
+            // but a const used in sse is defined in avx2 (a bug).
+            "ipred16_avx2",
+        ][..];
+        let x86_64_bpc16 = &[
             "cdef16_avx2",
             "cdef16_avx512",
-            "cdef16_sse",
             "filmgrain16_avx2",
             "filmgrain16_avx512",
-            "filmgrain16_sse",
-            "ipred16_avx2",
+            // TODO(kkysen) avx2 should only be in x86_64,
+            // but a const used in sse is defined in avx2 (a bug).
+            // "ipred16_avx2",
             "ipred16_avx512",
-            "ipred16_sse",
             "itx16_avx2",
             "itx16_avx512",
-            "itx16_sse",
             "loopfilter16_avx2",
             "loopfilter16_avx512",
-            "loopfilter16_sse",
             "looprestoration16_avx2",
             "looprestoration16_avx512",
-            "looprestoration16_sse",
             "mc16_avx2",
             "mc16_avx512",
-            "mc16_sse",
         ][..];
 
         let arm_generic = &["itx", "msac", "refmvs", "looprestoration_common"][..];
@@ -214,22 +221,37 @@ mod asm {
             "mc16",
         ][..];
 
-        // TODO(kkysen) Should not compile avx on x86.
+        let x86_all = &[
+            x86_generic,
+            #[cfg(feature = "bitdepth_8")]
+            x86_bpc8,
+            #[cfg(feature = "bitdepth_16")]
+            x86_bpc16,
+        ][..];
+        let x86_64_all = &[
+            x86_generic,
+            x86_64_generic,
+            #[cfg(feature = "bitdepth_8")]
+            x86_bpc8,
+            #[cfg(feature = "bitdepth_8")]
+            x86_64_bpc8,
+            #[cfg(feature = "bitdepth_16")]
+            x86_bpc16,
+            #[cfg(feature = "bitdepth_16")]
+            x86_64_bpc16,
+        ][..];
+        let arm_all = &[
+            arm_generic,
+            #[cfg(feature = "bitdepth_8")]
+            arm_bpc8,
+            #[cfg(feature = "bitdepth_16")]
+            arm_bpc16,
+        ][..];
+
         let asm_file_names = match arch {
-            Arch::X86(..) => [
-                x86_generic,
-                #[cfg(feature = "bitdepth_8")]
-                x86_bpc8,
-                #[cfg(feature = "bitdepth_16")]
-                x86_bpc16,
-            ],
-            Arch::Arm(..) => [
-                arm_generic,
-                #[cfg(feature = "bitdepth_8")]
-                arm_bpc8,
-                #[cfg(feature = "bitdepth_16")]
-                arm_bpc16,
-            ],
+            Arch::X86(ArchX86::X86_32) => x86_all,
+            Arch::X86(ArchX86::X86_64) => x86_64_all,
+            Arch::Arm(..) => arm_all,
         };
 
         let asm_file_dir = match arch {
