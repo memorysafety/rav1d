@@ -203,7 +203,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             &scaling[0],
             &grain_lut[0],
             bh,
-            row,
+            row as usize,
             bd,
         );
     }
@@ -235,7 +235,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                 &scaling[0],
                 &grain_lut[1 + pl],
                 bh,
-                row,
+                row as usize,
                 luma_src,
                 r#in.stride[0],
                 pl as c_int,
@@ -255,7 +255,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                     &scaling[1 + pl],
                     &grain_lut[1 + pl],
                     bh,
-                    row,
+                    row as usize,
                     luma_src,
                     r#in.stride[0],
                     pl as c_int,
