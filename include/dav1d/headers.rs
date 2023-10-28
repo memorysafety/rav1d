@@ -1031,15 +1031,11 @@ impl From<Rav1dLoopfilterModeRefDeltas> for Dav1dLoopfilterModeRefDeltas {
 }
 
 #[derive(Clone)]
-#[repr(C)]
 pub struct Rav1dFilmGrainData {
     pub seed: c_uint,
     pub num_y_points: c_int,
     pub y_points: [[u8; 2]; 14],
     pub chroma_scaling_from_luma: bool,
-    pub overlap_flag: bool,
-    pub clip_to_restricted_range: bool,
-    // 1 byte of padding
     pub num_uv_points: [c_int; 2],
     pub uv_points: [[[u8; 2]; 10]; 2],
     pub scaling_shift: c_int,
@@ -1051,6 +1047,8 @@ pub struct Rav1dFilmGrainData {
     pub uv_mult: [c_int; 2],
     pub uv_luma_mult: [c_int; 2],
     pub uv_offset: [c_int; 2],
+    pub overlap_flag: bool,
+    pub clip_to_restricted_range: bool,
 }
 
 /// Must be 16-byte aligned for `psrad` on [`Self::ar_coeff_shift`].
@@ -1139,8 +1137,6 @@ impl From<Dav1dFilmGrainData> for Rav1dFilmGrainData {
             num_y_points,
             y_points,
             chroma_scaling_from_luma: chroma_scaling_from_luma != 0,
-            overlap_flag: overlap_flag != 0,
-            clip_to_restricted_range: clip_to_restricted_range != 0,
             num_uv_points,
             uv_points,
             scaling_shift,
@@ -1152,6 +1148,8 @@ impl From<Dav1dFilmGrainData> for Rav1dFilmGrainData {
             uv_mult,
             uv_luma_mult,
             uv_offset,
+            overlap_flag: overlap_flag != 0,
+            clip_to_restricted_range: clip_to_restricted_range != 0,
         }
     }
 }
@@ -1163,8 +1161,6 @@ impl From<Rav1dFilmGrainData> for Dav1dFilmGrainData {
             num_y_points,
             y_points,
             chroma_scaling_from_luma,
-            overlap_flag,
-            clip_to_restricted_range,
             num_uv_points,
             uv_points,
             scaling_shift,
@@ -1176,6 +1172,8 @@ impl From<Rav1dFilmGrainData> for Dav1dFilmGrainData {
             uv_mult,
             uv_luma_mult,
             uv_offset,
+            overlap_flag,
+            clip_to_restricted_range,
         } = value;
         Self {
             seed,

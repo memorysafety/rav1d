@@ -4,6 +4,7 @@ use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::DynScaling;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
@@ -33,14 +34,14 @@ const SUB_GRAIN_HEIGHT: usize = 38;
 
 pub type generate_grain_y_fn = unsafe extern "C" fn(
     buf: *mut GrainLut<DynEntry>,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     bitdepth_max: c_int,
 ) -> ();
 
 pub type generate_grain_uv_fn = unsafe extern "C" fn(
     buf: *mut GrainLut<DynEntry>,
     buf_y: *const GrainLut<DynEntry>,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     uv: intptr_t,
     bitdepth_max: c_int,
 ) -> ();
@@ -49,7 +50,7 @@ pub type fgy_32x32xn_fn = unsafe extern "C" fn(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     pw: usize,
     scaling: *const DynScaling,
     grain_lut: *const GrainLut<DynEntry>,
@@ -62,7 +63,7 @@ pub type fguv_32x32xn_fn = unsafe extern "C" fn(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     pw: usize,
     scaling: *const DynScaling,
     grain_lut: *const GrainLut<DynEntry>,
@@ -87,7 +88,7 @@ pub struct Rav1dFilmGrainDSPContext {
 macro_rules! decl_generate_grain_y_fn {
     (fn $name:ident) => {{
         extern "C" {
-            fn $name(buf: *mut GrainLut<DynEntry>, data: &Rav1dFilmGrainData, bitdepth_max: c_int);
+            fn $name(buf: *mut GrainLut<DynEntry>, data: &Dav1dFilmGrainData, bitdepth_max: c_int);
         }
 
         $name
@@ -101,7 +102,7 @@ macro_rules! decl_generate_grain_uv_fn {
             fn $name(
                 buf: *mut GrainLut<DynEntry>,
                 buf_y: *const GrainLut<DynEntry>,
-                data: &Rav1dFilmGrainData,
+                data: &Dav1dFilmGrainData,
                 uv: intptr_t,
                 bitdepth_max: c_int,
             );
@@ -120,7 +121,7 @@ macro_rules! decl_fgy_32x32xn_fn {
                 dst_row: *mut DynPixel,
                 src_row: *const DynPixel,
                 stride: ptrdiff_t,
-                data: &Rav1dFilmGrainData,
+                data: &Dav1dFilmGrainData,
                 pw: usize,
                 scaling: *const DynScaling,
                 grain_lut: *const GrainLut<DynEntry>,
@@ -160,7 +161,7 @@ macro_rules! decl_fguv_32x32xn_fn {
                 dst_row: *mut DynPixel,
                 src_row: *const DynPixel,
                 stride: ptrdiff_t,
-                data: &Rav1dFilmGrainData,
+                data: &Dav1dFilmGrainData,
                 pw: usize,
                 scaling: *const DynScaling,
                 grain_lut: *const GrainLut<DynEntry>,
@@ -181,7 +182,7 @@ macro_rules! decl_fguv_32x32xn_fn {
                 src: *const DynPixel,
                 stride: ptrdiff_t,
                 scaling: *const DynScaling,
-                data: &Rav1dFilmGrainData,
+                data: &Dav1dFilmGrainData,
                 grain_lut: *const GrainLut<DynEntry>,
                 luma_row: *const DynPixel,
                 luma_stride: ptrdiff_t,
@@ -218,11 +219,12 @@ where
 
 unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     buf: *mut GrainLut<DynEntry>,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     bitdepth_max: c_int,
 ) {
     // Safety: Casting back to the original type from the `fn` ptr call.
     let buf = unsafe { &mut *buf.cast() };
+    let data = &data.clone().into();
     let bd = BD::from_c(bitdepth_max);
     generate_grain_y_rust(buf, data, bd)
 }
@@ -369,7 +371,7 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
 >(
     buf: *mut GrainLut<DynEntry>,
     buf_y: *const GrainLut<DynEntry>,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     uv: intptr_t,
     bitdepth_max: c_int,
 ) {
@@ -377,6 +379,7 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     let buf = unsafe { &mut *buf.cast() };
     // Safety: Casting back to the original type from the `fn` ptr call.
     let buf_y = unsafe { &*buf_y.cast() };
+    let data = &data.clone().into();
     let bd = BD::from_c(bitdepth_max);
     generate_grain_uv_rust(buf, buf_y, data, uv, IS_SUBX, IS_SUBY, bd)
 }
@@ -408,7 +411,7 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     pw: usize,
     scaling: *const DynScaling,
     grain_lut: *const GrainLut<DynEntry>,
@@ -418,6 +421,7 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
 ) {
     let dst_row = dst_row.cast();
     let src_row = src_row.cast();
+    let data = &data.clone().into();
     // Safety: Casting back to the original type from the `fn` ptr call.
     let scaling = unsafe { &*scaling.cast() };
     // Safety: Casting back to the original type from the `fn` ptr call.
@@ -756,7 +760,7 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     pw: usize,
     scaling: *const DynScaling,
     grain_lut: *const GrainLut<DynEntry>,
@@ -770,6 +774,7 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
 ) {
     let dst_row = dst_row.cast();
     let src_row = src_row.cast();
+    let data = &data.clone().into();
     // Safety: Casting back to the original type from the `fn` ptr call.
     let scaling = unsafe { &*scaling.cast() };
     // Safety: Casting back to the original type from the `fn` ptr call.
@@ -801,7 +806,7 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     pw: usize,
     scaling: *const DynScaling,
     grain_lut: *const GrainLut<DynEntry>,
@@ -811,6 +816,7 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
 ) {
     let dst_row = dst_row.cast();
     let src_row = src_row.cast();
+    let data = &data.clone().into();
     let scaling = scaling.cast();
     let grain_lut = grain_lut.cast();
     let bd = BD::from_c(bitdepth_max);
@@ -892,7 +898,7 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: &Rav1dFilmGrainData,
+    data: &Dav1dFilmGrainData,
     pw: usize,
     scaling: *const DynScaling,
     grain_lut: *const GrainLut<DynEntry>,
@@ -906,6 +912,8 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
 ) {
     let dst_row = dst_row.cast();
     let src_row = src_row.cast();
+    let data_c = data;
+    let data = &data.clone().into();
     let scaling = scaling.cast();
     let grain_lut = grain_lut.cast();
     let luma_row = luma_row.cast();
@@ -915,6 +923,7 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
         src_row,
         stride,
         data,
+        data_c,
         pw,
         scaling,
         grain_lut,
@@ -934,6 +943,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
     data: &Rav1dFilmGrainData,
+    data_c: &Dav1dFilmGrainData,
     pw: usize,
     scaling: *const BD::Scaling,
     grain_lut: *const GrainLut<BD::Entry>,
@@ -993,7 +1003,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
             src_row.offset(bx as isize).cast(),
             stride,
             scaling.cast(),
-            data,
+            data_c,
             grain_lut.cast(),
             luma_row.offset((bx << sx) as isize).cast(),
             luma_stride,

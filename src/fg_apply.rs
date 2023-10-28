@@ -81,15 +81,16 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
 ) {
     let GrainBD { grain_lut, scaling } = grain;
     let data = &(*out.frame_hdr).film_grain.data;
+    let data_c = &data.clone().into();
     let bitdepth_max = (1 << out.p.bpc) - 1;
 
     // Generate grain LUTs as needed
-    (dsp.generate_grain_y)(grain_lut[0].as_mut_ptr().cast(), data, bitdepth_max);
+    (dsp.generate_grain_y)(grain_lut[0].as_mut_ptr().cast(), data_c, bitdepth_max);
     if data.num_uv_points[0] != 0 || data.chroma_scaling_from_luma {
         (dsp.generate_grain_uv[r#in.p.layout as usize - 1])(
             grain_lut[1].as_mut_ptr().cast(),
             grain_lut[0].as_mut_ptr().cast(),
-            data,
+            data_c,
             0,
             bitdepth_max,
         );
@@ -98,7 +99,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         (dsp.generate_grain_uv[r#in.p.layout as usize - 1])(
             grain_lut[2].as_mut_ptr().cast(),
             grain_lut[0].as_mut_ptr().cast(),
-            data,
+            data_c,
             1,
             bitdepth_max,
         );
@@ -180,6 +181,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     // Synthesize grain for the affected planes
     let GrainBD { grain_lut, scaling } = grain;
     let data = &(*out.frame_hdr).film_grain.data;
+    let data_c = &data.clone().into();
     let ss_y = (r#in.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
     let ss_x = (r#in.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
     let cpw = out.p.w + ss_x >> ss_x;
@@ -198,7 +200,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                 .cast(),
             luma_src.cast(),
             out.stride[0],
-            data,
+            data_c,
             out.p.w as usize,
             scaling[0].as_ref().as_ptr().cast(),
             grain_lut[0].as_ptr().cast(),
@@ -234,7 +236,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                     .offset(uv_off as isize)
                     .cast(),
                 r#in.stride[1],
-                data,
+                data_c,
                 cpw as usize,
                 scaling[0].as_ref().as_ptr().cast(),
                 grain_lut[1 + pl].as_ptr().cast(),
@@ -258,7 +260,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                         .offset(uv_off as isize)
                         .cast(),
                     r#in.stride[1],
-                    data,
+                    data_c,
                     cpw as usize,
                     scaling[1 + pl].as_ref().as_ptr().cast(),
                     grain_lut[1 + pl].as_ptr().cast(),
