@@ -252,6 +252,46 @@ impl From<Rav1dPixelLayout> for Dav1dPixelLayout {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Rav1dPixelLayoutSubSampled {
+    I420,
+    I422,
+    I444,
+}
+
+impl EnumKey<3> for Rav1dPixelLayoutSubSampled {
+    const VALUES: [Self; 3] = [Self::I420, Self::I422, Self::I444];
+
+    fn as_usize(self) -> usize {
+        self as usize
+    }
+}
+
+impl TryFrom<Rav1dPixelLayout> for Rav1dPixelLayoutSubSampled {
+    type Error = ();
+
+    fn try_from(value: Rav1dPixelLayout) -> Result<Self, Self::Error> {
+        use Rav1dPixelLayout::*;
+        Ok(match value {
+            I400 => return Err(()),
+            I420 => Self::I420,
+            I422 => Self::I422,
+            I444 => Self::I444,
+        })
+    }
+}
+
+impl From<Rav1dPixelLayoutSubSampled> for Rav1dPixelLayout {
+    fn from(value: Rav1dPixelLayoutSubSampled) -> Self {
+        use Rav1dPixelLayoutSubSampled::*;
+        match value {
+            I420 => Self::I420,
+            I422 => Self::I422,
+            I444 => Self::I444,
+        }
+    }
+}
+
 pub type Dav1dFrameType = c_uint;
 pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
 pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
