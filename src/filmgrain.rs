@@ -209,10 +209,9 @@ fn get_random_number(bits: u8, state: &mut c_uint) -> c_int {
 }
 
 #[inline]
-fn round2<T, B>(x: T, shift: B) -> T
+fn round2<T>(x: T, shift: u8) -> T
 where
-    T: Add<Output = T> + From<u8> + Shl<B, Output = T> + Shr<B, Output = T> + Shr<u8, Output = T>,
-    B: Copy,
+    T: Add<Output = T> + From<u8> + Shl<u8, Output = T> + Shr<u8, Output = T>,
 {
     (x + (T::from(1) << shift >> 1)) >> shift
 }
@@ -234,7 +233,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     data: &Rav1dFilmGrainData,
     bd: BD,
 ) {
-    let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
+    let bitdepth_min_8 = bd.bitdepth() - 8;
     let mut seed: c_uint = data.seed;
     let shift = 4 - bitdepth_min_8 + data.grain_scale_shift;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
@@ -285,9 +284,9 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     is_suby: bool,
     bd: BD,
 ) {
-    let [subx, suby] = [is_subx, is_suby].map(|it| it as c_int);
+    let [subx, suby] = [is_subx, is_suby].map(|it| it as u8);
 
-    let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
+    let bitdepth_min_8 = bd.bitdepth() - 8;
     let mut seed: c_uint = data.seed
         ^ (if uv != 0 {
             0x49d8 as c_int
@@ -338,7 +337,8 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         let lumaY = (y - ar_pad << suby) + ar_pad;
                         for i in 0..=suby {
                             for j in 0..=subx {
-                                luma += buf_y[(lumaY + i) as usize][(lumaX + j) as usize]
+                                luma += buf_y[lumaY as usize + i as usize]
+                                    [lumaX as usize + j as usize]
                                     .as_::<c_int>();
                             }
                         }
@@ -877,7 +877,7 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
             src_row.offset(bx as isize).cast(),
             stride,
             scaling.cast(),
-            data.scaling_shift,
+            data.scaling_shift.into(),
             grain_lut.cast(),
             &offsets,
             bh,
