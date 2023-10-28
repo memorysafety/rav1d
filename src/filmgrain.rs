@@ -1134,7 +1134,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 }
 
 impl Rav1dFilmGrainDSPContext {
-    fn new_c<BD: BitDepth>() -> Self {
+    const fn new_c<BD: BitDepth>() -> Self {
         Self {
             generate_grain_y: FnGenerateGrainY::new(generate_grain_y_c_erased::<BD>),
             generate_grain_uv: enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
@@ -1153,9 +1153,9 @@ impl Rav1dFilmGrainDSPContext {
 
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
-    fn init_x86<BD: BitDepth>(&mut self, flags: CpuFlags) {
+    const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::SSSE3) {
-            return;
+            return self;
         }
 
         self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, ssse3);
@@ -1175,7 +1175,7 @@ impl Rav1dFilmGrainDSPContext {
         #[cfg(target_arch = "x86_64")]
         {
             if !flags.contains(CpuFlags::AVX2) {
-                return;
+                return self;
             }
 
             self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, avx2);
@@ -1195,7 +1195,7 @@ impl Rav1dFilmGrainDSPContext {
             }
 
             if !flags.contains(CpuFlags::AVX512ICL) {
-                return;
+                return self;
             }
 
             self.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx512icl);
@@ -1205,13 +1205,15 @@ impl Rav1dFilmGrainDSPContext {
                 I444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx512icl),
             });
         }
+
+        self
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
-    fn init_arm<BD: BitDepth>(&mut self, flags: CpuFlags) {
+    const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::NEON) {
-            return;
+            return self;
         }
 
         self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, neon);
@@ -1227,28 +1229,31 @@ impl Rav1dFilmGrainDSPContext {
             I422 => FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 422, true, false>),
             I444 => FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 444, false, false>),
         });
+
+        self
     }
 
-    fn init<BD: BitDepth>(&mut self) {
+    fn init<BD: BitDepth>(self) -> Self {
         #[cfg(feature = "asm")]
         {
             let flags = rav1d_get_cpu_flags();
 
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {
-                self.init_x86::<BD>(flags);
+                return self.init_x86::<BD>(flags);
             }
             #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
             {
-                self.init_arm::<BD>(flags);
+                return self.init_arm::<BD>(flags);
             }
         }
+
+        #[allow(unreachable_code)] // Reachable on some #[cfg]s.
+        self
     }
 
     #[cold]
     pub fn new<BD: BitDepth>() -> Self {
-        let mut c = Self::new_c::<BD>();
-        c.init::<BD>();
-        c
+        Self::new_c::<BD>().init::<BD>()
     }
 }
