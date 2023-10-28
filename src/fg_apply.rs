@@ -90,7 +90,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             grain_lut_1,
             grain_lut_0,
             data,
-            0,
+            false,
             bd,
         );
     }
@@ -99,7 +99,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
             grain_lut_2,
             grain_lut_0,
             data,
-            1,
+            true,
             bd,
         );
     }

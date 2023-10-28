@@ -69,12 +69,13 @@ impl FnGenerateGrainUV {
         buf: &mut GrainLut<BD::Entry>,
         buf_y: &GrainLut<BD::Entry>,
         data: &Rav1dFilmGrainData,
-        uv: intptr_t,
+        uv: bool,
         bd: BD,
     ) {
         let buf = (buf as *mut GrainLut<BD::Entry>).cast();
         let buf_y = (buf_y as *const GrainLut<BD::Entry>).cast();
         let data = &data.clone().into();
+        let uv = uv.into();
         let bd = bd.into_c();
         (self.get())(buf, buf_y, data, uv, bd)
     }
@@ -394,7 +395,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     buf: &mut GrainLut<BD::Entry>,
     buf_y: &GrainLut<BD::Entry>,
     data: &Rav1dFilmGrainData,
-    uv: usize,
+    uv: bool,
     is_subx: bool,
     is_suby: bool,
     bd: BD,
@@ -402,12 +403,8 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     let [subx, suby] = [is_subx, is_suby].map(|it| it as u8);
 
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let mut seed: c_uint = data.seed
-        ^ (if uv != 0 {
-            0x49d8 as c_int
-        } else {
-            0xb524 as c_int
-        }) as c_uint;
+    let mut seed: c_uint =
+        data.seed ^ (if uv { 0x49d8 as c_int } else { 0xb524 as c_int }) as c_uint;
     let shift = 4 - bitdepth_min_8 + data.grain_scale_shift;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
@@ -436,7 +433,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
 
     for y in ar_pad..chromaH {
         for x in ar_pad..chromaW - ar_pad {
-            let mut coeff: *const i8 = (data.ar_coeffs_uv[uv]).as_ptr();
+            let mut coeff: *const i8 = (data.ar_coeffs_uv[uv as usize]).as_ptr();
             let mut sum = 0;
             for dy in -ar_lag..=0 {
                 for dx in -ar_lag..=ar_lag {
@@ -493,7 +490,7 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     // Safety: Casting back to the original type from the `fn` ptr call.
     let buf_y = unsafe { &*buf_y.cast() };
     let data = &data.clone().into();
-    let uv = uv as usize;
+    let uv = uv != 0;
     let bd = BD::from_c(bitdepth_max);
     generate_grain_uv_rust(buf, buf_y, data, uv, IS_SUBX, IS_SUBY, bd)
 }
