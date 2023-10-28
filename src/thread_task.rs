@@ -783,7 +783,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                     &mut *out,
                     &*in_0,
                     BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain),
-                    row,
+                    row as usize,
                 );
             }
             #[cfg(feature = "bitdepth_16")]
@@ -793,7 +793,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                     &mut *out,
                     &*in_0,
                     BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain),
-                    row,
+                    row as usize,
                 );
             }
             _ => {
