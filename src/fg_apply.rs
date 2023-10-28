@@ -86,7 +86,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     let [grain_lut_0, grain_lut_1, grain_lut_2] = &mut grain_lut.0;
     dsp.generate_grain_y.call(grain_lut_0, data, bd);
     if data.num_uv_points[0] != 0 || data.chroma_scaling_from_luma {
-        dsp.generate_grain_uv[r#in.p.layout as usize - 1].call(
+        dsp.generate_grain_uv[r#in.p.layout.try_into().unwrap()].call(
             grain_lut_1,
             grain_lut_0,
             data,
@@ -95,7 +95,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
         );
     }
     if data.num_uv_points[1] != 0 || data.chroma_scaling_from_luma {
-        dsp.generate_grain_uv[r#in.p.layout as usize - 1].call(
+        dsp.generate_grain_uv[r#in.p.layout.try_into().unwrap()].call(
             grain_lut_2,
             grain_lut_0,
             data,
@@ -226,7 +226,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let uv_off = (row * 32) as isize * BD::pxstride(out.stride[1] as usize) as isize >> ss_y;
     if data.chroma_scaling_from_luma {
         for pl in 0..2 {
-            dsp.fguv_32x32xn[r#in.p.layout as usize - 1].call(
+            dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
                 (out.data[1 + pl] as *mut BD::Pixel).offset(uv_off as isize),
                 (r#in.data[1 + pl] as *const BD::Pixel).offset(uv_off as isize),
                 r#in.stride[1],
@@ -246,7 +246,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     } else {
         for pl in 0..2 {
             if data.num_uv_points[pl] != 0 {
-                dsp.fguv_32x32xn[r#in.p.layout as usize - 1].call(
+                dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
                     (out.data[1 + pl] as *mut BD::Pixel).offset(uv_off as isize),
                     (r#in.data[1 + pl] as *const BD::Pixel).offset(uv_off as isize),
                     r#in.stride[1],

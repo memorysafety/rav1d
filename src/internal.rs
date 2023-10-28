@@ -76,7 +76,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 
 #[repr(C)]
-pub struct Rav1dDSPContext {
+pub(crate) struct Rav1dDSPContext {
     pub fg: Rav1dFilmGrainDSPContext,
     pub ipred: Rav1dIntraPredDSPContext,
     pub mc: Rav1dMCDSPContext,

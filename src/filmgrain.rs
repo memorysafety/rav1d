@@ -6,8 +6,10 @@ use crate::include::common::bitdepth::DynScaling;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
+use crate::src::enum_map::enum_map;
 use crate::src::enum_map::DefaultValue;
+use crate::src::enum_map::EnumMap;
 use crate::src::internal::GrainLut;
 use crate::src::tables::dav1d_gaussian_sequence;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
@@ -179,11 +181,11 @@ impl FnFGUV32x32xN {
 }
 
 #[repr(C)]
-pub struct Rav1dFilmGrainDSPContext {
+pub(crate) struct Rav1dFilmGrainDSPContext {
     pub generate_grain_y: FnGenerateGrainY,
-    pub generate_grain_uv: [FnGenerateGrainUV; 3],
+    pub generate_grain_uv: EnumMap<Rav1dPixelLayoutSubSampled, FnGenerateGrainUV, 3>,
     pub fgy_32x32xn: FnFGY32x32xN,
-    pub fguv_32x32xn: [FnFGUV32x32xN; 3],
+    pub fguv_32x32xn: EnumMap<Rav1dPixelLayoutSubSampled, FnFGUV32x32xN, 3>,
 }
 
 #[cfg(feature = "asm")]
@@ -1133,41 +1135,20 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 
 impl Rav1dFilmGrainDSPContext {
     fn new_c<BD: BitDepth>() -> Self {
-        let mut c = Self {
+        Self {
             generate_grain_y: FnGenerateGrainY::new(generate_grain_y_c_erased::<BD>),
-            generate_grain_uv: [
-                FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 420, true, true>), // Rav1dPixelLayout::I420 - 1
-                FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 422, true, false>), // Rav1dPixelLayout::I422 - 1
-                FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 444, false, false>), // Rav1dPixelLayout::I444 - 1
-            ],
+            generate_grain_uv: enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
+                I420 => FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 420, true, true>),
+                I422 => FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 422, true, false>),
+                I444 => FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 444, false, false>),
+            }),
             fgy_32x32xn: FnFGY32x32xN::new(fgy_32x32xn_c_erased::<BD>),
-            fguv_32x32xn: [
-                FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 420, true, true>), // Rav1dPixelLayout::I420 - 1
-                FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 422, true, false>), // Rav1dPixelLayout::I422 - 1
-                FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 444, false, false>), // Rav1dPixelLayout::I444 - 1
-            ],
-        };
-
-        // TODO(kkysen) We should use something like `enum_map!`,
-        // but this ensures we have the correct order.
-        // Also, `fn`s don't `impl Default`,
-        // so we can't use that for the initial value above.
-
-        c.generate_grain_uv[Rav1dPixelLayout::I420 as usize - 1] =
-            FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 420, true, true>);
-        c.generate_grain_uv[Rav1dPixelLayout::I422 as usize - 1] =
-            FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 422, true, false>);
-        c.generate_grain_uv[Rav1dPixelLayout::I444 as usize - 1] =
-            FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 444, false, false>);
-
-        c.fguv_32x32xn[Rav1dPixelLayout::I420 as usize - 1] =
-            FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 420, true, true>);
-        c.fguv_32x32xn[Rav1dPixelLayout::I422 as usize - 1] =
-            FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 422, true, false>);
-        c.fguv_32x32xn[Rav1dPixelLayout::I444 as usize - 1] =
-            FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 444, false, false>);
-
-        c
+            fguv_32x32xn: enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
+                I420 => FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 420, true, true>),
+                I422 => FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 422, true, false>),
+                I444 => FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 444, false, false>),
+            }),
+        }
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
@@ -1178,20 +1159,18 @@ impl Rav1dFilmGrainDSPContext {
         }
 
         self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, ssse3);
-        self.generate_grain_uv[Rav1dPixelLayout::I420 as usize - 1] =
-            bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, ssse3);
-        self.generate_grain_uv[Rav1dPixelLayout::I422 as usize - 1] =
-            bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, ssse3);
-        self.generate_grain_uv[Rav1dPixelLayout::I444 as usize - 1] =
-            bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, ssse3);
+        self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
+            I420 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, ssse3),
+            I422 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, ssse3),
+            I444 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, ssse3),
+        });
 
         self.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, ssse3);
-        self.fguv_32x32xn[Rav1dPixelLayout::I420 as usize - 1] =
-            bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, ssse3);
-        self.fguv_32x32xn[Rav1dPixelLayout::I422 as usize - 1] =
-            bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, ssse3);
-        self.fguv_32x32xn[Rav1dPixelLayout::I444 as usize - 1] =
-            bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, ssse3);
+        self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
+            I420 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, ssse3),
+            I422 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, ssse3),
+            I444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, ssse3),
+        });
 
         #[cfg(target_arch = "x86_64")]
         {
@@ -1200,21 +1179,19 @@ impl Rav1dFilmGrainDSPContext {
             }
 
             self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, avx2);
-            self.generate_grain_uv[Rav1dPixelLayout::I420 as usize - 1] =
-                bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, avx2);
-            self.generate_grain_uv[Rav1dPixelLayout::I422 as usize - 1] =
-                bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, avx2);
-            self.generate_grain_uv[Rav1dPixelLayout::I444 as usize - 1] =
-                bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, avx2);
+            self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
+                I420 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, avx2),
+                I422 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, avx2),
+                I444 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, avx2),
+            });
 
             if !flags.contains(CpuFlags::SLOW_GATHER) {
                 self.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx2);
-                self.fguv_32x32xn[Rav1dPixelLayout::I420 as usize - 1] =
-                    bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, avx2);
-                self.fguv_32x32xn[Rav1dPixelLayout::I422 as usize - 1] =
-                    bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, avx2);
-                self.fguv_32x32xn[Rav1dPixelLayout::I444 as usize - 1] =
-                    bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx2);
+                self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
+                    I420 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, avx2),
+                    I422 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, avx2),
+                    I444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx2),
+                });
             }
 
             if !flags.contains(CpuFlags::AVX512ICL) {
@@ -1222,12 +1199,11 @@ impl Rav1dFilmGrainDSPContext {
             }
 
             self.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx512icl);
-            self.fguv_32x32xn[Rav1dPixelLayout::I420 as usize - 1] =
-                bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, avx512icl);
-            self.fguv_32x32xn[Rav1dPixelLayout::I422 as usize - 1] =
-                bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, avx512icl);
-            self.fguv_32x32xn[Rav1dPixelLayout::I444 as usize - 1] =
-                bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx512icl);
+            self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
+                I420 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, avx512icl),
+                I422 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, avx512icl),
+                I444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx512icl),
+            });
         }
     }
 
@@ -1239,20 +1215,18 @@ impl Rav1dFilmGrainDSPContext {
         }
 
         self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, neon);
-        self.generate_grain_uv[Rav1dPixelLayout::I420 as usize - 1] =
-            bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, neon);
-        self.generate_grain_uv[Rav1dPixelLayout::I422 as usize - 1] =
-            bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, neon);
-        self.generate_grain_uv[Rav1dPixelLayout::I444 as usize - 1] =
-            bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, neon);
+        self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
+            I420 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, neon),
+            I422 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, neon),
+            I444 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, neon),
+        });
 
         self.fgy_32x32xn = FnFGY32x32xN::new(fgy_32x32xn_neon_erased::<BD>);
-        self.fguv_32x32xn[Rav1dPixelLayout::I420 as usize - 1] =
-            FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 420, true, true>);
-        self.fguv_32x32xn[Rav1dPixelLayout::I422 as usize - 1] =
-            FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 422, true, false>);
-        self.fguv_32x32xn[Rav1dPixelLayout::I444 as usize - 1] =
-            FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 444, false, false>);
+        self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
+            I420 => FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 420, true, true>),
+            I422 => FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 422, true, false>),
+            I444 => FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 444, false, false>),
+        });
     }
 
     fn init<BD: BitDepth>(&mut self) {
