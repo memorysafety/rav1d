@@ -9,7 +9,6 @@ impl<F> HasFnPtr for WrappedFnPtr<F> {
     type FnPtr = F;
 }
 
-#[allow(dead_code)]
 impl<F> WrappedFnPtr<F> {
     pub const fn new(fn_ptr: F) -> Self {
         Self(fn_ptr)
@@ -20,7 +19,6 @@ impl<F> WrappedFnPtr<F> {
     }
 }
 
-#[allow(unused_macros)]
 macro_rules! wrap_fn_ptr {
     ($vis:vis struct $Wrapper:ident(
         unsafe extern "C" fn(
@@ -43,5 +41,4 @@ macro_rules! wrap_fn_ptr {
     };
 }
 
-#[allow(unused_imports)]
 pub(crate) use wrap_fn_ptr;
