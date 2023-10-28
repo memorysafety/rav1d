@@ -104,7 +104,7 @@ impl FnFGY32x32xN {
         pw: usize,
         scaling: &BD::Scaling,
         grain_lut: &GrainLut<BD::Entry>,
-        bh: c_int,
+        bh: usize,
         row_num: usize,
         bd: BD,
     ) {
@@ -113,6 +113,7 @@ impl FnFGY32x32xN {
         let data = &data.clone().into();
         let scaling = (scaling as *const BD::Scaling).cast();
         let grain_lut = (grain_lut as *const GrainLut<BD::Entry>).cast();
+        let bh = bh as c_int;
         let row_num = row_num as c_int;
         let bd = bd.into_c();
         (self.get())(
@@ -148,7 +149,7 @@ impl FnFGUV32x32xN {
         pw: usize,
         scaling: &BD::Scaling,
         grain_lut: &GrainLut<BD::Entry>,
-        bh: c_int,
+        bh: usize,
         row_num: usize,
         luma_row: *const BD::Pixel,
         luma_stride: ptrdiff_t,
@@ -161,6 +162,7 @@ impl FnFGUV32x32xN {
         let data = &data.clone().into();
         let scaling = (scaling as *const BD::Scaling).cast();
         let grain_lut = (grain_lut as *const GrainLut<BD::Entry>).cast();
+        let bh = bh as c_int;
         let row_num = row_num as c_int;
         let luma_row = luma_row.cast();
         let bd = bd.into_c();
