@@ -184,7 +184,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let ss_y = (r#in.p.layout == Rav1dPixelLayout::I420) as usize;
     let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as usize;
     let cpw = out.p.w as usize + ss_x >> ss_x;
-    let is_id = ((*out.seq_hdr).mtrx == RAV1D_MC_IDENTITY) as c_int;
+    let is_id = (*out.seq_hdr).mtrx == RAV1D_MC_IDENTITY;
     let luma_src = (r#in.data[0] as *mut BD::Pixel)
         .offset(((row * 32) as isize * BD::pxstride(r#in.stride[0] as usize) as isize) as isize);
     let bitdepth_max = (1 << out.p.bpc) - 1;

@@ -154,7 +154,7 @@ impl FnFGUV32x32xN {
         luma_row: *const BD::Pixel,
         luma_stride: ptrdiff_t,
         uv_pl: c_int,
-        is_id: c_int,
+        is_id: bool,
         bd: BD,
     ) {
         let dst_row = dst_row.cast();
@@ -165,6 +165,7 @@ impl FnFGUV32x32xN {
         let bh = bh as c_int;
         let row_num = row_num as c_int;
         let luma_row = luma_row.cast();
+        let is_id = is_id as c_int;
         let bd = bd.into_c();
         (self.get())(
             dst_row,
@@ -698,7 +699,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     luma_row: *const BD::Pixel,
     luma_stride: ptrdiff_t,
     uv: usize,
-    is_id: c_int,
+    is_id: bool,
     is_sx: bool,
     is_sy: bool,
     bd: BD,
@@ -715,11 +716,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     let max_value;
     if data.clip_to_restricted_range {
         min_value = (16 as c_int) << bitdepth_min_8;
-        max_value = (if is_id != 0 {
-            235 as c_int
-        } else {
-            240 as c_int
-        }) << bitdepth_min_8;
+        max_value = (if is_id { 235 as c_int } else { 240 as c_int }) << bitdepth_min_8;
     } else {
         min_value = 0 as c_int;
         max_value = bd.bitdepth_max().as_::<c_int>();
@@ -881,6 +878,7 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     let row_num = row_num as usize;
     let luma_row = luma_row.cast();
     let uv_pl = uv_pl as usize;
+    let is_id = is_id != 0;
     let bd = BD::from_c(bitdepth_max);
     fguv_32x32xn_rust(
         dst_row,
