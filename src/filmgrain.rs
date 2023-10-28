@@ -153,7 +153,7 @@ impl FnFGUV32x32xN {
         row_num: usize,
         luma_row: *const BD::Pixel,
         luma_stride: ptrdiff_t,
-        uv_pl: c_int,
+        uv_pl: usize,
         is_id: bool,
         bd: BD,
     ) {
@@ -165,6 +165,7 @@ impl FnFGUV32x32xN {
         let bh = bh as c_int;
         let row_num = row_num as c_int;
         let luma_row = luma_row.cast();
+        let uv_pl = uv_pl as c_int;
         let is_id = is_id as c_int;
         let bd = bd.into_c();
         (self.get())(
