@@ -2,6 +2,7 @@
 
 #[cfg(feature = "asm")]
 mod asm {
+    use std::collections::HashSet;
     use std::env;
     use std::fmt::Display;
     use std::fs;
@@ -61,15 +62,17 @@ mod asm {
     pub fn main() {
         let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
-        let arch = env::var("CARGO_CFG_TARGET_ARCH")
-            .unwrap()
-            .parse::<Arch>()
-            .unwrap();
+        let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+        let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
         let vendor = env::var("CARGO_CFG_TARGET_VENDOR").unwrap();
         let pointer_width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
+        let features = env::var("CARGO_CFG_TARGET_FEATURE").unwrap();
 
+        let arch = arch.parse::<Arch>().unwrap();
+        let os = os.as_str();
         let vendor = vendor.as_str();
         let pointer_width = pointer_width.as_str();
+        let features = features.split(",").collect::<HashSet<_>>();
 
         let rustc_cfg = match arch {
             Arch::X86(ArchX86::X86_32) => "nasm_x86",
@@ -83,16 +86,10 @@ mod asm {
             defines.push(define);
         };
 
-        // TODO(kkysen) incorrect, dav1d defines these for all arches
-        if matches!(arch, Arch::Arm(..)) {
-            define(Define::bool("CONFIG_ASM", true));
-            define(Define::bool("CONFIG_LOG", true));
-        }
+        define(Define::bool("CONFIG_ASM", true));
+        define(Define::bool("CONFIG_LOG", true)); // TODO(kkysen) should be configurable
 
-        // TODO(kkysen) incorrect since we may cross compile
-        if (matches!(arch, Arch::X86(..)) && cfg!(target_os = "macos"))
-            || (matches!(arch, Arch::Arm(..)) && vendor == "apple")
-        {
+        if vendor == "apple" || (os == "windows" && matches!(arch, Arch::X86(..))) {
             define(Define::bool("PREFIX", true));
         }
 
@@ -113,18 +110,21 @@ mod asm {
         }
 
         if let Arch::X86(arch) = arch {
-            define(Define::new(
-                "STACK_ALIGNMENT",
-                match arch {
-                    ArchX86::X86_32 => 4,
-                    ArchX86::X86_64 => 16,
-                },
-            ));
+            let stack_alignment = if arch == ArchX86::X86_64 || os == "linux" || vendor == "apple" {
+                16
+            } else {
+                4
+            };
+            define(Define::new("STACK_ALIGNMENT", stack_alignment));
         }
 
         if matches!(arch, Arch::X86(..)) {
             define(Define::bool("PIC", true));
-            define(Define::bool("FORCE_VEX_ENCODING", false)); // TODO(kkysen) incorrect, not what dav1d does
+
+            // Convert SSE asm into (128-bit) AVX when compiler flags are set to use AVX instructions.
+            // Note that this checks compile-time CPU features, not runtime features,
+            // but that does seem to be what `dav1d` does, too.
+            define(Define::bool("FORCE_VEX_ENCODING", features.contains("avx")));
         }
 
         let use_nasm = match arch {
