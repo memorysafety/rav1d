@@ -339,6 +339,19 @@ where
     (x + (T::from(1) << shift >> 1)) >> shift
 }
 
+/// For the returned `seed: [c_uint; 2]` array,
+/// `seed[0]` contains the current row, and
+/// `seed[1]` contains the previous row.
+fn row_seed(rows: usize, row_num: usize, data: &Rav1dFilmGrainData) -> [c_uint; 2] {
+    let mut seed: [c_uint; 2] = [0; 2];
+    for i in 0..rows {
+        seed[i] = data.seed;
+        seed[i] ^= (((row_num - i) * 37 + 178 & 0xFF) << 8) as c_uint;
+        seed[i] ^= ((row_num - i) * 173 + 105 & 0xFF) as c_uint;
+    }
+    seed
+}
+
 unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     buf: *mut GrainLut<DynEntry>,
     data: &Dav1dFilmGrainData,
@@ -579,13 +592,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         max_value = bd.bitdepth_max().as_::<c_int>();
     }
 
-    // seed[0] contains the current row, seed[1] contains the previous
-    let mut seed: [c_uint; 2] = [0; 2];
-    for i in 0..rows {
-        seed[i] = data.seed;
-        seed[i] ^= (((row_num - i) * 37 + 178 & 0xFF) << 8) as c_uint;
-        seed[i] ^= ((row_num - i) * 173 + 105 & 0xFF) as c_uint;
-    }
+    let mut seed = row_seed(rows, row_num, data);
 
     assert!((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0);
 
@@ -723,13 +730,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         max_value = bd.bitdepth_max().as_::<c_int>();
     }
 
-    // seed[0] contains the current row, seed[1] contains the previous
-    let mut seed: [c_uint; 2] = [0; 2];
-    for i in 0..rows {
-        seed[i] = data.seed;
-        seed[i] ^= (((row_num - i) * 37 + 178 & 0xFF) << 8) as c_uint;
-        seed[i] ^= ((row_num - i) * 173 + 105 & 0xFF) as c_uint;
-    }
+    let mut seed = row_seed(rows, row_num, data);
 
     assert!((stride as usize % (BLOCK_SIZE * ::core::mem::size_of::<BD::Pixel>())) == 0);
 
@@ -941,13 +942,7 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
 ) {
     let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
 
-    // seed[0] contains the current row, seed[1] contains the previous
-    let mut seed: [c_uint; 2] = [0; 2];
-    for i in 0..rows {
-        seed[i] = data.seed;
-        seed[i] ^= (((row_num - i) * 37 + 178 & 0xFF) << 8) as c_uint;
-        seed[i] ^= ((row_num - i) * 173 + 105 & 0xFF) as c_uint;
-    }
+    let mut seed = row_seed(rows, row_num, data);
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
@@ -1061,13 +1056,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 
     let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
 
-    // seed[0] contains the current row, seed[1] contains the previous
-    let mut seed: [c_uint; 2] = [0; 2];
-    for i in 0..rows {
-        seed[i] = data.seed;
-        seed[i] ^= (((row_num - i) * 37 + 178 & 0xFF) << 8) as c_uint;
-        seed[i] ^= ((row_num - i) * 173 + 105 & 0xFF) as c_uint;
-    }
+    let mut seed = row_seed(rows, row_num, data);
 
     let mut offsets: [[c_int; 2]; 2] = [[0; 2 /* row offset */]; 2 /* col offset */];
 
