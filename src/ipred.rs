@@ -152,12 +152,14 @@ extern "C" {
     decl_fns!(pal_pred, pal_pred);
 }
 
+// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline]
-pub unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+pub(crate) unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     return (angle < 40 && wh <= 16 >> is_sm) as c_int;
 }
 
-pub unsafe fn filter_fn(
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn filter_fn(
     flt_ptr: *const i8,
     p0: c_int,
     p1: c_int,
@@ -188,8 +190,10 @@ pub unsafe fn filter_fn(
 
 cfg_if! {
     if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        pub const FLT_INCR: isize = 2;
+        // TODO(kkysen) Temporarily pub until mod is deduplicated
+        pub(crate) const FLT_INCR: isize = 2;
     } else {
-        pub const FLT_INCR: isize = 1;
+        // TODO(kkysen) Temporarily pub until mod is deduplicated
+        pub(crate) const FLT_INCR: isize = 1;
     }
 }
