@@ -4,6 +4,7 @@ use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::src::ipred::get_filter_strength;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -671,62 +672,6 @@ unsafe fn ipred_smooth_h_rust(
         dst = dst.offset(stride as isize);
         y += 1;
     }
-}
-
-#[inline(never)]
-unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
-    if is_sm != 0 {
-        if wh <= 8 {
-            if angle >= 64 {
-                return 2 as c_int;
-            }
-            if angle >= 40 {
-                return 1 as c_int;
-            }
-        } else if wh <= 16 {
-            if angle >= 48 {
-                return 2 as c_int;
-            }
-            if angle >= 20 {
-                return 1 as c_int;
-            }
-        } else if wh <= 24 {
-            if angle >= 4 {
-                return 3 as c_int;
-            }
-        } else {
-            return 3 as c_int;
-        }
-    } else if wh <= 8 {
-        if angle >= 56 {
-            return 1 as c_int;
-        }
-    } else if wh <= 16 {
-        if angle >= 40 {
-            return 1 as c_int;
-        }
-    } else if wh <= 24 {
-        if angle >= 32 {
-            return 3 as c_int;
-        }
-        if angle >= 16 {
-            return 2 as c_int;
-        }
-        if angle >= 8 {
-            return 1 as c_int;
-        }
-    } else if wh <= 32 {
-        if angle >= 32 {
-            return 3 as c_int;
-        }
-        if angle >= 4 {
-            return 2 as c_int;
-        }
-        return 1 as c_int;
-    } else {
-        return 3 as c_int;
-    }
-    return 0 as c_int;
 }
 
 #[inline(never)]

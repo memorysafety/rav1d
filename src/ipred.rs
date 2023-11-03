@@ -153,6 +153,63 @@ extern "C" {
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
+#[inline(never)]
+pub(crate) unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+    if is_sm != 0 {
+        if wh <= 8 {
+            if angle >= 64 {
+                return 2 as c_int;
+            }
+            if angle >= 40 {
+                return 1 as c_int;
+            }
+        } else if wh <= 16 {
+            if angle >= 48 {
+                return 2 as c_int;
+            }
+            if angle >= 20 {
+                return 1 as c_int;
+            }
+        } else if wh <= 24 {
+            if angle >= 4 {
+                return 3 as c_int;
+            }
+        } else {
+            return 3 as c_int;
+        }
+    } else if wh <= 8 {
+        if angle >= 56 {
+            return 1 as c_int;
+        }
+    } else if wh <= 16 {
+        if angle >= 40 {
+            return 1 as c_int;
+        }
+    } else if wh <= 24 {
+        if angle >= 32 {
+            return 3 as c_int;
+        }
+        if angle >= 16 {
+            return 2 as c_int;
+        }
+        if angle >= 8 {
+            return 1 as c_int;
+        }
+    } else if wh <= 32 {
+        if angle >= 32 {
+            return 3 as c_int;
+        }
+        if angle >= 4 {
+            return 2 as c_int;
+        }
+        return 1 as c_int;
+    } else {
+        return 3 as c_int;
+    }
+    return 0 as c_int;
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline]
 pub(crate) unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     return (angle < 40 && wh <= 16 >> is_sm) as c_int;
