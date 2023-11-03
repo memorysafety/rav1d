@@ -3,11 +3,6 @@ use cfg_if::cfg_if;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 
-#[inline]
-pub unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
-    return (angle < 40 && wh <= 16 >> is_sm) as c_int;
-}
-
 pub type angular_ipred_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -155,6 +150,11 @@ extern "C" {
     decl_fns!(cfl_ac, ipred_cfl_ac_444);
 
     decl_fns!(pal_pred, pal_pred);
+}
+
+#[inline]
+pub unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+    return (angle < 40 && wh <= 16 >> is_sm) as c_int;
 }
 
 pub unsafe fn filter_fn(
