@@ -1,3 +1,4 @@
+use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -248,6 +249,17 @@ pub(crate) unsafe fn cfl_pred<BD: BitDepth>(
         dst = dst.offset(BD::pxstride(stride as usize) as isize);
         y += 1;
     }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn dc_gen_top<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int) -> c_uint {
+    let mut dc: c_uint = (width >> 1) as c_uint;
+    let mut i = 0;
+    while i < width {
+        dc = dc.wrapping_add((*topleft.offset((1 + i) as isize)).as_::<c_uint>());
+        i += 1;
+    }
+    return dc >> ctz(width as c_uint);
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
