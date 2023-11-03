@@ -15,6 +15,10 @@ pub trait DefaultValue {
     const DEFAULT: Self;
 }
 
+impl<T> DefaultValue for Option<T> {
+    const DEFAULT: Self = None;
+}
+
 /// A map from an `enum` key `K` to `V`s.
 /// `N` is the number of possible `enum` values.
 pub struct EnumMap<K, V, const N: usize>
