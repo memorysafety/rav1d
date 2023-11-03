@@ -19,3 +19,4 @@ target/
 /retranspile/
 
 .gdb_history
+.gdbinit
