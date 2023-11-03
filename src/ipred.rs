@@ -2,6 +2,7 @@ use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
+use crate::include::common::intops::apply_sign;
 use cfg_if::cfg_if;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
@@ -220,6 +221,32 @@ pub(crate) unsafe fn splat_dc<BD: BitDepth>(
                 y += 1;
             }
         }
+    }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+#[inline(never)]
+pub(crate) unsafe fn cfl_pred<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    width: c_int,
+    height: c_int,
+    dc: c_int,
+    mut ac: *const i16,
+    alpha: c_int,
+    bd: BD,
+) {
+    let mut y = 0;
+    while y < height {
+        let mut x = 0;
+        while x < width {
+            let diff = alpha * *ac.offset(x as isize) as c_int;
+            *dst.offset(x as isize) = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
+            x += 1;
+        }
+        ac = ac.offset(width as isize);
+        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        y += 1;
     }
 }
 

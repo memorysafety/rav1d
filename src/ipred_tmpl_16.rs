@@ -2,9 +2,9 @@ use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::src::ipred::cfl_pred;
 use crate::src::ipred::get_filter_strength;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::splat_dc;
@@ -150,35 +150,6 @@ unsafe fn pixel_set(dst: *mut pixel, val: c_int, num: c_int) {
     }
 }
 
-#[inline(never)]
-unsafe fn cfl_pred(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    width: c_int,
-    height: c_int,
-    dc: c_int,
-    mut ac: *const i16,
-    alpha: c_int,
-    bitdepth_max: c_int,
-) {
-    let mut y = 0;
-    while y < height {
-        let mut x = 0;
-        while x < width {
-            let diff = alpha * *ac.offset(x as isize) as c_int;
-            *dst.offset(x as isize) = iclip(
-                dc + apply_sign(diff.abs() + 32 >> 6, diff),
-                0 as c_int,
-                bitdepth_max,
-            ) as pixel;
-            x += 1;
-        }
-        ac = ac.offset(width as isize);
-        dst = dst.offset(PXSTRIDE(stride) as isize);
-        y += 1;
-    }
-}
-
 unsafe fn dc_gen_top(topleft: *const pixel, width: c_int) -> c_uint {
     let mut dc: c_uint = (width >> 1) as c_uint;
     let mut i = 0;
@@ -220,7 +191,7 @@ unsafe extern "C" fn ipred_cfl_top_c_erased(
     alpha: c_int,
     bitdepth_max: c_int,
 ) {
-    cfl_pred(
+    cfl_pred::<BitDepth16>(
         dst.cast(),
         stride,
         width,
@@ -228,7 +199,7 @@ unsafe extern "C" fn ipred_cfl_top_c_erased(
         dc_gen_top(topleft.cast(), width) as c_int,
         ac,
         alpha,
-        bitdepth_max,
+        BitDepth16::from_c(bitdepth_max),
     );
 }
 
@@ -274,7 +245,7 @@ unsafe extern "C" fn ipred_cfl_left_c_erased(
     bitdepth_max: c_int,
 ) {
     let dc: c_uint = dc_gen_left(topleft.cast(), height);
-    cfl_pred(
+    cfl_pred::<BitDepth16>(
         dst.cast(),
         stride,
         width,
@@ -282,7 +253,7 @@ unsafe extern "C" fn ipred_cfl_left_c_erased(
         dc as c_int,
         ac,
         alpha,
-        bitdepth_max,
+        BitDepth16::from_c(bitdepth_max),
     );
 }
 
@@ -344,7 +315,7 @@ unsafe extern "C" fn ipred_cfl_c_erased(
     bitdepth_max: c_int,
 ) {
     let dc: c_uint = dc_gen(topleft.cast(), width, height);
-    cfl_pred(
+    cfl_pred::<BitDepth16>(
         dst.cast(),
         stride,
         width,
@@ -352,7 +323,7 @@ unsafe extern "C" fn ipred_cfl_c_erased(
         dc as c_int,
         ac,
         alpha,
-        bitdepth_max,
+        BitDepth16::from_c(bitdepth_max),
     );
 }
 
@@ -389,7 +360,7 @@ unsafe extern "C" fn ipred_cfl_128_c_erased(
     bitdepth_max: c_int,
 ) {
     let dc = bitdepth_max + 1 >> 1;
-    cfl_pred(
+    cfl_pred::<BitDepth16>(
         dst.cast(),
         stride,
         width,
@@ -397,7 +368,7 @@ unsafe extern "C" fn ipred_cfl_128_c_erased(
         dc,
         ac,
         alpha,
-        bitdepth_max,
+        BitDepth16::from_c(bitdepth_max),
     );
 }
 
