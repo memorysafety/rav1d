@@ -1279,7 +1279,7 @@ unsafe fn ipred_filter_rust(
     _max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    use crate::src::ipred_tmpl::{filter_fn, FLT_INCR};
+    use crate::src::ipred::{filter_fn, FLT_INCR};
 
     filt_idx &= 511 as c_int;
     if !(filt_idx < 5) {
