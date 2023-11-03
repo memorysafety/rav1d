@@ -1,7 +1,13 @@
+use crate::include::common::bitdepth::AsPrimitive;
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::BPC;
 use cfg_if::cfg_if;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
+use std::ffi::c_uint;
+use std::ffi::c_ulong;
+use std::ffi::c_ulonglong;
 
 pub type angular_ipred_fn = unsafe extern "C" fn(
     *mut DynPixel,
@@ -150,6 +156,71 @@ extern "C" {
     decl_fns!(cfl_ac, ipred_cfl_ac_444);
 
     decl_fns!(pal_pred, pal_pred);
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+#[inline(never)]
+pub(crate) unsafe fn splat_dc<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    width: c_int,
+    height: c_int,
+    dc: c_int,
+    bd: BD,
+) {
+    match BD::BPC {
+        BPC::BPC8 => {
+            if !(dc <= 0xff as c_int) {
+                unreachable!();
+            }
+            if width > 4 {
+                let dcN: u64 =
+                    (dc as c_ulonglong).wrapping_mul(0x101010101010101 as c_ulonglong) as u64;
+                let mut y = 0;
+                while y < height {
+                    let mut x = 0;
+                    while x < width {
+                        *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut u64) = dcN;
+                        x = (x as c_ulong).wrapping_add(::core::mem::size_of::<u64>() as c_ulong)
+                            as c_int as c_int;
+                    }
+                    dst = dst.offset(stride as isize);
+                    y += 1;
+                }
+            } else {
+                let dcN_0: c_uint = (dc as c_uint).wrapping_mul(0x1010101 as c_uint);
+                let mut y_0 = 0;
+                while y_0 < height {
+                    let mut x_0 = 0;
+                    while x_0 < width {
+                        *(&mut *dst.offset(x_0 as isize) as *mut BD::Pixel as *mut c_uint) = dcN_0;
+                        x_0 = (x_0 as c_ulong)
+                            .wrapping_add(::core::mem::size_of::<c_uint>() as c_ulong)
+                            as c_int as c_int;
+                    }
+                    dst = dst.offset(stride as isize);
+                    y_0 += 1;
+                }
+            };
+        }
+        BPC::BPC16 => {
+            if !(dc <= bd.bitdepth_max().as_::<c_int>()) {
+                unreachable!();
+            }
+            let dcN: u64 = (dc as c_ulonglong).wrapping_mul(0x1000100010001 as c_ulonglong) as u64;
+            let mut y = 0;
+            while y < height {
+                let mut x = 0;
+                while x < width {
+                    *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut u64) = dcN;
+                    x = (x as c_ulong).wrapping_add(::core::mem::size_of::<u64>() as c_ulong >> 1)
+                        as c_int as c_int;
+                }
+                dst = dst.offset(BD::pxstride(stride as usize) as isize);
+                y += 1;
+            }
+        }
+    }
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated

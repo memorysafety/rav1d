@@ -1,4 +1,6 @@
 use crate::include::common::attributes::ctz;
+use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
@@ -6,6 +8,7 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::ipred::get_filter_strength;
 use crate::src::ipred::get_upsample;
+use crate::src::ipred::splat_dc;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
@@ -30,8 +33,6 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
-use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
@@ -129,40 +130,6 @@ extern "C" {
 pub type pixel = u8;
 
 #[inline(never)]
-unsafe fn splat_dc(mut dst: *mut pixel, stride: ptrdiff_t, width: c_int, height: c_int, dc: c_int) {
-    if !(dc <= 0xff as c_int) {
-        unreachable!();
-    }
-    if width > 4 {
-        let dcN: u64 = (dc as c_ulonglong).wrapping_mul(0x101010101010101 as c_ulonglong) as u64;
-        let mut y = 0;
-        while y < height {
-            let mut x = 0;
-            while x < width {
-                *(&mut *dst.offset(x as isize) as *mut pixel as *mut u64) = dcN;
-                x = (x as c_ulong).wrapping_add(::core::mem::size_of::<u64>() as c_ulong) as c_int
-                    as c_int;
-            }
-            dst = dst.offset(stride as isize);
-            y += 1;
-        }
-    } else {
-        let dcN_0: c_uint = (dc as c_uint).wrapping_mul(0x1010101 as c_uint);
-        let mut y_0 = 0;
-        while y_0 < height {
-            let mut x_0 = 0;
-            while x_0 < width {
-                *(&mut *dst.offset(x_0 as isize) as *mut pixel as *mut c_uint) = dcN_0;
-                x_0 = (x_0 as c_ulong).wrapping_add(::core::mem::size_of::<c_uint>() as c_ulong)
-                    as c_int as c_int;
-            }
-            dst = dst.offset(stride as isize);
-            y_0 += 1;
-        }
-    };
-}
-
-#[inline(never)]
 unsafe fn cfl_pred(
     mut dst: *mut pixel,
     stride: ptrdiff_t,
@@ -208,12 +175,13 @@ unsafe extern "C" fn ipred_dc_top_c_erased(
     _max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    splat_dc(
+    splat_dc::<BitDepth8>(
         dst.cast(),
         stride,
         width,
         height,
         dc_gen_top(topleft.cast(), width) as c_int,
+        BitDepth8::new(()),
     );
 }
 
@@ -259,12 +227,13 @@ unsafe extern "C" fn ipred_dc_left_c_erased(
     _max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    splat_dc(
+    splat_dc::<BitDepth8>(
         dst.cast(),
         stride,
         width,
         height,
         dc_gen_left(topleft.cast(), height) as c_int,
+        BitDepth8::new(()),
     );
 }
 
@@ -319,12 +288,13 @@ unsafe extern "C" fn ipred_dc_c_erased(
     _max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    splat_dc(
+    splat_dc::<BitDepth8>(
         dst.cast(),
         stride,
         width,
         height,
         dc_gen(topleft.cast(), width, height) as c_int,
+        BitDepth8::new(()),
     );
 }
 
@@ -354,7 +324,7 @@ unsafe extern "C" fn ipred_dc_128_c_erased(
     _bitdepth_max: c_int,
 ) {
     let dc = 128;
-    splat_dc(dst.cast(), stride, width, height, dc);
+    splat_dc::<BitDepth8>(dst.cast(), stride, width, height, dc, BitDepth8::new(()));
 }
 
 unsafe extern "C" fn ipred_cfl_128_c_erased(
@@ -1663,9 +1633,6 @@ unsafe fn ipred_z2_neon(
     max_width: c_int,
     max_height: c_int,
 ) {
-    use crate::include::common::bitdepth::BitDepth;
-    use crate::include::common::bitdepth::BitDepth8;
-
     let is_sm = angle >> 9 & 0x1 as c_int;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as c_int;
