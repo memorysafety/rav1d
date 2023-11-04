@@ -1,12 +1,11 @@
 use crate::include::common::attributes::ctz;
-use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::src::ipred::cfl_pred;
 use crate::src::ipred::get_filter_strength;
 use crate::src::ipred::get_upsample;
+use crate::src::ipred::ipred_cfl_128_c_erased;
 use crate::src::ipred::ipred_cfl_c_erased;
 use crate::src::ipred::ipred_cfl_left_c_erased;
 use crate::src::ipred::ipred_cfl_top_c_erased;
@@ -44,6 +43,9 @@ use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+use crate::include::common::bitdepth::BitDepth;
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 extern "C" {
@@ -154,29 +156,6 @@ unsafe fn pixel_set(dst: *mut pixel, val: c_int, num: c_int) {
         *dst.offset(n as isize) = val as pixel;
         n += 1;
     }
-}
-
-unsafe extern "C" fn ipred_cfl_128_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    _topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    ac: *const i16,
-    alpha: c_int,
-    bitdepth_max: c_int,
-) {
-    let dc = bitdepth_max + 1 >> 1;
-    cfl_pred::<BitDepth16>(
-        dst.cast(),
-        stride,
-        width,
-        height,
-        dc,
-        ac,
-        alpha,
-        BitDepth16::from_c(bitdepth_max),
-    );
 }
 
 unsafe extern "C" fn ipred_v_c_erased(
@@ -1804,7 +1783,7 @@ pub unsafe fn rav1d_intra_pred_dsp_init_16bpc(c: *mut Rav1dIntraPredDSPContext) 
     (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = cfl_ac_444_c_erased;
     (*c).cfl_pred[DC_PRED as usize] = ipred_cfl_c_erased::<BitDepth16>;
 
-    (*c).cfl_pred[DC_128_PRED as usize] = ipred_cfl_128_c_erased;
+    (*c).cfl_pred[DC_128_PRED as usize] = ipred_cfl_128_c_erased::<BitDepth16>;
     (*c).cfl_pred[TOP_DC_PRED as usize] = ipred_cfl_top_c_erased::<BitDepth16>;
     (*c).cfl_pred[LEFT_DC_PRED as usize] = ipred_cfl_left_c_erased::<BitDepth16>;
 

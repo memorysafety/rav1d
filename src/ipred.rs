@@ -224,9 +224,8 @@ unsafe fn splat_dc<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
-pub(crate) unsafe fn cfl_pred<BD: BitDepth>(
+unsafe fn cfl_pred<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     width: c_int,
@@ -451,6 +450,22 @@ pub(crate) unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
     splat_dc::<BD>(dst.cast(), stride, width, height, dc, bd);
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    _topleft: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    ac: *const i16,
+    alpha: c_int,
+    bitdepth_max: c_int,
+) {
+    let bd = BD::from_c(bitdepth_max);
+    let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
+    cfl_pred::<BD>(dst.cast(), stride, width, height, dc, ac, alpha, bd);
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
