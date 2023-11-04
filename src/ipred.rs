@@ -263,6 +263,28 @@ pub(crate) unsafe fn dc_gen_top<BD: BitDepth>(topleft: *const BD::Pixel, width: 
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn ipred_dc_top_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    bitdepth_max: c_int,
+) {
+    splat_dc::<BD>(
+        dst.cast(),
+        stride,
+        width,
+        height,
+        dc_gen_top::<BD>(topleft.cast(), width) as c_int,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
 pub(crate) unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     if is_sm != 0 {
