@@ -307,6 +307,17 @@ pub(crate) unsafe extern "C" fn ipred_cfl_top_c_erased<BD: BitDepth>(
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn dc_gen_left<BD: BitDepth>(topleft: *const BD::Pixel, height: c_int) -> c_uint {
+    let mut dc: c_uint = (height >> 1) as c_uint;
+    let mut i = 0;
+    while i < height {
+        dc = dc.wrapping_add((*topleft.offset(-(1 + i) as isize)).as_::<c_uint>());
+        i += 1;
+    }
+    return dc >> ctz(height as c_uint);
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
 pub(crate) unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     if is_sm != 0 {

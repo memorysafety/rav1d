@@ -6,6 +6,7 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::ipred::cfl_pred;
+use crate::src::ipred::dc_gen_left;
 use crate::src::ipred::get_filter_strength;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::ipred_cfl_top_c_erased;
@@ -131,16 +132,6 @@ extern "C" {
 
 pub type pixel = u8;
 
-unsafe fn dc_gen_left(topleft: *const pixel, height: c_int) -> c_uint {
-    let mut dc: c_uint = (height >> 1) as c_uint;
-    let mut i = 0;
-    while i < height {
-        dc = dc.wrapping_add(*topleft.offset(-(1 + i) as isize) as c_uint);
-        i += 1;
-    }
-    return dc >> ctz(height as c_uint);
-}
-
 unsafe extern "C" fn ipred_dc_left_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -157,7 +148,7 @@ unsafe extern "C" fn ipred_dc_left_c_erased(
         stride,
         width,
         height,
-        dc_gen_left(topleft.cast(), height) as c_int,
+        dc_gen_left::<BitDepth8>(topleft.cast(), height) as c_int,
         BitDepth8::new(()),
     );
 }
@@ -172,7 +163,7 @@ unsafe extern "C" fn ipred_cfl_left_c_erased(
     alpha: c_int,
     _bitdepth_max: c_int,
 ) {
-    let dc: c_uint = dc_gen_left(topleft.cast(), height);
+    let dc: c_uint = dc_gen_left::<BitDepth8>(topleft.cast(), height);
     cfl_pred::<BitDepth8>(
         dst.cast(),
         stride,
