@@ -10,6 +10,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_ulonglong;
+use std::slice;
 
 pub type angular_ipred_fn = unsafe extern "C" fn(
     *mut DynPixel,
@@ -466,6 +467,32 @@ pub(crate) unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
     cfl_pred::<BD>(dst.cast(), stride, width, height, dc, ac, alpha, bd);
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn ipred_v_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    topleft: *const BD::Pixel,
+    width: c_int,
+    height: c_int,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    _bd: BD,
+) {
+    let width = width.try_into().unwrap();
+
+    let mut y = 0;
+    while y < height {
+        BD::pixel_copy(
+            slice::from_raw_parts_mut(dst, width),
+            &slice::from_raw_parts(topleft, width + 1)[1..],
+            width,
+        );
+        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        y += 1;
+    }
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated

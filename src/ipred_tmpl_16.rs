@@ -1,4 +1,5 @@
 use crate::include::common::attributes::ctz;
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
@@ -13,6 +14,7 @@ use crate::src::ipred::ipred_dc_128_c_erased;
 use crate::src::ipred::ipred_dc_c_erased;
 use crate::src::ipred::ipred_dc_left_c_erased;
 use crate::src::ipred::ipred_dc_top_c_erased;
+use crate::src::ipred::ipred_v_rust;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
@@ -43,9 +45,6 @@ use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-use crate::include::common::bitdepth::BitDepth;
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 extern "C" {
@@ -169,7 +168,7 @@ unsafe extern "C" fn ipred_v_c_erased(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_v_rust(
+    ipred_v_rust::<BitDepth16>(
         dst.cast(),
         stride,
         topleft.cast(),
@@ -178,31 +177,8 @@ unsafe extern "C" fn ipred_v_c_erased(
         a,
         max_width,
         max_height,
-        bitdepth_max,
+        BitDepth16::from_c(bitdepth_max),
     );
-}
-
-unsafe fn ipred_v_rust(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    topleft: *const pixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
-) {
-    let mut y = 0;
-    while y < height {
-        memcpy(
-            dst as *mut c_void,
-            topleft.offset(1) as *const c_void,
-            (width << 1) as usize,
-        );
-        dst = dst.offset(PXSTRIDE(stride) as isize);
-        y += 1;
-    }
 }
 
 unsafe extern "C" fn ipred_h_c_erased(
