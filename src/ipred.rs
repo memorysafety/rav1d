@@ -362,12 +362,7 @@ pub(crate) unsafe extern "C" fn ipred_cfl_left_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn dc_gen<BD: BitDepth>(
-    topleft: *const BD::Pixel,
-    width: c_int,
-    height: c_int,
-) -> c_uint {
+unsafe fn dc_gen<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int, height: c_int) -> c_uint {
     let (multiplier_1x2, multiplier_1x4, base_shift) = match BD::BPC {
         BPC::BPC8 => (0x5556, 0x3334, 16),
         BPC::BPC16 => (0xAAAB, 0x6667, 17),
@@ -414,6 +409,30 @@ pub(crate) unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth>(
         width,
         height,
         dc_gen::<BD>(topleft.cast(), width, height) as c_int,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    ac: *const i16,
+    alpha: c_int,
+    bitdepth_max: c_int,
+) {
+    let dc: c_uint = dc_gen::<BD>(topleft.cast(), width, height);
+    cfl_pred::<BD>(
+        dst.cast(),
+        stride,
+        width,
+        height,
+        dc as c_int,
+        ac,
+        alpha,
         BD::from_c(bitdepth_max),
     );
 }
