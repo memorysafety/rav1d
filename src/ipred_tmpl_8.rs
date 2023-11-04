@@ -11,6 +11,7 @@ use crate::src::ipred::get_filter_strength;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::ipred_cfl_left_c_erased;
 use crate::src::ipred::ipred_cfl_top_c_erased;
+use crate::src::ipred::ipred_dc_c_erased;
 use crate::src::ipred::ipred_dc_left_c_erased;
 use crate::src::ipred::ipred_dc_top_c_erased;
 use crate::src::ipred::splat_dc;
@@ -133,27 +134,6 @@ extern "C" {
 }
 
 pub type pixel = u8;
-
-unsafe extern "C" fn ipred_dc_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
-) {
-    splat_dc::<BitDepth8>(
-        dst.cast(),
-        stride,
-        width,
-        height,
-        dc_gen::<BitDepth8>(topleft.cast(), width, height) as c_int,
-        BitDepth8::new(()),
-    );
-}
 
 unsafe extern "C" fn ipred_cfl_c_erased(
     dst: *mut DynPixel,
@@ -1780,7 +1760,7 @@ unsafe fn ipred_z1_neon(
 
 #[cold]
 pub unsafe fn rav1d_intra_pred_dsp_init_8bpc(c: *mut Rav1dIntraPredDSPContext) {
-    (*c).intra_pred[DC_PRED as usize] = Some(ipred_dc_c_erased);
+    (*c).intra_pred[DC_PRED as usize] = Some(ipred_dc_c_erased::<BitDepth8>);
     (*c).intra_pred[DC_128_PRED as usize] = Some(ipred_dc_128_c_erased);
     (*c).intra_pred[TOP_DC_PRED as usize] = Some(ipred_dc_top_c_erased::<BitDepth8>);
     (*c).intra_pred[LEFT_DC_PRED as usize] = Some(ipred_dc_left_c_erased::<BitDepth8>);
