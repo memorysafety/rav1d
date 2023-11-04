@@ -6,6 +6,7 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::ipred::cfl_pred;
+use crate::src::ipred::dc_gen;
 use crate::src::ipred::get_filter_strength;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::ipred_cfl_left_c_erased;
@@ -133,32 +134,6 @@ extern "C" {
 
 pub type pixel = u8;
 
-unsafe fn dc_gen(topleft: *const pixel, width: c_int, height: c_int) -> c_uint {
-    let mut dc: c_uint = (width + height >> 1) as c_uint;
-    let mut i = 0;
-    while i < width {
-        dc = dc.wrapping_add(*topleft.offset((i + 1) as isize) as c_uint);
-        i += 1;
-    }
-    let mut i_0 = 0;
-    while i_0 < height {
-        dc = dc.wrapping_add(*topleft.offset(-(i_0 + 1) as isize) as c_uint);
-        i_0 += 1;
-    }
-    dc >>= ctz((width + height) as c_uint);
-    if width != height {
-        dc = dc.wrapping_mul(
-            (if width > height * 2 || height > width * 2 {
-                0x3334 as c_int
-            } else {
-                0x5556 as c_int
-            }) as c_uint,
-        );
-        dc >>= 16;
-    }
-    return dc;
-}
-
 unsafe extern "C" fn ipred_dc_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -175,7 +150,7 @@ unsafe extern "C" fn ipred_dc_c_erased(
         stride,
         width,
         height,
-        dc_gen(topleft.cast(), width, height) as c_int,
+        dc_gen::<BitDepth8>(topleft.cast(), width, height) as c_int,
         BitDepth8::new(()),
     );
 }
@@ -190,7 +165,7 @@ unsafe extern "C" fn ipred_cfl_c_erased(
     alpha: c_int,
     _bitdepth_max: c_int,
 ) {
-    let dc: c_uint = dc_gen(topleft.cast(), width, height);
+    let dc: c_uint = dc_gen::<BitDepth8>(topleft.cast(), width, height);
     cfl_pred::<BitDepth8>(
         dst.cast(),
         stride,

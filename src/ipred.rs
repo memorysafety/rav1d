@@ -363,6 +363,40 @@ pub(crate) unsafe extern "C" fn ipred_cfl_left_c_erased<BD: BitDepth>(
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn dc_gen<BD: BitDepth>(
+    topleft: *const BD::Pixel,
+    width: c_int,
+    height: c_int,
+) -> c_uint {
+    let (multiplier_1x2, multiplier_1x4, base_shift) = match BD::BPC {
+        BPC::BPC8 => (0x5556, 0x3334, 16),
+        BPC::BPC16 => (0xAAAB, 0x6667, 17),
+    };
+
+    let mut dc: c_uint = (width + height >> 1) as c_uint;
+    let mut i = 0;
+    while i < width {
+        dc = dc.wrapping_add((*topleft.offset((i + 1) as isize)).as_::<c_uint>());
+        i += 1;
+    }
+    let mut i_0 = 0;
+    while i_0 < height {
+        dc = dc.wrapping_add((*topleft.offset(-(i_0 + 1) as isize)).as_::<c_uint>());
+        i_0 += 1;
+    }
+    dc >>= ctz((width + height) as c_uint);
+    if width != height {
+        dc = dc.wrapping_mul(if width > height * 2 || height > width * 2 {
+            multiplier_1x4
+        } else {
+            multiplier_1x2
+        });
+        dc >>= base_shift;
+    }
+    return dc;
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
 pub(crate) unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     if is_sm != 0 {
