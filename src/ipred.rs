@@ -496,6 +496,32 @@ pub(crate) unsafe fn ipred_v_rust<BD: BitDepth>(
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn ipred_h_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    topleft: *const BD::Pixel,
+    width: c_int,
+    height: c_int,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    _bd: BD,
+) {
+    let width = width.try_into().unwrap();
+
+    let mut y = 0;
+    while y < height {
+        BD::pixel_set(
+            slice::from_raw_parts_mut(dst, width),
+            *topleft.offset(-(1 + y) as isize),
+            width,
+        );
+        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        y += 1;
+    }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
 pub(crate) unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     if is_sm != 0 {

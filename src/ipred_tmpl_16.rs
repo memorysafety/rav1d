@@ -14,6 +14,7 @@ use crate::src::ipred::ipred_dc_128_c_erased;
 use crate::src::ipred::ipred_dc_c_erased;
 use crate::src::ipred::ipred_dc_left_c_erased;
 use crate::src::ipred::ipred_dc_top_c_erased;
+use crate::src::ipred::ipred_h_rust;
 use crate::src::ipred::ipred_v_rust;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -192,7 +193,7 @@ unsafe extern "C" fn ipred_h_c_erased(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_h_rust(
+    ipred_h_rust::<BitDepth16>(
         dst.cast(),
         stride,
         topleft.cast(),
@@ -201,27 +202,8 @@ unsafe extern "C" fn ipred_h_c_erased(
         a,
         max_width,
         max_height,
-        bitdepth_max,
+        BitDepth16::from_c(bitdepth_max),
     );
-}
-
-unsafe fn ipred_h_rust(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    topleft: *const pixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bitdepth_max: c_int,
-) {
-    let mut y = 0;
-    while y < height {
-        pixel_set(dst, *topleft.offset(-(1 + y) as isize) as c_int, width);
-        dst = dst.offset(PXSTRIDE(stride) as isize);
-        y += 1;
-    }
 }
 
 unsafe extern "C" fn ipred_paeth_c_erased(
