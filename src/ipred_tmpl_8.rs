@@ -17,6 +17,7 @@ use crate::src::ipred::ipred_dc_left_c_erased;
 use crate::src::ipred::ipred_dc_top_c_erased;
 use crate::src::ipred::ipred_h_rust;
 use crate::src::ipred::ipred_paeth_rust;
+use crate::src::ipred::ipred_smooth_rust;
 use crate::src::ipred::ipred_v_rust;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -221,7 +222,7 @@ unsafe extern "C" fn ipred_smooth_c_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_smooth_rust(
+    ipred_smooth_rust::<BitDepth8>(
         dst.cast(),
         stride,
         topleft.cast(),
@@ -230,39 +231,8 @@ unsafe extern "C" fn ipred_smooth_c_erased(
         a,
         max_width,
         max_height,
+        BitDepth8::new(()),
     );
-}
-
-unsafe fn ipred_smooth_rust(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    topleft: *const pixel,
-    width: c_int,
-    height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-) {
-    let weights_hor: *const u8 = &*dav1d_sm_weights.0.as_ptr().offset(width as isize) as *const u8;
-    let weights_ver: *const u8 = &*dav1d_sm_weights.0.as_ptr().offset(height as isize) as *const u8;
-    let right = *topleft.offset(width as isize) as c_int;
-    let bottom = *topleft.offset(-height as isize) as c_int;
-    let mut y = 0;
-    while y < height {
-        let mut x = 0;
-        while x < width {
-            let pred = *weights_ver.offset(y as isize) as c_int
-                * *topleft.offset((1 + x) as isize) as c_int
-                + (256 - *weights_ver.offset(y as isize) as c_int) * bottom
-                + *weights_hor.offset(x as isize) as c_int
-                    * *topleft.offset(-(1 + y) as isize) as c_int
-                + (256 - *weights_hor.offset(x as isize) as c_int) * right;
-            *dst.offset(x as isize) = (pred + 256 >> 9) as pixel;
-            x += 1;
-        }
-        dst = dst.offset(stride as isize);
-        y += 1;
-    }
 }
 
 unsafe extern "C" fn ipred_smooth_v_c_erased(
