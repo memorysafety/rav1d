@@ -14,12 +14,12 @@ use crate::src::ipred::ipred_dc_128_c_erased;
 use crate::src::ipred::ipred_dc_c_erased;
 use crate::src::ipred::ipred_dc_left_c_erased;
 use crate::src::ipred::ipred_dc_top_c_erased;
-use crate::src::ipred::ipred_h_rust;
-use crate::src::ipred::ipred_paeth_rust;
-use crate::src::ipred::ipred_smooth_h_rust;
-use crate::src::ipred::ipred_smooth_rust;
-use crate::src::ipred::ipred_smooth_v_rust;
-use crate::src::ipred::ipred_v_rust;
+use crate::src::ipred::ipred_h_c_erased;
+use crate::src::ipred::ipred_paeth_c_erased;
+use crate::src::ipred::ipred_smooth_c_erased;
+use crate::src::ipred::ipred_smooth_h_c_erased;
+use crate::src::ipred::ipred_smooth_v_c_erased;
+use crate::src::ipred::ipred_v_c_erased;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
@@ -159,150 +159,6 @@ unsafe fn pixel_set(dst: *mut pixel, val: c_int, num: c_int) {
         *dst.offset(n as isize) = val as pixel;
         n += 1;
     }
-}
-
-unsafe extern "C" fn ipred_v_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_v_rust::<BitDepth16>(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_h_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_h_rust::<BitDepth16>(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_paeth_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    tl_ptr: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_paeth_rust::<BitDepth16>(
-        dst.cast(),
-        stride,
-        tl_ptr.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_smooth_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_smooth_rust::<BitDepth16>(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_smooth_v_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_smooth_v_rust::<BitDepth16>(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_smooth_h_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_smooth_h_rust::<BitDepth16>(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
 }
 
 #[inline(never)]
@@ -1603,12 +1459,12 @@ pub unsafe fn rav1d_intra_pred_dsp_init_16bpc(c: *mut Rav1dIntraPredDSPContext) 
     (*c).intra_pred[DC_128_PRED as usize] = Some(ipred_dc_128_c_erased::<BitDepth16>);
     (*c).intra_pred[TOP_DC_PRED as usize] = Some(ipred_dc_top_c_erased::<BitDepth16>);
     (*c).intra_pred[LEFT_DC_PRED as usize] = Some(ipred_dc_left_c_erased::<BitDepth16>);
-    (*c).intra_pred[HOR_PRED as usize] = Some(ipred_h_c_erased);
-    (*c).intra_pred[VERT_PRED as usize] = Some(ipred_v_c_erased);
-    (*c).intra_pred[PAETH_PRED as usize] = Some(ipred_paeth_c_erased);
-    (*c).intra_pred[SMOOTH_PRED as usize] = Some(ipred_smooth_c_erased);
-    (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(ipred_smooth_v_c_erased);
-    (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(ipred_smooth_h_c_erased);
+    (*c).intra_pred[HOR_PRED as usize] = Some(ipred_h_c_erased::<BitDepth16>);
+    (*c).intra_pred[VERT_PRED as usize] = Some(ipred_v_c_erased::<BitDepth16>);
+    (*c).intra_pred[PAETH_PRED as usize] = Some(ipred_paeth_c_erased::<BitDepth16>);
+    (*c).intra_pred[SMOOTH_PRED as usize] = Some(ipred_smooth_c_erased::<BitDepth16>);
+    (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(ipred_smooth_v_c_erased::<BitDepth16>);
+    (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(ipred_smooth_h_c_erased::<BitDepth16>);
     (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_c_erased);
     (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_c_erased);
     (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased);
