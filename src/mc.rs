@@ -29,7 +29,7 @@ use std::iter;
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::bd_fn;
 
-#[cfg(feature = "asm")]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::BPC;
 
 #[cfg(feature = "asm")]

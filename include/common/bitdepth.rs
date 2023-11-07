@@ -99,7 +99,8 @@ pub trait BitDepth: Clone + Copy {
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>
-        + ToPrimitive<c_uint>;
+        + ToPrimitive<c_uint>
+        + ToPrimitive<isize>;
 
     type Coef: Copy
         + FromPrimitive<c_int>
@@ -109,7 +110,7 @@ pub trait BitDepth: Clone + Copy {
         + Add<Output = Self::Coef>
         + Display;
 
-    type Entry: Copy + Default + ArrayDefault;
+    type Entry: Copy + Default + ArrayDefault + FromPrimitive<c_int> + ToPrimitive<c_int>;
 
     type Scaling: AsRef<[u8]> + AsMut<[u8]> + ArrayDefault + Copy;
     const SCALING_SIZE: usize;
@@ -414,6 +415,7 @@ where
 macro_rules! bd_fn {
     ($decl_fn:path, $BD:ty, $name:ident, $asm:ident) => {{
         use paste::paste;
+        use $crate::include::common::bitdepth::BPC;
 
         paste! {
             match BD::BPC {
@@ -423,14 +425,11 @@ macro_rules! bd_fn {
         }
     }};
 
-    ($BD:ty, $name:ident, $asm:ident) => {
-        bd_fn!(
-            crate::include::common::bitdepth::fn_identity,
-            $BD,
-            $name,
-            $asm
-        )
-    };
+    ($BD:ty, $name:ident, $asm:ident) => {{
+        use $crate::include::common::bitdepth::fn_identity;
+
+        bd_fn!(fn_identity, $BD, $name, $asm)
+    }};
 }
 
 #[cfg(feature = "asm")]
