@@ -46,6 +46,7 @@ pub mod src {
     mod data;
     mod decode;
     mod dequant_tables;
+    pub(crate) mod enum_map;
     mod env;
     pub(crate) mod error;
     mod fg_apply;

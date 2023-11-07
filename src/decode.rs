@@ -42,6 +42,9 @@ use crate::src::ctx::CaseSet;
 use crate::src::data::rav1d_data_props_copy;
 use crate::src::data::rav1d_data_unref_internal;
 use crate::src::dequant_tables::dav1d_dq_tbl;
+use crate::src::enum_map::enum_map;
+use crate::src::enum_map::DefaultValue;
+use crate::src::enum_map::EnumMap;
 use crate::src::env::av1_get_bwd_ref_1_ctx;
 use crate::src::env::av1_get_bwd_ref_ctx;
 use crate::src::env::av1_get_fwd_ref_1_ctx;
@@ -3809,15 +3812,17 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
     ctx.pal_sz.0.fill(0);
 }
 
+impl DefaultValue for [u8; 2] {
+    const DEFAULT: Self = [0; 2];
+}
+
 /// `{ Y+U+V, Y+U } * 4`
-static ss_size_mul: [[u8; 2]; 4] = {
-    let mut a = [[0; 2]; 4];
-    a[Rav1dPixelLayout::I400 as usize] = [4, 4];
-    a[Rav1dPixelLayout::I420 as usize] = [6, 5];
-    a[Rav1dPixelLayout::I422 as usize] = [8, 6];
-    a[Rav1dPixelLayout::I444 as usize] = [12, 8];
-    a
-};
+static ss_size_mul: EnumMap<Rav1dPixelLayout, [u8; 2], 4> = enum_map!(Rav1dPixelLayout => [u8; 2]; match key {
+    I400 => [4, 4],
+    I420 => [6, 5],
+    I422 => [8, 6],
+    I444 => [12, 8],
+});
 
 unsafe fn setup_tile(
     ts: &mut Rav1dTileState,
@@ -3834,7 +3839,7 @@ unsafe fn setup_tile(
     let row_sb_end = (*f.frame_hdr).tiling.row_start_sb[tile_row + 1] as c_int;
     let sb_shift = f.sb_shift;
 
-    let size_mul = &ss_size_mul[f.cur.p.layout as usize];
+    let size_mul = &ss_size_mul[f.cur.p.layout];
     for p in 0..2 {
         ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
             f.frame_thread
@@ -4290,7 +4295,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     }
 
     let num_sb128 = f.sb128w * f.sb128h;
-    let size_mul = &ss_size_mul[f.cur.p.layout as usize];
+    let size_mul = &ss_size_mul[f.cur.p.layout];
     let hbd = ((*f.seq_hdr).hbd != 0) as c_int;
     if c.n_fc > 1 {
         let mut tile_idx = 0;
