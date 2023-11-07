@@ -21,6 +21,7 @@ use crate::src::ipred::ipred_smooth_c_erased;
 use crate::src::ipred::ipred_smooth_h_c_erased;
 use crate::src::ipred::ipred_smooth_v_c_erased;
 use crate::src::ipred::ipred_v_c_erased;
+use crate::src::ipred::upsample_edge;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
@@ -162,33 +163,6 @@ unsafe fn pixel_set(dst: *mut pixel, val: c_int, num: c_int) {
     }
 }
 
-#[inline(never)]
-unsafe fn upsample_edge(
-    out: *mut pixel,
-    hsz: c_int,
-    in_0: *const pixel,
-    from: c_int,
-    to: c_int,
-    bitdepth_max: c_int,
-) {
-    static kernel: [i8; 4] = [-1, 9, 9, -1];
-    let mut i;
-    i = 0 as c_int;
-    while i < hsz - 1 {
-        *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
-        let mut s = 0;
-        let mut j = 0;
-        while j < 4 {
-            s += *in_0.offset(iclip(i + j - 1, from, to - 1) as isize) as c_int
-                * kernel[j as usize] as c_int;
-            j += 1;
-        }
-        *out.offset((i * 2 + 1) as isize) = iclip(s + 8 >> 4, 0 as c_int, bitdepth_max) as pixel;
-        i += 1;
-    }
-    *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
-}
-
 unsafe extern "C" fn ipred_z1_c_erased(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -240,13 +214,13 @@ unsafe fn ipred_z1_rust(
         0 as c_int
     };
     if upsample_above != 0 {
-        upsample_edge(
+        upsample_edge::<BitDepth16>(
             top_out.as_mut_ptr(),
             width + height,
             &*topleft_in.offset(1),
             -(1 as c_int),
             width + cmp::min(width, height),
-            bitdepth_max,
+            BitDepth16::from_c(bitdepth_max),
         );
         top = top_out.as_mut_ptr();
         max_base_x = 2 * (width + height) - 2;
@@ -360,13 +334,13 @@ unsafe fn ipred_z2_rust(
     let mut edge: [pixel; 129] = [0; 129];
     let topleft: *mut pixel = &mut *edge.as_mut_ptr().offset(64) as *mut pixel;
     if upsample_above != 0 {
-        upsample_edge(
+        upsample_edge::<BitDepth16>(
             topleft,
             width + 1,
             topleft_in,
             0 as c_int,
             width + 1,
-            bitdepth_max,
+            BitDepth16::from_c(bitdepth_max),
         );
         dx <<= 1;
     } else {
@@ -395,13 +369,13 @@ unsafe fn ipred_z2_rust(
         }
     }
     if upsample_left != 0 {
-        upsample_edge(
+        upsample_edge::<BitDepth16>(
             &mut *topleft.offset((-height * 2) as isize),
             height + 1,
             &*topleft_in.offset(-height as isize),
             0 as c_int,
             height + 1,
-            bitdepth_max,
+            BitDepth16::from_c(bitdepth_max),
         );
         dy <<= 1;
     } else {
@@ -515,13 +489,13 @@ unsafe fn ipred_z3_rust(
         0 as c_int
     };
     if upsample_left != 0 {
-        upsample_edge(
+        upsample_edge::<BitDepth16>(
             left_out.as_mut_ptr(),
             width + height,
             &*topleft_in.offset(-(width + height) as isize),
             cmp::max(width - height, 0 as c_int),
             width + height + 1,
-            bitdepth_max,
+            BitDepth16::from_c(bitdepth_max),
         );
         left = &mut *left_out
             .as_mut_ptr()

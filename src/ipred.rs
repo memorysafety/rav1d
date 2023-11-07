@@ -900,6 +900,35 @@ pub(crate) unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_in
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
+#[inline(never)]
+pub(crate) unsafe fn upsample_edge<BD: BitDepth>(
+    out: *mut BD::Pixel,
+    hsz: c_int,
+    in_0: *const BD::Pixel,
+    from: c_int,
+    to: c_int,
+    bd: BD,
+) {
+    static kernel: [i8; 4] = [-1, 9, 9, -1];
+    let mut i;
+    i = 0 as c_int;
+    while i < hsz - 1 {
+        *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
+        let mut s = 0;
+        let mut j = 0;
+        while j < 4 {
+            s += (*in_0.offset(iclip(i + j - 1, from, to - 1) as isize)).as_::<c_int>()
+                * kernel[j as usize] as c_int;
+            j += 1;
+        }
+        *out.offset((i * 2 + 1) as isize) =
+            iclip(s + 8 >> 4, 0 as c_int, bd.bitdepth_max().as_::<c_int>()).as_::<BD::Pixel>();
+        i += 1;
+    }
+    *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
 pub(crate) unsafe fn filter_fn(
     flt_ptr: *const i8,
     p0: c_int,
