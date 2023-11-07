@@ -8,7 +8,6 @@ use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Dav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Dav1dColorPrimaries;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dFrameType;
@@ -21,6 +20,7 @@ use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Dav1dWarpedMotionType;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
+use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -1431,7 +1431,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 .clone();
             (*hdr).film_grain.data.seed = seed;
         } else {
-            let fgd: *mut Dav1dFilmGrainData = &mut (*hdr).film_grain.data;
+            let fgd = &mut (*hdr).film_grain.data;
             (*fgd).seed = seed;
             (*fgd).num_y_points = rav1d_get_bits(gb, 4 as c_int) as c_int;
             if (*fgd).num_y_points > 14 {
@@ -1449,10 +1449,9 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 (*fgd).y_points[i_21 as usize][1] = rav1d_get_bits(gb, 8 as c_int) as u8;
                 i_21 += 1;
             }
-            (*fgd).chroma_scaling_from_luma =
-                ((*seqhdr).monochrome == 0 && rav1d_get_bit(gb) != 0) as c_int;
+            (*fgd).chroma_scaling_from_luma = (*seqhdr).monochrome == 0 && rav1d_get_bit(gb) != 0;
             if (*seqhdr).monochrome != 0
-                || (*fgd).chroma_scaling_from_luma != 0
+                || (*fgd).chroma_scaling_from_luma
                 || (*seqhdr).ss_ver == 1 && (*seqhdr).ss_hor == 1 && (*fgd).num_y_points == 0
             {
                 (*fgd).num_uv_points[1] = 0 as c_int;
@@ -1502,8 +1501,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
             }
             let mut pl_0 = 0;
             while pl_0 < 2 {
-                if (*fgd).num_uv_points[pl_0 as usize] != 0 || (*fgd).chroma_scaling_from_luma != 0
-                {
+                if (*fgd).num_uv_points[pl_0 as usize] != 0 || (*fgd).chroma_scaling_from_luma {
                     let num_uv_pos: c_int = num_y_pos + ((*fgd).num_y_points != 0) as c_int;
                     let mut i_24 = 0;
                     while i_24 < num_uv_pos {
@@ -1536,14 +1534,14 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 }
                 pl_1 += 1;
             }
-            (*fgd).overlap_flag = rav1d_get_bit(gb) as c_int;
-            (*fgd).clip_to_restricted_range = rav1d_get_bit(gb) as c_int;
+            (*fgd).overlap_flag = rav1d_get_bit(gb) != 0;
+            (*fgd).clip_to_restricted_range = rav1d_get_bit(gb) != 0;
         }
     } else {
         memset(
-            &mut (*hdr).film_grain.data as *mut Dav1dFilmGrainData as *mut c_void,
+            &mut (*hdr).film_grain.data as *mut Rav1dFilmGrainData as *mut c_void,
             0 as c_int,
-            ::core::mem::size_of::<Dav1dFilmGrainData>(),
+            ::core::mem::size_of::<Rav1dFilmGrainData>(),
         );
     }
 

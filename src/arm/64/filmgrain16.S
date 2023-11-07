@@ -1515,7 +1515,7 @@ function fguv_32x32_\layout\()_16bpc_neon, export=1
         ldr             w16,      [sp, #120]   // bitdepth_max
 
         ldr             w13, [x4, #FGD_SCALING_SHIFT]
-        ldr             w12, [x4, #FGD_CLIP_TO_RESTRICTED_RANGE]
+        ldrb            w12, [x4, #FGD_CLIP_TO_RESTRICTED_RANGE]
         dup             v23.8h,  w16           // bitdepth_max
         clz             w16, w16
         eor             w13, w13, #15          // 15 - scaling_shift

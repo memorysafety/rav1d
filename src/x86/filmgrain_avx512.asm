@@ -65,9 +65,9 @@ cglobal fgy_32x32xn_8bpc, 6, 13, 22, dst, src, stride, fg_data, w, scaling, \
 %define base r11-fg_min
     lea             r11, [fg_min]
     mov             r6d, [fg_dataq+FGData.scaling_shift]
-    mov             r7d, [fg_dataq+FGData.clip_to_restricted_range]
+    movzx           r7d, byte [fg_dataq+FGData.clip_to_restricted_range]
     mov            sbyd, sbym
-    mov        overlapd, [fg_dataq+FGData.overlap_flag]
+    movzx      overlapd, byte [fg_dataq+FGData.overlap_flag]
     mov             r12, 0x0000000f0000000f ; h_overlap mask
     mova             m0, [scalingq+64*0]
     mova             m1, [scalingq+64*1]
@@ -344,10 +344,10 @@ cglobal fguv_32x32xn_i%1_8bpc, 6, 14+%2, 22, dst, src, stride, fg_data, w, \
                                              overlap, uv_pl, is_id, _, stride3
     lea             r11, [fg_min]
     mov             r6d, [fg_dataq+FGData.scaling_shift]
-    mov             r7d, [fg_dataq+FGData.clip_to_restricted_range]
+    movzx           r7d, byte [fg_dataq+FGData.clip_to_restricted_range]
     mov             r9d, is_idm
     mov            sbyd, sbym
-    mov        overlapd, [fg_dataq+FGData.overlap_flag]
+    movzx      overlapd, byte [fg_dataq+FGData.overlap_flag]
 %if %2
     mov             r12, 0x000f000f000f000f ; h_overlap mask
     vpbroadcastq    m10, [base+pb_23_22_0_32]

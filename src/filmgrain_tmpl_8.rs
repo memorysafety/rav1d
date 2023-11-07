@@ -2,7 +2,7 @@ use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
-use crate::include::dav1d::headers::Dav1dFilmGrainData;
+use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
@@ -28,13 +28,13 @@ use cfg_if::cfg_if;
 extern "C" {
     fn dav1d_generate_grain_y_8bpc_ssse3(
         buf: *mut [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         bitdepth_max: c_int,
     );
     fn dav1d_generate_grain_uv_420_8bpc_ssse3(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
@@ -42,7 +42,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -54,7 +54,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -69,14 +69,14 @@ extern "C" {
     fn dav1d_generate_grain_uv_422_8bpc_ssse3(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
     fn dav1d_generate_grain_uv_444_8bpc_ssse3(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
@@ -84,7 +84,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -100,7 +100,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -120,7 +120,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -136,7 +136,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -150,27 +150,27 @@ extern "C" {
     );
     fn dav1d_generate_grain_y_8bpc_avx2(
         buf: *mut [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         bitdepth_max: c_int,
     );
     fn dav1d_generate_grain_uv_420_8bpc_avx2(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
     fn dav1d_generate_grain_uv_422_8bpc_avx2(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
     fn dav1d_generate_grain_uv_444_8bpc_avx2(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
@@ -178,7 +178,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -190,7 +190,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -206,7 +206,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -222,7 +222,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -238,7 +238,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -254,7 +254,7 @@ extern "C" {
         dst_row: *mut DynPixel,
         src_row: *const DynPixel,
         stride: ptrdiff_t,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         pw: usize,
         scaling: *const u8,
         grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -271,7 +271,7 @@ extern "C" {
         src: *const pixel,
         stride: ptrdiff_t,
         scaling: *const u8,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         grain_lut: *const [entry; GRAIN_WIDTH],
         luma_row: *const pixel,
         luma_stride: ptrdiff_t,
@@ -284,26 +284,26 @@ extern "C" {
     fn dav1d_generate_grain_uv_422_8bpc_neon(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
     fn dav1d_generate_grain_uv_444_8bpc_neon(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
     fn dav1d_generate_grain_y_8bpc_neon(
         buf: *mut [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         bitdepth_max: c_int,
     );
     fn dav1d_generate_grain_uv_420_8bpc_neon(
         buf: *mut [DynEntry; GRAIN_WIDTH],
         buf_y: *const [DynEntry; GRAIN_WIDTH],
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         uv: intptr_t,
         bitdepth_max: c_int,
     );
@@ -324,7 +324,7 @@ extern "C" {
         src: *const pixel,
         stride: ptrdiff_t,
         scaling: *const u8,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         grain_lut: *const [entry; GRAIN_WIDTH],
         luma_row: *const pixel,
         luma_stride: ptrdiff_t,
@@ -339,7 +339,7 @@ extern "C" {
         src: *const pixel,
         stride: ptrdiff_t,
         scaling: *const u8,
-        data: *const Dav1dFilmGrainData,
+        data: *const Rav1dFilmGrainData,
         grain_lut: *const [entry; GRAIN_WIDTH],
         luma_row: *const pixel,
         luma_stride: ptrdiff_t,
@@ -356,13 +356,13 @@ pub type entry = i8;
 
 unsafe extern "C" fn generate_grain_y_c_erased(
     buf: *mut [DynEntry; GRAIN_WIDTH],
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     _bitdepth_max: c_int,
 ) {
     generate_grain_y_rust(buf.cast(), data);
 }
 
-unsafe fn generate_grain_y_rust(buf: *mut [entry; GRAIN_WIDTH], data: *const Dav1dFilmGrainData) {
+unsafe fn generate_grain_y_rust(buf: *mut [entry; GRAIN_WIDTH], data: *const Rav1dFilmGrainData) {
     let bitdepth_min_8 = 8 - 8;
     let mut seed: c_uint = (*data).seed;
     let shift = 4 - bitdepth_min_8 + (*data).grain_scale_shift;
@@ -418,7 +418,7 @@ unsafe fn generate_grain_y_rust(buf: *mut [entry; GRAIN_WIDTH], data: *const Dav
 unsafe fn generate_grain_uv_c(
     buf: *mut [entry; GRAIN_WIDTH],
     buf_y: *const [entry; GRAIN_WIDTH],
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     uv: intptr_t,
     subx: c_int,
     suby: c_int,
@@ -503,7 +503,7 @@ unsafe fn generate_grain_uv_c(
 unsafe extern "C" fn generate_grain_uv_420_c_erased(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     uv: intptr_t,
     _bitdepth_max: c_int,
 ) {
@@ -513,7 +513,7 @@ unsafe extern "C" fn generate_grain_uv_420_c_erased(
 unsafe extern "C" fn generate_grain_uv_422_c_erased(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     uv: intptr_t,
     _bitdepth_max: c_int,
 ) {
@@ -523,7 +523,7 @@ unsafe extern "C" fn generate_grain_uv_422_c_erased(
 unsafe extern "C" fn generate_grain_uv_444_c_erased(
     buf: *mut [DynEntry; GRAIN_WIDTH],
     buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     uv: intptr_t,
     _bitdepth_max: c_int,
 ) {
@@ -552,7 +552,7 @@ unsafe extern "C" fn fgy_32x32xn_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -577,21 +577,21 @@ unsafe fn fgy_32x32xn_rust(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [entry; GRAIN_WIDTH],
     bh: c_int,
     row_num: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let bitdepth_min_8 = 8 - 8;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
     let min_value;
     let max_value;
-    if (*data).clip_to_restricted_range != 0 {
+    if (*data).clip_to_restricted_range {
         min_value = (16 as c_int) << bitdepth_min_8;
         max_value = (235 as c_int) << bitdepth_min_8;
     } else {
@@ -619,7 +619,7 @@ unsafe fn fgy_32x32xn_rust(
             32 as c_int,
             (pw as c_int as c_uint).wrapping_sub(bx) as c_int,
         );
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -632,12 +632,12 @@ unsafe fn fgy_32x32xn_rust(
                 get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i_1 as isize));
             i_1 += 1;
         }
-        let ystart = if (*data).overlap_flag != 0 && row_num != 0 {
+        let ystart = if (*data).overlap_flag && row_num != 0 {
             cmp::min(2 as c_int, bh)
         } else {
             0 as c_int
         };
-        let xstart = if (*data).overlap_flag != 0 && bx != 0 {
+        let xstart = if (*data).overlap_flag && bx != 0 {
             cmp::min(2 as c_int, bw)
         } else {
             0 as c_int
@@ -843,7 +843,7 @@ unsafe fn fguv_32x32xn_c(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [entry; GRAIN_WIDTH],
@@ -856,14 +856,14 @@ unsafe fn fguv_32x32xn_c(
     sx: c_int,
     sy: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let bitdepth_min_8 = 8 - 8;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
     let min_value;
     let max_value;
-    if (*data).clip_to_restricted_range != 0 {
+    if (*data).clip_to_restricted_range {
         min_value = (16 as c_int) << bitdepth_min_8;
         max_value = (if is_id != 0 {
             235 as c_int
@@ -892,7 +892,7 @@ unsafe fn fguv_32x32xn_c(
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
         let bw = cmp::min(32 >> sx, pw.wrapping_sub(bx as usize) as c_int);
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -905,12 +905,12 @@ unsafe fn fguv_32x32xn_c(
                 get_random_number(8 as c_int, &mut *seed.as_mut_ptr().offset(i_1 as isize));
             i_1 += 1;
         }
-        let ystart = if (*data).overlap_flag != 0 && row_num != 0 {
+        let ystart = if (*data).overlap_flag && row_num != 0 {
             cmp::min(2 >> sy, bh)
         } else {
             0 as c_int
         };
-        let xstart = if (*data).overlap_flag != 0 && bx != 0 {
+        let xstart = if (*data).overlap_flag && bx != 0 {
             cmp::min(2 >> sx, bw)
         } else {
             0 as c_int
@@ -946,7 +946,7 @@ unsafe fn fguv_32x32xn_c(
                     .offset((y as isize * stride) as isize)
                     .offset(bx.wrapping_add(x as c_uint) as isize);
                 let mut val = avg as c_int;
-                if (*data).chroma_scaling_from_luma == 0 {
+                if !(*data).chroma_scaling_from_luma {
                     let combined = avg as c_int * (*data).uv_luma_mult[uv as usize]
                         + *src as c_int * (*data).uv_mult[uv as usize];
                     val = iclip_u8(
@@ -1005,7 +1005,7 @@ unsafe fn fguv_32x32xn_c(
                     .offset((y as isize * stride) as isize)
                     .offset(bx.wrapping_add(x_0 as c_uint) as isize);
                 let mut val_0 = avg_0 as c_int;
-                if (*data).chroma_scaling_from_luma == 0 {
+                if !(*data).chroma_scaling_from_luma {
                     let combined_0 = avg_0 as c_int * (*data).uv_luma_mult[uv as usize]
                         + *src_0 as c_int * (*data).uv_mult[uv as usize];
                     val_0 = iclip_u8(
@@ -1068,7 +1068,7 @@ unsafe fn fguv_32x32xn_c(
                     .offset((y_0 as isize * stride) as isize)
                     .offset(bx.wrapping_add(x_1 as c_uint) as isize);
                 let mut val_1 = avg_1 as c_int;
-                if (*data).chroma_scaling_from_luma == 0 {
+                if !(*data).chroma_scaling_from_luma {
                     let combined_1 = avg_1 as c_int * (*data).uv_luma_mult[uv as usize]
                         + *src_1 as c_int * (*data).uv_mult[uv as usize];
                     val_1 = iclip_u8(
@@ -1158,7 +1158,7 @@ unsafe fn fguv_32x32xn_c(
                     .offset((y_0 as isize * stride) as isize)
                     .offset(bx.wrapping_add(x_2 as c_uint) as isize);
                 let mut val_2 = avg_2 as c_int;
-                if (*data).chroma_scaling_from_luma == 0 {
+                if !(*data).chroma_scaling_from_luma {
                     let combined_2 = avg_2 as c_int * (*data).uv_luma_mult[uv as usize]
                         + *src_2 as c_int * (*data).uv_mult[uv as usize];
                     val_2 = iclip_u8(
@@ -1183,7 +1183,7 @@ unsafe extern "C" fn fguv_32x32xn_420_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -1218,7 +1218,7 @@ unsafe extern "C" fn fguv_32x32xn_422_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -1253,7 +1253,7 @@ unsafe extern "C" fn fguv_32x32xn_444_c_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -1375,7 +1375,7 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -1401,14 +1401,14 @@ unsafe fn fgy_32x32xn_neon(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [entry; GRAIN_WIDTH],
     bh: c_int,
     row_num: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let mut seed: [c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1420,7 +1420,7 @@ unsafe fn fgy_32x32xn_neon(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -1434,10 +1434,10 @@ unsafe fn fgy_32x32xn_neon(
             i_1 += 1;
         }
         let mut type_0 = 0;
-        if (*data).overlap_flag != 0 && row_num != 0 {
+        if (*data).overlap_flag && row_num != 0 {
             type_0 |= 1 as c_int;
         }
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             type_0 |= 2 as c_int;
         }
         dav1d_fgy_32x32_8bpc_neon(
@@ -1461,7 +1461,7 @@ unsafe extern "C" fn fguv_32x32xn_420_neon_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -1495,7 +1495,7 @@ unsafe fn fguv_32x32xn_420_neon(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [entry; GRAIN_WIDTH],
@@ -1506,7 +1506,7 @@ unsafe fn fguv_32x32xn_420_neon(
     uv: c_int,
     is_id: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let mut seed: [c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1518,7 +1518,7 @@ unsafe fn fguv_32x32xn_420_neon(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -1532,13 +1532,13 @@ unsafe fn fguv_32x32xn_420_neon(
             i_1 += 1;
         }
         let mut type_0 = 0;
-        if (*data).overlap_flag != 0 && row_num != 0 {
+        if (*data).overlap_flag && row_num != 0 {
             type_0 |= 1 as c_int;
         }
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             type_0 |= 2 as c_int;
         }
-        if (*data).chroma_scaling_from_luma != 0 {
+        if (*data).chroma_scaling_from_luma {
             type_0 |= 4 as c_int;
         }
         dav1d_fguv_32x32_420_8bpc_neon(
@@ -1565,7 +1565,7 @@ unsafe extern "C" fn fguv_32x32xn_422_neon_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -1599,7 +1599,7 @@ unsafe fn fguv_32x32xn_422_neon(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [entry; GRAIN_WIDTH],
@@ -1610,7 +1610,7 @@ unsafe fn fguv_32x32xn_422_neon(
     uv: c_int,
     is_id: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let mut seed: [c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1622,7 +1622,7 @@ unsafe fn fguv_32x32xn_422_neon(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -1636,13 +1636,13 @@ unsafe fn fguv_32x32xn_422_neon(
             i_1 += 1;
         }
         let mut type_0 = 0;
-        if (*data).overlap_flag != 0 && row_num != 0 {
+        if (*data).overlap_flag && row_num != 0 {
             type_0 |= 1 as c_int;
         }
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             type_0 |= 2 as c_int;
         }
-        if (*data).chroma_scaling_from_luma != 0 {
+        if (*data).chroma_scaling_from_luma {
             type_0 |= 4 as c_int;
         }
         dav1d_fguv_32x32_422_8bpc_neon(
@@ -1669,7 +1669,7 @@ unsafe extern "C" fn fguv_32x32xn_444_neon_erased(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [DynEntry; GRAIN_WIDTH],
@@ -1703,7 +1703,7 @@ unsafe fn fguv_32x32xn_444_neon(
     dst_row: *mut pixel,
     src_row: *const pixel,
     stride: ptrdiff_t,
-    data: *const Dav1dFilmGrainData,
+    data: *const Rav1dFilmGrainData,
     pw: usize,
     scaling: *const u8,
     grain_lut: *const [entry; GRAIN_WIDTH],
@@ -1714,7 +1714,7 @@ unsafe fn fguv_32x32xn_444_neon(
     uv: c_int,
     is_id: c_int,
 ) {
-    let rows = 1 + ((*data).overlap_flag != 0 && row_num > 0) as c_int;
+    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
     let mut seed: [c_uint; 2] = [0; 2];
     let mut i = 0;
     while i < rows {
@@ -1726,7 +1726,7 @@ unsafe fn fguv_32x32xn_444_neon(
     let mut offsets: [[c_int; 2]; 2] = [[0; 2]; 2];
     let mut bx: c_uint = 0 as c_int as c_uint;
     while (bx as usize) < pw {
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             let mut i_0 = 0;
             while i_0 < rows {
                 offsets[1][i_0 as usize] = offsets[0][i_0 as usize];
@@ -1740,13 +1740,13 @@ unsafe fn fguv_32x32xn_444_neon(
             i_1 += 1;
         }
         let mut type_0 = 0;
-        if (*data).overlap_flag != 0 && row_num != 0 {
+        if (*data).overlap_flag && row_num != 0 {
             type_0 |= 1 as c_int;
         }
-        if (*data).overlap_flag != 0 && bx != 0 {
+        if (*data).overlap_flag && bx != 0 {
             type_0 |= 2 as c_int;
         }
-        if (*data).chroma_scaling_from_luma != 0 {
+        if (*data).chroma_scaling_from_luma {
             type_0 |= 4 as c_int;
         }
         dav1d_fguv_32x32_444_8bpc_neon(
