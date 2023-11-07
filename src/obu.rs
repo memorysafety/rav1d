@@ -13,7 +13,6 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dFrameType;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dMatrixCoefficients;
-use crate::include::dav1d::headers::Dav1dPixelLayout;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Dav1dTransferCharacteristics;
@@ -27,6 +26,7 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dObuType;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSegmentationData;
 use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
@@ -53,10 +53,6 @@ use crate::include::dav1d::headers::RAV1D_OBU_REDUNDANT_FRAME_HDR;
 use crate::include::dav1d::headers::RAV1D_OBU_SEQ_HDR;
 use crate::include::dav1d::headers::RAV1D_OBU_TD;
 use crate::include::dav1d::headers::RAV1D_OBU_TILE_GRP;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
 use crate::include::dav1d::headers::RAV1D_TRC_UNKNOWN;
@@ -334,7 +330,7 @@ unsafe fn parse_seq_hdr(
     }
     if (*hdr).monochrome != 0 {
         (*hdr).color_range = rav1d_get_bit(gb) as c_int;
-        (*hdr).layout = RAV1D_PIXEL_LAYOUT_I400;
+        (*hdr).layout = Rav1dPixelLayout::I400;
         (*hdr).ss_ver = 1 as c_int;
         (*hdr).ss_hor = (*hdr).ss_ver;
         (*hdr).chr = RAV1D_CHR_UNKNOWN;
@@ -342,7 +338,7 @@ unsafe fn parse_seq_hdr(
         && (*hdr).trc as c_uint == RAV1D_TRC_SRGB as c_int as c_uint
         && (*hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint
     {
-        (*hdr).layout = RAV1D_PIXEL_LAYOUT_I444;
+        (*hdr).layout = Rav1dPixelLayout::I444;
         (*hdr).color_range = 1 as c_int;
         if (*hdr).profile != 1 && !((*hdr).profile == 2 && (*hdr).hbd == 2) {
             return parse_seq_hdr_error(c);
@@ -351,12 +347,12 @@ unsafe fn parse_seq_hdr(
         (*hdr).color_range = rav1d_get_bit(gb) as c_int;
         match (*hdr).profile {
             0 => {
-                (*hdr).layout = RAV1D_PIXEL_LAYOUT_I420;
+                (*hdr).layout = Rav1dPixelLayout::I420;
                 (*hdr).ss_ver = 1 as c_int;
                 (*hdr).ss_hor = (*hdr).ss_ver;
             }
             1 => {
-                (*hdr).layout = RAV1D_PIXEL_LAYOUT_I444;
+                (*hdr).layout = Rav1dPixelLayout::I444;
             }
             2 => {
                 if (*hdr).hbd == 2 {
@@ -367,15 +363,15 @@ unsafe fn parse_seq_hdr(
                 } else {
                     (*hdr).ss_hor = 1 as c_int;
                 }
-                (*hdr).layout = (if (*hdr).ss_hor != 0 {
+                (*hdr).layout = if (*hdr).ss_hor != 0 {
                     if (*hdr).ss_ver != 0 {
-                        RAV1D_PIXEL_LAYOUT_I420 as c_int
+                        Rav1dPixelLayout::I420
                     } else {
-                        RAV1D_PIXEL_LAYOUT_I422 as c_int
+                        Rav1dPixelLayout::I422
                     }
                 } else {
-                    RAV1D_PIXEL_LAYOUT_I444 as c_int
-                }) as Dav1dPixelLayout;
+                    Rav1dPixelLayout::I444
+                };
             }
             _ => {}
         }
@@ -387,7 +383,7 @@ unsafe fn parse_seq_hdr(
     }
     if (*c).strict_std_compliance
         && (*hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint
-        && (*hdr).layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint
+        && (*hdr).layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint
     {
         return parse_seq_hdr_error(c);
     }

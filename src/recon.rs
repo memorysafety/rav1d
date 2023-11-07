@@ -10,11 +10,8 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
-use crate::include::dav1d::headers::Dav1dPixelLayout;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
@@ -229,12 +226,12 @@ fn get_skip_ctx(
     a: &[u8],
     l: &[u8],
     chroma: c_int,
-    layout: Dav1dPixelLayout,
+    layout: Rav1dPixelLayout,
 ) -> u8 {
     let b_dim = &dav1d_block_dimensions[bs as usize];
     if chroma != 0 {
-        let ss_ver = layout == RAV1D_PIXEL_LAYOUT_I420;
-        let ss_hor = layout != RAV1D_PIXEL_LAYOUT_I444;
+        let ss_ver = layout == Rav1dPixelLayout::I420;
+        let ss_hor = layout != Rav1dPixelLayout::I444;
         let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
             || b_dim[3] - (b_dim[3] != 0 && ss_ver) as u8 > t_dim.lh;
         fn merge_ctx<const N: usize>(dir: &[u8]) -> bool {
@@ -1827,9 +1824,9 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
 ) {
     let f: *const Rav1dFrameContext = t.f;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor =
-        ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let cbx4 = bx4 >> ss_hor;
@@ -1839,7 +1836,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     let bh4 = *b_dim.offset(1) as c_int;
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
-    let has_chroma = ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
+    let has_chroma = ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
         && (bw4 > ss_hor || t.bx & 1 != 0)
         && (bh4 > ss_ver || t.by & 1 != 0)) as c_int;
     if b.skip != 0 {
@@ -2087,10 +2084,10 @@ unsafe fn mc<BD: BitDepth>(
     }
     let f: *const Rav1dFrameContext = (*t).f;
     let ss_ver = (pl != 0
-        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint)
         as c_int;
     let ss_hor = (pl != 0
-        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint)
         as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
@@ -2290,10 +2287,10 @@ unsafe fn obmc<BD: BitDepth>(
         as *mut *mut refmvs_block;
     let lap = BD::select_mut(&mut (*t).scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
     let ss_ver = (pl != 0
-        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint)
         as c_int;
     let ss_hor = (pl != 0
-        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint)
         as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
@@ -2419,10 +2416,10 @@ unsafe fn warp_affine<BD: BitDepth>(
     let f: *const Rav1dFrameContext = (*t).f;
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let ss_ver = (pl != 0
-        && (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint)
         as c_int;
     let ss_hor = (pl != 0
-        && (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+        && (*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint)
         as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
@@ -2530,9 +2527,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor =
-        ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
@@ -2542,7 +2539,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     let h4 = cmp::min(bh4, (*f).bh - t.by);
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
-    let has_chroma = ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
+    let has_chroma = ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
         && (bw4 > ss_hor || t.bx & 1 != 0)
         && (bh4 > ss_ver || t.by & 1 != 0)) as c_int;
     let t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions
@@ -3274,9 +3271,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor =
-        ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
@@ -3284,14 +3281,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     let bh4 = *b_dim.offset(1) as c_int;
     let w4 = cmp::min(bw4, (*f).bw - t.bx);
     let h4 = cmp::min(bh4, (*f).bh - t.by);
-    let has_chroma = ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint
+    let has_chroma = ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
         && (bw4 > ss_hor || t.bx & 1 != 0)
         && (bh4 > ss_ver || t.by & 1 != 0)) as c_int;
     let chr_layout_idx =
-        (if (*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
+        (if (*f).cur.p.layout as c_uint == Rav1dPixelLayout::I400 as c_int as c_uint {
             0 as c_int as c_uint
         } else {
-            (RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint).wrapping_sub((*f).cur.p.layout as c_uint)
+            (Rav1dPixelLayout::I444 as c_int as c_uint).wrapping_sub((*f).cur.p.layout as c_uint)
         }) as c_int;
     let mut res;
     let cbh4 = bh4 + ss_ver >> ss_ver;
@@ -4489,7 +4486,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         return;
     }
     let y = sby * f.sb_step * 4;
-    let ss_ver = (f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let p: [*mut BD::Pixel; 3] = [
         (f.lf.p[0] as *mut BD::Pixel)
             .offset((y as isize * BD::pxstride(f.cur.stride[0] as usize) as isize) as isize),
@@ -4525,7 +4522,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     sby: c_int,
 ) {
     let y = sby * f.sb_step * 4;
-    let ss_ver = (f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let p: [*mut BD::Pixel; 3] = [
         (f.lf.p[0] as *mut BD::Pixel)
             .offset((y as isize * BD::pxstride(f.cur.stride[0] as usize) as isize) as isize),
@@ -4562,7 +4559,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: &mut Rav1dTaskCon
     let sbsz = (*f).sb_step;
     let y = sby * sbsz * 4;
     let ss_ver =
-        ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let p: [*mut BD::Pixel; 3] = [
         ((*f).lf.p[0] as *mut BD::Pixel)
             .offset((y as isize * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize),
@@ -4580,7 +4577,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: &mut Rav1dTaskCon
     let start = sby * sbsz;
     if sby != 0 {
         let ss_ver =
-            ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+            ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
         let mut p_up: [*mut BD::Pixel; 3] = [
             (p[0]).offset(-((8 * BD::pxstride((*f).cur.stride[0] as usize) as isize) as isize)),
             (p[1]).offset(
@@ -4627,7 +4624,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
 ) {
     let sbsz = f.sb_step;
     let y = sby * sbsz * 4;
-    let ss_ver = (f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let p: [*const BD::Pixel; 3] = [
         (f.lf.p[0] as *mut BD::Pixel)
             .offset((y as isize * BD::pxstride(f.cur.stride[0] as usize) as isize) as isize)
@@ -4650,11 +4647,11 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         ),
     ];
     let has_chroma =
-        (f.cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint) as c_int;
+        (f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint) as c_int;
     let mut pl = 0;
     while pl < 1 + 2 * has_chroma {
         let ss_ver = (pl != 0
-            && f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint)
+            && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint)
             as c_int;
         let h_start = 8 * (sby != 0) as c_int >> ss_ver;
         let dst_stride: ptrdiff_t = f.sr_cur.p.stride[(pl != 0) as c_int as usize];
@@ -4665,7 +4662,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
             .offset(-(h_start as isize * BD::pxstride(src_stride as usize) as isize));
         let h_end = 4 * (sbsz - 2 * ((sby + 1) < f.sbh) as c_int) >> ss_ver;
         let ss_hor = (pl != 0
-            && f.cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint)
+            && f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint)
             as c_int;
         let dst_w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
         let src_w = 4 * f.bw + ss_hor >> ss_hor;
@@ -4691,7 +4688,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(f: &mut Rav1dFrameConte
         return;
     }
     let y = sby * f.sb_step * 4;
-    let ss_ver = (f.cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+    let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let sr_p: [*mut BD::Pixel; 3] = [
         (f.lf.sr_p[0] as *mut BD::Pixel)
             .offset(y as isize * BD::pxstride(f.sr_cur.p.stride[0] as usize) as isize),
@@ -4742,11 +4739,11 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(t: &mut Rav1dTaskCont
         slice::from_raw_parts(y, (4 * ((*ts).tiling.col_end - x_off)).try_into().unwrap()),
         (4 * ((*ts).tiling.col_end - x_off)).try_into().unwrap(),
     );
-    if (*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I400 as c_int as c_uint {
+    if (*f).cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint {
         let ss_ver =
-            ((*f).cur.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+            ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
         let ss_hor =
-            ((*f).cur.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+            ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
         let uv_off: ptrdiff_t = (x_off * 4 >> ss_hor) as isize
             + (((t.by + (*f).sb_step) * 4 >> ss_ver) - 1) as isize
                 * BD::pxstride((*f).cur.stride[1] as usize) as isize;

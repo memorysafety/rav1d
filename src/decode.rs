@@ -11,6 +11,7 @@ use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
@@ -18,10 +19,6 @@ use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I400;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SWITCHABLE;
@@ -1367,8 +1364,8 @@ unsafe fn affine_lowest_px_chroma(
     wmp: &Rav1dWarpedMotionParams,
 ) {
     let f = &*t.f;
-    assert!(f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400);
-    if f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I444 {
+    assert!(f.cur.p.layout != Rav1dPixelLayout::I400);
+    if f.cur.p.layout == Rav1dPixelLayout::I444 {
         affine_lowest_px_luma(t, dst, b_dim, wmp);
     } else {
         affine_lowest_px(
@@ -1376,7 +1373,7 @@ unsafe fn affine_lowest_px_chroma(
             dst,
             b_dim,
             wmp,
-            (f.cur.p.layout & RAV1D_PIXEL_LAYOUT_I420) as c_int,
+            (f.cur.p.layout & Rav1dPixelLayout::I420) as c_int,
             1,
         );
     };
@@ -1395,8 +1392,8 @@ unsafe fn obmc_lowest_px(
     assert!(t.bx & 1 == 0 && t.by & 1 == 0);
     let f = &*t.f;
     let r = &t.rt.r[(t.by as usize & 31) + 5 - 1..];
-    let ss_ver = (is_chroma && f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
-    let ss_hor = (is_chroma && f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+    let ss_ver = (is_chroma && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (is_chroma && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     if t.by > (*t.ts).tiling.row_start
@@ -1479,8 +1476,8 @@ unsafe fn decode_b(
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
-    let ss_ver = (f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
-    let ss_hor = (f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let bw4 = b_dim[0] as c_int;
@@ -1491,7 +1488,7 @@ unsafe fn decode_b(
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let have_left = t.bx > ts.tiling.col_start;
     let have_top = t.by > ts.tiling.row_start;
-    let has_chroma = f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400
+    let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.bx & 1 != 0)
         && (bh4 > ss_ver || t.by & 1 != 0);
 
@@ -1847,7 +1844,7 @@ unsafe fn decode_b(
 
             if frame_hdr.delta.lf.present != 0 {
                 let n_lfs = if frame_hdr.delta.lf.multi != 0 {
-                    if f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400 {
+                    if f.cur.p.layout != Rav1dPixelLayout::I400 {
                         4
                     } else {
                         2
@@ -3516,7 +3513,7 @@ unsafe fn decode_sb(
                 pc,
                 dav1d_partition_type_count[bl as usize].into(),
             ) as BlockPartition;
-            if f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I422
+            if f.cur.p.layout == Rav1dPixelLayout::I422
                 && (bp == PARTITION_V
                     || bp == PARTITION_V4
                     || bp == PARTITION_T_LEFT_SPLIT
@@ -3715,7 +3712,7 @@ unsafe fn decode_sb(
         let is_split;
         if let Some(pc) = pc {
             is_split = rav1d_msac_decode_bool(&mut ts.msac, gather_left_partition_prob(pc, bl));
-            if f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I422 && !is_split {
+            if f.cur.p.layout == Rav1dPixelLayout::I422 && !is_split {
                 return Err(());
             }
             if DEBUG_BLOCK_INFO(f, t) {
@@ -3815,10 +3812,10 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
 /// `{ Y+U+V, Y+U } * 4`
 static ss_size_mul: [[u8; 2]; 4] = {
     let mut a = [[0; 2]; 4];
-    a[RAV1D_PIXEL_LAYOUT_I400 as usize] = [4, 4];
-    a[RAV1D_PIXEL_LAYOUT_I420 as usize] = [6, 5];
-    a[RAV1D_PIXEL_LAYOUT_I422 as usize] = [8, 6];
-    a[RAV1D_PIXEL_LAYOUT_I444 as usize] = [12, 8];
+    a[Rav1dPixelLayout::I400 as usize] = [4, 4];
+    a[Rav1dPixelLayout::I420 as usize] = [6, 5];
+    a[Rav1dPixelLayout::I422 as usize] = [8, 6];
+    a[Rav1dPixelLayout::I444 as usize] = [12, 8];
     a
 };
 
@@ -3898,7 +3895,7 @@ unsafe fn setup_tile(
         }
 
         let lr_ref = if diff_width {
-            let ss_hor = (p != 0 && f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+            let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
             let d = (*f.frame_hdr).super_res.width_scale_denominator;
             let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
@@ -4134,8 +4131,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
                 continue;
             }
 
-            let ss_ver = (p != 0 && f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
-            let ss_hor = (p != 0 && f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+            let ss_ver = (p != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+            let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
             let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
             let y = t.by * 4 >> ss_ver;
             let h = f.cur.p.h + ss_ver >> ss_ver;
@@ -4222,7 +4219,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
         (align_h * tile_col + t.by + sb_step).try_into().unwrap(),
     )[(align_h * tile_col + t.by).try_into().unwrap()..][..sb_step.try_into().unwrap()]
         .copy_from_slice(&t.l.tx_lpf_y.0[(t.by & 16) as usize..][..sb_step.try_into().unwrap()]);
-    let ss_ver = (f.cur.p.layout == RAV1D_PIXEL_LAYOUT_I420) as c_int;
+    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     align_h >>= ss_ver;
     slice::from_raw_parts_mut(
         f.lf.tx_lpf_right_edge[1],
@@ -4678,7 +4675,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     // to avoid having additional in-loop branches in various places.
     // We never dereference those pointers, so it doesn't really matter
     // what they point at, as long as the pointers are valid.
-    let has_chroma = (f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I400) as usize;
+    let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400) as usize;
     f.lf.mask_ptr = f.lf.mask;
     f.lf.p = array::from_fn(|i| f.cur.data[has_chroma * i].cast());
     f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[has_chroma * i].cast());
@@ -5194,7 +5191,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
     if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
         f.resize_step[0] = scale_fac(f.cur.p.w, f.sr_cur.p.p.w);
-        let ss_hor = (f.cur.p.layout != RAV1D_PIXEL_LAYOUT_I444) as c_int;
+        let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
         let in_cw = f.cur.p.w + ss_hor >> ss_hor;
         let out_cw = f.sr_cur.p.p.w + ss_hor >> ss_hor;
         f.resize_step[1] = scale_fac(in_cw, out_cw);

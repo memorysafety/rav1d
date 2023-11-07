@@ -1,5 +1,4 @@
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
-use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
@@ -42,7 +41,7 @@ unsafe fn lr_stripe(
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        & ((*f).sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let stride: ptrdiff_t = (*f).sr_cur.p.stride[chroma as usize];
     let sby =
         y + (if y != 0 {
@@ -164,9 +163,9 @@ unsafe fn lr_sbrow(
 ) {
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
+        & ((*f).sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        & ((*f).sr_cur.p.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     let p_stride: ptrdiff_t = (*f).sr_cur.p.stride[chroma as usize];
     let unit_size_log2 = (*(*f).frame_hdr).restoration.unit_size[(plane != 0) as c_int as usize];
     let unit_size = (1 as c_int) << unit_size_log2;
@@ -276,10 +275,10 @@ pub(crate) unsafe fn rav1d_lr_sbrow_8bpc(
         );
     }
     if restore_planes & (LR_RESTORE_U as c_int | LR_RESTORE_V as c_int) != 0 {
-        let ss_ver = ((*f).sr_cur.p.p.layout as c_uint
-            == RAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint) as c_int;
-        let ss_hor = ((*f).sr_cur.p.p.layout as c_uint
-            != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint) as c_int;
+        let ss_ver = ((*f).sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint)
+            as c_int;
+        let ss_hor = ((*f).sr_cur.p.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint)
+            as c_int;
         let h_0 = (*f).sr_cur.p.p.h + ss_ver >> ss_ver;
         let w_0 = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
         let next_row_y_0 = (sby + 1) << 6 - ss_ver + (*(*f).seq_hdr).sb128;
