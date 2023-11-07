@@ -1488,7 +1488,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 return parse_frame_hdr_error(c);
             }
             (*fgd).scaling_shift =
-                (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(8 as c_int as c_uint) as c_int;
+                (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(8 as c_int as c_uint) as u8;
             (*fgd).ar_coeff_lag = rav1d_get_bits(gb, 2 as c_int) as c_int;
             let num_y_pos = 2 * (*fgd).ar_coeff_lag * ((*fgd).ar_coeff_lag + 1);
             if (*fgd).num_y_points != 0 {
@@ -1517,8 +1517,8 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 pl_0 += 1;
             }
             (*fgd).ar_coeff_shift =
-                (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(6 as c_int as c_uint) as u64;
-            (*fgd).grain_scale_shift = rav1d_get_bits(gb, 2 as c_int) as c_int;
+                (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(6 as c_int as c_uint) as u8;
+            (*fgd).grain_scale_shift = rav1d_get_bits(gb, 2 as c_int) as u8;
             let mut pl_1 = 0;
             while pl_1 < 2 {
                 if (*fgd).num_uv_points[pl_1 as usize] != 0 {
