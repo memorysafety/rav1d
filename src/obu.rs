@@ -255,9 +255,9 @@ unsafe fn parse_seq_hdr(
     (*c).operating_point_idc = (*hdr).operating_points[op_idx as usize].idc as c_uint;
     let spatial_mask = (*c).operating_point_idc >> 8;
     (*c).max_spatial_id = if spatial_mask != 0 {
-        ulog2(spatial_mask)
+        ulog2(spatial_mask) != 0
     } else {
-        0 as c_int
+        false
     };
     (*hdr).width_n_bits =
         (rav1d_get_bits(gb, 4 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;

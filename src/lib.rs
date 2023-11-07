@@ -284,9 +284,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     );
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
-    (*c).apply_grain = s.apply_grain;
+    (*c).apply_grain = s.apply_grain != 0;
     (*c).operating_point = s.operating_point;
-    (*c).all_layers = s.all_layers;
+    (*c).all_layers = s.all_layers != 0;
     (*c).frame_size_limit = s.frame_size_limit;
     (*c).strict_std_compliance = s.strict_std_compliance;
     (*c).output_invisible_frames = s.output_invisible_frames;
@@ -605,31 +605,32 @@ impl Rav1dPicture {
 
 unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
     let mut res = Ok(());
-    let in_0: *mut Rav1dThreadPicture = if c.all_layers != 0 || c.max_spatial_id == 0 {
+
+    let r#in: *mut Rav1dThreadPicture = if c.all_layers || !c.max_spatial_id {
         &mut c.out
     } else {
         &mut c.cache
     };
-    if c.apply_grain == 0 || !(*in_0).p.has_grain() {
-        rav1d_picture_move_ref(out, &mut (*in_0).p);
-        rav1d_thread_picture_unref(in_0);
+    if !c.apply_grain || !(*r#in).p.has_grain() {
+        rav1d_picture_move_ref(out, &mut (*r#in).p);
     } else {
-        res = rav1d_apply_grain(c, out, &mut (*in_0).p);
-        rav1d_thread_picture_unref(in_0);
+        res = rav1d_apply_grain(c, out, &(*r#in).p);
     }
-    if c.all_layers == 0 && c.max_spatial_id != 0 && !(c.out.p.data[0]).is_null() {
-        rav1d_thread_picture_move_ref(in_0, &mut c.out);
+    rav1d_thread_picture_unref(r#in);
+
+    if !c.all_layers && c.max_spatial_id && !(c.out.p.data[0]).is_null() {
+        rav1d_thread_picture_move_ref(r#in, &mut c.out);
     }
-    return res;
+    res
 }
 
 unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) -> c_int {
     if (*c).cached_error.is_err() {
         return 1 as c_int;
     }
-    if (*c).all_layers == 0 && (*c).max_spatial_id != 0 {
+    if !(*c).all_layers && (*c).max_spatial_id {
         if !((*c).out.p.data[0]).is_null() && !((*c).cache.p.data[0]).is_null() {
-            if (*c).max_spatial_id == (*(*c).cache.p.frame_hdr).spatial_id
+            if (*c).max_spatial_id == ((*(*c).cache.p.frame_hdr).spatial_id != 0)
                 || (*c).out.flags as c_uint & PICTURE_FLAG_NEW_TEMPORAL_UNIT as c_int as c_uint != 0
             {
                 return 1 as c_int;
