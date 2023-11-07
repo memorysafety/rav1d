@@ -22,6 +22,7 @@ use crate::src::ipred::ipred_smooth_h_c_erased;
 use crate::src::ipred::ipred_smooth_v_c_erased;
 use crate::src::ipred::ipred_v_c_erased;
 use crate::src::ipred::ipred_z1_rust;
+use crate::src::ipred::ipred_z2_rust;
 use crate::src::ipred::upsample_edge;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -176,7 +177,7 @@ unsafe extern "C" fn ipred_z2_c_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_z2_rust(
+    ipred_z2_rust::<BitDepth8>(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -185,142 +186,8 @@ unsafe extern "C" fn ipred_z2_c_erased(
         angle,
         max_width,
         max_height,
+        BitDepth8::new(()),
     );
-}
-
-unsafe fn ipred_z2_rust(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    topleft_in: *const pixel,
-    width: c_int,
-    height: c_int,
-    mut angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-) {
-    let is_sm = angle >> 9 & 0x1 as c_int;
-    let enable_intra_edge_filter = angle >> 10;
-    angle &= 511 as c_int;
-    if !(angle > 90 && angle < 180) {
-        unreachable!();
-    }
-    let mut dy = dav1d_dr_intra_derivative[(angle - 90 >> 1) as usize] as c_int;
-    let mut dx = dav1d_dr_intra_derivative[(180 - angle >> 1) as usize] as c_int;
-    let upsample_left = if enable_intra_edge_filter != 0 {
-        get_upsample(width + height, 180 - angle, is_sm)
-    } else {
-        0 as c_int
-    };
-    let upsample_above = if enable_intra_edge_filter != 0 {
-        get_upsample(width + height, angle - 90, is_sm)
-    } else {
-        0 as c_int
-    };
-    let mut edge: [pixel; 129] = [0; 129];
-    let topleft: *mut pixel = &mut *edge.as_mut_ptr().offset(64) as *mut pixel;
-    if upsample_above != 0 {
-        upsample_edge::<BitDepth8>(
-            topleft,
-            width + 1,
-            topleft_in,
-            0 as c_int,
-            width + 1,
-            BitDepth8::new(()),
-        );
-        dx <<= 1;
-    } else {
-        let filter_strength = if enable_intra_edge_filter != 0 {
-            get_filter_strength(width + height, angle - 90, is_sm)
-        } else {
-            0 as c_int
-        };
-        if filter_strength != 0 {
-            filter_edge::<BitDepth8>(
-                &mut *topleft.offset(1),
-                width,
-                0 as c_int,
-                max_width,
-                &*topleft_in.offset(1),
-                -(1 as c_int),
-                width,
-                filter_strength,
-            );
-        } else {
-            memcpy(
-                &mut *topleft.offset(1) as *mut pixel as *mut c_void,
-                &*topleft_in.offset(1) as *const pixel as *const c_void,
-                width as usize,
-            );
-        }
-    }
-    if upsample_left != 0 {
-        upsample_edge::<BitDepth8>(
-            &mut *topleft.offset((-height * 2) as isize),
-            height + 1,
-            &*topleft_in.offset(-height as isize),
-            0 as c_int,
-            height + 1,
-            BitDepth8::new(()),
-        );
-        dy <<= 1;
-    } else {
-        let filter_strength_0 = if enable_intra_edge_filter != 0 {
-            get_filter_strength(width + height, 180 - angle, is_sm)
-        } else {
-            0 as c_int
-        };
-        if filter_strength_0 != 0 {
-            filter_edge::<BitDepth8>(
-                &mut *topleft.offset(-height as isize),
-                height,
-                height - max_height,
-                height,
-                &*topleft_in.offset(-height as isize),
-                0 as c_int,
-                height + 1,
-                filter_strength_0,
-            );
-        } else {
-            memcpy(
-                &mut *topleft.offset(-height as isize) as *mut pixel as *mut c_void,
-                &*topleft_in.offset(-height as isize) as *const pixel as *const c_void,
-                height as usize,
-            );
-        }
-    }
-    *topleft = *topleft_in;
-    let base_inc_x = 1 + upsample_above;
-    let left: *const pixel = &mut *topleft.offset(-(1 + upsample_left) as isize) as *mut pixel;
-    let mut y = 0;
-    let mut xpos = (1 + upsample_above << 6) - dx;
-    while y < height {
-        let mut base_x = xpos >> 6;
-        let frac_x = xpos & 0x3e as c_int;
-        let mut x = 0;
-        let mut ypos = (y << 6 + upsample_left) - dy;
-        while x < width {
-            let v;
-            if base_x >= 0 {
-                v = *topleft.offset(base_x as isize) as c_int * (64 - frac_x)
-                    + *topleft.offset((base_x + 1) as isize) as c_int * frac_x;
-            } else {
-                let base_y = ypos >> 6;
-                if !(base_y >= -(1 + upsample_left)) {
-                    unreachable!();
-                }
-                let frac_y = ypos & 0x3e as c_int;
-                v = *left.offset(-base_y as isize) as c_int * (64 - frac_y)
-                    + *left.offset(-(base_y + 1) as isize) as c_int * frac_y;
-            }
-            *dst.offset(x as isize) = (v + 32 >> 6) as pixel;
-            x += 1;
-            base_x += base_inc_x;
-            ypos -= dy;
-        }
-        y += 1;
-        xpos -= dx;
-        dst = dst.offset(stride as isize);
-    }
 }
 
 unsafe extern "C" fn ipred_z3_c_erased(
