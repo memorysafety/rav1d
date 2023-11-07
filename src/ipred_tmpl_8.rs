@@ -21,6 +21,7 @@ use crate::src::ipred::ipred_smooth_c_erased;
 use crate::src::ipred::ipred_smooth_h_c_erased;
 use crate::src::ipred::ipred_smooth_v_c_erased;
 use crate::src::ipred::ipred_v_c_erased;
+use crate::src::ipred::ipred_z1_rust;
 use crate::src::ipred::upsample_edge;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -40,7 +41,6 @@ use crate::src::levels::Z3_PRED;
 use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use libc::memcpy;
-use libc::memset;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -152,7 +152,7 @@ unsafe extern "C" fn ipred_z1_c_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_z1_rust(
+    ipred_z1_rust::<BitDepth8>(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -161,97 +161,8 @@ unsafe extern "C" fn ipred_z1_c_erased(
         angle,
         max_width,
         max_height,
+        BitDepth8::new(()),
     );
-}
-
-unsafe fn ipred_z1_rust(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    topleft_in: *const pixel,
-    width: c_int,
-    height: c_int,
-    mut angle: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-) {
-    let is_sm = angle >> 9 & 0x1 as c_int;
-    let enable_intra_edge_filter = angle >> 10;
-    angle &= 511 as c_int;
-    if !(angle < 90) {
-        unreachable!();
-    }
-    let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
-    let mut top_out: [pixel; 128] = [0; 128];
-    let top: *const pixel;
-    let max_base_x;
-    let upsample_above = if enable_intra_edge_filter != 0 {
-        get_upsample(width + height, 90 - angle, is_sm)
-    } else {
-        0 as c_int
-    };
-    if upsample_above != 0 {
-        upsample_edge::<BitDepth8>(
-            top_out.as_mut_ptr(),
-            width + height,
-            &*topleft_in.offset(1),
-            -(1 as c_int),
-            width + cmp::min(width, height),
-            BitDepth8::new(()),
-        );
-        top = top_out.as_mut_ptr();
-        max_base_x = 2 * (width + height) - 2;
-        dx <<= 1;
-    } else {
-        let filter_strength = if enable_intra_edge_filter != 0 {
-            get_filter_strength(width + height, 90 - angle, is_sm)
-        } else {
-            0 as c_int
-        };
-        if filter_strength != 0 {
-            filter_edge::<BitDepth8>(
-                top_out.as_mut_ptr(),
-                width + height,
-                0 as c_int,
-                width + height,
-                &*topleft_in.offset(1),
-                -(1 as c_int),
-                width + cmp::min(width, height),
-                filter_strength,
-            );
-            top = top_out.as_mut_ptr();
-            max_base_x = width + height - 1;
-        } else {
-            top = &*topleft_in.offset(1) as *const pixel;
-            max_base_x = width + cmp::min(width, height) - 1;
-        }
-    }
-    let base_inc = 1 + upsample_above;
-    let mut y = 0;
-    let mut xpos = dx;
-    while y < height {
-        let frac = xpos & 0x3e as c_int;
-        let mut x = 0;
-        let mut base = xpos >> 6;
-        while x < width {
-            if base < max_base_x {
-                let v = *top.offset(base as isize) as c_int * (64 - frac)
-                    + *top.offset((base + 1) as isize) as c_int * frac;
-                *dst.offset(x as isize) = (v + 32 >> 6) as pixel;
-                x += 1;
-                base += base_inc;
-            } else {
-                memset(
-                    &mut *dst.offset(x as isize) as *mut pixel as *mut c_void,
-                    *top.offset(max_base_x as isize) as c_int,
-                    (width - x) as usize,
-                );
-                break;
-            }
-        }
-        y += 1;
-        dst = dst.offset(stride as isize);
-        xpos += dx;
-    }
 }
 
 unsafe extern "C" fn ipred_z2_c_erased(

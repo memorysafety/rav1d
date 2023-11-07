@@ -5,6 +5,7 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
+use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_sm_weights;
 use cfg_if::cfg_if;
 use libc::ptrdiff_t;
@@ -926,6 +927,100 @@ pub(crate) unsafe fn upsample_edge<BD: BitDepth>(
         i += 1;
     }
     *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn ipred_z1_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    topleft_in: *const BD::Pixel,
+    width: c_int,
+    height: c_int,
+    mut angle: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    bd: BD,
+) {
+    let is_sm = angle >> 9 & 0x1 as c_int;
+    let enable_intra_edge_filter = angle >> 10;
+    angle &= 511 as c_int;
+    if !(angle < 90) {
+        unreachable!();
+    }
+    let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
+    let mut top_out: [BD::Pixel; 128] = [0.into(); 128];
+    let top: *const BD::Pixel;
+    let max_base_x;
+    let upsample_above = if enable_intra_edge_filter != 0 {
+        get_upsample(width + height, 90 - angle, is_sm)
+    } else {
+        0 as c_int
+    };
+    if upsample_above != 0 {
+        upsample_edge::<BD>(
+            top_out.as_mut_ptr(),
+            width + height,
+            &*topleft_in.offset(1),
+            -(1 as c_int),
+            width + cmp::min(width, height),
+            bd,
+        );
+        top = top_out.as_mut_ptr();
+        max_base_x = 2 * (width + height) - 2;
+        dx <<= 1;
+    } else {
+        let filter_strength = if enable_intra_edge_filter != 0 {
+            get_filter_strength(width + height, 90 - angle, is_sm)
+        } else {
+            0 as c_int
+        };
+        if filter_strength != 0 {
+            filter_edge::<BD>(
+                top_out.as_mut_ptr(),
+                width + height,
+                0 as c_int,
+                width + height,
+                &*topleft_in.offset(1),
+                -(1 as c_int),
+                width + cmp::min(width, height),
+                filter_strength,
+            );
+            top = top_out.as_mut_ptr();
+            max_base_x = width + height - 1;
+        } else {
+            top = &*topleft_in.offset(1) as *const BD::Pixel;
+            max_base_x = width + cmp::min(width, height) - 1;
+        }
+    }
+    let base_inc = 1 + upsample_above;
+    let mut y = 0;
+    let mut xpos = dx;
+    while y < height {
+        let frac = xpos & 0x3e as c_int;
+        let mut x = 0;
+        let mut base = xpos >> 6;
+        while x < width {
+            if base < max_base_x {
+                let v = (*top.offset(base as isize)).as_::<c_int>() * (64 - frac)
+                    + (*top.offset((base + 1) as isize)).as_::<c_int>() * frac;
+                *dst.offset(x as isize) = (v + 32 >> 6).as_::<BD::Pixel>();
+                x += 1;
+                base += base_inc;
+            } else {
+                let width = width.try_into().unwrap();
+                let x = x as usize;
+                BD::pixel_set(
+                    &mut slice::from_raw_parts_mut(dst, width)[x..],
+                    *top.offset(max_base_x as isize),
+                    width - x,
+                );
+                break;
+            }
+        }
+        y += 1;
+        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        xpos += dx;
+    }
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
