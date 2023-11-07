@@ -1316,7 +1316,7 @@ cglobal fgy_32x32xn_8bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling, grai
 %endif
     mov             r6d, [fg_dataq+FGData.scaling_shift]
     movd             m3, [base+mul_bits+r6*2-14]
-    movzx           r6d, byte [fg_dataq+FGData.clip_to_restricted_range]
+    mov             r6d, [fg_dataq+FGData.clip_to_restricted_range]
     movd             m4, [base+max+r6*4]
     movd             m5, [base+min+r6*2]
     punpcklwd        m3, m3
@@ -1336,7 +1336,7 @@ cglobal fgy_32x32xn_8bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling, grai
 %endif
 
     mov            sbyd, r8m
-    movzx      overlapd, byte [fg_dataq+FGData.overlap_flag] ; left_overlap: overlap & 1
+    mov        overlapd, [fg_dataq+FGData.overlap_flag] ; left_overlap: overlap & 1
     test       overlapd, overlapd
     jz .no_vertical_overlap
     mova             m6, [base+pw_1024]
@@ -2100,7 +2100,7 @@ cglobal fguv_32x32xn_i%1_8bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling,
 %endif
     mov             r6d, [fg_dataq+FGData.scaling_shift]
     movd             m3, [base+mul_bits+r6*2-14]
-    movzx           r6d, byte [fg_dataq+FGData.clip_to_restricted_range]
+    mov             r6d, [fg_dataq+FGData.clip_to_restricted_range]
     lea            tmpd, [r6d*2]
 %if ARCH_X86_32 && STACK_ALIGNMENT < mmsize
     test             r3, r3
@@ -2145,7 +2145,7 @@ cglobal fguv_32x32xn_i%1_8bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling,
 %endif
 
     mov            sbyd, r8m
-    movzx      overlapd, byte [fg_dataq+FGData.overlap_flag] ; left_overlap: overlap & 1
+    mov        overlapd, [fg_dataq+FGData.overlap_flag] ; left_overlap: overlap & 1
     test       overlapd, overlapd
     jz %%no_vertical_overlap
 %if ARCH_X86_32

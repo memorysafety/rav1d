@@ -1582,7 +1582,7 @@ function fguv_32x32_\layout\()_16bpc_neon, export=1
         vld1.16         {d30[1]}, [lr]         // uv_mult
 
         ldr             lr,  [r4, #FGD_SCALING_SHIFT]
-        ldrb            r12, [r4, #FGD_CLIP_TO_RESTRICTED_RANGE]
+        ldr             r12, [r4, #FGD_CLIP_TO_RESTRICTED_RANGE]
         eor             lr,  lr,  #15          // 15 - scaling_shift
 
         vmov.16         d30[2], r10            // uv_offset << bitdepth_min_8

@@ -875,7 +875,7 @@ cglobal fgy_32x32xn_16bpc, 6, 14, 16, dst, src, stride, fg_data, w, scaling, \
 %define base r11-grain_min
     lea             r11, [grain_min]
     mov             r6d, r9m ; bdmax
-    movzx           r9d, byte [fg_dataq+FGData.clip_to_restricted_range]
+    mov             r9d, [fg_dataq+FGData.clip_to_restricted_range]
     mov             r7d, [fg_dataq+FGData.scaling_shift]
     mov            sbyd, sbym
     vpbroadcastd     m8, r9m
@@ -1347,7 +1347,7 @@ cglobal fguv_32x32xn_i%1_16bpc, 6, 15, 16, dst, src, stride, fg_data, w, scaling
     mov            r11d, is_idm
     mov            sbyd, sbym
     vpbroadcastw    m11, [base+mul_bits+r7*2-12]
-    movzx           r6d, byte [fg_dataq+FGData.clip_to_restricted_range]
+    mov             r6d, [fg_dataq+FGData.clip_to_restricted_range]
     shr             r9d, 11                 ; is_12bpc
     vpbroadcastd     m8, [base+grain_min+r9*4]
     shlx           r10d, r6d, r9d

@@ -1031,15 +1031,11 @@ impl From<Rav1dLoopfilterModeRefDeltas> for Dav1dLoopfilterModeRefDeltas {
 }
 
 #[derive(Clone)]
-#[repr(C)]
 pub struct Rav1dFilmGrainData {
     pub seed: c_uint,
     pub num_y_points: c_int,
     pub y_points: [[u8; 2]; 14],
     pub chroma_scaling_from_luma: bool,
-    pub overlap_flag: bool,
-    pub clip_to_restricted_range: bool,
-    // 1 byte of padding
     pub num_uv_points: [c_int; 2],
     pub uv_points: [[[u8; 2]; 10]; 2],
     pub scaling_shift: c_int,
@@ -1051,10 +1047,15 @@ pub struct Rav1dFilmGrainData {
     pub uv_mult: [c_int; 2],
     pub uv_luma_mult: [c_int; 2],
     pub uv_offset: [c_int; 2],
+    pub overlap_flag: bool,
+    pub clip_to_restricted_range: bool,
 }
 
+/// Must be 16-byte aligned for `psrad` on [`Self::ar_coeff_shift`].
+/// See the docs for [`Self::ar_coeff_shift`] for an explanation.
 #[derive(Clone)]
 #[repr(C)]
+#[repr(align(16))]
 pub struct Dav1dFilmGrainData {
     pub seed: c_uint,
     pub num_y_points: c_int,
@@ -1066,6 +1067,41 @@ pub struct Dav1dFilmGrainData {
     pub ar_coeff_lag: c_int,
     pub ar_coeffs_y: [i8; 24],
     pub ar_coeffs_uv: [[i8; 28]; 2],
+    /// Must be 16-byte aligned for `psrad`.
+    ///
+    /// TODO(kkysen) This appears to be a bug in `dav1d`.
+    ///
+    /// x86 asm uses `psrad` on a pointer to [`Self::ar_coeff_shift`].
+    /// When `psrad`'s shift operand is a memory address, i.e. a `XMMWORD PTR`,
+    /// it loads 128 bits from it, shifts by the lower 64 bits,
+    /// and requires the 128 bits to be 128-bit/16-byte aligned.
+    ///
+    /// Previously, and still in `dav1d`, [`Self::ar_coeff_shift`]
+    /// is only 8-byte aligned, as is [`Self`]/[`Dav1dFilmGrainData`].
+    /// However, in `dav1d`, [`Dav1dFilmGrainData`] is part of
+    /// [`Dav1dFrameHeader`], which is allocated with [`malloc`].
+    /// [`malloc`] happens to return 16-byte aligned pointers usually,
+    /// but is not required to, so this is UB and will segfault if not aligned.
+    ///
+    /// Due to the [`Rav1dFilmGrainData`] to [`Dav1dFilmGrainData`]
+    /// conversion done now, the [`Dav1dFilmGrainData`] is stored on the stack,
+    /// and often will not be 16-byte aligned, and thus will often segfault.
+    ///
+    /// To fix this, [`Self::ar_coeff_shift`] must be 16-byte aligned.
+    /// This cannot be done only for the field without changing the offsets of
+    /// the subsequent fields, however, so we instead align
+    /// [`Dav1dFilmGrainData`] itself with `#[repr(align(16))]`.
+    /// [`Self::ar_coeff_shift`] is at offset `0xB0`/`176`,
+    /// which is divisible by 16.
+    ///
+    /// `psrad` also loads a full 128 bits, not just the 64 bits of
+    /// [`Self::ar_coeff_shift`], even if it doesn't read them,
+    /// so we must ensure that the following 64 bits are also deferenceable.
+    /// They indeed are in `dav1d`, but we must be careful,
+    /// as [`Self::ar_coeff_shift`] being the last field would
+    /// read 8 bytes out of bounds and be UB.
+    ///
+    /// [`malloc`]: libc::malloc
     pub ar_coeff_shift: u64,
     pub grain_scale_shift: c_int,
     pub uv_mult: [c_int; 2],
@@ -1101,8 +1137,6 @@ impl From<Dav1dFilmGrainData> for Rav1dFilmGrainData {
             num_y_points,
             y_points,
             chroma_scaling_from_luma: chroma_scaling_from_luma != 0,
-            overlap_flag: overlap_flag != 0,
-            clip_to_restricted_range: clip_to_restricted_range != 0,
             num_uv_points,
             uv_points,
             scaling_shift,
@@ -1114,6 +1148,8 @@ impl From<Dav1dFilmGrainData> for Rav1dFilmGrainData {
             uv_mult,
             uv_luma_mult,
             uv_offset,
+            overlap_flag: overlap_flag != 0,
+            clip_to_restricted_range: clip_to_restricted_range != 0,
         }
     }
 }
@@ -1125,8 +1161,6 @@ impl From<Rav1dFilmGrainData> for Dav1dFilmGrainData {
             num_y_points,
             y_points,
             chroma_scaling_from_luma,
-            overlap_flag,
-            clip_to_restricted_range,
             num_uv_points,
             uv_points,
             scaling_shift,
@@ -1138,6 +1172,8 @@ impl From<Rav1dFilmGrainData> for Dav1dFilmGrainData {
             uv_mult,
             uv_luma_mult,
             uv_offset,
+            overlap_flag,
+            clip_to_restricted_range,
         } = value;
         Self {
             seed,
