@@ -7,8 +7,11 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::src::enum_map::DefaultValue;
 use crate::src::internal::GrainLut;
 use crate::src::tables::dav1d_gaussian_sequence;
+use crate::src::wrap_fn_ptr::wrap_fn_ptr;
+use crate::src::wrap_fn_ptr::WrappedFnPtr;
 use libc::intptr_t;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -30,21 +33,52 @@ const BLOCK_SIZE: usize = 32;
 const SUB_GRAIN_WIDTH: usize = 44;
 const SUB_GRAIN_HEIGHT: usize = 38;
 
-pub type generate_grain_y_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub struct FnGenerateGrainY(unsafe extern "C" fn(
     buf: *mut GrainLut<DynEntry>,
     data: &Dav1dFilmGrainData,
     bitdepth_max: c_int,
-) -> ();
+) -> ()));
 
-pub type generate_grain_uv_fn = unsafe extern "C" fn(
+impl FnGenerateGrainY {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        buf: &mut GrainLut<BD::Entry>,
+        data: &Rav1dFilmGrainData,
+        bd: BD,
+    ) {
+        let buf = (buf as *mut GrainLut<BD::Entry>).cast();
+        let data = &data.clone().into();
+        let bd = bd.into_c();
+        (self.get())(buf, data, bd)
+    }
+}
+
+wrap_fn_ptr!(pub struct FnGenerateGrainUV(unsafe extern "C" fn(
     buf: *mut GrainLut<DynEntry>,
     buf_y: *const GrainLut<DynEntry>,
     data: &Dav1dFilmGrainData,
     uv: intptr_t,
     bitdepth_max: c_int,
-) -> ();
+) -> ()));
 
-pub type fgy_32x32xn_fn = unsafe extern "C" fn(
+impl FnGenerateGrainUV {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        buf: &mut GrainLut<BD::Entry>,
+        buf_y: &GrainLut<BD::Entry>,
+        data: &Rav1dFilmGrainData,
+        uv: intptr_t,
+        bd: BD,
+    ) {
+        let buf = (buf as *mut GrainLut<BD::Entry>).cast();
+        let buf_y = (buf_y as *const GrainLut<BD::Entry>).cast();
+        let data = &data.clone().into();
+        let bd = bd.into_c();
+        (self.get())(buf, buf_y, data, uv, bd)
+    }
+}
+
+wrap_fn_ptr!(pub struct FnFGY32x32xN(unsafe extern "C" fn(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -55,9 +89,35 @@ pub type fgy_32x32xn_fn = unsafe extern "C" fn(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-) -> ();
+) -> ()));
 
-pub type fguv_32x32xn_fn = unsafe extern "C" fn(
+impl FnFGY32x32xN {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst_row: *mut BD::Pixel,
+        src_row: *const BD::Pixel,
+        stride: ptrdiff_t,
+        data: &Rav1dFilmGrainData,
+        pw: usize,
+        scaling: &BD::Scaling,
+        grain_lut: &GrainLut<BD::Entry>,
+        bh: c_int,
+        row_num: c_int,
+        bd: BD,
+    ) {
+        let dst_row = dst_row.cast();
+        let src_row = src_row.cast();
+        let data = &data.clone().into();
+        let scaling = (scaling as *const BD::Scaling).cast();
+        let grain_lut = (grain_lut as *const GrainLut<BD::Entry>).cast();
+        let bd = bd.into_c();
+        (self.get())(
+            dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd,
+        )
+    }
+}
+
+wrap_fn_ptr!(pub struct FnFGUV32x32xN(unsafe extern "C" fn(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -72,14 +132,58 @@ pub type fguv_32x32xn_fn = unsafe extern "C" fn(
     uv_pl: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-) -> ();
+) -> ()));
+
+impl FnFGUV32x32xN {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst_row: *mut BD::Pixel,
+        src_row: *const BD::Pixel,
+        stride: ptrdiff_t,
+        data: &Rav1dFilmGrainData,
+        pw: usize,
+        scaling: &BD::Scaling,
+        grain_lut: &GrainLut<BD::Entry>,
+        bh: c_int,
+        row_num: c_int,
+        luma_row: *const BD::Pixel,
+        luma_stride: ptrdiff_t,
+        uv_pl: c_int,
+        is_id: c_int,
+        bd: BD,
+    ) {
+        let dst_row = dst_row.cast();
+        let src_row = src_row.cast();
+        let data = &data.clone().into();
+        let scaling = (scaling as *const BD::Scaling).cast();
+        let grain_lut = (grain_lut as *const GrainLut<BD::Entry>).cast();
+        let luma_row = luma_row.cast();
+        let bd = bd.into_c();
+        (self.get())(
+            dst_row,
+            src_row,
+            stride,
+            data,
+            pw,
+            scaling,
+            grain_lut,
+            bh,
+            row_num,
+            luma_row,
+            luma_stride,
+            uv_pl,
+            is_id,
+            bd,
+        )
+    }
+}
 
 #[repr(C)]
 pub struct Rav1dFilmGrainDSPContext {
-    pub generate_grain_y: generate_grain_y_fn,
-    pub generate_grain_uv: [generate_grain_uv_fn; 3],
-    pub fgy_32x32xn: fgy_32x32xn_fn,
-    pub fguv_32x32xn: [fguv_32x32xn_fn; 3],
+    pub generate_grain_y: FnGenerateGrainY,
+    pub generate_grain_uv: [FnGenerateGrainUV; 3],
+    pub fgy_32x32xn: FnFGY32x32xN,
+    pub fguv_32x32xn: [FnFGUV32x32xN; 3],
 }
 
 #[cfg(feature = "asm")]
@@ -89,7 +193,7 @@ macro_rules! decl_generate_grain_y_fn {
             fn $name(buf: *mut GrainLut<DynEntry>, data: &Dav1dFilmGrainData, bitdepth_max: c_int);
         }
 
-        $name
+        FnGenerateGrainY::new($name)
     }};
 }
 
@@ -106,7 +210,7 @@ macro_rules! decl_generate_grain_uv_fn {
             );
         }
 
-        $name
+        FnGenerateGrainUV::new($name)
     }};
 }
 
@@ -146,7 +250,13 @@ macro_rules! decl_fgy_32x32xn_fn {
             );
         }
 
-        $name
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        let fn_ = FnFGY32x32xN::new($name);
+
+        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+        let fn_ = $name;
+
+        fn_
     }};
 }
 
@@ -193,7 +303,13 @@ macro_rules! decl_fguv_32x32xn_fn {
             );
         }
 
-        $name
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        let fn_ = FnFGUV32x32xN::new($name);
+
+        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+        let fn_ = $name;
+
+        fn_
     }};
 }
 
@@ -1018,17 +1134,17 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 impl Rav1dFilmGrainDSPContext {
     fn new_c<BD: BitDepth>() -> Self {
         let mut c = Self {
-            generate_grain_y: generate_grain_y_c_erased::<BD>,
+            generate_grain_y: FnGenerateGrainY::new(generate_grain_y_c_erased::<BD>),
             generate_grain_uv: [
-                generate_grain_uv_c_erased::<BD, 420, true, true>, // Rav1dPixelLayout::I420 - 1
-                generate_grain_uv_c_erased::<BD, 422, true, false>, // Rav1dPixelLayout::I422 - 1
-                generate_grain_uv_c_erased::<BD, 444, false, false>, // Rav1dPixelLayout::I444 - 1
+                FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 420, true, true>), // Rav1dPixelLayout::I420 - 1
+                FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 422, true, false>), // Rav1dPixelLayout::I422 - 1
+                FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 444, false, false>), // Rav1dPixelLayout::I444 - 1
             ],
-            fgy_32x32xn: fgy_32x32xn_c_erased::<BD>,
+            fgy_32x32xn: FnFGY32x32xN::new(fgy_32x32xn_c_erased::<BD>),
             fguv_32x32xn: [
-                fguv_32x32xn_c_erased::<BD, 420, true, true>, // Rav1dPixelLayout::I420 - 1
-                fguv_32x32xn_c_erased::<BD, 422, true, false>, // Rav1dPixelLayout::I422 - 1
-                fguv_32x32xn_c_erased::<BD, 444, false, false>, // Rav1dPixelLayout::I444 - 1
+                FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 420, true, true>), // Rav1dPixelLayout::I420 - 1
+                FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 422, true, false>), // Rav1dPixelLayout::I422 - 1
+                FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 444, false, false>), // Rav1dPixelLayout::I444 - 1
             ],
         };
 
@@ -1038,18 +1154,18 @@ impl Rav1dFilmGrainDSPContext {
         // so we can't use that for the initial value above.
 
         c.generate_grain_uv[Rav1dPixelLayout::I420 as usize - 1] =
-            generate_grain_uv_c_erased::<BD, 420, true, true>;
+            FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 420, true, true>);
         c.generate_grain_uv[Rav1dPixelLayout::I422 as usize - 1] =
-            generate_grain_uv_c_erased::<BD, 422, true, false>;
+            FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 422, true, false>);
         c.generate_grain_uv[Rav1dPixelLayout::I444 as usize - 1] =
-            generate_grain_uv_c_erased::<BD, 444, false, false>;
+            FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 444, false, false>);
 
         c.fguv_32x32xn[Rav1dPixelLayout::I420 as usize - 1] =
-            fguv_32x32xn_c_erased::<BD, 420, true, true>;
+            FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 420, true, true>);
         c.fguv_32x32xn[Rav1dPixelLayout::I422 as usize - 1] =
-            fguv_32x32xn_c_erased::<BD, 422, true, false>;
+            FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 422, true, false>);
         c.fguv_32x32xn[Rav1dPixelLayout::I444 as usize - 1] =
-            fguv_32x32xn_c_erased::<BD, 444, false, false>;
+            FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 444, false, false>);
 
         c
     }
@@ -1130,13 +1246,13 @@ impl Rav1dFilmGrainDSPContext {
         self.generate_grain_uv[Rav1dPixelLayout::I444 as usize - 1] =
             bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, neon);
 
-        self.fgy_32x32xn = fgy_32x32xn_neon_erased::<BD>;
+        self.fgy_32x32xn = FnFGY32x32xN::new(fgy_32x32xn_neon_erased::<BD>);
         self.fguv_32x32xn[Rav1dPixelLayout::I420 as usize - 1] =
-            fguv_32x32xn_neon_erased::<BD, 420, true, true>;
+            FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 420, true, true>);
         self.fguv_32x32xn[Rav1dPixelLayout::I422 as usize - 1] =
-            fguv_32x32xn_neon_erased::<BD, 422, true, false>;
+            FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 422, true, false>);
         self.fguv_32x32xn[Rav1dPixelLayout::I444 as usize - 1] =
-            fguv_32x32xn_neon_erased::<BD, 444, false, false>;
+            FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 444, false, false>);
     }
 
     fn init<BD: BitDepth>(&mut self) {
