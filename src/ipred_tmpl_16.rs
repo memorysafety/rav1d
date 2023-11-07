@@ -4,6 +4,7 @@ use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::src::ipred::filter_edge;
 use crate::src::ipred::get_filter_strength;
 use crate::src::ipred::get_upsample;
 use crate::src::ipred::ipred_cfl_128_c_erased;
@@ -162,43 +163,6 @@ unsafe fn pixel_set(dst: *mut pixel, val: c_int, num: c_int) {
 }
 
 #[inline(never)]
-unsafe fn filter_edge(
-    out: *mut pixel,
-    sz: c_int,
-    lim_from: c_int,
-    lim_to: c_int,
-    in_0: *const pixel,
-    from: c_int,
-    to: c_int,
-    strength: c_int,
-) {
-    static kernel: [[u8; 5]; 3] = [[0, 4, 8, 4, 0], [0, 5, 6, 5, 0], [2, 4, 4, 4, 2]];
-    if !(strength > 0) {
-        unreachable!();
-    }
-    let mut i = 0;
-    while i < cmp::min(sz, lim_from) {
-        *out.offset(i as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
-        i += 1;
-    }
-    while i < cmp::min(lim_to, sz) {
-        let mut s = 0;
-        let mut j = 0;
-        while j < 5 {
-            s += *in_0.offset(iclip(i - 2 + j, from, to - 1) as isize) as c_int
-                * kernel[(strength - 1) as usize][j as usize] as c_int;
-            j += 1;
-        }
-        *out.offset(i as isize) = (s + 8 >> 4) as pixel;
-        i += 1;
-    }
-    while i < sz {
-        *out.offset(i as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
-        i += 1;
-    }
-}
-
-#[inline(never)]
 unsafe fn upsample_edge(
     out: *mut pixel,
     hsz: c_int,
@@ -294,7 +258,7 @@ unsafe fn ipred_z1_rust(
             0 as c_int
         };
         if filter_strength != 0 {
-            filter_edge(
+            filter_edge::<BitDepth16>(
                 top_out.as_mut_ptr(),
                 width + height,
                 0 as c_int,
@@ -412,7 +376,7 @@ unsafe fn ipred_z2_rust(
             0 as c_int
         };
         if filter_strength != 0 {
-            filter_edge(
+            filter_edge::<BitDepth16>(
                 &mut *topleft.offset(1),
                 width,
                 0 as c_int,
@@ -447,7 +411,7 @@ unsafe fn ipred_z2_rust(
             0 as c_int
         };
         if filter_strength_0 != 0 {
-            filter_edge(
+            filter_edge::<BitDepth16>(
                 &mut *topleft.offset(-height as isize),
                 height,
                 height - max_height,
@@ -571,7 +535,7 @@ unsafe fn ipred_z3_rust(
             0 as c_int
         };
         if filter_strength != 0 {
-            filter_edge(
+            filter_edge::<BitDepth16>(
                 left_out.as_mut_ptr(),
                 width + height,
                 0 as c_int,
