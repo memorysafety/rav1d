@@ -856,9 +856,8 @@ pub(crate) unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) 
     return 0 as c_int;
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
-pub(crate) unsafe fn filter_edge<BD: BitDepth>(
+unsafe fn filter_edge<BD: BitDepth>(
     out: *mut BD::Pixel,
     sz: c_int,
     lim_from: c_int,
@@ -900,9 +899,8 @@ pub(crate) unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_in
     return (angle < 40 && wh <= 16 >> is_sm) as c_int;
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
-pub(crate) unsafe fn upsample_edge<BD: BitDepth>(
+unsafe fn upsample_edge<BD: BitDepth>(
     out: *mut BD::Pixel,
     hsz: c_int,
     in_0: *const BD::Pixel,
@@ -1158,6 +1156,106 @@ pub(crate) unsafe fn ipred_z2_rust<BD: BitDepth>(
         y += 1;
         xpos -= dx;
         dst = dst.offset(BD::pxstride(stride as usize) as isize);
+    }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn ipred_z3_rust<BD: BitDepth>(
+    dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    topleft_in: *const BD::Pixel,
+    width: c_int,
+    height: c_int,
+    mut angle: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    bd: BD,
+) {
+    let is_sm = angle >> 9 & 0x1 as c_int;
+    let enable_intra_edge_filter = angle >> 10;
+    angle &= 511 as c_int;
+    if !(angle > 180) {
+        unreachable!();
+    }
+    let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
+    let mut left_out: [BD::Pixel; 128] = [0.into(); 128];
+    let left: *const BD::Pixel;
+    let max_base_y;
+    let upsample_left = if enable_intra_edge_filter != 0 {
+        get_upsample(width + height, angle - 180, is_sm)
+    } else {
+        0 as c_int
+    };
+    if upsample_left != 0 {
+        upsample_edge::<BD>(
+            left_out.as_mut_ptr(),
+            width + height,
+            &*topleft_in.offset(-(width + height) as isize),
+            cmp::max(width - height, 0 as c_int),
+            width + height + 1,
+            bd,
+        );
+        left = &mut *left_out
+            .as_mut_ptr()
+            .offset((2 * (width + height) - 2) as isize) as *mut BD::Pixel;
+        max_base_y = 2 * (width + height) - 2;
+        dy <<= 1;
+    } else {
+        let filter_strength = if enable_intra_edge_filter != 0 {
+            get_filter_strength(width + height, angle - 180, is_sm)
+        } else {
+            0 as c_int
+        };
+        if filter_strength != 0 {
+            filter_edge::<BD>(
+                left_out.as_mut_ptr(),
+                width + height,
+                0 as c_int,
+                width + height,
+                &*topleft_in.offset(-(width + height) as isize),
+                cmp::max(width - height, 0 as c_int),
+                width + height + 1,
+                filter_strength,
+            );
+            left =
+                &mut *left_out.as_mut_ptr().offset((width + height - 1) as isize) as *mut BD::Pixel;
+            max_base_y = width + height - 1;
+        } else {
+            left = &*topleft_in.offset(-(1 as c_int) as isize) as *const BD::Pixel;
+            max_base_y = height + cmp::min(width, height) - 1;
+        }
+    }
+    let base_inc = 1 + upsample_left;
+    let mut x = 0;
+    let mut ypos = dy;
+    while x < width {
+        let frac = ypos & 0x3e as c_int;
+        let mut y = 0;
+        let mut base = ypos >> 6;
+        while y < height {
+            if base < max_base_y {
+                let v = (*left.offset(-base as isize)).as_::<c_int>() * (64 - frac)
+                    + (*left.offset(-(base + 1) as isize)).as_::<c_int>() * frac;
+                *dst.offset(
+                    (y as isize * BD::pxstride(stride as usize) as isize + x as isize) as isize,
+                ) = (v + 32 >> 6).as_::<BD::Pixel>();
+                y += 1;
+                base += base_inc;
+            } else {
+                loop {
+                    *dst.offset(
+                        (y as isize * BD::pxstride(stride as usize) as isize + x as isize) as isize,
+                    ) = *left.offset(-max_base_y as isize);
+                    y += 1;
+                    if !(y < height) {
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        x += 1;
+        ypos += dy;
     }
 }
 
