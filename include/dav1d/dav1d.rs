@@ -98,17 +98,16 @@ pub struct Dav1dSettings {
 pub(crate) struct Rav1dSettings {
     pub n_threads: c_int,
     pub max_frame_delay: c_int,
-    pub apply_grain: c_int,
+    pub apply_grain: bool,
     pub operating_point: c_int,
-    pub all_layers: c_int,
+    pub all_layers: bool,
     pub frame_size_limit: c_uint,
     pub allocator: Rav1dPicAllocator,
     pub logger: Rav1dLogger,
-    pub strict_std_compliance: c_int,
-    pub output_invisible_frames: c_int,
+    pub strict_std_compliance: bool,
+    pub output_invisible_frames: bool,
     pub inloop_filters: Rav1dInloopFilterType,
     pub decode_frame_type: Rav1dDecodeFrameType,
-    pub reserved: [u8; 16],
 }
 
 impl From<Dav1dSettings> for Rav1dSettings {
@@ -126,22 +125,21 @@ impl From<Dav1dSettings> for Rav1dSettings {
             output_invisible_frames,
             inloop_filters,
             decode_frame_type,
-            reserved,
+            reserved: _,
         } = value;
         Self {
             n_threads,
             max_frame_delay,
-            apply_grain,
+            apply_grain: apply_grain != 0,
             operating_point,
-            all_layers,
+            all_layers: all_layers != 0,
             frame_size_limit,
             allocator: allocator.into(),
             logger: logger.into(),
-            strict_std_compliance,
-            output_invisible_frames,
+            strict_std_compliance: strict_std_compliance != 0,
+            output_invisible_frames: output_invisible_frames != 0,
             inloop_filters,
             decode_frame_type,
-            reserved,
         }
     }
 }
@@ -161,22 +159,21 @@ impl From<Rav1dSettings> for Dav1dSettings {
             output_invisible_frames,
             inloop_filters,
             decode_frame_type,
-            reserved,
         } = value;
         Self {
             n_threads,
             max_frame_delay,
-            apply_grain,
+            apply_grain: apply_grain as c_int,
             operating_point,
-            all_layers,
+            all_layers: all_layers as c_int,
             frame_size_limit,
             allocator: allocator.into(),
             logger: logger.into(),
-            strict_std_compliance,
-            output_invisible_frames,
+            strict_std_compliance: strict_std_compliance as c_int,
+            output_invisible_frames: output_invisible_frames as c_int,
             inloop_filters,
             decode_frame_type,
-            reserved,
+            reserved: Default::default(),
         }
     }
 }

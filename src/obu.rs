@@ -175,7 +175,7 @@ unsafe fn parse_seq_hdr(
         if (*hdr).timing_info_present != 0 {
             (*hdr).num_units_in_tick = rav1d_get_bits(gb, 32 as c_int) as c_int;
             (*hdr).time_scale = rav1d_get_bits(gb, 32 as c_int) as c_int;
-            if (*c).strict_std_compliance != 0
+            if (*c).strict_std_compliance
                 && ((*hdr).num_units_in_tick == 0 || (*hdr).time_scale == 0)
             {
                 return parse_seq_hdr_error(c);
@@ -194,7 +194,7 @@ unsafe fn parse_seq_hdr(
                 (*hdr).encoder_decoder_buffer_delay_length =
                     (rav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
                 (*hdr).num_units_in_decoding_tick = rav1d_get_bits(gb, 32 as c_int) as c_int;
-                if (*c).strict_std_compliance != 0 && (*hdr).num_units_in_decoding_tick == 0 {
+                if (*c).strict_std_compliance && (*hdr).num_units_in_decoding_tick == 0 {
                     return parse_seq_hdr_error(c);
                 }
                 (*hdr).buffer_removal_delay_length =
@@ -385,7 +385,7 @@ unsafe fn parse_seq_hdr(
             RAV1D_CHR_UNKNOWN as c_int as c_uint
         }) as Dav1dChromaSamplePosition;
     }
-    if (*c).strict_std_compliance != 0
+    if (*c).strict_std_compliance
         && (*hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint
         && (*hdr).layout as c_uint != RAV1D_PIXEL_LAYOUT_I444 as c_int as c_uint
     {
@@ -622,7 +622,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 i_0 += 1;
             }
         }
-        if (*c).strict_std_compliance != 0
+        if (*c).strict_std_compliance
             && (*hdr).frame_type as c_uint == RAV1D_FRAME_TYPE_INTRA as c_int as c_uint
             && (*hdr).refresh_frame_flags == 0xff as c_int
         {
@@ -2114,7 +2114,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             {
                 rav1d_parse_obus_error(c, in_0)?;
             }
-            if (*c).strict_std_compliance != 0
+            if (*c).strict_std_compliance
                 && !(*c).refs[(*(*c).frame_hdr).existing_frame_idx as usize]
                     .p
                     .showable
@@ -2197,7 +2197,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     let progress: c_uint = ::core::intrinsics::atomic_load_relaxed(
                         &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
                     );
-                    if ((*out_delayed).visible || (*c).output_invisible_frames != 0)
+                    if ((*out_delayed).visible || (*c).output_invisible_frames)
                         && progress != FRAME_ERROR
                     {
                         rav1d_thread_picture_ref(&mut (*c).out, out_delayed);

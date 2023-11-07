@@ -156,17 +156,16 @@ impl Default for Rav1dSettings {
         Self {
             n_threads: 0,
             max_frame_delay: 0,
-            apply_grain: 1,
+            apply_grain: true,
             operating_point: 0,
-            all_layers: 1,
+            all_layers: true,
             frame_size_limit: 0,
             allocator: Default::default(),
             logger: Default::default(),
-            strict_std_compliance: 0,
-            output_invisible_frames: 0,
+            strict_std_compliance: false,
+            output_invisible_frames: false,
             inloop_filters: RAV1D_INLOOPFILTER_ALL,
             decode_frame_type: RAV1D_DECODEFRAMETYPE_ALL,
-            reserved: Default::default(),
         }
     }
 }
@@ -284,9 +283,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     );
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
-    (*c).apply_grain = s.apply_grain != 0;
+    (*c).apply_grain = s.apply_grain;
     (*c).operating_point = s.operating_point;
-    (*c).all_layers = s.all_layers != 0;
+    (*c).all_layers = s.all_layers;
     (*c).frame_size_limit = s.frame_size_limit;
     (*c).strict_std_compliance = s.strict_std_compliance;
     (*c).output_invisible_frames = s.output_invisible_frames;
@@ -714,8 +713,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             let progress: c_uint = ::core::intrinsics::atomic_load_relaxed(
                 &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
             );
-            if ((*out_delayed).visible || c.output_invisible_frames != 0) && progress != FRAME_ERROR
-            {
+            if ((*out_delayed).visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
                     c.event_flags as c_uint | rav1d_picture_get_event_flags(out_delayed) as c_uint,
