@@ -2,11 +2,13 @@ use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynEntry;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::DynScaling;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I420;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I422;
 use crate::include::dav1d::headers::RAV1D_PIXEL_LAYOUT_I444;
+use crate::src::internal::GrainLut;
 use crate::src::tables::dav1d_gaussian_sequence;
 use libc::intptr_t;
 use libc::ptrdiff_t;
@@ -16,6 +18,7 @@ use std::ffi::c_uint;
 use std::ops::Add;
 use std::ops::Shl;
 use std::ops::Shr;
+use to_method::To;
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
@@ -32,15 +35,15 @@ const SUB_GRAIN_WIDTH: usize = 44;
 const SUB_GRAIN_HEIGHT: usize = 38;
 
 pub type generate_grain_y_fn = unsafe extern "C" fn(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
+    buf: *mut GrainLut<DynEntry>,
+    data: &Rav1dFilmGrainData,
     bitdepth_max: c_int,
 ) -> ();
 
 pub type generate_grain_uv_fn = unsafe extern "C" fn(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
+    buf: *mut GrainLut<DynEntry>,
+    buf_y: *const GrainLut<DynEntry>,
+    data: &Rav1dFilmGrainData,
     uv: intptr_t,
     bitdepth_max: c_int,
 ) -> ();
@@ -49,10 +52,10 @@ pub type fgy_32x32xn_fn = unsafe extern "C" fn(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    scaling: *const DynScaling,
+    grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
@@ -62,10 +65,10 @@ pub type fguv_32x32xn_fn = unsafe extern "C" fn(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    scaling: *const DynScaling,
+    grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
     luma_row: *const DynPixel,
@@ -87,11 +90,7 @@ pub struct Rav1dFilmGrainDSPContext {
 macro_rules! decl_generate_grain_y_fn {
     (fn $name:ident) => {{
         extern "C" {
-            fn $name(
-                buf: *mut [DynEntry; GRAIN_WIDTH],
-                data: *const Rav1dFilmGrainData,
-                bitdepth_max: c_int,
-            );
+            fn $name(buf: *mut GrainLut<DynEntry>, data: &Rav1dFilmGrainData, bitdepth_max: c_int);
         }
 
         $name
@@ -103,9 +102,9 @@ macro_rules! decl_generate_grain_uv_fn {
     (fn $name:ident) => {{
         extern "C" {
             fn $name(
-                buf: *mut [DynEntry; GRAIN_WIDTH],
-                buf_y: *const [DynEntry; GRAIN_WIDTH],
-                data: *const Rav1dFilmGrainData,
+                buf: *mut GrainLut<DynEntry>,
+                buf_y: *const GrainLut<DynEntry>,
+                data: &Rav1dFilmGrainData,
                 uv: intptr_t,
                 bitdepth_max: c_int,
             );
@@ -124,10 +123,10 @@ macro_rules! decl_fgy_32x32xn_fn {
                 dst_row: *mut DynPixel,
                 src_row: *const DynPixel,
                 stride: ptrdiff_t,
-                data: *const Rav1dFilmGrainData,
+                data: &Rav1dFilmGrainData,
                 pw: usize,
-                scaling: *const u8,
-                grain_lut: *const [DynEntry; GRAIN_WIDTH],
+                scaling: *const DynScaling,
+                grain_lut: *const GrainLut<DynEntry>,
                 bh: c_int,
                 row_num: c_int,
                 bitdepth_max: c_int,
@@ -140,9 +139,9 @@ macro_rules! decl_fgy_32x32xn_fn {
                 dst: *mut DynPixel,
                 src: *const DynPixel,
                 stride: ptrdiff_t,
-                scaling: *const u8,
+                scaling: *const DynScaling,
                 scaling_shift: c_int,
-                grain_lut: *const [DynEntry; GRAIN_WIDTH],
+                grain_lut: *const GrainLut<DynEntry>,
                 offsets: *const [[c_int; 2]; 2],
                 h: c_int,
                 clip: ptrdiff_t,
@@ -164,10 +163,10 @@ macro_rules! decl_fguv_32x32xn_fn {
                 dst_row: *mut DynPixel,
                 src_row: *const DynPixel,
                 stride: ptrdiff_t,
-                data: *const Rav1dFilmGrainData,
+                data: &Rav1dFilmGrainData,
                 pw: usize,
-                scaling: *const u8,
-                grain_lut: *const [DynEntry; GRAIN_WIDTH],
+                scaling: *const DynScaling,
+                grain_lut: *const GrainLut<DynEntry>,
                 bh: c_int,
                 row_num: c_int,
                 luma_row: *const DynPixel,
@@ -184,9 +183,9 @@ macro_rules! decl_fguv_32x32xn_fn {
                 dst: *mut DynPixel,
                 src: *const DynPixel,
                 stride: ptrdiff_t,
-                scaling: *const u8,
-                data: *const Rav1dFilmGrainData,
-                grain_lut: *const [DynEntry; GRAIN_WIDTH],
+                scaling: *const DynScaling,
+                data: &Rav1dFilmGrainData,
+                grain_lut: *const GrainLut<DynEntry>,
                 luma_row: *const DynPixel,
                 luma_stride: ptrdiff_t,
                 offsets: *const [[c_int; 2]; 2],
@@ -221,21 +220,24 @@ where
 }
 
 unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
+    buf: *mut GrainLut<DynEntry>,
+    data: &Rav1dFilmGrainData,
     bitdepth_max: c_int,
 ) {
-    generate_grain_y_rust(buf.cast(), data, BD::from_c(bitdepth_max))
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let buf = unsafe { &mut *buf.cast() };
+    let bd = BD::from_c(bitdepth_max);
+    generate_grain_y_rust(buf, data, bd)
 }
 
 unsafe fn generate_grain_y_rust<BD: BitDepth>(
-    buf: *mut [BD::Entry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
+    buf: &mut GrainLut<BD::Entry>,
+    data: &Rav1dFilmGrainData,
     bd: BD,
 ) {
     let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
-    let mut seed: c_uint = (*data).seed;
-    let shift = 4 - bitdepth_min_8 + (*data).grain_scale_shift;
+    let mut seed: c_uint = data.seed;
+    let shift = 4 - bitdepth_min_8 + data.grain_scale_shift;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
@@ -243,17 +245,17 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     for y in 0..GRAIN_HEIGHT {
         for x in 0..GRAIN_WIDTH {
             let value = get_random_number(11, &mut seed);
-            (*buf.offset(y as isize))[x as usize] =
+            buf[y as usize][x as usize] =
                 round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>();
         }
     }
 
     let ar_pad = 3;
-    let ar_lag = (*data).ar_coeff_lag;
+    let ar_lag = data.ar_coeff_lag;
 
     for y in ar_pad..GRAIN_HEIGHT as c_int {
         for x in ar_pad..GRAIN_WIDTH as c_int - ar_pad {
-            let mut coeff: *const i8 = ((*data).ar_coeffs_y).as_ptr();
+            let mut coeff: *const i8 = (data.ar_coeffs_y).as_ptr();
             let mut sum = 0;
             for dy in -ar_lag..=0 {
                 for dx in -ar_lag..=ar_lag {
@@ -262,24 +264,23 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
                     }
                     let fresh0 = coeff;
                     coeff = coeff.offset(1);
-                    sum += *fresh0 as c_int
-                        * (*buf.offset((y + dy) as isize))[(x + dx) as usize].as_::<c_int>();
+                    sum +=
+                        *fresh0 as c_int * buf[(y + dy) as usize][(x + dx) as usize].as_::<c_int>();
                 }
             }
 
-            let grain = (*buf.offset(y as isize))[x as usize].as_::<c_int>()
-                + round2(sum, (*data).ar_coeff_shift);
-            (*buf.offset(y as isize))[x as usize] =
-                iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+            let grain =
+                buf[y as usize][x as usize].as_::<c_int>() + round2(sum, data.ar_coeff_shift);
+            buf[y as usize][x as usize] = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
     }
 }
 
 #[inline(never)]
 unsafe fn generate_grain_uv_rust<BD: BitDepth>(
-    buf: *mut [BD::Entry; GRAIN_WIDTH],
-    buf_y: *const [BD::Entry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
+    buf: &mut GrainLut<BD::Entry>,
+    buf_y: &GrainLut<BD::Entry>,
+    data: &Rav1dFilmGrainData,
     uv: intptr_t,
     is_subx: bool,
     is_suby: bool,
@@ -288,13 +289,13 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     let [subx, suby] = [is_subx, is_suby].map(|it| it as c_int);
 
     let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
-    let mut seed: c_uint = (*data).seed
+    let mut seed: c_uint = data.seed
         ^ (if uv != 0 {
             0x49d8 as c_int
         } else {
             0xb524 as c_int
         }) as c_uint;
-    let shift = 4 - bitdepth_min_8 + (*data).grain_scale_shift;
+    let shift = 4 - bitdepth_min_8 + data.grain_scale_shift;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
@@ -313,24 +314,24 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     for y in 0..chromaH {
         for x in 0..chromaW {
             let value = get_random_number(11, &mut seed);
-            (*buf.offset(y as isize))[x as usize] =
+            buf[y as usize][x as usize] =
                 round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>();
         }
     }
 
     let ar_pad = 3;
-    let ar_lag = (*data).ar_coeff_lag;
+    let ar_lag = data.ar_coeff_lag;
 
     for y in ar_pad..chromaH {
         for x in ar_pad..chromaW - ar_pad {
-            let mut coeff: *const i8 = ((*data).ar_coeffs_uv[uv as usize]).as_ptr();
+            let mut coeff: *const i8 = (data.ar_coeffs_uv[uv as usize]).as_ptr();
             let mut sum = 0;
             for dy in -ar_lag..=0 {
                 for dx in -ar_lag..=ar_lag {
                     // For the final (current) pixel, we need to add in the
                     // contribution from the luma grain texture.
                     if dx == 0 && dy == 0 {
-                        if (*data).num_y_points == 0 {
+                        if data.num_y_points == 0 {
                             break;
                         }
                         let mut luma = 0;
@@ -338,7 +339,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         let lumaY = (y - ar_pad << suby) + ar_pad;
                         for i in 0..=suby {
                             for j in 0..=subx {
-                                luma += (*buf_y.offset((lumaY + i) as isize))[(lumaX + j) as usize]
+                                luma += buf_y[(lumaY + i) as usize][(lumaX + j) as usize]
                                     .as_::<c_int>();
                             }
                         }
@@ -351,15 +352,14 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         coeff = coeff.offset(1);
 
                         sum += *fresh1 as c_int
-                            * (*buf.offset((y + dy) as isize))[(x + dx) as usize].as_::<c_int>();
+                            * buf[(y + dy) as usize][(x + dx) as usize].as_::<c_int>();
                     }
                 }
             }
 
-            let grain = (*buf.offset(y as isize))[x as usize].as_::<c_int>()
-                + round2(sum, (*data).ar_coeff_shift);
-            (*buf.offset(y as isize))[x as usize] =
-                iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+            let grain =
+                buf[y as usize][x as usize].as_::<c_int>() + round2(sum, data.ar_coeff_shift);
+            buf[y as usize][x as usize] = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
     }
 }
@@ -370,21 +370,18 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     const IS_SUBX: bool,
     const IS_SUBY: bool,
 >(
-    buf: *mut [DynEntry; GRAIN_WIDTH],
-    buf_y: *const [DynEntry; GRAIN_WIDTH],
-    data: *const Rav1dFilmGrainData,
+    buf: *mut GrainLut<DynEntry>,
+    buf_y: *const GrainLut<DynEntry>,
+    data: &Rav1dFilmGrainData,
     uv: intptr_t,
     bitdepth_max: c_int,
 ) {
-    generate_grain_uv_rust::<BD>(
-        buf.cast(),
-        buf_y.cast(),
-        data,
-        uv,
-        IS_SUBX,
-        IS_SUBY,
-        BD::from_c(bitdepth_max),
-    );
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let buf = unsafe { &mut *buf.cast() };
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let buf_y = unsafe { &*buf_y.cast() };
+    let bd = BD::from_c(bitdepth_max);
+    generate_grain_uv_rust(buf, buf_y, data, uv, IS_SUBX, IS_SUBY, bd)
 }
 
 /// Sample from the correct block of a grain LUT,
@@ -392,7 +389,7 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
 /// provided by the offsets cache.
 #[inline]
 unsafe fn sample_lut<BD: BitDepth>(
-    grain_lut: *const [BD::Entry; GRAIN_WIDTH],
+    grain_lut: &GrainLut<BD::Entry>,
     offsets: &[[c_int; 2]; 2],
     is_subx: bool,
     is_suby: bool,
@@ -406,7 +403,7 @@ unsafe fn sample_lut<BD: BitDepth>(
     let randval = offsets[bx as usize][by as usize];
     let offx = 3 + (2 >> subx) * (3 + (randval >> 4));
     let offy = 3 + (2 >> suby) * (3 + (randval & 0xf as c_int));
-    (*grain_lut.offset((offy + y + (BLOCK_SIZE as c_int >> suby) * by) as isize))
+    grain_lut[(offy + y + (BLOCK_SIZE as c_int >> suby) * by) as usize]
         [(offx + x + (BLOCK_SIZE as c_int >> subx) * bx) as usize]
 }
 
@@ -414,41 +411,39 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    scaling: *const DynScaling,
+    grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
 ) {
+    let dst_row = dst_row.cast();
+    let src_row = src_row.cast();
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let scaling = unsafe { &*scaling.cast() };
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let grain_lut = unsafe { &*grain_lut.cast() };
+    let bd = BD::from_c(bitdepth_max);
     fgy_32x32xn_rust(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling,
-        grain_lut.cast(),
-        bh,
-        row_num,
-        BD::from_c(bitdepth_max),
-    );
+        dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd,
+    )
 }
 
 unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [BD::Entry; GRAIN_WIDTH],
+    scaling: &BD::Scaling,
+    grain_lut: &GrainLut<BD::Entry>,
     bh: c_int,
     row_num: c_int,
     bd: BD,
 ) {
-    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
+    let rows = 1 + (data.overlap_flag && row_num > 0) as c_int;
     let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
@@ -456,7 +451,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
 
     let min_value;
     let max_value;
-    if (*data).clip_to_restricted_range {
+    if data.clip_to_restricted_range {
         min_value = (16 as c_int) << bitdepth_min_8;
         max_value = (235 as c_int) << bitdepth_min_8;
     } else {
@@ -467,7 +462,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     // seed[0] contains the current row, seed[1] contains the previous
     let mut seed: [c_uint; 2] = [0; 2];
     for i in 0..rows {
-        seed[i as usize] = (*data).seed;
+        seed[i as usize] = data.seed;
         seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
     }
@@ -480,7 +475,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     for bx in (0..pw).step_by(BLOCK_SIZE) {
         let bw = cmp::min(BLOCK_SIZE, pw - bx);
 
-        if (*data).overlap_flag && bx != 0 {
+        if data.overlap_flag && bx != 0 {
             // shift previous offsets left
             for i in 0..rows {
                 offsets[1][i as usize] = offsets[0][i as usize];
@@ -494,12 +489,12 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         }
 
         // x/y block offsets to compensate for overlapped regions
-        let ystart = if (*data).overlap_flag && row_num != 0 {
+        let ystart = if data.overlap_flag && row_num != 0 {
             cmp::min(2 as c_int, bh)
         } else {
             0 as c_int
         };
-        let xstart = if (*data).overlap_flag && bx != 0 {
+        let xstart = if data.overlap_flag && bx != 0 {
             cmp::min(2, bw)
         } else {
             0
@@ -517,8 +512,8 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 .offset(x as isize)
                 .offset(bx as isize);
             let noise = round2(
-                *scaling.offset((*src).as_::<isize>()) as c_int * grain,
-                (*data).scaling_shift,
+                scaling.as_ref()[(*src).to::<usize>()] as c_int * grain,
+                data.scaling_shift,
             );
             *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
         };
@@ -603,10 +598,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [BD::Entry; GRAIN_WIDTH],
+    scaling: &BD::Scaling,
+    grain_lut: &GrainLut<BD::Entry>,
     bh: c_int,
     row_num: c_int,
     luma_row: *const BD::Pixel,
@@ -619,7 +614,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 ) {
     let [sx, sy] = [is_sx, is_sy].map(|it| it as c_int);
 
-    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
+    let rows = 1 + (data.overlap_flag && row_num > 0) as c_int;
     let bitdepth_min_8 = bd.bitdepth() - 8;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
@@ -627,7 +622,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 
     let min_value;
     let max_value;
-    if (*data).clip_to_restricted_range {
+    if data.clip_to_restricted_range {
         min_value = (16 as c_int) << bitdepth_min_8;
         max_value = (if is_id != 0 {
             235 as c_int
@@ -642,7 +637,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     // seed[0] contains the current row, seed[1] contains the previous
     let mut seed: [c_uint; 2] = [0; 2];
     for i in 0..rows {
-        seed[i as usize] = (*data).seed;
+        seed[i as usize] = data.seed;
         seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
     }
@@ -657,7 +652,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
             BLOCK_SIZE as c_int >> sx,
             pw.wrapping_sub(bx as usize) as c_int,
         );
-        if (*data).overlap_flag && bx != 0 {
+        if data.overlap_flag && bx != 0 {
             // shift previous offsets left
             for i in 0..rows {
                 offsets[1][i as usize] = offsets[0][i as usize];
@@ -671,12 +666,12 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         }
 
         // x/y block offsets to compensate for overlapped regions
-        let ystart = if (*data).overlap_flag && row_num != 0 {
+        let ystart = if data.overlap_flag && row_num != 0 {
             cmp::min(2 >> sy, bh)
         } else {
             0 as c_int
         };
-        let xstart = if (*data).overlap_flag && bx != 0 {
+        let xstart = if data.overlap_flag && bx != 0 {
             cmp::min(2 >> sx, bw)
         } else {
             0 as c_int
@@ -702,19 +697,19 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
                 .offset(bx.wrapping_add(x as usize) as isize);
             let mut val = avg.as_::<c_int>();
-            if !(*data).chroma_scaling_from_luma {
-                let combined = avg.as_::<c_int>() * (*data).uv_luma_mult[uv as usize]
-                    + (*src).as_::<c_int>() * (*data).uv_mult[uv as usize];
+            if !data.chroma_scaling_from_luma {
+                let combined = avg.as_::<c_int>() * data.uv_luma_mult[uv as usize]
+                    + (*src).as_::<c_int>() * data.uv_mult[uv as usize];
                 val = iclip(
                     (combined >> 6)
-                        + (*data).uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
+                        + data.uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
                     0,
                     bd.bitdepth_max().as_::<c_int>(),
                 );
             }
             let noise = round2(
-                *scaling.offset(val as isize) as c_int * grain,
-                (*data).scaling_shift,
+                scaling.as_ref()[val as usize] as c_int * grain,
+                data.scaling_shift,
             );
             *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
         };
@@ -805,10 +800,10 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    scaling: *const DynScaling,
+    grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
     luma_row: *const DynPixel,
@@ -817,24 +812,32 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
     is_id: c_int,
     bitdepth_max: c_int,
 ) {
-    fguv_32x32xn_rust::<BD>(
-        dst_row.cast(),
-        src_row.cast(),
+    let dst_row = dst_row.cast();
+    let src_row = src_row.cast();
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let scaling = unsafe { &*scaling.cast() };
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let grain_lut = unsafe { &*grain_lut.cast() };
+    let luma_row = luma_row.cast();
+    let bd = BD::from_c(bitdepth_max);
+    fguv_32x32xn_rust(
+        dst_row,
+        src_row,
         stride,
         data,
         pw,
         scaling,
-        grain_lut.cast(),
+        grain_lut,
         bh,
         row_num,
-        luma_row.cast(),
+        luma_row,
         luma_stride,
         uv_pl,
         is_id,
         IS_SX,
         IS_SY,
-        BD::from_c(bitdepth_max),
-    );
+        bd,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
@@ -905,26 +908,22 @@ unsafe extern "C" fn fgy_32x32xn_neon_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    scaling: *const DynScaling,
+    grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
 ) {
+    let dst_row = dst_row.cast();
+    let src_row = src_row.cast();
+    let scaling = scaling.cast();
+    let grain_lut = grain_lut.cast();
+    let bd = BD::from_c(bitdepth_max);
     fgy_32x32xn_neon(
-        dst_row.cast(),
-        src_row.cast(),
-        stride,
-        data,
-        pw,
-        scaling,
-        grain_lut.cast(),
-        bh,
-        row_num,
-        BD::from_c(bitdepth_max),
-    );
+        dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -932,20 +931,20 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [BD::Entry; GRAIN_WIDTH],
+    scaling: *const BD::Scaling,
+    grain_lut: *const GrainLut<BD::Entry>,
     bh: c_int,
     row_num: c_int,
     bd: BD,
 ) {
-    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
+    let rows = 1 + (data.overlap_flag && row_num > 0) as c_int;
 
     // seed[0] contains the current row, seed[1] contains the previous
     let mut seed: [c_uint; 2] = [0; 2];
     for i in 0..rows {
-        seed[i as usize] = (*data).seed;
+        seed[i as usize] = data.seed;
         seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
     }
@@ -954,7 +953,7 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
 
     // process this row in BLOCK_SIZE^2 blocks
     for bx in (0..pw).step_by(BLOCK_SIZE) {
-        if (*data).overlap_flag && bx != 0 {
+        if data.overlap_flag && bx != 0 {
             // shift previous offsets left
             for i in 0..rows {
                 offsets[1][i as usize] = offsets[0][i as usize];
@@ -968,10 +967,10 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
         }
 
         let mut r#type = 0;
-        if (*data).overlap_flag && row_num != 0 {
+        if data.overlap_flag && row_num != 0 {
             r#type |= 1 as c_int; // overlap y
         }
-        if (*data).overlap_flag && bx != 0 {
+        if data.overlap_flag && bx != 0 {
             r#type |= 2 as c_int; // overlap x
         }
 
@@ -979,12 +978,12 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
             dst_row.offset(bx as isize).cast(),
             src_row.offset(bx as isize).cast(),
             stride,
-            scaling,
-            (*data).scaling_shift,
+            scaling.cast(),
+            data.scaling_shift,
             grain_lut.cast(),
             &offsets,
             bh,
-            (*data).clip_to_restricted_range as ptrdiff_t,
+            data.clip_to_restricted_range as ptrdiff_t,
             r#type as ptrdiff_t,
             bd.into_c(),
         );
@@ -1001,10 +1000,10 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [DynEntry; GRAIN_WIDTH],
+    scaling: *const DynScaling,
+    grain_lut: *const GrainLut<DynEntry>,
     bh: c_int,
     row_num: c_int,
     luma_row: *const DynPixel,
@@ -1013,22 +1012,28 @@ unsafe extern "C" fn fguv_32x32xn_neon_erased<
     is_id: c_int,
     bitdepth_max: c_int,
 ) {
-    fguv_32x32xn_neon::<BD, NM, IS_SX, IS_SY>(
-        dst_row.cast(),
-        src_row.cast(),
+    let dst_row = dst_row.cast();
+    let src_row = src_row.cast();
+    let scaling = scaling.cast();
+    let grain_lut = grain_lut.cast();
+    let luma_row = luma_row.cast();
+    let bd = BD::from_c(bitdepth_max);
+    fguv_32x32xn_neon::<_, NM, IS_SX, IS_SY>(
+        dst_row,
+        src_row,
         stride,
         data,
         pw,
         scaling,
-        grain_lut.cast(),
+        grain_lut,
         bh,
         row_num,
-        luma_row.cast(),
+        luma_row,
         luma_stride,
         uv,
         is_id,
-        BD::from_c(bitdepth_max),
-    );
+        bd,
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -1036,10 +1041,10 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
     stride: ptrdiff_t,
-    data: *const Rav1dFilmGrainData,
+    data: &Rav1dFilmGrainData,
     pw: usize,
-    scaling: *const u8,
-    grain_lut: *const [BD::Entry; GRAIN_WIDTH],
+    scaling: *const BD::Scaling,
+    grain_lut: *const GrainLut<BD::Entry>,
     bh: c_int,
     row_num: c_int,
     luma_row: *const BD::Pixel,
@@ -1050,12 +1055,12 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 ) {
     let [sx, _sy] = [IS_SX, IS_SY].map(|it| it as c_int);
 
-    let rows = 1 + ((*data).overlap_flag && row_num > 0) as c_int;
+    let rows = 1 + (data.overlap_flag && row_num > 0) as c_int;
 
     // seed[0] contains the current row, seed[1] contains the previous
     let mut seed: [c_uint; 2] = [0; 2];
     for i in 0..rows {
-        seed[i as usize] = (*data).seed;
+        seed[i as usize] = data.seed;
         seed[i as usize] ^= (((row_num - i) * 37 + 178 & 0xff as c_int) << 8) as c_uint;
         seed[i as usize] ^= ((row_num - i) * 173 + 105 & 0xff as c_int) as c_uint;
     }
@@ -1064,7 +1069,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 
     // process this row in BLOCK_SIZE^2 blocks (subsampled)
     for bx in (0..pw).step_by(BLOCK_SIZE >> sx) {
-        if (*data).overlap_flag && bx != 0 {
+        if data.overlap_flag && bx != 0 {
             // shift previous offsets left
             for i in 0..rows {
                 offsets[1][i as usize] = offsets[0][i as usize];
@@ -1078,13 +1083,13 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
         }
 
         let mut r#type = 0;
-        if (*data).overlap_flag && row_num != 0 {
+        if data.overlap_flag && row_num != 0 {
             r#type |= 1 as c_int; // overlap y
         }
-        if (*data).overlap_flag && bx != 0 {
+        if data.overlap_flag && bx != 0 {
             r#type |= 2 as c_int; // overlap x
         }
-        if (*data).chroma_scaling_from_luma {
+        if data.chroma_scaling_from_luma {
             r#type |= 4 as c_int;
         }
         (match NM {
@@ -1096,7 +1101,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
             dst_row.offset(bx as isize).cast(),
             src_row.offset(bx as isize).cast(),
             stride,
-            scaling,
+            scaling.cast(),
             data,
             grain_lut.cast(),
             luma_row.offset((bx << sx) as isize).cast(),

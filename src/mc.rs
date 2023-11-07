@@ -25,6 +25,7 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::iter;
+use to_method::To;
 
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::bd_fn;
@@ -699,7 +700,7 @@ unsafe fn avg_rust<BD: BitDepth>(
         for x in 0..w {
             *dst.offset(x as isize) = bd.iclip_pixel(
                 ((*tmp1.offset(x as isize) as i32 + *tmp2.offset(x as isize) as i32 + rnd) >> sh)
-                    .into(),
+                    .to::<i32>(),
             );
         }
 
