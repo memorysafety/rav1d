@@ -499,7 +499,16 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     ptr: *const u8,
     sz: usize,
 ) -> Rav1dResult {
-    let mut current_block: u64;
+    unsafe fn rav1d_parse_sequence_header_error(
+        res: Rav1dResult,
+        mut c: *mut Rav1dContext,
+        buf: *mut Rav1dData,
+    ) -> Rav1dResult {
+        rav1d_data_unref_internal(buf);
+        rav1d_close(&mut c);
+        res
+    }
+
     let mut buf: Rav1dData = {
         let init = Rav1dData {
             data: 0 as *const u8,
@@ -530,45 +539,31 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     if !ptr.is_null() {
         res = rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void);
         if res.is_err() {
-            current_block = 10647346020414903899;
-        } else {
-            current_block = 5399440093318478209;
-        }
-    } else {
-        current_block = 5399440093318478209;
-    }
-    loop {
-        match current_block {
-            10647346020414903899 => {
-                rav1d_data_unref_internal(&mut buf);
-                break;
-            }
-            _ => {
-                if buf.sz > 0 {
-                    let res = rav1d_parse_obus(c, &mut buf, 1 as c_int);
-                    let Ok(res) = res else {
-                        current_block = 10647346020414903899;
-                        continue;
-                    };
-                    if !(res as usize <= buf.sz) {
-                        unreachable!();
-                    }
-                    buf.sz = (buf.sz as c_ulong).wrapping_sub(res as c_ulong) as usize as usize;
-                    buf.data = (buf.data).offset(res as isize);
-                    current_block = 5399440093318478209;
-                } else if ((*c).seq_hdr).is_null() {
-                    res = Err(ENOENT);
-                    current_block = 10647346020414903899;
-                } else {
-                    *out = (*(*c).seq_hdr).clone();
-                    res = Ok(());
-                    current_block = 10647346020414903899;
-                }
-            }
+            return rav1d_parse_sequence_header_error(res, c, &mut buf);
         }
     }
-    rav1d_close(&mut c);
-    return res;
+
+    while buf.sz > 0 {
+        let res = rav1d_parse_obus(c, &mut buf, 1 as c_int);
+        let res = match res {
+            Ok(res) => res,
+            Err(res) => return rav1d_parse_sequence_header_error(Err(res), c, &mut buf),
+        };
+
+        assert!(res as usize <= buf.sz);
+        buf.sz -= res as usize;
+        buf.data = (buf.data).offset(res as isize);
+    }
+
+    if ((*c).seq_hdr).is_null() {
+        res = Err(ENOENT);
+        return rav1d_parse_sequence_header_error(res, c, &mut buf);
+    }
+
+    *out = (*(*c).seq_hdr).clone();
+    res = Ok(());
+
+    return rav1d_parse_sequence_header_error(res, c, &mut buf);
 }
 
 #[no_mangle]
