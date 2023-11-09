@@ -153,7 +153,7 @@ impl FnFGUV32x32xN {
         row_num: usize,
         luma_row: *const BD::Pixel,
         luma_stride: ptrdiff_t,
-        uv_pl: usize,
+        is_uv: bool,
         is_id: bool,
         bd: BD,
     ) {
@@ -165,7 +165,7 @@ impl FnFGUV32x32xN {
         let bh = bh as c_int;
         let row_num = row_num as c_int;
         let luma_row = luma_row.cast();
-        let uv_pl = uv_pl as c_int;
+        let uv_pl = is_uv as c_int;
         let is_id = is_id as c_int;
         let bd = bd.into_c();
         (self.get())(
@@ -706,13 +706,13 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     row_num: usize,
     luma_row: *const BD::Pixel,
     luma_stride: ptrdiff_t,
-    uv: usize,
+    is_uv: bool,
     is_id: bool,
     is_sx: bool,
     is_sy: bool,
     bd: BD,
 ) {
-    let [sx, sy] = [is_sx, is_sy].map(|it| it as usize);
+    let [uv, sx, sy] = [is_uv, is_sx, is_sy].map(|it| it as usize);
 
     let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
     let bitdepth_min_8 = bd.bitdepth() - 8;
@@ -894,7 +894,7 @@ unsafe extern "C" fn fguv_32x32xn_c_erased<
         row_num,
         luma_row,
         luma_stride,
-        uv_pl,
+        uv_pl != 0,
         is_id,
         IS_SX,
         IS_SY,
