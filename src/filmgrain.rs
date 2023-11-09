@@ -712,6 +712,8 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     is_sy: bool,
     bd: BD,
 ) {
+    let uv = uv != 0;
+
     let [sx, sy] = [is_sx, is_sy].map(|it| it as usize);
 
     let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
@@ -765,7 +767,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 
         static w: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
 
-        let add_noise_uv = |x, y, grain| {
+        let add_noise_uv = move |x, y, grain| {
             let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
             let ly = y << sy;
             let luma: *const BD::Pixel = luma_row
@@ -784,16 +786,20 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 .offset(bx.wrapping_add(x as usize) as isize);
             let mut val = avg.as_::<c_int>();
             if !data.chroma_scaling_from_luma {
-                let combined = avg.as_::<c_int>() * data.uv_luma_mult[uv]
-                    + (*src).as_::<c_int>() * data.uv_mult[uv];
+                let combined = avg.as_::<c_int>() * data.uv_luma_mult[uv as usize]
+                    + (*src).as_::<c_int>() * data.uv_mult[uv as usize];
                 val = iclip(
-                    (combined >> 6) + data.uv_offset[uv] * ((1 as c_int) << bitdepth_min_8),
+                    (combined >> 6)
+                        + data.uv_offset[uv as usize] * ((1 as c_int) << bitdepth_min_8),
                     0,
                     bd.bitdepth_max().as_::<c_int>(),
                 );
             }
             let noise = round2(
-                scaling.as_ref()[val as usize] as c_int * grain,
+                // clipping to the size of the `scaling` array isn't strictly needed but is cheaper than
+                // a bounds check
+                scaling.as_ref()[cmp::min(val as usize, scaling.as_ref().len() - 1)] as c_int
+                    * grain,
                 data.scaling_shift,
             );
             *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
