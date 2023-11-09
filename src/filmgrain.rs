@@ -409,7 +409,6 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     }
 }
 
-#[inline(never)]
 unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     buf: &mut GrainLut<BD::Entry>,
     buf_y: &GrainLut<BD::Entry>,
@@ -492,6 +491,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     }
 }
 
+#[inline(never)]
 unsafe extern "C" fn generate_grain_uv_c_erased<
     BD: BitDepth,
     const NM: usize,
@@ -693,7 +693,6 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     }
 }
 
-#[inline(never)]
 unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     dst_row: *mut BD::Pixel,
     src_row: *const BD::Pixel,
@@ -850,6 +849,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
     }
 }
 
+#[inline(never)]
 unsafe extern "C" fn fguv_32x32xn_c_erased<
     BD: BitDepth,
     const NM: usize,
