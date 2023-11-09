@@ -30,13 +30,13 @@ pub mod include {
 pub mod src {
     pub mod align;
     mod cdef;
-    #[cfg(feature = "bitdepth_16")]
+    #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
     mod cdef_apply_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
+    #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
     mod cdef_apply_tmpl_8;
-    #[cfg(feature = "bitdepth_16")]
+    #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
     mod cdef_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
+    #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
     mod cdef_tmpl_8;
     mod cdf;
     mod const_fn;
@@ -69,9 +69,9 @@ pub mod src {
     mod itx_tmpl_16;
     mod itx_tmpl_8;
     mod levels;
-    #[cfg(feature = "bitdepth_16")]
+    #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
     mod lf_apply_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
+    #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
     mod lf_apply_tmpl_8;
     mod lf_mask;
     pub mod lib;
@@ -83,9 +83,9 @@ pub mod src {
     mod loopfilter_tmpl_8;
     mod looprestoration;
     mod lr_apply;
-    #[cfg(feature = "bitdepth_16")]
+    #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
     mod lr_apply_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
+    #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
     mod lr_apply_tmpl_8;
     mod mc;
     mod mem;
