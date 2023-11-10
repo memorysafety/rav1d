@@ -476,12 +476,11 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
 
                         sum += luma * *coeff as c_int;
                         break;
-                    } else {
-                        sum += *coeff as c_int
-                            * buf[(y as isize + dy) as usize][(x as isize + dx) as usize]
-                                .as_::<c_int>();
-                        coeff = coeff.offset(1);
                     }
+                    sum += *coeff as c_int
+                        * buf[(y as isize + dy) as usize][(x as isize + dx) as usize]
+                            .as_::<c_int>();
+                    coeff = coeff.offset(1);
                 }
             }
 
