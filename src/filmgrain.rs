@@ -1,3 +1,6 @@
+#![warn(clippy::all)]
+#![allow(clippy::too_many_arguments)]
+
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynEntry;
@@ -325,10 +328,10 @@ macro_rules! decl_fguv_32x32xn_fn {
 #[inline]
 fn get_random_number(bits: u8, state: &mut c_uint) -> c_int {
     let r = *state;
-    let bit = ((r >> 0) ^ (r >> 1) ^ (r >> 3) ^ (r >> 12)) & 1;
+    let bit = (r ^ (r >> 1) ^ (r >> 3) ^ (r >> 12)) & 1;
     *state = (r >> 1) | bit << 15;
 
-    (*state >> 16 - bits & (1 << bits) - 1) as c_int
+    (*state >> (16 - bits) & ((1 << bits) - 1)) as c_int
 }
 
 #[inline]
@@ -346,8 +349,8 @@ fn row_seed(rows: usize, row_num: usize, data: &Rav1dFilmGrainData) -> [c_uint; 
     let mut seed = [0; 2];
     for i in 0..rows {
         seed[i] = data.seed;
-        seed[i] ^= (((row_num - i) * 37 + 178 & 0xFF) << 8) as c_uint;
-        seed[i] ^= ((row_num - i) * 173 + 105 & 0xFF) as c_uint;
+        seed[i] ^= ((((row_num - i) * 37 + 178) & 0xFF) << 8) as c_uint;
+        seed[i] ^= (((row_num - i) * 173 + 105) & 0xFF) as c_uint;
     }
     seed
 }
@@ -461,8 +464,8 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                             break;
                         }
                         let mut luma = 0;
-                        let lumaX = (x - ar_pad << subx) + ar_pad;
-                        let lumaY = (y - ar_pad << suby) + ar_pad;
+                        let lumaX = ((x - ar_pad) << subx) + ar_pad;
+                        let lumaY = ((y - ar_pad) << suby) + ar_pad;
                         for i in 0..=suby {
                             for j in 0..=subx {
                                 luma +=
@@ -629,13 +632,13 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
 
         let add_noise_y = |x, y, grain| {
             let src = src_row
-                .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                .offset(x as isize)
-                .offset(bx as isize);
+                .offset(y as isize * BD::pxstride(stride as usize) as isize)
+                .add(x)
+                .add(bx);
             let dst = dst_row
-                .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                .offset(x as isize)
-                .offset(bx as isize);
+                .offset(y as isize * BD::pxstride(stride as usize) as isize)
+                .add(x)
+                .add(bx);
             let noise = round2(
                 scaling.as_ref()[(*src).to::<usize>()] as c_int * grain,
                 data.scaling_shift,
@@ -764,22 +767,22 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         static w: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
 
         let add_noise_uv = |x, y, grain| {
-            let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
+            let lx = (bx.wrapping_add(x) << sx) as c_int;
             let ly = y << sy;
             let luma = luma_row
-                .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
+                .offset(ly as isize * BD::pxstride(luma_stride as usize) as isize)
                 .offset(lx as isize);
             let mut avg = *luma.offset(0);
             if is_sx {
-                avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
+                avg = ((avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1) >> 1)
                     .as_::<BD::Pixel>();
             }
             let src = src_row
-                .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                .offset(bx.wrapping_add(x as usize) as isize);
+                .offset(y as isize * BD::pxstride(stride as usize) as isize)
+                .add(bx.wrapping_add(x));
             let dst = dst_row
-                .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
-                .offset(bx.wrapping_add(x as usize) as isize);
+                .offset(y as isize * BD::pxstride(stride as usize) as isize)
+                .add(bx.wrapping_add(x));
             let mut val = avg.as_::<c_int>();
             if !data.chroma_scaling_from_luma {
                 let combined = avg.as_::<c_int>() * data.uv_luma_mult[uv]
