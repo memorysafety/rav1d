@@ -785,11 +785,11 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
             if !data.chroma_scaling_from_luma {
                 let combined = avg.as_::<c_int>() * data.uv_luma_mult[uv]
                     + (*src).as_::<c_int>() * data.uv_mult[uv];
-                val = iclip(
-                    (combined >> 6) + data.uv_offset[uv] * ((1 as c_int) << bitdepth_min_8),
-                    0,
-                    bd.bitdepth_max().as_::<c_int>(),
-                );
+                val = bd
+                    .iclip_pixel(
+                        (combined >> 6) + data.uv_offset[uv] * ((1 as c_int) << bitdepth_min_8),
+                    )
+                    .as_::<c_int>();
             }
             // `val` isn't out of bounds, so we can
             // eliminate extra panicking code by bit-truncating `val`.
