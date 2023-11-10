@@ -2,6 +2,7 @@
 #![allow(non_upper_case_globals)]
 #![feature(extern_types)]
 #![feature(c_variadic)]
+#![allow(clippy::all)]
 
 mod input {
     mod annexb;
