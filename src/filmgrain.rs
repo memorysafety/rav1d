@@ -398,11 +398,10 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
                     if dx == 0 && dy == 0 {
                         break;
                     }
-                    let fresh0 = coeff;
-                    coeff = coeff.offset(1);
-                    sum += *fresh0 as c_int
+                    sum += *coeff as c_int
                         * buf[(y as isize + dy) as usize][(x as isize + dx) as usize]
                             .as_::<c_int>();
+                    coeff = coeff.offset(1);
                 }
             }
 
@@ -478,12 +477,10 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         sum += luma * *coeff as c_int;
                         break;
                     } else {
-                        let fresh1 = coeff;
-                        coeff = coeff.offset(1);
-
-                        sum += *fresh1 as c_int
+                        sum += *coeff as c_int
                             * buf[(y as isize + dy) as usize][(x as isize + dx) as usize]
                                 .as_::<c_int>();
+                        coeff = coeff.offset(1);
                     }
                 }
             }
