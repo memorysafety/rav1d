@@ -1054,7 +1054,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
     is_id: c_int,
     bd: BD,
 ) {
-    let [sx, _sy] = [IS_SX, IS_SY].map(|it| it as c_int);
+    let [sx, _sy] = [IS_SX, IS_SY].map(|it| it as usize);
 
     let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
 
