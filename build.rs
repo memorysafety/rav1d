@@ -72,7 +72,7 @@ mod asm {
         let os = os.as_str();
         let vendor = vendor.as_str();
         let pointer_width = pointer_width.as_str();
-        let features = features.split(",").collect::<HashSet<_>>();
+        let features = features.split(',').collect::<HashSet<_>>();
 
         let rustc_cfg = match arch {
             Arch::X86(ArchX86::X86_32) => "nasm_x86",
