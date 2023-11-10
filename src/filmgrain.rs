@@ -973,8 +973,8 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
         }
 
         bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32, neon)(
-            dst_row.offset(bx as isize).cast(),
-            src_row.offset(bx as isize).cast(),
+            dst_row.add(bx).cast(),
+            src_row.add(bx).cast(),
             stride,
             scaling.cast(),
             data.scaling_shift.into(),
@@ -1094,13 +1094,13 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
             444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32_444, neon),
             _ => unreachable!(),
         })(
-            dst_row.offset(bx as isize).cast(),
-            src_row.offset(bx as isize).cast(),
+            dst_row.add(bx).cast(),
+            src_row.add(bx).cast(),
             stride,
             scaling.cast(),
             data_c,
             grain_lut.cast(),
-            luma_row.offset((bx << sx) as isize).cast(),
+            luma_row.add(bx << sx).cast(),
             luma_stride,
             &offsets,
             bh as ptrdiff_t,
