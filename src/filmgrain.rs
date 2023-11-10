@@ -375,7 +375,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     let bitdepth_min_8 = bd.bitdepth() - 8;
     let mut seed = data.seed;
     let shift = 4 - bitdepth_min_8 + data.grain_scale_shift;
-    let grain_ctr = (128 as c_int) << bitdepth_min_8;
+    let grain_ctr = 128 << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
 
@@ -424,9 +424,9 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     let [subx, suby] = [is_subx, is_suby].map(|it| it as u8);
 
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let mut seed = data.seed ^ (if uv { 0x49d8 as c_int } else { 0xb524 as c_int }) as c_uint;
+    let mut seed = data.seed ^ if uv { 0x49d8 } else { 0xb524 };
     let shift = 4 - bitdepth_min_8 + data.grain_scale_shift;
-    let grain_ctr = (128 as c_int) << bitdepth_min_8;
+    let grain_ctr = 128 << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
 
@@ -579,18 +579,18 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
-    let bitdepth_min_8 = bd.bitdepth() as c_int - 8;
-    let grain_ctr = (128 as c_int) << bitdepth_min_8;
+    let bitdepth_min_8 = bd.bitdepth() - 8;
+    let grain_ctr = 128 << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
 
     let min_value;
     let max_value;
     if data.clip_to_restricted_range {
-        min_value = (16 as c_int) << bitdepth_min_8;
-        max_value = (235 as c_int) << bitdepth_min_8;
+        min_value = 16 << bitdepth_min_8;
+        max_value = 235 << bitdepth_min_8;
     } else {
-        min_value = 0 as c_int;
+        min_value = 0;
         max_value = bd.bitdepth_max().as_::<c_int>();
     }
 
@@ -717,17 +717,17 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 
     let rows = 1 + (data.overlap_flag && row_num > 0) as usize;
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let grain_ctr = (128 as c_int) << bitdepth_min_8;
+    let grain_ctr = 128 << bitdepth_min_8;
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
 
     let min_value;
     let max_value;
     if data.clip_to_restricted_range {
-        min_value = (16 as c_int) << bitdepth_min_8;
-        max_value = (if is_id { 235 as c_int } else { 240 as c_int }) << bitdepth_min_8;
+        min_value = 16 << bitdepth_min_8;
+        max_value = (if is_id { 235 } else { 240 }) << bitdepth_min_8;
     } else {
-        min_value = 0 as c_int;
+        min_value = 0;
         max_value = bd.bitdepth_max().as_::<c_int>();
     }
 
@@ -767,7 +767,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         static w: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
 
         let add_noise_uv = |x, y, grain| {
-            let lx = (bx.wrapping_add(x) << sx) as c_int;
+            let lx = bx.wrapping_add(x) << sx;
             let ly = y << sy;
             let luma = luma_row
                 .offset(ly as isize * BD::pxstride(luma_stride as usize) as isize)
@@ -788,9 +788,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 let combined = avg.as_::<c_int>() * data.uv_luma_mult[uv]
                     + (*src).as_::<c_int>() * data.uv_mult[uv];
                 val = bd
-                    .iclip_pixel(
-                        (combined >> 6) + data.uv_offset[uv] * ((1 as c_int) << bitdepth_min_8),
-                    )
+                    .iclip_pixel((combined >> 6) + data.uv_offset[uv] * (1 << bitdepth_min_8))
                     .as_::<c_int>();
             }
             // `val` isn't out of bounds, so we can
@@ -966,10 +964,10 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
 
         let mut r#type = 0;
         if data.overlap_flag && row_num != 0 {
-            r#type |= 1 as c_int; // overlap y
+            r#type |= 1; // overlap y
         }
         if data.overlap_flag && bx != 0 {
-            r#type |= 2 as c_int; // overlap x
+            r#type |= 2; // overlap x
         }
 
         bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32, neon)(
@@ -1080,13 +1078,13 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 
         let mut r#type = 0;
         if data.overlap_flag && row_num != 0 {
-            r#type |= 1 as c_int; // overlap y
+            r#type |= 1; // overlap y
         }
         if data.overlap_flag && bx != 0 {
-            r#type |= 2 as c_int; // overlap x
+            r#type |= 2; // overlap x
         }
         if data.chroma_scaling_from_luma {
-            r#type |= 4 as c_int;
+            r#type |= 4;
         }
         (match NM {
             420 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32_420, neon),
