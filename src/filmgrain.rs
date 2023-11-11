@@ -387,26 +387,30 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     }
 
     let ar_pad = 3;
-    let ar_lag = data.ar_coeff_lag as isize;
+    // `ar_lag` is 2 bits; this tells the compiler it definitely is.
+    // That also means `ar_lag <= ar_pad`.
+    let ar_lag = data.ar_coeff_lag as usize & ((1 << 2) - 1);
 
-    for y in ar_pad..GRAIN_HEIGHT {
-        for x in ar_pad..GRAIN_WIDTH - ar_pad {
+    for y in 0..GRAIN_HEIGHT - ar_pad {
+        for x in 0..GRAIN_WIDTH - 2 * ar_pad {
             let mut coeff = (data.ar_coeffs_y).as_ptr();
             let mut sum = 0;
-            for dy in -ar_lag..=0 {
-                for dx in -ar_lag..=ar_lag {
-                    if dx == 0 && dy == 0 {
+            for (dy, buf_row) in buf[y..][ar_pad - ar_lag..=ar_pad].iter().enumerate() {
+                for (dx, &buf_val) in buf_row[x..][ar_pad - ar_lag..=ar_pad + ar_lag]
+                    .iter()
+                    .enumerate()
+                {
+                    if dx == ar_lag && dy == ar_lag {
                         break;
                     }
-                    sum += *coeff as c_int
-                        * buf[(y as isize + dy) as usize][(x as isize + dx) as usize]
-                            .as_::<c_int>();
+                    sum += *coeff as c_int * buf_val.as_::<c_int>();
                     coeff = coeff.offset(1);
                 }
             }
 
-            let grain = buf[y][x].as_::<c_int>() + round2(sum, data.ar_coeff_shift);
-            buf[y][x] = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+            let buf_yx = &mut buf[y + ar_pad][x + ar_pad];
+            let grain = (*buf_yx).as_::<c_int>() + round2(sum, data.ar_coeff_shift);
+            (*buf_yx) = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
     }
 }
@@ -449,23 +453,23 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     }
 
     let ar_pad = 3;
-    let ar_lag = data.ar_coeff_lag as isize;
+    // `ar_lag` is 2 bits; this tells the compiler it definitely is.
+    // That also means `ar_lag <= ar_pad`.
+    let ar_lag = data.ar_coeff_lag as usize & ((1 << 2) - 1);
 
-    for y in ar_pad..chromaH {
-        for x in ar_pad..chromaW - ar_pad {
+    for y in 0..chromaH - ar_pad {
+        for x in 0..chromaW - 2 * ar_pad {
             let mut coeff = (data.ar_coeffs_uv[uv]).as_ptr();
             let mut sum = 0;
-            for dy in -ar_lag..=0 {
-                for dx in -ar_lag..=ar_lag {
-                    // For the final (current) pixel, we need to add in the
-                    // contribution from the luma grain texture.
-                    if dx == 0 && dy == 0 {
-                        if data.num_y_points == 0 {
-                            break;
-                        }
+            for (dy, buf_row) in buf[y..][ar_pad - ar_lag..=ar_pad].iter().enumerate() {
+                for (dx, &buf_val) in buf_row[x..][ar_pad - ar_lag..=ar_pad + ar_lag]
+                    .iter()
+                    .enumerate()
+                {
+                    if dx == ar_lag && dy == ar_lag {
                         let mut luma = 0;
-                        let lumaX = ((x - ar_pad) << subx) + ar_pad;
-                        let lumaY = ((y - ar_pad) << suby) + ar_pad;
+                        let lumaX = (x << subx) + ar_pad;
+                        let lumaY = (y << suby) + ar_pad;
                         for i in 0..=suby {
                             for j in 0..=subx {
                                 luma +=
@@ -477,15 +481,14 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         sum += luma * *coeff as c_int;
                         break;
                     }
-                    sum += *coeff as c_int
-                        * buf[(y as isize + dy) as usize][(x as isize + dx) as usize]
-                            .as_::<c_int>();
+                    sum += *coeff as c_int * buf_val.as_::<c_int>();
                     coeff = coeff.offset(1);
                 }
             }
 
-            let grain = buf[y][x].as_::<c_int>() + round2(sum, data.ar_coeff_shift);
-            buf[y][x] = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+            let buf_yx = &mut buf[y + ar_pad][x + ar_pad];
+            let grain = (*buf_yx).as_::<c_int>() + round2(sum, data.ar_coeff_shift);
+            (*buf_yx) = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
     }
 }
