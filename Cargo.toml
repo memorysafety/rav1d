@@ -49,3 +49,6 @@ bitdepth_16 = []
 # unless we enable the basic optimizations (`opt-level = 1`),
 # which don't increase compile-time that much.
 opt-level = 1
+
+[profile.release]
+codegen-units = 1
