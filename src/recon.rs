@@ -112,7 +112,7 @@ use std::ffi::c_void;
 use std::ops::BitOr;
 use std::slice;
 
-#[cfg(feature = "bitdepth_8")]
+#[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
 use crate::{
     src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc, src::lf_apply_tmpl_8::rav1d_copy_lpf_8bpc,
     src::lf_apply_tmpl_8::rav1d_loopfilter_sbrow_cols_8bpc,
@@ -120,7 +120,7 @@ use crate::{
     src::lr_apply_tmpl_8::rav1d_lr_sbrow_8bpc,
 };
 
-#[cfg(feature = "bitdepth_16")]
+#[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
 use crate::{
     src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc, src::lf_apply_tmpl_16::rav1d_copy_lpf_16bpc,
     src::lf_apply_tmpl_16::rav1d_loopfilter_sbrow_cols_16bpc,
