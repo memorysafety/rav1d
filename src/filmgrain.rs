@@ -10,6 +10,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
+use crate::src::assume::assume;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::DefaultValue;
 use crate::src::enum_map::EnumMap;
@@ -470,10 +471,11 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         let mut luma = 0;
                         let luma_x = (x << subx) + ar_pad;
                         let luma_y = (y << suby) + ar_pad;
-                        for i in 0..=suby {
-                            for j in 0..=subx {
-                                luma +=
-                                    buf_y[luma_y + i as usize][luma_x + j as usize].as_::<c_int>();
+                        assume(luma_y < GRAIN_HEIGHT + 1 - 1);
+                        assume(luma_x < GRAIN_WIDTH - 1);
+                        for i in 0..1 + is_suby as usize {
+                            for j in 0..1 + is_subx as usize {
+                                luma += buf_y[luma_y + i][luma_x + j].as_::<c_int>();
                             }
                         }
                         luma = round2(luma, subx + suby);
