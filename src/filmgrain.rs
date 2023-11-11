@@ -368,6 +368,8 @@ unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     generate_grain_y_rust(buf, data, bd)
 }
 
+const AR_PAD: usize = 3;
+
 unsafe fn generate_grain_y_rust<BD: BitDepth>(
     buf: &mut GrainLut<BD::Entry>,
     data: &Rav1dFilmGrainData,
@@ -387,17 +389,16 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
         });
     }
 
-    let ar_pad = 3;
     // `ar_lag` is 2 bits; this tells the compiler it definitely is.
     // That also means `ar_lag <= ar_pad`.
     let ar_lag = data.ar_coeff_lag as usize & ((1 << 2) - 1);
 
-    for y in 0..GRAIN_HEIGHT - ar_pad {
-        for x in 0..GRAIN_WIDTH - 2 * ar_pad {
+    for y in 0..GRAIN_HEIGHT - AR_PAD {
+        for x in 0..GRAIN_WIDTH - 2 * AR_PAD {
             let mut coeff = (data.ar_coeffs_y).as_ptr();
             let mut sum = 0;
-            for (dy, buf_row) in buf[y..][ar_pad - ar_lag..=ar_pad].iter().enumerate() {
-                for (dx, &buf_val) in buf_row[x..][ar_pad - ar_lag..=ar_pad + ar_lag]
+            for (dy, buf_row) in buf[y..][AR_PAD - ar_lag..=AR_PAD].iter().enumerate() {
+                for (dx, &buf_val) in buf_row[x..][AR_PAD - ar_lag..=AR_PAD + ar_lag]
                     .iter()
                     .enumerate()
                 {
@@ -409,7 +410,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
                 }
             }
 
-            let buf_yx = &mut buf[y + ar_pad][x + ar_pad];
+            let buf_yx = &mut buf[y + AR_PAD][x + AR_PAD];
             let grain = (*buf_yx).as_::<c_int>() + round2(sum, data.ar_coeff_shift);
             (*buf_yx) = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
@@ -453,24 +454,23 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
         });
     }
 
-    let ar_pad = 3;
     // `ar_lag` is 2 bits; this tells the compiler it definitely is.
     // That also means `ar_lag <= ar_pad`.
     let ar_lag = data.ar_coeff_lag as usize & ((1 << 2) - 1);
 
-    for y in 0..chroma_h - ar_pad {
-        for x in 0..chroma_w - 2 * ar_pad {
+    for y in 0..chroma_h - AR_PAD {
+        for x in 0..chroma_w - 2 * AR_PAD {
             let mut coeff = (data.ar_coeffs_uv[uv]).as_ptr();
             let mut sum = 0;
-            for (dy, buf_row) in buf[y..][ar_pad - ar_lag..=ar_pad].iter().enumerate() {
-                for (dx, &buf_val) in buf_row[x..][ar_pad - ar_lag..=ar_pad + ar_lag]
+            for (dy, buf_row) in buf[y..][AR_PAD - ar_lag..=AR_PAD].iter().enumerate() {
+                for (dx, &buf_val) in buf_row[x..][AR_PAD - ar_lag..=AR_PAD + ar_lag]
                     .iter()
                     .enumerate()
                 {
                     if dx == ar_lag && dy == ar_lag {
                         let mut luma = 0;
-                        let luma_x = (x << subx) + ar_pad;
-                        let luma_y = (y << suby) + ar_pad;
+                        let luma_x = (x << subx) + AR_PAD;
+                        let luma_y = (y << suby) + AR_PAD;
                         assume(luma_y < GRAIN_HEIGHT + 1 - 1);
                         assume(luma_x < GRAIN_WIDTH - 1);
                         for i in 0..1 + is_suby as usize {
@@ -488,7 +488,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                 }
             }
 
-            let buf_yx = &mut buf[y + ar_pad][x + ar_pad];
+            let buf_yx = &mut buf[y + AR_PAD][x + AR_PAD];
             let grain = (*buf_yx).as_::<c_int>() + round2(sum, data.ar_coeff_shift);
             (*buf_yx) = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
