@@ -427,7 +427,67 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let uv = is_uv as usize;
-    let [subx, suby] = [is_subx, is_suby].map(|it| it as u8);
+
+    struct IsSub {
+        y: bool,
+        x: bool,
+    }
+
+    impl IsSub {
+        const fn chroma(&self) -> (usize, usize) {
+            let h = if self.y {
+                SUB_GRAIN_HEIGHT
+            } else {
+                GRAIN_HEIGHT
+            };
+            let w = if self.x { SUB_GRAIN_WIDTH } else { GRAIN_WIDTH };
+            (h, w)
+        }
+
+        const fn len(&self) -> (usize, usize) {
+            let (h, w) = self.chroma();
+            (h - AR_PAD, w - 2 * AR_PAD)
+        }
+
+        const fn luma(&self, (y, x): (usize, usize)) -> (usize, usize) {
+            (
+                (y << self.y as usize) + AR_PAD,
+                (x << self.x as usize) + AR_PAD,
+            )
+        }
+
+        const fn buf_index(&self, (y, x): (usize, usize)) -> (usize, usize) {
+            let (y, x) = self.luma((y, x));
+            (y + self.y as usize, x + self.x as usize)
+        }
+
+        const fn max_buf_index(&self) -> (usize, usize) {
+            let (y, x) = self.len();
+            self.buf_index((y - 1, x - 1))
+        }
+
+        const fn check_buf_index<T, const Y: usize, const X: usize>(
+            &self,
+            _: &Option<[[T; X]; Y]>,
+        ) {
+            let (y, x) = self.max_buf_index();
+            assert!(y < Y);
+            assert!(x < X);
+        }
+
+        #[allow(dead_code)] // False positive; used in a `const`.
+        const fn check_buf_index_all<T, const Y: usize, const X: usize>(buf: &Option<[[T; X]; Y]>) {
+            Self { y: true, x: true }.check_buf_index(buf);
+            Self { y: true, x: false }.check_buf_index(buf);
+            Self { y: false, x: true }.check_buf_index(buf);
+            Self { y: false, x: false }.check_buf_index(buf);
+        }
+    }
+
+    let is_sub = IsSub {
+        y: is_suby,
+        x: is_subx,
+    };
 
     let bitdepth_min_8 = bd.bitdepth() - 8;
     let mut seed = data.seed ^ if is_uv { 0x49d8 } else { 0xb524 };
@@ -436,19 +496,8 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
 
-    let chroma_w = if is_subx {
-        SUB_GRAIN_WIDTH
-    } else {
-        GRAIN_WIDTH
-    };
-    let chroma_h = if is_suby {
-        SUB_GRAIN_HEIGHT
-    } else {
-        GRAIN_HEIGHT
-    };
-
-    for row in &mut buf[..chroma_h] {
-        row[..chroma_w].fill_with(|| {
+    for row in &mut buf[..is_sub.chroma().0] {
+        row[..is_sub.chroma().1].fill_with(|| {
             let value = get_random_number(11, &mut seed);
             round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>()
         });
@@ -458,8 +507,8 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     // That also means `ar_lag <= ar_pad`.
     let ar_lag = data.ar_coeff_lag as usize & ((1 << 2) - 1);
 
-    for y in 0..chroma_h - AR_PAD {
-        for x in 0..chroma_w - 2 * AR_PAD {
+    for y in 0..is_sub.len().0 {
+        for x in 0..is_sub.len().1 {
             let mut coeff = (data.ar_coeffs_uv[uv]).as_ptr();
             let mut sum = 0;
             for (dy, buf_row) in buf[y..][AR_PAD - ar_lag..=AR_PAD].iter().enumerate() {
@@ -469,16 +518,20 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                 {
                     if dx == ar_lag && dy == ar_lag {
                         let mut luma = 0;
-                        let luma_x = (x << subx) + AR_PAD;
-                        let luma_y = (y << suby) + AR_PAD;
-                        assume(luma_y < GRAIN_HEIGHT + 1 - 1);
-                        assume(luma_x < GRAIN_WIDTH - 1);
-                        for i in 0..1 + is_suby as usize {
-                            for j in 0..1 + is_subx as usize {
+                        let (luma_y, luma_x) = is_sub.luma((y, x));
+                        const _: () = IsSub::check_buf_index_all(&None::<GrainLut<()>>);
+                        // The optimizer is not smart enough to deduce this on its own.
+                        // Safety: The above static check checks all maximum index possibilities.
+                        unsafe {
+                            assume(luma_y < GRAIN_HEIGHT + 1 - 1);
+                            assume(luma_x < GRAIN_WIDTH - 1);
+                        }
+                        for i in 0..1 + is_sub.y as usize {
+                            for j in 0..1 + is_sub.x as usize {
                                 luma += buf_y[luma_y + i][luma_x + j].as_::<c_int>();
                             }
                         }
-                        luma = round2(luma, subx + suby);
+                        luma = round2(luma, is_sub.y as u8 + is_sub.x as u8);
 
                         sum += luma * *coeff as c_int;
                         break;
