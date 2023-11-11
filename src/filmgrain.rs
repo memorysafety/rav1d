@@ -434,19 +434,19 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     let grain_min = -grain_ctr;
     let grain_max = grain_ctr - 1;
 
-    let chromaW = if is_subx {
+    let chroma_w = if is_subx {
         SUB_GRAIN_WIDTH
     } else {
         GRAIN_WIDTH
     };
-    let chromaH = if is_suby {
+    let chroma_h = if is_suby {
         SUB_GRAIN_HEIGHT
     } else {
         GRAIN_HEIGHT
     };
 
-    for row in &mut buf[..chromaH] {
-        row[..chromaW].fill_with(|| {
+    for row in &mut buf[..chroma_h] {
+        row[..chroma_w].fill_with(|| {
             let value = get_random_number(11, &mut seed);
             round2(dav1d_gaussian_sequence[value as usize], shift).as_::<BD::Entry>()
         });
@@ -457,8 +457,8 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     // That also means `ar_lag <= ar_pad`.
     let ar_lag = data.ar_coeff_lag as usize & ((1 << 2) - 1);
 
-    for y in 0..chromaH - ar_pad {
-        for x in 0..chromaW - 2 * ar_pad {
+    for y in 0..chroma_h - ar_pad {
+        for x in 0..chroma_w - 2 * ar_pad {
             let mut coeff = (data.ar_coeffs_uv[uv]).as_ptr();
             let mut sum = 0;
             for (dy, buf_row) in buf[y..][ar_pad - ar_lag..=ar_pad].iter().enumerate() {
@@ -468,12 +468,12 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                 {
                     if dx == ar_lag && dy == ar_lag {
                         let mut luma = 0;
-                        let lumaX = (x << subx) + ar_pad;
-                        let lumaY = (y << suby) + ar_pad;
+                        let luma_x = (x << subx) + ar_pad;
+                        let luma_y = (y << suby) + ar_pad;
                         for i in 0..=suby {
                             for j in 0..=subx {
                                 luma +=
-                                    buf_y[lumaY + i as usize][lumaX + j as usize].as_::<c_int>();
+                                    buf_y[luma_y + i as usize][luma_x + j as usize].as_::<c_int>();
                             }
                         }
                         luma = round2(luma, subx + suby);
