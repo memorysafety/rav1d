@@ -119,7 +119,8 @@ pub trait BitDepth: Clone + Copy {
         + ToPrimitive<c_int>;
 
     type Scaling: AsRef<[u8]> + AsMut<[u8]> + ArrayDefault + Copy;
-    const SCALING_SIZE: usize;
+    const SCALING_BITS: usize;
+    const SCALING_SIZE: usize = 1 << Self::SCALING_BITS;
 
     type BitDepthMax;
 
@@ -206,7 +207,7 @@ impl BitDepth for BitDepth8 {
     type Entry = i8;
 
     type Scaling = [u8; Self::SCALING_SIZE];
-    const SCALING_SIZE: usize = 1 << 8;
+    const SCALING_BITS: usize = 8;
 
     type BitDepthMax = ();
 
@@ -287,7 +288,7 @@ impl BitDepth for BitDepth16 {
     type Entry = i16;
 
     type Scaling = [u8; Self::SCALING_SIZE];
-    const SCALING_SIZE: usize = 1 << 12;
+    const SCALING_BITS: usize = 12;
 
     type BitDepthMax = Self::Pixel;
 

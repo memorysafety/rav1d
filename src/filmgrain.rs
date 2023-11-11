@@ -792,8 +792,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     bd.bitdepth_max().as_::<c_int>(),
                 );
             }
+            // `val` isn't out of bounds, so we can
+            // eliminate extra panicking code by bit-truncating `val`.
             let noise = round2(
-                scaling.as_ref()[val as usize] as c_int * grain,
+                scaling.as_ref()[val as usize % scaling.as_ref().len()] as c_int * grain,
                 data.scaling_shift,
             );
             *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
