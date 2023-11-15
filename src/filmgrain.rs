@@ -343,7 +343,7 @@ where
 /// `seed[0]` contains the current row, and
 /// `seed[1]` contains the previous row.
 fn row_seed(rows: usize, row_num: usize, data: &Rav1dFilmGrainData) -> [c_uint; 2] {
-    let mut seed: [c_uint; 2] = [0; 2];
+    let mut seed = [0; 2];
     for i in 0..rows {
         seed[i] = data.seed;
         seed[i] ^= (((row_num - i) * 37 + 178 & 0xFF) << 8) as c_uint;
@@ -370,7 +370,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let mut seed: c_uint = data.seed;
+    let mut seed = data.seed;
     let shift = 4 - bitdepth_min_8 + data.grain_scale_shift;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
@@ -388,7 +388,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
 
     for y in ar_pad..GRAIN_HEIGHT {
         for x in ar_pad..GRAIN_WIDTH - ar_pad {
-            let mut coeff: *const i8 = (data.ar_coeffs_y).as_ptr();
+            let mut coeff = (data.ar_coeffs_y).as_ptr();
             let mut sum = 0;
             for dy in -ar_lag..=0 {
                 for dx in -ar_lag..=ar_lag {
@@ -421,8 +421,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
     let [subx, suby] = [is_subx, is_suby].map(|it| it as u8);
 
     let bitdepth_min_8 = bd.bitdepth() - 8;
-    let mut seed: c_uint =
-        data.seed ^ (if uv { 0x49d8 as c_int } else { 0xb524 as c_int }) as c_uint;
+    let mut seed = data.seed ^ (if uv { 0x49d8 as c_int } else { 0xb524 as c_int }) as c_uint;
     let shift = 4 - bitdepth_min_8 + data.grain_scale_shift;
     let grain_ctr = (128 as c_int) << bitdepth_min_8;
     let grain_min = -grain_ctr;
@@ -451,7 +450,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
 
     for y in ar_pad..chromaH {
         for x in ar_pad..chromaW - ar_pad {
-            let mut coeff: *const i8 = (data.ar_coeffs_uv[uv as usize]).as_ptr();
+            let mut coeff = (data.ar_coeffs_uv[uv as usize]).as_ptr();
             let mut sum = 0;
             for dy in -ar_lag..=0 {
                 for dx in -ar_lag..=ar_lag {
@@ -629,11 +628,11 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
         static w: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
 
         let add_noise_y = |x, y, grain| {
-            let src: *const BD::Pixel = src_row
+            let src = src_row
                 .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
                 .offset(x as isize)
                 .offset(bx as isize);
-            let dst: *mut BD::Pixel = dst_row
+            let dst = dst_row
                 .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
                 .offset(x as isize)
                 .offset(bx as isize);
@@ -767,18 +766,18 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
         let add_noise_uv = |x, y, grain| {
             let lx = (bx.wrapping_add(x as usize) << sx) as c_int;
             let ly = y << sy;
-            let luma: *const BD::Pixel = luma_row
+            let luma = luma_row
                 .offset((ly as isize * BD::pxstride(luma_stride as usize) as isize) as isize)
                 .offset(lx as isize);
-            let mut avg: BD::Pixel = *luma.offset(0);
+            let mut avg = *luma.offset(0);
             if is_sx {
                 avg = (avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1 >> 1)
                     .as_::<BD::Pixel>();
             }
-            let src: *const BD::Pixel = src_row
+            let src = src_row
                 .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
                 .offset(bx.wrapping_add(x as usize) as isize);
-            let dst: *mut BD::Pixel = dst_row
+            let dst = dst_row
                 .offset((y as isize * BD::pxstride(stride as usize) as isize) as isize)
                 .offset(bx.wrapping_add(x as usize) as isize);
             let mut val = avg.as_::<c_int>();
