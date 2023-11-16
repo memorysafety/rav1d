@@ -2,7 +2,6 @@ use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::ipred::ipred_cfl_128_c_erased;
 use crate::src::ipred::ipred_cfl_c_erased;
@@ -12,6 +11,7 @@ use crate::src::ipred::ipred_dc_128_c_erased;
 use crate::src::ipred::ipred_dc_c_erased;
 use crate::src::ipred::ipred_dc_left_c_erased;
 use crate::src::ipred::ipred_dc_top_c_erased;
+use crate::src::ipred::ipred_filter_rust;
 use crate::src::ipred::ipred_h_c_erased;
 use crate::src::ipred::ipred_paeth_c_erased;
 use crate::src::ipred::ipred_smooth_c_erased;
@@ -36,7 +36,6 @@ use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
-use crate::src::tables::dav1d_filter_intra_taps;
 use libc::memcpy;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
@@ -243,7 +242,7 @@ unsafe extern "C" fn ipred_filter_c_erased(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_filter_rust(
+    ipred_filter_rust::<BitDepth16>(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -252,68 +251,8 @@ unsafe extern "C" fn ipred_filter_c_erased(
         filt_idx,
         max_width,
         max_height,
-        bitdepth_max,
+        BitDepth16::from_c(bitdepth_max),
     );
-}
-
-unsafe fn ipred_filter_rust(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    topleft_in: *const pixel,
-    width: c_int,
-    height: c_int,
-    mut filt_idx: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    use crate::src::ipred::{filter_fn, FLT_INCR};
-
-    filt_idx &= 511 as c_int;
-    if !(filt_idx < 5) {
-        unreachable!();
-    }
-    let filter: *const i8 = (dav1d_filter_intra_taps[filt_idx as usize]).as_ptr();
-    let mut top: *const pixel = &*topleft_in.offset(1) as *const pixel;
-    let mut y = 0;
-    while y < height {
-        let mut topleft: *const pixel = &*topleft_in.offset(-y as isize) as *const pixel;
-        let mut left: *const pixel = &*topleft.offset(-(1 as c_int) as isize) as *const pixel;
-        let mut left_stride: ptrdiff_t = -(1 as c_int) as ptrdiff_t;
-        let mut x = 0;
-        while x < width {
-            let p0 = *topleft as c_int;
-            let p1 = *top.offset(0) as c_int;
-            let p2 = *top.offset(1) as c_int;
-            let p3 = *top.offset(2) as c_int;
-            let p4 = *top.offset(3) as c_int;
-            let p5 = *left.offset((0 * left_stride) as isize) as c_int;
-            let p6 = *left.offset((1 * left_stride) as isize) as c_int;
-            let mut ptr: *mut pixel = &mut *dst.offset(x as isize) as *mut pixel;
-            let mut flt_ptr: *const i8 = filter;
-            let mut yy = 0;
-            while yy < 2 {
-                let mut xx = 0;
-                while xx < 4 {
-                    let acc = filter_fn(flt_ptr, p0, p1, p2, p3, p4, p5, p6);
-                    *ptr.offset(xx as isize) =
-                        iclip(acc + 8 >> 4, 0 as c_int, bitdepth_max) as pixel;
-                    xx += 1;
-                    flt_ptr = flt_ptr.offset(FLT_INCR);
-                }
-                ptr = ptr.offset(PXSTRIDE(stride) as isize);
-                yy += 1;
-            }
-            left = &mut *dst.offset((x + 4 - 1) as isize) as *mut pixel;
-            left_stride = PXSTRIDE(stride);
-            top = top.offset(4);
-            topleft = &*top.offset(-(1 as c_int) as isize) as *const pixel;
-            x += 4 as c_int;
-        }
-        top = &mut *dst.offset((PXSTRIDE)(stride) as isize) as *mut pixel;
-        dst = &mut *dst.offset(((PXSTRIDE)(stride) * 2) as isize) as *mut pixel;
-        y += 2 as c_int;
-    }
 }
 
 #[inline(never)]
