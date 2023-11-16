@@ -5,23 +5,43 @@ jobs:
         runs-on: [self-hosted, linux, X64]
         steps:
             - name: git checkout
-              uses: actions/checkout@v3
-              with:
-                fetch-depth: 1
-            - run: nice cargo build --release
+              uses: actions/checkout@v4
+            - name: release build this PR
+              run:  nice cargo build --release
+            - name: release build main branch
+              run: |
+                git fetch --depth 1 origin/main && git checkout origin/main
+                nice cargo build --release --target-dir target.main
             - name: benchmark on chimera 8-bit test data
               run: |
                 mkdir -p `dirname $LOCAL_FILE`
                 [ ! -f "$LOCAL_FILE" ] && curl -s -o $LOCAL_FILE $REMOTE_URL
-                time target/release/dav1d -i $LOCAL_FILE -o /dev/null
+                perf stat -r3 -- target/release/dav1d -q -i $LOCAL_FILE -o /dev/null
+
+                # generate diff vs. main branch
+                input=$(basename $LOCAL_FILE)
+                perf record -o perf.data.$input      -- target/release/dav1d -q -i $LOCAL_FILE -o /dev/null
+                perf record -o perf.data.$input.main -- target.main/release/dav1d -q -i $LOCAL_FILE -o /dev/null
+                perf diff perf.data.$input perf.data.$input.main | head -n 100
               env:
                 REMOTE_URL: http://download.opencontent.netflix.com.s3.amazonaws.com/AV1/Chimera/Old/Chimera-AV1-8bit-1280x720-3363kbps.ivf
-                LOCAL_FILE: tests/dav1d-test-data/8-bit/chimera/Chimera-AV1-8bit-1280x720-3363kbps.ivf
+                LOCAL_FILE: /tmp/rav1d/Chimera-AV1-8bit-1280x720-3363kbps.ivf
             - name: benchmark on chimera 10-bit test data
               run: |
                 mkdir -p `dirname $LOCAL_FILE`
                 [ ! -f "$LOCAL_FILE" ] && curl -s -o $LOCAL_FILE $REMOTE_URL
-                time target/release/dav1d -i $LOCAL_FILE -o /dev/null
+                perf stat -r3 -- target/release/dav1d -q -i $LOCAL_FILE -o /dev/null
+
+                # generate diff vs. main branch
+                input=$(basename $LOCAL_FILE)
+                perf record -o perf.data.$input      -- target/release/dav1d -q -i $LOCAL_FILE -o /dev/null
+                perf record -o perf.data.$input.main -- target.main/release/dav1d -q -i $LOCAL_FILE -o /dev/null
+                perf diff perf.data.$input perf.data.$input.main | head -n 100
               env:
                 REMOTE_URL: http://download.opencontent.netflix.com.s3.amazonaws.com/AV1/Chimera/Old/Chimera-AV1-10bit-1920x1080-6191kbps.ivf
-                LOCAL_FILE: tests/dav1d-test-data/10-bit/chimera/Chimera-AV1-10bit-1920x1080-6191kbps.ivf
+                LOCAL_FILE: /tmp/rav1d/Chimera-AV1-10bit-1920x1080-6191kbps.ivf
+            - name: upload benchmark data
+              uses: actions/upload-artifact@v3
+              with:
+                name: perf-data
+                path:  ${{ github.workspace }}/perf.data.*
