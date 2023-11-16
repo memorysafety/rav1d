@@ -42,6 +42,17 @@ use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+use crate::{
+    src::ipred::dav1d_ipred_pixel_set_8bpc_neon, src::ipred::dav1d_ipred_reverse_8bpc_neon,
+    src::ipred::dav1d_ipred_z1_fill1_8bpc_neon, src::ipred::dav1d_ipred_z1_fill2_8bpc_neon,
+    src::ipred::dav1d_ipred_z1_filter_edge_8bpc_neon,
+    src::ipred::dav1d_ipred_z1_upsample_edge_8bpc_neon, src::ipred::dav1d_ipred_z2_fill1_8bpc_neon,
+    src::ipred::dav1d_ipred_z2_fill2_8bpc_neon, src::ipred::dav1d_ipred_z2_fill3_8bpc_neon,
+    src::ipred::dav1d_ipred_z2_upsample_edge_8bpc_neon, src::ipred::dav1d_ipred_z3_fill1_8bpc_neon,
+    src::ipred::dav1d_ipred_z3_fill2_8bpc_neon,
+};
+
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
@@ -56,92 +67,6 @@ use crate::{
     src::ipred::get_filter_strength, src::ipred::get_upsample,
     src::tables::dav1d_dr_intra_derivative,
 };
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-extern "C" {
-    fn dav1d_ipred_z1_fill2_8bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        top: *const pixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        max_base_x: c_int,
-    );
-    fn dav1d_ipred_z1_fill1_8bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        top: *const pixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        max_base_x: c_int,
-    );
-    fn dav1d_ipred_z1_upsample_edge_8bpc_neon(
-        out: *mut pixel,
-        hsz: c_int,
-        in_0: *const pixel,
-        end: c_int,
-    );
-    fn dav1d_ipred_z1_filter_edge_8bpc_neon(
-        out: *mut pixel,
-        sz: c_int,
-        in_0: *const pixel,
-        end: c_int,
-        strength: c_int,
-    );
-    fn dav1d_ipred_z2_fill3_8bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        top: *const pixel,
-        left: *const pixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_fill2_8bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        top: *const pixel,
-        left: *const pixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_fill1_8bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        top: *const pixel,
-        left: *const pixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_upsample_edge_8bpc_neon(out: *mut pixel, hsz: c_int, in_0: *const pixel);
-    fn dav1d_ipred_reverse_8bpc_neon(dst: *mut pixel, src: *const pixel, n: c_int);
-    fn dav1d_ipred_z3_fill2_8bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: *const pixel,
-        width: c_int,
-        height: c_int,
-        dy: c_int,
-        max_base_y: c_int,
-    );
-    fn dav1d_ipred_z3_fill1_8bpc_neon(
-        dst: *mut pixel,
-        stride: ptrdiff_t,
-        left: *const pixel,
-        width: c_int,
-        height: c_int,
-        dy: c_int,
-        max_base_y: c_int,
-    );
-    fn dav1d_ipred_pixel_set_8bpc_neon(out: *mut pixel, px: pixel, n: c_int);
-}
 
 pub type pixel = u8;
 
