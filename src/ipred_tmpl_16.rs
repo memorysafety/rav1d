@@ -256,7 +256,7 @@ unsafe extern "C" fn ipred_filter_c_erased(
 }
 
 #[inline(never)]
-unsafe fn cfl_ac_c(
+unsafe fn cfl_ac_rust(
     mut ac: *mut i16,
     mut ypx: *const pixel,
     stride: ptrdiff_t,
@@ -350,7 +350,7 @@ unsafe extern "C" fn cfl_ac_420_c_erased(
     cw: c_int,
     ch: c_int,
 ) {
-    cfl_ac_c(
+    cfl_ac_rust(
         ac,
         ypx.cast(),
         stride,
@@ -372,7 +372,7 @@ unsafe extern "C" fn cfl_ac_422_c_erased(
     cw: c_int,
     ch: c_int,
 ) {
-    cfl_ac_c(
+    cfl_ac_rust(
         ac,
         ypx.cast(),
         stride,
@@ -394,7 +394,7 @@ unsafe extern "C" fn cfl_ac_444_c_erased(
     cw: c_int,
     ch: c_int,
 ) {
-    cfl_ac_c(
+    cfl_ac_rust(
         ac,
         ypx.cast(),
         stride,
