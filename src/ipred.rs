@@ -9,12 +9,14 @@ use crate::src::tables::dav1d_dr_intra_derivative;
 use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
 use cfg_if::cfg_if;
+use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_ulonglong;
+use std::ffi::c_void;
 use std::slice;
 
 pub type angular_ipred_fn = unsafe extern "C" fn(
@@ -1356,5 +1358,96 @@ pub(crate) unsafe fn ipred_filter_rust<BD: BitDepth>(
         top = &mut *dst.offset(BD::pxstride(stride as usize) as isize) as *mut BD::Pixel;
         dst = &mut *dst.offset((BD::pxstride(stride as usize) * 2) as isize) as *mut BD::Pixel;
         y += 2 as c_int;
+    }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+#[inline(never)]
+pub(crate) unsafe fn cfl_ac_rust<BD: BitDepth>(
+    mut ac: *mut i16,
+    mut ypx: *const BD::Pixel,
+    stride: ptrdiff_t,
+    w_pad: c_int,
+    h_pad: c_int,
+    width: c_int,
+    height: c_int,
+    ss_hor: c_int,
+    ss_ver: c_int,
+) {
+    let mut y;
+    let mut x: i32;
+    let ac_orig: *mut i16 = ac;
+    if !(w_pad >= 0 && (w_pad * 4) < width) {
+        unreachable!();
+    }
+    if !(h_pad >= 0 && (h_pad * 4) < height) {
+        unreachable!();
+    }
+    y = 0 as c_int;
+    while y < height - 4 * h_pad {
+        x = 0 as c_int;
+        while x < width - 4 * w_pad {
+            let mut ac_sum = (*ypx.offset((x << ss_hor) as isize)).as_::<c_int>();
+            if ss_hor != 0 {
+                ac_sum += (*ypx.offset((x * 2 + 1) as isize)).as_::<c_int>();
+            }
+            if ss_ver != 0 {
+                ac_sum += (*ypx.offset(
+                    ((x << ss_hor) as isize + BD::pxstride(stride as usize) as isize) as isize,
+                ))
+                .as_::<c_int>();
+                if ss_hor != 0 {
+                    ac_sum += (*ypx.offset(
+                        ((x * 2 + 1) as isize + BD::pxstride(stride as usize) as isize) as isize,
+                    ))
+                    .as_::<c_int>();
+                }
+            }
+            *ac.offset(x as isize) =
+                (ac_sum << 1 + (ss_ver == 0) as c_int + (ss_hor == 0) as c_int) as i16;
+            x += 1;
+        }
+        while x < width {
+            *ac.offset(x as isize) = *ac.offset((x - 1) as isize);
+            x += 1;
+        }
+        ac = ac.offset(width as isize);
+        ypx = ypx.offset((BD::pxstride(stride as usize) << ss_ver) as isize);
+        y += 1;
+    }
+    while y < height {
+        memcpy(
+            ac as *mut c_void,
+            &mut *ac.offset(-width as isize) as *mut i16 as *const c_void,
+            (width as usize).wrapping_mul(::core::mem::size_of::<i16>()),
+        );
+        ac = ac.offset(width as isize);
+        y += 1;
+    }
+    let log2sz = ctz(width as c_uint) + ctz(height as c_uint);
+    let mut sum = (1 as c_int) << log2sz >> 1;
+    ac = ac_orig;
+    y = 0 as c_int;
+    while y < height {
+        x = 0 as c_int;
+        while x < width {
+            sum += *ac.offset(x as isize) as c_int;
+            x += 1;
+        }
+        ac = ac.offset(width as isize);
+        y += 1;
+    }
+    sum >>= log2sz;
+    ac = ac_orig;
+    y = 0 as c_int;
+    while y < height {
+        x = 0 as c_int;
+        while x < width {
+            let ref mut fresh0 = *ac.offset(x as isize);
+            *fresh0 = (*fresh0 as c_int - sum) as i16;
+            x += 1;
+        }
+        ac = ac.offset(width as isize);
+        y += 1;
     }
 }

@@ -1,8 +1,8 @@
-use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::src::ipred::cfl_ac_rust;
 use crate::src::ipred::ipred_cfl_128_c_erased;
 use crate::src::ipred::ipred_cfl_c_erased;
 use crate::src::ipred::ipred_cfl_left_c_erased;
@@ -39,7 +39,6 @@ use crate::src::levels::Z3_PRED;
 use libc::memcpy;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
-use std::ffi::c_uint;
 use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
@@ -241,90 +240,6 @@ unsafe extern "C" fn ipred_filter_c_erased(
     );
 }
 
-#[inline(never)]
-unsafe fn cfl_ac_rust(
-    mut ac: *mut i16,
-    mut ypx: *const pixel,
-    stride: ptrdiff_t,
-    w_pad: c_int,
-    h_pad: c_int,
-    width: c_int,
-    height: c_int,
-    ss_hor: c_int,
-    ss_ver: c_int,
-) {
-    let mut y;
-    let mut x;
-    let ac_orig: *mut i16 = ac;
-    if !(w_pad >= 0 && (w_pad * 4) < width) {
-        unreachable!();
-    }
-    if !(h_pad >= 0 && (h_pad * 4) < height) {
-        unreachable!();
-    }
-    y = 0 as c_int;
-    while y < height - 4 * h_pad {
-        x = 0 as c_int;
-        while x < width - 4 * w_pad {
-            let mut ac_sum = *ypx.offset((x << ss_hor) as isize) as c_int;
-            if ss_hor != 0 {
-                ac_sum += *ypx.offset((x * 2 + 1) as isize) as c_int;
-            }
-            if ss_ver != 0 {
-                ac_sum += *ypx.offset(((x << ss_hor) as isize + stride) as isize) as c_int;
-                if ss_hor != 0 {
-                    ac_sum += *ypx.offset(((x * 2 + 1) as isize + stride) as isize) as c_int;
-                }
-            }
-            *ac.offset(x as isize) =
-                (ac_sum << 1 + (ss_ver == 0) as c_int + (ss_hor == 0) as c_int) as i16;
-            x += 1;
-        }
-        while x < width {
-            *ac.offset(x as isize) = *ac.offset((x - 1) as isize);
-            x += 1;
-        }
-        ac = ac.offset(width as isize);
-        ypx = ypx.offset((stride << ss_ver) as isize);
-        y += 1;
-    }
-    while y < height {
-        memcpy(
-            ac as *mut c_void,
-            &mut *ac.offset(-width as isize) as *mut i16 as *const c_void,
-            (width as usize).wrapping_mul(::core::mem::size_of::<i16>()),
-        );
-        ac = ac.offset(width as isize);
-        y += 1;
-    }
-    let log2sz = ctz(width as c_uint) + ctz(height as c_uint);
-    let mut sum = (1 as c_int) << log2sz >> 1;
-    ac = ac_orig;
-    y = 0 as c_int;
-    while y < height {
-        x = 0 as c_int;
-        while x < width {
-            sum += *ac.offset(x as isize) as c_int;
-            x += 1;
-        }
-        ac = ac.offset(width as isize);
-        y += 1;
-    }
-    sum >>= log2sz;
-    ac = ac_orig;
-    y = 0 as c_int;
-    while y < height {
-        x = 0 as c_int;
-        while x < width {
-            let ref mut fresh0 = *ac.offset(x as isize);
-            *fresh0 = (*fresh0 as c_int - sum) as i16;
-            x += 1;
-        }
-        ac = ac.offset(width as isize);
-        y += 1;
-    }
-}
-
 unsafe extern "C" fn cfl_ac_420_c_erased(
     ac: *mut i16,
     ypx: *const DynPixel,
@@ -334,7 +249,7 @@ unsafe extern "C" fn cfl_ac_420_c_erased(
     cw: c_int,
     ch: c_int,
 ) {
-    cfl_ac_rust(
+    cfl_ac_rust::<BitDepth8>(
         ac,
         ypx.cast(),
         stride,
@@ -356,7 +271,7 @@ unsafe extern "C" fn cfl_ac_422_c_erased(
     cw: c_int,
     ch: c_int,
 ) {
-    cfl_ac_rust(
+    cfl_ac_rust::<BitDepth8>(
         ac,
         ypx.cast(),
         stride,
@@ -378,7 +293,7 @@ unsafe extern "C" fn cfl_ac_444_c_erased(
     cw: c_int,
     ch: c_int,
 ) {
-    cfl_ac_rust(
+    cfl_ac_rust::<BitDepth8>(
         ac,
         ypx.cast(),
         stride,
