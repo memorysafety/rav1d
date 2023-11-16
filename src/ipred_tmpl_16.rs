@@ -21,6 +21,7 @@ use crate::src::ipred::ipred_v_c_erased;
 use crate::src::ipred::ipred_z1_rust;
 use crate::src::ipred::ipred_z2_rust;
 use crate::src::ipred::ipred_z3_rust;
+use crate::src::ipred::pal_pred_rust;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
@@ -149,14 +150,6 @@ extern "C" {
 }
 
 pub type pixel = u16;
-
-#[inline]
-unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 != 0 {
-        unreachable!();
-    }
-    return x >> 1;
-}
 
 unsafe extern "C" fn ipred_z1_c_erased(
     dst: *mut DynPixel,
@@ -328,28 +321,7 @@ unsafe extern "C" fn pal_pred_c_erased(
     w: c_int,
     h: c_int,
 ) {
-    pal_pred_rust(dst.cast(), stride, pal, idx, w, h);
-}
-
-unsafe fn pal_pred_rust(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    pal: *const u16,
-    mut idx: *const u8,
-    w: c_int,
-    h: c_int,
-) {
-    let mut y = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
-            *dst.offset(x as isize) = *pal.offset(*idx.offset(x as isize) as isize);
-            x += 1;
-        }
-        idx = idx.offset(w as isize);
-        dst = dst.offset(PXSTRIDE(stride) as isize);
-        y += 1;
-    }
+    pal_pred_rust::<BitDepth16>(dst.cast(), stride, pal, idx, w, h);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]

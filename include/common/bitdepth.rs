@@ -98,6 +98,7 @@ pub trait BitDepth: Clone + Copy {
         + Into<usize>
         + Into<i32>
         + TryFrom<i32>
+        + FromPrimitive<u16>
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>

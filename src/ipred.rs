@@ -1451,3 +1451,26 @@ pub(crate) unsafe fn cfl_ac_rust<BD: BitDepth>(
         y += 1;
     }
 }
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn pal_pred_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    pal: *const u16,
+    mut idx: *const u8,
+    w: c_int,
+    h: c_int,
+) {
+    let mut y = 0;
+    while y < h {
+        let mut x = 0;
+        while x < w {
+            *dst.offset(x as isize) =
+                (*pal.offset(*idx.offset(x as isize) as isize)).as_::<BD::Pixel>();
+            x += 1;
+        }
+        idx = idx.offset(w as isize);
+        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        y += 1;
+    }
+}
