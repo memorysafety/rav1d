@@ -1,5 +1,7 @@
 use crate::include::common::attributes::clz;
 use crate::include::common::attributes::clzll;
+use crate::include::common::bitdepth::AsPrimitive;
+use crate::include::common::bitdepth::ToPrimitive;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
@@ -11,30 +13,29 @@ use std::ffi::c_ulonglong;
 #[inline]
 pub fn clip<T, U>(v: T, min: U, max: U) -> U
 where
-    T: Copy + Ord + TryInto<U>,
+    T: Copy + Ord + TryInto<U> + ToPrimitive<U>,
     U: Copy + Ord + Into<T>,
 {
-    assert!(min <= max);
+    debug_assert!(min <= max);
     if v < min.into() {
         min
     } else if v > max.into() {
         max
     } else {
-        let v = v.try_into();
-        // # Safety
-        // `min <= v <= max`, `min: U`, `max: U`,
-        // and for all `u: U`, `u.into().try_into() == Ok(u)`,
-        // so `v` must be in `U`, too.
-        //
         // Note that `v.try_into().unwrap()` is not always optimized out.
-        unsafe { v.unwrap_unchecked() }
+        // We use `.as_()`, a truncating cast, here instead of
+        // `v.try_into().unwrap()`, which doesn't always optimized out,
+        // or `unsafe { v.try_into().unwrap_unchecked() }`, which is unsafe
+        // and depends on correct `{Try,}{From,Into}` `impl`s
+        // and `assert!(min <= max)`, which may not always get optimized out.
+        v.as_()
     }
 }
 
 #[inline]
 pub fn clip_u8<T>(v: T) -> u8
 where
-    T: Copy + Ord + From<u8> + TryInto<u8>,
+    T: Copy + Ord + From<u8> + TryInto<u8> + ToPrimitive<u8>,
 {
     clip(v, u8::MIN, u8::MAX)
 }
