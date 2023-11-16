@@ -10,7 +10,7 @@ jobs:
               run:  nice cargo build --release
             - name: release build main branch
               run: |
-                git fetch --depth 1 origin/main && git checkout origin/main
+                git fetch --depth 1 origin main && git checkout origin/main
                 nice cargo build --release --target-dir target.main
             - name: benchmark on chimera 8-bit test data
               run: |
