@@ -1788,3 +1788,181 @@ pub(crate) unsafe fn ipred_z1_neon<BD: BitDepth>(
         );
     };
 }
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+pub(crate) unsafe fn ipred_z2_neon<BD: BitDepth>(
+    dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    topleft_in: *const BD::Pixel,
+    width: c_int,
+    height: c_int,
+    mut angle: c_int,
+    max_width: c_int,
+    max_height: c_int,
+    bd: BD,
+) {
+    let is_sm = angle >> 9 & 0x1 as c_int;
+    let enable_intra_edge_filter = angle >> 10;
+    angle &= 511 as c_int;
+    if !(angle > 90 && angle < 180) {
+        unreachable!();
+    }
+    let mut dy = dav1d_dr_intra_derivative[((angle - 90) >> 1) as usize] as c_int;
+    let mut dx = dav1d_dr_intra_derivative[((180 - angle) >> 1) as usize] as c_int;
+    let mut buf: [BD::Pixel; 3 * (64 + 1)] = [0.into(); 3 * (64 + 1)]; // NOTE: C code doesn't initialize
+
+    // The asm can underread below the start of top[] and left[]; to avoid
+    // surprising behaviour, make sure this is within the allocated stack space.
+    let left_offset: isize = 2 * (64 + 1);
+    let top_offset: isize = 1 * (64 + 1);
+    let flipped_offset: isize = 0 * (64 + 1);
+
+    let upsample_left = if enable_intra_edge_filter != 0 {
+        get_upsample(width + height, 180 - angle, is_sm)
+    } else {
+        0 as c_int
+    };
+    let upsample_above = if enable_intra_edge_filter != 0 {
+        get_upsample(width + height, angle - 90, is_sm)
+    } else {
+        0 as c_int
+    };
+
+    if upsample_above != 0 {
+        bd_fn!(BD, ipred_z2_upsample_edge, neon)(
+            buf.as_mut_ptr().offset(top_offset).cast(),
+            width,
+            topleft_in.cast(),
+            bd.into_c(),
+        );
+        dx <<= 1;
+    } else {
+        let filter_strength = if enable_intra_edge_filter != 0 {
+            get_filter_strength(width + height, angle - 90, is_sm)
+        } else {
+            0 as c_int
+        };
+
+        if filter_strength != 0 {
+            bd_fn!(BD, ipred_z1_filter_edge, neon)(
+                buf.as_mut_ptr().offset(1 + top_offset).cast(),
+                cmp::min(max_width, width),
+                topleft_in.cast(),
+                width,
+                filter_strength,
+            );
+
+            if max_width < width {
+                memcpy(
+                    buf.as_mut_ptr().offset(top_offset + 1 + max_width as isize) as *mut c_void,
+                    topleft_in.offset(1 + max_width as isize) as *const c_void,
+                    ((width - max_width) as usize)
+                        .wrapping_mul(::core::mem::size_of::<BD::Pixel>()),
+                );
+            }
+        } else {
+            BD::pixel_copy(
+                &mut buf[1 + top_offset as usize..],
+                core::slice::from_raw_parts(topleft_in.offset(1), width as usize),
+                width as usize,
+            );
+        }
+    }
+
+    if upsample_left != 0 {
+        buf[flipped_offset as usize] = *topleft_in;
+        bd_fn!(BD, ipred_reverse, neon)(
+            buf.as_mut_ptr().offset(1 + flipped_offset).cast(),
+            topleft_in.cast(),
+            height,
+        );
+        bd_fn!(BD, ipred_z2_upsample_edge, neon)(
+            buf.as_mut_ptr().offset(left_offset).cast(),
+            height,
+            buf.as_ptr().offset(flipped_offset).cast(),
+            bd.into_c(),
+        );
+        dy <<= 1;
+    } else {
+        let filter_strength = if enable_intra_edge_filter != 0 {
+            get_filter_strength(width + height, 180 - angle, is_sm)
+        } else {
+            0 as c_int
+        };
+        if filter_strength != 0 {
+            buf[flipped_offset as usize] = *topleft_in;
+            bd_fn!(BD, ipred_reverse, neon)(
+                buf.as_mut_ptr().offset(1 + flipped_offset).cast(),
+                topleft_in.cast(),
+                height,
+            );
+            bd_fn!(BD, ipred_z1_filter_edge, neon)(
+                buf.as_mut_ptr().offset(1 + left_offset).cast(),
+                cmp::min(max_height, height),
+                buf.as_ptr().offset(flipped_offset).cast(),
+                height,
+                filter_strength,
+            );
+            if max_height < height {
+                memcpy(
+                    buf.as_mut_ptr()
+                        .offset(left_offset + 1 + max_height as isize)
+                        as *mut c_void,
+                    buf.as_mut_ptr()
+                        .offset(flipped_offset + 1 + max_height as isize)
+                        as *const c_void,
+                    ((height - max_height) as usize)
+                        .wrapping_mul(::core::mem::size_of::<BD::Pixel>()),
+                );
+            }
+        } else {
+            bd_fn!(BD, ipred_reverse, neon)(
+                buf.as_mut_ptr().offset(left_offset + 1).cast(),
+                topleft_in.cast(),
+                height,
+            );
+        }
+    }
+    buf[top_offset as usize] = *topleft_in;
+    buf[left_offset as usize] = *topleft_in;
+
+    if upsample_above != 0 && upsample_left != 0 {
+        unreachable!();
+    }
+
+    if upsample_above == 0 && upsample_left == 0 {
+        bd_fn!(BD, ipred_z2_fill1, neon)(
+            dst.cast(),
+            stride,
+            buf.as_ptr().offset(top_offset).cast(),
+            buf.as_ptr().offset(left_offset).cast(),
+            width,
+            height,
+            dx,
+            dy,
+        );
+    } else if upsample_above != 0 {
+        bd_fn!(BD, ipred_z2_fill2, neon)(
+            dst.cast(),
+            stride,
+            buf.as_ptr().offset(top_offset).cast(),
+            buf.as_ptr().offset(left_offset).cast(),
+            width,
+            height,
+            dx,
+            dy,
+        );
+    } else {
+        bd_fn!(BD, ipred_z2_fill3, neon)(
+            dst.cast(),
+            stride,
+            buf.as_ptr().offset(top_offset).cast(),
+            buf.as_ptr().offset(left_offset).cast(),
+            width,
+            height,
+            dx,
+            dy,
+        );
+    };
+}
