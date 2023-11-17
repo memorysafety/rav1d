@@ -200,6 +200,7 @@ extern "C" {
         hsz: c_int,
         in_0: *const DynPixel,
         end: c_int,
+        _bitdepth_max: c_int,
     );
     pub(crate) fn dav1d_ipred_z1_filter_edge_8bpc_neon(
         out: *mut DynPixel,
@@ -242,6 +243,7 @@ extern "C" {
         out: *mut DynPixel,
         hsz: c_int,
         in_0: *const DynPixel,
+        _bitdepth_max: c_int,
     );
     pub(crate) fn dav1d_ipred_reverse_8bpc_neon(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
     pub(crate) fn dav1d_ipred_z3_fill2_8bpc_neon(

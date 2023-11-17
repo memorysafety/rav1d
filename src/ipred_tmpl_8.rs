@@ -436,6 +436,7 @@ unsafe fn ipred_z3_neon(
             width + height,
             flipped.as_mut_ptr().cast(),
             height + cmp::min(width, height),
+            8,
         );
         max_base_y = 2 * (width + height) - 2;
         dy <<= 1;
@@ -568,6 +569,7 @@ unsafe fn ipred_z2_neon(
             buf.as_mut_ptr().offset(top_offset).cast(),
             width,
             topleft_in.cast(),
+            8,
         );
         dx <<= 1;
     } else {
@@ -613,6 +615,7 @@ unsafe fn ipred_z2_neon(
             buf.as_mut_ptr().offset(left_offset).cast(),
             height,
             buf.as_ptr().offset(flipped_offset).cast(),
+            8,
         );
         dy <<= 1;
     } else {
@@ -750,6 +753,7 @@ unsafe fn ipred_z1_neon(
             width + height,
             topleft_in.cast(),
             width + cmp::min(width, height),
+            8,
         );
         max_base_x = 2 * (width + height) - 2;
         dx <<= 1;
