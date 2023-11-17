@@ -423,14 +423,14 @@ unsafe fn ipred_z3_neon(
     if upsample_left != 0 {
         flipped[0] = *topleft_in.offset(0);
         dav1d_ipred_reverse_16bpc_neon(
-            &mut *flipped.as_mut_ptr().offset(1),
-            &*topleft_in.offset(0),
+            flipped.as_mut_ptr().offset(1).cast(),
+            topleft_in.offset(0).cast(),
             height + cmp::max(width, height),
         );
         dav1d_ipred_z1_upsample_edge_16bpc_neon(
-            left_out.as_mut_ptr(),
+            left_out.as_mut_ptr().cast(),
             width + height,
-            flipped.as_mut_ptr(),
+            flipped.as_mut_ptr().cast(),
             height + cmp::min(width, height),
             bitdepth_max,
         );
@@ -445,22 +445,22 @@ unsafe fn ipred_z3_neon(
         if filter_strength != 0 {
             flipped[0] = *topleft_in.offset(0);
             dav1d_ipred_reverse_16bpc_neon(
-                &mut *flipped.as_mut_ptr().offset(1),
-                &*topleft_in.offset(0),
+                flipped.as_mut_ptr().offset(1).cast(),
+                topleft_in.offset(0).cast(),
                 height + cmp::max(width, height),
             );
             dav1d_ipred_z1_filter_edge_16bpc_neon(
-                left_out.as_mut_ptr(),
+                left_out.as_mut_ptr().cast(),
                 width + height,
-                flipped.as_mut_ptr(),
+                flipped.as_mut_ptr().cast(),
                 height + cmp::min(width, height),
                 filter_strength,
             );
             max_base_y = width + height - 1;
         } else {
             dav1d_ipred_reverse_16bpc_neon(
-                left_out.as_mut_ptr(),
-                &*topleft_in.offset(0),
+                left_out.as_mut_ptr().cast(),
+                topleft_in.offset(0).cast(),
                 height + cmp::min(width, height),
             );
             max_base_y = height + cmp::min(width, height) - 1;
@@ -469,15 +469,18 @@ unsafe fn ipred_z3_neon(
     let base_inc = 1 + upsample_left;
     let pad_pixels = cmp::max(64 - max_base_y - 1, height + 15);
     dav1d_ipred_pixel_set_16bpc_neon(
-        &mut *left_out.as_mut_ptr().offset((max_base_y + 1) as isize) as *mut pixel,
+        left_out
+            .as_mut_ptr()
+            .offset((max_base_y + 1) as isize)
+            .cast(),
         left_out[max_base_y as usize],
         (pad_pixels * base_inc) as c_int,
     );
     if upsample_left != 0 {
         dav1d_ipred_z3_fill2_16bpc_neon(
-            dst,
+            dst.cast(),
             stride,
-            left_out.as_mut_ptr(),
+            left_out.as_mut_ptr().cast(),
             width,
             height,
             dy,
@@ -485,9 +488,9 @@ unsafe fn ipred_z3_neon(
         );
     } else {
         dav1d_ipred_z3_fill1_16bpc_neon(
-            dst,
+            dst.cast(),
             stride,
-            left_out.as_mut_ptr(),
+            left_out.as_mut_ptr().cast(),
             width,
             height,
             dy,
@@ -562,9 +565,9 @@ unsafe fn ipred_z2_neon(
 
     if upsample_above != 0 {
         dav1d_ipred_z2_upsample_edge_16bpc_neon(
-            buf.as_mut_ptr().offset(top_offset),
+            buf.as_mut_ptr().offset(top_offset).cast(),
             width,
-            topleft_in,
+            topleft_in.cast(),
             bitdepth_max,
         );
         dx <<= 1;
@@ -577,9 +580,9 @@ unsafe fn ipred_z2_neon(
 
         if filter_strength != 0 {
             dav1d_ipred_z1_filter_edge_16bpc_neon(
-                buf.as_mut_ptr().offset(1 + top_offset),
+                buf.as_mut_ptr().offset(1 + top_offset).cast(),
                 cmp::min(max_width, width),
-                topleft_in,
+                topleft_in.cast(),
                 width,
                 filter_strength,
             );
@@ -603,14 +606,14 @@ unsafe fn ipred_z2_neon(
     if upsample_left != 0 {
         buf[flipped_offset as usize] = *topleft_in;
         dav1d_ipred_reverse_16bpc_neon(
-            &mut *buf.as_mut_ptr().offset(1 + flipped_offset),
-            topleft_in,
+            buf.as_mut_ptr().offset(1 + flipped_offset).cast(),
+            topleft_in.cast(),
             height,
         );
         dav1d_ipred_z2_upsample_edge_16bpc_neon(
-            buf.as_mut_ptr().offset(left_offset),
+            buf.as_mut_ptr().offset(left_offset).cast(),
             height,
-            buf.as_ptr().offset(flipped_offset),
+            buf.as_ptr().offset(flipped_offset).cast(),
             bitdepth_max,
         );
         dy <<= 1;
@@ -623,14 +626,14 @@ unsafe fn ipred_z2_neon(
         if filter_strength != 0 {
             buf[flipped_offset as usize] = *topleft_in;
             dav1d_ipred_reverse_16bpc_neon(
-                &mut *buf.as_mut_ptr().offset(1 + flipped_offset),
-                topleft_in,
+                buf.as_mut_ptr().offset(1 + flipped_offset).cast(),
+                topleft_in.cast(),
                 height,
             );
             dav1d_ipred_z1_filter_edge_16bpc_neon(
-                buf.as_mut_ptr().offset(1 + left_offset),
+                buf.as_mut_ptr().offset(1 + left_offset).cast(),
                 cmp::min(max_height, height),
-                buf.as_ptr().offset(flipped_offset),
+                buf.as_ptr().offset(flipped_offset).cast(),
                 height,
                 filter_strength,
             );
@@ -647,8 +650,8 @@ unsafe fn ipred_z2_neon(
             }
         } else {
             dav1d_ipred_reverse_16bpc_neon(
-                buf.as_mut_ptr().offset(left_offset + 1),
-                topleft_in,
+                buf.as_mut_ptr().offset(left_offset + 1).cast(),
+                topleft_in.cast(),
                 height,
             );
         }
@@ -662,10 +665,10 @@ unsafe fn ipred_z2_neon(
 
     if upsample_above == 0 && upsample_left == 0 {
         dav1d_ipred_z2_fill1_16bpc_neon(
-            dst,
+            dst.cast(),
             stride,
-            buf.as_ptr().offset(top_offset),
-            buf.as_ptr().offset(left_offset),
+            buf.as_ptr().offset(top_offset).cast(),
+            buf.as_ptr().offset(left_offset).cast(),
             width,
             height,
             dx,
@@ -673,10 +676,10 @@ unsafe fn ipred_z2_neon(
         );
     } else if upsample_above != 0 {
         dav1d_ipred_z2_fill2_16bpc_neon(
-            dst,
+            dst.cast(),
             stride,
-            buf.as_ptr().offset(top_offset),
-            buf.as_ptr().offset(left_offset),
+            buf.as_ptr().offset(top_offset).cast(),
+            buf.as_ptr().offset(left_offset).cast(),
             width,
             height,
             dx,
@@ -684,10 +687,10 @@ unsafe fn ipred_z2_neon(
         );
     } else {
         dav1d_ipred_z2_fill3_16bpc_neon(
-            dst,
+            dst.cast(),
             stride,
-            buf.as_ptr().offset(top_offset),
-            buf.as_ptr().offset(left_offset),
+            buf.as_ptr().offset(top_offset).cast(),
+            buf.as_ptr().offset(left_offset).cast(),
             width,
             height,
             dx,
@@ -747,9 +750,9 @@ unsafe fn ipred_z1_neon(
     };
     if upsample_above != 0 {
         dav1d_ipred_z1_upsample_edge_16bpc_neon(
-            top_out.as_mut_ptr(),
+            top_out.as_mut_ptr().cast(),
             width + height,
-            topleft_in,
+            topleft_in.cast(),
             width + cmp::min(width, height),
             bitdepth_max,
         );
@@ -763,9 +766,9 @@ unsafe fn ipred_z1_neon(
         };
         if filter_strength != 0 {
             dav1d_ipred_z1_filter_edge_16bpc_neon(
-                top_out.as_mut_ptr(),
+                top_out.as_mut_ptr().cast(),
                 width + height,
-                topleft_in,
+                topleft_in.cast(),
                 width + cmp::min(width, height),
                 filter_strength,
             );
@@ -782,15 +785,18 @@ unsafe fn ipred_z1_neon(
     let base_inc = 1 + upsample_above;
     let pad_pixels = width + 15;
     dav1d_ipred_pixel_set_16bpc_neon(
-        &mut *top_out.as_mut_ptr().offset((max_base_x + 1) as isize) as *mut pixel,
+        top_out
+            .as_mut_ptr()
+            .offset((max_base_x + 1) as isize)
+            .cast(),
         top_out[max_base_x as usize],
         (pad_pixels * base_inc) as c_int,
     );
     if upsample_above != 0 {
         dav1d_ipred_z1_fill2_16bpc_neon(
-            dst,
+            dst.cast(),
             stride,
-            top_out.as_mut_ptr(),
+            top_out.as_mut_ptr().cast(),
             width,
             height,
             dx,
@@ -798,9 +804,9 @@ unsafe fn ipred_z1_neon(
         );
     } else {
         dav1d_ipred_z1_fill1_16bpc_neon(
-            dst,
+            dst.cast(),
             stride,
-            top_out.as_mut_ptr(),
+            top_out.as_mut_ptr().cast(),
             width,
             height,
             dx,

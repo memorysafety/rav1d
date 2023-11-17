@@ -178,96 +178,92 @@ extern "C" {
 #[cfg(all(feature = "bitdepth_8", feature = "asm", target_arch = "aarch64"))]
 extern "C" {
     pub(crate) fn dav1d_ipred_z1_fill2_8bpc_neon(
-        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth8 as BitDepth>::Pixel,
+        top: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         max_base_x: c_int,
     );
     pub(crate) fn dav1d_ipred_z1_fill1_8bpc_neon(
-        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth8 as BitDepth>::Pixel,
+        top: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         max_base_x: c_int,
     );
     pub(crate) fn dav1d_ipred_z1_upsample_edge_8bpc_neon(
-        out: *mut <BitDepth8 as BitDepth>::Pixel,
+        out: *mut DynPixel,
         hsz: c_int,
-        in_0: *const <BitDepth8 as BitDepth>::Pixel,
+        in_0: *const DynPixel,
         end: c_int,
     );
     pub(crate) fn dav1d_ipred_z1_filter_edge_8bpc_neon(
-        out: *mut <BitDepth8 as BitDepth>::Pixel,
+        out: *mut DynPixel,
         sz: c_int,
-        in_0: *const <BitDepth8 as BitDepth>::Pixel,
+        in_0: *const DynPixel,
         end: c_int,
         strength: c_int,
     );
     pub(crate) fn dav1d_ipred_z2_fill3_8bpc_neon(
-        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth8 as BitDepth>::Pixel,
-        left: *const <BitDepth8 as BitDepth>::Pixel,
+        top: *const DynPixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         dy: c_int,
     );
     pub(crate) fn dav1d_ipred_z2_fill2_8bpc_neon(
-        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth8 as BitDepth>::Pixel,
-        left: *const <BitDepth8 as BitDepth>::Pixel,
+        top: *const DynPixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         dy: c_int,
     );
     pub(crate) fn dav1d_ipred_z2_fill1_8bpc_neon(
-        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth8 as BitDepth>::Pixel,
-        left: *const <BitDepth8 as BitDepth>::Pixel,
+        top: *const DynPixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         dy: c_int,
     );
     pub(crate) fn dav1d_ipred_z2_upsample_edge_8bpc_neon(
-        out: *mut <BitDepth8 as BitDepth>::Pixel,
+        out: *mut DynPixel,
         hsz: c_int,
-        in_0: *const <BitDepth8 as BitDepth>::Pixel,
+        in_0: *const DynPixel,
     );
-    pub(crate) fn dav1d_ipred_reverse_8bpc_neon(
-        dst: *mut <BitDepth8 as BitDepth>::Pixel,
-        src: *const <BitDepth8 as BitDepth>::Pixel,
-        n: c_int,
-    );
+    pub(crate) fn dav1d_ipred_reverse_8bpc_neon(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
     pub(crate) fn dav1d_ipred_z3_fill2_8bpc_neon(
-        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: *const <BitDepth8 as BitDepth>::Pixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dy: c_int,
         max_base_y: c_int,
     );
     pub(crate) fn dav1d_ipred_z3_fill1_8bpc_neon(
-        dst: *mut <BitDepth8 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: *const <BitDepth8 as BitDepth>::Pixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dy: c_int,
         max_base_y: c_int,
     );
     pub(crate) fn dav1d_ipred_pixel_set_8bpc_neon(
-        out: *mut <BitDepth8 as BitDepth>::Pixel,
+        out: *mut DynPixel,
         px: <BitDepth8 as BitDepth>::Pixel,
         n: c_int,
     );
@@ -277,98 +273,98 @@ extern "C" {
 #[cfg(all(feature = "bitdepth_16", feature = "asm", target_arch = "aarch64"))]
 extern "C" {
     pub(crate) fn dav1d_ipred_z1_fill2_16bpc_neon(
-        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth16 as BitDepth>::Pixel,
+        top: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         max_base_x: c_int,
     );
     pub(crate) fn dav1d_ipred_z1_fill1_16bpc_neon(
-        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth16 as BitDepth>::Pixel,
+        top: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         max_base_x: c_int,
     );
     pub(crate) fn dav1d_ipred_z1_upsample_edge_16bpc_neon(
-        out: *mut <BitDepth16 as BitDepth>::Pixel,
+        out: *mut DynPixel,
         hsz: c_int,
-        in_0: *const <BitDepth16 as BitDepth>::Pixel,
+        in_0: *const DynPixel,
         end: c_int,
         bitdepth_max: c_int,
     );
     pub(crate) fn dav1d_ipred_z1_filter_edge_16bpc_neon(
-        out: *mut <BitDepth16 as BitDepth>::Pixel,
+        out: *mut DynPixel,
         sz: c_int,
-        in_0: *const <BitDepth16 as BitDepth>::Pixel,
+        in_0: *const DynPixel,
         end: c_int,
         strength: c_int,
     );
     pub(crate) fn dav1d_ipred_z2_fill3_16bpc_neon(
-        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth16 as BitDepth>::Pixel,
-        left: *const <BitDepth16 as BitDepth>::Pixel,
+        top: *const DynPixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         dy: c_int,
     );
     pub(crate) fn dav1d_ipred_z2_fill2_16bpc_neon(
-        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth16 as BitDepth>::Pixel,
-        left: *const <BitDepth16 as BitDepth>::Pixel,
+        top: *const DynPixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         dy: c_int,
     );
     pub(crate) fn dav1d_ipred_z2_fill1_16bpc_neon(
-        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        top: *const <BitDepth16 as BitDepth>::Pixel,
-        left: *const <BitDepth16 as BitDepth>::Pixel,
+        top: *const DynPixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dx: c_int,
         dy: c_int,
     );
     pub(crate) fn dav1d_ipred_z2_upsample_edge_16bpc_neon(
-        out: *mut <BitDepth16 as BitDepth>::Pixel,
+        out: *mut DynPixel,
         hsz: c_int,
-        in_0: *const <BitDepth16 as BitDepth>::Pixel,
+        in_0: *const DynPixel,
         bitdepth_max: c_int,
     );
     pub(crate) fn dav1d_ipred_reverse_16bpc_neon(
-        dst: *mut <BitDepth16 as BitDepth>::Pixel,
-        src: *const <BitDepth16 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
+        src: *const DynPixel,
         n: c_int,
     );
     pub(crate) fn dav1d_ipred_z3_fill2_16bpc_neon(
-        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: *const <BitDepth16 as BitDepth>::Pixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dy: c_int,
         max_base_y: c_int,
     );
     pub(crate) fn dav1d_ipred_z3_fill1_16bpc_neon(
-        dst: *mut <BitDepth16 as BitDepth>::Pixel,
+        dst: *mut DynPixel,
         stride: ptrdiff_t,
-        left: *const <BitDepth16 as BitDepth>::Pixel,
+        left: *const DynPixel,
         width: c_int,
         height: c_int,
         dy: c_int,
         max_base_y: c_int,
     );
     pub(crate) fn dav1d_ipred_pixel_set_16bpc_neon(
-        out: *mut <BitDepth16 as BitDepth>::Pixel,
+        out: *mut DynPixel,
         px: <BitDepth16 as BitDepth>::Pixel,
         n: c_int,
     );
