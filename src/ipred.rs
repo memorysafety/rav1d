@@ -25,6 +25,12 @@ use crate::include::common::bitdepth::BitDepth8;
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
 
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+use crate::include::common::bitdepth::bd_fn;
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+use ::to_method::To;
+
 pub type angular_ipred_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -1677,4 +1683,108 @@ pub(crate) unsafe fn pal_pred_rust<BD: BitDepth>(
         dst = dst.offset(BD::pxstride(stride as usize) as isize);
         y += 1;
     }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+pub(crate) unsafe fn ipred_z1_neon<BD: BitDepth>(
+    dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    topleft_in: *const BD::Pixel,
+    width: c_int,
+    height: c_int,
+    mut angle: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    bd: BD,
+) {
+    let is_sm = angle >> 9 & 0x1 as c_int;
+    let enable_intra_edge_filter = angle >> 10;
+    angle &= 511 as c_int;
+    let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
+    const top_out_size: usize = 64 + 64 * (64 + 15) * 2 + 16;
+    let mut top_out: [BD::Pixel; top_out_size] = [0.into(); top_out_size];
+    let max_base_x;
+    let upsample_above = if enable_intra_edge_filter != 0 {
+        get_upsample(width + height, 90 - angle, is_sm)
+    } else {
+        0 as c_int
+    };
+    if upsample_above != 0 {
+        bd_fn!(BD, ipred_z1_upsample_edge, neon)(
+            top_out.as_mut_ptr().cast(),
+            width + height,
+            topleft_in.cast(),
+            width + cmp::min(width, height),
+            bd.into_c(),
+        );
+        max_base_x = 2 * (width + height) - 2;
+        dx <<= 1;
+    } else {
+        let filter_strength = if enable_intra_edge_filter != 0 {
+            get_filter_strength(width + height, 90 - angle, is_sm)
+        } else {
+            0 as c_int
+        };
+        if filter_strength != 0 {
+            bd_fn!(BD, ipred_z1_filter_edge, neon)(
+                top_out.as_mut_ptr().cast(),
+                width + height,
+                topleft_in.cast(),
+                width + cmp::min(width, height),
+                filter_strength,
+            );
+            max_base_x = width + height - 1;
+        } else {
+            max_base_x = width + cmp::min(width, height) - 1;
+            memcpy(
+                top_out.as_mut_ptr() as *mut c_void,
+                &*topleft_in.offset(1) as *const BD::Pixel as *const c_void,
+                ((max_base_x + 1) as usize).wrapping_mul(::core::mem::size_of::<BD::Pixel>()),
+            );
+        }
+    }
+    let base_inc = 1 + upsample_above;
+    let pad_pixels = width + 15;
+    {
+        // `pixel_set` takes a `px: BD::Pixel`.
+        // Since it's not behind a ptr, we can't make it a `DynPixel`
+        // and call it uniformly with `bd_fn!`.
+        let out = top_out
+            .as_mut_ptr()
+            .offset((max_base_x + 1) as isize)
+            .cast();
+        let px = top_out[max_base_x as usize];
+        let n = (pad_pixels * base_inc) as c_int;
+        match BD::BPC {
+            BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
+                out,
+                // Really a no-op cast, but it's difficult to do it properly with generics.
+                px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
+                n,
+            ),
+            BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
+        }
+    }
+    if upsample_above != 0 {
+        bd_fn!(BD, ipred_z1_fill2, neon)(
+            dst.cast(),
+            stride,
+            top_out.as_mut_ptr().cast(),
+            width,
+            height,
+            dx,
+            max_base_x,
+        );
+    } else {
+        bd_fn!(BD, ipred_z1_fill1, neon)(
+            dst.cast(),
+            stride,
+            top_out.as_mut_ptr().cast(),
+            width,
+            height,
+            dx,
+            max_base_x,
+        );
+    };
 }

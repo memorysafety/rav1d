@@ -45,13 +45,13 @@ use std::ffi::c_void;
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 use crate::{
     src::ipred::dav1d_ipred_pixel_set_16bpc_neon, src::ipred::dav1d_ipred_reverse_16bpc_neon,
-    src::ipred::dav1d_ipred_z1_fill1_16bpc_neon, src::ipred::dav1d_ipred_z1_fill2_16bpc_neon,
     src::ipred::dav1d_ipred_z1_filter_edge_16bpc_neon,
     src::ipred::dav1d_ipred_z1_upsample_edge_16bpc_neon,
     src::ipred::dav1d_ipred_z2_fill1_16bpc_neon, src::ipred::dav1d_ipred_z2_fill2_16bpc_neon,
     src::ipred::dav1d_ipred_z2_fill3_16bpc_neon,
     src::ipred::dav1d_ipred_z2_upsample_edge_16bpc_neon,
     src::ipred::dav1d_ipred_z3_fill1_16bpc_neon, src::ipred::dav1d_ipred_z3_fill2_16bpc_neon,
+    src::ipred::ipred_z1_neon,
 };
 
 #[cfg(feature = "asm")]
@@ -711,7 +711,7 @@ unsafe extern "C" fn ipred_z1_neon_erased(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_z1_neon(
+    ipred_z1_neon::<BitDepth16>(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -720,99 +720,8 @@ unsafe extern "C" fn ipred_z1_neon_erased(
         angle,
         max_width,
         max_height,
-        bitdepth_max,
+        BitDepth16::from_c(bitdepth_max),
     );
-}
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe fn ipred_z1_neon(
-    dst: *mut pixel,
-    stride: ptrdiff_t,
-    topleft_in: *const pixel,
-    width: c_int,
-    height: c_int,
-    mut angle: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    let is_sm = angle >> 9 & 0x1 as c_int;
-    let enable_intra_edge_filter = angle >> 10;
-    angle &= 511 as c_int;
-    let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
-    const top_out_size: usize = 64 + 64 * (64 + 15) * 2 + 16;
-    let mut top_out: [pixel; top_out_size] = [0; top_out_size];
-    let max_base_x;
-    let upsample_above = if enable_intra_edge_filter != 0 {
-        get_upsample(width + height, 90 - angle, is_sm)
-    } else {
-        0 as c_int
-    };
-    if upsample_above != 0 {
-        dav1d_ipred_z1_upsample_edge_16bpc_neon(
-            top_out.as_mut_ptr().cast(),
-            width + height,
-            topleft_in.cast(),
-            width + cmp::min(width, height),
-            bitdepth_max,
-        );
-        max_base_x = 2 * (width + height) - 2;
-        dx <<= 1;
-    } else {
-        let filter_strength = if enable_intra_edge_filter != 0 {
-            get_filter_strength(width + height, 90 - angle, is_sm)
-        } else {
-            0 as c_int
-        };
-        if filter_strength != 0 {
-            dav1d_ipred_z1_filter_edge_16bpc_neon(
-                top_out.as_mut_ptr().cast(),
-                width + height,
-                topleft_in.cast(),
-                width + cmp::min(width, height),
-                filter_strength,
-            );
-            max_base_x = width + height - 1;
-        } else {
-            max_base_x = width + cmp::min(width, height) - 1;
-            memcpy(
-                top_out.as_mut_ptr() as *mut c_void,
-                &*topleft_in.offset(1) as *const pixel as *const c_void,
-                ((max_base_x + 1) as usize).wrapping_mul(::core::mem::size_of::<pixel>()),
-            );
-        }
-    }
-    let base_inc = 1 + upsample_above;
-    let pad_pixels = width + 15;
-    dav1d_ipred_pixel_set_16bpc_neon(
-        top_out
-            .as_mut_ptr()
-            .offset((max_base_x + 1) as isize)
-            .cast(),
-        top_out[max_base_x as usize],
-        (pad_pixels * base_inc) as c_int,
-    );
-    if upsample_above != 0 {
-        dav1d_ipred_z1_fill2_16bpc_neon(
-            dst.cast(),
-            stride,
-            top_out.as_mut_ptr().cast(),
-            width,
-            height,
-            dx,
-            max_base_x,
-        );
-    } else {
-        dav1d_ipred_z1_fill1_16bpc_neon(
-            dst.cast(),
-            stride,
-            top_out.as_mut_ptr().cast(),
-            width,
-            height,
-            dx,
-            max_base_x,
-        );
-    };
 }
 
 #[cold]
