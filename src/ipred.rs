@@ -291,20 +291,37 @@ macro_rules! decl_reverse_fn {
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-extern "C" {
-    #[cfg(feature = "bitdepth_8")]
-    fn dav1d_ipred_pixel_set_8bpc_neon(
-        out: *mut DynPixel,
-        px: <BitDepth8 as BitDepth>::Pixel,
-        n: c_int,
-    );
+unsafe fn rav1d_ipred_pixel_set_neon<BD: BitDepth>(out: *mut BD::Pixel, px: BD::Pixel, n: c_int) {
+    // `pixel_set` takes a `px: BD::Pixel`.
+    // Since it's not behind a ptr, we can't make it a `DynPixel`
+    // and call it uniformly with `bd_fn!`.
 
-    #[cfg(feature = "bitdepth_16")]
-    fn dav1d_ipred_pixel_set_16bpc_neon(
-        out: *mut DynPixel,
-        px: <BitDepth16 as BitDepth>::Pixel,
-        n: c_int,
-    );
+    extern "C" {
+        #[cfg(feature = "bitdepth_8")]
+        fn dav1d_ipred_pixel_set_8bpc_neon(
+            out: *mut DynPixel,
+            px: <BitDepth8 as BitDepth>::Pixel,
+            n: c_int,
+        );
+
+        #[cfg(feature = "bitdepth_16")]
+        fn dav1d_ipred_pixel_set_16bpc_neon(
+            out: *mut DynPixel,
+            px: <BitDepth16 as BitDepth>::Pixel,
+            n: c_int,
+        );
+    }
+
+    let out = out.cast();
+    match BD::BPC {
+        BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
+            out,
+            // Really a no-op cast, but it's difficult to do it properly with generics.
+            px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
+            n,
+        ),
+        BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
+    }
 }
 
 #[inline(never)]
@@ -1822,26 +1839,11 @@ unsafe fn ipred_z1_neon<BD: BitDepth>(
     }
     let base_inc = 1 + upsample_above;
     let pad_pixels = width + 15;
-    {
-        // `pixel_set` takes a `px: BD::Pixel`.
-        // Since it's not behind a ptr, we can't make it a `DynPixel`
-        // and call it uniformly with `bd_fn!`.
-        let out = top_out
-            .as_mut_ptr()
-            .offset((max_base_x + 1) as isize)
-            .cast();
-        let px = top_out[max_base_x as usize];
-        let n = (pad_pixels * base_inc) as c_int;
-        match BD::BPC {
-            BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
-                out,
-                // Really a no-op cast, but it's difficult to do it properly with generics.
-                px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
-                n,
-            ),
-            BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
-        }
-    }
+    rav1d_ipred_pixel_set_neon::<BD>(
+        top_out.as_mut_ptr().offset((max_base_x + 1) as isize),
+        top_out[max_base_x as usize],
+        (pad_pixels * base_inc) as c_int,
+    );
     if upsample_above != 0 {
         bd_fn!(decl_z1_fill_fn, BD, ipred_z1_fill2, neon)(
             dst.cast(),
@@ -2117,26 +2119,11 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
     }
     let base_inc = 1 + upsample_left;
     let pad_pixels = cmp::max(64 - max_base_y - 1, height + 15);
-    {
-        // `pixel_set` takes a `px: BD::Pixel`.
-        // Since it's not behind a ptr, we can't make it a `DynPixel`
-        // and call it uniformly with `bd_fn!`.
-        let out = left_out
-            .as_mut_ptr()
-            .offset((max_base_y + 1) as isize)
-            .cast();
-        let px = left_out[max_base_y as usize];
-        let n = (pad_pixels * base_inc) as c_int;
-        match BD::BPC {
-            BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
-                out,
-                // Really a no-op cast, but it's difficult to do it properly with generics.
-                px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
-                n,
-            ),
-            BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
-        }
-    }
+    rav1d_ipred_pixel_set_neon::<BD>(
+        left_out.as_mut_ptr().offset((max_base_y + 1) as isize),
+        left_out[max_base_y as usize],
+        (pad_pixels * base_inc) as c_int,
+    );
     if upsample_left != 0 {
         bd_fn!(decl_z3_fill_fn, BD, ipred_z3_fill2, neon)(
             dst.cast(),
