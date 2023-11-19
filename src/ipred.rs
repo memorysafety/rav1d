@@ -1584,8 +1584,7 @@ cfg_if! {
     }
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn ipred_filter_rust<BD: BitDepth>(
+unsafe fn ipred_filter_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     topleft_in: *const BD::Pixel,
@@ -1641,6 +1640,31 @@ pub(crate) unsafe fn ipred_filter_rust<BD: BitDepth>(
         dst = &mut *dst.offset((BD::pxstride(stride as usize) * 2) as isize) as *mut BD::Pixel;
         y += 2 as c_int;
     }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft_in: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    filt_idx: c_int,
+    max_width: c_int,
+    max_height: c_int,
+    bitdepth_max: c_int,
+) {
+    ipred_filter_rust(
+        dst.cast(),
+        stride,
+        topleft_in.cast(),
+        width,
+        height,
+        filt_idx,
+        max_width,
+        max_height,
+        BD::from_c(bitdepth_max),
+    );
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated

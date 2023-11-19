@@ -1,4 +1,3 @@
-use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
@@ -11,7 +10,7 @@ use crate::src::ipred::ipred_dc_128_c_erased;
 use crate::src::ipred::ipred_dc_c_erased;
 use crate::src::ipred::ipred_dc_left_c_erased;
 use crate::src::ipred::ipred_dc_top_c_erased;
-use crate::src::ipred::ipred_filter_rust;
+use crate::src::ipred::ipred_filter_c_erased;
 use crate::src::ipred::ipred_h_c_erased;
 use crate::src::ipred::ipred_paeth_c_erased;
 use crate::src::ipred::ipred_smooth_c_erased;
@@ -41,37 +40,16 @@ use libc::ptrdiff_t;
 use std::ffi::c_int;
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-use crate::{src::ipred::ipred_z1_neon, src::ipred::ipred_z2_neon, src::ipred::ipred_z3_neon};
+use crate::{
+    include::common::bitdepth::BitDepth, src::ipred::ipred_z1_neon, src::ipred::ipred_z2_neon,
+    src::ipred::ipred_z3_neon,
+};
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-
-unsafe extern "C" fn ipred_filter_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    filt_idx: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    _bitdepth_max: c_int,
-) {
-    ipred_filter_rust(
-        dst.cast(),
-        stride,
-        topleft_in.cast(),
-        width,
-        height,
-        filt_idx,
-        max_width,
-        max_height,
-        BitDepth8::new(()),
-    );
-}
 
 unsafe extern "C" fn cfl_ac_420_c_erased(
     ac: *mut i16,
@@ -371,7 +349,7 @@ pub unsafe fn rav1d_intra_pred_dsp_init_8bpc(c: *mut Rav1dIntraPredDSPContext) {
     (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_c_erased::<BitDepth8>);
     (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_c_erased::<BitDepth8>);
     (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased::<BitDepth8>);
-    (*c).intra_pred[FILTER_PRED as usize] = Some(ipred_filter_c_erased);
+    (*c).intra_pred[FILTER_PRED as usize] = Some(ipred_filter_c_erased::<BitDepth8>);
 
     (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = cfl_ac_420_c_erased;
     (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = cfl_ac_422_c_erased;
