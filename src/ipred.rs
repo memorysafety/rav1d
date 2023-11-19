@@ -22,7 +22,7 @@ use std::slice;
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::bd_fn;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[cfg(feature = "asm")]
 use crate::{
     include::dav1d::headers::Rav1dPixelLayout,
     src::cpu::{rav1d_get_cpu_flags, CpuFlags},
@@ -90,11 +90,10 @@ pub struct Rav1dIntraPredDSPContext {
     pub pal_pred: pal_pred_fn,
 }
 
-// TODO(legare): Generated fns are temporarily pub until init fns are deduplicated.
 #[cfg(feature = "asm")]
 macro_rules! decl_fn {
     (angular_ipred, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             dst: *mut DynPixel,
             stride: ptrdiff_t,
             topleft: *const DynPixel,
@@ -108,7 +107,7 @@ macro_rules! decl_fn {
     };
 
     (cfl_pred, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             dst: *mut DynPixel,
             stride: ptrdiff_t,
             topleft: *const DynPixel,
@@ -121,7 +120,7 @@ macro_rules! decl_fn {
     };
 
     (cfl_ac, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             ac: *mut i16,
             y: *const DynPixel,
             stride: ptrdiff_t,
@@ -133,7 +132,7 @@ macro_rules! decl_fn {
     };
 
     (pal_pred, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             dst: *mut DynPixel,
             stride: ptrdiff_t,
             pal: *const u16,
@@ -200,10 +199,9 @@ extern "C" {
     decl_fns!(pal_pred, pal_pred);
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[cfg(all(feature = "bitdepth_8", feature = "asm", target_arch = "aarch64"))]
 extern "C" {
-    pub(crate) fn dav1d_ipred_z1_fill2_8bpc_neon(
+    fn dav1d_ipred_z1_fill2_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -212,7 +210,7 @@ extern "C" {
         dx: c_int,
         max_base_x: c_int,
     );
-    pub(crate) fn dav1d_ipred_z1_fill1_8bpc_neon(
+    fn dav1d_ipred_z1_fill1_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -221,21 +219,21 @@ extern "C" {
         dx: c_int,
         max_base_x: c_int,
     );
-    pub(crate) fn dav1d_ipred_z1_upsample_edge_8bpc_neon(
+    fn dav1d_ipred_z1_upsample_edge_8bpc_neon(
         out: *mut DynPixel,
         hsz: c_int,
         in_0: *const DynPixel,
         end: c_int,
         _bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_ipred_z1_filter_edge_8bpc_neon(
+    fn dav1d_ipred_z1_filter_edge_8bpc_neon(
         out: *mut DynPixel,
         sz: c_int,
         in_0: *const DynPixel,
         end: c_int,
         strength: c_int,
     );
-    pub(crate) fn dav1d_ipred_z2_fill3_8bpc_neon(
+    fn dav1d_ipred_z2_fill3_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -245,7 +243,7 @@ extern "C" {
         dx: c_int,
         dy: c_int,
     );
-    pub(crate) fn dav1d_ipred_z2_fill2_8bpc_neon(
+    fn dav1d_ipred_z2_fill2_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -255,7 +253,7 @@ extern "C" {
         dx: c_int,
         dy: c_int,
     );
-    pub(crate) fn dav1d_ipred_z2_fill1_8bpc_neon(
+    fn dav1d_ipred_z2_fill1_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -265,14 +263,14 @@ extern "C" {
         dx: c_int,
         dy: c_int,
     );
-    pub(crate) fn dav1d_ipred_z2_upsample_edge_8bpc_neon(
+    fn dav1d_ipred_z2_upsample_edge_8bpc_neon(
         out: *mut DynPixel,
         hsz: c_int,
         in_0: *const DynPixel,
         _bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_ipred_reverse_8bpc_neon(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
-    pub(crate) fn dav1d_ipred_z3_fill2_8bpc_neon(
+    fn dav1d_ipred_reverse_8bpc_neon(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
+    fn dav1d_ipred_z3_fill2_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         left: *const DynPixel,
@@ -281,7 +279,7 @@ extern "C" {
         dy: c_int,
         max_base_y: c_int,
     );
-    pub(crate) fn dav1d_ipred_z3_fill1_8bpc_neon(
+    fn dav1d_ipred_z3_fill1_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         left: *const DynPixel,
@@ -290,17 +288,16 @@ extern "C" {
         dy: c_int,
         max_base_y: c_int,
     );
-    pub(crate) fn dav1d_ipred_pixel_set_8bpc_neon(
+    fn dav1d_ipred_pixel_set_8bpc_neon(
         out: *mut DynPixel,
         px: <BitDepth8 as BitDepth>::Pixel,
         n: c_int,
     );
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[cfg(all(feature = "bitdepth_16", feature = "asm", target_arch = "aarch64"))]
 extern "C" {
-    pub(crate) fn dav1d_ipred_z1_fill2_16bpc_neon(
+    fn dav1d_ipred_z1_fill2_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -309,7 +306,7 @@ extern "C" {
         dx: c_int,
         max_base_x: c_int,
     );
-    pub(crate) fn dav1d_ipred_z1_fill1_16bpc_neon(
+    fn dav1d_ipred_z1_fill1_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -318,21 +315,21 @@ extern "C" {
         dx: c_int,
         max_base_x: c_int,
     );
-    pub(crate) fn dav1d_ipred_z1_upsample_edge_16bpc_neon(
+    fn dav1d_ipred_z1_upsample_edge_16bpc_neon(
         out: *mut DynPixel,
         hsz: c_int,
         in_0: *const DynPixel,
         end: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_ipred_z1_filter_edge_16bpc_neon(
+    fn dav1d_ipred_z1_filter_edge_16bpc_neon(
         out: *mut DynPixel,
         sz: c_int,
         in_0: *const DynPixel,
         end: c_int,
         strength: c_int,
     );
-    pub(crate) fn dav1d_ipred_z2_fill3_16bpc_neon(
+    fn dav1d_ipred_z2_fill3_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -342,7 +339,7 @@ extern "C" {
         dx: c_int,
         dy: c_int,
     );
-    pub(crate) fn dav1d_ipred_z2_fill2_16bpc_neon(
+    fn dav1d_ipred_z2_fill2_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -352,7 +349,7 @@ extern "C" {
         dx: c_int,
         dy: c_int,
     );
-    pub(crate) fn dav1d_ipred_z2_fill1_16bpc_neon(
+    fn dav1d_ipred_z2_fill1_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         top: *const DynPixel,
@@ -362,18 +359,14 @@ extern "C" {
         dx: c_int,
         dy: c_int,
     );
-    pub(crate) fn dav1d_ipred_z2_upsample_edge_16bpc_neon(
+    fn dav1d_ipred_z2_upsample_edge_16bpc_neon(
         out: *mut DynPixel,
         hsz: c_int,
         in_0: *const DynPixel,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_ipred_reverse_16bpc_neon(
-        dst: *mut DynPixel,
-        src: *const DynPixel,
-        n: c_int,
-    );
-    pub(crate) fn dav1d_ipred_z3_fill2_16bpc_neon(
+    fn dav1d_ipred_reverse_16bpc_neon(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
+    fn dav1d_ipred_z3_fill2_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         left: *const DynPixel,
@@ -382,7 +375,7 @@ extern "C" {
         dy: c_int,
         max_base_y: c_int,
     );
-    pub(crate) fn dav1d_ipred_z3_fill1_16bpc_neon(
+    fn dav1d_ipred_z3_fill1_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         left: *const DynPixel,
@@ -391,7 +384,7 @@ extern "C" {
         dy: c_int,
         max_base_y: c_int,
     );
-    pub(crate) fn dav1d_ipred_pixel_set_16bpc_neon(
+    fn dav1d_ipred_pixel_set_16bpc_neon(
         out: *mut DynPixel,
         px: <BitDepth16 as BitDepth>::Pixel,
         n: c_int,
@@ -1032,9 +1025,8 @@ pub(crate) unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
-pub(crate) unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     if is_sm != 0 {
         if wh <= 8 {
             if angle >= 64 {
@@ -1126,9 +1118,8 @@ unsafe fn filter_edge<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline]
-pub(crate) unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+unsafe fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     return (angle < 40 && wh <= 16 >> is_sm) as c_int;
 }
 
@@ -1564,8 +1555,7 @@ pub(crate) unsafe extern "C" fn ipred_z3_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn filter_fn(
+unsafe fn filter_fn(
     flt_ptr: *const i8,
     p0: c_int,
     p1: c_int,
@@ -1596,11 +1586,9 @@ pub(crate) unsafe fn filter_fn(
 
 cfg_if! {
     if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-        // TODO(kkysen) Temporarily pub until mod is deduplicated
-        pub(crate) const FLT_INCR: isize = 2;
+        const FLT_INCR: isize = 2;
     } else {
-        // TODO(kkysen) Temporarily pub until mod is deduplicated
-        pub(crate) const FLT_INCR: isize = 1;
+        const FLT_INCR: isize = 1;
     }
 }
 
@@ -2278,9 +2266,8 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
     };
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-pub(crate) unsafe extern "C" fn ipred_z1_neon_erased<BD: BitDepth>(
+unsafe extern "C" fn ipred_z1_neon_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     topleft_in: *const DynPixel,
@@ -2304,9 +2291,8 @@ pub(crate) unsafe extern "C" fn ipred_z1_neon_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-pub(crate) unsafe extern "C" fn ipred_z2_neon_erased<BD: BitDepth>(
+unsafe extern "C" fn ipred_z2_neon_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     topleft_in: *const DynPixel,
@@ -2330,9 +2316,8 @@ pub(crate) unsafe extern "C" fn ipred_z2_neon_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-pub(crate) unsafe extern "C" fn ipred_z3_neon_erased<BD: BitDepth>(
+unsafe extern "C" fn ipred_z3_neon_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     topleft_in: *const DynPixel,
@@ -2445,4 +2430,44 @@ pub(crate) unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPre
 
         (*c).pal_pred = bd_fn!(BD, pal_pred, avx512icl);
     }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[inline(always)]
+pub(crate) unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext) {
+    let flags = rav1d_get_cpu_flags();
+
+    if !flags.contains(CpuFlags::NEON) {
+        return;
+    }
+
+    (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc, neon));
+    (*c).intra_pred[DC_128_PRED as usize] = Some(bd_fn!(BD, ipred_dc_128, neon));
+    (*c).intra_pred[TOP_DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc_top, neon));
+    (*c).intra_pred[LEFT_DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc_left, neon));
+    (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(BD, ipred_h, neon));
+    (*c).intra_pred[VERT_PRED as usize] = Some(bd_fn!(BD, ipred_v, neon));
+    (*c).intra_pred[PAETH_PRED as usize] = Some(bd_fn!(BD, ipred_paeth, neon));
+    (*c).intra_pred[SMOOTH_PRED as usize] = Some(bd_fn!(BD, ipred_smooth, neon));
+    (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_v, neon));
+    (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_h, neon));
+    #[cfg(target_arch = "aarch64")]
+    {
+        (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_neon_erased::<BD>);
+        (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_neon_erased::<BD>);
+        (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_neon_erased::<BD>);
+    }
+    (*c).intra_pred[FILTER_PRED as usize] = Some(bd_fn!(BD, ipred_filter, neon));
+
+    (*c).cfl_pred[DC_PRED as usize] = bd_fn!(BD, ipred_cfl, neon);
+    (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(BD, ipred_cfl_128, neon);
+    (*c).cfl_pred[TOP_DC_PRED as usize] = bd_fn!(BD, ipred_cfl_top, neon);
+    (*c).cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(BD, ipred_cfl_left, neon);
+
+    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_420, neon);
+    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_422, neon);
+    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_444, neon);
+
+    (*c).pal_pred = bd_fn!(BD, pal_pred, neon);
 }
