@@ -1680,7 +1680,7 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     }
 }
 
-unsafe extern "C" fn cfl_ac_420_c_erased<BD: BitDepth>(
+unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const IS_SS_VER: bool>(
     ac: *mut i16,
     ypx: *const DynPixel,
     stride: ptrdiff_t,
@@ -1697,52 +1697,8 @@ unsafe extern "C" fn cfl_ac_420_c_erased<BD: BitDepth>(
         h_pad,
         cw,
         ch,
-        1 as c_int,
-        1 as c_int,
-    );
-}
-
-unsafe extern "C" fn cfl_ac_422_c_erased<BD: BitDepth>(
-    ac: *mut i16,
-    ypx: *const DynPixel,
-    stride: ptrdiff_t,
-    w_pad: c_int,
-    h_pad: c_int,
-    cw: c_int,
-    ch: c_int,
-) {
-    cfl_ac_rust::<BD>(
-        ac,
-        ypx.cast(),
-        stride,
-        w_pad,
-        h_pad,
-        cw,
-        ch,
-        1 as c_int,
-        0 as c_int,
-    );
-}
-
-unsafe extern "C" fn cfl_ac_444_c_erased<BD: BitDepth>(
-    ac: *mut i16,
-    ypx: *const DynPixel,
-    stride: ptrdiff_t,
-    w_pad: c_int,
-    h_pad: c_int,
-    cw: c_int,
-    ch: c_int,
-) {
-    cfl_ac_rust::<BD>(
-        ac,
-        ypx.cast(),
-        stride,
-        w_pad,
-        h_pad,
-        cw,
-        ch,
-        0 as c_int,
-        0 as c_int,
+        IS_SS_HOR as c_int,
+        IS_SS_VER as c_int,
     );
 }
 
@@ -2413,9 +2369,9 @@ pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: *mut Rav1dIntraPredDSPC
     (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased::<BD>);
     (*c).intra_pred[FILTER_PRED as usize] = Some(ipred_filter_c_erased::<BD>);
 
-    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = cfl_ac_420_c_erased::<BD>;
-    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = cfl_ac_422_c_erased::<BD>;
-    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = cfl_ac_444_c_erased::<BD>;
+    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = cfl_ac_c_erased::<BD, true, true>;
+    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = cfl_ac_c_erased::<BD, true, false>;
+    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = cfl_ac_c_erased::<BD, false, false>;
     (*c).cfl_pred[DC_PRED as usize] = ipred_cfl_c_erased::<BD>;
 
     (*c).cfl_pred[DC_128_PRED as usize] = ipred_cfl_128_c_erased::<BD>;
