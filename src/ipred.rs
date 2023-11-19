@@ -19,17 +19,17 @@ use std::ffi::c_ulonglong;
 use std::ffi::c_void;
 use std::slice;
 
-#[cfg(feature = "bitdepth_8")]
-use crate::include::common::bitdepth::BitDepth8;
-
-#[cfg(feature = "bitdepth_16")]
-use crate::include::common::bitdepth::BitDepth16;
-
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 use ::to_method::To;
+
+#[cfg(all(feature = "bitdepth_8", feature = "asm", target_arch = "aarch64"))]
+use crate::include::common::bitdepth::BitDepth8;
+
+#[cfg(all(feature = "bitdepth_16", feature = "asm", target_arch = "aarch64"))]
+use crate::include::common::bitdepth::BitDepth16;
 
 pub type angular_ipred_fn = unsafe extern "C" fn(
     *mut DynPixel,
@@ -1963,6 +1963,125 @@ pub(crate) unsafe fn ipred_z2_neon<BD: BitDepth>(
             height,
             dx,
             dy,
+        );
+    };
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+pub(crate) unsafe fn ipred_z3_neon<BD: BitDepth>(
+    dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    topleft_in: *const BD::Pixel,
+    width: c_int,
+    height: c_int,
+    mut angle: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    bd: BD,
+) {
+    let is_sm = angle >> 9 & 0x1 as c_int;
+    let enable_intra_edge_filter = angle >> 10;
+    angle &= 511 as c_int;
+    if !(angle > 180) {
+        unreachable!();
+    }
+    let mut dy = dav1d_dr_intra_derivative[(270 - angle >> 1) as usize] as c_int;
+    let mut flipped: [BD::Pixel; 144] = [0.into(); 144];
+    let mut left_out: [BD::Pixel; 286] = [0.into(); 286];
+    let max_base_y;
+    let upsample_left = if enable_intra_edge_filter != 0 {
+        get_upsample(width + height, angle - 180, is_sm)
+    } else {
+        0 as c_int
+    };
+    if upsample_left != 0 {
+        flipped[0] = *topleft_in.offset(0);
+        bd_fn!(BD, ipred_reverse, neon)(
+            flipped.as_mut_ptr().offset(1).cast(),
+            topleft_in.offset(0).cast(),
+            height + cmp::max(width, height),
+        );
+        bd_fn!(BD, ipred_z1_upsample_edge, neon)(
+            left_out.as_mut_ptr().cast(),
+            width + height,
+            flipped.as_mut_ptr().cast(),
+            height + cmp::min(width, height),
+            bd.into_c(),
+        );
+        max_base_y = 2 * (width + height) - 2;
+        dy <<= 1;
+    } else {
+        let filter_strength = if enable_intra_edge_filter != 0 {
+            get_filter_strength(width + height, angle - 180, is_sm)
+        } else {
+            0 as c_int
+        };
+        if filter_strength != 0 {
+            flipped[0] = *topleft_in.offset(0);
+            bd_fn!(BD, ipred_reverse, neon)(
+                flipped.as_mut_ptr().offset(1).cast(),
+                topleft_in.offset(0).cast(),
+                height + cmp::max(width, height),
+            );
+            bd_fn!(BD, ipred_z1_filter_edge, neon)(
+                left_out.as_mut_ptr().cast(),
+                width + height,
+                flipped.as_mut_ptr().cast(),
+                height + cmp::min(width, height),
+                filter_strength,
+            );
+            max_base_y = width + height - 1;
+        } else {
+            bd_fn!(BD, ipred_reverse, neon)(
+                left_out.as_mut_ptr().cast(),
+                topleft_in.offset(0).cast(),
+                height + cmp::min(width, height),
+            );
+            max_base_y = height + cmp::min(width, height) - 1;
+        }
+    }
+    let base_inc = 1 + upsample_left;
+    let pad_pixels = cmp::max(64 - max_base_y - 1, height + 15);
+    {
+        // `pixel_set` takes a `px: BD::Pixel`.
+        // Since it's not behind a ptr, we can't make it a `DynPixel`
+        // and call it uniformly with `bd_fn!`.
+        let out = left_out
+            .as_mut_ptr()
+            .offset((max_base_y + 1) as isize)
+            .cast();
+        let px = left_out[max_base_y as usize];
+        let n = (pad_pixels * base_inc) as c_int;
+        match BD::BPC {
+            BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
+                out,
+                // Really a no-op cast, but it's difficult to do it properly with generics.
+                px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
+                n,
+            ),
+            BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
+        }
+    }
+    if upsample_left != 0 {
+        bd_fn!(BD, ipred_z3_fill2, neon)(
+            dst.cast(),
+            stride,
+            left_out.as_mut_ptr().cast(),
+            width,
+            height,
+            dy,
+            max_base_y,
+        );
+    } else {
+        bd_fn!(BD, ipred_z3_fill1, neon)(
+            dst.cast(),
+            stride,
+            left_out.as_mut_ptr().cast(),
+            width,
+            height,
+            dy,
+            max_base_y,
         );
     };
 }
