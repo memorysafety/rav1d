@@ -6,6 +6,7 @@ use crate::src::lf_mask::Av1FilterLUT;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
+use std::ffi::c_uint;
 
 pub type loopfilter_sb_fn = unsafe extern "C" fn(
     *mut DynPixel,
@@ -728,5 +729,52 @@ pub(crate) unsafe fn loop_filter<BD: BitDepth>(
         }
         i += 1;
         dst = dst.offset(stridea as isize);
+    }
+}
+
+// TODO(perl) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    vmask: *const u32,
+    mut l: *const [u8; 4],
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    _w: c_int,
+    bd: BD,
+) {
+    let vm: c_uint = *vmask.offset(0) | *vmask.offset(1) | *vmask.offset(2);
+    let mut x: c_uint = 1 as c_int as c_uint;
+    while vm & !x.wrapping_sub(1 as c_int as c_uint) != 0 {
+        if vm & x != 0 {
+            let L = if (*l.offset(0))[0] as c_int != 0 {
+                (*l.offset(0))[0] as c_int
+            } else {
+                (*l.offset(-b4_stride as isize))[0] as c_int
+            };
+            if !(L == 0) {
+                let H = L >> 4;
+                let E = (*lut).e[L as usize] as c_int;
+                let I = (*lut).i[L as usize] as c_int;
+                let idx = if *vmask.offset(2) & x != 0 {
+                    2 as c_int
+                } else {
+                    (*vmask.offset(1) & x != 0) as c_int
+                };
+                loop_filter(
+                    dst,
+                    E,
+                    I,
+                    H,
+                    1 as c_int as ptrdiff_t,
+                    BD::pxstride(stride as usize) as isize,
+                    (4 as c_int) << idx,
+                    bd,
+                );
+            }
+        }
+        x <<= 1;
+        dst = dst.offset(4);
+        l = l.offset(1);
     }
 }
