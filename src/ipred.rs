@@ -1338,7 +1338,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     }
 }
 
-unsafe extern "C" fn ipred_z1_c_erased<BD: BitDepth>(
+unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     topleft_in: *const DynPixel,
@@ -1349,7 +1349,7 @@ unsafe extern "C" fn ipred_z1_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_z1_rust(
+    [ipred_z1_rust, ipred_z2_rust, ipred_z3_rust][Z - 1](
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -1359,55 +1359,7 @@ unsafe extern "C" fn ipred_z1_c_erased<BD: BitDepth>(
         max_width,
         max_height,
         BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_z2_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_z2_rust(
-        dst.cast(),
-        stride,
-        topleft_in.cast(),
-        width,
-        height,
-        angle,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_z3_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_z3_rust(
-        dst.cast(),
-        stride,
-        topleft_in.cast(),
-        width,
-        height,
-        angle,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
-    );
+    )
 }
 
 unsafe fn filter_fn(
@@ -2043,7 +1995,7 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe extern "C" fn ipred_z1_neon_erased<BD: BitDepth>(
+unsafe extern "C" fn ipred_z_neon_erased<BD: BitDepth, const Z: usize>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     topleft_in: *const DynPixel,
@@ -2054,7 +2006,7 @@ unsafe extern "C" fn ipred_z1_neon_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_z1_neon(
+    [ipred_z1_neon, ipred_z2_neon, ipred_z3_neon][Z - 1](
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -2064,57 +2016,7 @@ unsafe extern "C" fn ipred_z1_neon_erased<BD: BitDepth>(
         max_width,
         max_height,
         BD::from_c(bitdepth_max),
-    );
-}
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe extern "C" fn ipred_z2_neon_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_z2_neon(
-        dst.cast(),
-        stride,
-        topleft_in.cast(),
-        width,
-        height,
-        angle,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-#[cfg(all(feature = "asm", target_arch = "aarch64"))]
-unsafe extern "C" fn ipred_z3_neon_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_z3_neon(
-        dst.cast(),
-        stride,
-        topleft_in.cast(),
-        width,
-        height,
-        angle,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
-    );
+    )
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
@@ -2269,9 +2171,9 @@ unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
         Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_h, neon));
     #[cfg(target_arch = "aarch64")]
     {
-        (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_neon_erased::<BD>);
-        (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_neon_erased::<BD>);
-        (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_neon_erased::<BD>);
+        (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z_neon_erased::<BD, 1>);
+        (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z_neon_erased::<BD, 2>);
+        (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z_neon_erased::<BD, 3>);
     }
     (*c).intra_pred[FILTER_PRED as usize] =
         Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_filter, neon));
@@ -2303,9 +2205,9 @@ pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: *mut Rav1dIntraPredDSPC
     (*c).intra_pred[SMOOTH_PRED as usize] = Some(ipred_smooth_c_erased::<BD>);
     (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(ipred_smooth_v_c_erased::<BD>);
     (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(ipred_smooth_h_c_erased::<BD>);
-    (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_c_erased::<BD>);
-    (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_c_erased::<BD>);
-    (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased::<BD>);
+    (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z_c_erased::<BD, 1>);
+    (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z_c_erased::<BD, 2>);
+    (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z_c_erased::<BD, 3>);
     (*c).intra_pred[FILTER_PRED as usize] = Some(ipred_filter_c_erased::<BD>);
 
     (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = cfl_ac_c_erased::<BD, true, true>;
