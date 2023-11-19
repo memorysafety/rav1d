@@ -2,6 +2,7 @@ use crate::src::enum_map::EnumKey;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
+use strum::EnumCount;
 
 /// This is so we can store both `*mut D` and `*mut R`
 /// for maintaining `dav1d` ABI compatibility,
@@ -201,7 +202,7 @@ pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
 pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
 pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount)]
 pub(crate) enum Rav1dPixelLayout {
     I400,
     I420,
@@ -210,7 +211,7 @@ pub(crate) enum Rav1dPixelLayout {
 }
 
 impl EnumKey<4> for Rav1dPixelLayout {
-    const VALUES: [Self; 4] = [Self::I400, Self::I420, Self::I422, Self::I444];
+    const VALUES: [Self; Self::COUNT] = [Self::I400, Self::I420, Self::I422, Self::I444];
 
     fn as_usize(self) -> usize {
         self as usize
@@ -252,7 +253,7 @@ impl From<Rav1dPixelLayout> for Dav1dPixelLayout {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount)]
 pub(crate) enum Rav1dPixelLayoutSubSampled {
     I420,
     I422,
@@ -260,7 +261,7 @@ pub(crate) enum Rav1dPixelLayoutSubSampled {
 }
 
 impl EnumKey<3> for Rav1dPixelLayoutSubSampled {
-    const VALUES: [Self; 3] = [Self::I420, Self::I422, Self::I444];
+    const VALUES: [Self; Self::COUNT] = [Self::I420, Self::I422, Self::I444];
 
     fn as_usize(self) -> usize {
         self as usize

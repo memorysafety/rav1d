@@ -12,6 +12,7 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::src::assume::assume;
 use crate::src::enum_map::enum_map;
+use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
 use crate::src::enum_map::EnumMap;
 use crate::src::internal::GrainLut;
@@ -194,9 +195,9 @@ impl FnFGUV32x32xN {
 #[repr(C)]
 pub(crate) struct Rav1dFilmGrainDSPContext {
     pub generate_grain_y: FnGenerateGrainY,
-    pub generate_grain_uv: EnumMap<Rav1dPixelLayoutSubSampled, FnGenerateGrainUV, 3>,
+    pub generate_grain_uv: enum_map_ty!(Rav1dPixelLayoutSubSampled, FnGenerateGrainUV),
     pub fgy_32x32xn: FnFGY32x32xN,
-    pub fguv_32x32xn: EnumMap<Rav1dPixelLayoutSubSampled, FnFGUV32x32xN, 3>,
+    pub fguv_32x32xn: enum_map_ty!(Rav1dPixelLayoutSubSampled, FnFGUV32x32xN),
 }
 
 #[cfg(feature = "asm")]
