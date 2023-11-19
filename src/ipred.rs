@@ -1826,8 +1826,7 @@ pub(crate) unsafe extern "C" fn cfl_ac_444_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn pal_pred_rust<BD: BitDepth>(
+unsafe fn pal_pred_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     pal: *const u16,
@@ -1847,6 +1846,18 @@ pub(crate) unsafe fn pal_pred_rust<BD: BitDepth>(
         dst = dst.offset(BD::pxstride(stride as usize) as isize);
         y += 1;
     }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    pal: *const u16,
+    idx: *const u8,
+    w: c_int,
+    h: c_int,
+) {
+    pal_pred_rust::<BD>(dst.cast(), stride, pal, idx, w, h);
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated

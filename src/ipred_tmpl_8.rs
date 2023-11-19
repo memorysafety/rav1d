@@ -1,5 +1,4 @@
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::ipred::cfl_ac_420_c_erased;
 use crate::src::ipred::cfl_ac_422_c_erased;
@@ -22,7 +21,7 @@ use crate::src::ipred::ipred_v_c_erased;
 use crate::src::ipred::ipred_z1_c_erased;
 use crate::src::ipred::ipred_z2_c_erased;
 use crate::src::ipred::ipred_z3_c_erased;
-use crate::src::ipred::pal_pred_rust;
+use crate::src::ipred::pal_pred_c_erased;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
@@ -38,31 +37,21 @@ use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
 use crate::src::levels::Z3_PRED;
-use libc::ptrdiff_t;
-use std::ffi::c_int;
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
 use crate::{
-    include::common::bitdepth::BitDepth, src::ipred::ipred_z1_neon, src::ipred::ipred_z2_neon,
-    src::ipred::ipred_z3_neon,
+    include::common::bitdepth::BitDepth, include::common::bitdepth::DynPixel,
+    src::ipred::ipred_z1_neon, src::ipred::ipred_z2_neon, src::ipred::ipred_z3_neon,
 };
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+use ::{libc::ptrdiff_t, std::ffi::c_int};
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-
-unsafe extern "C" fn pal_pred_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    pal: *const u16,
-    idx: *const u8,
-    w: c_int,
-    h: c_int,
-) {
-    pal_pred_rust::<BitDepth8>(dst.cast(), stride, pal, idx, w, h);
-}
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
@@ -295,7 +284,7 @@ pub unsafe fn rav1d_intra_pred_dsp_init_8bpc(c: *mut Rav1dIntraPredDSPContext) {
     (*c).cfl_pred[TOP_DC_PRED as usize] = ipred_cfl_top_c_erased::<BitDepth8>;
     (*c).cfl_pred[LEFT_DC_PRED as usize] = ipred_cfl_left_c_erased::<BitDepth8>;
 
-    (*c).pal_pred = pal_pred_c_erased;
+    (*c).pal_pred = pal_pred_c_erased::<BitDepth8>;
 
     #[cfg(feature = "asm")]
     cfg_if! {
