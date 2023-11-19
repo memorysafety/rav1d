@@ -1,7 +1,9 @@
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::src::ipred::cfl_ac_rust;
+use crate::src::ipred::cfl_ac_420_c_erased;
+use crate::src::ipred::cfl_ac_422_c_erased;
+use crate::src::ipred::cfl_ac_444_c_erased;
 use crate::src::ipred::ipred_cfl_128_c_erased;
 use crate::src::ipred::ipred_cfl_c_erased;
 use crate::src::ipred::ipred_cfl_left_c_erased;
@@ -50,72 +52,6 @@ use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-
-unsafe extern "C" fn cfl_ac_420_c_erased(
-    ac: *mut i16,
-    ypx: *const DynPixel,
-    stride: ptrdiff_t,
-    w_pad: c_int,
-    h_pad: c_int,
-    cw: c_int,
-    ch: c_int,
-) {
-    cfl_ac_rust::<BitDepth16>(
-        ac,
-        ypx.cast(),
-        stride,
-        w_pad,
-        h_pad,
-        cw,
-        ch,
-        1 as c_int,
-        1 as c_int,
-    );
-}
-
-unsafe extern "C" fn cfl_ac_422_c_erased(
-    ac: *mut i16,
-    ypx: *const DynPixel,
-    stride: ptrdiff_t,
-    w_pad: c_int,
-    h_pad: c_int,
-    cw: c_int,
-    ch: c_int,
-) {
-    cfl_ac_rust::<BitDepth16>(
-        ac,
-        ypx.cast(),
-        stride,
-        w_pad,
-        h_pad,
-        cw,
-        ch,
-        1 as c_int,
-        0 as c_int,
-    );
-}
-
-unsafe extern "C" fn cfl_ac_444_c_erased(
-    ac: *mut i16,
-    ypx: *const DynPixel,
-    stride: ptrdiff_t,
-    w_pad: c_int,
-    h_pad: c_int,
-    cw: c_int,
-    ch: c_int,
-) {
-    cfl_ac_rust::<BitDepth16>(
-        ac,
-        ypx.cast(),
-        stride,
-        w_pad,
-        h_pad,
-        cw,
-        ch,
-        0 as c_int,
-        0 as c_int,
-    );
-}
 
 unsafe extern "C" fn pal_pred_c_erased(
     dst: *mut DynPixel,
@@ -344,9 +280,9 @@ pub unsafe fn rav1d_intra_pred_dsp_init_16bpc(c: *mut Rav1dIntraPredDSPContext) 
     (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased::<BitDepth16>);
     (*c).intra_pred[FILTER_PRED as usize] = Some(ipred_filter_c_erased::<BitDepth16>);
 
-    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = cfl_ac_420_c_erased;
-    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = cfl_ac_422_c_erased;
-    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = cfl_ac_444_c_erased;
+    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = cfl_ac_420_c_erased::<BitDepth16>;
+    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = cfl_ac_422_c_erased::<BitDepth16>;
+    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = cfl_ac_444_c_erased::<BitDepth16>;
     (*c).cfl_pred[DC_PRED as usize] = ipred_cfl_c_erased::<BitDepth16>;
 
     (*c).cfl_pred[DC_128_PRED as usize] = ipred_cfl_128_c_erased::<BitDepth16>;

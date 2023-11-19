@@ -1667,9 +1667,8 @@ pub(crate) unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
 #[inline(never)]
-pub(crate) unsafe fn cfl_ac_rust<BD: BitDepth>(
+unsafe fn cfl_ac_rust<BD: BitDepth>(
     mut ac: *mut i16,
     mut ypx: *const BD::Pixel,
     stride: ptrdiff_t,
@@ -1756,6 +1755,75 @@ pub(crate) unsafe fn cfl_ac_rust<BD: BitDepth>(
         ac = ac.offset(width as isize);
         y += 1;
     }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn cfl_ac_420_c_erased<BD: BitDepth>(
+    ac: *mut i16,
+    ypx: *const DynPixel,
+    stride: ptrdiff_t,
+    w_pad: c_int,
+    h_pad: c_int,
+    cw: c_int,
+    ch: c_int,
+) {
+    cfl_ac_rust::<BD>(
+        ac,
+        ypx.cast(),
+        stride,
+        w_pad,
+        h_pad,
+        cw,
+        ch,
+        1 as c_int,
+        1 as c_int,
+    );
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn cfl_ac_422_c_erased<BD: BitDepth>(
+    ac: *mut i16,
+    ypx: *const DynPixel,
+    stride: ptrdiff_t,
+    w_pad: c_int,
+    h_pad: c_int,
+    cw: c_int,
+    ch: c_int,
+) {
+    cfl_ac_rust::<BD>(
+        ac,
+        ypx.cast(),
+        stride,
+        w_pad,
+        h_pad,
+        cw,
+        ch,
+        1 as c_int,
+        0 as c_int,
+    );
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn cfl_ac_444_c_erased<BD: BitDepth>(
+    ac: *mut i16,
+    ypx: *const DynPixel,
+    stride: ptrdiff_t,
+    w_pad: c_int,
+    h_pad: c_int,
+    cw: c_int,
+    ch: c_int,
+) {
+    cfl_ac_rust::<BD>(
+        ac,
+        ypx.cast(),
+        stride,
+        w_pad,
+        h_pad,
+        cw,
+        ch,
+        0 as c_int,
+        0 as c_int,
+    );
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
