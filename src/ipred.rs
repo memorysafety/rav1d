@@ -47,33 +47,46 @@ use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::BitDepth16;
 
 pub type angular_ipred_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const DynPixel,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    angle: c_int,
+    max_width: c_int,
+    max_height: c_int,
+    bitdepth_max: c_int,
 ) -> ();
 
-pub type cfl_ac_fn =
-    unsafe extern "C" fn(*mut i16, *const DynPixel, ptrdiff_t, c_int, c_int, c_int, c_int) -> ();
+pub type cfl_ac_fn = unsafe extern "C" fn(
+    ac: *mut i16,
+    y: *const DynPixel,
+    stride: ptrdiff_t,
+    w_pad: c_int,
+    h_pad: c_int,
+    cw: c_int,
+    ch: c_int,
+) -> ();
 
 pub type cfl_pred_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const DynPixel,
-    c_int,
-    c_int,
-    *const i16,
-    c_int,
-    c_int,
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    ac: *const i16,
+    alpha: c_int,
+    bitdepth_max: c_int,
 ) -> ();
 
-pub type pal_pred_fn =
-    unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const u16, *const u8, c_int, c_int) -> ();
+pub type pal_pred_fn = unsafe extern "C" fn(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    pal: *const u16,
+    idx: *const u8,
+    w: c_int,
+    h: c_int,
+) -> ();
 
 #[repr(C)]
 pub struct Rav1dIntraPredDSPContext {
