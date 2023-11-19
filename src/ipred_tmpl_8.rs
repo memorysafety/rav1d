@@ -60,7 +60,7 @@ unsafe extern "C" fn ipred_z1_c_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_z1_rust::<BitDepth8>(
+    ipred_z1_rust(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -84,7 +84,7 @@ unsafe extern "C" fn ipred_z2_c_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_z2_rust::<BitDepth8>(
+    ipred_z2_rust(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -108,7 +108,7 @@ unsafe extern "C" fn ipred_z3_c_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_z3_rust::<BitDepth8>(
+    ipred_z3_rust(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -132,7 +132,7 @@ unsafe extern "C" fn ipred_filter_c_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_filter_rust::<BitDepth8>(
+    ipred_filter_rust(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -365,7 +365,7 @@ unsafe extern "C" fn ipred_z3_neon_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_z3_neon::<BitDepth8>(
+    ipred_z3_neon(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -390,7 +390,7 @@ unsafe extern "C" fn ipred_z2_neon_erased(
     max_height: c_int,
     _bitdepth_max: c_int,
 ) {
-    ipred_z2_neon::<BitDepth8>(
+    ipred_z2_neon(
         dst.cast(),
         stride,
         topleft_in.cast(),
@@ -415,7 +415,7 @@ unsafe extern "C" fn ipred_z1_neon_erased(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_z1_neon::<BitDepth8>(
+    ipred_z1_neon(
         dst.cast(),
         stride,
         topleft_in.cast(),

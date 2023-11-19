@@ -2662,7 +2662,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             top_sb_edge =
                                 top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
                         }
-                        m = rav1d_prepare_intra_edges::<BD>(
+                        m = rav1d_prepare_intra_edges(
                             t.bx,
                             (t.bx > (*ts).tiling.col_start) as c_int,
                             t.by,
@@ -2871,7 +2871,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             let ypos = t.by >> ss_ver;
                             let xstart = (*ts).tiling.col_start >> ss_hor;
                             let ystart = (*ts).tiling.row_start >> ss_ver;
-                            let m: IntraPredMode = rav1d_prepare_intra_edges::<BD>(
+                            let m: IntraPredMode = rav1d_prepare_intra_edges(
                                 xpos,
                                 (xpos > xstart) as c_int,
                                 ypos,
@@ -3072,7 +3072,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 ypos = t.by >> ss_ver;
                                 xstart = (*ts).tiling.col_start >> ss_hor;
                                 ystart = (*ts).tiling.row_start >> ss_ver;
-                                m = rav1d_prepare_intra_edges::<BD>(
+                                m = rav1d_prepare_intra_edges(
                                     xpos,
                                     (xpos > xstart) as c_int,
                                     ypos,
@@ -3461,7 +3461,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 let sby = t.by >> (*f).sb_shift;
                 top_sb_edge = top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
             }
-            m = rav1d_prepare_intra_edges::<BD>(
+            m = rav1d_prepare_intra_edges(
                 t.bx,
                 (t.bx > (*ts).tiling.col_start) as c_int,
                 t.by,
@@ -3882,7 +3882,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             top_sb_edge =
                                 top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
                         }
-                        m = rav1d_prepare_intra_edges::<BD>(
+                        m = rav1d_prepare_intra_edges(
                             t.bx >> ss_hor,
                             (t.bx >> ss_hor > (*ts).tiling.col_start >> ss_hor) as c_int,
                             t.by >> ss_ver,

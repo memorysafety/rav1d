@@ -279,7 +279,7 @@ unsafe extern "C" fn wiener_c_erased<BD: BitDepth>(
     bitdepth_max: c_int,
 ) {
     let bd = BD::from_c(bitdepth_max);
-    wiener_rust::<BD>(
+    wiener_rust(
         p.cast(),
         stride,
         left.cast(),

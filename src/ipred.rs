@@ -489,7 +489,7 @@ pub(crate) unsafe extern "C" fn ipred_dc_top_c_erased<BD: BitDepth>(
     _max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    splat_dc::<BD>(
+    splat_dc(
         dst.cast(),
         stride,
         width,
@@ -510,7 +510,7 @@ pub(crate) unsafe extern "C" fn ipred_cfl_top_c_erased<BD: BitDepth>(
     alpha: c_int,
     bitdepth_max: c_int,
 ) {
-    cfl_pred::<BD>(
+    cfl_pred(
         dst.cast(),
         stride,
         width,
@@ -544,7 +544,7 @@ pub(crate) unsafe extern "C" fn ipred_dc_left_c_erased<BD: BitDepth>(
     _max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    splat_dc::<BD>(
+    splat_dc(
         dst.cast(),
         stride,
         width,
@@ -566,7 +566,7 @@ pub(crate) unsafe extern "C" fn ipred_cfl_left_c_erased<BD: BitDepth>(
     bitdepth_max: c_int,
 ) {
     let dc: c_uint = dc_gen_left::<BD>(topleft.cast(), height);
-    cfl_pred::<BD>(
+    cfl_pred(
         dst.cast(),
         stride,
         width,
@@ -619,7 +619,7 @@ pub(crate) unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth>(
     _max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    splat_dc::<BD>(
+    splat_dc(
         dst.cast(),
         stride,
         width,
@@ -641,7 +641,7 @@ pub(crate) unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth>(
     bitdepth_max: c_int,
 ) {
     let dc: c_uint = dc_gen::<BD>(topleft.cast(), width, height);
-    cfl_pred::<BD>(
+    cfl_pred(
         dst.cast(),
         stride,
         width,
@@ -667,7 +667,7 @@ pub(crate) unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
 ) {
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
-    splat_dc::<BD>(dst.cast(), stride, width, height, dc, bd);
+    splat_dc(dst.cast(), stride, width, height, dc, bd);
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
@@ -683,7 +683,7 @@ pub(crate) unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
 ) {
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
-    cfl_pred::<BD>(dst.cast(), stride, width, height, dc, ac, alpha, bd);
+    cfl_pred(dst.cast(), stride, width, height, dc, ac, alpha, bd);
 }
 
 unsafe fn ipred_v_rust<BD: BitDepth>(
@@ -723,7 +723,7 @@ pub(crate) unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_v_rust::<BD>(
+    ipred_v_rust(
         dst.cast(),
         stride,
         topleft.cast(),
@@ -773,7 +773,7 @@ pub(crate) unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_h_rust::<BD>(
+    ipred_h_rust(
         dst.cast(),
         stride,
         topleft.cast(),
@@ -835,7 +835,7 @@ pub(crate) unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_paeth_rust::<BD>(
+    ipred_paeth_rust(
         dst.cast(),
         stride,
         tl_ptr.cast(),
@@ -893,7 +893,7 @@ pub(crate) unsafe extern "C" fn ipred_smooth_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_smooth_rust::<BD>(
+    ipred_smooth_rust(
         dst.cast(),
         stride,
         topleft.cast(),
@@ -946,7 +946,7 @@ pub(crate) unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_smooth_v_rust::<BD>(
+    ipred_smooth_v_rust(
         dst.cast(),
         stride,
         topleft.cast(),
@@ -999,7 +999,7 @@ pub(crate) unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
     max_height: c_int,
     bitdepth_max: c_int,
 ) {
-    ipred_smooth_h_rust::<BD>(
+    ipred_smooth_h_rust(
         dst.cast(),
         stride,
         topleft.cast(),
