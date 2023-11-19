@@ -18,9 +18,9 @@ use crate::src::ipred::ipred_smooth_c_erased;
 use crate::src::ipred::ipred_smooth_h_c_erased;
 use crate::src::ipred::ipred_smooth_v_c_erased;
 use crate::src::ipred::ipred_v_c_erased;
-use crate::src::ipred::ipred_z1_rust;
-use crate::src::ipred::ipred_z2_rust;
-use crate::src::ipred::ipred_z3_rust;
+use crate::src::ipred::ipred_z1_c_erased;
+use crate::src::ipred::ipred_z2_c_erased;
+use crate::src::ipred::ipred_z3_c_erased;
 use crate::src::ipred::pal_pred_rust;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::levels::DC_128_PRED;
@@ -48,78 +48,6 @@ use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-
-unsafe extern "C" fn ipred_z1_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_z1_rust(
-        dst.cast(),
-        stride,
-        topleft_in.cast(),
-        width,
-        height,
-        angle,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_z2_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_z2_rust(
-        dst.cast(),
-        stride,
-        topleft_in.cast(),
-        width,
-        height,
-        angle,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn ipred_z3_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    topleft_in: *const DynPixel,
-    width: c_int,
-    height: c_int,
-    angle: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-) {
-    ipred_z3_rust(
-        dst.cast(),
-        stride,
-        topleft_in.cast(),
-        width,
-        height,
-        angle,
-        max_width,
-        max_height,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
 
 unsafe extern "C" fn ipred_filter_c_erased(
     dst: *mut DynPixel,
@@ -433,9 +361,9 @@ pub unsafe fn rav1d_intra_pred_dsp_init_16bpc(c: *mut Rav1dIntraPredDSPContext) 
     (*c).intra_pred[SMOOTH_PRED as usize] = Some(ipred_smooth_c_erased::<BitDepth16>);
     (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(ipred_smooth_v_c_erased::<BitDepth16>);
     (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(ipred_smooth_h_c_erased::<BitDepth16>);
-    (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_c_erased);
-    (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_c_erased);
-    (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased);
+    (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_c_erased::<BitDepth16>);
+    (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_c_erased::<BitDepth16>);
+    (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_c_erased::<BitDepth16>);
     (*c).intra_pred[FILTER_PRED as usize] = Some(ipred_filter_c_erased);
 
     (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = cfl_ac_420_c_erased;

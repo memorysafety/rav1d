@@ -1140,8 +1140,7 @@ unsafe fn upsample_edge<BD: BitDepth>(
     *out.offset((i * 2) as isize) = *in_0.offset(iclip(i, from, to - 1) as isize);
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn ipred_z1_rust<BD: BitDepth>(
+unsafe fn ipred_z1_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     topleft_in: *const BD::Pixel,
@@ -1234,8 +1233,7 @@ pub(crate) unsafe fn ipred_z1_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn ipred_z2_rust<BD: BitDepth>(
+unsafe fn ipred_z2_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     topleft_in: *const BD::Pixel,
@@ -1372,8 +1370,7 @@ pub(crate) unsafe fn ipred_z2_rust<BD: BitDepth>(
     }
 }
 
-// TODO(kkysen) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn ipred_z3_rust<BD: BitDepth>(
+unsafe fn ipred_z3_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     topleft_in: *const BD::Pixel,
@@ -1470,6 +1467,81 @@ pub(crate) unsafe fn ipred_z3_rust<BD: BitDepth>(
         x += 1;
         ypos += dy;
     }
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn ipred_z1_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft_in: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    angle: c_int,
+    max_width: c_int,
+    max_height: c_int,
+    bitdepth_max: c_int,
+) {
+    ipred_z1_rust(
+        dst.cast(),
+        stride,
+        topleft_in.cast(),
+        width,
+        height,
+        angle,
+        max_width,
+        max_height,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn ipred_z2_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft_in: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    angle: c_int,
+    max_width: c_int,
+    max_height: c_int,
+    bitdepth_max: c_int,
+) {
+    ipred_z2_rust(
+        dst.cast(),
+        stride,
+        topleft_in.cast(),
+        width,
+        height,
+        angle,
+        max_width,
+        max_height,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(kkysen) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn ipred_z3_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft_in: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    angle: c_int,
+    max_width: c_int,
+    max_height: c_int,
+    bitdepth_max: c_int,
+) {
+    ipred_z3_rust(
+        dst.cast(),
+        stride,
+        topleft_in.cast(),
+        width,
+        height,
+        angle,
+        max_width,
+        max_height,
+        BD::from_c(bitdepth_max),
+    );
 }
 
 // TODO(kkysen) Temporarily pub until mod is deduplicated
