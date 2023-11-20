@@ -847,3 +847,68 @@ pub(crate) unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
         l = l.offset(1);
     }
 }
+
+// TODO(perl) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn loop_filter_h_sb128uv_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    vmask: *const u32,
+    l: *const [u8; 4],
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    h: c_int,
+    bitdepth_max: c_int,
+) {
+    loop_filter_h_sb128uv_rust(
+        dst.cast(),
+        stride,
+        vmask,
+        l,
+        b4_stride,
+        lut,
+        h,
+        BD::from_c(bitdepth_max),
+    )
+}
+
+unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    vmask: *const u32,
+    mut l: *const [u8; 4],
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    _h: c_int,
+    bd: BD,
+) {
+    let vm: c_uint = *vmask.offset(0) | *vmask.offset(1);
+    let mut y: c_uint = 1 as c_int as c_uint;
+    while vm & !y.wrapping_sub(1 as c_int as c_uint) != 0 {
+        if vm & y != 0 {
+            let L = if (*l.offset(0))[0] as c_int != 0 {
+                (*l.offset(0))[0] as c_int
+            } else {
+                (*l.offset(-(1 as c_int) as isize))[0] as c_int
+            };
+            if !(L == 0) {
+                let H = L >> 4;
+                let E = (*lut).e[L as usize] as c_int;
+                let I = (*lut).i[L as usize] as c_int;
+                let idx = (*vmask.offset(1) & y != 0) as c_int;
+                loop_filter(
+                    dst,
+                    E,
+                    I,
+                    H,
+                    BD::pxstride(stride as usize) as isize,
+                    1 as c_int as ptrdiff_t,
+                    4 + 2 * idx,
+                    bd,
+                );
+            }
+        }
+        y <<= 1;
+        dst = dst.offset(4 * BD::pxstride(stride as usize) as isize);
+        l = l.offset(b4_stride as isize);
+    }
+}
