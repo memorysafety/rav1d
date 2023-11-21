@@ -1,22 +1,39 @@
+use std::marker::PhantomData;
+
 pub trait HasFnPtr {
     type FnPtr;
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct WrappedFnPtr<F>(F);
+pub struct WrappedFnPtr<F, T>
+where
+    T: Clone + Copy + PartialEq + Eq,
+{
+    fn_ptr: F,
+    token: PhantomData<T>,
+}
 
-impl<F> HasFnPtr for WrappedFnPtr<F> {
+impl<F, T> HasFnPtr for WrappedFnPtr<F, T>
+where
+    T: Clone + Copy + PartialEq + Eq,
+{
     type FnPtr = F;
 }
 
-impl<F> WrappedFnPtr<F> {
+impl<F, T> WrappedFnPtr<F, T>
+where
+    T: Clone + Copy + PartialEq + Eq,
+{
     pub const fn new(fn_ptr: F) -> Self {
-        Self(fn_ptr)
+        Self {
+            fn_ptr,
+            token: PhantomData,
+        }
     }
 
     pub const fn get(&self) -> &F {
-        &self.0
+        &self.fn_ptr
     }
 }
 
@@ -29,7 +46,10 @@ macro_rules! wrap_fn_ptr {
             use $crate::src::enum_map::DefaultValue;
             use super::*;
 
-            pub type Fn = WrappedFnPtr<unsafe extern "C" fn($($arg_name: $arg_ty),*) -> $return_ty>;
+            #[derive(Clone, Copy, PartialEq, Eq)]
+            pub struct Token;
+
+            pub type Fn = WrappedFnPtr<unsafe extern "C" fn($($arg_name: $arg_ty),*) -> $return_ty, Token>;
 
             impl DefaultValue for Fn {
                 const DEFAULT: Self = {
