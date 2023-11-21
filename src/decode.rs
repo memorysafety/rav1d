@@ -87,6 +87,7 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeNode;
 use crate::src::intra_edge::EdgeTip;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
+use crate::src::ipred::rav1d_intra_pred_dsp_init;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BS_128x128;
@@ -244,14 +245,13 @@ use std::sync::atomic::Ordering;
 #[cfg(feature = "bitdepth_8")]
 use crate::{
     include::common::bitdepth::BitDepth8, src::cdef_tmpl_8::rav1d_cdef_dsp_init_8bpc,
-    src::ipred_tmpl_8::rav1d_intra_pred_dsp_init_8bpc, src::itx_tmpl_8::rav1d_itx_dsp_init_8bpc,
+    src::itx_tmpl_8::rav1d_itx_dsp_init_8bpc,
     src::loopfilter_tmpl_8::rav1d_loop_filter_dsp_init_8bpc,
 };
 
 #[cfg(feature = "bitdepth_16")]
 use crate::{
     include::common::bitdepth::BitDepth16, src::cdef_tmpl_16::rav1d_cdef_dsp_init_16bpc,
-    src::ipred_tmpl_16::rav1d_intra_pred_dsp_init_16bpc,
     src::itx_tmpl_16::rav1d_itx_dsp_init_16bpc,
     src::loopfilter_tmpl_16::rav1d_loop_filter_dsp_init_16bpc,
 };
@@ -5051,7 +5051,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             #[cfg(feature = "bitdepth_8")]
             8 => {
                 rav1d_cdef_dsp_init_8bpc(&mut dsp.cdef);
-                rav1d_intra_pred_dsp_init_8bpc(&mut dsp.ipred);
+                rav1d_intra_pred_dsp_init::<BitDepth8>(&mut dsp.ipred);
                 rav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
                 rav1d_loop_filter_dsp_init_8bpc(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
@@ -5061,7 +5061,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
                 rav1d_cdef_dsp_init_16bpc(&mut dsp.cdef);
-                rav1d_intra_pred_dsp_init_16bpc(&mut dsp.ipred);
+                rav1d_intra_pred_dsp_init::<BitDepth16>(&mut dsp.ipred);
                 rav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
                 rav1d_loop_filter_dsp_init_16bpc(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
