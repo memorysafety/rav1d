@@ -173,117 +173,155 @@ pub struct Rav1dIntraPredDSPContext {
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-macro_rules! decl_z1_fill_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(
-                dst: *mut DynPixel,
-                stride: ptrdiff_t,
-                top: *const DynPixel,
-                width: c_int,
-                height: c_int,
-                dx: c_int,
-                max_base_x: c_int,
-            );
-        }
+wrap_fn_ptr!(unsafe extern "C" fn z13_fill(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    dxy: c_int,
+    max_base_xy: c_int,
+) -> ());
 
-        $name
-    }};
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+impl z13_fill::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        stride: ptrdiff_t,
+        topleft: *const BD::Pixel,
+        width: c_int,
+        height: c_int,
+        dxy: c_int,
+        max_base_xy: c_int,
+    ) {
+        let dst = dst.cast();
+        let topleft = topleft.cast();
+        self.get()(dst, stride, topleft, width, height, dxy, max_base_xy)
+    }
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-macro_rules! decl_z2_fill_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(
-                dst: *mut DynPixel,
-                stride: ptrdiff_t,
-                top: *const DynPixel,
-                left: *const DynPixel,
-                width: c_int,
-                height: c_int,
-                dx: c_int,
-                dy: c_int,
-            );
-        }
+wrap_fn_ptr!(unsafe extern "C" fn z2_fill(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    top: *const DynPixel,
+    left: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    dx: c_int,
+    dy: c_int,
+) -> ());
 
-        $name
-    }};
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+impl z2_fill::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        stride: ptrdiff_t,
+        top: *const BD::Pixel,
+        left: *const BD::Pixel,
+        width: c_int,
+        height: c_int,
+        dx: c_int,
+        dy: c_int,
+    ) {
+        let dst = dst.cast();
+        let top = top.cast();
+        let left = left.cast();
+        self.get()(dst, stride, top, left, width, height, dx, dy)
+    }
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-macro_rules! decl_z3_fill_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(
-                dst: *mut DynPixel,
-                stride: ptrdiff_t,
-                left: *const DynPixel,
-                width: c_int,
-                height: c_int,
-                dy: c_int,
-                max_base_y: c_int,
-            );
-        }
+wrap_fn_ptr!(unsafe extern "C" fn z1_upsample_edge(
+    out: *mut DynPixel,
+    hsz: c_int,
+    in_0: *const DynPixel,
+    end: c_int,
+    _bitdepth_max: c_int,
+) -> ());
 
-        $name
-    }};
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+impl z1_upsample_edge::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        out: *mut BD::Pixel,
+        hsz: c_int,
+        in_0: *const BD::Pixel,
+        end: c_int,
+        bd: BD,
+    ) {
+        let out = out.cast();
+        let in_0 = in_0.cast();
+        let bd = bd.into_c();
+        self.get()(out, hsz, in_0, end, bd)
+    }
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-macro_rules! decl_z1_upsample_edge_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(
-                out: *mut DynPixel,
-                hsz: c_int,
-                in_0: *const DynPixel,
-                end: c_int,
-                _bitdepth_max: c_int,
-            );
-        }
+wrap_fn_ptr!(unsafe extern "C" fn z1_filter_edge(
+    out: *mut DynPixel,
+    sz: c_int,
+    in_0: *const DynPixel,
+    end: c_int,
+    strength: c_int,
+) -> ());
 
-        $name
-    }};
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+impl z1_filter_edge::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        out: *mut BD::Pixel,
+        sz: c_int,
+        in_0: *const BD::Pixel,
+        end: c_int,
+        strength: c_int,
+    ) {
+        let out = out.cast();
+        let in_0 = in_0.cast();
+        self.get()(out, sz, in_0, end, strength)
+    }
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-macro_rules! decl_z1_filter_edge_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(
-                out: *mut DynPixel,
-                sz: c_int,
-                in_0: *const DynPixel,
-                end: c_int,
-                strength: c_int,
-            );
-        }
+wrap_fn_ptr!(unsafe extern "C" fn z2_upsample_edge(
+    out: *mut DynPixel,
+    hsz: c_int,
+    in_0: *const DynPixel,
+    _bitdepth_max: c_int,
+) -> ());
 
-        $name
-    }};
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+impl z2_upsample_edge::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        out: *mut BD::Pixel,
+        hsz: c_int,
+        in_0: *const BD::Pixel,
+        bd: BD,
+    ) {
+        let out = out.cast();
+        let in_0 = in_0.cast();
+        let bd = bd.into_c();
+        self.get()(out, hsz, in_0, bd)
+    }
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-macro_rules! decl_z2_upsample_edge_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(out: *mut DynPixel, hsz: c_int, in_0: *const DynPixel, _bitdepth_max: c_int);
-        }
-
-        $name
-    }};
-}
+wrap_fn_ptr!(unsafe extern "C" fn reverse(
+    dst: *mut DynPixel,
+    src: *const DynPixel,
+    n: c_int,
+) -> ());
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
-macro_rules! decl_reverse_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
-        }
-
-        $name
-    }};
+impl reverse::Fn {
+    pub unsafe fn call<BD: BitDepth>(&self, dst: *mut BD::Pixel, src: *const BD::Pixel, n: c_int) {
+        let dst = dst.cast();
+        let src = src.cast();
+        self.get()(dst, src, n)
+    }
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
@@ -1646,12 +1684,12 @@ unsafe fn ipred_z1_neon<BD: BitDepth>(
         0 as c_int
     };
     if upsample_above != 0 {
-        bd_fn!(decl_z1_upsample_edge_fn, BD, ipred_z1_upsample_edge, neon)(
-            top_out.as_mut_ptr().cast(),
+        bd_fn!(z1_upsample_edge::decl_fn, BD, ipred_z1_upsample_edge, neon).call(
+            top_out.as_mut_ptr(),
             width + height,
-            topleft_in.cast(),
+            topleft_in,
             width + cmp::min(width, height),
-            bd.into_c(),
+            bd,
         );
         max_base_x = 2 * (width + height) - 2;
         dx <<= 1;
@@ -1662,10 +1700,10 @@ unsafe fn ipred_z1_neon<BD: BitDepth>(
             0 as c_int
         };
         if filter_strength != 0 {
-            bd_fn!(decl_z1_filter_edge_fn, BD, ipred_z1_filter_edge, neon)(
-                top_out.as_mut_ptr().cast(),
+            bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
+                top_out.as_mut_ptr(),
                 width + height,
-                topleft_in.cast(),
+                topleft_in,
                 width + cmp::min(width, height),
                 filter_strength,
             );
@@ -1687,20 +1725,20 @@ unsafe fn ipred_z1_neon<BD: BitDepth>(
         (pad_pixels * base_inc) as c_int,
     );
     if upsample_above != 0 {
-        bd_fn!(decl_z1_fill_fn, BD, ipred_z1_fill2, neon)(
-            dst.cast(),
+        bd_fn!(z13_fill::decl_fn, BD, ipred_z1_fill2, neon).call::<BD>(
+            dst,
             stride,
-            top_out.as_mut_ptr().cast(),
+            top_out.as_mut_ptr(),
             width,
             height,
             dx,
             max_base_x,
         );
     } else {
-        bd_fn!(decl_z1_fill_fn, BD, ipred_z1_fill1, neon)(
-            dst.cast(),
+        bd_fn!(z13_fill::decl_fn, BD, ipred_z1_fill1, neon).call::<BD>(
+            dst,
             stride,
-            top_out.as_mut_ptr().cast(),
+            top_out.as_mut_ptr(),
             width,
             height,
             dx,
@@ -1749,11 +1787,11 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
     };
 
     if upsample_above != 0 {
-        bd_fn!(decl_z2_upsample_edge_fn, BD, ipred_z2_upsample_edge, neon)(
-            buf.as_mut_ptr().offset(top_offset).cast(),
+        bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
+            buf.as_mut_ptr().offset(top_offset),
             width,
-            topleft_in.cast(),
-            bd.into_c(),
+            topleft_in,
+            bd,
         );
         dx <<= 1;
     } else {
@@ -1764,10 +1802,10 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
         };
 
         if filter_strength != 0 {
-            bd_fn!(decl_z1_filter_edge_fn, BD, ipred_z1_filter_edge, neon)(
-                buf.as_mut_ptr().offset(1 + top_offset).cast(),
+            bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
+                buf.as_mut_ptr().offset(1 + top_offset),
                 cmp::min(max_width, width),
-                topleft_in.cast(),
+                topleft_in,
                 width,
                 filter_strength,
             );
@@ -1791,16 +1829,16 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
 
     if upsample_left != 0 {
         buf[flipped_offset as usize] = *topleft_in;
-        bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
-            buf.as_mut_ptr().offset(1 + flipped_offset).cast(),
-            topleft_in.cast(),
+        bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
+            buf.as_mut_ptr().offset(1 + flipped_offset),
+            topleft_in,
             height,
         );
-        bd_fn!(decl_z2_upsample_edge_fn, BD, ipred_z2_upsample_edge, neon)(
-            buf.as_mut_ptr().offset(left_offset).cast(),
+        bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
+            buf.as_mut_ptr().offset(left_offset),
             height,
-            buf.as_ptr().offset(flipped_offset).cast(),
-            bd.into_c(),
+            buf.as_ptr().offset(flipped_offset),
+            bd,
         );
         dy <<= 1;
     } else {
@@ -1811,15 +1849,15 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
         };
         if filter_strength != 0 {
             buf[flipped_offset as usize] = *topleft_in;
-            bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
-                buf.as_mut_ptr().offset(1 + flipped_offset).cast(),
-                topleft_in.cast(),
+            bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
+                buf.as_mut_ptr().offset(1 + flipped_offset),
+                topleft_in,
                 height,
             );
-            bd_fn!(decl_z1_filter_edge_fn, BD, ipred_z1_filter_edge, neon)(
-                buf.as_mut_ptr().offset(1 + left_offset).cast(),
+            bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
+                buf.as_mut_ptr().offset(1 + left_offset),
                 cmp::min(max_height, height),
-                buf.as_ptr().offset(flipped_offset).cast(),
+                buf.as_ptr().offset(flipped_offset),
                 height,
                 filter_strength,
             );
@@ -1836,9 +1874,9 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
                 );
             }
         } else {
-            bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
-                buf.as_mut_ptr().offset(left_offset + 1).cast(),
-                topleft_in.cast(),
+            bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
+                buf.as_mut_ptr().offset(left_offset + 1),
+                topleft_in,
                 height,
             );
         }
@@ -1851,33 +1889,33 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
     }
 
     if upsample_above == 0 && upsample_left == 0 {
-        bd_fn!(decl_z2_fill_fn, BD, ipred_z2_fill1, neon)(
-            dst.cast(),
+        bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill1, neon).call::<BD>(
+            dst,
             stride,
-            buf.as_ptr().offset(top_offset).cast(),
-            buf.as_ptr().offset(left_offset).cast(),
+            buf.as_ptr().offset(top_offset),
+            buf.as_ptr().offset(left_offset),
             width,
             height,
             dx,
             dy,
         );
     } else if upsample_above != 0 {
-        bd_fn!(decl_z2_fill_fn, BD, ipred_z2_fill2, neon)(
-            dst.cast(),
+        bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill2, neon).call::<BD>(
+            dst,
             stride,
-            buf.as_ptr().offset(top_offset).cast(),
-            buf.as_ptr().offset(left_offset).cast(),
+            buf.as_ptr().offset(top_offset),
+            buf.as_ptr().offset(left_offset),
             width,
             height,
             dx,
             dy,
         );
     } else {
-        bd_fn!(decl_z2_fill_fn, BD, ipred_z2_fill3, neon)(
-            dst.cast(),
+        bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill3, neon).call::<BD>(
+            dst,
             stride,
-            buf.as_ptr().offset(top_offset).cast(),
-            buf.as_ptr().offset(left_offset).cast(),
+            buf.as_ptr().offset(top_offset),
+            buf.as_ptr().offset(left_offset),
             width,
             height,
             dx,
@@ -1915,17 +1953,17 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
     };
     if upsample_left != 0 {
         flipped[0] = *topleft_in.offset(0);
-        bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
-            flipped.as_mut_ptr().offset(1).cast(),
-            topleft_in.offset(0).cast(),
+        bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
+            flipped.as_mut_ptr().offset(1),
+            topleft_in.offset(0),
             height + cmp::max(width, height),
         );
-        bd_fn!(decl_z1_upsample_edge_fn, BD, ipred_z1_upsample_edge, neon)(
-            left_out.as_mut_ptr().cast(),
+        bd_fn!(z1_upsample_edge::decl_fn, BD, ipred_z1_upsample_edge, neon).call(
+            left_out.as_mut_ptr(),
             width + height,
-            flipped.as_mut_ptr().cast(),
+            flipped.as_mut_ptr(),
             height + cmp::min(width, height),
-            bd.into_c(),
+            bd,
         );
         max_base_y = 2 * (width + height) - 2;
         dy <<= 1;
@@ -1937,23 +1975,23 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
         };
         if filter_strength != 0 {
             flipped[0] = *topleft_in.offset(0);
-            bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
-                flipped.as_mut_ptr().offset(1).cast(),
-                topleft_in.offset(0).cast(),
+            bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
+                flipped.as_mut_ptr().offset(1),
+                topleft_in.offset(0),
                 height + cmp::max(width, height),
             );
-            bd_fn!(decl_z1_filter_edge_fn, BD, ipred_z1_filter_edge, neon)(
-                left_out.as_mut_ptr().cast(),
+            bd_fn!(z1_filter_edge::decl_fn, BD, ipred_z1_filter_edge, neon).call::<BD>(
+                left_out.as_mut_ptr(),
                 width + height,
-                flipped.as_mut_ptr().cast(),
+                flipped.as_mut_ptr(),
                 height + cmp::min(width, height),
                 filter_strength,
             );
             max_base_y = width + height - 1;
         } else {
-            bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
-                left_out.as_mut_ptr().cast(),
-                topleft_in.offset(0).cast(),
+            bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
+                left_out.as_mut_ptr(),
+                topleft_in.offset(0),
                 height + cmp::min(width, height),
             );
             max_base_y = height + cmp::min(width, height) - 1;
@@ -1967,20 +2005,20 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
         (pad_pixels * base_inc) as c_int,
     );
     if upsample_left != 0 {
-        bd_fn!(decl_z3_fill_fn, BD, ipred_z3_fill2, neon)(
-            dst.cast(),
+        bd_fn!(z13_fill::decl_fn, BD, ipred_z3_fill2, neon).call::<BD>(
+            dst,
             stride,
-            left_out.as_mut_ptr().cast(),
+            left_out.as_mut_ptr(),
             width,
             height,
             dy,
             max_base_y,
         );
     } else {
-        bd_fn!(decl_z3_fill_fn, BD, ipred_z3_fill1, neon)(
-            dst.cast(),
+        bd_fn!(z13_fill::decl_fn, BD, ipred_z3_fill1, neon).call::<BD>(
+            dst,
             stride,
-            left_out.as_mut_ptr().cast(),
+            left_out.as_mut_ptr(),
             width,
             height,
             dy,
