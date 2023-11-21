@@ -2893,7 +2893,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 edge,
                                 BD::from_c((*f).bitdepth_max),
                             );
-                            (*dsp).ipred.cfl_pred[m as usize](
+                            (*dsp).ipred.cfl_pred[m as usize].get()(
                                 uv_dst[pl as usize].cast(),
                                 stride,
                                 edge.cast(),
