@@ -2849,7 +2849,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let furthest_b =
                         (ch4 << ss_ver) + (*t_dim).h as c_int - 1 & !((*t_dim).h as c_int - 1);
                     (*dsp).ipred.cfl_ac
-                        [((*f).cur.p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize](
+                        [((*f).cur.p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize]
+                        .get()(
                         ac.as_mut_ptr(),
                         y_src.cast(),
                         (*f).cur.stride[0],
