@@ -20,23 +20,27 @@ impl<F> WrappedFnPtr<F> {
 }
 
 macro_rules! wrap_fn_ptr {
-    ($vis:vis struct $Wrapper:ident(
-        unsafe extern "C" fn(
+    ($vis:vis unsafe extern "C" fn $name:ident(
             $($arg_name:ident: $arg_ty:ty),*$(,)?
-        ) -> $return_ty:ty
-    )) => {
-        $vis type $Wrapper = WrappedFnPtr<unsafe extern "C" fn($($arg_name: $arg_ty),*) -> $return_ty>;
+    ) -> $return_ty:ty) => {
+        $vis mod $name {
+            use $crate::src::wrap_fn_ptr::WrappedFnPtr;
+            use $crate::src::enum_map::DefaultValue;
+            use super::*;
 
-        impl DefaultValue for $Wrapper {
-            const DEFAULT: Self = {
-                extern "C" fn default_unimplemented(
-                    $($arg_name: $arg_ty,)*
-                ) -> $return_ty {
-                    $(let _ = $arg_name;)*
-                    unimplemented!()
-                }
-                Self::new(default_unimplemented)
-            };
+            pub type Fn = WrappedFnPtr<unsafe extern "C" fn($($arg_name: $arg_ty),*) -> $return_ty>;
+
+            impl DefaultValue for Fn {
+                const DEFAULT: Self = {
+                    extern "C" fn default_unimplemented(
+                        $($arg_name: $arg_ty,)*
+                    ) -> $return_ty {
+                        $(let _ = $arg_name;)*
+                        unimplemented!()
+                    }
+                    Self::new(default_unimplemented)
+                };
+            }
         }
     };
 }
