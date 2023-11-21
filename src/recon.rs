@@ -2846,17 +2846,15 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         (cw4 << ss_hor) + (*t_dim).w as c_int - 1 & !((*t_dim).w as c_int - 1);
                     let furthest_b =
                         (ch4 << ss_ver) + (*t_dim).h as c_int - 1 & !((*t_dim).h as c_int - 1);
-                    (*dsp).ipred.cfl_ac
-                        [((*f).cur.p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize]
-                        .call::<BD>(
-                            ac.as_mut_ptr(),
-                            y_src,
-                            (*f).cur.stride[0],
-                            cbw4 - (furthest_r >> ss_hor),
-                            cbh4 - (furthest_b >> ss_ver),
-                            cbw4 * 4,
-                            cbh4 * 4,
-                        );
+                    (*dsp).ipred.cfl_ac[(*f).cur.p.layout.try_into().unwrap()].call::<BD>(
+                        ac.as_mut_ptr(),
+                        y_src,
+                        (*f).cur.stride[0],
+                        cbw4 - (furthest_r >> ss_hor),
+                        cbh4 - (furthest_b >> ss_ver),
+                        cbw4 * 4,
+                        cbh4 * 4,
+                    );
                     let mut pl = 0;
                     while pl < 2 {
                         if !(b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[pl as usize] == 0) {
