@@ -32,7 +32,7 @@ where
 // Has to be a macro until we have `#![feature(generic_const_exprs)]`.
 macro_rules! enum_map_ty {
     ($K:ty, $V:ty) => {
-        EnumMap<$K, $V, { <$K as ::strum::EnumCount>::COUNT }>
+        $crate::src::enum_map::EnumMap<$K, $V, { <$K as ::strum::EnumCount>::COUNT }>
     }
 }
 

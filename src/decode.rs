@@ -45,7 +45,6 @@ use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
-use crate::src::enum_map::EnumMap;
 use crate::src::env::av1_get_bwd_ref_1_ctx;
 use crate::src::env::av1_get_bwd_ref_ctx;
 use crate::src::env::av1_get_fwd_ref_1_ctx;
