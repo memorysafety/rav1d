@@ -2,6 +2,7 @@ pub trait HasFnPtr {
     type FnPtr;
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct WrappedFnPtr<F>(F);
 
