@@ -2213,46 +2213,46 @@ unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
 }
 
 #[cold]
-pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext) {
-    (*c).intra_pred[DC_PRED as usize] =
+pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
+    c.intra_pred[DC_PRED as usize] =
         angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::TopLeft as u8 }>);
-    (*c).intra_pred[DC_128_PRED as usize] = angular_ipred::Fn::new(ipred_dc_128_c_erased::<BD>);
-    (*c).intra_pred[TOP_DC_PRED as usize] =
+    c.intra_pred[DC_128_PRED as usize] = angular_ipred::Fn::new(ipred_dc_128_c_erased::<BD>);
+    c.intra_pred[TOP_DC_PRED as usize] =
         angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::Top as u8 }>);
-    (*c).intra_pred[LEFT_DC_PRED as usize] =
+    c.intra_pred[LEFT_DC_PRED as usize] =
         angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::Left as u8 }>);
-    (*c).intra_pred[HOR_PRED as usize] = angular_ipred::Fn::new(ipred_h_c_erased::<BD>);
-    (*c).intra_pred[VERT_PRED as usize] = angular_ipred::Fn::new(ipred_v_c_erased::<BD>);
-    (*c).intra_pred[PAETH_PRED as usize] = angular_ipred::Fn::new(ipred_paeth_c_erased::<BD>);
-    (*c).intra_pred[SMOOTH_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_c_erased::<BD>);
-    (*c).intra_pred[SMOOTH_V_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_v_c_erased::<BD>);
-    (*c).intra_pred[SMOOTH_H_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_h_c_erased::<BD>);
-    (*c).intra_pred[Z1_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 1>);
-    (*c).intra_pred[Z2_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 2>);
-    (*c).intra_pred[Z3_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 3>);
-    (*c).intra_pred[FILTER_PRED as usize] = angular_ipred::Fn::new(ipred_filter_c_erased::<BD>);
+    c.intra_pred[HOR_PRED as usize] = angular_ipred::Fn::new(ipred_h_c_erased::<BD>);
+    c.intra_pred[VERT_PRED as usize] = angular_ipred::Fn::new(ipred_v_c_erased::<BD>);
+    c.intra_pred[PAETH_PRED as usize] = angular_ipred::Fn::new(ipred_paeth_c_erased::<BD>);
+    c.intra_pred[SMOOTH_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_c_erased::<BD>);
+    c.intra_pred[SMOOTH_V_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_v_c_erased::<BD>);
+    c.intra_pred[SMOOTH_H_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_h_c_erased::<BD>);
+    c.intra_pred[Z1_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 1>);
+    c.intra_pred[Z2_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 2>);
+    c.intra_pred[Z3_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 3>);
+    c.intra_pred[FILTER_PRED as usize] = angular_ipred::Fn::new(ipred_filter_c_erased::<BD>);
 
-    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
+    c.cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
         cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, true>);
-    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
+    c.cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
         cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, false>);
-    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
+    c.cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
         cfl_ac::Fn::new(cfl_ac_c_erased::<BD, false, false>);
 
     // Not all elements are initialized with fns,
     // so we default initialize first so that there is no unitialized memory.
     // The defaults just call `unimplemented!()`,
     // which shouldn't slow down the other code paths at all.
-    (*c).cfl_pred = [DefaultValue::DEFAULT; 6];
-    (*c).cfl_pred[DC_PRED as usize] =
+    c.cfl_pred = [DefaultValue::DEFAULT; 6];
+    c.cfl_pred[DC_PRED as usize] =
         cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::TopLeft as u8 }>);
-    (*c).cfl_pred[DC_128_PRED as usize] = cfl_pred::Fn::new(ipred_cfl_128_c_erased::<BD>);
-    (*c).cfl_pred[TOP_DC_PRED as usize] =
+    c.cfl_pred[DC_128_PRED as usize] = cfl_pred::Fn::new(ipred_cfl_128_c_erased::<BD>);
+    c.cfl_pred[TOP_DC_PRED as usize] =
         cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Top as u8 }>);
-    (*c).cfl_pred[LEFT_DC_PRED as usize] =
+    c.cfl_pred[LEFT_DC_PRED as usize] =
         cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Left as u8 }>);
 
-    (*c).pal_pred = pal_pred::Fn::new(pal_pred_c_erased::<BD>);
+    c.pal_pred = pal_pred::Fn::new(pal_pred_c_erased::<BD>);
 
     #[cfg(feature = "asm")]
     cfg_if! {
