@@ -81,14 +81,14 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     bitdepth_max: c_int,
 ) -> ());
 
-pub type pal_pred_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     pal: *const u16,
     idx: *const u8,
     w: c_int,
     h: c_int,
-) -> ();
+) -> ());
 
 #[repr(C)]
 pub struct Rav1dIntraPredDSPContext {
@@ -97,25 +97,7 @@ pub struct Rav1dIntraPredDSPContext {
     pub intra_pred: [Option<angular_ipred::Fn>; 14],
     pub cfl_ac: [cfl_ac::Fn; 3],
     pub cfl_pred: [cfl_pred::Fn; 6],
-    pub pal_pred: pal_pred_fn,
-}
-
-#[cfg(feature = "asm")]
-macro_rules! decl_pal_pred_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(
-                dst: *mut DynPixel,
-                stride: ptrdiff_t,
-                pal: *const u16,
-                idx: *const u8,
-                w: c_int,
-                h: c_int,
-            );
-        }
-
-        $name
-    }};
+    pub pal_pred: pal_pred::Fn,
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
@@ -2004,7 +1986,7 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
     (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
         bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, ssse3);
 
-    (*c).pal_pred = bd_fn!(decl_pal_pred_fn, BD, pal_pred, ssse3);
+    (*c).pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, ssse3);
 
     #[cfg(target_arch = "x86_64")]
     {
@@ -2053,7 +2035,7 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
         (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
             bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, avx2);
 
-        (*c).pal_pred = bd_fn!(decl_pal_pred_fn, BD, pal_pred, avx2);
+        (*c).pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, avx2);
 
         if !flags.contains(CpuFlags::AVX512ICL) {
             return;
@@ -2093,7 +2075,7 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
         (*c).intra_pred[FILTER_PRED as usize] =
             Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx512icl));
 
-        (*c).pal_pred = bd_fn!(decl_pal_pred_fn, BD, pal_pred, avx512icl);
+        (*c).pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, avx512icl);
     }
 }
 
@@ -2147,7 +2129,7 @@ unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
     (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
         bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, neon);
 
-    (*c).pal_pred = bd_fn!(decl_pal_pred_fn, BD, pal_pred, neon);
+    (*c).pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, neon);
 }
 
 #[cold]
@@ -2193,7 +2175,7 @@ pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: *mut Rav1dIntraPredDSPC
     (*c).cfl_pred[LEFT_DC_PRED as usize] =
         cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Left as u8 }>);
 
-    (*c).pal_pred = pal_pred_c_erased::<BD>;
+    (*c).pal_pred = pal_pred::Fn::new(pal_pred_c_erased::<BD>);
 
     #[cfg(feature = "asm")]
     cfg_if! {

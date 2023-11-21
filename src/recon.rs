@@ -2587,7 +2587,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 } else {
                     (t.scratch.c2rust_unnamed_0.pal[0]).as_mut_ptr()
                 };
-                ((*(*f).dsp).ipred.pal_pred)(
+                (*(*f).dsp).ipred.pal_pred.get()(
                     dst.cast(),
                     (*f).cur.stride[0],
                     pal,
@@ -2952,7 +2952,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             .offset((bw4 * bh4 * 16) as isize)
                             as *mut u8;
                     }
-                    ((*(*f).dsp).ipred.pal_pred)(
+                    (*(*f).dsp).ipred.pal_pred.get()(
                         ((*f).cur.data[1] as *mut BD::Pixel)
                             .offset(uv_dstoff as isize)
                             .cast(),
@@ -2962,7 +2962,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         cbw4 * 4,
                         cbh4 * 4,
                     );
-                    ((*(*f).dsp).ipred.pal_pred)(
+                    (*(*f).dsp).ipred.pal_pred.get()(
                         ((*f).cur.data[2] as *mut BD::Pixel)
                             .offset(uv_dstoff as isize)
                             .cast(),
