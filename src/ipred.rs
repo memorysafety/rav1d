@@ -2049,7 +2049,7 @@ mod neon {
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 #[inline(always)]
-unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
+fn intra_pred_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
@@ -2161,7 +2161,7 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 #[inline(always)]
-unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
+fn intra_pred_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -2204,7 +2204,7 @@ unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext
 }
 
 #[cold]
-pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
+pub fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
     c.intra_pred[DC_PRED as usize] =
         angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::TopLeft as u8 }>);
     c.intra_pred[DC_128_PRED as usize] = angular_ipred::Fn::new(ipred_dc_128_c_erased::<BD>);
