@@ -6,6 +6,7 @@ use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::src::enum_map::DefaultValue;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
@@ -2237,9 +2238,14 @@ pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: *mut Rav1dIntraPredDSPC
         cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, false>);
     (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
         cfl_ac::Fn::new(cfl_ac_c_erased::<BD, false, false>);
+
+    // Not all elements are initialized with fns,
+    // so we default initialize first so that there is no unitialized memory.
+    // The defaults just call `unimplemented!()`,
+    // which shouldn't slow down the other code paths at all.
+    (*c).cfl_pred = [DefaultValue::DEFAULT; 6];
     (*c).cfl_pred[DC_PRED as usize] =
         cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::TopLeft as u8 }>);
-
     (*c).cfl_pred[DC_128_PRED as usize] = cfl_pred::Fn::new(ipred_cfl_128_c_erased::<BD>);
     (*c).cfl_pred[TOP_DC_PRED as usize] =
         cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Top as u8 }>);
