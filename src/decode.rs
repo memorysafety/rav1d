@@ -5045,42 +5045,40 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
     }
 
-    if (*f.dsp).ipred.intra_pred[DC_PRED as usize].is_none() {
-        let dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
+    let dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
 
-        match bpc {
-            #[cfg(feature = "bitdepth_8")]
-            8 => {
-                rav1d_cdef_dsp_init_8bpc(&mut dsp.cdef);
-                rav1d_intra_pred_dsp_init::<BitDepth8>(&mut dsp.ipred);
-                rav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
-                rav1d_loop_filter_dsp_init_8bpc(&mut dsp.lf);
-                rav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
-                rav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
-                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth8>();
-            }
-            #[cfg(feature = "bitdepth_16")]
-            10 | 12 => {
-                rav1d_cdef_dsp_init_16bpc(&mut dsp.cdef);
-                rav1d_intra_pred_dsp_init::<BitDepth16>(&mut dsp.ipred);
-                rav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
-                rav1d_loop_filter_dsp_init_16bpc(&mut dsp.lf);
-                rav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
-                rav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
-                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>();
-            }
-            _ => {
-                rav1d_log(
-                    c,
-                    b"Compiled without support for %d-bit decoding\n\0" as *const u8
-                        as *const c_char,
-                    8 + 2 * (*f.seq_hdr).hbd,
-                );
-                on_error(f, c, out_delayed);
-                return Err(ENOPROTOOPT);
-            }
+    match bpc {
+        #[cfg(feature = "bitdepth_8")]
+        8 => {
+            rav1d_cdef_dsp_init_8bpc(&mut dsp.cdef);
+            rav1d_intra_pred_dsp_init::<BitDepth8>(&mut dsp.ipred);
+            rav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
+            rav1d_loop_filter_dsp_init_8bpc(&mut dsp.lf);
+            rav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
+            rav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
+            dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth8>();
+        }
+        #[cfg(feature = "bitdepth_16")]
+        10 | 12 => {
+            rav1d_cdef_dsp_init_16bpc(&mut dsp.cdef);
+            rav1d_intra_pred_dsp_init::<BitDepth16>(&mut dsp.ipred);
+            rav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
+            rav1d_loop_filter_dsp_init_16bpc(&mut dsp.lf);
+            rav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
+            rav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
+            dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>();
+        }
+        _ => {
+            rav1d_log(
+                c,
+                b"Compiled without support for %d-bit decoding\n\0" as *const u8 as *const c_char,
+                8 + 2 * (*f.seq_hdr).hbd,
+            );
+            on_error(f, c, out_delayed);
+            return Err(ENOPROTOOPT);
         }
     }
+
     if (*f.seq_hdr).hbd == 0 {
         #[cfg(feature = "bitdepth_8")]
         {
