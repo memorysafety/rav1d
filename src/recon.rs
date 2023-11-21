@@ -2681,7 +2681,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             edge,
                             BD::from_c((*f).bitdepth_max),
                         );
-                        ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
+                        (*dsp).ipred.intra_pred[m as usize]
+                            .expect("non-null function pointer")
+                            .get()(
                             dst.cast(),
                             (*f).cur.stride[0],
                             edge.cast(),
@@ -3092,8 +3094,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     BD::from_c((*f).bitdepth_max),
                                 );
                                 angle |= intra_edge_filter_flag;
-                                ((*dsp).ipred.intra_pred[m as usize])
-                                    .expect("non-null function pointer")(
+                                (*dsp).ipred.intra_pred[m as usize]
+                                    .expect("non-null function pointer")
+                                    .get()(
                                     dst.cast(),
                                     stride,
                                     edge.cast(),
@@ -3480,7 +3483,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 tl_edge,
                 BD::from_c((*f).bitdepth_max),
             );
-            ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
+            (*dsp).ipred.intra_pred[m as usize]
+                .expect("non-null function pointer")
+                .get()(
                 tmp.cast(),
                 ((4 * bw4) as c_ulong).wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                     as ptrdiff_t,
@@ -3901,7 +3906,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             tl_edge,
                             BD::from_c((*f).bitdepth_max),
                         );
-                        ((*dsp).ipred.intra_pred[m as usize]).expect("non-null function pointer")(
+                        (*dsp).ipred.intra_pred[m as usize]
+                            .expect("non-null function pointer")
+                            .get()(
                             tmp.cast(),
                             ((cbw4 * 4) as c_ulong)
                                 .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
