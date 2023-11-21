@@ -41,6 +41,22 @@ macro_rules! wrap_fn_ptr {
                     Self::new(default_unimplemented)
                 };
             }
+
+            #[cfg(feature = "asm")]
+            #[allow(unused_macros)]
+            macro_rules! decl_fn {
+                (fn $fn_name:ident) => {{
+                    extern "C" {
+                        fn $fn_name($($arg_name: $arg_ty,)*) -> $return_ty;
+                    }
+
+                    $name::Fn::new($fn_name)
+                }};
+            }
+
+            #[cfg(feature = "asm")]
+            #[allow(unused_imports)]
+            pub(crate) use decl_fn;
         }
     };
 }
