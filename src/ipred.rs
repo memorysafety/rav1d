@@ -5,7 +5,9 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
+use crate::src::enum_map::enum_map;
+use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
@@ -155,9 +157,9 @@ impl pal_pred::Fn {
 }
 
 #[repr(C)]
-pub struct Rav1dIntraPredDSPContext {
+pub(crate) struct Rav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred::Fn; 14],
-    pub cfl_ac: [cfl_ac::Fn; 3],
+    pub cfl_ac: enum_map_ty!(Rav1dPixelLayoutSubSampled, cfl_ac::Fn),
     pub cfl_pred: [cfl_pred::Fn; 6],
     pub pal_pred: pal_pred::Fn,
 }
@@ -2078,12 +2080,11 @@ fn intra_pred_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
     c.cfl_pred[TOP_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, ssse3);
     c.cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, ssse3);
 
-    c.cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
-        bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, ssse3);
-    c.cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
-        bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, ssse3);
-    c.cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
-        bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, ssse3);
+    c.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
+        I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, ssse3),
+        I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, ssse3),
+        I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, ssse3),
+    });
 
     c.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, ssse3);
 
@@ -2116,12 +2117,11 @@ fn intra_pred_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
         c.cfl_pred[TOP_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, avx2);
         c.cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, avx2);
 
-        c.cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
-            bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, avx2);
-        c.cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
-            bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, avx2);
-        c.cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
-            bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, avx2);
+        c.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
+            I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, avx2),
+            I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, avx2),
+            I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, avx2),
+        });
 
         c.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, avx2);
 
@@ -2193,18 +2193,17 @@ fn intra_pred_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
     c.cfl_pred[TOP_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, neon);
     c.cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, neon);
 
-    c.cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
-        bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, neon);
-    c.cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
-        bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, neon);
-    c.cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
-        bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, neon);
+    c.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
+        I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, neon),
+        I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, neon),
+        I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, neon),
+    });
 
     c.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, neon);
 }
 
 #[cold]
-pub fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
+pub(crate) fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
     c.intra_pred[DC_PRED as usize] =
         angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::TopLeft as u8 }>);
     c.intra_pred[DC_128_PRED as usize] = angular_ipred::Fn::new(ipred_dc_128_c_erased::<BD>);
@@ -2223,12 +2222,11 @@ pub fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext)
     c.intra_pred[Z3_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 3>);
     c.intra_pred[FILTER_PRED as usize] = angular_ipred::Fn::new(ipred_filter_c_erased::<BD>);
 
-    c.cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
-        cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, true>);
-    c.cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
-        cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, false>);
-    c.cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
-        cfl_ac::Fn::new(cfl_ac_c_erased::<BD, false, false>);
+    c.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
+        I420 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, true>),
+        I422 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, false>),
+        I444 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, false, false>),
+    });
 
     // Not all elements are initialized with fns,
     // so we default initialize first so that there is no unitialized memory.
