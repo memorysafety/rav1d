@@ -2587,8 +2587,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 } else {
                     (t.scratch.c2rust_unnamed_0.pal[0]).as_mut_ptr()
                 };
-                (*(*f).dsp).ipred.pal_pred.get()(
-                    dst.cast(),
+                (*(*f).dsp).ipred.pal_pred.call::<BD>(
+                    dst,
                     (*f).cur.stride[0],
                     pal,
                     pal_idx,
@@ -2683,17 +2683,17 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         );
                         (*dsp).ipred.intra_pred[m as usize]
                             .expect("non-null function pointer")
-                            .get()(
-                            dst.cast(),
-                            (*f).cur.stride[0],
-                            edge.cast(),
-                            (*t_dim).w as c_int * 4,
-                            (*t_dim).h as c_int * 4,
-                            angle | intra_flags,
-                            4 * (*f).bw - 4 * t.bx,
-                            4 * (*f).bh - 4 * t.by,
-                            (*f).bitdepth_max,
-                        );
+                            .call(
+                                dst,
+                                (*f).cur.stride[0],
+                                edge,
+                                (*t_dim).w as c_int * 4,
+                                (*t_dim).h as c_int * 4,
+                                angle | intra_flags,
+                                4 * (*f).bw - 4 * t.bx,
+                                4 * (*f).bh - 4 * t.by,
+                                BD::from_c((*f).bitdepth_max),
+                            );
                         if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
                             hex_dump::<BD>(
                                 edge.offset(-(((*t_dim).h as c_int * 4) as isize)),
@@ -2850,15 +2850,15 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         (ch4 << ss_ver) + (*t_dim).h as c_int - 1 & !((*t_dim).h as c_int - 1);
                     (*dsp).ipred.cfl_ac
                         [((*f).cur.p.layout as c_uint).wrapping_sub(1 as c_int as c_uint) as usize]
-                        .get()(
-                        ac.as_mut_ptr(),
-                        y_src.cast(),
-                        (*f).cur.stride[0],
-                        cbw4 - (furthest_r >> ss_hor),
-                        cbh4 - (furthest_b >> ss_ver),
-                        cbw4 * 4,
-                        cbh4 * 4,
-                    );
+                        .call::<BD>(
+                            ac.as_mut_ptr(),
+                            y_src,
+                            (*f).cur.stride[0],
+                            cbw4 - (furthest_r >> ss_hor),
+                            cbh4 - (furthest_b >> ss_ver),
+                            cbw4 * 4,
+                            cbh4 * 4,
+                        );
                     let mut pl = 0;
                     while pl < 2 {
                         if !(b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[pl as usize] == 0) {
@@ -2893,15 +2893,15 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 edge,
                                 BD::from_c((*f).bitdepth_max),
                             );
-                            (*dsp).ipred.cfl_pred[m as usize].get()(
-                                uv_dst[pl as usize].cast(),
+                            (*dsp).ipred.cfl_pred[m as usize].call(
+                                uv_dst[pl as usize],
                                 stride,
-                                edge.cast(),
+                                edge,
                                 (*uv_t_dim).w as c_int * 4,
                                 (*uv_t_dim).h as c_int * 4,
                                 ac.as_mut_ptr(),
                                 b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[pl as usize] as c_int,
-                                (*f).bitdepth_max,
+                                BD::from_c((*f).bitdepth_max),
                             );
                         }
                         pl += 1;
@@ -2952,20 +2952,16 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             .offset((bw4 * bh4 * 16) as isize)
                             as *mut u8;
                     }
-                    (*(*f).dsp).ipred.pal_pred.get()(
-                        ((*f).cur.data[1] as *mut BD::Pixel)
-                            .offset(uv_dstoff as isize)
-                            .cast(),
+                    (*(*f).dsp).ipred.pal_pred.call::<BD>(
+                        ((*f).cur.data[1] as *mut BD::Pixel).offset(uv_dstoff as isize),
                         (*f).cur.stride[1],
                         (*pal.offset(1)).as_ptr(),
                         pal_idx,
                         cbw4 * 4,
                         cbh4 * 4,
                     );
-                    (*(*f).dsp).ipred.pal_pred.get()(
-                        ((*f).cur.data[2] as *mut BD::Pixel)
-                            .offset(uv_dstoff as isize)
-                            .cast(),
+                    (*(*f).dsp).ipred.pal_pred.call::<BD>(
+                        ((*f).cur.data[2] as *mut BD::Pixel).offset(uv_dstoff as isize),
                         (*f).cur.stride[1],
                         (*pal.offset(2)).as_ptr(),
                         pal_idx,
@@ -3097,17 +3093,17 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 angle |= intra_edge_filter_flag;
                                 (*dsp).ipred.intra_pred[m as usize]
                                     .expect("non-null function pointer")
-                                    .get()(
-                                    dst.cast(),
-                                    stride,
-                                    edge.cast(),
-                                    (*uv_t_dim).w as c_int * 4,
-                                    (*uv_t_dim).h as c_int * 4,
-                                    angle | sm_uv_fl,
-                                    4 * (*f).bw + ss_hor - 4 * (t.bx & !ss_hor) >> ss_hor,
-                                    4 * (*f).bh + ss_ver - 4 * (t.by & !ss_ver) >> ss_ver,
-                                    (*f).bitdepth_max,
-                                );
+                                    .call(
+                                        dst,
+                                        stride,
+                                        edge,
+                                        (*uv_t_dim).w as c_int * 4,
+                                        (*uv_t_dim).h as c_int * 4,
+                                        angle | sm_uv_fl,
+                                        4 * (*f).bw + ss_hor - 4 * (t.bx & !ss_hor) >> ss_hor,
+                                        4 * (*f).bh + ss_ver - 4 * (t.by & !ss_ver) >> ss_ver,
+                                        BD::from_c((*f).bitdepth_max),
+                                    );
                                 if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
                                     hex_dump::<BD>(
                                         edge.offset(-(((*uv_t_dim).h as c_int * 4) as isize)),
@@ -3486,18 +3482,19 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             );
             (*dsp).ipred.intra_pred[m as usize]
                 .expect("non-null function pointer")
-                .get()(
-                tmp.cast(),
-                ((4 * bw4) as c_ulong).wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
-                    as ptrdiff_t,
-                tl_edge.cast(),
-                bw4 * 4,
-                bh4 * 4,
-                0 as c_int,
-                0 as c_int,
-                0 as c_int,
-                (*f).bitdepth_max,
-            );
+                .call(
+                    tmp,
+                    ((4 * bw4) as c_ulong)
+                        .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
+                        as ptrdiff_t,
+                    tl_edge,
+                    bw4 * 4,
+                    bh4 * 4,
+                    0 as c_int,
+                    0 as c_int,
+                    0 as c_int,
+                    BD::from_c((*f).bitdepth_max),
+                );
             let ii_mask = if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type as c_int
                 == INTER_INTRA_BLEND as c_int
             {
@@ -3909,19 +3906,19 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                         (*dsp).ipred.intra_pred[m as usize]
                             .expect("non-null function pointer")
-                            .get()(
-                            tmp.cast(),
-                            ((cbw4 * 4) as c_ulong)
-                                .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
-                                as ptrdiff_t,
-                            tl_edge.cast(),
-                            cbw4 * 4,
-                            cbh4 * 4,
-                            0 as c_int,
-                            0 as c_int,
-                            0 as c_int,
-                            (*f).bitdepth_max,
-                        );
+                            .call(
+                                tmp,
+                                ((cbw4 * 4) as c_ulong)
+                                    .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
+                                    as ptrdiff_t,
+                                tl_edge,
+                                cbw4 * 4,
+                                cbh4 * 4,
+                                0 as c_int,
+                                0 as c_int,
+                                0 as c_int,
+                                BD::from_c((*f).bitdepth_max),
+                            );
                         ((*dsp).mc.blend)(
                             uvdst.cast(),
                             (*f).cur.stride[1],

@@ -60,6 +60,28 @@ wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     bitdepth_max: c_int,
 ) -> ());
 
+impl angular_ipred::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        stride: ptrdiff_t,
+        topleft: *const BD::Pixel,
+        width: c_int,
+        height: c_int,
+        angle: c_int,
+        max_width: c_int,
+        max_height: c_int,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let topleft = topleft.cast();
+        let bd = bd.into_c();
+        self.get()(
+            dst, stride, topleft, width, height, angle, max_width, max_height, bd,
+        )
+    }
+}
+
 wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
     ac: *mut i16,
     y: *const DynPixel,
@@ -69,6 +91,22 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
     cw: c_int,
     ch: c_int,
 ) -> ());
+
+impl cfl_ac::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        ac: *mut i16,
+        y: *const BD::Pixel,
+        stride: ptrdiff_t,
+        w_pad: c_int,
+        h_pad: c_int,
+        cw: c_int,
+        ch: c_int,
+    ) {
+        let y = y.cast();
+        self.get()(ac, y, stride, w_pad, h_pad, cw, ch)
+    }
+}
 
 wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     dst: *mut DynPixel,
@@ -81,6 +119,25 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     bitdepth_max: c_int,
 ) -> ());
 
+impl cfl_pred::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        stride: ptrdiff_t,
+        topleft: *const BD::Pixel,
+        width: c_int,
+        height: c_int,
+        ac: *const i16,
+        alpha: c_int,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let topleft = topleft.cast();
+        let bd = bd.into_c();
+        self.get()(dst, stride, topleft, width, height, ac, alpha, bd)
+    }
+}
+
 wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -89,6 +146,21 @@ wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
     w: c_int,
     h: c_int,
 ) -> ());
+
+impl pal_pred::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        stride: ptrdiff_t,
+        pal: *const u16,
+        idx: *const u8,
+        w: c_int,
+        h: c_int,
+    ) {
+        let dst = dst.cast();
+        self.get()(dst, stride, pal, idx, w, h)
+    }
+}
 
 #[repr(C)]
 pub struct Rav1dIntraPredDSPContext {
