@@ -1580,8 +1580,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
     r#in: &mut Rav1dData,
     global: c_int,
 ) -> Rav1dResult<c_uint> {
-    unsafe fn error(c: &mut Rav1dContext, r#in: *mut Rav1dData) -> Rav1dResult {
-        rav1d_data_props_copy(&mut c.cached_error_props, &mut (*r#in).m);
+    unsafe fn error(c: &mut Rav1dContext, r#in: &mut Rav1dData) -> Rav1dResult {
+        rav1d_data_props_copy(&mut c.cached_error_props, &mut r#in.m);
         rav1d_log(
             c,
             b"Error parsing OBU data\n\0" as *const u8 as *const c_char,
