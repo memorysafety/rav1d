@@ -210,7 +210,7 @@ pub(crate) enum Rav1dPixelLayout {
     I444,
 }
 
-impl EnumKey<4> for Rav1dPixelLayout {
+impl EnumKey<{ Self::COUNT }> for Rav1dPixelLayout {
     const VALUES: [Self; Self::COUNT] = [Self::I400, Self::I420, Self::I422, Self::I444];
 
     fn as_usize(self) -> usize {
@@ -260,7 +260,7 @@ pub(crate) enum Rav1dPixelLayoutSubSampled {
     I444,
 }
 
-impl EnumKey<3> for Rav1dPixelLayoutSubSampled {
+impl EnumKey<{ Self::COUNT }> for Rav1dPixelLayoutSubSampled {
     const VALUES: [Self; Self::COUNT] = [Self::I420, Self::I422, Self::I444];
 
     fn as_usize(self) -> usize {
