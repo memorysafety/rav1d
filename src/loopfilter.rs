@@ -8,6 +8,12 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
+#[cfg(feature = "asm")]
+use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
+
+#[cfg(feature = "asm")]
+use cfg_if::cfg_if;
+
 pub type loopfilter_sb_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -24,14 +30,13 @@ pub struct Rav1dLoopFilterDSPContext {
     pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
 }
 
-// TODO(legare): Temporarily pub until init fns have been deduplicated.
 #[cfg(all(
     feature = "asm",
     feature = "bitdepth_8",
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
 extern "C" {
-    pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_ssse3(
+    fn dav1d_lpf_v_sb_uv_8bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -41,7 +46,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_ssse3(
+    fn dav1d_lpf_h_sb_uv_8bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -51,7 +56,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_y_8bpc_ssse3(
+    fn dav1d_lpf_v_sb_y_8bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -61,7 +66,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_y_8bpc_ssse3(
+    fn dav1d_lpf_h_sb_y_8bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -73,10 +78,9 @@ extern "C" {
     );
 }
 
-// TODO(legare): Temporarily pub until init fns have been deduplicated.
 #[cfg(all(feature = "asm", feature = "bitdepth_8", target_arch = "x86_64",))]
 extern "C" {
-    pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_avx512icl(
+    fn dav1d_lpf_v_sb_uv_8bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -86,7 +90,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_avx512icl(
+    fn dav1d_lpf_h_sb_uv_8bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -96,7 +100,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_y_8bpc_avx512icl(
+    fn dav1d_lpf_v_sb_y_8bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -106,7 +110,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_y_8bpc_avx512icl(
+    fn dav1d_lpf_h_sb_y_8bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -116,7 +120,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_avx2(
+    fn dav1d_lpf_v_sb_uv_8bpc_avx2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -126,7 +130,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_avx2(
+    fn dav1d_lpf_h_sb_uv_8bpc_avx2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -136,7 +140,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_y_8bpc_avx2(
+    fn dav1d_lpf_v_sb_y_8bpc_avx2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -146,7 +150,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_y_8bpc_avx2(
+    fn dav1d_lpf_h_sb_y_8bpc_avx2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -158,14 +162,13 @@ extern "C" {
     );
 }
 
-// TODO(legare): Temporarily pub until init fns have been deduplicated.
 #[cfg(all(
     feature = "asm",
     feature = "bitdepth_8",
     any(target_arch = "arm", target_arch = "aarch64")
 ))]
 extern "C" {
-    pub(crate) fn dav1d_lpf_h_sb_uv_8bpc_neon(
+    fn dav1d_lpf_h_sb_uv_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -175,7 +178,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_y_8bpc_neon(
+    fn dav1d_lpf_v_sb_y_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -185,7 +188,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_y_8bpc_neon(
+    fn dav1d_lpf_h_sb_y_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -195,7 +198,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_uv_8bpc_neon(
+    fn dav1d_lpf_v_sb_uv_8bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -207,14 +210,13 @@ extern "C" {
     );
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
 #[cfg(all(
     feature = "asm",
     feature = "bitdepth_16",
     any(target_arch = "x86", target_arch = "x86_64"),
 ))]
 extern "C" {
-    pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_ssse3(
+    fn dav1d_lpf_v_sb_uv_16bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -224,7 +226,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_ssse3(
+    fn dav1d_lpf_h_sb_uv_16bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -234,7 +236,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_y_16bpc_ssse3(
+    fn dav1d_lpf_v_sb_y_16bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -244,7 +246,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_y_16bpc_ssse3(
+    fn dav1d_lpf_h_sb_y_16bpc_ssse3(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -256,10 +258,9 @@ extern "C" {
     );
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
 #[cfg(all(feature = "asm", feature = "bitdepth_16", target_arch = "x86_64",))]
 extern "C" {
-    pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_avx512icl(
+    fn dav1d_lpf_v_sb_uv_16bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -269,7 +270,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_avx512icl(
+    fn dav1d_lpf_h_sb_uv_16bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -279,7 +280,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_y_16bpc_avx512icl(
+    fn dav1d_lpf_v_sb_y_16bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -289,7 +290,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_y_16bpc_avx512icl(
+    fn dav1d_lpf_h_sb_y_16bpc_avx512icl(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -299,7 +300,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_avx2(
+    fn dav1d_lpf_v_sb_uv_16bpc_avx2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -309,7 +310,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_avx2(
+    fn dav1d_lpf_h_sb_uv_16bpc_avx2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -319,7 +320,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_y_16bpc_avx2(
+    fn dav1d_lpf_v_sb_y_16bpc_avx2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -329,7 +330,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_y_16bpc_avx2(
+    fn dav1d_lpf_h_sb_y_16bpc_avx2(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -341,14 +342,13 @@ extern "C" {
     );
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
 #[cfg(all(
     feature = "asm",
     feature = "bitdepth_16",
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
 extern "C" {
-    pub(crate) fn dav1d_lpf_v_sb_uv_16bpc_neon(
+    fn dav1d_lpf_v_sb_uv_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -358,7 +358,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_uv_16bpc_neon(
+    fn dav1d_lpf_h_sb_uv_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -368,7 +368,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_v_sb_y_16bpc_neon(
+    fn dav1d_lpf_v_sb_y_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -378,7 +378,7 @@ extern "C" {
         w: c_int,
         bitdepth_max: c_int,
     );
-    pub(crate) fn dav1d_lpf_h_sb_y_16bpc_neon(
+    fn dav1d_lpf_h_sb_y_16bpc_neon(
         dst: *mut DynPixel,
         stride: ptrdiff_t,
         mask: *const u32,
@@ -390,9 +390,8 @@ extern "C" {
     );
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
 #[inline(never)]
-pub(crate) unsafe fn loop_filter<BD: BitDepth>(
+unsafe fn loop_filter<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     mut E: c_int,
     mut I: c_int,
@@ -732,8 +731,7 @@ pub(crate) unsafe fn loop_filter<BD: BitDepth>(
     }
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn loop_filter_h_sb128y_c_erased<BD: BitDepth>(
+unsafe extern "C" fn loop_filter_h_sb128y_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: *const u32,
@@ -801,8 +799,7 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
     }
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn loop_filter_v_sb128y_c_erased<BD: BitDepth>(
+unsafe extern "C" fn loop_filter_v_sb128y_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: *const u32,
@@ -824,8 +821,7 @@ pub(crate) unsafe extern "C" fn loop_filter_v_sb128y_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
+unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     vmask: *const u32,
@@ -871,8 +867,7 @@ pub(crate) unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
     }
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn loop_filter_h_sb128uv_c_erased<BD: BitDepth>(
+unsafe extern "C" fn loop_filter_h_sb128uv_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: *const u32,
@@ -936,8 +931,7 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
     }
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
-pub(crate) unsafe extern "C" fn loop_filter_v_sb128uv_c_erased<BD: BitDepth>(
+unsafe extern "C" fn loop_filter_v_sb128uv_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     vmask: *const u32,
@@ -998,5 +992,117 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
         x <<= 1;
         dst = dst.offset(4);
         l = l.offset(1);
+    }
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[inline(always)]
+unsafe fn loop_filter_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPContext) {
+    use crate::include::common::bitdepth::BPC;
+
+    let flags = rav1d_get_cpu_flags();
+
+    if !flags.contains(CpuFlags::SSSE3) {
+        return;
+    }
+    match BD::BPC {
+        BPC::BPC8 => {
+            (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_ssse3;
+            (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_ssse3;
+            (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_ssse3;
+            (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_ssse3;
+
+            #[cfg(target_arch = "x86_64")]
+            {
+                if !flags.contains(CpuFlags::AVX2) {
+                    return;
+                }
+
+                (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx2;
+                (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx2;
+                (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx2;
+                (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx2;
+
+                if !flags.contains(CpuFlags::AVX512ICL) {
+                    return;
+                }
+
+                (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx512icl;
+                (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx512icl;
+                (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx512icl;
+                (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx512icl;
+            }
+        }
+        BPC::BPC16 => {
+            (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_ssse3;
+            (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_ssse3;
+            (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_ssse3;
+            (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_ssse3;
+
+            #[cfg(target_arch = "x86_64")]
+            {
+                if !flags.contains(CpuFlags::AVX2) {
+                    return;
+                }
+
+                (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx2;
+                (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx2;
+                (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx2;
+                (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx2;
+
+                if !flags.contains(CpuFlags::AVX512ICL) {
+                    return;
+                }
+
+                (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx512icl;
+                (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx512icl;
+                (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx512icl;
+                (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx512icl;
+            }
+        }
+    }
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[inline(always)]
+unsafe fn loop_filter_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPContext) {
+    use crate::include::common::bitdepth::BPC;
+
+    let flags = rav1d_get_cpu_flags();
+
+    if !flags.contains(CpuFlags::NEON) {
+        return;
+    }
+
+    match BD::BPC {
+        BPC::BPC8 => {
+            (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_neon;
+            (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_neon;
+            (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_neon;
+            (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_neon;
+        }
+        BPC::BPC16 => {
+            (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_neon;
+            (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_neon;
+            (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_neon;
+            (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_neon;
+        }
+    }
+}
+
+#[cold]
+pub unsafe fn rav1d_loop_filter_dsp_init<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPContext) {
+    (*c).loop_filter_sb[0][0] = loop_filter_h_sb128y_c_erased::<BD>;
+    (*c).loop_filter_sb[0][1] = loop_filter_v_sb128y_c_erased::<BD>;
+    (*c).loop_filter_sb[1][0] = loop_filter_h_sb128uv_c_erased::<BD>;
+    (*c).loop_filter_sb[1][1] = loop_filter_v_sb128uv_c_erased::<BD>;
+
+    #[cfg(feature = "asm")]
+    cfg_if! {
+        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+            loop_filter_dsp_init_x86::<BD>(c);
+        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+            loop_filter_dsp_init_arm::<BD>(c);
+        }
     }
 }
