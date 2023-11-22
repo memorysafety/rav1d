@@ -483,7 +483,7 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
-unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult {
+unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult {
     unsafe fn error(c: *mut Rav1dContext) -> Rav1dResult {
         rav1d_log(
             c,
