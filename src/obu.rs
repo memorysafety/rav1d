@@ -396,7 +396,7 @@ unsafe fn parse_seq_hdr(
 }
 
 unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int) -> c_int {
-    let seqhdr: *const Rav1dSequenceHeader = c.seq_hdr;
+    let seqhdr = &*c.seq_hdr;
     let hdr: *mut Rav1dFrameHeader = c.frame_hdr;
     if use_ref != 0 {
         let mut i = 0;
@@ -414,7 +414,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
                 (*hdr).render_width = (*(*r#ref).p.frame_hdr).render_width;
                 (*hdr).render_height = (*(*r#ref).p.frame_hdr).render_height;
                 (*hdr).super_res.enabled =
-                    ((*seqhdr).super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
+                    (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
                 if (*hdr).super_res.enabled != 0 {
                     (*hdr).super_res.width_scale_denominator = (9 as c_int as c_uint)
                         .wrapping_add(rav1d_get_bits(gb, 3 as c_int))
@@ -434,15 +434,15 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
         }
     }
     if (*hdr).frame_size_override != 0 {
-        (*hdr).width[1] = (rav1d_get_bits(gb, (*seqhdr).width_n_bits))
-            .wrapping_add(1 as c_int as c_uint) as c_int;
-        (*hdr).height = (rav1d_get_bits(gb, (*seqhdr).height_n_bits))
-            .wrapping_add(1 as c_int as c_uint) as c_int;
+        (*hdr).width[1] =
+            (rav1d_get_bits(gb, seqhdr.width_n_bits)).wrapping_add(1 as c_int as c_uint) as c_int;
+        (*hdr).height =
+            (rav1d_get_bits(gb, seqhdr.height_n_bits)).wrapping_add(1 as c_int as c_uint) as c_int;
     } else {
-        (*hdr).width[1] = (*seqhdr).max_width;
-        (*hdr).height = (*seqhdr).max_height;
+        (*hdr).width[1] = seqhdr.max_width;
+        (*hdr).height = seqhdr.max_height;
     }
-    (*hdr).super_res.enabled = ((*seqhdr).super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
+    (*hdr).super_res.enabled = (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
     if (*hdr).super_res.enabled != 0 {
         (*hdr).super_res.width_scale_denominator =
             (9 as c_int as c_uint).wrapping_add(rav1d_get_bits(gb, 3 as c_int)) as c_int;
