@@ -395,16 +395,16 @@ unsafe fn parse_seq_hdr(
     Ok(())
 }
 
-unsafe fn read_frame_size(c: *mut Rav1dContext, gb: *mut GetBits, use_ref: c_int) -> c_int {
-    let seqhdr: *const Rav1dSequenceHeader = (*c).seq_hdr;
-    let hdr: *mut Rav1dFrameHeader = (*c).frame_hdr;
+unsafe fn read_frame_size(c: &mut Rav1dContext, gb: *mut GetBits, use_ref: c_int) -> c_int {
+    let seqhdr: *const Rav1dSequenceHeader = c.seq_hdr;
+    let hdr: *mut Rav1dFrameHeader = c.frame_hdr;
     if use_ref != 0 {
         let mut i = 0;
         while i < 7 {
             if rav1d_get_bit(gb) != 0 {
-                let r#ref: *const Rav1dThreadPicture = &mut (*((*c).refs)
+                let r#ref: *const Rav1dThreadPicture = &mut (*(c.refs)
                     .as_mut_ptr()
-                    .offset(*((*(*c).frame_hdr).refidx).as_mut_ptr().offset(i as isize) as isize))
+                    .offset(*((*c.frame_hdr).refidx).as_mut_ptr().offset(i as isize) as isize))
                 .p;
                 if ((*r#ref).p.frame_hdr).is_null() {
                     return -(1 as c_int);
