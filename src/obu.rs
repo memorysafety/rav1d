@@ -1549,7 +1549,7 @@ unsafe fn parse_tile_hdr(c: *mut Rav1dContext, gb: *mut GetBits) {
 }
 
 unsafe fn check_for_overrun(
-    c: *mut Rav1dContext,
+    c: &mut Rav1dContext,
     gb: &mut GetBits,
     init_bit_pos: c_uint,
     obu_len: c_uint,
