@@ -802,6 +802,29 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
 }
 
 // TODO(perl) Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn loop_filter_v_sb128y_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    vmask: *const u32,
+    l: *const [u8; 4],
+    b4_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    w: c_int,
+    bitdepth_max: c_int,
+) {
+    loop_filter_v_sb128y_rust(
+        dst.cast(),
+        stride,
+        vmask,
+        l,
+        b4_stride,
+        lut,
+        w,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(perl) Temporarily pub until mod is deduplicated
 pub(crate) unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
