@@ -1554,7 +1554,7 @@ unsafe fn check_for_overrun(
     init_bit_pos: c_uint,
     obu_len: c_uint,
 ) -> c_int {
-    if (*gb).error != 0 {
+    if gb.error != 0 {
         rav1d_log(
             c,
             b"Overrun in OBU bit buffer\n\0" as *const u8 as *const c_char,
@@ -1572,7 +1572,7 @@ unsafe fn check_for_overrun(
         );
         return 1 as c_int;
     }
-    return 0 as c_int;
+    0
 }
 
 pub(crate) unsafe fn rav1d_parse_obus(
