@@ -129,9 +129,9 @@ use std::ptr::addr_of_mut;
 
 #[inline]
 unsafe fn rav1d_get_bits_pos(c: *const GetBits) -> c_uint {
-    return (((*c).ptr).offset_from((*c).ptr_start) as c_long as c_uint)
+    (((*c).ptr).offset_from((*c).ptr_start) as c_long as c_uint)
         .wrapping_mul(8 as c_int as c_uint)
-        .wrapping_sub((*c).bits_left as c_uint);
+        .wrapping_sub((*c).bits_left as c_uint)
 }
 
 unsafe fn parse_seq_hdr(
@@ -465,7 +465,7 @@ unsafe fn read_frame_size(c: *mut Rav1dContext, gb: *mut GetBits, use_ref: c_int
         (*hdr).render_width = (*hdr).width[1];
         (*hdr).render_height = (*hdr).height;
     }
-    return 0 as c_int;
+    0
 }
 
 #[inline]
@@ -475,7 +475,7 @@ unsafe fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
     while sz << k < tgt {
         k += 1;
     }
-    return k;
+    k
 }
 
 static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterModeRefDeltas {
@@ -1550,7 +1550,7 @@ unsafe fn parse_tile_hdr(c: *mut Rav1dContext, gb: *mut GetBits) {
 
 unsafe fn check_for_overrun(
     c: *mut Rav1dContext,
-    gb: *mut GetBits,
+    gb: &mut GetBits,
     init_bit_pos: c_uint,
     obu_len: c_uint,
 ) -> c_int {
