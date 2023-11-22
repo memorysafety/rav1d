@@ -202,22 +202,20 @@ unsafe fn parse_seq_hdr(
             (rav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
         let mut i = 0;
         while i < hdr.num_operating_points {
-            let op: *mut Rav1dSequenceHeaderOperatingPoint =
-                &mut *(hdr.operating_points).as_mut_ptr().offset(i as isize)
-                    as *mut Rav1dSequenceHeaderOperatingPoint;
-            (*op).idc = rav1d_get_bits(gb, 12 as c_int) as c_int;
-            if (*op).idc != 0 && ((*op).idc & 0xff as c_int == 0 || (*op).idc & 0xf00 == 0) {
+            let op = &mut hdr.operating_points[i as usize];
+            op.idc = rav1d_get_bits(gb, 12 as c_int) as c_int;
+            if op.idc != 0 && (op.idc & 0xff as c_int == 0 || op.idc & 0xf00 == 0) {
                 return error(c);
             }
-            (*op).major_level =
+            op.major_level =
                 (2 as c_int as c_uint).wrapping_add(rav1d_get_bits(gb, 3 as c_int)) as c_int;
-            (*op).minor_level = rav1d_get_bits(gb, 2 as c_int) as c_int;
-            if (*op).major_level > 3 {
-                (*op).tier = rav1d_get_bit(gb) as c_int;
+            op.minor_level = rav1d_get_bits(gb, 2 as c_int) as c_int;
+            if op.major_level > 3 {
+                op.tier = rav1d_get_bit(gb) as c_int;
             }
             if hdr.decoder_model_info_present != 0 {
-                (*op).decoder_model_param_present = rav1d_get_bit(gb) as c_int;
-                if (*op).decoder_model_param_present != 0 {
+                op.decoder_model_param_present = rav1d_get_bit(gb) as c_int;
+                if op.decoder_model_param_present != 0 {
                     let opi: *mut Rav1dSequenceHeaderOperatingParameterInfo = &mut *(hdr
                         .operating_parameter_info)
                         .as_mut_ptr()
@@ -231,9 +229,9 @@ unsafe fn parse_seq_hdr(
                 }
             }
             if hdr.display_model_info_present != 0 {
-                (*op).display_model_param_present = rav1d_get_bit(gb) as c_int;
+                op.display_model_param_present = rav1d_get_bit(gb) as c_int;
             }
-            (*op).initial_display_delay = (if (*op).display_model_param_present != 0 {
+            op.initial_display_delay = (if op.display_model_param_present != 0 {
                 (rav1d_get_bits(gb, 4 as c_int)).wrapping_add(1 as c_int as c_uint)
             } else {
                 10 as c_int as c_uint
