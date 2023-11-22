@@ -483,7 +483,7 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
-unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult {
+unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult {
     unsafe fn error(c: *mut Rav1dContext) -> Rav1dResult {
         rav1d_log(
             c,
@@ -492,8 +492,8 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
         return Err(EINVAL);
     }
 
-    let seqhdr: *const Rav1dSequenceHeader = (*c).seq_hdr;
-    let hdr: *mut Rav1dFrameHeader = (*c).frame_hdr;
+    let seqhdr: *const Rav1dSequenceHeader = c.seq_hdr;
+    let hdr: *mut Rav1dFrameHeader = c.frame_hdr;
     (*hdr).show_existing_frame =
         ((*seqhdr).reduced_still_picture_header == 0 && rav1d_get_bit(gb) != 0) as c_int;
     if (*hdr).show_existing_frame != 0 {
@@ -505,7 +505,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
         if (*seqhdr).frame_id_numbers_present != 0 {
             (*hdr).frame_id = rav1d_get_bits(gb, (*seqhdr).frame_id_n_bits) as c_int;
             let ref_frame_hdr: *mut Rav1dFrameHeader =
-                (*c).refs[(*hdr).existing_frame_idx as usize].p.p.frame_hdr;
+                c.refs[(*hdr).existing_frame_idx as usize].p.p.frame_hdr;
             if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != (*hdr).frame_id {
                 return error(c);
             }
@@ -580,7 +580,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
         (*hdr).buffer_removal_time_present = rav1d_get_bit(gb) as c_int;
         if (*hdr).buffer_removal_time_present != 0 {
             let mut i = 0;
-            while i < (*(*c).seq_hdr).num_operating_points {
+            while i < (*c.seq_hdr).num_operating_points {
                 let seqop: *const Rav1dSequenceHeaderOperatingPoint =
                     &*((*seqhdr).operating_points).as_ptr().offset(i as isize)
                         as *const Rav1dSequenceHeaderOperatingPoint;
@@ -618,7 +618,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 i += 1;
             }
         }
-        if (*c).strict_std_compliance
+        if c.strict_std_compliance
             && (*hdr).frame_type as c_uint == RAV1D_FRAME_TYPE_INTRA as c_int as c_uint
             && (*hdr).refresh_frame_flags == 0xff as c_int
         {
@@ -660,13 +660,13 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
             let current_frame_offset: c_int = (1 as c_int) << (*seqhdr).order_hint_n_bits - 1;
             let mut i = 0;
             while i < 8 {
-                if ((*c).refs[i as usize].p.p.frame_hdr).is_null() {
+                if (c.refs[i as usize].p.p.frame_hdr).is_null() {
                     return error(c);
                 }
                 shifted_frame_offset[i as usize] = current_frame_offset
                     + get_poc_diff(
                         (*seqhdr).order_hint_n_bits,
-                        (*(*c).refs[i as usize].p.p.frame_hdr).frame_offset,
+                        (*c.refs[i as usize].p.p.frame_hdr).frame_offset,
                         (*hdr).frame_offset,
                     );
                 i += 1;
@@ -777,7 +777,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                     - 1
                     & ((1 as c_int) << (*seqhdr).frame_id_n_bits) - 1;
                 let ref_frame_hdr: *mut Rav1dFrameHeader =
-                    (*c).refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr;
+                    c.refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr;
                 if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != ref_frame_id {
                     return error(c);
                 }
@@ -1022,10 +1022,10 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 unreachable!();
             }
             let pri_ref: c_int = (*hdr).refidx[(*hdr).primary_ref_frame as usize];
-            if ((*c).refs[pri_ref as usize].p.p.frame_hdr).is_null() {
+            if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                 return error(c);
             }
-            (*hdr).segmentation.seg_data = (*(*c).refs[pri_ref as usize].p.p.frame_hdr)
+            (*hdr).segmentation.seg_data = (*c.refs[pri_ref as usize].p.p.frame_hdr)
                 .segmentation
                 .seg_data
                 .clone();
@@ -1106,10 +1106,10 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
             (*hdr).loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
         } else {
             let r#ref: c_int = (*hdr).refidx[(*hdr).primary_ref_frame as usize];
-            if ((*c).refs[r#ref as usize].p.p.frame_hdr).is_null() {
+            if (c.refs[r#ref as usize].p.p.frame_hdr).is_null() {
                 return error(c);
             }
-            (*hdr).loopfilter.mode_ref_deltas = (*(*c).refs[r#ref as usize].p.p.frame_hdr)
+            (*hdr).loopfilter.mode_ref_deltas = (*c.refs[r#ref as usize].p.p.frame_hdr)
                 .loopfilter
                 .mode_ref_deltas
                 .clone();
@@ -1221,11 +1221,11 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
         let mut off_after_idx = 0;
         let mut i = 0;
         while i < 7 {
-            if ((*c).refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
+            if (c.refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
                 return error(c);
             }
-            let refpoc: c_uint = (*(*c).refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr)
-                .frame_offset as c_uint;
+            let refpoc: c_uint =
+                (*c.refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
             let diff: c_int =
                 get_poc_diff((*seqhdr).order_hint_n_bits, refpoc as c_int, poc as c_int);
             if diff > 0 {
@@ -1257,10 +1257,10 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
             let mut off_before2_idx = 0;
             let mut i = 0;
             while i < 7 {
-                if ((*c).refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
+                if (c.refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
                     return error(c);
                 }
-                let refpoc: c_uint = (*(*c).refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr)
+                let refpoc: c_uint = (*c.refs[(*hdr).refidx[i as usize] as usize].p.p.frame_hdr)
                     .frame_offset as c_uint;
                 if get_poc_diff(
                     (*seqhdr).order_hint_n_bits,
@@ -1323,10 +1323,10 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                     ref_gmv = &dav1d_default_wm_params;
                 } else {
                     let pri_ref: c_int = (*hdr).refidx[(*hdr).primary_ref_frame as usize];
-                    if ((*c).refs[pri_ref as usize].p.p.frame_hdr).is_null() {
+                    if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                         return error(c);
                     }
-                    ref_gmv = &mut *((*(*((*c).refs).as_mut_ptr().offset(pri_ref as isize))
+                    ref_gmv = &mut *((*(*(c.refs).as_mut_ptr().offset(pri_ref as isize))
                         .p
                         .p
                         .frame_hdr)
@@ -1399,10 +1399,10 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 }
                 i += 1;
             }
-            if i == 7 || ((*c).refs[refidx as usize].p.p.frame_hdr).is_null() {
+            if i == 7 || (c.refs[refidx as usize].p.p.frame_hdr).is_null() {
                 return error(c);
             }
-            (*hdr).film_grain.data = (*(*c).refs[refidx as usize].p.p.frame_hdr)
+            (*hdr).film_grain.data = (*c.refs[refidx as usize].p.p.frame_hdr)
                 .film_grain
                 .data
                 .clone();
@@ -1522,7 +1522,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
         );
     }
 
-    (*(*(*c).frame_hdr_ref)
+    (*(*c.frame_hdr_ref)
         .data
         .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
     .update_dav1d();
