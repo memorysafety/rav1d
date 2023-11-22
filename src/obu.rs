@@ -135,7 +135,7 @@ unsafe fn rav1d_get_bits_pos(c: &GetBits) -> c_uint {
 }
 
 unsafe fn parse_seq_hdr(
-    c: *mut Rav1dContext,
+    c: &mut Rav1dContext,
     gb: *mut GetBits,
     hdr: *mut Rav1dSequenceHeader,
 ) -> Rav1dResult {
@@ -171,8 +171,7 @@ unsafe fn parse_seq_hdr(
         if (*hdr).timing_info_present != 0 {
             (*hdr).num_units_in_tick = rav1d_get_bits(gb, 32 as c_int) as c_int;
             (*hdr).time_scale = rav1d_get_bits(gb, 32 as c_int) as c_int;
-            if (*c).strict_std_compliance
-                && ((*hdr).num_units_in_tick == 0 || (*hdr).time_scale == 0)
+            if c.strict_std_compliance && ((*hdr).num_units_in_tick == 0 || (*hdr).time_scale == 0)
             {
                 return error(c);
             }
@@ -190,7 +189,7 @@ unsafe fn parse_seq_hdr(
                 (*hdr).encoder_decoder_buffer_delay_length =
                     (rav1d_get_bits(gb, 5 as c_int)).wrapping_add(1 as c_int as c_uint) as c_int;
                 (*hdr).num_units_in_decoding_tick = rav1d_get_bits(gb, 32 as c_int) as c_int;
-                if (*c).strict_std_compliance && (*hdr).num_units_in_decoding_tick == 0 {
+                if c.strict_std_compliance && (*hdr).num_units_in_decoding_tick == 0 {
                     return error(c);
                 }
                 (*hdr).buffer_removal_delay_length =
@@ -243,14 +242,14 @@ unsafe fn parse_seq_hdr(
             i += 1;
         }
     }
-    let op_idx: c_int = if (*c).operating_point < (*hdr).num_operating_points {
-        (*c).operating_point
+    let op_idx: c_int = if c.operating_point < (*hdr).num_operating_points {
+        c.operating_point
     } else {
         0 as c_int
     };
-    (*c).operating_point_idc = (*hdr).operating_points[op_idx as usize].idc as c_uint;
-    let spatial_mask = (*c).operating_point_idc >> 8;
-    (*c).max_spatial_id = if spatial_mask != 0 {
+    c.operating_point_idc = (*hdr).operating_points[op_idx as usize].idc as c_uint;
+    let spatial_mask = c.operating_point_idc >> 8;
+    c.max_spatial_id = if spatial_mask != 0 {
         ulog2(spatial_mask) != 0
     } else {
         false
@@ -381,7 +380,7 @@ unsafe fn parse_seq_hdr(
             RAV1D_CHR_UNKNOWN as c_int as c_uint
         }) as Dav1dChromaSamplePosition;
     }
-    if (*c).strict_std_compliance
+    if c.strict_std_compliance
         && (*hdr).mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint
         && (*hdr).layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint
     {
