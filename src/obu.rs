@@ -1589,23 +1589,23 @@ pub(crate) unsafe fn rav1d_parse_obus(
         return Err(EINVAL);
     }
 
-    unsafe fn skip(c: *mut Rav1dContext, len: c_uint, init_byte_pos: c_uint) -> c_uint {
+    unsafe fn skip(c: &mut Rav1dContext, len: c_uint, init_byte_pos: c_uint) -> c_uint {
         let mut i = 0;
         while i < 8 {
-            if (*(*c).frame_hdr).refresh_frame_flags & (1 as c_int) << i != 0 {
-                rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
-                (*c).refs[i as usize].p.p.frame_hdr = (*c).frame_hdr;
-                (*c).refs[i as usize].p.p.seq_hdr = (*c).seq_hdr;
-                (*c).refs[i as usize].p.p.frame_hdr_ref = (*c).frame_hdr_ref;
-                (*c).refs[i as usize].p.p.seq_hdr_ref = (*c).seq_hdr_ref;
-                rav1d_ref_inc((*c).frame_hdr_ref);
-                rav1d_ref_inc((*c).seq_hdr_ref);
+            if (*c.frame_hdr).refresh_frame_flags & (1 as c_int) << i != 0 {
+                rav1d_thread_picture_unref(&mut (*(c.refs).as_mut_ptr().offset(i as isize)).p);
+                c.refs[i as usize].p.p.frame_hdr = c.frame_hdr;
+                c.refs[i as usize].p.p.seq_hdr = c.seq_hdr;
+                c.refs[i as usize].p.p.frame_hdr_ref = c.frame_hdr_ref;
+                c.refs[i as usize].p.p.seq_hdr_ref = c.seq_hdr_ref;
+                rav1d_ref_inc(c.frame_hdr_ref);
+                rav1d_ref_inc(c.seq_hdr_ref);
             }
             i += 1;
         }
-        rav1d_ref_dec(&mut (*c).frame_hdr_ref);
-        (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
-        (*c).n_tiles = 0 as c_int;
+        rav1d_ref_dec(&mut c.frame_hdr_ref);
+        c.frame_hdr = 0 as *mut Rav1dFrameHeader;
+        c.n_tiles = 0 as c_int;
         len.wrapping_add(init_byte_pos)
     }
 
