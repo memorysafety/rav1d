@@ -4154,7 +4154,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
                 continue;
             }
 
-            let frame_type = (*f.frame_hdr).restoration.type_0[p as usize];
+            let frame_type = (*f.frame_hdr).restoration.r#type[p as usize];
 
             if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
                 let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
@@ -4560,7 +4560,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     }
     f.lf.restore_planes = (*f.frame_hdr)
         .restoration
-        .type_0
+        .r#type
         .iter()
         .enumerate()
         .map(|(i, &r#type)| ((r#type != RAV1D_RESTORATION_NONE) as u8) << i)

@@ -1161,17 +1161,17 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
         && (*seqhdr).restoration != 0
         && (*hdr).allow_intrabc == 0
     {
-        (*hdr).restoration.type_0[0] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
+        (*hdr).restoration.r#type[0] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
         if (*seqhdr).monochrome == 0 {
-            (*hdr).restoration.type_0[1] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
-            (*hdr).restoration.type_0[2] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
+            (*hdr).restoration.r#type[1] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
+            (*hdr).restoration.r#type[2] = rav1d_get_bits(gb, 2 as c_int) as Rav1dRestorationType;
         } else {
-            (*hdr).restoration.type_0[2] = RAV1D_RESTORATION_NONE;
-            (*hdr).restoration.type_0[1] = (*hdr).restoration.type_0[2];
+            (*hdr).restoration.r#type[2] = RAV1D_RESTORATION_NONE;
+            (*hdr).restoration.r#type[1] = (*hdr).restoration.r#type[2];
         }
-        if (*hdr).restoration.type_0[0] as c_uint != 0
-            || (*hdr).restoration.type_0[1] as c_uint != 0
-            || (*hdr).restoration.type_0[2] as c_uint != 0
+        if (*hdr).restoration.r#type[0] as c_uint != 0
+            || (*hdr).restoration.r#type[1] as c_uint != 0
+            || (*hdr).restoration.r#type[2] as c_uint != 0
         {
             (*hdr).restoration.unit_size[0] = 6 + (*seqhdr).sb128;
             if rav1d_get_bit(gb) != 0 {
@@ -1183,8 +1183,8 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 }
             }
             (*hdr).restoration.unit_size[1] = (*hdr).restoration.unit_size[0];
-            if ((*hdr).restoration.type_0[1] as c_uint != 0
-                || (*hdr).restoration.type_0[2] as c_uint != 0)
+            if ((*hdr).restoration.r#type[1] as c_uint != 0
+                || (*hdr).restoration.r#type[2] as c_uint != 0)
                 && (*seqhdr).ss_hor == 1
                 && (*seqhdr).ss_ver == 1
             {
@@ -1196,9 +1196,9 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
             (*hdr).restoration.unit_size[0] = 8 as c_int;
         }
     } else {
-        (*hdr).restoration.type_0[0] = RAV1D_RESTORATION_NONE;
-        (*hdr).restoration.type_0[1] = RAV1D_RESTORATION_NONE;
-        (*hdr).restoration.type_0[2] = RAV1D_RESTORATION_NONE;
+        (*hdr).restoration.r#type[0] = RAV1D_RESTORATION_NONE;
+        (*hdr).restoration.r#type[1] = RAV1D_RESTORATION_NONE;
+        (*hdr).restoration.r#type[2] = RAV1D_RESTORATION_NONE;
     }
     (*hdr).txfm_mode = (if (*hdr).all_lossless != 0 {
         RAV1D_TX_4X4_ONLY as c_int
