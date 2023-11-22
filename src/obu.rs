@@ -139,7 +139,7 @@ unsafe fn parse_seq_hdr(
     gb: &mut GetBits,
     hdr: &mut Rav1dSequenceHeader,
 ) -> Rav1dResult {
-    unsafe fn error(c: *mut Rav1dContext) -> Rav1dResult {
+    unsafe fn error(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_log(
             c,
             b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
