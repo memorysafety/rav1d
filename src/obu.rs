@@ -1530,7 +1530,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
     Ok(())
 }
 
-unsafe fn parse_tile_hdr(c: &mut Rav1dContext, gb: *mut GetBits) {
+unsafe fn parse_tile_hdr(c: &mut Rav1dContext, gb: &mut GetBits) {
     let n_tiles = (*c.frame_hdr).tiling.cols * (*c.frame_hdr).tiling.rows;
     let have_tile_pos = (if n_tiles > 1 {
         rav1d_get_bit(gb)
