@@ -113,7 +113,7 @@ pub const RAV1D_WM_TYPE_IDENTITY: Rav1dWarpedMotionType = DAV1D_WM_TYPE_IDENTITY
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dWarpedMotionParams {
-    pub type_0: Dav1dWarpedMotionType,
+    pub r#type: Dav1dWarpedMotionType,
     pub matrix: [i32; 6],
     pub abcd: [i16; 4],
 }
@@ -139,7 +139,7 @@ impl Dav1dWarpedMotionParams {
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dWarpedMotionParams {
-    pub type_0: Rav1dWarpedMotionType,
+    pub r#type: Rav1dWarpedMotionType,
     pub matrix: [i32; 6],
     pub abcd: [i16; 4],
 }
@@ -169,12 +169,12 @@ impl Rav1dWarpedMotionParams {
 impl From<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
     fn from(value: Dav1dWarpedMotionParams) -> Self {
         let Dav1dWarpedMotionParams {
-            type_0,
+            r#type,
             matrix,
             abcd,
         } = value;
         Self {
-            type_0,
+            r#type,
             matrix,
             abcd,
         }
@@ -184,12 +184,12 @@ impl From<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
 impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
     fn from(value: Rav1dWarpedMotionParams) -> Self {
         let Rav1dWarpedMotionParams {
-            type_0,
+            r#type,
             matrix,
             abcd,
         } = value;
         Self {
-            type_0,
+            r#type,
             matrix,
             abcd,
         }

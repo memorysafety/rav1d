@@ -3362,7 +3362,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     as c_int
                     != 0
                 || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int == MM_WARP as c_int
-                    && t.warpmv.type_0 as c_uint > RAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
+                    && t.warpmv.r#type as c_uint > RAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
         {
             res = warp_affine::<BD>(
                 t,
@@ -3739,7 +3739,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             != 0
                         || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int
                             == MM_WARP as c_int
-                            && t.warpmv.type_0 as c_uint
+                            && t.warpmv.r#type as c_uint
                                 > RAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
                 {
                     let mut pl = 0;

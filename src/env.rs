@@ -658,7 +658,7 @@ pub(crate) fn get_gmv_2d(
     bh4: c_int,
     hdr: &Rav1dFrameHeader,
 ) -> mv {
-    match gmv.type_0 {
+    match gmv.r#type {
         2 => {
             assert!(gmv.matrix[5] == gmv.matrix[2]);
             assert!(gmv.matrix[4] == -gmv.matrix[3]);

@@ -746,7 +746,7 @@ pub const interintra_allowed_mask: c_uint = 0
     | 0;
 
 pub(crate) static dav1d_default_wm_params: Rav1dWarpedMotionParams = Rav1dWarpedMotionParams {
-    type_0: RAV1D_WM_TYPE_IDENTITY,
+    r#type: RAV1D_WM_TYPE_IDENTITY,
     matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
     abcd: [0; 4],
 };
