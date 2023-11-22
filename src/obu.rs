@@ -1530,21 +1530,20 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
     Ok(())
 }
 
-unsafe fn parse_tile_hdr(c: *mut Rav1dContext, gb: *mut GetBits) {
-    let n_tiles = (*(*c).frame_hdr).tiling.cols * (*(*c).frame_hdr).tiling.rows;
+unsafe fn parse_tile_hdr(c: &mut Rav1dContext, gb: *mut GetBits) {
+    let n_tiles = (*c.frame_hdr).tiling.cols * (*c.frame_hdr).tiling.rows;
     let have_tile_pos = (if n_tiles > 1 {
         rav1d_get_bit(gb)
     } else {
         0 as c_int as c_uint
     }) as c_int;
     if have_tile_pos != 0 {
-        let n_bits = (*(*c).frame_hdr).tiling.log2_cols + (*(*c).frame_hdr).tiling.log2_rows;
-        (*((*c).tile).offset((*c).n_tile_data as isize)).start =
-            rav1d_get_bits(gb, n_bits) as c_int;
-        (*((*c).tile).offset((*c).n_tile_data as isize)).end = rav1d_get_bits(gb, n_bits) as c_int;
+        let n_bits = (*c.frame_hdr).tiling.log2_cols + (*c.frame_hdr).tiling.log2_rows;
+        (*(c.tile).offset(c.n_tile_data as isize)).start = rav1d_get_bits(gb, n_bits) as c_int;
+        (*(c.tile).offset(c.n_tile_data as isize)).end = rav1d_get_bits(gb, n_bits) as c_int;
     } else {
-        (*((*c).tile).offset((*c).n_tile_data as isize)).start = 0 as c_int;
-        (*((*c).tile).offset((*c).n_tile_data as isize)).end = n_tiles - 1;
+        (*(c.tile).offset(c.n_tile_data as isize)).start = 0 as c_int;
+        (*(c.tile).offset(c.n_tile_data as isize)).end = n_tiles - 1;
     };
 }
 
