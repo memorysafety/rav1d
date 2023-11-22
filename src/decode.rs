@@ -161,6 +161,7 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::rav1d_log;
+use crate::src::loopfilter::rav1d_loop_filter_dsp_init;
 use crate::src::looprestoration::rav1d_loop_restoration_dsp_init;
 use crate::src::mc::rav1d_mc_dsp_init;
 use crate::src::mem::freep;
@@ -247,14 +248,12 @@ use std::sync::atomic::Ordering;
 use crate::{
     include::common::bitdepth::BitDepth8, src::cdef_tmpl_8::rav1d_cdef_dsp_init_8bpc,
     src::itx_tmpl_8::rav1d_itx_dsp_init_8bpc,
-    src::loopfilter_tmpl_8::rav1d_loop_filter_dsp_init_8bpc,
 };
 
 #[cfg(feature = "bitdepth_16")]
 use crate::{
     include::common::bitdepth::BitDepth16, src::cdef_tmpl_16::rav1d_cdef_dsp_init_16bpc,
     src::itx_tmpl_16::rav1d_itx_dsp_init_16bpc,
-    src::loopfilter_tmpl_16::rav1d_loop_filter_dsp_init_16bpc,
 };
 
 fn init_quant_tables(
@@ -5054,7 +5053,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 rav1d_cdef_dsp_init_8bpc(&mut dsp.cdef);
                 rav1d_intra_pred_dsp_init::<BitDepth8>(&mut dsp.ipred);
                 rav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
-                rav1d_loop_filter_dsp_init_8bpc(&mut dsp.lf);
+                rav1d_loop_filter_dsp_init::<BitDepth8>(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
                 rav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
                 dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth8>();
@@ -5064,7 +5063,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 rav1d_cdef_dsp_init_16bpc(&mut dsp.cdef);
                 rav1d_intra_pred_dsp_init::<BitDepth16>(&mut dsp.ipred);
                 rav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
-                rav1d_loop_filter_dsp_init_16bpc(&mut dsp.lf);
+                rav1d_loop_filter_dsp_init::<BitDepth16>(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
                 rav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
                 dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>();

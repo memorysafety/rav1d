@@ -74,10 +74,6 @@ pub mod src {
     pub mod lib;
     mod log;
     mod loopfilter;
-    #[cfg(feature = "bitdepth_16")]
-    mod loopfilter_tmpl_16;
-    #[cfg(feature = "bitdepth_8")]
-    mod loopfilter_tmpl_8;
     mod looprestoration;
     mod lr_apply;
     #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
