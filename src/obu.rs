@@ -1577,7 +1577,7 @@ unsafe fn check_for_overrun(
 
 pub(crate) unsafe fn rav1d_parse_obus(
     c: &mut Rav1dContext,
-    r#in: *mut Rav1dData,
+    r#in: &mut Rav1dData,
     global: c_int,
 ) -> Rav1dResult<c_uint> {
     unsafe fn error(c: *mut Rav1dContext, r#in: *mut Rav1dData) -> Rav1dResult {
@@ -1617,7 +1617,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
         ptr_start: 0 as *const u8,
         ptr_end: 0 as *const u8,
     };
-    rav1d_init_get_bits(&mut gb, (*r#in).data, (*r#in).sz);
+    rav1d_init_get_bits(&mut gb, r#in.data, r#in.sz);
     rav1d_get_bit(&mut gb);
     let r#type: Rav1dObuType = rav1d_get_bits(&mut gb, 4 as c_int) as Rav1dObuType;
     let has_extension: c_int = rav1d_get_bit(&mut gb) as c_int;
@@ -1633,7 +1633,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
     let len: c_uint = if has_length_field != 0 {
         rav1d_get_uleb128(&mut gb)
     } else {
-        ((*r#in).sz as c_uint)
+        (r#in.sz as c_uint)
             .wrapping_sub(1 as c_int as c_uint)
             .wrapping_sub(has_extension as c_uint)
     };
@@ -1645,10 +1645,10 @@ pub(crate) unsafe fn rav1d_parse_obus(
     if !(init_bit_pos & 7 as c_uint == 0 as c_uint) {
         unreachable!();
     }
-    if !((*r#in).sz >= init_byte_pos as usize) {
+    if !(r#in.sz >= init_byte_pos as usize) {
         unreachable!();
     }
-    if len as usize > ((*r#in).sz).wrapping_sub(init_byte_pos as usize) {
+    if len as usize > (r#in.sz).wrapping_sub(init_byte_pos as usize) {
         error(c, r#in)?;
     }
     if r#type as c_uint != RAV1D_OBU_SEQ_HDR as c_int as c_uint
@@ -1807,7 +1807,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 OBU_META_ITUT_T35 => {
                     let mut payload_size: c_int = len as c_int;
                     while payload_size > 0
-                        && *((*r#in).data).offset(
+                        && *(r#in.data).offset(
                             init_byte_pos
                                 .wrapping_add(payload_size as c_uint)
                                 .wrapping_sub(1 as c_int as c_uint)
@@ -2089,7 +2089,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         .offset((*c.frame_hdr).existing_frame_idx as isize))
                     .p,
                 );
-                rav1d_data_props_copy(&mut c.out.p.m, &mut (*r#in).m);
+                rav1d_data_props_copy(&mut c.out.p.m, &mut r#in.m);
                 c.event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
                     c.event_flags as c_uint
                         | rav1d_picture_get_event_flags(
@@ -2176,7 +2176,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     .p,
                 );
                 (*out_delayed).visible = true;
-                rav1d_data_props_copy(&mut (*out_delayed).p.m, &mut (*r#in).m);
+                rav1d_data_props_copy(&mut (*out_delayed).p.m, &mut r#in.m);
                 pthread_mutex_unlock(&mut c.task_thread.lock);
             }
             if (*c.refs[(*c.frame_hdr).existing_frame_idx as usize]
