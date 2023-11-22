@@ -136,7 +136,7 @@ unsafe fn rav1d_get_bits_pos(c: &GetBits) -> c_uint {
 
 unsafe fn parse_seq_hdr(
     c: &mut Rav1dContext,
-    gb: *mut GetBits,
+    gb: &mut GetBits,
     hdr: *mut Rav1dSequenceHeader,
 ) -> Rav1dResult {
     unsafe fn error(c: *mut Rav1dContext) -> Rav1dResult {
