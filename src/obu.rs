@@ -1325,7 +1325,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
     if (*hdr).frame_type as c_uint & 1 as c_uint != 0 {
         let mut i_19 = 0;
         while i_19 < 7 {
-            (*hdr).gmv[i_19 as usize].type_0 = (if rav1d_get_bit(gb) == 0 {
+            (*hdr).gmv[i_19 as usize].r#type = (if rav1d_get_bit(gb) == 0 {
                 RAV1D_WM_TYPE_IDENTITY as c_int
             } else if rav1d_get_bit(gb) != 0 {
                 RAV1D_WM_TYPE_ROT_ZOOM as c_int
@@ -1334,7 +1334,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
             } else {
                 RAV1D_WM_TYPE_AFFINE as c_int
             }) as Dav1dWarpedMotionType;
-            if !((*hdr).gmv[i_19 as usize].type_0 as c_uint
+            if !((*hdr).gmv[i_19 as usize].r#type as c_uint
                 == RAV1D_WM_TYPE_IDENTITY as c_int as c_uint)
             {
                 let ref_gmv: *const Rav1dWarpedMotionParams;
@@ -1358,7 +1358,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                 let ref_mat: *const i32 = ((*ref_gmv).matrix).as_ptr();
                 let bits: c_int;
                 let shift: c_int;
-                if (*hdr).gmv[i_19 as usize].type_0 as c_uint
+                if (*hdr).gmv[i_19 as usize].r#type as c_uint
                     >= RAV1D_WM_TYPE_ROT_ZOOM as c_int as c_uint
                 {
                     *mat.offset(2) = ((1 as c_int) << 16)
@@ -1375,7 +1375,7 @@ unsafe fn parse_frame_hdr(c: *mut Rav1dContext, gb: *mut GetBits) -> Rav1dResult
                     bits = 9 - ((*hdr).hp == 0) as c_int;
                     shift = 13 + ((*hdr).hp == 0) as c_int;
                 }
-                if (*hdr).gmv[i_19 as usize].type_0 as c_uint
+                if (*hdr).gmv[i_19 as usize].r#type as c_uint
                     == RAV1D_WM_TYPE_AFFINE as c_int as c_uint
                 {
                     *mat.offset(4) = 2 as c_int

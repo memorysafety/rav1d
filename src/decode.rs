@@ -675,7 +675,7 @@ unsafe fn derive_warpmv(
         }
     }
 
-    wmp.type_0 = if !rav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.bx, t.by)
+    wmp.r#type = if !rav1d_find_affine_int(&pts, ret, bw4, bh4, mv, &mut wmp, t.bx, t.by)
         && !rav1d_get_shear_params(&mut wmp)
     {
         RAV1D_WM_TYPE_AFFINE
@@ -1545,9 +1545,9 @@ unsafe fn decode_b(
                 && b.motion_mode() as MotionMode == MM_WARP
             {
                 if b.matrix()[0] == i16::MIN {
-                    t.warpmv.type_0 = RAV1D_WM_TYPE_IDENTITY;
+                    t.warpmv.r#type = RAV1D_WM_TYPE_IDENTITY;
                 } else {
-                    t.warpmv.type_0 = RAV1D_WM_TYPE_AFFINE;
+                    t.warpmv.r#type = RAV1D_WM_TYPE_AFFINE;
                     t.warpmv.matrix[2] = b.matrix()[0] as i32 + 0x10000;
                     t.warpmv.matrix[3] = b.matrix()[1] as i32;
                     t.warpmv.matrix[4] = b.matrix()[2] as i32;
@@ -2645,7 +2645,7 @@ unsafe fn decode_b(
                 }
                 GLOBALMV => {
                     has_subpel_filter |=
-                        frame_hdr.gmv[b.r#ref()[idx] as usize].type_0 == RAV1D_WM_TYPE_TRANSLATION;
+                        frame_hdr.gmv[b.r#ref()[idx] as usize].r#type == RAV1D_WM_TYPE_TRANSLATION;
                     b.mv_mut()[idx] = get_gmv_2d(
                         &frame_hdr.gmv[b.r#ref()[idx] as usize],
                         t.bx,
@@ -2851,7 +2851,7 @@ unsafe fn decode_b(
                         frame_hdr,
                     );
                     has_subpel_filter = cmp::min(bw4, bh4) == 1
-                        || frame_hdr.gmv[b.r#ref()[0] as usize].type_0 == RAV1D_WM_TYPE_TRANSLATION;
+                        || frame_hdr.gmv[b.r#ref()[0] as usize].r#type == RAV1D_WM_TYPE_TRANSLATION;
                 } else {
                     has_subpel_filter = true;
                     if rav1d_msac_decode_bool_adapt(
@@ -3005,7 +3005,7 @@ unsafe fn decode_b(
                 // is not warped global motion
                 && !(frame_hdr.force_integer_mv == 0
                     && b.inter_mode() == GLOBALMV
-                    && frame_hdr.gmv[b.r#ref()[0] as usize].type_0 > RAV1D_WM_TYPE_TRANSLATION)
+                    && frame_hdr.gmv[b.r#ref()[0] as usize].r#type > RAV1D_WM_TYPE_TRANSLATION)
                 // has overlappable neighbours
                 && (have_left && findoddzero(&t.l.intra.0[by4 as usize..][..h4 as usize])
                     || have_top && findoddzero(&(*t.a).intra.0[bx4 as usize..][..w4 as usize]))
@@ -3062,7 +3062,7 @@ unsafe fn decode_b(
                         );
                     }
                     if t.frame_thread.pass != 0 {
-                        if t.warpmv.type_0 == RAV1D_WM_TYPE_AFFINE {
+                        if t.warpmv.r#type == RAV1D_WM_TYPE_AFFINE {
                             b.matrix_mut()[0] = (t.warpmv.matrix[2] - 0x10000) as i16;
                             b.matrix_mut()[1] = t.warpmv.matrix[3] as i16;
                             b.matrix_mut()[2] = t.warpmv.matrix[4] as i16;
@@ -3272,7 +3272,7 @@ unsafe fn decode_b(
             if cmp::min(bw4, bh4) > 1
                 && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                     || b.motion_mode() == MM_WARP as u8
-                        && t.warpmv.type_0 > RAV1D_WM_TYPE_TRANSLATION)
+                        && t.warpmv.r#type > RAV1D_WM_TYPE_TRANSLATION)
             {
                 affine_lowest_px_luma(
                     t,
@@ -3370,7 +3370,7 @@ unsafe fn decode_b(
                     && (b.inter_mode() == GLOBALMV
                         && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                         || b.motion_mode() == MM_WARP as u8
-                            && t.warpmv.type_0 > RAV1D_WM_TYPE_TRANSLATION)
+                            && t.warpmv.r#type > RAV1D_WM_TYPE_TRANSLATION)
                 {
                     affine_lowest_px_chroma(
                         t,
@@ -5132,7 +5132,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 f.svc[i][1].scale = 0;
                 f.svc[i][0].scale = f.svc[i][1].scale;
             }
-            f.gmv_warp_allowed[i] = ((*f.frame_hdr).gmv[i].type_0 > RAV1D_WM_TYPE_TRANSLATION
+            f.gmv_warp_allowed[i] = ((*f.frame_hdr).gmv[i].r#type > RAV1D_WM_TYPE_TRANSLATION
                 && (*f.frame_hdr).force_integer_mv == 0
                 && !rav1d_get_shear_params(&mut (*f.frame_hdr).gmv[i])
                 && f.svc[i][0].scale == 0) as u8;
