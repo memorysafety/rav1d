@@ -1398,48 +1398,48 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             hdr.film_grain.data.seed = seed;
         } else {
             let fgd = &mut hdr.film_grain.data;
-            (*fgd).seed = seed;
-            (*fgd).num_y_points = rav1d_get_bits(gb, 4 as c_int) as c_int;
-            if (*fgd).num_y_points > 14 {
+            fgd.seed = seed;
+            fgd.num_y_points = rav1d_get_bits(gb, 4 as c_int) as c_int;
+            if fgd.num_y_points > 14 {
                 return error(c);
             }
             let mut i = 0;
-            while i < (*fgd).num_y_points {
-                (*fgd).y_points[i as usize][0] = rav1d_get_bits(gb, 8 as c_int) as u8;
+            while i < fgd.num_y_points {
+                fgd.y_points[i as usize][0] = rav1d_get_bits(gb, 8 as c_int) as u8;
                 if i != 0
-                    && (*fgd).y_points[(i - 1) as usize][0] as c_int
-                        >= (*fgd).y_points[i as usize][0] as c_int
+                    && fgd.y_points[(i - 1) as usize][0] as c_int
+                        >= fgd.y_points[i as usize][0] as c_int
                 {
                     return error(c);
                 }
-                (*fgd).y_points[i as usize][1] = rav1d_get_bits(gb, 8 as c_int) as u8;
+                fgd.y_points[i as usize][1] = rav1d_get_bits(gb, 8 as c_int) as u8;
                 i += 1;
             }
-            (*fgd).chroma_scaling_from_luma = seqhdr.monochrome == 0 && rav1d_get_bit(gb) != 0;
+            fgd.chroma_scaling_from_luma = seqhdr.monochrome == 0 && rav1d_get_bit(gb) != 0;
             if seqhdr.monochrome != 0
-                || (*fgd).chroma_scaling_from_luma
-                || seqhdr.ss_ver == 1 && seqhdr.ss_hor == 1 && (*fgd).num_y_points == 0
+                || fgd.chroma_scaling_from_luma
+                || seqhdr.ss_ver == 1 && seqhdr.ss_hor == 1 && fgd.num_y_points == 0
             {
-                (*fgd).num_uv_points[1] = 0 as c_int;
-                (*fgd).num_uv_points[0] = (*fgd).num_uv_points[1];
+                fgd.num_uv_points[1] = 0 as c_int;
+                fgd.num_uv_points[0] = fgd.num_uv_points[1];
             } else {
                 let mut pl = 0;
                 while pl < 2 {
-                    (*fgd).num_uv_points[pl as usize] = rav1d_get_bits(gb, 4 as c_int) as c_int;
-                    if (*fgd).num_uv_points[pl as usize] > 10 {
+                    fgd.num_uv_points[pl as usize] = rav1d_get_bits(gb, 4 as c_int) as c_int;
+                    if fgd.num_uv_points[pl as usize] > 10 {
                         return error(c);
                     }
                     let mut i = 0;
-                    while i < (*fgd).num_uv_points[pl as usize] {
-                        (*fgd).uv_points[pl as usize][i as usize][0] =
+                    while i < fgd.num_uv_points[pl as usize] {
+                        fgd.uv_points[pl as usize][i as usize][0] =
                             rav1d_get_bits(gb, 8 as c_int) as u8;
                         if i != 0
-                            && (*fgd).uv_points[pl as usize][(i - 1) as usize][0] as c_int
-                                >= (*fgd).uv_points[pl as usize][i as usize][0] as c_int
+                            && fgd.uv_points[pl as usize][(i - 1) as usize][0] as c_int
+                                >= fgd.uv_points[pl as usize][i as usize][0] as c_int
                         {
                             return error(c);
                         }
-                        (*fgd).uv_points[pl as usize][i as usize][1] =
+                        fgd.uv_points[pl as usize][i as usize][1] =
                             rav1d_get_bits(gb, 8 as c_int) as u8;
                         i += 1;
                     }
@@ -1448,60 +1448,59 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             }
             if seqhdr.ss_hor == 1
                 && seqhdr.ss_ver == 1
-                && ((*fgd).num_uv_points[0] != 0) as c_int
-                    != ((*fgd).num_uv_points[1] != 0) as c_int
+                && (fgd.num_uv_points[0] != 0) as c_int != (fgd.num_uv_points[1] != 0) as c_int
             {
                 return error(c);
             }
-            (*fgd).scaling_shift =
+            fgd.scaling_shift =
                 (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(8 as c_int as c_uint) as u8;
-            (*fgd).ar_coeff_lag = rav1d_get_bits(gb, 2 as c_int) as c_int;
-            let num_y_pos = 2 * (*fgd).ar_coeff_lag * ((*fgd).ar_coeff_lag + 1);
-            if (*fgd).num_y_points != 0 {
+            fgd.ar_coeff_lag = rav1d_get_bits(gb, 2 as c_int) as c_int;
+            let num_y_pos = 2 * fgd.ar_coeff_lag * (fgd.ar_coeff_lag + 1);
+            if fgd.num_y_points != 0 {
                 let mut i = 0;
                 while i < num_y_pos {
-                    (*fgd).ar_coeffs_y[i as usize] =
+                    fgd.ar_coeffs_y[i as usize] =
                         (rav1d_get_bits(gb, 8 as c_int)).wrapping_sub(128 as c_int as c_uint) as i8;
                     i += 1;
                 }
             }
             let mut pl = 0;
             while pl < 2 {
-                if (*fgd).num_uv_points[pl as usize] != 0 || (*fgd).chroma_scaling_from_luma {
-                    let num_uv_pos: c_int = num_y_pos + ((*fgd).num_y_points != 0) as c_int;
+                if fgd.num_uv_points[pl as usize] != 0 || fgd.chroma_scaling_from_luma {
+                    let num_uv_pos: c_int = num_y_pos + (fgd.num_y_points != 0) as c_int;
                     let mut i = 0;
                     while i < num_uv_pos {
-                        (*fgd).ar_coeffs_uv[pl as usize][i as usize] =
-                            (rav1d_get_bits(gb, 8 as c_int)).wrapping_sub(128 as c_int as c_uint)
-                                as i8;
+                        fgd.ar_coeffs_uv[pl as usize][i as usize] = (rav1d_get_bits(gb, 8 as c_int))
+                            .wrapping_sub(128 as c_int as c_uint)
+                            as i8;
                         i += 1;
                     }
-                    if (*fgd).num_y_points == 0 {
-                        (*fgd).ar_coeffs_uv[pl as usize][num_uv_pos as usize] = 0 as c_int as i8;
+                    if fgd.num_y_points == 0 {
+                        fgd.ar_coeffs_uv[pl as usize][num_uv_pos as usize] = 0 as c_int as i8;
                     }
                 }
                 pl += 1;
             }
-            (*fgd).ar_coeff_shift =
+            fgd.ar_coeff_shift =
                 (rav1d_get_bits(gb, 2 as c_int)).wrapping_add(6 as c_int as c_uint) as u8;
-            (*fgd).grain_scale_shift = rav1d_get_bits(gb, 2 as c_int) as u8;
+            fgd.grain_scale_shift = rav1d_get_bits(gb, 2 as c_int) as u8;
             let mut pl = 0;
             while pl < 2 {
-                if (*fgd).num_uv_points[pl as usize] != 0 {
-                    (*fgd).uv_mult[pl as usize] = (rav1d_get_bits(gb, 8 as c_int))
+                if fgd.num_uv_points[pl as usize] != 0 {
+                    fgd.uv_mult[pl as usize] = (rav1d_get_bits(gb, 8 as c_int))
                         .wrapping_sub(128 as c_int as c_uint)
                         as c_int;
-                    (*fgd).uv_luma_mult[pl as usize] = (rav1d_get_bits(gb, 8 as c_int))
+                    fgd.uv_luma_mult[pl as usize] = (rav1d_get_bits(gb, 8 as c_int))
                         .wrapping_sub(128 as c_int as c_uint)
                         as c_int;
-                    (*fgd).uv_offset[pl as usize] = (rav1d_get_bits(gb, 9 as c_int))
+                    fgd.uv_offset[pl as usize] = (rav1d_get_bits(gb, 9 as c_int))
                         .wrapping_sub(256 as c_int as c_uint)
                         as c_int;
                 }
                 pl += 1;
             }
-            (*fgd).overlap_flag = rav1d_get_bit(gb) != 0;
-            (*fgd).clip_to_restricted_range = rav1d_get_bit(gb) != 0;
+            fgd.overlap_flag = rav1d_get_bit(gb) != 0;
+            fgd.clip_to_restricted_range = rav1d_get_bit(gb) != 0;
         }
     } else {
         memset(
