@@ -31,7 +31,6 @@ use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSegmentationData;
 use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_ADAPTIVE;
@@ -216,16 +215,12 @@ unsafe fn parse_seq_hdr(
             if hdr.decoder_model_info_present != 0 {
                 op.decoder_model_param_present = rav1d_get_bit(gb) as c_int;
                 if op.decoder_model_param_present != 0 {
-                    let opi: *mut Rav1dSequenceHeaderOperatingParameterInfo = &mut *(hdr
-                        .operating_parameter_info)
-                        .as_mut_ptr()
-                        .offset(i as isize)
-                        as *mut Rav1dSequenceHeaderOperatingParameterInfo;
-                    (*opi).decoder_buffer_delay =
+                    let opi = &mut hdr.operating_parameter_info[i as usize];
+                    opi.decoder_buffer_delay =
                         rav1d_get_bits(gb, hdr.encoder_decoder_buffer_delay_length) as c_int;
-                    (*opi).encoder_buffer_delay =
+                    opi.encoder_buffer_delay =
                         rav1d_get_bits(gb, hdr.encoder_decoder_buffer_delay_length) as c_int;
-                    (*opi).low_delay_mode = rav1d_get_bit(gb) as c_int;
+                    opi.low_delay_mode = rav1d_get_bit(gb) as c_int;
                 }
             }
             if hdr.display_model_info_present != 0 {
