@@ -128,10 +128,10 @@ use std::ffi::c_void;
 use std::ptr::addr_of_mut;
 
 #[inline]
-unsafe fn rav1d_get_bits_pos(c: *const GetBits) -> c_uint {
-    (((*c).ptr).offset_from((*c).ptr_start) as c_long as c_uint)
+unsafe fn rav1d_get_bits_pos(c: &GetBits) -> c_uint {
+    (c.ptr.offset_from(c.ptr_start) as c_long as c_uint)
         .wrapping_mul(8 as c_int as c_uint)
-        .wrapping_sub((*c).bits_left as c_uint)
+        .wrapping_sub(c.bits_left as c_uint)
 }
 
 unsafe fn parse_seq_hdr(
