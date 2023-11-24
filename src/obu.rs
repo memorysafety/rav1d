@@ -1002,9 +1002,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 i += 1;
             }
         } else {
-            if !(hdr.primary_ref_frame != 7 as c_int) {
-                unreachable!();
-            }
+            assert!(hdr.primary_ref_frame != 7 as c_int);
             let pri_ref: c_int = hdr.refidx[hdr.primary_ref_frame as usize];
             if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                 return error(c);
@@ -1538,9 +1536,7 @@ unsafe fn check_for_overrun(
         return 1 as c_int;
     }
     let pos: c_uint = rav1d_get_bits_pos(gb);
-    if !(init_bit_pos <= pos) {
-        unreachable!();
-    }
+    assert!(init_bit_pos <= pos);
     if pos.wrapping_sub(init_bit_pos) > (8 as c_int as c_uint).wrapping_mul(obu_len) {
         rav1d_log(
             c,
@@ -1618,12 +1614,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
     }
     let init_bit_pos: c_uint = rav1d_get_bits_pos(&mut gb);
     let init_byte_pos: c_uint = init_bit_pos >> 3;
-    if !(init_bit_pos & 7 as c_uint == 0 as c_uint) {
-        unreachable!();
-    }
-    if !(r#in.sz >= init_byte_pos as usize) {
-        unreachable!();
-    }
+    assert!(init_bit_pos & 7 as c_uint == 0 as c_uint);
+    assert!(r#in.sz >= init_byte_pos as usize);
     if len as usize > (r#in.sz).wrapping_sub(init_byte_pos as usize) {
         error(c, r#in)?;
     }
@@ -1984,12 +1976,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 }
                 let pkt_bytelen: c_uint = init_byte_pos.wrapping_add(len);
                 let bit_pos: c_uint = rav1d_get_bits_pos(&mut gb);
-                if !(bit_pos & 7 as c_uint == 0 as c_uint) {
-                    unreachable!();
-                }
-                if !(pkt_bytelen >= bit_pos >> 3) {
-                    unreachable!();
-                }
+                assert!(bit_pos & 7 as c_uint == 0 as c_uint);
+                assert!(pkt_bytelen >= bit_pos >> 3);
                 rav1d_data_ref(&mut (*(c.tile).offset(c.n_tile_data as isize)).data, r#in);
                 (*(c.tile).offset(c.n_tile_data as isize)).data.data = (*(c.tile)
                     .offset(c.n_tile_data as isize))
@@ -2220,9 +2208,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 error(c, r#in)?;
             }
             rav1d_submit_frame(&mut *c)?;
-            if c.n_tile_data != 0 {
-                unreachable!();
-            }
+            assert!(c.n_tile_data == 0);
             c.frame_hdr = 0 as *mut Rav1dFrameHeader;
             c.n_tiles = 0 as c_int;
         }
