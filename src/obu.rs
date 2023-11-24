@@ -399,7 +399,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
                     let d = hdr.super_res.width_scale_denominator;
                     hdr.width[0] = cmp::max(
                         (hdr.width[1] * 8 + (d >> 1)) / d,
-                        cmp::min(16 as c_int, hdr.width[1]),
+                        cmp::min(16, hdr.width[1]),
                     );
                 } else {
                     hdr.super_res.width_scale_denominator = 8;
@@ -424,7 +424,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
         let d = hdr.super_res.width_scale_denominator;
         hdr.width[0] = cmp::max(
             (hdr.width[1] * 8 + (d >> 1)) / d,
-            cmp::min(16 as c_int, hdr.width[1]),
+            cmp::min(16, hdr.width[1]),
         );
     } else {
         hdr.super_res.width_scale_denominator = 8;
@@ -640,7 +640,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                     );
                 i += 1;
             }
-            let mut used_frame: [c_int; 8] = [0 as c_int, 0, 0, 0, 0, 0, 0, 0];
+            let mut used_frame: [c_int; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
             used_frame[hdr.refidx[0] as usize] = 1;
             used_frame[hdr.refidx[3] as usize] = 1;
             let mut latest_frame_offset: c_int = -(1);
@@ -780,8 +780,8 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     let max_tile_width_sb = 4096 >> sbsz_log2;
     let max_tile_area_sb = 4096 * 2304 >> 2 * sbsz_log2;
     hdr.tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
-    hdr.tiling.max_log2_cols = tile_log2(1 as c_int, cmp::min(sbw, 64));
-    hdr.tiling.max_log2_rows = tile_log2(1 as c_int, cmp::min(sbh, 64));
+    hdr.tiling.max_log2_cols = tile_log2(1, cmp::min(sbw, 64));
+    hdr.tiling.max_log2_rows = tile_log2(1, cmp::min(sbh, 64));
     let min_log2_tiles: c_int = cmp::max(
         tile_log2(max_tile_area_sb, sbw * sbh),
         hdr.tiling.min_log2_cols,
@@ -829,7 +829,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             widest_tile = cmp::max(widest_tile, tile_w);
             hdr.tiling.cols += 1;
         }
-        hdr.tiling.log2_cols = tile_log2(1 as c_int, hdr.tiling.cols);
+        hdr.tiling.log2_cols = tile_log2(1, hdr.tiling.cols);
         if min_log2_tiles != 0 {
             max_tile_area_sb >>= min_log2_tiles + 1;
         }
@@ -847,7 +847,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             sby += tile_h;
             hdr.tiling.rows += 1;
         }
-        hdr.tiling.log2_rows = tile_log2(1 as c_int, hdr.tiling.rows);
+        hdr.tiling.log2_rows = tile_log2(1, hdr.tiling.rows);
     }
     hdr.tiling.col_start_sb[hdr.tiling.cols as usize] = sbw as u16;
     hdr.tiling.row_start_sb[hdr.tiling.rows as usize] = sbh as u16;
