@@ -159,10 +159,10 @@ unsafe fn parse_seq_hdr(
         return error(c);
     }
     if hdr.reduced_still_picture_header != 0 {
-        hdr.num_operating_points = 1 as c_int;
+        hdr.num_operating_points = 1;
         hdr.operating_points[0].major_level = rav1d_get_bits(gb, 3) as c_int;
         hdr.operating_points[0].minor_level = rav1d_get_bits(gb, 2) as c_int;
-        hdr.operating_points[0].initial_display_delay = 10 as c_int;
+        hdr.operating_points[0].initial_display_delay = 10;
     } else {
         hdr.timing_info_present = rav1d_get_bit(gb) as c_int;
         if hdr.timing_info_present != 0 {
@@ -310,7 +310,7 @@ unsafe fn parse_seq_hdr(
     if hdr.monochrome != 0 {
         hdr.color_range = rav1d_get_bit(gb) as c_int;
         hdr.layout = Rav1dPixelLayout::I400;
-        hdr.ss_ver = 1 as c_int;
+        hdr.ss_ver = 1;
         hdr.ss_hor = hdr.ss_ver;
         hdr.chr = RAV1D_CHR_UNKNOWN;
     } else if hdr.pri as c_uint == RAV1D_COLOR_PRI_BT709 as c_uint
@@ -318,7 +318,7 @@ unsafe fn parse_seq_hdr(
         && hdr.mtrx as c_uint == RAV1D_MC_IDENTITY as c_int as c_uint
     {
         hdr.layout = Rav1dPixelLayout::I444;
-        hdr.color_range = 1 as c_int;
+        hdr.color_range = 1;
         if hdr.profile != 1 && !(hdr.profile == 2 && hdr.hbd == 2) {
             return error(c);
         }
@@ -327,7 +327,7 @@ unsafe fn parse_seq_hdr(
         match hdr.profile {
             0 => {
                 hdr.layout = Rav1dPixelLayout::I420;
-                hdr.ss_ver = 1 as c_int;
+                hdr.ss_ver = 1;
                 hdr.ss_hor = hdr.ss_ver;
             }
             1 => {
@@ -340,7 +340,7 @@ unsafe fn parse_seq_hdr(
                         hdr.ss_ver = rav1d_get_bit(gb) as c_int;
                     }
                 } else {
-                    hdr.ss_hor = 1 as c_int;
+                    hdr.ss_hor = 1;
                 }
                 hdr.layout = if hdr.ss_hor != 0 {
                     if hdr.ss_ver != 0 {
@@ -402,7 +402,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
                         cmp::min(16 as c_int, hdr.width[1]),
                     );
                 } else {
-                    hdr.super_res.width_scale_denominator = 8 as c_int;
+                    hdr.super_res.width_scale_denominator = 8;
                     hdr.width[0] = hdr.width[1];
                 }
                 return 0 as c_int;
@@ -427,7 +427,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
             cmp::min(16 as c_int, hdr.width[1]),
         );
     } else {
-        hdr.super_res.width_scale_denominator = 8 as c_int;
+        hdr.super_res.width_scale_denominator = 8;
         hdr.width[0] = hdr.width[1];
     }
     hdr.have_render_size = rav1d_get_bit(gb) as c_int;
@@ -444,7 +444,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
 #[inline]
 unsafe fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
     let mut k;
-    k = 0 as c_int;
+    k = 0;
     while sz << k < tgt {
         k += 1;
     }
@@ -521,10 +521,10 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 seqhdr.force_integer_mv as c_uint
             }) as c_int;
     } else {
-        hdr.force_integer_mv = 0 as c_int;
+        hdr.force_integer_mv = 0;
     }
     if hdr.frame_type as c_uint & 1 as c_uint == 0 {
-        hdr.force_integer_mv = 1 as c_int;
+        hdr.force_integer_mv = 1;
     }
     if seqhdr.frame_id_numbers_present != 0 {
         hdr.frame_id = rav1d_get_bits(gb, seqhdr.frame_id_n_bits) as c_int;
@@ -601,9 +601,9 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         hdr.allow_intrabc = (hdr.allow_screen_content_tools != 0
             && hdr.super_res.enabled == 0
             && rav1d_get_bit(gb) != 0) as c_int;
-        hdr.use_ref_frame_mvs = 0 as c_int;
+        hdr.use_ref_frame_mvs = 0;
     } else {
-        hdr.allow_intrabc = 0 as c_int;
+        hdr.allow_intrabc = 0;
         hdr.refresh_frame_flags =
             (if hdr.frame_type as c_uint == RAV1D_FRAME_TYPE_SWITCH as c_int as c_uint {
                 0xff as c_int as c_uint
@@ -642,8 +642,8 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 i += 1;
             }
             let mut used_frame: [c_int; 8] = [0 as c_int, 0, 0, 0, 0, 0, 0, 0];
-            used_frame[hdr.refidx[0] as usize] = 1 as c_int;
-            used_frame[hdr.refidx[3] as usize] = 1 as c_int;
+            used_frame[hdr.refidx[0] as usize] = 1;
+            used_frame[hdr.refidx[3] as usize] = 1;
             let mut latest_frame_offset: c_int = -(1);
             let mut i = 0;
             while i < 8 {
@@ -658,7 +658,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 i += 1;
             }
             if latest_frame_offset != -(1) {
-                used_frame[hdr.refidx[6] as usize] = 1 as c_int;
+                used_frame[hdr.refidx[6] as usize] = 1;
             }
             let mut earliest_frame_offset = i32::MAX;
             let mut i = 0;
@@ -674,7 +674,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 i += 1;
             }
             if earliest_frame_offset != i32::MAX {
-                used_frame[hdr.refidx[4] as usize] = 1 as c_int;
+                used_frame[hdr.refidx[4] as usize] = 1;
             }
             earliest_frame_offset = i32::MAX;
             let mut i = 0;
@@ -690,7 +690,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 i += 1;
             }
             if earliest_frame_offset != i32::MAX {
-                used_frame[hdr.refidx[5] as usize] = 1 as c_int;
+                used_frame[hdr.refidx[5] as usize] = 1;
             }
             let mut i = 1;
             while i < 7 {
@@ -709,7 +709,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                         j += 1;
                     }
                     if latest_frame_offset != -(1) {
-                        used_frame[hdr.refidx[i as usize] as usize] = 1 as c_int;
+                        used_frame[hdr.refidx[i as usize] as usize] = 1;
                     }
                 }
                 i += 1;
@@ -793,7 +793,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             hdr.tiling.log2_cols += 1;
         }
         let tile_w = 1 + (sbw - 1 >> hdr.tiling.log2_cols);
-        hdr.tiling.cols = 0 as c_int;
+        hdr.tiling.cols = 0;
         let mut sbx = 0;
         while sbx < sbw {
             hdr.tiling.col_start_sb[hdr.tiling.cols as usize] = sbx as u16;
@@ -806,7 +806,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             hdr.tiling.log2_rows += 1;
         }
         let tile_h = 1 + (sbh - 1 >> hdr.tiling.log2_rows);
-        hdr.tiling.rows = 0 as c_int;
+        hdr.tiling.rows = 0;
         let mut sby = 0;
         while sby < sbh {
             hdr.tiling.row_start_sb[hdr.tiling.rows as usize] = sby as u16;
@@ -814,7 +814,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             hdr.tiling.rows += 1;
         }
     } else {
-        hdr.tiling.cols = 0 as c_int;
+        hdr.tiling.cols = 0;
         let mut widest_tile = 0;
         let mut max_tile_area_sb: c_int = sbw * sbh;
         let mut sbx = 0;
@@ -835,7 +835,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             max_tile_area_sb >>= min_log2_tiles + 1;
         }
         let max_tile_height_sb: c_int = cmp::max(max_tile_area_sb / widest_tile, 1);
-        hdr.tiling.rows = 0 as c_int;
+        hdr.tiling.rows = 0;
         let mut sby = 0;
         while sby < sbh && hdr.tiling.rows < 64 {
             let tile_height_sb: c_int = cmp::min(sbh - sby, max_tile_height_sb);
@@ -860,7 +860,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         }
         hdr.tiling.n_bytes = (rav1d_get_bits(gb, 2)).wrapping_add(1);
     } else {
-        hdr.tiling.update = 0 as c_int;
+        hdr.tiling.update = 0;
         hdr.tiling.n_bytes = hdr.tiling.update as c_uint;
     }
     hdr.quant.yac = rav1d_get_bits(gb, 8) as c_int;
@@ -914,9 +914,9 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     hdr.segmentation.enabled = rav1d_get_bit(gb) as c_int;
     if hdr.segmentation.enabled != 0 {
         if hdr.primary_ref_frame == 7 {
-            hdr.segmentation.update_map = 1 as c_int;
-            hdr.segmentation.temporal = 0 as c_int;
-            hdr.segmentation.update_data = 1 as c_int;
+            hdr.segmentation.update_map = 1;
+            hdr.segmentation.temporal = 0;
+            hdr.segmentation.update_data = 1;
         } else {
             hdr.segmentation.update_map = rav1d_get_bit(gb) as c_int;
             hdr.segmentation.temporal = (if hdr.segmentation.update_map != 0 {
@@ -927,7 +927,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             hdr.segmentation.update_data = rav1d_get_bit(gb) as c_int;
         }
         if hdr.segmentation.update_data != 0 {
-            hdr.segmentation.seg_data.preskip = 0 as c_int;
+            hdr.segmentation.seg_data.preskip = 0;
             hdr.segmentation.seg_data.last_active_segid = -(1);
             let mut i = 0;
             while i < 8 {
@@ -939,48 +939,48 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                     (*seg).delta_q = rav1d_get_sbits(gb, 9);
                     hdr.segmentation.seg_data.last_active_segid = i;
                 } else {
-                    (*seg).delta_q = 0 as c_int;
+                    (*seg).delta_q = 0;
                 }
                 if rav1d_get_bit(gb) != 0 {
                     (*seg).delta_lf_y_v = rav1d_get_sbits(gb, 7);
                     hdr.segmentation.seg_data.last_active_segid = i;
                 } else {
-                    (*seg).delta_lf_y_v = 0 as c_int;
+                    (*seg).delta_lf_y_v = 0;
                 }
                 if rav1d_get_bit(gb) != 0 {
                     (*seg).delta_lf_y_h = rav1d_get_sbits(gb, 7);
                     hdr.segmentation.seg_data.last_active_segid = i;
                 } else {
-                    (*seg).delta_lf_y_h = 0 as c_int;
+                    (*seg).delta_lf_y_h = 0;
                 }
                 if rav1d_get_bit(gb) != 0 {
                     (*seg).delta_lf_u = rav1d_get_sbits(gb, 7);
                     hdr.segmentation.seg_data.last_active_segid = i;
                 } else {
-                    (*seg).delta_lf_u = 0 as c_int;
+                    (*seg).delta_lf_u = 0;
                 }
                 if rav1d_get_bit(gb) != 0 {
                     (*seg).delta_lf_v = rav1d_get_sbits(gb, 7);
                     hdr.segmentation.seg_data.last_active_segid = i;
                 } else {
-                    (*seg).delta_lf_v = 0 as c_int;
+                    (*seg).delta_lf_v = 0;
                 }
                 if rav1d_get_bit(gb) != 0 {
                     (*seg).r#ref = rav1d_get_bits(gb, 3) as c_int;
                     hdr.segmentation.seg_data.last_active_segid = i;
-                    hdr.segmentation.seg_data.preskip = 1 as c_int;
+                    hdr.segmentation.seg_data.preskip = 1;
                 } else {
                     (*seg).r#ref = -(1);
                 }
                 (*seg).skip = rav1d_get_bit(gb) as c_int;
                 if (*seg).skip != 0 {
                     hdr.segmentation.seg_data.last_active_segid = i;
-                    hdr.segmentation.seg_data.preskip = 1 as c_int;
+                    hdr.segmentation.seg_data.preskip = 1;
                 }
                 (*seg).globalmv = rav1d_get_bit(gb) as c_int;
                 if (*seg).globalmv != 0 {
                     hdr.segmentation.seg_data.last_active_segid = i;
-                    hdr.segmentation.seg_data.preskip = 1 as c_int;
+                    hdr.segmentation.seg_data.preskip = 1;
                 }
                 i += 1;
             }
@@ -1034,7 +1034,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         && hdr.quant.uac_delta == 0
         && hdr.quant.vdc_delta == 0
         && hdr.quant.vac_delta == 0) as c_int;
-    hdr.all_lossless = 1 as c_int;
+    hdr.all_lossless = 1;
     let mut i = 0;
     while i < 8 {
         hdr.segmentation.qidx[i as usize] = if hdr.segmentation.enabled != 0 {
@@ -1048,13 +1048,13 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         i += 1;
     }
     if hdr.all_lossless != 0 || hdr.allow_intrabc != 0 {
-        hdr.loopfilter.level_y[1] = 0 as c_int;
+        hdr.loopfilter.level_y[1] = 0;
         hdr.loopfilter.level_y[0] = hdr.loopfilter.level_y[1];
-        hdr.loopfilter.level_v = 0 as c_int;
+        hdr.loopfilter.level_v = 0;
         hdr.loopfilter.level_u = hdr.loopfilter.level_v;
-        hdr.loopfilter.sharpness = 0 as c_int;
-        hdr.loopfilter.mode_ref_delta_enabled = 1 as c_int;
-        hdr.loopfilter.mode_ref_delta_update = 1 as c_int;
+        hdr.loopfilter.sharpness = 0;
+        hdr.loopfilter.mode_ref_delta_enabled = 1;
+        hdr.loopfilter.mode_ref_delta_update = 1;
         hdr.loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
     } else {
         hdr.loopfilter.level_y[0] = rav1d_get_bits(gb, 6) as c_int;
@@ -1113,9 +1113,9 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             i += 1;
         }
     } else {
-        hdr.cdef.n_bits = 0 as c_int;
-        hdr.cdef.y_strength[0] = 0 as c_int;
-        hdr.cdef.uv_strength[0] = 0 as c_int;
+        hdr.cdef.n_bits = 0;
+        hdr.cdef.y_strength[0] = 0;
+        hdr.cdef.uv_strength[0] = 0;
     }
     if (hdr.all_lossless == 0 || hdr.super_res.enabled != 0)
         && seqhdr.restoration != 0
@@ -1153,7 +1153,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                     as c_int as c_int;
             }
         } else {
-            hdr.restoration.unit_size[0] = 8 as c_int;
+            hdr.restoration.unit_size[0] = 8;
         }
     } else {
         hdr.restoration.r#type[0] = RAV1D_RESTORATION_NONE;
@@ -1172,7 +1172,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     } else {
         0 as c_uint
     }) as c_int;
-    hdr.skip_mode_allowed = 0 as c_int;
+    hdr.skip_mode_allowed = 0;
     if hdr.switchable_comp_refs != 0
         && hdr.frame_type as c_uint & 1 as c_uint != 0
         && seqhdr.order_hint != 0
@@ -1213,7 +1213,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         if off_before != 0xffffffff as c_uint && off_after != -(1) {
             hdr.skip_mode_refs[0] = cmp::min(off_before_idx, off_after_idx);
             hdr.skip_mode_refs[1] = cmp::max(off_before_idx, off_after_idx);
-            hdr.skip_mode_allowed = 1 as c_int;
+            hdr.skip_mode_allowed = 1;
         } else if off_before != 0xffffffff as c_uint {
             let mut off_before2: c_uint = 0xffffffff as c_uint;
             let mut off_before2_idx = 0;
@@ -1246,7 +1246,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             if off_before2 != 0xffffffff as c_uint {
                 hdr.skip_mode_refs[0] = cmp::min(off_before_idx, off_before2_idx);
                 hdr.skip_mode_refs[1] = cmp::max(off_before_idx, off_before2_idx);
-                hdr.skip_mode_allowed = 1 as c_int;
+                hdr.skip_mode_allowed = 1;
             }
         }
     }
@@ -1310,8 +1310,8 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                         );
                     *mat.offset(3) =
                         2 as c_int * rav1d_get_bits_subexp(gb, *ref_mat.offset(3) >> 1, 12);
-                    bits = 12 as c_int;
-                    shift = 10 as c_int;
+                    bits = 12;
+                    shift = 10;
                 } else {
                     bits = 9 - (hdr.hp == 0) as c_int;
                     shift = 13 + (hdr.hp == 0) as c_int;
@@ -1350,7 +1350,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         if hdr.film_grain.update == 0 {
             let refidx: c_int = rav1d_get_bits(gb, 3) as c_int;
             let mut i: c_int;
-            i = 0 as c_int;
+            i = 0;
             while i < 7 {
                 if hdr.refidx[i as usize] == refidx {
                     break;
@@ -1389,7 +1389,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 || fgd.chroma_scaling_from_luma
                 || seqhdr.ss_ver == 1 && seqhdr.ss_hor == 1 && fgd.num_y_points == 0
             {
-                fgd.num_uv_points[1] = 0 as c_int;
+                fgd.num_uv_points[1] = 0;
                 fgd.num_uv_points[0] = fgd.num_uv_points[1];
             } else {
                 let mut pl = 0;
@@ -1440,7 +1440,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                         i += 1;
                     }
                     if fgd.num_y_points == 0 {
-                        fgd.ar_coeffs_uv[pl as usize][num_uv_pos as usize] = 0 as i8;
+                        fgd.ar_coeffs_uv[pl as usize][num_uv_pos as usize] = 0;
                     }
                 }
                 pl += 1;
@@ -1488,7 +1488,7 @@ unsafe fn parse_tile_hdr(c: &mut Rav1dContext, gb: &mut GetBits) {
         (*(c.tile).offset(c.n_tile_data as isize)).start = rav1d_get_bits(gb, n_bits) as c_int;
         (*(c.tile).offset(c.n_tile_data as isize)).end = rav1d_get_bits(gb, n_bits) as c_int;
     } else {
-        (*(c.tile).offset(c.n_tile_data as isize)).start = 0 as c_int;
+        (*(c.tile).offset(c.n_tile_data as isize)).start = 0;
         (*(c.tile).offset(c.n_tile_data as isize)).end = n_tiles - 1;
     };
 }
@@ -1548,7 +1548,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
         }
         rav1d_ref_dec(&mut c.frame_hdr_ref);
         c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-        c.n_tiles = 0 as c_int;
+        c.n_tiles = 0;
         len.wrapping_add(init_byte_pos)
     }
 
@@ -1863,8 +1863,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_data_unref_internal(&mut (*(c.tile).offset(n as isize)).data);
                     n += 1;
                 }
-                c.n_tile_data = 0 as c_int;
-                c.n_tiles = 0 as c_int;
+                c.n_tile_data = 0;
+                c.n_tiles = 0;
                 if r#type as c_uint != RAV1D_OBU_FRAME as c_int as c_uint {
                     rav1d_get_bit(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
@@ -1954,8 +1954,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         rav1d_data_unref_internal(&mut (*(c.tile).offset(i as isize)).data);
                         i += 1;
                     }
-                    c.n_tile_data = 0 as c_int;
-                    c.n_tiles = 0 as c_int;
+                    c.n_tile_data = 0;
+                    c.n_tiles = 0;
                     error(c, r#in)?;
                 }
                 c.n_tiles += 1 as c_int + (*(c.tile).offset(c.n_tile_data as isize)).end
@@ -2027,7 +2027,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 let next = c.frame_thread.next;
                 c.frame_thread.next = (c.frame_thread.next).wrapping_add(1);
                 if c.frame_thread.next == c.n_fc {
-                    c.frame_thread.next = 0 as c_uint;
+                    c.frame_thread.next = 0;
                 }
                 let f: *mut Rav1dFrameContext =
                     &mut *(c.fc).offset(next as isize) as *mut Rav1dFrameContext;
@@ -2163,7 +2163,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             rav1d_submit_frame(&mut *c)?;
             assert!(c.n_tile_data == 0);
             c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-            c.n_tiles = 0 as c_int;
+            c.n_tiles = 0;
         }
     }
     Ok(len.wrapping_add(init_byte_pos))
