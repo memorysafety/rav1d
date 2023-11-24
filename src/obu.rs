@@ -1,7 +1,6 @@
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::data::Rav1dData;
-use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_INTRA;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_REFERENCE;
 use crate::include::dav1d::headers::DRav1d;
@@ -98,7 +97,6 @@ use crate::src::log::rav1d_log;
 use crate::src::picture::rav1d_picture_get_event_flags;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
-use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::picture::PICTURE_FLAG_NEW_OP_PARAMS_INFO;
 use crate::src::picture::PICTURE_FLAG_NEW_SEQUENCE;
@@ -1658,9 +1656,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             }
             if (c.seq_hdr).is_null() {
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                c.frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
-                    c.frame_flags as c_uint | PICTURE_FLAG_NEW_SEQUENCE as c_int as c_uint,
-                );
+                c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
             } else if memcmp(seq_hdr as *const c_void, c.seq_hdr as *const c_void, 1100) != 0 {
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
                 c.mastering_display = 0 as *mut Rav1dMasteringDisplay;
@@ -1679,18 +1675,14 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_cdf_thread_unref(&mut *(c.cdf).as_mut_ptr().offset(i as isize));
                     i += 1;
                 }
-                c.frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
-                    c.frame_flags as c_uint | PICTURE_FLAG_NEW_SEQUENCE as c_int as c_uint,
-                );
+                c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
             } else if memcmp(
                 ((*seq_hdr).operating_parameter_info).as_mut_ptr() as *const c_void,
                 ((*c.seq_hdr).operating_parameter_info).as_mut_ptr() as *const c_void,
                 ::core::mem::size_of::<[Dav1dSequenceHeaderOperatingParameterInfo; 32]>(),
             ) != 0
             {
-                c.frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
-                    c.frame_flags as c_uint | PICTURE_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint,
-                );
+                c.frame_flags |= PICTURE_FLAG_NEW_OP_PARAMS_INFO;
             }
             rav1d_ref_dec(&mut c.seq_hdr_ref);
             c.seq_hdr_ref = r#ref;
@@ -1847,9 +1839,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             current_block_188 = 8953117030348968745;
         }
         RAV1D_OBU_TD => {
-            c.frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
-                c.frame_flags as c_uint | PICTURE_FLAG_NEW_TEMPORAL_UNIT as c_int as c_uint,
-            );
+            c.frame_flags |= PICTURE_FLAG_NEW_TEMPORAL_UNIT;
             current_block_188 = 8953117030348968745;
         }
         RAV1D_OBU_PADDING => {
@@ -2057,14 +2047,11 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     .p,
                 );
                 rav1d_data_props_copy(&mut c.out.p.m, &mut r#in.m);
-                c.event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-                    c.event_flags as c_uint
-                        | rav1d_picture_get_event_flags(
-                            &mut (*(c.refs)
-                                .as_mut_ptr()
-                                .offset((*c.frame_hdr).existing_frame_idx as isize))
-                            .p,
-                        ) as c_uint,
+                c.event_flags |= rav1d_picture_get_event_flags(
+                    &mut (*(c.refs)
+                        .as_mut_ptr()
+                        .offset((*c.frame_hdr).existing_frame_idx as isize))
+                    .p,
                 );
             } else {
                 pthread_mutex_lock(&mut c.task_thread.lock);
@@ -2125,10 +2112,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         && progress != FRAME_ERROR
                     {
                         rav1d_thread_picture_ref(&mut c.out, out_delayed);
-                        c.event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-                            c.event_flags as c_uint
-                                | rav1d_picture_get_event_flags(out_delayed) as c_uint,
-                        );
+                        c.event_flags |= rav1d_picture_get_event_flags(out_delayed);
                     }
                     rav1d_thread_picture_unref(out_delayed);
                 }
