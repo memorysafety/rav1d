@@ -1991,8 +1991,11 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     unreachable!();
                 }
                 rav1d_data_ref(&mut (*(c.tile).offset(c.n_tile_data as isize)).data, r#in);
-                let ref mut fresh0 = (*(c.tile).offset(c.n_tile_data as isize)).data.data;
-                *fresh0 = (*fresh0).offset((bit_pos >> 3) as isize);
+                (*(c.tile).offset(c.n_tile_data as isize)).data.data = (*(c.tile)
+                    .offset(c.n_tile_data as isize))
+                .data
+                .data
+                .offset((bit_pos >> 3) as isize);
                 (*(c.tile).offset(c.n_tile_data as isize)).data.sz =
                     pkt_bytelen.wrapping_sub(bit_pos >> 3) as usize;
                 if (*(c.tile).offset(c.n_tile_data as isize)).start
@@ -2077,9 +2080,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 );
             } else {
                 pthread_mutex_lock(&mut c.task_thread.lock);
-                let fresh1 = c.frame_thread.next;
+                let next = c.frame_thread.next;
                 c.frame_thread.next = (c.frame_thread.next).wrapping_add(1);
-                let next: c_uint = fresh1;
                 if c.frame_thread.next == c.n_fc {
                     c.frame_thread.next = 0 as c_int as c_uint;
                 }
@@ -2099,7 +2101,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         &mut (*f).task_thread.error as *mut atomic_int,
                     ) != 0
                 {
-                    let mut first: c_uint =
+                    let first: c_uint =
                         ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
                     if first.wrapping_add(1 as c_uint) < c.n_fc {
                         ::core::intrinsics::atomic_xadd_seqcst(
@@ -2112,13 +2114,11 @@ pub(crate) unsafe fn rav1d_parse_obus(
                             0 as c_int as c_uint,
                         );
                     }
-                    let fresh2 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
+                    ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
                         &mut c.task_thread.reset_task_cur,
-                        *&mut first,
+                        first,
                         u32::MAX,
                     );
-                    *&mut first = fresh2.0;
-                    fresh2.1;
                     if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
                         c.task_thread.cur = (c.task_thread.cur).wrapping_sub(1);
                     }
