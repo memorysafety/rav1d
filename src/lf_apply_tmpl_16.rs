@@ -1,17 +1,17 @@
+use crate::include::common::bitdepth::BitDepth16;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::env::BlockContext;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
+use crate::src::lf_apply::backup_lpf;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
-use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 
 pub type pixel = u16;
 
@@ -21,118 +21,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
         unreachable!();
     }
     return x >> 1;
-}
-
-unsafe fn backup_lpf(
-    f: *const Rav1dFrameContext,
-    mut dst: *mut pixel,
-    dst_stride: ptrdiff_t,
-    mut src: *const pixel,
-    src_stride: ptrdiff_t,
-    ss_ver: c_int,
-    sb128: c_int,
-    mut row: c_int,
-    row_h: c_int,
-    src_w: c_int,
-    h: c_int,
-    ss_hor: c_int,
-    lr_backup: c_int,
-) {
-    let cdef_backup = (lr_backup == 0) as c_int;
-    let dst_w = if (*(*f).frame_hdr).super_res.enabled != 0 {
-        (*(*f).frame_hdr).width[1] + ss_hor >> ss_hor
-    } else {
-        src_w
-    };
-    let mut stripe_h = ((64 as c_int) << (cdef_backup & sb128)) - 8 * (row == 0) as c_int >> ss_ver;
-    src = src.offset(((stripe_h - 2) as isize * PXSTRIDE(src_stride)) as isize);
-    if (*(*f).c).n_tc == 1 as c_uint {
-        if row != 0 {
-            let top = (4 as c_int) << sb128;
-            memcpy(
-                &mut *dst.offset(((PXSTRIDE)(dst_stride) * 0 as isize) as isize) as *mut pixel
-                    as *mut c_void,
-                &mut *dst.offset(((PXSTRIDE)(dst_stride) * top as isize) as isize) as *mut pixel
-                    as *const c_void,
-                (dst_w << 1) as usize,
-            );
-            memcpy(
-                &mut *dst.offset(((PXSTRIDE)(dst_stride) * 1 as isize) as isize) as *mut pixel
-                    as *mut c_void,
-                &mut *dst.offset(((PXSTRIDE)(dst_stride) * (top + 1) as isize) as isize)
-                    as *mut pixel as *const c_void,
-                (dst_w << 1) as usize,
-            );
-            memcpy(
-                &mut *dst.offset(((PXSTRIDE)(dst_stride) * 2 as isize) as isize) as *mut pixel
-                    as *mut c_void,
-                &mut *dst.offset(((PXSTRIDE)(dst_stride) * (top + 2) as isize) as isize)
-                    as *mut pixel as *const c_void,
-                (dst_w << 1) as usize,
-            );
-            memcpy(
-                &mut *dst.offset(((PXSTRIDE)(dst_stride) * 3 as isize) as isize) as *mut pixel
-                    as *mut c_void,
-                &mut *dst.offset(((PXSTRIDE)(dst_stride) * (top + 3) as isize) as isize)
-                    as *mut pixel as *const c_void,
-                (dst_w << 1) as usize,
-            );
-        }
-        dst = dst.offset(4 * PXSTRIDE(dst_stride));
-    }
-    if lr_backup != 0 && (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
-        while row + stripe_h <= row_h {
-            let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
-            ((*(*f).dsp).mc.resize)(
-                dst.cast(),
-                dst_stride,
-                src.cast(),
-                src_stride,
-                dst_w,
-                n_lines,
-                src_w,
-                (*f).resize_step[ss_hor as usize],
-                (*f).resize_start[ss_hor as usize],
-                (*f).bitdepth_max,
-            );
-            row += stripe_h;
-            stripe_h = 64 >> ss_ver;
-            src = src.offset((stripe_h as isize * PXSTRIDE(src_stride)) as isize);
-            dst = dst.offset((n_lines as isize * PXSTRIDE(dst_stride)) as isize);
-            if n_lines == 3 {
-                memcpy(
-                    dst as *mut c_void,
-                    &mut *dst.offset(-(PXSTRIDE)(dst_stride) as isize) as *mut pixel
-                        as *const c_void,
-                    (dst_w << 1) as usize,
-                );
-                dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-            }
-        }
-    } else {
-        while row + stripe_h <= row_h {
-            let n_lines_0 = 4 - (row + stripe_h + 1 == h) as c_int;
-            let mut i = 0;
-            while i < 4 {
-                memcpy(
-                    dst as *mut c_void,
-                    (if i == n_lines_0 {
-                        &mut *dst.offset(-(PXSTRIDE)(dst_stride) as isize) as *mut pixel
-                            as *const pixel
-                    } else {
-                        src
-                    }) as *const c_void,
-                    (src_w << 1) as usize,
-                );
-                dst = dst.offset(PXSTRIDE(dst_stride) as isize);
-                src = src.offset(PXSTRIDE(src_stride) as isize);
-                i += 1;
-            }
-            row += stripe_h;
-            stripe_h = 64 >> ss_ver;
-            src = src.offset(((stripe_h - 4) as isize * PXSTRIDE(src_stride)) as isize);
-        }
-    };
 }
 
 pub(crate) unsafe fn rav1d_copy_lpf_16bpc(
@@ -161,7 +49,7 @@ pub(crate) unsafe fn rav1d_copy_lpf_16bpc(
         let row_h = cmp::min((sby + 1) << 6 + (*(*f).seq_hdr).sb128, h - 1);
         let y_stripe = (sby << 6 + (*(*f).seq_hdr).sb128) - offset;
         if restore_planes & LR_RESTORE_Y as c_int != 0 || resize == 0 {
-            backup_lpf(
+            backup_lpf::<BitDepth16>(
                 f,
                 dst[0],
                 *lr_stride.offset(0),
@@ -180,7 +68,7 @@ pub(crate) unsafe fn rav1d_copy_lpf_16bpc(
         }
         if have_tt != 0 && resize != 0 {
             let cdef_off_y: ptrdiff_t = (sby * 4) as isize * PXSTRIDE(*src_stride.offset(0));
-            backup_lpf(
+            backup_lpf::<BitDepth16>(
                 f,
                 ((*f).lf.cdef_lpf_line[0] as *mut pixel).offset(cdef_off_y as isize),
                 *src_stride.offset(0),
@@ -214,7 +102,7 @@ pub(crate) unsafe fn rav1d_copy_lpf_16bpc(
         let cdef_off_uv: ptrdiff_t = sby as isize * 4 * PXSTRIDE(*src_stride.offset(1));
         if (*(*f).seq_hdr).cdef != 0 || restore_planes & LR_RESTORE_U as c_int != 0 {
             if restore_planes & LR_RESTORE_U as c_int != 0 || resize == 0 {
-                backup_lpf(
+                backup_lpf::<BitDepth16>(
                     f,
                     dst[1],
                     *lr_stride.offset(1),
@@ -232,7 +120,7 @@ pub(crate) unsafe fn rav1d_copy_lpf_16bpc(
                 );
             }
             if have_tt != 0 && resize != 0 {
-                backup_lpf(
+                backup_lpf::<BitDepth16>(
                     f,
                     ((*f).lf.cdef_lpf_line[1] as *mut pixel).offset(cdef_off_uv as isize),
                     *src_stride.offset(1),
@@ -252,7 +140,7 @@ pub(crate) unsafe fn rav1d_copy_lpf_16bpc(
         }
         if (*(*f).seq_hdr).cdef != 0 || restore_planes & LR_RESTORE_V as c_int != 0 {
             if restore_planes & LR_RESTORE_V as c_int != 0 || resize == 0 {
-                backup_lpf(
+                backup_lpf::<BitDepth16>(
                     f,
                     dst[2],
                     *lr_stride.offset(1),
@@ -270,7 +158,7 @@ pub(crate) unsafe fn rav1d_copy_lpf_16bpc(
                 );
             }
             if have_tt != 0 && resize != 0 {
-                backup_lpf(
+                backup_lpf::<BitDepth16>(
                     f,
                     ((*f).lf.cdef_lpf_line[2] as *mut pixel).offset(cdef_off_uv as isize),
                     *src_stride.offset(1),
