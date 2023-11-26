@@ -1,5 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth16;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
@@ -13,6 +15,7 @@ use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
+use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::CodedBlockInfo;
@@ -115,12 +118,6 @@ use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::ops::BitOr;
 use std::slice;
-
-#[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
-use crate::src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc;
-
-#[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
-use crate::src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc;
 
 /// TODO: add feature and compile-time guard around this code
 pub(crate) unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
@@ -4561,7 +4558,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: &mut Rav1dTaskCon
             ),
         ];
         match BD::BPC {
-            BPC::BPC8 => rav1d_cdef_brow_8bpc(
+            BPC::BPC8 => rav1d_cdef_brow::<BitDepth8>(
                 tc,
                 p_up.as_mut_ptr().cast(),
                 prev_mask,
@@ -4570,7 +4567,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: &mut Rav1dTaskCon
                 1 as c_int,
                 sby,
             ),
-            BPC::BPC16 => rav1d_cdef_brow_16bpc(
+            BPC::BPC16 => rav1d_cdef_brow::<BitDepth16>(
                 tc,
                 p_up.as_mut_ptr().cast(),
                 prev_mask,
@@ -4584,9 +4581,11 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: &mut Rav1dTaskCon
     let n_blks = sbsz - 2 * ((sby + 1) < (*f).sbh) as c_int;
     let end = cmp::min(start + n_blks, (*f).bh);
     match BD::BPC {
-        BPC::BPC8 => rav1d_cdef_brow_8bpc(tc, p.as_ptr().cast(), mask, start, end, 0 as c_int, sby),
+        BPC::BPC8 => {
+            rav1d_cdef_brow::<BitDepth8>(tc, p.as_ptr().cast(), mask, start, end, 0 as c_int, sby)
+        }
         BPC::BPC16 => {
-            rav1d_cdef_brow_16bpc(tc, p.as_ptr().cast(), mask, start, end, 0 as c_int, sby)
+            rav1d_cdef_brow::<BitDepth16>(tc, p.as_ptr().cast(), mask, start, end, 0 as c_int, sby)
         }
     };
 }
