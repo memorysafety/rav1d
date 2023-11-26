@@ -67,10 +67,6 @@ pub mod src {
     mod itx_tmpl_8;
     mod levels;
     mod lf_apply;
-    #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
-    mod lf_apply_tmpl_16;
-    #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
-    mod lf_apply_tmpl_8;
     mod lf_mask;
     pub mod lib;
     mod log;

@@ -727,3 +727,70 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         level_ptr = level_ptr.offset((32 >> ss_hor) as isize);
     }
 }
+
+pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
+    f: *const Rav1dFrameContext,
+    p: *const *mut BD::Pixel,
+    lflvl: *mut Av1Filter,
+    sby: c_int,
+) {
+    let mut x;
+    let have_top = (sby > 0) as c_int;
+    let is_sb64 = ((*(*f).seq_hdr).sb128 == 0) as c_int;
+    let starty4 = (sby & is_sb64) << 4;
+    let sbsz = 32 >> is_sb64;
+    let ss_ver =
+        ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
+    let ss_hor =
+        ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let endy4: c_uint = (starty4 + cmp::min((*f).h4 - sby * sbsz, sbsz)) as c_uint;
+    let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
+    let mut ptr: *mut BD::Pixel;
+    let mut level_ptr: *mut [u8; 4] =
+        ((*f).lf.level).offset((*f).b4_stride * sby as isize * sbsz as isize);
+    ptr = *p.offset(0);
+    x = 0 as c_int;
+    while x < (*f).sb128w {
+        filter_plane_rows_y::<BD>(
+            f,
+            have_top,
+            level_ptr as *const [u8; 4],
+            (*f).b4_stride,
+            ((*lflvl.offset(x as isize)).filter_y[1]).as_mut_ptr() as *const [[u16; 2]; 3],
+            ptr,
+            (*f).cur.stride[0],
+            cmp::min(32 as c_int, (*f).w4 - x * 32),
+            starty4,
+            endy4 as c_int,
+        );
+        x += 1;
+        ptr = ptr.offset(128);
+        level_ptr = level_ptr.offset(32);
+    }
+    if (*(*f).frame_hdr).loopfilter.level_u == 0 && (*(*f).frame_hdr).loopfilter.level_v == 0 {
+        return;
+    }
+    let mut uv_off: ptrdiff_t;
+    level_ptr = ((*f).lf.level).offset((*f).b4_stride * (sby * sbsz >> ss_ver) as isize);
+    uv_off = 0 as c_int as ptrdiff_t;
+    x = 0 as c_int;
+    while x < (*f).sb128w {
+        filter_plane_rows_uv::<BD>(
+            f,
+            have_top,
+            level_ptr as *const [u8; 4],
+            (*f).b4_stride,
+            ((*lflvl.offset(x as isize)).filter_uv[1]).as_mut_ptr() as *const [[u16; 2]; 2],
+            &mut *(*p.offset(1)).offset(uv_off as isize),
+            &mut *(*p.offset(2)).offset(uv_off as isize),
+            (*f).cur.stride[1],
+            cmp::min(32 as c_int, (*f).w4 - x * 32) + ss_hor >> ss_hor,
+            starty4 >> ss_ver,
+            uv_endy4 as c_int,
+            ss_hor,
+        );
+        x += 1;
+        uv_off += 128 >> ss_hor;
+        level_ptr = level_ptr.offset((32 >> ss_hor) as isize);
+    }
+}
