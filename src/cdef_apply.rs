@@ -1,16 +1,7 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::src::align::Align16;
-use crate::src::cdef::CdefEdgeFlags;
-use crate::src::cdef::CDEF_HAVE_BOTTOM;
-use crate::src::cdef::CDEF_HAVE_LEFT;
-use crate::src::cdef::CDEF_HAVE_RIGHT;
-use crate::src::cdef::CDEF_HAVE_TOP;
-use crate::src::internal::Rav1dDSPContext;
-use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dTaskContext;
-use crate::src::lf_mask::Av1Filter;
+
 use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -157,4 +148,17 @@ pub(crate) unsafe fn backup2x8<BD: BitDepth>(
         y_0 += 1;
         y_off += BD::pxstride(*src_stride.offset(1) as usize) as isize;
     }
+}
+
+// TODO(perl) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
+    if var == 0 {
+        return 0 as c_int;
+    }
+    let i = if var >> 6 != 0 {
+        cmp::min(ulog2(var >> 6), 12 as c_int)
+    } else {
+        0 as c_int
+    };
+    return strength * (4 + i) + 8 >> 4;
 }

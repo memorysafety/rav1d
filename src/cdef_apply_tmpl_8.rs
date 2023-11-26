@@ -1,5 +1,5 @@
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::intops::ulog2;
+
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::align::Align16;
 use crate::src::cdef::CdefEdgeFlags;
@@ -7,36 +7,24 @@ use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
+use crate::src::cdef_apply::adjust_strength;
 use crate::src::cdef_apply::backup2lines;
 use crate::src::cdef_apply::backup2x8;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::lf_mask::Av1Filter;
-use libc::memcpy;
+
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 
 pub type pixel = u8;
 
 pub type Backup2x8Flags = c_uint;
 pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
 pub const BACKUP_2X8_Y: Backup2x8Flags = 1;
-
-unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
-    if var == 0 {
-        return 0 as c_int;
-    }
-    let i = if var >> 6 != 0 {
-        cmp::min(ulog2(var >> 6), 12 as c_int)
-    } else {
-        0 as c_int
-    };
-    return strength * (4 + i) + 8 >> 4;
-}
 
 pub(crate) unsafe fn rav1d_cdef_brow_8bpc(
     tc: *mut Rav1dTaskContext,
