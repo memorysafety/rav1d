@@ -30,6 +30,7 @@ pub mod src {
     pub mod align;
     mod assume;
     mod cdef;
+    mod cdef_apply;
     #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
     mod cdef_apply_tmpl_16;
     #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
