@@ -465,3 +465,58 @@ pub(crate) unsafe fn filter_plane_cols_uv<BD: BitDepth>(
         x += 1;
     }
 }
+
+// TODO(perl) Temporarily pub until mod is deduplicated
+#[inline]
+pub(crate) unsafe fn filter_plane_rows_uv<BD: BitDepth>(
+    f: *const Rav1dFrameContext,
+    have_top: c_int,
+    mut lvl: *const [u8; 4],
+    b4_stride: ptrdiff_t,
+    mask: *const [[u16; 2]; 2],
+    u: *mut BD::Pixel,
+    v: *mut BD::Pixel,
+    ls: ptrdiff_t,
+    w: c_int,
+    starty4: c_int,
+    endy4: c_int,
+    ss_hor: c_int,
+) {
+    let dsp: *const Rav1dDSPContext = (*f).dsp;
+    let mut off_l: ptrdiff_t = 0 as c_int as ptrdiff_t;
+    let mut y = starty4;
+    while y < endy4 {
+        if !(have_top == 0 && y == 0) {
+            let vmask: [u32; 3] = [
+                (*mask.offset(y as isize))[0][0] as c_uint
+                    | ((*mask.offset(y as isize))[0][1] as c_uint) << (16 >> ss_hor),
+                (*mask.offset(y as isize))[1][0] as c_uint
+                    | ((*mask.offset(y as isize))[1][1] as c_uint) << (16 >> ss_hor),
+                0 as c_int as u32,
+            ];
+            (*dsp).lf.loop_filter_sb[1][1](
+                u.offset(off_l as isize).cast(),
+                ls,
+                vmask.as_ptr(),
+                &*(*lvl.offset(0)).as_ptr().offset(2) as *const u8 as *const [u8; 4],
+                b4_stride,
+                &(*f).lf.lim_lut.0,
+                w,
+                (*f).bitdepth_max,
+            );
+            (*dsp).lf.loop_filter_sb[1][1](
+                v.offset(off_l as isize).cast(),
+                ls,
+                vmask.as_ptr(),
+                &*(*lvl.offset(0)).as_ptr().offset(3) as *const u8 as *const [u8; 4],
+                b4_stride,
+                &(*f).lf.lim_lut.0,
+                w,
+                (*f).bitdepth_max,
+            );
+        }
+        y += 1;
+        off_l += 4 * BD::pxstride(ls as usize) as isize;
+        lvl = lvl.offset(b4_stride as isize);
+    }
+}
