@@ -8,6 +8,7 @@ use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
 use crate::src::cdef_apply::backup2lines;
+use crate::src::cdef_apply::backup2x8;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
@@ -24,56 +25,6 @@ pub type pixel = u8;
 pub type Backup2x8Flags = c_uint;
 pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
 pub const BACKUP_2X8_Y: Backup2x8Flags = 1;
-
-unsafe fn backup2x8(
-    dst: *mut [[pixel; 2]; 8],
-    src: *const *mut pixel,
-    src_stride: *const ptrdiff_t,
-    mut x_off: c_int,
-    layout: Rav1dPixelLayout,
-    flag: Backup2x8Flags,
-) {
-    let mut y_off: ptrdiff_t = 0 as c_int as ptrdiff_t;
-    if flag as c_uint & BACKUP_2X8_Y as c_int as c_uint != 0 {
-        let mut y = 0;
-        while y < 8 {
-            memcpy(
-                ((*dst.offset(0))[y as usize]).as_mut_ptr() as *mut c_void,
-                &mut *(*src.offset(0)).offset((y_off + x_off as isize - 2) as isize) as *mut pixel
-                    as *const c_void,
-                2,
-            );
-            y += 1;
-            y_off += *src_stride.offset(0);
-        }
-    }
-    if layout as c_uint == Rav1dPixelLayout::I400 as c_int as c_uint
-        || flag as c_uint & BACKUP_2X8_UV as c_int as c_uint == 0
-    {
-        return;
-    }
-    let ss_ver = (layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor = (layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
-    x_off >>= ss_hor;
-    y_off = 0 as c_int as ptrdiff_t;
-    let mut y_0 = 0;
-    while y_0 < 8 >> ss_ver {
-        memcpy(
-            ((*dst.offset(1))[y_0 as usize]).as_mut_ptr() as *mut c_void,
-            &mut *(*src.offset(1)).offset((y_off + x_off as isize - 2) as isize) as *mut pixel
-                as *const c_void,
-            2 as usize,
-        );
-        memcpy(
-            ((*dst.offset(2))[y_0 as usize]).as_mut_ptr() as *mut c_void,
-            &mut *(*src.offset(2)).offset((y_off + x_off as isize - 2 as isize) as isize)
-                as *mut pixel as *const c_void,
-            2,
-        );
-        y_0 += 1;
-        y_off += *src_stride.offset(1);
-    }
-}
 
 unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
     if var == 0 {
@@ -230,7 +181,7 @@ pub(crate) unsafe fn rav1d_cdef_brow_8bpc(
                         prev_flag = flag;
                         if do_left != 0 && edges as c_uint & CDEF_HAVE_LEFT as c_int as c_uint != 0
                         {
-                            backup2x8(
+                            backup2x8::<BitDepth8>(
                                 (lr_bak[bit as usize]).as_mut_ptr(),
                                 bptrs.as_mut_ptr() as *const *mut pixel,
                                 ((*f).cur.stride).as_mut_ptr() as *const ptrdiff_t,
@@ -240,7 +191,7 @@ pub(crate) unsafe fn rav1d_cdef_brow_8bpc(
                             );
                         }
                         if edges as c_uint & CDEF_HAVE_RIGHT as c_int as c_uint != 0 {
-                            backup2x8(
+                            backup2x8::<BitDepth8>(
                                 (lr_bak[(bit == 0) as c_int as usize]).as_mut_ptr(),
                                 bptrs.as_mut_ptr() as *const *mut pixel,
                                 ((*f).cur.stride).as_mut_ptr() as *const ptrdiff_t,
