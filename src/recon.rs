@@ -78,6 +78,7 @@ use crate::src::levels::TX_CLASS_V;
 use crate::src::levels::WHT_WHT;
 use crate::src::lf_apply::rav1d_copy_lpf;
 use crate::src::lf_apply::rav1d_loopfilter_sbrow_cols;
+use crate::src::lf_apply::rav1d_loopfilter_sbrow_rows;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::msac::rav1d_msac_decode_bool_adapt;
 use crate::src::msac::rav1d_msac_decode_bool_equi;
@@ -118,16 +119,12 @@ use std::slice;
 
 #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
 use crate::{
-    src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc,
-    src::lf_apply_tmpl_8::rav1d_loopfilter_sbrow_rows_8bpc,
-    src::lr_apply_tmpl_8::rav1d_lr_sbrow_8bpc,
+    src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc, src::lr_apply_tmpl_8::rav1d_lr_sbrow_8bpc,
 };
 
 #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
 use crate::{
-    src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc,
-    src::lf_apply_tmpl_16::rav1d_loopfilter_sbrow_rows_16bpc,
-    src::lr_apply_tmpl_16::rav1d_lr_sbrow_16bpc,
+    src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc, src::lr_apply_tmpl_16::rav1d_lr_sbrow_16bpc,
 };
 
 /// TODO: add feature and compile-time guard around this code
@@ -4541,8 +4538,10 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
         && ((*f.frame_hdr).loopfilter.level_y[0] != 0 || (*f.frame_hdr).loopfilter.level_y[1] != 0)
     {
         match BD::BPC {
-            BPC::BPC8 => rav1d_loopfilter_sbrow_rows_8bpc(f, p.as_ptr().cast(), mask, sby),
-            BPC::BPC16 => rav1d_loopfilter_sbrow_rows_16bpc(f, p.as_ptr().cast(), mask, sby),
+            BPC::BPC8 => rav1d_loopfilter_sbrow_rows::<BitDepth8>(f, p.as_ptr().cast(), mask, sby),
+            BPC::BPC16 => {
+                rav1d_loopfilter_sbrow_rows::<BitDepth16>(f, p.as_ptr().cast(), mask, sby)
+            }
         };
     }
     if (*f.seq_hdr).cdef != 0 || f.lf.restore_planes != 0 {
