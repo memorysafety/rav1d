@@ -1,9 +1,9 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
+
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
-use crate::src::align::Align16;
+
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::lf_mask::Av1RestorationUnit;
@@ -14,6 +14,8 @@ use crate::src::looprestoration::LR_HAVE_BOTTOM;
 use crate::src::looprestoration::LR_HAVE_TOP;
 use crate::src::tables::dav1d_sgr_params;
 
+use libc::c_void;
+use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -142,5 +144,21 @@ pub(crate) unsafe fn lr_stripe<BD: BitDepth>(
             break;
         }
         lpf = lpf.offset(4 * BD::pxstride(stride as usize) as isize);
+    }
+}
+
+// TODO(perl) Temporarily pub until mod is deduplicated
+pub(crate) unsafe fn backup4xU<BD: BitDepth>(
+    mut dst: *mut [BD::Pixel; 4],
+    mut src: *const BD::Pixel,
+    src_stride: ptrdiff_t,
+    mut u: c_int,
+) {
+    while u > 0 {
+        let n = if BD::BITDEPTH == 8 { 4 } else { 4 << 1 };
+        memcpy(dst as *mut c_void, src as *const c_void, n);
+        u -= 1;
+        dst = dst.offset(1);
+        src = src.offset(BD::pxstride(src_stride as usize) as isize);
     }
 }

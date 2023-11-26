@@ -1,46 +1,29 @@
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
+
 use crate::src::align::Align16;
-use crate::src::internal::Rav1dDSPContext;
+
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::looprestoration::looprestorationfilter_fn;
-use crate::src::looprestoration::LooprestorationParams;
+
 use crate::src::looprestoration::LrEdgeFlags;
-use crate::src::looprestoration::LR_HAVE_BOTTOM;
+
 use crate::src::looprestoration::LR_HAVE_LEFT;
 use crate::src::looprestoration::LR_HAVE_RIGHT;
 use crate::src::looprestoration::LR_HAVE_TOP;
+use crate::src::lr_apply::backup4xU;
 use crate::src::lr_apply::lr_stripe;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
-use crate::src::tables::dav1d_sgr_params;
-use libc::memcpy;
+
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 
 pub type pixel = u8;
-
-unsafe fn backup4xU(
-    mut dst: *mut [pixel; 4],
-    mut src: *const pixel,
-    src_stride: ptrdiff_t,
-    mut u: c_int,
-) {
-    while u > 0 {
-        memcpy(dst as *mut c_void, src as *const c_void, 4);
-        u -= 1;
-        dst = dst.offset(1);
-        src = src.offset(src_stride as isize);
-    }
-}
 
 unsafe fn lr_sbrow(
     f: *const Rav1dFrameContext,
@@ -90,7 +73,7 @@ unsafe fn lr_sbrow(
         let restore_next = (lr[(bit == 0) as c_int as usize].r#type as c_int
             != RAV1D_RESTORATION_NONE as c_int) as c_int;
         if restore_next != 0 {
-            backup4xU(
+            backup4xU::<BitDepth8>(
                 (pre_lr_border[bit as usize]).as_mut_ptr(),
                 p.offset(unit_size as isize).offset(-(4 as c_int as isize)),
                 p_stride,
