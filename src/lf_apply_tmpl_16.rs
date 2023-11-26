@@ -5,6 +5,7 @@ use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 
 use crate::src::lf_apply::filter_plane_cols_y;
+use crate::src::lf_apply::filter_plane_rows_y;
 use crate::src::lf_mask::Av1Filter;
 
 use libc::ptrdiff_t;
@@ -20,49 +21,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
         unreachable!();
     }
     return x >> 1;
-}
-
-#[inline]
-unsafe fn filter_plane_rows_y(
-    f: *const Rav1dFrameContext,
-    have_top: c_int,
-    mut lvl: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    mask: *const [[u16; 2]; 3],
-    mut dst: *mut pixel,
-    ls: ptrdiff_t,
-    w: c_int,
-    starty4: c_int,
-    endy4: c_int,
-) {
-    let dsp: *const Rav1dDSPContext = (*f).dsp;
-    let mut y = starty4;
-    while y < endy4 {
-        if !(have_top == 0 && y == 0) {
-            let vmask: [u32; 4] = [
-                (*mask.offset(y as isize))[0][0] as c_uint
-                    | ((*mask.offset(y as isize))[0][1] as c_uint) << 16,
-                (*mask.offset(y as isize))[1][0] as c_uint
-                    | ((*mask.offset(y as isize))[1][1] as c_uint) << 16,
-                (*mask.offset(y as isize))[2][0] as c_uint
-                    | ((*mask.offset(y as isize))[2][1] as c_uint) << 16,
-                0 as c_int as u32,
-            ];
-            (*dsp).lf.loop_filter_sb[0][1](
-                dst.cast(),
-                ls,
-                vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(1) as *const u8 as *const [u8; 4],
-                b4_stride,
-                &(*f).lf.lim_lut.0,
-                w,
-                (*f).bitdepth_max,
-            );
-        }
-        y += 1;
-        dst = dst.offset(4 * PXSTRIDE(ls));
-        lvl = lvl.offset(b4_stride as isize);
-    }
 }
 
 #[inline]
@@ -404,7 +362,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows_16bpc(
     ptr = *p.offset(0);
     x = 0 as c_int;
     while x < (*f).sb128w {
-        filter_plane_rows_y(
+        filter_plane_rows_y::<BitDepth16>(
             f,
             have_top,
             level_ptr as *const [u8; 4],
