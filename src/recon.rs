@@ -1,5 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth16;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
@@ -78,6 +80,7 @@ use crate::src::lf_apply::rav1d_copy_lpf;
 use crate::src::lf_apply::rav1d_loopfilter_sbrow_cols;
 use crate::src::lf_apply::rav1d_loopfilter_sbrow_rows;
 use crate::src::lf_mask::Av1Filter;
+use crate::src::lr_apply::rav1d_lr_sbrow;
 use crate::src::msac::rav1d_msac_decode_bool_adapt;
 use crate::src::msac::rav1d_msac_decode_bool_equi;
 use crate::src::msac::rav1d_msac_decode_bools;
@@ -116,14 +119,10 @@ use std::ops::BitOr;
 use std::slice;
 
 #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
-use crate::{
-    src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc, src::lr_apply_tmpl_8::rav1d_lr_sbrow_8bpc,
-};
+use crate::src::cdef_apply_tmpl_8::rav1d_cdef_brow_8bpc;
 
 #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
-use crate::{
-    src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc, src::lr_apply_tmpl_16::rav1d_lr_sbrow_16bpc,
-};
+use crate::src::cdef_apply_tmpl_16::rav1d_cdef_brow_16bpc;
 
 /// TODO: add feature and compile-time guard around this code
 pub(crate) unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
@@ -4680,8 +4679,8 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(f: &mut Rav1dFrameConte
             .offset(y as isize * BD::pxstride(f.sr_cur.p.stride[1] as usize) as isize >> ss_ver),
     ];
     match BD::BPC {
-        BPC::BPC8 => rav1d_lr_sbrow_8bpc(f, sr_p.as_ptr().cast(), sby),
-        BPC::BPC16 => rav1d_lr_sbrow_16bpc(f, sr_p.as_ptr().cast(), sby),
+        BPC::BPC8 => rav1d_lr_sbrow::<BitDepth8>(f, sr_p.as_ptr().cast(), sby),
+        BPC::BPC16 => rav1d_lr_sbrow::<BitDepth16>(f, sr_p.as_ptr().cast(), sby),
     };
 }
 
