@@ -3,67 +3,16 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::env::BlockContext;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
-use crate::src::lf_apply::backup_lpf;
+
+use crate::src::lf_apply::filter_plane_cols_y;
 use crate::src::lf_mask::Av1Filter;
-use crate::src::lr_apply::LR_RESTORE_U;
-use crate::src::lr_apply::LR_RESTORE_V;
-use crate::src::lr_apply::LR_RESTORE_Y;
-use libc::memcpy;
+
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 
 pub type pixel = u8;
-
-#[inline]
-unsafe fn filter_plane_cols_y(
-    f: *const Rav1dFrameContext,
-    have_left: c_int,
-    lvl: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    mask: *const [[u16; 2]; 3],
-    dst: *mut pixel,
-    ls: ptrdiff_t,
-    w: c_int,
-    starty4: c_int,
-    endy4: c_int,
-) {
-    let dsp: *const Rav1dDSPContext = (*f).dsp;
-    let mut x = 0;
-    while x < w {
-        if !(have_left == 0 && x == 0) {
-            let mut hmask: [u32; 4] = [0; 4];
-            if starty4 == 0 {
-                hmask[0] = (*mask.offset(x as isize))[0][0] as u32;
-                hmask[1] = (*mask.offset(x as isize))[1][0] as u32;
-                hmask[2] = (*mask.offset(x as isize))[2][0] as u32;
-                if endy4 > 16 {
-                    hmask[0] |= ((*mask.offset(x as isize))[0][1] as c_uint) << 16;
-                    hmask[1] |= ((*mask.offset(x as isize))[1][1] as c_uint) << 16;
-                    hmask[2] |= ((*mask.offset(x as isize))[2][1] as c_uint) << 16;
-                }
-            } else {
-                hmask[0] = (*mask.offset(x as isize))[0][1] as u32;
-                hmask[1] = (*mask.offset(x as isize))[1][1] as u32;
-                hmask[2] = (*mask.offset(x as isize))[2][1] as u32;
-            }
-            hmask[3] = 0 as c_int as u32;
-            (*dsp).lf.loop_filter_sb[0][0](
-                dst.offset((x * 4) as isize).cast(),
-                ls,
-                hmask.as_mut_ptr(),
-                &*(*lvl.offset(x as isize)).as_ptr().offset(0) as *const u8 as *const [u8; 4],
-                b4_stride,
-                &(*f).lf.lim_lut.0,
-                endy4 - starty4,
-                8,
-            );
-        }
-        x += 1;
-    }
-}
 
 #[inline]
 unsafe fn filter_plane_rows_y(
@@ -377,7 +326,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols_8bpc(
     have_left = 0 as c_int;
     x = 0 as c_int;
     while x < (*f).sb128w {
-        filter_plane_cols_y(
+        filter_plane_cols_y::<BitDepth8>(
             f,
             have_left,
             level_ptr as *const [u8; 4],
