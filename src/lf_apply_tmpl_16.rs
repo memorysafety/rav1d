@@ -1,11 +1,12 @@
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::env::BlockContext;
-use crate::src::internal::Rav1dDSPContext;
+
 use crate::src::internal::Rav1dFrameContext;
 
 use crate::src::lf_apply::filter_plane_cols_uv;
 use crate::src::lf_apply::filter_plane_cols_y;
+use crate::src::lf_apply::filter_plane_rows_uv;
 use crate::src::lf_apply::filter_plane_rows_y;
 use crate::src::lf_mask::Av1Filter;
 
@@ -15,68 +16,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 
 pub type pixel = u16;
-
-#[inline]
-unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
-    if x & 1 != 0 {
-        unreachable!();
-    }
-    return x >> 1;
-}
-
-#[inline]
-unsafe fn filter_plane_rows_uv(
-    f: *const Rav1dFrameContext,
-    have_top: c_int,
-    mut lvl: *const [u8; 4],
-    b4_stride: ptrdiff_t,
-    mask: *const [[u16; 2]; 2],
-    u: *mut pixel,
-    v: *mut pixel,
-    ls: ptrdiff_t,
-    w: c_int,
-    starty4: c_int,
-    endy4: c_int,
-    ss_hor: c_int,
-) {
-    let dsp: *const Rav1dDSPContext = (*f).dsp;
-    let mut off_l: ptrdiff_t = 0 as c_int as ptrdiff_t;
-    let mut y = starty4;
-    while y < endy4 {
-        if !(have_top == 0 && y == 0) {
-            let vmask: [u32; 3] = [
-                (*mask.offset(y as isize))[0][0] as c_uint
-                    | ((*mask.offset(y as isize))[0][1] as c_uint) << (16 >> ss_hor),
-                (*mask.offset(y as isize))[1][0] as c_uint
-                    | ((*mask.offset(y as isize))[1][1] as c_uint) << (16 >> ss_hor),
-                0 as c_int as u32,
-            ];
-            (*dsp).lf.loop_filter_sb[1][1](
-                u.offset(off_l as isize).cast(),
-                ls,
-                vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(2) as *const u8 as *const [u8; 4],
-                b4_stride,
-                &(*f).lf.lim_lut.0,
-                w,
-                (*f).bitdepth_max,
-            );
-            (*dsp).lf.loop_filter_sb[1][1](
-                v.offset(off_l as isize).cast(),
-                ls,
-                vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(3) as *const u8 as *const [u8; 4],
-                b4_stride,
-                &(*f).lf.lim_lut.0,
-                w,
-                (*f).bitdepth_max,
-            );
-        }
-        y += 1;
-        off_l += 4 * PXSTRIDE(ls);
-        lvl = lvl.offset(b4_stride as isize);
-    }
-}
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols_16bpc(
     f: *const Rav1dFrameContext,
@@ -330,7 +269,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows_16bpc(
     uv_off = 0 as c_int as ptrdiff_t;
     x = 0 as c_int;
     while x < (*f).sb128w {
-        filter_plane_rows_uv(
+        filter_plane_rows_uv::<BitDepth16>(
             f,
             have_top,
             level_ptr as *const [u8; 4],
