@@ -77,10 +77,6 @@ pub mod src {
     mod loopfilter_tmpl_8;
     mod looprestoration;
     mod lr_apply;
-    #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
-    mod lr_apply_tmpl_16;
-    #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
-    mod lr_apply_tmpl_8;
     mod mc;
     mod mem;
     mod msac;
