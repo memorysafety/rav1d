@@ -101,6 +101,7 @@ pub trait BitDepth: Clone + Copy {
         + FromPrimitive<u16>
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
+        + ToPrimitive<i16>
         + ToPrimitive<c_int>
         + ToPrimitive<c_uint>;
 
