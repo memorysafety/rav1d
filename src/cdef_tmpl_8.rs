@@ -1,15 +1,10 @@
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
-use crate::include::common::intops::iclip;
-use crate::include::common::intops::ulog2;
-use crate::src::cdef::constrain;
-use crate::src::cdef::padding;
+use crate::src::cdef::cdef_filter_block_c;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::cdef::Rav1dCdefDSPContext;
-use crate::src::tables::dav1d_cdef_directions;
-use libc::ptrdiff_t;
-use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
@@ -18,161 +13,9 @@ use crate::src::align::Align16;
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
+use libc::ptrdiff_t;
 
 pub type pixel = u8;
-
-#[inline(never)]
-unsafe fn cdef_filter_block_c(
-    mut dst: *mut pixel,
-    dst_stride: ptrdiff_t,
-    left: *const [pixel; 2],
-    top: *const pixel,
-    bottom: *const pixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    w: c_int,
-    mut h: c_int,
-    edges: CdefEdgeFlags,
-) {
-    let tmp_stride: ptrdiff_t = 12 as c_int as ptrdiff_t;
-    if !((w == 4 || w == 8) && (h == 4 || h == 8)) {
-        unreachable!();
-    }
-    let mut tmp_buf: [i16; 144] = [0; 144];
-    let mut tmp: *mut i16 = tmp_buf
-        .as_mut_ptr()
-        .offset((2 * tmp_stride) as isize)
-        .offset(2);
-    padding::<BitDepth8>(
-        tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
-    );
-    if pri_strength != 0 {
-        let bitdepth_min_8 = 8 - 8;
-        let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
-        let pri_shift = cmp::max(0 as c_int, damping - ulog2(pri_strength as c_uint));
-        if sec_strength != 0 {
-            let sec_shift = damping - ulog2(sec_strength as c_uint);
-            loop {
-                let mut x = 0;
-                while x < w {
-                    let px = *dst.offset(x as isize) as c_int;
-                    let mut sum = 0;
-                    let mut max = px;
-                    let mut min = px;
-                    let mut pri_tap_k = pri_tap;
-                    let mut k = 0;
-                    while k < 2 {
-                        let off1 = dav1d_cdef_directions[(dir + 2) as usize][k as usize] as c_int;
-                        let p0 = *tmp.offset((x + off1) as isize) as c_int;
-                        let p1 = *tmp.offset((x - off1) as isize) as c_int;
-                        sum += pri_tap_k * constrain(p0 - px, pri_strength, pri_shift);
-                        sum += pri_tap_k * constrain(p1 - px, pri_strength, pri_shift);
-                        pri_tap_k = pri_tap_k & 3 | 2;
-                        min = cmp::min(p0 as c_uint, min as c_uint) as c_int;
-                        max = cmp::max(p0, max);
-                        min = cmp::min(p1 as c_uint, min as c_uint) as c_int;
-                        max = cmp::max(p1, max);
-                        let off2 = dav1d_cdef_directions[(dir + 4) as usize][k as usize] as c_int;
-                        let off3 = dav1d_cdef_directions[(dir + 0) as usize][k as usize] as c_int;
-                        let s0 = *tmp.offset((x + off2) as isize) as c_int;
-                        let s1 = *tmp.offset((x - off2) as isize) as c_int;
-                        let s2 = *tmp.offset((x + off3) as isize) as c_int;
-                        let s3 = *tmp.offset((x - off3) as isize) as c_int;
-                        let sec_tap = 2 - k;
-                        sum += sec_tap * constrain(s0 - px, sec_strength, sec_shift);
-                        sum += sec_tap * constrain(s1 - px, sec_strength, sec_shift);
-                        sum += sec_tap * constrain(s2 - px, sec_strength, sec_shift);
-                        sum += sec_tap * constrain(s3 - px, sec_strength, sec_shift);
-                        min = cmp::min(s0 as c_uint, min as c_uint) as c_int;
-                        max = cmp::max(s0, max);
-                        min = cmp::min(s1 as c_uint, min as c_uint) as c_int;
-                        max = cmp::max(s1, max);
-                        min = cmp::min(s2 as c_uint, min as c_uint) as c_int;
-                        max = cmp::max(s2, max);
-                        min = cmp::min(s3 as c_uint, min as c_uint) as c_int;
-                        max = cmp::max(s3, max);
-                        k += 1;
-                    }
-                    *dst.offset(x as isize) =
-                        iclip(px + (sum - (sum < 0) as c_int + 8 >> 4), min, max) as pixel;
-                    x += 1;
-                }
-                dst = dst.offset(dst_stride as isize);
-                tmp = tmp.offset(tmp_stride as isize);
-                h -= 1;
-                if !(h != 0) {
-                    break;
-                }
-            }
-        } else {
-            loop {
-                let mut x_0 = 0;
-                while x_0 < w {
-                    let px_0 = *dst.offset(x_0 as isize) as c_int;
-                    let mut sum_0 = 0;
-                    let mut pri_tap_k_0 = pri_tap;
-                    let mut k_0 = 0;
-                    while k_0 < 2 {
-                        let off = dav1d_cdef_directions[(dir + 2) as usize][k_0 as usize] as c_int;
-                        let p0_0 = *tmp.offset((x_0 + off) as isize) as c_int;
-                        let p1_0 = *tmp.offset((x_0 - off) as isize) as c_int;
-                        sum_0 += pri_tap_k_0 * constrain(p0_0 - px_0, pri_strength, pri_shift);
-                        sum_0 += pri_tap_k_0 * constrain(p1_0 - px_0, pri_strength, pri_shift);
-                        pri_tap_k_0 = pri_tap_k_0 & 3 | 2;
-                        k_0 += 1;
-                    }
-                    *dst.offset(x_0 as isize) =
-                        (px_0 + (sum_0 - (sum_0 < 0) as c_int + 8 >> 4)) as pixel;
-                    x_0 += 1;
-                }
-                dst = dst.offset(dst_stride as isize);
-                tmp = tmp.offset(tmp_stride as isize);
-                h -= 1;
-                if !(h != 0) {
-                    break;
-                }
-            }
-        }
-    } else {
-        if sec_strength == 0 {
-            unreachable!();
-        }
-        let sec_shift_0 = damping - ulog2(sec_strength as c_uint);
-        loop {
-            let mut x_1 = 0;
-            while x_1 < w {
-                let px_1 = *dst.offset(x_1 as isize) as c_int;
-                let mut sum_1 = 0;
-                let mut k_1 = 0;
-                while k_1 < 2 {
-                    let off1_0 = dav1d_cdef_directions[(dir + 4) as usize][k_1 as usize] as c_int;
-                    let off2_0 = dav1d_cdef_directions[(dir + 0) as usize][k_1 as usize] as c_int;
-                    let s0_0 = *tmp.offset((x_1 + off1_0) as isize) as c_int;
-                    let s1_0 = *tmp.offset((x_1 - off1_0) as isize) as c_int;
-                    let s2_0 = *tmp.offset((x_1 + off2_0) as isize) as c_int;
-                    let s3_0 = *tmp.offset((x_1 - off2_0) as isize) as c_int;
-                    let sec_tap_0 = 2 - k_1;
-                    sum_1 += sec_tap_0 * constrain(s0_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1 += sec_tap_0 * constrain(s1_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1 += sec_tap_0 * constrain(s2_0 - px_1, sec_strength, sec_shift_0);
-                    sum_1 += sec_tap_0 * constrain(s3_0 - px_1, sec_strength, sec_shift_0);
-                    k_1 += 1;
-                }
-                *dst.offset(x_1 as isize) =
-                    (px_1 + (sum_1 - (sum_1 < 0) as c_int + 8 >> 4)) as pixel;
-                x_1 += 1;
-            }
-            dst = dst.offset(dst_stride as isize);
-            tmp = tmp.offset(tmp_stride as isize);
-            h -= 1;
-            if !(h != 0) {
-                break;
-            }
-        }
-    };
-}
 
 unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
     dst: *mut DynPixel,
@@ -187,7 +30,7 @@ unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
     edges: CdefEdgeFlags,
     _bitdepth_max: c_int,
 ) {
-    cdef_filter_block_c(
+    cdef_filter_block_c::<BitDepth8>(
         dst.cast(),
         stride,
         left.cast(),
@@ -200,6 +43,7 @@ unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
         4 as c_int,
         4 as c_int,
         edges,
+        BitDepth8::new(()),
     );
 }
 
@@ -229,6 +73,7 @@ unsafe extern "C" fn cdef_filter_block_4x8_c_erased(
         4 as c_int,
         8 as c_int,
         edges,
+        BitDepth8::new(()),
     );
 }
 
@@ -258,6 +103,7 @@ unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
         8 as c_int,
         8 as c_int,
         edges,
+        BitDepth8::new(()),
     );
 }
 
