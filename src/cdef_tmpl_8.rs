@@ -1,15 +1,12 @@
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::ulog2;
 use crate::src::cdef::constrain;
-use crate::src::cdef::fill;
+use crate::src::cdef::padding;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::cdef::Rav1dCdefDSPContext;
-use crate::src::cdef::CDEF_HAVE_BOTTOM;
-use crate::src::cdef::CDEF_HAVE_LEFT;
-use crate::src::cdef::CDEF_HAVE_RIGHT;
-use crate::src::cdef::CDEF_HAVE_TOP;
 use crate::src::tables::dav1d_cdef_directions;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -23,107 +20,6 @@ use crate::src::align::Align16;
 use cfg_if::cfg_if;
 
 pub type pixel = u8;
-
-unsafe fn padding(
-    mut tmp: *mut i16,
-    tmp_stride: ptrdiff_t,
-    mut src: *const pixel,
-    src_stride: ptrdiff_t,
-    left: *const [pixel; 2],
-    mut top: *const pixel,
-    mut bottom: *const pixel,
-    w: c_int,
-    h: c_int,
-    edges: CdefEdgeFlags,
-) {
-    let mut x_start = -(2 as c_int);
-    let mut x_end = w + 2;
-    let mut y_start = -(2 as c_int);
-    let mut y_end = h + 2;
-    if edges as c_uint & CDEF_HAVE_TOP as c_int as c_uint == 0 {
-        fill(
-            tmp.offset(-(2 as c_int as isize))
-                .offset(-((2 * tmp_stride) as isize)),
-            tmp_stride,
-            w + 4,
-            2 as c_int,
-        );
-        y_start = 0 as c_int;
-    }
-    if edges as c_uint & CDEF_HAVE_BOTTOM as c_int as c_uint == 0 {
-        fill(
-            tmp.offset((h as isize * tmp_stride) as isize)
-                .offset(-(2 as c_int as isize)),
-            tmp_stride,
-            w + 4,
-            2 as c_int,
-        );
-        y_end -= 2 as c_int;
-    }
-    if edges as c_uint & CDEF_HAVE_LEFT as c_int as c_uint == 0 {
-        fill(
-            tmp.offset((y_start as isize * tmp_stride) as isize)
-                .offset(-(2 as c_int as isize)),
-            tmp_stride,
-            2 as c_int,
-            y_end - y_start,
-        );
-        x_start = 0 as c_int;
-    }
-    if edges as c_uint & CDEF_HAVE_RIGHT as c_int as c_uint == 0 {
-        fill(
-            tmp.offset((y_start as isize * tmp_stride) as isize)
-                .offset(w as isize),
-            tmp_stride,
-            2 as c_int,
-            y_end - y_start,
-        );
-        x_end -= 2 as c_int;
-    }
-    let mut y = y_start;
-    while y < 0 {
-        let mut x = x_start;
-        while x < x_end {
-            *tmp.offset((x as isize + y as isize * tmp_stride) as isize) =
-                *top.offset(x as isize) as i16;
-            x += 1;
-        }
-        top = top.offset(src_stride as isize);
-        y += 1;
-    }
-    let mut y_0 = 0;
-    while y_0 < h {
-        let mut x_0 = x_start;
-        while x_0 < 0 {
-            *tmp.offset((x_0 as isize + y_0 as isize * tmp_stride) as isize) =
-                (*left.offset(y_0 as isize))[(2 + x_0) as usize] as i16;
-            x_0 += 1;
-        }
-        y_0 += 1;
-    }
-    let mut y_1 = 0;
-    while y_1 < h {
-        let mut x_1 = if y_1 < h { 0 as c_int } else { x_start };
-        while x_1 < x_end {
-            *tmp.offset(x_1 as isize) = *src.offset(x_1 as isize) as i16;
-            x_1 += 1;
-        }
-        src = src.offset(src_stride as isize);
-        tmp = tmp.offset(tmp_stride as isize);
-        y_1 += 1;
-    }
-    let mut y_2 = h;
-    while y_2 < y_end {
-        let mut x_2 = x_start;
-        while x_2 < x_end {
-            *tmp.offset(x_2 as isize) = *bottom.offset(x_2 as isize) as i16;
-            x_2 += 1;
-        }
-        bottom = bottom.offset(src_stride as isize);
-        tmp = tmp.offset(tmp_stride as isize);
-        y_2 += 1;
-    }
-}
 
 #[inline(never)]
 unsafe fn cdef_filter_block_c(
@@ -149,7 +45,7 @@ unsafe fn cdef_filter_block_c(
         .as_mut_ptr()
         .offset((2 * tmp_stride) as isize)
         .offset(2);
-    padding(
+    padding::<BitDepth8>(
         tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
     );
     if pri_strength != 0 {
