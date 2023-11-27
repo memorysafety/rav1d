@@ -47,33 +47,46 @@ use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::BitDepth16;
 
 pub type angular_ipred_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const DynPixel,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    angle: c_int,
+    max_width: c_int,
+    max_height: c_int,
+    bitdepth_max: c_int,
 ) -> ();
 
-pub type cfl_ac_fn =
-    unsafe extern "C" fn(*mut i16, *const DynPixel, ptrdiff_t, c_int, c_int, c_int, c_int) -> ();
+pub type cfl_ac_fn = unsafe extern "C" fn(
+    ac: *mut i16,
+    y: *const DynPixel,
+    stride: ptrdiff_t,
+    w_pad: c_int,
+    h_pad: c_int,
+    cw: c_int,
+    ch: c_int,
+) -> ();
 
 pub type cfl_pred_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const DynPixel,
-    c_int,
-    c_int,
-    *const i16,
-    c_int,
-    c_int,
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    topleft: *const DynPixel,
+    width: c_int,
+    height: c_int,
+    ac: *const i16,
+    alpha: c_int,
+    bitdepth_max: c_int,
 ) -> ();
 
-pub type pal_pred_fn =
-    unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const u16, *const u8, c_int, c_int) -> ();
+pub type pal_pred_fn = unsafe extern "C" fn(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    pal: *const u16,
+    idx: *const u8,
+    w: c_int,
+    h: c_int,
+) -> ();
 
 #[repr(C)]
 pub struct Rav1dIntraPredDSPContext {
@@ -86,304 +99,229 @@ pub struct Rav1dIntraPredDSPContext {
 }
 
 #[cfg(feature = "asm")]
-macro_rules! decl_fn {
-    (angular_ipred, $name:ident) => {
-        fn $name(
-            dst: *mut DynPixel,
-            stride: ptrdiff_t,
-            topleft: *const DynPixel,
-            width: c_int,
-            height: c_int,
-            angle: c_int,
-            max_width: c_int,
-            max_height: c_int,
-            bitdepth_max: c_int,
-        );
-    };
-
-    (cfl_pred, $name:ident) => {
-        fn $name(
-            dst: *mut DynPixel,
-            stride: ptrdiff_t,
-            topleft: *const DynPixel,
-            width: c_int,
-            height: c_int,
-            ac: *const i16,
-            alpha: c_int,
-            bitdepth_max: c_int,
-        );
-    };
-
-    (cfl_ac, $name:ident) => {
-        fn $name(
-            ac: *mut i16,
-            y: *const DynPixel,
-            stride: ptrdiff_t,
-            w_pad: c_int,
-            h_pad: c_int,
-            cw: c_int,
-            ch: c_int,
-        );
-    };
-
-    (pal_pred, $name:ident) => {
-        fn $name(
-            dst: *mut DynPixel,
-            stride: ptrdiff_t,
-            pal: *const u16,
-            idx: *const u8,
-            w: c_int,
-            h: c_int,
-        );
-    };
-}
-
-#[cfg(feature = "asm")]
-macro_rules! decl_fns {
-    ($fn_kind:ident, $name:ident) => {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        decl_fns!($fn_kind, $name, ssse3);
-
-        #[cfg(target_arch = "x86_64")]
-        decl_fns!($fn_kind, $name, avx2);
-
-        #[cfg(target_arch = "x86_64")]
-        decl_fns!($fn_kind, $name, avx512icl);
-
-        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-        decl_fns!($fn_kind, $name, neon);
-    };
-
-    ($fn_kind:ident, $name:ident, $asm:ident) => {
-        paste::paste! {
-            #[cfg(feature = "bitdepth_8")]
-            decl_fn!($fn_kind, [<dav1d_ $name _8bpc_ $asm>]);
-            #[cfg(feature = "bitdepth_16")]
-            decl_fn!($fn_kind, [<dav1d_ $name _16bpc_ $asm>]);
+macro_rules! decl_angular_ipred_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                dst: *mut DynPixel,
+                stride: ptrdiff_t,
+                topleft: *const DynPixel,
+                width: c_int,
+                height: c_int,
+                angle: c_int,
+                max_width: c_int,
+                max_height: c_int,
+                bitdepth_max: c_int,
+            );
         }
-    };
+
+        $name
+    }};
 }
 
 #[cfg(feature = "asm")]
-#[allow(dead_code)] // Macro declares more fns than actually exist.
-extern "C" {
-    decl_fns!(angular_ipred, ipred_dc);
-    decl_fns!(angular_ipred, ipred_dc_128);
-    decl_fns!(angular_ipred, ipred_dc_top);
-    decl_fns!(angular_ipred, ipred_dc_left);
-    decl_fns!(angular_ipred, ipred_h);
-    decl_fns!(angular_ipred, ipred_v);
-    decl_fns!(angular_ipred, ipred_paeth);
-    decl_fns!(angular_ipred, ipred_smooth);
-    decl_fns!(angular_ipred, ipred_smooth_h);
-    decl_fns!(angular_ipred, ipred_smooth_v);
-    decl_fns!(angular_ipred, ipred_z1);
-    decl_fns!(angular_ipred, ipred_z2);
-    decl_fns!(angular_ipred, ipred_z3);
-    decl_fns!(angular_ipred, ipred_filter);
+macro_rules! decl_cfl_pred_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                dst: *mut DynPixel,
+                stride: ptrdiff_t,
+                topleft: *const DynPixel,
+                width: c_int,
+                height: c_int,
+                ac: *const i16,
+                alpha: c_int,
+                bitdepth_max: c_int,
+            );
+        }
 
-    decl_fns!(cfl_pred, ipred_cfl);
-    decl_fns!(cfl_pred, ipred_cfl_128);
-    decl_fns!(cfl_pred, ipred_cfl_top);
-    decl_fns!(cfl_pred, ipred_cfl_left);
-
-    decl_fns!(cfl_ac, ipred_cfl_ac_420);
-    decl_fns!(cfl_ac, ipred_cfl_ac_422);
-    decl_fns!(cfl_ac, ipred_cfl_ac_444);
-
-    decl_fns!(pal_pred, pal_pred);
+        $name
+    }};
 }
 
-#[cfg(all(feature = "bitdepth_8", feature = "asm", target_arch = "aarch64"))]
-extern "C" {
-    fn dav1d_ipred_z1_fill2_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        max_base_x: c_int,
-    );
-    fn dav1d_ipred_z1_fill1_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        max_base_x: c_int,
-    );
-    fn dav1d_ipred_z1_upsample_edge_8bpc_neon(
-        out: *mut DynPixel,
-        hsz: c_int,
-        in_0: *const DynPixel,
-        end: c_int,
-        _bitdepth_max: c_int,
-    );
-    fn dav1d_ipred_z1_filter_edge_8bpc_neon(
-        out: *mut DynPixel,
-        sz: c_int,
-        in_0: *const DynPixel,
-        end: c_int,
-        strength: c_int,
-    );
-    fn dav1d_ipred_z2_fill3_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_fill2_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_fill1_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_upsample_edge_8bpc_neon(
-        out: *mut DynPixel,
-        hsz: c_int,
-        in_0: *const DynPixel,
-        _bitdepth_max: c_int,
-    );
-    fn dav1d_ipred_reverse_8bpc_neon(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
-    fn dav1d_ipred_z3_fill2_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dy: c_int,
-        max_base_y: c_int,
-    );
-    fn dav1d_ipred_z3_fill1_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dy: c_int,
-        max_base_y: c_int,
-    );
-    fn dav1d_ipred_pixel_set_8bpc_neon(
-        out: *mut DynPixel,
-        px: <BitDepth8 as BitDepth>::Pixel,
-        n: c_int,
-    );
+#[cfg(feature = "asm")]
+macro_rules! decl_cfl_ac_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                ac: *mut i16,
+                y: *const DynPixel,
+                stride: ptrdiff_t,
+                w_pad: c_int,
+                h_pad: c_int,
+                cw: c_int,
+                ch: c_int,
+            );
+        }
+
+        $name
+    }};
 }
 
-#[cfg(all(feature = "bitdepth_16", feature = "asm", target_arch = "aarch64"))]
-extern "C" {
-    fn dav1d_ipred_z1_fill2_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        max_base_x: c_int,
-    );
-    fn dav1d_ipred_z1_fill1_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        max_base_x: c_int,
-    );
-    fn dav1d_ipred_z1_upsample_edge_16bpc_neon(
-        out: *mut DynPixel,
-        hsz: c_int,
-        in_0: *const DynPixel,
-        end: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_ipred_z1_filter_edge_16bpc_neon(
-        out: *mut DynPixel,
-        sz: c_int,
-        in_0: *const DynPixel,
-        end: c_int,
-        strength: c_int,
-    );
-    fn dav1d_ipred_z2_fill3_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_fill2_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_fill1_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        top: *const DynPixel,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dx: c_int,
-        dy: c_int,
-    );
-    fn dav1d_ipred_z2_upsample_edge_16bpc_neon(
-        out: *mut DynPixel,
-        hsz: c_int,
-        in_0: *const DynPixel,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_ipred_reverse_16bpc_neon(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
-    fn dav1d_ipred_z3_fill2_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dy: c_int,
-        max_base_y: c_int,
-    );
-    fn dav1d_ipred_z3_fill1_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        left: *const DynPixel,
-        width: c_int,
-        height: c_int,
-        dy: c_int,
-        max_base_y: c_int,
-    );
-    fn dav1d_ipred_pixel_set_16bpc_neon(
-        out: *mut DynPixel,
-        px: <BitDepth16 as BitDepth>::Pixel,
-        n: c_int,
-    );
+#[cfg(feature = "asm")]
+macro_rules! decl_pal_pred_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                dst: *mut DynPixel,
+                stride: ptrdiff_t,
+                pal: *const u16,
+                idx: *const u8,
+                w: c_int,
+                h: c_int,
+            );
+        }
+
+        $name
+    }};
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+macro_rules! decl_z1_fill_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                dst: *mut DynPixel,
+                stride: ptrdiff_t,
+                top: *const DynPixel,
+                width: c_int,
+                height: c_int,
+                dx: c_int,
+                max_base_x: c_int,
+            );
+        }
+
+        $name
+    }};
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+macro_rules! decl_z2_fill_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                dst: *mut DynPixel,
+                stride: ptrdiff_t,
+                top: *const DynPixel,
+                left: *const DynPixel,
+                width: c_int,
+                height: c_int,
+                dx: c_int,
+                dy: c_int,
+            );
+        }
+
+        $name
+    }};
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+macro_rules! decl_z3_fill_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                dst: *mut DynPixel,
+                stride: ptrdiff_t,
+                left: *const DynPixel,
+                width: c_int,
+                height: c_int,
+                dy: c_int,
+                max_base_y: c_int,
+            );
+        }
+
+        $name
+    }};
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+macro_rules! decl_z1_upsample_edge_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                out: *mut DynPixel,
+                hsz: c_int,
+                in_0: *const DynPixel,
+                end: c_int,
+                _bitdepth_max: c_int,
+            );
+        }
+
+        $name
+    }};
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+macro_rules! decl_z1_filter_edge_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(
+                out: *mut DynPixel,
+                sz: c_int,
+                in_0: *const DynPixel,
+                end: c_int,
+                strength: c_int,
+            );
+        }
+
+        $name
+    }};
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+macro_rules! decl_z2_upsample_edge_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(out: *mut DynPixel, hsz: c_int, in_0: *const DynPixel, _bitdepth_max: c_int);
+        }
+
+        $name
+    }};
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+macro_rules! decl_reverse_fn {
+    (fn $name:ident) => {{
+        extern "C" {
+            fn $name(dst: *mut DynPixel, src: *const DynPixel, n: c_int);
+        }
+
+        $name
+    }};
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn rav1d_ipred_pixel_set_neon<BD: BitDepth>(out: *mut BD::Pixel, px: BD::Pixel, n: c_int) {
+    // `pixel_set` takes a `px: BD::Pixel`.
+    // Since it's not behind a ptr, we can't make it a `DynPixel`
+    // and call it uniformly with `bd_fn!`.
+
+    extern "C" {
+        #[cfg(feature = "bitdepth_8")]
+        fn dav1d_ipred_pixel_set_8bpc_neon(
+            out: *mut DynPixel,
+            px: <BitDepth8 as BitDepth>::Pixel,
+            n: c_int,
+        );
+
+        #[cfg(feature = "bitdepth_16")]
+        fn dav1d_ipred_pixel_set_16bpc_neon(
+            out: *mut DynPixel,
+            px: <BitDepth16 as BitDepth>::Pixel,
+            n: c_int,
+        );
+    }
+
+    let out = out.cast();
+    match BD::BPC {
+        BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
+            out,
+            // Really a no-op cast, but it's difficult to do it properly with generics.
+            px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
+            n,
+        ),
+        BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
+    }
 }
 
 #[inline(never)]
@@ -1866,7 +1804,7 @@ unsafe fn ipred_z1_neon<BD: BitDepth>(
         0 as c_int
     };
     if upsample_above != 0 {
-        bd_fn!(BD, ipred_z1_upsample_edge, neon)(
+        bd_fn!(decl_z1_upsample_edge_fn, BD, ipred_z1_upsample_edge, neon)(
             top_out.as_mut_ptr().cast(),
             width + height,
             topleft_in.cast(),
@@ -1882,7 +1820,7 @@ unsafe fn ipred_z1_neon<BD: BitDepth>(
             0 as c_int
         };
         if filter_strength != 0 {
-            bd_fn!(BD, ipred_z1_filter_edge, neon)(
+            bd_fn!(decl_z1_filter_edge_fn, BD, ipred_z1_filter_edge, neon)(
                 top_out.as_mut_ptr().cast(),
                 width + height,
                 topleft_in.cast(),
@@ -1901,28 +1839,13 @@ unsafe fn ipred_z1_neon<BD: BitDepth>(
     }
     let base_inc = 1 + upsample_above;
     let pad_pixels = width + 15;
-    {
-        // `pixel_set` takes a `px: BD::Pixel`.
-        // Since it's not behind a ptr, we can't make it a `DynPixel`
-        // and call it uniformly with `bd_fn!`.
-        let out = top_out
-            .as_mut_ptr()
-            .offset((max_base_x + 1) as isize)
-            .cast();
-        let px = top_out[max_base_x as usize];
-        let n = (pad_pixels * base_inc) as c_int;
-        match BD::BPC {
-            BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
-                out,
-                // Really a no-op cast, but it's difficult to do it properly with generics.
-                px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
-                n,
-            ),
-            BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
-        }
-    }
+    rav1d_ipred_pixel_set_neon::<BD>(
+        top_out.as_mut_ptr().offset((max_base_x + 1) as isize),
+        top_out[max_base_x as usize],
+        (pad_pixels * base_inc) as c_int,
+    );
     if upsample_above != 0 {
-        bd_fn!(BD, ipred_z1_fill2, neon)(
+        bd_fn!(decl_z1_fill_fn, BD, ipred_z1_fill2, neon)(
             dst.cast(),
             stride,
             top_out.as_mut_ptr().cast(),
@@ -1932,7 +1855,7 @@ unsafe fn ipred_z1_neon<BD: BitDepth>(
             max_base_x,
         );
     } else {
-        bd_fn!(BD, ipred_z1_fill1, neon)(
+        bd_fn!(decl_z1_fill_fn, BD, ipred_z1_fill1, neon)(
             dst.cast(),
             stride,
             top_out.as_mut_ptr().cast(),
@@ -1984,7 +1907,7 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
     };
 
     if upsample_above != 0 {
-        bd_fn!(BD, ipred_z2_upsample_edge, neon)(
+        bd_fn!(decl_z2_upsample_edge_fn, BD, ipred_z2_upsample_edge, neon)(
             buf.as_mut_ptr().offset(top_offset).cast(),
             width,
             topleft_in.cast(),
@@ -1999,7 +1922,7 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
         };
 
         if filter_strength != 0 {
-            bd_fn!(BD, ipred_z1_filter_edge, neon)(
+            bd_fn!(decl_z1_filter_edge_fn, BD, ipred_z1_filter_edge, neon)(
                 buf.as_mut_ptr().offset(1 + top_offset).cast(),
                 cmp::min(max_width, width),
                 topleft_in.cast(),
@@ -2026,12 +1949,12 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
 
     if upsample_left != 0 {
         buf[flipped_offset as usize] = *topleft_in;
-        bd_fn!(BD, ipred_reverse, neon)(
+        bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
             buf.as_mut_ptr().offset(1 + flipped_offset).cast(),
             topleft_in.cast(),
             height,
         );
-        bd_fn!(BD, ipred_z2_upsample_edge, neon)(
+        bd_fn!(decl_z2_upsample_edge_fn, BD, ipred_z2_upsample_edge, neon)(
             buf.as_mut_ptr().offset(left_offset).cast(),
             height,
             buf.as_ptr().offset(flipped_offset).cast(),
@@ -2046,12 +1969,12 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
         };
         if filter_strength != 0 {
             buf[flipped_offset as usize] = *topleft_in;
-            bd_fn!(BD, ipred_reverse, neon)(
+            bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
                 buf.as_mut_ptr().offset(1 + flipped_offset).cast(),
                 topleft_in.cast(),
                 height,
             );
-            bd_fn!(BD, ipred_z1_filter_edge, neon)(
+            bd_fn!(decl_z1_filter_edge_fn, BD, ipred_z1_filter_edge, neon)(
                 buf.as_mut_ptr().offset(1 + left_offset).cast(),
                 cmp::min(max_height, height),
                 buf.as_ptr().offset(flipped_offset).cast(),
@@ -2071,7 +1994,7 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
                 );
             }
         } else {
-            bd_fn!(BD, ipred_reverse, neon)(
+            bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
                 buf.as_mut_ptr().offset(left_offset + 1).cast(),
                 topleft_in.cast(),
                 height,
@@ -2086,7 +2009,7 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
     }
 
     if upsample_above == 0 && upsample_left == 0 {
-        bd_fn!(BD, ipred_z2_fill1, neon)(
+        bd_fn!(decl_z2_fill_fn, BD, ipred_z2_fill1, neon)(
             dst.cast(),
             stride,
             buf.as_ptr().offset(top_offset).cast(),
@@ -2097,7 +2020,7 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
             dy,
         );
     } else if upsample_above != 0 {
-        bd_fn!(BD, ipred_z2_fill2, neon)(
+        bd_fn!(decl_z2_fill_fn, BD, ipred_z2_fill2, neon)(
             dst.cast(),
             stride,
             buf.as_ptr().offset(top_offset).cast(),
@@ -2108,7 +2031,7 @@ unsafe fn ipred_z2_neon<BD: BitDepth>(
             dy,
         );
     } else {
-        bd_fn!(BD, ipred_z2_fill3, neon)(
+        bd_fn!(decl_z2_fill_fn, BD, ipred_z2_fill3, neon)(
             dst.cast(),
             stride,
             buf.as_ptr().offset(top_offset).cast(),
@@ -2150,12 +2073,12 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
     };
     if upsample_left != 0 {
         flipped[0] = *topleft_in.offset(0);
-        bd_fn!(BD, ipred_reverse, neon)(
+        bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
             flipped.as_mut_ptr().offset(1).cast(),
             topleft_in.offset(0).cast(),
             height + cmp::max(width, height),
         );
-        bd_fn!(BD, ipred_z1_upsample_edge, neon)(
+        bd_fn!(decl_z1_upsample_edge_fn, BD, ipred_z1_upsample_edge, neon)(
             left_out.as_mut_ptr().cast(),
             width + height,
             flipped.as_mut_ptr().cast(),
@@ -2172,12 +2095,12 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
         };
         if filter_strength != 0 {
             flipped[0] = *topleft_in.offset(0);
-            bd_fn!(BD, ipred_reverse, neon)(
+            bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
                 flipped.as_mut_ptr().offset(1).cast(),
                 topleft_in.offset(0).cast(),
                 height + cmp::max(width, height),
             );
-            bd_fn!(BD, ipred_z1_filter_edge, neon)(
+            bd_fn!(decl_z1_filter_edge_fn, BD, ipred_z1_filter_edge, neon)(
                 left_out.as_mut_ptr().cast(),
                 width + height,
                 flipped.as_mut_ptr().cast(),
@@ -2186,7 +2109,7 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
             );
             max_base_y = width + height - 1;
         } else {
-            bd_fn!(BD, ipred_reverse, neon)(
+            bd_fn!(decl_reverse_fn, BD, ipred_reverse, neon)(
                 left_out.as_mut_ptr().cast(),
                 topleft_in.offset(0).cast(),
                 height + cmp::min(width, height),
@@ -2196,28 +2119,13 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
     }
     let base_inc = 1 + upsample_left;
     let pad_pixels = cmp::max(64 - max_base_y - 1, height + 15);
-    {
-        // `pixel_set` takes a `px: BD::Pixel`.
-        // Since it's not behind a ptr, we can't make it a `DynPixel`
-        // and call it uniformly with `bd_fn!`.
-        let out = left_out
-            .as_mut_ptr()
-            .offset((max_base_y + 1) as isize)
-            .cast();
-        let px = left_out[max_base_y as usize];
-        let n = (pad_pixels * base_inc) as c_int;
-        match BD::BPC {
-            BPC::BPC8 => dav1d_ipred_pixel_set_8bpc_neon(
-                out,
-                // Really a no-op cast, but it's difficult to do it properly with generics.
-                px.to::<u16>() as <BitDepth8 as BitDepth>::Pixel,
-                n,
-            ),
-            BPC::BPC16 => dav1d_ipred_pixel_set_16bpc_neon(out, px.into(), n),
-        }
-    }
+    rav1d_ipred_pixel_set_neon::<BD>(
+        left_out.as_mut_ptr().offset((max_base_y + 1) as isize),
+        left_out[max_base_y as usize],
+        (pad_pixels * base_inc) as c_int,
+    );
     if upsample_left != 0 {
-        bd_fn!(BD, ipred_z3_fill2, neon)(
+        bd_fn!(decl_z3_fill_fn, BD, ipred_z3_fill2, neon)(
             dst.cast(),
             stride,
             left_out.as_mut_ptr().cast(),
@@ -2227,7 +2135,7 @@ unsafe fn ipred_z3_neon<BD: BitDepth>(
             max_base_y,
         );
     } else {
-        bd_fn!(BD, ipred_z3_fill1, neon)(
+        bd_fn!(decl_z3_fill_fn, BD, ipred_z3_fill1, neon)(
             dst.cast(),
             stride,
             left_out.as_mut_ptr().cast(),
@@ -2323,31 +2231,42 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
         return;
     }
 
-    (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc, ssse3));
-    (*c).intra_pred[DC_128_PRED as usize] = Some(bd_fn!(BD, ipred_dc_128, ssse3));
-    (*c).intra_pred[TOP_DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc_top, ssse3));
-    (*c).intra_pred[LEFT_DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc_left, ssse3));
-    (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(BD, ipred_h, ssse3));
-    (*c).intra_pred[VERT_PRED as usize] = Some(bd_fn!(BD, ipred_v, ssse3));
-    (*c).intra_pred[PAETH_PRED as usize] = Some(bd_fn!(BD, ipred_paeth, ssse3));
-    (*c).intra_pred[SMOOTH_PRED as usize] = Some(bd_fn!(BD, ipred_smooth, ssse3));
-    (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_h, ssse3));
-    (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_v, ssse3));
-    (*c).intra_pred[Z1_PRED as usize] = Some(bd_fn!(BD, ipred_z1, ssse3));
-    (*c).intra_pred[Z2_PRED as usize] = Some(bd_fn!(BD, ipred_z2, ssse3));
-    (*c).intra_pred[Z3_PRED as usize] = Some(bd_fn!(BD, ipred_z3, ssse3));
-    (*c).intra_pred[FILTER_PRED as usize] = Some(bd_fn!(BD, ipred_filter, ssse3));
+    (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc, ssse3));
+    (*c).intra_pred[DC_128_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_128, ssse3));
+    (*c).intra_pred[TOP_DC_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_top, ssse3));
+    (*c).intra_pred[LEFT_DC_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_left, ssse3));
+    (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_h, ssse3));
+    (*c).intra_pred[VERT_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_v, ssse3));
+    (*c).intra_pred[PAETH_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_paeth, ssse3));
+    (*c).intra_pred[SMOOTH_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth, ssse3));
+    (*c).intra_pred[SMOOTH_H_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_h, ssse3));
+    (*c).intra_pred[SMOOTH_V_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_v, ssse3));
+    (*c).intra_pred[Z1_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_z1, ssse3));
+    (*c).intra_pred[Z2_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_z2, ssse3));
+    (*c).intra_pred[Z3_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_z3, ssse3));
+    (*c).intra_pred[FILTER_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_filter, ssse3));
 
-    (*c).cfl_pred[DC_PRED as usize] = bd_fn!(BD, ipred_cfl, ssse3);
-    (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(BD, ipred_cfl_128, ssse3);
-    (*c).cfl_pred[TOP_DC_PRED as usize] = bd_fn!(BD, ipred_cfl_top, ssse3);
-    (*c).cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(BD, ipred_cfl_left, ssse3);
+    (*c).cfl_pred[DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl, ssse3);
+    (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_128, ssse3);
+    (*c).cfl_pred[TOP_DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_top, ssse3);
+    (*c).cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_left, ssse3);
 
-    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_420, ssse3);
-    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_422, ssse3);
-    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_444, ssse3);
+    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
+        bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_420, ssse3);
+    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
+        bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_422, ssse3);
+    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
+        bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_444, ssse3);
 
-    (*c).pal_pred = bd_fn!(BD, pal_pred, ssse3);
+    (*c).pal_pred = bd_fn!(decl_pal_pred_fn, BD, pal_pred, ssse3);
 
     #[cfg(target_arch = "x86_64")]
     {
@@ -2355,52 +2274,75 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
             return;
         }
 
-        (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc, avx2));
-        (*c).intra_pred[DC_128_PRED as usize] = Some(bd_fn!(BD, ipred_dc_128, avx2));
-        (*c).intra_pred[TOP_DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc_top, avx2));
-        (*c).intra_pred[LEFT_DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc_left, avx2));
-        (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(BD, ipred_h, avx2));
-        (*c).intra_pred[VERT_PRED as usize] = Some(bd_fn!(BD, ipred_v, avx2));
-        (*c).intra_pred[PAETH_PRED as usize] = Some(bd_fn!(BD, ipred_paeth, avx2));
-        (*c).intra_pred[SMOOTH_PRED as usize] = Some(bd_fn!(BD, ipred_smooth, avx2));
-        (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_h, avx2));
-        (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_v, avx2));
-        (*c).intra_pred[Z1_PRED as usize] = Some(bd_fn!(BD, ipred_z1, avx2));
-        (*c).intra_pred[Z2_PRED as usize] = Some(bd_fn!(BD, ipred_z2, avx2));
-        (*c).intra_pred[Z3_PRED as usize] = Some(bd_fn!(BD, ipred_z3, avx2));
-        (*c).intra_pred[FILTER_PRED as usize] = Some(bd_fn!(BD, ipred_filter, avx2));
+        (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc, avx2));
+        (*c).intra_pred[DC_128_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_128, avx2));
+        (*c).intra_pred[TOP_DC_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_top, avx2));
+        (*c).intra_pred[LEFT_DC_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_left, avx2));
+        (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_h, avx2));
+        (*c).intra_pred[VERT_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_v, avx2));
+        (*c).intra_pred[PAETH_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_paeth, avx2));
+        (*c).intra_pred[SMOOTH_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth, avx2));
+        (*c).intra_pred[SMOOTH_H_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_h, avx2));
+        (*c).intra_pred[SMOOTH_V_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_v, avx2));
+        (*c).intra_pred[Z1_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_z1, avx2));
+        (*c).intra_pred[Z2_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_z2, avx2));
+        (*c).intra_pred[Z3_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_z3, avx2));
+        (*c).intra_pred[FILTER_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_filter, avx2));
 
-        (*c).cfl_pred[DC_PRED as usize] = bd_fn!(BD, ipred_cfl, avx2);
-        (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(BD, ipred_cfl_128, avx2);
-        (*c).cfl_pred[TOP_DC_PRED as usize] = bd_fn!(BD, ipred_cfl_top, avx2);
-        (*c).cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(BD, ipred_cfl_left, avx2);
+        (*c).cfl_pred[DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl, avx2);
+        (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_128, avx2);
+        (*c).cfl_pred[TOP_DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_top, avx2);
+        (*c).cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_left, avx2);
 
-        (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_420, avx2);
-        (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_422, avx2);
-        (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_444, avx2);
+        (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
+            bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_420, avx2);
+        (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
+            bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_422, avx2);
+        (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
+            bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_444, avx2);
 
-        (*c).pal_pred = bd_fn!(BD, pal_pred, avx2);
+        (*c).pal_pred = bd_fn!(decl_pal_pred_fn, BD, pal_pred, avx2);
 
         if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
         if BD::BPC == BPC::BPC8 {
-            (*c).intra_pred[DC_PRED as usize] = Some(dav1d_ipred_dc_8bpc_avx512icl);
-            (*c).intra_pred[DC_128_PRED as usize] = Some(dav1d_ipred_dc_128_8bpc_avx512icl);
-            (*c).intra_pred[TOP_DC_PRED as usize] = Some(dav1d_ipred_dc_top_8bpc_avx512icl);
-            (*c).intra_pred[LEFT_DC_PRED as usize] = Some(dav1d_ipred_dc_left_8bpc_avx512icl);
-            (*c).intra_pred[HOR_PRED as usize] = Some(dav1d_ipred_h_8bpc_avx512icl);
-            (*c).intra_pred[VERT_PRED as usize] = Some(dav1d_ipred_v_8bpc_avx512icl);
+            (*c).intra_pred[DC_PRED as usize] =
+                Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc, avx512icl));
+            (*c).intra_pred[DC_128_PRED as usize] =
+                Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_128, avx512icl));
+            (*c).intra_pred[TOP_DC_PRED as usize] =
+                Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_top, avx512icl));
+            (*c).intra_pred[LEFT_DC_PRED as usize] =
+                Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_left, avx512icl));
+            (*c).intra_pred[HOR_PRED as usize] =
+                Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_h, avx512icl));
+            (*c).intra_pred[VERT_PRED as usize] =
+                Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_v, avx512icl));
         }
 
-        (*c).intra_pred[PAETH_PRED as usize] = Some(bd_fn!(BD, ipred_paeth, avx512icl));
-        (*c).intra_pred[SMOOTH_PRED as usize] = Some(bd_fn!(BD, ipred_smooth, avx512icl));
-        (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_h, avx512icl));
-        (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_v, avx512icl));
-        (*c).intra_pred[FILTER_PRED as usize] = Some(bd_fn!(BD, ipred_filter, avx512icl));
+        (*c).intra_pred[PAETH_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_paeth, avx512icl));
+        (*c).intra_pred[SMOOTH_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth, avx512icl));
+        (*c).intra_pred[SMOOTH_H_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_h, avx512icl));
+        (*c).intra_pred[SMOOTH_V_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_v, avx512icl));
+        (*c).intra_pred[FILTER_PRED as usize] =
+            Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_filter, avx512icl));
 
-        (*c).pal_pred = bd_fn!(BD, pal_pred, avx512icl);
+        (*c).pal_pred = bd_fn!(decl_pal_pred_fn, BD, pal_pred, avx512icl);
     }
 }
 
@@ -2413,34 +2355,45 @@ unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
         return;
     }
 
-    (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc, neon));
-    (*c).intra_pred[DC_128_PRED as usize] = Some(bd_fn!(BD, ipred_dc_128, neon));
-    (*c).intra_pred[TOP_DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc_top, neon));
-    (*c).intra_pred[LEFT_DC_PRED as usize] = Some(bd_fn!(BD, ipred_dc_left, neon));
-    (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(BD, ipred_h, neon));
-    (*c).intra_pred[VERT_PRED as usize] = Some(bd_fn!(BD, ipred_v, neon));
-    (*c).intra_pred[PAETH_PRED as usize] = Some(bd_fn!(BD, ipred_paeth, neon));
-    (*c).intra_pred[SMOOTH_PRED as usize] = Some(bd_fn!(BD, ipred_smooth, neon));
-    (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_v, neon));
-    (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(bd_fn!(BD, ipred_smooth_h, neon));
+    (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc, neon));
+    (*c).intra_pred[DC_128_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_128, neon));
+    (*c).intra_pred[TOP_DC_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_top, neon));
+    (*c).intra_pred[LEFT_DC_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_dc_left, neon));
+    (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_h, neon));
+    (*c).intra_pred[VERT_PRED as usize] = Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_v, neon));
+    (*c).intra_pred[PAETH_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_paeth, neon));
+    (*c).intra_pred[SMOOTH_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth, neon));
+    (*c).intra_pred[SMOOTH_V_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_v, neon));
+    (*c).intra_pred[SMOOTH_H_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_smooth_h, neon));
     #[cfg(target_arch = "aarch64")]
     {
         (*c).intra_pred[Z1_PRED as usize] = Some(ipred_z1_neon_erased::<BD>);
         (*c).intra_pred[Z2_PRED as usize] = Some(ipred_z2_neon_erased::<BD>);
         (*c).intra_pred[Z3_PRED as usize] = Some(ipred_z3_neon_erased::<BD>);
     }
-    (*c).intra_pred[FILTER_PRED as usize] = Some(bd_fn!(BD, ipred_filter, neon));
+    (*c).intra_pred[FILTER_PRED as usize] =
+        Some(bd_fn!(decl_angular_ipred_fn, BD, ipred_filter, neon));
 
-    (*c).cfl_pred[DC_PRED as usize] = bd_fn!(BD, ipred_cfl, neon);
-    (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(BD, ipred_cfl_128, neon);
-    (*c).cfl_pred[TOP_DC_PRED as usize] = bd_fn!(BD, ipred_cfl_top, neon);
-    (*c).cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(BD, ipred_cfl_left, neon);
+    (*c).cfl_pred[DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl, neon);
+    (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_128, neon);
+    (*c).cfl_pred[TOP_DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_top, neon);
+    (*c).cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(decl_cfl_pred_fn, BD, ipred_cfl_left, neon);
 
-    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_420, neon);
-    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_422, neon);
-    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] = bd_fn!(BD, ipred_cfl_ac_444, neon);
+    (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
+        bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_420, neon);
+    (*c).cfl_ac[Rav1dPixelLayout::I422 as usize - 1] =
+        bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_422, neon);
+    (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
+        bd_fn!(decl_cfl_ac_fn, BD, ipred_cfl_ac_444, neon);
 
-    (*c).pal_pred = bd_fn!(BD, pal_pred, neon);
+    (*c).pal_pred = bd_fn!(decl_pal_pred_fn, BD, pal_pred, neon);
 }
 
 #[cold]
