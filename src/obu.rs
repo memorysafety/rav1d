@@ -123,9 +123,7 @@ use std::ptr::addr_of_mut;
 
 #[inline]
 unsafe fn rav1d_get_bits_pos(c: &GetBits) -> c_uint {
-    (c.ptr.offset_from(c.ptr_start) as c_uint)
-        .wrapping_mul(8)
-        .wrapping_sub(c.bits_left as c_uint)
+    c.ptr.offset_from(c.ptr_start) as c_uint * 8 - c.bits_left as c_uint
 }
 
 unsafe fn parse_seq_hdr(
@@ -196,7 +194,7 @@ unsafe fn parse_seq_hdr(
             if op.idc != 0 && (op.idc & 0xff == 0 || op.idc & 0xf00 == 0) {
                 return error(c);
             }
-            op.major_level = (2 as c_uint).wrapping_add(rav1d_get_bits(gb, 3)) as c_int;
+            op.major_level = 2 + rav1d_get_bits(gb, 3) as c_int;
             op.minor_level = rav1d_get_bits(gb, 2) as c_int;
             if op.major_level > 3 {
                 op.tier = rav1d_get_bit(gb) as c_int;
@@ -243,9 +241,7 @@ unsafe fn parse_seq_hdr(
         hdr.frame_id_numbers_present = rav1d_get_bit(gb) as c_int;
         if hdr.frame_id_numbers_present != 0 {
             hdr.delta_frame_id_n_bits = rav1d_get_bits(gb, 4) as c_int + 2;
-            hdr.frame_id_n_bits = (rav1d_get_bits(gb, 3))
-                .wrapping_add(hdr.delta_frame_id_n_bits as c_uint)
-                .wrapping_add(1) as c_int;
+            hdr.frame_id_n_bits = rav1d_get_bits(gb, 3) as c_int + hdr.delta_frame_id_n_bits + 1;
         }
     }
     hdr.sb128 = rav1d_get_bit(gb) as c_int;
@@ -287,7 +283,7 @@ unsafe fn parse_seq_hdr(
     hdr.restoration = rav1d_get_bit(gb) as c_int;
     hdr.hbd = rav1d_get_bit(gb) as c_int;
     if hdr.profile == 2 && hdr.hbd != 0 {
-        hdr.hbd = (hdr.hbd as c_uint).wrapping_add(rav1d_get_bit(gb)) as c_int as c_int;
+        hdr.hbd += rav1d_get_bit(gb) as c_int;
     }
     if hdr.profile != 1 {
         hdr.monochrome = rav1d_get_bit(gb) as c_int;
@@ -389,8 +385,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
                 hdr.render_height = (*(*r#ref).p.frame_hdr).render_height;
                 hdr.super_res.enabled = (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
                 if hdr.super_res.enabled != 0 {
-                    hdr.super_res.width_scale_denominator =
-                        (9 as c_uint).wrapping_add(rav1d_get_bits(gb, 3)) as c_int;
+                    hdr.super_res.width_scale_denominator = 9 + rav1d_get_bits(gb, 3) as c_int;
                     let d = hdr.super_res.width_scale_denominator;
                     hdr.width[0] = cmp::max(
                         (hdr.width[1] * 8 + (d >> 1)) / d,
@@ -414,8 +409,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
     }
     hdr.super_res.enabled = (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
     if hdr.super_res.enabled != 0 {
-        hdr.super_res.width_scale_denominator =
-            (9 as c_uint).wrapping_add(rav1d_get_bits(gb, 3)) as c_int;
+        hdr.super_res.width_scale_denominator = 9 + rav1d_get_bits(gb, 3) as c_int;
         let d = hdr.super_res.width_scale_denominator;
         hdr.width[0] = cmp::max(
             (hdr.width[1] * 8 + (d >> 1)) / d,
@@ -1120,9 +1114,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             if rav1d_get_bit(gb) != 0 {
                 hdr.restoration.unit_size[0] += 1;
                 if seqhdr.sb128 == 0 {
-                    hdr.restoration.unit_size[0] = (hdr.restoration.unit_size[0] as c_uint)
-                        .wrapping_add(rav1d_get_bit(gb))
-                        as c_int;
+                    hdr.restoration.unit_size[0] += rav1d_get_bit(gb) as c_int;
                 }
             }
             hdr.restoration.unit_size[1] = hdr.restoration.unit_size[0];
@@ -1130,9 +1122,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 && seqhdr.ss_hor == 1
                 && seqhdr.ss_ver == 1
             {
-                hdr.restoration.unit_size[1] = (hdr.restoration.unit_size[1] as c_uint)
-                    .wrapping_sub(rav1d_get_bit(gb))
-                    as c_int;
+                hdr.restoration.unit_size[1] -= rav1d_get_bit(gb) as c_int;
             }
         } else {
             hdr.restoration.unit_size[0] = 8;
@@ -1473,7 +1463,7 @@ unsafe fn check_for_overrun(
     }
     let pos: c_uint = rav1d_get_bits_pos(gb);
     assert!(init_bit_pos <= pos);
-    if pos.wrapping_sub(init_bit_pos) > (8 as c_uint).wrapping_mul(obu_len) {
+    if pos - init_bit_pos > 8 * obu_len {
         rav1d_log(
             c,
             b"Overrun in OBU bit buffer into next OBU\n\0" as *const u8 as *const c_char,
@@ -1514,7 +1504,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
         rav1d_ref_dec(&mut c.frame_hdr_ref);
         c.frame_hdr = 0 as *mut Rav1dFrameHeader;
         c.n_tiles = 0;
-        len.wrapping_add(init_byte_pos)
+        len + init_byte_pos
     }
 
     let mut gb: GetBits = GetBits {
@@ -1541,9 +1531,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
     let len: c_uint = if has_length_field != 0 {
         rav1d_get_uleb128(&mut gb)
     } else {
-        (r#in.sz as c_uint)
-            .wrapping_sub(1)
-            .wrapping_sub(has_extension as c_uint)
+        r#in.sz as c_uint - 1 - has_extension as c_uint
     };
     if gb.error != 0 {
         error(c, r#in)?;
@@ -1552,7 +1540,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
     let init_byte_pos: c_uint = init_bit_pos >> 3;
     assert!(init_bit_pos & 7 == 0);
     assert!(r#in.sz >= init_byte_pos as usize);
-    if len as usize > r#in.sz.wrapping_sub(init_byte_pos as usize) {
+    if len as usize > r#in.sz - init_byte_pos as usize {
         error(c, r#in)?;
     }
     if r#type != RAV1D_OBU_SEQ_HDR
@@ -1563,7 +1551,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
         let in_temporal_layer: c_int = (c.operating_point_idc >> temporal_id & 1) as c_int;
         let in_spatial_layer: c_int = (c.operating_point_idc >> spatial_id + 8 & 1) as c_int;
         if in_temporal_layer == 0 || in_spatial_layer == 0 {
-            return Ok(len.wrapping_add(init_byte_pos));
+            return Ok(len + init_byte_pos);
         }
     }
     let mut current_block_188: u64;
@@ -1640,8 +1628,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
         }
         RAV1D_OBU_METADATA => {
             let meta_type: ObuMetaType = rav1d_get_uleb128(&mut gb) as ObuMetaType;
-            let meta_type_len: c_int =
-                ((rav1d_get_bits_pos(&mut gb)).wrapping_sub(init_bit_pos) >> 3) as c_int;
+            let meta_type_len: c_int = ((rav1d_get_bits_pos(&mut gb) - init_bit_pos) >> 3) as c_int;
             if gb.error != 0 {
                 error(c, r#in)?;
             }
@@ -1700,11 +1687,10 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 OBU_META_ITUT_T35 => {
                     let mut payload_size: c_int = len as c_int;
                     while payload_size > 0
-                        && *r#in.data.offset(
-                            init_byte_pos
-                                .wrapping_add(payload_size as c_uint)
-                                .wrapping_sub(1) as isize,
-                        ) == 0
+                        && *r#in
+                            .data
+                            .offset((init_byte_pos + payload_size as c_uint - 1) as isize)
+                            == 0
                     {
                         payload_size -= 1;
                     }
@@ -1725,11 +1711,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         );
                     } else {
                         let r#ref: *mut Rav1dRef = rav1d_ref_create(
-                            (::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-                                .wrapping_add(
-                                    (payload_size as usize)
-                                        .wrapping_mul(::core::mem::size_of::<u8>()),
-                                ),
+                            ::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
+                                + payload_size as usize * ::core::mem::size_of::<u8>(),
                         );
                         if r#ref.is_null() {
                             return Err(ENOMEM);
@@ -1877,8 +1860,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     }
                     let tile: *mut Rav1dTileGroup = realloc(
                         c.tile as *mut c_void,
-                        ((c.n_tile_data + 1) as usize)
-                            .wrapping_mul(::core::mem::size_of::<Rav1dTileGroup>()),
+                        ((c.n_tile_data + 1) as usize) * ::core::mem::size_of::<Rav1dTileGroup>(),
                     ) as *mut Rav1dTileGroup;
                     if tile.is_null() {
                         error(c, r#in)?;
@@ -1896,7 +1878,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                     error(c, r#in)?;
                 }
-                let pkt_bytelen: c_uint = init_byte_pos.wrapping_add(len);
+                let pkt_bytelen: c_uint = init_byte_pos + len;
                 let bit_pos: c_uint = rav1d_get_bits_pos(&mut gb);
                 assert!(bit_pos & 7 == 0);
                 assert!(pkt_bytelen >= bit_pos >> 3);
@@ -1907,7 +1889,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 .data
                 .offset((bit_pos >> 3) as isize);
                 (*c.tile.offset(c.n_tile_data as isize)).data.sz =
-                    pkt_bytelen.wrapping_sub(bit_pos >> 3) as usize;
+                    (pkt_bytelen - (bit_pos >> 3)) as usize;
                 if (*c.tile.offset(c.n_tile_data as isize)).start
                     > (*c.tile.offset(c.n_tile_data as isize)).end
                     || (*c.tile.offset(c.n_tile_data as isize)).start != c.n_tiles
@@ -2116,5 +2098,5 @@ pub(crate) unsafe fn rav1d_parse_obus(
             c.n_tiles = 0;
         }
     }
-    Ok(len.wrapping_add(init_byte_pos))
+    Ok(len + init_byte_pos)
 }
