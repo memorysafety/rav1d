@@ -29,6 +29,15 @@ where
     _phantom: PhantomData<K>,
 }
 
+// Has to be a macro until we have `#![feature(generic_const_exprs)]`.
+macro_rules! enum_map_ty {
+    ($K:ty, $V:ty) => {
+        EnumMap<$K, $V, { <$K as ::strum::EnumCount>::COUNT }>
+    }
+}
+
+pub(crate) use enum_map_ty;
+
 impl<K, V, const N: usize> EnumMap<K, V, N>
 where
     K: EnumKey<N>,

@@ -43,6 +43,7 @@ use crate::src::data::rav1d_data_props_copy;
 use crate::src::data::rav1d_data_unref_internal;
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::enum_map::enum_map;
+use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
 use crate::src::enum_map::EnumMap;
 use crate::src::env::av1_get_bwd_ref_1_ctx;
@@ -3817,7 +3818,7 @@ impl DefaultValue for [u8; 2] {
 }
 
 /// `{ Y+U+V, Y+U } * 4`
-static ss_size_mul: EnumMap<Rav1dPixelLayout, [u8; 2], 4> = enum_map!(Rav1dPixelLayout => [u8; 2]; match key {
+static ss_size_mul: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPixelLayout => [u8; 2]; match key {
     I400 => [4, 4],
     I420 => [6, 5],
     I422 => [8, 6],
