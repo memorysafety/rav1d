@@ -813,3 +813,96 @@ pub(crate) unsafe fn cdef_filter_block_c<BD: BitDepth>(
         }
     };
 }
+
+// TODO(perl): Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn cdef_filter_block_4x4_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
+    pri_strength: c_int,
+    sec_strength: c_int,
+    dir: c_int,
+    damping: c_int,
+    edges: CdefEdgeFlags,
+    bitdepth_max: c_int,
+) {
+    cdef_filter_block_c::<BD>(
+        dst.cast(),
+        stride,
+        left.cast(),
+        top.cast(),
+        bottom.cast(),
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        4 as c_int,
+        4 as c_int,
+        edges,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(perl): Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn cdef_filter_block_4x8_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
+    pri_strength: c_int,
+    sec_strength: c_int,
+    dir: c_int,
+    damping: c_int,
+    edges: CdefEdgeFlags,
+    bitdepth_max: c_int,
+) {
+    cdef_filter_block_c(
+        dst.cast(),
+        stride,
+        left.cast(),
+        top.cast(),
+        bottom.cast(),
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        4 as c_int,
+        8 as c_int,
+        edges,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+// TODO(perl): Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn cdef_filter_block_8x8_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
+    pri_strength: c_int,
+    sec_strength: c_int,
+    dir: c_int,
+    damping: c_int,
+    edges: CdefEdgeFlags,
+    bitdepth_max: c_int,
+) {
+    cdef_filter_block_c(
+        dst.cast(),
+        stride,
+        left.cast(),
+        top.cast(),
+        bottom.cast(),
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        8 as c_int,
+        8 as c_int,
+        edges,
+        BD::from_c(bitdepth_max),
+    );
+}

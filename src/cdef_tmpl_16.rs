@@ -1,10 +1,9 @@
 use crate::include::common::attributes::clz;
-use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::bitdepth::LeftPixelRow2px;
-use crate::src::cdef::cdef_filter_block_c;
-use crate::src::cdef::CdefEdgeFlags;
+use crate::src::cdef::cdef_filter_block_4x4_c_erased;
+use crate::src::cdef::cdef_filter_block_4x8_c_erased;
+use crate::src::cdef::cdef_filter_block_8x8_c_erased;
 use crate::src::cdef::Rav1dCdefDSPContext;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
@@ -24,96 +23,6 @@ unsafe fn PXSTRIDE(x: ptrdiff_t) -> ptrdiff_t {
         unreachable!();
     }
     return x >> 1;
-}
-
-unsafe extern "C" fn cdef_filter_block_4x4_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    cdef_filter_block_c::<BitDepth16>(
-        dst.cast(),
-        stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        4 as c_int,
-        4 as c_int,
-        edges,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn cdef_filter_block_4x8_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    cdef_filter_block_c(
-        dst.cast(),
-        stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        4 as c_int,
-        8 as c_int,
-        edges,
-        BitDepth16::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn cdef_filter_block_8x8_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    cdef_filter_block_c(
-        dst.cast(),
-        stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        8 as c_int,
-        8 as c_int,
-        edges,
-        BitDepth16::from_c(bitdepth_max),
-    );
 }
 
 unsafe extern "C" fn cdef_find_dir_c_erased(
@@ -407,9 +316,9 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased(
 #[cold]
 pub unsafe fn rav1d_cdef_dsp_init_16bpc(c: *mut Rav1dCdefDSPContext) {
     (*c).dir = cdef_find_dir_c_erased;
-    (*c).fb[0] = cdef_filter_block_8x8_c_erased;
-    (*c).fb[1] = cdef_filter_block_4x8_c_erased;
-    (*c).fb[2] = cdef_filter_block_4x4_c_erased;
+    (*c).fb[0] = cdef_filter_block_8x8_c_erased::<BitDepth16>;
+    (*c).fb[1] = cdef_filter_block_4x8_c_erased::<BitDepth16>;
+    (*c).fb[2] = cdef_filter_block_4x4_c_erased::<BitDepth16>;
 
     #[cfg(feature = "asm")]
     cfg_if! {
