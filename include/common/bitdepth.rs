@@ -422,6 +422,48 @@ where
     }
 }
 
+/// Declare and select a [`BitDepth`]-dependent `extern "C" fn`.
+///
+/// # Args
+///
+/// * `$decl_fn:path`:
+///     A path to a macro that, given a `fn $fn_name:ident`,
+///     declares and evaluates to an `extern "C" fn`
+///     with the appropriate signature for this `fn`.
+///     This should usually be `mod::decl_fn`,
+///     where the `mod` is defined by [`wrap_fn_ptr!`],
+///     but it doesn't have to be.
+///
+/// * `$BD:ty`:
+///     A `<BD: `[`BitDepth`]`>` generic type parameter.
+///     [`BPC::BPC8`] results in `bpc8` and
+///     [`BPC::BPC16`] results in `bpc16`.
+///
+/// * `$name:ident`:
+///     The inner name of the asm `fn` to be declared and evaluated to.
+///     This excludes the `dav1d_` prefix and the `_bpc{8,16}_$asm` suffix.
+///
+/// * `$asm:ident`:
+///     The asm variant the asm `fn` is named with.
+///     The possible values correspond to the [`CpuFlags`]:
+///     * `x86`, `x86_64`:
+///         * [`sse2`]
+///         * [`ssse3`]
+///         * [`sse41`]
+///     * `x86_64`:
+///         * [`avx2`]
+///         * [`avx512icl`]
+///     * `arm`, `aarch64`:
+///         * [`neon`]
+///
+/// [`wrap_fn_ptr!`]: crate::src::wrap_fn_ptr::wrap_fn_ptr
+/// [`CpuFlags`]: crate::src::cpu::CpuFlags
+/// [`sse2`]: crate::src::cpu::CpuFlags::SSE2
+/// [`sse41`]: crate::src::cpu::CpuFlags::SSE41
+/// [`ssse3`]: crate::src::cpu::CpuFlags::SSSE3
+/// [`avx2`]: crate::src::cpu::CpuFlags::AVX2
+/// [`avx512icl`]: crate::src::cpu::CpuFlags::AVX512ICL
+/// [`neon`]: crate::src::cpu::CpuFlags::NEON
 #[cfg(feature = "asm")]
 macro_rules! bd_fn {
     ($decl_fn:path, $BD:ty, $name:ident, $asm:ident) => {{
