@@ -1,27 +1,27 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-
 use crate::src::env::BlockContext;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
-
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
-use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
+use std::slice;
 
-// TODO(perl) Temporarily pub until mod is deduplicated
-pub(crate) unsafe fn backup_lpf<BD: BitDepth>(
+// The loop filter buffer stores 12 rows of pixels. A superblock block will
+// contain at most 2 stripes. Each stripe requires 4 rows pixels (2 above
+// and 2 below) the final 4 rows are used to swap the bottom of the last
+// stripe with the top of the next super block row.
+unsafe fn backup_lpf<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     mut dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
-    mut src: *mut BD::Pixel,
+    mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     ss_ver: c_int,
     sb128: c_int,
@@ -38,54 +38,68 @@ pub(crate) unsafe fn backup_lpf<BD: BitDepth>(
     } else {
         src_w
     };
+    // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = ((64 as c_int) << (cdef_backup & sb128)) - 8 * (row == 0) as c_int >> ss_ver;
     src = src.offset((stripe_h - 2) as isize * BD::pxstride(src_stride as usize) as isize);
     if (*(*f).c).n_tc == 1 as c_uint {
         if row != 0 {
             let top = (4 as c_int) << sb128;
-            memcpy(
-                &mut *dst.offset(BD::pxstride(dst_stride as usize * 0) as isize) as *mut BD::Pixel
-                    as *mut c_void,
-                &mut *dst.offset(BD::pxstride(dst_stride as usize * top as usize) as isize)
-                    as *mut BD::Pixel as *const c_void,
-                if BD::BITDEPTH == 8 {
-                    dst_w as usize
-                } else {
-                    (dst_w << 1) as usize
-                },
+            // Copy the top part of the stored loop filtered pixels from the
+            // previous sb row needed above the first stripe of this sb row.
+            BD::pixel_copy(
+                slice::from_raw_parts_mut(
+                    &mut *dst.offset(BD::pxstride(dst_stride as usize * 0) as isize)
+                        as *mut BD::Pixel,
+                    dst_w as usize,
+                ),
+                slice::from_raw_parts(
+                    &mut *dst.offset(BD::pxstride(dst_stride as usize * top as usize) as isize)
+                        as *mut BD::Pixel,
+                    dst_w as usize,
+                ),
+                dst_w as usize,
             );
-            memcpy(
-                &mut *dst.offset(BD::pxstride(dst_stride as usize * 1) as isize) as *mut BD::Pixel
-                    as *mut c_void,
-                &mut *dst.offset(BD::pxstride(dst_stride as usize * (top + 1) as usize) as isize)
-                    as *mut BD::Pixel as *const c_void,
-                if BD::BITDEPTH == 8 {
-                    dst_w as usize
-                } else {
-                    (dst_w << 1) as usize
-                },
+            BD::pixel_copy(
+                slice::from_raw_parts_mut(
+                    &mut *dst.offset(BD::pxstride(dst_stride as usize * 1) as isize)
+                        as *mut BD::Pixel,
+                    dst_w as usize,
+                ),
+                slice::from_raw_parts(
+                    &mut *dst
+                        .offset(BD::pxstride(dst_stride as usize * (top + 1) as usize) as isize)
+                        as *mut BD::Pixel,
+                    dst_w as usize,
+                ),
+                dst_w as usize,
             );
-            memcpy(
-                &mut *dst.offset(BD::pxstride(dst_stride as usize * 2) as isize) as *mut BD::Pixel
-                    as *mut c_void,
-                &mut *dst.offset(BD::pxstride(dst_stride as usize * (top + 2) as usize) as isize)
-                    as *mut BD::Pixel as *const c_void,
-                if BD::BITDEPTH == 8 {
-                    dst_w as usize
-                } else {
-                    (dst_w << 1) as usize
-                },
+            BD::pixel_copy(
+                slice::from_raw_parts_mut(
+                    &mut *dst.offset(BD::pxstride(dst_stride as usize * 2) as isize)
+                        as *mut BD::Pixel,
+                    dst_w as usize,
+                ),
+                slice::from_raw_parts(
+                    &mut *dst
+                        .offset(BD::pxstride(dst_stride as usize * (top + 2) as usize) as isize)
+                        as *mut BD::Pixel,
+                    dst_w as usize,
+                ),
+                dst_w as usize,
             );
-            memcpy(
-                &mut *dst.offset(BD::pxstride(dst_stride as usize * 3) as isize) as *mut BD::Pixel
-                    as *mut c_void,
-                &mut *dst.offset(BD::pxstride(dst_stride as usize * (top + 3) as usize) as isize)
-                    as *mut BD::Pixel as *const c_void,
-                if BD::BITDEPTH == 8 {
-                    dst_w as usize
-                } else {
-                    (dst_w << 1) as usize
-                },
+            BD::pixel_copy(
+                slice::from_raw_parts_mut(
+                    &mut *dst.offset(BD::pxstride(dst_stride as usize * 3) as isize)
+                        as *mut BD::Pixel,
+                    dst_w as usize,
+                ),
+                slice::from_raw_parts(
+                    &mut *dst
+                        .offset(BD::pxstride(dst_stride as usize * (top + 3) as usize) as isize)
+                        as *mut BD::Pixel,
+                    dst_w as usize,
+                ),
+                dst_w as usize,
             );
         }
         dst = dst.offset(4 * BD::pxstride(dst_stride as usize) as isize);
@@ -105,20 +119,19 @@ pub(crate) unsafe fn backup_lpf<BD: BitDepth>(
                 (*f).resize_start[ss_hor as usize],
                 (*f).bitdepth_max,
             );
-            row += stripe_h;
+            row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
             src = src.offset(stripe_h as isize * BD::pxstride(src_stride as usize) as isize);
             dst = dst.offset(n_lines as isize * BD::pxstride(dst_stride as usize) as isize);
             if n_lines == 3 {
-                memcpy(
-                    dst as *mut c_void,
-                    &mut *dst.offset(-1 * BD::pxstride(dst_stride as usize) as isize)
-                        as *mut BD::Pixel as *const c_void,
-                    if BD::BITDEPTH == 8 {
-                        dst_w as usize
-                    } else {
-                        (dst_w << 1) as usize
-                    },
+                BD::pixel_copy(
+                    slice::from_raw_parts_mut(dst, dst_w as usize),
+                    slice::from_raw_parts(
+                        &mut *dst.offset(-(BD::pxstride(dst_stride as usize) as isize))
+                            as *mut BD::Pixel,
+                        dst_w as usize,
+                    ),
+                    dst_w as usize,
                 );
                 dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
             }
@@ -128,25 +141,24 @@ pub(crate) unsafe fn backup_lpf<BD: BitDepth>(
             let n_lines_0 = 4 - (row + stripe_h + 1 == h) as c_int;
             let mut i = 0;
             while i < 4 {
-                memcpy(
-                    dst as *mut c_void,
-                    (if i == n_lines_0 {
-                        &mut *dst.offset(-1 * BD::pxstride(dst_stride as usize) as isize)
-                            as *mut BD::Pixel as *const BD::Pixel
-                    } else {
-                        src
-                    }) as *const c_void,
-                    if BD::BITDEPTH == 8 {
-                        src_w as usize
-                    } else {
-                        (src_w << 1) as usize
-                    },
+                BD::pixel_copy(
+                    slice::from_raw_parts_mut(dst, dst_w as usize),
+                    slice::from_raw_parts(
+                        if i == n_lines_0 {
+                            &mut *dst.offset(-(BD::pxstride(dst_stride as usize) as isize))
+                                as *mut BD::Pixel as *const BD::Pixel
+                        } else {
+                            src
+                        },
+                        dst_w as usize,
+                    ),
+                    src_w as usize,
                 );
                 dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
                 src = src.offset(BD::pxstride(src_stride as usize) as isize);
                 i += 1;
             }
-            row += stripe_h;
+            row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
             src = src.offset((stripe_h - 4) as isize * BD::pxstride(src_stride as usize) as isize);
         }
@@ -317,9 +329,8 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     }
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
 #[inline]
-pub(crate) unsafe fn filter_plane_cols_y<BD: BitDepth>(
+unsafe fn filter_plane_cols_y<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     have_left: c_int,
     lvl: *const [u8; 4],
@@ -366,9 +377,8 @@ pub(crate) unsafe fn filter_plane_cols_y<BD: BitDepth>(
     }
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
 #[inline]
-pub(crate) unsafe fn filter_plane_rows_y<BD: BitDepth>(
+unsafe fn filter_plane_rows_y<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     have_top: c_int,
     mut lvl: *const [u8; 4],
@@ -410,9 +420,8 @@ pub(crate) unsafe fn filter_plane_rows_y<BD: BitDepth>(
     }
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
 #[inline]
-pub(crate) unsafe fn filter_plane_cols_uv<BD: BitDepth>(
+unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     have_left: c_int,
     lvl: *const [u8; 4],
@@ -468,9 +477,8 @@ pub(crate) unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     }
 }
 
-// TODO(perl) Temporarily pub until mod is deduplicated
 #[inline]
-pub(crate) unsafe fn filter_plane_rows_uv<BD: BitDepth>(
+unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     have_top: c_int,
     mut lvl: *const [u8; 4],
