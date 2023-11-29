@@ -1,3 +1,4 @@
+/// A `trait` to extract the `fn` ptr type of a [`WrappedFnPtr`].
 pub trait HasFnPtr {
     type FnPtr;
 }
