@@ -3,6 +3,10 @@ pub trait HasFnPtr {
     type FnPtr;
 }
 
+/// A newtype wrapped `fn` ptr.
+///
+/// This allows us to add a safer (type-safe for sure, and increasingly fully safe)
+/// wrapper around calling a `fn` ptr.
 #[repr(transparent)]
 pub struct WrappedFnPtr<F>(F);
 
