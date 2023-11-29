@@ -1,55 +1,22 @@
-use std::marker::PhantomData;
-
-/// A `trait` to extract the `fn` ptr type of a [`WrappedFnPtr`].
-pub trait HasFnPtr {
-    type FnPtr;
-}
-
-/// A newtype wrapped `fn` ptr.
-///
-/// This allows us to add a safer (type-safe for sure, and increasingly fully safe)
-/// wrapper around calling a `fn` ptr.
-#[derive(Clone, Copy, PartialEq, Eq)]
-#[repr(transparent)]
-pub struct WrappedFnPtr<F, T>
-where
-    T: Clone + Copy + PartialEq + Eq,
-{
-    fn_ptr: F,
-    token: PhantomData<T>,
-}
-
-impl<F, T> HasFnPtr for WrappedFnPtr<F, T>
-where
-    T: Clone + Copy + PartialEq + Eq,
-{
-    type FnPtr = F;
-}
-
-impl<F, T> WrappedFnPtr<F, T>
-where
-    T: Clone + Copy + PartialEq + Eq,
-{
-    pub const fn new(fn_ptr: F) -> Self {
-        Self {
-            fn_ptr,
-            token: PhantomData,
-        }
-    }
-
-    pub const fn get(&self) -> &F {
-        &self.fn_ptr
-    }
-}
-
 /// Declare a newtype wrapper for a `fn` ptr
 /// and define related, useful items for that `fn` ptr (see below).
 /// Given a `fn` signature with no body,
 /// this generates a `mod` with the name of the `fn` provided that contains:
 ///
+/// * `type FnPtr`:
+///     The raw, inner `fn` ptr (according to the provided signature) contained by `Fn`.
+///
 /// * `type Fn`:
-///     A [`WrappedFnPtr`] wrapping the `fn` ptr signature provided.
-///     This is a newtype wrapper for the purpose of implementing methods on.
+///     A newtype wrapping `FnPtr`.
+///     It defines `const fn new(FnPtr) -> Self` to construct it
+///     and `const fn get(&self) -> &FnPtr` to read the `FnPtr`.
+///
+///     These methods are marked `pub(super)`
+///     as they are meant to be used in the module calling [`wrap_fn_ptr!`].
+///
+///     It is meant for a `fn call` to also be added
+///     to call the `fn` in a type-safe (e.x. [`BitDepth`]-wise)
+///     and generally safer (memory safety-wise) way.
 ///
 /// * `impl ` [`DefaultValue`] ` for Fn`:
 ///     A `const`-compatible default implementation of `Fn`
@@ -66,6 +33,7 @@ where
 /// This ensures that the `fn` signature is consistent between all of these
 /// and reduces the need to repeat the `fn` signature many times.
 ///
+/// [`BitDepth`]: crate::include::common::bitdepth::BitDepth
 /// [`DefaultValue`]: crate::src::enum_map::DefaultValue
 /// [`enum_map!`]: crate::src::enum_map::enum_map
 /// [`bd_fn!`]: crate::include::common::bitdepth::bd_fn
@@ -74,14 +42,29 @@ macro_rules! wrap_fn_ptr {
             $($arg_name:ident: $arg_ty:ty),*$(,)?
     ) -> $return_ty:ty) => {
         $vis mod $name {
-            use $crate::src::wrap_fn_ptr::WrappedFnPtr;
             use $crate::src::enum_map::DefaultValue;
             use super::*;
 
-            #[derive(Clone, Copy, PartialEq, Eq)]
-            pub struct Token;
+            pub type FnPtr = unsafe extern "C" fn($($arg_name: $arg_ty),*) -> $return_ty;
 
-            pub type Fn = WrappedFnPtr<unsafe extern "C" fn($($arg_name: $arg_ty),*) -> $return_ty, Token>;
+            /// A newtype wrapped [`FnPtr`].
+            ///
+            /// This allows us to add a safer
+            /// (type-safe for sure, and increasingly fully safe)
+            /// wrapper around calling a `fn` ptr.
+            #[derive(Clone, Copy, PartialEq, Eq)]
+            #[repr(transparent)]
+            pub struct Fn(FnPtr);
+
+            impl Fn {
+                pub(super) const fn new(fn_ptr: FnPtr) -> Self {
+                    Self(fn_ptr)
+                }
+
+                pub(super) const fn get(&self) -> &FnPtr {
+                    &self.0
+                }
+            }
 
             impl DefaultValue for Fn {
                 const DEFAULT: Self = {
