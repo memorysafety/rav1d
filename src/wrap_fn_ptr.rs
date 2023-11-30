@@ -14,8 +14,9 @@
 ///     These methods are marked `pub(super)`
 ///     as they are meant to be used in the module calling [`wrap_fn_ptr!`].
 ///
-///     It is meant for a `fn call` to also be added
-///     to call the `fn` in a type-safe (e.x. [`BitDepth`]-wise)
+///     It is meant for a `fn call` method to also be implemented
+///     for this type to allow users to call the `fn`
+///     in a type-safe (e.x. [`BitDepth`]-wise)
 ///     and generally safer (memory safety-wise) way.
 ///
 /// * `impl ` [`DefaultValue`] ` for Fn`:
