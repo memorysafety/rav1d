@@ -426,13 +426,18 @@ where
 ///
 /// # Args
 ///
-/// * `$decl_fn:path`:
+/// * `$decl_fn:path` (optional):
 ///     A path to a macro that, given a `fn $fn_name:ident`,
 ///     declares and evaluates to an `extern "C" fn`
 ///     with the appropriate signature for this `fn`.
 ///     This should usually be `mod::decl_fn`,
 ///     where the `mod` is defined by [`wrap_fn_ptr!`],
 ///     but it doesn't have to be.
+///
+///     If omitted, this defaults to [`fn_identity`],
+///     which returns the `fn` given without declaring one inline.
+///     This should be used when the `fn` you are selecting
+///     is already declared elsewhere.
 ///
 /// * `$BD:ty`:
 ///     A `<BD: `[`BitDepth`]`>` generic type parameter.
