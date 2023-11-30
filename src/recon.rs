@@ -1,7 +1,5 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BitDepth16;
-use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
@@ -4498,22 +4496,13 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     ];
     let mask: *mut Av1Filter =
         (f.lf.mask).offset(((sby >> ((*f.seq_hdr).sb128 == 0) as c_int) * f.sb128w) as isize);
-    match BD::BPC {
-        BPC::BPC8 => rav1d_loopfilter_sbrow_cols::<BitDepth8>(
-            f,
-            p.as_ptr().cast(),
-            mask,
-            sby,
-            *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
-        ),
-        BPC::BPC16 => rav1d_loopfilter_sbrow_cols::<BitDepth16>(
-            f,
-            p.as_ptr().cast(),
-            mask,
-            sby,
-            *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
-        ),
-    };
+    rav1d_loopfilter_sbrow_cols::<BD>(
+        f,
+        p.as_ptr(),
+        mask,
+        sby,
+        *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
+    );
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
@@ -4537,18 +4526,10 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     if (*f.c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
         && ((*f.frame_hdr).loopfilter.level_y[0] != 0 || (*f.frame_hdr).loopfilter.level_y[1] != 0)
     {
-        match BD::BPC {
-            BPC::BPC8 => rav1d_loopfilter_sbrow_rows::<BitDepth8>(f, p.as_ptr().cast(), mask, sby),
-            BPC::BPC16 => {
-                rav1d_loopfilter_sbrow_rows::<BitDepth16>(f, p.as_ptr().cast(), mask, sby)
-            }
-        };
+        rav1d_loopfilter_sbrow_rows::<BD>(f, p.as_ptr(), mask, sby);
     }
     if (*f.seq_hdr).cdef != 0 || f.lf.restore_planes != 0 {
-        match BD::BPC {
-            BPC::BPC8 => rav1d_copy_lpf::<BitDepth8>(f, p.as_ptr().cast(), sby),
-            BPC::BPC16 => rav1d_copy_lpf::<BitDepth16>(f, p.as_ptr().cast(), sby),
-        };
+        rav1d_copy_lpf::<BD>(f, p.as_ptr(), sby);
     }
 }
 
