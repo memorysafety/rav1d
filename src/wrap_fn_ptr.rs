@@ -24,14 +24,14 @@ impl<F> WrappedFnPtr<F> {
     }
 }
 
-/// This declares a wrapper for a `fn` ptr
-/// and defines related, useful things for that `fn` ptr.
-///
-/// The API for [`wrap_fn_ptr!`] is a `fn` signature with no body.
-/// This generates a `mod` with the name of the `fn` provided that contains:
+/// Declare a newtype wrapper for a `fn` ptr
+/// and define related, useful items for that `fn` ptr (see below).
+/// Given a `fn` signature with no body,
+/// this generates a `mod` with the name of the `fn` provided that contains:
 ///
 /// * `type Fn`:
 ///     A [`WrappedFnPtr`] wrapping the `fn` ptr signature provided.
+///     This is a newtype wrapper for the purpose of implementing methods on.
 ///
 /// * `impl ` [`DefaultValue`] ` for Fn`:
 ///     A `const`-compatible default implementation of `Fn`
