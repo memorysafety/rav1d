@@ -1,7 +1,5 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BitDepth16;
-use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
@@ -4678,10 +4676,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(f: &mut Rav1dFrameConte
         (f.lf.sr_p[2] as *mut BD::Pixel)
             .offset(y as isize * BD::pxstride(f.sr_cur.p.stride[1] as usize) as isize >> ss_ver),
     ];
-    match BD::BPC {
-        BPC::BPC8 => rav1d_lr_sbrow::<BitDepth8>(f, sr_p.as_ptr().cast(), sby),
-        BPC::BPC16 => rav1d_lr_sbrow::<BitDepth16>(f, sr_p.as_ptr().cast(), sby),
-    };
+    rav1d_lr_sbrow::<BD>(f, sr_p.as_ptr(), sby);
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(f: &mut Rav1dFrameContext, sby: c_int) {
