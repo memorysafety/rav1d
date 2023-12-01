@@ -1,3 +1,4 @@
+use crate::include::common::frame::is_key_or_intra;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::data::Rav1dData;
@@ -514,7 +515,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         hdr.force_integer_mv = 0;
     }
 
-    if hdr.frame_type & 1 == 0 {
+    if is_key_or_intra(hdr) {
         hdr.force_integer_mv = 1;
     }
 
@@ -558,7 +559,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         }
     }
 
-    if hdr.frame_type & 1 == 0 {
+    if is_key_or_intra(hdr) {
         hdr.refresh_frame_flags = if hdr.frame_type == RAV1D_FRAME_TYPE_KEY && hdr.show_frame != 0 {
             0xff
         } else {
