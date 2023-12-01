@@ -1,3 +1,4 @@
+use crate::include::common::frame::is_inter_or_switch;
 use crate::include::common::frame::is_key_or_intra;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
@@ -535,7 +536,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     } else {
         0
     };
-    hdr.primary_ref_frame = if hdr.error_resilient_mode == 0 && hdr.frame_type as c_uint & 1 != 0 {
+    hdr.primary_ref_frame = if hdr.error_resilient_mode == 0 && is_inter_or_switch(hdr) {
         rav1d_get_bits(gb, 3) as c_int
     } else {
         7
@@ -736,7 +737,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         hdr.use_ref_frame_mvs = (hdr.error_resilient_mode == 0
             && seqhdr.ref_frame_mvs != 0
             && seqhdr.order_hint != 0
-            && hdr.frame_type & 1 != 0
+            && is_inter_or_switch(hdr)
             && rav1d_get_bit(gb) != 0) as c_int;
     }
 
@@ -1145,14 +1146,13 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     } else {
         RAV1D_TX_LARGEST
     };
-    hdr.switchable_comp_refs = if hdr.frame_type as c_uint & 1 != 0 {
+    hdr.switchable_comp_refs = if is_inter_or_switch(hdr) {
         rav1d_get_bit(gb) as c_int
     } else {
         0
     };
     hdr.skip_mode_allowed = 0;
-    if hdr.switchable_comp_refs != 0 && hdr.frame_type as c_uint & 1 != 0 && seqhdr.order_hint != 0
-    {
+    if hdr.switchable_comp_refs != 0 && is_inter_or_switch(hdr) && seqhdr.order_hint != 0 {
         let poc = hdr.frame_offset as c_uint;
         let mut off_before = 0xffffffff;
         let mut off_after = -1;
@@ -1236,7 +1236,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         0
     };
     hdr.warp_motion = (hdr.error_resilient_mode == 0
-        && hdr.frame_type & 1 != 0
+        && is_inter_or_switch(hdr)
         && seqhdr.warped_motion != 0
         && rav1d_get_bit(gb) != 0) as c_int;
     hdr.reduced_txtp_set = rav1d_get_bit(gb) as c_int;
@@ -1245,7 +1245,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         hdr.gmv[i as usize] = dav1d_default_wm_params.clone();
     }
 
-    if hdr.frame_type & 1 != 0 {
+    if is_inter_or_switch(hdr) {
         for i in 0..7 {
             hdr.gmv[i as usize].r#type = if rav1d_get_bit(gb) == 0 {
                 RAV1D_WM_TYPE_IDENTITY
