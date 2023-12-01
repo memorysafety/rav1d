@@ -18,7 +18,6 @@ use crate::src::enum_map::EnumMap;
 use crate::src::internal::GrainLut;
 use crate::src::tables::dav1d_gaussian_sequence;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
-use crate::src::wrap_fn_ptr::WrappedFnPtr;
 use libc::intptr_t;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -40,13 +39,13 @@ const BLOCK_SIZE: usize = 32;
 const SUB_GRAIN_WIDTH: usize = 44;
 const SUB_GRAIN_HEIGHT: usize = 38;
 
-wrap_fn_ptr!(pub struct FnGenerateGrainY(unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn generate_grain_y(
     buf: *mut GrainLut<DynEntry>,
     data: &Dav1dFilmGrainData,
     bitdepth_max: c_int,
-) -> ()));
+) -> ());
 
-impl FnGenerateGrainY {
+impl generate_grain_y::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         buf: &mut GrainLut<BD::Entry>,
@@ -60,15 +59,15 @@ impl FnGenerateGrainY {
     }
 }
 
-wrap_fn_ptr!(pub struct FnGenerateGrainUV(unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn generate_grain_uv(
     buf: *mut GrainLut<DynEntry>,
     buf_y: *const GrainLut<DynEntry>,
     data: &Dav1dFilmGrainData,
     uv: intptr_t,
     bitdepth_max: c_int,
-) -> ()));
+) -> ());
 
-impl FnGenerateGrainUV {
+impl generate_grain_uv::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         buf: &mut GrainLut<BD::Entry>,
@@ -86,7 +85,7 @@ impl FnGenerateGrainUV {
     }
 }
 
-wrap_fn_ptr!(pub struct FnFGY32x32xN(unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn fgy_32x32xn(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -97,9 +96,9 @@ wrap_fn_ptr!(pub struct FnFGY32x32xN(unsafe extern "C" fn(
     bh: c_int,
     row_num: c_int,
     bitdepth_max: c_int,
-) -> ()));
+) -> ());
 
-impl FnFGY32x32xN {
+impl fgy_32x32xn::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         dst_row: *mut BD::Pixel,
@@ -127,7 +126,7 @@ impl FnFGY32x32xN {
     }
 }
 
-wrap_fn_ptr!(pub struct FnFGUV32x32xN(unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn fguv_32x32xn(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
     stride: ptrdiff_t,
@@ -142,9 +141,9 @@ wrap_fn_ptr!(pub struct FnFGUV32x32xN(unsafe extern "C" fn(
     uv_pl: c_int,
     is_id: c_int,
     bitdepth_max: c_int,
-) -> ()));
+) -> ());
 
-impl FnFGUV32x32xN {
+impl fguv_32x32xn::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         dst_row: *mut BD::Pixel,
@@ -194,61 +193,18 @@ impl FnFGUV32x32xN {
 
 #[repr(C)]
 pub(crate) struct Rav1dFilmGrainDSPContext {
-    pub generate_grain_y: FnGenerateGrainY,
-    pub generate_grain_uv: enum_map_ty!(Rav1dPixelLayoutSubSampled, FnGenerateGrainUV),
-    pub fgy_32x32xn: FnFGY32x32xN,
-    pub fguv_32x32xn: enum_map_ty!(Rav1dPixelLayoutSubSampled, FnFGUV32x32xN),
+    pub generate_grain_y: generate_grain_y::Fn,
+    pub generate_grain_uv: enum_map_ty!(Rav1dPixelLayoutSubSampled, generate_grain_uv::Fn),
+    pub fgy_32x32xn: fgy_32x32xn::Fn,
+    pub fguv_32x32xn: enum_map_ty!(Rav1dPixelLayoutSubSampled, fguv_32x32xn::Fn),
 }
 
-#[cfg(feature = "asm")]
-macro_rules! decl_generate_grain_y_fn {
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+macro_rules! decl_fgy_32x32xn_neon_fn {
     (fn $name:ident) => {{
         extern "C" {
-            fn $name(buf: *mut GrainLut<DynEntry>, data: &Dav1dFilmGrainData, bitdepth_max: c_int);
-        }
-
-        FnGenerateGrainY::new($name)
-    }};
-}
-
-#[cfg(feature = "asm")]
-macro_rules! decl_generate_grain_uv_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            fn $name(
-                buf: *mut GrainLut<DynEntry>,
-                buf_y: *const GrainLut<DynEntry>,
-                data: &Dav1dFilmGrainData,
-                uv: intptr_t,
-                bitdepth_max: c_int,
-            );
-        }
-
-        FnGenerateGrainUV::new($name)
-    }};
-}
-
-#[cfg(feature = "asm")]
-macro_rules! decl_fgy_32x32xn_fn {
-    (fn $name:ident) => {{
-        extern "C" {
-            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-            fn $name(
-                dst_row: *mut DynPixel,
-                src_row: *const DynPixel,
-                stride: ptrdiff_t,
-                data: &Dav1dFilmGrainData,
-                pw: usize,
-                scaling: *const DynScaling,
-                grain_lut: *const GrainLut<DynEntry>,
-                bh: c_int,
-                row_num: c_int,
-                bitdepth_max: c_int,
-            );
-
             // Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
             // to get the same layout of parameters on the stack across platforms.
-            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
             fn $name(
                 dst: *mut DynPixel,
                 src: *const DynPixel,
@@ -264,41 +220,16 @@ macro_rules! decl_fgy_32x32xn_fn {
             );
         }
 
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        let fn_ = FnFGY32x32xN::new($name);
-
-        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-        let fn_ = $name;
-
-        fn_
+        $name
     }};
 }
 
-#[cfg(feature = "asm")]
-macro_rules! decl_fguv_32x32xn_fn {
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+macro_rules! decl_fguv_32x32xn_neon_fn {
     (fn $name:ident) => {{
         extern "C" {
-            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-            fn $name(
-                dst_row: *mut DynPixel,
-                src_row: *const DynPixel,
-                stride: ptrdiff_t,
-                data: &Dav1dFilmGrainData,
-                pw: usize,
-                scaling: *const DynScaling,
-                grain_lut: *const GrainLut<DynEntry>,
-                bh: c_int,
-                row_num: c_int,
-                luma_row: *const DynPixel,
-                luma_stride: ptrdiff_t,
-                uv_pl: c_int,
-                is_id: c_int,
-                bitdepth_max: c_int,
-            );
-
             // Use [`ptrdiff_t`] instead of [`c_int`] for the last few parameters,
             // to get the parameters on the stack with the same layout across platforms.
-            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
             fn $name(
                 dst: *mut DynPixel,
                 src: *const DynPixel,
@@ -317,13 +248,7 @@ macro_rules! decl_fguv_32x32xn_fn {
             );
         }
 
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        let fn_ = FnFGUV32x32xN::new($name);
-
-        #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-        let fn_ = $name;
-
-        fn_
+        $name
     }};
 }
 
@@ -1026,7 +951,7 @@ unsafe fn fgy_32x32xn_neon<BD: BitDepth>(
             r#type |= 2; // overlap x
         }
 
-        bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32, neon)(
+        bd_fn!(decl_fgy_32x32xn_neon_fn, BD, fgy_32x32, neon)(
             dst_row.add(bx).cast(),
             src_row.add(bx).cast(),
             stride,
@@ -1143,9 +1068,9 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
             r#type |= 4;
         }
         (match NM {
-            420 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32_420, neon),
-            422 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32_422, neon),
-            444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32_444, neon),
+            420 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_420, neon),
+            422 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_422, neon),
+            444 => bd_fn!(decl_fguv_32x32xn_neon_fn, BD, fguv_32x32_444, neon),
             _ => unreachable!(),
         })(
             dst_row.add(bx).cast(),
@@ -1169,17 +1094,17 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 impl Rav1dFilmGrainDSPContext {
     const fn new_c<BD: BitDepth>() -> Self {
         Self {
-            generate_grain_y: FnGenerateGrainY::new(generate_grain_y_c_erased::<BD>),
-            generate_grain_uv: enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
-                I420 => FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 420, true, true>),
-                I422 => FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 422, true, false>),
-                I444 => FnGenerateGrainUV::new(generate_grain_uv_c_erased::<BD, 444, false, false>),
+            generate_grain_y: generate_grain_y::Fn::new(generate_grain_y_c_erased::<BD>),
+            generate_grain_uv: enum_map!(Rav1dPixelLayoutSubSampled => generate_grain_uv::Fn; match key {
+                I420 => generate_grain_uv::Fn::new(generate_grain_uv_c_erased::<BD, 420, true, true>),
+                I422 => generate_grain_uv::Fn::new(generate_grain_uv_c_erased::<BD, 422, true, false>),
+                I444 => generate_grain_uv::Fn::new(generate_grain_uv_c_erased::<BD, 444, false, false>),
             }),
-            fgy_32x32xn: FnFGY32x32xN::new(fgy_32x32xn_c_erased::<BD>),
-            fguv_32x32xn: enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
-                I420 => FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 420, true, true>),
-                I422 => FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 422, true, false>),
-                I444 => FnFGUV32x32xN::new(fguv_32x32xn_c_erased::<BD, 444, false, false>),
+            fgy_32x32xn: fgy_32x32xn::Fn::new(fgy_32x32xn_c_erased::<BD>),
+            fguv_32x32xn: enum_map!(Rav1dPixelLayoutSubSampled => fguv_32x32xn::Fn; match key {
+                I420 => fguv_32x32xn::Fn::new(fguv_32x32xn_c_erased::<BD, 420, true, true>),
+                I422 => fguv_32x32xn::Fn::new(fguv_32x32xn_c_erased::<BD, 422, true, false>),
+                I444 => fguv_32x32xn::Fn::new(fguv_32x32xn_c_erased::<BD, 444, false, false>),
             }),
         }
     }
@@ -1191,18 +1116,18 @@ impl Rav1dFilmGrainDSPContext {
             return self;
         }
 
-        self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, ssse3);
-        self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
-            I420 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, ssse3),
-            I422 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, ssse3),
-            I444 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, ssse3),
+        self.generate_grain_y = bd_fn!(generate_grain_y::decl_fn, BD, generate_grain_y, ssse3);
+        self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => generate_grain_uv::Fn; match key {
+            I420 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_420, ssse3),
+            I422 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_422, ssse3),
+            I444 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_444, ssse3),
         });
 
-        self.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, ssse3);
-        self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
-            I420 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, ssse3),
-            I422 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, ssse3),
-            I444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, ssse3),
+        self.fgy_32x32xn = bd_fn!(fgy_32x32xn::decl_fn, BD, fgy_32x32xn, ssse3);
+        self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => fguv_32x32xn::Fn; match key {
+            I420 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i420, ssse3),
+            I422 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i422, ssse3),
+            I444 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i444, ssse3),
         });
 
         #[cfg(target_arch = "x86_64")]
@@ -1211,19 +1136,19 @@ impl Rav1dFilmGrainDSPContext {
                 return self;
             }
 
-            self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, avx2);
-            self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
-                I420 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, avx2),
-                I422 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, avx2),
-                I444 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, avx2),
+            self.generate_grain_y = bd_fn!(generate_grain_y::decl_fn, BD, generate_grain_y, avx2);
+            self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => generate_grain_uv::Fn; match key {
+                I420 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_420, avx2),
+                I422 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_422, avx2),
+                I444 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_444, avx2),
             });
 
             if !flags.contains(CpuFlags::SLOW_GATHER) {
-                self.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx2);
-                self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
-                    I420 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, avx2),
-                    I422 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, avx2),
-                    I444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx2),
+                self.fgy_32x32xn = bd_fn!(fgy_32x32xn::decl_fn, BD, fgy_32x32xn, avx2);
+                self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => fguv_32x32xn::Fn; match key {
+                    I420 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i420, avx2),
+                    I422 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i422, avx2),
+                    I444 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i444, avx2),
                 });
             }
 
@@ -1231,11 +1156,11 @@ impl Rav1dFilmGrainDSPContext {
                 return self;
             }
 
-            self.fgy_32x32xn = bd_fn!(decl_fgy_32x32xn_fn, BD, fgy_32x32xn, avx512icl);
-            self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
-                I420 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i420, avx512icl),
-                I422 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i422, avx512icl),
-                I444 => bd_fn!(decl_fguv_32x32xn_fn, BD, fguv_32x32xn_i444, avx512icl),
+            self.fgy_32x32xn = bd_fn!(fgy_32x32xn::decl_fn, BD, fgy_32x32xn, avx512icl);
+            self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => fguv_32x32xn::Fn; match key {
+                I420 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i420, avx512icl),
+                I422 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i422, avx512icl),
+                I444 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i444, avx512icl),
             });
         }
 
@@ -1249,18 +1174,18 @@ impl Rav1dFilmGrainDSPContext {
             return self;
         }
 
-        self.generate_grain_y = bd_fn!(decl_generate_grain_y_fn, BD, generate_grain_y, neon);
-        self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => FnGenerateGrainUV; match key {
-            I420 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_420, neon),
-            I422 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_422, neon),
-            I444 => bd_fn!(decl_generate_grain_uv_fn, BD, generate_grain_uv_444, neon),
+        self.generate_grain_y = bd_fn!(generate_grain_y::decl_fn, BD, generate_grain_y, neon);
+        self.generate_grain_uv = enum_map!(Rav1dPixelLayoutSubSampled => generate_grain_uv::Fn; match key {
+            I420 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_420, neon),
+            I422 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_422, neon),
+            I444 => bd_fn!(generate_grain_uv::decl_fn, BD, generate_grain_uv_444, neon),
         });
 
-        self.fgy_32x32xn = FnFGY32x32xN::new(fgy_32x32xn_neon_erased::<BD>);
-        self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => FnFGUV32x32xN; match key {
-            I420 => FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 420, true, true>),
-            I422 => FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 422, true, false>),
-            I444 => FnFGUV32x32xN::new(fguv_32x32xn_neon_erased::<BD, 444, false, false>),
+        self.fgy_32x32xn = fgy_32x32xn::Fn::new(fgy_32x32xn_neon_erased::<BD>);
+        self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => fguv_32x32xn::Fn; match key {
+            I420 => fguv_32x32xn::Fn::new(fguv_32x32xn_neon_erased::<BD, 420, true, true>),
+            I422 => fguv_32x32xn::Fn::new(fguv_32x32xn_neon_erased::<BD, 422, true, false>),
+            I444 => fguv_32x32xn::Fn::new(fguv_32x32xn_neon_erased::<BD, 444, false, false>),
         });
 
         self
