@@ -112,6 +112,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::mem;
 use std::ptr::addr_of_mut;
 
 #[inline]
@@ -1609,7 +1610,17 @@ pub(crate) unsafe fn rav1d_parse_obus(
             if c.seq_hdr.is_null() {
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
                 c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
-            } else if memcmp(seq_hdr as *const c_void, c.seq_hdr as *const c_void, 1100) != 0 {
+            } else if memcmp(
+                seq_hdr as *const c_void,
+                c.seq_hdr as *const c_void,
+                // TODO(kkysen) Remove unstable feature.
+                // Doing it this way also prevents us from removing the `#[repr(C)]`.
+                // We should split [`Rav1dSequenceHeader`] into an inner `struct`
+                // without the `operating_parameter_info` field,
+                // or at least offer safe field-by-field comparison methods.
+                mem::offset_of!(Rav1dSequenceHeader, operating_parameter_info),
+            ) != 0
+            {
                 // See 7.5, `operating_parameter_info` is allowed to change in
                 // sequence headers of a single sequence.
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;

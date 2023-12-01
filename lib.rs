@@ -3,6 +3,7 @@
 #![allow(non_upper_case_globals)]
 #![feature(c_variadic)]
 #![feature(core_intrinsics)]
+#![feature(offset_of)] // TODO(kkysen) Will be removed shortly.
 #![cfg_attr(target_arch = "arm", feature(stdsimd))]
 #![allow(clippy::all)]
 
