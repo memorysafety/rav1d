@@ -142,15 +142,15 @@ unsafe fn backup_lpf<BD: BitDepth>(
             let mut i = 0;
             while i < 4 {
                 BD::pixel_copy(
-                    slice::from_raw_parts_mut(dst, dst_w as usize),
+                    slice::from_raw_parts_mut(dst, src_w as usize),
                     slice::from_raw_parts(
                         if i == n_lines_0 {
                             &mut *dst.offset(-(BD::pxstride(dst_stride as usize) as isize))
-                                as *mut BD::Pixel as *const BD::Pixel
+                                as *const BD::Pixel as *const BD::Pixel
                         } else {
                             src
                         },
-                        dst_w as usize,
+                        src_w as usize,
                     ),
                     src_w as usize,
                 );
