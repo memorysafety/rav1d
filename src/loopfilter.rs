@@ -682,38 +682,36 @@ unsafe fn loop_filter<BD: BitDepth>(
                     (p0 + 2 * q0 + 2 * q1 + 2 * q2 + q2 + 4 >> 3).as_::<BD::Pixel>();
             } else {
                 let hev = ((p1 - p0).abs() > H || (q1 - q0).abs() > H) as c_int;
+
+                fn iclip_diff(v: c_int, bitdepth_min_8: u8) -> i32 {
+                    iclip(
+                        v,
+                        -128 * (1 << bitdepth_min_8),
+                        128 * (1 << bitdepth_min_8) - 1,
+                    )
+                }
+
                 if hev != 0 {
-                    let mut f = iclip(
-                        p1 - q1,
-                        -(128 as c_int) * ((1 as c_int) << bitdepth_min_8),
-                        128 * ((1 as c_int) << bitdepth_min_8) - 1,
-                    );
-                    let f1;
-                    let f2;
-                    f = iclip(
-                        3 * (q0 - p0) + f,
-                        -(128 as c_int) * ((1 as c_int) << bitdepth_min_8),
-                        128 * ((1 as c_int) << bitdepth_min_8) - 1,
-                    );
-                    f1 = cmp::min(f + 4, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-                    f2 = cmp::min(f + 3, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
+                    let mut f = iclip_diff(p1 - q1, bitdepth_min_8);
+                    f = iclip_diff(3 * (q0 - p0) + f, bitdepth_min_8);
+
+                    let f1 = cmp::min(f + 4, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
+                    let f2 = cmp::min(f + 3, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
+
                     *dst.offset(strideb * -(1 as c_int) as isize) = bd.iclip_pixel(p0 + f2);
                     *dst.offset((strideb * 0) as isize) = bd.iclip_pixel(q0 - f1);
                 } else {
-                    let mut f_0 = iclip(
-                        3 * (q0 - p0),
-                        -(128 as c_int) * ((1 as c_int) << bitdepth_min_8),
-                        128 * ((1 as c_int) << bitdepth_min_8) - 1,
-                    );
-                    let f1_0;
-                    let f2_0;
-                    f1_0 = cmp::min(f_0 + 4, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-                    f2_0 = cmp::min(f_0 + 3, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-                    *dst.offset(strideb * -(1 as c_int) as isize) = bd.iclip_pixel(p0 + f2_0);
-                    *dst.offset((strideb * 0) as isize) = bd.iclip_pixel(q0 - f1_0);
-                    f_0 = f1_0 + 1 >> 1;
-                    *dst.offset(strideb * -(2 as c_int) as isize) = bd.iclip_pixel(p1 + f_0);
-                    *dst.offset((strideb * 1) as isize) = bd.iclip_pixel(q1 - f_0);
+                    let mut f = iclip_diff(3 * (q0 - p0), bitdepth_min_8);
+
+                    let f1 = cmp::min(f + 4, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
+                    let f2 = cmp::min(f + 3, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
+
+                    *dst.offset(strideb * -(1 as c_int) as isize) = bd.iclip_pixel(p0 + f2);
+                    *dst.offset((strideb * 0) as isize) = bd.iclip_pixel(q0 - f1);
+
+                    f = (f1 + 1) >> 1;
+                    *dst.offset(strideb * -(2 as c_int) as isize) = bd.iclip_pixel(p1 + f);
+                    *dst.offset((strideb * 1) as isize) = bd.iclip_pixel(q1 - f);
                 }
             }
         }
