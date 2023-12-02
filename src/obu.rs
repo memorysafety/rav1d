@@ -37,6 +37,7 @@ use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTER;
 use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTRA;
 use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_KEY;
 use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_SWITCH;
+use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_OBU_FRAME;
@@ -912,7 +913,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         if hdr.segmentation.update_data != 0 {
             hdr.segmentation.seg_data.preskip = 0;
             hdr.segmentation.seg_data.last_active_segid = -1;
-            for i in 0..8 {
+            for i in 0..RAV1D_MAX_SEGMENTS as c_int {
                 let seg = &mut hdr.segmentation.seg_data.d[i as usize];
                 if rav1d_get_bit(gb) != 0 {
                     seg.delta_q = rav1d_get_sbits(gb, 9);
@@ -981,7 +982,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             0,
             ::core::mem::size_of::<Rav1dSegmentationDataSet>(),
         );
-        for i in 0..8 {
+        for i in 0..RAV1D_MAX_SEGMENTS {
             hdr.segmentation.seg_data.d[i as usize].r#ref = -1;
         }
     }
@@ -1017,7 +1018,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         && hdr.quant.vdc_delta == 0
         && hdr.quant.vac_delta == 0) as c_int;
     hdr.all_lossless = 1;
-    for i in 0..8 {
+    for i in 0..RAV1D_MAX_SEGMENTS {
         hdr.segmentation.qidx[i as usize] = if hdr.segmentation.enabled != 0 {
             iclip_u8(hdr.quant.yac + hdr.segmentation.seg_data.d[i as usize].delta_q)
         } else {

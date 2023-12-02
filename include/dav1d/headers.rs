@@ -1035,7 +1035,7 @@ impl From<Rav1dSegmentationData> for Dav1dSegmentationData {
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dSegmentationDataSet {
-    pub d: [Dav1dSegmentationData; 8],
+    pub d: [Dav1dSegmentationData; DAV1D_MAX_SEGMENTS as usize],
     pub preskip: c_int,
     pub last_active_segid: c_int,
 }
@@ -1043,7 +1043,7 @@ pub struct Dav1dSegmentationDataSet {
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dSegmentationDataSet {
-    pub d: [Rav1dSegmentationData; 8],
+    pub d: [Rav1dSegmentationData; RAV1D_MAX_SEGMENTS as usize],
     pub preskip: c_int,
     pub last_active_segid: c_int,
 }
@@ -1607,8 +1607,8 @@ pub struct Dav1dFrameHeader_segmentation {
     pub temporal: c_int,
     pub update_data: c_int,
     pub seg_data: Dav1dSegmentationDataSet,
-    pub lossless: [c_int; 8],
-    pub qidx: [c_int; 8],
+    pub lossless: [c_int; DAV1D_MAX_SEGMENTS as usize],
+    pub qidx: [c_int; DAV1D_MAX_SEGMENTS as usize],
 }
 
 #[derive(Clone)]
@@ -1619,8 +1619,8 @@ pub(crate) struct Rav1dFrameHeader_segmentation {
     pub temporal: c_int,
     pub update_data: c_int,
     pub seg_data: Rav1dSegmentationDataSet,
-    pub lossless: [c_int; 8],
-    pub qidx: [c_int; 8],
+    pub lossless: [c_int; RAV1D_MAX_SEGMENTS as usize],
+    pub qidx: [c_int; RAV1D_MAX_SEGMENTS as usize],
 }
 
 impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {

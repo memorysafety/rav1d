@@ -15,6 +15,7 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
+use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
@@ -455,7 +456,7 @@ pub(crate) struct Rav1dFrameContext {
     pub sb_shift: c_int,
     pub sb_step: c_int,
     pub sr_sb128w: c_int,
-    pub dq: [[[u16; 2]; 3]; 8],
+    pub dq: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
     pub qm: [[*const u8; 3]; 19],
     pub a: *mut BlockContext,
     pub a_sz: c_int,
@@ -492,7 +493,7 @@ pub struct Rav1dTileState {
     pub progress: [atomic_int; 2],
     pub frame_thread: [Rav1dTileState_frame_thread; 2],
     pub lowest_pixel: *mut [[c_int; 2]; 7],
-    pub dqmem: [[[u16; 2]; 3]; 8],
+    pub dqmem: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
     pub dq: *const [[u16; 2]; 3],
     pub last_qidx: c_int,
     pub last_delta_lf: [i8; 4],
