@@ -544,7 +544,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     }
 
     while buf.sz > 0 {
-        let res = rav1d_parse_obus(c, &mut buf, 1 as c_int);
+        let res = rav1d_parse_obus(&mut *c, &mut buf, 1 as c_int);
         let res = match res {
             Ok(res) => res,
             Err(res) => return rav1d_parse_sequence_header_error(Err(res), c, &mut buf),
@@ -737,7 +737,7 @@ unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
         return Ok(());
     }
     while (*in_0).sz > 0 {
-        res = rav1d_parse_obus(c, in_0, 0 as c_int);
+        res = rav1d_parse_obus(&mut *c, &mut *in_0, 0 as c_int);
         match res {
             Err(_) => rav1d_data_unref_internal(in_0),
             Ok(res) => {

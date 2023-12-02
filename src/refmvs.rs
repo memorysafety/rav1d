@@ -698,7 +698,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             &*rf.frm_hdr,
         );
         gmv[0] =
-            if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].type_0 > RAV1D_WM_TYPE_TRANSLATION {
+            if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].r#type > RAV1D_WM_TYPE_TRANSLATION {
                 tgmv[0]
             } else {
                 mv::INVALID
@@ -717,7 +717,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             &*rf.frm_hdr,
         );
         gmv[1] =
-            if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].type_0 > RAV1D_WM_TYPE_TRANSLATION {
+            if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].r#type > RAV1D_WM_TYPE_TRANSLATION {
                 tgmv[1]
             } else {
                 mv::INVALID
