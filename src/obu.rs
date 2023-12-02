@@ -1861,7 +1861,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             const DEBUG_OBU_METADATA: bool = false;
             let init_ptr = gb.ptr;
 
-            // obu metadta type field
+            // obu metadata type field
             let meta_type = rav1d_get_uleb128(&mut gb) as ObuMetaType;
             let meta_type_len = ((rav1d_get_bits_pos(&mut gb) - init_bit_pos) >> 3) as c_int;
             if gb.error != 0 {
