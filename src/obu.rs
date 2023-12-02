@@ -1435,48 +1435,48 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             } else {
                 RAV1D_WM_TYPE_AFFINE
             };
-            if !(hdr.gmv[i as usize].r#type == RAV1D_WM_TYPE_IDENTITY) {
-                let ref_gmv;
-                if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-                    ref_gmv = &dav1d_default_wm_params;
-                } else {
-                    let pri_ref = hdr.refidx[hdr.primary_ref_frame as usize];
-                    if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
-                        return error(c);
-                    }
-                    ref_gmv = &mut (*c.refs[pri_ref as usize].p.p.frame_hdr).gmv[i as usize];
-                }
-                let mat = &mut hdr.gmv[i as usize].matrix;
-                let ref_mat = &ref_gmv.matrix;
-                let bits;
-                let shift;
-
-                if hdr.gmv[i as usize].r#type >= RAV1D_WM_TYPE_ROT_ZOOM {
-                    mat[2] = ((1) << 16)
-                        + 2 * rav1d_get_bits_subexp(gb, ref_mat[2] - ((1) << 16) >> 1, 12);
-                    mat[3] = 2 * rav1d_get_bits_subexp(gb, ref_mat[3] >> 1, 12);
-
-                    bits = 12;
-                    shift = 10;
-                } else {
-                    bits = 9 - (hdr.hp == 0) as c_int;
-                    shift = 13 + (hdr.hp == 0) as c_int;
-                }
-
-                if hdr.gmv[i as usize].r#type as c_uint == RAV1D_WM_TYPE_AFFINE as c_int as c_uint {
-                    mat[4] = 2 * rav1d_get_bits_subexp(gb, ref_mat[4] >> 1, 12);
-                    mat[5] = (1 << 16)
-                        + 2 * rav1d_get_bits_subexp(gb, ref_mat[5] - ((1) << 16) >> 1, 12);
-                } else {
-                    mat[4] = -mat[3];
-                    mat[5] = mat[2];
-                }
-
-                mat[0] =
-                    rav1d_get_bits_subexp(gb, ref_mat[0] >> shift, bits as c_uint) * (1 << shift);
-                mat[1] =
-                    rav1d_get_bits_subexp(gb, ref_mat[1] >> shift, bits as c_uint) * (1 << shift);
+            if hdr.gmv[i as usize].r#type == RAV1D_WM_TYPE_IDENTITY {
+                continue;
             }
+
+            let ref_gmv;
+            if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
+                ref_gmv = &dav1d_default_wm_params;
+            } else {
+                let pri_ref = hdr.refidx[hdr.primary_ref_frame as usize];
+                if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
+                    return error(c);
+                }
+                ref_gmv = &mut (*c.refs[pri_ref as usize].p.p.frame_hdr).gmv[i as usize];
+            }
+            let mat = &mut hdr.gmv[i as usize].matrix;
+            let ref_mat = &ref_gmv.matrix;
+            let bits;
+            let shift;
+
+            if hdr.gmv[i as usize].r#type >= RAV1D_WM_TYPE_ROT_ZOOM {
+                mat[2] =
+                    ((1) << 16) + 2 * rav1d_get_bits_subexp(gb, ref_mat[2] - ((1) << 16) >> 1, 12);
+                mat[3] = 2 * rav1d_get_bits_subexp(gb, ref_mat[3] >> 1, 12);
+
+                bits = 12;
+                shift = 10;
+            } else {
+                bits = 9 - (hdr.hp == 0) as c_int;
+                shift = 13 + (hdr.hp == 0) as c_int;
+            }
+
+            if hdr.gmv[i as usize].r#type as c_uint == RAV1D_WM_TYPE_AFFINE as c_int as c_uint {
+                mat[4] = 2 * rav1d_get_bits_subexp(gb, ref_mat[4] >> 1, 12);
+                mat[5] =
+                    (1 << 16) + 2 * rav1d_get_bits_subexp(gb, ref_mat[5] - ((1) << 16) >> 1, 12);
+            } else {
+                mat[4] = -mat[3];
+                mat[5] = mat[2];
+            }
+
+            mat[0] = rav1d_get_bits_subexp(gb, ref_mat[0] >> shift, bits as c_uint) * (1 << shift);
+            mat[1] = rav1d_get_bits_subexp(gb, ref_mat[1] >> shift, bits as c_uint) * (1 << shift);
         }
     }
     if DEBUG_FRAME_HDR {
@@ -2345,25 +2345,24 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 let r = (*c.frame_hdr).existing_frame_idx;
                 c.refs[r as usize].p.showable = false;
                 for i in 0..8 {
-                    if !(i == r) {
-                        if !c.refs[i as usize].p.p.frame_hdr.is_null() {
-                            rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
-                        }
-                        rav1d_thread_picture_ref(
-                            &mut c.refs[i as usize].p,
-                            &mut c.refs[r as usize].p,
-                        );
-
-                        rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
-                        rav1d_cdf_thread_ref(&mut c.cdf[i as usize], &mut c.cdf[r as usize]);
-
-                        rav1d_ref_dec(&mut c.refs[i as usize].segmap);
-                        c.refs[i as usize].segmap = c.refs[r as usize].segmap;
-                        if !c.refs[r as usize].segmap.is_null() {
-                            rav1d_ref_inc(c.refs[r as usize].segmap);
-                        }
-                        rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
+                    if i == r {
+                        continue;
                     }
+
+                    if !c.refs[i as usize].p.p.frame_hdr.is_null() {
+                        rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
+                    }
+                    rav1d_thread_picture_ref(&mut c.refs[i as usize].p, &mut c.refs[r as usize].p);
+
+                    rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
+                    rav1d_cdf_thread_ref(&mut c.cdf[i as usize], &mut c.cdf[r as usize]);
+
+                    rav1d_ref_dec(&mut c.refs[i as usize].segmap);
+                    c.refs[i as usize].segmap = c.refs[r as usize].segmap;
+                    if !c.refs[r as usize].segmap.is_null() {
+                        rav1d_ref_inc(c.refs[r as usize].segmap);
+                    }
+                    rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
                 }
             }
             c.frame_hdr = 0 as *mut Rav1dFrameHeader;
