@@ -14,6 +14,9 @@ use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
 
+#[cfg(feature = "asm")]
+use crate::include::common::bitdepth::BPC;
+
 pub type loopfilter_sb_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
@@ -694,12 +697,8 @@ unsafe fn loop_filter<BD: BitDepth>(
                     );
                     f1 = cmp::min(f + 4, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
                     f2 = cmp::min(f + 3, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-                    *dst.offset(strideb * -(1 as c_int) as isize) =
-                        iclip(p0 + f2, 0 as c_int, bd.bitdepth_max().as_::<c_int>())
-                            .as_::<BD::Pixel>();
-                    *dst.offset((strideb * 0) as isize) =
-                        iclip(q0 - f1, 0 as c_int, bd.bitdepth_max().as_::<c_int>())
-                            .as_::<BD::Pixel>();
+                    *dst.offset(strideb * -(1 as c_int) as isize) = bd.iclip_pixel(p0 + f2);
+                    *dst.offset((strideb * 0) as isize) = bd.iclip_pixel(q0 - f1);
                 } else {
                     let mut f_0 = iclip(
                         3 * (q0 - p0),
@@ -710,19 +709,11 @@ unsafe fn loop_filter<BD: BitDepth>(
                     let f2_0;
                     f1_0 = cmp::min(f_0 + 4, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
                     f2_0 = cmp::min(f_0 + 3, ((128 as c_int) << bitdepth_min_8) - 1) >> 3;
-                    *dst.offset(strideb * -(1 as c_int) as isize) =
-                        iclip(p0 + f2_0, 0 as c_int, bd.bitdepth_max().as_::<c_int>())
-                            .as_::<BD::Pixel>();
-                    *dst.offset((strideb * 0) as isize) =
-                        iclip(q0 - f1_0, 0 as c_int, bd.bitdepth_max().as_::<c_int>())
-                            .as_::<BD::Pixel>();
+                    *dst.offset(strideb * -(1 as c_int) as isize) = bd.iclip_pixel(p0 + f2_0);
+                    *dst.offset((strideb * 0) as isize) = bd.iclip_pixel(q0 - f1_0);
                     f_0 = f1_0 + 1 >> 1;
-                    *dst.offset(strideb * -(2 as c_int) as isize) =
-                        iclip(p1 + f_0, 0 as c_int, bd.bitdepth_max().as_::<c_int>())
-                            .as_::<BD::Pixel>();
-                    *dst.offset((strideb * 1) as isize) =
-                        iclip(q1 - f_0, 0 as c_int, bd.bitdepth_max().as_::<c_int>())
-                            .as_::<BD::Pixel>();
+                    *dst.offset(strideb * -(2 as c_int) as isize) = bd.iclip_pixel(p1 + f_0);
+                    *dst.offset((strideb * 1) as isize) = bd.iclip_pixel(q1 - f_0);
                 }
             }
         }
@@ -998,8 +989,6 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe fn loop_filter_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPContext) {
-    use crate::include::common::bitdepth::BPC;
-
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
@@ -1066,8 +1055,6 @@ unsafe fn loop_filter_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPConte
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 unsafe fn loop_filter_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPContext) {
-    use crate::include::common::bitdepth::BPC;
-
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
