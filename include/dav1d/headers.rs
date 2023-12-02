@@ -421,8 +421,10 @@ pub(crate) const RAV1D_CHR_UNKNOWN: Rav1dChromaSamplePosition = DAV1D_CHR_UNKNOW
 
 // Constants from Section 3. "Symbols and abbreviated terms"
 pub const DAV1D_MAX_SEGMENTS: u8 = 8;
+pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
 
 pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
+pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
 
 #[repr(C)]
 pub struct Rav1dContentLightLevel {

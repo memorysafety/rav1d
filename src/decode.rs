@@ -19,6 +19,7 @@ use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
+use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SWITCHABLE;
@@ -1160,7 +1161,7 @@ unsafe fn get_prev_frame_segid(
     ref_seg_map: *const u8,
     stride: ptrdiff_t,
 ) -> u8 {
-    assert!((*f.frame_hdr).primary_ref_frame != 7);
+    assert!((*f.frame_hdr).primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
 
     // Need checked casts here because an overflowing cast
     // would give a too large `len` to [`std::slice::from_raw_parts`], which would UB.
@@ -5099,7 +5100,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
     let mut ref_coded_width = <[i32; 7]>::default();
     if is_inter_or_switch(&*f.frame_hdr) {
-        if (*f.frame_hdr).primary_ref_frame != 7 {
+        if (*f.frame_hdr).primary_ref_frame != RAV1D_PRIMARY_REF_NONE {
             let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
             if c.refs[pri_ref].p.p.data[0].is_null() {
                 on_error(f, c, out_delayed);
@@ -5143,7 +5144,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     // setup entropy
-    if (*f.frame_hdr).primary_ref_frame == 7 {
+    if (*f.frame_hdr).primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
         rav1d_cdf_thread_init_static(&mut f.in_cdf, (*f.frame_hdr).quant.yac);
     } else {
         let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
@@ -5292,7 +5293,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         if (*f.frame_hdr).segmentation.temporal != 0 || (*f.frame_hdr).segmentation.update_map == 0
         {
             let pri_ref = (*f.frame_hdr).primary_ref_frame as usize;
-            assert!(pri_ref != 7);
+            assert!(pri_ref != RAV1D_PRIMARY_REF_NONE as usize);
             let ref_w = (ref_coded_width[pri_ref] + 7 >> 3) << 1;
             let ref_h = (f.refp[pri_ref].p.p.h + 7 >> 3) << 1;
             if ref_w == f.bw && ref_h == f.bh {
