@@ -87,7 +87,7 @@ macro_rules! wrap_fn_ptr {
                         fn $fn_name($($arg_name: $arg_ty,)*) -> $return_ty;
                     }
 
-                    $name::Fn::new($fn_name)
+                    self::$name::Fn::new($fn_name)
                 }};
             }
 
