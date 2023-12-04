@@ -1977,21 +1977,20 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     return Err(ERANGE);
                 }
 
-                if r#type != RAV1D_OBU_FRAME {
-                    break;
-                }
-                // OBU_FRAMEs shouldn't be signaled with `show_existing_frame`.
-                if (*c.frame_hdr).show_existing_frame != 0 {
-                    c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                    error(c, r#in)?;
-                }
+                if r#type == RAV1D_OBU_FRAME {
+                    // OBU_FRAMEs shouldn't be signaled with `show_existing_frame`.
+                    if (*c.frame_hdr).show_existing_frame != 0 {
+                        c.frame_hdr = 0 as *mut Rav1dFrameHeader;
+                        error(c, r#in)?;
+                    }
 
-                // This is the frame header at the start of a frame OBU.
-                // There's no trailing bit at the end to skip,
-                // but we do need to align to the next byte.
-                rav1d_bytealign_get_bits(&mut gb);
-                if global == 0 {
-                    parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
+                    // This is the frame header at the start of a frame OBU.
+                    // There's no trailing bit at the end to skip,
+                    // but we do need to align to the next byte.
+                    rav1d_bytealign_get_bits(&mut gb);
+                    if global == 0 {
+                        parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
+                    }
                 }
             }
             RAV1D_OBU_TILE_GRP => {
