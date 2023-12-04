@@ -1844,13 +1844,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 c.seq_hdr_ref = r#ref;
                 c.seq_hdr = seq_hdr;
             }
-            RAV1D_OBU_REDUNDANT_FRAME_HDR => {
-                if c.frame_hdr.is_null() {
-                    state = RAV1D_OBU_FRAME;
-                    continue; // fall-through
-                }
-            }
-            RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
+            RAV1D_OBU_REDUNDANT_FRAME_HDR if !c.frame_hdr.is_null() => {}
+            RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
                 if global != 0 {
                     break;
                 }
