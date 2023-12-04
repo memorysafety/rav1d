@@ -420,9 +420,11 @@ pub(crate) const _RAV1D_CHR_VERTICAL: Rav1dChromaSamplePosition = DAV1D_CHR_VERT
 pub(crate) const RAV1D_CHR_UNKNOWN: Rav1dChromaSamplePosition = DAV1D_CHR_UNKNOWN;
 
 // Constants from Section 3. "Symbols and abbreviated terms"
+pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
 pub const DAV1D_MAX_SEGMENTS: u8 = 8;
 pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
 
+pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
 pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
 pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
 
@@ -1854,8 +1856,8 @@ impl From<Rav1dFrameHeader_loopfilter> for Dav1dFrameHeader_loopfilter {
 pub struct Dav1dFrameHeader_cdef {
     pub damping: c_int,
     pub n_bits: c_int,
-    pub y_strength: [c_int; 8],
-    pub uv_strength: [c_int; 8],
+    pub y_strength: [c_int; DAV1D_MAX_CDEF_STRENGTHS],
+    pub uv_strength: [c_int; DAV1D_MAX_CDEF_STRENGTHS],
 }
 
 #[derive(Clone)]
@@ -1863,8 +1865,8 @@ pub struct Dav1dFrameHeader_cdef {
 pub(crate) struct Rav1dFrameHeader_cdef {
     pub damping: c_int,
     pub n_bits: c_int,
-    pub y_strength: [c_int; 8],
-    pub uv_strength: [c_int; 8],
+    pub y_strength: [c_int; RAV1D_MAX_CDEF_STRENGTHS],
+    pub uv_strength: [c_int; RAV1D_MAX_CDEF_STRENGTHS],
 }
 
 impl From<Dav1dFrameHeader_cdef> for Rav1dFrameHeader_cdef {
