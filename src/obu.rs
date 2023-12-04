@@ -1915,10 +1915,9 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 c.seq_hdr = seq_hdr;
             }
             RAV1D_OBU_REDUNDANT_FRAME_HDR if !c.frame_hdr.is_null() => {}
+            RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR
+                if global != 0 => {}
             RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
-                if global != 0 {
-                    break;
-                }
                 if c.seq_hdr.is_null() {
                     error(c, r#in)?;
                 }
@@ -1991,16 +1990,14 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
                 rav1d_bytealign_get_bits(&mut gb);
-                if global != 0 {
-                    break;
+                if global == 0 {
+                    parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
                 }
-                parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
             RAV1D_OBU_TILE_GRP => {
-                if global != 0 {
-                    break;
+                if global == 0 {
+                    parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
                 }
-                parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
             RAV1D_OBU_METADATA => {
                 const DEBUG_OBU_METADATA: bool = false;
