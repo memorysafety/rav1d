@@ -421,10 +421,12 @@ pub(crate) const RAV1D_CHR_UNKNOWN: Rav1dChromaSamplePosition = DAV1D_CHR_UNKNOW
 
 // Constants from Section 3. "Symbols and abbreviated terms"
 pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
+pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
 pub const DAV1D_MAX_SEGMENTS: u8 = 8;
 pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
 
 pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
+pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
 pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
 pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
 
@@ -628,7 +630,7 @@ pub struct Dav1dSequenceHeader {
     pub hbd: c_int,
     pub color_range: c_int,
     pub num_operating_points: c_int,
-    pub operating_points: [Dav1dSequenceHeaderOperatingPoint; 32],
+    pub operating_points: [Dav1dSequenceHeaderOperatingPoint; DAV1D_MAX_OPERATING_POINTS],
     pub still_picture: c_int,
     pub reduced_still_picture_header: c_int,
     pub timing_info_present: c_int,
@@ -669,7 +671,8 @@ pub struct Dav1dSequenceHeader {
     pub color_description_present: c_int,
     pub separate_uv_delta_q: c_int,
     pub film_grain_present: c_int,
-    pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
+    pub operating_parameter_info:
+        [Dav1dSequenceHeaderOperatingParameterInfo; DAV1D_MAX_OPERATING_POINTS],
 }
 
 #[derive(Clone)]
@@ -686,7 +689,7 @@ pub(crate) struct Rav1dSequenceHeader {
     pub hbd: c_int,
     pub color_range: c_int,
     pub num_operating_points: c_int,
-    pub operating_points: [Rav1dSequenceHeaderOperatingPoint; 32],
+    pub operating_points: [Rav1dSequenceHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
     pub still_picture: c_int,
     pub reduced_still_picture_header: c_int,
     pub timing_info_present: c_int,
@@ -727,7 +730,8 @@ pub(crate) struct Rav1dSequenceHeader {
     pub color_description_present: c_int,
     pub separate_uv_delta_q: c_int,
     pub film_grain_present: c_int,
-    pub operating_parameter_info: [Rav1dSequenceHeaderOperatingParameterInfo; 32],
+    pub operating_parameter_info:
+        [Rav1dSequenceHeaderOperatingParameterInfo; RAV1D_MAX_OPERATING_POINTS],
 }
 
 impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
@@ -1954,7 +1958,7 @@ pub struct Dav1dFrameHeader {
     pub frame_size_override: c_int,
     pub primary_ref_frame: c_int,
     pub buffer_removal_time_present: c_int,
-    pub operating_points: [Dav1dFrameHeaderOperatingPoint; 32],
+    pub operating_points: [Dav1dFrameHeaderOperatingPoint; DAV1D_MAX_OPERATING_POINTS],
     pub refresh_frame_flags: c_int,
     pub render_width: c_int,
     pub render_height: c_int,
@@ -2009,7 +2013,7 @@ pub(crate) struct Rav1dFrameHeader {
     pub frame_size_override: c_int,
     pub primary_ref_frame: c_int,
     pub buffer_removal_time_present: c_int,
-    pub operating_points: [Rav1dFrameHeaderOperatingPoint; 32],
+    pub operating_points: [Rav1dFrameHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
     pub refresh_frame_flags: c_int,
     pub render_width: c_int,
     pub render_height: c_int,
