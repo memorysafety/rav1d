@@ -1843,9 +1843,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
         Ok(())
     }
 
-    let state = r#type;
     loop {
-        match state {
+        match r#type {
             RAV1D_OBU_SEQ_HDR => {
                 let mut r#ref = rav1d_ref_create_using_pool(
                     c.seq_hdr_pool,
