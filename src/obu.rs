@@ -1772,7 +1772,78 @@ pub(crate) unsafe fn rav1d_parse_obus(
         }
     }
 
-    let mut state = r#type;
+    unsafe fn parse_tile_grp(
+        c: &mut Rav1dContext,
+        r#in: &mut Rav1dData,
+        gb: &mut GetBits,
+        init_bit_pos: c_uint,
+        init_byte_pos: c_uint,
+        len: c_uint,
+    ) -> Rav1dResult {
+        if c.frame_hdr.is_null() {
+            error(c, r#in)?;
+        }
+        if c.n_tile_data_alloc < c.n_tile_data + 1 {
+            if c.n_tile_data + 1
+                > i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_ulong as c_int
+            {
+                error(c, r#in)?;
+            }
+            let tile = realloc(
+                c.tile as *mut c_void,
+                ((c.n_tile_data + 1) as usize) * ::core::mem::size_of::<Rav1dTileGroup>(),
+            ) as *mut Rav1dTileGroup;
+            if tile.is_null() {
+                error(c, r#in)?;
+            }
+            c.tile = tile;
+            memset(
+                c.tile.offset(c.n_tile_data as isize) as *mut c_void,
+                0,
+                ::core::mem::size_of::<Rav1dTileGroup>(),
+            );
+            c.n_tile_data_alloc = c.n_tile_data + 1;
+        }
+        parse_tile_hdr(c, gb);
+        // Align to the next byte boundary and check for overrun.
+        rav1d_bytealign_get_bits(gb);
+        if check_for_overrun(c, gb, init_bit_pos, len) != 0 {
+            error(c, r#in)?;
+        }
+        // The current bit position is a multiple of 8
+        // (because we just aligned it) and less than `8 * pkt_bytelen`
+        // because otherwise the overrun check would have fired.
+        let pkt_bytelen = init_byte_pos + len;
+        let bit_pos = rav1d_get_bits_pos(gb);
+        assert!(bit_pos & 7 == 0);
+        assert!(pkt_bytelen >= bit_pos >> 3);
+        rav1d_data_ref(&mut (*c.tile.offset(c.n_tile_data as isize)).data, r#in);
+        (*c.tile.offset(c.n_tile_data as isize)).data.data = (*(c.tile)
+            .offset(c.n_tile_data as isize))
+        .data
+        .data
+        .offset((bit_pos >> 3) as isize);
+        (*c.tile.offset(c.n_tile_data as isize)).data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
+        // Ensure tile groups are in order and sane; see 6.10.1.
+        if (*c.tile.offset(c.n_tile_data as isize)).start
+            > (*c.tile.offset(c.n_tile_data as isize)).end
+            || (*c.tile.offset(c.n_tile_data as isize)).start != c.n_tiles
+        {
+            for i in 0..=c.n_tile_data {
+                rav1d_data_unref_internal(&mut (*c.tile.offset(i as isize)).data);
+            }
+            c.n_tile_data = 0;
+            c.n_tiles = 0;
+            error(c, r#in)?;
+        }
+        c.n_tiles += 1 + (*(c.tile).offset(c.n_tile_data as isize)).end
+            - (*(c.tile).offset(c.n_tile_data as isize)).start;
+        c.n_tile_data += 1;
+
+        Ok(())
+    }
+
+    let state = r#type;
     loop {
         match state {
             RAV1D_OBU_SEQ_HDR => {
@@ -1921,73 +1992,16 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
                 rav1d_bytealign_get_bits(&mut gb);
-                state = RAV1D_OBU_TILE_GRP;
-                continue; // fall-through
+                if global != 0 {
+                    break;
+                }
+                parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
             RAV1D_OBU_TILE_GRP => {
                 if global != 0 {
                     break;
                 }
-                if c.frame_hdr.is_null() {
-                    error(c, r#in)?;
-                }
-                if c.n_tile_data_alloc < c.n_tile_data + 1 {
-                    if c.n_tile_data + 1
-                        > i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_ulong as c_int
-                    {
-                        error(c, r#in)?;
-                    }
-                    let tile = realloc(
-                        c.tile as *mut c_void,
-                        ((c.n_tile_data + 1) as usize) * ::core::mem::size_of::<Rav1dTileGroup>(),
-                    ) as *mut Rav1dTileGroup;
-                    if tile.is_null() {
-                        error(c, r#in)?;
-                    }
-                    c.tile = tile;
-                    memset(
-                        c.tile.offset(c.n_tile_data as isize) as *mut c_void,
-                        0,
-                        ::core::mem::size_of::<Rav1dTileGroup>(),
-                    );
-                    c.n_tile_data_alloc = c.n_tile_data + 1;
-                }
-                parse_tile_hdr(c, &mut gb);
-                // Align to the next byte boundary and check for overrun.
-                rav1d_bytealign_get_bits(&mut gb);
-                if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                    error(c, r#in)?;
-                }
-                // The current bit position is a multiple of 8
-                // (because we just aligned it) and less than `8 * pkt_bytelen`
-                // because otherwise the overrun check would have fired.
-                let pkt_bytelen = init_byte_pos + len;
-                let bit_pos = rav1d_get_bits_pos(&mut gb);
-                assert!(bit_pos & 7 == 0);
-                assert!(pkt_bytelen >= bit_pos >> 3);
-                rav1d_data_ref(&mut (*c.tile.offset(c.n_tile_data as isize)).data, r#in);
-                (*c.tile.offset(c.n_tile_data as isize)).data.data = (*(c.tile)
-                    .offset(c.n_tile_data as isize))
-                .data
-                .data
-                .offset((bit_pos >> 3) as isize);
-                (*c.tile.offset(c.n_tile_data as isize)).data.sz =
-                    (pkt_bytelen - (bit_pos >> 3)) as usize;
-                // Ensure tile groups are in order and sane; see 6.10.1.
-                if (*c.tile.offset(c.n_tile_data as isize)).start
-                    > (*c.tile.offset(c.n_tile_data as isize)).end
-                    || (*c.tile.offset(c.n_tile_data as isize)).start != c.n_tiles
-                {
-                    for i in 0..=c.n_tile_data {
-                        rav1d_data_unref_internal(&mut (*c.tile.offset(i as isize)).data);
-                    }
-                    c.n_tile_data = 0;
-                    c.n_tiles = 0;
-                    error(c, r#in)?;
-                }
-                c.n_tiles += 1 + (*(c.tile).offset(c.n_tile_data as isize)).end
-                    - (*(c.tile).offset(c.n_tile_data as isize)).start;
-                c.n_tile_data += 1;
+                parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
             RAV1D_OBU_METADATA => {
                 const DEBUG_OBU_METADATA: bool = false;
