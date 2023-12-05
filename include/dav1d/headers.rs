@@ -428,6 +428,7 @@ pub const DAV1D_MAX_SEGMENTS: u8 = 8;
 pub const DAV1D_NUM_REF_FRAMES: usize = 8;
 pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
 pub const DAV1D_REFS_PER_FRAME: usize = 7;
+pub const DAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME + 1;
 
 pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
 pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
@@ -437,6 +438,7 @@ pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
 pub(crate) const _RAV1D_NUM_REF_FRAMES: usize = DAV1D_NUM_REF_FRAMES;
 pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
 pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
+pub(crate) const RAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_TOTAL_REFS_PER_FRAME;
 
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
@@ -1098,14 +1100,14 @@ impl From<Rav1dSegmentationDataSet> for Dav1dSegmentationDataSet {
 #[repr(C)]
 pub struct Dav1dLoopfilterModeRefDeltas {
     pub mode_delta: [c_int; 2],
-    pub ref_delta: [c_int; 8],
+    pub ref_delta: [c_int; DAV1D_TOTAL_REFS_PER_FRAME],
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dLoopfilterModeRefDeltas {
     pub mode_delta: [c_int; 2],
-    pub ref_delta: [c_int; 8],
+    pub ref_delta: [c_int; RAV1D_TOTAL_REFS_PER_FRAME],
 }
 
 impl From<Dav1dLoopfilterModeRefDeltas> for Rav1dLoopfilterModeRefDeltas {
