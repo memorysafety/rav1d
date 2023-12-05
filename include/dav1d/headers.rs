@@ -26,6 +26,27 @@ where
     }
 }
 
+// Constants from Section 3. "Symbols and abbreviated terms"
+pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
+pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
+pub const DAV1D_MAX_TILE_COLS: usize = 64;
+pub const DAV1D_MAX_TILE_ROWS: usize = 64;
+pub const DAV1D_MAX_SEGMENTS: u8 = 8;
+pub const DAV1D_NUM_REF_FRAMES: usize = 8;
+pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
+pub const DAV1D_REFS_PER_FRAME: usize = 7;
+pub const DAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME + 1;
+
+pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
+pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
+pub(crate) const RAV1D_MAX_TILE_COLS: usize = DAV1D_MAX_TILE_COLS;
+pub(crate) const RAV1D_MAX_TILE_ROWS: usize = DAV1D_MAX_TILE_ROWS;
+pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
+pub(crate) const _RAV1D_NUM_REF_FRAMES: usize = DAV1D_NUM_REF_FRAMES;
+pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
+pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
+pub(crate) const RAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_TOTAL_REFS_PER_FRAME;
+
 pub type Dav1dObuType = c_uint;
 pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
 pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
@@ -418,27 +439,6 @@ pub(crate) type Rav1dChromaSamplePosition = c_uint;
 pub(crate) const _RAV1D_CHR_COLOCATED: Rav1dChromaSamplePosition = DAV1D_CHR_COLOCATED;
 pub(crate) const _RAV1D_CHR_VERTICAL: Rav1dChromaSamplePosition = DAV1D_CHR_VERTICAL;
 pub(crate) const RAV1D_CHR_UNKNOWN: Rav1dChromaSamplePosition = DAV1D_CHR_UNKNOWN;
-
-// Constants from Section 3. "Symbols and abbreviated terms"
-pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
-pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
-pub const DAV1D_MAX_TILE_COLS: usize = 64;
-pub const DAV1D_MAX_TILE_ROWS: usize = 64;
-pub const DAV1D_MAX_SEGMENTS: u8 = 8;
-pub const DAV1D_NUM_REF_FRAMES: usize = 8;
-pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
-pub const DAV1D_REFS_PER_FRAME: usize = 7;
-pub const DAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME + 1;
-
-pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
-pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
-pub(crate) const RAV1D_MAX_TILE_COLS: usize = DAV1D_MAX_TILE_COLS;
-pub(crate) const RAV1D_MAX_TILE_ROWS: usize = DAV1D_MAX_TILE_ROWS;
-pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
-pub(crate) const _RAV1D_NUM_REF_FRAMES: usize = DAV1D_NUM_REF_FRAMES;
-pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
-pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
-pub(crate) const RAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_TOTAL_REFS_PER_FRAME;
 
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
