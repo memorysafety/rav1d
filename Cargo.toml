@@ -43,11 +43,10 @@ asm = []
 bitdepth_8 = []
 bitdepth_16 = []
 
-[profile.dev]
-# As we port, we increasingly use operations that require more optimizations to be zero-cost,
-# so while `--release` perf stays the same, debug perf suffers a lot,
-# unless we enable the basic optimizations (`opt-level = 1`),
-# which don't increase compile-time that much.
+[profile.opt-dev]
+# The debug builds run tests very slowly so this profile keeps debug assertions
+# while enabling basic optimizations. The profile is not suitable for debugging.
+inherits = "dev"
 opt-level = 1
 
 [profile.release]
