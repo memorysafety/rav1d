@@ -1,4 +1,6 @@
 use crate::include::common::attributes::ctz;
+use crate::include::common::bitdepth::BitDepth16;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::apply_sign64;
@@ -28,6 +30,7 @@ use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
 use crate::src::align::Align16;
+use crate::src::cdef::rav1d_cdef_dsp_init;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
 use crate::src::cdf::rav1d_cdf_thread_init_static;
@@ -239,16 +242,10 @@ use std::sync::atomic::AtomicI32;
 use std::sync::atomic::Ordering;
 
 #[cfg(feature = "bitdepth_8")]
-use crate::{
-    include::common::bitdepth::BitDepth8, src::cdef_tmpl_8::rav1d_cdef_dsp_init_8bpc,
-    src::itx_tmpl_8::rav1d_itx_dsp_init_8bpc,
-};
+use crate::src::itx_tmpl_8::rav1d_itx_dsp_init_8bpc;
 
 #[cfg(feature = "bitdepth_16")]
-use crate::{
-    include::common::bitdepth::BitDepth16, src::cdef_tmpl_16::rav1d_cdef_dsp_init_16bpc,
-    src::itx_tmpl_16::rav1d_itx_dsp_init_16bpc,
-};
+use crate::src::itx_tmpl_16::rav1d_itx_dsp_init_16bpc;
 
 fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
@@ -5053,7 +5050,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         match bpc {
             #[cfg(feature = "bitdepth_8")]
             8 => {
-                rav1d_cdef_dsp_init_8bpc(&mut dsp.cdef);
+                rav1d_cdef_dsp_init::<BitDepth8>(&mut dsp.cdef);
                 rav1d_intra_pred_dsp_init::<BitDepth8>(&mut dsp.ipred);
                 rav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
                 rav1d_loop_filter_dsp_init::<BitDepth8>(&mut dsp.lf);
@@ -5063,7 +5060,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
             #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
-                rav1d_cdef_dsp_init_16bpc(&mut dsp.cdef);
+                rav1d_cdef_dsp_init::<BitDepth16>(&mut dsp.cdef);
                 rav1d_intra_pred_dsp_init::<BitDepth16>(&mut dsp.ipred);
                 rav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
                 rav1d_loop_filter_dsp_init::<BitDepth16>(&mut dsp.lf);
