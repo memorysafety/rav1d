@@ -1777,8 +1777,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
 
     (*(*c.frame_hdr_ref)
         .data
-        .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-    .update_dav1d();
+        .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>()) = DRav1d::from_rav1d(hdr.clone());
 
     Ok(())
 }
@@ -2025,8 +2024,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 rav1d_ref_dec(&mut r#ref);
                 error(c, r#in).unwrap_err()
             })?;
-            (*seq_hdrs).rav1d = seq_hdr;
-            (*seq_hdrs).update_dav1d();
+            (*seq_hdrs) = DRav1d::from_rav1d(seq_hdr);
             let seq_hdr = &mut (*seq_hdrs).rav1d as *mut Rav1dSequenceHeader;
             if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                 rav1d_ref_dec(&mut r#ref);
@@ -2321,7 +2319,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                                 rav1d_get_bits(&mut gb, 8) as u8;
                         }
                         (*itut_t35_metadata).payload_size = payload_size as usize;
-                        (*itut_t32_metadatas).update_dav1d();
+                        *itut_t32_metadatas = DRav1d::from_rav1d((*itut_t35_metadata).clone());
 
                         rav1d_ref_dec(&mut c.itut_t35_ref);
                         c.itut_t35 = itut_t35_metadata;
