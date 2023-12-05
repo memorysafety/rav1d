@@ -422,11 +422,15 @@ pub(crate) const RAV1D_CHR_UNKNOWN: Rav1dChromaSamplePosition = DAV1D_CHR_UNKNOW
 // Constants from Section 3. "Symbols and abbreviated terms"
 pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
 pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
+pub const DAV1D_MAX_TILE_COLS: usize = 64;
+pub const DAV1D_MAX_TILE_ROWS: usize = 64;
 pub const DAV1D_MAX_SEGMENTS: u8 = 8;
 pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
 
 pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
 pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
+pub(crate) const RAV1D_MAX_TILE_COLS: usize = DAV1D_MAX_TILE_COLS;
+pub(crate) const RAV1D_MAX_TILE_ROWS: usize = DAV1D_MAX_TILE_ROWS;
 pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
 pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
 
@@ -1426,8 +1430,8 @@ pub struct Dav1dFrameHeader_tiling {
     pub max_log2_rows: c_int,
     pub log2_rows: c_int,
     pub rows: c_int,
-    pub col_start_sb: [u16; 65],
-    pub row_start_sb: [u16; 65],
+    pub col_start_sb: [u16; DAV1D_MAX_TILE_COLS + 1],
+    pub row_start_sb: [u16; DAV1D_MAX_TILE_ROWS + 1],
     pub update: c_int,
 }
 
@@ -1444,8 +1448,8 @@ pub(crate) struct Rav1dFrameHeader_tiling {
     pub max_log2_rows: c_int,
     pub log2_rows: c_int,
     pub rows: c_int,
-    pub col_start_sb: [u16; 65],
-    pub row_start_sb: [u16; 65],
+    pub col_start_sb: [u16; RAV1D_MAX_TILE_COLS + 1],
+    pub row_start_sb: [u16; RAV1D_MAX_TILE_ROWS + 1],
     pub update: c_int,
 }
 
