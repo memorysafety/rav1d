@@ -1,9 +1,6 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BitDepth16;
-use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
-use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
@@ -4557,37 +4554,19 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: &mut Rav1dTaskCon
                 -((8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize),
             ),
         ];
-        match BD::BPC {
-            BPC::BPC8 => rav1d_cdef_brow::<BitDepth8>(
-                tc,
-                p_up.as_mut_ptr().cast(),
-                prev_mask,
-                start - 2,
-                start,
-                1 as c_int,
-                sby,
-            ),
-            BPC::BPC16 => rav1d_cdef_brow::<BitDepth16>(
-                tc,
-                p_up.as_mut_ptr().cast(),
-                prev_mask,
-                start - 2,
-                start,
-                1 as c_int,
-                sby,
-            ),
-        };
+        rav1d_cdef_brow::<BD>(
+            tc,
+            p_up.as_mut_ptr(),
+            prev_mask,
+            start - 2,
+            start,
+            1 as c_int,
+            sby,
+        );
     }
     let n_blks = sbsz - 2 * ((sby + 1) < (*f).sbh) as c_int;
     let end = cmp::min(start + n_blks, (*f).bh);
-    match BD::BPC {
-        BPC::BPC8 => {
-            rav1d_cdef_brow::<BitDepth8>(tc, p.as_ptr().cast(), mask, start, end, 0 as c_int, sby)
-        }
-        BPC::BPC16 => {
-            rav1d_cdef_brow::<BitDepth16>(tc, p.as_ptr().cast(), mask, start, end, 0 as c_int, sby)
-        }
-    };
+    rav1d_cdef_brow::<BD>(tc, p.as_ptr(), mask, start, end, 0 as c_int, sby);
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
