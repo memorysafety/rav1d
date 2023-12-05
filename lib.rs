@@ -33,10 +33,6 @@ pub mod src {
     pub(crate) mod c_box;
     mod cdef;
     mod cdef_apply;
-    #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
-    mod cdef_tmpl_16;
-    #[cfg_attr(not(feature = "bitdepth_8"), allow(dead_code))]
-    mod cdef_tmpl_8;
     mod cdf;
     mod const_fn;
     pub mod cpu;
