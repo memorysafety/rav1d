@@ -114,6 +114,7 @@ use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
 use libc::realloc;
+use std::array;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
@@ -2195,57 +2196,52 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     c.content_light_ref = r#ref;
                 }
                 OBU_META_HDR_MDCV => {
-                    let mut r#ref =
-                        rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
-                    if r#ref.is_null() {
-                        return Err(ENOMEM);
-                    }
-                    let mastering_display = (*r#ref).data as *mut Rav1dMasteringDisplay;
-
-                    for i in 0..3 {
-                        (*mastering_display).primaries[i as usize][0] =
-                            rav1d_get_bits(&mut gb, 16) as u16;
-                        (*mastering_display).primaries[i as usize][1] =
-                            rav1d_get_bits(&mut gb, 16) as u16;
+                    let primaries = array::from_fn(|i| {
+                        let primary = [
+                            rav1d_get_bits(&mut gb, 16) as u16,
+                            rav1d_get_bits(&mut gb, 16) as u16,
+                        ];
                         if DEBUG_OBU_METADATA {
                             println!(
                                 "MDCVOBU: primaries[{}]: ({}, {}) [off={}]",
                                 i,
-                                (*mastering_display).primaries[i as usize][0],
-                                (*mastering_display).primaries[i as usize][1],
+                                primary[0],
+                                primary[1],
                                 gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                             );
                         }
-                    }
-                    (*mastering_display).white_point[0] = rav1d_get_bits(&mut gb, 16) as u16;
+                        primary
+                    });
+                    let white_point0 = rav1d_get_bits(&mut gb, 16) as u16;
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: white-point-x: {} [off={}]",
-                            (*mastering_display).white_point[0],
+                            white_point0,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    (*mastering_display).white_point[1] = rav1d_get_bits(&mut gb, 16) as u16;
+                    let white_point1 = rav1d_get_bits(&mut gb, 16) as u16;
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: white-point-y: {} [off={}]",
-                            (*mastering_display).white_point[1],
+                            white_point1,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    (*mastering_display).max_luminance = rav1d_get_bits(&mut gb, 32);
+                    let white_point = [white_point0, white_point1];
+                    let max_luminance = rav1d_get_bits(&mut gb, 32);
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: max-luminance: {} [off={}]",
-                            (*mastering_display).max_luminance,
+                            max_luminance,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    (*mastering_display).min_luminance = rav1d_get_bits(&mut gb, 32);
+                    let min_luminance = rav1d_get_bits(&mut gb, 32);
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: min-luminance: {} [off={}]",
-                            (*mastering_display).min_luminance,
+                            min_luminance,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
@@ -2253,10 +2249,20 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_get_bit(&mut gb);
                     rav1d_bytealign_get_bits(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        rav1d_ref_dec(&mut r#ref);
                         error(c, r#in)?;
                     }
 
+                    let r#ref = rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
+                    if r#ref.is_null() {
+                        return Err(ENOMEM);
+                    }
+                    let mastering_display = (*r#ref).data as *mut Rav1dMasteringDisplay;
+                    mastering_display.write(Rav1dMasteringDisplay {
+                        primaries,
+                        white_point,
+                        max_luminance,
+                        min_luminance,
+                    });
                     rav1d_ref_dec(&mut c.mastering_display_ref);
                     c.mastering_display = mastering_display;
                     c.mastering_display_ref = r#ref;
