@@ -120,7 +120,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-use std::ptr::addr_of_mut;
 
 #[inline]
 unsafe fn rav1d_get_bits_pos(c: &GetBits) -> c_uint {
@@ -2300,29 +2299,31 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         if r#ref.is_null() {
                             return Err(ENOMEM);
                         }
-                        let itut_t35_metadatas =
-                            (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
-                        let itut_t35_metadata = addr_of_mut!((*itut_t35_metadatas).rav1d);
 
+                        let country_code = country_code as u8;
+                        let country_code_extension_byte = country_code_extension_byte as u8;
                         // We need our public headers to be C++ compatible, so payload can't be
                         // a flexible array member
-                        (*itut_t35_metadata).payload = (*r#ref)
+                        let payload = (*r#ref)
                             .data
                             .cast::<u8>()
                             .offset(::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
                                 as isize);
-                        (*itut_t35_metadata).country_code = country_code as u8;
-                        (*itut_t35_metadata).country_code_extension_byte =
-                            country_code_extension_byte as u8;
+                        let payload_size = payload_size as usize;
                         for i in 0..payload_size {
-                            *((*itut_t35_metadata).payload).offset(i as isize) =
-                                rav1d_get_bits(&mut gb, 8) as u8;
+                            *payload.offset(i as isize) = rav1d_get_bits(&mut gb, 8) as u8;
                         }
-                        (*itut_t35_metadata).payload_size = payload_size as usize;
-                        *itut_t35_metadatas = DRav1d::from_rav1d((*itut_t35_metadata).clone());
 
+                        let itut_t35_metadatas =
+                            (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
+                        itut_t35_metadatas.write(DRav1d::from_rav1d(Rav1dITUTT35 {
+                            country_code,
+                            country_code_extension_byte,
+                            payload,
+                            payload_size,
+                        }));
                         rav1d_ref_dec(&mut c.itut_t35_ref);
-                        c.itut_t35 = itut_t35_metadata;
+                        c.itut_t35 = &mut (*itut_t35_metadatas).rav1d;
                         c.itut_t35_ref = r#ref;
                     }
                 }
