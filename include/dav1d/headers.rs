@@ -522,7 +522,7 @@ pub struct Dav1dSequenceHeaderOperatingPoint {
     pub display_model_param_present: c_int,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeaderOperatingPoint {
     pub major_level: c_int,
@@ -742,6 +742,123 @@ pub(crate) struct Rav1dSequenceHeader {
     pub film_grain_present: c_int,
     pub operating_parameter_info:
         [Rav1dSequenceHeaderOperatingParameterInfo; RAV1D_MAX_OPERATING_POINTS],
+}
+
+impl Rav1dSequenceHeader {
+    /// TODO(kkysen) We should split [`Rav1dSequenceHeader`] into an inner `struct`
+    /// without the `operating_parameter_info` field
+    /// so that we can just `#[derive(PartialEq, Eq)]` it.
+    pub fn eq_without_operating_parameter_info(&self, other: &Self) -> bool {
+        // Destructure so that there's a compile error
+        // if we add fields and forget to update them here.
+        let Self {
+            profile,
+            max_width,
+            max_height,
+            layout,
+            pri,
+            trc,
+            mtrx,
+            chr,
+            hbd,
+            color_range,
+            num_operating_points,
+            operating_points,
+            still_picture,
+            reduced_still_picture_header,
+            timing_info_present,
+            num_units_in_tick,
+            time_scale,
+            equal_picture_interval,
+            num_ticks_per_picture,
+            decoder_model_info_present,
+            encoder_decoder_buffer_delay_length,
+            num_units_in_decoding_tick,
+            buffer_removal_delay_length,
+            frame_presentation_delay_length,
+            display_model_info_present,
+            width_n_bits,
+            height_n_bits,
+            frame_id_numbers_present,
+            delta_frame_id_n_bits,
+            frame_id_n_bits,
+            sb128,
+            filter_intra,
+            intra_edge_filter,
+            inter_intra,
+            masked_compound,
+            warped_motion,
+            dual_filter,
+            order_hint,
+            jnt_comp,
+            ref_frame_mvs,
+            screen_content_tools,
+            force_integer_mv,
+            order_hint_n_bits,
+            super_res,
+            cdef,
+            restoration,
+            ss_hor,
+            ss_ver,
+            monochrome,
+            color_description_present,
+            separate_uv_delta_q,
+            film_grain_present,
+            operating_parameter_info: _,
+        } = self;
+        true && *profile == other.profile
+            && *max_width == other.max_width
+            && *max_height == other.max_height
+            && *layout == other.layout
+            && *pri == other.pri
+            && *trc == other.trc
+            && *mtrx == other.mtrx
+            && *chr == other.chr
+            && *hbd == other.hbd
+            && *color_range == other.color_range
+            && *num_operating_points == other.num_operating_points
+            && *operating_points == other.operating_points
+            && *still_picture == other.still_picture
+            && *reduced_still_picture_header == other.reduced_still_picture_header
+            && *timing_info_present == other.timing_info_present
+            && *num_units_in_tick == other.num_units_in_tick
+            && *time_scale == other.time_scale
+            && *equal_picture_interval == other.equal_picture_interval
+            && *num_ticks_per_picture == other.num_ticks_per_picture
+            && *decoder_model_info_present == other.decoder_model_info_present
+            && *encoder_decoder_buffer_delay_length == other.encoder_decoder_buffer_delay_length
+            && *num_units_in_decoding_tick == other.num_units_in_decoding_tick
+            && *buffer_removal_delay_length == other.buffer_removal_delay_length
+            && *frame_presentation_delay_length == other.frame_presentation_delay_length
+            && *display_model_info_present == other.display_model_info_present
+            && *width_n_bits == other.width_n_bits
+            && *height_n_bits == other.height_n_bits
+            && *frame_id_numbers_present == other.frame_id_numbers_present
+            && *delta_frame_id_n_bits == other.delta_frame_id_n_bits
+            && *frame_id_n_bits == other.frame_id_n_bits
+            && *sb128 == other.sb128
+            && *filter_intra == other.filter_intra
+            && *intra_edge_filter == other.intra_edge_filter
+            && *inter_intra == other.inter_intra
+            && *masked_compound == other.masked_compound
+            && *warped_motion == other.warped_motion
+            && *dual_filter == other.dual_filter
+            && *order_hint == other.order_hint
+            && *jnt_comp == other.jnt_comp
+            && *ref_frame_mvs == other.ref_frame_mvs
+            && *screen_content_tools == other.screen_content_tools
+            && *force_integer_mv == other.force_integer_mv
+            && *order_hint_n_bits == other.order_hint_n_bits
+            && *super_res == other.super_res
+            && *cdef == other.cdef
+            && *restoration == other.restoration
+            && *ss_hor == other.ss_hor
+            && *ss_ver == other.ss_ver
+            && *monochrome == other.monochrome
+            && *color_description_present == other.color_description_present
+            && *separate_uv_delta_q == other.separate_uv_delta_q
+            && *film_grain_present == other.film_grain_present
+    }
 }
 
 impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
