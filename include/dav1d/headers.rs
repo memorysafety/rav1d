@@ -425,6 +425,7 @@ pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
 pub const DAV1D_MAX_TILE_COLS: usize = 64;
 pub const DAV1D_MAX_TILE_ROWS: usize = 64;
 pub const DAV1D_MAX_SEGMENTS: u8 = 8;
+pub const DAV1D_NUM_REF_FRAMES: usize = 8;
 pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
 
 pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
@@ -432,6 +433,7 @@ pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
 pub(crate) const RAV1D_MAX_TILE_COLS: usize = DAV1D_MAX_TILE_COLS;
 pub(crate) const RAV1D_MAX_TILE_ROWS: usize = DAV1D_MAX_TILE_ROWS;
 pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
+pub(crate) const _RAV1D_NUM_REF_FRAMES: usize = DAV1D_NUM_REF_FRAMES;
 pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
 
 #[repr(C)]
