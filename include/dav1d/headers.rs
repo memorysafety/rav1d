@@ -427,6 +427,7 @@ pub const DAV1D_MAX_TILE_ROWS: usize = 64;
 pub const DAV1D_MAX_SEGMENTS: u8 = 8;
 pub const DAV1D_NUM_REF_FRAMES: usize = 8;
 pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
+pub const DAV1D_REFS_PER_FRAME: usize = 7;
 
 pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
 pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
@@ -435,6 +436,7 @@ pub(crate) const RAV1D_MAX_TILE_ROWS: usize = DAV1D_MAX_TILE_ROWS;
 pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
 pub(crate) const _RAV1D_NUM_REF_FRAMES: usize = DAV1D_NUM_REF_FRAMES;
 pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
+pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
 
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
@@ -1972,7 +1974,7 @@ pub struct Dav1dFrameHeader {
     pub have_render_size: c_int,
     pub allow_intrabc: c_int,
     pub frame_ref_short_signaling: c_int,
-    pub refidx: [c_int; 7],
+    pub refidx: [c_int; DAV1D_REFS_PER_FRAME],
     pub hp: c_int,
     pub subpel_filter_mode: Dav1dFilterMode,
     pub switchable_motion_mode: c_int,
@@ -1993,7 +1995,7 @@ pub struct Dav1dFrameHeader {
     pub skip_mode_refs: [c_int; 2],
     pub warp_motion: c_int,
     pub reduced_txtp_set: c_int,
-    pub gmv: [Dav1dWarpedMotionParams; 7],
+    pub gmv: [Dav1dWarpedMotionParams; DAV1D_REFS_PER_FRAME],
 }
 
 #[derive(Clone)]
@@ -2027,7 +2029,7 @@ pub(crate) struct Rav1dFrameHeader {
     pub have_render_size: c_int,
     pub allow_intrabc: c_int,
     pub frame_ref_short_signaling: c_int,
-    pub refidx: [c_int; 7],
+    pub refidx: [c_int; RAV1D_REFS_PER_FRAME],
     pub hp: c_int,
     pub subpel_filter_mode: Rav1dFilterMode,
     pub switchable_motion_mode: c_int,
@@ -2048,7 +2050,7 @@ pub(crate) struct Rav1dFrameHeader {
     pub skip_mode_refs: [c_int; 2],
     pub warp_motion: c_int,
     pub reduced_txtp_set: c_int,
-    pub gmv: [Rav1dWarpedMotionParams; 7],
+    pub gmv: [Rav1dWarpedMotionParams; RAV1D_REFS_PER_FRAME],
 }
 
 impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
