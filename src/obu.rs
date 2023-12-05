@@ -2300,9 +2300,9 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         if r#ref.is_null() {
                             return Err(ENOMEM);
                         }
-                        let itut_t32_metadatas =
+                        let itut_t35_metadatas =
                             (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
-                        let itut_t35_metadata = addr_of_mut!((*itut_t32_metadatas).rav1d);
+                        let itut_t35_metadata = addr_of_mut!((*itut_t35_metadatas).rav1d);
 
                         // We need our public headers to be C++ compatible, so payload can't be
                         // a flexible array member
@@ -2319,7 +2319,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                                 rav1d_get_bits(&mut gb, 8) as u8;
                         }
                         (*itut_t35_metadata).payload_size = payload_size as usize;
-                        *itut_t32_metadatas = DRav1d::from_rav1d((*itut_t35_metadata).clone());
+                        *itut_t35_metadatas = DRav1d::from_rav1d((*itut_t35_metadata).clone());
 
                         rav1d_ref_dec(&mut c.itut_t35_ref);
                         c.itut_t35 = itut_t35_metadata;
