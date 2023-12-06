@@ -84,6 +84,7 @@ pub(crate) struct Rav1dDSPContext {
     pub lf: Rav1dLoopFilterDSPContext,
     pub cdef: Rav1dCdefDSPContext,
     pub lr: Rav1dLoopRestorationDSPContext,
+    pub initialized: bool,
 }
 
 #[derive(Clone, Default)]

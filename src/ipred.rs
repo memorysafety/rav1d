@@ -6,6 +6,7 @@ use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::src::enum_map::DefaultValue;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
@@ -155,9 +156,7 @@ impl pal_pred::Fn {
 
 #[repr(C)]
 pub struct Rav1dIntraPredDSPContext {
-    // TODO(legare): Remove `Option` once `dav1d_submit_frame` is no longer checking
-    // this field with `is_none`.
-    pub intra_pred: [Option<angular_ipred::Fn>; 14],
+    pub intra_pred: [angular_ipred::Fn; 14],
     pub cfl_ac: [cfl_ac::Fn; 3],
     pub cfl_pred: [cfl_pred::Fn; 6],
     pub pal_pred: pal_pred::Fn,
@@ -2057,28 +2056,23 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
         return;
     }
 
-    (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, ssse3));
-    (*c).intra_pred[DC_128_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, ssse3));
-    (*c).intra_pred[TOP_DC_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, ssse3));
+    (*c).intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, ssse3);
+    (*c).intra_pred[DC_128_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, ssse3);
+    (*c).intra_pred[TOP_DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, ssse3);
     (*c).intra_pred[LEFT_DC_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, ssse3));
-    (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_h, ssse3));
-    (*c).intra_pred[VERT_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_v, ssse3));
-    (*c).intra_pred[PAETH_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, ssse3));
-    (*c).intra_pred[SMOOTH_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, ssse3));
+        bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, ssse3);
+    (*c).intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, ssse3);
+    (*c).intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, ssse3);
+    (*c).intra_pred[PAETH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, ssse3);
+    (*c).intra_pred[SMOOTH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, ssse3);
     (*c).intra_pred[SMOOTH_H_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, ssse3));
+        bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, ssse3);
     (*c).intra_pred[SMOOTH_V_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, ssse3));
-    (*c).intra_pred[Z1_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, ssse3));
-    (*c).intra_pred[Z2_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, ssse3));
-    (*c).intra_pred[Z3_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, ssse3));
-    (*c).intra_pred[FILTER_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, ssse3));
+        bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, ssse3);
+    (*c).intra_pred[Z1_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, ssse3);
+    (*c).intra_pred[Z2_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, ssse3);
+    (*c).intra_pred[Z3_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, ssse3);
+    (*c).intra_pred[FILTER_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, ssse3);
 
     (*c).cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, ssse3);
     (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, ssse3);
@@ -2100,34 +2094,28 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
             return;
         }
 
-        (*c).intra_pred[DC_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, avx2));
+        (*c).intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, avx2);
         (*c).intra_pred[DC_128_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, avx2));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, avx2);
         (*c).intra_pred[TOP_DC_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, avx2));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, avx2);
         (*c).intra_pred[LEFT_DC_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, avx2));
-        (*c).intra_pred[HOR_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_h, avx2));
-        (*c).intra_pred[VERT_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_v, avx2));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, avx2);
+        (*c).intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, avx2);
+        (*c).intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, avx2);
         (*c).intra_pred[PAETH_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, avx2));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, avx2);
         (*c).intra_pred[SMOOTH_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, avx2));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, avx2);
         (*c).intra_pred[SMOOTH_H_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, avx2));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, avx2);
         (*c).intra_pred[SMOOTH_V_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, avx2));
-        (*c).intra_pred[Z1_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, avx2));
-        (*c).intra_pred[Z2_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, avx2));
-        (*c).intra_pred[Z3_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, avx2));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, avx2);
+        (*c).intra_pred[Z1_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, avx2);
+        (*c).intra_pred[Z2_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, avx2);
+        (*c).intra_pred[Z3_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, avx2);
         (*c).intra_pred[FILTER_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx2));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx2);
 
         (*c).cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, avx2);
         (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, avx2);
@@ -2149,37 +2137,29 @@ unsafe fn intra_pred_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
 
         if BD::BPC == BPC::BPC8 {
             (*c).intra_pred[DC_PRED as usize] =
-                Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, avx512icl));
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, avx512icl);
             (*c).intra_pred[DC_128_PRED as usize] =
-                Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, avx512icl));
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, avx512icl);
             (*c).intra_pred[TOP_DC_PRED as usize] =
-                Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, avx512icl));
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, avx512icl);
             (*c).intra_pred[LEFT_DC_PRED as usize] =
-                Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, avx512icl));
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, avx512icl);
             (*c).intra_pred[HOR_PRED as usize] =
-                Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_h, avx512icl));
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_h, avx512icl);
             (*c).intra_pred[VERT_PRED as usize] =
-                Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_v, avx512icl));
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_v, avx512icl);
         }
 
         (*c).intra_pred[PAETH_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, avx512icl));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, avx512icl);
         (*c).intra_pred[SMOOTH_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, avx512icl));
-        (*c).intra_pred[SMOOTH_H_PRED as usize] = Some(bd_fn!(
-            angular_ipred::decl_fn,
-            BD,
-            ipred_smooth_h,
-            avx512icl
-        ));
-        (*c).intra_pred[SMOOTH_V_PRED as usize] = Some(bd_fn!(
-            angular_ipred::decl_fn,
-            BD,
-            ipred_smooth_v,
-            avx512icl
-        ));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, avx512icl);
+        (*c).intra_pred[SMOOTH_H_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, avx512icl);
+        (*c).intra_pred[SMOOTH_V_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, avx512icl);
         (*c).intra_pred[FILTER_PRED as usize] =
-            Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx512icl));
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx512icl);
 
         (*c).pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, avx512icl);
     }
@@ -2194,36 +2174,28 @@ unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
         return;
     }
 
-    (*c).intra_pred[DC_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, neon));
-    (*c).intra_pred[DC_128_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, neon));
-    (*c).intra_pred[TOP_DC_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, neon));
+    (*c).intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, neon);
+    (*c).intra_pred[DC_128_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, neon);
+    (*c).intra_pred[TOP_DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, neon);
     (*c).intra_pred[LEFT_DC_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, neon));
-    (*c).intra_pred[HOR_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_h, neon));
-    (*c).intra_pred[VERT_PRED as usize] = Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_v, neon));
-    (*c).intra_pred[PAETH_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, neon));
-    (*c).intra_pred[SMOOTH_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, neon));
+        bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, neon);
+    (*c).intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, neon);
+    (*c).intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, neon);
+    (*c).intra_pred[PAETH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, neon);
+    (*c).intra_pred[SMOOTH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, neon);
     (*c).intra_pred[SMOOTH_V_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, neon));
+        bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, neon);
     (*c).intra_pred[SMOOTH_H_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, neon));
+        bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, neon);
     #[cfg(target_arch = "aarch64")]
     {
         use self::neon::ipred_z_neon_erased;
 
-        (*c).intra_pred[Z1_PRED as usize] =
-            Some(angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 1>));
-        (*c).intra_pred[Z2_PRED as usize] =
-            Some(angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 2>));
-        (*c).intra_pred[Z3_PRED as usize] =
-            Some(angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 3>));
+        (*c).intra_pred[Z1_PRED as usize] = angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 1>);
+        (*c).intra_pred[Z2_PRED as usize] = angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 2>);
+        (*c).intra_pred[Z3_PRED as usize] = angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 3>);
     }
-    (*c).intra_pred[FILTER_PRED as usize] =
-        Some(bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, neon));
+    (*c).intra_pred[FILTER_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, neon);
 
     (*c).cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, neon);
     (*c).cfl_pred[DC_128_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, neon);
@@ -2242,31 +2214,23 @@ unsafe fn intra_pred_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext
 
 #[cold]
 pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: *mut Rav1dIntraPredDSPContext) {
-    (*c).intra_pred[DC_PRED as usize] = Some(angular_ipred::Fn::new(
-        ipred_dc_c_erased::<BD, { DcGen::TopLeft as u8 }>,
-    ));
-    (*c).intra_pred[DC_128_PRED as usize] =
-        Some(angular_ipred::Fn::new(ipred_dc_128_c_erased::<BD>));
-    (*c).intra_pred[TOP_DC_PRED as usize] = Some(angular_ipred::Fn::new(
-        ipred_dc_c_erased::<BD, { DcGen::Top as u8 }>,
-    ));
-    (*c).intra_pred[LEFT_DC_PRED as usize] = Some(angular_ipred::Fn::new(
-        ipred_dc_c_erased::<BD, { DcGen::Left as u8 }>,
-    ));
-    (*c).intra_pred[HOR_PRED as usize] = Some(angular_ipred::Fn::new(ipred_h_c_erased::<BD>));
-    (*c).intra_pred[VERT_PRED as usize] = Some(angular_ipred::Fn::new(ipred_v_c_erased::<BD>));
-    (*c).intra_pred[PAETH_PRED as usize] = Some(angular_ipred::Fn::new(ipred_paeth_c_erased::<BD>));
-    (*c).intra_pred[SMOOTH_PRED as usize] =
-        Some(angular_ipred::Fn::new(ipred_smooth_c_erased::<BD>));
-    (*c).intra_pred[SMOOTH_V_PRED as usize] =
-        Some(angular_ipred::Fn::new(ipred_smooth_v_c_erased::<BD>));
-    (*c).intra_pred[SMOOTH_H_PRED as usize] =
-        Some(angular_ipred::Fn::new(ipred_smooth_h_c_erased::<BD>));
-    (*c).intra_pred[Z1_PRED as usize] = Some(angular_ipred::Fn::new(ipred_z_c_erased::<BD, 1>));
-    (*c).intra_pred[Z2_PRED as usize] = Some(angular_ipred::Fn::new(ipred_z_c_erased::<BD, 2>));
-    (*c).intra_pred[Z3_PRED as usize] = Some(angular_ipred::Fn::new(ipred_z_c_erased::<BD, 3>));
-    (*c).intra_pred[FILTER_PRED as usize] =
-        Some(angular_ipred::Fn::new(ipred_filter_c_erased::<BD>));
+    (*c).intra_pred[DC_PRED as usize] =
+        angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::TopLeft as u8 }>);
+    (*c).intra_pred[DC_128_PRED as usize] = angular_ipred::Fn::new(ipred_dc_128_c_erased::<BD>);
+    (*c).intra_pred[TOP_DC_PRED as usize] =
+        angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::Top as u8 }>);
+    (*c).intra_pred[LEFT_DC_PRED as usize] =
+        angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::Left as u8 }>);
+    (*c).intra_pred[HOR_PRED as usize] = angular_ipred::Fn::new(ipred_h_c_erased::<BD>);
+    (*c).intra_pred[VERT_PRED as usize] = angular_ipred::Fn::new(ipred_v_c_erased::<BD>);
+    (*c).intra_pred[PAETH_PRED as usize] = angular_ipred::Fn::new(ipred_paeth_c_erased::<BD>);
+    (*c).intra_pred[SMOOTH_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_c_erased::<BD>);
+    (*c).intra_pred[SMOOTH_V_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_v_c_erased::<BD>);
+    (*c).intra_pred[SMOOTH_H_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_h_c_erased::<BD>);
+    (*c).intra_pred[Z1_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 1>);
+    (*c).intra_pred[Z2_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 2>);
+    (*c).intra_pred[Z3_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 3>);
+    (*c).intra_pred[FILTER_PRED as usize] = angular_ipred::Fn::new(ipred_filter_c_erased::<BD>);
 
     (*c).cfl_ac[Rav1dPixelLayout::I420 as usize - 1] =
         cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, true>);
@@ -2274,9 +2238,14 @@ pub unsafe fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: *mut Rav1dIntraPredDSPC
         cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, false>);
     (*c).cfl_ac[Rav1dPixelLayout::I444 as usize - 1] =
         cfl_ac::Fn::new(cfl_ac_c_erased::<BD, false, false>);
+
+    // Not all elements are initialized with fns,
+    // so we default initialize first so that there is no unitialized memory.
+    // The defaults just call `unimplemented!()`,
+    // which shouldn't slow down the other code paths at all.
+    (*c).cfl_pred = [DefaultValue::DEFAULT; 6];
     (*c).cfl_pred[DC_PRED as usize] =
         cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::TopLeft as u8 }>);
-
     (*c).cfl_pred[DC_128_PRED as usize] = cfl_pred::Fn::new(ipred_cfl_128_c_erased::<BD>);
     (*c).cfl_pred[TOP_DC_PRED as usize] =
         cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Top as u8 }>);

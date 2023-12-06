@@ -5044,8 +5044,12 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
     }
 
-    if (*f.dsp).ipred.intra_pred[DC_PRED as usize].is_none() {
+    // TODO(kkysen) Rather than lazy initializing this,
+    // we should probably initialize all the fn ptrs
+    // when `c` is allocated during [`rav1d_open`].
+    if !(*f.dsp).initialized {
         let dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
+        dsp.initialized = true;
 
         match bpc {
             #[cfg(feature = "bitdepth_8")]
