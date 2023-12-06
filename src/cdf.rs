@@ -5679,11 +5679,11 @@ pub unsafe fn rav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThre
     }
 }
 
-pub unsafe fn rav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
+pub unsafe fn rav1d_cdf_thread_unref(cdf: &mut CdfThreadContext) {
     memset(
-        &mut (*cdf).data as *mut CdfThreadContext_data as *mut c_void,
+        &mut cdf.data as *mut CdfThreadContext_data as *mut c_void,
         0 as c_int,
         ::core::mem::size_of::<CdfThreadContext>() - mem::offset_of!(CdfThreadContext, data),
     );
-    rav1d_ref_dec(&mut (*cdf).r#ref);
+    rav1d_ref_dec(&mut cdf.r#ref);
 }
