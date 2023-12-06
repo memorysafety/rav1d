@@ -28,6 +28,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::mem;
 
 #[repr(C)]
 pub struct CdfContext {
@@ -5682,7 +5683,7 @@ pub unsafe fn rav1d_cdf_thread_unref(cdf: *mut CdfThreadContext) {
     memset(
         &mut (*cdf).data as *mut CdfThreadContext_data as *mut c_void,
         0 as c_int,
-        (::core::mem::size_of::<CdfThreadContext>()).wrapping_sub(8),
+        ::core::mem::size_of::<CdfThreadContext>() - mem::offset_of!(CdfThreadContext, data),
     );
     rav1d_ref_dec(&mut (*cdf).r#ref);
 }
