@@ -4,7 +4,6 @@ use libc::fprintf;
 use libc::fread;
 use libc::fseeko;
 use libc::ftello;
-use libc::memcmp;
 use libc::ptrdiff_t;
 use libc::strerror;
 use libc::ENOMEM;
@@ -56,11 +55,7 @@ static probe_data: [u8; 12] = [
 ];
 
 unsafe extern "C" fn ivf_probe(data: *const u8) -> c_int {
-    return (memcmp(
-        data as *const c_void,
-        probe_data.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u8; 12]>(),
-    ) == 0) as c_int;
+    (*(data as *const [u8; 12]) == probe_data) as c_int
 }
 
 unsafe fn rl32(p: *const u8) -> c_uint {
