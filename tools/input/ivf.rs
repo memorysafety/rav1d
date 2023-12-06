@@ -101,12 +101,8 @@ unsafe extern "C" fn ivf_open(
             fclose((*c).f);
             return -1;
         } else {
-            if memcmp(
-                hdr.as_mut_ptr() as *const c_void,
-                b"DKIF\0" as *const u8 as *const c_char as *const c_void,
-                4,
-            ) != 0
-            {
+            let dkif = b"DKIF";
+            if hdr[..dkif.len()] != dkif[..] {
                 fprintf(
                     stderr,
                     b"%s is not an IVF file [tag=%.4s|0x%02x%02x%02x%02x]\n\0" as *const u8
@@ -121,12 +117,8 @@ unsafe extern "C" fn ivf_open(
                 fclose((*c).f);
                 return -1;
             } else {
-                if memcmp(
-                    &mut *hdr.as_mut_ptr().offset(8) as *mut u8 as *const c_void,
-                    b"AV01\0" as *const u8 as *const c_char as *const c_void,
-                    4,
-                ) != 0
-                {
+                let av01 = b"AV01";
+                if hdr[8..][..av01.len()] != av01[..] {
                     fprintf(
                         stderr,
                         b"%s is not an AV1 file [tag=%.4s|0x%02x%02x%02x%02x]\n\0" as *const u8
