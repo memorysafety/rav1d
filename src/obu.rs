@@ -9,7 +9,6 @@ use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Rav1dColorPrimaries;
@@ -1902,12 +1901,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
                 }
                 c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
-            } else if memcmp(
-                ((*seq_hdr).operating_parameter_info).as_mut_ptr() as *const c_void,
-                ((*c.seq_hdr).operating_parameter_info).as_mut_ptr() as *const c_void,
-                ::core::mem::size_of::<[Dav1dSequenceHeaderOperatingParameterInfo; 32]>(),
-            ) != 0
-            {
+            } else if (*seq_hdr).operating_parameter_info != (*c.seq_hdr).operating_parameter_info {
                 // If operating_parameter_info changed, signal it
                 c.frame_flags |= PICTURE_FLAG_NEW_OP_PARAMS_INFO;
             }

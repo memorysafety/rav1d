@@ -588,7 +588,7 @@ pub struct Dav1dSequenceHeaderOperatingParameterInfo {
     pub low_delay_mode: c_int,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeaderOperatingParameterInfo {
     pub decoder_buffer_delay: c_int,
