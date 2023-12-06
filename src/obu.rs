@@ -2158,27 +2158,19 @@ pub(crate) unsafe fn rav1d_parse_obus(
 
             match meta_type {
                 OBU_META_HDR_CLL => {
-                    let mut r#ref =
-                        rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
-                    if r#ref.is_null() {
-                        return Err(ENOMEM);
-                    }
-                    let content_light = (*r#ref).data as *mut Rav1dContentLightLevel;
-
-                    (*content_light).max_content_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
+                    let max_content_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: max-content-light-level: {} [off={}]",
-                            (*content_light).max_content_light_level,
+                            max_content_light_level,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    (*content_light).max_frame_average_light_level =
-                        rav1d_get_bits(&mut gb, 16) as c_int;
+                    let max_frame_average_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: max-frame-average-light-level: {} [off={}]",
-                            (*content_light).max_frame_average_light_level,
+                            max_frame_average_light_level,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
@@ -2187,10 +2179,18 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_get_bit(&mut gb);
                     rav1d_bytealign_get_bits(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        rav1d_ref_dec(&mut r#ref);
                         error(c, r#in)?;
                     }
 
+                    let r#ref = rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
+                    if r#ref.is_null() {
+                        return Err(ENOMEM);
+                    }
+                    let content_light = (*r#ref).data as *mut Rav1dContentLightLevel;
+                    content_light.write(Rav1dContentLightLevel {
+                        max_content_light_level,
+                        max_frame_average_light_level,
+                    });
                     rav1d_ref_dec(&mut c.content_light_ref);
                     c.content_light = content_light;
                     c.content_light_ref = r#ref;
