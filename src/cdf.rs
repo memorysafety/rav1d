@@ -23,12 +23,11 @@ use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::Rav1dRef;
 use crate::src::tables::dav1d_partition_type_count;
 use libc::memcpy;
-use libc::memset;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
-use std::mem;
+use std::ptr;
 
 #[repr(C)]
 pub struct CdfContext {
@@ -5680,10 +5679,13 @@ pub unsafe fn rav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThre
 }
 
 pub unsafe fn rav1d_cdf_thread_unref(cdf: &mut CdfThreadContext) {
-    memset(
-        &mut cdf.data as *mut CdfThreadContext_data as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<CdfThreadContext>() - mem::offset_of!(CdfThreadContext, data),
-    );
+    *cdf = CdfThreadContext {
+        r#ref: cdf.r#ref,
+        data: CdfThreadContext_data {
+            cdf: ptr::null_mut(),
+            // cdf is larger than qcat, so this zeroes it
+        },
+        progress: ptr::null_mut(),
+    };
     rav1d_ref_dec(&mut cdf.r#ref);
 }
