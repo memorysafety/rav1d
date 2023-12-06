@@ -1,0 +1,105 @@
+name: build and test on arm with QEMU
+on: [push, pull_request]
+jobs:
+  test-on-qemu:
+    strategy:
+      matrix:
+        target: [
+          {
+            rust: "aarch64-unknown-linux-gnu",
+            qemu: "arm64",
+            gcc: "g++-aarch64-linux-gnu",
+            libc_cross: "libc6-dev-arm64-cross",
+            docker_image: "debian-bullseye-aarch64",
+            docker_platform: "linux/arm64",
+          },
+          {
+            rust: "armv7-unknown-linux-gnueabihf",
+            qemu: "arm",
+            gcc: "g++-arm-linux-gnueabihf",
+            libc_cross: "libc6-dev-armhf-cross",
+            docker_image: "debian-bullseye-arm7",
+            docker_platform: "linux/arm/v7",
+          },
+        ]
+        build: [
+          {profile: "checked-release", features: "asm", timeout_multiplier: 2},
+          # The asm fallback "should" be the same on all platforms,
+          # so if we tested it for x86, we shouldn't need to for arm either
+          # (which is slower due to qemu).
+          # {profile: "checked-release", features: ""   , timeout_multiplier: 2},
+        ]
+    runs-on: ubuntu-latest
+    name: meson tests on ${{ matrix.target.rust }} (qemu) with --features ${{ matrix.build.features }}
+    steps:
+      - name: install prerequisites
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: ${{ matrix.target.gcc }} ${{ matrix.target.libc_cross }}
+          version: 1.0 # version of cache to load
+      - name: git checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: set up qemu
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: ${{ matrix.target.qemu }}
+      - name: cache rust toolchain
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.rustup/toolchains
+            ~/.rustup/update-hashes
+            ~/.rustup/settings.toml
+          key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
+      - name: cache rust crates
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.target.rust }}-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+      # - name: cache dav1d object files
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: build/
+      #     key: ${{ matrix.target.rust }}-c-object-files-${{ hashFiles('**/meson.build', '**/*.c', '**/*.h') }}
+      - name: cargo build
+        run: |
+          rustup target add ${{ matrix.target.rust }}
+          cargo build \
+            --target ${{ matrix.target.rust }} \
+            --profile ${{ matrix.build.profile }} \
+            --no-default-features --features=bitdepth_8,bitdepth_16,${{ matrix.build.features }}
+      - name: docker pull
+        run: docker pull ghcr.io/immunant/rav1d/${{ matrix.target.docker_image }}:latest
+      - name: build and run tests in docker
+        run: |
+          docker run \
+            --rm \
+            -v ~/.cargo/git:/home/prossimo/.cargo/git \
+            -v ~/.cargo/registry:/home/prossimo/.cargo/registry \
+            -v $(pwd):/${{ github.workspace }} \
+            -w ${{ github.workspace }} \
+            --platform ${{ matrix.target.docker_platform }} \
+            ghcr.io/immunant/rav1d/${{ matrix.target.docker_image }}:latest \
+            .github/workflows/test.sh \
+                -r ../target/${{ matrix.target.rust }}/${{ matrix.build.profile }}/dav1d \
+                -s ../target/${{ matrix.target.rust }}/${{ matrix.build.profile }}/seek_stress \
+                -t ${{ matrix.build.timeout_multiplier }}
+      - name: copy log files
+        if: ${{ !cancelled() }}
+        run: |
+          cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
+             ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.features }}.txt
+      - name: upload build artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: meson-test-logs
+          path: |
+             ${{ github.workspace }}/build/meson-logs/testlog-*.txt

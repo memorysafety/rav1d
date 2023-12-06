@@ -6,15 +6,14 @@ jobs:
       matrix:
         target: [
           "x86_64-unknown-linux-gnu",
-          "i686-unknown-linux-gnu"
+          "i686-unknown-linux-gnu",
         ]
         build: [
-          # release build without optimized assembly routines
-          {name: "release", flags: "--release --no-default-features --features=bitdepth_8,bitdepth_16", timeout_multiplier: 1},
-          # debug build to catch overflows with optimized assembly routines
-          {name: "debug", flags: "", timeout_multiplier: 2}
+          {profile: "checked-release", features: "asm", timeout_multiplier: 2},
+          {profile: "checked-release", features: ""   , timeout_multiplier: 2},
         ]
     runs-on: ubuntu-latest
+    name: meson tests on ${{ matrix.target }} with --features ${{ matrix.build.features }}
     steps:
       - name: install prerequisites
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -43,22 +42,25 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: cargo build for ${{ matrix.target }} ${{ matrix.build.name }}
+      - name: cargo build
         run: |
           cargo clean
           rustup target add ${{ matrix.target }}
-          cargo build --target ${{ matrix.target }} ${{ matrix.build.flags }}
-      - name: meson test for ${{ matrix.target }} ${{ matrix.build.name }}
+          cargo build \
+            --target ${{ matrix.target }} \
+            --profile ${{ matrix.build.profile }} \
+            --no-default-features --features=bitdepth_8,bitdepth_16,${{ matrix.build.features }}
+      - name: meson test
         run: |
           .github/workflows/test.sh \
-              -r ../target/${{ matrix.target }}/${{ matrix.build.name }}/dav1d \
-              -s ../target/${{ matrix.target }}/${{ matrix.build.name }}/seek_stress \
+              -r ../target/${{ matrix.target }}/${{ matrix.build.profile }}/dav1d \
+              -s ../target/${{ matrix.target }}/${{ matrix.build.profile }}/seek_stress \
               -t ${{ matrix.build.timeout_multiplier }}
       - name: copy log files
         if: ${{ !cancelled() }}
         run: |
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
-             ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.name }}.txt
+             ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.features }}.txt
       - name: upload build artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v3
@@ -68,6 +70,7 @@ jobs:
              ${{ github.workspace }}/build/meson-logs/testlog-*.txt
   test-on-macos-latest:
     runs-on: macos-latest
+    name: meson tests on x86_64-apple-darwin with --features asm
     steps:
       - name: install prerequisites
         env:
@@ -95,18 +98,18 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: cargo build for x86_64-apple-darwin
+      - name: cargo build
         run: |
-          cargo build --release
-      - name: meson test for x86_64-apple-darwin
+          cargo build --profile checked-release
+      - name: meson test
         run: |
-          .github/workflows/test.sh -r ../target/release/dav1d \
-              -s ../target/release/seek_stress
+          .github/workflows/test.sh -r ../target/checked-release/dav1d \
+              -s ../target/checked-release/seek_stress
       - name: copy log files
         if: ${{ !cancelled() }}
         run: |
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
-              ${{ github.workspace }}/build/meson-logs/testlog-x86_64-apple-darwin.txt
+              ${{ github.workspace }}/build/meson-logs/testlog-x86_64-apple-darwin-asm-asm.txt
       - name: upload build artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v3

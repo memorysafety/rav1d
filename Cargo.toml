@@ -43,12 +43,40 @@ asm = []
 bitdepth_8 = []
 bitdepth_16 = []
 
+# For debugging.
+#
+# This enables no optimizations, so optimizations can't interfere with debugging,
+# but it will probably be very slow.
 [profile.dev]
-# As we port, we increasingly use operations that require more optimizations to be zero-cost,
-# so while `--release` perf stays the same, debug perf suffers a lot,
-# unless we enable the basic optimizations (`opt-level = 1`),
-# which don't increase compile-time that much.
+
+# Fastest for local development.
+#
+# `debug`/`dev` builds are very slow*, so this enables some optimizations
+# to be fastest for the local development cycle of compiling and running tests.
+# Only some optimizations are enabled, so compile time doesn't increase very much.
+# Full debug info is still enabled, so this can also be used for debugging,
+# but there are still some cases where optimizations can still interfere with debugging.
+#
+# * Especially as we increasingly use more zero-cost abstractions,
+# which are only zero-cost with optimizations.
+[profile.fast-dev]
+inherits = "dev"
 opt-level = 1
 
+# Fastest.
+# For release builds.
 [profile.release]
 codegen-units = 1
+
+# Fast but checked.
+# For CI and sometimes local development with qemu.
+#
+# That is, it compiles with all runtime checks and limited debug info (as opposed to none).
+[profile.checked-release]
+inherits = "release"
+opt-level = 3
+debug = "limited"
+debug-assertions = true
+overflow-checks = true
+lto = "thin"
+codegen-units = 16      # release default
