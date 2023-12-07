@@ -1,4 +1,5 @@
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
@@ -89,7 +90,7 @@ pub struct CdfModeContext {
     pub angle_delta: Align16<[[u16; 8]; 8]>,
     pub filter_intra: Align16<[u16; 8]>,
     pub comp_inter_mode: Align16<[[u16; N_COMP_INTER_PRED_MODES]; 8]>,
-    pub seg_id: Align16<[[u16; 8]; 3]>,
+    pub seg_id: Align16<[[u16; RAV1D_MAX_SEGMENTS as usize]; 3]>,
     pub pal_sz: Align16<[[[u16; 8]; 7]; 2]>,
     pub color_map: Align16<[[[[u16; 8]; 5]; 7]; 2]>,
     pub filter: Align8<[[[u16; 4]; 8]; 2]>,
@@ -5186,7 +5187,7 @@ pub(crate) unsafe fn rav1d_cdf_thread_update(
             ((*src).m.seg_id[j_18 as usize]).as_ptr() as *const c_void,
             ::core::mem::size_of::<[u16; 8]>(),
         );
-        (*dst).m.seg_id[j_18 as usize][(8 - 1) as usize] = 0 as c_int as u16;
+        (*dst).m.seg_id[j_18 as usize][(RAV1D_MAX_SEGMENTS - 1) as usize] = 0 as c_int as u16;
         j_18 += 1;
     }
     memcpy(

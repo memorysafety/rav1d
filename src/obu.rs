@@ -1,3 +1,5 @@
+use crate::include::common::frame::is_inter_or_switch;
+use crate::include::common::frame::is_key_or_intra;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::data::Rav1dData;
@@ -35,6 +37,7 @@ use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTER;
 use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTRA;
 use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_KEY;
 use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_SWITCH;
+use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_OBU_FRAME;
@@ -45,6 +48,7 @@ use crate::include::dav1d::headers::RAV1D_OBU_REDUNDANT_FRAME_HDR;
 use crate::include::dav1d::headers::RAV1D_OBU_SEQ_HDR;
 use crate::include::dav1d::headers::RAV1D_OBU_TD;
 use crate::include::dav1d::headers::RAV1D_OBU_TILE_GRP;
+use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
 use crate::include::dav1d::headers::RAV1D_TRC_UNKNOWN;
@@ -112,6 +116,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::mem;
 use std::ptr::addr_of_mut;
 
 #[inline]
@@ -513,7 +518,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         hdr.force_integer_mv = 0;
     }
 
-    if hdr.frame_type & 1 == 0 {
+    if is_key_or_intra(hdr) {
         hdr.force_integer_mv = 1;
     }
 
@@ -533,10 +538,10 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     } else {
         0
     };
-    hdr.primary_ref_frame = if hdr.error_resilient_mode == 0 && hdr.frame_type as c_uint & 1 != 0 {
+    hdr.primary_ref_frame = if hdr.error_resilient_mode == 0 && is_inter_or_switch(hdr) {
         rav1d_get_bits(gb, 3) as c_int
     } else {
-        7
+        RAV1D_PRIMARY_REF_NONE
     };
 
     if seqhdr.decoder_model_info_present != 0 {
@@ -557,7 +562,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         }
     }
 
-    if hdr.frame_type & 1 == 0 {
+    if is_key_or_intra(hdr) {
         hdr.refresh_frame_flags = if hdr.frame_type == RAV1D_FRAME_TYPE_KEY && hdr.show_frame != 0 {
             0xff
         } else {
@@ -734,7 +739,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         hdr.use_ref_frame_mvs = (hdr.error_resilient_mode == 0
             && seqhdr.ref_frame_mvs != 0
             && seqhdr.order_hint != 0
-            && hdr.frame_type & 1 != 0
+            && is_inter_or_switch(hdr)
             && rav1d_get_bit(gb) != 0) as c_int;
     }
 
@@ -892,7 +897,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     // segmentation data
     hdr.segmentation.enabled = rav1d_get_bit(gb) as c_int;
     if hdr.segmentation.enabled != 0 {
-        if hdr.primary_ref_frame == 7 {
+        if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
             hdr.segmentation.update_map = 1;
             hdr.segmentation.temporal = 0;
             hdr.segmentation.update_data = 1;
@@ -909,7 +914,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         if hdr.segmentation.update_data != 0 {
             hdr.segmentation.seg_data.preskip = 0;
             hdr.segmentation.seg_data.last_active_segid = -1;
-            for i in 0..8 {
+            for i in 0..RAV1D_MAX_SEGMENTS as c_int {
                 let seg = &mut hdr.segmentation.seg_data.d[i as usize];
                 if rav1d_get_bit(gb) != 0 {
                     seg.delta_q = rav1d_get_sbits(gb, 9);
@@ -962,7 +967,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         } else {
             // segmentation.update_data was false so we should copy
             // segmentation data from the reference frame.
-            assert!(hdr.primary_ref_frame != 7);
+            assert!(hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
             let pri_ref = hdr.refidx[hdr.primary_ref_frame as usize];
             if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                 return error(c);
@@ -978,7 +983,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             0,
             ::core::mem::size_of::<Rav1dSegmentationDataSet>(),
         );
-        for i in 0..8 {
+        for i in 0..RAV1D_MAX_SEGMENTS {
             hdr.segmentation.seg_data.d[i as usize].r#ref = -1;
         }
     }
@@ -1014,7 +1019,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         && hdr.quant.vdc_delta == 0
         && hdr.quant.vac_delta == 0) as c_int;
     hdr.all_lossless = 1;
-    for i in 0..8 {
+    for i in 0..RAV1D_MAX_SEGMENTS {
         hdr.segmentation.qidx[i as usize] = if hdr.segmentation.enabled != 0 {
             iclip_u8(hdr.quant.yac + hdr.segmentation.seg_data.d[i as usize].delta_q)
         } else {
@@ -1046,7 +1051,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         }
         hdr.loopfilter.sharpness = rav1d_get_bits(gb, 3) as c_int;
 
-        if hdr.primary_ref_frame == 7 {
+        if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
             hdr.loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
         } else {
             let r#ref = hdr.refidx[hdr.primary_ref_frame as usize];
@@ -1143,14 +1148,13 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     } else {
         RAV1D_TX_LARGEST
     };
-    hdr.switchable_comp_refs = if hdr.frame_type as c_uint & 1 != 0 {
+    hdr.switchable_comp_refs = if is_inter_or_switch(hdr) {
         rav1d_get_bit(gb) as c_int
     } else {
         0
     };
     hdr.skip_mode_allowed = 0;
-    if hdr.switchable_comp_refs != 0 && hdr.frame_type as c_uint & 1 != 0 && seqhdr.order_hint != 0
-    {
+    if hdr.switchable_comp_refs != 0 && is_inter_or_switch(hdr) && seqhdr.order_hint != 0 {
         let poc = hdr.frame_offset as c_uint;
         let mut off_before = 0xffffffff;
         let mut off_after = -1;
@@ -1234,7 +1238,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         0
     };
     hdr.warp_motion = (hdr.error_resilient_mode == 0
-        && hdr.frame_type & 1 != 0
+        && is_inter_or_switch(hdr)
         && seqhdr.warped_motion != 0
         && rav1d_get_bit(gb) != 0) as c_int;
     hdr.reduced_txtp_set = rav1d_get_bit(gb) as c_int;
@@ -1243,7 +1247,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         hdr.gmv[i as usize] = dav1d_default_wm_params.clone();
     }
 
-    if hdr.frame_type & 1 != 0 {
+    if is_inter_or_switch(hdr) {
         for i in 0..7 {
             hdr.gmv[i as usize].r#type = if rav1d_get_bit(gb) == 0 {
                 RAV1D_WM_TYPE_IDENTITY
@@ -1256,7 +1260,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             };
             if !(hdr.gmv[i as usize].r#type == RAV1D_WM_TYPE_IDENTITY) {
                 let ref_gmv;
-                if hdr.primary_ref_frame == 7 {
+                if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
                     ref_gmv = &dav1d_default_wm_params;
                 } else {
                     let pri_ref = hdr.refidx[hdr.primary_ref_frame as usize];
@@ -1609,7 +1613,17 @@ pub(crate) unsafe fn rav1d_parse_obus(
             if c.seq_hdr.is_null() {
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
                 c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
-            } else if memcmp(seq_hdr as *const c_void, c.seq_hdr as *const c_void, 1100) != 0 {
+            } else if memcmp(
+                seq_hdr as *const c_void,
+                c.seq_hdr as *const c_void,
+                // TODO(kkysen) Remove unstable feature.
+                // Doing it this way also prevents us from removing the `#[repr(C)]`.
+                // We should split [`Rav1dSequenceHeader`] into an inner `struct`
+                // without the `operating_parameter_info` field,
+                // or at least offer safe field-by-field comparison methods.
+                mem::offset_of!(Rav1dSequenceHeader, operating_parameter_info),
+            ) != 0
+            {
                 // See 7.5, `operating_parameter_info` is allowed to change in
                 // sequence headers of a single sequence.
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
