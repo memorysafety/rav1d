@@ -131,11 +131,7 @@ unsafe fn parse_seq_hdr(
     c: &mut Rav1dContext,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dSequenceHeader> {
-    unsafe fn error(c: &mut Rav1dContext) -> Rav1dResult {
-        rav1d_log(
-            c,
-            b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
-        );
+    unsafe fn error(_c: &mut Rav1dContext) -> Rav1dResult {
         return Err(EINVAL);
     }
 
@@ -687,11 +683,7 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
 };
 
 unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult {
-    unsafe fn error(c: &mut Rav1dContext) -> Rav1dResult {
-        rav1d_log(
-            c,
-            b"Error parsing frame header\n\0" as *const u8 as *const c_char,
-        );
+    unsafe fn error(_c: &mut Rav1dContext) -> Rav1dResult {
         return Err(EINVAL);
     }
 
@@ -2020,6 +2012,10 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 .data
                 .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>();
             let seq_hdr = parse_seq_hdr(c, &mut gb).map_err(|_| {
+                rav1d_log(
+                    c,
+                    b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
+                );
                 rav1d_ref_dec(&mut r#ref);
                 error(c, r#in).unwrap_err()
             })?;
@@ -2090,6 +2086,10 @@ pub(crate) unsafe fn rav1d_parse_obus(
             (*c.frame_hdr).spatial_id = spatial_id;
             let res = parse_frame_hdr(c, &mut gb);
             if res.is_err() {
+                rav1d_log(
+                    c,
+                    b"Error parsing frame header\n\0" as *const u8 as *const c_char,
+                );
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
                 error(c, r#in)?;
             }
