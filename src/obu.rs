@@ -1825,17 +1825,12 @@ unsafe fn check_for_overrun(
     0
 }
 
-pub(crate) unsafe fn rav1d_parse_obus(
+unsafe fn parse_obus(
     c: &mut Rav1dContext,
     r#in: &mut Rav1dData,
     global: c_int,
 ) -> Rav1dResult<c_uint> {
-    unsafe fn error(c: &mut Rav1dContext, r#in: &mut Rav1dData) -> Rav1dResult {
-        rav1d_data_props_copy(&mut c.cached_error_props, &mut r#in.m);
-        rav1d_log(
-            c,
-            b"Error parsing OBU data\n\0" as *const u8 as *const c_char,
-        );
+    unsafe fn error(_c: &mut Rav1dContext, _in: &mut Rav1dData) -> Rav1dResult {
         return Err(EINVAL);
     }
 
@@ -2552,4 +2547,18 @@ pub(crate) unsafe fn rav1d_parse_obus(
     }
 
     Ok(len + init_byte_pos)
+}
+
+pub(crate) unsafe fn rav1d_parse_obus(
+    c: &mut Rav1dContext,
+    r#in: &mut Rav1dData,
+    global: c_int,
+) -> Rav1dResult<c_uint> {
+    parse_obus(c, r#in, global).inspect_err(|_| {
+        rav1d_data_props_copy(&mut c.cached_error_props, &mut r#in.m);
+        rav1d_log(
+            c,
+            b"Error parsing OBU data\n\0" as *const u8 as *const c_char,
+        );
+    })
 }
