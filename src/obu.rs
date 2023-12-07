@@ -1994,13 +1994,12 @@ unsafe fn parse_obus(
             let seq_hdrs = (*r#ref)
                 .data
                 .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>();
-            let seq_hdr = parse_seq_hdr(c, &mut gb).map_err(|_| {
+            let seq_hdr = parse_seq_hdr(c, &mut gb).inspect_err(|_| {
                 rav1d_log(
                     c,
                     b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
                 );
                 rav1d_ref_dec(&mut r#ref);
-                EINVAL
             })?;
             (*seq_hdrs) = DRav1d::from_rav1d(seq_hdr);
             let seq_hdr = &mut (*seq_hdrs).rav1d as *mut Rav1dSequenceHeader;
