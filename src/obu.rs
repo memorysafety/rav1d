@@ -91,6 +91,7 @@ use crate::src::levels::OBU_META_ITUT_T35;
 use crate::src::levels::OBU_META_SCALABILITY;
 use crate::src::levels::OBU_META_TIMECODE;
 use crate::src::log::rav1d_log;
+use crate::src::picture::rav1d_picture_copy_props;
 use crate::src::picture::rav1d_picture_get_event_flags;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
@@ -2026,7 +2027,19 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     &mut c.out,
                     &mut c.refs[(*c.frame_hdr).existing_frame_idx as usize].p,
                 );
-                rav1d_data_props_copy(&mut c.out.p.m, &mut r#in.m);
+                rav1d_picture_copy_props(
+                    &mut (*c).out.p,
+                    c.content_light,
+                    c.content_light_ref,
+                    c.mastering_display,
+                    c.mastering_display_ref,
+                    c.itut_t35,
+                    c.itut_t35_ref,
+                    &mut r#in.m,
+                );
+                // Must be removed from the context after being attached to the frame
+                rav1d_ref_dec(&mut c.itut_t35_ref);
+                c.itut_t35 = 0 as *mut Rav1dITUTT35;
                 c.event_flags |= rav1d_picture_get_event_flags(
                     &mut c.refs[(*c.frame_hdr).existing_frame_idx as usize].p,
                 );
@@ -2090,7 +2103,19 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     &mut c.refs[(*c.frame_hdr).existing_frame_idx as usize].p,
                 );
                 (*out_delayed).visible = true;
-                rav1d_data_props_copy(&mut (*out_delayed).p.m, &mut r#in.m);
+                rav1d_picture_copy_props(
+                    &mut (*out_delayed).p,
+                    c.content_light,
+                    c.content_light_ref,
+                    c.mastering_display,
+                    c.mastering_display_ref,
+                    c.itut_t35,
+                    c.itut_t35_ref,
+                    &mut r#in.m,
+                );
+                // Must be removed from the context after being attached to the frame
+                rav1d_ref_dec(&mut c.itut_t35_ref);
+                c.itut_t35 = 0 as *mut Rav1dITUTT35;
                 pthread_mutex_unlock(&mut c.task_thread.lock);
             }
             if (*c.refs[(*c.frame_hdr).existing_frame_idx as usize]
