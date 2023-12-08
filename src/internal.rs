@@ -189,8 +189,7 @@ pub struct Rav1dContext_intra_edge {
 
 #[repr(C)]
 pub struct Rav1dContext {
-    pub(crate) fc: *mut Rav1dFrameContext,
-    pub(crate) n_fc: c_uint,
+    pub(crate) fc: Box<[Rav1dFrameContext]>,
     pub(crate) tc: *mut Rav1dTaskContext,
     pub(crate) n_tc: c_uint,
     pub(crate) tiles: Vec<Rav1dTileGroup>,

@@ -4060,7 +4060,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
         );
     }
 
-    if is_inter_or_switch(&*f.frame_hdr) && c.n_fc > 1 {
+    if is_inter_or_switch(&*f.frame_hdr) && c.fc.len() > 1 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         *ts.lowest_pixel.offset(sby as isize) = [[i32::MIN; 2]; 7];
     }
@@ -4265,7 +4265,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
 
     let n_ts = (*f.frame_hdr).tiling.cols * (*f.frame_hdr).tiling.rows;
     if n_ts != f.n_ts {
-        if c.n_fc > 1 {
+        if c.fc.len() > 1 {
             freep(&mut f.frame_thread.tile_start_off as *mut *mut c_int as *mut c_void);
             f.frame_thread.tile_start_off =
                 malloc(::core::mem::size_of::<c_int>() * n_ts as usize) as *mut c_int;
@@ -4283,7 +4283,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
         f.n_ts = n_ts;
     }
 
-    let a_sz = f.sb128w * (*f.frame_hdr).tiling.rows * (1 + (c.n_fc > 1 && c.n_tc > 1) as c_int);
+    let a_sz =
+        f.sb128w * (*f.frame_hdr).tiling.rows * (1 + (c.fc.len() > 1 && c.n_tc > 1) as c_int);
     if a_sz != f.a_sz {
         freep(&mut f.a as *mut *mut BlockContext as *mut c_void);
         f.a = malloc(::core::mem::size_of::<BlockContext>() * a_sz as usize) as *mut BlockContext;
@@ -4297,7 +4298,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     let num_sb128 = f.sb128w * f.sb128h;
     let size_mul = &ss_size_mul[f.cur.p.layout];
     let hbd = ((*f.seq_hdr).hbd != 0) as c_int;
-    if c.n_fc > 1 {
+    if c.fc.len() > 1 {
         let mut tile_idx = 0;
         for tile_row in 0..(*f.frame_hdr).tiling.rows {
             let row_off = (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as c_int
@@ -4529,7 +4530,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
             f.lf.mask_sz = 0;
             return Err(ENOMEM);
         }
-        if c.n_fc > 1 {
+        if c.fc.len() > 1 {
             freep(&mut f.frame_thread.b as *mut *mut Av1Block as *mut c_void);
             freep(&mut f.frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
             f.frame_thread.b =
@@ -4613,7 +4614,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
             f.refrefpoc.as_ptr(),
             f.ref_mvs.as_ptr(),
             (*f.c).n_tc as c_int,
-            (*f.c).n_fc as c_int,
+            (*f.c).fc.len() as c_int,
         );
         if ret.is_err() {
             return Err(ENOMEM);
@@ -4695,7 +4696,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
         rav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
     }
 
-    let uses_2pass = c.n_fc > 1;
+    let uses_2pass = c.fc.len() > 1;
 
     let tiling = &(*f.frame_hdr).tiling;
 
@@ -4787,7 +4788,9 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
 
     assert!(c.n_tc == 1);
 
-    let t = &mut *c.tc.offset((f as *mut Rav1dFrameContext).offset_from(c.fc));
+    let t = &mut *c
+        .tc
+        .offset((f as *const Rav1dFrameContext).offset_from(c.fc.as_ptr()));
     t.f = f;
     t.frame_thread.pass = 0;
 
@@ -4854,7 +4857,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
     if !f.sr_cur.p.data[0].is_null() {
         f.task_thread.error = 0;
     }
-    if c.n_fc > 1 && retval.is_err() && !f.frame_thread.cf.is_null() {
+    if c.fc.len() > 1 && retval.is_err() && !f.frame_thread.cf.is_null() {
         slice::from_raw_parts_mut(
             f.frame_thread.cf.cast::<u8>(),
             usize::try_from(f.frame_thread.cf_sz).unwrap() * 128 * 128 / 2,
@@ -4892,7 +4895,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
 }
 
 pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> Rav1dResult {
-    assert!((*f.c).n_fc == 1);
+    assert!((*f.c).fc.len() == 1);
     // if n_tc > 1 (but n_fc == 1), we could run init/exit in the task
     // threads also. Not sure it makes a measurable difference.
     let mut res = rav1d_decode_frame_init(f);
@@ -4941,15 +4944,15 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
 
 pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // wait for c->out_delayed[next] and move into c->out if visible
-    let (f, out_delayed) = if c.n_fc > 1 {
+    let (f, out_delayed) = if c.fc.len() > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
         let next = c.frame_thread.next;
         c.frame_thread.next += 1;
-        if c.frame_thread.next == c.n_fc {
+        if c.frame_thread.next as usize == c.fc.len() {
             c.frame_thread.next = 0;
         }
 
-        let f = &mut *c.fc.offset(next as isize);
+        let f = &mut c.fc[next as usize];
         while !f.tiles.is_empty() {
             pthread_cond_wait(&mut f.task_thread.cond, &mut c.task_thread.lock);
         }
@@ -4959,7 +4962,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 != 0
         {
             let first = ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
-            if first + 1 < c.n_fc {
+            if first as usize + 1 < c.fc.len() {
                 ::core::intrinsics::atomic_xadd_seqcst(&mut c.task_thread.first, 1);
             } else {
                 ::core::intrinsics::atomic_store_seqcst(&mut c.task_thread.first, 0);
@@ -4969,7 +4972,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 first,
                 u32::MAX,
             );
-            if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
+            if c.task_thread.cur != 0 && (c.task_thread.cur as usize) < c.fc.len() {
                 c.task_thread.cur -= 1;
             }
         }
@@ -4991,7 +4994,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
         (f, out_delayed as *mut _)
     } else {
-        (&mut *c.fc, ptr::null_mut())
+        (&mut c.fc[0], ptr::null_mut())
     };
 
     f.seq_hdr = c.seq_hdr;
@@ -5021,7 +5024,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
             rav1d_ref_dec(&mut f.ref_mvs_ref[i]);
         }
-        if c.n_fc == 1 {
+        if c.fc.len() == 1 {
             rav1d_thread_picture_unref(&mut c.out);
         } else {
             rav1d_thread_picture_unref(out_delayed);
@@ -5037,7 +5040,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             rav1d_data_unref_internal(&mut tile.data);
         }
 
-        if c.n_fc > 1 {
+        if c.fc.len() > 1 {
             pthread_mutex_unlock(&mut c.task_thread.lock);
         }
     }
@@ -5151,7 +5154,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_cdf_thread_ref(&mut f.in_cdf, &mut c.cdf[pri_ref]);
     }
     if (*f.frame_hdr).refresh_context != 0 {
-        let res = rav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.n_fc > 1) as c_int);
+        let res = rav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.fc.len() > 1) as c_int);
         if res.is_err() {
             on_error(f, c, out_delayed);
             return res;
@@ -5189,7 +5192,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     // move f->cur into output queue
-    if c.n_fc == 1 {
+    if c.fc.len() == 1 {
         if (*f.frame_hdr).show_frame != 0 || c.output_invisible_frames {
             rav1d_thread_picture_ref(&mut c.out, &mut f.sr_cur);
             c.event_flags |= rav1d_picture_get_event_flags(&mut f.sr_cur);
@@ -5210,7 +5213,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     f.b4_stride = (f.bw + 31 & !31) as ptrdiff_t;
     f.bitdepth_max = (1 << f.cur.p.bpc) - 1;
     *&mut f.task_thread.error = 0;
-    let uses_2pass = (c.n_fc > 1) as c_int;
+    let uses_2pass = (c.fc.len() > 1) as c_int;
     let cols = (*f.frame_hdr).tiling.cols;
     let rows = (*f.frame_hdr).tiling.rows;
     ::core::intrinsics::atomic_store_seqcst(
@@ -5357,7 +5360,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
     }
 
-    if c.n_fc == 1 {
+    if c.fc.len() == 1 {
         let res = rav1d_decode_frame(f);
         if res.is_err() {
             rav1d_thread_picture_unref(&mut c.out);

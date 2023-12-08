@@ -277,7 +277,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     bpc: c_int,
 ) -> Rav1dResult {
     let p: *mut Rav1dThreadPicture = &mut (*f).sr_cur;
-    let have_frame_mt = ((*c).n_fc > 1 as c_uint) as c_int;
+    let have_frame_mt = ((*c).fc.len() > 1) as c_int;
     let res = picture_alloc_with_edges(
         c,
         &mut (*p).p,

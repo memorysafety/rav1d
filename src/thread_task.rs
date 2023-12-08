@@ -94,9 +94,9 @@ unsafe fn reset_task_cur(
         reset_frame_idx = u32::MAX;
     }
     if (*ttd).cur == 0
-        && ((*((*c).fc).offset(first as isize))
+        && ((*c).fc)[first as usize]
             .task_thread
-            .task_cur_prev)
+            .task_cur_prev
             .is_null()
     {
         return 0 as c_int;
@@ -120,19 +120,18 @@ unsafe fn reset_task_cur(
     match current_block {
         5399440093318478209 => {
             if frame_idx < first {
-                frame_idx = frame_idx.wrapping_add((*c).n_fc);
+                frame_idx += (*c).fc.len() as c_uint;
             }
             min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
             cur_frame_idx = first.wrapping_add((*ttd).cur);
-            if (*ttd).cur < (*c).n_fc && cur_frame_idx < min_frame_idx {
+            if ((*ttd).cur as usize) < (*c).fc.len() && cur_frame_idx < min_frame_idx {
                 return 0 as c_int;
             }
             (*ttd).cur = min_frame_idx.wrapping_sub(first);
-            while (*ttd).cur < (*c).n_fc {
-                if !((*((*c).fc)
-                    .offset(first.wrapping_add((*ttd).cur).wrapping_rem((*c).n_fc) as isize))
-                .task_thread
-                .task_head)
+            while ((*ttd).cur as usize) < (*c).fc.len() {
+                if !(*c).fc[(first + (*ttd).cur) as usize % (*c).fc.len()]
+                    .task_thread
+                    .task_head
                     .is_null()
                 {
                     break;
@@ -142,14 +141,10 @@ unsafe fn reset_task_cur(
         }
         _ => {}
     }
-    let mut i: c_uint = (*ttd).cur;
-    while i < (*c).n_fc {
-        let ref mut fresh0 = (*((*c).fc)
-            .offset(first.wrapping_add(i).wrapping_rem((*c).n_fc) as isize))
-        .task_thread
-        .task_cur_prev;
-        *fresh0 = 0 as *mut Rav1dTask;
-        i = i.wrapping_add(1);
+    for i in (*ttd).cur as usize..(*c).fc.len() {
+        (*c).fc[(first as usize + i) % (*c).fc.len()]
+            .task_thread
+            .task_cur_prev = 0 as *mut Rav1dTask;
     }
     return 1 as c_int;
 }
@@ -343,13 +338,10 @@ unsafe fn merge_pending_frame(f: *mut Rav1dFrameContext) -> c_int {
 
 #[inline]
 unsafe fn merge_pending(c: *const Rav1dContext) -> c_int {
-    let mut res = 0;
-    let mut i: c_uint = 0 as c_int as c_uint;
-    while i < (*c).n_fc {
-        res |= merge_pending_frame(&mut *((*c).fc).offset(i as isize));
-        i = i.wrapping_add(1);
-    }
-    return res;
+    (*(*c).fc)
+        .iter_mut()
+        .map(|fc| merge_pending_frame(fc))
+        .fold(0, |res, cur| res | cur)
 }
 
 unsafe fn create_filter_sbrow(
@@ -363,7 +355,7 @@ unsafe fn create_filter_sbrow(
     let has_resize = ((*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1]) as c_int;
     let has_lr = (*f).lf.restore_planes;
     let mut tasks: *mut Rav1dTask = (*f).task_thread.tasks;
-    let uses_2pass = ((*(*f).c).n_fc > 1 as c_uint) as c_int;
+    let uses_2pass = ((*(*f).c).fc.len() > 1) as c_int;
     let num_tasks = (*f).sbh * (1 + uses_2pass);
     if num_tasks > (*f).task_thread.num_tasks {
         let size: usize = (::core::mem::size_of::<Rav1dTask>()).wrapping_mul(num_tasks as usize);
@@ -423,7 +415,7 @@ unsafe fn create_filter_sbrow(
     } else {
         RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS as c_int
     }) as TaskType;
-    (*t).frame_idx = f.offset_from((*(*f).c).fc) as c_long as c_int as c_uint;
+    (*t).frame_idx = f.offset_from((*(*f).c).fc.as_ptr()) as c_long as c_int as c_uint;
     *res_t = t;
     return 0 as c_int;
 }
@@ -434,7 +426,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     _cond_signal: c_int,
 ) -> Rav1dResult {
     let mut tasks: *mut Rav1dTask = (*f).task_thread.tile_tasks[0];
-    let uses_2pass = ((*(*f).c).n_fc > 1 as c_uint) as c_int;
+    let uses_2pass = ((*(*f).c).fc.len() > 1) as c_int;
     let num_tasks = (*(*f).frame_hdr).tiling.cols * (*(*f).frame_hdr).tiling.rows;
     if pass < 2 {
         let alloc_num_tasks = num_tasks * (1 + uses_2pass);
@@ -476,7 +468,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
         } else {
             RAV1D_TASK_TYPE_TILE_ENTROPY as c_int
         }) as TaskType;
-        (*t).frame_idx = f.offset_from((*(*f).c).fc) as c_long as c_int as c_uint;
+        (*t).frame_idx = f.offset_from((*(*f).c).fc.as_ptr()) as c_long as c_int as c_uint;
         if !prev_t.is_null() {
             (*prev_t).next = t;
         }
@@ -515,7 +507,7 @@ pub(crate) unsafe fn rav1d_task_frame_init(f: *mut Rav1dFrameContext) {
     ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.init_done, 0 as c_int);
     let t: *mut Rav1dTask = &mut (*f).task_thread.init_task;
     (*t).type_0 = RAV1D_TASK_TYPE_INIT;
-    (*t).frame_idx = f.offset_from((*c).fc) as c_long as c_int as c_uint;
+    (*t).frame_idx = f.offset_from((*c).fc.as_ptr()) as c_long as c_int as c_uint;
     (*t).sby = 0 as c_int;
     (*t).deblock_progress = 0 as c_int;
     (*t).recon_progress = (*t).deblock_progress;
@@ -645,7 +637,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
 
 #[inline]
 unsafe fn get_frame_progress(c: *const Rav1dContext, f: *const Rav1dFrameContext) -> c_int {
-    let frame_prog: c_uint = if (*c).n_fc > 1 as c_uint {
+    let frame_prog: c_uint = if (*c).fc.len() > 1 {
         ::core::intrinsics::atomic_load_seqcst(
             &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint
         )
@@ -854,18 +846,16 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                 f = 0 as *mut Rav1dFrameContext;
                 t = 0 as *mut Rav1dTask;
                 prev_t = 0 as *mut Rav1dTask;
-                if (*c).n_fc > 1 as c_uint {
-                    let mut i: c_uint = 0 as c_int as c_uint;
+                if (*c).fc.len() > 1 {
+                    let mut i = 0;
                     loop {
-                        if !(i < (*c).n_fc) {
+                        if !(i < (*c).fc.len()) {
                             current_block = 5601891728916014340;
                             break;
                         }
                         let first: c_uint =
                             ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
-                        f = &mut *((*c).fc)
-                            .offset(first.wrapping_add(i).wrapping_rem((*c).n_fc) as isize)
-                            as *mut Rav1dFrameContext;
+                        f = &mut (*c).fc[(first as usize + i) % (*c).fc.len()];
                         if !(::core::intrinsics::atomic_load_seqcst(
                             &mut (*f).task_thread.init_done as *mut atomic_int,
                         ) != 0)
@@ -904,13 +894,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                 's_107: loop {
                     match current_block {
                         5601891728916014340 => {
-                            if (*ttd).cur < (*c).n_fc {
+                            if ((*ttd).cur as usize) < (*c).fc.len() {
                                 let first_0: c_uint =
                                     ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
-                                f = &mut *((*c).fc).offset(
-                                    first_0.wrapping_add((*ttd).cur).wrapping_rem((*c).n_fc)
-                                        as isize,
-                                ) as *mut Rav1dFrameContext;
+                                f = &mut (*c).fc[(first_0 + (*ttd).cur) as usize % (*c).fc.len()];
                                 merge_pending_frame(f);
                                 prev_t = (*f).task_thread.task_cur_prev;
                                 t = if !prev_t.is_null() {
@@ -928,9 +915,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                 == RAV1D_TASK_TYPE_TILE_RECONSTRUCTION as c_int
                                                     as c_uint
                                         {
-                                            if check_tile(t, f, ((*c).n_fc > 1 as c_uint) as c_int)
-                                                == 0
-                                            {
+                                            if check_tile(t, f, ((*c).fc.len() > 1) as c_int) == 0 {
                                                 current_block = 7012560550443761033;
                                                 continue 's_107;
                                             }
@@ -1124,7 +1109,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             sby = (*t).sby;
                             match (*t).type_0 as c_uint {
                                 RAV1D_TASK_TYPE_INIT => {
-                                    if !((*c).n_fc > 1 as c_uint) {
+                                    if !((*c).fc.len() > 1) {
                                         unreachable!();
                                     }
                                     let res = rav1d_decode_frame_init(&mut *f);
@@ -1152,7 +1137,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     }
                                 }
                                 RAV1D_TASK_TYPE_INIT_CDF => {
-                                    if !((*c).n_fc > 1 as c_uint) {
+                                    if !((*c).fc.len() > 1) {
                                         unreachable!();
                                     }
                                     let mut res_0 = Err(EINVAL);
@@ -1176,7 +1161,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         );
                                     }
                                     if res_0.is_ok() {
-                                        if !((*c).n_fc > 1 as c_uint) {
+                                        if !((*c).fc.len() > 1) {
                                             unreachable!();
                                         }
                                         let mut p_0 = 1;
@@ -1258,7 +1243,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         as *mut Rav1dTileState;
                                     (*tc).ts = ts_0;
                                     (*tc).by = sby << (*f).sb_shift;
-                                    let uses_2pass = ((*c).n_fc > 1 as c_uint) as c_int;
+                                    let uses_2pass = ((*c).fc.len() > 1) as c_int;
                                     (*tc).frame_thread.pass = if uses_2pass == 0 {
                                         0 as c_int
                                     } else {
@@ -1290,7 +1275,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                     as *mut atomic_int,
                                                 progress,
                                             );
-                                            reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
+                                            reset_task_cur_async(
+                                                ttd,
+                                                (*t).frame_idx,
+                                                (*c).fc.len() as c_uint,
+                                            );
                                             if ::core::intrinsics::atomic_or_seqcst(
                                                 &mut (*ttd).cond_signaled as *mut atomic_int,
                                                 1 as c_int,
@@ -1338,7 +1327,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                     .cdf,
                                                 );
                                             }
-                                            if (*c).n_fc > 1 as c_uint {
+                                            if (*c).fc.len() > 1 {
                                                 ::core::intrinsics::atomic_store_seqcst(
                                                     (*f).out_cdf.progress,
                                                     (if error_0 != 0 {
@@ -1468,7 +1457,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         &mut (*f).frame_thread.deblock_progress,
                                         if error_0 != 0 { TILE_ERROR } else { sby + 1 },
                                     );
-                                    reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
+                                    reset_task_cur_async(
+                                        ttd,
+                                        (*t).frame_idx,
+                                        (*c).fc.len() as c_uint,
+                                    );
                                     if ::core::intrinsics::atomic_or_seqcst(
                                         &mut (*ttd).cond_signaled as *mut atomic_int,
                                         1 as c_int,
@@ -1514,7 +1507,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     {
                                         ((*f).bd_fn.filter_sbrow_cdef)(&mut *tc, sby);
                                     }
-                                    reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
+                                    reset_task_cur_async(
+                                        ttd,
+                                        (*t).frame_idx,
+                                        (*c).fc.len() as c_uint,
+                                    );
                                     if ::core::intrinsics::atomic_or_seqcst(
                                         &mut (*ttd).cond_signaled as *mut atomic_int,
                                         1 as c_int,
@@ -1558,7 +1555,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             18238912670629178022 => {}
                             _ => {}
                         }
-                        let uses_2pass_0 = ((*c).n_fc > 1 as c_uint) as c_int;
+                        let uses_2pass_0 = ((*c).fc.len() > 1) as c_int;
                         let sbh = (*f).sbh;
                         let sbsz = (*f).sb_step * 4;
                         if (*t).type_0 as c_uint
@@ -1571,7 +1568,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             } else {
                                 ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                             };
-                            if !((*c).n_fc > 1 as c_uint) {
+                            if !((*c).fc.len() > 1) {
                                 unreachable!();
                             }
                             if !((*f).sr_cur.p.data[0]).is_null() {
@@ -1644,7 +1641,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             } else {
                                 ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                             };
-                            if (*c).n_fc > 1 as c_uint && !((*f).sr_cur.p.data[0]).is_null() {
+                            if (*c).fc.len() > 1 && !((*f).sr_cur.p.data[0]).is_null() {
                                 ::core::intrinsics::atomic_store_seqcst(
                                     &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint,
                                     if error_0 != 0 { FRAME_ERROR } else { y_0 },

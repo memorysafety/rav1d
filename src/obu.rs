@@ -2362,7 +2362,7 @@ unsafe fn parse_obus(
             {
                 return Err(EINVAL);
             }
-            if c.n_fc == 1 {
+            if c.fc.len() == 1 {
                 rav1d_thread_picture_ref(
                     &mut c.out,
                     &mut c.refs[(*c.frame_hdr).existing_frame_idx as usize].p,
@@ -2388,11 +2388,11 @@ unsafe fn parse_obus(
                 // Need to append this to the frame output queue.
                 let next = c.frame_thread.next;
                 c.frame_thread.next += 1;
-                if c.frame_thread.next == c.n_fc {
+                if c.frame_thread.next as usize == c.fc.len() {
                     c.frame_thread.next = 0;
                 }
 
-                let f = &mut *c.fc.offset(next as isize);
+                let f = &mut c.fc[next as usize];
                 while !(*f).tiles.is_empty() {
                     pthread_cond_wait(
                         &mut (*f).task_thread.cond,
@@ -2406,7 +2406,7 @@ unsafe fn parse_obus(
                     ) != 0
                 {
                     let first = ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
-                    if first + 1 < c.n_fc {
+                    if first as usize + 1 < c.fc.len() {
                         ::core::intrinsics::atomic_xadd_seqcst(&mut c.task_thread.first, 1);
                     } else {
                         ::core::intrinsics::atomic_store_seqcst(&mut c.task_thread.first, 0);
@@ -2416,7 +2416,7 @@ unsafe fn parse_obus(
                         first,
                         u32::MAX,
                     );
-                    if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
+                    if c.task_thread.cur != 0 && (c.task_thread.cur as usize) < c.fc.len() {
                         c.task_thread.cur -= 1;
                     }
                 }
