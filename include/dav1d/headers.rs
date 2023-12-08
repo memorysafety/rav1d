@@ -522,7 +522,7 @@ pub struct Dav1dSequenceHeaderOperatingPoint {
     pub display_model_param_present: c_int,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeaderOperatingPoint {
     pub major_level: c_int,
@@ -588,7 +588,7 @@ pub struct Dav1dSequenceHeaderOperatingParameterInfo {
     pub low_delay_mode: c_int,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C)]
 pub(crate) struct Rav1dSequenceHeaderOperatingParameterInfo {
     pub decoder_buffer_delay: c_int,
