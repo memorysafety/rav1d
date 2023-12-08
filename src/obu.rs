@@ -1775,11 +1775,11 @@ unsafe fn parse_tile_hdr(c: &mut Rav1dContext, gb: &mut GetBits) {
 
     if have_tile_pos != 0 {
         let n_bits = (*c.frame_hdr).tiling.log2_cols + (*c.frame_hdr).tiling.log2_rows;
-        (*(c.tile).offset(c.n_tile_data as isize)).start = rav1d_get_bits(gb, n_bits) as c_int;
-        (*(c.tile).offset(c.n_tile_data as isize)).end = rav1d_get_bits(gb, n_bits) as c_int;
+        (*(c.tile).offset(c.n_tile_data as isize)).hdr.start = rav1d_get_bits(gb, n_bits) as c_int;
+        (*(c.tile).offset(c.n_tile_data as isize)).hdr.end = rav1d_get_bits(gb, n_bits) as c_int;
     } else {
-        (*(c.tile).offset(c.n_tile_data as isize)).start = 0;
-        (*(c.tile).offset(c.n_tile_data as isize)).end = n_tiles - 1;
+        (*(c.tile).offset(c.n_tile_data as isize)).hdr.start = 0;
+        (*(c.tile).offset(c.n_tile_data as isize)).hdr.end = n_tiles - 1;
     };
 }
 
@@ -1964,9 +1964,9 @@ unsafe fn parse_obus(
         .offset((bit_pos >> 3) as isize);
         (*c.tile.offset(c.n_tile_data as isize)).data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
         // Ensure tile groups are in order and sane; see 6.10.1.
-        if (*c.tile.offset(c.n_tile_data as isize)).start
-            > (*c.tile.offset(c.n_tile_data as isize)).end
-            || (*c.tile.offset(c.n_tile_data as isize)).start != c.n_tiles
+        if (*c.tile.offset(c.n_tile_data as isize)).hdr.start
+            > (*c.tile.offset(c.n_tile_data as isize)).hdr.end
+            || (*c.tile.offset(c.n_tile_data as isize)).hdr.start != c.n_tiles
         {
             for i in 0..=c.n_tile_data {
                 rav1d_data_unref_internal(&mut (*c.tile.offset(i as isize)).data);
@@ -1975,8 +1975,8 @@ unsafe fn parse_obus(
             c.n_tiles = 0;
             return Err(EINVAL);
         }
-        c.n_tiles += 1 + (*(c.tile).offset(c.n_tile_data as isize)).end
-            - (*(c.tile).offset(c.n_tile_data as isize)).start;
+        c.n_tiles += 1 + (*(c.tile).offset(c.n_tile_data as isize)).hdr.end
+            - (*(c.tile).offset(c.n_tile_data as isize)).hdr.start;
         c.n_tile_data += 1;
 
         Ok(())
