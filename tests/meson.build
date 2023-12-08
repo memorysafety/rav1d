@@ -149,27 +149,26 @@ if get_option('test_rust')
     test_rust_path = get_option('test_rust_path')
     seek_stress_test_rust_path = get_option('seek_stress_test_rust_path')
 
+    if test_rust_path == '' or seek_stress_test_rust_path == ''
+        message('running cargo build since "test_rust" is set but ' +
+                '"test_rust_path" or "seek_stress_test_rust_path" isn\'t set...'
+        )
+        if get_option('debug')
+            run_command('cargo', 'build', check: true)
+            test_rust_path = '../target/debug/dav1d'
+            seek_stress_test_rust_path  = '../target/debug/seek_stress'
+        else
+            run_command('cargo', 'build', '--release', check: true)
+            test_rust_path = '../target/release/dav1d'
+            seek_stress_test_rust_path  = '../target/release/seek_stress'
+        endif
+    endif
+
     # HACK: If we're trying to test the Rust build, override the `dav1d` and
     # `seek_stress` executables to point to the versions produced by Cargo.
-    # This will test the Rust executables instead of the C versions.
-    if test_rust_path == ''
-        if get_option('debug')
-            profile = 'debug'
-        else
-            profile = 'release'
-        endif
-        test_rust_path = '../target/' + profile + '/dav1d'
-        test_rust_path = join_paths(meson.current_source_dir(), test_rust_path)
-        dav1d = find_program(test_rust_path, required: true)
-        seek_stress_test_rust_path = '../target/' + profile + '/seek_stress'
-        seek_stress_test_rust_path = join_paths(meson.current_source_dir(), seek_stress_test_rust_path)
-        seek_stress = find_program(seek_stress_test_rust_path, required: true)
-    else
-        # Adjust relative paths so one can use binary paths relative to project
-        # top dir rather than relative to the location of the test subdirectory.
-        dav1d = files(join_paths('../', get_option('test_rust_path')))
-        seek_stress = files(join_paths('../', get_option('seek_stress_test_rust_path')))
-    endif
+    # This will cause the Rust executables to be tested instead of the C versions.
+    dav1d = files(test_rust_path)
+    seek_stress = files(seek_stress_test_rust_path)
 endif
 
 # Include dav1d test data repository with additional tests
