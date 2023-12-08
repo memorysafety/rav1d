@@ -4710,8 +4710,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
     let mut tile_col = 0;
     f.task_thread.update_set = false;
     for tile in slice::from_raw_parts(f.tile, n_tile_data) {
-        let start = tile.start.try_into().unwrap();
-        let end: usize = tile.end.try_into().unwrap();
+        let start = tile.hdr.start.try_into().unwrap();
+        let end: usize = tile.hdr.end.try_into().unwrap();
 
         let mut data = slice::from_raw_parts(tile.data.data, tile.data.sz);
 
