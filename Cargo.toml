@@ -43,6 +43,13 @@ asm = []
 bitdepth_8 = []
 bitdepth_16 = []
 
+[profile.dev]
+# FIXME: The unoptimized build is currently broken since macros generate references
+# to 16bpc variants of assembly routines although only 8bpc versions exist. Until then
+# debugging will not work correctly. Remove once problem described here is resolved
+# https://github.com/memorysafety/rav1d/pull/613#issuecomment-1846949481
+opt-level = 1
+
 [profile.opt-dev]
 # The debug builds run tests very slowly so this profile keeps debug assertions
 # while enabling basic optimizations. The profile is not suitable for debugging.
