@@ -294,7 +294,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         (*c).itut_t35,
         (*c).itut_t35_ref,
         bpc,
-        &mut (*((*f).tile).offset(0)).data.m,
+        &mut (*f).tiles[0].data.m,
         &mut (*c).allocator,
         if have_frame_mt != 0 {
             (::core::mem::size_of::<atomic_int>()).wrapping_mul(2)

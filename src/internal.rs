@@ -198,12 +198,9 @@ pub struct Rav1dContext {
 
     pub(crate) tc: *mut Rav1dTaskContext,
     pub(crate) n_tc: c_uint,
-
-    // cache of OBUs that make up a single frame before we submit them
-    // to a frame worker to be decoded
-    pub(crate) tile: *mut Rav1dTileGroup,
-    pub(crate) n_tile_data_alloc: c_int,
-    pub(crate) n_tile_data: c_int,
+    /// Cache of OBUs that make up a single frame before we submit them
+    /// to a frame worker to be decoded.
+    pub(crate) tiles: Vec<Rav1dTileGroup>,
     pub(crate) n_tiles: c_int,
     pub(crate) seq_hdr_pool: *mut Rav1dMemPool,
     pub(crate) seq_hdr_ref: *mut Rav1dRef,
@@ -480,9 +477,7 @@ pub(crate) struct Rav1dFrameContext {
     pub gmv_warp_allowed: [u8; 7],
     pub in_cdf: CdfThreadContext,
     pub out_cdf: CdfThreadContext,
-    pub tile: *mut Rav1dTileGroup,
-    pub n_tile_data_alloc: c_int,
-    pub n_tile_data: c_int,
+    pub tiles: Vec<Rav1dTileGroup>,
 
     // for scalable references
     pub svc: [[ScalableMotionParams; 2]; 7], /* [2 x,y][7] */
