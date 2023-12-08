@@ -80,7 +80,6 @@ use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameContext_bd_fn;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
-use crate::src::internal::Rav1dTileGroup;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::ScalableMotionParams;
 use crate::src::intra_edge::EdgeBranch;
@@ -238,6 +237,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::iter;
+use std::mem;
 use std::ptr;
 use std::ptr::addr_of_mut;
 use std::slice;
@@ -4699,7 +4699,6 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
 
     let tiling = &(*f.frame_hdr).tiling;
 
-    let n_tile_data = f.n_tile_data.try_into().unwrap();
     let n_bytes = tiling.n_bytes.try_into().unwrap();
     let rows: usize = tiling.rows.try_into().unwrap();
     let cols = tiling.cols.try_into().unwrap();
@@ -4709,7 +4708,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
     let mut tile_row = 0;
     let mut tile_col = 0;
     f.task_thread.update_set = false;
-    for tile in slice::from_raw_parts(f.tile, n_tile_data) {
+    for tile in &f.tiles {
         let start = tile.hdr.start.try_into().unwrap();
         let end: usize = tile.hdr.end.try_into().unwrap();
 
@@ -4886,7 +4885,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
     rav1d_ref_dec(&mut f.mvs_ref);
     rav1d_ref_dec(&mut f.seq_hdr_ref);
     rav1d_ref_dec(&mut f.frame_hdr_ref);
-    for tile in slice::from_raw_parts_mut(f.tile, f.n_tile_data.try_into().unwrap()) {
+    for tile in &mut f.tiles {
         rav1d_data_unref_internal(&mut tile.data);
     }
     f.task_thread.retval = retval;
@@ -4930,7 +4929,7 @@ pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> Rav1dResul
         }
     }
     rav1d_decode_frame_exit(f, res);
-    f.n_tile_data = 0;
+    f.tiles.clear();
     res
 }
 
@@ -4951,7 +4950,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
 
         let f = &mut *c.fc.offset(next as isize);
-        while f.n_tile_data > 0 {
+        while !f.tiles.is_empty() {
             pthread_cond_wait(&mut f.task_thread.cond, &mut c.task_thread.lock);
         }
         let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
@@ -5034,10 +5033,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_ref_dec(&mut f.frame_hdr_ref);
         rav1d_data_props_copy(&mut c.cached_error_props, &mut c.in_0.m);
 
-        for tile in slice::from_raw_parts_mut(f.tile, f.n_tile_data.try_into().unwrap()) {
+        for mut tile in f.tiles.drain(..) {
             rav1d_data_unref_internal(&mut tile.data);
         }
-        f.n_tile_data = 0;
 
         if c.n_fc > 1 {
             pthread_mutex_unlock(&mut c.task_thread.lock);
@@ -5161,26 +5159,8 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     // FIXME qsort so tiles are in order (for frame threading)
-    if f.n_tile_data_alloc < c.n_tile_data {
-        freep(&mut f.tile as *mut *mut Rav1dTileGroup as *mut c_void);
-        assert!(c.n_tile_data < i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_int);
-        f.tile = malloc(c.n_tile_data as usize * ::core::mem::size_of::<Rav1dTileGroup>())
-            as *mut Rav1dTileGroup;
-        if f.tile.is_null() {
-            f.n_tile_data = 0;
-            f.n_tile_data_alloc = f.n_tile_data;
-            on_error(f, c, out_delayed);
-            return Err(ENOMEM);
-        }
-        f.n_tile_data_alloc = c.n_tile_data;
-    }
-    let num_tiles = c.n_tile_data.try_into().unwrap();
-    let f_tiles = slice::from_raw_parts_mut(f.tile, num_tiles);
-    let c_tiles = slice::from_raw_parts_mut(c.tile, num_tiles);
-    f_tiles.clone_from_slice(c_tiles);
-    c_tiles.fill_with(Default::default);
-    f.n_tile_data = c.n_tile_data;
-    c.n_tile_data = 0;
+    f.tiles.clear();
+    mem::swap(&mut f.tiles, &mut c.tiles);
 
     // allocate frame
     let res = rav1d_thread_picture_alloc(c, f, bpc);

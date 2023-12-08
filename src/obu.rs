@@ -115,13 +115,11 @@ use libc::memset;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
-use libc::realloc;
 use std::array;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
 
 #[inline]
@@ -1930,34 +1928,24 @@ unsafe fn parse_obus(
         if c.frame_hdr.is_null() {
             return Err(EINVAL);
         }
-        if c.n_tile_data_alloc < c.n_tile_data + 1 {
-            if c.n_tile_data + 1
-                > i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_ulong as c_int
-            {
-                return Err(EINVAL);
-            }
-            let tile = realloc(
-                c.tile as *mut c_void,
-                ((c.n_tile_data + 1) as usize) * ::core::mem::size_of::<Rav1dTileGroup>(),
-            ) as *mut Rav1dTileGroup;
-            if tile.is_null() {
-                return Err(EINVAL);
-            }
-            c.tile = tile;
-            memset(
-                c.tile.offset(c.n_tile_data as isize) as *mut c_void,
-                0,
-                ::core::mem::size_of::<Rav1dTileGroup>(),
-            );
-            c.n_tile_data_alloc = c.n_tile_data + 1;
-        }
-        let tile_hdr = parse_tile_hdr(&(*c.frame_hdr).tiling, gb);
-        (*(c.tile).offset(c.n_tile_data as isize)).hdr = tile_hdr;
+
+        let hdr = parse_tile_hdr(&(*c.frame_hdr).tiling, gb);
         // Align to the next byte boundary and check for overrun.
         rav1d_bytealign_get_bits(gb);
         if check_for_overrun(c, gb, init_bit_pos, len) != 0 {
             return Err(EINVAL);
         }
+
+        if let Err(_) = c.tiles.try_reserve_exact(1) {
+            return Err(EINVAL);
+        }
+        c.tiles.push(Rav1dTileGroup {
+            data: Default::default(),
+            hdr,
+        });
+        // TODO(kkysen) An idiom for push and getting a &mut would be nice and more efficient.
+        let tile = c.tiles.last_mut().unwrap();
+
         // The current bit position is a multiple of 8
         // (because we just aligned it) and less than `8 * pkt_bytelen`
         // because otherwise the overrun check would have fired.
@@ -1965,28 +1953,18 @@ unsafe fn parse_obus(
         let bit_pos = rav1d_get_bits_pos(gb);
         assert!(bit_pos & 7 == 0);
         assert!(pkt_bytelen >= bit_pos >> 3);
-        rav1d_data_ref(&mut (*c.tile.offset(c.n_tile_data as isize)).data, r#in);
-        (*c.tile.offset(c.n_tile_data as isize)).data.data = (*(c.tile)
-            .offset(c.n_tile_data as isize))
-        .data
-        .data
-        .offset((bit_pos >> 3) as isize);
-        (*c.tile.offset(c.n_tile_data as isize)).data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
+        rav1d_data_ref(&mut tile.data, r#in);
+        tile.data.data = tile.data.data.offset((bit_pos >> 3) as isize);
+        tile.data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
         // Ensure tile groups are in order and sane; see 6.10.1.
-        if (*c.tile.offset(c.n_tile_data as isize)).hdr.start
-            > (*c.tile.offset(c.n_tile_data as isize)).hdr.end
-            || (*c.tile.offset(c.n_tile_data as isize)).hdr.start != c.n_tiles
-        {
-            for i in 0..=c.n_tile_data {
-                rav1d_data_unref_internal(&mut (*c.tile.offset(i as isize)).data);
+        if tile.hdr.start > tile.hdr.end || tile.hdr.start != c.n_tiles {
+            for mut tile in c.tiles.drain(..) {
+                rav1d_data_unref_internal(&mut tile.data);
             }
-            c.n_tile_data = 0;
             c.n_tiles = 0;
             return Err(EINVAL);
         }
-        c.n_tiles += 1 + (*(c.tile).offset(c.n_tile_data as isize)).hdr.end
-            - (*(c.tile).offset(c.n_tile_data as isize)).hdr.start;
-        c.n_tile_data += 1;
+        c.n_tiles += 1 + tile.hdr.end - tile.hdr.start;
 
         Ok(())
     }
@@ -2084,10 +2062,9 @@ unsafe fn parse_obus(
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
                 return Err(EINVAL);
             }
-            for n in 0..c.n_tile_data {
-                rav1d_data_unref_internal(&mut (*c.tile.offset(n as isize)).data);
+            for mut tile in c.tiles.drain(..) {
+                rav1d_data_unref_internal(&mut tile.data);
             }
-            c.n_tile_data = 0;
             c.n_tiles = 0;
             if r#type != RAV1D_OBU_FRAME {
                 // This is actually a frame header OBU,
@@ -2416,7 +2393,7 @@ unsafe fn parse_obus(
                 }
 
                 let f = &mut *c.fc.offset(next as isize);
-                while (*f).n_tile_data > 0 {
+                while !(*f).tiles.is_empty() {
                     pthread_cond_wait(
                         &mut (*f).task_thread.cond,
                         &mut (*(*f).task_thread.ttd).lock,
@@ -2532,11 +2509,11 @@ unsafe fn parse_obus(
                 }
                 _ => {}
             }
-            if c.n_tile_data == 0 {
+            if c.tiles.is_empty() {
                 return Err(EINVAL);
             }
             rav1d_submit_frame(&mut *c)?;
-            assert!(c.n_tile_data == 0);
+            assert!(c.tiles.is_empty());
             c.frame_hdr = 0 as *mut Rav1dFrameHeader;
             c.n_tiles = 0;
         }
