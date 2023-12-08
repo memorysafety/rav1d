@@ -114,13 +114,13 @@ use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
 use libc::realloc;
+use std::array;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
-use std::ptr::addr_of_mut;
 
 #[inline]
 unsafe fn rav1d_get_bits_pos(c: &GetBits) -> c_uint {
@@ -1777,8 +1777,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
 
     (*(*c.frame_hdr_ref)
         .data
-        .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-    .update_dav1d();
+        .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>()) = DRav1d::from_rav1d(hdr.clone());
 
     Ok(())
 }
@@ -2025,8 +2024,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 rav1d_ref_dec(&mut r#ref);
                 error(c, r#in).unwrap_err()
             })?;
-            (*seq_hdrs).rav1d = seq_hdr;
-            (*seq_hdrs).update_dav1d();
+            (*seq_hdrs) = DRav1d::from_rav1d(seq_hdr);
             let seq_hdr = &mut (*seq_hdrs).rav1d as *mut Rav1dSequenceHeader;
             if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                 rav1d_ref_dec(&mut r#ref);
@@ -2160,27 +2158,19 @@ pub(crate) unsafe fn rav1d_parse_obus(
 
             match meta_type {
                 OBU_META_HDR_CLL => {
-                    let mut r#ref =
-                        rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
-                    if r#ref.is_null() {
-                        return Err(ENOMEM);
-                    }
-                    let content_light = (*r#ref).data as *mut Rav1dContentLightLevel;
-
-                    (*content_light).max_content_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
+                    let max_content_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: max-content-light-level: {} [off={}]",
-                            (*content_light).max_content_light_level,
+                            max_content_light_level,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    (*content_light).max_frame_average_light_level =
-                        rav1d_get_bits(&mut gb, 16) as c_int;
+                    let max_frame_average_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: max-frame-average-light-level: {} [off={}]",
-                            (*content_light).max_frame_average_light_level,
+                            max_frame_average_light_level,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
@@ -2189,66 +2179,69 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_get_bit(&mut gb);
                     rav1d_bytealign_get_bits(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        rav1d_ref_dec(&mut r#ref);
                         error(c, r#in)?;
                     }
 
+                    let r#ref = rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
+                    if r#ref.is_null() {
+                        return Err(ENOMEM);
+                    }
+                    let content_light = (*r#ref).data as *mut Rav1dContentLightLevel;
+                    content_light.write(Rav1dContentLightLevel {
+                        max_content_light_level,
+                        max_frame_average_light_level,
+                    });
                     rav1d_ref_dec(&mut c.content_light_ref);
                     c.content_light = content_light;
                     c.content_light_ref = r#ref;
                 }
                 OBU_META_HDR_MDCV => {
-                    let mut r#ref =
-                        rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
-                    if r#ref.is_null() {
-                        return Err(ENOMEM);
-                    }
-                    let mastering_display = (*r#ref).data as *mut Rav1dMasteringDisplay;
-
-                    for i in 0..3 {
-                        (*mastering_display).primaries[i as usize][0] =
-                            rav1d_get_bits(&mut gb, 16) as u16;
-                        (*mastering_display).primaries[i as usize][1] =
-                            rav1d_get_bits(&mut gb, 16) as u16;
+                    let primaries = array::from_fn(|i| {
+                        let primary = [
+                            rav1d_get_bits(&mut gb, 16) as u16,
+                            rav1d_get_bits(&mut gb, 16) as u16,
+                        ];
                         if DEBUG_OBU_METADATA {
                             println!(
                                 "MDCVOBU: primaries[{}]: ({}, {}) [off={}]",
                                 i,
-                                (*mastering_display).primaries[i as usize][0],
-                                (*mastering_display).primaries[i as usize][1],
+                                primary[0],
+                                primary[1],
                                 gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                             );
                         }
-                    }
-                    (*mastering_display).white_point[0] = rav1d_get_bits(&mut gb, 16) as u16;
+                        primary
+                    });
+                    let white_point0 = rav1d_get_bits(&mut gb, 16) as u16;
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: white-point-x: {} [off={}]",
-                            (*mastering_display).white_point[0],
+                            white_point0,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    (*mastering_display).white_point[1] = rav1d_get_bits(&mut gb, 16) as u16;
+                    let white_point1 = rav1d_get_bits(&mut gb, 16) as u16;
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: white-point-y: {} [off={}]",
-                            (*mastering_display).white_point[1],
+                            white_point1,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    (*mastering_display).max_luminance = rav1d_get_bits(&mut gb, 32);
+                    let white_point = [white_point0, white_point1];
+                    let max_luminance = rav1d_get_bits(&mut gb, 32);
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: max-luminance: {} [off={}]",
-                            (*mastering_display).max_luminance,
+                            max_luminance,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    (*mastering_display).min_luminance = rav1d_get_bits(&mut gb, 32);
+                    let min_luminance = rav1d_get_bits(&mut gb, 32);
                     if DEBUG_OBU_METADATA {
                         println!(
                             "CLLOBU: min-luminance: {} [off={}]",
-                            (*mastering_display).min_luminance,
+                            min_luminance,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
@@ -2256,10 +2249,20 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_get_bit(&mut gb);
                     rav1d_bytealign_get_bits(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        rav1d_ref_dec(&mut r#ref);
                         error(c, r#in)?;
                     }
 
+                    let r#ref = rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
+                    if r#ref.is_null() {
+                        return Err(ENOMEM);
+                    }
+                    let mastering_display = (*r#ref).data as *mut Rav1dMasteringDisplay;
+                    mastering_display.write(Rav1dMasteringDisplay {
+                        primaries,
+                        white_point,
+                        max_luminance,
+                        min_luminance,
+                    });
                     rav1d_ref_dec(&mut c.mastering_display_ref);
                     c.mastering_display = mastering_display;
                     c.mastering_display_ref = r#ref;
@@ -2302,29 +2305,31 @@ pub(crate) unsafe fn rav1d_parse_obus(
                         if r#ref.is_null() {
                             return Err(ENOMEM);
                         }
-                        let itut_t32_metadatas =
-                            (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
-                        let itut_t35_metadata = addr_of_mut!((*itut_t32_metadatas).rav1d);
 
+                        let country_code = country_code as u8;
+                        let country_code_extension_byte = country_code_extension_byte as u8;
                         // We need our public headers to be C++ compatible, so payload can't be
                         // a flexible array member
-                        (*itut_t35_metadata).payload = (*r#ref)
+                        let payload = (*r#ref)
                             .data
                             .cast::<u8>()
                             .offset(::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
                                 as isize);
-                        (*itut_t35_metadata).country_code = country_code as u8;
-                        (*itut_t35_metadata).country_code_extension_byte =
-                            country_code_extension_byte as u8;
+                        let payload_size = payload_size as usize;
                         for i in 0..payload_size {
-                            *((*itut_t35_metadata).payload).offset(i as isize) =
-                                rav1d_get_bits(&mut gb, 8) as u8;
+                            *payload.offset(i as isize) = rav1d_get_bits(&mut gb, 8) as u8;
                         }
-                        (*itut_t35_metadata).payload_size = payload_size as usize;
-                        (*itut_t32_metadatas).update_dav1d();
 
+                        let itut_t35_metadatas =
+                            (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
+                        itut_t35_metadatas.write(DRav1d::from_rav1d(Rav1dITUTT35 {
+                            country_code,
+                            country_code_extension_byte,
+                            payload,
+                            payload_size,
+                        }));
                         rav1d_ref_dec(&mut c.itut_t35_ref);
-                        c.itut_t35 = itut_t35_metadata;
+                        c.itut_t35 = &mut (*itut_t35_metadatas).rav1d;
                         c.itut_t35_ref = r#ref;
                     }
                 }

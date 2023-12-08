@@ -14,15 +14,20 @@ pub(crate) struct DRav1d<R, D> {
 
 impl<R, D> DRav1d<R, D>
 where
-    R: Clone + Into<D>,
     D: Clone + Into<R>,
 {
     pub fn update_rav1d(&mut self) {
         self.rav1d = self.dav1d.clone().into();
     }
+}
 
-    pub fn update_dav1d(&mut self) {
-        self.dav1d = self.rav1d.clone().into();
+impl<R, D> DRav1d<R, D>
+where
+    R: Clone + Into<D>,
+{
+    pub fn from_rav1d(rav1d: R) -> Self {
+        let dav1d = rav1d.clone().into();
+        Self { rav1d, dav1d }
     }
 }
 

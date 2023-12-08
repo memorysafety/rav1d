@@ -218,7 +218,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
         assert_eq!(seq_hdr.is_null(), seq_hdr_ref.is_null());
         assert_eq!(frame_hdr.is_null(), frame_hdr_ref.is_null());
         Self {
-            // `.update_dav1d()` happens right after [`parse_seq_hdr`].
+            // `DRav1d::from_rav1d` is called right after [`parse_seq_hdr`].
             seq_hdr: if seq_hdr.is_null() {
                 ptr::null_mut()
             } else {
@@ -231,7 +231,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
                     )
                 }
             },
-            // `.update_dav1d()` happens in [`parse_frame_hdr`].
+            // `DRav1d::from_rav1d` is called in [`parse_frame_hdr`].
             frame_hdr: if frame_hdr.is_null() {
                 ptr::null_mut()
             } else {
@@ -250,7 +250,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
             m: m.into(),
             content_light,
             mastering_display,
-            // `.update_dav1d()` happens in [`rav1d_parse_obus`].
+            // `DRav1d::from_rav1d` is called in [`rav1d_parse_obus`].
             itut_t35: if itut_t35.is_null() {
                 ptr::null_mut()
             } else {
