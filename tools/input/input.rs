@@ -157,7 +157,7 @@ pub unsafe fn input_open(
     }
     c = calloc(
         1,
-        mem::offset_of!(DemuxerContext, priv_data) + (*impl_0).priv_data_size as usize,
+        mem::size_of::<DemuxerContext>() + (*impl_0).priv_data_size as usize,
     ) as *mut DemuxerContext;
     if c.is_null() {
         fprintf(

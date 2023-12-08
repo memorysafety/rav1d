@@ -161,7 +161,7 @@ pub unsafe fn output_open(
             return -ENOPROTOOPT;
         }
     }
-    c = malloc(mem::offset_of!(MuxerContext, priv_data) + (*impl_0).priv_data_size as usize)
+    c = malloc(mem::size_of::<MuxerContext>() + (*impl_0).priv_data_size as usize)
         as *mut MuxerContext;
     if c.is_null() {
         fprintf(
