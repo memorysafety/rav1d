@@ -16,6 +16,7 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
 use crate::include::dav1d::headers::Rav1dFrameType;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
@@ -1766,8 +1767,11 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     Ok(())
 }
 
-unsafe fn parse_tile_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dTileGroupHeader {
-    let n_tiles = (*c.frame_hdr).tiling.cols * (*c.frame_hdr).tiling.rows;
+unsafe fn parse_tile_hdr(
+    tiling: &Rav1dFrameHeader_tiling,
+    gb: &mut GetBits,
+) -> Rav1dTileGroupHeader {
+    let n_tiles = tiling.cols * tiling.rows;
     let have_tile_pos = if n_tiles > 1 {
         rav1d_get_bit(gb) as c_int
     } else {
@@ -1775,7 +1779,7 @@ unsafe fn parse_tile_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dTileGro
     };
 
     if have_tile_pos != 0 {
-        let n_bits = (*c.frame_hdr).tiling.log2_cols + (*c.frame_hdr).tiling.log2_rows;
+        let n_bits = tiling.log2_cols + tiling.log2_rows;
         let start = rav1d_get_bits(gb, n_bits) as c_int;
         let end = rav1d_get_bits(gb, n_bits) as c_int;
         Rav1dTileGroupHeader { start, end }
@@ -1947,7 +1951,7 @@ unsafe fn parse_obus(
             );
             c.n_tile_data_alloc = c.n_tile_data + 1;
         }
-        let tile_hdr = parse_tile_hdr(c, gb);
+        let tile_hdr = parse_tile_hdr(&(*c.frame_hdr).tiling, gb);
         (*(c.tile).offset(c.n_tile_data as isize)).hdr = tile_hdr;
         // Align to the next byte boundary and check for overrun.
         rav1d_bytealign_get_bits(gb);
