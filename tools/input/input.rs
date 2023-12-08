@@ -17,6 +17,7 @@ use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::mem;
 
 extern "C" {
     pub type DemuxerPriv;
@@ -156,7 +157,7 @@ pub unsafe fn input_open(
     }
     c = calloc(
         1,
-        (16 as usize).wrapping_add((*impl_0).priv_data_size as usize),
+        mem::offset_of!(DemuxerContext, priv_data) + (*impl_0).priv_data_size as usize,
     ) as *mut DemuxerContext;
     if c.is_null() {
         fprintf(

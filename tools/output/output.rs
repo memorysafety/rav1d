@@ -19,6 +19,7 @@ use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::mem;
 
 extern "C" {
     pub type MuxerPriv;
@@ -160,7 +161,8 @@ pub unsafe fn output_open(
             return -ENOPROTOOPT;
         }
     }
-    c = malloc((48 as usize).wrapping_add((*impl_0).priv_data_size as usize)) as *mut MuxerContext;
+    c = malloc(mem::offset_of!(MuxerContext, priv_data) + (*impl_0).priv_data_size as usize)
+        as *mut MuxerContext;
     if c.is_null() {
         fprintf(
             stderr,

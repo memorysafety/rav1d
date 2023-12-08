@@ -2,6 +2,7 @@
 #![allow(non_upper_case_globals)]
 #![feature(extern_types)]
 #![feature(c_variadic)]
+#![feature(offset_of)]
 #![allow(clippy::all)]
 
 #[path = "../tools/input"]
