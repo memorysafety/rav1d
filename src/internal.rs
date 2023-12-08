@@ -89,7 +89,6 @@ pub(crate) struct Rav1dDSPContext {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
 pub(crate) struct Rav1dTileGroup {
     pub data: Rav1dData,
     pub start: c_int,
