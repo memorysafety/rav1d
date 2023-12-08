@@ -1,7 +1,6 @@
 use libc::fclose;
 use libc::fopen;
 use libc::fprintf;
-use libc::memcmp;
 use libc::memcpy;
 use libc::strcmp;
 use libc::strerror;
@@ -620,11 +619,7 @@ unsafe extern "C" fn md5_verify(md5: *mut MD5Context, mut md5_str: *const c_char
         }
         i += 1;
     }
-    return (memcmp(
-        abcd.as_mut_ptr() as *const c_void,
-        ((*md5).abcd).as_mut_ptr() as *const c_void,
-        ::core::mem::size_of::<[u32; 4]>(),
-    ) != 0) as c_int;
+    (abcd != (*md5).abcd) as c_int
 }
 
 #[no_mangle]
