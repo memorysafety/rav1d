@@ -1772,150 +1772,210 @@ pub(crate) unsafe fn rav1d_parse_obus(
         }
     }
 
-    let mut state = r#type;
-    loop {
-        match state {
-            RAV1D_OBU_SEQ_HDR => {
-                let mut r#ref = rav1d_ref_create_using_pool(
-                    c.seq_hdr_pool,
-                    ::core::mem::size_of::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>(),
-                );
-                if r#ref.is_null() {
-                    return Err(ENOMEM);
-                }
-                let seq_hdrs = (*r#ref)
-                    .data
-                    .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>();
-                let seq_hdr = addr_of_mut!((*seq_hdrs).rav1d);
-                let res = parse_seq_hdr(c, &mut gb, &mut *seq_hdr);
-                (*seq_hdrs).update_dav1d();
-                if res.is_err() {
-                    rav1d_ref_dec(&mut r#ref);
-                    error(c, r#in)?;
-                }
-                if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                    rav1d_ref_dec(&mut r#ref);
-                    error(c, r#in)?;
-                }
-                // If we have read a sequence header which is different from the old one,
-                // this is a new video sequence and can't use any previous state.
-                // Free that state.
+    unsafe fn parse_tile_grp(
+        c: &mut Rav1dContext,
+        r#in: &mut Rav1dData,
+        gb: &mut GetBits,
+        init_bit_pos: c_uint,
+        init_byte_pos: c_uint,
+        len: c_uint,
+    ) -> Rav1dResult {
+        if c.frame_hdr.is_null() {
+            error(c, r#in)?;
+        }
+        if c.n_tile_data_alloc < c.n_tile_data + 1 {
+            if c.n_tile_data + 1
+                > i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_ulong as c_int
+            {
+                error(c, r#in)?;
+            }
+            let tile = realloc(
+                c.tile as *mut c_void,
+                ((c.n_tile_data + 1) as usize) * ::core::mem::size_of::<Rav1dTileGroup>(),
+            ) as *mut Rav1dTileGroup;
+            if tile.is_null() {
+                error(c, r#in)?;
+            }
+            c.tile = tile;
+            memset(
+                c.tile.offset(c.n_tile_data as isize) as *mut c_void,
+                0,
+                ::core::mem::size_of::<Rav1dTileGroup>(),
+            );
+            c.n_tile_data_alloc = c.n_tile_data + 1;
+        }
+        parse_tile_hdr(c, gb);
+        // Align to the next byte boundary and check for overrun.
+        rav1d_bytealign_get_bits(gb);
+        if check_for_overrun(c, gb, init_bit_pos, len) != 0 {
+            error(c, r#in)?;
+        }
+        // The current bit position is a multiple of 8
+        // (because we just aligned it) and less than `8 * pkt_bytelen`
+        // because otherwise the overrun check would have fired.
+        let pkt_bytelen = init_byte_pos + len;
+        let bit_pos = rav1d_get_bits_pos(gb);
+        assert!(bit_pos & 7 == 0);
+        assert!(pkt_bytelen >= bit_pos >> 3);
+        rav1d_data_ref(&mut (*c.tile.offset(c.n_tile_data as isize)).data, r#in);
+        (*c.tile.offset(c.n_tile_data as isize)).data.data = (*(c.tile)
+            .offset(c.n_tile_data as isize))
+        .data
+        .data
+        .offset((bit_pos >> 3) as isize);
+        (*c.tile.offset(c.n_tile_data as isize)).data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
+        // Ensure tile groups are in order and sane; see 6.10.1.
+        if (*c.tile.offset(c.n_tile_data as isize)).start
+            > (*c.tile.offset(c.n_tile_data as isize)).end
+            || (*c.tile.offset(c.n_tile_data as isize)).start != c.n_tiles
+        {
+            for i in 0..=c.n_tile_data {
+                rav1d_data_unref_internal(&mut (*c.tile.offset(i as isize)).data);
+            }
+            c.n_tile_data = 0;
+            c.n_tiles = 0;
+            error(c, r#in)?;
+        }
+        c.n_tiles += 1 + (*(c.tile).offset(c.n_tile_data as isize)).end
+            - (*(c.tile).offset(c.n_tile_data as isize)).start;
+        c.n_tile_data += 1;
 
-                if c.seq_hdr.is_null() {
-                    c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                    c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
-                } else if memcmp(
-                    seq_hdr as *const c_void,
-                    c.seq_hdr as *const c_void,
-                    // TODO(kkysen) Remove unstable feature.
-                    // Doing it this way also prevents us from removing the `#[repr(C)]`.
-                    // We should split [`Rav1dSequenceHeader`] into an inner `struct`
-                    // without the `operating_parameter_info` field,
-                    // or at least offer safe field-by-field comparison methods.
-                    mem::offset_of!(Rav1dSequenceHeader, operating_parameter_info),
-                ) != 0
-                {
-                    // See 7.5, `operating_parameter_info` is allowed to change in
-                    // sequence headers of a single sequence.
-                    c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                    c.mastering_display = 0 as *mut Rav1dMasteringDisplay;
-                    c.content_light = 0 as *mut Rav1dContentLightLevel;
-                    rav1d_ref_dec(&mut c.mastering_display_ref);
-                    rav1d_ref_dec(&mut c.content_light_ref);
-                    for i in 0..8 {
-                        if !c.refs[i as usize].p.p.frame_hdr.is_null() {
-                            rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
-                        }
-                        rav1d_ref_dec(&mut c.refs[i as usize].segmap);
-                        rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
-                        rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
-                    }
-                    c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
-                } else if memcmp(
-                    ((*seq_hdr).operating_parameter_info).as_mut_ptr() as *const c_void,
-                    ((*c.seq_hdr).operating_parameter_info).as_mut_ptr() as *const c_void,
-                    ::core::mem::size_of::<[Dav1dSequenceHeaderOperatingParameterInfo; 32]>(),
-                ) != 0
-                {
-                    // If operating_parameter_info changed, signal it
-                    c.frame_flags |= PICTURE_FLAG_NEW_OP_PARAMS_INFO;
-                }
-                rav1d_ref_dec(&mut c.seq_hdr_ref);
-                c.seq_hdr_ref = r#ref;
-                c.seq_hdr = seq_hdr;
+        Ok(())
+    }
+
+    match r#type {
+        RAV1D_OBU_SEQ_HDR => {
+            let mut r#ref = rav1d_ref_create_using_pool(
+                c.seq_hdr_pool,
+                ::core::mem::size_of::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>(),
+            );
+            if r#ref.is_null() {
+                return Err(ENOMEM);
             }
-            RAV1D_OBU_REDUNDANT_FRAME_HDR => {
-                if c.frame_hdr.is_null() {
-                    state = RAV1D_OBU_FRAME;
-                    continue; // fall-through
-                }
+            let seq_hdrs = (*r#ref)
+                .data
+                .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>();
+            let seq_hdr = addr_of_mut!((*seq_hdrs).rav1d);
+            let res = parse_seq_hdr(c, &mut gb, &mut *seq_hdr);
+            (*seq_hdrs).update_dav1d();
+            if res.is_err() {
+                rav1d_ref_dec(&mut r#ref);
+                error(c, r#in)?;
             }
-            RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
-                if global != 0 {
-                    break;
-                }
-                if c.seq_hdr.is_null() {
-                    error(c, r#in)?;
-                }
-                if c.frame_hdr_ref.is_null() {
-                    c.frame_hdr_ref = rav1d_ref_create_using_pool(
-                        c.frame_hdr_pool,
-                        ::core::mem::size_of::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>(),
-                    );
-                    if c.frame_hdr_ref.is_null() {
-                        return Err(ENOMEM);
+            if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                rav1d_ref_dec(&mut r#ref);
+                error(c, r#in)?;
+            }
+            // If we have read a sequence header which is different from the old one,
+            // this is a new video sequence and can't use any previous state.
+            // Free that state.
+
+            if c.seq_hdr.is_null() {
+                c.frame_hdr = 0 as *mut Rav1dFrameHeader;
+                c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
+            } else if memcmp(
+                seq_hdr as *const c_void,
+                c.seq_hdr as *const c_void,
+                // TODO(kkysen) Remove unstable feature.
+                // Doing it this way also prevents us from removing the `#[repr(C)]`.
+                // We should split [`Rav1dSequenceHeader`] into an inner `struct`
+                // without the `operating_parameter_info` field,
+                // or at least offer safe field-by-field comparison methods.
+                mem::offset_of!(Rav1dSequenceHeader, operating_parameter_info),
+            ) != 0
+            {
+                // See 7.5, `operating_parameter_info` is allowed to change in
+                // sequence headers of a single sequence.
+                c.frame_hdr = 0 as *mut Rav1dFrameHeader;
+                c.mastering_display = 0 as *mut Rav1dMasteringDisplay;
+                c.content_light = 0 as *mut Rav1dContentLightLevel;
+                rav1d_ref_dec(&mut c.mastering_display_ref);
+                rav1d_ref_dec(&mut c.content_light_ref);
+                for i in 0..8 {
+                    if !c.refs[i as usize].p.p.frame_hdr.is_null() {
+                        rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
                     }
+                    rav1d_ref_dec(&mut c.refs[i as usize].segmap);
+                    rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
+                    rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
                 }
-                // ensure that the reference is writable
-                debug_assert!(rav1d_ref_is_writable(c.frame_hdr_ref) != 0);
-                let frame_hdrs =
-                    (*c.frame_hdr_ref).data as *mut DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>;
-                memset(
-                    frame_hdrs as *mut c_void,
-                    0,
+                c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
+            } else if memcmp(
+                ((*seq_hdr).operating_parameter_info).as_mut_ptr() as *const c_void,
+                ((*c.seq_hdr).operating_parameter_info).as_mut_ptr() as *const c_void,
+                ::core::mem::size_of::<[Dav1dSequenceHeaderOperatingParameterInfo; 32]>(),
+            ) != 0
+            {
+                // If operating_parameter_info changed, signal it
+                c.frame_flags |= PICTURE_FLAG_NEW_OP_PARAMS_INFO;
+            }
+            rav1d_ref_dec(&mut c.seq_hdr_ref);
+            c.seq_hdr_ref = r#ref;
+            c.seq_hdr = seq_hdr;
+        }
+        RAV1D_OBU_REDUNDANT_FRAME_HDR if !c.frame_hdr.is_null() => {}
+        RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR if global != 0 => {}
+        RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
+            if c.seq_hdr.is_null() {
+                error(c, r#in)?;
+            }
+            if c.frame_hdr_ref.is_null() {
+                c.frame_hdr_ref = rav1d_ref_create_using_pool(
+                    c.frame_hdr_pool,
                     ::core::mem::size_of::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>(),
                 );
-                c.frame_hdr = &mut (*frame_hdrs).rav1d;
-                (*c.frame_hdr).temporal_id = temporal_id;
-                (*c.frame_hdr).spatial_id = spatial_id;
-                let res = parse_frame_hdr(c, &mut gb);
-                if res.is_err() {
+                if c.frame_hdr_ref.is_null() {
+                    return Err(ENOMEM);
+                }
+            }
+            // ensure that the reference is writable
+            debug_assert!(rav1d_ref_is_writable(c.frame_hdr_ref) != 0);
+            let frame_hdrs =
+                (*c.frame_hdr_ref).data as *mut DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>;
+            memset(
+                frame_hdrs as *mut c_void,
+                0,
+                ::core::mem::size_of::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>(),
+            );
+            c.frame_hdr = &mut (*frame_hdrs).rav1d;
+            (*c.frame_hdr).temporal_id = temporal_id;
+            (*c.frame_hdr).spatial_id = spatial_id;
+            let res = parse_frame_hdr(c, &mut gb);
+            if res.is_err() {
+                c.frame_hdr = 0 as *mut Rav1dFrameHeader;
+                error(c, r#in)?;
+            }
+            for n in 0..c.n_tile_data {
+                rav1d_data_unref_internal(&mut (*c.tile.offset(n as isize)).data);
+            }
+            c.n_tile_data = 0;
+            c.n_tiles = 0;
+            if r#type != RAV1D_OBU_FRAME {
+                // This is actually a frame header OBU,
+                // so read the trailing bit and check for overrun.
+                rav1d_get_bit(&mut gb);
+                if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                     c.frame_hdr = 0 as *mut Rav1dFrameHeader;
                     error(c, r#in)?;
                 }
-                for n in 0..c.n_tile_data {
-                    rav1d_data_unref_internal(&mut (*c.tile.offset(n as isize)).data);
-                }
-                c.n_tile_data = 0;
-                c.n_tiles = 0;
-                if r#type != RAV1D_OBU_FRAME {
-                    // This is actually a frame header OBU,
-                    // so read the trailing bit and check for overrun.
-                    rav1d_get_bit(&mut gb);
-                    if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                        error(c, r#in)?;
-                    }
-                }
+            }
 
-                if c.frame_size_limit != 0
-                    && (*c.frame_hdr).width[1] as i64 * (*c.frame_hdr).height as i64
-                        > c.frame_size_limit as i64
-                {
-                    rav1d_log(
-                        c,
-                        b"Frame size %dx%d exceeds limit %u\n\0" as *const u8 as *const c_char,
-                        (*c.frame_hdr).width[1],
-                        (*c.frame_hdr).height,
-                        c.frame_size_limit,
-                    );
-                    c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                    return Err(ERANGE);
-                }
+            if c.frame_size_limit != 0
+                && (*c.frame_hdr).width[1] as i64 * (*c.frame_hdr).height as i64
+                    > c.frame_size_limit as i64
+            {
+                rav1d_log(
+                    c,
+                    b"Frame size %dx%d exceeds limit %u\n\0" as *const u8 as *const c_char,
+                    (*c.frame_hdr).width[1],
+                    (*c.frame_hdr).height,
+                    c.frame_size_limit,
+                );
+                c.frame_hdr = 0 as *mut Rav1dFrameHeader;
+                return Err(ERANGE);
+            }
 
-                if r#type != RAV1D_OBU_FRAME {
-                    break;
-                }
+            if r#type == RAV1D_OBU_FRAME {
                 // OBU_FRAMEs shouldn't be signaled with `show_existing_frame`.
                 if (*c.frame_hdr).show_existing_frame != 0 {
                     c.frame_hdr = 0 as *mut Rav1dFrameHeader;
@@ -1926,281 +1986,219 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
                 rav1d_bytealign_get_bits(&mut gb);
-                state = RAV1D_OBU_TILE_GRP;
-                continue; // fall-through
-            }
-            RAV1D_OBU_TILE_GRP => {
-                if global != 0 {
-                    break;
+                if global == 0 {
+                    parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
                 }
-                if c.frame_hdr.is_null() {
-                    error(c, r#in)?;
-                }
-                if c.n_tile_data_alloc < c.n_tile_data + 1 {
-                    if c.n_tile_data + 1
-                        > i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_ulong as c_int
-                    {
-                        error(c, r#in)?;
-                    }
-                    let tile = realloc(
-                        c.tile as *mut c_void,
-                        ((c.n_tile_data + 1) as usize) * ::core::mem::size_of::<Rav1dTileGroup>(),
-                    ) as *mut Rav1dTileGroup;
-                    if tile.is_null() {
-                        error(c, r#in)?;
-                    }
-                    c.tile = tile;
-                    memset(
-                        c.tile.offset(c.n_tile_data as isize) as *mut c_void,
-                        0,
-                        ::core::mem::size_of::<Rav1dTileGroup>(),
-                    );
-                    c.n_tile_data_alloc = c.n_tile_data + 1;
-                }
-                parse_tile_hdr(c, &mut gb);
-                // Align to the next byte boundary and check for overrun.
-                rav1d_bytealign_get_bits(&mut gb);
-                if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                    error(c, r#in)?;
-                }
-                // The current bit position is a multiple of 8
-                // (because we just aligned it) and less than `8 * pkt_bytelen`
-                // because otherwise the overrun check would have fired.
-                let pkt_bytelen = init_byte_pos + len;
-                let bit_pos = rav1d_get_bits_pos(&mut gb);
-                assert!(bit_pos & 7 == 0);
-                assert!(pkt_bytelen >= bit_pos >> 3);
-                rav1d_data_ref(&mut (*c.tile.offset(c.n_tile_data as isize)).data, r#in);
-                (*c.tile.offset(c.n_tile_data as isize)).data.data = (*(c.tile)
-                    .offset(c.n_tile_data as isize))
-                .data
-                .data
-                .offset((bit_pos >> 3) as isize);
-                (*c.tile.offset(c.n_tile_data as isize)).data.sz =
-                    (pkt_bytelen - (bit_pos >> 3)) as usize;
-                // Ensure tile groups are in order and sane; see 6.10.1.
-                if (*c.tile.offset(c.n_tile_data as isize)).start
-                    > (*c.tile.offset(c.n_tile_data as isize)).end
-                    || (*c.tile.offset(c.n_tile_data as isize)).start != c.n_tiles
-                {
-                    for i in 0..=c.n_tile_data {
-                        rav1d_data_unref_internal(&mut (*c.tile.offset(i as isize)).data);
-                    }
-                    c.n_tile_data = 0;
-                    c.n_tiles = 0;
-                    error(c, r#in)?;
-                }
-                c.n_tiles += 1 + (*(c.tile).offset(c.n_tile_data as isize)).end
-                    - (*(c.tile).offset(c.n_tile_data as isize)).start;
-                c.n_tile_data += 1;
-            }
-            RAV1D_OBU_METADATA => {
-                const DEBUG_OBU_METADATA: bool = false;
-                let init_ptr = gb.ptr;
-
-                // obu metadata type field
-                let meta_type = rav1d_get_uleb128(&mut gb) as ObuMetaType;
-                let meta_type_len = ((rav1d_get_bits_pos(&mut gb) - init_bit_pos) >> 3) as c_int;
-                if gb.error != 0 {
-                    error(c, r#in)?;
-                }
-
-                match meta_type {
-                    OBU_META_HDR_CLL => {
-                        let mut r#ref =
-                            rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
-                        if r#ref.is_null() {
-                            return Err(ENOMEM);
-                        }
-                        let content_light = (*r#ref).data as *mut Rav1dContentLightLevel;
-
-                        (*content_light).max_content_light_level =
-                            rav1d_get_bits(&mut gb, 16) as c_int;
-                        if DEBUG_OBU_METADATA {
-                            println!(
-                                "CLLOBU: max-content-light-level: {} [off={}]",
-                                (*content_light).max_content_light_level,
-                                gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                            );
-                        }
-                        (*content_light).max_frame_average_light_level =
-                            rav1d_get_bits(&mut gb, 16) as c_int;
-                        if DEBUG_OBU_METADATA {
-                            println!(
-                                "CLLOBU: max-frame-average-light-level: {} [off={}]",
-                                (*content_light).max_frame_average_light_level,
-                                gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                            );
-                        }
-
-                        // Skip the trailing bit, align to the next byte boundary and check for overrun.
-                        rav1d_get_bit(&mut gb);
-                        rav1d_bytealign_get_bits(&mut gb);
-                        if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                            rav1d_ref_dec(&mut r#ref);
-                            error(c, r#in)?;
-                        }
-
-                        rav1d_ref_dec(&mut c.content_light_ref);
-                        c.content_light = content_light;
-                        c.content_light_ref = r#ref;
-                    }
-                    OBU_META_HDR_MDCV => {
-                        let mut r#ref =
-                            rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
-                        if r#ref.is_null() {
-                            return Err(ENOMEM);
-                        }
-                        let mastering_display = (*r#ref).data as *mut Rav1dMasteringDisplay;
-
-                        for i in 0..3 {
-                            (*mastering_display).primaries[i as usize][0] =
-                                rav1d_get_bits(&mut gb, 16) as u16;
-                            (*mastering_display).primaries[i as usize][1] =
-                                rav1d_get_bits(&mut gb, 16) as u16;
-                            if DEBUG_OBU_METADATA {
-                                println!(
-                                    "MDCVOBU: primaries[{}]: ({}, {}) [off={}]",
-                                    i,
-                                    (*mastering_display).primaries[i as usize][0],
-                                    (*mastering_display).primaries[i as usize][1],
-                                    gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                                );
-                            }
-                        }
-                        (*mastering_display).white_point[0] = rav1d_get_bits(&mut gb, 16) as u16;
-                        if DEBUG_OBU_METADATA {
-                            println!(
-                                "CLLOBU: white-point-x: {} [off={}]",
-                                (*mastering_display).white_point[0],
-                                gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                            );
-                        }
-                        (*mastering_display).white_point[1] = rav1d_get_bits(&mut gb, 16) as u16;
-                        if DEBUG_OBU_METADATA {
-                            println!(
-                                "CLLOBU: white-point-y: {} [off={}]",
-                                (*mastering_display).white_point[1],
-                                gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                            );
-                        }
-                        (*mastering_display).max_luminance = rav1d_get_bits(&mut gb, 32);
-                        if DEBUG_OBU_METADATA {
-                            println!(
-                                "CLLOBU: max-luminance: {} [off={}]",
-                                (*mastering_display).max_luminance,
-                                gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                            );
-                        }
-                        (*mastering_display).min_luminance = rav1d_get_bits(&mut gb, 32);
-                        if DEBUG_OBU_METADATA {
-                            println!(
-                                "CLLOBU: min-luminance: {} [off={}]",
-                                (*mastering_display).min_luminance,
-                                gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                            );
-                        }
-                        // Skip the trailing bit, align to the next byte boundary and check for overrun.
-                        rav1d_get_bit(&mut gb);
-                        rav1d_bytealign_get_bits(&mut gb);
-                        if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                            rav1d_ref_dec(&mut r#ref);
-                            error(c, r#in)?;
-                        }
-
-                        rav1d_ref_dec(&mut c.mastering_display_ref);
-                        c.mastering_display = mastering_display;
-                        c.mastering_display_ref = r#ref;
-                    }
-                    OBU_META_ITUT_T35 => {
-                        let mut payload_size = len as c_int;
-                        // Don't take into account all the trailing bits for `payload_size`.
-                        while payload_size > 0
-                            && *r#in
-                                .data
-                                .offset((init_byte_pos + payload_size as c_uint - 1) as isize)
-                                == 0
-                        {
-                            payload_size -= 1; // trailing_zero_bit x 8
-                        }
-                        payload_size -= 1; // trailing_one_bit + trailing_zero_bit x 7
-
-                        // Don't take into account meta_type bytes
-                        payload_size -= meta_type_len;
-
-                        let mut country_code_extension_byte = 0;
-                        let country_code = rav1d_get_bits(&mut gb, 8) as c_int;
-                        payload_size -= 1;
-                        if country_code == 0xff {
-                            country_code_extension_byte = rav1d_get_bits(&mut gb, 8) as c_int;
-                            payload_size -= 1;
-                        }
-
-                        if payload_size <= 0 {
-                            rav1d_log(
-                                c,
-                                b"Malformed ITU-T T.35 metadata message format\n\0" as *const u8
-                                    as *const c_char,
-                            );
-                        } else {
-                            let r#ref = rav1d_ref_create(
-                                ::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
-                                    + payload_size as usize * ::core::mem::size_of::<u8>(),
-                            );
-                            if r#ref.is_null() {
-                                return Err(ENOMEM);
-                            }
-                            let itut_t32_metadatas =
-                                (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
-                            let itut_t35_metadata = addr_of_mut!((*itut_t32_metadatas).rav1d);
-
-                            // We need our public headers to be C++ compatible, so payload can't be
-                            // a flexible array member
-                            (*itut_t35_metadata).payload =
-                                (*r#ref).data.cast::<u8>().offset(::core::mem::size_of::<
-                                    DRav1d<Rav1dITUTT35, Dav1dITUTT35>,
-                                >(
-                                )
-                                    as isize);
-                            (*itut_t35_metadata).country_code = country_code as u8;
-                            (*itut_t35_metadata).country_code_extension_byte =
-                                country_code_extension_byte as u8;
-                            for i in 0..payload_size {
-                                *((*itut_t35_metadata).payload).offset(i as isize) =
-                                    rav1d_get_bits(&mut gb, 8) as u8;
-                            }
-                            (*itut_t35_metadata).payload_size = payload_size as usize;
-                            (*itut_t32_metadatas).update_dav1d();
-
-                            rav1d_ref_dec(&mut c.itut_t35_ref);
-                            c.itut_t35 = itut_t35_metadata;
-                            c.itut_t35_ref = r#ref;
-                        }
-                    }
-                    OBU_META_SCALABILITY | OBU_META_TIMECODE => {} // Ignore metadata OBUs we don't care about.
-                    _ => {
-                        // Print a warning, but don't fail for unknown types.
-                        rav1d_log(
-                            c,
-                            b"Unknown Metadata OBU type %d\n\0" as *const u8 as *const c_char,
-                            meta_type as c_uint,
-                        );
-                    }
-                }
-            }
-            RAV1D_OBU_TD => c.frame_flags |= PICTURE_FLAG_NEW_TEMPORAL_UNIT,
-            RAV1D_OBU_PADDING => {} // Ignore OBUs we don't care about.
-            _ => {
-                // Print a warning, but don't fail for unknown types.
-                rav1d_log(
-                    c,
-                    b"Unknown OBU type %d of size %u\n\0" as *const u8 as *const c_char,
-                    r#type as c_uint,
-                    len,
-                );
             }
         }
-        break;
+        RAV1D_OBU_TILE_GRP => {
+            if global == 0 {
+                parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
+            }
+        }
+        RAV1D_OBU_METADATA => {
+            const DEBUG_OBU_METADATA: bool = false;
+            let init_ptr = gb.ptr;
+
+            // obu metadata type field
+            let meta_type = rav1d_get_uleb128(&mut gb) as ObuMetaType;
+            let meta_type_len = ((rav1d_get_bits_pos(&mut gb) - init_bit_pos) >> 3) as c_int;
+            if gb.error != 0 {
+                error(c, r#in)?;
+            }
+
+            match meta_type {
+                OBU_META_HDR_CLL => {
+                    let mut r#ref =
+                        rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
+                    if r#ref.is_null() {
+                        return Err(ENOMEM);
+                    }
+                    let content_light = (*r#ref).data as *mut Rav1dContentLightLevel;
+
+                    (*content_light).max_content_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
+                    if DEBUG_OBU_METADATA {
+                        println!(
+                            "CLLOBU: max-content-light-level: {} [off={}]",
+                            (*content_light).max_content_light_level,
+                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
+                        );
+                    }
+                    (*content_light).max_frame_average_light_level =
+                        rav1d_get_bits(&mut gb, 16) as c_int;
+                    if DEBUG_OBU_METADATA {
+                        println!(
+                            "CLLOBU: max-frame-average-light-level: {} [off={}]",
+                            (*content_light).max_frame_average_light_level,
+                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
+                        );
+                    }
+
+                    // Skip the trailing bit, align to the next byte boundary and check for overrun.
+                    rav1d_get_bit(&mut gb);
+                    rav1d_bytealign_get_bits(&mut gb);
+                    if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                        rav1d_ref_dec(&mut r#ref);
+                        error(c, r#in)?;
+                    }
+
+                    rav1d_ref_dec(&mut c.content_light_ref);
+                    c.content_light = content_light;
+                    c.content_light_ref = r#ref;
+                }
+                OBU_META_HDR_MDCV => {
+                    let mut r#ref =
+                        rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
+                    if r#ref.is_null() {
+                        return Err(ENOMEM);
+                    }
+                    let mastering_display = (*r#ref).data as *mut Rav1dMasteringDisplay;
+
+                    for i in 0..3 {
+                        (*mastering_display).primaries[i as usize][0] =
+                            rav1d_get_bits(&mut gb, 16) as u16;
+                        (*mastering_display).primaries[i as usize][1] =
+                            rav1d_get_bits(&mut gb, 16) as u16;
+                        if DEBUG_OBU_METADATA {
+                            println!(
+                                "MDCVOBU: primaries[{}]: ({}, {}) [off={}]",
+                                i,
+                                (*mastering_display).primaries[i as usize][0],
+                                (*mastering_display).primaries[i as usize][1],
+                                gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
+                            );
+                        }
+                    }
+                    (*mastering_display).white_point[0] = rav1d_get_bits(&mut gb, 16) as u16;
+                    if DEBUG_OBU_METADATA {
+                        println!(
+                            "CLLOBU: white-point-x: {} [off={}]",
+                            (*mastering_display).white_point[0],
+                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
+                        );
+                    }
+                    (*mastering_display).white_point[1] = rav1d_get_bits(&mut gb, 16) as u16;
+                    if DEBUG_OBU_METADATA {
+                        println!(
+                            "CLLOBU: white-point-y: {} [off={}]",
+                            (*mastering_display).white_point[1],
+                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
+                        );
+                    }
+                    (*mastering_display).max_luminance = rav1d_get_bits(&mut gb, 32);
+                    if DEBUG_OBU_METADATA {
+                        println!(
+                            "CLLOBU: max-luminance: {} [off={}]",
+                            (*mastering_display).max_luminance,
+                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
+                        );
+                    }
+                    (*mastering_display).min_luminance = rav1d_get_bits(&mut gb, 32);
+                    if DEBUG_OBU_METADATA {
+                        println!(
+                            "CLLOBU: min-luminance: {} [off={}]",
+                            (*mastering_display).min_luminance,
+                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
+                        );
+                    }
+                    // Skip the trailing bit, align to the next byte boundary and check for overrun.
+                    rav1d_get_bit(&mut gb);
+                    rav1d_bytealign_get_bits(&mut gb);
+                    if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                        rav1d_ref_dec(&mut r#ref);
+                        error(c, r#in)?;
+                    }
+
+                    rav1d_ref_dec(&mut c.mastering_display_ref);
+                    c.mastering_display = mastering_display;
+                    c.mastering_display_ref = r#ref;
+                }
+                OBU_META_ITUT_T35 => {
+                    let mut payload_size = len as c_int;
+                    // Don't take into account all the trailing bits for `payload_size`.
+                    while payload_size > 0
+                        && *r#in
+                            .data
+                            .offset((init_byte_pos + payload_size as c_uint - 1) as isize)
+                            == 0
+                    {
+                        payload_size -= 1; // trailing_zero_bit x 8
+                    }
+                    payload_size -= 1; // trailing_one_bit + trailing_zero_bit x 7
+
+                    // Don't take into account meta_type bytes
+                    payload_size -= meta_type_len;
+
+                    let mut country_code_extension_byte = 0;
+                    let country_code = rav1d_get_bits(&mut gb, 8) as c_int;
+                    payload_size -= 1;
+                    if country_code == 0xff {
+                        country_code_extension_byte = rav1d_get_bits(&mut gb, 8) as c_int;
+                        payload_size -= 1;
+                    }
+
+                    if payload_size <= 0 {
+                        rav1d_log(
+                            c,
+                            b"Malformed ITU-T T.35 metadata message format\n\0" as *const u8
+                                as *const c_char,
+                        );
+                    } else {
+                        let r#ref = rav1d_ref_create(
+                            ::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
+                                + payload_size as usize * ::core::mem::size_of::<u8>(),
+                        );
+                        if r#ref.is_null() {
+                            return Err(ENOMEM);
+                        }
+                        let itut_t32_metadatas =
+                            (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
+                        let itut_t35_metadata = addr_of_mut!((*itut_t32_metadatas).rav1d);
+
+                        // We need our public headers to be C++ compatible, so payload can't be
+                        // a flexible array member
+                        (*itut_t35_metadata).payload = (*r#ref)
+                            .data
+                            .cast::<u8>()
+                            .offset(::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
+                                as isize);
+                        (*itut_t35_metadata).country_code = country_code as u8;
+                        (*itut_t35_metadata).country_code_extension_byte =
+                            country_code_extension_byte as u8;
+                        for i in 0..payload_size {
+                            *((*itut_t35_metadata).payload).offset(i as isize) =
+                                rav1d_get_bits(&mut gb, 8) as u8;
+                        }
+                        (*itut_t35_metadata).payload_size = payload_size as usize;
+                        (*itut_t32_metadatas).update_dav1d();
+
+                        rav1d_ref_dec(&mut c.itut_t35_ref);
+                        c.itut_t35 = itut_t35_metadata;
+                        c.itut_t35_ref = r#ref;
+                    }
+                }
+                OBU_META_SCALABILITY | OBU_META_TIMECODE => {} // Ignore metadata OBUs we don't care about.
+                _ => {
+                    // Print a warning, but don't fail for unknown types.
+                    rav1d_log(
+                        c,
+                        b"Unknown Metadata OBU type %d\n\0" as *const u8 as *const c_char,
+                        meta_type as c_uint,
+                    );
+                }
+            }
+        }
+        RAV1D_OBU_TD => c.frame_flags |= PICTURE_FLAG_NEW_TEMPORAL_UNIT,
+        RAV1D_OBU_PADDING => {} // Ignore OBUs we don't care about.
+        _ => {
+            // Print a warning, but don't fail for unknown types.
+            rav1d_log(
+                c,
+                b"Unknown OBU type %d of size %u\n\0" as *const u8 as *const c_char,
+                r#type as c_uint,
+                len,
+            );
+        }
     }
 
     if !c.seq_hdr.is_null() && !c.frame_hdr.is_null() {
