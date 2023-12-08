@@ -26,6 +26,27 @@ where
     }
 }
 
+// Constants from Section 3. "Symbols and abbreviated terms"
+pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
+pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
+pub const DAV1D_MAX_TILE_COLS: usize = 64;
+pub const DAV1D_MAX_TILE_ROWS: usize = 64;
+pub const DAV1D_MAX_SEGMENTS: u8 = 8;
+pub const DAV1D_NUM_REF_FRAMES: usize = 8;
+pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
+pub const DAV1D_REFS_PER_FRAME: usize = 7;
+pub const DAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME + 1;
+
+pub(crate) const RAV1D_MAX_CDEF_STRENGTHS: usize = DAV1D_MAX_CDEF_STRENGTHS;
+pub(crate) const RAV1D_MAX_OPERATING_POINTS: usize = DAV1D_MAX_OPERATING_POINTS;
+pub(crate) const RAV1D_MAX_TILE_COLS: usize = DAV1D_MAX_TILE_COLS;
+pub(crate) const RAV1D_MAX_TILE_ROWS: usize = DAV1D_MAX_TILE_ROWS;
+pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
+pub(crate) const _RAV1D_NUM_REF_FRAMES: usize = DAV1D_NUM_REF_FRAMES;
+pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
+pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
+pub(crate) const RAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_TOTAL_REFS_PER_FRAME;
+
 pub type Dav1dObuType = c_uint;
 pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
 pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
@@ -419,13 +440,6 @@ pub(crate) const _RAV1D_CHR_COLOCATED: Rav1dChromaSamplePosition = DAV1D_CHR_COL
 pub(crate) const _RAV1D_CHR_VERTICAL: Rav1dChromaSamplePosition = DAV1D_CHR_VERTICAL;
 pub(crate) const RAV1D_CHR_UNKNOWN: Rav1dChromaSamplePosition = DAV1D_CHR_UNKNOWN;
 
-// Constants from Section 3. "Symbols and abbreviated terms"
-pub const DAV1D_MAX_SEGMENTS: u8 = 8;
-pub const DAV1D_PRIMARY_REF_NONE: c_int = 7;
-
-pub(crate) const RAV1D_MAX_SEGMENTS: u8 = DAV1D_MAX_SEGMENTS;
-pub(crate) const RAV1D_PRIMARY_REF_NONE: c_int = DAV1D_PRIMARY_REF_NONE;
-
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
     pub max_content_light_level: c_int,
@@ -626,7 +640,7 @@ pub struct Dav1dSequenceHeader {
     pub hbd: c_int,
     pub color_range: c_int,
     pub num_operating_points: c_int,
-    pub operating_points: [Dav1dSequenceHeaderOperatingPoint; 32],
+    pub operating_points: [Dav1dSequenceHeaderOperatingPoint; DAV1D_MAX_OPERATING_POINTS],
     pub still_picture: c_int,
     pub reduced_still_picture_header: c_int,
     pub timing_info_present: c_int,
@@ -667,7 +681,8 @@ pub struct Dav1dSequenceHeader {
     pub color_description_present: c_int,
     pub separate_uv_delta_q: c_int,
     pub film_grain_present: c_int,
-    pub operating_parameter_info: [Dav1dSequenceHeaderOperatingParameterInfo; 32],
+    pub operating_parameter_info:
+        [Dav1dSequenceHeaderOperatingParameterInfo; DAV1D_MAX_OPERATING_POINTS],
 }
 
 #[derive(Clone)]
@@ -684,7 +699,7 @@ pub(crate) struct Rav1dSequenceHeader {
     pub hbd: c_int,
     pub color_range: c_int,
     pub num_operating_points: c_int,
-    pub operating_points: [Rav1dSequenceHeaderOperatingPoint; 32],
+    pub operating_points: [Rav1dSequenceHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
     pub still_picture: c_int,
     pub reduced_still_picture_header: c_int,
     pub timing_info_present: c_int,
@@ -725,7 +740,8 @@ pub(crate) struct Rav1dSequenceHeader {
     pub color_description_present: c_int,
     pub separate_uv_delta_q: c_int,
     pub film_grain_present: c_int,
-    pub operating_parameter_info: [Rav1dSequenceHeaderOperatingParameterInfo; 32],
+    pub operating_parameter_info:
+        [Rav1dSequenceHeaderOperatingParameterInfo; RAV1D_MAX_OPERATING_POINTS],
 }
 
 impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
@@ -1084,14 +1100,14 @@ impl From<Rav1dSegmentationDataSet> for Dav1dSegmentationDataSet {
 #[repr(C)]
 pub struct Dav1dLoopfilterModeRefDeltas {
     pub mode_delta: [c_int; 2],
-    pub ref_delta: [c_int; 8],
+    pub ref_delta: [c_int; DAV1D_TOTAL_REFS_PER_FRAME],
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dLoopfilterModeRefDeltas {
     pub mode_delta: [c_int; 2],
-    pub ref_delta: [c_int; 8],
+    pub ref_delta: [c_int; RAV1D_TOTAL_REFS_PER_FRAME],
 }
 
 impl From<Dav1dLoopfilterModeRefDeltas> for Rav1dLoopfilterModeRefDeltas {
@@ -1420,8 +1436,8 @@ pub struct Dav1dFrameHeader_tiling {
     pub max_log2_rows: c_int,
     pub log2_rows: c_int,
     pub rows: c_int,
-    pub col_start_sb: [u16; 65],
-    pub row_start_sb: [u16; 65],
+    pub col_start_sb: [u16; DAV1D_MAX_TILE_COLS + 1],
+    pub row_start_sb: [u16; DAV1D_MAX_TILE_ROWS + 1],
     pub update: c_int,
 }
 
@@ -1438,8 +1454,8 @@ pub(crate) struct Rav1dFrameHeader_tiling {
     pub max_log2_rows: c_int,
     pub log2_rows: c_int,
     pub rows: c_int,
-    pub col_start_sb: [u16; 65],
-    pub row_start_sb: [u16; 65],
+    pub col_start_sb: [u16; RAV1D_MAX_TILE_COLS + 1],
+    pub row_start_sb: [u16; RAV1D_MAX_TILE_ROWS + 1],
     pub update: c_int,
 }
 
@@ -1854,8 +1870,8 @@ impl From<Rav1dFrameHeader_loopfilter> for Dav1dFrameHeader_loopfilter {
 pub struct Dav1dFrameHeader_cdef {
     pub damping: c_int,
     pub n_bits: c_int,
-    pub y_strength: [c_int; 8],
-    pub uv_strength: [c_int; 8],
+    pub y_strength: [c_int; DAV1D_MAX_CDEF_STRENGTHS],
+    pub uv_strength: [c_int; DAV1D_MAX_CDEF_STRENGTHS],
 }
 
 #[derive(Clone)]
@@ -1863,8 +1879,8 @@ pub struct Dav1dFrameHeader_cdef {
 pub(crate) struct Rav1dFrameHeader_cdef {
     pub damping: c_int,
     pub n_bits: c_int,
-    pub y_strength: [c_int; 8],
-    pub uv_strength: [c_int; 8],
+    pub y_strength: [c_int; RAV1D_MAX_CDEF_STRENGTHS],
+    pub uv_strength: [c_int; RAV1D_MAX_CDEF_STRENGTHS],
 }
 
 impl From<Dav1dFrameHeader_cdef> for Rav1dFrameHeader_cdef {
@@ -1952,7 +1968,7 @@ pub struct Dav1dFrameHeader {
     pub frame_size_override: c_int,
     pub primary_ref_frame: c_int,
     pub buffer_removal_time_present: c_int,
-    pub operating_points: [Dav1dFrameHeaderOperatingPoint; 32],
+    pub operating_points: [Dav1dFrameHeaderOperatingPoint; DAV1D_MAX_OPERATING_POINTS],
     pub refresh_frame_flags: c_int,
     pub render_width: c_int,
     pub render_height: c_int,
@@ -1960,7 +1976,7 @@ pub struct Dav1dFrameHeader {
     pub have_render_size: c_int,
     pub allow_intrabc: c_int,
     pub frame_ref_short_signaling: c_int,
-    pub refidx: [c_int; 7],
+    pub refidx: [c_int; DAV1D_REFS_PER_FRAME],
     pub hp: c_int,
     pub subpel_filter_mode: Dav1dFilterMode,
     pub switchable_motion_mode: c_int,
@@ -1981,7 +1997,7 @@ pub struct Dav1dFrameHeader {
     pub skip_mode_refs: [c_int; 2],
     pub warp_motion: c_int,
     pub reduced_txtp_set: c_int,
-    pub gmv: [Dav1dWarpedMotionParams; 7],
+    pub gmv: [Dav1dWarpedMotionParams; DAV1D_REFS_PER_FRAME],
 }
 
 #[derive(Clone)]
@@ -2007,7 +2023,7 @@ pub(crate) struct Rav1dFrameHeader {
     pub frame_size_override: c_int,
     pub primary_ref_frame: c_int,
     pub buffer_removal_time_present: c_int,
-    pub operating_points: [Rav1dFrameHeaderOperatingPoint; 32],
+    pub operating_points: [Rav1dFrameHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
     pub refresh_frame_flags: c_int,
     pub render_width: c_int,
     pub render_height: c_int,
@@ -2015,7 +2031,7 @@ pub(crate) struct Rav1dFrameHeader {
     pub have_render_size: c_int,
     pub allow_intrabc: c_int,
     pub frame_ref_short_signaling: c_int,
-    pub refidx: [c_int; 7],
+    pub refidx: [c_int; RAV1D_REFS_PER_FRAME],
     pub hp: c_int,
     pub subpel_filter_mode: Rav1dFilterMode,
     pub switchable_motion_mode: c_int,
@@ -2036,7 +2052,7 @@ pub(crate) struct Rav1dFrameHeader {
     pub skip_mode_refs: [c_int; 2],
     pub warp_motion: c_int,
     pub reduced_txtp_set: c_int,
-    pub gmv: [Rav1dWarpedMotionParams; 7],
+    pub gmv: [Rav1dWarpedMotionParams; RAV1D_REFS_PER_FRAME],
 }
 
 impl From<Dav1dFrameHeader> for Rav1dFrameHeader {

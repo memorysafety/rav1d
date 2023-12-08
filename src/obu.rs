@@ -38,6 +38,8 @@ use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTRA;
 use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_KEY;
 use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_SWITCH;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
+use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
+use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_OBU_FRAME;
@@ -856,8 +858,8 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     let max_tile_width_sb = 4096 >> sbsz_log2;
     let max_tile_area_sb = 4096 * 2304 >> 2 * sbsz_log2;
     hdr.tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
-    hdr.tiling.max_log2_cols = tile_log2(1, cmp::min(sbw, 64));
-    hdr.tiling.max_log2_rows = tile_log2(1, cmp::min(sbh, 64));
+    hdr.tiling.max_log2_cols = tile_log2(1, cmp::min(sbw, RAV1D_MAX_TILE_COLS as c_int));
+    hdr.tiling.max_log2_rows = tile_log2(1, cmp::min(sbh, RAV1D_MAX_TILE_ROWS as c_int));
     let min_log2_tiles = cmp::max(
         tile_log2(max_tile_area_sb, sbw * sbh),
         hdr.tiling.min_log2_cols,
@@ -894,7 +896,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         let mut widest_tile = 0;
         let mut max_tile_area_sb = sbw * sbh;
         let mut sbx = 0;
-        while sbx < sbw && hdr.tiling.cols < 64 {
+        while sbx < sbw && hdr.tiling.cols < RAV1D_MAX_TILE_COLS as c_int {
             let tile_width_sb = cmp::min(sbw - sbx, max_tile_width_sb);
             let tile_w = if tile_width_sb > 1 {
                 1 + rav1d_get_uniform(gb, tile_width_sb as c_uint) as c_int
@@ -914,7 +916,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
 
         hdr.tiling.rows = 0;
         let mut sby = 0;
-        while sby < sbh && hdr.tiling.rows < 64 {
+        while sby < sbh && hdr.tiling.rows < RAV1D_MAX_TILE_ROWS as c_int {
             let tile_height_sb = cmp::min(sbh - sby, max_tile_height_sb);
             let tile_h = if tile_height_sb > 1 {
                 1 + rav1d_get_uniform(gb, tile_height_sb as c_uint) as c_int
