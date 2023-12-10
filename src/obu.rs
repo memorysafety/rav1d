@@ -618,10 +618,11 @@ unsafe fn parse_frame_size(
                 if (*r#ref).p.frame_hdr.is_null() {
                     return Err(EINVAL);
                 }
-                let width1 = (*(*r#ref).p.frame_hdr).size.width[1];
-                let height = (*(*r#ref).p.frame_hdr).size.height;
-                let render_width = (*(*r#ref).p.frame_hdr).size.render_width;
-                let render_height = (*(*r#ref).p.frame_hdr).size.render_height;
+                let ref_size = &(*(*r#ref).p.frame_hdr).size;
+                let width1 = ref_size.width[1];
+                let height = ref_size.height;
+                let render_width = ref_size.render_width;
+                let render_height = ref_size.render_height;
                 let enabled = (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
                 let width_scale_denominator;
                 let width0;
