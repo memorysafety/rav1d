@@ -116,19 +116,42 @@ impl Rav1dLog for Option<Rav1dLogger> {
     }
 }
 
-/// Used as a marker for [`Rav1dLogger::Stdout`].  Still a valid (i.e. safe) [`Dav1dLoggerCallback`], though.
-unsafe extern "C" fn rav1d_logger_stdout(_cookie: *mut c_void, _fmt: *const c_char, ...) {}
+mod marker {
+    use super::*;
 
-/// Used as a marker for [`Rav1dLogger::Stderr`].  Still a valid (i.e. safe) [`Dav1dLoggerCallback`], though.
-unsafe extern "C" fn rav1d_logger_stderr(_cookie: *mut c_void, _fmt: *const c_char, ...) {}
+    type Callback = extern "C" fn(cookie: *mut c_void, fmt: *const c_char);
+
+    const fn cast(callback: Callback) -> Dav1dLoggerCallback {
+        // Safety: It should always be safe to ignore variadic args.
+        // Declaring a variadic `fn` is unstable, though, which is why we avoid that.
+        unsafe { std::mem::transmute(callback) }
+    }
+
+    /// Create an empty [`Dav1dLoggerCallback`] for use as a marker `fn`
+    /// for special `fn`s stored in [`Dav1dLogger::callback`].
+    macro_rules! create {
+        ($name:ident) => {{
+            extern "C" fn $name(_cookie: *mut c_void, _fmt: *const c_char) {
+                // The `fn` needs a unique body so that
+                // multiple ones don't get optimized into the same `fn`.
+                unimplemented!(stringify!($name));
+            }
+
+            cast($name)
+        }};
+    }
+
+    pub const STDOUT: Dav1dLoggerCallback = create!(stdout);
+    pub const STDERR: Dav1dLoggerCallback = create!(stderr);
+}
 
 impl From<Dav1dLogger> for Option<Rav1dLogger> {
     fn from(logger: Dav1dLogger) -> Self {
         let Dav1dLogger { cookie, callback } = logger;
         Some(match callback {
             None => return None,
-            Some(cb) if cb == rav1d_logger_stdout => Rav1dLogger::Stdout,
-            Some(cb) if cb == rav1d_logger_stderr => Rav1dLogger::Stderr,
+            Some(cb) if cb == marker::STDOUT => Rav1dLogger::Stdout,
+            Some(cb) if cb == marker::STDERR => Rav1dLogger::Stderr,
             _ => Rav1dLogger::Dav1d(Dav1dLogger { cookie, callback }),
         })
     }
@@ -142,8 +165,8 @@ impl From<Option<Rav1dLogger>> for Dav1dLogger {
         };
         let callback = logger.and_then(|logger| match logger {
             Rav1dLogger::Dav1d(dav1d) => dav1d.callback,
-            Rav1dLogger::Stdout => Some(rav1d_logger_stdout),
-            Rav1dLogger::Stderr => Some(rav1d_logger_stderr),
+            Rav1dLogger::Stdout => Some(marker::STDOUT),
+            Rav1dLogger::Stderr => Some(marker::STDERR),
         });
         Self { cookie, callback }
     }
