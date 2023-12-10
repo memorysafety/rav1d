@@ -1,7 +1,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
-#![feature(c_variadic)]
 #![cfg_attr(target_arch = "arm", feature(stdarch_arm_feature_detection))]
 #![cfg_attr(
     any(target_arch = "riscv32", target_arch = "riscv64"),
