@@ -614,7 +614,7 @@ unsafe fn parse_frame_size(
     if use_ref != 0 {
         for i in 0..7 {
             if rav1d_get_bit(gb) != 0 {
-                let r#ref = &mut c.refs[hdr.refidx[i as usize] as usize].p;
+                let r#ref = &c.refs[hdr.refidx[i as usize] as usize].p;
                 if (*r#ref).p.frame_hdr.is_null() {
                     return Err(EINVAL);
                 }
