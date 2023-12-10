@@ -16,7 +16,9 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader_super_res;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
+use crate::include::dav1d::headers::Rav1dFrameSize;
 use crate::include::dav1d::headers::Rav1dFrameType;
 use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
@@ -605,7 +607,7 @@ unsafe fn read_frame_size(
     c: &mut Rav1dContext,
     gb: &mut GetBits,
     use_ref: c_int,
-) -> Result<(), ()> {
+) -> Result<Rav1dFrameSize, ()> {
     let seqhdr = &*c.seq_hdr;
     let hdr = &mut *c.frame_hdr;
 
@@ -616,57 +618,79 @@ unsafe fn read_frame_size(
                 if (*r#ref).p.frame_hdr.is_null() {
                     return Err(());
                 }
-                hdr.size.width[1] = (*(*r#ref).p.frame_hdr).size.width[1];
-                hdr.size.height = (*(*r#ref).p.frame_hdr).size.height;
-                hdr.size.render_width = (*(*r#ref).p.frame_hdr).size.render_width;
-                hdr.size.render_height = (*(*r#ref).p.frame_hdr).size.render_height;
-                hdr.size.super_res.enabled =
-                    (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
-                if hdr.size.super_res.enabled != 0 {
-                    hdr.size.super_res.width_scale_denominator = 9 + rav1d_get_bits(gb, 3) as c_int;
-                    let d = hdr.size.super_res.width_scale_denominator;
-                    hdr.size.width[0] = cmp::max(
-                        (hdr.size.width[1] * 8 + (d >> 1)) / d,
-                        cmp::min(16, hdr.size.width[1]),
-                    );
+                let width1 = (*(*r#ref).p.frame_hdr).size.width[1];
+                let height = (*(*r#ref).p.frame_hdr).size.height;
+                let render_width = (*(*r#ref).p.frame_hdr).size.render_width;
+                let render_height = (*(*r#ref).p.frame_hdr).size.render_height;
+                let enabled = (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
+                let width_scale_denominator;
+                let width0;
+                if enabled != 0 {
+                    width_scale_denominator = 9 + rav1d_get_bits(gb, 3) as c_int;
+                    let d = width_scale_denominator;
+                    width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
                 } else {
-                    hdr.size.super_res.width_scale_denominator = 8;
-                    hdr.size.width[0] = hdr.size.width[1];
+                    width_scale_denominator = 8;
+                    width0 = width1;
                 }
-                return Ok(());
+                let width = [width0, width1];
+                return Ok(Rav1dFrameSize {
+                    width,
+                    height,
+                    render_width,
+                    render_height,
+                    super_res: Rav1dFrameHeader_super_res {
+                        enabled,
+                        width_scale_denominator,
+                    },
+                    have_render_size: 0,
+                });
             }
         }
     }
 
+    let width1;
+    let height;
     if hdr.frame_size_override != 0 {
-        hdr.size.width[1] = rav1d_get_bits(gb, seqhdr.width_n_bits) as c_int + 1;
-        hdr.size.height = rav1d_get_bits(gb, seqhdr.height_n_bits) as c_int + 1;
+        width1 = rav1d_get_bits(gb, seqhdr.width_n_bits) as c_int + 1;
+        height = rav1d_get_bits(gb, seqhdr.height_n_bits) as c_int + 1;
     } else {
-        hdr.size.width[1] = seqhdr.max_width;
-        hdr.size.height = seqhdr.max_height;
+        width1 = seqhdr.max_width;
+        height = seqhdr.max_height;
     }
-    hdr.size.super_res.enabled = (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
-    if hdr.size.super_res.enabled != 0 {
-        hdr.size.super_res.width_scale_denominator = 9 + rav1d_get_bits(gb, 3) as c_int;
-        let d = hdr.size.super_res.width_scale_denominator;
-        hdr.size.width[0] = cmp::max(
-            (hdr.size.width[1] * 8 + (d >> 1)) / d,
-            cmp::min(16, hdr.size.width[1]),
-        );
+    let enabled = (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
+    let width_scale_denominator;
+    let width0;
+    if enabled != 0 {
+        width_scale_denominator = 9 + rav1d_get_bits(gb, 3) as c_int;
+        let d = width_scale_denominator;
+        width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
     } else {
-        hdr.size.super_res.width_scale_denominator = 8;
-        hdr.size.width[0] = hdr.size.width[1];
+        width_scale_denominator = 8;
+        width0 = width1;
     }
-    hdr.size.have_render_size = rav1d_get_bit(gb) as c_int;
-    if hdr.size.have_render_size != 0 {
-        hdr.size.render_width = rav1d_get_bits(gb, 16) as c_int + 1;
-        hdr.size.render_height = rav1d_get_bits(gb, 16) as c_int + 1;
+    let have_render_size = rav1d_get_bit(gb) as c_int;
+    let render_width;
+    let render_height;
+    if have_render_size != 0 {
+        render_width = rav1d_get_bits(gb, 16) as c_int + 1;
+        render_height = rav1d_get_bits(gb, 16) as c_int + 1;
     } else {
-        hdr.size.render_width = hdr.size.width[1];
-        hdr.size.render_height = hdr.size.height;
+        render_width = width1;
+        render_height = height;
     }
-
-    Ok(())
+    let width = [width0, width1];
+    Ok(Rav1dFrameSize {
+        width,
+        height,
+        render_width,
+        render_height,
+        super_res: Rav1dFrameHeader_super_res {
+            enabled,
+            width_scale_denominator,
+        },
+        have_render_size,
+    })
 }
 
 #[inline]
@@ -824,7 +848,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         {
             return Err(EINVAL);
         }
-        read_frame_size(c, gb, 0).map_err(|()| EINVAL)?;
+        (*c.frame_hdr).size = read_frame_size(c, gb, 0).map_err(|()| EINVAL)?;
         hdr.allow_intrabc = (hdr.allow_screen_content_tools != 0
             && hdr.size.super_res.enabled == 0
             && rav1d_get_bit(gb) != 0) as c_int;
@@ -966,7 +990,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             }
         }
         let use_ref = (hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0) as c_int;
-        read_frame_size(c, gb, use_ref).map_err(|()| EINVAL)?;
+        (*c.frame_hdr).size = read_frame_size(c, gb, use_ref).map_err(|()| EINVAL)?;
         hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
         hdr.subpel_filter_mode = if rav1d_get_bit(gb) != 0 {
             RAV1D_FILTER_SWITCHABLE
