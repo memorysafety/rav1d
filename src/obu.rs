@@ -604,7 +604,7 @@ unsafe fn parse_seq_hdr(
 }
 
 unsafe fn parse_frame_size(
-    c: &mut Rav1dContext,
+    c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     hdr: &Rav1dFrameHeader,
     gb: &mut GetBits,
