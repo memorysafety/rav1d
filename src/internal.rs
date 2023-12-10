@@ -8,7 +8,6 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
-use crate::include::dav1d::dav1d::Rav1dLogger;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -42,6 +41,7 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
+use crate::src::log::Rav1dLogger;
 use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
 use crate::src::mc::Rav1dMCDSPContext;
@@ -258,7 +258,7 @@ pub struct Rav1dContext {
     pub(crate) cached_error_props: Rav1dDataProps,
     pub(crate) cached_error: Rav1dResult,
 
-    pub(crate) logger: Rav1dLogger,
+    pub(crate) logger: Option<Rav1dLogger>,
 
     pub(crate) picture_pool: *mut Rav1dMemPool,
 }

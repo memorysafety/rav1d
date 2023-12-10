@@ -68,7 +68,7 @@ pub mod src {
     mod lf_apply;
     mod lf_mask;
     pub mod lib;
-    mod log;
+    pub(crate) mod log;
     mod loopfilter;
     mod looprestoration;
     mod lr_apply;

@@ -1,44 +1,14 @@
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::src::internal::Rav1dContext;
+pub use crate::src::log::Dav1dLogger;
+use crate::src::log::Rav1dLogger;
 use crate::src::r#ref::Rav1dRef;
-use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 
 pub type Dav1dContext = Rav1dContext;
 pub type Dav1dRef = Rav1dRef;
-
-#[derive(Clone)]
-#[repr(C)]
-pub struct Dav1dLogger {
-    pub cookie: *mut c_void,
-    pub callback:
-        Option<unsafe extern "C" fn(*mut c_void, *const c_char, ::core::ffi::VaList) -> ()>,
-}
-
-#[derive(Clone)]
-#[repr(C)]
-pub(crate) struct Rav1dLogger {
-    pub cookie: *mut c_void,
-    pub callback:
-        Option<unsafe extern "C" fn(*mut c_void, *const c_char, ::core::ffi::VaList) -> ()>,
-}
-
-impl From<Dav1dLogger> for Rav1dLogger {
-    fn from(value: Dav1dLogger) -> Self {
-        let Dav1dLogger { cookie, callback } = value;
-        Self { cookie, callback }
-    }
-}
-
-impl From<Rav1dLogger> for Dav1dLogger {
-    fn from(value: Rav1dLogger) -> Self {
-        let Rav1dLogger { cookie, callback } = value;
-        Self { cookie, callback }
-    }
-}
 
 pub type Dav1dInloopFilterType = c_uint;
 pub const DAV1D_INLOOPFILTER_ALL: Dav1dInloopFilterType = 7;
@@ -103,7 +73,7 @@ pub(crate) struct Rav1dSettings {
     pub all_layers: bool,
     pub frame_size_limit: c_uint,
     pub allocator: Rav1dPicAllocator,
-    pub logger: Rav1dLogger,
+    pub logger: Option<Rav1dLogger>,
     pub strict_std_compliance: bool,
     pub output_invisible_frames: bool,
     pub inloop_filters: Rav1dInloopFilterType,
