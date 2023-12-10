@@ -593,6 +593,30 @@ unsafe fn parse_frame_size(
     frame_size_override: c_int,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameSize> {
+    unsafe fn parse_width_and_super_res(
+        seqhdr: &Rav1dSequenceHeader,
+        gb: &mut GetBits,
+        width1: c_int,
+    ) -> ([c_int; 2], Rav1dFrameHeader_super_res) {
+        let enabled = (seqhdr.super_res != 0 && gb.get_bit()) as c_int;
+        let width_scale_denominator;
+        let width0;
+        if enabled != 0 {
+            width_scale_denominator = 9 + gb.get_bits(3) as c_int;
+            let d = width_scale_denominator;
+            width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
+        } else {
+            width_scale_denominator = 8;
+            width0 = width1;
+        }
+        let width = [width0, width1];
+        let super_res = Rav1dFrameHeader_super_res {
+            width_scale_denominator,
+            enabled,
+        };
+        (width, super_res)
+    }
+
     if let Some(refidx) = refidx {
         if let Some(refidx) = refidx.iter().copied().find(|_| gb.get_bit()) {
             let ref_frame_hdr = c.refs[refidx as usize].p.p.frame_hdr;
@@ -604,27 +628,13 @@ unsafe fn parse_frame_size(
             let height = ref_size.height;
             let render_width = ref_size.render_width;
             let render_height = ref_size.render_height;
-            let enabled = (seqhdr.super_res != 0 && gb.get_bit()) as c_int;
-            let width_scale_denominator;
-            let width0;
-            if enabled != 0 {
-                width_scale_denominator = 9 + gb.get_bits(3) as c_int;
-                let d = width_scale_denominator;
-                width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
-            } else {
-                width_scale_denominator = 8;
-                width0 = width1;
-            }
-            let width = [width0, width1];
+            let (width, super_res) = parse_width_and_super_res(seqhdr, gb, width1);
             return Ok(Rav1dFrameSize {
                 width,
                 height,
                 render_width,
                 render_height,
-                super_res: Rav1dFrameHeader_super_res {
-                    enabled,
-                    width_scale_denominator,
-                },
+                super_res,
                 have_render_size: 0,
             });
         }
@@ -639,17 +649,7 @@ unsafe fn parse_frame_size(
         width1 = seqhdr.max_width;
         height = seqhdr.max_height;
     }
-    let enabled = (seqhdr.super_res != 0 && gb.get_bit()) as c_int;
-    let width_scale_denominator;
-    let width0;
-    if enabled != 0 {
-        width_scale_denominator = 9 + gb.get_bits(3) as c_int;
-        let d = width_scale_denominator;
-        width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
-    } else {
-        width_scale_denominator = 8;
-        width0 = width1;
-    }
+    let (width, super_res) = parse_width_and_super_res(seqhdr, gb, width1);
     let have_render_size = gb.get_bit() as c_int;
     let render_width;
     let render_height;
@@ -660,16 +660,12 @@ unsafe fn parse_frame_size(
         render_width = width1;
         render_height = height;
     }
-    let width = [width0, width1];
     Ok(Rav1dFrameSize {
         width,
         height,
         render_width,
         render_height,
-        super_res: Rav1dFrameHeader_super_res {
-            enabled,
-            width_scale_denominator,
-        },
+        super_res,
         have_render_size,
     })
 }
