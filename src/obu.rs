@@ -601,7 +601,11 @@ unsafe fn parse_seq_hdr(
     })
 }
 
-unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int) -> c_int {
+unsafe fn read_frame_size(
+    c: &mut Rav1dContext,
+    gb: &mut GetBits,
+    use_ref: c_int,
+) -> Result<(), ()> {
     let seqhdr = &*c.seq_hdr;
     let hdr = &mut *c.frame_hdr;
 
@@ -610,7 +614,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
             if rav1d_get_bit(gb) != 0 {
                 let r#ref = &mut c.refs[(*c.frame_hdr).refidx[i as usize] as usize].p;
                 if (*r#ref).p.frame_hdr.is_null() {
-                    return -1;
+                    return Err(());
                 }
                 hdr.size.width[1] = (*(*r#ref).p.frame_hdr).size.width[1];
                 hdr.size.height = (*(*r#ref).p.frame_hdr).size.height;
@@ -629,7 +633,7 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
                     hdr.size.super_res.width_scale_denominator = 8;
                     hdr.size.width[0] = hdr.size.width[1];
                 }
-                return 0;
+                return Ok(());
             }
         }
     }
@@ -661,7 +665,8 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
         hdr.size.render_width = hdr.size.width[1];
         hdr.size.render_height = hdr.size.height;
     }
-    0
+
+    Ok(())
 }
 
 #[inline]
@@ -819,9 +824,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         {
             return Err(EINVAL);
         }
-        if read_frame_size(c, gb, 0) < 0 {
-            return Err(EINVAL);
-        }
+        read_frame_size(c, gb, 0).map_err(|()| EINVAL)?;
         hdr.allow_intrabc = (hdr.allow_screen_content_tools != 0
             && hdr.size.super_res.enabled == 0
             && rav1d_get_bit(gb) != 0) as c_int;
@@ -963,9 +966,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             }
         }
         let use_ref = (hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0) as c_int;
-        if read_frame_size(c, gb, use_ref) < 0 {
-            return Err(EINVAL);
-        }
+        read_frame_size(c, gb, use_ref).map_err(|()| EINVAL)?;
         hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
         hdr.subpel_filter_mode = if rav1d_get_bit(gb) != 0 {
             RAV1D_FILTER_SWITCHABLE
