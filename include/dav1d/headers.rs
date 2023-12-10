@@ -2124,11 +2124,21 @@ pub struct Dav1dFrameHeader {
 
 #[derive(Clone)]
 #[repr(C)]
-pub(crate) struct Rav1dFrameHeader {
-    pub film_grain: Rav1dFrameHeader_film_grain,
-    pub frame_type: Rav1dFrameType,
+pub(crate) struct Rav1dFrameSize {
     pub width: [c_int; 2],
     pub height: c_int,
+    pub render_width: c_int,
+    pub render_height: c_int,
+    pub super_res: Rav1dFrameHeader_super_res,
+    pub have_render_size: c_int,
+}
+
+#[derive(Clone)]
+#[repr(C)]
+pub(crate) struct Rav1dFrameHeader {
+    pub size: Rav1dFrameSize,
+    pub film_grain: Rav1dFrameHeader_film_grain,
+    pub frame_type: Rav1dFrameType,
     pub frame_offset: c_int,
     pub temporal_id: c_int,
     pub spatial_id: c_int,
@@ -2147,10 +2157,6 @@ pub(crate) struct Rav1dFrameHeader {
     pub buffer_removal_time_present: c_int,
     pub operating_points: [Rav1dFrameHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
     pub refresh_frame_flags: c_int,
-    pub render_width: c_int,
-    pub render_height: c_int,
-    pub super_res: Rav1dFrameHeader_super_res,
-    pub have_render_size: c_int,
     pub allow_intrabc: c_int,
     pub frame_ref_short_signaling: c_int,
     pub refidx: [c_int; RAV1D_REFS_PER_FRAME],
@@ -2232,10 +2238,16 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             gmv,
         } = value;
         Self {
+            size: Rav1dFrameSize {
+                width,
+                height,
+                render_width,
+                render_height,
+                super_res: super_res.into(),
+                have_render_size,
+            },
             film_grain: film_grain.into(),
             frame_type,
-            width,
-            height,
             frame_offset,
             temporal_id,
             spatial_id,
@@ -2254,10 +2266,6 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             buffer_removal_time_present,
             operating_points: operating_points.map(|c| c.into()),
             refresh_frame_flags,
-            render_width,
-            render_height,
-            super_res: super_res.into(),
-            have_render_size,
             allow_intrabc,
             frame_ref_short_signaling,
             refidx,
@@ -2289,10 +2297,17 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
 impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
     fn from(value: Rav1dFrameHeader) -> Self {
         let Rav1dFrameHeader {
+            size:
+                Rav1dFrameSize {
+                    width,
+                    height,
+                    render_width,
+                    render_height,
+                    super_res,
+                    have_render_size,
+                },
             film_grain,
             frame_type,
-            width,
-            height,
             frame_offset,
             temporal_id,
             spatial_id,
@@ -2311,10 +2326,6 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             buffer_removal_time_present,
             operating_points,
             refresh_frame_flags,
-            render_width,
-            render_height,
-            super_res,
-            have_render_size,
             allow_intrabc,
             frame_ref_short_signaling,
             refidx,

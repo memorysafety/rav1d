@@ -180,7 +180,7 @@ pub(crate) unsafe fn rav1d_cdef_brow_8bpc(
         .as_ptr();
     let have_tt = ((*(*f).c).n_tc > 1 as c_uint) as c_int;
     let sb128 = (*(*f).seq_hdr).sb128;
-    let resize = ((*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1]) as c_int;
+    let resize = ((*(*f).frame_hdr).size.width[0] != (*(*f).frame_hdr).size.width[1]) as c_int;
     let y_stride: ptrdiff_t = (*f).cur.stride[0];
     let uv_stride: ptrdiff_t = (*f).cur.stride[1];
     let mut bit = 0;

@@ -1389,11 +1389,12 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
 ) -> Rav1dResult {
     (*rf).sbsz = (16 as c_int) << (*seq_hdr).sb128;
     (*rf).frm_hdr = frm_hdr;
-    (*rf).iw8 = (*frm_hdr).width[0] + 7 >> 3;
-    (*rf).ih8 = (*frm_hdr).height + 7 >> 3;
+    (*rf).iw8 = (*frm_hdr).size.width[0] + 7 >> 3;
+    (*rf).ih8 = (*frm_hdr).size.height + 7 >> 3;
     (*rf).iw4 = (*rf).iw8 << 1;
     (*rf).ih4 = (*rf).ih8 << 1;
-    let r_stride: ptrdiff_t = (((*frm_hdr).width[0] + 127 & !(127 as c_int)) >> 2) as ptrdiff_t;
+    let r_stride: ptrdiff_t =
+        (((*frm_hdr).size.width[0] + 127 & !(127 as c_int)) >> 2) as ptrdiff_t;
     let n_tile_rows = if n_tile_threads > 1 {
         (*frm_hdr).tiling.rows
     } else {

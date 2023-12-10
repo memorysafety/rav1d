@@ -360,7 +360,7 @@ unsafe fn create_filter_sbrow(
     let has_deblock = ((*(*f).frame_hdr).loopfilter.level_y[0] != 0
         || (*(*f).frame_hdr).loopfilter.level_y[1] != 0) as c_int;
     let has_cdef = (*(*f).seq_hdr).cdef;
-    let has_resize = ((*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1]) as c_int;
+    let has_resize = ((*(*f).frame_hdr).size.width[0] != (*(*f).frame_hdr).size.width[1]) as c_int;
     let has_lr = (*f).lf.restore_planes;
     let mut tasks: *mut Rav1dTask = (*f).task_thread.tasks;
     let uses_2pass = ((*(*f).c).n_fc > 1 as c_uint) as c_int;
@@ -1529,7 +1529,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         }
                         match current_block {
                             12196494833634779273 => {
-                                if (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
+                                if (*(*f).frame_hdr).size.width[0]
+                                    != (*(*f).frame_hdr).size.width[1]
+                                {
                                     if ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
