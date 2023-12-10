@@ -603,7 +603,7 @@ unsafe fn parse_seq_hdr(
     })
 }
 
-unsafe fn read_frame_size(
+unsafe fn parse_frame_size(
     c: &mut Rav1dContext,
     gb: &mut GetBits,
     use_ref: c_int,
@@ -848,7 +848,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         {
             return Err(EINVAL);
         }
-        (*c.frame_hdr).size = read_frame_size(c, gb, 0).map_err(|()| EINVAL)?;
+        (*c.frame_hdr).size = parse_frame_size(c, gb, 0).map_err(|()| EINVAL)?;
         hdr.allow_intrabc = (hdr.allow_screen_content_tools != 0
             && hdr.size.super_res.enabled == 0
             && rav1d_get_bit(gb) != 0) as c_int;
@@ -990,7 +990,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             }
         }
         let use_ref = (hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0) as c_int;
-        (*c.frame_hdr).size = read_frame_size(c, gb, use_ref).map_err(|()| EINVAL)?;
+        (*c.frame_hdr).size = parse_frame_size(c, gb, use_ref).map_err(|()| EINVAL)?;
         hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
         hdr.subpel_filter_mode = if rav1d_get_bit(gb) != 0 {
             RAV1D_FILTER_SWITCHABLE
