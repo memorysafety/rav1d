@@ -3289,7 +3289,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         * ((t.bx >> ss_hor) as isize
             + (t.by >> ss_ver) as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize);
     if (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint == 0 {
-        if (*(*f).frame_hdr).super_res.enabled != 0 {
+        if (*(*f).frame_hdr).size.super_res.enabled != 0 {
             unreachable!();
         }
         res = mc::<BD>(
@@ -4679,7 +4679,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(f: &mut Rav1dFrameContext,
     if (*f.seq_hdr).cdef != 0 {
         rav1d_filter_sbrow_cdef::<BD>(&mut *(*f.c).tc, sby);
     }
-    if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+    if (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1] {
         rav1d_filter_sbrow_resize::<BD>(f, sby);
     }
     if f.lf.restore_planes != 0 {
