@@ -4,6 +4,10 @@
 #![feature(c_variadic)]
 #![allow(clippy::all)]
 
+mod compat {
+    pub mod errno;
+    pub mod stdio;
+} // mod compat
 mod input {
     mod annexb;
     pub mod input;
@@ -19,6 +23,7 @@ mod output {
 } // mod output
 mod dav1d_cli_parse;
 
+use crate::compat::stdio::stderr;
 use crate::dav1d_cli_parse::parse;
 use crate::dav1d_cli_parse::CLISettings;
 use crate::dav1d_cli_parse::REALTIME_CUSTOM;
@@ -83,7 +88,6 @@ use rav1d::src::lib::dav1d_open;
 use rav1d::src::lib::dav1d_parse_sequence_header;
 use rav1d::src::lib::dav1d_send_data;
 use rav1d::src::lib::dav1d_version;
-use rav1d::stderr;
 use rav1d::Dav1dResult;
 use std::ffi::c_char;
 use std::ffi::c_double;

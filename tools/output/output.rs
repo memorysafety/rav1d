@@ -1,3 +1,4 @@
+use crate::compat::stdio::stderr;
 use libc::fprintf;
 use libc::free;
 use libc::malloc;
@@ -11,7 +12,6 @@ use libc::ENOMEM;
 use libc::ENOPROTOOPT;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
-use rav1d::stderr;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;

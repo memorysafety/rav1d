@@ -1,3 +1,4 @@
+use crate::compat::stdio::stderr;
 use libc::fprintf;
 use libc::getopt_long;
 use libc::memset;
@@ -24,7 +25,6 @@ use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
 use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
 use rav1d::src::lib::dav1d_default_settings;
 use rav1d::src::lib::dav1d_version;
-use rav1d::stderr;
 use std::ffi::c_char;
 use std::ffi::c_double;
 use std::ffi::c_int;

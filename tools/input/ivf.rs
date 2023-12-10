@@ -1,3 +1,5 @@
+use crate::compat::errno::errno_location;
+use crate::compat::stdio::stderr;
 use libc::fclose;
 use libc::fopen;
 use libc::fprintf;
@@ -7,11 +9,9 @@ use libc::ftello;
 use libc::ptrdiff_t;
 use libc::strerror;
 use libc::ENOMEM;
-use rav1d::errno_location;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::src::lib::dav1d_data_create;
 use rav1d::src::lib::dav1d_data_unref;
-use rav1d::stderr;
 use std::ffi::c_char;
 use std::ffi::c_double;
 use std::ffi::c_int;
