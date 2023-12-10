@@ -609,7 +609,7 @@ unsafe fn parse_frame_size(
     use_ref: c_int,
 ) -> Rav1dResult<Rav1dFrameSize> {
     let seqhdr = &*c.seq_hdr;
-    let hdr = &mut *c.frame_hdr;
+    let hdr = &*c.frame_hdr;
 
     if use_ref != 0 {
         for i in 0..7 {
