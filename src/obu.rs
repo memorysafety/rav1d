@@ -14,6 +14,7 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader_quant;
 use crate::include::dav1d::headers::Rav1dFrameHeader_super_res;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
 use crate::include::dav1d::headers::Rav1dFrameSize;
@@ -948,16 +949,19 @@ unsafe fn parse_tiling(
 
 unsafe fn parse_quant(
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &mut Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult {
-    hdr.quant.yac = rav1d_get_bits(gb, 8) as c_int;
-    hdr.quant.ydc_delta = if rav1d_get_bit(gb) != 0 {
+) -> Rav1dResult<Rav1dFrameHeader_quant> {
+    let yac = rav1d_get_bits(gb, 8) as c_int;
+    let ydc_delta = if rav1d_get_bit(gb) != 0 {
         rav1d_get_sbits(gb, 7)
     } else {
         0
     };
+    let udc_delta;
+    let uac_delta;
+    let vdc_delta;
+    let vac_delta;
     if seqhdr.monochrome == 0 {
         // If the sequence header says that delta_q might be different
         // for U, V, we must check whether it actually is for this
@@ -967,45 +971,70 @@ unsafe fn parse_quant(
         } else {
             0
         };
-        hdr.quant.udc_delta = if rav1d_get_bit(gb) != 0 {
+        udc_delta = if rav1d_get_bit(gb) != 0 {
             rav1d_get_sbits(gb, 7)
         } else {
             0
         };
-        hdr.quant.uac_delta = if rav1d_get_bit(gb) != 0 {
+        uac_delta = if rav1d_get_bit(gb) != 0 {
             rav1d_get_sbits(gb, 7)
         } else {
             0
         };
         if diff_uv_delta != 0 {
-            hdr.quant.vdc_delta = if rav1d_get_bit(gb) != 0 {
+            vdc_delta = if rav1d_get_bit(gb) != 0 {
                 rav1d_get_sbits(gb, 7)
             } else {
                 0
             };
-            hdr.quant.vac_delta = if rav1d_get_bit(gb) != 0 {
+            vac_delta = if rav1d_get_bit(gb) != 0 {
                 rav1d_get_sbits(gb, 7)
             } else {
                 0
             };
         } else {
-            hdr.quant.vdc_delta = hdr.quant.udc_delta;
-            hdr.quant.vac_delta = hdr.quant.uac_delta;
+            vdc_delta = udc_delta;
+            vac_delta = uac_delta;
         }
+    } else {
+        // Default initialization.
+        udc_delta = Default::default();
+        uac_delta = Default::default();
+        vdc_delta = Default::default();
+        vac_delta = Default::default();
     }
     debug.post(gb, "quant");
-    hdr.quant.qm = rav1d_get_bit(gb) as c_int;
-    if hdr.quant.qm != 0 {
-        hdr.quant.qm_y = rav1d_get_bits(gb, 4) as c_int;
-        hdr.quant.qm_u = rav1d_get_bits(gb, 4) as c_int;
-        hdr.quant.qm_v = if seqhdr.separate_uv_delta_q != 0 {
+    let qm = rav1d_get_bit(gb) as c_int;
+    let qm_y;
+    let qm_u;
+    let qm_v;
+    if qm != 0 {
+        qm_y = rav1d_get_bits(gb, 4) as c_int;
+        qm_u = rav1d_get_bits(gb, 4) as c_int;
+        qm_v = if seqhdr.separate_uv_delta_q != 0 {
             rav1d_get_bits(gb, 4) as c_int
         } else {
-            hdr.quant.qm_u
+            qm_u
         };
+    } else {
+        // Default initialization.
+        qm_y = Default::default();
+        qm_u = Default::default();
+        qm_v = Default::default();
     }
     debug.post(gb, "qm");
-    Ok(())
+    Ok(Rav1dFrameHeader_quant {
+        yac,
+        ydc_delta,
+        udc_delta,
+        uac_delta,
+        vdc_delta,
+        vac_delta,
+        qm,
+        qm_y,
+        qm_u,
+        qm_v,
+    })
 }
 
 /// Also initializes [`Rav1dFrameHeader::all_lossless`].
@@ -1771,7 +1800,7 @@ unsafe fn parse_frame_hdr(
     debug.post(gb, "refresh_context");
 
     hdr.tiling = parse_tiling(seqhdr, &hdr.size, &debug, gb)?;
-    parse_quant(seqhdr, &mut hdr, &debug, gb)?;
+    hdr.quant = parse_quant(seqhdr, &debug, gb)?;
     parse_segmentation(c, &mut hdr, &debug, gb)?;
     parse_delta(&mut hdr, &debug, gb)?;
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
