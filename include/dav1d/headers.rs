@@ -3,6 +3,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
 use strum::EnumCount;
+use strum::FromRepr;
 
 /// This is so we can store both `*mut D` and `*mut R`
 /// for maintaining `dav1d` ABI compatibility,
@@ -319,17 +320,49 @@ impl From<Rav1dPixelLayoutSubSampled> for Rav1dPixelLayout {
     }
 }
 
-pub type Dav1dFrameType = c_uint;
-pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
-pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
-pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
-pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub(crate) enum Rav1dFrameType {
+    Key = 0,
+    Inter = 1,
+    Intra = 2,
+    Switch = 3,
+}
 
-pub(crate) type Rav1dFrameType = c_uint;
-pub(crate) const RAV1D_FRAME_TYPE_SWITCH: Rav1dFrameType = DAV1D_FRAME_TYPE_SWITCH;
-pub(crate) const RAV1D_FRAME_TYPE_INTRA: Rav1dFrameType = DAV1D_FRAME_TYPE_INTRA;
-pub(crate) const RAV1D_FRAME_TYPE_INTER: Rav1dFrameType = DAV1D_FRAME_TYPE_INTER;
-pub(crate) const RAV1D_FRAME_TYPE_KEY: Rav1dFrameType = DAV1D_FRAME_TYPE_KEY;
+impl Rav1dFrameType {
+    pub const fn into_rav1d(self) -> Dav1dFrameType {
+        self as Dav1dFrameType
+    }
+}
+
+pub type Dav1dFrameType = c_uint;
+pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = Rav1dFrameType::Key.into_rav1d();
+pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = Rav1dFrameType::Inter.into_rav1d();
+pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = Rav1dFrameType::Intra.into_rav1d();
+pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = Rav1dFrameType::Switch.into_rav1d();
+
+impl From<Rav1dFrameType> for Dav1dFrameType {
+    fn from(value: Rav1dFrameType) -> Self {
+        value.into_rav1d()
+    }
+}
+
+impl TryFrom<Dav1dFrameType> for Rav1dFrameType {
+    type Error = ();
+
+    fn try_from(value: Dav1dFrameType) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
+}
+
+impl Rav1dFrameType {
+    pub const fn is_inter_or_switch(&self) -> bool {
+        matches!(self, Self::Inter | Self::Switch)
+    }
+
+    pub const fn is_key_or_intra(&self) -> bool {
+        matches!(self, Self::Key | Self::Intra)
+    }
+}
 
 pub type Dav1dColorPrimaries = c_uint;
 pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
@@ -2247,7 +2280,7 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
                 have_render_size,
             },
             film_grain: film_grain.into(),
-            frame_type,
+            frame_type: frame_type.try_into().unwrap(),
             frame_offset,
             temporal_id,
             spatial_id,
@@ -2353,7 +2386,7 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
         } = value;
         Self {
             film_grain: film_grain.into(),
-            frame_type,
+            frame_type: frame_type.into(),
             width,
             height,
             frame_offset,

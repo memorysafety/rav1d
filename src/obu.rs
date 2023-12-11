@@ -1,5 +1,3 @@
-use crate::include::common::frame::is_inter_or_switch;
-use crate::include::common::frame::is_key_or_intra;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::data::Rav1dData;
@@ -37,10 +35,6 @@ use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
-use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTER;
-use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_INTRA;
-use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_KEY;
-use crate::include::dav1d::headers::RAV1D_FRAME_TYPE_SWITCH;
 use crate::include::dav1d::headers::RAV1D_MAX_OPERATING_POINTS;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
@@ -748,9 +742,9 @@ unsafe fn parse_frame_hdr(
     }
 
     hdr.frame_type = if seqhdr.reduced_still_picture_header != 0 {
-        RAV1D_FRAME_TYPE_KEY
+        Rav1dFrameType::Key
     } else {
-        rav1d_get_bits(gb, 2) as Rav1dFrameType
+        Rav1dFrameType::from_repr(rav1d_get_bits(gb, 2) as usize).unwrap()
     };
     hdr.show_frame = (seqhdr.reduced_still_picture_header != 0 || rav1d_get_bit(gb) != 0) as c_int;
     if hdr.show_frame != 0 {
@@ -758,12 +752,12 @@ unsafe fn parse_frame_hdr(
             hdr.frame_presentation_delay =
                 rav1d_get_bits(gb, seqhdr.frame_presentation_delay_length) as c_int;
         }
-        hdr.showable_frame = (hdr.frame_type != RAV1D_FRAME_TYPE_KEY) as c_int;
+        hdr.showable_frame = (hdr.frame_type != Rav1dFrameType::Key) as c_int;
     } else {
         hdr.showable_frame = rav1d_get_bit(gb) as c_int;
     }
-    hdr.error_resilient_mode = (hdr.frame_type == RAV1D_FRAME_TYPE_KEY && hdr.show_frame != 0
-        || hdr.frame_type == RAV1D_FRAME_TYPE_SWITCH
+    hdr.error_resilient_mode = (hdr.frame_type == Rav1dFrameType::Key && hdr.show_frame != 0
+        || hdr.frame_type == Rav1dFrameType::Switch
         || seqhdr.reduced_still_picture_header != 0
         || rav1d_get_bit(gb) != 0) as c_int;
     if DEBUG_FRAME_HDR {
@@ -788,7 +782,7 @@ unsafe fn parse_frame_hdr(
         hdr.force_integer_mv = 0;
     }
 
-    if is_key_or_intra(&hdr) {
+    if hdr.frame_type.is_key_or_intra() {
         hdr.force_integer_mv = 1;
     }
 
@@ -798,7 +792,7 @@ unsafe fn parse_frame_hdr(
 
     hdr.frame_size_override = (if seqhdr.reduced_still_picture_header != 0 {
         0
-    } else if hdr.frame_type == RAV1D_FRAME_TYPE_SWITCH {
+    } else if hdr.frame_type == Rav1dFrameType::Switch {
         1
     } else {
         rav1d_get_bit(gb)
@@ -814,7 +808,8 @@ unsafe fn parse_frame_hdr(
     } else {
         0
     };
-    hdr.primary_ref_frame = if hdr.error_resilient_mode == 0 && is_inter_or_switch(&hdr) {
+    hdr.primary_ref_frame = if hdr.error_resilient_mode == 0 && hdr.frame_type.is_inter_or_switch()
+    {
         rav1d_get_bits(gb, 3) as c_int
     } else {
         RAV1D_PRIMARY_REF_NONE
@@ -838,8 +833,8 @@ unsafe fn parse_frame_hdr(
         }
     }
 
-    if is_key_or_intra(&hdr) {
-        hdr.refresh_frame_flags = if hdr.frame_type == RAV1D_FRAME_TYPE_KEY && hdr.show_frame != 0 {
+    if hdr.frame_type.is_key_or_intra() {
+        hdr.refresh_frame_flags = if hdr.frame_type == Rav1dFrameType::Key && hdr.show_frame != 0 {
             0xff
         } else {
             rav1d_get_bits(gb, 8) as c_int
@@ -853,7 +848,7 @@ unsafe fn parse_frame_hdr(
             }
         }
         if c.strict_std_compliance
-            && hdr.frame_type == RAV1D_FRAME_TYPE_INTRA
+            && hdr.frame_type == Rav1dFrameType::Intra
             && hdr.refresh_frame_flags == 0xff
         {
             return Err(EINVAL);
@@ -865,7 +860,7 @@ unsafe fn parse_frame_hdr(
         hdr.use_ref_frame_mvs = 0;
     } else {
         hdr.allow_intrabc = 0;
-        hdr.refresh_frame_flags = if hdr.frame_type == RAV1D_FRAME_TYPE_SWITCH {
+        hdr.refresh_frame_flags = if hdr.frame_type == Rav1dFrameType::Switch {
             0xff
         } else {
             rav1d_get_bits(gb, 8) as c_int
@@ -1011,7 +1006,7 @@ unsafe fn parse_frame_hdr(
         hdr.use_ref_frame_mvs = (hdr.error_resilient_mode == 0
             && seqhdr.ref_frame_mvs != 0
             && seqhdr.order_hint != 0
-            && is_inter_or_switch(&hdr)
+            && hdr.frame_type.is_inter_or_switch()
             && rav1d_get_bit(gb) != 0) as c_int;
     }
     if DEBUG_FRAME_HDR {
@@ -1486,7 +1481,7 @@ unsafe fn parse_frame_hdr(
             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
         );
     }
-    hdr.switchable_comp_refs = if is_inter_or_switch(&hdr) {
+    hdr.switchable_comp_refs = if hdr.frame_type.is_inter_or_switch() {
         rav1d_get_bit(gb) as c_int
     } else {
         0
@@ -1498,7 +1493,10 @@ unsafe fn parse_frame_hdr(
         );
     }
     hdr.skip_mode_allowed = 0;
-    if hdr.switchable_comp_refs != 0 && is_inter_or_switch(&hdr) && seqhdr.order_hint != 0 {
+    if hdr.switchable_comp_refs != 0
+        && hdr.frame_type.is_inter_or_switch()
+        && seqhdr.order_hint != 0
+    {
         let poc = hdr.frame_offset as c_uint;
         let mut off_before = 0xffffffff;
         let mut off_after = -1;
@@ -1588,7 +1586,7 @@ unsafe fn parse_frame_hdr(
         );
     }
     hdr.warp_motion = (hdr.error_resilient_mode == 0
-        && is_inter_or_switch(&hdr)
+        && hdr.frame_type.is_inter_or_switch()
         && seqhdr.warped_motion != 0
         && rav1d_get_bit(gb) != 0) as c_int;
     if DEBUG_FRAME_HDR {
@@ -1609,7 +1607,7 @@ unsafe fn parse_frame_hdr(
         hdr.gmv[i as usize] = dav1d_default_wm_params.clone();
     }
 
-    if is_inter_or_switch(&hdr) {
+    if hdr.frame_type.is_inter_or_switch() {
         for i in 0..7 {
             hdr.gmv[i as usize].r#type = if rav1d_get_bit(gb) == 0 {
                 RAV1D_WM_TYPE_IDENTITY
@@ -1677,7 +1675,7 @@ unsafe fn parse_frame_hdr(
     if hdr.film_grain.present != 0 {
         let seed = rav1d_get_bits(gb, 16);
         hdr.film_grain.update =
-            (hdr.frame_type != RAV1D_FRAME_TYPE_INTER || rav1d_get_bit(gb) != 0) as c_int;
+            (hdr.frame_type != Rav1dFrameType::Inter || rav1d_get_bit(gb) != 0) as c_int;
         if hdr.film_grain.update == 0 {
             let refidx = rav1d_get_bits(gb, 3) as c_int;
             let mut found = false;
@@ -2343,14 +2341,14 @@ unsafe fn parse_obus(
                 .p
                 .p
                 .frame_hdr)
-                .frame_type as c_uint
+                .frame_type
             {
-                RAV1D_FRAME_TYPE_INTER | RAV1D_FRAME_TYPE_SWITCH => {
+                Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
                     if c.decode_frame_type > RAV1D_DECODEFRAMETYPE_REFERENCE {
                         return Ok(skip(c, len, init_byte_pos));
                     }
                 }
-                RAV1D_FRAME_TYPE_INTRA => {
+                Rav1dFrameType::Intra => {
                     if c.decode_frame_type > RAV1D_DECODEFRAMETYPE_INTRA {
                         return Ok(skip(c, len, init_byte_pos));
                     }
@@ -2468,7 +2466,7 @@ unsafe fn parse_obus(
                 .p
                 .frame_hdr)
                 .frame_type
-                == RAV1D_FRAME_TYPE_KEY
+                == Rav1dFrameType::Key
             {
                 let r = (*c.frame_hdr).existing_frame_idx;
                 c.refs[r as usize].p.showable = false;
@@ -2496,7 +2494,7 @@ unsafe fn parse_obus(
             c.frame_hdr = 0 as *mut Rav1dFrameHeader;
         } else if c.n_tiles == (*c.frame_hdr).tiling.cols * (*c.frame_hdr).tiling.rows {
             match (*c.frame_hdr).frame_type {
-                RAV1D_FRAME_TYPE_INTER | RAV1D_FRAME_TYPE_SWITCH => {
+                Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
                     if c.decode_frame_type > RAV1D_DECODEFRAMETYPE_REFERENCE
                         || c.decode_frame_type == RAV1D_DECODEFRAMETYPE_REFERENCE
                             && (*c.frame_hdr).refresh_frame_flags == 0
@@ -2504,7 +2502,7 @@ unsafe fn parse_obus(
                         return Ok(skip(c, len, init_byte_pos));
                     }
                 }
-                RAV1D_FRAME_TYPE_INTRA => {
+                Rav1dFrameType::Intra => {
                     if c.decode_frame_type > RAV1D_DECODEFRAMETYPE_INTRA
                         || c.decode_frame_type == RAV1D_DECODEFRAMETYPE_REFERENCE
                             && (*c.frame_hdr).refresh_frame_flags == 0

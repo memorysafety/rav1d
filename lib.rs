@@ -13,7 +13,6 @@ pub mod include {
         pub(crate) mod attributes;
         pub(crate) mod bitdepth;
         pub(crate) mod dump;
-        pub mod frame;
         pub(crate) mod intops;
         pub(crate) mod validate;
     } // mod common
