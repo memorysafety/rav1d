@@ -2187,27 +2187,27 @@ unsafe fn parse_obus(
                         }
                         primary
                     });
-                    let white_point0 = rav1d_get_bits(&mut gb, 16) as u16;
+                    let white_point_x = rav1d_get_bits(&mut gb, 16) as u16;
                     if DEBUG_OBU_METADATA {
                         println!(
-                            "CLLOBU: white-point-x: {} [off={}]",
-                            white_point0,
+                            "MDCVOBU: white-point-x: {} [off={}]",
+                            white_point_x,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    let white_point1 = rav1d_get_bits(&mut gb, 16) as u16;
+                    let white_point_y = rav1d_get_bits(&mut gb, 16) as u16;
                     if DEBUG_OBU_METADATA {
                         println!(
-                            "CLLOBU: white-point-y: {} [off={}]",
-                            white_point1,
+                            "MDCVOBU: white-point-y: {} [off={}]",
+                            white_point_y,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
                     }
-                    let white_point = [white_point0, white_point1];
+                    let white_point = [white_point_x, white_point_y];
                     let max_luminance = rav1d_get_bits(&mut gb, 32);
                     if DEBUG_OBU_METADATA {
                         println!(
-                            "CLLOBU: max-luminance: {} [off={}]",
+                            "MDCVOBU: max-luminance: {} [off={}]",
                             max_luminance,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
@@ -2215,7 +2215,7 @@ unsafe fn parse_obus(
                     let min_luminance = rav1d_get_bits(&mut gb, 32);
                     if DEBUG_OBU_METADATA {
                         println!(
-                            "CLLOBU: min-luminance: {} [off={}]",
+                            "MDCVOBU: min-luminance: {} [off={}]",
                             min_luminance,
                             gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
                         );
@@ -2307,11 +2307,7 @@ unsafe fn parse_obus(
                 OBU_META_SCALABILITY | OBU_META_TIMECODE => {} // Ignore metadata OBUs we don't care about.
                 _ => {
                     // Print a warning, but don't fail for unknown types.
-                    writeln!(
-                        c.logger,
-                        "Unknown Metadata OBU type {}",
-                        meta_type as c_uint,
-                    );
+                    writeln!(c.logger, "Unknown Metadata OBU type {meta_type}",);
                 }
             }
         }
