@@ -984,6 +984,68 @@ unsafe fn parse_delta(hdr: &mut Rav1dFrameHeader, debug: &Debug, gb: &mut GetBit
     Ok(())
 }
 
+unsafe fn parse_loopfilter(
+    c: &Rav1dContext,
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &mut Rav1dFrameHeader,
+    debug: &Debug,
+    gb: &mut GetBits,
+) -> Rav1dResult {
+    if hdr.all_lossless != 0 || hdr.allow_intrabc != 0 {
+        hdr.loopfilter.level_y[1] = 0;
+        hdr.loopfilter.level_y[0] = hdr.loopfilter.level_y[1];
+        hdr.loopfilter.level_v = 0;
+        hdr.loopfilter.level_u = hdr.loopfilter.level_v;
+        hdr.loopfilter.sharpness = 0;
+        hdr.loopfilter.mode_ref_delta_enabled = 1;
+        hdr.loopfilter.mode_ref_delta_update = 1;
+        hdr.loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
+    } else {
+        hdr.loopfilter.level_y[0] = rav1d_get_bits(gb, 6) as c_int;
+        hdr.loopfilter.level_y[1] = rav1d_get_bits(gb, 6) as c_int;
+        if seqhdr.monochrome == 0
+            && (hdr.loopfilter.level_y[0] != 0 || hdr.loopfilter.level_y[1] != 0)
+        {
+            hdr.loopfilter.level_u = rav1d_get_bits(gb, 6) as c_int;
+            hdr.loopfilter.level_v = rav1d_get_bits(gb, 6) as c_int;
+        }
+        hdr.loopfilter.sharpness = rav1d_get_bits(gb, 3) as c_int;
+
+        if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
+            hdr.loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
+        } else {
+            let r#ref = hdr.refidx[hdr.primary_ref_frame as usize];
+            if (c.refs[r#ref as usize].p.p.frame_hdr).is_null() {
+                return Err(EINVAL);
+            }
+            hdr.loopfilter.mode_ref_deltas = (*c.refs[r#ref as usize].p.p.frame_hdr)
+                .loopfilter
+                .mode_ref_deltas
+                .clone();
+        }
+        hdr.loopfilter.mode_ref_delta_enabled = rav1d_get_bit(gb) as c_int;
+        if hdr.loopfilter.mode_ref_delta_enabled != 0 {
+            hdr.loopfilter.mode_ref_delta_update = rav1d_get_bit(gb) as c_int;
+            if hdr.loopfilter.mode_ref_delta_update != 0 {
+                for i in 0..8 {
+                    if rav1d_get_bit(gb) != 0 {
+                        hdr.loopfilter.mode_ref_deltas.ref_delta[i as usize] =
+                            rav1d_get_sbits(gb, 7);
+                    }
+                }
+                for i in 0..2 {
+                    if rav1d_get_bit(gb) != 0 {
+                        hdr.loopfilter.mode_ref_deltas.mode_delta[i as usize] =
+                            rav1d_get_sbits(gb, 7);
+                    }
+                }
+            }
+        }
+    }
+    debug.post(gb, "lpf");
+    Ok(())
+}
+
 unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
@@ -1305,59 +1367,7 @@ unsafe fn parse_frame_hdr(
         hdr.all_lossless &= hdr.segmentation.lossless[i as usize];
     }
 
-    // loopfilter
-    if hdr.all_lossless != 0 || hdr.allow_intrabc != 0 {
-        hdr.loopfilter.level_y[1] = 0;
-        hdr.loopfilter.level_y[0] = hdr.loopfilter.level_y[1];
-        hdr.loopfilter.level_v = 0;
-        hdr.loopfilter.level_u = hdr.loopfilter.level_v;
-        hdr.loopfilter.sharpness = 0;
-        hdr.loopfilter.mode_ref_delta_enabled = 1;
-        hdr.loopfilter.mode_ref_delta_update = 1;
-        hdr.loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
-    } else {
-        hdr.loopfilter.level_y[0] = rav1d_get_bits(gb, 6) as c_int;
-        hdr.loopfilter.level_y[1] = rav1d_get_bits(gb, 6) as c_int;
-        if seqhdr.monochrome == 0
-            && (hdr.loopfilter.level_y[0] != 0 || hdr.loopfilter.level_y[1] != 0)
-        {
-            hdr.loopfilter.level_u = rav1d_get_bits(gb, 6) as c_int;
-            hdr.loopfilter.level_v = rav1d_get_bits(gb, 6) as c_int;
-        }
-        hdr.loopfilter.sharpness = rav1d_get_bits(gb, 3) as c_int;
-
-        if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-            hdr.loopfilter.mode_ref_deltas = default_mode_ref_deltas.clone();
-        } else {
-            let r#ref = hdr.refidx[hdr.primary_ref_frame as usize];
-            if (c.refs[r#ref as usize].p.p.frame_hdr).is_null() {
-                return Err(EINVAL);
-            }
-            hdr.loopfilter.mode_ref_deltas = (*c.refs[r#ref as usize].p.p.frame_hdr)
-                .loopfilter
-                .mode_ref_deltas
-                .clone();
-        }
-        hdr.loopfilter.mode_ref_delta_enabled = rav1d_get_bit(gb) as c_int;
-        if hdr.loopfilter.mode_ref_delta_enabled != 0 {
-            hdr.loopfilter.mode_ref_delta_update = rav1d_get_bit(gb) as c_int;
-            if hdr.loopfilter.mode_ref_delta_update != 0 {
-                for i in 0..8 {
-                    if rav1d_get_bit(gb) != 0 {
-                        hdr.loopfilter.mode_ref_deltas.ref_delta[i as usize] =
-                            rav1d_get_sbits(gb, 7);
-                    }
-                }
-                for i in 0..2 {
-                    if rav1d_get_bit(gb) != 0 {
-                        hdr.loopfilter.mode_ref_deltas.mode_delta[i as usize] =
-                            rav1d_get_sbits(gb, 7);
-                    }
-                }
-            }
-        }
-    }
-    debug.post(gb, "lpf");
+    parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
 
     // cdef
     if hdr.all_lossless == 0 && seqhdr.cdef != 0 && hdr.allow_intrabc == 0 {
