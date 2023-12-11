@@ -1120,6 +1120,104 @@ unsafe fn parse_restoration(
     Ok(())
 }
 
+unsafe fn parse_skip_mode(
+    c: &Rav1dContext,
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &mut Rav1dFrameHeader,
+    debug: &Debug,
+    gb: &mut GetBits,
+) -> Rav1dResult {
+    hdr.skip_mode_allowed = 0;
+    if hdr.switchable_comp_refs != 0
+        && hdr.frame_type.is_inter_or_switch()
+        && seqhdr.order_hint != 0
+    {
+        let poc = hdr.frame_offset as c_uint;
+        let mut off_before = 0xffffffff;
+        let mut off_after = -1;
+        let mut off_before_idx = 0;
+        let mut off_after_idx = 0;
+        for i in 0..7 {
+            if c.refs[hdr.refidx[i as usize] as usize]
+                .p
+                .p
+                .frame_hdr
+                .is_null()
+            {
+                return Err(EINVAL);
+            }
+            let refpoc =
+                (*c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
+
+            let diff = get_poc_diff(seqhdr.order_hint_n_bits, refpoc as c_int, poc as c_int);
+            if diff > 0 {
+                if off_after == -1
+                    || get_poc_diff(seqhdr.order_hint_n_bits, off_after, refpoc as c_int) > 0
+                {
+                    off_after = refpoc as c_int;
+                    off_after_idx = i;
+                }
+            } else if diff < 0
+                && (off_before == 0xffffffff
+                    || get_poc_diff(
+                        seqhdr.order_hint_n_bits,
+                        refpoc as c_int,
+                        off_before as c_int,
+                    ) > 0)
+            {
+                off_before = refpoc;
+                off_before_idx = i;
+            }
+        }
+
+        if off_before != 0xffffffff && off_after != -1 {
+            hdr.skip_mode_refs[0] = cmp::min(off_before_idx, off_after_idx);
+            hdr.skip_mode_refs[1] = cmp::max(off_before_idx, off_after_idx);
+            hdr.skip_mode_allowed = 1;
+        } else if off_before != 0xffffffff {
+            let mut off_before2 = 0xffffffff;
+            let mut off_before2_idx = 0;
+            for i in 0..7 {
+                if (c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
+                    return Err(EINVAL);
+                }
+                let refpoc =
+                    (*c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
+                if get_poc_diff(
+                    seqhdr.order_hint_n_bits,
+                    refpoc as c_int,
+                    off_before as c_int,
+                ) < 0
+                {
+                    if off_before2 == 0xffffffff
+                        || get_poc_diff(
+                            seqhdr.order_hint_n_bits,
+                            refpoc as c_int,
+                            off_before2 as c_int,
+                        ) > 0
+                    {
+                        off_before2 = refpoc;
+                        off_before2_idx = i;
+                    }
+                }
+            }
+
+            if off_before2 != 0xffffffff {
+                hdr.skip_mode_refs[0] = cmp::min(off_before_idx, off_before2_idx);
+                hdr.skip_mode_refs[1] = cmp::max(off_before_idx, off_before2_idx);
+                hdr.skip_mode_allowed = 1;
+            }
+        }
+    }
+    hdr.skip_mode_enabled = if hdr.skip_mode_allowed != 0 {
+        rav1d_get_bit(gb) as c_int
+    } else {
+        0
+    };
+    debug.post(gb, "extskip");
+    Ok(())
+}
+
 unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
@@ -1459,94 +1557,7 @@ unsafe fn parse_frame_hdr(
         0
     };
     debug.post(gb, "refmode");
-    hdr.skip_mode_allowed = 0;
-    if hdr.switchable_comp_refs != 0
-        && hdr.frame_type.is_inter_or_switch()
-        && seqhdr.order_hint != 0
-    {
-        let poc = hdr.frame_offset as c_uint;
-        let mut off_before = 0xffffffff;
-        let mut off_after = -1;
-        let mut off_before_idx = 0;
-        let mut off_after_idx = 0;
-        for i in 0..7 {
-            if c.refs[hdr.refidx[i as usize] as usize]
-                .p
-                .p
-                .frame_hdr
-                .is_null()
-            {
-                return Err(EINVAL);
-            }
-            let refpoc =
-                (*c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
-
-            let diff = get_poc_diff(seqhdr.order_hint_n_bits, refpoc as c_int, poc as c_int);
-            if diff > 0 {
-                if off_after == -1
-                    || get_poc_diff(seqhdr.order_hint_n_bits, off_after, refpoc as c_int) > 0
-                {
-                    off_after = refpoc as c_int;
-                    off_after_idx = i;
-                }
-            } else if diff < 0
-                && (off_before == 0xffffffff
-                    || get_poc_diff(
-                        seqhdr.order_hint_n_bits,
-                        refpoc as c_int,
-                        off_before as c_int,
-                    ) > 0)
-            {
-                off_before = refpoc;
-                off_before_idx = i;
-            }
-        }
-
-        if off_before != 0xffffffff && off_after != -1 {
-            hdr.skip_mode_refs[0] = cmp::min(off_before_idx, off_after_idx);
-            hdr.skip_mode_refs[1] = cmp::max(off_before_idx, off_after_idx);
-            hdr.skip_mode_allowed = 1;
-        } else if off_before != 0xffffffff {
-            let mut off_before2 = 0xffffffff;
-            let mut off_before2_idx = 0;
-            for i in 0..7 {
-                if (c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
-                    return Err(EINVAL);
-                }
-                let refpoc =
-                    (*c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
-                if get_poc_diff(
-                    seqhdr.order_hint_n_bits,
-                    refpoc as c_int,
-                    off_before as c_int,
-                ) < 0
-                {
-                    if off_before2 == 0xffffffff
-                        || get_poc_diff(
-                            seqhdr.order_hint_n_bits,
-                            refpoc as c_int,
-                            off_before2 as c_int,
-                        ) > 0
-                    {
-                        off_before2 = refpoc;
-                        off_before2_idx = i;
-                    }
-                }
-            }
-
-            if off_before2 != 0xffffffff {
-                hdr.skip_mode_refs[0] = cmp::min(off_before_idx, off_before2_idx);
-                hdr.skip_mode_refs[1] = cmp::max(off_before_idx, off_before2_idx);
-                hdr.skip_mode_allowed = 1;
-            }
-        }
-    }
-    hdr.skip_mode_enabled = if hdr.skip_mode_allowed != 0 {
-        rav1d_get_bit(gb) as c_int
-    } else {
-        0
-    };
-    debug.post(gb, "extskip");
+    parse_skip_mode(c, seqhdr, &mut hdr, &debug, gb)?;
     hdr.warp_motion = (hdr.error_resilient_mode == 0
         && hdr.frame_type.is_inter_or_switch()
         && seqhdr.warped_motion != 0
