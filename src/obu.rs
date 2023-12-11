@@ -951,7 +951,7 @@ unsafe fn parse_quant(
     seqhdr: &Rav1dSequenceHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult<Rav1dFrameHeader_quant> {
+) -> Rav1dFrameHeader_quant {
     let yac = rav1d_get_bits(gb, 8) as c_int;
     let ydc_delta = if rav1d_get_bit(gb) != 0 {
         rav1d_get_sbits(gb, 7)
@@ -1023,7 +1023,7 @@ unsafe fn parse_quant(
         qm_v = Default::default();
     }
     debug.post(gb, "qm");
-    Ok(Rav1dFrameHeader_quant {
+    Rav1dFrameHeader_quant {
         yac,
         ydc_delta,
         udc_delta,
@@ -1034,7 +1034,7 @@ unsafe fn parse_quant(
         qm_y,
         qm_u,
         qm_v,
-    })
+    }
 }
 
 /// Also initializes [`Rav1dFrameHeader::all_lossless`].
@@ -1800,7 +1800,7 @@ unsafe fn parse_frame_hdr(
     debug.post(gb, "refresh_context");
 
     hdr.tiling = parse_tiling(seqhdr, &hdr.size, &debug, gb)?;
-    hdr.quant = parse_quant(seqhdr, &debug, gb)?;
+    hdr.quant = parse_quant(seqhdr, &debug, gb);
     parse_segmentation(c, &mut hdr, &debug, gb)?;
     parse_delta(&mut hdr, &debug, gb)?;
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
