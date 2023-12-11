@@ -827,104 +827,123 @@ unsafe fn parse_refidx(
 
 unsafe fn parse_tiling(
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &mut Rav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult {
-    hdr.tiling.uniform = rav1d_get_bit(gb) as c_int;
+) -> Rav1dResult<Rav1dFrameHeader_tiling> {
+    let uniform = rav1d_get_bit(gb) as c_int;
     let sbsz_min1 = ((64) << seqhdr.sb128) - 1;
     let sbsz_log2 = 6 + seqhdr.sb128;
     let sbw = hdr.size.width[0] + sbsz_min1 >> sbsz_log2;
     let sbh = hdr.size.height + sbsz_min1 >> sbsz_log2;
     let max_tile_width_sb = 4096 >> sbsz_log2;
     let max_tile_area_sb = 4096 * 2304 >> 2 * sbsz_log2;
-    hdr.tiling.min_log2_cols = tile_log2(max_tile_width_sb, sbw);
-    hdr.tiling.max_log2_cols = tile_log2(1, cmp::min(sbw, RAV1D_MAX_TILE_COLS as c_int));
-    hdr.tiling.max_log2_rows = tile_log2(1, cmp::min(sbh, RAV1D_MAX_TILE_ROWS as c_int));
-    let min_log2_tiles = cmp::max(
-        tile_log2(max_tile_area_sb, sbw * sbh),
-        hdr.tiling.min_log2_cols,
-    );
-    if hdr.tiling.uniform != 0 {
-        hdr.tiling.log2_cols = hdr.tiling.min_log2_cols;
-        while hdr.tiling.log2_cols < hdr.tiling.max_log2_cols && rav1d_get_bit(gb) != 0 {
-            hdr.tiling.log2_cols += 1;
+    let min_log2_cols = tile_log2(max_tile_width_sb, sbw);
+    let max_log2_cols = tile_log2(1, cmp::min(sbw, RAV1D_MAX_TILE_COLS as c_int));
+    let max_log2_rows = tile_log2(1, cmp::min(sbh, RAV1D_MAX_TILE_ROWS as c_int));
+    let min_log2_tiles = cmp::max(tile_log2(max_tile_area_sb, sbw * sbh), min_log2_cols);
+    let mut log2_cols;
+    let mut cols;
+    let mut log2_rows;
+    let mut rows;
+    let mut col_start_sb = [0; RAV1D_MAX_TILE_COLS + 1];
+    let mut row_start_sb = [0; RAV1D_MAX_TILE_ROWS + 1];
+    if uniform != 0 {
+        log2_cols = min_log2_cols;
+        while log2_cols < max_log2_cols && rav1d_get_bit(gb) != 0 {
+            log2_cols += 1;
         }
-        let tile_w = 1 + (sbw - 1 >> hdr.tiling.log2_cols);
-        hdr.tiling.cols = 0;
+        let tile_w = 1 + (sbw - 1 >> log2_cols);
+        cols = 0;
         let mut sbx = 0;
         while sbx < sbw {
-            hdr.tiling.col_start_sb[hdr.tiling.cols as usize] = sbx as u16;
+            col_start_sb[cols as usize] = sbx as u16;
             sbx += tile_w;
-            hdr.tiling.cols += 1;
+            cols += 1;
         }
-        hdr.tiling.min_log2_rows = cmp::max(min_log2_tiles - hdr.tiling.log2_cols, 0);
+        let min_log2_rows = cmp::max(min_log2_tiles - log2_cols, 0);
 
-        hdr.tiling.log2_rows = hdr.tiling.min_log2_rows;
-        while hdr.tiling.log2_rows < hdr.tiling.max_log2_rows && rav1d_get_bit(gb) != 0 {
-            hdr.tiling.log2_rows += 1;
+        log2_rows = min_log2_rows;
+        while log2_rows < max_log2_rows && rav1d_get_bit(gb) != 0 {
+            log2_rows += 1;
         }
-        let tile_h = 1 + (sbh - 1 >> hdr.tiling.log2_rows);
-        hdr.tiling.rows = 0;
+        let tile_h = 1 + (sbh - 1 >> log2_rows);
+        rows = 0;
         let mut sby = 0;
         while sby < sbh {
-            hdr.tiling.row_start_sb[hdr.tiling.rows as usize] = sby as u16;
+            row_start_sb[rows as usize] = sby as u16;
             sby += tile_h;
-            hdr.tiling.rows += 1;
+            rows += 1;
         }
     } else {
-        hdr.tiling.cols = 0;
+        cols = 0;
         let mut widest_tile = 0;
         let mut max_tile_area_sb = sbw * sbh;
         let mut sbx = 0;
-        while sbx < sbw && hdr.tiling.cols < RAV1D_MAX_TILE_COLS as c_int {
+        while sbx < sbw && cols < RAV1D_MAX_TILE_COLS as c_int {
             let tile_width_sb = cmp::min(sbw - sbx, max_tile_width_sb);
             let tile_w = if tile_width_sb > 1 {
                 1 + rav1d_get_uniform(gb, tile_width_sb as c_uint) as c_int
             } else {
                 1
             };
-            hdr.tiling.col_start_sb[hdr.tiling.cols as usize] = sbx as u16;
+            col_start_sb[cols as usize] = sbx as u16;
             sbx += tile_w;
             widest_tile = cmp::max(widest_tile, tile_w);
-            hdr.tiling.cols += 1;
+            cols += 1;
         }
-        hdr.tiling.log2_cols = tile_log2(1, hdr.tiling.cols);
+        log2_cols = tile_log2(1, cols);
         if min_log2_tiles != 0 {
             max_tile_area_sb >>= min_log2_tiles + 1;
         }
         let max_tile_height_sb = cmp::max(max_tile_area_sb / widest_tile, 1);
 
-        hdr.tiling.rows = 0;
+        rows = 0;
         let mut sby = 0;
-        while sby < sbh && hdr.tiling.rows < RAV1D_MAX_TILE_ROWS as c_int {
+        while sby < sbh && rows < RAV1D_MAX_TILE_ROWS as c_int {
             let tile_height_sb = cmp::min(sbh - sby, max_tile_height_sb);
             let tile_h = if tile_height_sb > 1 {
                 1 + rav1d_get_uniform(gb, tile_height_sb as c_uint) as c_int
             } else {
                 1
             };
-            hdr.tiling.row_start_sb[hdr.tiling.rows as usize] = sby as u16;
+            row_start_sb[rows as usize] = sby as u16;
             sby += tile_h;
-            hdr.tiling.rows += 1;
+            rows += 1;
         }
-        hdr.tiling.log2_rows = tile_log2(1, hdr.tiling.rows);
+        log2_rows = tile_log2(1, rows);
     }
-    hdr.tiling.col_start_sb[hdr.tiling.cols as usize] = sbw as u16;
-    hdr.tiling.row_start_sb[hdr.tiling.rows as usize] = sbh as u16;
-    if hdr.tiling.log2_cols != 0 || hdr.tiling.log2_rows != 0 {
-        hdr.tiling.update =
-            rav1d_get_bits(gb, hdr.tiling.log2_cols + hdr.tiling.log2_rows) as c_int;
-        if hdr.tiling.update >= hdr.tiling.cols * hdr.tiling.rows {
+    col_start_sb[cols as usize] = sbw as u16;
+    row_start_sb[rows as usize] = sbh as u16;
+    let update;
+    let n_bytes;
+    if log2_cols != 0 || log2_rows != 0 {
+        update = rav1d_get_bits(gb, log2_cols + log2_rows) as c_int;
+        if update >= cols * rows {
             return Err(EINVAL);
         }
-        hdr.tiling.n_bytes = rav1d_get_bits(gb, 2) + 1;
+        n_bytes = rav1d_get_bits(gb, 2) + 1;
     } else {
-        hdr.tiling.update = 0;
-        hdr.tiling.n_bytes = hdr.tiling.update as c_uint;
+        update = 0;
+        n_bytes = update as c_uint;
     }
     debug.post(gb, "tiling");
-    Ok(())
+    Ok(Rav1dFrameHeader_tiling {
+        uniform,
+        n_bytes,
+        min_log2_cols,
+        max_log2_cols,
+        log2_cols,
+        cols,
+        // TODO(kkysen) Never written or read in C; is this correct?
+        min_log2_rows: 0,
+        max_log2_rows,
+        log2_rows,
+        rows,
+        col_start_sb,
+        row_start_sb,
+        update,
+    })
 }
 
 unsafe fn parse_quant(
@@ -1751,7 +1770,7 @@ unsafe fn parse_frame_hdr(
         && rav1d_get_bit(gb) == 0) as c_int;
     debug.post(gb, "refresh_context");
 
-    parse_tiling(seqhdr, &mut hdr, &debug, gb)?;
+    hdr.tiling = parse_tiling(seqhdr, &mut hdr, &debug, gb)?;
     parse_quant(seqhdr, &mut hdr, &debug, gb)?;
     parse_segmentation(c, &mut hdr, &debug, gb)?;
     parse_delta(&mut hdr, &debug, gb)?;
