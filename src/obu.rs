@@ -1290,6 +1290,132 @@ unsafe fn parse_gmv(
     Ok(())
 }
 
+unsafe fn parse_film_grain(
+    c: &Rav1dContext,
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &mut Rav1dFrameHeader,
+    debug: &Debug,
+    gb: &mut GetBits,
+) -> Rav1dResult {
+    hdr.film_grain.present = (seqhdr.film_grain_present != 0
+        && (hdr.show_frame != 0 || hdr.showable_frame != 0)
+        && rav1d_get_bit(gb) != 0) as c_int;
+    if hdr.film_grain.present != 0 {
+        let seed = rav1d_get_bits(gb, 16);
+        hdr.film_grain.update =
+            (hdr.frame_type != Rav1dFrameType::Inter || rav1d_get_bit(gb) != 0) as c_int;
+        if hdr.film_grain.update == 0 {
+            let refidx = rav1d_get_bits(gb, 3) as c_int;
+            let mut found = false;
+            for i in 0..7 {
+                if hdr.refidx[i as usize] == refidx {
+                    found = true;
+                    break;
+                }
+            }
+            if !found || c.refs[refidx as usize].p.p.frame_hdr.is_null() {
+                return Err(EINVAL);
+            }
+            hdr.film_grain.data = (*c.refs[refidx as usize].p.p.frame_hdr)
+                .film_grain
+                .data
+                .clone();
+            hdr.film_grain.data.seed = seed;
+        } else {
+            let fgd = &mut hdr.film_grain.data;
+            fgd.seed = seed;
+
+            fgd.num_y_points = rav1d_get_bits(gb, 4) as c_int;
+            if fgd.num_y_points > 14 {
+                return Err(EINVAL);
+            }
+            for i in 0..fgd.num_y_points {
+                fgd.y_points[i as usize][0] = rav1d_get_bits(gb, 8) as u8;
+                if i != 0
+                    && fgd.y_points[(i - 1) as usize][0] as c_int
+                        >= fgd.y_points[i as usize][0] as c_int
+                {
+                    return Err(EINVAL);
+                }
+                fgd.y_points[i as usize][1] = rav1d_get_bits(gb, 8) as u8;
+            }
+
+            fgd.chroma_scaling_from_luma = seqhdr.monochrome == 0 && rav1d_get_bit(gb) != 0;
+            if seqhdr.monochrome != 0
+                || fgd.chroma_scaling_from_luma
+                || seqhdr.ss_ver == 1 && seqhdr.ss_hor == 1 && fgd.num_y_points == 0
+            {
+                fgd.num_uv_points[1] = 0;
+                fgd.num_uv_points[0] = fgd.num_uv_points[1];
+            } else {
+                for pl in 0..2 {
+                    fgd.num_uv_points[pl as usize] = rav1d_get_bits(gb, 4) as c_int;
+                    if fgd.num_uv_points[pl as usize] > 10 {
+                        return Err(EINVAL);
+                    }
+                    for i in 0..fgd.num_uv_points[pl as usize] {
+                        fgd.uv_points[pl as usize][i as usize][0] = rav1d_get_bits(gb, 8) as u8;
+                        if i != 0
+                            && fgd.uv_points[pl as usize][(i - 1) as usize][0] as c_int
+                                >= fgd.uv_points[pl as usize][i as usize][0] as c_int
+                        {
+                            return Err(EINVAL);
+                        }
+                        fgd.uv_points[pl as usize][i as usize][1] = rav1d_get_bits(gb, 8) as u8;
+                    }
+                }
+            }
+
+            if seqhdr.ss_hor == 1
+                && seqhdr.ss_ver == 1
+                && (fgd.num_uv_points[0] != 0) != (fgd.num_uv_points[1] != 0)
+            {
+                return Err(EINVAL);
+            }
+
+            fgd.scaling_shift = rav1d_get_bits(gb, 2) as u8 + 8;
+            fgd.ar_coeff_lag = rav1d_get_bits(gb, 2) as c_int;
+            let num_y_pos = 2 * fgd.ar_coeff_lag * (fgd.ar_coeff_lag + 1);
+            if fgd.num_y_points != 0 {
+                for i in 0..num_y_pos {
+                    fgd.ar_coeffs_y[i as usize] = rav1d_get_bits(gb, 8).wrapping_sub(128) as i8;
+                }
+            }
+            for pl in 0..2 {
+                if fgd.num_uv_points[pl as usize] != 0 || fgd.chroma_scaling_from_luma {
+                    let num_uv_pos = num_y_pos + (fgd.num_y_points != 0) as c_int;
+                    for i in 0..num_uv_pos {
+                        fgd.ar_coeffs_uv[pl as usize][i as usize] =
+                            rav1d_get_bits(gb, 8).wrapping_sub(128) as i8;
+                    }
+                    if fgd.num_y_points == 0 {
+                        fgd.ar_coeffs_uv[pl as usize][num_uv_pos as usize] = 0;
+                    }
+                }
+            }
+            fgd.ar_coeff_shift = rav1d_get_bits(gb, 2) as u8 + 6;
+            fgd.grain_scale_shift = rav1d_get_bits(gb, 2) as u8;
+            for pl in 0..2 {
+                if fgd.num_uv_points[pl as usize] != 0 {
+                    fgd.uv_mult[pl as usize] = rav1d_get_bits(gb, 8) as c_int - 128;
+                    fgd.uv_luma_mult[pl as usize] = rav1d_get_bits(gb, 8) as c_int - 128;
+                    fgd.uv_offset[pl as usize] = rav1d_get_bits(gb, 9) as c_int - 256;
+                }
+            }
+            fgd.overlap_flag = rav1d_get_bit(gb) != 0;
+            fgd.clip_to_restricted_range = rav1d_get_bit(gb) != 0;
+        }
+    } else {
+        memset(
+            &mut hdr.film_grain.data as *mut Rav1dFilmGrainData as *mut c_void,
+            0,
+            ::core::mem::size_of::<Rav1dFilmGrainData>(),
+        );
+    }
+    debug.post(gb, "filmgrain");
+    Ok(())
+}
+
 unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
@@ -1639,123 +1765,7 @@ unsafe fn parse_frame_hdr(
     debug.post(gb, "reducedtxtpset");
 
     parse_gmv(c, &mut hdr, &debug, gb)?;
-
-    hdr.film_grain.present = (seqhdr.film_grain_present != 0
-        && (hdr.show_frame != 0 || hdr.showable_frame != 0)
-        && rav1d_get_bit(gb) != 0) as c_int;
-    if hdr.film_grain.present != 0 {
-        let seed = rav1d_get_bits(gb, 16);
-        hdr.film_grain.update =
-            (hdr.frame_type != Rav1dFrameType::Inter || rav1d_get_bit(gb) != 0) as c_int;
-        if hdr.film_grain.update == 0 {
-            let refidx = rav1d_get_bits(gb, 3) as c_int;
-            let mut found = false;
-            for i in 0..7 {
-                if hdr.refidx[i as usize] == refidx {
-                    found = true;
-                    break;
-                }
-            }
-            if !found || c.refs[refidx as usize].p.p.frame_hdr.is_null() {
-                return Err(EINVAL);
-            }
-            hdr.film_grain.data = (*c.refs[refidx as usize].p.p.frame_hdr)
-                .film_grain
-                .data
-                .clone();
-            hdr.film_grain.data.seed = seed;
-        } else {
-            let fgd = &mut hdr.film_grain.data;
-            fgd.seed = seed;
-
-            fgd.num_y_points = rav1d_get_bits(gb, 4) as c_int;
-            if fgd.num_y_points > 14 {
-                return Err(EINVAL);
-            }
-            for i in 0..fgd.num_y_points {
-                fgd.y_points[i as usize][0] = rav1d_get_bits(gb, 8) as u8;
-                if i != 0
-                    && fgd.y_points[(i - 1) as usize][0] as c_int
-                        >= fgd.y_points[i as usize][0] as c_int
-                {
-                    return Err(EINVAL);
-                }
-                fgd.y_points[i as usize][1] = rav1d_get_bits(gb, 8) as u8;
-            }
-
-            fgd.chroma_scaling_from_luma = seqhdr.monochrome == 0 && rav1d_get_bit(gb) != 0;
-            if seqhdr.monochrome != 0
-                || fgd.chroma_scaling_from_luma
-                || seqhdr.ss_ver == 1 && seqhdr.ss_hor == 1 && fgd.num_y_points == 0
-            {
-                fgd.num_uv_points[1] = 0;
-                fgd.num_uv_points[0] = fgd.num_uv_points[1];
-            } else {
-                for pl in 0..2 {
-                    fgd.num_uv_points[pl as usize] = rav1d_get_bits(gb, 4) as c_int;
-                    if fgd.num_uv_points[pl as usize] > 10 {
-                        return Err(EINVAL);
-                    }
-                    for i in 0..fgd.num_uv_points[pl as usize] {
-                        fgd.uv_points[pl as usize][i as usize][0] = rav1d_get_bits(gb, 8) as u8;
-                        if i != 0
-                            && fgd.uv_points[pl as usize][(i - 1) as usize][0] as c_int
-                                >= fgd.uv_points[pl as usize][i as usize][0] as c_int
-                        {
-                            return Err(EINVAL);
-                        }
-                        fgd.uv_points[pl as usize][i as usize][1] = rav1d_get_bits(gb, 8) as u8;
-                    }
-                }
-            }
-
-            if seqhdr.ss_hor == 1
-                && seqhdr.ss_ver == 1
-                && (fgd.num_uv_points[0] != 0) != (fgd.num_uv_points[1] != 0)
-            {
-                return Err(EINVAL);
-            }
-
-            fgd.scaling_shift = rav1d_get_bits(gb, 2) as u8 + 8;
-            fgd.ar_coeff_lag = rav1d_get_bits(gb, 2) as c_int;
-            let num_y_pos = 2 * fgd.ar_coeff_lag * (fgd.ar_coeff_lag + 1);
-            if fgd.num_y_points != 0 {
-                for i in 0..num_y_pos {
-                    fgd.ar_coeffs_y[i as usize] = rav1d_get_bits(gb, 8).wrapping_sub(128) as i8;
-                }
-            }
-            for pl in 0..2 {
-                if fgd.num_uv_points[pl as usize] != 0 || fgd.chroma_scaling_from_luma {
-                    let num_uv_pos = num_y_pos + (fgd.num_y_points != 0) as c_int;
-                    for i in 0..num_uv_pos {
-                        fgd.ar_coeffs_uv[pl as usize][i as usize] =
-                            rav1d_get_bits(gb, 8).wrapping_sub(128) as i8;
-                    }
-                    if fgd.num_y_points == 0 {
-                        fgd.ar_coeffs_uv[pl as usize][num_uv_pos as usize] = 0;
-                    }
-                }
-            }
-            fgd.ar_coeff_shift = rav1d_get_bits(gb, 2) as u8 + 6;
-            fgd.grain_scale_shift = rav1d_get_bits(gb, 2) as u8;
-            for pl in 0..2 {
-                if fgd.num_uv_points[pl as usize] != 0 {
-                    fgd.uv_mult[pl as usize] = rav1d_get_bits(gb, 8) as c_int - 128;
-                    fgd.uv_luma_mult[pl as usize] = rav1d_get_bits(gb, 8) as c_int - 128;
-                    fgd.uv_offset[pl as usize] = rav1d_get_bits(gb, 9) as c_int - 256;
-                }
-            }
-            fgd.overlap_flag = rav1d_get_bit(gb) != 0;
-            fgd.clip_to_restricted_range = rav1d_get_bit(gb) != 0;
-        }
-    } else {
-        memset(
-            &mut hdr.film_grain.data as *mut Rav1dFilmGrainData as *mut c_void,
-            0,
-            ::core::mem::size_of::<Rav1dFilmGrainData>(),
-        );
-    }
-    debug.post(gb, "filmgrain");
+    parse_film_grain(c, seqhdr, &mut hdr, &debug, gb)?;
 
     Ok(hdr)
 }
