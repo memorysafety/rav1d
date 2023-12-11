@@ -855,6 +855,8 @@ unsafe fn parse_quant(
     Ok(())
 }
 
+/// Also initializes [`Rav1dFrameHeader::all_lossless`].
+// TODO(kkysen) Move `all_lossless` into `segmentation`.
 unsafe fn parse_segmentation(
     c: &Rav1dContext,
     hdr: &mut Rav1dFrameHeader,
@@ -954,6 +956,25 @@ unsafe fn parse_segmentation(
         }
     }
     debug.post(gb, "segmentation");
+
+    // derive lossless flags
+    let delta_lossless = (hdr.quant.ydc_delta == 0
+        && hdr.quant.udc_delta == 0
+        && hdr.quant.uac_delta == 0
+        && hdr.quant.vdc_delta == 0
+        && hdr.quant.vac_delta == 0) as c_int;
+    hdr.all_lossless = 1;
+    for i in 0..RAV1D_MAX_SEGMENTS {
+        hdr.segmentation.qidx[i as usize] = if hdr.segmentation.enabled != 0 {
+            iclip_u8(hdr.quant.yac + hdr.segmentation.seg_data.d[i as usize].delta_q)
+        } else {
+            hdr.quant.yac
+        };
+        hdr.segmentation.lossless[i as usize] =
+            (hdr.segmentation.qidx[i as usize] == 0 && delta_lossless != 0) as c_int;
+        hdr.all_lossless &= hdr.segmentation.lossless[i as usize];
+    }
+
     Ok(())
 }
 
@@ -1715,25 +1736,6 @@ unsafe fn parse_frame_hdr(
     parse_quant(seqhdr, &mut hdr, &debug, gb)?;
     parse_segmentation(c, &mut hdr, &debug, gb)?;
     parse_delta(&mut hdr, &debug, gb)?;
-
-    // derive lossless flags
-    let delta_lossless = (hdr.quant.ydc_delta == 0
-        && hdr.quant.udc_delta == 0
-        && hdr.quant.uac_delta == 0
-        && hdr.quant.vdc_delta == 0
-        && hdr.quant.vac_delta == 0) as c_int;
-    hdr.all_lossless = 1;
-    for i in 0..RAV1D_MAX_SEGMENTS {
-        hdr.segmentation.qidx[i as usize] = if hdr.segmentation.enabled != 0 {
-            iclip_u8(hdr.quant.yac + hdr.segmentation.seg_data.d[i as usize].delta_q)
-        } else {
-            hdr.quant.yac
-        };
-        hdr.segmentation.lossless[i as usize] =
-            (hdr.segmentation.qidx[i as usize] == 0 && delta_lossless != 0) as c_int;
-        hdr.all_lossless &= hdr.segmentation.lossless[i as usize];
-    }
-
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
     parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
     parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
