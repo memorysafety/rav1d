@@ -824,15 +824,15 @@ unsafe fn parse_refidx(
 
 unsafe fn parse_tiling(
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &Rav1dFrameHeader,
+    size: &Rav1dFrameSize,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_tiling> {
     let uniform = rav1d_get_bit(gb) as c_int;
     let sbsz_min1 = ((64) << seqhdr.sb128) - 1;
     let sbsz_log2 = 6 + seqhdr.sb128;
-    let sbw = hdr.size.width[0] + sbsz_min1 >> sbsz_log2;
-    let sbh = hdr.size.height + sbsz_min1 >> sbsz_log2;
+    let sbw = size.width[0] + sbsz_min1 >> sbsz_log2;
+    let sbh = size.height + sbsz_min1 >> sbsz_log2;
     let max_tile_width_sb = 4096 >> sbsz_log2;
     let max_tile_area_sb = 4096 * 2304 >> 2 * sbsz_log2;
     let min_log2_cols = tile_log2(max_tile_width_sb, sbw);
@@ -1767,7 +1767,7 @@ unsafe fn parse_frame_hdr(
         && rav1d_get_bit(gb) == 0) as c_int;
     debug.post(gb, "refresh_context");
 
-    hdr.tiling = parse_tiling(seqhdr, &mut hdr, &debug, gb)?;
+    hdr.tiling = parse_tiling(seqhdr, &hdr.size, &debug, gb)?;
     parse_quant(seqhdr, &mut hdr, &debug, gb)?;
     parse_segmentation(c, &mut hdr, &debug, gb)?;
     parse_delta(&mut hdr, &debug, gb)?;
