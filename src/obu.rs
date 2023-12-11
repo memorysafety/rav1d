@@ -813,7 +813,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
     if seqhdr.decoder_model_info_present != 0 {
         hdr.buffer_removal_time_present = rav1d_get_bit(gb) as c_int;
         if hdr.buffer_removal_time_present != 0 {
-            for i in 0..(*c.seq_hdr).num_operating_points {
+            for i in 0..seqhdr.num_operating_points {
                 let seqop = &seqhdr.operating_points[i as usize];
                 let op = &mut hdr.operating_points[i as usize];
                 if seqop.decoder_model_param_present != 0 {
@@ -848,7 +848,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         {
             return Err(EINVAL);
         }
-        (*c.frame_hdr).size = parse_frame_size(c, seqhdr, hdr, gb, false)?;
+        hdr.size = parse_frame_size(c, seqhdr, hdr, gb, false)?;
         hdr.allow_intrabc = (hdr.allow_screen_content_tools != 0
             && hdr.size.super_res.enabled == 0
             && rav1d_get_bit(gb) != 0) as c_int;
@@ -990,7 +990,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             }
         }
         let use_ref = hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0;
-        (*c.frame_hdr).size = parse_frame_size(c, seqhdr, hdr, gb, use_ref)?;
+        hdr.size = parse_frame_size(c, seqhdr, hdr, gb, use_ref)?;
         hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
         hdr.subpel_filter_mode = if rav1d_get_bit(gb) != 0 {
             RAV1D_FILTER_SWITCHABLE
