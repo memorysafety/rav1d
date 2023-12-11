@@ -707,12 +707,15 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
-unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult {
+unsafe fn parse_frame_hdr(
+    c: &Rav1dContext,
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &mut Rav1dFrameHeader,
+    gb: &mut GetBits,
+) -> Rav1dResult {
     const DEBUG_FRAME_HDR: bool = false;
     let init_ptr = gb.ptr;
 
-    let seqhdr = &*c.seq_hdr;
-    let hdr = &mut *c.frame_hdr;
     if DEBUG_FRAME_HDR {
         println!(
             "HDR: post-show_existing_frame: off={}",
@@ -2064,7 +2067,7 @@ unsafe fn parse_obus(
             c.frame_hdr = &mut (*frame_hdrs).rav1d;
             (*c.frame_hdr).temporal_id = temporal_id;
             (*c.frame_hdr).spatial_id = spatial_id;
-            let res = parse_frame_hdr(c, &mut gb);
+            let res = parse_frame_hdr(c, &*c.seq_hdr, &mut (*frame_hdrs).rav1d, &mut gb);
             if res.is_err() {
                 writeln!(c.logger, "Error parsing frame header");
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
