@@ -957,6 +957,33 @@ unsafe fn parse_segmentation(
     Ok(())
 }
 
+unsafe fn parse_delta(hdr: &mut Rav1dFrameHeader, debug: &Debug, gb: &mut GetBits) -> Rav1dResult {
+    hdr.delta.q.present = if hdr.quant.yac != 0 {
+        rav1d_get_bit(gb) as c_int
+    } else {
+        0
+    };
+    hdr.delta.q.res_log2 = if hdr.delta.q.present != 0 {
+        rav1d_get_bits(gb, 2) as c_int
+    } else {
+        0
+    };
+    hdr.delta.lf.present =
+        (hdr.delta.q.present != 0 && hdr.allow_intrabc == 0 && rav1d_get_bit(gb) != 0) as c_int;
+    hdr.delta.lf.res_log2 = if hdr.delta.lf.present != 0 {
+        rav1d_get_bits(gb, 2) as c_int
+    } else {
+        0
+    };
+    hdr.delta.lf.multi = if hdr.delta.lf.present != 0 {
+        rav1d_get_bit(gb) as c_int
+    } else {
+        0
+    };
+    debug.post(gb, "delta_q_lf_flags");
+    Ok(())
+}
+
 unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
@@ -1258,31 +1285,7 @@ unsafe fn parse_frame_hdr(
     parse_tiling(seqhdr, &mut hdr, &debug, gb)?;
     parse_quant(seqhdr, &mut hdr, &debug, gb)?;
     parse_segmentation(c, &mut hdr, &debug, gb)?;
-
-    // delta q
-    hdr.delta.q.present = if hdr.quant.yac != 0 {
-        rav1d_get_bit(gb) as c_int
-    } else {
-        0
-    };
-    hdr.delta.q.res_log2 = if hdr.delta.q.present != 0 {
-        rav1d_get_bits(gb, 2) as c_int
-    } else {
-        0
-    };
-    hdr.delta.lf.present =
-        (hdr.delta.q.present != 0 && hdr.allow_intrabc == 0 && rav1d_get_bit(gb) != 0) as c_int;
-    hdr.delta.lf.res_log2 = if hdr.delta.lf.present != 0 {
-        rav1d_get_bits(gb, 2) as c_int
-    } else {
-        0
-    };
-    hdr.delta.lf.multi = if hdr.delta.lf.present != 0 {
-        rav1d_get_bit(gb) as c_int
-    } else {
-        0
-    };
-    debug.post(gb, "delta_q_lf_flags");
+    parse_delta(&mut hdr, &debug, gb)?;
 
     // derive lossless flags
     let delta_lossless = (hdr.quant.ydc_delta == 0
