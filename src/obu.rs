@@ -691,6 +691,138 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
+unsafe fn parse_refidx(
+    c: &Rav1dContext,
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &mut Rav1dFrameHeader,
+    gb: &mut GetBits,
+) -> Rav1dResult {
+    if hdr.frame_ref_short_signaling != 0 {
+        // FIXME: Nearly verbatim copy from section 7.8
+        hdr.refidx[0] = rav1d_get_bits(gb, 3) as c_int;
+        hdr.refidx[2] = -1;
+        hdr.refidx[1] = hdr.refidx[2];
+        hdr.refidx[3] = rav1d_get_bits(gb, 3) as c_int;
+        hdr.refidx[6] = -1;
+        hdr.refidx[5] = hdr.refidx[6];
+        hdr.refidx[4] = hdr.refidx[5];
+
+        let mut shifted_frame_offset = [0; 8];
+        let current_frame_offset = 1 << seqhdr.order_hint_n_bits - 1;
+        for i in 0..8 {
+            if c.refs[i as usize].p.p.frame_hdr.is_null() {
+                return Err(EINVAL);
+            }
+            shifted_frame_offset[i as usize] = current_frame_offset
+                + get_poc_diff(
+                    seqhdr.order_hint_n_bits,
+                    (*c.refs[i as usize].p.p.frame_hdr).frame_offset,
+                    hdr.frame_offset,
+                );
+        }
+
+        let mut used_frame = [0, 0, 0, 0, 0, 0, 0, 0];
+        used_frame[hdr.refidx[0] as usize] = 1;
+        used_frame[hdr.refidx[3] as usize] = 1;
+
+        let mut latest_frame_offset = -1;
+        for i in 0..8 {
+            let hint = shifted_frame_offset[i as usize];
+            if used_frame[i as usize] == 0
+                && hint >= current_frame_offset
+                && hint >= latest_frame_offset
+            {
+                hdr.refidx[6] = i;
+                latest_frame_offset = hint;
+            }
+        }
+        if latest_frame_offset != -1 {
+            used_frame[hdr.refidx[6] as usize] = 1;
+        }
+
+        let mut earliest_frame_offset = i32::MAX;
+        for i in 0..8 {
+            let hint = shifted_frame_offset[i as usize];
+            if used_frame[i as usize] == 0
+                && hint >= current_frame_offset
+                && hint < earliest_frame_offset
+            {
+                hdr.refidx[4] = i;
+                earliest_frame_offset = hint;
+            }
+        }
+        if earliest_frame_offset != i32::MAX {
+            used_frame[hdr.refidx[4] as usize] = 1;
+        }
+
+        earliest_frame_offset = i32::MAX;
+        for i in 0..8 {
+            let hint = shifted_frame_offset[i as usize];
+            if used_frame[i as usize] == 0
+                && hint >= current_frame_offset
+                && hint < earliest_frame_offset
+            {
+                hdr.refidx[5] = i;
+                earliest_frame_offset = hint;
+            }
+        }
+        if earliest_frame_offset != i32::MAX {
+            used_frame[hdr.refidx[5] as usize] = 1;
+        }
+
+        for i in 1..7 {
+            if hdr.refidx[i as usize] < 0 {
+                latest_frame_offset = -1;
+                for j in 0..8 {
+                    let hint = shifted_frame_offset[j as usize];
+                    if used_frame[j as usize] == 0
+                        && hint < current_frame_offset
+                        && hint >= latest_frame_offset
+                    {
+                        hdr.refidx[i as usize] = j;
+                        latest_frame_offset = hint;
+                    }
+                }
+                if latest_frame_offset != -1 {
+                    used_frame[hdr.refidx[i as usize] as usize] = 1;
+                }
+            }
+        }
+
+        earliest_frame_offset = i32::MAX;
+        let mut r#ref = -1;
+        for i in 0..8 {
+            let hint = shifted_frame_offset[i as usize];
+            if hint < earliest_frame_offset {
+                r#ref = i;
+                earliest_frame_offset = hint;
+            }
+        }
+        for i in 0..7 {
+            if hdr.refidx[i as usize] < 0 {
+                hdr.refidx[i as usize] = r#ref;
+            }
+        }
+    }
+    for i in 0..7 {
+        if hdr.frame_ref_short_signaling == 0 {
+            hdr.refidx[i as usize] = rav1d_get_bits(gb, 3) as c_int;
+        }
+        if seqhdr.frame_id_numbers_present != 0 {
+            let delta_ref_frame_id_minus_1 =
+                rav1d_get_bits(gb, seqhdr.delta_frame_id_n_bits) as c_int;
+            let ref_frame_id =
+                hdr.frame_id + ((1) << seqhdr.frame_id_n_bits) - delta_ref_frame_id_minus_1 - 1
+                    & ((1) << seqhdr.frame_id_n_bits) - 1;
+            let ref_frame_hdr = c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr;
+            if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != ref_frame_id {
+                return Err(EINVAL);
+            }
+        }
+    }
+    Ok(())
+}
+
 unsafe fn parse_tiling(
     seqhdr: &Rav1dSequenceHeader,
     hdr: &mut Rav1dFrameHeader,
@@ -1587,129 +1719,7 @@ unsafe fn parse_frame_hdr(
             }
         }
         hdr.frame_ref_short_signaling = (seqhdr.order_hint != 0 && rav1d_get_bit(gb) != 0) as c_int;
-        if hdr.frame_ref_short_signaling != 0 {
-            // FIXME: Nearly verbatim copy from section 7.8
-            hdr.refidx[0] = rav1d_get_bits(gb, 3) as c_int;
-            hdr.refidx[2] = -1;
-            hdr.refidx[1] = hdr.refidx[2];
-            hdr.refidx[3] = rav1d_get_bits(gb, 3) as c_int;
-            hdr.refidx[6] = -1;
-            hdr.refidx[5] = hdr.refidx[6];
-            hdr.refidx[4] = hdr.refidx[5];
-
-            let mut shifted_frame_offset = [0; 8];
-            let current_frame_offset = 1 << seqhdr.order_hint_n_bits - 1;
-            for i in 0..8 {
-                if c.refs[i as usize].p.p.frame_hdr.is_null() {
-                    return Err(EINVAL);
-                }
-                shifted_frame_offset[i as usize] = current_frame_offset
-                    + get_poc_diff(
-                        seqhdr.order_hint_n_bits,
-                        (*c.refs[i as usize].p.p.frame_hdr).frame_offset,
-                        hdr.frame_offset,
-                    );
-            }
-
-            let mut used_frame = [0, 0, 0, 0, 0, 0, 0, 0];
-            used_frame[hdr.refidx[0] as usize] = 1;
-            used_frame[hdr.refidx[3] as usize] = 1;
-
-            let mut latest_frame_offset = -1;
-            for i in 0..8 {
-                let hint = shifted_frame_offset[i as usize];
-                if used_frame[i as usize] == 0
-                    && hint >= current_frame_offset
-                    && hint >= latest_frame_offset
-                {
-                    hdr.refidx[6] = i;
-                    latest_frame_offset = hint;
-                }
-            }
-            if latest_frame_offset != -1 {
-                used_frame[hdr.refidx[6] as usize] = 1;
-            }
-
-            let mut earliest_frame_offset = i32::MAX;
-            for i in 0..8 {
-                let hint = shifted_frame_offset[i as usize];
-                if used_frame[i as usize] == 0
-                    && hint >= current_frame_offset
-                    && hint < earliest_frame_offset
-                {
-                    hdr.refidx[4] = i;
-                    earliest_frame_offset = hint;
-                }
-            }
-            if earliest_frame_offset != i32::MAX {
-                used_frame[hdr.refidx[4] as usize] = 1;
-            }
-
-            earliest_frame_offset = i32::MAX;
-            for i in 0..8 {
-                let hint = shifted_frame_offset[i as usize];
-                if used_frame[i as usize] == 0
-                    && hint >= current_frame_offset
-                    && hint < earliest_frame_offset
-                {
-                    hdr.refidx[5] = i;
-                    earliest_frame_offset = hint;
-                }
-            }
-            if earliest_frame_offset != i32::MAX {
-                used_frame[hdr.refidx[5] as usize] = 1;
-            }
-
-            for i in 1..7 {
-                if hdr.refidx[i as usize] < 0 {
-                    latest_frame_offset = -1;
-                    for j in 0..8 {
-                        let hint = shifted_frame_offset[j as usize];
-                        if used_frame[j as usize] == 0
-                            && hint < current_frame_offset
-                            && hint >= latest_frame_offset
-                        {
-                            hdr.refidx[i as usize] = j;
-                            latest_frame_offset = hint;
-                        }
-                    }
-                    if latest_frame_offset != -1 {
-                        used_frame[hdr.refidx[i as usize] as usize] = 1;
-                    }
-                }
-            }
-
-            earliest_frame_offset = i32::MAX;
-            let mut r#ref = -1;
-            for i in 0..8 {
-                let hint = shifted_frame_offset[i as usize];
-                if hint < earliest_frame_offset {
-                    r#ref = i;
-                    earliest_frame_offset = hint;
-                }
-            }
-            for i in 0..7 {
-                if hdr.refidx[i as usize] < 0 {
-                    hdr.refidx[i as usize] = r#ref;
-                }
-            }
-        }
-        for i in 0..7 {
-            if hdr.frame_ref_short_signaling == 0 {
-                hdr.refidx[i as usize] = rav1d_get_bits(gb, 3) as c_int;
-            }
-            if seqhdr.frame_id_numbers_present != 0 {
-                let delta_ref_frame_id_minus_1 =
-                    rav1d_get_bits(gb, seqhdr.delta_frame_id_n_bits) as c_int;
-                let ref_frame_id =
-                    hdr.frame_id + ((1) << seqhdr.frame_id_n_bits) - delta_ref_frame_id_minus_1 - 1
-                        & ((1) << seqhdr.frame_id_n_bits) - 1;
-                let ref_frame_hdr = c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr;
-                if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != ref_frame_id {
-                    return Err(EINVAL);
-                }
-            }
-        }
+        parse_refidx(c, seqhdr, &mut hdr, gb)?;
         let use_ref = hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0;
         hdr.size = parse_frame_size(c, seqhdr, &hdr, gb, use_ref)?;
         hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
