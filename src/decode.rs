@@ -1,8 +1,6 @@
 use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::frame::is_inter_or_switch;
-use crate::include::common::frame::is_key_or_intra;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
@@ -1513,7 +1511,7 @@ unsafe fn decode_b(
                     case.set(&mut dir.intra.0, 1);
                 },
             );
-            if is_inter_or_switch(frame_hdr) {
+            if frame_hdr.frame_type.is_inter_or_switch() {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 {
                     let block = &mut *r.offset(x as isize);
@@ -1539,7 +1537,7 @@ unsafe fn decode_b(
                 );
             }
         } else {
-            if is_inter_or_switch(frame_hdr) /* not intrabc */
+            if frame_hdr.frame_type.is_inter_or_switch() /* not intrabc */
                 && b.comp_type() == COMP_INTER_NONE
                 && b.motion_mode() as MotionMode == MM_WARP
             {
@@ -1587,7 +1585,7 @@ unsafe fn decode_b(
                 },
             );
 
-            if is_inter_or_switch(frame_hdr) {
+            if frame_hdr.frame_type.is_inter_or_switch() {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 let r = std::slice::from_raw_parts_mut(r, bw4 as usize);
                 for r in r {
@@ -1902,7 +1900,7 @@ unsafe fn decode_b(
 
     if b.skip_mode != 0 {
         b.intra = 0;
-    } else if is_inter_or_switch(frame_hdr) {
+    } else if frame_hdr.frame_type.is_inter_or_switch() {
         if let Some(seg) = seg.filter(|seg| seg.r#ref >= 0 || seg.globalmv != 0) {
             b.intra = (seg.r#ref == 0) as u8;
         } else {
@@ -1925,7 +1923,7 @@ unsafe fn decode_b(
 
     // intra/inter-specific stuff
     if b.intra != 0 {
-        let ymode_cdf = if frame_hdr.frame_type & 1 != 0 {
+        let ymode_cdf = if frame_hdr.frame_type.is_inter_or_switch() {
             &mut ts.cdf.m.y_mode[dav1d_ymode_size_context[bs as usize] as usize]
         } else {
             &mut ts.cdf.kfym
@@ -2220,7 +2218,7 @@ unsafe fn decode_b(
                     &mut t.pal_sz_uv[dir_index],
                     if has_chroma { b.pal_sz()[1] } else { 0 },
                 );
-                if is_inter_or_switch(frame_hdr) {
+                if frame_hdr.frame_type.is_inter_or_switch() {
                     case.set(&mut dir.comp_type.0, COMP_INTER_NONE);
                     case.set(&mut dir.r#ref[0], -1);
                     case.set(&mut dir.r#ref[1], -1);
@@ -2272,10 +2270,10 @@ unsafe fn decode_b(
                 }
             }
         }
-        if is_inter_or_switch(frame_hdr) || frame_hdr.allow_intrabc != 0 {
+        if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
             splat_intraref(&*f.c, t, bs, bw4 as usize, bh4 as usize);
         }
-    } else if is_key_or_intra(frame_hdr) {
+    } else if frame_hdr.frame_type.is_key_or_intra() {
         // intra block copy
         let mut mvstack = [Default::default(); 8];
         let mut n_mvs = 0;
@@ -3262,7 +3260,7 @@ unsafe fn decode_b(
         }
     }
 
-    if t.frame_thread.pass == 1 && b.intra == 0 && frame_hdr.frame_type & 1 != 0 {
+    if t.frame_thread.pass == 1 && b.intra == 0 && frame_hdr.frame_type.is_inter_or_switch() {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
         // keep track of motion vectors for each reference
@@ -4045,7 +4043,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
     let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as c_int;
     let col_sb128_start = col_sb_start >> ((*f.seq_hdr).sb128 == 0) as c_int;
 
-    if is_inter_or_switch(&*f.frame_hdr) || (*f.frame_hdr).allow_intrabc != 0 {
+    if (*f.frame_hdr).frame_type.is_inter_or_switch() || (*f.frame_hdr).allow_intrabc != 0 {
         rav1d_refmvs_tile_sbrow_init(
             &mut t.rt,
             &f.rf,
@@ -4059,14 +4057,14 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
         );
     }
 
-    if is_inter_or_switch(&*f.frame_hdr) && c.n_fc > 1 {
+    if (*f.frame_hdr).frame_type.is_inter_or_switch() && c.n_fc > 1 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         *ts.lowest_pixel.offset(sby as isize) = [[i32::MIN; 2]; 7];
     }
 
     reset_context(
         &mut t.l,
-        is_key_or_intra(&*f.frame_hdr),
+        (*f.frame_hdr).frame_type.is_key_or_intra(),
         t.frame_thread.pass,
     );
     if t.frame_thread.pass == 2 {
@@ -4199,7 +4197,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
         }
     }
 
-    if (*f.seq_hdr).ref_frame_mvs != 0 && (*f.c).n_tc > 1 && (*f.frame_hdr).frame_type & 1 != 0 {
+    if (*f.seq_hdr).ref_frame_mvs != 0
+        && (*f.c).n_tc > 1
+        && (*f.frame_hdr).frame_type.is_inter_or_switch()
+    {
         rav1d_refmvs_save_tmvs(
             &(*f.c).refmvs_dsp,
             &mut t.rt,
@@ -4602,7 +4603,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     }
 
     // init ref mvs
-    if is_inter_or_switch(&*f.frame_hdr) || (*f.frame_hdr).allow_intrabc != 0 {
+    if (*f.frame_hdr).frame_type.is_inter_or_switch() || (*f.frame_hdr).allow_intrabc != 0 {
         let ret = rav1d_refmvs_init_frame(
             &mut f.rf,
             f.seq_hdr,
@@ -4768,7 +4769,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
         {
             reset_context(
                 ctx,
-                is_key_or_intra(&*f.frame_hdr),
+                (*f.frame_hdr).frame_type.is_key_or_intra(),
                 if uses_2pass {
                     1 + (n >= sb128w * rows) as c_int
                 } else {
@@ -4794,7 +4795,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
         f.a,
         (f.sb128w * (*f.frame_hdr).tiling.rows).try_into().unwrap(),
     ) {
-        reset_context(ctx, is_key_or_intra(&*f.frame_hdr), 0);
+        reset_context(ctx, (*f.frame_hdr).frame_type.is_key_or_intra(), 0);
     }
 
     // no threading - we explicitly interleave tile/sbrow decoding
@@ -4829,7 +4830,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
                 t.ts = tile;
                 rav1d_decode_tile_sbrow(t).map_err(|()| EINVAL)?;
             }
-            if is_inter_or_switch(&*f.frame_hdr) {
+            if (*f.frame_hdr).frame_type.is_inter_or_switch() {
                 rav1d_refmvs_save_tmvs(
                     &(*f.c).refmvs_dsp,
                     &mut t.rt,
@@ -5097,7 +5098,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     let mut ref_coded_width = <[i32; 7]>::default();
-    if is_inter_or_switch(&*f.frame_hdr) {
+    if (*f.frame_hdr).frame_type.is_inter_or_switch() {
         if (*f.frame_hdr).primary_ref_frame != RAV1D_PRIMARY_REF_NONE {
             let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
             if c.refs[pri_ref].p.p.data[0].is_null() {
@@ -5218,7 +5219,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     );
 
     // ref_mvs
-    if is_inter_or_switch(&*f.frame_hdr) || (*f.frame_hdr).allow_intrabc != 0 {
+    if (*f.frame_hdr).frame_type.is_inter_or_switch() || (*f.frame_hdr).allow_intrabc != 0 {
         f.mvs_ref = rav1d_ref_create_using_pool(
             c.refmvs_pool,
             ::core::mem::size_of::<refmvs_temporal_block>()
