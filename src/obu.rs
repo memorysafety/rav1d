@@ -1070,6 +1070,56 @@ unsafe fn parse_cdef(
     Ok(())
 }
 
+unsafe fn parse_restoration(
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &mut Rav1dFrameHeader,
+    debug: &Debug,
+    gb: &mut GetBits,
+) -> Rav1dResult {
+    if (hdr.all_lossless == 0 || hdr.size.super_res.enabled != 0)
+        && seqhdr.restoration != 0
+        && hdr.allow_intrabc == 0
+    {
+        hdr.restoration.r#type[0] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
+        if seqhdr.monochrome == 0 {
+            hdr.restoration.r#type[1] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
+            hdr.restoration.r#type[2] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
+        } else {
+            hdr.restoration.r#type[2] = RAV1D_RESTORATION_NONE;
+            hdr.restoration.r#type[1] = hdr.restoration.r#type[2];
+        }
+
+        if hdr.restoration.r#type[0] != 0
+            || hdr.restoration.r#type[1] != 0
+            || hdr.restoration.r#type[2] != 0
+        {
+            // Log2 of the restoration unit size.
+            hdr.restoration.unit_size[0] = 6 + seqhdr.sb128;
+            if rav1d_get_bit(gb) != 0 {
+                hdr.restoration.unit_size[0] += 1;
+                if seqhdr.sb128 == 0 {
+                    hdr.restoration.unit_size[0] += rav1d_get_bit(gb) as c_int;
+                }
+            }
+            hdr.restoration.unit_size[1] = hdr.restoration.unit_size[0];
+            if (hdr.restoration.r#type[1] != 0 || hdr.restoration.r#type[2] != 0)
+                && seqhdr.ss_hor == 1
+                && seqhdr.ss_ver == 1
+            {
+                hdr.restoration.unit_size[1] -= rav1d_get_bit(gb) as c_int;
+            }
+        } else {
+            hdr.restoration.unit_size[0] = 8;
+        }
+    } else {
+        hdr.restoration.r#type[0] = RAV1D_RESTORATION_NONE;
+        hdr.restoration.r#type[1] = RAV1D_RESTORATION_NONE;
+        hdr.restoration.r#type[2] = RAV1D_RESTORATION_NONE;
+    }
+    debug.post(gb, "restoration");
+    Ok(())
+}
+
 unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
@@ -1393,49 +1443,7 @@ unsafe fn parse_frame_hdr(
 
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
     parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
-
-    // restoration
-    if (hdr.all_lossless == 0 || hdr.size.super_res.enabled != 0)
-        && seqhdr.restoration != 0
-        && hdr.allow_intrabc == 0
-    {
-        hdr.restoration.r#type[0] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
-        if seqhdr.monochrome == 0 {
-            hdr.restoration.r#type[1] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
-            hdr.restoration.r#type[2] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
-        } else {
-            hdr.restoration.r#type[2] = RAV1D_RESTORATION_NONE;
-            hdr.restoration.r#type[1] = hdr.restoration.r#type[2];
-        }
-
-        if hdr.restoration.r#type[0] != 0
-            || hdr.restoration.r#type[1] != 0
-            || hdr.restoration.r#type[2] != 0
-        {
-            // Log2 of the restoration unit size.
-            hdr.restoration.unit_size[0] = 6 + seqhdr.sb128;
-            if rav1d_get_bit(gb) != 0 {
-                hdr.restoration.unit_size[0] += 1;
-                if seqhdr.sb128 == 0 {
-                    hdr.restoration.unit_size[0] += rav1d_get_bit(gb) as c_int;
-                }
-            }
-            hdr.restoration.unit_size[1] = hdr.restoration.unit_size[0];
-            if (hdr.restoration.r#type[1] != 0 || hdr.restoration.r#type[2] != 0)
-                && seqhdr.ss_hor == 1
-                && seqhdr.ss_ver == 1
-            {
-                hdr.restoration.unit_size[1] -= rav1d_get_bit(gb) as c_int;
-            }
-        } else {
-            hdr.restoration.unit_size[0] = 8;
-        }
-    } else {
-        hdr.restoration.r#type[0] = RAV1D_RESTORATION_NONE;
-        hdr.restoration.r#type[1] = RAV1D_RESTORATION_NONE;
-        hdr.restoration.r#type[2] = RAV1D_RESTORATION_NONE;
-    }
-    debug.post(gb, "restoration");
+    parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
 
     hdr.txfm_mode = if hdr.all_lossless != 0 {
         RAV1D_TX_4X4_ONLY
