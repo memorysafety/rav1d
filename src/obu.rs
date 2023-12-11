@@ -695,11 +695,13 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
 unsafe fn parse_refidx(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &Rav1dFrameHeader,
+    frame_ref_short_signaling: c_int,
+    frame_offset: c_int,
+    frame_id: c_int,
     gb: &mut GetBits,
 ) -> Rav1dResult<[c_int; RAV1D_REFS_PER_FRAME]> {
     let mut refidx = [-1; RAV1D_REFS_PER_FRAME];
-    if hdr.frame_ref_short_signaling != 0 {
+    if frame_ref_short_signaling != 0 {
         // FIXME: Nearly verbatim copy from section 7.8
         refidx[0] = rav1d_get_bits(gb, 3) as c_int;
         refidx[3] = rav1d_get_bits(gb, 3) as c_int;
@@ -714,7 +716,7 @@ unsafe fn parse_refidx(
                 + get_poc_diff(
                     seqhdr.order_hint_n_bits,
                     (*c.refs[i as usize].p.p.frame_hdr).frame_offset,
-                    hdr.frame_offset,
+                    frame_offset,
                 );
         }
 
@@ -802,14 +804,14 @@ unsafe fn parse_refidx(
         }
     }
     for i in 0..7 {
-        if hdr.frame_ref_short_signaling == 0 {
+        if frame_ref_short_signaling == 0 {
             refidx[i as usize] = rav1d_get_bits(gb, 3) as c_int;
         }
         if seqhdr.frame_id_numbers_present != 0 {
             let delta_ref_frame_id_minus_1 =
                 rav1d_get_bits(gb, seqhdr.delta_frame_id_n_bits) as c_int;
             let ref_frame_id =
-                hdr.frame_id + ((1) << seqhdr.frame_id_n_bits) - delta_ref_frame_id_minus_1 - 1
+                frame_id + ((1) << seqhdr.frame_id_n_bits) - delta_ref_frame_id_minus_1 - 1
                     & ((1) << seqhdr.frame_id_n_bits) - 1;
             let ref_frame_hdr = c.refs[refidx[i as usize] as usize].p.p.frame_hdr;
             if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != ref_frame_id {
@@ -1716,7 +1718,14 @@ unsafe fn parse_frame_hdr(
             }
         }
         hdr.frame_ref_short_signaling = (seqhdr.order_hint != 0 && rav1d_get_bit(gb) != 0) as c_int;
-        hdr.refidx = parse_refidx(c, seqhdr, &mut hdr, gb)?;
+        hdr.refidx = parse_refidx(
+            c,
+            seqhdr,
+            hdr.frame_ref_short_signaling,
+            hdr.frame_offset,
+            hdr.frame_id,
+            gb,
+        )?;
         let use_ref = hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0;
         hdr.size = parse_frame_size(c, seqhdr, &hdr, gb, use_ref)?;
         hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
