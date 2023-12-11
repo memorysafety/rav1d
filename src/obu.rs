@@ -1034,6 +1034,61 @@ unsafe fn parse_quant(
     }
 }
 
+unsafe fn parse_seg_data(hdr: &mut Rav1dFrameHeader, gb: &mut GetBits) {
+    hdr.segmentation.seg_data.preskip = 0;
+    hdr.segmentation.seg_data.last_active_segid = -1;
+    for i in 0..RAV1D_MAX_SEGMENTS as c_int {
+        let seg = &mut hdr.segmentation.seg_data.d[i as usize];
+        if rav1d_get_bit(gb) != 0 {
+            seg.delta_q = rav1d_get_sbits(gb, 9);
+            hdr.segmentation.seg_data.last_active_segid = i;
+        } else {
+            seg.delta_q = 0;
+        }
+        if rav1d_get_bit(gb) != 0 {
+            seg.delta_lf_y_v = rav1d_get_sbits(gb, 7);
+            hdr.segmentation.seg_data.last_active_segid = i;
+        } else {
+            seg.delta_lf_y_v = 0;
+        }
+        if rav1d_get_bit(gb) != 0 {
+            seg.delta_lf_y_h = rav1d_get_sbits(gb, 7);
+            hdr.segmentation.seg_data.last_active_segid = i;
+        } else {
+            seg.delta_lf_y_h = 0;
+        }
+        if rav1d_get_bit(gb) != 0 {
+            seg.delta_lf_u = rav1d_get_sbits(gb, 7);
+            hdr.segmentation.seg_data.last_active_segid = i;
+        } else {
+            seg.delta_lf_u = 0;
+        }
+        if rav1d_get_bit(gb) != 0 {
+            seg.delta_lf_v = rav1d_get_sbits(gb, 7);
+            hdr.segmentation.seg_data.last_active_segid = i;
+        } else {
+            seg.delta_lf_v = 0;
+        }
+        if rav1d_get_bit(gb) != 0 {
+            seg.r#ref = rav1d_get_bits(gb, 3) as c_int;
+            hdr.segmentation.seg_data.last_active_segid = i;
+            hdr.segmentation.seg_data.preskip = 1;
+        } else {
+            seg.r#ref = -1;
+        }
+        seg.skip = rav1d_get_bit(gb) as c_int;
+        if seg.skip != 0 {
+            hdr.segmentation.seg_data.last_active_segid = i;
+            hdr.segmentation.seg_data.preskip = 1;
+        }
+        seg.globalmv = rav1d_get_bit(gb) as c_int;
+        if seg.globalmv != 0 {
+            hdr.segmentation.seg_data.last_active_segid = i;
+            hdr.segmentation.seg_data.preskip = 1;
+        }
+    }
+}
+
 /// Also initializes [`Rav1dFrameHeader::all_lossless`].
 // TODO(kkysen) Move `all_lossless` into `segmentation`.
 unsafe fn parse_segmentation(
@@ -1059,58 +1114,7 @@ unsafe fn parse_segmentation(
         }
 
         if hdr.segmentation.update_data != 0 {
-            hdr.segmentation.seg_data.preskip = 0;
-            hdr.segmentation.seg_data.last_active_segid = -1;
-            for i in 0..RAV1D_MAX_SEGMENTS as c_int {
-                let seg = &mut hdr.segmentation.seg_data.d[i as usize];
-                if rav1d_get_bit(gb) != 0 {
-                    seg.delta_q = rav1d_get_sbits(gb, 9);
-                    hdr.segmentation.seg_data.last_active_segid = i;
-                } else {
-                    seg.delta_q = 0;
-                }
-                if rav1d_get_bit(gb) != 0 {
-                    seg.delta_lf_y_v = rav1d_get_sbits(gb, 7);
-                    hdr.segmentation.seg_data.last_active_segid = i;
-                } else {
-                    seg.delta_lf_y_v = 0;
-                }
-                if rav1d_get_bit(gb) != 0 {
-                    seg.delta_lf_y_h = rav1d_get_sbits(gb, 7);
-                    hdr.segmentation.seg_data.last_active_segid = i;
-                } else {
-                    seg.delta_lf_y_h = 0;
-                }
-                if rav1d_get_bit(gb) != 0 {
-                    seg.delta_lf_u = rav1d_get_sbits(gb, 7);
-                    hdr.segmentation.seg_data.last_active_segid = i;
-                } else {
-                    seg.delta_lf_u = 0;
-                }
-                if rav1d_get_bit(gb) != 0 {
-                    seg.delta_lf_v = rav1d_get_sbits(gb, 7);
-                    hdr.segmentation.seg_data.last_active_segid = i;
-                } else {
-                    seg.delta_lf_v = 0;
-                }
-                if rav1d_get_bit(gb) != 0 {
-                    seg.r#ref = rav1d_get_bits(gb, 3) as c_int;
-                    hdr.segmentation.seg_data.last_active_segid = i;
-                    hdr.segmentation.seg_data.preskip = 1;
-                } else {
-                    seg.r#ref = -1;
-                }
-                seg.skip = rav1d_get_bit(gb) as c_int;
-                if seg.skip != 0 {
-                    hdr.segmentation.seg_data.last_active_segid = i;
-                    hdr.segmentation.seg_data.preskip = 1;
-                }
-                seg.globalmv = rav1d_get_bit(gb) as c_int;
-                if seg.globalmv != 0 {
-                    hdr.segmentation.seg_data.last_active_segid = i;
-                    hdr.segmentation.seg_data.preskip = 1;
-                }
-            }
+            parse_seg_data(hdr, gb);
         } else {
             // segmentation.update_data was false so we should copy
             // segmentation data from the reference frame.
