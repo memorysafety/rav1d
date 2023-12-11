@@ -711,8 +711,13 @@ unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     hdr: &mut Rav1dFrameHeader,
+    temporal_id: c_int,
+    spatial_id: c_int,
     gb: &mut GetBits,
 ) -> Rav1dResult {
+    hdr.temporal_id = temporal_id;
+    hdr.spatial_id = spatial_id;
+
     const DEBUG_FRAME_HDR: bool = false;
     let init_ptr = gb.ptr;
 
@@ -2065,9 +2070,14 @@ unsafe fn parse_obus(
                 ::core::mem::size_of::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>(),
             );
             c.frame_hdr = &mut (*frame_hdrs).rav1d;
-            (*c.frame_hdr).temporal_id = temporal_id;
-            (*c.frame_hdr).spatial_id = spatial_id;
-            let res = parse_frame_hdr(c, &*c.seq_hdr, &mut (*frame_hdrs).rav1d, &mut gb);
+            let res = parse_frame_hdr(
+                c,
+                &*c.seq_hdr,
+                &mut (*frame_hdrs).rav1d,
+                temporal_id,
+                spatial_id,
+                &mut gb,
+            );
             if res.is_err() {
                 writeln!(c.logger, "Error parsing frame header");
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
