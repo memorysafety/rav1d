@@ -796,6 +796,68 @@ unsafe fn parse_tiling(
     Ok(())
 }
 
+unsafe fn parse_quant(
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &mut Rav1dFrameHeader,
+    debug: &Debug,
+    gb: &mut GetBits,
+) -> Rav1dResult {
+    hdr.quant.yac = rav1d_get_bits(gb, 8) as c_int;
+    hdr.quant.ydc_delta = if rav1d_get_bit(gb) != 0 {
+        rav1d_get_sbits(gb, 7)
+    } else {
+        0
+    };
+    if seqhdr.monochrome == 0 {
+        // If the sequence header says that delta_q might be different
+        // for U, V, we must check whether it actually is for this
+        // frame.
+        let diff_uv_delta = if seqhdr.separate_uv_delta_q != 0 {
+            rav1d_get_bit(gb) as c_int
+        } else {
+            0
+        };
+        hdr.quant.udc_delta = if rav1d_get_bit(gb) != 0 {
+            rav1d_get_sbits(gb, 7)
+        } else {
+            0
+        };
+        hdr.quant.uac_delta = if rav1d_get_bit(gb) != 0 {
+            rav1d_get_sbits(gb, 7)
+        } else {
+            0
+        };
+        if diff_uv_delta != 0 {
+            hdr.quant.vdc_delta = if rav1d_get_bit(gb) != 0 {
+                rav1d_get_sbits(gb, 7)
+            } else {
+                0
+            };
+            hdr.quant.vac_delta = if rav1d_get_bit(gb) != 0 {
+                rav1d_get_sbits(gb, 7)
+            } else {
+                0
+            };
+        } else {
+            hdr.quant.vdc_delta = hdr.quant.udc_delta;
+            hdr.quant.vac_delta = hdr.quant.uac_delta;
+        }
+    }
+    debug.post(gb, "quant");
+    hdr.quant.qm = rav1d_get_bit(gb) as c_int;
+    if hdr.quant.qm != 0 {
+        hdr.quant.qm_y = rav1d_get_bits(gb, 4) as c_int;
+        hdr.quant.qm_u = rav1d_get_bits(gb, 4) as c_int;
+        hdr.quant.qm_v = if seqhdr.separate_uv_delta_q != 0 {
+            rav1d_get_bits(gb, 4) as c_int
+        } else {
+            hdr.quant.qm_u
+        };
+    }
+    debug.post(gb, "qm");
+    Ok(())
+}
+
 unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
@@ -1095,61 +1157,7 @@ unsafe fn parse_frame_hdr(
     debug.post(gb, "refresh_context");
 
     parse_tiling(seqhdr, &mut hdr, &debug, gb)?;
-
-    // quant data
-    hdr.quant.yac = rav1d_get_bits(gb, 8) as c_int;
-    hdr.quant.ydc_delta = if rav1d_get_bit(gb) != 0 {
-        rav1d_get_sbits(gb, 7)
-    } else {
-        0
-    };
-    if seqhdr.monochrome == 0 {
-        // If the sequence header says that delta_q might be different
-        // for U, V, we must check whether it actually is for this
-        // frame.
-        let diff_uv_delta = if seqhdr.separate_uv_delta_q != 0 {
-            rav1d_get_bit(gb) as c_int
-        } else {
-            0
-        };
-        hdr.quant.udc_delta = if rav1d_get_bit(gb) != 0 {
-            rav1d_get_sbits(gb, 7)
-        } else {
-            0
-        };
-        hdr.quant.uac_delta = if rav1d_get_bit(gb) != 0 {
-            rav1d_get_sbits(gb, 7)
-        } else {
-            0
-        };
-        if diff_uv_delta != 0 {
-            hdr.quant.vdc_delta = if rav1d_get_bit(gb) != 0 {
-                rav1d_get_sbits(gb, 7)
-            } else {
-                0
-            };
-            hdr.quant.vac_delta = if rav1d_get_bit(gb) != 0 {
-                rav1d_get_sbits(gb, 7)
-            } else {
-                0
-            };
-        } else {
-            hdr.quant.vdc_delta = hdr.quant.udc_delta;
-            hdr.quant.vac_delta = hdr.quant.uac_delta;
-        }
-    }
-    debug.post(gb, "quant");
-    hdr.quant.qm = rav1d_get_bit(gb) as c_int;
-    if hdr.quant.qm != 0 {
-        hdr.quant.qm_y = rav1d_get_bits(gb, 4) as c_int;
-        hdr.quant.qm_u = rav1d_get_bits(gb, 4) as c_int;
-        hdr.quant.qm_v = if seqhdr.separate_uv_delta_q != 0 {
-            rav1d_get_bits(gb, 4) as c_int
-        } else {
-            hdr.quant.qm_u
-        };
-    }
-    debug.post(gb, "qm");
+    parse_quant(seqhdr, &mut hdr, &debug, gb)?;
 
     // segmentation data
     hdr.segmentation.enabled = rav1d_get_bit(gb) as c_int;
