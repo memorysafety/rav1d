@@ -1049,6 +1049,30 @@ unsafe fn parse_loopfilter(
     Ok(())
 }
 
+unsafe fn parse_cdef(
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &mut Rav1dFrameHeader,
+    debug: &Debug,
+    gb: &mut GetBits,
+) -> Rav1dResult {
+    if hdr.all_lossless == 0 && seqhdr.cdef != 0 && hdr.allow_intrabc == 0 {
+        hdr.cdef.damping = rav1d_get_bits(gb, 2) as c_int + 3;
+        hdr.cdef.n_bits = rav1d_get_bits(gb, 2) as c_int;
+        for i in 0..1 << hdr.cdef.n_bits {
+            hdr.cdef.y_strength[i as usize] = rav1d_get_bits(gb, 6) as c_int;
+            if seqhdr.monochrome == 0 {
+                hdr.cdef.uv_strength[i as usize] = rav1d_get_bits(gb, 6) as c_int;
+            }
+        }
+    } else {
+        hdr.cdef.n_bits = 0;
+        hdr.cdef.y_strength[0] = 0;
+        hdr.cdef.uv_strength[0] = 0;
+    }
+    debug.post(gb, "cdef");
+    Ok(())
+}
+
 unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
@@ -1371,23 +1395,7 @@ unsafe fn parse_frame_hdr(
     }
 
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
-
-    // cdef
-    if hdr.all_lossless == 0 && seqhdr.cdef != 0 && hdr.allow_intrabc == 0 {
-        hdr.cdef.damping = rav1d_get_bits(gb, 2) as c_int + 3;
-        hdr.cdef.n_bits = rav1d_get_bits(gb, 2) as c_int;
-        for i in 0..1 << hdr.cdef.n_bits {
-            hdr.cdef.y_strength[i as usize] = rav1d_get_bits(gb, 6) as c_int;
-            if seqhdr.monochrome == 0 {
-                hdr.cdef.uv_strength[i as usize] = rav1d_get_bits(gb, 6) as c_int;
-            }
-        }
-    } else {
-        hdr.cdef.n_bits = 0;
-        hdr.cdef.y_strength[0] = 0;
-        hdr.cdef.uv_strength[0] = 0;
-    }
-    debug.post(gb, "cdef");
+    parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
 
     // restoration
     if (hdr.all_lossless == 0 || hdr.size.super_res.enabled != 0)
