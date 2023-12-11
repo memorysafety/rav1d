@@ -113,7 +113,54 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::fmt;
 use std::mem::MaybeUninit;
+
+struct Debug {
+    enabled: bool,
+    name: &'static str,
+    init_ptr: *const u8,
+}
+
+impl Debug {
+    pub const fn new(enabled: bool, name: &'static str, gb: &GetBits) -> Self {
+        Self {
+            enabled,
+            name,
+            init_ptr: gb.ptr,
+        }
+    }
+
+    const fn named(&self, name: &'static str) -> Self {
+        let &Self {
+            enabled,
+            name: _,
+            init_ptr,
+        } = self;
+        Self {
+            enabled,
+            name,
+            init_ptr,
+        }
+    }
+
+    pub unsafe fn log(&self, gb: &GetBits, msg: fmt::Arguments) {
+        let &Self {
+            enabled,
+            name,
+            init_ptr,
+        } = self;
+        if !enabled {
+            return;
+        }
+        let offset = gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize;
+        println!("{name}: {msg} [off={offset}]");
+    }
+
+    pub unsafe fn post(&self, gb: &GetBits, post: &str) {
+        self.log(gb, format_args!("post-{post}"));
+    }
+}
 
 #[inline]
 unsafe fn rav1d_get_bits_pos(c: &GetBits) -> c_uint {
@@ -124,35 +171,20 @@ unsafe fn parse_seq_hdr(
     c: &mut Rav1dContext,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dSequenceHeader> {
-    const DEBUG_SEQ_HDR: bool = false;
-    let init_bit_pos = if DEBUG_SEQ_HDR {
-        rav1d_get_bits_pos(gb)
-    } else {
-        0
-    };
+    let debug = Debug::new(false, "SEQHDR", gb);
 
     let profile = rav1d_get_bits(gb, 3) as c_int;
     if profile > 2 {
         return Err(EINVAL);
     }
-    if DEBUG_SEQ_HDR {
-        println!(
-            "SEQHDR: post-profile: off={}",
-            rav1d_get_bits_pos(gb) - init_bit_pos
-        );
-    }
+    debug.post(gb, "post-profile");
 
     let still_picture = rav1d_get_bit(gb) as c_int;
     let reduced_still_picture_header = rav1d_get_bit(gb) as c_int;
     if reduced_still_picture_header != 0 && still_picture == 0 {
         return Err(EINVAL);
     }
-    if DEBUG_SEQ_HDR {
-        println!(
-            "SEQHDR: post-stillpicture_flags: off={}",
-            rav1d_get_bits_pos(gb) - init_bit_pos
-        );
-    }
+    debug.post(gb, "post-stillpicture_flags");
 
     let num_operating_points;
     let mut operating_points =
@@ -236,12 +268,7 @@ unsafe fn parse_seq_hdr(
             buffer_removal_delay_length = Default::default();
             frame_presentation_delay_length = Default::default();
         }
-        if DEBUG_SEQ_HDR {
-            println!(
-                "SEQHDR: post-timinginfo: off={}",
-                rav1d_get_bits_pos(gb) - init_bit_pos
-            );
-        }
+        debug.post(gb, "post-timinginfo");
 
         display_model_info_present = rav1d_get_bit(gb) as c_int;
         num_operating_points = rav1d_get_bits(gb, 5) as c_int + 1;
@@ -276,12 +303,7 @@ unsafe fn parse_seq_hdr(
                 10
             };
         }
-        if DEBUG_SEQ_HDR {
-            println!(
-                "SEQHDR: post-operating-points: off={}",
-                rav1d_get_bits_pos(gb) - init_bit_pos
-            );
-        }
+        debug.post(gb, "operating-points");
     }
 
     let op_idx = if c.operating_point < num_operating_points {
@@ -301,12 +323,7 @@ unsafe fn parse_seq_hdr(
     let height_n_bits = rav1d_get_bits(gb, 4) as c_int + 1;
     let max_width = rav1d_get_bits(gb, width_n_bits) as c_int + 1;
     let max_height = rav1d_get_bits(gb, height_n_bits) as c_int + 1;
-    if DEBUG_SEQ_HDR {
-        println!(
-            "SEQHDR: post-size: off={}",
-            rav1d_get_bits_pos(gb) - init_bit_pos
-        );
-    }
+    debug.post(gb, "size");
     let frame_id_numbers_present;
     let delta_frame_id_n_bits;
     let frame_id_n_bits;
@@ -326,12 +343,7 @@ unsafe fn parse_seq_hdr(
         delta_frame_id_n_bits = Default::default();
         frame_id_n_bits = Default::default();
     }
-    if DEBUG_SEQ_HDR {
-        println!(
-            "SEQHDR: post-frame-id-numbers-present: off={}",
-            rav1d_get_bits_pos(gb) - init_bit_pos
-        );
-    }
+    debug.post(gb, "frame-id-numbers-present");
 
     let sb128 = rav1d_get_bit(gb) as c_int;
     let filter_intra = rav1d_get_bit(gb) as c_int;
@@ -378,12 +390,7 @@ unsafe fn parse_seq_hdr(
         } else {
             rav1d_get_bit(gb) as Rav1dAdaptiveBoolean
         };
-        if DEBUG_SEQ_HDR {
-            println!(
-                "SEQHDR: post-screentools: off={}",
-                rav1d_get_bits_pos(gb) - init_bit_pos
-            );
-        }
+        debug.post(gb, "screentools");
         force_integer_mv = if screen_content_tools as c_uint != 0 {
             if rav1d_get_bit(gb) != 0 {
                 RAV1D_ADAPTIVE
@@ -403,12 +410,7 @@ unsafe fn parse_seq_hdr(
     let super_res = rav1d_get_bit(gb) as c_int;
     let cdef = rav1d_get_bit(gb) as c_int;
     let restoration = rav1d_get_bit(gb) as c_int;
-    if DEBUG_SEQ_HDR {
-        println!(
-            "SEQHDR: post-featurebits: off={}",
-            rav1d_get_bits_pos(gb) - init_bit_pos
-        );
-    }
+    debug.post(gb, "featurebits");
 
     let hbd = {
         let mut hbd = rav1d_get_bit(gb) as c_int;
@@ -517,20 +519,10 @@ unsafe fn parse_seq_hdr(
         // Default initialization.
         separate_uv_delta_q = Default::default();
     }
-    if DEBUG_SEQ_HDR {
-        println!(
-            "SEQHDR: post-colorinfo: off={}",
-            rav1d_get_bits_pos(gb) - init_bit_pos
-        );
-    }
+    debug.post(gb, "colorinfo");
 
     let film_grain_present = rav1d_get_bit(gb) as c_int;
-    if DEBUG_SEQ_HDR {
-        println!(
-            "SEQHDR: post-filmgrain: off={}",
-            rav1d_get_bits_pos(gb) - init_bit_pos
-        );
-    }
+    debug.post(gb, "filmgrain");
 
     rav1d_get_bit(gb); // dummy bit
 
@@ -711,15 +703,9 @@ unsafe fn parse_frame_hdr(
     hdr.temporal_id = temporal_id;
     hdr.spatial_id = spatial_id;
 
-    const DEBUG_FRAME_HDR: bool = false;
-    let init_ptr = gb.ptr;
+    let debug = Debug::new(false, "HDR", gb);
 
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-show_existing_frame: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "show_existing_frame");
     hdr.show_existing_frame =
         (seqhdr.reduced_still_picture_header == 0 && rav1d_get_bit(gb) != 0) as c_int;
     if hdr.show_existing_frame != 0 {
@@ -757,12 +743,7 @@ unsafe fn parse_frame_hdr(
         || hdr.frame_type == Rav1dFrameType::Switch
         || seqhdr.reduced_still_picture_header != 0
         || rav1d_get_bit(gb) != 0) as c_int;
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-frametype_bits: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "frametype_bits");
     hdr.disable_cdf_update = rav1d_get_bit(gb) as c_int;
     hdr.allow_screen_content_tools = (if seqhdr.screen_content_tools == RAV1D_ADAPTIVE {
         rav1d_get_bit(gb)
@@ -794,12 +775,7 @@ unsafe fn parse_frame_hdr(
     } else {
         rav1d_get_bit(gb)
     }) as c_int;
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-frame_size_override_flag: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "frame_size_override_flag");
     hdr.frame_offset = if seqhdr.order_hint != 0 {
         rav1d_get_bits(gb, seqhdr.order_hint_n_bits) as c_int
     } else {
@@ -1006,22 +982,12 @@ unsafe fn parse_frame_hdr(
             && hdr.frame_type.is_inter_or_switch()
             && rav1d_get_bit(gb) != 0) as c_int;
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-frametype-specific-bits: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "frametype-specific-bits");
 
     hdr.refresh_context = (seqhdr.reduced_still_picture_header == 0
         && hdr.disable_cdf_update == 0
         && rav1d_get_bit(gb) == 0) as c_int;
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-refresh_context: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "refresh_context");
 
     // tile data
     hdr.tiling.uniform = rav1d_get_bit(gb) as c_int;
@@ -1116,12 +1082,7 @@ unsafe fn parse_frame_hdr(
         hdr.tiling.update = 0;
         hdr.tiling.n_bytes = hdr.tiling.update as c_uint;
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-tiling: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "tiling");
 
     // quant data
     hdr.quant.yac = rav1d_get_bits(gb, 8) as c_int;
@@ -1165,12 +1126,7 @@ unsafe fn parse_frame_hdr(
             hdr.quant.vac_delta = hdr.quant.uac_delta;
         }
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-quant: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "quant");
     hdr.quant.qm = rav1d_get_bit(gb) as c_int;
     if hdr.quant.qm != 0 {
         hdr.quant.qm_y = rav1d_get_bits(gb, 4) as c_int;
@@ -1181,12 +1137,7 @@ unsafe fn parse_frame_hdr(
             hdr.quant.qm_u
         };
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-qm: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "qm");
 
     // segmentation data
     hdr.segmentation.enabled = rav1d_get_bit(gb) as c_int;
@@ -1281,12 +1232,7 @@ unsafe fn parse_frame_hdr(
             hdr.segmentation.seg_data.d[i as usize].r#ref = -1;
         }
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-segmentation: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "segmentation");
 
     // delta q
     hdr.delta.q.present = if hdr.quant.yac != 0 {
@@ -1311,12 +1257,7 @@ unsafe fn parse_frame_hdr(
     } else {
         0
     };
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-delta_q_lf_flags: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "delta_q_lf_flags");
 
     // derive lossless flags
     let delta_lossless = (hdr.quant.ydc_delta == 0
@@ -1388,12 +1329,7 @@ unsafe fn parse_frame_hdr(
             }
         }
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-lpf: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "lpf");
 
     // cdef
     if hdr.all_lossless == 0 && seqhdr.cdef != 0 && hdr.allow_intrabc == 0 {
@@ -1410,12 +1346,7 @@ unsafe fn parse_frame_hdr(
         hdr.cdef.y_strength[0] = 0;
         hdr.cdef.uv_strength[0] = 0;
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-cdef: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "cdef");
 
     // restoration
     if (hdr.all_lossless == 0 || hdr.size.super_res.enabled != 0)
@@ -1458,12 +1389,7 @@ unsafe fn parse_frame_hdr(
         hdr.restoration.r#type[1] = RAV1D_RESTORATION_NONE;
         hdr.restoration.r#type[2] = RAV1D_RESTORATION_NONE;
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-restoration: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "restoration");
 
     hdr.txfm_mode = if hdr.all_lossless != 0 {
         RAV1D_TX_4X4_ONLY
@@ -1472,23 +1398,13 @@ unsafe fn parse_frame_hdr(
     } else {
         RAV1D_TX_LARGEST
     };
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-txfmmode: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "txfmmode");
     hdr.switchable_comp_refs = if hdr.frame_type.is_inter_or_switch() {
         rav1d_get_bit(gb) as c_int
     } else {
         0
     };
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-refmode: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "refmode");
     hdr.skip_mode_allowed = 0;
     if hdr.switchable_comp_refs != 0
         && hdr.frame_type.is_inter_or_switch()
@@ -1576,29 +1492,14 @@ unsafe fn parse_frame_hdr(
     } else {
         0
     };
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-extskip: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "extskip");
     hdr.warp_motion = (hdr.error_resilient_mode == 0
         && hdr.frame_type.is_inter_or_switch()
         && seqhdr.warped_motion != 0
         && rav1d_get_bit(gb) != 0) as c_int;
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-warpmotionbit: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "warpmotionbit");
     hdr.reduced_txtp_set = rav1d_get_bit(gb) as c_int;
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-reducedtxtpset: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "reducedtxtpset");
 
     for i in 0..7 {
         hdr.gmv[i as usize] = dav1d_default_wm_params.clone();
@@ -1659,12 +1560,7 @@ unsafe fn parse_frame_hdr(
             mat[1] = rav1d_get_bits_subexp(gb, ref_mat[1] >> shift, bits as c_uint) * (1 << shift);
         }
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-gmv: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "gmv");
 
     hdr.film_grain.present = (seqhdr.film_grain_present != 0
         && (hdr.show_frame != 0 || hdr.showable_frame != 0)
@@ -1781,12 +1677,7 @@ unsafe fn parse_frame_hdr(
             ::core::mem::size_of::<Rav1dFilmGrainData>(),
         );
     }
-    if DEBUG_FRAME_HDR {
-        println!(
-            "HDR: post-filmgrain: off={}",
-            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-        );
-    }
+    debug.post(gb, "filmgrain");
 
     Ok(hdr)
 }
@@ -2118,8 +2009,7 @@ unsafe fn parse_obus(
             }
         }
         RAV1D_OBU_METADATA => {
-            const DEBUG_OBU_METADATA: bool = false;
-            let init_ptr = gb.ptr;
+            let debug = Debug::new(false, "OBU", &gb);
 
             // obu metadata type field
             let meta_type = rav1d_get_uleb128(&mut gb) as ObuMetaType;
@@ -2130,22 +2020,19 @@ unsafe fn parse_obus(
 
             match meta_type {
                 OBU_META_HDR_CLL => {
+                    let debug = debug.named("CLLOBU");
                     let max_content_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
-                    if DEBUG_OBU_METADATA {
-                        println!(
-                            "CLLOBU: max-content-light-level: {} [off={}]",
-                            max_content_light_level,
-                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                        );
-                    }
+                    debug.log(
+                        &gb,
+                        format_args!("max-content-light-level: {max_content_light_level}"),
+                    );
                     let max_frame_average_light_level = rav1d_get_bits(&mut gb, 16) as c_int;
-                    if DEBUG_OBU_METADATA {
-                        println!(
-                            "CLLOBU: max-frame-average-light-level: {} [off={}]",
-                            max_frame_average_light_level,
-                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                        );
-                    }
+                    debug.log(
+                        &gb,
+                        format_args!(
+                            "max-frame-average-light-level: {max_frame_average_light_level}"
+                        ),
+                    );
 
                     // Skip the trailing bit, align to the next byte boundary and check for overrun.
                     rav1d_get_bit(&mut gb);
@@ -2168,55 +2055,24 @@ unsafe fn parse_obus(
                     c.content_light_ref = r#ref;
                 }
                 OBU_META_HDR_MDCV => {
+                    let debug = debug.named("MDCVOBU");
                     let primaries = array::from_fn(|i| {
                         let primary = [
                             rav1d_get_bits(&mut gb, 16) as u16,
                             rav1d_get_bits(&mut gb, 16) as u16,
                         ];
-                        if DEBUG_OBU_METADATA {
-                            println!(
-                                "MDCVOBU: primaries[{}]: ({}, {}) [off={}]",
-                                i,
-                                primary[0],
-                                primary[1],
-                                gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                            );
-                        }
+                        debug.log(&gb, format_args!("primaries[{i}]: {primary:?}"));
                         primary
                     });
                     let white_point_x = rav1d_get_bits(&mut gb, 16) as u16;
-                    if DEBUG_OBU_METADATA {
-                        println!(
-                            "MDCVOBU: white-point-x: {} [off={}]",
-                            white_point_x,
-                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                        );
-                    }
+                    debug.log(&gb, format_args!("white-point-x: {white_point_x}"));
                     let white_point_y = rav1d_get_bits(&mut gb, 16) as u16;
-                    if DEBUG_OBU_METADATA {
-                        println!(
-                            "MDCVOBU: white-point-y: {} [off={}]",
-                            white_point_y,
-                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                        );
-                    }
+                    debug.log(&gb, format_args!("white-point-y: {white_point_y}"));
                     let white_point = [white_point_x, white_point_y];
                     let max_luminance = rav1d_get_bits(&mut gb, 32);
-                    if DEBUG_OBU_METADATA {
-                        println!(
-                            "MDCVOBU: max-luminance: {} [off={}]",
-                            max_luminance,
-                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                        );
-                    }
+                    debug.log(&gb, format_args!("max-luminance: {max_luminance}"));
                     let min_luminance = rav1d_get_bits(&mut gb, 32);
-                    if DEBUG_OBU_METADATA {
-                        println!(
-                            "MDCVOBU: min-luminance: {} [off={}]",
-                            min_luminance,
-                            gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize
-                        );
-                    }
+                    debug.log(&gb, format_args!("min-luminance: {min_luminance}"));
                     // Skip the trailing bit, align to the next byte boundary and check for overrun.
                     rav1d_get_bit(&mut gb);
                     rav1d_bytealign_get_bits(&mut gb);
