@@ -2187,11 +2187,6 @@ unsafe fn parse_obus(
     // when reading the leb128 length field).
     assert!(init_bit_pos & 7 == 0);
 
-    // We also know that we haven't tried to read more than `r#in.sz`
-    // bytes yet (otherwise the error flag would have been set
-    // by the code in [`crate::src::getbits`]).
-    assert!(r#in.sz >= init_byte_pos as usize);
-
     // Make sure that there are enough bits left in the buffer
     // for the rest of the OBU.
     if len as usize > r#in.sz - init_byte_pos as usize {
