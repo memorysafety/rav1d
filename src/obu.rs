@@ -15,6 +15,7 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader_quant;
+use crate::include::dav1d::headers::Rav1dFrameHeader_segmentation;
 use crate::include::dav1d::headers::Rav1dFrameHeader_super_res;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
 use crate::include::dav1d::headers::Rav1dFrameSize;
@@ -38,7 +39,6 @@ use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_MAX_OPERATING_POINTS;
-use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
@@ -1118,28 +1118,31 @@ unsafe fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
 // TODO(kkysen) Move `all_lossless` into `segmentation`.
 unsafe fn parse_segmentation(
     c: &Rav1dContext,
-    hdr: &mut Rav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult {
-    hdr.segmentation.enabled = rav1d_get_bit(gb) as c_int;
-    if hdr.segmentation.enabled != 0 {
+) -> Rav1dResult<(Rav1dFrameHeader_segmentation, c_int)> {
+    let enabled = rav1d_get_bit(gb) as c_int;
+    let update_map;
+    let temporal;
+    let update_data;
+    let seg_data = if enabled != 0 {
         if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-            hdr.segmentation.update_map = 1;
-            hdr.segmentation.temporal = 0;
-            hdr.segmentation.update_data = 1;
+            update_map = 1;
+            temporal = 0;
+            update_data = 1;
         } else {
-            hdr.segmentation.update_map = rav1d_get_bit(gb) as c_int;
-            hdr.segmentation.temporal = if hdr.segmentation.update_map != 0 {
+            update_map = rav1d_get_bit(gb) as c_int;
+            temporal = if update_map != 0 {
                 rav1d_get_bit(gb) as c_int
             } else {
                 0
             };
-            hdr.segmentation.update_data = rav1d_get_bit(gb) as c_int;
+            update_data = rav1d_get_bit(gb) as c_int;
         }
 
-        if hdr.segmentation.update_data != 0 {
-            hdr.segmentation.seg_data = parse_seg_data(gb);
+        if update_data != 0 {
+            parse_seg_data(gb)
         } else {
             // segmentation.update_data was false so we should copy
             // segmentation data from the reference frame.
@@ -1148,21 +1151,23 @@ unsafe fn parse_segmentation(
             if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                 return Err(EINVAL);
             }
-            hdr.segmentation.seg_data = (*c.refs[pri_ref as usize].p.p.frame_hdr)
+            (*c.refs[pri_ref as usize].p.p.frame_hdr)
                 .segmentation
                 .seg_data
-                .clone();
+                .clone()
         }
     } else {
-        memset(
-            &mut hdr.segmentation.seg_data as *mut Rav1dSegmentationDataSet as *mut c_void,
-            0,
-            ::core::mem::size_of::<Rav1dSegmentationDataSet>(),
-        );
-        for i in 0..RAV1D_MAX_SEGMENTS {
-            hdr.segmentation.seg_data.d[i as usize].r#ref = -1;
+        // Default initialization.
+        update_map = Default::default();
+        temporal = Default::default();
+        update_data = Default::default();
+
+        let mut seg_data = Rav1dSegmentationDataSet::default();
+        for data in &mut seg_data.d {
+            data.r#ref = -1;
         }
-    }
+        seg_data
+    };
     debug.post(gb, "segmentation");
 
     // derive lossless flags
@@ -1171,19 +1176,27 @@ unsafe fn parse_segmentation(
         && hdr.quant.uac_delta == 0
         && hdr.quant.vdc_delta == 0
         && hdr.quant.vac_delta == 0) as c_int;
-    hdr.all_lossless = 1;
-    for i in 0..RAV1D_MAX_SEGMENTS {
-        hdr.segmentation.qidx[i as usize] = if hdr.segmentation.enabled != 0 {
-            iclip_u8(hdr.quant.yac + hdr.segmentation.seg_data.d[i as usize].delta_q)
+    let qidx = array::from_fn(|i| {
+        if enabled != 0 {
+            iclip_u8(hdr.quant.yac + seg_data.d[i].delta_q)
         } else {
             hdr.quant.yac
-        };
-        hdr.segmentation.lossless[i as usize] =
-            (hdr.segmentation.qidx[i as usize] == 0 && delta_lossless != 0) as c_int;
-        hdr.all_lossless &= hdr.segmentation.lossless[i as usize];
-    }
-
-    Ok(())
+        }
+    });
+    let lossless = array::from_fn(|i| (qidx[i] == 0 && delta_lossless != 0) as c_int);
+    let all_lossless = lossless.iter().all(|&it| it != 0) as c_int;
+    Ok((
+        Rav1dFrameHeader_segmentation {
+            enabled,
+            update_map,
+            temporal,
+            update_data,
+            seg_data,
+            lossless,
+            qidx,
+        },
+        all_lossless,
+    ))
 }
 
 unsafe fn parse_delta(hdr: &mut Rav1dFrameHeader, debug: &Debug, gb: &mut GetBits) -> Rav1dResult {
@@ -1827,7 +1840,9 @@ unsafe fn parse_frame_hdr(
 
     hdr.tiling = parse_tiling(seqhdr, &hdr.size, &debug, gb)?;
     hdr.quant = parse_quant(seqhdr, &debug, gb);
-    parse_segmentation(c, &mut hdr, &debug, gb)?;
+    let (segmentation, all_lossless) = parse_segmentation(c, &mut hdr, &debug, gb)?;
+    hdr.segmentation = segmentation;
+    hdr.all_lossless = all_lossless;
     parse_delta(&mut hdr, &debug, gb)?;
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
     parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
