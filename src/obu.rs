@@ -121,6 +121,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::fmt;
 use std::mem::MaybeUninit;
+use std::slice;
 
 struct Debug {
     enabled: bool,
@@ -129,7 +130,7 @@ struct Debug {
 }
 
 impl Debug {
-    pub const unsafe fn new(enabled: bool, name: &'static str, gb: &GetBits) -> Self {
+    pub const fn new(enabled: bool, name: &'static str, gb: &GetBits) -> Self {
         Self {
             enabled,
             name,
@@ -150,7 +151,7 @@ impl Debug {
         }
     }
 
-    pub unsafe fn log(&self, gb: &GetBits, msg: fmt::Arguments) {
+    pub fn log(&self, gb: &GetBits, msg: fmt::Arguments) {
         let &Self {
             enabled,
             name,
@@ -163,15 +164,12 @@ impl Debug {
         println!("{name}: {msg} [off={offset}]");
     }
 
-    pub unsafe fn post(&self, gb: &GetBits, post: &str) {
+    pub fn post(&self, gb: &GetBits, post: &str) {
         self.log(gb, format_args!("post-{post}"));
     }
 }
 
-unsafe fn parse_seq_hdr(
-    c: &mut Rav1dContext,
-    gb: &mut GetBits,
-) -> Rav1dResult<Rav1dSequenceHeader> {
+fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSequenceHeader> {
     let debug = Debug::new(false, "SEQHDR", gb);
 
     let profile = gb.get_bits(3) as c_int;
@@ -821,7 +819,7 @@ unsafe fn parse_refidx(
     Ok(refidx)
 }
 
-unsafe fn parse_tiling(
+fn parse_tiling(
     seqhdr: &Rav1dSequenceHeader,
     size: &Rav1dFrameSize,
     debug: &Debug,
@@ -942,7 +940,7 @@ unsafe fn parse_tiling(
     })
 }
 
-unsafe fn parse_quant(
+fn parse_quant(
     seqhdr: &Rav1dSequenceHeader,
     debug: &Debug,
     gb: &mut GetBits,
@@ -1032,7 +1030,7 @@ unsafe fn parse_quant(
     }
 }
 
-unsafe fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
+fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
     let mut preskip = 0;
     let mut last_active_segid = -1;
     let d = array::from_fn(|i| {
@@ -1189,7 +1187,7 @@ unsafe fn parse_segmentation(
     })
 }
 
-unsafe fn parse_delta(
+fn parse_delta(
     quant: &Rav1dFrameHeader_quant,
     allow_intrabc: c_int,
     debug: &Debug,
@@ -1311,7 +1309,7 @@ unsafe fn parse_loopfilter(
     })
 }
 
-unsafe fn parse_cdef(
+fn parse_cdef(
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: c_int,
     allow_intrabc: c_int,
@@ -1348,7 +1346,7 @@ unsafe fn parse_cdef(
     }
 }
 
-unsafe fn parse_restoration(
+fn parse_restoration(
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: c_int,
     super_res_enabled: c_int,
@@ -1570,7 +1568,7 @@ unsafe fn parse_gmv(
     Ok(gmv)
 }
 
-unsafe fn parse_film_grain_data(
+fn parse_film_grain_data(
     seqhdr: &Rav1dSequenceHeader,
     seed: c_uint,
     gb: &mut GetBits,
@@ -2079,10 +2077,7 @@ unsafe fn parse_frame_hdr(
     })
 }
 
-unsafe fn parse_tile_hdr(
-    tiling: &Rav1dFrameHeader_tiling,
-    gb: &mut GetBits,
-) -> Rav1dTileGroupHeader {
+fn parse_tile_hdr(tiling: &Rav1dFrameHeader_tiling, gb: &mut GetBits) -> Rav1dTileGroupHeader {
     let n_tiles = tiling.cols * tiling.rows;
     let have_tile_pos = if n_tiles > 1 {
         gb.get_bit() as c_int
@@ -2105,7 +2100,7 @@ unsafe fn parse_tile_hdr(
 
 /// Check that we haven't read more than `obu_len`` bytes
 /// from the buffer since `init_bit_pos`.
-unsafe fn check_for_overrun(
+fn check_for_overrun(
     c: &mut Rav1dContext,
     gb: &mut GetBits,
     init_bit_pos: c_uint,
@@ -2157,7 +2152,7 @@ unsafe fn parse_obus(
         len + init_byte_pos
     }
 
-    let mut gb = GetBits::new(r#in.data, r#in.sz);
+    let mut gb = GetBits::new(slice::from_raw_parts(r#in.data, r#in.sz));
 
     // obu header
     gb.get_bit(); // obu_forbidden_bit
