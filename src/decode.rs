@@ -1695,7 +1695,7 @@ unsafe fn decode_b(
     if seg
         .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
         .unwrap_or(true)
-        && (*f.frame_hdr).skip_mode_enabled != 0
+        && (*f.frame_hdr).skip_mode.enabled != 0
         && cmp::min(bw4, bh4) > 1
     {
         let smctx = (*t.a).skip_mode.0[bx4 as usize] + t.l.skip_mode.0[by4 as usize];
@@ -2439,8 +2439,8 @@ unsafe fn decode_b(
 
         if b.skip_mode != 0 {
             *b.ref_mut() = [
-                frame_hdr.skip_mode_refs[0] as i8,
-                frame_hdr.skip_mode_refs[1] as i8,
+                frame_hdr.skip_mode.refs[0] as i8,
+                frame_hdr.skip_mode.refs[1] as i8,
             ];
             *b.comp_type_mut() = COMP_INTER_AVG;
             *b.inter_mode_mut() = NEARESTMV_NEARESTMV;
