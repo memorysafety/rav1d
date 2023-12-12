@@ -1590,22 +1590,25 @@ unsafe fn parse_gmv(
 unsafe fn parse_film_grain(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &Rav1dFrameHeader,
+    show_frame: c_int,
+    showable_frame: c_int,
+    frame_type: Rav1dFrameType,
+    ref_indices: &[c_int; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_film_grain> {
     let present = (seqhdr.film_grain_present != 0
-        && (hdr.show_frame != 0 || hdr.showable_frame != 0)
+        && (show_frame != 0 || showable_frame != 0)
         && rav1d_get_bit(gb) != 0) as c_int;
     let update;
     let data = if present != 0 {
         let seed = rav1d_get_bits(gb, 16);
-        update = (hdr.frame_type != Rav1dFrameType::Inter || rav1d_get_bit(gb) != 0) as c_int;
+        update = (frame_type != Rav1dFrameType::Inter || rav1d_get_bit(gb) != 0) as c_int;
         if update == 0 {
             let refidx = rav1d_get_bits(gb, 3) as c_int;
             let mut found = false;
             for i in 0..7 {
-                if hdr.refidx[i as usize] == refidx {
+                if ref_indices[i as usize] == refidx {
                     found = true;
                     break;
                 }
@@ -1976,7 +1979,16 @@ unsafe fn parse_frame_hdr(
         &debug,
         gb,
     )?;
-    hdr.film_grain = parse_film_grain(c, seqhdr, &hdr, &debug, gb)?;
+    hdr.film_grain = parse_film_grain(
+        c,
+        seqhdr,
+        hdr.show_frame,
+        hdr.showable_frame,
+        hdr.frame_type,
+        &hdr.refidx,
+        &debug,
+        gb,
+    )?;
 
     Ok(hdr)
 }
