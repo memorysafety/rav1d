@@ -1519,13 +1519,16 @@ unsafe fn parse_skip_mode(
 
 unsafe fn parse_gmv(
     c: &Rav1dContext,
-    hdr: &Rav1dFrameHeader,
+    frame_type: Rav1dFrameType,
+    primary_ref_frame: c_int,
+    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
+    hp: c_int,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<[Rav1dWarpedMotionParams; RAV1D_REFS_PER_FRAME]> {
     let mut gmv = array::from_fn(|_| dav1d_default_wm_params.clone());
 
-    if hdr.frame_type.is_inter_or_switch() {
+    if frame_type.is_inter_or_switch() {
         for (i, gmv) in gmv.iter_mut().enumerate() {
             gmv.r#type = if rav1d_get_bit(gb) == 0 {
                 RAV1D_WM_TYPE_IDENTITY
@@ -1541,10 +1544,10 @@ unsafe fn parse_gmv(
             }
 
             let ref_gmv;
-            if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
+            if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
                 ref_gmv = &dav1d_default_wm_params;
             } else {
-                let pri_ref = hdr.refidx[hdr.primary_ref_frame as usize];
+                let pri_ref = refidx[primary_ref_frame as usize];
                 if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                     return Err(EINVAL);
                 }
@@ -1562,8 +1565,8 @@ unsafe fn parse_gmv(
                 bits = 12;
                 shift = 10;
             } else {
-                bits = 9 - (hdr.hp == 0) as c_int;
-                shift = 13 + (hdr.hp == 0) as c_int;
+                bits = 9 - (hp == 0) as c_int;
+                shift = 13 + (hp == 0) as c_int;
             }
 
             if gmv.r#type as c_uint == RAV1D_WM_TYPE_AFFINE as c_int as c_uint {
@@ -1955,7 +1958,15 @@ unsafe fn parse_frame_hdr(
     hdr.reduced_txtp_set = rav1d_get_bit(gb) as c_int;
     debug.post(gb, "reducedtxtpset");
 
-    hdr.gmv = parse_gmv(c, &hdr, &debug, gb)?;
+    hdr.gmv = parse_gmv(
+        c,
+        hdr.frame_type,
+        hdr.primary_ref_frame,
+        &hdr.refidx,
+        hdr.hp,
+        &debug,
+        gb,
+    )?;
     parse_film_grain(c, seqhdr, &mut hdr, &debug, gb)?;
 
     Ok(hdr)
