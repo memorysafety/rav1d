@@ -2154,16 +2154,7 @@ unsafe fn parse_obus(
         len + init_byte_pos
     }
 
-    let mut gb = GetBits {
-        state: 0,
-        bits_left: 0,
-        error: 0,
-        ptr: 0 as *const u8,
-        ptr_start: 0 as *const u8,
-        ptr_end: 0 as *const u8,
-    };
-
-    gb.init(r#in.data, r#in.sz);
+    let mut gb = GetBits::new(r#in.data, r#in.sz);
 
     // obu header
     gb.get_bit(); // obu_forbidden_bit
