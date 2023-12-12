@@ -1111,14 +1111,12 @@ unsafe fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
     }
 }
 
-/// Also initializes [`Rav1dFrameHeader::all_lossless`].
-// TODO(kkysen) Move `all_lossless` into `segmentation`.
 unsafe fn parse_segmentation(
     c: &Rav1dContext,
     hdr: &Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult<(Rav1dFrameHeader_segmentation, c_int)> {
+) -> Rav1dResult<Rav1dFrameHeader_segmentation> {
     let enabled = rav1d_get_bit(gb) as c_int;
     let update_map;
     let temporal;
@@ -1181,19 +1179,15 @@ unsafe fn parse_segmentation(
         }
     });
     let lossless = array::from_fn(|i| (qidx[i] == 0 && delta_lossless != 0) as c_int);
-    let all_lossless = lossless.iter().all(|&it| it != 0) as c_int;
-    Ok((
-        Rav1dFrameHeader_segmentation {
-            enabled,
-            update_map,
-            temporal,
-            update_data,
-            seg_data,
-            lossless,
-            qidx,
-        },
-        all_lossless,
-    ))
+    Ok(Rav1dFrameHeader_segmentation {
+        enabled,
+        update_map,
+        temporal,
+        update_data,
+        seg_data,
+        lossless,
+        qidx,
+    })
 }
 
 unsafe fn parse_delta(hdr: &mut Rav1dFrameHeader, debug: &Debug, gb: &mut GetBits) -> Rav1dResult {
@@ -1837,9 +1831,8 @@ unsafe fn parse_frame_hdr(
 
     hdr.tiling = parse_tiling(seqhdr, &hdr.size, &debug, gb)?;
     hdr.quant = parse_quant(seqhdr, &debug, gb);
-    let (segmentation, all_lossless) = parse_segmentation(c, &mut hdr, &debug, gb)?;
-    hdr.segmentation = segmentation;
-    hdr.all_lossless = all_lossless;
+    hdr.segmentation = parse_segmentation(c, &mut hdr, &debug, gb)?;
+    hdr.all_lossless = hdr.segmentation.lossless.iter().all(|&it| it != 0) as c_int;
     parse_delta(&mut hdr, &debug, gb)?;
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
     parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
