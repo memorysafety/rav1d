@@ -1329,7 +1329,7 @@ unsafe fn parse_cdef(
     hdr: &mut Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult {
+) {
     if hdr.all_lossless == 0 && seqhdr.cdef != 0 && hdr.allow_intrabc == 0 {
         hdr.cdef.damping = rav1d_get_bits(gb, 2) as c_int + 3;
         hdr.cdef.n_bits = rav1d_get_bits(gb, 2) as c_int;
@@ -1345,7 +1345,6 @@ unsafe fn parse_cdef(
         hdr.cdef.uv_strength[0] = 0;
     }
     debug.post(gb, "cdef");
-    Ok(())
 }
 
 unsafe fn parse_restoration(
@@ -1896,7 +1895,7 @@ unsafe fn parse_frame_hdr(
         &debug,
         gb,
     )?;
-    parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
+    parse_cdef(seqhdr, &mut hdr, &debug, gb);
     parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
 
     hdr.txfm_mode = if hdr.all_lossless != 0 {
