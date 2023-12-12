@@ -7,7 +7,7 @@ use std::ffi::c_uint;
 pub struct GetBits {
     state: u64,
     bits_left: c_int,
-    pub error: c_int,
+    error: c_int,
     ptr: *const u8,
     ptr_start: *const u8,
     ptr_end: *const u8,
@@ -24,6 +24,10 @@ impl GetBits {
             bits_left: 0,
             error: 0,
         }
+    }
+
+    pub const fn has_error(&self) -> c_int {
+        self.error
     }
 
     pub unsafe fn get_bit(&mut self) -> c_uint {
