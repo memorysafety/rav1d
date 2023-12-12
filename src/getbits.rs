@@ -20,20 +20,20 @@ pub unsafe fn rav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: usize) {
     (*c).ptr_start = data;
     (*c).ptr = (*c).ptr_start;
     (*c).ptr_end = &*((*c).ptr_start).offset(sz as isize) as *const u8;
-    (*c).state = 0 as c_int as u64;
-    (*c).bits_left = 0 as c_int;
-    (*c).error = 0 as c_int;
+    (*c).state = 0;
+    (*c).bits_left = 0;
+    (*c).error = 0;
 }
 
 pub unsafe fn rav1d_get_bit(c: *mut GetBits) -> c_uint {
     if (*c).bits_left == 0 {
         if (*c).ptr >= (*c).ptr_end {
-            (*c).error = 1 as c_int;
+            (*c).error = 1;
         } else {
             let fresh0 = (*c).ptr;
             (*c).ptr = ((*c).ptr).offset(1);
             let state: c_uint = *fresh0 as c_uint;
-            (*c).bits_left = 7 as c_int;
+            (*c).bits_left = 7;
             (*c).state = (state as u64) << 57;
             return state >> 7;
         }
@@ -49,10 +49,10 @@ unsafe fn refill(c: *mut GetBits, n: c_int) {
     if !((*c).bits_left >= 0 && (*c).bits_left < 32) {
         unreachable!();
     }
-    let mut state: c_uint = 0 as c_int as c_uint;
+    let mut state: c_uint = 0;
     loop {
         if (*c).ptr >= (*c).ptr_end {
-            (*c).error = 1 as c_int;
+            (*c).error = 1;
             if state != 0 {
                 break;
             }
@@ -61,7 +61,7 @@ unsafe fn refill(c: *mut GetBits, n: c_int) {
             let fresh1 = (*c).ptr;
             (*c).ptr = ((*c).ptr).offset(1);
             state = state << 8 | *fresh1 as c_uint;
-            (*c).bits_left += 8 as c_int;
+            (*c).bits_left += 8;
             if !(n > (*c).bits_left) {
                 break;
             }
@@ -95,27 +95,27 @@ pub unsafe fn rav1d_get_sbits(c: *mut GetBits, n: c_int) -> c_int {
 }
 
 pub unsafe fn rav1d_get_uleb128(c: *mut GetBits) -> c_uint {
-    let mut val: u64 = 0 as c_int as u64;
-    let mut i: c_uint = 0 as c_int as c_uint;
+    let mut val: u64 = 0;
+    let mut i: c_uint = 0;
     let mut more: c_uint;
     loop {
-        let v = rav1d_get_bits(c, 8 as c_int) as c_int;
-        more = (v & 0x80 as c_int) as c_uint;
-        val |= ((v & 0x7f as c_int) as u64) << i;
-        i = i.wrapping_add(7 as c_int as c_uint);
-        if !(more != 0 && i < 56 as c_uint) {
+        let v = rav1d_get_bits(c, 8) as c_int;
+        more = (v & 0x80) as c_uint;
+        val |= ((v & 0x7f) as u64) << i;
+        i = i.wrapping_add(7);
+        if !(more != 0 && i < 56) {
             break;
         }
     }
     if val > u32::MAX as u64 || more != 0 {
-        (*c).error = 1 as c_int;
+        (*c).error = 1;
         return 0;
     }
     return val as c_uint;
 }
 
 pub unsafe fn rav1d_get_uniform(c: *mut GetBits, max: c_uint) -> c_uint {
-    if !(max > 1 as c_uint) {
+    if !(max > 1) {
         unreachable!();
     }
     let l = ulog2(max) + 1;
@@ -133,43 +133,40 @@ pub unsafe fn rav1d_get_uniform(c: *mut GetBits, max: c_uint) -> c_uint {
 
 pub unsafe fn rav1d_get_vlc(c: *mut GetBits) -> c_uint {
     if rav1d_get_bit(c) != 0 {
-        return 0 as c_int as c_uint;
+        return 0;
     }
     let mut n_bits = 0;
     loop {
         n_bits += 1;
         if n_bits == 32 {
-            return 0xffffffff as c_uint;
+            return 0xffffffff;
         }
         if !(rav1d_get_bit(c) == 0) {
             break;
         }
     }
     return ((1 as c_uint) << n_bits)
-        .wrapping_sub(1 as c_int as c_uint)
+        .wrapping_sub(1)
         .wrapping_add(rav1d_get_bits(c, n_bits));
 }
 
 unsafe fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint) -> c_uint {
-    let mut v: c_uint = 0 as c_int as c_uint;
+    let mut v: c_uint = 0;
     let mut i = 0;
     loop {
-        let b = if i != 0 { 3 + i - 1 } else { 3 as c_int };
-        if n < v.wrapping_add((3 * ((1 as c_int) << b)) as c_uint) {
-            v = v.wrapping_add(rav1d_get_uniform(
-                c,
-                n.wrapping_sub(v).wrapping_add(1 as c_int as c_uint),
-            ));
+        let b = if i != 0 { 3 + i - 1 } else { 3 };
+        if n < v.wrapping_add(3 * (1 << b)) {
+            v = v.wrapping_add(rav1d_get_uniform(c, n.wrapping_sub(v).wrapping_add(1)));
             break;
         } else if rav1d_get_bit(c) == 0 {
             v = v.wrapping_add(rav1d_get_bits(c, b));
             break;
         } else {
-            v = v.wrapping_add(((1 as c_int) << b) as c_uint);
+            v = v.wrapping_add(1 << b);
             i += 1;
         }
     }
-    return if r#ref.wrapping_mul(2 as c_int as c_uint) <= n {
+    return if r#ref.wrapping_mul(2) <= n {
         inv_recenter(r#ref, v)
     } else {
         n.wrapping_sub(inv_recenter(n.wrapping_sub(r#ref), v))
@@ -177,18 +174,13 @@ unsafe fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint) -> c_uint
 }
 
 pub unsafe fn rav1d_get_bits_subexp(c: *mut GetBits, r#ref: c_int, n: c_uint) -> c_int {
-    return get_bits_subexp_u(
-        c,
-        (r#ref + ((1 as c_int) << n)) as c_uint,
-        ((2 as c_int) << n) as c_uint,
-    ) as c_int
-        - ((1 as c_int) << n);
+    return get_bits_subexp_u(c, (r#ref + (1 << n)) as c_uint, 2 << n) as c_int - (1 << n);
 }
 
 pub unsafe fn rav1d_bytealign_get_bits(c: *mut GetBits) {
     if !((*c).bits_left <= 7) {
         unreachable!();
     }
-    (*c).bits_left = 0 as c_int;
-    (*c).state = 0 as c_int as u64;
+    (*c).bits_left = 0;
+    (*c).state = 0;
 }
