@@ -32,13 +32,13 @@ pub unsafe fn rav1d_get_bit(c: *mut GetBits) -> c_uint {
         } else {
             let fresh0 = (*c).ptr;
             (*c).ptr = ((*c).ptr).offset(1);
-            let state: c_uint = *fresh0 as c_uint;
+            let state = *fresh0 as c_uint;
             (*c).bits_left = 7;
             (*c).state = (state as u64) << 57;
             return state >> 7;
         }
     }
-    let state_0: u64 = (*c).state;
+    let state_0 = (*c).state;
     (*c).bits_left -= 1;
     (*c).state = state_0 << 1;
     return (state_0 >> 63) as c_uint;
@@ -49,7 +49,7 @@ unsafe fn refill(c: *mut GetBits, n: c_int) {
     if !((*c).bits_left >= 0 && (*c).bits_left < 32) {
         unreachable!();
     }
-    let mut state: c_uint = 0;
+    let mut state = 0;
     loop {
         if (*c).ptr >= (*c).ptr_end {
             (*c).error = 1;
@@ -76,7 +76,7 @@ pub unsafe fn rav1d_get_bits(c: *mut GetBits, n: c_int) -> c_uint {
     if n as c_uint > (*c).bits_left as c_uint {
         refill(c, n);
     }
-    let state: u64 = (*c).state;
+    let state = (*c).state;
     (*c).bits_left -= n;
     (*c).state = state << n;
     return (state as u64 >> 64 - n) as c_uint;
@@ -88,16 +88,16 @@ pub unsafe fn rav1d_get_sbits(c: *mut GetBits, n: c_int) -> c_int {
     if n as c_uint > (*c).bits_left as c_uint {
         refill(c, n);
     }
-    let state: u64 = (*c).state;
+    let state = (*c).state;
     (*c).bits_left -= n;
     (*c).state = state << n;
     return (state as i64 >> 64 - n) as c_int;
 }
 
 pub unsafe fn rav1d_get_uleb128(c: *mut GetBits) -> c_uint {
-    let mut val: u64 = 0;
-    let mut i: c_uint = 0;
-    let mut more: c_uint;
+    let mut val = 0;
+    let mut i = 0 as c_uint;
+    let mut more;
     loop {
         let v = rav1d_get_bits(c, 8) as c_int;
         more = (v & 0x80) as c_uint;
@@ -122,8 +122,8 @@ pub unsafe fn rav1d_get_uniform(c: *mut GetBits, max: c_uint) -> c_uint {
     if !(l > 1) {
         unreachable!();
     }
-    let m: c_uint = ((1 as c_uint) << l).wrapping_sub(max);
-    let v: c_uint = rav1d_get_bits(c, l - 1);
+    let m = ((1 as c_uint) << l).wrapping_sub(max);
+    let v = rav1d_get_bits(c, l - 1);
     return if v < m {
         v
     } else {
@@ -151,7 +151,7 @@ pub unsafe fn rav1d_get_vlc(c: *mut GetBits) -> c_uint {
 }
 
 unsafe fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint) -> c_uint {
-    let mut v: c_uint = 0;
+    let mut v = 0 as c_uint;
     let mut i = 0;
     loop {
         let b = if i != 0 { 3 + i - 1 } else { 3 };
