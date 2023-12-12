@@ -14,9 +14,7 @@ pub struct GetBits {
 }
 
 pub unsafe fn rav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: usize) {
-    if sz == 0 {
-        unreachable!();
-    }
+    assert!(sz != 0);
     (*c).ptr_start = data;
     (*c).ptr = (*c).ptr_start;
     (*c).ptr_end = (*c).ptr_start.add(sz);
@@ -45,9 +43,7 @@ pub unsafe fn rav1d_get_bit(c: *mut GetBits) -> c_uint {
 
 #[inline]
 unsafe fn refill(c: *mut GetBits, n: c_int) {
-    if !((*c).bits_left >= 0 && (*c).bits_left < 32) {
-        unreachable!();
-    }
+    assert!((*c).bits_left >= 0 && (*c).bits_left < 32);
     let mut state = 0;
     loop {
         if (*c).ptr >= (*c).ptr_end {
@@ -113,13 +109,9 @@ pub unsafe fn rav1d_get_uleb128(c: *mut GetBits) -> c_uint {
 }
 
 pub unsafe fn rav1d_get_uniform(c: *mut GetBits, max: c_uint) -> c_uint {
-    if !(max > 1) {
-        unreachable!();
-    }
+    assert!(max > 1);
     let l = ulog2(max) + 1;
-    if !(l > 1) {
-        unreachable!();
-    }
+    assert!(l > 1);
     let m = (1 << l) - max;
     let v = rav1d_get_bits(c, l - 1);
     if v < m {
@@ -174,9 +166,7 @@ pub unsafe fn rav1d_get_bits_subexp(c: *mut GetBits, r#ref: c_int, n: c_uint) ->
 }
 
 pub unsafe fn rav1d_bytealign_get_bits(c: *mut GetBits) {
-    if !((*c).bits_left <= 7) {
-        unreachable!();
-    }
+    assert!((*c).bits_left <= 7);
     (*c).bits_left = 0;
     (*c).state = 0;
 }
