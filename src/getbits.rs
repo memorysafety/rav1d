@@ -100,7 +100,7 @@ pub unsafe fn rav1d_get_uleb128(c: *mut GetBits) -> c_uint {
         let v = rav1d_get_bits(c, 8) as c_int;
         more = (v & 0x80) as c_uint;
         val |= ((v & 0x7f) as u64) << i;
-        i = i.wrapping_add(7);
+        i += 7;
         if !(more != 0 && i < 56) {
             break;
         }
@@ -120,12 +120,12 @@ pub unsafe fn rav1d_get_uniform(c: *mut GetBits, max: c_uint) -> c_uint {
     if !(l > 1) {
         unreachable!();
     }
-    let m = ((1 as c_uint) << l).wrapping_sub(max);
+    let m = (1 << l) - max;
     let v = rav1d_get_bits(c, l - 1);
     if v < m {
         v
     } else {
-        (v << 1).wrapping_sub(m).wrapping_add(rav1d_get_bit(c))
+        (v << 1) - m + rav1d_get_bit(c)
     }
 }
 
@@ -143,9 +143,7 @@ pub unsafe fn rav1d_get_vlc(c: *mut GetBits) -> c_uint {
             break;
         }
     }
-    ((1 as c_uint) << n_bits)
-        .wrapping_sub(1)
-        .wrapping_add(rav1d_get_bits(c, n_bits))
+    (1 << n_bits) - 1 + rav1d_get_bits(c, n_bits)
 }
 
 unsafe fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint) -> c_uint {
@@ -153,21 +151,21 @@ unsafe fn get_bits_subexp_u(c: *mut GetBits, r#ref: c_uint, n: c_uint) -> c_uint
     let mut i = 0;
     loop {
         let b = if i != 0 { 3 + i - 1 } else { 3 };
-        if n < v.wrapping_add(3 * (1 << b)) {
-            v = v.wrapping_add(rav1d_get_uniform(c, n.wrapping_sub(v).wrapping_add(1)));
+        if n < v + (3 * (1 << b)) {
+            v += rav1d_get_uniform(c, n - v + 1);
             break;
         } else if rav1d_get_bit(c) == 0 {
-            v = v.wrapping_add(rav1d_get_bits(c, b));
+            v += rav1d_get_bits(c, b);
             break;
         } else {
-            v = v.wrapping_add(1 << b);
+            v += 1 << b;
             i += 1;
         }
     }
-    if r#ref.wrapping_mul(2) <= n {
+    if r#ref * 2 <= n {
         inv_recenter(r#ref, v)
     } else {
-        n.wrapping_sub(inv_recenter(n.wrapping_sub(r#ref), v))
+        n - inv_recenter(n - r#ref, v)
     }
 }
 
