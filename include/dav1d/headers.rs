@@ -1503,7 +1503,7 @@ pub struct Dav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: c_int,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameHeaderOperatingPoint {
     pub buffer_removal_time: c_int,
