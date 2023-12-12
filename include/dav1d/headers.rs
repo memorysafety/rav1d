@@ -1284,7 +1284,7 @@ impl From<Rav1dLoopfilterModeRefDeltas> for Dav1dLoopfilterModeRefDeltas {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Rav1dFilmGrainData {
     pub seed: c_uint,
     pub num_y_points: c_int,

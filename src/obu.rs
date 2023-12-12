@@ -18,6 +18,7 @@ use crate::include::dav1d::headers::Rav1dFrameHeader_cdef;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta_lf;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta_q;
+use crate::include::dav1d::headers::Rav1dFrameHeader_film_grain;
 use crate::include::dav1d::headers::Rav1dFrameHeader_loopfilter;
 use crate::include::dav1d::headers::Rav1dFrameHeader_quant;
 use crate::include::dav1d::headers::Rav1dFrameHeader_restoration;
@@ -119,7 +120,6 @@ use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_is_writable;
 use crate::src::tables::dav1d_default_wm_params;
 use crate::src::thread_task::FRAME_ERROR;
-use libc::memset;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
@@ -127,7 +127,6 @@ use std::array;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 use std::fmt;
 use std::mem::MaybeUninit;
 
@@ -1591,18 +1590,18 @@ unsafe fn parse_gmv(
 unsafe fn parse_film_grain(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &mut Rav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult {
-    hdr.film_grain.present = (seqhdr.film_grain_present != 0
+) -> Rav1dResult<Rav1dFrameHeader_film_grain> {
+    let present = (seqhdr.film_grain_present != 0
         && (hdr.show_frame != 0 || hdr.showable_frame != 0)
         && rav1d_get_bit(gb) != 0) as c_int;
-    if hdr.film_grain.present != 0 {
+    let update;
+    let data = if present != 0 {
         let seed = rav1d_get_bits(gb, 16);
-        hdr.film_grain.update =
-            (hdr.frame_type != Rav1dFrameType::Inter || rav1d_get_bit(gb) != 0) as c_int;
-        if hdr.film_grain.update == 0 {
+        update = (hdr.frame_type != Rav1dFrameType::Inter || rav1d_get_bit(gb) != 0) as c_int;
+        if update == 0 {
             let refidx = rav1d_get_bits(gb, 3) as c_int;
             let mut found = false;
             for i in 0..7 {
@@ -1614,13 +1613,15 @@ unsafe fn parse_film_grain(
             if !found || c.refs[refidx as usize].p.p.frame_hdr.is_null() {
                 return Err(EINVAL);
             }
-            hdr.film_grain.data = (*c.refs[refidx as usize].p.p.frame_hdr)
+            let mut data = (*c.refs[refidx as usize].p.p.frame_hdr)
                 .film_grain
                 .data
                 .clone();
-            hdr.film_grain.data.seed = seed;
+            data.seed = seed;
+            data
         } else {
-            let fgd = &mut hdr.film_grain.data;
+            let mut data = Rav1dFilmGrainData::default();
+            let fgd = &mut data;
             fgd.seed = seed;
 
             fgd.num_y_points = rav1d_get_bits(gb, 4) as c_int;
@@ -1702,16 +1703,21 @@ unsafe fn parse_film_grain(
             }
             fgd.overlap_flag = rav1d_get_bit(gb) != 0;
             fgd.clip_to_restricted_range = rav1d_get_bit(gb) != 0;
+
+            data
         }
     } else {
-        memset(
-            &mut hdr.film_grain.data as *mut Rav1dFilmGrainData as *mut c_void,
-            0,
-            ::core::mem::size_of::<Rav1dFilmGrainData>(),
-        );
-    }
+        // Default initialization.
+        update = Default::default();
+
+        Default::default()
+    };
     debug.post(gb, "filmgrain");
-    Ok(())
+    Ok(Rav1dFrameHeader_film_grain {
+        data,
+        present,
+        update,
+    })
 }
 
 unsafe fn parse_frame_hdr(
@@ -1970,7 +1976,7 @@ unsafe fn parse_frame_hdr(
         &debug,
         gb,
     )?;
-    parse_film_grain(c, seqhdr, &mut hdr, &debug, gb)?;
+    hdr.film_grain = parse_film_grain(c, seqhdr, &hdr, &debug, gb)?;
 
     Ok(hdr)
 }
