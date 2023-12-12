@@ -37,10 +37,10 @@ pub unsafe fn rav1d_get_bit(c: *mut GetBits) -> c_uint {
             return state >> 7;
         }
     }
-    let state_0 = (*c).state;
+    let state = (*c).state;
     (*c).bits_left -= 1;
-    (*c).state = state_0 << 1;
-    return (state_0 >> 63) as c_uint;
+    (*c).state = state << 1;
+    return (state >> 63) as c_uint;
 }
 
 #[inline]
