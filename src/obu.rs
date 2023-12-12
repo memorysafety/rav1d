@@ -122,15 +122,15 @@ use std::mem::MaybeUninit;
 struct Debug {
     enabled: bool,
     name: &'static str,
-    init_ptr: *const u8,
+    start: c_uint,
 }
 
 impl Debug {
-    pub const fn new(enabled: bool, name: &'static str, gb: &GetBits) -> Self {
+    pub const unsafe fn new(enabled: bool, name: &'static str, gb: &GetBits) -> Self {
         Self {
             enabled,
             name,
-            init_ptr: gb.ptr,
+            start: gb.pos(),
         }
     }
 
@@ -138,12 +138,12 @@ impl Debug {
         let &Self {
             enabled,
             name: _,
-            init_ptr,
+            start,
         } = self;
         Self {
             enabled,
             name,
-            init_ptr,
+            start,
         }
     }
 
@@ -151,12 +151,12 @@ impl Debug {
         let &Self {
             enabled,
             name,
-            init_ptr,
+            start,
         } = self;
         if !enabled {
             return;
         }
-        let offset = gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize;
+        let offset = gb.pos() - start;
         println!("{name}: {msg} [off={offset}]");
     }
 
