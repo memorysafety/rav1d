@@ -1366,15 +1366,17 @@ unsafe fn parse_cdef(
 
 unsafe fn parse_restoration(
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &Rav1dFrameHeader,
+    all_lossless: c_int,
+    super_res_enabled: c_int,
+    allow_intrabc: c_int,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_restoration {
     let r#type;
     let unit_size;
-    if (hdr.all_lossless == 0 || hdr.size.super_res.enabled != 0)
+    if (all_lossless == 0 || super_res_enabled != 0)
         && seqhdr.restoration != 0
-        && hdr.allow_intrabc == 0
+        && allow_intrabc == 0
     {
         let type_0 = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
         r#type = if seqhdr.monochrome == 0 {
@@ -1913,7 +1915,14 @@ unsafe fn parse_frame_hdr(
         gb,
     )?;
     hdr.cdef = parse_cdef(seqhdr, hdr.all_lossless, hdr.allow_intrabc, &debug, gb);
-    hdr.restoration = parse_restoration(seqhdr, &hdr, &debug, gb);
+    hdr.restoration = parse_restoration(
+        seqhdr,
+        hdr.all_lossless,
+        hdr.size.super_res.enabled,
+        hdr.allow_intrabc,
+        &debug,
+        gb,
+    );
 
     hdr.txfm_mode = if hdr.all_lossless != 0 {
         RAV1D_TX_4X4_ONLY
