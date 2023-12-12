@@ -165,7 +165,7 @@ pub unsafe fn rav1d_get_bits_subexp(c: &mut GetBits, r#ref: c_int, n: c_uint) ->
     get_bits_subexp_u(c, (r#ref + (1 << n)) as c_uint, 2 << n) as c_int - (1 << n)
 }
 
-pub unsafe fn rav1d_bytealign_get_bits(c: &mut GetBits) {
+pub fn rav1d_bytealign_get_bits(c: &mut GetBits) {
     assert!(c.bits_left <= 7);
     c.bits_left = 0;
     c.state = 0;
