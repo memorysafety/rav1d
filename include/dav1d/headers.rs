@@ -1135,7 +1135,7 @@ pub struct Dav1dSegmentationData {
     pub globalmv: c_int,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dSegmentationData {
     pub delta_q: c_int,
@@ -1206,7 +1206,7 @@ pub struct Dav1dSegmentationDataSet {
     pub last_active_segid: c_int,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dSegmentationDataSet {
     pub d: [Rav1dSegmentationData; RAV1D_MAX_SEGMENTS as usize],
