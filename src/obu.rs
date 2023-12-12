@@ -1243,7 +1243,10 @@ unsafe fn parse_delta(
 unsafe fn parse_loopfilter(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &Rav1dFrameHeader,
+    all_lossless: c_int,
+    allow_intrabc: c_int,
+    primary_ref_frame: c_int,
+    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_loopfilter> {
@@ -1254,7 +1257,7 @@ unsafe fn parse_loopfilter(
     let mode_ref_delta_update;
     let mut mode_ref_deltas;
     let sharpness;
-    if hdr.all_lossless != 0 || hdr.allow_intrabc != 0 {
+    if all_lossless != 0 || allow_intrabc != 0 {
         level_y = [0; 2];
         level_v = 0;
         level_u = level_v;
@@ -1277,10 +1280,10 @@ unsafe fn parse_loopfilter(
         }
         sharpness = rav1d_get_bits(gb, 3) as c_int;
 
-        if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
+        if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
             mode_ref_deltas = default_mode_ref_deltas.clone();
         } else {
-            let r#ref = hdr.refidx[hdr.primary_ref_frame as usize];
+            let r#ref = refidx[primary_ref_frame as usize];
             if (c.refs[r#ref as usize].p.p.frame_hdr).is_null() {
                 return Err(EINVAL);
             }
@@ -1883,7 +1886,16 @@ unsafe fn parse_frame_hdr(
     )?;
     hdr.all_lossless = hdr.segmentation.lossless.iter().all(|&it| it != 0) as c_int;
     hdr.delta = parse_delta(&hdr.quant, hdr.allow_intrabc, &debug, gb);
-    hdr.loopfilter = parse_loopfilter(c, seqhdr, &hdr, &debug, gb)?;
+    hdr.loopfilter = parse_loopfilter(
+        c,
+        seqhdr,
+        hdr.all_lossless,
+        hdr.allow_intrabc,
+        hdr.primary_ref_frame,
+        &hdr.refidx,
+        &debug,
+        gb,
+    )?;
     parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
     parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
 
