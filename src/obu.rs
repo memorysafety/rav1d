@@ -14,6 +14,9 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader_delta;
+use crate::include::dav1d::headers::Rav1dFrameHeader_delta_lf;
+use crate::include::dav1d::headers::Rav1dFrameHeader_delta_q;
 use crate::include::dav1d::headers::Rav1dFrameHeader_quant;
 use crate::include::dav1d::headers::Rav1dFrameHeader_segmentation;
 use crate::include::dav1d::headers::Rav1dFrameHeader_super_res;
@@ -1195,30 +1198,44 @@ unsafe fn parse_segmentation(
     })
 }
 
-unsafe fn parse_delta(hdr: &mut Rav1dFrameHeader, debug: &Debug, gb: &mut GetBits) {
-    hdr.delta.q.present = if hdr.quant.yac != 0 {
-        rav1d_get_bit(gb) as c_int
-    } else {
-        0
+unsafe fn parse_delta(
+    hdr: &Rav1dFrameHeader,
+    debug: &Debug,
+    gb: &mut GetBits,
+) -> Rav1dFrameHeader_delta {
+    let q = {
+        let present = if hdr.quant.yac != 0 {
+            rav1d_get_bit(gb) as c_int
+        } else {
+            0
+        };
+        let res_log2 = if present != 0 {
+            rav1d_get_bits(gb, 2) as c_int
+        } else {
+            0
+        };
+        Rav1dFrameHeader_delta_q { present, res_log2 }
     };
-    hdr.delta.q.res_log2 = if hdr.delta.q.present != 0 {
-        rav1d_get_bits(gb, 2) as c_int
-    } else {
-        0
-    };
-    hdr.delta.lf.present =
-        (hdr.delta.q.present != 0 && hdr.allow_intrabc == 0 && rav1d_get_bit(gb) != 0) as c_int;
-    hdr.delta.lf.res_log2 = if hdr.delta.lf.present != 0 {
-        rav1d_get_bits(gb, 2) as c_int
-    } else {
-        0
-    };
-    hdr.delta.lf.multi = if hdr.delta.lf.present != 0 {
-        rav1d_get_bit(gb) as c_int
-    } else {
-        0
+    let lf = {
+        let present = (q.present != 0 && hdr.allow_intrabc == 0 && rav1d_get_bit(gb) != 0) as c_int;
+        let res_log2 = if present != 0 {
+            rav1d_get_bits(gb, 2) as c_int
+        } else {
+            0
+        };
+        let multi = if present != 0 {
+            rav1d_get_bit(gb) as c_int
+        } else {
+            0
+        };
+        Rav1dFrameHeader_delta_lf {
+            present,
+            res_log2,
+            multi,
+        }
     };
     debug.post(gb, "delta_q_lf_flags");
+    Rav1dFrameHeader_delta { q, lf }
 }
 
 unsafe fn parse_loopfilter(
@@ -1844,7 +1861,7 @@ unsafe fn parse_frame_hdr(
         gb,
     )?;
     hdr.all_lossless = hdr.segmentation.lossless.iter().all(|&it| it != 0) as c_int;
-    parse_delta(&mut hdr, &debug, gb);
+    hdr.delta = parse_delta(&hdr, &debug, gb);
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
     parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
     parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
