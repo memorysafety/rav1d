@@ -741,7 +741,7 @@ unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
         match res {
             Err(_) => rav1d_data_unref_internal(in_0),
             Ok(res) => {
-                if !(res as usize <= (*in_0).sz) {
+                if !(res <= (*in_0).sz) {
                     unreachable!();
                 }
                 (*in_0).sz = ((*in_0).sz as c_ulong).wrapping_sub(res as c_ulong) as usize as usize;
