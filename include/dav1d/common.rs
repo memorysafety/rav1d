@@ -58,7 +58,7 @@ pub struct Dav1dDataProps {
     pub user_data: Dav1dUserData,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dDataProps {
     pub timestamp: i64,
@@ -66,6 +66,18 @@ pub(crate) struct Rav1dDataProps {
     pub offset: libc::off_t,
     pub size: usize,
     pub user_data: Rav1dUserData,
+}
+
+impl Default for Rav1dDataProps {
+    fn default() -> Self {
+        Self {
+            timestamp: i64::MIN,
+            duration: 0,
+            offset: -1,
+            size: 0,
+            user_data: Default::default(),
+        }
+    }
 }
 
 impl From<Dav1dDataProps> for Rav1dDataProps {

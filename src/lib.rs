@@ -36,7 +36,6 @@ use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
 use crate::src::data::rav1d_data_create_internal;
 use crate::src::data::rav1d_data_props_copy;
-use crate::src::data::rav1d_data_props_set_defaults;
 use crate::src::data::rav1d_data_props_unref_internal;
 use crate::src::data::rav1d_data_ref;
 use crate::src::data::rav1d_data_unref_internal;
@@ -291,7 +290,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).output_invisible_frames = s.output_invisible_frames;
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
-    rav1d_data_props_set_defaults(&mut (*c).cached_error_props);
+    (*c).cached_error_props = Default::default();
     if rav1d_mem_pool_init(&mut (*c).seq_hdr_pool).is_err()
         || rav1d_mem_pool_init(&mut (*c).frame_hdr_pool).is_err()
         || rav1d_mem_pool_init(&mut (*c).segmap_pool).is_err()
@@ -1234,7 +1233,7 @@ pub(crate) unsafe fn rav1d_get_decode_error_data_props(
 ) -> Rav1dResult {
     rav1d_data_props_unref_internal(out);
     *out = c.cached_error_props.clone();
-    rav1d_data_props_set_defaults(&mut c.cached_error_props);
+    c.cached_error_props = Default::default();
     Ok(())
 }
 
