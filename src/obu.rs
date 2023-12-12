@@ -123,7 +123,7 @@ use std::slice;
 struct Debug {
     enabled: bool,
     name: &'static str,
-    start: c_uint,
+    start: usize,
 }
 
 impl Debug {
@@ -2100,8 +2100,8 @@ fn parse_tile_hdr(tiling: &Rav1dFrameHeader_tiling, gb: &mut GetBits) -> Rav1dTi
 fn check_for_overrun(
     c: &mut Rav1dContext,
     gb: &mut GetBits,
-    init_bit_pos: c_uint,
-    obu_len: c_uint,
+    init_bit_pos: usize,
+    obu_len: usize,
 ) -> c_int {
     // Make sure we haven't actually read past the end of the `gb` buffer
     if gb.has_error() != 0 {
@@ -2127,8 +2127,8 @@ unsafe fn parse_obus(
     c: &mut Rav1dContext,
     r#in: &mut Rav1dData,
     global: c_int,
-) -> Rav1dResult<c_uint> {
-    unsafe fn skip(c: &mut Rav1dContext, len: c_uint, init_byte_pos: c_uint) -> c_uint {
+) -> Rav1dResult<usize> {
+    unsafe fn skip(c: &mut Rav1dContext, len: usize, init_byte_pos: usize) -> usize {
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
             if (*c.frame_hdr).refresh_frame_flags & (1 << i) != 0 {
@@ -2168,9 +2168,9 @@ unsafe fn parse_obus(
 
     // obu length field
     let len = if has_length_field != 0 {
-        gb.get_uleb128()
+        gb.get_uleb128() as usize
     } else {
-        r#in.sz as c_uint - 1 - has_extension as c_uint
+        r#in.sz - 1 - has_extension as usize
     };
     if gb.has_error() != 0 {
         return Err(EINVAL);
@@ -2186,7 +2186,7 @@ unsafe fn parse_obus(
 
     // Make sure that there are enough bits left in the buffer
     // for the rest of the OBU.
-    if len as usize > r#in.sz - init_byte_pos as usize {
+    if len > r#in.sz - init_byte_pos {
         return Err(EINVAL);
     }
 
@@ -2207,9 +2207,9 @@ unsafe fn parse_obus(
         c: &mut Rav1dContext,
         r#in: &mut Rav1dData,
         gb: &mut GetBits,
-        init_bit_pos: c_uint,
-        init_byte_pos: c_uint,
-        len: c_uint,
+        init_bit_pos: usize,
+        init_byte_pos: usize,
+        len: usize,
     ) -> Rav1dResult {
         if c.frame_hdr.is_null() {
             return Err(EINVAL);
@@ -2473,7 +2473,7 @@ unsafe fn parse_obus(
                     while payload_size > 0
                         && *r#in
                             .data
-                            .offset((init_byte_pos + payload_size as c_uint - 1) as isize)
+                            .offset((init_byte_pos + payload_size as usize - 1) as isize)
                             == 0
                     {
                         payload_size -= 1; // trailing_zero_bit x 8
@@ -2751,7 +2751,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
     c: &mut Rav1dContext,
     r#in: &mut Rav1dData,
     global: c_int,
-) -> Rav1dResult<c_uint> {
+) -> Rav1dResult<usize> {
     parse_obus(c, r#in, global).inspect_err(|_| {
         rav1d_data_props_copy(&mut c.cached_error_props, &mut r#in.m);
         writeln!(c.logger, "Error parsing OBU data");
