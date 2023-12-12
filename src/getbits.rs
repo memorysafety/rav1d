@@ -171,4 +171,9 @@ impl GetBits {
         self.bits_left = 0;
         self.state = 0;
     }
+
+    #[inline]
+    pub unsafe fn pos(&self) -> c_uint {
+        self.ptr.offset_from(self.ptr_start) as c_uint * 8 - self.bits_left as c_uint
+    }
 }

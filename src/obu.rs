@@ -165,11 +165,6 @@ impl Debug {
     }
 }
 
-#[inline]
-unsafe fn rav1d_get_bits_pos(c: &GetBits) -> c_uint {
-    c.ptr.offset_from(c.ptr_start) as c_uint * 8 - c.bits_left as c_uint
-}
-
 unsafe fn parse_seq_hdr(
     c: &mut Rav1dContext,
     gb: &mut GetBits,
@@ -2119,7 +2114,7 @@ unsafe fn check_for_overrun(
         return 1;
     }
 
-    let pos = rav1d_get_bits_pos(gb);
+    let pos = gb.pos();
 
     // We assume that `init_bit_pos` was the bit position of the buffer
     // at some point in the past, so cannot be smaller than `pos`.
@@ -2195,7 +2190,7 @@ unsafe fn parse_obus(
         return Err(EINVAL);
     }
 
-    let init_bit_pos = rav1d_get_bits_pos(&mut gb);
+    let init_bit_pos = gb.pos();
     let init_byte_pos = init_bit_pos >> 3;
 
     // We must have read a whole number of bytes at this point
@@ -2250,7 +2245,7 @@ unsafe fn parse_obus(
         // (because we just aligned it) and less than `8 * pkt_bytelen`
         // because otherwise the overrun check would have fired.
         let pkt_bytelen = init_byte_pos + len;
-        let bit_pos = rav1d_get_bits_pos(gb);
+        let bit_pos = gb.pos();
         assert!(bit_pos & 7 == 0);
         assert!(pkt_bytelen >= bit_pos >> 3);
         let mut data = Default::default();
@@ -2412,7 +2407,7 @@ unsafe fn parse_obus(
 
             // obu metadata type field
             let meta_type = gb.get_uleb128() as ObuMetaType;
-            let meta_type_len = ((rav1d_get_bits_pos(&mut gb) - init_bit_pos) >> 3) as c_int;
+            let meta_type_len = ((gb.pos() - init_bit_pos) >> 3) as c_int;
             if gb.error != 0 {
                 return Err(EINVAL);
             }
