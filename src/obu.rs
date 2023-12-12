@@ -673,9 +673,8 @@ unsafe fn read_frame_size(c: &mut Rav1dContext, gb: &mut GetBits, use_ref: c_int
 }
 
 #[inline]
-unsafe fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
-    let mut k;
-    k = 0;
+fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
+    let mut k = 0;
     while sz << k < tgt {
         k += 1;
     }
