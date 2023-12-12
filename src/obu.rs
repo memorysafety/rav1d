@@ -1325,7 +1325,8 @@ unsafe fn parse_loopfilter(
 
 unsafe fn parse_cdef(
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &Rav1dFrameHeader,
+    all_lossless: c_int,
+    allow_intrabc: c_int,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_cdef {
@@ -1333,7 +1334,7 @@ unsafe fn parse_cdef(
     let n_bits;
     let mut y_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
     let mut uv_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
-    if hdr.all_lossless == 0 && seqhdr.cdef != 0 && hdr.allow_intrabc == 0 {
+    if all_lossless == 0 && seqhdr.cdef != 0 && allow_intrabc == 0 {
         damping = rav1d_get_bits(gb, 2) as c_int + 3;
         n_bits = rav1d_get_bits(gb, 2) as c_int;
         for i in 0..1 << n_bits {
@@ -1907,7 +1908,7 @@ unsafe fn parse_frame_hdr(
         &debug,
         gb,
     )?;
-    hdr.cdef = parse_cdef(seqhdr, &hdr, &debug, gb);
+    hdr.cdef = parse_cdef(seqhdr, hdr.all_lossless, hdr.allow_intrabc, &debug, gb);
     parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
 
     hdr.txfm_mode = if hdr.all_lossless != 0 {
