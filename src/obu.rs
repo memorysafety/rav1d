@@ -131,14 +131,6 @@ unsafe fn parse_seq_hdr(
     c: &mut Rav1dContext,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dSequenceHeader> {
-    unsafe fn error(c: &mut Rav1dContext) -> Rav1dResult {
-        rav1d_log(
-            c,
-            b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
-        );
-        return Err(EINVAL);
-    }
-
     const DEBUG_SEQ_HDR: bool = false;
     let init_bit_pos = if DEBUG_SEQ_HDR {
         rav1d_get_bits_pos(gb)
@@ -148,7 +140,7 @@ unsafe fn parse_seq_hdr(
 
     let profile = rav1d_get_bits(gb, 3) as c_int;
     if profile > 2 {
-        error(c)?;
+        return Err(EINVAL);
     }
     if DEBUG_SEQ_HDR {
         println!(
@@ -160,7 +152,7 @@ unsafe fn parse_seq_hdr(
     let still_picture = rav1d_get_bit(gb) as c_int;
     let reduced_still_picture_header = rav1d_get_bit(gb) as c_int;
     if reduced_still_picture_header != 0 && still_picture == 0 {
-        error(c)?;
+        return Err(EINVAL);
     }
     if DEBUG_SEQ_HDR {
         println!(
@@ -209,13 +201,13 @@ unsafe fn parse_seq_hdr(
             num_units_in_tick = rav1d_get_bits(gb, 32) as c_int;
             time_scale = rav1d_get_bits(gb, 32) as c_int;
             if c.strict_std_compliance && (num_units_in_tick == 0 || time_scale == 0) {
-                error(c)?;
+                return Err(EINVAL);
             }
             equal_picture_interval = rav1d_get_bit(gb) as c_int;
             if equal_picture_interval != 0 {
                 let num_ticks_per_picture_ = rav1d_get_vlc(gb);
                 if num_ticks_per_picture_ == 0xffffffff {
-                    error(c)?;
+                    return Err(EINVAL);
                 }
                 num_ticks_per_picture = num_ticks_per_picture_ + 1;
             } else {
@@ -228,7 +220,7 @@ unsafe fn parse_seq_hdr(
                 encoder_decoder_buffer_delay_length = rav1d_get_bits(gb, 5) as c_int + 1;
                 num_units_in_decoding_tick = rav1d_get_bits(gb, 32) as c_int;
                 if c.strict_std_compliance && num_units_in_decoding_tick == 0 {
-                    error(c)?;
+                    return Err(EINVAL);
                 }
                 buffer_removal_delay_length = rav1d_get_bits(gb, 5) as c_int + 1;
                 frame_presentation_delay_length = rav1d_get_bits(gb, 5) as c_int + 1;
@@ -264,7 +256,7 @@ unsafe fn parse_seq_hdr(
             let op = &mut operating_points[i as usize];
             op.idc = rav1d_get_bits(gb, 12) as c_int;
             if op.idc != 0 && (op.idc & 0xff == 0 || op.idc & 0xf00 == 0) {
-                error(c)?;
+                return Err(EINVAL);
             }
             op.major_level = 2 + rav1d_get_bits(gb, 3) as c_int;
             op.minor_level = rav1d_get_bits(gb, 2) as c_int;
@@ -467,7 +459,7 @@ unsafe fn parse_seq_hdr(
         layout = Rav1dPixelLayout::I444;
         color_range = 1;
         if profile != 1 && !(profile == 2 && hbd == 2) {
-            error(c)?;
+            return Err(EINVAL);
         }
 
         // Default initialization.
@@ -523,7 +515,7 @@ unsafe fn parse_seq_hdr(
         };
     }
     if c.strict_std_compliance && mtrx == RAV1D_MC_IDENTITY && layout != Rav1dPixelLayout::I444 {
-        error(c)?;
+        return Err(EINVAL);
     }
     let separate_uv_delta_q;
     if monochrome == 0 {
@@ -687,14 +679,6 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
 };
 
 unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult {
-    unsafe fn error(c: &mut Rav1dContext) -> Rav1dResult {
-        rav1d_log(
-            c,
-            b"Error parsing frame header\n\0" as *const u8 as *const c_char,
-        );
-        return Err(EINVAL);
-    }
-
     const DEBUG_FRAME_HDR: bool = false;
     let init_ptr = gb.ptr;
 
@@ -718,7 +702,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             hdr.frame_id = rav1d_get_bits(gb, seqhdr.frame_id_n_bits) as c_int;
             let ref_frame_hdr = c.refs[hdr.existing_frame_idx as usize].p.p.frame_hdr;
             if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != hdr.frame_id {
-                error(c)?;
+                return Err(EINVAL);
             }
         }
         return Ok(());
@@ -833,10 +817,10 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             && hdr.frame_type == RAV1D_FRAME_TYPE_INTRA
             && hdr.refresh_frame_flags == 0xff
         {
-            error(c)?;
+            return Err(EINVAL);
         }
         if read_frame_size(c, gb, 0) < 0 {
-            error(c)?;
+            return Err(EINVAL);
         }
         hdr.allow_intrabc = (hdr.allow_screen_content_tools != 0
             && hdr.super_res.enabled == 0
@@ -869,7 +853,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             let current_frame_offset = 1 << seqhdr.order_hint_n_bits - 1;
             for i in 0..8 {
                 if c.refs[i as usize].p.p.frame_hdr.is_null() {
-                    error(c)?;
+                    return Err(EINVAL);
                 }
                 shifted_frame_offset[i as usize] = current_frame_offset
                     + get_poc_diff(
@@ -974,13 +958,13 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                         & ((1) << seqhdr.frame_id_n_bits) - 1;
                 let ref_frame_hdr = c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr;
                 if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != ref_frame_id {
-                    error(c)?;
+                    return Err(EINVAL);
                 }
             }
         }
         let use_ref = (hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0) as c_int;
         if read_frame_size(c, gb, use_ref) < 0 {
-            error(c)?;
+            return Err(EINVAL);
         }
         hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
         hdr.subpel_filter_mode = if rav1d_get_bit(gb) != 0 {
@@ -1098,7 +1082,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         hdr.tiling.update =
             rav1d_get_bits(gb, hdr.tiling.log2_cols + hdr.tiling.log2_rows) as c_int;
         if hdr.tiling.update >= hdr.tiling.cols * hdr.tiling.rows {
-            error(c)?;
+            return Err(EINVAL);
         }
         hdr.tiling.n_bytes = rav1d_get_bits(gb, 2) + 1;
     } else {
@@ -1253,7 +1237,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             assert!(hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
             let pri_ref = hdr.refidx[hdr.primary_ref_frame as usize];
             if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
-                error(c)?;
+                return Err(EINVAL);
             }
             hdr.segmentation.seg_data = (*c.refs[pri_ref as usize].p.p.frame_hdr)
                 .segmentation
@@ -1351,7 +1335,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         } else {
             let r#ref = hdr.refidx[hdr.primary_ref_frame as usize];
             if (c.refs[r#ref as usize].p.p.frame_hdr).is_null() {
-                error(c)?;
+                return Err(EINVAL);
             }
             hdr.loopfilter.mode_ref_deltas = (*c.refs[r#ref as usize].p.p.frame_hdr)
                 .loopfilter
@@ -1492,7 +1476,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 .frame_hdr
                 .is_null()
             {
-                error(c)?;
+                return Err(EINVAL);
             }
             let refpoc =
                 (*c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
@@ -1527,7 +1511,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             let mut off_before2_idx = 0;
             for i in 0..7 {
                 if (c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
-                    error(c)?;
+                    return Err(EINVAL);
                 }
                 let refpoc =
                     (*c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
@@ -1611,7 +1595,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
             } else {
                 let pri_ref = hdr.refidx[hdr.primary_ref_frame as usize];
                 if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
-                    error(c)?;
+                    return Err(EINVAL);
                 }
                 ref_gmv = &mut (*c.refs[pri_ref as usize].p.p.frame_hdr).gmv[i as usize];
             }
@@ -1669,7 +1653,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 }
             }
             if !found || c.refs[refidx as usize].p.p.frame_hdr.is_null() {
-                error(c)?;
+                return Err(EINVAL);
             }
             hdr.film_grain.data = (*c.refs[refidx as usize].p.p.frame_hdr)
                 .film_grain
@@ -1682,7 +1666,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
 
             fgd.num_y_points = rav1d_get_bits(gb, 4) as c_int;
             if fgd.num_y_points > 14 {
-                error(c)?;
+                return Err(EINVAL);
             }
             for i in 0..fgd.num_y_points {
                 fgd.y_points[i as usize][0] = rav1d_get_bits(gb, 8) as u8;
@@ -1690,7 +1674,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                     && fgd.y_points[(i - 1) as usize][0] as c_int
                         >= fgd.y_points[i as usize][0] as c_int
                 {
-                    error(c)?;
+                    return Err(EINVAL);
                 }
                 fgd.y_points[i as usize][1] = rav1d_get_bits(gb, 8) as u8;
             }
@@ -1706,7 +1690,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 for pl in 0..2 {
                     fgd.num_uv_points[pl as usize] = rav1d_get_bits(gb, 4) as c_int;
                     if fgd.num_uv_points[pl as usize] > 10 {
-                        error(c)?;
+                        return Err(EINVAL);
                     }
                     for i in 0..fgd.num_uv_points[pl as usize] {
                         fgd.uv_points[pl as usize][i as usize][0] = rav1d_get_bits(gb, 8) as u8;
@@ -1714,7 +1698,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                             && fgd.uv_points[pl as usize][(i - 1) as usize][0] as c_int
                                 >= fgd.uv_points[pl as usize][i as usize][0] as c_int
                         {
-                            error(c)?;
+                            return Err(EINVAL);
                         }
                         fgd.uv_points[pl as usize][i as usize][1] = rav1d_get_bits(gb, 8) as u8;
                     }
@@ -1725,7 +1709,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 && seqhdr.ss_ver == 1
                 && (fgd.num_uv_points[0] != 0) != (fgd.num_uv_points[1] != 0)
             {
-                error(c)?;
+                return Err(EINVAL);
             }
 
             fgd.scaling_shift = rav1d_get_bits(gb, 2) as u8 + 8;
@@ -1833,20 +1817,11 @@ unsafe fn check_for_overrun(
     0
 }
 
-pub(crate) unsafe fn rav1d_parse_obus(
+unsafe fn parse_obus(
     c: &mut Rav1dContext,
     r#in: &mut Rav1dData,
     global: c_int,
 ) -> Rav1dResult<c_uint> {
-    unsafe fn error(c: &mut Rav1dContext, r#in: &mut Rav1dData) -> Rav1dResult {
-        rav1d_data_props_copy(&mut c.cached_error_props, &mut r#in.m);
-        rav1d_log(
-            c,
-            b"Error parsing OBU data\n\0" as *const u8 as *const c_char,
-        );
-        return Err(EINVAL);
-    }
-
     unsafe fn skip(c: &mut Rav1dContext, len: c_uint, init_byte_pos: c_uint) -> c_uint {
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
@@ -1901,7 +1876,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
         r#in.sz as c_uint - 1 - has_extension as c_uint
     };
     if gb.error != 0 {
-        error(c, r#in)?;
+        return Err(EINVAL);
     }
 
     let init_bit_pos = rav1d_get_bits_pos(&mut gb);
@@ -1920,7 +1895,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
     // Make sure that there are enough bits left in the buffer
     // for the rest of the OBU.
     if len as usize > r#in.sz - init_byte_pos as usize {
-        error(c, r#in)?;
+        return Err(EINVAL);
     }
 
     // skip obu not belonging to the selected temporal/spatial layer
@@ -1945,20 +1920,20 @@ pub(crate) unsafe fn rav1d_parse_obus(
         len: c_uint,
     ) -> Rav1dResult {
         if c.frame_hdr.is_null() {
-            error(c, r#in)?;
+            return Err(EINVAL);
         }
         if c.n_tile_data_alloc < c.n_tile_data + 1 {
             if c.n_tile_data + 1
                 > i32::MAX / ::core::mem::size_of::<Rav1dTileGroup>() as c_ulong as c_int
             {
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             let tile = realloc(
                 c.tile as *mut c_void,
                 ((c.n_tile_data + 1) as usize) * ::core::mem::size_of::<Rav1dTileGroup>(),
             ) as *mut Rav1dTileGroup;
             if tile.is_null() {
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             c.tile = tile;
             memset(
@@ -1972,7 +1947,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
         // Align to the next byte boundary and check for overrun.
         rav1d_bytealign_get_bits(gb);
         if check_for_overrun(c, gb, init_bit_pos, len) != 0 {
-            error(c, r#in)?;
+            return Err(EINVAL);
         }
         // The current bit position is a multiple of 8
         // (because we just aligned it) and less than `8 * pkt_bytelen`
@@ -1998,7 +1973,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             }
             c.n_tile_data = 0;
             c.n_tiles = 0;
-            error(c, r#in)?;
+            return Err(EINVAL);
         }
         c.n_tiles += 1 + (*(c.tile).offset(c.n_tile_data as isize)).end
             - (*(c.tile).offset(c.n_tile_data as isize)).start;
@@ -2019,15 +1994,18 @@ pub(crate) unsafe fn rav1d_parse_obus(
             let seq_hdrs = (*r#ref)
                 .data
                 .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>();
-            let seq_hdr = parse_seq_hdr(c, &mut gb).map_err(|_| {
+            let seq_hdr = parse_seq_hdr(c, &mut gb).inspect_err(|_| {
+                rav1d_log(
+                    c,
+                    b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
+                );
                 rav1d_ref_dec(&mut r#ref);
-                error(c, r#in).unwrap_err()
             })?;
             (*seq_hdrs) = DRav1d::from_rav1d(seq_hdr);
             let seq_hdr = &mut (*seq_hdrs).rav1d as *mut Rav1dSequenceHeader;
             if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                 rav1d_ref_dec(&mut r#ref);
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             // If we have read a sequence header which is different from the old one,
             // this is a new video sequence and can't use any previous state.
@@ -2065,7 +2043,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
         RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR if global != 0 => {}
         RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
             if c.seq_hdr.is_null() {
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             if c.frame_hdr_ref.is_null() {
                 c.frame_hdr_ref = rav1d_ref_create_using_pool(
@@ -2090,8 +2068,12 @@ pub(crate) unsafe fn rav1d_parse_obus(
             (*c.frame_hdr).spatial_id = spatial_id;
             let res = parse_frame_hdr(c, &mut gb);
             if res.is_err() {
+                rav1d_log(
+                    c,
+                    b"Error parsing frame header\n\0" as *const u8 as *const c_char,
+                );
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             for n in 0..c.n_tile_data {
                 rav1d_data_unref_internal(&mut (*c.tile.offset(n as isize)).data);
@@ -2104,7 +2086,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 rav1d_get_bit(&mut gb);
                 if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                     c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                    error(c, r#in)?;
+                    return Err(EINVAL);
                 }
             }
 
@@ -2127,7 +2109,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 // OBU_FRAMEs shouldn't be signaled with `show_existing_frame`.
                 if (*c.frame_hdr).show_existing_frame != 0 {
                     c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                    error(c, r#in)?;
+                    return Err(EINVAL);
                 }
 
                 // This is the frame header at the start of a frame OBU.
@@ -2152,7 +2134,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
             let meta_type = rav1d_get_uleb128(&mut gb) as ObuMetaType;
             let meta_type_len = ((rav1d_get_bits_pos(&mut gb) - init_bit_pos) >> 3) as c_int;
             if gb.error != 0 {
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
 
             match meta_type {
@@ -2178,7 +2160,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_get_bit(&mut gb);
                     rav1d_bytealign_get_bits(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        error(c, r#in)?;
+                        return Err(EINVAL);
                     }
 
                     let r#ref = rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
@@ -2248,7 +2230,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                     rav1d_get_bit(&mut gb);
                     rav1d_bytealign_get_bits(&mut gb);
                     if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
-                        error(c, r#in)?;
+                        return Err(EINVAL);
                     }
 
                     let r#ref = rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
@@ -2364,7 +2346,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 .frame_hdr
                 .is_null()
             {
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             match (*c.refs[(*c.frame_hdr).existing_frame_idx as usize]
                 .p
@@ -2385,14 +2367,14 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 _ => {}
             }
             if c.refs[(*c.frame_hdr).existing_frame_idx as usize].p.p.data[0].is_null() {
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             if c.strict_std_compliance
                 && !c.refs[(*c.frame_hdr).existing_frame_idx as usize]
                     .p
                     .showable
             {
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             if c.n_fc == 1 {
                 rav1d_thread_picture_ref(
@@ -2542,7 +2524,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
                 _ => {}
             }
             if c.n_tile_data == 0 {
-                error(c, r#in)?;
+                return Err(EINVAL);
             }
             rav1d_submit_frame(&mut *c)?;
             assert!(c.n_tile_data == 0);
@@ -2552,4 +2534,18 @@ pub(crate) unsafe fn rav1d_parse_obus(
     }
 
     Ok(len + init_byte_pos)
+}
+
+pub(crate) unsafe fn rav1d_parse_obus(
+    c: &mut Rav1dContext,
+    r#in: &mut Rav1dData,
+    global: c_int,
+) -> Rav1dResult<c_uint> {
+    parse_obus(c, r#in, global).inspect_err(|_| {
+        rav1d_data_props_copy(&mut c.cached_error_props, &mut r#in.m);
+        rav1d_log(
+            c,
+            b"Error parsing OBU data\n\0" as *const u8 as *const c_char,
+        );
+    })
 }
