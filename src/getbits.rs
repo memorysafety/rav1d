@@ -28,22 +28,22 @@ impl<'a> GetBits<'a> {
         self.error
     }
 
-    pub fn get_bit(&mut self) -> c_uint {
+    pub fn get_bit(&mut self) -> bool {
         if self.bits_left == 0 {
             if self.index >= self.data.len() {
                 self.error = 1;
             } else {
-                let state = self.data[self.index] as c_uint;
+                let state = self.data[self.index];
                 self.index += 1;
                 self.bits_left = 7;
                 self.state = (state as u64) << 57;
-                return state >> 7;
+                return (state >> 7) != 0;
             }
         }
         let state = self.state;
         self.bits_left -= 1;
         self.state = state << 1;
-        (state >> 63) as c_uint
+        (state >> 63) != 0
     }
 
     #[inline]
@@ -122,12 +122,12 @@ impl<'a> GetBits<'a> {
         if v < m {
             v
         } else {
-            (v << 1) - m + self.get_bit()
+            (v << 1) - m + self.get_bit() as c_uint
         }
     }
 
     pub fn get_vlc(&mut self) -> c_uint {
-        if self.get_bit() != 0 {
+        if self.get_bit() {
             return 0;
         }
         let mut n_bits = 0;
@@ -136,7 +136,7 @@ impl<'a> GetBits<'a> {
             if n_bits == 32 {
                 return 0xffffffff;
             }
-            if !(self.get_bit() == 0) {
+            if self.get_bit() {
                 break;
             }
         }
@@ -151,7 +151,7 @@ impl<'a> GetBits<'a> {
             if n < v + (3 * (1 << b)) {
                 v += self.get_uniform(n - v + 1);
                 break;
-            } else if self.get_bit() == 0 {
+            } else if !self.get_bit() {
                 v += self.get_bits(b);
                 break;
             } else {
