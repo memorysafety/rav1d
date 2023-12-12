@@ -14,6 +14,7 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeader_cdef;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta_lf;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta_q;
@@ -42,6 +43,7 @@ use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
+use crate::include::dav1d::headers::RAV1D_MAX_CDEF_STRENGTHS;
 use crate::include::dav1d::headers::RAV1D_MAX_OPERATING_POINTS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
@@ -1326,25 +1328,38 @@ unsafe fn parse_loopfilter(
 
 unsafe fn parse_cdef(
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &mut Rav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) {
+) -> Rav1dFrameHeader_cdef {
+    let damping;
+    let n_bits;
+    let mut y_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
+    let mut uv_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
     if hdr.all_lossless == 0 && seqhdr.cdef != 0 && hdr.allow_intrabc == 0 {
-        hdr.cdef.damping = rav1d_get_bits(gb, 2) as c_int + 3;
-        hdr.cdef.n_bits = rav1d_get_bits(gb, 2) as c_int;
-        for i in 0..1 << hdr.cdef.n_bits {
-            hdr.cdef.y_strength[i as usize] = rav1d_get_bits(gb, 6) as c_int;
+        damping = rav1d_get_bits(gb, 2) as c_int + 3;
+        n_bits = rav1d_get_bits(gb, 2) as c_int;
+        for i in 0..1 << n_bits {
+            y_strength[i as usize] = rav1d_get_bits(gb, 6) as c_int;
             if seqhdr.monochrome == 0 {
-                hdr.cdef.uv_strength[i as usize] = rav1d_get_bits(gb, 6) as c_int;
+                uv_strength[i as usize] = rav1d_get_bits(gb, 6) as c_int;
             }
         }
     } else {
-        hdr.cdef.n_bits = 0;
-        hdr.cdef.y_strength[0] = 0;
-        hdr.cdef.uv_strength[0] = 0;
+        // Default initialization.
+        damping = Default::default();
+
+        n_bits = 0;
+        y_strength[0] = 0;
+        uv_strength[0] = 0;
     }
     debug.post(gb, "cdef");
+    Rav1dFrameHeader_cdef {
+        damping,
+        n_bits,
+        y_strength,
+        uv_strength,
+    }
 }
 
 unsafe fn parse_restoration(
@@ -1895,7 +1910,7 @@ unsafe fn parse_frame_hdr(
         &debug,
         gb,
     )?;
-    parse_cdef(seqhdr, &mut hdr, &debug, gb);
+    hdr.cdef = parse_cdef(seqhdr, &hdr, &debug, gb);
     parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
 
     hdr.txfm_mode = if hdr.all_lossless != 0 {
