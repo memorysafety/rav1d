@@ -2109,7 +2109,7 @@ unsafe fn check_for_overrun(
     obu_len: c_uint,
 ) -> c_int {
     // Make sure we haven't actually read past the end of the `gb` buffer
-    if gb.error != 0 {
+    if gb.has_error() != 0 {
         writeln!(c.logger, "Overrun in OBU bit buffer");
         return 1;
     }
@@ -2177,7 +2177,7 @@ unsafe fn parse_obus(
     } else {
         r#in.sz as c_uint - 1 - has_extension as c_uint
     };
-    if gb.error != 0 {
+    if gb.has_error() != 0 {
         return Err(EINVAL);
     }
 
@@ -2399,7 +2399,7 @@ unsafe fn parse_obus(
             // obu metadata type field
             let meta_type = gb.get_uleb128() as ObuMetaType;
             let meta_type_len = ((gb.pos() - init_bit_pos) >> 3) as c_int;
-            if gb.error != 0 {
+            if gb.has_error() != 0 {
                 return Err(EINVAL);
             }
 
