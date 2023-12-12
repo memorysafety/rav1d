@@ -40,6 +40,7 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dTransferCharacteristics;
+use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_ADAPTIVE;
 use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
@@ -1521,17 +1522,15 @@ unsafe fn parse_skip_mode(
 
 unsafe fn parse_gmv(
     c: &Rav1dContext,
-    hdr: &mut Rav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult {
-    for i in 0..7 {
-        hdr.gmv[i as usize] = dav1d_default_wm_params.clone();
-    }
+) -> Rav1dResult<[Rav1dWarpedMotionParams; RAV1D_REFS_PER_FRAME]> {
+    let mut gmv = array::from_fn(|_| dav1d_default_wm_params.clone());
 
     if hdr.frame_type.is_inter_or_switch() {
-        for i in 0..7 {
-            hdr.gmv[i as usize].r#type = if rav1d_get_bit(gb) == 0 {
+        for (i, gmv) in gmv.iter_mut().enumerate() {
+            gmv.r#type = if rav1d_get_bit(gb) == 0 {
                 RAV1D_WM_TYPE_IDENTITY
             } else if rav1d_get_bit(gb) != 0 {
                 RAV1D_WM_TYPE_ROT_ZOOM
@@ -1540,7 +1539,7 @@ unsafe fn parse_gmv(
             } else {
                 RAV1D_WM_TYPE_AFFINE
             };
-            if hdr.gmv[i as usize].r#type == RAV1D_WM_TYPE_IDENTITY {
+            if gmv.r#type == RAV1D_WM_TYPE_IDENTITY {
                 continue;
             }
 
@@ -1552,16 +1551,15 @@ unsafe fn parse_gmv(
                 if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                     return Err(EINVAL);
                 }
-                ref_gmv = &mut (*c.refs[pri_ref as usize].p.p.frame_hdr).gmv[i as usize];
+                ref_gmv = &(*c.refs[pri_ref as usize].p.p.frame_hdr).gmv[i];
             }
-            let mat = &mut hdr.gmv[i as usize].matrix;
+            let mat = &mut gmv.matrix;
             let ref_mat = &ref_gmv.matrix;
             let bits;
             let shift;
 
-            if hdr.gmv[i as usize].r#type >= RAV1D_WM_TYPE_ROT_ZOOM {
-                mat[2] =
-                    ((1) << 16) + 2 * rav1d_get_bits_subexp(gb, ref_mat[2] - ((1) << 16) >> 1, 12);
+            if gmv.r#type >= RAV1D_WM_TYPE_ROT_ZOOM {
+                mat[2] = (1 << 16) + 2 * rav1d_get_bits_subexp(gb, ref_mat[2] - (1 << 16) >> 1, 12);
                 mat[3] = 2 * rav1d_get_bits_subexp(gb, ref_mat[3] >> 1, 12);
 
                 bits = 12;
@@ -1571,10 +1569,9 @@ unsafe fn parse_gmv(
                 shift = 13 + (hdr.hp == 0) as c_int;
             }
 
-            if hdr.gmv[i as usize].r#type as c_uint == RAV1D_WM_TYPE_AFFINE as c_int as c_uint {
+            if gmv.r#type as c_uint == RAV1D_WM_TYPE_AFFINE as c_int as c_uint {
                 mat[4] = 2 * rav1d_get_bits_subexp(gb, ref_mat[4] >> 1, 12);
-                mat[5] =
-                    (1 << 16) + 2 * rav1d_get_bits_subexp(gb, ref_mat[5] - ((1) << 16) >> 1, 12);
+                mat[5] = (1 << 16) + 2 * rav1d_get_bits_subexp(gb, ref_mat[5] - (1 << 16) >> 1, 12);
             } else {
                 mat[4] = -mat[3];
                 mat[5] = mat[2];
@@ -1585,7 +1582,7 @@ unsafe fn parse_gmv(
         }
     }
     debug.post(gb, "gmv");
-    Ok(())
+    Ok(gmv)
 }
 
 unsafe fn parse_film_grain(
@@ -1961,7 +1958,7 @@ unsafe fn parse_frame_hdr(
     hdr.reduced_txtp_set = rav1d_get_bit(gb) as c_int;
     debug.post(gb, "reducedtxtpset");
 
-    parse_gmv(c, &mut hdr, &debug, gb)?;
+    hdr.gmv = parse_gmv(c, &hdr, &debug, gb)?;
     parse_film_grain(c, seqhdr, &mut hdr, &debug, gb)?;
 
     Ok(hdr)
