@@ -1113,7 +1113,9 @@ unsafe fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
 
 unsafe fn parse_segmentation(
     c: &Rav1dContext,
-    hdr: &Rav1dFrameHeader,
+    primary_ref_frame: c_int,
+    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
+    quant: &Rav1dFrameHeader_quant,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_segmentation> {
@@ -1122,7 +1124,7 @@ unsafe fn parse_segmentation(
     let temporal;
     let update_data;
     let seg_data = if enabled != 0 {
-        if hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
+        if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
             update_map = 1;
             temporal = 0;
             update_data = 1;
@@ -1141,8 +1143,8 @@ unsafe fn parse_segmentation(
         } else {
             // segmentation.update_data was false so we should copy
             // segmentation data from the reference frame.
-            assert!(hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
-            let pri_ref = hdr.refidx[hdr.primary_ref_frame as usize];
+            assert!(primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
+            let pri_ref = refidx[primary_ref_frame as usize];
             if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                 return Err(EINVAL);
             }
@@ -1166,16 +1168,16 @@ unsafe fn parse_segmentation(
     debug.post(gb, "segmentation");
 
     // derive lossless flags
-    let delta_lossless = (hdr.quant.ydc_delta == 0
-        && hdr.quant.udc_delta == 0
-        && hdr.quant.uac_delta == 0
-        && hdr.quant.vdc_delta == 0
-        && hdr.quant.vac_delta == 0) as c_int;
+    let delta_lossless = (quant.ydc_delta == 0
+        && quant.udc_delta == 0
+        && quant.uac_delta == 0
+        && quant.vdc_delta == 0
+        && quant.vac_delta == 0) as c_int;
     let qidx = array::from_fn(|i| {
         if enabled != 0 {
-            iclip_u8(hdr.quant.yac + seg_data.d[i].delta_q)
+            iclip_u8(quant.yac + seg_data.d[i].delta_q)
         } else {
-            hdr.quant.yac
+            quant.yac
         }
     });
     let lossless = array::from_fn(|i| (qidx[i] == 0 && delta_lossless != 0) as c_int);
@@ -1831,7 +1833,14 @@ unsafe fn parse_frame_hdr(
 
     hdr.tiling = parse_tiling(seqhdr, &hdr.size, &debug, gb)?;
     hdr.quant = parse_quant(seqhdr, &debug, gb);
-    hdr.segmentation = parse_segmentation(c, &mut hdr, &debug, gb)?;
+    hdr.segmentation = parse_segmentation(
+        c,
+        hdr.primary_ref_frame,
+        &hdr.refidx,
+        &hdr.quant,
+        &debug,
+        gb,
+    )?;
     hdr.all_lossless = hdr.segmentation.lossless.iter().all(|&it| it != 0) as c_int;
     parse_delta(&mut hdr, &debug, gb)?;
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
