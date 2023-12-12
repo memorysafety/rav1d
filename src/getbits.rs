@@ -4,25 +4,23 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 
 #[repr(C)]
-pub struct GetBits {
+pub struct GetBits<'a> {
     state: u64,
     bits_left: c_int,
     error: c_int,
-    ptr: *const u8,
-    ptr_start: *const u8,
-    ptr_end: *const u8,
+    index: usize,
+    data: &'a [u8],
 }
 
-impl GetBits {
-    pub const unsafe fn new(data: *const u8, sz: usize) -> Self {
-        assert!(sz != 0);
+impl<'a> GetBits<'a> {
+    pub const fn new(data: &'a [u8]) -> Self {
+        assert!(!data.is_empty());
         Self {
-            ptr_start: data,
-            ptr: data,
-            ptr_end: data.add(sz),
             state: 0,
             bits_left: 0,
             error: 0,
+            index: 0,
+            data,
         }
     }
 
@@ -30,13 +28,13 @@ impl GetBits {
         self.error
     }
 
-    pub unsafe fn get_bit(&mut self) -> c_uint {
+    pub fn get_bit(&mut self) -> c_uint {
         if self.bits_left == 0 {
-            if self.ptr >= self.ptr_end {
+            if self.index >= self.data.len() {
                 self.error = 1;
             } else {
-                let state = *self.ptr as c_uint;
-                self.ptr = self.ptr.add(1);
+                let state = self.data[self.index] as c_uint;
+                self.index += 1;
                 self.bits_left = 7;
                 self.state = (state as u64) << 57;
                 return state >> 7;
@@ -49,19 +47,19 @@ impl GetBits {
     }
 
     #[inline]
-    unsafe fn refill(&mut self, n: c_int) {
+    fn refill(&mut self, n: c_int) {
         assert!(self.bits_left >= 0 && self.bits_left < 32);
         let mut state = 0;
         loop {
-            if self.ptr >= self.ptr_end {
+            if self.index >= self.data.len() {
                 self.error = 1;
                 if state != 0 {
                     break;
                 }
                 return;
             } else {
-                state = state << 8 | *self.ptr as c_uint;
-                self.ptr = self.ptr.add(1);
+                state = (state << 8) | self.data[self.index] as c_uint;
+                self.index += 1;
                 self.bits_left += 8;
                 if !(n > self.bits_left) {
                     break;
@@ -71,7 +69,7 @@ impl GetBits {
         self.state |= (state as u64) << 64 - self.bits_left;
     }
 
-    pub unsafe fn get_bits(&mut self, n: c_int) -> c_uint {
+    pub fn get_bits(&mut self, n: c_int) -> c_uint {
         assert!(n > 0 && n <= 32);
         // Unsigned cast avoids refill after eob.
         if n as c_uint > self.bits_left as c_uint {
@@ -83,7 +81,7 @@ impl GetBits {
         (state as u64 >> 64 - n) as c_uint
     }
 
-    pub unsafe fn get_sbits(&mut self, n: c_int) -> c_int {
+    pub fn get_sbits(&mut self, n: c_int) -> c_int {
         assert!(n > 0 && n <= 32);
         // Unsigned cast avoids refill after eob.
         if n as c_uint > self.bits_left as c_uint {
@@ -95,7 +93,7 @@ impl GetBits {
         (state as i64 >> 64 - n) as c_int
     }
 
-    pub unsafe fn get_uleb128(&mut self) -> c_uint {
+    pub fn get_uleb128(&mut self) -> c_uint {
         let mut val = 0;
         let mut i = 0 as c_uint;
         let mut more;
@@ -115,7 +113,7 @@ impl GetBits {
         val as c_uint
     }
 
-    pub unsafe fn get_uniform(&mut self, max: c_uint) -> c_uint {
+    pub fn get_uniform(&mut self, max: c_uint) -> c_uint {
         assert!(max > 1);
         let l = ulog2(max) + 1;
         assert!(l > 1);
@@ -128,7 +126,7 @@ impl GetBits {
         }
     }
 
-    pub unsafe fn get_vlc(&mut self) -> c_uint {
+    pub fn get_vlc(&mut self) -> c_uint {
         if self.get_bit() != 0 {
             return 0;
         }
@@ -145,7 +143,7 @@ impl GetBits {
         (1 << n_bits) - 1 + self.get_bits(n_bits)
     }
 
-    unsafe fn get_bits_subexp_u(&mut self, r#ref: c_uint, n: c_uint) -> c_uint {
+    fn get_bits_subexp_u(&mut self, r#ref: c_uint, n: c_uint) -> c_uint {
         let mut v = 0 as c_uint;
         let mut i = 0;
         loop {
@@ -168,7 +166,7 @@ impl GetBits {
         }
     }
 
-    pub unsafe fn get_bits_subexp(&mut self, r#ref: c_int, n: c_uint) -> c_int {
+    pub fn get_bits_subexp(&mut self, r#ref: c_int, n: c_uint) -> c_int {
         self.get_bits_subexp_u((r#ref + (1 << n)) as c_uint, 2 << n) as c_int - (1 << n)
     }
 
@@ -179,7 +177,7 @@ impl GetBits {
     }
 
     #[inline]
-    pub const unsafe fn pos(&self) -> c_uint {
-        self.ptr.offset_from(self.ptr_start) as c_uint * 8 - self.bits_left as c_uint
+    pub const fn pos(&self) -> c_uint {
+        self.index as c_uint * u8::BITS - self.bits_left as c_uint
     }
 }
