@@ -5,23 +5,25 @@ use std::ffi::c_uint;
 
 #[repr(C)]
 pub struct GetBits {
-    pub state: u64,
-    pub bits_left: c_int,
+    state: u64,
+    bits_left: c_int,
     pub error: c_int,
-    pub ptr: *const u8,
-    pub ptr_start: *const u8,
-    pub ptr_end: *const u8,
+    ptr: *const u8,
+    ptr_start: *const u8,
+    ptr_end: *const u8,
 }
 
 impl GetBits {
-    pub unsafe fn init(&mut self, data: *const u8, sz: usize) {
+    pub const unsafe fn new(data: *const u8, sz: usize) -> Self {
         assert!(sz != 0);
-        self.ptr_start = data;
-        self.ptr = self.ptr_start;
-        self.ptr_end = self.ptr_start.add(sz);
-        self.state = 0;
-        self.bits_left = 0;
-        self.error = 0;
+        Self {
+            ptr_start: data,
+            ptr: data,
+            ptr_end: data.add(sz),
+            state: 0,
+            bits_left: 0,
+            error: 0,
+        }
     }
 
     pub unsafe fn get_bit(&mut self) -> c_uint {
