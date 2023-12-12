@@ -1420,32 +1420,27 @@ unsafe fn parse_restoration(
 unsafe fn parse_skip_mode(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &Rav1dFrameHeader,
+    switchable_comp_refs: c_int,
+    frame_type: Rav1dFrameType,
+    frame_offset: c_int,
+    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameSkipMode> {
     let mut allowed = 0;
     let mut refs = Default::default();
-    if hdr.switchable_comp_refs != 0
-        && hdr.frame_type.is_inter_or_switch()
-        && seqhdr.order_hint != 0
-    {
-        let poc = hdr.frame_offset as c_uint;
+    if switchable_comp_refs != 0 && frame_type.is_inter_or_switch() && seqhdr.order_hint != 0 {
+        let poc = frame_offset as c_uint;
         let mut off_before = 0xffffffff;
         let mut off_after = -1;
         let mut off_before_idx = 0;
         let mut off_after_idx = 0;
         for i in 0..7 {
-            if c.refs[hdr.refidx[i as usize] as usize]
-                .p
-                .p
-                .frame_hdr
-                .is_null()
-            {
+            if c.refs[refidx[i as usize] as usize].p.p.frame_hdr.is_null() {
                 return Err(EINVAL);
             }
             let refpoc =
-                (*c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
+                (*c.refs[refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
 
             let diff = get_poc_diff(seqhdr.order_hint_n_bits, refpoc as c_int, poc as c_int);
             if diff > 0 {
@@ -1478,11 +1473,11 @@ unsafe fn parse_skip_mode(
             let mut off_before2 = 0xffffffff;
             let mut off_before2_idx = 0;
             for i in 0..7 {
-                if (c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
+                if (c.refs[refidx[i as usize] as usize].p.p.frame_hdr).is_null() {
                     return Err(EINVAL);
                 }
                 let refpoc =
-                    (*c.refs[hdr.refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
+                    (*c.refs[refidx[i as usize] as usize].p.p.frame_hdr).frame_offset as c_uint;
                 if get_poc_diff(
                     seqhdr.order_hint_n_bits,
                     refpoc as c_int,
@@ -1948,7 +1943,16 @@ unsafe fn parse_frame_hdr(
         0
     };
     debug.post(gb, "refmode");
-    hdr.skip_mode = parse_skip_mode(c, seqhdr, &hdr, &debug, gb)?;
+    hdr.skip_mode = parse_skip_mode(
+        c,
+        seqhdr,
+        hdr.switchable_comp_refs,
+        hdr.frame_type,
+        hdr.frame_offset,
+        &hdr.refidx,
+        &debug,
+        gb,
+    )?;
     hdr.warp_motion = (hdr.error_resilient_mode == 0
         && hdr.frame_type.is_inter_or_switch()
         && seqhdr.warped_motion != 0
