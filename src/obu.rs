@@ -20,6 +20,7 @@ use crate::include::dav1d::headers::Rav1dFrameHeader_delta_lf;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta_q;
 use crate::include::dav1d::headers::Rav1dFrameHeader_loopfilter;
 use crate::include::dav1d::headers::Rav1dFrameHeader_quant;
+use crate::include::dav1d::headers::Rav1dFrameHeader_restoration;
 use crate::include::dav1d::headers::Rav1dFrameHeader_segmentation;
 use crate::include::dav1d::headers::Rav1dFrameHeader_super_res;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
@@ -1365,51 +1366,52 @@ unsafe fn parse_cdef(
 
 unsafe fn parse_restoration(
     seqhdr: &Rav1dSequenceHeader,
-    hdr: &mut Rav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) {
+) -> Rav1dFrameHeader_restoration {
+    let r#type;
+    let unit_size;
     if (hdr.all_lossless == 0 || hdr.size.super_res.enabled != 0)
         && seqhdr.restoration != 0
         && hdr.allow_intrabc == 0
     {
-        hdr.restoration.r#type[0] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
-        if seqhdr.monochrome == 0 {
-            hdr.restoration.r#type[1] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
-            hdr.restoration.r#type[2] = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
+        let type_0 = rav1d_get_bits(gb, 2) as Rav1dRestorationType;
+        r#type = if seqhdr.monochrome == 0 {
+            [
+                type_0,
+                rav1d_get_bits(gb, 2) as Rav1dRestorationType,
+                rav1d_get_bits(gb, 2) as Rav1dRestorationType,
+            ]
         } else {
-            hdr.restoration.r#type[2] = RAV1D_RESTORATION_NONE;
-            hdr.restoration.r#type[1] = hdr.restoration.r#type[2];
-        }
+            [type_0, RAV1D_RESTORATION_NONE, RAV1D_RESTORATION_NONE]
+        };
 
-        if hdr.restoration.r#type[0] != 0
-            || hdr.restoration.r#type[1] != 0
-            || hdr.restoration.r#type[2] != 0
-        {
+        unit_size = if r#type[0] != 0 || r#type[1] != 0 || r#type[2] != 0 {
             // Log2 of the restoration unit size.
-            hdr.restoration.unit_size[0] = 6 + seqhdr.sb128;
+            let mut unit_size_0 = 6 + seqhdr.sb128;
             if rav1d_get_bit(gb) != 0 {
-                hdr.restoration.unit_size[0] += 1;
+                unit_size_0 += 1;
                 if seqhdr.sb128 == 0 {
-                    hdr.restoration.unit_size[0] += rav1d_get_bit(gb) as c_int;
+                    unit_size_0 += rav1d_get_bit(gb) as c_int;
                 }
             }
-            hdr.restoration.unit_size[1] = hdr.restoration.unit_size[0];
-            if (hdr.restoration.r#type[1] != 0 || hdr.restoration.r#type[2] != 0)
-                && seqhdr.ss_hor == 1
-                && seqhdr.ss_ver == 1
-            {
-                hdr.restoration.unit_size[1] -= rav1d_get_bit(gb) as c_int;
+            let mut unit_size_1 = unit_size_0;
+            if (r#type[1] != 0 || r#type[2] != 0) && seqhdr.ss_hor == 1 && seqhdr.ss_ver == 1 {
+                unit_size_1 -= rav1d_get_bit(gb) as c_int;
             }
+            [unit_size_0, unit_size_1]
         } else {
-            hdr.restoration.unit_size[0] = 8;
-        }
+            [8, 0]
+        };
     } else {
-        hdr.restoration.r#type[0] = RAV1D_RESTORATION_NONE;
-        hdr.restoration.r#type[1] = RAV1D_RESTORATION_NONE;
-        hdr.restoration.r#type[2] = RAV1D_RESTORATION_NONE;
+        r#type = [RAV1D_RESTORATION_NONE; 3];
+
+        // Default initialization.
+        unit_size = Default::default();
     }
     debug.post(gb, "restoration");
+    Rav1dFrameHeader_restoration { r#type, unit_size }
 }
 
 unsafe fn parse_skip_mode(
@@ -1911,7 +1913,7 @@ unsafe fn parse_frame_hdr(
         gb,
     )?;
     hdr.cdef = parse_cdef(seqhdr, hdr.all_lossless, hdr.allow_intrabc, &debug, gb);
-    parse_restoration(seqhdr, &mut hdr, &debug, gb);
+    hdr.restoration = parse_restoration(seqhdr, &hdr, &debug, gb);
 
     hdr.txfm_mode = if hdr.all_lossless != 0 {
         RAV1D_TX_4X4_ONLY
