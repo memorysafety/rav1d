@@ -19,7 +19,7 @@ pub unsafe fn rav1d_init_get_bits(c: *mut GetBits, data: *const u8, sz: usize) {
     }
     (*c).ptr_start = data;
     (*c).ptr = (*c).ptr_start;
-    (*c).ptr_end = &*((*c).ptr_start).offset(sz as isize) as *const u8;
+    (*c).ptr_end = (*c).ptr_start.add(sz);
     (*c).state = 0;
     (*c).bits_left = 0;
     (*c).error = 0;
@@ -31,7 +31,7 @@ pub unsafe fn rav1d_get_bit(c: *mut GetBits) -> c_uint {
             (*c).error = 1;
         } else {
             let state = *(*c).ptr as c_uint;
-            (*c).ptr = ((*c).ptr).offset(1);
+            (*c).ptr = (*c).ptr.add(1);
             (*c).bits_left = 7;
             (*c).state = (state as u64) << 57;
             return state >> 7;
@@ -58,7 +58,7 @@ unsafe fn refill(c: *mut GetBits, n: c_int) {
             return;
         } else {
             state = state << 8 | *(*c).ptr as c_uint;
-            (*c).ptr = ((*c).ptr).offset(1);
+            (*c).ptr = (*c).ptr.add(1);
             (*c).bits_left += 8;
             if !(n > (*c).bits_left) {
                 break;
