@@ -1195,7 +1195,7 @@ unsafe fn parse_segmentation(
     })
 }
 
-unsafe fn parse_delta(hdr: &mut Rav1dFrameHeader, debug: &Debug, gb: &mut GetBits) -> Rav1dResult {
+unsafe fn parse_delta(hdr: &mut Rav1dFrameHeader, debug: &Debug, gb: &mut GetBits) {
     hdr.delta.q.present = if hdr.quant.yac != 0 {
         rav1d_get_bit(gb) as c_int
     } else {
@@ -1219,7 +1219,6 @@ unsafe fn parse_delta(hdr: &mut Rav1dFrameHeader, debug: &Debug, gb: &mut GetBit
         0
     };
     debug.post(gb, "delta_q_lf_flags");
-    Ok(())
 }
 
 unsafe fn parse_loopfilter(
@@ -1845,7 +1844,7 @@ unsafe fn parse_frame_hdr(
         gb,
     )?;
     hdr.all_lossless = hdr.segmentation.lossless.iter().all(|&it| it != 0) as c_int;
-    parse_delta(&mut hdr, &debug, gb)?;
+    parse_delta(&mut hdr, &debug, gb);
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
     parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
     parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
