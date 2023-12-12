@@ -1196,12 +1196,13 @@ unsafe fn parse_segmentation(
 }
 
 unsafe fn parse_delta(
-    hdr: &Rav1dFrameHeader,
+    quant: &Rav1dFrameHeader_quant,
+    allow_intrabc: c_int,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_delta {
     let q = {
-        let present = if hdr.quant.yac != 0 {
+        let present = if quant.yac != 0 {
             rav1d_get_bit(gb) as c_int
         } else {
             0
@@ -1214,7 +1215,7 @@ unsafe fn parse_delta(
         Rav1dFrameHeader_delta_q { present, res_log2 }
     };
     let lf = {
-        let present = (q.present != 0 && hdr.allow_intrabc == 0 && rav1d_get_bit(gb) != 0) as c_int;
+        let present = (q.present != 0 && allow_intrabc == 0 && rav1d_get_bit(gb) != 0) as c_int;
         let res_log2 = if present != 0 {
             rav1d_get_bits(gb, 2) as c_int
         } else {
@@ -1858,7 +1859,7 @@ unsafe fn parse_frame_hdr(
         gb,
     )?;
     hdr.all_lossless = hdr.segmentation.lossless.iter().all(|&it| it != 0) as c_int;
-    hdr.delta = parse_delta(&hdr, &debug, gb);
+    hdr.delta = parse_delta(&hdr.quant, hdr.allow_intrabc, &debug, gb);
     parse_loopfilter(c, seqhdr, &mut hdr, &debug, gb)?;
     parse_cdef(seqhdr, &mut hdr, &debug, gb)?;
     parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
