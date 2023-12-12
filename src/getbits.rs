@@ -66,7 +66,7 @@ unsafe fn refill(c: &mut GetBits, n: c_int) {
 
 pub unsafe fn rav1d_get_bits(c: &mut GetBits, n: c_int) -> c_uint {
     assert!(n > 0 && n <= 32);
-    /* Unsigned cast avoids refill after eob */
+    // Unsigned cast avoids refill after eob.
     if n as c_uint > c.bits_left as c_uint {
         refill(c, n);
     }
@@ -78,7 +78,7 @@ pub unsafe fn rav1d_get_bits(c: &mut GetBits, n: c_int) -> c_uint {
 
 pub unsafe fn rav1d_get_sbits(c: &mut GetBits, n: c_int) -> c_int {
     assert!(n > 0 && n <= 32);
-    /* Unsigned cast avoids refill after eob */
+    // Unsigned cast avoids refill after eob.
     if n as c_uint > c.bits_left as c_uint {
         refill(c, n);
     }
