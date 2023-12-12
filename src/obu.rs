@@ -1420,7 +1420,7 @@ unsafe fn parse_skip_mode(
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult {
-    hdr.skip_mode_allowed = 0;
+    hdr.skip_mode.allowed = 0;
     if hdr.switchable_comp_refs != 0
         && hdr.frame_type.is_inter_or_switch()
         && seqhdr.order_hint != 0
@@ -1464,9 +1464,9 @@ unsafe fn parse_skip_mode(
         }
 
         if off_before != 0xffffffff && off_after != -1 {
-            hdr.skip_mode_refs[0] = cmp::min(off_before_idx, off_after_idx);
-            hdr.skip_mode_refs[1] = cmp::max(off_before_idx, off_after_idx);
-            hdr.skip_mode_allowed = 1;
+            hdr.skip_mode.refs[0] = cmp::min(off_before_idx, off_after_idx);
+            hdr.skip_mode.refs[1] = cmp::max(off_before_idx, off_after_idx);
+            hdr.skip_mode.allowed = 1;
         } else if off_before != 0xffffffff {
             let mut off_before2 = 0xffffffff;
             let mut off_before2_idx = 0;
@@ -1496,13 +1496,13 @@ unsafe fn parse_skip_mode(
             }
 
             if off_before2 != 0xffffffff {
-                hdr.skip_mode_refs[0] = cmp::min(off_before_idx, off_before2_idx);
-                hdr.skip_mode_refs[1] = cmp::max(off_before_idx, off_before2_idx);
-                hdr.skip_mode_allowed = 1;
+                hdr.skip_mode.refs[0] = cmp::min(off_before_idx, off_before2_idx);
+                hdr.skip_mode.refs[1] = cmp::max(off_before_idx, off_before2_idx);
+                hdr.skip_mode.allowed = 1;
             }
         }
     }
-    hdr.skip_mode_enabled = if hdr.skip_mode_allowed != 0 {
+    hdr.skip_mode.enabled = if hdr.skip_mode.allowed != 0 {
         rav1d_get_bit(gb) as c_int
     } else {
         0
