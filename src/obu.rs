@@ -1368,7 +1368,7 @@ unsafe fn parse_restoration(
     hdr: &mut Rav1dFrameHeader,
     debug: &Debug,
     gb: &mut GetBits,
-) -> Rav1dResult {
+) {
     if (hdr.all_lossless == 0 || hdr.size.super_res.enabled != 0)
         && seqhdr.restoration != 0
         && hdr.allow_intrabc == 0
@@ -1410,7 +1410,6 @@ unsafe fn parse_restoration(
         hdr.restoration.r#type[2] = RAV1D_RESTORATION_NONE;
     }
     debug.post(gb, "restoration");
-    Ok(())
 }
 
 unsafe fn parse_skip_mode(
@@ -1912,7 +1911,7 @@ unsafe fn parse_frame_hdr(
         gb,
     )?;
     hdr.cdef = parse_cdef(seqhdr, hdr.all_lossless, hdr.allow_intrabc, &debug, gb);
-    parse_restoration(seqhdr, &mut hdr, &debug, gb)?;
+    parse_restoration(seqhdr, &mut hdr, &debug, gb);
 
     hdr.txfm_mode = if hdr.all_lossless != 0 {
         RAV1D_TX_4X4_ONLY
