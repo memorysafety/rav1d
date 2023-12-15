@@ -160,10 +160,10 @@ pub(crate) struct TaskThreadData {
     pub cond: pthread_cond_t,
     pub first: atomic_uint,
     pub cur: c_uint,
-    // This is used for delayed reset of the task cur pointer when
-    // such operation is needed but the thread doesn't enter a critical
-    // section (typically when executing the next sbrow task locklessly).
-    // See src/thread_task.c:reset_task_cur().
+    /// This is used for delayed reset of the task cur pointer when
+    /// such operation is needed but the thread doesn't enter a critical
+    /// section (typically when executing the next sbrow task locklessly).
+    /// See [crate::src::thread_task::reset_task_cur].
     pub reset_task_cur: atomic_uint,
     pub cond_signaled: atomic_int,
     pub delayed_fg: TaskThreadData_delayed_fg,
