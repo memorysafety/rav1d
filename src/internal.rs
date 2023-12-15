@@ -234,7 +234,7 @@ pub struct Rav1dContext {
     pub(crate) cdf_pool: *mut Rav1dMemPool,
     pub(crate) cdf: [CdfThreadContext; 8],
 
-    pub(crate) dsp: [Rav1dDSPContext; 3 /* 8, 10, 12 bits/component */],
+    pub(crate) dsp: [Rav1dDSPContext; 3], /* 8, 10, 12 bits/component */
     pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,
 
     // tree to keep track of which edges are available
@@ -350,13 +350,13 @@ impl Rav1dFrameContext_bd_fn {
 
 #[repr(C)]
 pub struct CodedBlockInfo {
-    pub eob: [i16; 3 /* plane */],
-    pub txtp: [u8; 3 /* plane */],
+    pub eob: [i16; 3], /* plane */
+    pub txtp: [u8; 3], /* plane */
 }
 
 #[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
-    pub next_tile_row: [c_int; 2 /* 0: reconstruction, 1: entropy */],
+    pub next_tile_row: [c_int; 2], /* 0: reconstruction, 1: entropy */
     pub entropy_progress: atomic_int,
     pub deblock_progress: atomic_int, // in sby units
     pub frame_progress: *mut atomic_uint,
@@ -365,7 +365,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub b: *mut Av1Block,
     pub cbi: *mut CodedBlockInfo,
     // indexed using (t->by >> 1) * (f->b4_stride >> 1) + (t->bx >> 1)
-    pub pal: *mut [[u16; 8 /* idx */]; 3 /* plane */],
+    pub pal: *mut [[u16; 8]; 3], /* [3 plane][8 idx] */
     // iterated over inside tile state
     pub pal_idx: *mut u8,
     pub cf: *mut DynCoef,
@@ -388,16 +388,16 @@ pub struct Rav1dFrameContext_lf {
     pub cdef_buf_plane_sz: [c_int; 2], /* stride*sbh*4 */
     pub cdef_buf_sbh: c_int,
     pub lr_buf_plane_sz: [c_int; 2], /* (stride*sbh*4) << sb128 if n_tc > 1, else stride*4 */
-    pub re_sz: c_int, /* h */
+    pub re_sz: c_int,                /* h */
     pub lim_lut: Align16<Av1FilterLUT>,
     pub last_sharpness: c_int,
-    pub lvl: [[[[u8; 2 /* is_gmv */]; 8 /* ref */]; 4 /* dir */]; 8 /* seg_id */],
+    pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub tx_lpf_right_edge: [*mut u8; 2],
     pub cdef_line_buf: *mut u8,
     pub lr_line_buf: *mut u8,
-    pub cdef_line: [[*mut DynPixel; 3 /* plane */]; 2 /* pre, post */],
-    pub cdef_lpf_line: [*mut DynPixel; 3 /* plane */],
-    pub lr_lpf_line: [*mut DynPixel; 3 /* plane */],
+    pub cdef_line: [[*mut DynPixel; 3]; 2], /* [2 pre/post][3 plane] */
+    pub cdef_lpf_line: [*mut DynPixel; 3],  /* plane */
+    pub lr_lpf_line: [*mut DynPixel; 3],    /* plane */
 
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: *mut u8,
@@ -481,9 +481,9 @@ pub(crate) struct Rav1dFrameContext {
     pub n_tile_data: c_int,
 
     // for scalable references
-    pub svc: [[ScalableMotionParams; 2 /* x, y */]; 7],
-    pub resize_step: [c_int; 2 /* y, uv */],
-    pub resize_start: [c_int; 2 /* y, uv */],
+    pub svc: [[ScalableMotionParams; 2]; 7], /* [2 x,y][7] */
+    pub resize_step: [c_int; 2],             /* y, uv */
+    pub resize_start: [c_int; 2],            /* y, uv */
 
     pub c: *const Rav1dContext,
     pub ts: *mut Rav1dTileState,
@@ -504,8 +504,8 @@ pub(crate) struct Rav1dFrameContext {
     pub sb_shift: c_int,
     pub sb_step: c_int,
     pub sr_sb128w: c_int,
-    pub dq: [[[u16; 2 /* dc/ac */]; 3 /* plane */]; RAV1D_MAX_SEGMENTS as usize],
-    pub qm: [[*const u8; 3 /* plane */]; 19],
+    pub dq: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub qm: [[*const u8; 3]; 19],                         /* [3 plane][19] */
     pub a: *mut BlockContext,
     pub a_sz: c_int, /* w*tile_rows */
     pub rf: refmvs_frame,
@@ -544,18 +544,18 @@ pub struct Rav1dTileState {
     pub tiling: Rav1dTileState_tiling,
 
     // in sby units, TILE_ERROR after a decoding error
-    pub progress: [atomic_int; 2 /* 0: reconstruction, 1: entropy */],
-    pub frame_thread: [Rav1dTileState_frame_thread; 2 /* 0: reconstruction, 1: entropy */],
+    pub progress: [atomic_int; 2], /* 0: reconstruction, 1: entropy */
+    pub frame_thread: [Rav1dTileState_frame_thread; 2], /* 0: reconstruction, 1: entropy */
 
     // in fullpel units, [0] = Y, [1] = UV, used for progress requirements
     // each entry is one tile-sbrow; middle index is refidx
     pub lowest_pixel: *mut [[c_int; 2]; 7],
 
-    pub dqmem: [[[u16; 2]; 3 /* plane */]; RAV1D_MAX_SEGMENTS as usize /* dc/ac */],
+    pub dqmem: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
     pub dq: *const [[u16; 2]; 3],
     pub last_qidx: c_int,
     pub last_delta_lf: [i8; 4],
-    pub lflvlmem: [[[[u8; 2 /* is_gmv */]; 8 /* ref */]; 4 /* dir */]; 8 /* seg_id */],
+    pub lflvlmem: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub lflvl: *const [[[u8; 2]; 8]; 4],
 
     pub lr_ref: [Av1RestorationUnit; 3],
@@ -634,7 +634,7 @@ pub struct Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub c2rust_unnamed: Rav1dTaskContext_scratch_levels_pal,
     pub ac: [i16; 1024],
     pub pal_idx: [u8; 8192],
-    pub pal: [[u16; 8 /* palette_idx */]; 3 /* plane */],
+    pub pal: [[u16; 8]; 3], /* [3 plane][8 palette_idx] */
     pub interintra_edge: BitDepthUnion<InterIntraEdge>,
 }
 
@@ -671,9 +671,9 @@ pub(crate) struct Rav1dTaskContext {
     pub cf: BitDepthUnion<Cf>,
     // FIXME types can be changed to pixel (and dynamically allocated)
     // which would make copy/assign operations slightly faster?
-    pub al_pal: [[[[u16; 8 /* palette_idx */]; 3 /* plane */]; 32 /* bx/y4 */]; 2 /* a/l */],
-    pub pal_sz_uv: [[u8; 32 /* bx4/by4 */]; 2 /* a/l */],
-    pub txtp_map: [u8; 1024], // inter-only
+    pub al_pal: [[[[u16; 8]; 3]; 32]; 2], /* [2 a/l][32 bx/y4][3 plane][8 palette_idx] */
+    pub pal_sz_uv: [[u8; 32]; 2],         /* [2 a/l][32 bx4/by4] */
+    pub txtp_map: [u8; 1024],             // inter-only
     pub scratch: Rav1dTaskContext_scratch,
 
     pub warpmv: Rav1dWarpedMotionParams,
