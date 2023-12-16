@@ -38,16 +38,10 @@ impl Dav1dLogger {
     }
 }
 
-/// A [`Dav1dLogger`] from C that's not
-/// just a [`Rav1dLogger`] converted to a [`Dav1dLogger`].
-#[derive(Clone)]
-pub(crate) struct OnlyDav1dLogger {
-    cookie: *mut c_void,
-    callback: Dav1dLoggerCallback,
-}
-
-impl fmt::Write for OnlyDav1dLogger {
+impl fmt::Write for Dav1dLogger {
     fn write_str(&mut self, s: &str) -> fmt::Result {
+        let callback = self.callback.unwrap();
+
         // `s` doesn't have a terminating nul-byte,
         // and it may have internal nul-bytes,
         // so it's easiest just to print one byte at a time.
@@ -62,7 +56,7 @@ impl fmt::Write for OnlyDav1dLogger {
             // and the rest are safe to call `printf` with,
             // as required by [`Self::new`].
             unsafe {
-                (self.callback)(self.cookie, fmt.as_ptr(), byte as c_uint);
+                callback(self.cookie, fmt.as_ptr(), byte as c_uint);
             }
         }
         Ok(())
@@ -71,7 +65,7 @@ impl fmt::Write for OnlyDav1dLogger {
 
 #[derive(Clone, Default)]
 pub(crate) enum Rav1dLogger {
-    Dav1d(OnlyDav1dLogger),
+    Dav1d(Dav1dLogger),
     Stdout,
     #[default]
     Stderr,
@@ -91,7 +85,7 @@ impl Rav1dLog for Rav1dLogger {
         match self {
             // The `dav1d.clone()` is because [`fmt::Write::write_fmt`] takes `&mut`
             // even though we don't need it to.
-            // [`OnlyDav1dLogger`] is trivial to [`Clone`], though, so we can just do that.
+            // [`Dav1dLogger`] is trivial to [`Clone`], though, so we can just do that.
             Self::Dav1d(dav1d) => dav1d.clone().write_fmt(args).unwrap(),
             Self::Stdout => stdout().write_fmt(args).unwrap(),
             Self::Stderr => stderr().write_fmt(args).unwrap(),
@@ -125,7 +119,10 @@ impl From<Dav1dLogger> for Option<Rav1dLogger> {
         } else if callback == rav1d_logger_stderr {
             Rav1dLogger::Stderr
         } else {
-            Rav1dLogger::Dav1d(OnlyDav1dLogger { cookie, callback })
+            Rav1dLogger::Dav1d(Dav1dLogger {
+                cookie,
+                callback: Some(callback),
+            })
         })
     }
 }
@@ -136,10 +133,10 @@ impl From<Option<Rav1dLogger>> for Dav1dLogger {
             Some(Rav1dLogger::Dav1d(dav1d)) => dav1d.cookie,
             _ => ptr::null_mut(),
         };
-        let callback = logger.map(|logger| match logger {
+        let callback = logger.and_then(|logger| match logger {
             Rav1dLogger::Dav1d(dav1d) => dav1d.callback,
-            Rav1dLogger::Stdout => rav1d_logger_stdout,
-            Rav1dLogger::Stderr => rav1d_logger_stderr,
+            Rav1dLogger::Stdout => Some(rav1d_logger_stdout),
+            Rav1dLogger::Stderr => Some(rav1d_logger_stderr),
         });
         Self { cookie, callback }
     }
