@@ -1936,16 +1936,6 @@ unsafe fn parse_obus(
             return Err(EINVAL);
         }
 
-        if let Err(_) = c.tiles.try_reserve_exact(1) {
-            return Err(EINVAL);
-        }
-        c.tiles.push(Rav1dTileGroup {
-            data: Default::default(),
-            hdr,
-        });
-        // TODO(kkysen) An idiom for push and getting a &mut would be nice and more efficient.
-        let tile = c.tiles.last_mut().unwrap();
-
         // The current bit position is a multiple of 8
         // (because we just aligned it) and less than `8 * pkt_bytelen`
         // because otherwise the overrun check would have fired.
@@ -1953,18 +1943,23 @@ unsafe fn parse_obus(
         let bit_pos = rav1d_get_bits_pos(gb);
         assert!(bit_pos & 7 == 0);
         assert!(pkt_bytelen >= bit_pos >> 3);
-        rav1d_data_ref(&mut tile.data, r#in);
-        tile.data.data = tile.data.data.offset((bit_pos >> 3) as isize);
-        tile.data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
+        let mut data = Default::default();
+        rav1d_data_ref(&mut data, r#in);
+        data.data = data.data.offset((bit_pos >> 3) as isize);
+        data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
         // Ensure tile groups are in order and sane; see 6.10.1.
-        if tile.hdr.start > tile.hdr.end || tile.hdr.start != c.n_tiles {
+        if hdr.start > hdr.end || hdr.start != c.n_tiles {
             for mut tile in c.tiles.drain(..) {
                 rav1d_data_unref_internal(&mut tile.data);
             }
             c.n_tiles = 0;
             return Err(EINVAL);
         }
-        c.n_tiles += 1 + tile.hdr.end - tile.hdr.start;
+        if let Err(_) = c.tiles.try_reserve_exact(1) {
+            return Err(EINVAL);
+        }
+        c.n_tiles += 1 + hdr.end - hdr.start;
+        c.tiles.push(Rav1dTileGroup { data, hdr });
 
         Ok(())
     }
