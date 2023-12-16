@@ -69,10 +69,7 @@ pub(crate) unsafe fn rav1d_data_wrap_user_data_internal(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_data_ref(dst: *mut Rav1dData, src: *const Rav1dData) {
-    if validate_input!(!dst.is_null()).is_err() {
-        return;
-    }
+pub(crate) unsafe fn rav1d_data_ref(dst: &mut Rav1dData, src: *const Rav1dData) {
     if validate_input!((*dst).data.is_null()).is_err() {
         return;
     }
