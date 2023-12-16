@@ -125,16 +125,11 @@ unsafe extern "C" fn rav1d_logger_stderr(_cookie: *mut c_void, _fmt: *const c_ch
 impl From<Dav1dLogger> for Option<Rav1dLogger> {
     fn from(logger: Dav1dLogger) -> Self {
         let Dav1dLogger { cookie, callback } = logger;
-        let callback = callback?;
-        Some(if callback == rav1d_logger_stdout {
-            Rav1dLogger::Stdout
-        } else if callback == rav1d_logger_stderr {
-            Rav1dLogger::Stderr
-        } else {
-            Rav1dLogger::Dav1d(Dav1dLogger {
-                cookie,
-                callback: Some(callback),
-            })
+        Some(match callback {
+            None => return None,
+            Some(cb) if cb == rav1d_logger_stdout => Rav1dLogger::Stdout,
+            Some(cb) if cb == rav1d_logger_stderr => Rav1dLogger::Stderr,
+            _ => Rav1dLogger::Dav1d(Dav1dLogger { cookie, callback }),
         })
     }
 }
