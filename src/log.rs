@@ -38,13 +38,6 @@ impl Dav1dLogger {
     }
 }
 
-impl Default for Dav1dLogger {
-    fn default() -> Self {
-        // Safety: `callback` is [`None`].
-        unsafe { Self::new(ptr::null_mut(), None) }
-    }
-}
-
 /// A [`Dav1dLogger`] from C that's not
 /// just a [`Rav1dLogger`] converted to a [`Dav1dLogger`].
 #[derive(Clone)]
