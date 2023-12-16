@@ -1,7 +1,7 @@
-use cstr::cstr;
 use std::ffi::c_char;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::ffi::CStr;
 use std::fmt;
 use std::fmt::Write as _;
 use std::io::stderr;
@@ -53,7 +53,8 @@ impl fmt::Write for OnlyDav1dLogger {
         // so it's easiest just to print one byte at a time.
         // This may be slow, but logging can be disabled if it's slow,
         // or the Rust API can be used instead.
-        let fmt = cstr!("%c");
+        // TODO(kkysen) Replace with `c"%c"` once its stabilization reaches stable.
+        let fmt = CStr::from_bytes_with_nul(b"%c\0").unwrap();
         for &byte in s.as_bytes() {
             // # Safety
             //
