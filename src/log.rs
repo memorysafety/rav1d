@@ -72,6 +72,18 @@ pub(crate) enum Rav1dLogger {
 }
 
 /// Any type implementing [`Rav1dLog`] can be used with [`write!`].
+///
+/// [`Rav1dLog`] is very similar to [`fmt::Write`] and [`io::Write`]
+/// in that they can both be called by [`write!`] as `.write_fmt(format_args!(...))`.
+///
+/// The difference, and the reason we don't use either of those,
+/// is that [`Rav1dLog::write_fmt`] takes `&self` instead of `&mut self`,
+/// and this makes ownership and borrowing much simpler and more flexible.
+/// Furthermore, this returns `()` instead of a [`Result`]
+/// so that call sites don't have to propagate or `.unwrap()` it,
+/// bloating call sites for non-essential logging code.
+///
+/// [`io::Write`]: std::io::Write
 pub trait Rav1dLog {
     fn write_fmt(&self, args: fmt::Arguments);
 }
