@@ -69,23 +69,20 @@ pub(crate) unsafe fn rav1d_data_wrap_user_data_internal(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_data_ref(dst: &mut Rav1dData, src: *const Rav1dData) {
+pub(crate) unsafe fn rav1d_data_ref(dst: &mut Rav1dData, src: &Rav1dData) {
     if validate_input!((*dst).data.is_null()).is_err() {
         return;
     }
-    if validate_input!(!src.is_null()).is_err() {
-        return;
-    }
-    if !((*src).r#ref).is_null() {
-        if validate_input!(!(*src).data.is_null()).is_err() {
+    if !src.r#ref.is_null() {
+        if validate_input!(!src.data.is_null()).is_err() {
             return;
         }
-        rav1d_ref_inc((*src).r#ref);
+        rav1d_ref_inc(src.r#ref);
     }
-    if !((*src).m.user_data.r#ref).is_null() {
-        rav1d_ref_inc((*src).m.user_data.r#ref);
+    if !src.m.user_data.r#ref.is_null() {
+        rav1d_ref_inc(src.m.user_data.r#ref);
     }
-    *dst = (*src).clone();
+    *dst = src.clone();
 }
 
 pub(crate) unsafe fn rav1d_data_props_copy(dst: *mut Rav1dDataProps, src: *const Rav1dDataProps) {
