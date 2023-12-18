@@ -89,11 +89,15 @@ pub(crate) struct Rav1dDSPContext {
 }
 
 #[derive(Clone, Default)]
-#[repr(C)]
-pub(crate) struct Rav1dTileGroup {
-    pub data: Rav1dData,
+pub(crate) struct Rav1dTileGroupHeader {
     pub start: c_int,
     pub end: c_int,
+}
+
+#[derive(Clone, Default)]
+pub(crate) struct Rav1dTileGroup {
+    pub data: Rav1dData,
+    pub hdr: Rav1dTileGroupHeader,
 }
 
 pub type TaskType = c_uint;
