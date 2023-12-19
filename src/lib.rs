@@ -1002,7 +1002,6 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             let f: *mut Rav1dFrameContext =
                 &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
             rav1d_decode_frame_exit(&mut *f, Err(EGeneric));
-            (*f).tiles.clear();
             (*f).task_thread.retval = Ok(());
             let out_delayed: *mut Rav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
                 .offset(next as isize)

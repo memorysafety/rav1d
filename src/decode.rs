@@ -4888,6 +4888,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
     for tile in &mut f.tiles {
         rav1d_data_unref_internal(&mut tile.data);
     }
+    f.tiles.clear();
     f.task_thread.retval = retval;
 }
 
@@ -4929,7 +4930,6 @@ pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> Rav1dResul
         }
     }
     rav1d_decode_frame_exit(f, res);
-    f.tiles.clear();
     res
 }
 
