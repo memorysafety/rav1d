@@ -654,7 +654,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let f: *mut Rav1dFrameContext =
             &mut *(c.fc).offset(next as isize) as *mut Rav1dFrameContext;
         pthread_mutex_lock(&mut c.task_thread.lock);
-        while (*f).n_tile_data > 0 {
+        while !(*f).tiles.is_empty() {
             pthread_cond_wait(
                 &mut (*f).task_thread.cond,
                 &mut (*(*f).task_thread.ttd).lock,
@@ -1046,7 +1046,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             let f: *mut Rav1dFrameContext =
                 &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
             rav1d_decode_frame_exit(&mut *f, Err(EGeneric));
-            (*f).n_tile_data = 0 as c_int;
+            (*f).tiles.clear();
             (*f).task_thread.retval = Ok(());
             let out_delayed: *mut Rav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
                 .offset(next as isize)
@@ -1150,7 +1150,7 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         rav1d_free_aligned((*f).ts as *mut c_void);
         rav1d_free_aligned((*f).ipred_edge[0] as *mut c_void);
         free((*f).a as *mut c_void);
-        free((*f).tile as *mut c_void);
+        (*f).tiles = Default::default(); // TODO(kkysen) Remove when dropped properly.
         free((*f).lf.mask as *mut c_void);
         free((*f).lf.lr_mask as *mut c_void);
         free((*f).lf.level as *mut c_void);
@@ -1178,12 +1178,10 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         }
         free((*c).frame_thread.out_delayed as *mut c_void);
     }
-    let mut n_3 = 0;
-    while n_3 < (*c).n_tile_data {
-        rav1d_data_unref_internal(&mut (*((*c).tile).offset(n_3 as isize)).data);
-        n_3 += 1;
+    for mut tile in (*c).tiles.drain(..) {
+        rav1d_data_unref_internal(&mut tile.data);
     }
-    free((*c).tile as *mut c_void);
+    (*c).tiles = Default::default(); // TODO(kkysen) Remove when dropped properly.
     let mut n_4 = 0;
     while n_4 < 8 {
         rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(n_4 as isize));
