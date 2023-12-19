@@ -159,7 +159,7 @@ use crate::src::lf_mask::rav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::log::rav1d_log;
+use crate::src::log::Rav1dLog as _;
 use crate::src::loopfilter::rav1d_loop_filter_dsp_init;
 use crate::src::looprestoration::rav1d_loop_restoration_dsp_init;
 use crate::src::mc::rav1d_mc_dsp_init;
@@ -232,7 +232,6 @@ use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::array;
 use std::cmp;
-use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
@@ -5071,11 +5070,10 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>();
             }
             _ => {
-                rav1d_log(
-                    c,
-                    b"Compiled without support for %d-bit decoding\n\0" as *const u8
-                        as *const c_char,
-                    8 + 2 * (*f.seq_hdr).hbd,
+                writeln!(
+                    c.logger,
+                    "Compiled without support for {}-bit decoding",
+                    8 + 2 * (*f.seq_hdr).hbd
                 );
                 on_error(f, c, out_delayed);
                 return Err(ENOPROTOOPT);

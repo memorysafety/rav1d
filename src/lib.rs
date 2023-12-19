@@ -61,7 +61,7 @@ use crate::src::intra_edge::rav1d_init_mode_tree;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_64X64;
-use crate::src::log::rav1d_log;
+use crate::src::log::Rav1dLog as _;
 use crate::src::mem::freep;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
@@ -320,9 +320,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     {
         (*c).frame_size_limit = (8192 * 8192) as c_uint;
         if s.frame_size_limit != 0 {
-            rav1d_log(
-                c,
-                b"Frame size limit reduced from %u to %u.\n\0" as *const u8 as *const c_char,
+            writeln!(
+                (*c).logger,
+                "Frame size limit reduced from {} to {}.",
                 s.frame_size_limit,
                 (*c).frame_size_limit,
             );
@@ -530,7 +530,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     let mut res;
     let mut s = Rav1dSettings::default();
     s.n_threads = 1 as c_int;
-    s.logger.callback = None;
+    s.logger = None;
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
     res = rav1d_open(&mut c, &mut s);
     if res.is_err() {

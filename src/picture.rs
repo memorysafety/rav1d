@@ -1,4 +1,3 @@
-use crate::errno_location;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
@@ -24,7 +23,7 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
-use crate::src::log::rav1d_log;
+use crate::src::log::Rav1dLog as _;
 use crate::src::mem::rav1d_mem_pool_pop;
 use crate::src::mem::rav1d_mem_pool_push;
 use crate::src::mem::Rav1dMemPool;
@@ -37,12 +36,11 @@ use libc::free;
 use libc::malloc;
 use libc::memset;
 use libc::ptrdiff_t;
-use libc::strerror;
-use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::io;
 use std::ptr;
 
 pub type PictureFlags = c_uint;
@@ -167,10 +165,7 @@ unsafe fn picture_alloc_with_edges(
     extra_ptr: *mut *mut c_void,
 ) -> Rav1dResult {
     if !((*p).data[0]).is_null() {
-        rav1d_log(
-            c,
-            b"Picture already allocated!\n\0" as *const u8 as *const c_char,
-        );
+        writeln!((*c).logger, "Picture already allocated!",);
         return Err(EGeneric);
     }
     if !(bpc > 0 && bpc <= 16) {
@@ -206,10 +201,10 @@ unsafe fn picture_alloc_with_edges(
     if ((*p).r#ref).is_null() {
         (*p_allocator).release_picture(p);
         free(pic_ctx as *mut c_void);
-        rav1d_log(
-            c,
-            b"Failed to wrap picture: %s\n\0" as *const u8 as *const c_char,
-            strerror(*errno_location()),
+        writeln!(
+            (*c).logger,
+            "Failed to wrap picture: {}",
+            io::Error::last_os_error(),
         );
         return Err(ENOMEM);
     }

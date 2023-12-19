@@ -68,7 +68,7 @@ pub mod src {
     mod lf_apply;
     mod lf_mask;
     pub mod lib;
-    mod log;
+    pub(crate) mod log;
     mod loopfilter;
     mod looprestoration;
     mod lr_apply;
@@ -89,33 +89,4 @@ pub mod src {
     mod wedge;
 } // mod src
 
-use std::ffi::c_int;
-
 pub use src::error::Dav1dResult;
-
-// NOTE: temporary code to support Linux and macOS, should be removed eventually
-cfg_if::cfg_if! {
-    if #[cfg(target_os = "linux")] {
-        extern "C" {
-            pub static mut stdout: *mut libc::FILE;
-
-            pub static mut stderr: *mut libc::FILE;
-        }
-
-        pub unsafe fn errno_location() -> *mut c_int {
-            libc::__errno_location()
-        }
-    } else if #[cfg(target_os = "macos")] {
-        extern "C" {
-            #[link_name = "__stdoutp"]
-            pub static mut stdout: *mut libc::FILE;
-
-            #[link_name = "__stderrp"]
-            pub static mut stderr: *mut libc::FILE;
-        }
-
-        pub unsafe fn errno_location() -> *mut c_int {
-            libc::__error()
-        }
-    }
-}

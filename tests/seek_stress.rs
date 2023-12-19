@@ -4,6 +4,11 @@
 #![feature(c_variadic)]
 #![allow(clippy::all)]
 
+#[path = "../tools/compat"]
+mod compat {
+    pub mod errno;
+    pub mod stdio;
+} // mod compat
 #[path = "../tools/input"]
 mod input {
     mod annexb;
@@ -22,6 +27,7 @@ mod output {
 #[path = "../tools/dav1d_cli_parse.rs"]
 mod dav1d_cli_parse;
 
+use crate::compat::stdio::stderr;
 use crate::dav1d_cli_parse::parse;
 use crate::dav1d_cli_parse::CLISettings;
 use crate::dav1d_cli_parse::REALTIME_DISABLE;
@@ -64,7 +70,6 @@ use rav1d::src::lib::dav1d_parse_sequence_header;
 use rav1d::src::lib::dav1d_picture_unref;
 use rav1d::src::lib::dav1d_send_data;
 use rav1d::src::lib::dav1d_version;
-use rav1d::stderr;
 use std::ffi::c_char;
 use std::ffi::c_double;
 use std::ffi::c_float;
@@ -375,10 +380,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             alloc_picture_callback: None,
             release_picture_callback: None,
         },
-        logger: Dav1dLogger {
-            cookie: 0 as *mut c_void,
-            callback: None,
-        },
+        logger: Dav1dLogger::new(0 as *mut c_void, None),
         strict_std_compliance: 0,
         output_invisible_frames: 0,
         inloop_filters: DAV1D_INLOOPFILTER_NONE,

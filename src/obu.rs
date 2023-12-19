@@ -96,7 +96,7 @@ use crate::src::levels::OBU_META_HDR_MDCV;
 use crate::src::levels::OBU_META_ITUT_T35;
 use crate::src::levels::OBU_META_SCALABILITY;
 use crate::src::levels::OBU_META_TIMECODE;
-use crate::src::log::rav1d_log;
+use crate::src::log::Rav1dLog as _;
 use crate::src::picture::rav1d_picture_copy_props;
 use crate::src::picture::rav1d_picture_get_event_flags;
 use crate::src::picture::rav1d_thread_picture_ref;
@@ -117,7 +117,6 @@ use libc::pthread_mutex_lock;
 use libc::pthread_mutex_unlock;
 use std::array;
 use std::cmp;
-use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
@@ -1799,10 +1798,7 @@ unsafe fn check_for_overrun(
 ) -> c_int {
     // Make sure we haven't actually read past the end of the `gb` buffer
     if gb.error != 0 {
-        rav1d_log(
-            c,
-            b"Overrun in OBU bit buffer\n\0" as *const u8 as *const c_char,
-        );
+        writeln!(c.logger, "Overrun in OBU bit buffer");
         return 1;
     }
 
@@ -1813,10 +1809,7 @@ unsafe fn check_for_overrun(
     assert!(init_bit_pos <= pos);
 
     if pos - init_bit_pos > 8 * obu_len {
-        rav1d_log(
-            c,
-            b"Overrun in OBU bit buffer into next OBU\n\0" as *const u8 as *const c_char,
-        );
+        writeln!(c.logger, "Overrun in OBU bit buffer into next OBU");
         return 1;
     }
 
@@ -1977,10 +1970,7 @@ unsafe fn parse_obus(
                 .data
                 .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>();
             let seq_hdr = parse_seq_hdr(c, &mut gb).inspect_err(|_| {
-                rav1d_log(
-                    c,
-                    b"Error parsing sequence header\n\0" as *const u8 as *const c_char,
-                );
+                writeln!(c.logger, "Error parsing sequence header");
                 rav1d_ref_dec(&mut r#ref);
             })?;
             (*seq_hdrs) = DRav1d::from_rav1d(seq_hdr);
@@ -2050,10 +2040,7 @@ unsafe fn parse_obus(
             (*c.frame_hdr).spatial_id = spatial_id;
             let res = parse_frame_hdr(c, &mut gb);
             if res.is_err() {
-                rav1d_log(
-                    c,
-                    b"Error parsing frame header\n\0" as *const u8 as *const c_char,
-                );
+                writeln!(c.logger, "Error parsing frame header");
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
                 return Err(EINVAL);
             }
@@ -2075,9 +2062,9 @@ unsafe fn parse_obus(
                 && (*c.frame_hdr).width[1] as i64 * (*c.frame_hdr).height as i64
                     > c.frame_size_limit as i64
             {
-                rav1d_log(
-                    c,
-                    b"Frame size %dx%d exceeds limit %u\n\0" as *const u8 as *const c_char,
+                writeln!(
+                    c.logger,
+                    "Frame size {}x{} exceeds limit {}",
                     (*c.frame_hdr).width[1],
                     (*c.frame_hdr).height,
                     c.frame_size_limit,
@@ -2254,11 +2241,7 @@ unsafe fn parse_obus(
                     }
 
                     if payload_size <= 0 {
-                        rav1d_log(
-                            c,
-                            b"Malformed ITU-T T.35 metadata message format\n\0" as *const u8
-                                as *const c_char,
-                        );
+                        writeln!(c.logger, "Malformed ITU-T T.35 metadata message format");
                     } else {
                         let r#ref = rav1d_ref_create(
                             ::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
@@ -2298,9 +2281,9 @@ unsafe fn parse_obus(
                 OBU_META_SCALABILITY | OBU_META_TIMECODE => {} // Ignore metadata OBUs we don't care about.
                 _ => {
                     // Print a warning, but don't fail for unknown types.
-                    rav1d_log(
-                        c,
-                        b"Unknown Metadata OBU type %d\n\0" as *const u8 as *const c_char,
+                    writeln!(
+                        c.logger,
+                        "Unknown Metadata OBU type {}",
                         meta_type as c_uint,
                     );
                 }
@@ -2310,11 +2293,10 @@ unsafe fn parse_obus(
         RAV1D_OBU_PADDING => {} // Ignore OBUs we don't care about.
         _ => {
             // Print a warning, but don't fail for unknown types.
-            rav1d_log(
-                c,
-                b"Unknown OBU type %d of size %u\n\0" as *const u8 as *const c_char,
-                r#type as c_uint,
-                len,
+            writeln!(
+                c.logger,
+                "Unknown OBU type {} of size {}",
+                r#type as c_uint, len,
             );
         }
     }
@@ -2524,9 +2506,6 @@ pub(crate) unsafe fn rav1d_parse_obus(
 ) -> Rav1dResult<c_uint> {
     parse_obus(c, r#in, global).inspect_err(|_| {
         rav1d_data_props_copy(&mut c.cached_error_props, &mut r#in.m);
-        rav1d_log(
-            c,
-            b"Error parsing OBU data\n\0" as *const u8 as *const c_char,
-        );
+        writeln!(c.logger, "Error parsing OBU data");
     })
 }
