@@ -2,7 +2,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use strum::FromRepr;
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, Debug)]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum Rav1dError {
