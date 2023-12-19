@@ -2,7 +2,6 @@ use crate::include::dav1d::dav1d::Dav1dRef;
 use crate::src::r#ref::Rav1dRef;
 use std::ptr;
 
-#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dUserData {
     pub data: *const u8,
@@ -48,7 +47,7 @@ impl From<Rav1dUserData> for Dav1dUserData {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 #[repr(C)]
 pub struct Dav1dDataProps {
     pub timestamp: i64,

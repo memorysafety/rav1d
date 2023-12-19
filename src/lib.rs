@@ -823,31 +823,31 @@ pub unsafe extern "C" fn dav1d_get_picture(
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
         let c = &mut *c;
-        let out = &mut *out;
-        if let Some(mut seq_hdr_ref) = NonNull::new(out.seq_hdr_ref) {
+        let out_c = out.read();
+        if let Some(mut seq_hdr_ref) = NonNull::new(out_c.seq_hdr_ref) {
             (*seq_hdr_ref
                 .as_mut()
                 .data
                 .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
             .update_rav1d();
         }
-        if let Some(mut frame_hdr_ref) = NonNull::new(out.frame_hdr_ref) {
+        if let Some(mut frame_hdr_ref) = NonNull::new(out_c.frame_hdr_ref) {
             (*frame_hdr_ref
                 .as_mut()
                 .data
                 .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
             .update_rav1d();
         }
-        if let Some(mut itut_t35_ref) = NonNull::new(out.itut_t35_ref) {
+        if let Some(mut itut_t35_ref) = NonNull::new(out_c.itut_t35_ref) {
             (*itut_t35_ref
                 .as_mut()
                 .data
                 .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
             .update_rav1d();
         }
-        let mut out_rust = out.clone().into();
+        let mut out_rust = out_c.into();
         let result = rav1d_get_picture(c, &mut out_rust);
-        *out = out_rust.into();
+        out.write(out_rust.into());
         result
     })()
     .into()
@@ -907,8 +907,8 @@ pub unsafe extern "C" fn dav1d_apply_grain(
         validate_input!((!out.is_null(), EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
         let c = &mut *c;
-        let out = &mut *out;
-        let in_0 = &*in_0;
+        let out_c = out.read();
+        let in_0 = in_0.read();
         if let Some(mut seq_hdr_ref) = NonNull::new(in_0.seq_hdr_ref) {
             (*seq_hdr_ref
                 .as_mut()
@@ -930,31 +930,31 @@ pub unsafe extern "C" fn dav1d_apply_grain(
                 .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
             .update_rav1d();
         }
-        if let Some(mut seq_hdr_ref) = NonNull::new(out.seq_hdr_ref) {
+        if let Some(mut seq_hdr_ref) = NonNull::new(out_c.seq_hdr_ref) {
             (*seq_hdr_ref
                 .as_mut()
                 .data
                 .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
             .update_rav1d();
         }
-        if let Some(mut frame_hdr_ref) = NonNull::new(out.frame_hdr_ref) {
+        if let Some(mut frame_hdr_ref) = NonNull::new(out_c.frame_hdr_ref) {
             (*frame_hdr_ref
                 .as_mut()
                 .data
                 .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
             .update_rav1d();
         }
-        if let Some(mut itut_t35_ref) = NonNull::new(out.itut_t35_ref) {
+        if let Some(mut itut_t35_ref) = NonNull::new(out_c.itut_t35_ref) {
             (*itut_t35_ref
                 .as_mut()
                 .data
                 .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
             .update_rav1d();
         }
-        let mut out_rust = out.clone().into();
-        let in_rust = in_0.clone().into();
+        let mut out_rust = out_c.into();
+        let in_rust = in_0.into();
         let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
-        *out = out_rust.into();
+        out.write(out_rust.into());
         result
     })()
     .into()
@@ -1262,10 +1262,9 @@ pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
     if validate_input!(!p.is_null()).is_err() {
         return;
     }
-    let p = &mut *p;
-    let mut p_rust = p.clone().into();
+    let mut p_rust = p.read().into();
     rav1d_picture_unref(&mut p_rust);
-    *p = p_rust.into();
+    p.write(p_rust.into());
 }
 
 pub(crate) unsafe fn rav1d_data_create(buf: *mut Rav1dData, sz: usize) -> *mut u8 {
