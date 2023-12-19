@@ -77,6 +77,7 @@ use libc::pthread_mutex_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::sync::atomic::AtomicI32;
 use std::sync::Arc;
 
 #[repr(C)]
@@ -358,7 +359,7 @@ pub struct CodedBlockInfo {
 #[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
     pub next_tile_row: [c_int; 2], /* 0: reconstruction, 1: entropy */
-    pub entropy_progress: atomic_int,
+    pub entropy_progress: AtomicI32,
     pub deblock_progress: atomic_int, // in sby units
     pub frame_progress: *mut atomic_uint,
     pub copy_lpf_progress: *mut atomic_uint,
