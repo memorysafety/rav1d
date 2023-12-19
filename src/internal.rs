@@ -78,6 +78,7 @@ use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
 #[repr(C)]
@@ -361,8 +362,8 @@ pub struct Rav1dFrameContext_frame_thread {
     pub next_tile_row: [c_int; 2], /* 0: reconstruction, 1: entropy */
     pub entropy_progress: AtomicI32,
     pub deblock_progress: AtomicI32, // in sby units
-    pub frame_progress: *mut atomic_uint,
-    pub copy_lpf_progress: *mut atomic_uint,
+    pub frame_progress: Vec<AtomicU32>,
+    pub copy_lpf_progress: Vec<AtomicU32>,
     // indexed using t->by * f->b4_stride + t->bx
     pub b: *mut Av1Block,
     pub cbi: *mut CodedBlockInfo,
@@ -371,7 +372,6 @@ pub struct Rav1dFrameContext_frame_thread {
     // iterated over inside tile state
     pub pal_idx: *mut u8,
     pub cf: *mut DynCoef,
-    pub prog_sz: c_int,
     pub pal_sz: c_int,
     pub pal_idx_sz: c_int,
     pub cf_sz: c_int,

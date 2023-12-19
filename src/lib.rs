@@ -1029,7 +1029,8 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
             pthread_cond_destroy(&mut (*f).task_thread.cond);
             pthread_mutex_destroy(&mut (*f).task_thread.lock);
         }
-        freep(&mut (*f).frame_thread.frame_progress as *mut *mut atomic_uint as *mut c_void);
+        mem::take(&mut (*f).frame_thread.frame_progress); // TODO: remove when context is owned
+        mem::take(&mut (*f).frame_thread.copy_lpf_progress); // TODO: remove when context is owned
         freep(&mut (*f).task_thread.tasks as *mut *mut Rav1dTask as *mut c_void);
         freep(
             &mut *((*f).task_thread.tile_tasks).as_mut_ptr().offset(0) as *mut *mut Rav1dTask
