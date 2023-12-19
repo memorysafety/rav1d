@@ -7,13 +7,15 @@ timeout_multiplier=1
 rust_test_path=
 seek_stress_test_rust_path=
 debug_opt=
-while getopts t:r:d:s: flag
+frame_delay=
+while getopts t:r:d:s:f: flag
 do
     case "${flag}" in
         t) timeout_multiplier=${OPTARG};;
         r) rust_test_path="-Dtest_rust_path=${OPTARG}";;
         s) seek_stress_test_rust_path="-Dseek_stress_test_rust_path=${OPTARG}";;
         d) debug_opt="-Ddebug=true";;
+        f) frame_delay=${OPTARG};;
     esac
 done
 
@@ -47,6 +49,12 @@ if [[ -z $seek_stress_test_rust_path ]]; then
     : # stress test binary not provided; don't include seek stress tests
 else
     test_args+=(--suite testdata_seek-stress)
+fi
+
+if [[ -n $frame_delay ]]; then
+    # These test args override the args from test-data, resulting in 2 threads
+    # and a frame delay
+    test_args+=(--test-args "--threads 2 --framedelay $frame_delay")
 fi
 
 cd build && meson test "${test_args[@]}"
