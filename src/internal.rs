@@ -360,7 +360,7 @@ pub struct CodedBlockInfo {
 pub struct Rav1dFrameContext_frame_thread {
     pub next_tile_row: [c_int; 2], /* 0: reconstruction, 1: entropy */
     pub entropy_progress: AtomicI32,
-    pub deblock_progress: atomic_int, // in sby units
+    pub deblock_progress: AtomicI32, // in sby units
     pub frame_progress: *mut atomic_uint,
     pub copy_lpf_progress: *mut atomic_uint,
     // indexed using t->by * f->b4_stride + t->bx

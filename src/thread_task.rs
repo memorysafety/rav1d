@@ -404,10 +404,9 @@ unsafe fn create_filter_sbrow(
             0 as c_int,
             (prog_sz as usize).wrapping_mul(::core::mem::size_of::<atomic_uint>() as usize),
         );
-        ::core::intrinsics::atomic_store_seqcst(
-            &mut (*f).frame_thread.deblock_progress,
-            0 as c_int,
-        );
+        (*f).frame_thread
+            .deblock_progress
+            .store(0, Ordering::SeqCst);
     }
     (*f).frame_thread.next_tile_row[(pass & 1) as usize] = 0 as c_int;
     let t: *mut Rav1dTask = &mut *tasks.offset(0) as *mut Rav1dTask;
@@ -548,10 +547,10 @@ unsafe fn ensure_progress(
     f: *mut Rav1dFrameContext,
     t: *mut Rav1dTask,
     type_0: TaskType,
-    state: *mut atomic_int,
+    state: &AtomicI32,
     target: *mut c_int,
 ) -> c_int {
-    let p1 = ::core::intrinsics::atomic_load_seqcst(state);
+    let p1 = state.load(Ordering::SeqCst);
     if p1 < (*t).sby {
         (*t).type_0 = type_0;
         (*t).deblock_progress = 0 as c_int;
@@ -1055,9 +1054,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             if (*t).deblock_progress == 0 {
                                                 unreachable!();
                                             }
-                                            let p1_2 = ::core::intrinsics::atomic_load_seqcst(
-                                                &mut (*f).frame_thread.deblock_progress,
-                                            );
+                                            let p1_2 = (*f)
+                                                .frame_thread
+                                                .deblock_progress
+                                                .load(Ordering::SeqCst);
                                             if p1_2 >= (*t).deblock_progress {
                                                 ::core::intrinsics::atomic_or_seqcst(
                                                     &mut (*f).task_thread.error,
@@ -1410,7 +1410,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         f,
                                         t,
                                         RAV1D_TASK_TYPE_DEBLOCK_ROWS,
-                                        &mut (*f).frame_thread.deblock_progress,
+                                        &(*f).frame_thread.deblock_progress,
                                         &mut (*t).deblock_progress,
                                     ) != 0
                                     {
@@ -1463,9 +1463,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     error_0 = ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error,
                                     );
-                                    ::core::intrinsics::atomic_store_seqcst(
-                                        &mut (*f).frame_thread.deblock_progress,
+                                    (*f).frame_thread.deblock_progress.store(
                                         if error_0 != 0 { TILE_ERROR } else { sby + 1 },
+                                        Ordering::SeqCst,
                                     );
                                     reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
                                     if ::core::intrinsics::atomic_or_seqcst(
