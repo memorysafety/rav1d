@@ -34,7 +34,7 @@ pub struct Dav1dPictureParameters {
 }
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, PartialEq, Eq, Hash, Debug)]
 #[repr(C)]
 pub(crate) struct Rav1dPictureParameters {
     pub w: c_int,
