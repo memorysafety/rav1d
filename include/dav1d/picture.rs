@@ -30,7 +30,7 @@ pub struct Dav1dPictureParameters {
     pub bpc: c_int,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(C)]
 pub(crate) struct Rav1dPictureParameters {
     pub w: c_int,

@@ -223,7 +223,7 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, EnumCount, FromRepr, Debug)]
 pub(crate) enum Rav1dPixelLayout {
     I400 = 0,
     I420 = 1,
