@@ -53,6 +53,7 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::process::abort;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 
 #[cfg(target_os = "linux")]
@@ -381,29 +382,15 @@ unsafe fn create_filter_sbrow(
     if pass & 1 != 0 {
         (*f).frame_thread.entropy_progress = AtomicI32::new(0);
     } else {
-        let prog_sz = ((*f).sbh + 31 & !(31 as c_int)) >> 5;
-        if prog_sz > (*f).frame_thread.prog_sz {
-            let prog: *mut atomic_uint = realloc(
-                (*f).frame_thread.frame_progress as *mut c_void,
-                ((2 * prog_sz) as usize).wrapping_mul(::core::mem::size_of::<atomic_uint>()),
-            ) as *mut atomic_uint;
-            if prog.is_null() {
-                return -(1 as c_int);
-            }
-            (*f).frame_thread.frame_progress = prog;
-            (*f).frame_thread.copy_lpf_progress = prog.offset(prog_sz as isize);
-        }
-        (*f).frame_thread.prog_sz = prog_sz;
-        memset(
-            (*f).frame_thread.frame_progress as *mut c_void,
-            0 as c_int,
-            (prog_sz as usize).wrapping_mul(::core::mem::size_of::<atomic_uint>()),
-        );
-        memset(
-            (*f).frame_thread.copy_lpf_progress as *mut c_void,
-            0 as c_int,
-            (prog_sz as usize).wrapping_mul(::core::mem::size_of::<atomic_uint>() as usize),
-        );
+        let prog_sz = (((*f).sbh + 31 & !(31 as c_int)) >> 5) as usize;
+        (*f).frame_thread.frame_progress.clear();
+        (*f).frame_thread
+            .frame_progress
+            .resize_with(prog_sz, || AtomicU32::new(0));
+        (*f).frame_thread.copy_lpf_progress.clear();
+        (*f).frame_thread
+            .copy_lpf_progress
+            .resize_with(prog_sz, || AtomicU32::new(0));
         (*f).frame_thread
             .deblock_progress
             .store(0, Ordering::SeqCst);
@@ -659,16 +646,14 @@ unsafe fn get_frame_progress(c: *const Rav1dContext, f: *const Rav1dFrameContext
     let mut idx = (frame_prog >> (*f).sb_shift + 7) as c_int;
     let mut prog;
     loop {
-        let state: *mut atomic_uint =
-            &mut *((*f).frame_thread.frame_progress).offset(idx as isize) as *mut atomic_uint;
-        let val: c_uint = !::core::intrinsics::atomic_load_seqcst(state);
+        let val: c_uint = !((*f).frame_thread.frame_progress)[idx as usize].load(Ordering::SeqCst);
         prog = if val != 0 { ctz(val) } else { 32 as c_int };
         if prog != 32 as c_int {
             break;
         }
         prog = 0 as c_int;
         idx += 1;
-        if !(idx < (*f).frame_thread.prog_sz) {
+        if !((idx as usize) < (*f).frame_thread.frame_progress.len()) {
             break;
         }
     }
@@ -1037,13 +1022,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         } else if (*t).type_0 as c_uint
                                             == RAV1D_TASK_TYPE_CDEF as c_int as c_uint
                                         {
-                                            let prog_0: *mut atomic_uint =
-                                                (*f).frame_thread.copy_lpf_progress;
-                                            let p1_1 = ::core::intrinsics::atomic_load_seqcst(
-                                                &mut *prog_0.offset(((*t).sby - 1 >> 5) as isize)
-                                                    as *mut atomic_uint,
-                                            )
-                                                as c_int;
+                                            let p1_1 = (*f).frame_thread.copy_lpf_progress
+                                                [((*t).sby - 1 >> 5) as usize]
+                                                .load(Ordering::SeqCst);
                                             if p1_1 as c_uint & (1 as c_uint) << ((*t).sby - 1 & 31)
                                                 != 0
                                             {
@@ -1476,19 +1457,12 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         pthread_cond_signal(&mut (*ttd).cond);
                                     }
                                 } else if (*(*f).seq_hdr).cdef != 0 || (*f).lf.restore_planes != 0 {
-                                    ::core::intrinsics::atomic_or_seqcst(
-                                        &mut *((*f).frame_thread.copy_lpf_progress)
-                                            .offset((sby >> 5) as isize)
-                                            as *mut atomic_uint,
-                                        (1 as c_uint) << (sby & 31),
-                                    );
+                                    (*f).frame_thread.copy_lpf_progress[(sby >> 5) as usize]
+                                        .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
                                     if sby != 0 {
-                                        let prog_1 = ::core::intrinsics::atomic_load_seqcst(
-                                            &mut *((*f).frame_thread.copy_lpf_progress)
-                                                .offset((sby - 1 >> 5) as isize)
-                                                as *mut atomic_uint,
-                                        )
-                                            as c_int;
+                                        let prog_1 = (*f).frame_thread.copy_lpf_progress
+                                            [(sby - 1 >> 5) as usize]
+                                            .load(Ordering::SeqCst);
                                         if !prog_1 as c_uint & (1 as c_uint) << (sby - 1 & 31) != 0
                                         {
                                             (*t).type_0 = RAV1D_TASK_TYPE_CDEF;
@@ -1630,11 +1604,8 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 continue;
                             }
                         } else {
-                            ::core::intrinsics::atomic_or_seqcst(
-                                &mut *((*f).frame_thread.frame_progress).offset((sby >> 5) as isize)
-                                    as *mut atomic_uint,
-                                (1 as c_uint) << (sby & 31),
-                            );
+                            (*f).frame_thread.frame_progress[(sby >> 5) as usize]
+                                .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
                             pthread_mutex_lock(&mut (*f).task_thread.lock);
                             sby = get_frame_progress(c, f);
                             error_0 =
