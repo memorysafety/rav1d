@@ -52,6 +52,8 @@ use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::process::abort;
+use std::sync::atomic::AtomicI32;
+use std::sync::atomic::Ordering;
 
 #[cfg(target_os = "linux")]
 use libc::prctl;
@@ -377,7 +379,7 @@ unsafe fn create_filter_sbrow(
     }
     tasks = tasks.offset(((*f).sbh * (pass & 1)) as isize);
     if pass & 1 != 0 {
-        (*f).frame_thread.entropy_progress = 0 as c_int;
+        (*f).frame_thread.entropy_progress = AtomicI32::new(0);
     } else {
         let prog_sz = ((*f).sbh + 31 & !(31 as c_int)) >> 5;
         if prog_sz > (*f).frame_thread.prog_sz {
@@ -954,10 +956,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             let tile_row_base = (*(*f).frame_hdr).tiling.cols
                                                 * (*f).frame_thread.next_tile_row[p as usize];
                                             if p != 0 {
-                                                let prog: *mut atomic_int =
-                                                    &mut (*f).frame_thread.entropy_progress;
-                                                let p1_0 =
-                                                    ::core::intrinsics::atomic_load_seqcst(prog);
+                                                let p1_0 = (*f)
+                                                    .frame_thread
+                                                    .entropy_progress
+                                                    .load(Ordering::SeqCst);
                                                 if p1_0 < (*t).sby {
                                                     current_block = 5395695591151878490;
                                                 } else {
@@ -1579,9 +1581,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     if error_0 != 0 { FRAME_ERROR } else { y },
                                 );
                             }
-                            ::core::intrinsics::atomic_store_seqcst(
-                                &mut (*f).frame_thread.entropy_progress,
+                            (*f).frame_thread.entropy_progress.store(
                                 if error_0 != 0 { TILE_ERROR } else { sby + 1 },
+                                Ordering::SeqCst,
                             );
                             if sby + 1 == sbh {
                                 ::core::intrinsics::atomic_store_seqcst(
