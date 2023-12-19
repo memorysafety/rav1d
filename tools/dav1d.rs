@@ -95,6 +95,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
+use std::ptr;
 
 unsafe fn get_time_nanos() -> u64 {
     let mut ts: libc::timespec = libc::timespec {
@@ -322,8 +323,8 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const u8,
-                r#ref: 0 as *mut Dav1dRef,
+                data: None,
+                r#ref: None,
             },
         },
         content_light: 0 as *mut Dav1dContentLightLevel,
@@ -341,17 +342,17 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     };
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
-        data: 0 as *const u8,
+        data: None,
         sz: 0,
-        r#ref: 0 as *mut Dav1dRef,
+        r#ref: None,
         m: Dav1dDataProps {
             timestamp: 0,
             duration: 0,
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const u8,
-                r#ref: 0 as *mut Dav1dRef,
+                data: None,
+                r#ref: None,
             },
         },
     };
@@ -478,7 +479,15 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             }; 32],
         };
         let mut seq_skip: c_uint = 0 as c_int as c_uint;
-        while dav1d_parse_sequence_header(&mut seq, data.data, data.sz).0 != 0 {
+        while dav1d_parse_sequence_header(
+            &mut seq,
+            data.data
+                .map(|ptr| ptr.as_ptr() as *const _)
+                .unwrap_or_else(ptr::null),
+            data.sz,
+        )
+        .0 != 0
+        {
             res = input_read(in_0, &mut data);
             if res < 0 {
                 input_close(in_0);
@@ -577,6 +586,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
                 break;
             }
             n_out = n_out.wrapping_add(1);
+            dbg!(n_out);
             if nspf != 0 || cli_settings.quiet == 0 {
                 synchronize(
                     cli_settings.realtime as c_int,

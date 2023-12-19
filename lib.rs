@@ -29,6 +29,8 @@ pub mod include {
 pub mod src {
     pub mod align;
     mod assume;
+    pub(crate) mod c_arc;
+    pub(crate) mod c_box;
     mod cdef;
     #[cfg_attr(not(feature = "bitdepth_16"), allow(dead_code))]
     mod cdef_apply_tmpl_16;

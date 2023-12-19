@@ -30,7 +30,8 @@ pub struct Dav1dPictureParameters {
     pub bpc: c_int,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dPictureParameters {
     pub w: c_int,
@@ -85,7 +86,7 @@ pub struct Dav1dPicture {
     pub allocator_data: *mut c_void,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[repr(C)]
 pub(crate) struct Rav1dPicture {
     pub seq_hdr: *mut Rav1dSequenceHeader,
@@ -270,6 +271,32 @@ impl From<Rav1dPicture> for Dav1dPicture {
             reserved_ref,
             r#ref,
             allocator_data,
+        }
+    }
+}
+
+// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
+impl Default for Rav1dPicture {
+    fn default() -> Self {
+        Self {
+            seq_hdr: ptr::null_mut(),
+            frame_hdr: ptr::null_mut(),
+            data: [ptr::null_mut(); 3],
+            stride: Default::default(),
+            p: Default::default(),
+            m: Default::default(),
+            content_light: ptr::null_mut(),
+            mastering_display: ptr::null_mut(),
+            itut_t35: ptr::null_mut(),
+            reserved: Default::default(),
+            frame_hdr_ref: ptr::null_mut(),
+            seq_hdr_ref: ptr::null_mut(),
+            content_light_ref: ptr::null_mut(),
+            mastering_display_ref: ptr::null_mut(),
+            itut_t35_ref: ptr::null_mut(),
+            reserved_ref: Default::default(),
+            r#ref: ptr::null_mut(),
+            allocator_data: ptr::null_mut(),
         }
     }
 }

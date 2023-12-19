@@ -37,6 +37,7 @@ pub struct CdfContext {
     pub mv: CdfMvContext,
     pub dmv: CdfMvContext,
 }
+
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],

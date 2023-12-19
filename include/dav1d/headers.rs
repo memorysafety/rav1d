@@ -223,8 +223,10 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, EnumCount, FromRepr, Debug)]
+// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, EnumCount, FromRepr, Debug, Default)]
 pub(crate) enum Rav1dPixelLayout {
+    #[default]
     I400 = 0,
     I420 = 1,
     I422 = 2,

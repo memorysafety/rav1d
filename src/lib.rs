@@ -2,10 +2,10 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
+use crate::include::common::validate::func_name;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::common::Rav1dUserData;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Dav1dContext;
@@ -33,13 +33,6 @@ use crate::src::align::Align64;
 use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
-use crate::src::data::rav1d_data_create_internal;
-use crate::src::data::rav1d_data_props_copy;
-use crate::src::data::rav1d_data_props_unref_internal;
-use crate::src::data::rav1d_data_ref;
-use crate::src::data::rav1d_data_unref_internal;
-use crate::src::data::rav1d_data_wrap_internal;
-use crate::src::data::rav1d_data_wrap_user_data_internal;
 use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
@@ -79,7 +72,6 @@ use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::r#ref::rav1d_ref_dec;
-use crate::src::r#ref::Rav1dRef;
 use crate::src::refmvs::rav1d_refmvs_clear;
 use crate::src::refmvs::rav1d_refmvs_dsp_init;
 use crate::src::refmvs::rav1d_refmvs_init;
@@ -115,8 +107,11 @@ use std::ffi::c_void;
 use std::mem;
 use std::mem::MaybeUninit;
 use std::process::abort;
+use std::ptr;
 use std::ptr::NonNull;
+use std::slice;
 use std::sync::Once;
+use to_method::To as _;
 
 #[cfg(target_os = "linux")]
 use libc::dlsym;
@@ -146,6 +141,7 @@ pub fn rav1d_version() -> &'static str {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_version() -> *const c_char {
+    dbg!(func_name!());
     // Safety: [`rav1d_version`] has a null-terminator.
     rav1d_version().as_ptr().cast()
 }
@@ -172,6 +168,7 @@ impl Default for Rav1dSettings {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
+    dbg!(func_name!());
     s.write(Rav1dSettings::default().into());
 }
 
@@ -231,6 +228,7 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usi
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1dResult {
+    dbg!(func_name!());
     (|| {
         validate_input!((!s.is_null(), EINVAL))?;
         rav1d_get_frame_delay(&s.read().into()).map(|frame_delay| frame_delay as c_uint)
@@ -479,6 +477,7 @@ pub unsafe extern "C" fn dav1d_open(
     c_out: *mut *mut Dav1dContext,
     s: *const Dav1dSettings,
 ) -> Dav1dResult {
+    dbg!(func_name!());
     (|| {
         validate_input!((!c_out.is_null(), EINVAL))?;
         validate_input!((!s.is_null(), EINVAL))?;
@@ -494,75 +493,41 @@ unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
 }
 
 pub(crate) unsafe fn rav1d_parse_sequence_header(
-    out: &mut Rav1dSequenceHeader,
     ptr: *const u8,
     sz: usize,
-) -> Rav1dResult {
-    unsafe fn rav1d_parse_sequence_header_error(
-        res: Rav1dResult,
-        mut c: *mut Rav1dContext,
-        buf: *mut Rav1dData,
-    ) -> Rav1dResult {
-        rav1d_data_unref_internal(buf);
-        rav1d_close(&mut c);
-        res
-    }
-
-    let mut buf: Rav1dData = {
-        let init = Rav1dData {
-            data: 0 as *const u8,
-            sz: 0,
-            r#ref: 0 as *mut Rav1dRef,
-            m: Rav1dDataProps {
-                timestamp: 0,
-                duration: 0,
-                offset: 0,
-                size: 0,
-                user_data: Rav1dUserData {
-                    data: 0 as *const u8,
-                    r#ref: 0 as *mut Rav1dRef,
-                },
-            },
-        };
-        init
+) -> Rav1dResult<Rav1dSequenceHeader> {
+    let s = Rav1dSettings {
+        n_threads: 1,
+        logger: None,
+        ..Default::default()
     };
-    let mut res;
-    let mut s = Rav1dSettings::default();
-    s.n_threads = 1 as c_int;
-    s.logger = None;
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
-    res = rav1d_open(&mut c, &mut s);
-    if res.is_err() {
-        return res;
-    }
-    if !ptr.is_null() {
-        res = rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void);
-        if res.is_err() {
-            return rav1d_parse_sequence_header_error(res, c, &mut buf);
-        }
-    }
-
-    while buf.sz > 0 {
-        let res = rav1d_parse_obus(&mut *c, &mut buf, 1 as c_int);
-        let res = match res {
-            Ok(res) => res,
-            Err(res) => return rav1d_parse_sequence_header_error(Err(res), c, &mut buf),
+    rav1d_open(&mut c, &s)?;
+    || -> Rav1dResult<Rav1dSequenceHeader> {
+        let Rav1dData {
+            mut data,
+            m: mut props,
+        } = match NonNull::new(ptr.cast_mut()) {
+            None => Default::default(),
+            Some(ptr) => Rav1dData::wrap(
+                slice::from_raw_parts(ptr.as_ptr(), sz).into(),
+                Some(dummy_free),
+                ptr::null_mut(),
+            )?,
         };
+        if let Some(data) = &mut data {
+            while !data.is_empty() {
+                let len = rav1d_parse_obus(&mut *c, data, &mut props, 1)?;
+                *data += len;
+            }
+        }
+        if (*c).seq_hdr.is_null() {
+            return Err(ENOENT);
+        }
 
-        assert!(res as usize <= buf.sz);
-        buf.sz -= res as usize;
-        buf.data = (buf.data).offset(res as isize);
-    }
-
-    if ((*c).seq_hdr).is_null() {
-        res = Err(ENOENT);
-        return rav1d_parse_sequence_header_error(res, c, &mut buf);
-    }
-
-    *out = (*(*c).seq_hdr).clone();
-    res = Ok(());
-
-    return rav1d_parse_sequence_header_error(res, c, &mut buf);
+        Ok((*(*c).seq_hdr).clone())
+    }()
+    .inspect_err(|_| rav1d_close(&mut c))
 }
 
 #[no_mangle]
@@ -571,12 +536,12 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     ptr: *const u8,
     sz: usize,
 ) -> Dav1dResult {
-    (|| {
+    dbg!(func_name!());
+    (|| -> Rav1dResult {
         validate_input!((!out.is_null(), EINVAL))?;
-        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
-        let result = rav1d_parse_sequence_header(&mut out_rust, ptr, sz);
-        out.write(out_rust.into());
-        result
+        let seq_hdr = rav1d_parse_sequence_header(ptr, sz)?;
+        out.write(seq_hdr.into());
+        Ok(())
     })()
     .into()
 }
@@ -699,7 +664,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let error = (*f).task_thread.retval;
         if error.is_err() {
             (*f).task_thread.retval = Ok(());
-            rav1d_data_props_copy(&mut c.cached_error_props, &mut (*out_delayed).p.m);
+            c.cached_error_props = (*out_delayed).p.m.clone();
             rav1d_thread_picture_unref(out_delayed);
             return error;
         }
@@ -727,28 +692,30 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
     return Err(EAGAIN);
 }
 
-unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
-    let mut res;
-    let in_0: *mut Rav1dData = &mut (*c).in_0;
+unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
     if output_picture_ready(c, 0 as c_int) != 0 {
         return Ok(());
     }
-    while (*in_0).sz > 0 {
-        res = rav1d_parse_obus(&mut *c, &mut *in_0, 0 as c_int);
-        match res {
-            Err(_) => rav1d_data_unref_internal(in_0),
-            Ok(res) => {
-                if !(res <= (*in_0).sz) {
-                    unreachable!();
-                }
-                (*in_0).sz = ((*in_0).sz as c_ulong).wrapping_sub(res as c_ulong) as usize as usize;
-                (*in_0).data = ((*in_0).data).offset(res as isize);
-                if (*in_0).sz == 0 {
-                    rav1d_data_unref_internal(in_0);
+    // Take so we don't have 2 `&mut`s.
+    let Rav1dData {
+        data: r#in,
+        m: props,
+    } = mem::take(&mut c.in_0);
+    let Some(mut r#in) = r#in else { return Ok(()) };
+    while !r#in.is_empty() {
+        let res = rav1d_parse_obus(c, &r#in, &props, 0 as c_int);
+        if let Ok(res) = res {
+            r#in += res;
+        }
+        // Note that [`output_picture_ready`] doesn't read [`Rav1dContext::in_0`].
+        if output_picture_ready(c, 0 as c_int) != 0 {
+            // Restore into `c` when there's still data left.
+            if !r#in.is_empty() {
+                c.in_0 = Rav1dData {
+                    data: Some(r#in),
+                    m: props,
                 }
             }
-        }
-        if output_picture_ready(c, 0 as c_int) != 0 {
             break;
         }
         res?;
@@ -756,18 +723,24 @@ unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_send_data(c: &mut Rav1dContext, in_0: &mut Rav1dData) -> Rav1dResult {
-    validate_input!((in_0.data.is_null() || in_0.sz != 0, EINVAL))?;
-    if !in_0.data.is_null() {
+pub(crate) unsafe fn rav1d_send_data(c: &mut Rav1dContext, r#in: &mut Rav1dData) -> Rav1dResult {
+    validate_input!((
+        r#in.data
+            .as_ref()
+            .map(|data| !data.is_empty())
+            .unwrap_or(true),
+        EINVAL
+    ))?;
+    if r#in.data.is_some() {
         c.drain = 0 as c_int;
     }
-    if !c.in_0.data.is_null() {
+    if c.in_0.data.is_some() {
         return Err(EAGAIN);
     }
-    rav1d_data_ref(&mut c.in_0, in_0);
+    c.in_0 = r#in.clone();
     let res = gen_picture(c);
     if res.is_ok() {
-        rav1d_data_unref_internal(in_0);
+        let _ = mem::take(r#in);
     }
     return res;
 }
@@ -777,6 +750,7 @@ pub unsafe extern "C" fn dav1d_send_data(
     c: *mut Rav1dContext,
     in_0: *mut Dav1dData,
 ) -> Dav1dResult {
+    dbg!(func_name!());
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
@@ -792,24 +766,16 @@ pub(crate) unsafe fn rav1d_get_picture(
     c: &mut Rav1dContext,
     out: &mut Rav1dPicture,
 ) -> Rav1dResult {
-    let drain = c.drain;
-    c.drain = 1 as c_int;
-    let res = gen_picture(c);
-    if res.is_err() {
-        return res;
-    }
-    if c.cached_error.is_err() {
-        let res_0 = c.cached_error;
-        c.cached_error = Ok(());
-        return res_0;
-    }
-    if output_picture_ready(c, (c.n_fc == 1 as c_uint) as c_int) != 0 {
+    let drain = mem::replace(&mut c.drain, 1);
+    gen_picture(c)?;
+    mem::replace(&mut c.cached_error, Ok(()))?;
+    if output_picture_ready(c, (c.n_fc == 1) as c_int) != 0 {
         return output_image(c, out);
     }
-    if c.n_fc > 1 as c_uint && drain != 0 {
+    if c.n_fc > 1 && drain != 0 {
         return drain_picture(c, out);
     }
-    return Err(EAGAIN);
+    Err(EAGAIN)
 }
 
 #[no_mangle]
@@ -817,12 +783,15 @@ pub unsafe extern "C" fn dav1d_get_picture(
     c: *mut Dav1dContext,
     out: *mut Dav1dPicture,
 ) -> Dav1dResult {
+    dbg!(func_name!());
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
         let c = &mut *c;
         let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
-        let result = rav1d_get_picture(c, &mut out_rust);
+        let result = rav1d_get_picture(c, &mut out_rust).inspect(|_| {
+            println!("after rav1d_get_picture: {out_rust}");
+        });
         out.write(out_rust.into());
         result
     })()
@@ -878,6 +847,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     out: *mut Dav1dPicture,
     in_0: *const Dav1dPicture,
 ) -> Dav1dResult {
+    dbg!(func_name!());
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
@@ -915,7 +885,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
 }
 
 pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
-    rav1d_data_unref_internal(&mut (*c).in_0);
+    let _ = mem::take(&mut (*c).in_0);
     if !((*c).out.p.frame_hdr).is_null() {
         rav1d_thread_picture_unref(&mut (*c).out);
     }
@@ -943,7 +913,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     rav1d_ref_dec(&mut (*c).mastering_display_ref);
     rav1d_ref_dec(&mut (*c).content_light_ref);
     rav1d_ref_dec(&mut (*c).itut_t35_ref);
-    rav1d_data_props_unref_internal(&mut (*c).cached_error_props);
+    let _ = mem::take(&mut (*c).cached_error_props);
     if (*c).n_fc == 1 as c_uint && (*c).n_tc == 1 as c_uint {
         return;
     }
@@ -1016,6 +986,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
+    dbg!(func_name!());
     rav1d_flush(c)
 }
 
@@ -1027,6 +998,7 @@ pub(crate) unsafe fn rav1d_close(c_out: &mut *mut Rav1dContext) {
 #[no_mangle]
 #[cold]
 pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
+    dbg!(func_name!());
     if validate_input!(!c_out.is_null()).is_err() {
         return;
     }
@@ -1102,7 +1074,7 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         rav1d_free_aligned((*f).ts as *mut c_void);
         rav1d_free_aligned((*f).ipred_edge[0] as *mut c_void);
         free((*f).a as *mut c_void);
-        (*f).tiles = Default::default(); // TODO(kkysen) Remove when dropped properly.
+        let _ = mem::take(&mut (*f).tiles); // TODO(kkysen) Remove when dropped properly.
         free((*f).lf.mask as *mut c_void);
         free((*f).lf.lr_mask as *mut c_void);
         free((*f).lf.level as *mut c_void);
@@ -1130,10 +1102,7 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         }
         free((*c).frame_thread.out_delayed as *mut c_void);
     }
-    for mut tile in (*c).tiles.drain(..) {
-        rav1d_data_unref_internal(&mut tile.data);
-    }
-    (*c).tiles = Default::default(); // TODO(kkysen) Remove when dropped properly.
+    let _ = mem::take(&mut (*c).tiles); // TODO(kkysen) Remove when dropped properly.
     let mut n_4 = 0;
     while n_4 < 8 {
         rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(n_4 as isize));
@@ -1163,6 +1132,7 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     c: *mut Dav1dContext,
     flags: *mut Dav1dEventFlags,
 ) -> Dav1dResult {
+    dbg!(func_name!());
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!flags.is_null(), EINVAL))?;
@@ -1176,9 +1146,7 @@ pub(crate) unsafe fn rav1d_get_decode_error_data_props(
     c: &mut Rav1dContext,
     out: &mut Rav1dDataProps,
 ) -> Rav1dResult {
-    rav1d_data_props_unref_internal(out);
-    *out = c.cached_error_props.clone();
-    c.cached_error_props = Default::default();
+    *out = mem::take(&mut c.cached_error_props);
     Ok(())
 }
 
@@ -1187,6 +1155,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     c: *mut Dav1dContext,
     out: *mut Dav1dDataProps,
 ) -> Dav1dResult {
+    dbg!(func_name!());
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
@@ -1204,6 +1173,7 @@ pub(crate) unsafe fn rav1d_picture_unref(p: &mut Rav1dPicture) {
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
+    dbg!(func_name!());
     if validate_input!(!p.is_null()).is_err() {
         return;
     }
@@ -1212,26 +1182,21 @@ pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
     p.write(p_rust.into());
 }
 
-pub(crate) unsafe fn rav1d_data_create(buf: *mut Rav1dData, sz: usize) -> *mut u8 {
-    return rav1d_data_create_internal(buf, sz);
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_create(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
-    let mut buf_rust = buf.read().into();
-    let result = rav1d_data_create(&mut buf_rust, sz);
-    buf.write(buf_rust.into());
-    result
-}
-
-pub(crate) unsafe fn rav1d_data_wrap(
-    buf: *mut Rav1dData,
-    ptr: *const u8,
-    sz: usize,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
-    user_data: *mut c_void,
-) -> Rav1dResult {
-    return rav1d_data_wrap_internal(buf, ptr, sz, free_callback, user_data);
+    dbg!(func_name!());
+    || -> Rav1dResult<*mut u8> {
+        let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
+        let data = Rav1dData::create(sz)?;
+        let data = data.to::<Dav1dData>();
+        let ptr = data
+            .data
+            .map(|ptr| ptr.as_ptr())
+            .unwrap_or_else(ptr::null_mut);
+        buf.as_ptr().write(data);
+        Ok(ptr)
+    }()
+    .unwrap_or_else(|_| ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1242,19 +1207,16 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     user_data: *mut c_void,
 ) -> Dav1dResult {
-    let mut buf_rust = buf.read().into();
-    let result = rav1d_data_wrap(&mut buf_rust, ptr, sz, free_callback, user_data);
-    buf.write(buf_rust.into());
-    result.into()
-}
-
-pub(crate) unsafe fn rav1d_data_wrap_user_data(
-    buf: *mut Rav1dData,
-    user_data: *const u8,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
-    cookie: *mut c_void,
-) -> Rav1dResult {
-    return rav1d_data_wrap_user_data_internal(buf, user_data, free_callback, cookie);
+    dbg!(func_name!());
+    || -> Rav1dResult {
+        let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
+        let ptr = validate_input!(NonNull::new(ptr.cast_mut()).ok_or(EINVAL))?;
+        let data = slice::from_raw_parts(ptr.as_ptr(), sz).into();
+        let data = Rav1dData::wrap(data, free_callback, user_data)?;
+        buf.as_ptr().write(data.into());
+        Ok(())
+    }()
+    .into()
 }
 
 #[no_mangle]
@@ -1264,31 +1226,31 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     cookie: *mut c_void,
 ) -> Dav1dResult {
-    let mut buf_rust = buf.read().into();
-    let result = rav1d_data_wrap_user_data(&mut buf_rust, user_data, free_callback, cookie);
-    buf.write(buf_rust.into());
-    result.into()
-}
-
-pub(crate) unsafe fn rav1d_data_unref(buf: *mut Rav1dData) {
-    rav1d_data_unref_internal(buf);
+    dbg!(func_name!());
+    || -> Rav1dResult {
+        let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
+        // Note that `dav1d` doesn't do this check, but they do for the similar [`dav1d_data_wrap`].
+        let user_data = validate_input!(NonNull::new(user_data.cast_mut()).ok_or(EINVAL))?;
+        let mut data = buf.as_ptr().read().to::<Rav1dData>();
+        data.wrap_user_data(user_data, free_callback, cookie)?;
+        buf.as_ptr().write(data.into());
+        Ok(())
+    }()
+    .into()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_unref(buf: *mut Dav1dData) {
-    let mut buf_rust = buf.read().into();
-    let result = rav1d_data_unref(&mut buf_rust);
-    buf.write(buf_rust.into());
-    result
-}
-
-pub(crate) unsafe fn rav1d_data_props_unref(props: *mut Rav1dDataProps) {
-    rav1d_data_props_unref_internal(props);
+    dbg!(func_name!());
+    let buf = validate_input!(NonNull::new(buf).ok_or(()));
+    let Ok(mut buf) = buf else { return };
+    let _ = mem::take(buf.as_mut()).to::<Rav1dData>();
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_props_unref(props: *mut Dav1dDataProps) {
-    let mut props_rust = props.read().into();
-    rav1d_data_props_unref(&mut props_rust);
-    props.write(props_rust.into());
+    dbg!(func_name!());
+    let props = validate_input!(NonNull::new(props).ok_or(()));
+    let Ok(mut props) = props else { return };
+    let _ = mem::take(props.as_mut()).to::<Rav1dDataProps>();
 }
