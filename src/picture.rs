@@ -49,6 +49,13 @@ bitflags! {
     }
 }
 
+impl From<PictureFlags> for Rav1dEventFlags {
+    fn from(value: PictureFlags) -> Self {
+        // [`Rav1dEventFlags`] just has one extra flag.
+        Self::from_bits_truncate(value.bits())
+    }
+}
+
 #[repr(C)]
 pub(crate) struct Rav1dThreadPicture {
     pub p: Rav1dPicture,
@@ -450,20 +457,4 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
     rav1d_picture_unref_internal(&mut (*p).p);
     (*p).progress = 0 as *mut atomic_uint;
-}
-
-pub(crate) unsafe fn rav1d_picture_get_event_flags(
-    p: *const Rav1dThreadPicture,
-) -> Rav1dEventFlags {
-    if (*p).flags.is_empty() {
-        return Rav1dEventFlags::empty();
-    }
-    let mut flags = Rav1dEventFlags::empty();
-    if (*p).flags.contains(PictureFlags::NEW_SEQUENCE) {
-        flags |= Rav1dEventFlags::NEW_SEQUENCE;
-    }
-    if (*p).flags.contains(PictureFlags::NEW_OP_PARAMS_INFO) {
-        flags |= Rav1dEventFlags::NEW_OP_PARAMS_INFO;
-    }
-    return flags;
 }

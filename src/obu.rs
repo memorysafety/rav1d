@@ -93,11 +93,10 @@ use crate::src::levels::OBU_META_ITUT_T35;
 use crate::src::levels::OBU_META_SCALABILITY;
 use crate::src::levels::OBU_META_TIMECODE;
 use crate::src::log::Rav1dLog as _;
-use crate::src::picture::PictureFlags;
 use crate::src::picture::rav1d_picture_copy_props;
-use crate::src::picture::rav1d_picture_get_event_flags;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
+use crate::src::picture::PictureFlags;
 use crate::src::r#ref::rav1d_ref_create;
 use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
@@ -2381,9 +2380,10 @@ unsafe fn parse_obus(
                 // Must be removed from the context after being attached to the frame
                 rav1d_ref_dec(&mut c.itut_t35_ref);
                 c.itut_t35 = 0 as *mut Rav1dITUTT35;
-                c.event_flags |= rav1d_picture_get_event_flags(
-                    &mut c.refs[(*c.frame_hdr).existing_frame_idx as usize].p,
-                );
+                c.event_flags |= c.refs[(*c.frame_hdr).existing_frame_idx as usize]
+                    .p
+                    .flags
+                    .into();
             } else {
                 pthread_mutex_lock(&mut c.task_thread.lock);
                 // Need to append this to the frame output queue.
@@ -2435,7 +2435,7 @@ unsafe fn parse_obus(
                         && progress != FRAME_ERROR
                     {
                         rav1d_thread_picture_ref(&mut c.out, out_delayed);
-                        c.event_flags |= rav1d_picture_get_event_flags(out_delayed);
+                        c.event_flags |= out_delayed.flags.into();
                     }
                     rav1d_thread_picture_unref(out_delayed);
                 }
