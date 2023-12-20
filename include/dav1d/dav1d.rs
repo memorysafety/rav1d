@@ -48,7 +48,20 @@ pub const DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO: Dav1dEventFlags =
 bitflags! {
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
     pub(crate) struct Rav1dEventFlags: u8 {
+        /// The last returned picture contains a reference
+        /// to a new [`Rav1dSequenceHeader`],
+        /// either because it's the start of a new coded sequence,
+        /// or the decoder was flushed before it was generated.
+        ///
+        /// [`Rav1dSequenceHeader`]: crate::include::dav1d::headers::Rav1dSequenceHeader
         const NEW_SEQUENCE = 1 << 0;
+
+        /// The last returned picture contains a reference to a
+        /// [`Rav1dSequenceHeader`] with new [`Rav1dSequenceHeaderOperatingParameterInfo`]
+        /// for the current coded sequence.
+        ///
+        /// [`Rav1dSequenceHeader`]: crate::include::dav1d::headers::Rav1dSequenceHeader
+        /// [`Rav1dSequenceHeaderOperatingParameterInfo`]: crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo
         const NEW_OP_PARAMS_INFO = 1 << 1;
     }
 }
