@@ -1142,14 +1142,6 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     .into()
 }
 
-pub(crate) unsafe fn rav1d_get_decode_error_data_props(
-    c: &mut Rav1dContext,
-    out: &mut Rav1dDataProps,
-) -> Rav1dResult {
-    *out = mem::take(&mut c.cached_error_props);
-    Ok(())
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     c: *mut Dav1dContext,
@@ -1159,10 +1151,8 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
-        let result = rav1d_get_decode_error_data_props(&mut *c, &mut out_rust);
-        out.write(out_rust.into());
-        result
+        out.write(mem::take(&mut (*c).cached_error_props).into());
+        Ok(())
     })()
     .into()
 }
