@@ -68,6 +68,7 @@ use crate::src::mem::rav1d_freep_aligned;
 use crate::src::mem::rav1d_mem_pool_end;
 use crate::src::mem::rav1d_mem_pool_init;
 use crate::src::obu::rav1d_parse_obus;
+use crate::src::picture::PictureFlags;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
@@ -79,7 +80,6 @@ use crate::src::picture::rav1d_thread_picture_move_ref;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::Rav1dRef;
 use crate::src::refmvs::rav1d_refmvs_clear;
@@ -625,7 +625,7 @@ unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) ->
     if !(*c).all_layers && (*c).max_spatial_id {
         if !((*c).out.p.data[0]).is_null() && !((*c).cache.p.data[0]).is_null() {
             if (*c).max_spatial_id == ((*(*c).cache.p.frame_hdr).spatial_id != 0)
-                || (*c).out.flags as c_uint & PICTURE_FLAG_NEW_TEMPORAL_UNIT as c_int as c_uint != 0
+                || (*c).out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
                 return 1 as c_int;
             }

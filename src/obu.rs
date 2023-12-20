@@ -93,13 +93,11 @@ use crate::src::levels::OBU_META_ITUT_T35;
 use crate::src::levels::OBU_META_SCALABILITY;
 use crate::src::levels::OBU_META_TIMECODE;
 use crate::src::log::Rav1dLog as _;
+use crate::src::picture::PictureFlags;
 use crate::src::picture::rav1d_picture_copy_props;
 use crate::src::picture::rav1d_picture_get_event_flags;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
-use crate::src::picture::PICTURE_FLAG_NEW_OP_PARAMS_INFO;
-use crate::src::picture::PICTURE_FLAG_NEW_SEQUENCE;
-use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
 use crate::src::r#ref::rav1d_ref_create;
 use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
@@ -2015,7 +2013,7 @@ unsafe fn parse_obus(
 
             if c.seq_hdr.is_null() {
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
+                c.frame_flags |= PictureFlags::NEW_SEQUENCE;
             } else if !(*seq_hdr).eq_without_operating_parameter_info(&*c.seq_hdr) {
                 // See 7.5, `operating_parameter_info` is allowed to change in
                 // sequence headers of a single sequence.
@@ -2032,10 +2030,10 @@ unsafe fn parse_obus(
                     rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
                     rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
                 }
-                c.frame_flags |= PICTURE_FLAG_NEW_SEQUENCE;
+                c.frame_flags |= PictureFlags::NEW_SEQUENCE;
             } else if (*seq_hdr).operating_parameter_info != (*c.seq_hdr).operating_parameter_info {
                 // If operating_parameter_info changed, signal it
-                c.frame_flags |= PICTURE_FLAG_NEW_OP_PARAMS_INFO;
+                c.frame_flags |= PictureFlags::NEW_OP_PARAMS_INFO;
             }
             rav1d_ref_dec(&mut c.seq_hdr_ref);
             c.seq_hdr_ref = r#ref;
@@ -2315,7 +2313,7 @@ unsafe fn parse_obus(
                 }
             }
         }
-        RAV1D_OBU_TD => c.frame_flags |= PICTURE_FLAG_NEW_TEMPORAL_UNIT,
+        RAV1D_OBU_TD => c.frame_flags |= PictureFlags::NEW_TEMPORAL_UNIT,
         RAV1D_OBU_PADDING => {} // Ignore OBUs we don't care about.
         _ => {
             // Print a warning, but don't fail for unknown types.
