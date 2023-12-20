@@ -16,7 +16,6 @@ use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::data::rav1d_data_props_copy;
-use crate::src::data::rav1d_data_props_set_defaults;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::ENOMEM;
@@ -183,7 +182,7 @@ unsafe fn picture_alloc_with_edges(
     (*p).frame_hdr = frame_hdr;
     (*p).p.layout = (*seq_hdr).layout;
     (*p).p.bpc = bpc;
-    rav1d_data_props_set_defaults(&mut (*p).m);
+    (*p).m = Default::default();
     (*p).seq_hdr_ref = seq_hdr_ref;
     (*p).frame_hdr_ref = frame_hdr_ref;
     let res = (*p_allocator).alloc_picture(p);
@@ -445,7 +444,7 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
         0 as c_int,
         ::core::mem::size_of::<Rav1dPicture>(),
     );
-    rav1d_data_props_set_defaults(&mut p.m);
+    p.m = Default::default();
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
