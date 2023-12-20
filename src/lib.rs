@@ -710,9 +710,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             );
             if ((*out_delayed).visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
-                c.event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-                    c.event_flags as c_uint | rav1d_picture_get_event_flags(out_delayed) as c_uint,
-                );
+                c.event_flags |= rav1d_picture_get_event_flags(out_delayed);
             }
             rav1d_thread_picture_unref(out_delayed);
             if output_picture_ready(c, 0 as c_int) != 0 {
@@ -1166,7 +1164,7 @@ pub(crate) unsafe fn rav1d_get_event_flags(
     flags: &mut Rav1dEventFlags,
 ) -> Rav1dResult {
     *flags = c.event_flags;
-    c.event_flags = 0 as Dav1dEventFlags;
+    c.event_flags = Default::default();
     Ok(())
 }
 
@@ -1178,7 +1176,10 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!flags.is_null(), EINVAL))?;
-        rav1d_get_event_flags(&mut *c, &mut *flags)
+        let mut flags_rust = flags.read().into();
+        rav1d_get_event_flags(&mut *c, &mut flags_rust)?;
+        flags.write(flags_rust.into());
+        Ok(())
     })()
     .into()
 }

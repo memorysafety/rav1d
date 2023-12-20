@@ -1,9 +1,6 @@
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
-use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
-use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_SEQUENCE;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -459,18 +456,14 @@ pub(crate) unsafe fn rav1d_picture_get_event_flags(
     p: *const Rav1dThreadPicture,
 ) -> Rav1dEventFlags {
     if (*p).flags.is_empty() {
-        return 0 as Dav1dEventFlags;
+        return Rav1dEventFlags::empty();
     }
-    let mut flags: Dav1dEventFlags = 0 as Dav1dEventFlags;
+    let mut flags = Rav1dEventFlags::empty();
     if (*p).flags.contains(PictureFlags::NEW_SEQUENCE) {
-        flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-            flags as c_uint | RAV1D_EVENT_FLAG_NEW_SEQUENCE as c_int as c_uint,
-        );
+        flags |= Rav1dEventFlags::NEW_SEQUENCE;
     }
     if (*p).flags.contains(PictureFlags::NEW_OP_PARAMS_INFO) {
-        flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-            flags as c_uint | RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint,
-        );
+        flags |= Rav1dEventFlags::NEW_OP_PARAMS_INFO;
     }
     return flags;
 }
