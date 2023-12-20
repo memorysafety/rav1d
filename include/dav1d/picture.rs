@@ -22,7 +22,6 @@ use std::ffi::c_void;
 use std::ptr;
 use std::ptr::addr_of_mut;
 
-#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPictureParameters {
     pub w: c_int,
@@ -64,7 +63,6 @@ impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
     }
 }
 
-#[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPicture {
     pub seq_hdr: *mut Dav1dSequenceHeader,
