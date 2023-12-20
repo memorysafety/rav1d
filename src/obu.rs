@@ -604,24 +604,24 @@ unsafe fn parse_seq_hdr(
 }
 
 unsafe fn parse_frame_size(
-    c: &mut Rav1dContext,
+    c: &Rav1dContext,
+    seqhdr: &Rav1dSequenceHeader,
+    hdr: &Rav1dFrameHeader,
     gb: &mut GetBits,
-    use_ref: c_int,
+    use_ref: bool,
 ) -> Rav1dResult<Rav1dFrameSize> {
-    let seqhdr = &*c.seq_hdr;
-    let hdr = &mut *c.frame_hdr;
-
-    if use_ref != 0 {
+    if use_ref {
         for i in 0..7 {
             if rav1d_get_bit(gb) != 0 {
-                let r#ref = &mut c.refs[(*c.frame_hdr).refidx[i as usize] as usize].p;
+                let r#ref = &c.refs[hdr.refidx[i as usize] as usize].p;
                 if (*r#ref).p.frame_hdr.is_null() {
                     return Err(EINVAL);
                 }
-                let width1 = (*(*r#ref).p.frame_hdr).size.width[1];
-                let height = (*(*r#ref).p.frame_hdr).size.height;
-                let render_width = (*(*r#ref).p.frame_hdr).size.render_width;
-                let render_height = (*(*r#ref).p.frame_hdr).size.render_height;
+                let ref_size = &(*(*r#ref).p.frame_hdr).size;
+                let width1 = ref_size.width[1];
+                let height = ref_size.height;
+                let render_width = ref_size.render_width;
+                let render_height = ref_size.render_height;
                 let enabled = (seqhdr.super_res != 0 && rav1d_get_bit(gb) != 0) as c_int;
                 let width_scale_denominator;
                 let width0;
@@ -848,7 +848,7 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
         {
             return Err(EINVAL);
         }
-        (*c.frame_hdr).size = parse_frame_size(c, gb, 0)?;
+        (*c.frame_hdr).size = parse_frame_size(c, seqhdr, hdr, gb, false)?;
         hdr.allow_intrabc = (hdr.allow_screen_content_tools != 0
             && hdr.size.super_res.enabled == 0
             && rav1d_get_bit(gb) != 0) as c_int;
@@ -989,8 +989,8 @@ unsafe fn parse_frame_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult
                 }
             }
         }
-        let use_ref = (hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0) as c_int;
-        (*c.frame_hdr).size = parse_frame_size(c, gb, use_ref)?;
+        let use_ref = hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0;
+        (*c.frame_hdr).size = parse_frame_size(c, seqhdr, hdr, gb, use_ref)?;
         hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
         hdr.subpel_filter_mode = if rav1d_get_bit(gb) != 0 {
             RAV1D_FILTER_SWITCHABLE
