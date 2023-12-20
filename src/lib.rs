@@ -11,7 +11,6 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Dav1dContext;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Dav1dSettings;
-use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dSettings;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
@@ -113,6 +112,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::mem;
 use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr::NonNull;
@@ -1158,15 +1158,6 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     rav1d_freep_aligned(c_out as *mut _ as *mut c_void);
 }
 
-pub(crate) unsafe fn rav1d_get_event_flags(
-    c: &mut Rav1dContext,
-    flags: &mut Rav1dEventFlags,
-) -> Rav1dResult {
-    *flags = c.event_flags;
-    c.event_flags = Default::default();
-    Ok(())
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_event_flags(
     c: *mut Dav1dContext,
@@ -1175,9 +1166,7 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!flags.is_null(), EINVAL))?;
-        let mut flags_rust = flags.read().into();
-        rav1d_get_event_flags(&mut *c, &mut flags_rust)?;
-        flags.write(flags_rust.into());
+        flags.write(mem::take(&mut (*c).event_flags).into());
         Ok(())
     })()
     .into()
