@@ -276,8 +276,8 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     let res = picture_alloc_with_edges(
         c,
         &mut (*p).p,
-        (*(*f).frame_hdr).width[1],
-        (*(*f).frame_hdr).height,
+        (*(*f).frame_hdr).size.width[1],
+        (*(*f).frame_hdr).size.height,
         (*f).seq_hdr,
         (*f).seq_hdr_ref,
         (*f).frame_hdr,

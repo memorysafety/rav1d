@@ -3878,7 +3878,7 @@ unsafe fn setup_tile(
     ts.tiling.col_end = cmp::min(col_sb_end << sb_shift, f.bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
     ts.tiling.row_end = cmp::min(row_sb_end << sb_shift, f.bh);
-    let diff_width = (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1];
+    let diff_width = (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1];
 
     // Reference Restoration Unit (used for exp coding)
     let (sb_idx, unit_idx) = if diff_width {
@@ -3900,7 +3900,7 @@ unsafe fn setup_tile(
 
         let lr_ref = if diff_width {
             let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
-            let d = (*f.frame_hdr).super_res.width_scale_denominator;
+            let d = (*f.frame_hdr).size.super_res.width_scale_denominator;
             let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
             let shift = unit_size_log2 + 3;
@@ -4155,11 +4155,11 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
 
             let frame_type = (*f.frame_hdr).restoration.r#type[p as usize];
 
-            if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+            if (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1] {
                 let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
                 let n_units = cmp::max(1, w + half_unit >> unit_size_log2);
 
-                let d = (*f.frame_hdr).super_res.width_scale_denominator;
+                let d = (*f.frame_hdr).size.super_res.width_scale_denominator;
                 let rnd = unit_size * 8 - 1;
                 let shift = unit_size_log2 + 3;
                 let x0 = (4 * t.bx * d >> ss_hor) + rnd >> shift;
@@ -4400,7 +4400,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     // update allocation of block contexts for above
     let mut y_stride = f.cur.stride[0];
     let mut uv_stride = f.cur.stride[1];
-    let has_resize = ((*f.frame_hdr).width[0] != (*f.frame_hdr).width[1]) as c_int;
+    let has_resize = ((*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1]) as c_int;
     let need_cdef_lpf_copy = (c.n_tc > 1 && has_resize != 0) as c_int;
     if y_stride * f.sbh as isize * 4 != f.lf.cdef_buf_plane_sz[0] as isize
         || uv_stride * f.sbh as isize * 8 != f.lf.cdef_buf_plane_sz[1] as isize
@@ -5108,10 +5108,10 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         for i in 0..7 {
             let refidx = (*f.frame_hdr).refidx[i] as usize;
             if c.refs[refidx].p.p.data[0].is_null()
-                || ((*f.frame_hdr).width[0] * 2) < c.refs[refidx].p.p.p.w
-                || ((*f.frame_hdr).height * 2) < c.refs[refidx].p.p.p.h
-                || (*f.frame_hdr).width[0] > c.refs[refidx].p.p.p.w * 16
-                || (*f.frame_hdr).height > c.refs[refidx].p.p.p.h * 16
+                || ((*f.frame_hdr).size.width[0] * 2) < c.refs[refidx].p.p.p.w
+                || ((*f.frame_hdr).size.height * 2) < c.refs[refidx].p.p.p.h
+                || (*f.frame_hdr).size.width[0] > c.refs[refidx].p.p.p.w * 16
+                || (*f.frame_hdr).size.height > c.refs[refidx].p.p.p.h * 16
                 || (*f.seq_hdr).layout != c.refs[refidx].p.p.p.layout
                 || bpc != c.refs[refidx].p.p.p.bpc
             {
@@ -5122,12 +5122,12 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 return Err(EINVAL);
             }
             rav1d_thread_picture_ref(&mut f.refp[i], &mut c.refs[refidx].p);
-            ref_coded_width[i] = (*c.refs[refidx].p.p.frame_hdr).width[0];
-            if (*f.frame_hdr).width[0] != c.refs[refidx].p.p.p.w
-                || (*f.frame_hdr).height != c.refs[refidx].p.p.p.h
+            ref_coded_width[i] = (*c.refs[refidx].p.p.frame_hdr).size.width[0];
+            if (*f.frame_hdr).size.width[0] != c.refs[refidx].p.p.p.w
+                || (*f.frame_hdr).size.height != c.refs[refidx].p.p.p.h
             {
-                f.svc[i][0].scale = scale_fac(c.refs[refidx].p.p.p.w, (*f.frame_hdr).width[0]);
-                f.svc[i][1].scale = scale_fac(c.refs[refidx].p.p.p.h, (*f.frame_hdr).height);
+                f.svc[i][0].scale = scale_fac(c.refs[refidx].p.p.p.w, (*f.frame_hdr).size.width[0]);
+                f.svc[i][1].scale = scale_fac(c.refs[refidx].p.p.p.h, (*f.frame_hdr).size.height);
                 f.svc[i][0].step = f.svc[i][0].scale + 8 >> 4;
                 f.svc[i][1].step = f.svc[i][1].scale + 8 >> 4;
             } else {
@@ -5167,8 +5167,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         return res;
     }
 
-    if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
-        let res = rav1d_picture_alloc_copy(c, &mut f.cur, (*f.frame_hdr).width[0], &mut f.sr_cur.p);
+    if (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1] {
+        let res =
+            rav1d_picture_alloc_copy(c, &mut f.cur, (*f.frame_hdr).size.width[0], &mut f.sr_cur.p);
         if res.is_err() {
             on_error(f, c, out_delayed);
             return res;
@@ -5176,7 +5177,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     } else {
         rav1d_picture_ref(&mut f.cur, &mut f.sr_cur.p);
     }
-    if (*f.frame_hdr).width[0] != (*f.frame_hdr).width[1] {
+    if (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1] {
         f.resize_step[0] = scale_fac(f.cur.p.w, f.sr_cur.p.p.w);
         let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
         let in_cw = f.cur.p.w + ss_hor >> ss_hor;
@@ -5196,10 +5197,10 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_thread_picture_ref(out_delayed, &mut f.sr_cur);
     }
 
-    f.w4 = (*f.frame_hdr).width[0] + 3 >> 2;
-    f.h4 = (*f.frame_hdr).height + 3 >> 2;
-    f.bw = ((*f.frame_hdr).width[0] + 7 >> 3) << 1;
-    f.bh = ((*f.frame_hdr).height + 7 >> 3) << 1;
+    f.w4 = (*f.frame_hdr).size.width[0] + 3 >> 2;
+    f.h4 = (*f.frame_hdr).size.height + 3 >> 2;
+    f.bw = ((*f.frame_hdr).size.width[0] + 7 >> 3) << 1;
+    f.bh = ((*f.frame_hdr).size.height + 7 >> 3) << 1;
     f.sb128w = f.bw + 31 >> 5;
     f.sb128h = f.bh + 31 >> 5;
     f.sb_shift = 4 + (*f.seq_hdr).sb128;

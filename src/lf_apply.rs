@@ -33,8 +33,8 @@ unsafe fn backup_lpf<BD: BitDepth>(
     lr_backup: c_int,
 ) {
     let cdef_backup = (lr_backup == 0) as c_int;
-    let dst_w = if (*(*f).frame_hdr).super_res.enabled != 0 {
-        (*(*f).frame_hdr).width[1] + ss_hor >> ss_hor
+    let dst_w = if (*(*f).frame_hdr).size.super_res.enabled != 0 {
+        (*(*f).frame_hdr).size.width[1] + ss_hor >> ss_hor
     } else {
         src_w
     };
@@ -104,7 +104,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
         }
         dst = dst.offset(4 * BD::pxstride(dst_stride as usize) as isize);
     }
-    if lr_backup != 0 && (*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1] {
+    if lr_backup != 0 && (*(*f).frame_hdr).size.width[0] != (*(*f).frame_hdr).size.width[1] {
         while row + stripe_h <= row_h {
             let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
             ((*(*f).dsp).mc.resize)(
@@ -171,7 +171,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     sby: c_int,
 ) {
     let have_tt = ((*(*f).c).n_tc > 1 as c_uint) as c_int;
-    let resize = ((*(*f).frame_hdr).width[0] != (*(*f).frame_hdr).width[1]) as c_int;
+    let resize = ((*(*f).frame_hdr).size.width[0] != (*(*f).frame_hdr).size.width[1]) as c_int;
     let offset = 8 * (sby != 0) as c_int;
     let src_stride: *const ptrdiff_t = ((*f).cur.stride).as_mut_ptr();
     let lr_stride: *const ptrdiff_t = ((*f).sr_cur.p.stride).as_mut_ptr();
