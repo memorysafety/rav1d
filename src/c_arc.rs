@@ -1,10 +1,12 @@
 use crate::src::c_box::CBox;
 use crate::src::error::Rav1dResult;
 use std::marker::PhantomData;
+use std::mem;
 use std::ops::AddAssign;
 use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::Arc;
+use to_method::To;
 
 /// A C/custom [`Arc`].
 ///
@@ -31,11 +33,43 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct CArc<T: ?Sized> {
     owner: Arc<CBox<T>>,
+
+    /// The same as [`Self::stable_ref`] but it never changes.
+    #[cfg(debug_assertions)]
+    base_stable_ref: NonNull<T>,
+
     stable_ref: NonNull<T>,
 }
 
 impl<T: ?Sized> AsRef<T> for CArc<T> {
     fn as_ref(&self) -> &T {
+        #[cfg(debug_assertions)]
+        {
+            // Some extra checks to check if our ptrs are definitely invalid.
+
+            let real_ref = (*self.owner).as_ref();
+            assert_eq!(real_ref.to::<NonNull<T>>(), self.base_stable_ref);
+
+            // Cast through `*const ()` and use [`pointer::byte_offset_from`]
+            // to remove any fat ptr metadata.
+            let offset = unsafe {
+                self.stable_ref
+                    .as_ptr()
+                    .cast::<()>()
+                    .byte_offset_from((real_ref as *const T).cast::<()>())
+            };
+            let offset = offset.try_to::<usize>().unwrap();
+            let len = mem::size_of_val(real_ref);
+            let out_of_bounds = offset > len;
+            if out_of_bounds {
+                dbg!(real_ref as *const T);
+                dbg!(self.stable_ref.as_ptr());
+                dbg!(offset);
+                dbg!(len);
+                panic!("CArc::stable_ref is out of bounds");
+            }
+        }
+
         // Safety: [`Self::stable_ref`] is a ptr
         // derived from [`Self::owner`]'s through [`CBox::as_ref`]
         // and is thus safe to dereference.
@@ -53,9 +87,16 @@ impl<T: ?Sized> Deref for CArc<T> {
 
 impl<T: ?Sized> Clone for CArc<T> {
     fn clone(&self) -> Self {
-        let Self { owner, stable_ref } = self;
+        let Self {
+            owner,
+            #[cfg(debug_assertions)]
+            base_stable_ref,
+            stable_ref,
+        } = self;
         Self {
             owner: owner.clone(),
+            #[cfg(debug_assertions)]
+            base_stable_ref: base_stable_ref.clone(),
             // Safety: The ref remains stable across an [`Arc::clone`].
             stable_ref: stable_ref.clone(),
         }
@@ -65,7 +106,12 @@ impl<T: ?Sized> Clone for CArc<T> {
 impl<T: ?Sized> From<Arc<CBox<T>>> for CArc<T> {
     fn from(owner: Arc<CBox<T>>) -> Self {
         let stable_ref = (*owner).as_ref().into();
-        Self { owner, stable_ref }
+        Self {
+            owner,
+            #[cfg(debug_assertions)]
+            base_stable_ref: stable_ref,
+            stable_ref,
+        }
     }
 }
 
