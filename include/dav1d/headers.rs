@@ -3,6 +3,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
 use strum::EnumCount;
+use strum::FromRepr;
 
 /// This is so we can store both `*mut D` and `*mut R`
 /// for maintaining `dav1d` ABI compatibility,
@@ -222,18 +223,38 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
     }
 }
 
-pub type Dav1dPixelLayout = c_uint;
-pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = 3;
-pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = 2;
-pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = 1;
-pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = 0;
-
-#[derive(Clone, Copy, PartialEq, Eq, EnumCount)]
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr)]
 pub(crate) enum Rav1dPixelLayout {
-    I400,
-    I420,
-    I422,
-    I444,
+    I400 = 0,
+    I420 = 1,
+    I422 = 2,
+    I444 = 3,
+}
+
+impl Rav1dPixelLayout {
+    pub const fn into_rav1d(self) -> Dav1dPixelLayout {
+        self as Dav1dPixelLayout
+    }
+}
+
+pub type Dav1dPixelLayout = c_uint;
+pub const DAV1D_PIXEL_LAYOUT_I400: Dav1dPixelLayout = Rav1dPixelLayout::I400.into_rav1d();
+pub const DAV1D_PIXEL_LAYOUT_I420: Dav1dPixelLayout = Rav1dPixelLayout::I420.into_rav1d();
+pub const DAV1D_PIXEL_LAYOUT_I422: Dav1dPixelLayout = Rav1dPixelLayout::I422.into_rav1d();
+pub const DAV1D_PIXEL_LAYOUT_I444: Dav1dPixelLayout = Rav1dPixelLayout::I444.into_rav1d();
+
+impl From<Rav1dPixelLayout> for Dav1dPixelLayout {
+    fn from(value: Rav1dPixelLayout) -> Self {
+        value.into_rav1d()
+    }
+}
+
+impl TryFrom<Dav1dPixelLayout> for Rav1dPixelLayout {
+    type Error = ();
+
+    fn try_from(value: Dav1dPixelLayout) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
 }
 
 impl EnumKey<{ Self::COUNT }> for Rav1dPixelLayout {
@@ -249,33 +270,6 @@ impl BitAnd for Rav1dPixelLayout {
 
     fn bitand(self, rhs: Self) -> Self::Output {
         (self as usize & rhs as usize) != 0
-    }
-}
-
-impl TryFrom<Dav1dPixelLayout> for Rav1dPixelLayout {
-    type Error = ();
-
-    fn try_from(value: Dav1dPixelLayout) -> Result<Self, Self::Error> {
-        use Rav1dPixelLayout::*;
-        Ok(match value {
-            DAV1D_PIXEL_LAYOUT_I400 => I400,
-            DAV1D_PIXEL_LAYOUT_I420 => I420,
-            DAV1D_PIXEL_LAYOUT_I422 => I422,
-            DAV1D_PIXEL_LAYOUT_I444 => I444,
-            _ => return Err(()),
-        })
-    }
-}
-
-impl From<Rav1dPixelLayout> for Dav1dPixelLayout {
-    fn from(value: Rav1dPixelLayout) -> Self {
-        use Rav1dPixelLayout::*;
-        match value {
-            I400 => DAV1D_PIXEL_LAYOUT_I400,
-            I420 => DAV1D_PIXEL_LAYOUT_I420,
-            I422 => DAV1D_PIXEL_LAYOUT_I422,
-            I444 => DAV1D_PIXEL_LAYOUT_I444,
-        }
     }
 }
 
@@ -319,17 +313,49 @@ impl From<Rav1dPixelLayoutSubSampled> for Rav1dPixelLayout {
     }
 }
 
-pub type Dav1dFrameType = c_uint;
-pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = 3;
-pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = 2;
-pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = 1;
-pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = 0;
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub(crate) enum Rav1dFrameType {
+    Key = 0,
+    Inter = 1,
+    Intra = 2,
+    Switch = 3,
+}
 
-pub(crate) type Rav1dFrameType = c_uint;
-pub(crate) const RAV1D_FRAME_TYPE_SWITCH: Rav1dFrameType = DAV1D_FRAME_TYPE_SWITCH;
-pub(crate) const RAV1D_FRAME_TYPE_INTRA: Rav1dFrameType = DAV1D_FRAME_TYPE_INTRA;
-pub(crate) const RAV1D_FRAME_TYPE_INTER: Rav1dFrameType = DAV1D_FRAME_TYPE_INTER;
-pub(crate) const RAV1D_FRAME_TYPE_KEY: Rav1dFrameType = DAV1D_FRAME_TYPE_KEY;
+impl Rav1dFrameType {
+    pub const fn into_rav1d(self) -> Dav1dFrameType {
+        self as Dav1dFrameType
+    }
+}
+
+pub type Dav1dFrameType = c_uint;
+pub const DAV1D_FRAME_TYPE_KEY: Dav1dFrameType = Rav1dFrameType::Key.into_rav1d();
+pub const DAV1D_FRAME_TYPE_INTER: Dav1dFrameType = Rav1dFrameType::Inter.into_rav1d();
+pub const DAV1D_FRAME_TYPE_INTRA: Dav1dFrameType = Rav1dFrameType::Intra.into_rav1d();
+pub const DAV1D_FRAME_TYPE_SWITCH: Dav1dFrameType = Rav1dFrameType::Switch.into_rav1d();
+
+impl From<Rav1dFrameType> for Dav1dFrameType {
+    fn from(value: Rav1dFrameType) -> Self {
+        value.into_rav1d()
+    }
+}
+
+impl TryFrom<Dav1dFrameType> for Rav1dFrameType {
+    type Error = ();
+
+    fn try_from(value: Dav1dFrameType) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
+}
+
+impl Rav1dFrameType {
+    pub const fn is_inter_or_switch(&self) -> bool {
+        matches!(self, Self::Inter | Self::Switch)
+    }
+
+    pub const fn is_key_or_intra(&self) -> bool {
+        matches!(self, Self::Key | Self::Intra)
+    }
+}
 
 pub type Dav1dColorPrimaries = c_uint;
 pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
@@ -2247,7 +2273,7 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
                 have_render_size,
             },
             film_grain: film_grain.into(),
-            frame_type,
+            frame_type: frame_type.try_into().unwrap(),
             frame_offset,
             temporal_id,
             spatial_id,
@@ -2353,7 +2379,7 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
         } = value;
         Self {
             film_grain: film_grain.into(),
-            frame_type,
+            frame_type: frame_type.into(),
             width,
             height,
             frame_offset,
