@@ -490,10 +490,9 @@ unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
 }
 
 pub(crate) unsafe fn rav1d_parse_sequence_header(
-    out: &mut Rav1dSequenceHeader,
     ptr: *const u8,
     sz: usize,
-) -> Rav1dResult {
+) -> Rav1dResult<Rav1dSequenceHeader> {
     let mut buf = Rav1dData::default();
     let s = Rav1dSettings {
         n_threads: 1,
@@ -502,7 +501,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     };
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
     rav1d_open(&mut c, &s)?;
-    || -> Rav1dResult {
+    || -> Rav1dResult<Rav1dSequenceHeader> {
         if !ptr.is_null() {
             rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void)?;
         }
@@ -518,8 +517,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
             return Err(ENOENT);
         }
 
-        *out = (*(*c).seq_hdr).clone();
-        Ok(())
+        Ok((*(*c).seq_hdr).clone())
     }()
     .inspect_err(|_| {
         rav1d_data_unref_internal(&mut buf);
@@ -535,10 +533,9 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 ) -> Dav1dResult {
     (|| {
         validate_input!((!out.is_null(), EINVAL))?;
-        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
-        let result = rav1d_parse_sequence_header(&mut out_rust, ptr, sz);
-        out.write(out_rust.into());
-        result
+        let seq_hdr = rav1d_parse_sequence_header(ptr, sz)?;
+        out.write(seq_hdr.into());
+        Ok(())
     })()
     .into()
 }
