@@ -114,6 +114,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr::NonNull;
 use std::sync::Once;
@@ -573,7 +574,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 ) -> Dav1dResult {
     (|| {
         validate_input!((!out.is_null(), EINVAL))?;
-        let mut out_rust = out.read().into();
+        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
         let result = rav1d_parse_sequence_header(&mut out_rust, ptr, sz);
         out.write(out_rust.into());
         result
@@ -823,29 +824,7 @@ pub unsafe extern "C" fn dav1d_get_picture(
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
         let c = &mut *c;
-        let out_c = out.read();
-        if let Some(mut seq_hdr_ref) = NonNull::new(out_c.seq_hdr_ref) {
-            (*seq_hdr_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
-            .update_rav1d();
-        }
-        if let Some(mut frame_hdr_ref) = NonNull::new(out_c.frame_hdr_ref) {
-            (*frame_hdr_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-            .update_rav1d();
-        }
-        if let Some(mut itut_t35_ref) = NonNull::new(out_c.itut_t35_ref) {
-            (*itut_t35_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-            .update_rav1d();
-        }
-        let mut out_rust = out_c.into();
+        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
         let result = rav1d_get_picture(c, &mut out_rust);
         out.write(out_rust.into());
         result
@@ -907,7 +886,6 @@ pub unsafe extern "C" fn dav1d_apply_grain(
         validate_input!((!out.is_null(), EINVAL))?;
         validate_input!((!in_0.is_null(), EINVAL))?;
         let c = &mut *c;
-        let out_c = out.read();
         let in_0 = in_0.read();
         if let Some(mut seq_hdr_ref) = NonNull::new(in_0.seq_hdr_ref) {
             (*seq_hdr_ref
@@ -930,28 +908,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
                 .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
             .update_rav1d();
         }
-        if let Some(mut seq_hdr_ref) = NonNull::new(out_c.seq_hdr_ref) {
-            (*seq_hdr_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
-            .update_rav1d();
-        }
-        if let Some(mut frame_hdr_ref) = NonNull::new(out_c.frame_hdr_ref) {
-            (*frame_hdr_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-            .update_rav1d();
-        }
-        if let Some(mut itut_t35_ref) = NonNull::new(out_c.itut_t35_ref) {
-            (*itut_t35_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-            .update_rav1d();
-        }
-        let mut out_rust = out_c.into();
+        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
         let in_rust = in_0.into();
         let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
         out.write(out_rust.into());
@@ -1245,7 +1202,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        let mut out_rust = out.read().into();
+        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
         let result = rav1d_get_decode_error_data_props(&mut *c, &mut out_rust);
         out.write(out_rust.into());
         result
