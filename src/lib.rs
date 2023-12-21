@@ -611,7 +611,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     res
 }
 
-unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) -> c_int {
+unsafe fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) -> c_int {
     if (*c).cached_error.is_err() {
         return 1 as c_int;
     }
