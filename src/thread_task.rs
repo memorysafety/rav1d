@@ -702,7 +702,6 @@ unsafe fn abort_frame(f: *mut Rav1dFrameContext, error: Rav1dResult) {
         FRAME_ERROR,
     );
     rav1d_decode_frame_exit(&mut *f, error);
-    (*f).tiles.clear();
     pthread_cond_signal(&mut (*f).task_thread.cond);
 }
 
@@ -1224,7 +1223,6 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                         unreachable!();
                                                     }
                                                     rav1d_decode_frame_exit(&mut *f, Err(ENOMEM));
-                                                    (*f).tiles.clear();
                                                     pthread_cond_signal(&mut (*f).task_thread.cond);
                                                 } else {
                                                     pthread_mutex_unlock(&mut (*ttd).lock);
@@ -1380,7 +1378,6 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                     Ok(())
                                                 },
                                             );
-                                            (*f).tiles.clear();
                                             pthread_cond_signal(&mut (*f).task_thread.cond);
                                         }
                                         if !(::core::intrinsics::atomic_load_seqcst(
@@ -1625,7 +1622,6 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             Ok(())
                                         },
                                     );
-                                    (*f).tiles.clear();
                                     pthread_cond_signal(&mut (*f).task_thread.cond);
                                 }
                                 reset_task_cur(c, ttd, (*t).frame_idx);
@@ -1693,7 +1689,6 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             Ok(())
                                         },
                                     );
-                                    (*f).tiles.clear();
                                     pthread_cond_signal(&mut (*f).task_thread.cond);
                                 }
                                 reset_task_cur(c, ttd, (*t).frame_idx);
