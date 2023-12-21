@@ -585,7 +585,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
         error = (p2 == TILE_ERROR) as c_int;
         error |= ::core::intrinsics::atomic_or_seqcst(&mut (*f).task_thread.error, error);
     }
-    if error == 0 && frame_mt != 0 && (*(*f).frame_hdr).frame_type as c_uint & 1 as c_uint != 0 {
+    if error == 0 && frame_mt != 0 && !(*(*f).frame_hdr).frame_type.is_key_or_intra() {
         let p: *const Rav1dThreadPicture = &mut (*f).sr_cur;
         let ss_ver =
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;

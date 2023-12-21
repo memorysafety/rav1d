@@ -37,6 +37,7 @@ pub struct CdfContext {
     pub mv: CdfMvContext,
     pub dmv: CdfMvContext,
 }
+
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
@@ -5317,7 +5318,7 @@ pub(crate) unsafe fn rav1d_cdf_thread_update(
         (*dst).m.txtp_inter3[i_7 as usize][1] = 0 as c_int as u16;
         i_7 += 1;
     }
-    if (*hdr).frame_type as c_uint & 1 as c_uint == 0 {
+    if (*hdr).frame_type.is_key_or_intra() {
         (*dst).m.intrabc[0] = (*src).m.intrabc[0];
         (*dst).m.intrabc[1] = 0 as c_int as u16;
         memcpy(
