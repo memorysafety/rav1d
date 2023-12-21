@@ -611,7 +611,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     res
 }
 
-unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: c_int) -> bool {
+unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
     if c.cached_error.is_err() {
         return true;
     }
@@ -626,7 +626,7 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: c_int) -> bool {
             rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
             return false;
         } else {
-            if !c.cache.p.data[0].is_null() && drain != 0 {
+            if !c.cache.p.data[0].is_null() && drain {
                 return true;
             } else {
                 if !c.out.p.data[0].is_null() {
@@ -706,7 +706,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 c.event_flags |= (*out_delayed).flags.into();
             }
             rav1d_thread_picture_unref(out_delayed);
-            if output_picture_ready(c, 0 as c_int) {
+            if output_picture_ready(c, false) {
                 return output_image(c, out);
             }
         }
@@ -715,7 +715,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             break;
         }
     }
-    if output_picture_ready(c, 1 as c_int) {
+    if output_picture_ready(c, true) {
         return output_image(c, out);
     }
     return Err(EAGAIN);
@@ -724,7 +724,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
 unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
     let mut res;
     let in_0: *mut Rav1dData = &mut (*c).in_0;
-    if output_picture_ready(&mut *c, 0 as c_int) {
+    if output_picture_ready(&mut *c, false) {
         return Ok(());
     }
     while (*in_0).sz > 0 {
@@ -742,7 +742,7 @@ unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
                 }
             }
         }
-        if output_picture_ready(&mut *c, 0 as c_int) {
+        if output_picture_ready(&mut *c, false) {
             break;
         }
         res?;
@@ -789,7 +789,7 @@ pub(crate) unsafe fn rav1d_get_picture(
     let drain = mem::replace(&mut c.drain, 1);
     gen_picture(c)?;
     mem::replace(&mut c.cached_error, Ok(()))?;
-    if output_picture_ready(c, (c.n_fc == 1) as c_int) {
+    if output_picture_ready(c, c.n_fc == 1) {
         return output_image(c, out);
     }
     if c.n_fc > 1 && drain != 0 {
