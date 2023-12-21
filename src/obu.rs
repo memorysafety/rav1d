@@ -1,5 +1,6 @@
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
+use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_INTRA;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_REFERENCE;
@@ -73,10 +74,9 @@ use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_ROT_ZOOM;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
+use crate::src::c_arc::CArc;
 use crate::src::cdf::rav1d_cdf_thread_ref;
 use crate::src::cdf::rav1d_cdf_thread_unref;
-use crate::src::data::rav1d_data_ref;
-use crate::src::data::rav1d_data_unref_internal;
 use crate::src::decode::rav1d_submit_frame;
 use crate::src::env::get_poc_diff;
 use crate::src::error::Rav1dError::EINVAL;
@@ -112,8 +112,6 @@ use std::ffi::c_uint;
 use std::fmt;
 use std::mem;
 use std::mem::MaybeUninit;
-use std::ptr::NonNull;
-use std::slice;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
@@ -2121,7 +2119,12 @@ fn check_for_overrun(
     0
 }
 
-unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Rav1dResult<usize> {
+unsafe fn parse_obus(
+    c: &mut Rav1dContext,
+    r#in: &CArc<[u8]>,
+    props: &Rav1dDataProps,
+    global: bool,
+) -> Rav1dResult<usize> {
     unsafe fn skip(c: &mut Rav1dContext, len: usize, init_byte_pos: usize) -> usize {
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
@@ -2138,7 +2141,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
         len + init_byte_pos
     }
 
-    let mut gb = GetBits::new(slice::from_raw_parts(r#in.data.unwrap().as_ptr(), r#in.sz));
+    let mut gb = GetBits::new(r#in);
 
     // obu header
     gb.get_bit(); // obu_forbidden_bit
@@ -2159,7 +2162,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
     let len = if has_length_field != 0 {
         gb.get_uleb128() as usize
     } else {
-        r#in.sz - 1 - has_extension as usize
+        r#in.len() - 1 - has_extension as usize
     };
     if gb.has_error() != 0 {
         return Err(EINVAL);
@@ -2175,7 +2178,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
 
     // Make sure that there are enough bits left in the buffer
     // for the rest of the OBU.
-    if len > r#in.sz - init_byte_pos {
+    if len > r#in.len() - init_byte_pos {
         return Err(EINVAL);
     }
 
@@ -2194,7 +2197,8 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
 
     unsafe fn parse_tile_grp(
         c: &mut Rav1dContext,
-        r#in: &Rav1dData,
+        r#in: &CArc<[u8]>,
+        props: &Rav1dDataProps,
         gb: &mut GetBits,
         init_bit_pos: usize,
         init_byte_pos: usize,
@@ -2214,17 +2218,12 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
         let bit_pos = gb.pos();
         assert!(bit_pos & 7 == 0);
         assert!(pkt_bytelen >= bit_pos >> 3);
-        let mut data = Default::default();
-        rav1d_data_ref(&mut data, r#in);
-        data.data = data
-            .data
-            .and_then(|data| NonNull::new(data.as_ptr().add(bit_pos >> 3)));
-        data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
+        let mut data = r#in.clone();
+        data.slice_in_place(..pkt_bytelen);
+        data.slice_in_place(bit_pos >> 3..);
         // Ensure tile groups are in order and sane; see 6.10.1.
         if hdr.start > hdr.end || hdr.start != c.n_tiles {
-            for mut tile in c.tiles.drain(..) {
-                rav1d_data_unref_internal(&mut tile.data);
-            }
+            c.tiles.clear();
             c.n_tiles = 0;
             return Err(EINVAL);
         }
@@ -2232,7 +2231,15 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
             return Err(EINVAL);
         }
         c.n_tiles += 1 + hdr.end - hdr.start;
-        c.tiles.push(Rav1dTileGroup { data, hdr });
+        c.tiles.push(Rav1dTileGroup {
+            data: Rav1dData {
+                data: Some(data),
+                // TODO(kkysen) Are props needed here?
+                // Also, if it's not needed, we don't need the `Option` for `CArc<[u8]>` either.
+                m: props.clone(),
+            },
+            hdr,
+        });
 
         Ok(())
     }
@@ -2296,9 +2303,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
             )
             .inspect_err(|_| writeln!(c.logger, "Error parsing frame header"))?;
 
-            for mut tile in c.tiles.drain(..) {
-                rav1d_data_unref_internal(&mut tile.data);
-            }
+            c.tiles.clear();
             c.n_tiles = 0;
             if r#type != RAV1D_OBU_FRAME {
                 // This is actually a frame header OBU,
@@ -2336,13 +2341,13 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                 // but we do need to align to the next byte.
                 gb.bytealign();
                 if !global {
-                    parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
+                    parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
                 }
             }
         }
         RAV1D_OBU_TILE_GRP => {
             if !global {
-                parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
+                parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
         }
         RAV1D_OBU_METADATA => {
@@ -2416,14 +2421,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                 OBU_META_ITUT_T35 => {
                     let mut payload_size = len as c_int;
                     // Don't take into account all the trailing bits for `payload_size`.
-                    while payload_size > 0
-                        && *r#in
-                            .data
-                            .unwrap()
-                            .as_ptr()
-                            .offset((init_byte_pos + payload_size as usize - 1) as isize)
-                            == 0
-                    {
+                    while payload_size > 0 && r#in[init_byte_pos + payload_size as usize - 1] == 0 {
                         payload_size -= 1; // trailing_zero_bit x 8
                     }
                     payload_size -= 1; // trailing_one_bit + trailing_zero_bit x 7
@@ -2520,7 +2518,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                     &c.content_light,
                     &c.mastering_display,
                     &c.itut_t35,
-                    &r#in.m,
+                    props,
                 );
                 // Must be removed from the context after being attached to the frame
                 let _ = mem::take(&mut c.itut_t35);
@@ -2589,7 +2587,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                     &c.content_light,
                     &c.mastering_display,
                     &c.itut_t35,
-                    &r#in.m,
+                    props,
                 );
                 // Must be removed from the context after being attached to the frame
                 let _ = mem::take(&mut c.itut_t35);
@@ -2663,11 +2661,12 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
 
 pub(crate) unsafe fn rav1d_parse_obus(
     c: &mut Rav1dContext,
-    r#in: &Rav1dData,
+    r#in: &CArc<[u8]>,
+    props: &Rav1dDataProps,
     global: bool,
 ) -> Rav1dResult<usize> {
-    parse_obus(c, r#in, global).inspect_err(|_| {
-        c.cached_error_props = r#in.m.clone();
+    parse_obus(c, r#in, props, global).inspect_err(|_| {
+        c.cached_error_props = props.clone();
         writeln!(c.logger, "Error parsing OBU data");
     })
 }

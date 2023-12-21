@@ -25,10 +25,6 @@ use crate::src::align::Align64;
 use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
-use crate::src::data::rav1d_data_create_internal;
-use crate::src::data::rav1d_data_ref;
-use crate::src::data::rav1d_data_unref_internal;
-use crate::src::data::rav1d_data_wrap_internal;
 use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
@@ -103,7 +99,9 @@ use std::ffi::c_void;
 use std::mem;
 use std::mem::MaybeUninit;
 use std::process::abort;
+use std::ptr;
 use std::ptr::NonNull;
+use std::slice;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Once;
@@ -484,7 +482,6 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     ptr: *const u8,
     sz: usize,
 ) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
-    let mut buf = Rav1dData::default();
     let s = Rav1dSettings {
         n_threads: 1,
         logger: None,
@@ -493,17 +490,22 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
     rav1d_open(&mut c, &s)?;
     || -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
-        if !ptr.is_null() {
-            rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void)?;
-        }
-
-        while buf.sz > 0 {
-            let len = rav1d_parse_obus(&mut *c, &mut buf, true)?;
-            assert!(len <= buf.sz);
-            buf.sz -= len;
-            buf.data = buf
-                .data
-                .and_then(|data| NonNull::new(data.as_ptr().add(len)));
+        let Rav1dData {
+            mut data,
+            m: mut props,
+        } = match NonNull::new(ptr.cast_mut()) {
+            None => Default::default(),
+            Some(ptr) => Rav1dData::wrap(
+                slice::from_raw_parts(ptr.as_ptr(), sz).into(),
+                Some(dummy_free),
+                ptr::null_mut(),
+            )?,
+        };
+        if let Some(data) = &mut data {
+            while !data.is_empty() {
+                let len = rav1d_parse_obus(&mut *c, data, &mut props, true)?;
+                data.slice_in_place(len..);
+            }
         }
 
         if (*c).seq_hdr.is_none() {
@@ -517,7 +519,6 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
             .unwrap()
     }()
     .inspect_err(|_| {
-        rav1d_data_unref_internal(&mut buf);
         rav1d_close(&mut c);
     })
 }
@@ -685,21 +686,18 @@ unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
     if output_picture_ready(c, false) {
         return Ok(());
     }
-    while c.in_0.sz > 0 {
+    while !c.in_0.as_ref().is_empty() {
         let r#in = mem::take(&mut c.in_0); // Take so we don't have 2 `&mut`s.
-        let len = rav1d_parse_obus(c, &r#in, false);
+        let len = rav1d_parse_obus(c, &r#in.data.as_ref().unwrap(), &r#in.m, false);
         c.in_0 = r#in; // Restore into `c` right after.
         match len {
-            Err(_) => rav1d_data_unref_internal(&mut c.in_0),
+            Err(_) => {
+                let _ = mem::take(&mut c.in_0);
+            }
             Ok(len) => {
-                assert!(len <= c.in_0.sz);
-                c.in_0.sz -= len;
-                c.in_0.data = c
-                    .in_0
-                    .data
-                    .and_then(|data| NonNull::new(data.as_ptr().add(len)));
-                if c.in_0.sz == 0 {
-                    rav1d_data_unref_internal(&mut c.in_0);
+                c.in_0.data.as_mut().unwrap().slice_in_place(len..);
+                if c.in_0.data.as_ref().unwrap().is_empty() {
+                    let _ = mem::take(&mut c.in_0);
                 }
             }
         }
@@ -712,17 +710,20 @@ unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
 }
 
 pub(crate) unsafe fn rav1d_send_data(c: &mut Rav1dContext, in_0: &mut Rav1dData) -> Rav1dResult {
-    validate_input!((in_0.data.is_none() || in_0.sz != 0, EINVAL))?;
+    validate_input!((
+        in_0.data.as_ref().map_or(true, |data| !data.is_empty()),
+        EINVAL
+    ))?;
     if in_0.data.is_some() {
         c.drain = 0 as c_int;
     }
     if c.in_0.data.is_some() {
         return Err(EAGAIN);
     }
-    rav1d_data_ref(&mut c.in_0, in_0);
+    c.in_0 = in_0.clone();
     let res = gen_picture(c);
     if res.is_ok() {
-        rav1d_data_unref_internal(in_0);
+        let _ = mem::take(in_0);
     }
     return res;
 }
@@ -844,7 +845,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
 }
 
 pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
-    rav1d_data_unref_internal(&mut (*c).in_0);
+    let _ = mem::take(&mut (*c).in_0);
     if (*c).out.p.frame_hdr.is_some() {
         rav1d_thread_picture_unref(&mut (*c).out);
     }
@@ -1056,10 +1057,7 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         }
         free((*c).frame_thread.out_delayed as *mut c_void);
     }
-    for mut tile in (*c).tiles.drain(..) {
-        rav1d_data_unref_internal(&mut tile.data);
-    }
-    (*c).tiles = Default::default(); // TODO(kkysen) Remove when dropped properly.
+    let _ = mem::take(&mut (*c).tiles);
     let mut n_4 = 0;
     while n_4 < 8 {
         rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(n_4 as isize));
@@ -1124,26 +1122,20 @@ pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
     p.write(p_rust.into());
 }
 
-pub(crate) unsafe fn rav1d_data_create(buf: *mut Rav1dData, sz: usize) -> *mut u8 {
-    return rav1d_data_create_internal(buf, sz);
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_create(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
-    let mut buf_rust = buf.read().into();
-    let result = rav1d_data_create(&mut buf_rust, sz);
-    buf.write(buf_rust.into());
-    result
-}
-
-pub(crate) unsafe fn rav1d_data_wrap(
-    buf: *mut Rav1dData,
-    ptr: *const u8,
-    sz: usize,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
-    user_data: *mut c_void,
-) -> Rav1dResult {
-    return rav1d_data_wrap_internal(buf, ptr, sz, free_callback, user_data);
+    || -> Rav1dResult<*mut u8> {
+        let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
+        let data = Rav1dData::create(sz)?;
+        let data = data.to::<Dav1dData>();
+        let ptr = data
+            .data
+            .map(|ptr| ptr.as_ptr())
+            .unwrap_or_else(ptr::null_mut);
+        buf.as_ptr().write(data);
+        Ok(ptr)
+    }()
+    .unwrap_or_else(|_| ptr::null_mut())
 }
 
 #[no_mangle]
@@ -1154,10 +1146,15 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     user_data: *mut c_void,
 ) -> Dav1dResult {
-    let mut buf_rust = buf.read().into();
-    let result = rav1d_data_wrap(&mut buf_rust, ptr, sz, free_callback, user_data);
-    buf.write(buf_rust.into());
-    result.into()
+    || -> Rav1dResult {
+        let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
+        let ptr = validate_input!(NonNull::new(ptr.cast_mut()).ok_or(EINVAL))?;
+        let data = slice::from_raw_parts(ptr.as_ptr(), sz).into();
+        let data = Rav1dData::wrap(data, free_callback, user_data)?;
+        buf.as_ptr().write(data.into());
+        Ok(())
+    }()
+    .into()
 }
 
 #[no_mangle]
@@ -1179,16 +1176,11 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     .into()
 }
 
-pub(crate) unsafe fn rav1d_data_unref(buf: *mut Rav1dData) {
-    rav1d_data_unref_internal(buf);
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_unref(buf: *mut Dav1dData) {
-    let mut buf_rust = buf.read().into();
-    let result = rav1d_data_unref(&mut buf_rust);
-    buf.write(buf_rust.into());
-    result
+    let buf = validate_input!(NonNull::new(buf).ok_or(()));
+    let Ok(mut buf) = buf else { return };
+    let _ = mem::take(buf.as_mut()).to::<Rav1dData>();
 }
 
 #[no_mangle]
