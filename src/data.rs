@@ -13,6 +13,7 @@ use libc::memset;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::ptr;
+use std::ptr::NonNull;
 
 pub(crate) unsafe fn rav1d_data_create_internal(buf: *mut Rav1dData, sz: usize) -> *mut u8 {
     if let Err(e) = validate_input!((!buf.is_null(), ptr::null_mut())) {
@@ -61,11 +62,11 @@ pub(crate) unsafe fn rav1d_data_wrap_user_data_internal(
 ) -> Rav1dResult {
     validate_input!((!buf.is_null(), EINVAL))?;
     validate_input!((free_callback.is_some(), EINVAL))?;
-    (*buf).m.user_data.r#ref = rav1d_ref_wrap(user_data, free_callback, cookie);
-    if ((*buf).m.user_data.r#ref).is_null() {
+    (*buf).m.user_data.r#ref = NonNull::new(rav1d_ref_wrap(user_data, free_callback, cookie));
+    if ((*buf).m.user_data.r#ref).is_none() {
         return Err(ENOMEM);
     }
-    (*buf).m.user_data.data = user_data;
+    (*buf).m.user_data.data = NonNull::new(user_data.cast_mut());
     Ok(())
 }
 
@@ -79,8 +80,8 @@ pub(crate) unsafe fn rav1d_data_ref(dst: &mut Rav1dData, src: &Rav1dData) {
         }
         rav1d_ref_inc(src.r#ref);
     }
-    if !src.m.user_data.r#ref.is_null() {
-        rav1d_ref_inc(src.m.user_data.r#ref);
+    if let Some(r#ref) = src.m.user_data.r#ref {
+        rav1d_ref_inc(r#ref.as_ptr());
     }
     *dst = src.clone();
 }
@@ -92,10 +93,15 @@ pub(crate) unsafe fn rav1d_data_props_copy(dst: *mut Rav1dDataProps, src: *const
     if src.is_null() {
         unreachable!();
     }
-    rav1d_ref_dec(&mut (*dst).user_data.r#ref);
+    rav1d_ref_dec(
+        &mut (*dst)
+            .user_data
+            .r#ref
+            .map_or_else(ptr::null_mut, |r#ref| r#ref.as_ptr()),
+    );
     *dst = (*src).clone();
-    if !((*dst).user_data.r#ref).is_null() {
-        rav1d_ref_inc((*dst).user_data.r#ref);
+    if let Some(r#ref) = (*dst).user_data.r#ref {
+        rav1d_ref_inc(r#ref.as_ptr());
     }
 }
 
@@ -103,7 +109,10 @@ pub(crate) unsafe fn rav1d_data_props_unref_internal(props: *mut Rav1dDataProps)
     if validate_input!(!props.is_null()).is_err() {
         return;
     }
-    let mut user_data_ref: *mut Rav1dRef = (*props).user_data.r#ref;
+    let mut user_data_ref: *mut Rav1dRef = (*props)
+        .user_data
+        .r#ref
+        .map_or_else(ptr::null_mut, |r#ref| r#ref.as_ptr());
     (*props) = Default::default();
     rav1d_ref_dec(&mut user_data_ref);
 }
@@ -112,7 +121,11 @@ pub(crate) unsafe fn rav1d_data_unref_internal(buf: *mut Rav1dData) {
     if validate_input!(!buf.is_null()).is_err() {
         return;
     }
-    let mut user_data_ref: *mut Rav1dRef = (*buf).m.user_data.r#ref;
+    let mut user_data_ref: *mut Rav1dRef = (*buf)
+        .m
+        .user_data
+        .r#ref
+        .map_or_else(ptr::null_mut, |r#ref| r#ref.as_ptr());
     if !((*buf).r#ref).is_null() {
         if validate_input!(!(*buf).data.is_null()).is_err() {
             return;

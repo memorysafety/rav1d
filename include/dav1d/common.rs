@@ -1,36 +1,19 @@
 use crate::include::dav1d::dav1d::Dav1dRef;
 use crate::src::r#ref::Rav1dRef;
-use std::ptr;
+use std::ptr::NonNull;
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Dav1dUserData {
-    pub data: *const u8,
-    pub r#ref: *mut Dav1dRef,
+    pub data: Option<NonNull<u8>>,
+    pub r#ref: Option<NonNull<Dav1dRef>>,
 }
 
-impl Default for Dav1dUserData {
-    fn default() -> Self {
-        Self {
-            data: ptr::null(),
-            r#ref: ptr::null_mut(),
-        }
-    }
-}
-
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dUserData {
-    pub data: *const u8,
-    pub r#ref: *mut Rav1dRef,
-}
-
-impl Default for Rav1dUserData {
-    fn default() -> Self {
-        Self {
-            data: ptr::null(),
-            r#ref: ptr::null_mut(),
-        }
-    }
+    pub data: Option<NonNull<u8>>,
+    pub r#ref: Option<NonNull<Rav1dRef>>,
 }
 
 impl From<Dav1dUserData> for Rav1dUserData {

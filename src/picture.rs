@@ -376,8 +376,8 @@ pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPictur
     if !src.seq_hdr_ref.is_null() {
         rav1d_ref_inc(src.seq_hdr_ref);
     }
-    if !src.m.user_data.r#ref.is_null() {
-        rav1d_ref_inc(src.m.user_data.r#ref);
+    if let Some(r#ref) = src.m.user_data.r#ref {
+        rav1d_ref_inc(r#ref.as_ptr());
     }
     if !src.content_light_ref.is_null() {
         rav1d_ref_inc(src.content_light_ref);
@@ -444,7 +444,13 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
     }
     rav1d_ref_dec(&mut p.seq_hdr_ref);
     rav1d_ref_dec(&mut p.frame_hdr_ref);
-    rav1d_ref_dec(&mut p.m.user_data.r#ref);
+    rav1d_ref_dec(
+        &mut p
+            .m
+            .user_data
+            .r#ref
+            .map_or_else(ptr::null_mut, |r#ref| r#ref.as_ptr()),
+    );
     rav1d_ref_dec(&mut p.content_light_ref);
     rav1d_ref_dec(&mut p.mastering_display_ref);
     rav1d_ref_dec(&mut p.itut_t35_ref);

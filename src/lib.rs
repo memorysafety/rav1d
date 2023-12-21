@@ -519,8 +519,8 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
                 offset: 0,
                 size: 0,
                 user_data: Rav1dUserData {
-                    data: 0 as *const u8,
-                    r#ref: 0 as *mut Rav1dRef,
+                    data: None,
+                    r#ref: None,
                 },
             },
         };
