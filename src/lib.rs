@@ -732,7 +732,7 @@ unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
             Err(_) => rav1d_data_unref_internal(in_0),
             Ok(len) => {
                 assert!(len <= (*in_0).sz);
-                (*in_0).sz = ((*in_0).sz as c_ulong).wrapping_sub(len as c_ulong) as usize as usize;
+                (*in_0).sz -= len;
                 (*in_0).data = ((*in_0).data).offset(len as isize);
                 if (*in_0).sz == 0 {
                     rav1d_data_unref_internal(in_0);
