@@ -722,20 +722,19 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
 }
 
 unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
-    let in_0: *mut Rav1dData = &mut (*c).in_0;
     if output_picture_ready(&mut *c, false) {
         return Ok(());
     }
-    while (*in_0).sz > 0 {
-        let len = rav1d_parse_obus(&mut *c, &*in_0, 0 as c_int);
+    while (*c).in_0.sz > 0 {
+        let len = rav1d_parse_obus(&mut *c, &(*c).in_0, 0 as c_int);
         match len {
-            Err(_) => rav1d_data_unref_internal(in_0),
+            Err(_) => rav1d_data_unref_internal(&mut (*c).in_0),
             Ok(len) => {
-                assert!(len <= (*in_0).sz);
-                (*in_0).sz -= len;
-                (*in_0).data = (*in_0).data.add(len);
-                if (*in_0).sz == 0 {
-                    rav1d_data_unref_internal(in_0);
+                assert!(len <= (*c).in_0.sz);
+                (*c).in_0.sz -= len;
+                (*c).in_0.data = (*c).in_0.data.add(len);
+                if (*c).in_0.sz == 0 {
+                    rav1d_data_unref_internal(&mut (*c).in_0);
                 }
             }
         }
