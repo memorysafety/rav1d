@@ -4,6 +4,7 @@ use crate::src::internal::Rav1dContext;
 pub use crate::src::log::Dav1dLogger;
 use crate::src::log::Rav1dLogger;
 use crate::src::r#ref::Rav1dRef;
+use bitflags::bitflags;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
@@ -39,13 +40,43 @@ pub(crate) const RAV1D_DECODEFRAMETYPE_REFERENCE: Rav1dDecodeFrameType =
 pub(crate) const RAV1D_DECODEFRAMETYPE_ALL: Rav1dDecodeFrameType = DAV1D_DECODEFRAMETYPE_ALL;
 
 pub type Dav1dEventFlags = c_uint;
-pub const DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO: Dav1dEventFlags = 2;
-pub const DAV1D_EVENT_FLAG_NEW_SEQUENCE: Dav1dEventFlags = 1;
+pub const DAV1D_EVENT_FLAG_NEW_SEQUENCE: Dav1dEventFlags =
+    Rav1dEventFlags::NEW_SEQUENCE.bits() as Dav1dEventFlags;
+pub const DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO: Dav1dEventFlags =
+    Rav1dEventFlags::NEW_OP_PARAMS_INFO.bits() as Dav1dEventFlags;
 
-pub(crate) type Rav1dEventFlags = c_uint;
-pub(crate) const RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO: Rav1dEventFlags =
-    DAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
-pub(crate) const RAV1D_EVENT_FLAG_NEW_SEQUENCE: Rav1dEventFlags = DAV1D_EVENT_FLAG_NEW_SEQUENCE;
+bitflags! {
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+    pub(crate) struct Rav1dEventFlags: u8 {
+        /// The last returned picture contains a reference
+        /// to a new [`Rav1dSequenceHeader`],
+        /// either because it's the start of a new coded sequence,
+        /// or the decoder was flushed before it was generated.
+        ///
+        /// [`Rav1dSequenceHeader`]: crate::include::dav1d::headers::Rav1dSequenceHeader
+        const NEW_SEQUENCE = 1 << 0;
+
+        /// The last returned picture contains a reference to a
+        /// [`Rav1dSequenceHeader`] with new [`Rav1dSequenceHeaderOperatingParameterInfo`]
+        /// for the current coded sequence.
+        ///
+        /// [`Rav1dSequenceHeader`]: crate::include::dav1d::headers::Rav1dSequenceHeader
+        /// [`Rav1dSequenceHeaderOperatingParameterInfo`]: crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo
+        const NEW_OP_PARAMS_INFO = 1 << 1;
+    }
+}
+
+impl From<Rav1dEventFlags> for Dav1dEventFlags {
+    fn from(value: Rav1dEventFlags) -> Self {
+        value.bits().into()
+    }
+}
+
+impl From<Dav1dEventFlags> for Rav1dEventFlags {
+    fn from(value: Dav1dEventFlags) -> Self {
+        Self::from_bits_retain(value as u8)
+    }
+}
 
 #[repr(C)]
 pub struct Dav1dSettings {

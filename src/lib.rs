@@ -11,7 +11,6 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Dav1dContext;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Dav1dSettings;
-use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dSettings;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
@@ -71,15 +70,14 @@ use crate::src::obu::rav1d_parse_obus;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_picture_get_event_flags;
 use crate::src::picture::rav1d_picture_move_ref;
 use crate::src::picture::rav1d_picture_ref;
 use crate::src::picture::rav1d_picture_unref_internal;
 use crate::src::picture::rav1d_thread_picture_move_ref;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
+use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::picture::PICTURE_FLAG_NEW_TEMPORAL_UNIT;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::Rav1dRef;
 use crate::src::refmvs::rav1d_refmvs_clear;
@@ -114,6 +112,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::mem;
 use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr::NonNull;
@@ -625,7 +624,7 @@ unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) ->
     if !(*c).all_layers && (*c).max_spatial_id {
         if !((*c).out.p.data[0]).is_null() && !((*c).cache.p.data[0]).is_null() {
             if (*c).max_spatial_id == ((*(*c).cache.p.frame_hdr).spatial_id != 0)
-                || (*c).out.flags as c_uint & PICTURE_FLAG_NEW_TEMPORAL_UNIT as c_int as c_uint != 0
+                || (*c).out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
                 return 1 as c_int;
             }
@@ -710,9 +709,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             );
             if ((*out_delayed).visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
-                c.event_flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-                    c.event_flags as c_uint | rav1d_picture_get_event_flags(out_delayed) as c_uint,
-                );
+                c.event_flags |= (*out_delayed).flags.into();
             }
             rav1d_thread_picture_unref(out_delayed);
             if output_picture_ready(c, 0 as c_int) != 0 {
@@ -1161,15 +1158,6 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     rav1d_freep_aligned(c_out as *mut _ as *mut c_void);
 }
 
-pub(crate) unsafe fn rav1d_get_event_flags(
-    c: &mut Rav1dContext,
-    flags: &mut Rav1dEventFlags,
-) -> Rav1dResult {
-    *flags = c.event_flags;
-    c.event_flags = 0 as Dav1dEventFlags;
-    Ok(())
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_event_flags(
     c: *mut Dav1dContext,
@@ -1178,7 +1166,8 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!flags.is_null(), EINVAL))?;
-        rav1d_get_event_flags(&mut *c, &mut *flags)
+        flags.write(mem::take(&mut (*c).event_flags).into());
+        Ok(())
     })()
     .into()
 }

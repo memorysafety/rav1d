@@ -1,9 +1,6 @@
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
-use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO;
-use crate::include::dav1d::dav1d::RAV1D_EVENT_FLAG_NEW_SEQUENCE;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -31,6 +28,7 @@ use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_wrap;
 use crate::src::r#ref::Rav1dRef;
+use bitflags::bitflags;
 use libc::free;
 use libc::malloc;
 use libc::memset;
@@ -42,10 +40,23 @@ use std::ffi::c_void;
 use std::io;
 use std::ptr;
 
-pub type PictureFlags = c_uint;
-pub const PICTURE_FLAG_NEW_TEMPORAL_UNIT: PictureFlags = 4;
-pub const PICTURE_FLAG_NEW_OP_PARAMS_INFO: PictureFlags = 2;
-pub const PICTURE_FLAG_NEW_SEQUENCE: PictureFlags = 1;
+bitflags! {
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+    pub struct PictureFlags: u8 {
+        const NEW_SEQUENCE = 1 << 0;
+        const NEW_OP_PARAMS_INFO = 1 << 1;
+        const NEW_TEMPORAL_UNIT = 1 << 2;
+    }
+}
+
+impl From<PictureFlags> for Rav1dEventFlags {
+    fn from(value: PictureFlags) -> Self {
+        // [`Rav1dEventFlags`] just has one extra flag vs. [`PictureFlags`],
+        // which this just truncates off.
+        // Otherwise the values are the same so we can convert the bits.
+        Self::from_bits_truncate(value.bits())
+    }
+}
 
 #[repr(C)]
 pub(crate) struct Rav1dThreadPicture {
@@ -303,14 +314,12 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     rav1d_ref_dec(&mut (*c).itut_t35_ref);
     (*c).itut_t35 = 0 as *mut Rav1dITUTT35;
     let flags_mask = if (*(*f).frame_hdr).show_frame != 0 || (*c).output_invisible_frames {
-        0 as c_int
+        PictureFlags::empty()
     } else {
-        PICTURE_FLAG_NEW_SEQUENCE as c_int | PICTURE_FLAG_NEW_OP_PARAMS_INFO as c_int
+        PictureFlags::NEW_SEQUENCE | PictureFlags::NEW_OP_PARAMS_INFO
     };
     (*p).flags = (*c).frame_flags;
-    (*c).frame_flags = ::core::mem::transmute::<c_uint, PictureFlags>(
-        (*c).frame_flags as c_uint & flags_mask as c_uint,
-    );
+    (*c).frame_flags &= flags_mask;
     (*p).visible = (*(*f).frame_hdr).show_frame != 0;
     (*p).showable = (*(*f).frame_hdr).showable_frame != 0;
     if have_frame_mt != 0 {
@@ -450,24 +459,4 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
     rav1d_picture_unref_internal(&mut (*p).p);
     (*p).progress = 0 as *mut atomic_uint;
-}
-
-pub(crate) unsafe fn rav1d_picture_get_event_flags(
-    p: *const Rav1dThreadPicture,
-) -> Rav1dEventFlags {
-    if (*p).flags as u64 == 0 {
-        return 0 as Dav1dEventFlags;
-    }
-    let mut flags: Dav1dEventFlags = 0 as Dav1dEventFlags;
-    if (*p).flags as c_uint & PICTURE_FLAG_NEW_SEQUENCE as c_int as c_uint != 0 {
-        flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-            flags as c_uint | RAV1D_EVENT_FLAG_NEW_SEQUENCE as c_int as c_uint,
-        );
-    }
-    if (*p).flags as c_uint & PICTURE_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint != 0 {
-        flags = ::core::mem::transmute::<c_uint, Dav1dEventFlags>(
-            flags as c_uint | RAV1D_EVENT_FLAG_NEW_OP_PARAMS_INFO as c_int as c_uint,
-        );
-    }
-    return flags;
 }

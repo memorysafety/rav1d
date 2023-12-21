@@ -176,7 +176,6 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::rav1d_msac_decode_uniform;
 use crate::src::msac::rav1d_msac_init;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_picture_get_event_flags;
 use crate::src::picture::rav1d_picture_ref;
 use crate::src::picture::rav1d_picture_unref_internal;
 use crate::src::picture::rav1d_thread_picture_alloc;
@@ -4985,7 +4984,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             );
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
-                c.event_flags |= rav1d_picture_get_event_flags(out_delayed);
+                c.event_flags |= out_delayed.flags.into();
             }
             rav1d_thread_picture_unref(out_delayed);
         }
@@ -5192,7 +5191,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if c.n_fc == 1 {
         if (*f.frame_hdr).show_frame != 0 || c.output_invisible_frames {
             rav1d_thread_picture_ref(&mut c.out, &mut f.sr_cur);
-            c.event_flags |= rav1d_picture_get_event_flags(&mut f.sr_cur);
+            c.event_flags |= f.sr_cur.flags.into();
         }
     } else {
         rav1d_thread_picture_ref(out_delayed, &mut f.sr_cur);
