@@ -116,8 +116,10 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::fmt;
+use std::mem;
 use std::mem::MaybeUninit;
 use std::slice;
+use std::sync::Arc;
 
 struct Debug {
     enabled: bool,
@@ -2257,10 +2259,8 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                 // See 7.5, `operating_parameter_info` is allowed to change in
                 // sequence headers of a single sequence.
                 c.frame_hdr = 0 as *mut Rav1dFrameHeader;
-                c.mastering_display = 0 as *mut Rav1dMasteringDisplay;
-                c.content_light = 0 as *mut Rav1dContentLightLevel;
-                rav1d_ref_dec(&mut c.mastering_display_ref);
-                rav1d_ref_dec(&mut c.content_light_ref);
+                let _ = mem::take(&mut c.content_light);
+                let _ = mem::take(&mut c.mastering_display);
                 for i in 0..8 {
                     if !c.refs[i as usize].p.p.frame_hdr.is_null() {
                         rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
@@ -2390,18 +2390,10 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                         return Err(EINVAL);
                     }
 
-                    let r#ref = rav1d_ref_create(::core::mem::size_of::<Rav1dContentLightLevel>());
-                    if r#ref.is_null() {
-                        return Err(ENOMEM);
-                    }
-                    let content_light = (*r#ref).data as *mut Rav1dContentLightLevel;
-                    content_light.write(Rav1dContentLightLevel {
+                    c.content_light = Some(Arc::new(Rav1dContentLightLevel {
                         max_content_light_level,
                         max_frame_average_light_level,
-                    });
-                    rav1d_ref_dec(&mut c.content_light_ref);
-                    c.content_light = content_light;
-                    c.content_light_ref = r#ref;
+                    })); // TODO(kkysen) fallible allocation
                 }
                 OBU_META_HDR_MDCV => {
                     let debug = debug.named("MDCVOBU");
@@ -2426,20 +2418,12 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                         return Err(EINVAL);
                     }
 
-                    let r#ref = rav1d_ref_create(::core::mem::size_of::<Rav1dMasteringDisplay>());
-                    if r#ref.is_null() {
-                        return Err(ENOMEM);
-                    }
-                    let mastering_display = (*r#ref).data as *mut Rav1dMasteringDisplay;
-                    mastering_display.write(Rav1dMasteringDisplay {
+                    c.mastering_display = Some(Arc::new(Rav1dMasteringDisplay {
                         primaries,
                         white_point,
                         max_luminance,
                         min_luminance,
-                    });
-                    rav1d_ref_dec(&mut c.mastering_display_ref);
-                    c.mastering_display = mastering_display;
-                    c.mastering_display_ref = r#ref;
+                    })); // TODO(kkysen) fallible allocation
                 }
                 OBU_META_ITUT_T35 => {
                     let mut payload_size = len as c_int;
@@ -2567,10 +2551,8 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                 );
                 rav1d_picture_copy_props(
                     &mut (*c).out.p,
-                    c.content_light,
-                    c.content_light_ref,
-                    c.mastering_display,
-                    c.mastering_display_ref,
+                    &c.content_light,
+                    &c.mastering_display,
                     c.itut_t35,
                     c.itut_t35_ref,
                     &r#in.m,
@@ -2644,10 +2626,8 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                 (*out_delayed).visible = true;
                 rav1d_picture_copy_props(
                     &mut (*out_delayed).p,
-                    c.content_light,
-                    c.content_light_ref,
-                    c.mastering_display,
-                    c.mastering_display_ref,
+                    &c.content_light,
+                    &c.mastering_display,
                     c.itut_t35,
                     c.itut_t35_ref,
                     &r#in.m,
