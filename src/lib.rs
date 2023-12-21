@@ -611,32 +611,32 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     res
 }
 
-unsafe fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) -> c_int {
-    if (*c).cached_error.is_err() {
+unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: c_int) -> c_int {
+    if c.cached_error.is_err() {
         return 1 as c_int;
     }
-    if !(*c).all_layers && (*c).max_spatial_id {
-        if !((*c).out.p.data[0]).is_null() && !((*c).cache.p.data[0]).is_null() {
-            if (*c).max_spatial_id == ((*(*c).cache.p.frame_hdr).spatial_id != 0)
-                || (*c).out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
+    if !c.all_layers && c.max_spatial_id {
+        if !(c.out.p.data[0]).is_null() && !(c.cache.p.data[0]).is_null() {
+            if c.max_spatial_id == ((*c.cache.p.frame_hdr).spatial_id != 0)
+                || c.out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
                 return 1 as c_int;
             }
-            rav1d_thread_picture_unref(&mut (*c).cache);
-            rav1d_thread_picture_move_ref(&mut (*c).cache, &mut (*c).out);
+            rav1d_thread_picture_unref(&mut c.cache);
+            rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
             return 0 as c_int;
         } else {
-            if !((*c).cache.p.data[0]).is_null() && drain != 0 {
+            if !(c.cache.p.data[0]).is_null() && drain != 0 {
                 return 1 as c_int;
             } else {
-                if !((*c).out.p.data[0]).is_null() {
-                    rav1d_thread_picture_move_ref(&mut (*c).cache, &mut (*c).out);
+                if !(c.out.p.data[0]).is_null() {
+                    rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
                     return 0 as c_int;
                 }
             }
         }
     }
-    return !((*c).out.p.data[0]).is_null() as c_int;
+    return !(c.out.p.data[0]).is_null() as c_int;
 }
 
 unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
@@ -724,7 +724,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
 unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
     let mut res;
     let in_0: *mut Rav1dData = &mut (*c).in_0;
-    if output_picture_ready(c, 0 as c_int) != 0 {
+    if output_picture_ready(&mut *c, 0 as c_int) != 0 {
         return Ok(());
     }
     while (*in_0).sz > 0 {
@@ -742,7 +742,7 @@ unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
                 }
             }
         }
-        if output_picture_ready(c, 0 as c_int) != 0 {
+        if output_picture_ready(&mut *c, 0 as c_int) != 0 {
             break;
         }
         res?;
