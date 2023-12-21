@@ -494,56 +494,37 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     ptr: *const u8,
     sz: usize,
 ) -> Rav1dResult {
-    unsafe fn rav1d_parse_sequence_header_error(
-        res: Rav1dResult,
-        mut c: *mut Rav1dContext,
-        buf: *mut Rav1dData,
-    ) -> Rav1dResult {
-        rav1d_data_unref_internal(buf);
-        rav1d_close(&mut c);
-        res
-    }
-
-    let mut buf = Default::default();
-    let mut res;
+    let mut buf = Rav1dData::default();
     let s = Rav1dSettings {
         n_threads: 1,
         logger: None,
         ..Default::default()
     };
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
-    res = rav1d_open(&mut c, &s);
-    if res.is_err() {
-        return res;
-    }
-    if !ptr.is_null() {
-        res = rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void);
-        if res.is_err() {
-            return rav1d_parse_sequence_header_error(res, c, &mut buf);
+    rav1d_open(&mut c, &s)?;
+    || -> Rav1dResult {
+        if !ptr.is_null() {
+            rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void)?;
         }
-    }
 
-    while buf.sz > 0 {
-        let len = rav1d_parse_obus(&mut *c, &mut buf, true);
-        let len = match len {
-            Ok(len) => len,
-            Err(e) => return rav1d_parse_sequence_header_error(Err(e), c, &mut buf),
-        };
+        while buf.sz > 0 {
+            let len = rav1d_parse_obus(&mut *c, &mut buf, true)?;
+            assert!(len <= buf.sz);
+            buf.sz -= len;
+            buf.data = buf.data.add(len);
+        }
 
-        assert!(len <= buf.sz);
-        buf.sz -= len;
-        buf.data = buf.data.add(len);
-    }
+        if (*c).seq_hdr.is_null() {
+            return Err(ENOENT);
+        }
 
-    if ((*c).seq_hdr).is_null() {
-        res = Err(ENOENT);
-        return rav1d_parse_sequence_header_error(res, c, &mut buf);
-    }
-
-    *out = (*(*c).seq_hdr).clone();
-    res = Ok(());
-
-    return rav1d_parse_sequence_header_error(res, c, &mut buf);
+        *out = (*(*c).seq_hdr).clone();
+        Ok(())
+    }()
+    .inspect_err(|_| {
+        rav1d_data_unref_internal(&mut buf);
+        rav1d_close(&mut c);
+    })
 }
 
 #[no_mangle]
