@@ -524,15 +524,15 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     }
 
     while buf.sz > 0 {
-        let res = rav1d_parse_obus(&mut *c, &mut buf, true);
-        let res = match res {
-            Ok(res) => res,
-            Err(res) => return rav1d_parse_sequence_header_error(Err(res), c, &mut buf),
+        let len = rav1d_parse_obus(&mut *c, &mut buf, true);
+        let len = match len {
+            Ok(len) => len,
+            Err(e) => return rav1d_parse_sequence_header_error(Err(e), c, &mut buf),
         };
 
-        assert!(res as usize <= buf.sz);
-        buf.sz -= res as usize;
-        buf.data = (buf.data).offset(res as isize);
+        assert!(len <= buf.sz);
+        buf.sz -= len;
+        buf.data = (buf.data).offset(len as isize);
     }
 
     if ((*c).seq_hdr).is_null() {
