@@ -51,7 +51,9 @@ bitflags! {
 
 impl From<PictureFlags> for Rav1dEventFlags {
     fn from(value: PictureFlags) -> Self {
-        // [`Rav1dEventFlags`] just has one extra flag.
+        // [`Rav1dEventFlags`] just has one extra flag vs. [`PictureFlags`],
+        // which this just truncates off.
+        // Otherwise the values are the same so we can convert the bits.
         Self::from_bits_truncate(value.bits())
     }
 }
