@@ -721,26 +721,26 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
     return Err(EAGAIN);
 }
 
-unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
-    if output_picture_ready(&mut *c, false) {
+unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
+    if output_picture_ready(c, false) {
         return Ok(());
     }
-    while (*c).in_0.sz > 0 {
-        let r#in = mem::take(&mut (*c).in_0); // Take so we don't have 2 `&mut`s.
-        let len = rav1d_parse_obus(&mut *c, &r#in, 0 as c_int);
-        (*c).in_0 = r#in; // Restore into `c` right after.
+    while c.in_0.sz > 0 {
+        let r#in = mem::take(&mut c.in_0); // Take so we don't have 2 `&mut`s.
+        let len = rav1d_parse_obus(c, &r#in, 0 as c_int);
+        c.in_0 = r#in; // Restore into `c` right after.
         match len {
-            Err(_) => rav1d_data_unref_internal(&mut (*c).in_0),
+            Err(_) => rav1d_data_unref_internal(&mut c.in_0),
             Ok(len) => {
-                assert!(len <= (*c).in_0.sz);
-                (*c).in_0.sz -= len;
-                (*c).in_0.data = (*c).in_0.data.add(len);
-                if (*c).in_0.sz == 0 {
-                    rav1d_data_unref_internal(&mut (*c).in_0);
+                assert!(len <= c.in_0.sz);
+                c.in_0.sz -= len;
+                c.in_0.data = c.in_0.data.add(len);
+                if c.in_0.sz == 0 {
+                    rav1d_data_unref_internal(&mut c.in_0);
                 }
             }
         }
-        if output_picture_ready(&mut *c, false) {
+        if output_picture_ready(c, false) {
             break;
         }
         len?;
