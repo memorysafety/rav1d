@@ -506,11 +506,13 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
 
     let mut buf = Default::default();
     let mut res;
-    let mut s = Rav1dSettings::default();
-    s.n_threads = 1 as c_int;
-    s.logger = None;
+    let s = Rav1dSettings {
+        n_threads: 1,
+        logger: None,
+        ..Default::default()
+    };
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
-    res = rav1d_open(&mut c, &mut s);
+    res = rav1d_open(&mut c, &s);
     if res.is_err() {
         return res;
     }
