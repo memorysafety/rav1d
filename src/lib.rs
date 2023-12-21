@@ -786,24 +786,16 @@ pub(crate) unsafe fn rav1d_get_picture(
     c: &mut Rav1dContext,
     out: &mut Rav1dPicture,
 ) -> Rav1dResult {
-    let drain = c.drain;
-    c.drain = 1 as c_int;
-    let res = gen_picture(c);
-    if res.is_err() {
-        return res;
-    }
-    if c.cached_error.is_err() {
-        let res_0 = c.cached_error;
-        c.cached_error = Ok(());
-        return res_0;
-    }
-    if output_picture_ready(c, (c.n_fc == 1 as c_uint) as c_int) != 0 {
+    let drain = mem::replace(&mut c.drain, 1);
+    gen_picture(c)?;
+    mem::replace(&mut c.cached_error, Ok(()))?;
+    if output_picture_ready(c, (c.n_fc == 1) as c_int) != 0 {
         return output_image(c, out);
     }
-    if c.n_fc > 1 as c_uint && drain != 0 {
+    if c.n_fc > 1 && drain != 0 {
         return drain_picture(c, out);
     }
-    return Err(EAGAIN);
+    Err(EAGAIN)
 }
 
 #[no_mangle]
