@@ -532,7 +532,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
 
         assert!(len <= buf.sz);
         buf.sz -= len;
-        buf.data = (buf.data).offset(len as isize);
+        buf.data = buf.data.add(len);
     }
 
     if ((*c).seq_hdr).is_null() {
