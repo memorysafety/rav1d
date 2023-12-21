@@ -75,7 +75,6 @@ use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::r#ref::rav1d_ref_dec;
-use crate::src::r#ref::Rav1dRef;
 use crate::src::refmvs::rav1d_refmvs_clear;
 use crate::src::refmvs::rav1d_refmvs_dsp_init;
 use crate::src::refmvs::rav1d_refmvs_init;
@@ -505,21 +504,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
         res
     }
 
-    let mut buf: Rav1dData = {
-        let init = Rav1dData {
-            data: 0 as *const u8,
-            sz: 0,
-            r#ref: 0 as *mut Rav1dRef,
-            m: Rav1dDataProps {
-                timestamp: 0,
-                duration: 0,
-                offset: 0,
-                size: 0,
-                user_data: Default::default(),
-            },
-        };
-        init
-    };
+    let mut buf = Default::default();
     let mut res;
     let mut s = Rav1dSettings::default();
     s.n_threads = 1 as c_int;
