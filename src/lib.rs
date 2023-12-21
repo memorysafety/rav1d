@@ -613,25 +613,25 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
 
 unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: c_int) -> c_int {
     if c.cached_error.is_err() {
-        return 1 as c_int;
+        return 1;
     }
     if !c.all_layers && c.max_spatial_id {
         if !(c.out.p.data[0]).is_null() && !(c.cache.p.data[0]).is_null() {
             if c.max_spatial_id == ((*c.cache.p.frame_hdr).spatial_id != 0)
                 || c.out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
-                return 1 as c_int;
+                return 1;
             }
             rav1d_thread_picture_unref(&mut c.cache);
             rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
-            return 0 as c_int;
+            return 0;
         } else {
             if !(c.cache.p.data[0]).is_null() && drain != 0 {
-                return 1 as c_int;
+                return 1;
             } else {
                 if !(c.out.p.data[0]).is_null() {
                     rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
-                    return 0 as c_int;
+                    return 0;
                 }
             }
         }
