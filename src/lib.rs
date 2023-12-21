@@ -501,7 +501,9 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
             let len = rav1d_parse_obus(&mut *c, &mut buf, true)?;
             assert!(len <= buf.sz);
             buf.sz -= len;
-            buf.data = buf.data.add(len);
+            buf.data = buf
+                .data
+                .and_then(|data| NonNull::new(data.as_ptr().add(len)));
         }
 
         if (*c).seq_hdr.is_none() {
@@ -692,7 +694,10 @@ unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
             Ok(len) => {
                 assert!(len <= c.in_0.sz);
                 c.in_0.sz -= len;
-                c.in_0.data = c.in_0.data.add(len);
+                c.in_0.data = c
+                    .in_0
+                    .data
+                    .and_then(|data| NonNull::new(data.as_ptr().add(len)));
                 if c.in_0.sz == 0 {
                     rav1d_data_unref_internal(&mut c.in_0);
                 }
@@ -707,11 +712,11 @@ unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
 }
 
 pub(crate) unsafe fn rav1d_send_data(c: &mut Rav1dContext, in_0: &mut Rav1dData) -> Rav1dResult {
-    validate_input!((in_0.data.is_null() || in_0.sz != 0, EINVAL))?;
-    if !in_0.data.is_null() {
+    validate_input!((in_0.data.is_none() || in_0.sz != 0, EINVAL))?;
+    if in_0.data.is_some() {
         c.drain = 0 as c_int;
     }
-    if !c.in_0.data.is_null() {
+    if c.in_0.data.is_some() {
         return Err(EAGAIN);
     }
     rav1d_data_ref(&mut c.in_0, in_0);

@@ -23,15 +23,15 @@ pub(crate) unsafe fn rav1d_data_create_internal(buf: *mut Rav1dData, sz: usize) 
     if sz > usize::MAX / 2 {
         return 0 as *mut u8;
     }
-    (*buf).r#ref = rav1d_ref_create(sz);
-    if ((*buf).r#ref).is_null() {
+    (*buf).r#ref = NonNull::new(rav1d_ref_create(sz));
+    let Some(r#ref) = (*buf).r#ref else {
         return 0 as *mut u8;
-    }
-    (*buf).data = (*(*buf).r#ref).const_data as *const u8;
+    };
+    (*buf).data = NonNull::new(r#ref.as_ref().const_data as *mut u8);
     (*buf).sz = sz;
     (*buf).m = Default::default();
     (*buf).m.size = sz;
-    return (*(*buf).r#ref).data as *mut u8;
+    return r#ref.as_ref().data as *mut u8;
 }
 
 pub(crate) unsafe fn rav1d_data_wrap_internal(
@@ -44,11 +44,11 @@ pub(crate) unsafe fn rav1d_data_wrap_internal(
     validate_input!((!buf.is_null(), EINVAL))?;
     validate_input!((!ptr.is_null(), EINVAL))?;
     validate_input!((free_callback.is_some(), EINVAL))?;
-    (*buf).r#ref = rav1d_ref_wrap(ptr, free_callback, cookie);
-    if ((*buf).r#ref).is_null() {
+    (*buf).r#ref = NonNull::new(rav1d_ref_wrap(ptr, free_callback, cookie));
+    if (*buf).r#ref.is_none() {
         return Err(ENOMEM);
     }
-    (*buf).data = ptr;
+    (*buf).data = NonNull::new(ptr.cast_mut());
     (*buf).sz = sz;
     (*buf).m = Default::default();
     (*buf).m.size = sz;
@@ -75,14 +75,14 @@ impl Rav1dData {
 }
 
 pub(crate) unsafe fn rav1d_data_ref(dst: &mut Rav1dData, src: &Rav1dData) {
-    if validate_input!((*dst).data.is_null()).is_err() {
+    if validate_input!((*dst).data.is_none()).is_err() {
         return;
     }
-    if !src.r#ref.is_null() {
-        if validate_input!(!src.data.is_null()).is_err() {
+    if let Some(r#ref) = src.r#ref {
+        if validate_input!(!src.data.is_none()).is_err() {
             return;
         }
-        rav1d_ref_inc(src.r#ref);
+        rav1d_ref_inc(r#ref.as_ptr());
     }
     *dst = src.clone();
 }
@@ -94,14 +94,14 @@ pub(crate) unsafe fn rav1d_data_unref_internal(buf: *mut Rav1dData) {
     let Rav1dData {
         data,
         sz: _,
-        mut r#ref,
+        r#ref,
         m: _,
     } = mem::take(&mut *buf);
     let _ = mem::take(&mut (*buf).m);
-    if !r#ref.is_null() {
-        if validate_input!(!data.is_null()).is_err() {
+    if let Some(r#ref) = r#ref {
+        if validate_input!(!data.is_none()).is_err() {
             return;
         }
-        rav1d_ref_dec(&mut r#ref);
+        rav1d_ref_dec(&mut r#ref.as_ptr());
     }
 }

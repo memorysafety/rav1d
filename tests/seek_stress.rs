@@ -328,7 +328,9 @@ unsafe fn seek(
         if res != 0 {
             break;
         }
-        if !(dav1d_parse_sequence_header(&mut seq, (*data).data, (*data).sz).0 != 0) {
+        if !(dav1d_parse_sequence_header(&mut seq, (*data).data.unwrap().as_ptr(), (*data).sz).0
+            != 0)
+        {
             break;
         }
     }
@@ -386,9 +388,9 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     let mut in_0: *mut DemuxerContext = 0 as *mut DemuxerContext;
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
-        data: 0 as *const u8,
+        data: None,
         sz: 0,
-        r#ref: 0 as *mut Dav1dRef,
+        r#ref: None,
         m: Dav1dDataProps {
             timestamp: 0,
             duration: 0,

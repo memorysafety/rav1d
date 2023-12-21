@@ -112,6 +112,7 @@ use std::ffi::c_uint;
 use std::fmt;
 use std::mem;
 use std::mem::MaybeUninit;
+use std::ptr::NonNull;
 use std::slice;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -2137,7 +2138,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
         len + init_byte_pos
     }
 
-    let mut gb = GetBits::new(slice::from_raw_parts(r#in.data, r#in.sz));
+    let mut gb = GetBits::new(slice::from_raw_parts(r#in.data.unwrap().as_ptr(), r#in.sz));
 
     // obu header
     gb.get_bit(); // obu_forbidden_bit
@@ -2215,7 +2216,9 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
         assert!(pkt_bytelen >= bit_pos >> 3);
         let mut data = Default::default();
         rav1d_data_ref(&mut data, r#in);
-        data.data = data.data.offset((bit_pos >> 3) as isize);
+        data.data = data
+            .data
+            .and_then(|data| NonNull::new(data.as_ptr().add(bit_pos >> 3)));
         data.sz = (pkt_bytelen - (bit_pos >> 3)) as usize;
         // Ensure tile groups are in order and sane; see 6.10.1.
         if hdr.start > hdr.end || hdr.start != c.n_tiles {
@@ -2416,6 +2419,8 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                     while payload_size > 0
                         && *r#in
                             .data
+                            .unwrap()
+                            .as_ptr()
                             .offset((init_byte_pos + payload_size as usize - 1) as isize)
                             == 0
                     {
