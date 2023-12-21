@@ -12,7 +12,6 @@ use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
-use crate::src::data::rav1d_data_props_copy;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::ENOMEM;
@@ -38,7 +37,9 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::io;
+use std::mem;
 use std::ptr;
+use std::ptr::addr_of_mut;
 
 bitflags! {
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -202,7 +203,10 @@ unsafe fn picture_alloc_with_edges(
         return res;
     }
     (*pic_ctx).allocator = (*p_allocator).clone();
-    (*pic_ctx).pic = (*p).clone();
+    // TODO(kkysen) A normal assignment here as it used to be
+    // calls `fn drop` on `(*pic_ctx).pic`, which segfaults as it is uninitialized.
+    // We need to figure out the right thing to do here.
+    addr_of_mut!((*pic_ctx).pic).write((*p).clone());
     (*p).r#ref = rav1d_ref_wrap(
         (*p).data[0] as *const u8,
         Some(free_buffer),
@@ -252,7 +256,7 @@ pub unsafe fn rav1d_picture_copy_props(
     itut_t35_ref: *mut Rav1dRef,
     props: *const Rav1dDataProps,
 ) {
-    rav1d_data_props_copy(&mut (*p).m, props);
+    (*p).m = (*props).clone();
 
     rav1d_ref_dec(&mut (*p).content_light_ref);
     (*p).content_light_ref = content_light_ref;
@@ -376,9 +380,6 @@ pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPictur
     if !src.seq_hdr_ref.is_null() {
         rav1d_ref_inc(src.seq_hdr_ref);
     }
-    if let Some(r#ref) = src.m.user_data.r#ref {
-        rav1d_ref_inc(r#ref.as_ptr());
-    }
     if !src.content_light_ref.is_null() {
         rav1d_ref_inc(src.content_light_ref);
     }
@@ -444,13 +445,7 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
     }
     rav1d_ref_dec(&mut p.seq_hdr_ref);
     rav1d_ref_dec(&mut p.frame_hdr_ref);
-    rav1d_ref_dec(
-        &mut p
-            .m
-            .user_data
-            .r#ref
-            .map_or_else(ptr::null_mut, |r#ref| r#ref.as_ptr()),
-    );
+    let _ = mem::take(&mut p.m);
     rav1d_ref_dec(&mut p.content_light_ref);
     rav1d_ref_dec(&mut p.mastering_display_ref);
     rav1d_ref_dec(&mut p.itut_t35_ref);

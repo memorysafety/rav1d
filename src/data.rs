@@ -1,6 +1,9 @@
 use crate::include::common::validate::validate_input;
-use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
+use crate::src::c_arc::CArc;
+use crate::src::c_box::CBox;
+use crate::src::c_box::FnFree;
+use crate::src::c_box::Free;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
@@ -8,10 +11,8 @@ use crate::src::r#ref::rav1d_ref_create;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_wrap;
-use crate::src::r#ref::Rav1dRef;
-use libc::memset;
-use std::ffi::c_int;
 use std::ffi::c_void;
+use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
 
@@ -54,20 +55,23 @@ pub(crate) unsafe fn rav1d_data_wrap_internal(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_data_wrap_user_data_internal(
-    buf: *mut Rav1dData,
-    user_data: *const u8,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
-    cookie: *mut c_void,
-) -> Rav1dResult {
-    validate_input!((!buf.is_null(), EINVAL))?;
-    validate_input!((free_callback.is_some(), EINVAL))?;
-    (*buf).m.user_data.r#ref = NonNull::new(rav1d_ref_wrap(user_data, free_callback, cookie));
-    if ((*buf).m.user_data.r#ref).is_none() {
-        return Err(ENOMEM);
+impl Rav1dData {
+    /// # Safety
+    ///
+    /// See [`CBox::from_c`]'s safety for `user_data`, `free_callback`, `cookie`.
+    pub unsafe fn wrap_user_data(
+        &mut self,
+        user_data: NonNull<u8>,
+        free_callback: Option<FnFree>,
+        cookie: *mut c_void,
+    ) -> Rav1dResult {
+        let free = validate_input!(free_callback.ok_or(EINVAL))?;
+        let free = Free { free, cookie };
+        let user_data = CBox::from_c(user_data, free);
+        let user_data = CArc::wrap(user_data)?;
+        self.m.user_data = Some(user_data);
+        Ok(())
     }
-    (*buf).m.user_data.data = NonNull::new(user_data.cast_mut());
-    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_data_ref(dst: &mut Rav1dData, src: &Rav1dData) {
@@ -80,63 +84,24 @@ pub(crate) unsafe fn rav1d_data_ref(dst: &mut Rav1dData, src: &Rav1dData) {
         }
         rav1d_ref_inc(src.r#ref);
     }
-    if let Some(r#ref) = src.m.user_data.r#ref {
-        rav1d_ref_inc(r#ref.as_ptr());
-    }
     *dst = src.clone();
-}
-
-pub(crate) unsafe fn rav1d_data_props_copy(dst: *mut Rav1dDataProps, src: *const Rav1dDataProps) {
-    if dst.is_null() {
-        unreachable!();
-    }
-    if src.is_null() {
-        unreachable!();
-    }
-    rav1d_ref_dec(
-        &mut (*dst)
-            .user_data
-            .r#ref
-            .map_or_else(ptr::null_mut, |r#ref| r#ref.as_ptr()),
-    );
-    *dst = (*src).clone();
-    if let Some(r#ref) = (*dst).user_data.r#ref {
-        rav1d_ref_inc(r#ref.as_ptr());
-    }
-}
-
-pub(crate) unsafe fn rav1d_data_props_unref_internal(props: *mut Rav1dDataProps) {
-    if validate_input!(!props.is_null()).is_err() {
-        return;
-    }
-    let mut user_data_ref: *mut Rav1dRef = (*props)
-        .user_data
-        .r#ref
-        .map_or_else(ptr::null_mut, |r#ref| r#ref.as_ptr());
-    (*props) = Default::default();
-    rav1d_ref_dec(&mut user_data_ref);
 }
 
 pub(crate) unsafe fn rav1d_data_unref_internal(buf: *mut Rav1dData) {
     if validate_input!(!buf.is_null()).is_err() {
         return;
     }
-    let mut user_data_ref: *mut Rav1dRef = (*buf)
-        .m
-        .user_data
-        .r#ref
-        .map_or_else(ptr::null_mut, |r#ref| r#ref.as_ptr());
-    if !((*buf).r#ref).is_null() {
-        if validate_input!(!(*buf).data.is_null()).is_err() {
+    let Rav1dData {
+        data,
+        sz: _,
+        mut r#ref,
+        m: _,
+    } = mem::take(&mut *buf);
+    let _ = mem::take(&mut (*buf).m);
+    if !r#ref.is_null() {
+        if validate_input!(!data.is_null()).is_err() {
             return;
         }
-        rav1d_ref_dec(&mut (*buf).r#ref);
+        rav1d_ref_dec(&mut r#ref);
     }
-    memset(
-        buf as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<Rav1dData>(),
-    );
-    (*buf).m = Default::default();
-    rav1d_ref_dec(&mut user_data_ref);
 }

@@ -38,7 +38,6 @@ use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
-use crate::src::data::rav1d_data_props_copy;
 use crate::src::data::rav1d_data_unref_internal;
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::enum_map::enum_map;
@@ -4976,7 +4975,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         if error.is_err() {
             f.task_thread.retval = Ok(());
             c.cached_error = error;
-            rav1d_data_props_copy(&mut c.cached_error_props, &mut out_delayed.p.m);
+            c.cached_error_props = out_delayed.p.m.clone();
             rav1d_thread_picture_unref(out_delayed);
         } else if !out_delayed.p.data[0].is_null() {
             let progress = ::core::intrinsics::atomic_load_relaxed(
@@ -5030,7 +5029,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_ref_dec(&mut f.mvs_ref);
         rav1d_ref_dec(&mut f.seq_hdr_ref);
         rav1d_ref_dec(&mut f.frame_hdr_ref);
-        rav1d_data_props_copy(&mut c.cached_error_props, &mut c.in_0.m);
+        c.cached_error_props = c.in_0.m.clone();
 
         for mut tile in f.tiles.drain(..) {
             rav1d_data_unref_internal(&mut tile.data);

@@ -78,7 +78,6 @@ use crate::include::stdatomic::atomic_int;
 use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::rav1d_cdf_thread_ref;
 use crate::src::cdf::rav1d_cdf_thread_unref;
-use crate::src::data::rav1d_data_props_copy;
 use crate::src::data::rav1d_data_ref;
 use crate::src::data::rav1d_data_unref_internal;
 use crate::src::decode::rav1d_submit_frame;
@@ -2628,7 +2627,7 @@ unsafe fn parse_obus(
                 if error.is_err() {
                     c.cached_error = error;
                     (*f).task_thread.retval = Ok(());
-                    rav1d_data_props_copy(&mut c.cached_error_props, &mut (*out_delayed).p.m);
+                    c.cached_error_props = (*out_delayed).p.m.clone();
                     rav1d_thread_picture_unref(out_delayed);
                 } else if !((*out_delayed).p.data[0]).is_null() {
                     let progress = ::core::intrinsics::atomic_load_relaxed(
@@ -2732,7 +2731,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
     global: c_int,
 ) -> Rav1dResult<usize> {
     parse_obus(c, r#in, global).inspect_err(|_| {
-        rav1d_data_props_copy(&mut c.cached_error_props, &mut r#in.m);
+        c.cached_error_props = r#in.m.clone();
         writeln!(c.logger, "Error parsing OBU data");
     })
 }

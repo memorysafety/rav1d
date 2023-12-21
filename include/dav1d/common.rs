@@ -1,32 +1,29 @@
-use crate::include::dav1d::dav1d::Dav1dRef;
-use crate::src::r#ref::Rav1dRef;
+use crate::src::c_arc::CArc;
+use crate::src::c_arc::RawCArc;
 use std::ptr::NonNull;
 
 #[derive(Default)]
 #[repr(C)]
 pub struct Dav1dUserData {
     pub data: Option<NonNull<u8>>,
-    pub r#ref: Option<NonNull<Dav1dRef>>,
+    pub r#ref: Option<RawCArc<u8>>, // opaque, so we can change this
 }
 
-#[derive(Clone, Default)]
-#[repr(C)]
-pub(crate) struct Rav1dUserData {
-    pub data: Option<NonNull<u8>>,
-    pub r#ref: Option<NonNull<Rav1dRef>>,
-}
+pub(crate) type Rav1dUserData = Option<CArc<u8>>;
 
 impl From<Dav1dUserData> for Rav1dUserData {
     fn from(value: Dav1dUserData) -> Self {
-        let Dav1dUserData { data, r#ref } = value;
-        Self { data, r#ref }
+        let Dav1dUserData { data: _, r#ref } = value;
+        r#ref.map(|r#ref| unsafe { CArc::from_raw(r#ref) })
     }
 }
 
 impl From<Rav1dUserData> for Dav1dUserData {
     fn from(value: Rav1dUserData) -> Self {
-        let Rav1dUserData { data, r#ref } = value;
-        Self { data, r#ref }
+        Self {
+            data: value.as_ref().map(|user_data| user_data.as_ref().into()),
+            r#ref: value.map(|user_data| user_data.into_raw()),
+        }
     }
 }
 
