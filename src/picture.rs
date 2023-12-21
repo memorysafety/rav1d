@@ -30,7 +30,6 @@ use crate::src::r#ref::Rav1dRef;
 use bitflags::bitflags;
 use libc::free;
 use libc::malloc;
-use libc::memset;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -66,6 +65,19 @@ pub(crate) struct Rav1dThreadPicture {
     pub showable: bool,
     pub flags: PictureFlags,
     pub progress: *mut atomic_uint,
+}
+
+// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
+impl Default for Rav1dThreadPicture {
+    fn default() -> Self {
+        Self {
+            p: Default::default(),
+            visible: Default::default(),
+            showable: Default::default(),
+            flags: Default::default(),
+            progress: ptr::null_mut(),
+        }
+    }
 }
 
 #[repr(C)]
@@ -401,12 +413,7 @@ pub(crate) unsafe fn rav1d_picture_move_ref(dst: &mut Rav1dPicture, src: &mut Ra
             return;
         }
     }
-    *dst = src.clone();
-    memset(
-        src as *mut _ as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<Rav1dPicture>(),
-    );
+    *dst = mem::take(src);
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_ref(
@@ -424,37 +431,32 @@ pub(crate) unsafe fn rav1d_thread_picture_move_ref(
     dst: *mut Rav1dThreadPicture,
     src: *mut Rav1dThreadPicture,
 ) {
-    rav1d_picture_move_ref(&mut (*dst).p, &mut (*src).p);
-    (*dst).visible = (*src).visible;
-    (*dst).showable = (*src).showable;
-    (*dst).progress = (*src).progress;
-    (*dst).flags = (*src).flags;
-    memset(
-        src as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<Rav1dThreadPicture>(),
-    );
+    *dst = mem::take(&mut *src);
 }
 
 pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
-    if !p.r#ref.is_null() {
-        if validate_input!(!p.data[0].is_null()).is_err() {
+    let Rav1dPicture {
+        m: _,
+        data,
+        mut r#ref,
+        mut frame_hdr_ref,
+        mut seq_hdr_ref,
+        mut content_light_ref,
+        mut mastering_display_ref,
+        mut itut_t35_ref,
+        ..
+    } = mem::take(p);
+    if !r#ref.is_null() {
+        if validate_input!(!data[0].is_null()).is_err() {
             return;
         }
-        rav1d_ref_dec(&mut p.r#ref);
+        rav1d_ref_dec(&mut r#ref);
     }
-    rav1d_ref_dec(&mut p.seq_hdr_ref);
-    rav1d_ref_dec(&mut p.frame_hdr_ref);
-    let _ = mem::take(&mut p.m);
-    rav1d_ref_dec(&mut p.content_light_ref);
-    rav1d_ref_dec(&mut p.mastering_display_ref);
-    rav1d_ref_dec(&mut p.itut_t35_ref);
-    memset(
-        p as *mut _ as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<Rav1dPicture>(),
-    );
-    p.m = Default::default();
+    rav1d_ref_dec(&mut seq_hdr_ref);
+    rav1d_ref_dec(&mut frame_hdr_ref);
+    rav1d_ref_dec(&mut content_light_ref);
+    rav1d_ref_dec(&mut mastering_display_ref);
+    rav1d_ref_dec(&mut itut_t35_ref);
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
