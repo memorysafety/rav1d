@@ -636,7 +636,7 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: c_int) -> c_int {
             }
         }
     }
-    return !c.out.p.data[0].is_null() as c_int;
+    !c.out.p.data[0].is_null() as c_int
 }
 
 unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
