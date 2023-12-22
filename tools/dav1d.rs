@@ -65,7 +65,6 @@ use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::headers::Dav1dColorPrimaries;
 use rav1d::include::dav1d::headers::Dav1dFrameHeader;
-use rav1d::include::dav1d::headers::Dav1dITUTT35;
 use rav1d::include::dav1d::headers::Dav1dSequenceHeader;
 use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
@@ -326,13 +325,13 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         },
         content_light: None,
         mastering_display: None,
-        itut_t35: 0 as *mut Dav1dITUTT35,
+        itut_t35: None,
         reserved: [0; 4],
         frame_hdr_ref: 0 as *mut Dav1dRef,
         seq_hdr_ref: 0 as *mut Dav1dRef,
         content_light_ref: None,
         mastering_display_ref: None,
-        itut_t35_ref: 0 as *mut Dav1dRef,
+        itut_t35_ref: None,
         reserved_ref: [0; 4],
         r#ref: 0 as *mut Dav1dRef,
         allocator_data: 0 as *mut c_void,

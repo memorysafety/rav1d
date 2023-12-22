@@ -8,6 +8,8 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
+use crate::include::dav1d::headers::DRav1d;
+use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -211,8 +213,7 @@ pub struct Rav1dContext {
     pub(crate) frame_hdr: *mut Rav1dFrameHeader,
     pub(crate) content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub(crate) mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-    pub(crate) itut_t35_ref: *mut Rav1dRef,
-    pub(crate) itut_t35: *mut Rav1dITUTT35,
+    pub(crate) itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
 
     // decoded output picture queue
     pub(crate) in_0: Rav1dData,

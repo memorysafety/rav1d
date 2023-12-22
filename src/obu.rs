@@ -2464,16 +2464,11 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                         let country_code_extension_byte = country_code_extension_byte as u8;
                         let payload = (0..payload_size).map(|_| gb.get_bits(8) as u8).collect(); // TODO(kkysen) fallible allocation
 
-                        let itut_t35_metadatas =
-                            (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
-                        itut_t35_metadatas.write(DRav1d::from_rav1d(Rav1dITUTT35 {
+                        c.itut_t35 = Some(Arc::new(DRav1d::from_rav1d(Rav1dITUTT35 {
                             country_code,
                             country_code_extension_byte,
                             payload,
-                        }));
-                        rav1d_ref_dec(&mut c.itut_t35_ref);
-                        c.itut_t35 = &mut (*itut_t35_metadatas).rav1d;
-                        c.itut_t35_ref = r#ref;
+                        }))); // TODO(kkysen) fallible allocation
                     }
                 }
                 OBU_META_SCALABILITY | OBU_META_TIMECODE => {} // Ignore metadata OBUs we don't care about.
@@ -2542,13 +2537,11 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                     &mut (*c).out.p,
                     &c.content_light,
                     &c.mastering_display,
-                    c.itut_t35,
-                    c.itut_t35_ref,
+                    &c.itut_t35,
                     &r#in.m,
                 );
                 // Must be removed from the context after being attached to the frame
-                rav1d_ref_dec(&mut c.itut_t35_ref);
-                c.itut_t35 = 0 as *mut Rav1dITUTT35;
+                let _ = mem::take(&mut c.itut_t35);
                 c.event_flags |= c.refs[(*c.frame_hdr).existing_frame_idx as usize]
                     .p
                     .flags
@@ -2617,13 +2610,11 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                     &mut (*out_delayed).p,
                     &c.content_light,
                     &c.mastering_display,
-                    c.itut_t35,
-                    c.itut_t35_ref,
+                    &c.itut_t35,
                     &r#in.m,
                 );
                 // Must be removed from the context after being attached to the frame
-                rav1d_ref_dec(&mut c.itut_t35_ref);
-                c.itut_t35 = 0 as *mut Rav1dITUTT35;
+                let _ = mem::take(&mut c.itut_t35);
                 pthread_mutex_unlock(&mut c.task_thread.lock);
             }
             if (*c.refs[(*c.frame_hdr).existing_frame_idx as usize]

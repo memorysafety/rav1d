@@ -1,6 +1,8 @@
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
+use crate::include::dav1d::headers::DRav1d;
+use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -178,8 +180,7 @@ unsafe fn picture_alloc_with_edges(
     frame_hdr_ref: *mut Rav1dRef,
     content_light: &Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
-    itut_t35: *mut Rav1dITUTT35,
-    itut_t35_ref: *mut Rav1dRef,
+    itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     bpc: c_int,
     props: *const Rav1dDataProps,
     p_allocator: *mut Rav1dPicAllocator,
@@ -239,14 +240,7 @@ unsafe fn picture_alloc_with_edges(
     if !frame_hdr_ref.is_null() {
         rav1d_ref_inc(frame_hdr_ref);
     }
-    rav1d_picture_copy_props(
-        p,
-        content_light,
-        mastering_display,
-        itut_t35,
-        itut_t35_ref,
-        props,
-    );
+    rav1d_picture_copy_props(p, content_light, mastering_display, itut_t35, props);
 
     if extra != 0 && !extra_ptr.is_null() {
         *extra_ptr = &mut (*pic_ctx).extra_ptr as *mut *mut c_void as *mut c_void;
@@ -259,21 +253,13 @@ pub unsafe fn rav1d_picture_copy_props(
     p: *mut Rav1dPicture,
     content_light: &Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
-    itut_t35: *mut Rav1dITUTT35,
-    itut_t35_ref: *mut Rav1dRef,
+    itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     props: *const Rav1dDataProps,
 ) {
     (*p).m = (*props).clone();
-
     (*p).content_light = content_light.clone();
     (*p).mastering_display = mastering_display.clone();
-
-    rav1d_ref_dec(&mut (*p).itut_t35_ref);
-    (*p).itut_t35_ref = itut_t35_ref;
-    (*p).itut_t35 = itut_t35;
-    if !itut_t35_ref.is_null() {
-        rav1d_ref_inc(itut_t35_ref);
-    }
+    (*p).itut_t35 = itut_t35.clone();
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
@@ -294,8 +280,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         (*f).frame_hdr_ref,
         &(*c).content_light,
         &(*c).mastering_display,
-        (*c).itut_t35,
-        (*c).itut_t35_ref,
+        &(*c).itut_t35,
         bpc,
         &mut (*f).tiles[0].data.m,
         &mut (*c).allocator,
@@ -309,8 +294,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     if res.is_err() {
         return res;
     }
-    rav1d_ref_dec(&mut (*c).itut_t35_ref);
-    (*c).itut_t35 = 0 as *mut Rav1dITUTT35;
+    let _ = mem::take(&mut (*c).itut_t35);
     let flags_mask = if (*(*f).frame_hdr).show_frame != 0 || (*c).output_invisible_frames {
         PictureFlags::empty()
     } else {
@@ -345,8 +329,7 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         (*src).frame_hdr_ref,
         &(*src).content_light,
         &(*src).mastering_display,
-        (*src).itut_t35,
-        (*src).itut_t35_ref,
+        &(*src).itut_t35,
         (*src).p.bpc,
         &(*src).m,
         &mut (*pic_ctx).allocator,
@@ -371,9 +354,6 @@ pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPictur
     }
     if !src.seq_hdr_ref.is_null() {
         rav1d_ref_inc(src.seq_hdr_ref);
-    }
-    if !src.itut_t35_ref.is_null() {
-        rav1d_ref_inc(src.itut_t35_ref);
     }
     *dst = src.clone();
 }
@@ -415,7 +395,6 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
         mut r#ref,
         mut frame_hdr_ref,
         mut seq_hdr_ref,
-        mut itut_t35_ref,
         ..
     } = mem::take(p);
     if !r#ref.is_null() {
@@ -426,7 +405,6 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
     }
     rav1d_ref_dec(&mut seq_hdr_ref);
     rav1d_ref_dec(&mut frame_hdr_ref);
-    rav1d_ref_dec(&mut itut_t35_ref);
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {

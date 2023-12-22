@@ -19,7 +19,6 @@ use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
-use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -844,7 +843,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
                 .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
             .update_rav1d();
         }
-        // Don't `.update_rav1d` [`Rav1dITUTT35`] because we never read it.
+        // Don't `.update_rav1d()` [`Rav1dITUTT35`] because we never read it.
         let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
         let in_rust = in_0.into();
         let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
@@ -879,8 +878,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     rav1d_ref_dec(&mut (*c).seq_hdr_ref);
     let _ = mem::take(&mut (*c).content_light);
     let _ = mem::take(&mut (*c).mastering_display);
-    (*c).itut_t35 = 0 as *mut Rav1dITUTT35;
-    rav1d_ref_dec(&mut (*c).itut_t35_ref);
+    let _ = mem::take(&mut (*c).itut_t35);
     let _ = mem::take(&mut (*c).cached_error_props);
     if (*c).n_fc == 1 as c_uint && (*c).n_tc == 1 as c_uint {
         return;
@@ -1086,7 +1084,7 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     rav1d_ref_dec(&mut (*c).frame_hdr_ref);
     let _ = mem::take(&mut (*c).mastering_display);
     let _ = mem::take(&mut (*c).content_light);
-    rav1d_ref_dec(&mut (*c).itut_t35_ref);
+    let _ = mem::take(&mut (*c).itut_t35);
     rav1d_mem_pool_end((*c).seq_hdr_pool);
     rav1d_mem_pool_end((*c).frame_hdr_pool);
     rav1d_mem_pool_end((*c).segmap_pool);
