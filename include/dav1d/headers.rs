@@ -2,7 +2,6 @@ use crate::src::enum_map::EnumKey;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
-use std::slice;
 use strum::EnumCount;
 use strum::FromRepr;
 
@@ -507,24 +506,6 @@ pub(crate) struct Rav1dITUTT35 {
     pub country_code: u8,
     pub country_code_extension_byte: u8,
     pub payload: Box<[u8]>,
-}
-
-impl From<Dav1dITUTT35> for Rav1dITUTT35 {
-    fn from(value: Dav1dITUTT35) -> Self {
-        let Dav1dITUTT35 {
-            country_code,
-            country_code_extension_byte,
-            payload_size,
-            payload,
-        } = value;
-        let payload = unsafe { slice::from_raw_parts_mut(payload, payload_size) };
-        let payload = unsafe { Box::from_raw(payload) };
-        Self {
-            country_code,
-            country_code_extension_byte,
-            payload,
-        }
-    }
 }
 
 impl From<Rav1dITUTT35> for Dav1dITUTT35 {

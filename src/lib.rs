@@ -16,7 +16,6 @@ use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_ALL;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
@@ -845,13 +844,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
                 .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
             .update_rav1d();
         }
-        if let Some(mut itut_t35_ref) = NonNull::new(in_0.itut_t35_ref) {
-            (*itut_t35_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-            .update_rav1d();
-        }
+        // Don't `.update_rav1d` [`Rav1dITUTT35`] because we never read it.
         let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
         let in_rust = in_0.into();
         let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);

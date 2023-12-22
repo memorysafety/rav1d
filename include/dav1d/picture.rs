@@ -167,7 +167,7 @@ impl From<Dav1dPicture> for Rav1dPicture {
             content_light: content_light_ref.map(|raw| unsafe { raw.into_arc() }),
             // Safety: `raw` came from [`RawArc::from_arc`].
             mastering_display: mastering_display_ref.map(|raw| unsafe { raw.into_arc() }),
-            // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
+            // We don't `.update_rav1d` [`Rav1dITUTT35`] because never read it.
             itut_t35: if itut_t35.is_null() {
                 ptr::null_mut()
             } else {
