@@ -30,7 +30,7 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 extern "C" {
     fn dav1d_sgr_box3_v_neon(
         sumsq: *mut i32,
@@ -1093,7 +1093,7 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
     );
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn rav1d_sgr_box3_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
@@ -1127,7 +1127,7 @@ unsafe fn rav1d_sgr_box3_h_neon<BD: BitDepth>(
     })(sumsq, sum, left.cast(), src.cast(), stride, w, h, edges)
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "arm")))]
 unsafe fn rav1d_sgr_finish_filter1_neon<BD: BitDepth>(
     tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
@@ -1159,7 +1159,7 @@ unsafe fn rav1d_sgr_finish_filter1_neon<BD: BitDepth>(
     })(tmp.as_mut_ptr(), src.cast(), stride, a, b, w, h)
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
     tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
@@ -1214,7 +1214,7 @@ unsafe fn rav1d_sgr_filter1_neon<BD: BitDepth>(
     rav1d_sgr_finish_filter1_neon::<BD>(tmp, src, stride, a, b, w, h);
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "arm")))]
 unsafe fn rav1d_sgr_box5_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
@@ -1248,7 +1248,7 @@ unsafe fn rav1d_sgr_box5_h_neon<BD: BitDepth>(
     })(sumsq, sum, left.cast(), src.cast(), stride, w, h, edges)
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "arm")))]
 unsafe fn rav1d_sgr_finish_filter2_neon<BD: BitDepth>(
     tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
@@ -1280,7 +1280,7 @@ unsafe fn rav1d_sgr_finish_filter2_neon<BD: BitDepth>(
     })(tmp.as_mut_ptr(), src.cast(), stride, a, b, w, h)
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
     tmp: &mut [i16; 64 * 384],
     src: *const BD::Pixel,
@@ -1335,7 +1335,7 @@ unsafe fn rav1d_sgr_filter2_neon<BD: BitDepth>(
     rav1d_sgr_finish_filter2_neon::<BD>(tmp, src, stride, a, b, w, h);
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "arm")))]
 unsafe fn rav1d_sgr_weighted1_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
@@ -1381,7 +1381,7 @@ unsafe fn rav1d_sgr_weighted1_neon<BD: BitDepth>(
     )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "arm")))]
 unsafe fn rav1d_sgr_weighted2_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
@@ -1455,7 +1455,7 @@ unsafe extern "C" fn sgr_filter_5x5_neon_erased<BD: BitDepth>(
     )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
@@ -1518,7 +1518,7 @@ unsafe extern "C" fn sgr_filter_3x3_neon_erased<BD: BitDepth>(
     )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
@@ -1556,6 +1556,1825 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     );
 }
 
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn rotate5_x2(sumsq_ptrs: &mut [*mut i32; 5], sum_ptrs: &mut [*mut i16; 5]) {
+    sumsq_ptrs.rotate_left(2);
+    sum_ptrs.rotate_left(2);
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn rotate_ab_2(A_ptrs: &mut [*mut i32; 2], B_ptrs: &mut [*mut i16; 2]) {
+    A_ptrs.rotate_left(1);
+    B_ptrs.rotate_left(1);
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn rotate_ab_3(A_ptrs: &mut [*mut i32; 3], B_ptrs: &mut [*mut i16; 3]) {
+    A_ptrs.rotate_left(1);
+    B_ptrs.rotate_left(1);
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn rotate_ab_4(A_ptrs: &mut [*mut i32; 4], B_ptrs: &mut [*mut i16; 4]) {
+    A_ptrs.rotate_left(1);
+    B_ptrs.rotate_left(1);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
+    sumsq: *mut i32,
+    sum: *mut i16,
+    left: *const [BD::Pixel; 4],
+    src: *const BD::Pixel,
+    w: c_int,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    macro_rules! asm_fn {
+        ($name:ident) => {{
+            extern "C" {
+                fn $name(
+                    sumsq: *mut i32,
+                    sum: *mut i16,
+                    left: *const c_void,
+                    src: *const c_void,
+                    w: c_int,
+                    edges: LrEdgeFlags,
+                    bitdepth_max: c_int,
+                );
+            }
+            $name
+        }};
+    }
+    (match BD::BPC {
+        BPC::BPC8 => asm_fn!(dav1d_sgr_box3_row_h_8bpc_neon),
+        BPC::BPC16 => asm_fn!(dav1d_sgr_box3_row_h_16bpc_neon),
+    })(sumsq, sum, left.cast(), src.cast(), w, edges, bd.into_c())
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe fn rav1d_sgr_box5_row_h_neon<BD: BitDepth>(
+    sumsq: *mut i32,
+    sum: *mut i16,
+    left: *const [BD::Pixel; 4],
+    src: *const BD::Pixel,
+    w: c_int,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    macro_rules! asm_fn {
+        ($name:ident) => {{
+            extern "C" {
+                fn $name(
+                    sumsq: *mut i32,
+                    sum: *mut i16,
+                    left: *const c_void,
+                    src: *const c_void,
+                    w: c_int,
+                    edges: LrEdgeFlags,
+                    bitdepth_max: c_int,
+                );
+            }
+            $name
+        }};
+    }
+    (match BD::BPC {
+        BPC::BPC8 => asm_fn!(dav1d_sgr_box5_row_h_8bpc_neon),
+        BPC::BPC16 => asm_fn!(dav1d_sgr_box5_row_h_16bpc_neon),
+    })(sumsq, sum, left.cast(), src.cast(), w, edges, bd.into_c())
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
+    sumsq3: *mut i32,
+    sum3: *mut i16,
+    sumsq5: *mut i32,
+    sum5: *mut i16,
+    left: *const [BD::Pixel; 4],
+    src: *const BD::Pixel,
+    w: c_int,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    macro_rules! asm_fn {
+        ($name:ident) => {{
+            extern "C" {
+                fn $name(
+                    sumsq3: *mut i32,
+                    sum3: *mut i16,
+                    sumsq5: *mut i32,
+                    sum5: *mut i16,
+                    left: *const c_void,
+                    src: *const c_void,
+                    w: c_int,
+                    edges: LrEdgeFlags,
+                    bitdepth_max: c_int,
+                );
+            }
+            $name
+        }};
+    }
+    (match BD::BPC {
+        BPC::BPC8 => asm_fn!(dav1d_sgr_box35_row_h_8bpc_neon),
+        BPC::BPC16 => asm_fn!(dav1d_sgr_box35_row_h_16bpc_neon),
+    })(
+        sumsq3,
+        sum3,
+        sumsq5,
+        sum5,
+        left.cast(),
+        src.cast(),
+        w,
+        edges,
+        bd.into_c(),
+    )
+}
+
+extern "C" {
+    fn dav1d_sgr_box3_vert_neon(
+        sumsq: *mut *mut i32,
+        sum: *mut *mut i16,
+        AA: *mut i32,
+        BB: *mut i16,
+        w: c_int,
+        s: c_int,
+        bitdepth_max: c_int,
+    );
+
+    fn dav1d_sgr_box5_vert_neon(
+        sumsq: *mut *mut i32,
+        sum: *mut *mut i16,
+        AA: *mut i32,
+        BB: *mut i16,
+        w: c_int,
+        s: c_int,
+        bitdepth_max: c_int,
+    );
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_box3_vert_neon<BD: BitDepth>(
+    sumsq: &mut [*mut i32; 3],
+    sum: &mut [*mut i16; 3],
+    sumsq_out: *mut i32,
+    sum_out: *mut i16,
+    w: c_int,
+    s: c_int,
+    bd: BD,
+) {
+    dav1d_sgr_box3_vert_neon(
+        sumsq.as_mut_ptr(),
+        sum.as_mut_ptr(),
+        sumsq_out,
+        sum_out,
+        w,
+        s,
+        bd.into_c(),
+    );
+    rotate_ab_3(sumsq, sum);
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_box5_vert_neon<BD: BitDepth>(
+    sumsq: &mut [*mut i32; 5],
+    sum: &mut [*mut i16; 5],
+    sumsq_out: *mut i32,
+    sum_out: *mut i16,
+    w: c_int,
+    s: c_int,
+    bd: BD,
+) {
+    dav1d_sgr_box5_vert_neon(
+        sumsq.as_mut_ptr(),
+        sum.as_mut_ptr(),
+        sumsq_out,
+        sum_out,
+        w,
+        s,
+        bd.into_c(),
+    );
+    rotate5_x2(sumsq, sum);
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
+unsafe fn rav1d_sgr_finish_weighted1_neon<BD: BitDepth>(
+    dst: *mut BD::Pixel,
+    A_ptrs: &mut [*mut i32; 3],
+    B_ptrs: &mut [*mut i16; 3],
+    w: c_int,
+    w1: c_int,
+    bd: BD,
+) {
+    macro_rules! asm_fn {
+        ($name:ident) => {{
+            extern "C" {
+                fn $name(
+                    dst: *mut c_void,
+                    A_ptrs: *mut *mut i32,
+                    B_ptrs: *mut *mut i16,
+                    w: c_int,
+                    w1: c_int,
+                    bitdepth_max: c_int,
+                );
+            }
+            $name
+        }};
+    }
+    (match BD::BPC {
+        BPC::BPC8 => asm_fn!(dav1d_sgr_finish_weighted1_8bpc_neon),
+        BPC::BPC16 => asm_fn!(dav1d_sgr_finish_weighted1_16bpc_neon),
+    })(
+        dst.cast(),
+        A_ptrs.as_mut_ptr(),
+        B_ptrs.as_mut_ptr(),
+        w,
+        w1,
+        bd.into_c(),
+    )
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
+unsafe fn rav1d_sgr_finish_weighted2_neon<BD: BitDepth>(
+    dst: *mut BD::Pixel,
+    stride: usize,
+    A_ptrs: &mut [*mut i32; 2],
+    B_ptrs: &mut [*mut i16; 2],
+    w: c_int,
+    h: c_int,
+    w1: c_int,
+    bd: BD,
+) {
+    macro_rules! asm_fn {
+        ($name:ident) => {{
+            extern "C" {
+                fn $name(
+                    dst: *mut c_void,
+                    stride: ptrdiff_t,
+                    A_ptrs: *mut *mut i32,
+                    B_ptrs: *mut *mut i16,
+                    w: c_int,
+                    h: c_int,
+                    w1: c_int,
+                    bitdepth_max: c_int,
+                );
+            }
+            $name
+        }};
+    }
+    (match BD::BPC {
+        BPC::BPC8 => asm_fn!(dav1d_sgr_finish_weighted2_8bpc_neon),
+        BPC::BPC16 => asm_fn!(dav1d_sgr_finish_weighted2_16bpc_neon),
+    })(
+        dst.cast(),
+        (stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
+        A_ptrs.as_mut_ptr(),
+        B_ptrs.as_mut_ptr(),
+        w,
+        h,
+        w1,
+        bd.into_c(),
+    )
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
+    tmp: *mut i16,
+    src: *const BD::Pixel,
+    src_stride: usize,
+    A_ptrs: &mut [*mut i32; 4],
+    B_ptrs: &mut [*mut i16; 4],
+    w: c_int,
+    h: c_int,
+    bd: BD,
+) {
+    macro_rules! asm_fn {
+        ($name:ident) => {{
+            extern "C" {
+                fn $name(
+                    tmp: *mut i16,
+                    src: *const c_void,
+                    src_stride: ptrdiff_t,
+                    A_ptrs: *mut *mut i32,
+                    B_ptrs: *mut *mut i16,
+                    w: c_int,
+                    h: c_int,
+                    bitdepth_max: c_int,
+                );
+            }
+            $name
+        }};
+    }
+    (match BD::BPC {
+        BPC::BPC8 => asm_fn!(dav1d_sgr_finish_filter1_2rows_8bpc_neon),
+        BPC::BPC16 => asm_fn!(dav1d_sgr_finish_filter1_2rows_16bpc_neon),
+    })(
+        tmp,
+        src.cast(),
+        (src_stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
+        A_ptrs.as_mut_ptr(),
+        B_ptrs.as_mut_ptr(),
+        w,
+        h,
+        bd.into_c(),
+    )
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+unsafe fn rav1d_sgr_finish_filter2_2rows_neon<BD: BitDepth>(
+    tmp: *mut i16,
+    src: *const BD::Pixel,
+    src_stride: usize,
+    A_ptrs: &mut [*mut i32; 2],
+    B_ptrs: &mut [*mut i16; 2],
+    w: c_int,
+    h: c_int,
+    bd: BD,
+) {
+    macro_rules! asm_fn {
+        ($name:ident) => {{
+            extern "C" {
+                fn $name(
+                    tmp: *mut i16,
+                    src: *const c_void,
+                    src_stride: ptrdiff_t,
+                    A_ptrs: *mut *mut i32,
+                    B_ptrs: *mut *mut i16,
+                    w: c_int,
+                    h: c_int,
+                    bitdepth_max: c_int,
+                );
+            }
+            $name
+        }};
+    }
+    (match BD::BPC {
+        BPC::BPC8 => asm_fn!(dav1d_sgr_finish_filter2_2rows_8bpc_neon),
+        BPC::BPC16 => asm_fn!(dav1d_sgr_finish_filter2_2rows_16bpc_neon),
+    })(
+        tmp,
+        src.cast(),
+        (src_stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
+        A_ptrs.as_mut_ptr(),
+        B_ptrs.as_mut_ptr(),
+        w,
+        h,
+        bd.into_c(),
+    )
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_box3_hv_neon<BD: BitDepth>(
+    sumsq: &mut [*mut i32; 3],
+    sum: &mut [*mut i16; 3],
+    AA: *mut i32,
+    BB: *mut i16,
+    left: *const [BD::Pixel; 4],
+    src: *const BD::Pixel,
+    w: c_int,
+    s: c_int,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    rav1d_sgr_box3_row_h_neon(sumsq[2], sum[2], left, src, w, edges, bd);
+    sgr_box3_vert_neon(sumsq, sum, AA, BB, w, s, bd);
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_finish1_neon<BD: BitDepth>(
+    dst: &mut *mut BD::Pixel,
+    stride: usize,
+    A_ptrs: &mut [*mut i32; 3],
+    B_ptrs: &mut [*mut i16; 3],
+    w: c_int,
+    w1: c_int,
+    bd: BD,
+) {
+    rav1d_sgr_finish_weighted1_neon(*dst, A_ptrs, B_ptrs, w, w1, bd);
+    *dst = (*dst).add(stride);
+    rotate_ab_3(A_ptrs, B_ptrs);
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_finish2_neon<BD: BitDepth>(
+    dst: &mut *mut BD::Pixel,
+    stride: usize,
+    A_ptrs: &mut [*mut i32; 2],
+    B_ptrs: &mut [*mut i16; 2],
+    w: c_int,
+    h: c_int,
+    w1: c_int,
+    bd: BD,
+) {
+    rav1d_sgr_finish_weighted2_neon(*dst, stride, A_ptrs, B_ptrs, w, h, w1, bd);
+    *dst = (*dst).add(2 * stride);
+    rotate_ab_2(A_ptrs, B_ptrs);
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
+    dst: &mut *mut BD::Pixel,
+    stride: usize,
+    A5_ptrs: &mut [*mut i32; 2],
+    B5_ptrs: &mut [*mut i16; 2],
+    A3_ptrs: &mut [*mut i32; 4],
+    B3_ptrs: &mut [*mut i16; 4],
+    w: c_int,
+    h: c_int,
+    w0: c_int,
+    w1: c_int,
+    bd: BD,
+) {
+    const FILTER_OUT_STRIDE: usize = 384;
+
+    let mut tmp5: Align16<[i16; 2 * FILTER_OUT_STRIDE]> = Align16([0; 2 * FILTER_OUT_STRIDE]);
+    let mut tmp3: Align16<[i16; 2 * FILTER_OUT_STRIDE]> = Align16([0; 2 * FILTER_OUT_STRIDE]);
+
+    rav1d_sgr_finish_filter2_2rows_neon(
+        tmp5.0.as_mut_ptr(),
+        *dst,
+        stride,
+        A5_ptrs,
+        B5_ptrs,
+        w,
+        h,
+        bd,
+    );
+    rav1d_sgr_finish_filter1_2rows_neon(
+        tmp3.0.as_mut_ptr(),
+        *dst,
+        stride,
+        A3_ptrs,
+        B3_ptrs,
+        w,
+        h,
+        bd,
+    );
+
+    let wt: [i16; 2] = [w0 as i16, w1 as i16];
+    macro_rules! asm_fn {
+        ($name:ident) => {{
+            extern "C" {
+                fn $name(
+                    dst: *mut c_void,
+                    dst_stride: ptrdiff_t,
+                    src: *const c_void,
+                    src_stride: ptrdiff_t,
+                    t1: *const i16,
+                    t2: *const i16,
+                    w: c_int,
+                    h: c_int,
+                    wt: *const i16,
+                    bitdepth_max: c_int,
+                );
+            }
+            $name
+        }};
+    }
+    (match BD::BPC {
+        BPC::BPC8 => asm_fn!(dav1d_sgr_weighted2_8bpc_neon),
+        BPC::BPC16 => asm_fn!(dav1d_sgr_weighted2_16bpc_neon),
+    })(
+        dst.cast(),
+        (stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
+        dst.cast(),
+        (stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
+        tmp5.0.as_mut_ptr(),
+        tmp3.0.as_mut_ptr(),
+        w,
+        h,
+        wt.as_ptr(),
+        bd.into_c(),
+    );
+
+    *dst = (*dst).add(h as usize * stride);
+    rotate_ab_2(A5_ptrs, B5_ptrs);
+    rotate_ab_4(A3_ptrs, B3_ptrs);
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    mut left: *const [BD::Pixel; 4],
+    mut lpf: *const BD::Pixel,
+    w: c_int,
+    mut h: c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    let stride = BD::pxstride(stride as usize);
+
+    const BUF_STRIDE: usize = 384 + 16;
+
+    let mut sumsq_buf: Align16<[i32; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut sum_buf: Align16<[i16; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+
+    let mut sumsq_ptrs: [*mut i32; 3];
+    let mut sum_ptrs: [*mut i16; 3];
+    let mut sumsq_rows: [*mut i32; 3] = [0 as *mut i32; 3];
+    let mut sum_rows: [*mut i16; 3] = [0 as *mut i16; 3];
+    for i in 0..3 {
+        sumsq_rows[i] = (sumsq_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        sum_rows[i] = (sum_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+    }
+
+    let mut A_buf: Align16<[i32; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut B_buf: Align16<[i16; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+
+    let mut A_ptrs: [*mut i32; 3] = [0 as *mut i32; 3];
+    let mut B_ptrs: [*mut i16; 3] = [0 as *mut i16; 3];
+    for i in 0..3 {
+        A_ptrs[i] = (A_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        B_ptrs[i] = (B_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+    }
+
+    let mut src: *const BD::Pixel = dst;
+    let mut lpf_bottom: *const BD::Pixel = lpf.add(6 * stride);
+
+    #[derive(PartialEq)]
+    enum Track {
+        main,
+        vert1,
+        vert2,
+    }
+    let mut track = Track::main;
+
+    if (edges & LR_HAVE_TOP) != 0 {
+        sumsq_ptrs = sumsq_rows;
+        sum_ptrs = sum_rows;
+
+        rav1d_sgr_box3_row_h_neon(
+            sumsq_rows[0],
+            sum_rows[0],
+            0 as *const [BD::Pixel; 4],
+            lpf,
+            w,
+            edges,
+            bd,
+        );
+        lpf = lpf.add(stride);
+        rav1d_sgr_box3_row_h_neon(
+            sumsq_rows[1],
+            sum_rows[1],
+            0 as *const [BD::Pixel; 4],
+            lpf,
+            w,
+            edges,
+            bd,
+        );
+
+        sgr_box3_hv_neon(
+            &mut sumsq_ptrs,
+            &mut sum_ptrs,
+            A_ptrs[2],
+            B_ptrs[2],
+            left,
+            src,
+            w,
+            (*params).sgr.s1 as c_int,
+            edges,
+            bd,
+        );
+
+        left = left.offset(1);
+        src = src.add(stride);
+        rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+
+        h -= 1;
+        if h <= 0 {
+            track = Track::vert1;
+        } else {
+            sgr_box3_hv_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[2],
+                B_ptrs[2],
+                left,
+                src,
+                w,
+                (*params).sgr.s1 as c_int,
+                edges,
+                bd,
+            );
+            left = left.offset(1);
+            src = src.add(stride);
+            rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+
+            h -= 1;
+            if h <= 0 {
+                track = Track::vert2;
+            }
+        }
+    } else {
+        sumsq_ptrs = [sumsq_rows[0]; 3];
+        sum_ptrs = [sum_rows[0]; 3];
+
+        rav1d_sgr_box3_row_h_neon(sumsq_rows[0], sum_rows[0], left, src, w, edges, bd);
+        left = left.offset(1);
+        src = src.add(stride);
+
+        sgr_box3_vert_neon(
+            &mut sumsq_ptrs,
+            &mut sum_ptrs,
+            A_ptrs[2],
+            B_ptrs[2],
+            w,
+            (*params).sgr.s1 as c_int,
+            bd,
+        );
+        rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+
+        h -= 1;
+        if h <= 0 {
+            track = Track::vert1;
+        } else {
+            sumsq_ptrs[2] = sumsq_rows[1];
+            sum_ptrs[2] = sum_rows[1];
+
+            sgr_box3_hv_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[2],
+                B_ptrs[2],
+                left,
+                src,
+                w,
+                (*params).sgr.s1 as c_int,
+                edges,
+                bd,
+            );
+            left = left.offset(1);
+            src = src.add(stride);
+            rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+
+            h -= 1;
+            if h <= 0 {
+                track = Track::vert2;
+            } else {
+                sumsq_ptrs[2] = sumsq_rows[2];
+                sum_ptrs[2] = sum_rows[2];
+            }
+        }
+    }
+
+    while track == Track::main && h > 0 {
+        sgr_box3_hv_neon(
+            &mut sumsq_ptrs,
+            &mut sum_ptrs,
+            A_ptrs[2],
+            B_ptrs[2],
+            left,
+            src,
+            w,
+            (*params).sgr.s1 as c_int,
+            edges,
+            bd,
+        );
+        left = left.offset(1);
+        src = src.add(stride);
+
+        sgr_finish1_neon(
+            &mut dst,
+            stride,
+            &mut A_ptrs,
+            &mut B_ptrs,
+            w,
+            (*params).sgr.w1 as c_int,
+            bd,
+        );
+        h -= 1;
+    }
+
+    if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        track = Track::vert2;
+    }
+
+    match track {
+        Track::main => {
+            sgr_box3_hv_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[2],
+                B_ptrs[2],
+                0 as *const [BD::Pixel; 4],
+                lpf_bottom,
+                w,
+                (*params).sgr.s1 as c_int,
+                edges,
+                bd,
+            );
+            lpf_bottom = lpf_bottom.add(stride);
+
+            sgr_finish1_neon(
+                &mut dst,
+                stride,
+                &mut A_ptrs,
+                &mut B_ptrs,
+                w,
+                (*params).sgr.w1 as c_int,
+                bd,
+            );
+
+            sgr_box3_hv_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[2],
+                B_ptrs[2],
+                0 as *const [BD::Pixel; 4],
+                lpf_bottom,
+                w,
+                (*params).sgr.s1 as c_int,
+                edges,
+                bd,
+            );
+
+            sgr_finish1_neon(
+                &mut dst,
+                stride,
+                &mut A_ptrs,
+                &mut B_ptrs,
+                w,
+                (*params).sgr.w1 as c_int,
+                bd,
+            );
+        }
+        Track::vert1 => {
+            sumsq_ptrs[2] = sumsq_ptrs[1];
+            sum_ptrs[2] = sum_ptrs[1];
+            sgr_box3_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[2],
+                B_ptrs[2],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
+        }
+        Track::vert2 => {
+            sumsq_ptrs[2] = sumsq_ptrs[1];
+            sum_ptrs[2] = sum_ptrs[1];
+            sgr_box3_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[2],
+                B_ptrs[2],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+
+            sgr_finish1_neon(
+                &mut dst,
+                stride,
+                &mut A_ptrs,
+                &mut B_ptrs,
+                w,
+                (*params).sgr.w1 as c_int,
+                bd,
+            );
+        }
+    }
+
+    if track != Track::main {
+        sumsq_ptrs[2] = sumsq_ptrs[1];
+        sum_ptrs[2] = sum_ptrs[1];
+        sgr_box3_vert_neon(
+            &mut sumsq_ptrs,
+            &mut sum_ptrs,
+            A_ptrs[2],
+            B_ptrs[2],
+            w,
+            (*params).sgr.s1 as c_int,
+            bd,
+        );
+
+        sgr_finish1_neon(
+            &mut dst,
+            stride,
+            &mut A_ptrs,
+            &mut B_ptrs,
+            w,
+            (*params).sgr.w1 as c_int,
+            bd,
+        );
+    }
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    mut left: *const [BD::Pixel; 4],
+    mut lpf: *const BD::Pixel,
+    w: c_int,
+    mut h: c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    let stride = BD::pxstride(stride as usize);
+
+    const BUF_STRIDE: usize = 384 + 16;
+
+    let mut sumsq_buf: Align16<[i32; BUF_STRIDE * 5 + 16]> = Align16([0; BUF_STRIDE * 5 + 16]);
+    let mut sum_buf: Align16<[i16; BUF_STRIDE * 5 + 16]> = Align16([0; BUF_STRIDE * 5 + 16]);
+
+    let mut sumsq_ptrs: [*mut i32; 5] = [0 as *mut i32; 5];
+    let mut sum_ptrs: [*mut i16; 5] = [0 as *mut i16; 5];
+    let mut sumsq_rows: [*mut i32; 5] = [0 as *mut i32; 5];
+    let mut sum_rows: [*mut i16; 5] = [0 as *mut i16; 5];
+    for i in 0..5 {
+        sumsq_rows[i] = (sumsq_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        sum_rows[i] = (sum_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+    }
+
+    let mut A_buf: Align16<[i32; BUF_STRIDE * 2 + 16]> = Align16([0; BUF_STRIDE * 2 + 16]);
+    let mut B_buf: Align16<[i16; BUF_STRIDE * 2 + 16]> = Align16([0; BUF_STRIDE * 2 + 16]);
+
+    let mut A_ptrs: [*mut i32; 2] = [0 as *mut i32; 2];
+    let mut B_ptrs: [*mut i16; 2] = [0 as *mut i16; 2];
+    for i in 0..2 {
+        A_ptrs[i] = (A_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        B_ptrs[i] = (B_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+    }
+
+    let mut src: *const BD::Pixel = dst;
+    let mut lpf_bottom: *const BD::Pixel = lpf.add(6 * stride);
+
+    #[derive(PartialEq)]
+    enum Track {
+        main,
+        vert1,
+        vert2,
+        odd,
+    }
+    let mut track = Track::main;
+
+    if (edges & LR_HAVE_TOP) != 0 {
+        for i in 0..5 {
+            sumsq_ptrs[i] = sumsq_rows[if i > 0 { i - 1 } else { 0 }];
+            sum_ptrs[i] = sum_rows[if i > 0 { i - 1 } else { 0 }];
+        }
+
+        rav1d_sgr_box5_row_h_neon(
+            sumsq_rows[0],
+            sum_rows[0],
+            0 as *const [BD::Pixel; 4],
+            lpf,
+            w,
+            edges,
+            bd,
+        );
+        lpf = lpf.add(stride);
+        rav1d_sgr_box5_row_h_neon(
+            sumsq_rows[1],
+            sum_rows[1],
+            0 as *const [BD::Pixel; 4],
+            lpf,
+            w,
+            edges,
+            bd,
+        );
+
+        rav1d_sgr_box5_row_h_neon(sumsq_rows[2], sum_rows[2], left, src, w, edges, bd);
+
+        left = left.offset(1);
+        src = src.add(stride);
+
+        h -= 1;
+        if h <= 0 {
+            track = Track::vert1;
+        } else {
+            rav1d_sgr_box5_row_h_neon(sumsq_rows[3], sum_rows[3], left, src, w, edges, bd);
+            left = left.offset(1);
+            src = src.add(stride);
+            sgr_box5_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[1],
+                B_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
+
+            h -= 1;
+            if h <= 0 {
+                track = Track::vert2;
+            } else {
+                // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
+                // one of them to point at the previously unused rows[4].
+                sumsq_ptrs[3] = sumsq_rows[4];
+                sum_ptrs[3] = sum_rows[4];
+            }
+        }
+    } else {
+        sumsq_ptrs = [sumsq_rows[0]; 5];
+        sum_ptrs = [sum_rows[0]; 5];
+
+        rav1d_sgr_box5_row_h_neon(sumsq_rows[0], sum_rows[0], left, src, w, edges, bd);
+        left = left.offset(1);
+        src = src.add(stride);
+
+        h -= 1;
+        if h <= 0 {
+            track = Track::vert1;
+        } else {
+            sumsq_ptrs[4] = sumsq_rows[1];
+            sum_ptrs[4] = sum_rows[1];
+
+            rav1d_sgr_box5_row_h_neon(sumsq_rows[1], sum_rows[1], left, src, w, edges, bd);
+            left = left.offset(1);
+            src = src.add(stride);
+
+            sgr_box5_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[1],
+                B_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
+
+            h -= 1;
+            if h <= 0 {
+                track = Track::vert2;
+            } else {
+                sumsq_ptrs[3] = sumsq_rows[2];
+                sumsq_ptrs[4] = sumsq_rows[3];
+                sum_ptrs[3] = sum_rows[2];
+                sum_ptrs[4] = sum_rows[3];
+
+                rav1d_sgr_box5_row_h_neon(sumsq_rows[2], sum_rows[2], left, src, w, edges, bd);
+                left = left.offset(1);
+                src = src.add(stride);
+
+                h -= 1;
+                if h <= 0 {
+                    track = Track::odd;
+                } else {
+                    rav1d_sgr_box5_row_h_neon(sumsq_rows[3], sum_rows[3], left, src, w, edges, bd);
+                    left = left.offset(1);
+                    src = src.add(stride);
+
+                    sgr_box5_vert_neon(
+                        &mut sumsq_ptrs,
+                        &mut sum_ptrs,
+                        A_ptrs[1],
+                        B_ptrs[1],
+                        w,
+                        (*params).sgr.s0 as c_int,
+                        bd,
+                    );
+
+                    sgr_finish2_neon(
+                        &mut dst,
+                        stride,
+                        &mut A_ptrs,
+                        &mut B_ptrs,
+                        w,
+                        2,
+                        (*params).sgr.w0 as c_int,
+                        bd,
+                    );
+
+                    h -= 1;
+                    if h <= 0 {
+                        track = Track::vert2;
+                    } else {
+                        // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
+                        // one of them to point at the previously unused rows[4].
+                        sumsq_ptrs[3] = sumsq_rows[4];
+                        sum_ptrs[3] = sum_rows[4];
+                    }
+                }
+            }
+        }
+    }
+
+    while track == Track::main && h > 0 {
+        rav1d_sgr_box5_row_h_neon(sumsq_ptrs[3], sum_ptrs[3], left, src, w, edges, bd);
+        left = left.offset(1);
+        src = src.add(stride);
+
+        h -= 1;
+        if h <= 0 {
+            track = Track::odd;
+        } else {
+            rav1d_sgr_box5_row_h_neon(sumsq_ptrs[4], sum_ptrs[4], left, src, w, edges, bd);
+            left = left.offset(1);
+            src = src.add(stride);
+
+            sgr_box5_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[1],
+                B_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            sgr_finish2_neon(
+                &mut dst,
+                stride,
+                &mut A_ptrs,
+                &mut B_ptrs,
+                w,
+                2,
+                (*params).sgr.w0 as c_int,
+                bd,
+            );
+            h -= 1;
+        }
+    }
+
+    if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        track = Track::vert2;
+    }
+
+    match track {
+        Track::main => {
+            rav1d_sgr_box5_row_h_neon(
+                sumsq_ptrs[3],
+                sum_ptrs[3],
+                0 as *const [BD::Pixel; 4],
+                lpf_bottom,
+                w,
+                edges,
+                bd,
+            );
+            lpf_bottom = lpf_bottom.add(stride);
+            rav1d_sgr_box5_row_h_neon(
+                sumsq_ptrs[4],
+                sum_ptrs[4],
+                0 as *const [BD::Pixel; 4],
+                lpf_bottom,
+                w,
+                edges,
+                bd,
+            );
+        }
+        Track::vert1 => {
+            // Copy the last row as padding once
+            sumsq_ptrs[4] = sumsq_ptrs[3];
+            sum_ptrs[4] = sum_ptrs[3];
+            sgr_box5_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[1],
+                B_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
+        }
+        Track::vert2 => {
+            // Duplicate the last row twice more
+            sumsq_ptrs[3] = sumsq_ptrs[2];
+            sumsq_ptrs[4] = sumsq_ptrs[2];
+            sum_ptrs[3] = sum_ptrs[2];
+            sum_ptrs[4] = sum_ptrs[2];
+        }
+        Track::odd => {
+            // Copy the last row as padding once
+            sumsq_ptrs[4] = sumsq_ptrs[3];
+            sum_ptrs[4] = sum_ptrs[3];
+
+            sgr_box5_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[1],
+                B_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            sgr_finish2_neon(
+                &mut dst,
+                stride,
+                &mut A_ptrs,
+                &mut B_ptrs,
+                w,
+                2,
+                (*params).sgr.w0 as c_int,
+                bd,
+            );
+        }
+    }
+
+    match track {
+        Track::main | Track::vert2 => {
+            sgr_box5_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[1],
+                B_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            sgr_finish2_neon(
+                &mut dst,
+                stride,
+                &mut A_ptrs,
+                &mut B_ptrs,
+                w,
+                2,
+                (*params).sgr.w0 as c_int,
+                bd,
+            );
+        }
+        Track::odd | Track::vert1 => {
+            // Duplicate the last row twice more
+            sumsq_ptrs[3] = sumsq_ptrs[2];
+            sumsq_ptrs[4] = sumsq_ptrs[2];
+            sum_ptrs[3] = sum_ptrs[2];
+            sum_ptrs[4] = sum_ptrs[2];
+
+            sgr_box5_vert_neon(
+                &mut sumsq_ptrs,
+                &mut sum_ptrs,
+                A_ptrs[1],
+                B_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            sgr_finish2_neon(
+                &mut dst,
+                stride,
+                &mut A_ptrs,
+                &mut B_ptrs,
+                w,
+                1,
+                (*params).sgr.w0 as c_int,
+                bd,
+            );
+        }
+    }
+}
+
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
+unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    mut left: *const [BD::Pixel; 4],
+    mut lpf: *const BD::Pixel,
+    w: c_int,
+    mut h: c_int,
+    params: *const LooprestorationParams,
+    edges: LrEdgeFlags,
+    bd: BD,
+) {
+    let stride = BD::pxstride(stride as usize);
+
+    const BUF_STRIDE: usize = 384 + 16;
+
+    let mut sumsq5_buf: Align16<[i32; BUF_STRIDE * 5 + 16]> = Align16([0; BUF_STRIDE * 5 + 16]);
+    let mut sum5_buf: Align16<[i16; BUF_STRIDE * 5 + 16]> = Align16([0; BUF_STRIDE * 5 + 16]);
+
+    let mut sumsq5_rows: [*mut i32; 5] = [0 as *mut i32; 5];
+    let mut sum5_rows: [*mut i16; 5] = [0 as *mut i16; 5];
+    for i in 0..5 {
+        sumsq5_rows[i] = (sumsq5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        sum5_rows[i] = (sum5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+    }
+
+    let mut sumsq3_buf: Align16<[i32; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+    let mut sum3_buf: Align16<[i16; BUF_STRIDE * 3 + 16]> = Align16([0; BUF_STRIDE * 3 + 16]);
+
+    let mut sumsq3_rows: [*mut i32; 3] = [0 as *mut i32; 3];
+    let mut sum3_rows: [*mut i16; 3] = [0 as *mut i16; 3];
+    for i in 0..3 {
+        sumsq3_rows[i] = (sumsq3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        sum3_rows[i] = (sum3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+    }
+
+    let mut A5_buf: Align16<[i32; BUF_STRIDE * 2 + 16]> = Align16([0; BUF_STRIDE * 2 + 16]);
+    let mut B5_buf: Align16<[i16; BUF_STRIDE * 2 + 16]> = Align16([0; BUF_STRIDE * 2 + 16]);
+
+    let mut A5_ptrs: [*mut i32; 2] = [0 as *mut i32; 2];
+    let mut B5_ptrs: [*mut i16; 2] = [0 as *mut i16; 2];
+    for i in 0..2 {
+        A5_ptrs[i] = (A5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        B5_ptrs[i] = (B5_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+    }
+
+    let mut A3_buf: Align16<[i32; BUF_STRIDE * 4 + 16]> = Align16([0; BUF_STRIDE * 4 + 16]);
+    let mut B3_buf: Align16<[i16; BUF_STRIDE * 4 + 16]> = Align16([0; BUF_STRIDE * 4 + 16]);
+
+    let mut A3_ptrs: [*mut i32; 4] = [0 as *mut i32; 4];
+    let mut B3_ptrs: [*mut i16; 4] = [0 as *mut i16; 4];
+    for i in 0..4 {
+        A3_ptrs[i] = (A3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+        B3_ptrs[i] = (B3_buf.0[i * BUF_STRIDE..i * BUF_STRIDE + BUF_STRIDE]).as_mut_ptr();
+    }
+
+    let mut src: *const BD::Pixel = dst;
+    let mut lpf_bottom: *const BD::Pixel = lpf.add(6 * stride);
+
+    #[derive(PartialEq)]
+    enum Track {
+        main,
+        vert1,
+        vert2,
+        odd,
+    }
+    let mut track = Track::main;
+
+    let lr_have_top = (edges & LR_HAVE_TOP) != 0;
+
+    let mut sumsq3_ptrs: [*mut i32; 3] = [0 as *mut i32; 3];
+    let mut sum3_ptrs: [*mut i16; 3] = [0 as *mut i16; 3];
+    for i in 0..3 {
+        sumsq3_ptrs[i] = sumsq3_rows[if lr_have_top { i } else { 0 }];
+        sum3_ptrs[i] = sum3_rows[if lr_have_top { i } else { 0 }];
+    }
+
+    let mut sumsq5_ptrs: [*mut i32; 5] = [0 as *mut i32; 5];
+    let mut sum5_ptrs: [*mut i16; 5] = [0 as *mut i16; 5];
+    for i in 0..5 {
+        sumsq5_ptrs[i] = sumsq5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
+        sum5_ptrs[i] = sum5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
+    }
+
+    if lr_have_top {
+        rav1d_sgr_box35_row_h_neon(
+            sumsq3_rows[0],
+            sum3_rows[0],
+            sumsq5_rows[0],
+            sum5_rows[0],
+            0 as *const [BD::Pixel; 4],
+            lpf,
+            w,
+            edges,
+            bd,
+        );
+        lpf = lpf.add(stride);
+        rav1d_sgr_box35_row_h_neon(
+            sumsq3_rows[1],
+            sum3_rows[1],
+            sumsq5_rows[1],
+            sum5_rows[1],
+            0 as *const [BD::Pixel; 4],
+            lpf,
+            w,
+            edges,
+            bd,
+        );
+
+        rav1d_sgr_box35_row_h_neon(
+            sumsq3_rows[2],
+            sum3_rows[2],
+            sumsq5_rows[2],
+            sum5_rows[2],
+            left,
+            src,
+            w,
+            edges,
+            bd,
+        );
+
+        left = left.offset(1);
+        src = src.add(stride);
+
+        sgr_box3_vert_neon(
+            &mut sumsq3_ptrs,
+            &mut sum3_ptrs,
+            A3_ptrs[3],
+            B3_ptrs[3],
+            w,
+            (*params).sgr.s1 as c_int,
+            bd,
+        );
+        rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+
+        h -= 1;
+        if h <= 0 {
+            track = Track::vert1;
+        } else {
+            rav1d_sgr_box35_row_h_neon(
+                sumsq3_ptrs[2],
+                sum3_ptrs[2],
+                sumsq5_rows[3],
+                sum5_rows[3],
+                left,
+                src,
+                w,
+                edges,
+                bd,
+            );
+            left = left.offset(1);
+            src = src.add(stride);
+
+            sgr_box5_vert_neon(
+                &mut sumsq5_ptrs,
+                &mut sum5_ptrs,
+                A5_ptrs[1],
+                B5_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
+
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+
+            h -= 1;
+            if h <= 0 {
+                track = Track::vert2;
+            }
+
+            // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
+            // one of them to point at the previously unused rows[4].
+            sumsq5_ptrs[3] = sumsq5_rows[4];
+            sum5_ptrs[3] = sum5_rows[4];
+        }
+    } else {
+        rav1d_sgr_box35_row_h_neon(
+            sumsq3_rows[0],
+            sum3_rows[0],
+            sumsq5_rows[0],
+            sum5_rows[0],
+            left,
+            src,
+            w,
+            edges,
+            bd,
+        );
+        left = left.offset(1);
+        src = src.add(stride);
+
+        sgr_box3_vert_neon(
+            &mut sumsq3_ptrs,
+            &mut sum3_ptrs,
+            A3_ptrs[3],
+            B3_ptrs[3],
+            w,
+            (*params).sgr.s1 as i32,
+            bd,
+        );
+        rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+
+        h -= 1;
+        if h <= 0 {
+            track = Track::vert1;
+        } else {
+            sumsq5_ptrs[4] = sumsq5_rows[1];
+            sum5_ptrs[4] = sum5_rows[1];
+
+            sumsq3_ptrs[2] = sumsq3_rows[1];
+            sum3_ptrs[2] = sum3_rows[1];
+
+            rav1d_sgr_box35_row_h_neon(
+                sumsq3_rows[1],
+                sum3_rows[1],
+                sumsq5_rows[1],
+                sum5_rows[1],
+                left,
+                src,
+                w,
+                edges,
+                bd,
+            );
+            left = left.offset(1);
+            src = src.add(stride);
+
+            sgr_box5_vert_neon(
+                &mut sumsq5_ptrs,
+                &mut sum5_ptrs,
+                A5_ptrs[1],
+                B5_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
+
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+
+            h -= 1;
+            if h <= 0 {
+                track = Track::vert2;
+            } else {
+                sumsq5_ptrs[3] = sumsq5_rows[2];
+                sumsq5_ptrs[4] = sumsq5_rows[3];
+                sum5_ptrs[3] = sum5_rows[2];
+                sum5_ptrs[4] = sum5_rows[3];
+
+                sumsq3_ptrs[2] = sumsq3_rows[2];
+                sum3_ptrs[2] = sum3_rows[2];
+
+                rav1d_sgr_box35_row_h_neon(
+                    sumsq3_rows[2],
+                    sum3_rows[2],
+                    sumsq5_rows[2],
+                    sum5_rows[2],
+                    left,
+                    src,
+                    w,
+                    edges,
+                    bd,
+                );
+                left = left.offset(1);
+                src = src.add(stride);
+
+                sgr_box3_vert_neon(
+                    &mut sumsq3_ptrs,
+                    &mut sum3_ptrs,
+                    A3_ptrs[3],
+                    B3_ptrs[3],
+                    w,
+                    (*params).sgr.s1 as c_int,
+                    bd,
+                );
+                rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+
+                h -= 1;
+                if h <= 0 {
+                    track = Track::odd;
+                } else {
+                    rav1d_sgr_box35_row_h_neon(
+                        sumsq3_ptrs[2],
+                        sum3_ptrs[2],
+                        sumsq5_rows[3],
+                        sum5_rows[3],
+                        left,
+                        src,
+                        w,
+                        edges,
+                        bd,
+                    );
+                    left = left.offset(1);
+                    src = src.add(stride);
+
+                    sgr_box5_vert_neon(
+                        &mut sumsq5_ptrs,
+                        &mut sum5_ptrs,
+                        A5_ptrs[1],
+                        B5_ptrs[1],
+                        w,
+                        (*params).sgr.s0 as c_int,
+                        bd,
+                    );
+                    sgr_box3_vert_neon(
+                        &mut sumsq3_ptrs,
+                        &mut sum3_ptrs,
+                        A3_ptrs[3],
+                        B3_ptrs[3],
+                        w,
+                        (*params).sgr.s1 as c_int,
+                        bd,
+                    );
+                    sgr_finish_mix_neon(
+                        &mut dst,
+                        stride,
+                        &mut A5_ptrs,
+                        &mut B5_ptrs,
+                        &mut A3_ptrs,
+                        &mut B3_ptrs,
+                        w,
+                        2,
+                        (*params).sgr.w0 as c_int,
+                        (*params).sgr.w1 as c_int,
+                        bd,
+                    );
+
+                    h -= 1;
+                    if h <= 0 {
+                        track = Track::vert2;
+                    } else {
+                        // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
+                        // one of them to point at the previously unused rows[4].
+                        sumsq5_ptrs[3] = sumsq5_rows[4];
+                        sum5_ptrs[3] = sum5_rows[4];
+                    }
+                }
+            }
+        }
+    }
+
+    while track == Track::main && h > 0 {
+        rav1d_sgr_box35_row_h_neon(
+            sumsq3_ptrs[2],
+            sum3_ptrs[2],
+            sumsq5_ptrs[3],
+            sum5_ptrs[3],
+            left,
+            src,
+            w,
+            edges,
+            bd,
+        );
+        left = left.offset(1);
+        src = src.add(stride);
+
+        sgr_box3_vert_neon(
+            &mut sumsq3_ptrs,
+            &mut sum3_ptrs,
+            A3_ptrs[3],
+            B3_ptrs[3],
+            w,
+            (*params).sgr.s1 as c_int,
+            bd,
+        );
+        rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+
+        h -= 1;
+        if h <= 0 {
+            track = Track::odd;
+        } else {
+            rav1d_sgr_box35_row_h_neon(
+                sumsq3_ptrs[2],
+                sum3_ptrs[2],
+                sumsq5_ptrs[4],
+                sum5_ptrs[4],
+                left,
+                src,
+                w,
+                edges,
+                bd,
+            );
+            left = left.offset(1);
+            src = src.add(stride);
+
+            sgr_box5_vert_neon(
+                &mut sumsq5_ptrs,
+                &mut sum5_ptrs,
+                A5_ptrs[1],
+                B5_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            sgr_finish_mix_neon(
+                &mut dst,
+                stride,
+                &mut A5_ptrs,
+                &mut B5_ptrs,
+                &mut A3_ptrs,
+                &mut B3_ptrs,
+                w,
+                2,
+                (*params).sgr.w0 as c_int,
+                (*params).sgr.w1 as c_int,
+                bd,
+            );
+            h -= 1;
+        }
+    }
+
+    if track == Track::main && (edges & LR_HAVE_BOTTOM) == 0 {
+        track = Track::vert2;
+    }
+
+    match track {
+        Track::main => {
+            rav1d_sgr_box35_row_h_neon(
+                sumsq3_ptrs[2],
+                sum3_ptrs[2],
+                sumsq5_ptrs[3],
+                sum5_ptrs[3],
+                0 as *const [BD::Pixel; 4],
+                lpf_bottom,
+                w,
+                edges,
+                bd,
+            );
+            lpf_bottom = lpf_bottom.add(stride);
+
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+
+            rav1d_sgr_box35_row_h_neon(
+                sumsq3_ptrs[2],
+                sum3_ptrs[2],
+                sumsq5_ptrs[4],
+                sum5_ptrs[4],
+                0 as *const [BD::Pixel; 4],
+                lpf_bottom,
+                w,
+                edges,
+                bd,
+            );
+        }
+        Track::vert1 => {
+            // Copy the last row as padding once
+            sumsq5_ptrs[4] = sumsq5_ptrs[3];
+            sum5_ptrs[4] = sum5_ptrs[3];
+
+            sumsq3_ptrs[2] = sumsq3_ptrs[1];
+            sum3_ptrs[2] = sum3_ptrs[1];
+
+            sgr_box5_vert_neon(
+                &mut sumsq5_ptrs,
+                &mut sum5_ptrs,
+                A5_ptrs[1],
+                B5_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+        }
+        Track::vert2 => {
+            // Duplicate the last row twice more
+            sumsq5_ptrs[3] = sumsq5_ptrs[2];
+            sumsq5_ptrs[4] = sumsq5_ptrs[2];
+            sum5_ptrs[3] = sum5_ptrs[2];
+            sum5_ptrs[4] = sum5_ptrs[2];
+
+            sumsq3_ptrs[2] = sumsq3_ptrs[1];
+            sum3_ptrs[2] = sum3_ptrs[1];
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+
+            sumsq3_ptrs[2] = sumsq3_ptrs[1];
+            sum3_ptrs[2] = sum3_ptrs[1];
+        }
+        Track::odd => {
+            // Copy the last row as padding once
+            sumsq5_ptrs[4] = sumsq5_ptrs[3];
+            sum5_ptrs[4] = sum5_ptrs[3];
+
+            sumsq3_ptrs[2] = sumsq3_ptrs[1];
+            sum3_ptrs[2] = sum3_ptrs[1];
+
+            sgr_box5_vert_neon(
+                &mut sumsq5_ptrs,
+                &mut sum5_ptrs,
+                A5_ptrs[1],
+                B5_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            sgr_finish_mix_neon(
+                &mut dst,
+                stride,
+                &mut A5_ptrs,
+                &mut B5_ptrs,
+                &mut A3_ptrs,
+                &mut B3_ptrs,
+                w,
+                2,
+                (*params).sgr.w0 as c_int,
+                (*params).sgr.w1 as c_int,
+                bd,
+            );
+        }
+    }
+
+    match track {
+        Track::main | Track::vert2 => {
+            sgr_box5_vert_neon(
+                &mut sumsq5_ptrs,
+                &mut sum5_ptrs,
+                A5_ptrs[1],
+                B5_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            sgr_finish_mix_neon(
+                &mut dst,
+                stride,
+                &mut A5_ptrs,
+                &mut B5_ptrs,
+                &mut A3_ptrs,
+                &mut B3_ptrs,
+                w,
+                2,
+                (*params).sgr.w0 as c_int,
+                (*params).sgr.w1 as c_int,
+                bd,
+            );
+        }
+        Track::vert1 | Track::odd => {
+            // Duplicate the last row twice more
+            sumsq5_ptrs[3] = sumsq5_ptrs[2];
+            sumsq5_ptrs[4] = sumsq5_ptrs[2];
+            sum5_ptrs[3] = sum5_ptrs[2];
+            sum5_ptrs[4] = sum5_ptrs[2];
+
+            sumsq3_ptrs[2] = sumsq3_ptrs[1];
+            sum3_ptrs[2] = sum3_ptrs[1];
+
+            sgr_box5_vert_neon(
+                &mut sumsq5_ptrs,
+                &mut sum5_ptrs,
+                A5_ptrs[1],
+                B5_ptrs[1],
+                w,
+                (*params).sgr.s0 as c_int,
+                bd,
+            );
+            sgr_box3_vert_neon(
+                &mut sumsq3_ptrs,
+                &mut sum3_ptrs,
+                A3_ptrs[3],
+                B3_ptrs[3],
+                w,
+                (*params).sgr.s1 as c_int,
+                bd,
+            );
+            rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
+            // Output only one row
+            sgr_finish_mix_neon(
+                &mut dst,
+                stride,
+                &mut A5_ptrs,
+                &mut B5_ptrs,
+                &mut A3_ptrs,
+                &mut B3_ptrs,
+                w,
+                1,
+                (*params).sgr.w0 as c_int,
+                (*params).sgr.w1 as c_int,
+                bd,
+            );
+        }
+    }
+}
+
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
     p: *mut DynPixel,
@@ -1581,7 +3400,7 @@ unsafe extern "C" fn sgr_filter_mix_neon_erased<BD: BitDepth>(
     )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", target_arch = "arm"))]
 unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
