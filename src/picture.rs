@@ -171,7 +171,7 @@ unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut c_void) {
 }
 
 unsafe fn picture_alloc_with_edges(
-    c: *mut Rav1dContext,
+    c: &mut Rav1dContext,
     p: *mut Rav1dPicture,
     w: c_int,
     h: c_int,
@@ -187,7 +187,7 @@ unsafe fn picture_alloc_with_edges(
     extra_ptr: *mut *mut c_void,
 ) -> Rav1dResult {
     if !((*p).data[0]).is_null() {
-        writeln!((*c).logger, "Picture already allocated!",);
+        writeln!(c.logger, "Picture already allocated!",);
         return Err(EGeneric);
     }
     if !(bpc > 0 && bpc <= 16) {
@@ -225,7 +225,7 @@ unsafe fn picture_alloc_with_edges(
         (*p_allocator).release_picture(p);
         free(pic_ctx as *mut c_void);
         writeln!(
-            (*c).logger,
+            c.logger,
             "Failed to wrap picture: {}",
             io::Error::last_os_error(),
         );
@@ -262,7 +262,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     let have_frame_mt = ((*c).n_fc > 1 as c_uint) as c_int;
     let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
     let res = picture_alloc_with_edges(
-        c,
+        &mut *c,
         &mut (*p).p,
         frame_hdr.size.width[1],
         frame_hdr.size.height,
@@ -309,7 +309,7 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
 ) -> Rav1dResult {
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
     let res = picture_alloc_with_edges(
-        c,
+        &mut *c,
         dst,
         w,
         (*src).p.h,
