@@ -130,27 +130,47 @@ impl<T: ?Sized> CArc<T> {
     }
 }
 
-/// An opaque, raw [`CArc`], which is represented as a [`NonNull`] ptr to a [`CBox`].
+/// An opaque, raw [`Arc`] ptr.
 ///
-/// To keep the type FFI-safe, a [`PhantomData`] wrapper is used,
-/// but the ptr is actually a [`CBox`].
+/// See [`Arc::from_raw`], [`Arc::into_raw`], and [`arc_into_raw`].
+///
+/// The [`PhantomData`] is so it can be FFI-safe
+/// without `T` having to be `#[repr(C)]`,
+/// which it doesn't since it's opaque,
+/// while still keeping `T` in the type.
 #[repr(transparent)]
-pub struct RawCArc<T: ?Sized>(NonNull<PhantomData<Pin<CBox<T>>>>);
+pub struct RawArc<T>(NonNull<PhantomData<T>>);
+
+impl<T> RawArc<T> {
+    pub fn from_arc(arc: Arc<T>) -> Self {
+        Self(arc_into_raw(arc).cast())
+    }
+
+    /// # Safety
+    ///
+    /// The [`RawArc`] must be originally from [`Self::from_arc`].F
+    pub unsafe fn into_arc(self) -> Arc<T> {
+        let raw = self.0.cast().as_ptr();
+        Arc::from_raw(raw)
+    }
+}
+
+#[repr(transparent)]
+pub struct RawCArc<T: ?Sized>(RawArc<Pin<CBox<T>>>);
 
 impl<T: ?Sized> CArc<T> {
     /// Convert into a raw, opaque form suitable for C FFI.
     pub fn into_raw(self) -> RawCArc<T> {
-        RawCArc(arc_into_raw(self.owner).cast())
+        RawCArc(RawArc::from_arc(self.owner))
     }
 
     /// # Safety
     ///
     /// The [`RawCArc`] must be originally from [`Self::into_raw`].
-    #[deny(unsafe_op_in_unsafe_fn)]
     pub unsafe fn from_raw(raw: RawCArc<T>) -> Self {
         // Safety: The [`RawCArc`] contains the output of [`Arc::into_raw`],
         // so we can call [`Arc::from_raw`] on it.
-        let owner = unsafe { Arc::from_raw(raw.0.cast::<Pin<CBox<T>>>().as_ptr()) };
+        let owner = raw.0.into_arc();
         owner.into()
     }
 }
