@@ -181,7 +181,7 @@ unsafe fn picture_alloc_with_edges(
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
     itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     bpc: c_int,
-    props: *const Rav1dDataProps,
+    props: &Rav1dDataProps,
     p_allocator: *mut Rav1dPicAllocator,
     extra: usize,
     extra_ptr: *mut *mut c_void,
