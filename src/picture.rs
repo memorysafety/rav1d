@@ -172,7 +172,7 @@ unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut c_void) {
 
 unsafe fn picture_alloc_with_edges(
     c: &Rav1dContext,
-    p: *mut Rav1dPicture,
+    p: &mut Rav1dPicture,
     w: c_int,
     h: c_int,
     seq_hdr: &Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
@@ -186,7 +186,7 @@ unsafe fn picture_alloc_with_edges(
     extra: usize,
     extra_ptr: *mut *mut c_void,
 ) -> Rav1dResult {
-    if !((*p).data[0]).is_null() {
+    if !p.data[0].is_null() {
         writeln!(c.logger, "Picture already allocated!",);
         return Err(EGeneric);
     }
@@ -199,13 +199,13 @@ unsafe fn picture_alloc_with_edges(
     if pic_ctx.is_null() {
         return Err(ENOMEM);
     }
-    (*p).p.w = w;
-    (*p).p.h = h;
-    (*p).seq_hdr = seq_hdr.clone();
-    (*p).frame_hdr = frame_hdr.clone();
-    (*p).p.layout = seq_hdr.as_ref().unwrap().layout;
-    (*p).p.bpc = bpc;
-    (*p).m = Default::default();
+    p.p.w = w;
+    p.p.h = h;
+    p.seq_hdr = seq_hdr.clone();
+    p.frame_hdr = frame_hdr.clone();
+    p.p.layout = seq_hdr.as_ref().unwrap().layout;
+    p.p.bpc = bpc;
+    p.m = Default::default();
     let res = (*p_allocator).alloc_picture(p);
     if res.is_err() {
         free(pic_ctx as *mut c_void);
@@ -215,13 +215,13 @@ unsafe fn picture_alloc_with_edges(
     // TODO(kkysen) A normal assignment here as it used to be
     // calls `fn drop` on `(*pic_ctx).pic`, which segfaults as it is uninitialized.
     // We need to figure out the right thing to do here.
-    addr_of_mut!((*pic_ctx).pic).write((*p).clone());
-    (*p).r#ref = rav1d_ref_wrap(
-        (*p).data[0] as *const u8,
+    addr_of_mut!((*pic_ctx).pic).write(p.clone());
+    p.r#ref = rav1d_ref_wrap(
+        p.data[0] as *const u8,
         Some(free_buffer),
         pic_ctx as *mut c_void,
     );
-    if ((*p).r#ref).is_null() {
+    if p.r#ref.is_null() {
         (*p_allocator).release_picture(p);
         free(pic_ctx as *mut c_void);
         writeln!(
@@ -310,7 +310,7 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
     let res = picture_alloc_with_edges(
         &*c,
-        dst,
+        &mut *dst,
         w,
         (*src).p.h,
         &(*src).seq_hdr,
