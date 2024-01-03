@@ -1,6 +1,7 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::ops::Deref;
+use std::pin::Pin;
 use std::ptr::drop_in_place;
 use std::ptr::NonNull;
 
@@ -90,5 +91,18 @@ impl<T: ?Sized> CBox<T> {
 
     pub fn from_box(data: Box<T>) -> Self {
         Self::Rust(data)
+    }
+
+    pub fn into_pin(self) -> Pin<Self> {
+        // Safety:
+        // If `self` is `Self::Rust`, `Box` can be pinned.
+        // If `self` is `Self::C`, `data` is never moved until [`Self::drop`].
+        unsafe { Pin::new_unchecked(self) }
+    }
+}
+
+impl<T: ?Sized> From<CBox<T>> for Pin<CBox<T>> {
+    fn from(value: CBox<T>) -> Self {
+        value.into_pin()
     }
 }

@@ -3,6 +3,7 @@ use crate::src::error::Rav1dResult;
 use std::marker::PhantomData;
 use std::mem;
 use std::ops::Deref;
+use std::pin::Pin;
 use std::ptr::NonNull;
 use std::slice::SliceIndex;
 use std::sync::Arc;
@@ -28,17 +29,16 @@ pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
 /// a stable pointer is stored inline,
 /// removing the double indirection.
 /// This self-referential ptr is sound
-/// because [`Arc`] and [`Box`]/[`CBox`]
-/// never move their data ptr during moves, as it's on the heap.
-/// As long as [`Self::owner`] is never moved
+/// because the [`CBox`] is [`Pin`]ned.
+/// As long as [`Self::owner`] is never replaced
 /// without also re-updating [`Self::stable_ref`], this is sound.
 ///
 /// Furthermore, storing this stable ref ptr like this
 /// allows for provenance projections of [`Self::stable_ref`],
-/// such as slicing it for a `CArc<[T]>`.
+/// such as slicing it for a `CArc<[T]>` (see [`Self::slice_in_place`]).
 #[derive(Debug)]
 pub struct CArc<T: ?Sized> {
-    owner: Arc<CBox<T>>,
+    owner: Arc<Pin<CBox<T>>>,
 
     /// The same as [`Self::stable_ref`] but it never changes.
     #[cfg(debug_assertions)]
@@ -53,7 +53,7 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
         {
             // Some extra checks to check if our ptrs are definitely invalid.
 
-            let real_ref = (*self.owner).as_ref();
+            let real_ref = (*self.owner).as_ref().get_ref();
             assert_eq!(real_ref.to::<NonNull<T>>(), self.base_stable_ref);
 
             // Cast through `*const ()` and use [`pointer::byte_offset_from`]
@@ -79,6 +79,9 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
         // Safety: [`Self::stable_ref`] is a ptr
         // derived from [`Self::owner`]'s through [`CBox::as_ref`]
         // and is thus safe to dereference.
+        // The [`CBox`] is [`Pin`]ned and
+        // [`Self::stable_Ref`] is always updated on writes to [`Self::owner`],
+        // so they are always in sync.
         unsafe { self.stable_ref.as_ref() }
     }
 }
@@ -103,15 +106,14 @@ impl<T: ?Sized> Clone for CArc<T> {
             owner: owner.clone(),
             #[cfg(debug_assertions)]
             base_stable_ref: base_stable_ref.clone(),
-            // Safety: The ref remains stable across an [`Arc::clone`].
             stable_ref: stable_ref.clone(),
         }
     }
 }
 
-impl<T: ?Sized> From<Arc<CBox<T>>> for CArc<T> {
-    fn from(owner: Arc<CBox<T>>) -> Self {
-        let stable_ref = (*owner).as_ref().into();
+impl<T: ?Sized> From<Arc<Pin<CBox<T>>>> for CArc<T> {
+    fn from(owner: Arc<Pin<CBox<T>>>) -> Self {
+        let stable_ref = (*owner).as_ref().get_ref().into();
         Self {
             owner,
             #[cfg(debug_assertions)]
@@ -123,7 +125,7 @@ impl<T: ?Sized> From<Arc<CBox<T>>> for CArc<T> {
 
 impl<T: ?Sized> CArc<T> {
     pub fn wrap(owner: CBox<T>) -> Rav1dResult<Self> {
-        let owner = Arc::new(owner); // TODO fallible allocation
+        let owner = Arc::new(owner.into_pin()); // TODO fallible allocation
         Ok(owner.into())
     }
 }
@@ -133,7 +135,7 @@ impl<T: ?Sized> CArc<T> {
 /// To keep the type FFI-safe, a [`PhantomData`] wrapper is used,
 /// but the ptr is actually a [`CBox`].
 #[repr(transparent)]
-pub struct RawCArc<T: ?Sized>(NonNull<PhantomData<CBox<T>>>);
+pub struct RawCArc<T: ?Sized>(NonNull<PhantomData<Pin<CBox<T>>>>);
 
 impl<T: ?Sized> CArc<T> {
     /// Convert into a raw, opaque form suitable for C FFI.
@@ -148,7 +150,7 @@ impl<T: ?Sized> CArc<T> {
     pub unsafe fn from_raw(raw: RawCArc<T>) -> Self {
         // Safety: The [`RawCArc`] contains the output of [`Arc::into_raw`],
         // so we can call [`Arc::from_raw`] on it.
-        let owner = unsafe { Arc::from_raw(raw.0.cast::<CBox<T>>().as_ptr()) };
+        let owner = unsafe { Arc::from_raw(raw.0.cast::<Pin<CBox<T>>>().as_ptr()) };
         owner.into()
     }
 }
