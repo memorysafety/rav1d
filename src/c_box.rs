@@ -4,12 +4,6 @@ use std::ops::Deref;
 use std::ptr::drop_in_place;
 use std::ptr::NonNull;
 
-pub fn box_into_raw<T: ?Sized>(r#box: Box<T>) -> NonNull<T> {
-    let raw = Box::into_raw(r#box);
-    // Safety: [`Box::into_raw`] never returns null.
-    unsafe { NonNull::new_unchecked(raw) }
-}
-
 pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: *mut c_void);
 
 /// A `free` "closure", i.e. a [`FnFree`] and an enclosed context [`Self::cookie`].
@@ -32,16 +26,26 @@ impl Free {
 /// instead of the normal [`Box`] (de)allocator.
 /// It can also store a normal [`Box`] as well.
 #[derive(Debug)]
-pub struct CBox<T: ?Sized> {
-    data: NonNull<T>,
-    /// If [`None`], [`Self::data`] should be freed as a [`Box`].
-    free: Option<Free>,
-    _phantom: PhantomData<T>,
+pub enum CBox<T: ?Sized> {
+    Rust(Box<T>),
+    C {
+        /// # Safety:
+        ///
+        /// * Never moved.
+        /// * Valid to dereference.
+        /// * `free`d by the `free` `fn` ptr below.
+        data: NonNull<T>,
+        free: Free,
+        _phantom: PhantomData<T>,
+    },
 }
 
 impl<T: ?Sized> AsRef<T> for CBox<T> {
     fn as_ref(&self) -> &T {
-        unsafe { self.data.as_ref() }
+        match self {
+            Self::Rust(r#box) => r#box.as_ref(),
+            Self::C { data, .. } => unsafe { data.as_ref() },
+        }
     }
 }
 
@@ -55,23 +59,16 @@ impl<T: ?Sized> Deref for CBox<T> {
 
 impl<T: ?Sized> Drop for CBox<T> {
     fn drop(&mut self) {
-        let ptr = self.data.as_ptr();
-        match &self.free {
-            None => {
-                // Safety: If [`Self::free`] is [`None`],
-                // then [`Self::data`] is a [`Box`].
-                // See [`Self::from_box`].
-                let _ = unsafe { Box::from_raw(ptr) };
-            }
-            Some(free) => {
+        match self {
+            Self::Rust(_) => {} // Drop normally.
+            Self::C { data, free, .. } => {
+                let ptr = data.as_ptr();
                 // Safety: See below.
                 // The [`FnFree`] won't run Rust's `fn drop`,
                 // so we have to do this ourselves first.
                 unsafe { drop_in_place(ptr) };
                 let ptr = ptr.cast();
-                // Safety: If [`Self::free`] is [`Some`],
-                // then that [`FnFree`] should be used for `free`ing.
-                // See [`Self::from_c`].
+                // Safety: See safety docs on [`Self::data`].
                 unsafe { free.free(ptr) }
             }
         }
@@ -80,18 +77,14 @@ impl<T: ?Sized> Drop for CBox<T> {
 
 impl<T: ?Sized> CBox<T> {
     pub fn from_c(data: NonNull<T>, free: Free) -> Self {
-        Self {
+        Self::C {
             data,
-            free: Some(free),
+            free,
             _phantom: PhantomData,
         }
     }
 
     pub fn from_box(data: Box<T>) -> Self {
-        Self {
-            data: box_into_raw(data),
-            free: None,
-            _phantom: PhantomData,
-        }
+        Self::Rust(data)
     }
 }
