@@ -37,6 +37,11 @@ pub enum CBox<T: ?Sized> {
         /// * `free`d by the `free` `fn` ptr below.
         data: NonNull<T>,
         free: Free,
+        /// This marker has no consequences for variance,
+        /// but is necessary for dropck to understand that we logically own a `T`.
+        ///
+        /// For details, see [`std::ptr::Unique::_marker`] and
+        /// <https://github.com/rust-lang/rfcs/blob/master/text/0769-sound-generic-drop.md#phantom-data>.
         _phantom: PhantomData<T>,
     },
 }
