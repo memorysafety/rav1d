@@ -104,6 +104,7 @@ use std::mem;
 use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr::NonNull;
+use std::sync::Arc;
 use std::sync::Once;
 use to_method::To as _;
 
@@ -508,8 +509,8 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
             return Err(ENOENT);
         }
 
-        let seq_hdr = &***(*c).seq_hdr.as_ref().unwrap();
-        Ok(seq_hdr.clone())
+        let seq_hdr = (*c).seq_hdr.take().and_then(Arc::into_inner).unwrap();
+        Ok(seq_hdr.rav1d)
     }()
     .inspect_err(|_| {
         rav1d_data_unref_internal(&mut buf);
