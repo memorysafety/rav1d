@@ -9,7 +9,9 @@ use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::headers::DRav1d;
+use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -207,12 +209,8 @@ pub struct Rav1dContext {
     /// to a frame worker to be decoded.
     pub(crate) tiles: Vec<Rav1dTileGroup>,
     pub(crate) n_tiles: c_int,
-    pub(crate) seq_hdr_pool: *mut Rav1dMemPool,
-    pub(crate) seq_hdr_ref: *mut Rav1dRef,
-    pub(crate) seq_hdr: *mut Rav1dSequenceHeader,
-    pub(crate) frame_hdr_pool: *mut Rav1dMemPool,
-    pub(crate) frame_hdr_ref: *mut Rav1dRef,
-    pub(crate) frame_hdr: *mut Rav1dFrameHeader,
+    pub(crate) seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>, // TODO(kkysen) Previously pooled.
+    pub(crate) frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>, // TODO(kkysen) Previously pooled.
     pub(crate) content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub(crate) mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     pub(crate) itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
@@ -456,10 +454,8 @@ pub struct FrameTileThreadData {
 
 #[repr(C)]
 pub(crate) struct Rav1dFrameContext {
-    pub seq_hdr_ref: *mut Rav1dRef,
-    pub seq_hdr: *mut Rav1dSequenceHeader,
-    pub frame_hdr_ref: *mut Rav1dRef,
-    pub frame_hdr: *mut Rav1dFrameHeader,
+    pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     pub refp: [Rav1dThreadPicture; 7],
     // during block coding / reconstruction
     pub cur: Rav1dPicture,

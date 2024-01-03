@@ -101,21 +101,23 @@ unsafe fn write_header(c: *mut Y4m2OutputContext, p: *const Dav1dPicture) -> c_i
         b"420mpeg2\0" as *const u8 as *const c_char,
         b"420\0" as *const u8 as *const c_char,
     ];
+    let seq_hdr = (*p).seq_hdr.unwrap().as_ref();
+    let frame_hdr = (*p).frame_hdr.unwrap().as_ref();
     let ss_name: *const c_char =
         if (*p).p.layout as c_uint == DAV1D_PIXEL_LAYOUT_I420 as c_int as c_uint && (*p).p.bpc == 8
         {
-            chr_names_8bpc_i420[(if (*(*p).seq_hdr).chr as c_uint > 2 as c_uint {
+            chr_names_8bpc_i420[(if seq_hdr.chr as c_uint > 2 as c_uint {
                 DAV1D_CHR_UNKNOWN as c_int as c_uint
             } else {
-                (*(*p).seq_hdr).chr as c_uint
+                seq_hdr.chr as c_uint
             }) as usize]
         } else {
-            ss_names[(*p).p.layout as usize][(*(*p).seq_hdr).hbd as usize]
+            ss_names[(*p).p.layout as usize][seq_hdr.hbd as usize]
         };
     let fw: c_uint = (*p).p.w as c_uint;
     let fh: c_uint = (*p).p.h as c_uint;
-    let mut aw: u64 = (fh as u64).wrapping_mul((*(*p).frame_hdr).render_width as u64);
-    let mut ah: u64 = (fw as u64).wrapping_mul((*(*p).frame_hdr).render_height as u64);
+    let mut aw: u64 = (fh as u64).wrapping_mul(frame_hdr.render_width as u64);
+    let mut ah: u64 = (fw as u64).wrapping_mul(frame_hdr.render_height as u64);
     let mut gcd: u64 = ah;
     let mut a: u64 = aw;
     let mut b: u64;

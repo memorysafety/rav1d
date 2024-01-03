@@ -288,7 +288,7 @@ unsafe fn read_mv_component_diff(
 ) -> c_int {
     let ts = &mut *t.ts;
     let f = &*t.f;
-    let have_hp = (*f.frame_hdr).hp != 0;
+    let have_hp = f.frame_hdr.as_ref().unwrap().hp != 0;
     let sign = rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0);
     let cl = rav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10);
     let mut up;
@@ -1072,9 +1072,10 @@ unsafe fn read_vartx_tree(
     // var-tx tree coding
     let mut tx_split = [0u16; 2];
     *b.max_ytx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
-    let txfm_mode = (*f.frame_hdr).txfm_mode as Dav1dTxfmMode;
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let txfm_mode = frame_hdr.txfm_mode as Dav1dTxfmMode;
     if b.skip == 0
-        && ((*f.frame_hdr).segmentation.lossless[b.seg_id as usize] != 0
+        && (frame_hdr.segmentation.lossless[b.seg_id as usize] != 0
             || b.max_ytx() as TxfmSize == TX_4X4)
     {
         b.uvtx = TX_4X4 as u8;
@@ -1154,7 +1155,7 @@ unsafe fn get_prev_frame_segid(
     ref_seg_map: *const u8,
     stride: ptrdiff_t,
 ) -> u8 {
-    assert!((*f.frame_hdr).primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
+    assert!(f.frame_hdr.as_ref().unwrap().primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
 
     // Need checked casts here because an overflowing cast
     // would give a too large `len` to [`std::slice::from_raw_parts`], which would UB.
@@ -1461,7 +1462,7 @@ unsafe fn decode_b(
 
     let ts = &mut *t.ts;
     let f = &*t.f;
-    let frame_hdr = &mut *f.frame_hdr;
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let mut b_mem = Default::default();
     let b = if t.frame_thread.pass != 0 {
         &mut *f
@@ -1693,7 +1694,7 @@ unsafe fn decode_b(
     if seg
         .map(|seg| seg.globalmv == 0 && seg.r#ref == -1 && seg.skip == 0)
         .unwrap_or(true)
-        && (*f.frame_hdr).skip_mode.enabled != 0
+        && frame_hdr.skip_mode.enabled != 0
         && cmp::min(bw4, bh4) > 1
     {
         let smctx = (*t.a).skip_mode.0[bx4 as usize] + t.l.skip_mode.0[by4 as usize];
@@ -1720,11 +1721,11 @@ unsafe fn decode_b(
     }
 
     // segment_id
-    if (*f.frame_hdr).segmentation.enabled != 0
-        && (*f.frame_hdr).segmentation.update_map != 0
-        && (*f.frame_hdr).segmentation.seg_data.preskip == 0
+    if frame_hdr.segmentation.enabled != 0
+        && frame_hdr.segmentation.update_map != 0
+        && frame_hdr.segmentation.seg_data.preskip == 0
     {
-        if b.skip == 0 && (*f.frame_hdr).segmentation.temporal != 0 && {
+        if b.skip == 0 && frame_hdr.segmentation.temporal != 0 && {
             let index = (*t.a).seg_pred.0[bx4 as usize] + t.l.seg_pred.0[by4 as usize];
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
@@ -1754,7 +1755,7 @@ unsafe fn decode_b(
                     &mut ts.cdf.m.seg_id[seg_ctx as usize],
                     RAV1D_MAX_SEGMENTS as usize - 1,
                 );
-                let last_active_seg_id = (*f.frame_hdr).segmentation.seg_data.last_active_segid;
+                let last_active_seg_id = frame_hdr.segmentation.seg_data.last_active_segid;
                 b.seg_id =
                     neg_deinterleave(diff as c_int, pred_seg_id as c_int, last_active_seg_id + 1)
                         as u8;
@@ -1767,16 +1768,17 @@ unsafe fn decode_b(
             }
         }
 
-        seg = Some(&(*f.frame_hdr).segmentation.seg_data.d[b.seg_id as usize]);
+        seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
 
         if DEBUG_BLOCK_INFO(f, t) {
             println!("Post-segid[postskip;{}]: r={}", b.seg_id, ts.msac.rng);
         }
     }
 
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     // cdef index
     if b.skip == 0 {
-        let idx = if (*f.seq_hdr).sb128 != 0 {
+        let idx = if seq_hdr.sb128 != 0 {
             ((t.bx & 16) >> 4) + ((t.by & 16) >> 3)
         } else {
             0
@@ -1804,12 +1806,12 @@ unsafe fn decode_b(
     }
 
     // delta-q/lf
-    let not_sb128 = ((*f.seq_hdr).sb128 == 0) as c_int;
+    let not_sb128 = (seq_hdr.sb128 == 0) as c_int;
     if t.bx & (31 >> not_sb128) == 0 && t.by & (31 >> not_sb128) == 0 {
         let prev_qidx = ts.last_qidx;
         let have_delta_q = frame_hdr.delta.q.present != 0
             && (bs
-                != (if (*f.seq_hdr).sb128 != 0 {
+                != (if seq_hdr.sb128 != 0 {
                     BS_128x128
                 } else {
                     BS_64x64
@@ -1883,7 +1885,7 @@ unsafe fn decode_b(
             ts.dq = f.dq.as_ptr();
         } else if ts.last_qidx != prev_qidx {
             // find sb-specific quant parameters
-            init_quant_tables(&*f.seq_hdr, frame_hdr, ts.last_qidx, &mut ts.dqmem);
+            init_quant_tables(seq_hdr, frame_hdr, ts.last_qidx, &mut ts.dqmem);
             ts.dq = ts.dqmem.as_ptr();
         }
         if ts.last_delta_lf == [0, 0, 0, 0] {
@@ -2052,7 +2054,7 @@ unsafe fn decode_b(
         if b.y_mode() == DC_PRED
             && b.pal_sz()[0] == 0
             && cmp::max(b_dim[2], b_dim[3]) <= 3
-            && (*f.seq_hdr).filter_intra != 0
+            && seq_hdr.filter_intra != 0
         {
             let is_filter = rav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
@@ -2292,11 +2294,11 @@ unsafe fn decode_b(
             b.mv_mut()[0] = mvstack[0].mv.mv[0];
         } else if mvstack[1].mv.mv[0] != mv::ZERO {
             b.mv_mut()[0] = mvstack[1].mv.mv[0];
-        } else if t.by - (16 << (*f.seq_hdr).sb128) < ts.tiling.row_start {
+        } else if t.by - (16 << seq_hdr.sb128) < ts.tiling.row_start {
             b.mv_mut()[0].y = 0;
-            b.mv_mut()[0].x = (-(512 << (*f.seq_hdr).sb128) - 2048) as i16;
+            b.mv_mut()[0].x = (-(512 << seq_hdr.sb128) - 2048) as i16;
         } else {
-            b.mv_mut()[0].y = -(512 << (*f.seq_hdr).sb128) as i16;
+            b.mv_mut()[0].y = -(512 << seq_hdr.sb128) as i16;
             b.mv_mut()[0].x = 0;
         }
 
@@ -2334,9 +2336,9 @@ unsafe fn decode_b(
             src_top += border_top - src_top;
         }
 
-        let sbx = t.bx >> 4 + (*f.seq_hdr).sb128 << 6 + (*f.seq_hdr).sb128;
-        let sby = t.by >> 4 + (*f.seq_hdr).sb128 << 6 + (*f.seq_hdr).sb128;
-        let sb_size = 1 << 6 + (*f.seq_hdr).sb128;
+        let sbx = t.bx >> 4 + seq_hdr.sb128 << 6 + seq_hdr.sb128;
+        let sby = t.by >> 4 + seq_hdr.sb128 << 6 + seq_hdr.sb128;
+        let sb_size = 1 << 6 + seq_hdr.sb128;
         // check for overlap with current superblock
         if src_bottom > sby && src_right > sbx {
             if src_top - border_top >= src_bottom - sby {
@@ -2676,7 +2678,7 @@ unsafe fn decode_b(
 
             // jnt_comp vs. seg vs. wedge
             let mut is_segwedge = false;
-            if (*f.seq_hdr).masked_compound != 0 {
+            if seq_hdr.masked_compound != 0 {
                 let mask_ctx = get_mask_comp_ctx(&*t.a, &t.l, by4, bx4);
                 is_segwedge = rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
@@ -2691,12 +2693,20 @@ unsafe fn decode_b(
             }
 
             if !is_segwedge {
-                if (*f.seq_hdr).jnt_comp != 0 {
+                if seq_hdr.jnt_comp != 0 {
+                    let [ref0poc, ref1poc] = b.r#ref().map(|r#ref| {
+                        f.refp[r#ref as usize]
+                            .p
+                            .frame_hdr
+                            .as_ref()
+                            .unwrap()
+                            .frame_offset as c_uint
+                    });
                     let jnt_ctx = get_jnt_comp_ctx(
-                        (*f.seq_hdr).order_hint_n_bits,
-                        (*f.cur.frame_hdr).frame_offset as c_uint,
-                        (*f.refp[b.r#ref()[0] as usize].p.frame_hdr).frame_offset as c_uint,
-                        (*f.refp[b.r#ref()[1] as usize].p.frame_hdr).frame_offset as c_uint,
+                        seq_hdr.order_hint_n_bits,
+                        f.cur.frame_hdr.as_ref().unwrap().frame_offset as c_uint,
+                        ref0poc,
+                        ref1poc,
                         &*t.a,
                         &t.l,
                         by4,
@@ -2952,7 +2962,7 @@ unsafe fn decode_b(
 
             // interintra flags
             let ii_sz_grp = dav1d_ymode_size_context[bs as usize] as c_int;
-            if (*f.seq_hdr).inter_intra != 0
+            if seq_hdr.inter_intra != 0
                 && interintra_allowed_mask & (1 << bs) != 0
                 && rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
@@ -2981,7 +2991,7 @@ unsafe fn decode_b(
                 *b.interintra_type_mut() = INTER_INTRA_NONE;
             }
             if DEBUG_BLOCK_INFO(f, t)
-                && (*f.seq_hdr).inter_intra != 0
+                && seq_hdr.inter_intra != 0
                 && interintra_allowed_mask & (1 << bs) != 0
             {
                 println!(
@@ -3092,7 +3102,7 @@ unsafe fn decode_b(
                     &mut ts.cdf.m.filter.0[0][ctx1 as usize],
                     RAV1D_N_SWITCHABLE_FILTERS as usize - 1,
                 ) as Dav1dFilterMode;
-                if (*f.seq_hdr).dual_filter != 0 {
+                if seq_hdr.dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&*t.a, &t.l, comp, true, b.r#ref()[0], by4, bx4);
                     if DEBUG_BLOCK_INFO(f, t) {
                         println!(
@@ -3481,6 +3491,8 @@ unsafe fn decode_sb(
         return decode_sb(t, bl + 1, (*(node as *const EdgeBranch)).split[0]);
     }
 
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+
     let bp;
     let mut ctx = 0;
     let mut bx8 = 0;
@@ -3491,11 +3503,7 @@ unsafe fn decode_sb(
         if false && bl == BL_64X64 {
             println!(
                 "poc={},y={},x={},bl={},r={}",
-                (*f.frame_hdr).frame_offset,
-                t.by,
-                t.bx,
-                bl,
-                ts.msac.rng,
+                frame_hdr.frame_offset, t.by, t.bx, bl, ts.msac.rng,
             );
         }
         bx8 = (t.bx & 31) >> 1;
@@ -3522,13 +3530,7 @@ unsafe fn decode_sb(
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
-                    (*f.frame_hdr).frame_offset,
-                    t.by,
-                    t.bx,
-                    bl,
-                    ctx,
-                    bp,
-                    ts.msac.rng,
+                    frame_hdr.frame_offset, t.by, t.bx, bl, ctx, bp, ts.msac.rng,
                 );
             }
         } else {
@@ -3669,7 +3671,7 @@ unsafe fn decode_sb(
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
-                    (*f.frame_hdr).frame_offset,
+                    frame_hdr.frame_offset,
                     t.by,
                     t.bx,
                     bl,
@@ -3716,7 +3718,7 @@ unsafe fn decode_sb(
             if DEBUG_BLOCK_INFO(f, t) {
                 println!(
                     "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
-                    (*f.frame_hdr).frame_offset,
+                    frame_hdr.frame_offset,
                     t.by,
                     t.bx,
                     bl,
@@ -3827,11 +3829,14 @@ unsafe fn setup_tile(
     tile_col: usize,
     tile_start_off: usize,
 ) {
-    let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col] as c_int;
-    let col_sb128_start = col_sb_start >> ((*f.seq_hdr).sb128 == 0) as c_int;
-    let col_sb_end = (*f.frame_hdr).tiling.col_start_sb[tile_col + 1] as c_int;
-    let row_sb_start = (*f.frame_hdr).tiling.row_start_sb[tile_row] as c_int;
-    let row_sb_end = (*f.frame_hdr).tiling.row_start_sb[tile_row + 1] as c_int;
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+
+    let col_sb_start = frame_hdr.tiling.col_start_sb[tile_col] as c_int;
+    let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
+    let col_sb_end = frame_hdr.tiling.col_start_sb[tile_col + 1] as c_int;
+    let row_sb_start = frame_hdr.tiling.row_start_sb[tile_row] as c_int;
+    let row_sb_end = frame_hdr.tiling.row_start_sb[tile_row + 1] as c_int;
     let sb_shift = f.sb_shift;
 
     let size_mul = &ss_size_mul[f.cur.p.layout];
@@ -3848,8 +3853,7 @@ unsafe fn setup_tile(
                 .cf
                 .cast::<u8>()
                 .offset(
-                    (tile_start_off * size_mul[0] as usize >> ((*f.seq_hdr).hbd == 0) as c_int)
-                        as isize,
+                    (tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int) as isize,
                 )
                 .cast::<DynCoef>()
         } else {
@@ -3858,14 +3862,14 @@ unsafe fn setup_tile(
     }
 
     rav1d_cdf_thread_copy(&mut ts.cdf, &f.in_cdf);
-    ts.last_qidx = (*f.frame_hdr).quant.yac;
+    ts.last_qidx = frame_hdr.quant.yac;
     ts.last_delta_lf.fill(0);
 
     rav1d_msac_init(
         &mut ts.msac,
         data.as_ptr(),
         data.len(),
-        (*f.frame_hdr).disable_cdf_update != 0,
+        frame_hdr.disable_cdf_update != 0,
     );
 
     ts.tiling.row = tile_row as c_int;
@@ -3874,7 +3878,7 @@ unsafe fn setup_tile(
     ts.tiling.col_end = cmp::min(col_sb_end << sb_shift, f.bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
     ts.tiling.row_end = cmp::min(row_sb_end << sb_shift, f.bh);
-    let diff_width = (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1];
+    let diff_width = frame_hdr.size.width[0] != frame_hdr.size.width[1];
 
     // Reference Restoration Unit (used for exp coding)
     let (sb_idx, unit_idx) = if diff_width {
@@ -3896,8 +3900,8 @@ unsafe fn setup_tile(
 
         let lr_ref = if diff_width {
             let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
-            let d = (*f.frame_hdr).size.super_res.width_scale_denominator;
-            let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
+            let d = frame_hdr.size.super_res.width_scale_denominator;
+            let unit_size_log2 = frame_hdr.restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
             let shift = unit_size_log2 + 3;
             let x = (4 * ts.tiling.col_start * d >> ss_hor) + rnd >> shift;
@@ -4028,7 +4032,8 @@ unsafe fn read_restoration_info(
 
 pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result<(), ()> {
     let f = &*t.f;
-    let root_bl = if (*f.seq_hdr).sb128 != 0 {
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let root_bl = if seq_hdr.sb128 != 0 {
         BL_128X128
     } else {
         BL_64X64
@@ -4038,10 +4043,11 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
     let sb_step = f.sb_step;
     let tile_row = ts.tiling.row;
     let tile_col = ts.tiling.col;
-    let col_sb_start = (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as c_int;
-    let col_sb128_start = col_sb_start >> ((*f.seq_hdr).sb128 == 0) as c_int;
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let col_sb_start = frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int;
+    let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
 
-    if (*f.frame_hdr).frame_type.is_inter_or_switch() || (*f.frame_hdr).allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
         rav1d_refmvs_tile_sbrow_init(
             &mut t.rt,
             &f.rf,
@@ -4055,19 +4061,19 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
         );
     }
 
-    if (*f.frame_hdr).frame_type.is_inter_or_switch() && c.n_fc > 1 {
+    if frame_hdr.frame_type.is_inter_or_switch() && c.n_fc > 1 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         *ts.lowest_pixel.offset(sby as isize) = [[i32::MIN; 2]; 7];
     }
 
     reset_context(
         &mut t.l,
-        (*f.frame_hdr).frame_type.is_key_or_intra(),
+        frame_hdr.frame_type.is_key_or_intra(),
         t.frame_thread.pass,
     );
     if t.frame_thread.pass == 2 {
         let off_2pass = if c.n_tc > 1 {
-            f.sb128w * (*f.frame_hdr).tiling.rows
+            f.sb128w * frame_hdr.tiling.rows
         } else {
             0
         };
@@ -4079,7 +4085,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
                 return Err(());
             }
             decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize])?;
-            if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
+            if t.bx & 16 != 0 || seq_hdr.sb128 != 0 {
                 t.a = (t.a).offset(1);
             }
         }
@@ -4092,7 +4098,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
         return Err(());
     }
 
-    if (*f.c).n_tc > 1 && (*f.frame_hdr).use_ref_frame_mvs != 0 {
+    if (*f.c).n_tc > 1 && frame_hdr.use_ref_frame_mvs != 0 {
         (*f.c)
             .refmvs_dsp
             .load_tmvs
@@ -4133,7 +4139,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
 
             let ss_ver = (p != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
             let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
-            let unit_size_log2 = (*f.frame_hdr).restoration.unit_size[(p != 0) as usize];
+            let unit_size_log2 = frame_hdr.restoration.unit_size[(p != 0) as usize];
             let y = t.by * 4 >> ss_ver;
             let h = f.cur.p.h + ss_ver >> ss_ver;
 
@@ -4149,13 +4155,13 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
                 continue;
             }
 
-            let frame_type = (*f.frame_hdr).restoration.r#type[p as usize];
+            let frame_type = frame_hdr.restoration.r#type[p as usize];
 
-            if (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1] {
+            if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                 let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
                 let n_units = cmp::max(1, w + half_unit >> unit_size_log2);
 
-                let d = (*f.frame_hdr).size.super_res.width_scale_denominator;
+                let d = frame_hdr.size.super_res.width_scale_denominator;
                 let rnd = unit_size * 8 - 1;
                 let shift = unit_size_log2 + 3;
                 let x0 = (4 * t.bx * d >> ss_hor) + rnd >> shift;
@@ -4189,16 +4195,13 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
             }
         }
         decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize])?;
-        if t.bx & 16 != 0 || (*f.seq_hdr).sb128 != 0 {
+        if t.bx & 16 != 0 || seq_hdr.sb128 != 0 {
             t.a = (t.a).offset(1);
             t.lf_mask = (t.lf_mask).offset(1);
         }
     }
 
-    if (*f.seq_hdr).ref_frame_mvs != 0
-        && (*f.c).n_tc > 1
-        && (*f.frame_hdr).frame_type.is_inter_or_switch()
-    {
+    if seq_hdr.ref_frame_mvs != 0 && (*f.c).n_tc > 1 && frame_hdr.frame_type.is_inter_or_switch() {
         rav1d_refmvs_save_tmvs(
             &(*f.c).refmvs_dsp,
             &mut t.rt,
@@ -4251,17 +4254,18 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
         }
         f.lf.start_of_tile_row_sz = f.sbh;
     }
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let mut sby = 0;
-    for tile_row in 0..(*f.frame_hdr).tiling.rows {
+    for tile_row in 0..frame_hdr.tiling.rows {
         *f.lf.start_of_tile_row.offset(sby as isize) = tile_row as u8;
         sby += 1;
-        while sby < (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as c_int {
+        while sby < frame_hdr.tiling.row_start_sb[(tile_row + 1) as usize] as c_int {
             *f.lf.start_of_tile_row.offset(sby as isize) = 0;
             sby += 1;
         }
     }
 
-    let n_ts = (*f.frame_hdr).tiling.cols * (*f.frame_hdr).tiling.rows;
+    let n_ts = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
     if n_ts != f.n_ts {
         if c.n_fc > 1 {
             freep(&mut f.frame_thread.tile_start_off as *mut *mut c_int as *mut c_void);
@@ -4281,7 +4285,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
         f.n_ts = n_ts;
     }
 
-    let a_sz = f.sb128w * (*f.frame_hdr).tiling.rows * (1 + (c.n_fc > 1 && c.n_tc > 1) as c_int);
+    let a_sz = f.sb128w * frame_hdr.tiling.rows * (1 + (c.n_fc > 1 && c.n_tc > 1) as c_int);
     if a_sz != f.a_sz {
         freep(&mut f.a as *mut *mut BlockContext as *mut c_void);
         f.a = malloc(::core::mem::size_of::<BlockContext>() * a_sz as usize) as *mut BlockContext;
@@ -4294,23 +4298,24 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
 
     let num_sb128 = f.sb128w * f.sb128h;
     let size_mul = &ss_size_mul[f.cur.p.layout];
-    let hbd = ((*f.seq_hdr).hbd != 0) as c_int;
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let hbd = (seq_hdr.hbd != 0) as c_int;
     if c.n_fc > 1 {
         let mut tile_idx = 0;
-        for tile_row in 0..(*f.frame_hdr).tiling.rows {
-            let row_off = (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as c_int
+        for tile_row in 0..frame_hdr.tiling.rows {
+            let row_off = frame_hdr.tiling.row_start_sb[tile_row as usize] as c_int
                 * f.sb_step
                 * 4
                 * f.sb128w
                 * 128;
-            let b_diff = ((*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize] as c_int
-                - (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as c_int)
+            let b_diff = (frame_hdr.tiling.row_start_sb[(tile_row + 1) as usize] as c_int
+                - frame_hdr.tiling.row_start_sb[tile_row as usize] as c_int)
                 * f.sb_step
                 * 4;
-            for tile_col in 0..(*f.frame_hdr).tiling.cols {
+            for tile_col in 0..frame_hdr.tiling.cols {
                 *f.frame_thread.tile_start_off.offset(tile_idx as isize) = row_off
                     + b_diff
-                        * (*f.frame_hdr).tiling.col_start_sb[tile_col as usize] as c_int
+                        * frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int
                         * f.sb_step
                         * 4;
 
@@ -4318,7 +4323,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
             }
         }
 
-        let lowest_pixel_mem_sz = (*f.frame_hdr).tiling.cols * f.sbh;
+        let lowest_pixel_mem_sz = frame_hdr.tiling.cols * f.sbh;
         if lowest_pixel_mem_sz != f.tile_thread.lowest_pixel_mem_sz {
             free(f.tile_thread.lowest_pixel_mem as *mut c_void);
             f.tile_thread.lowest_pixel_mem =
@@ -4331,12 +4336,11 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
             f.tile_thread.lowest_pixel_mem_sz = lowest_pixel_mem_sz;
         }
         let mut lowest_pixel_ptr = f.tile_thread.lowest_pixel_mem;
-        for tile_row in 0..(*f.frame_hdr).tiling.rows {
-            let tile_row_base = tile_row * (*f.frame_hdr).tiling.cols;
-            let tile_row_sb_h = (*f.frame_hdr).tiling.row_start_sb[(tile_row + 1) as usize]
-                as c_int
-                - (*f.frame_hdr).tiling.row_start_sb[tile_row as usize] as c_int;
-            for tile_col in 0..(*f.frame_hdr).tiling.cols {
+        for tile_row in 0..frame_hdr.tiling.rows {
+            let tile_row_base = tile_row * frame_hdr.tiling.cols;
+            let tile_row_sb_h = frame_hdr.tiling.row_start_sb[(tile_row + 1) as usize] as c_int
+                - frame_hdr.tiling.row_start_sb[tile_row as usize] as c_int;
+            for tile_col in 0..frame_hdr.tiling.cols {
                 (*f.ts.offset((tile_row_base + tile_col) as isize)).lowest_pixel = lowest_pixel_ptr;
                 lowest_pixel_ptr = lowest_pixel_ptr.offset(tile_row_sb_h as isize);
             }
@@ -4359,7 +4363,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
             f.frame_thread.cf_sz = cf_sz;
         }
 
-        if (*f.frame_hdr).allow_screen_content_tools != 0 {
+        if frame_hdr.allow_screen_content_tools != 0 {
             if num_sb128 != f.frame_thread.pal_sz {
                 rav1d_freep_aligned(
                     &mut f.frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut c_void,
@@ -4399,7 +4403,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     // update allocation of block contexts for above
     let mut y_stride = f.cur.stride[0];
     let mut uv_stride = f.cur.stride[1];
-    let has_resize = ((*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1]) as c_int;
+    let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let need_cdef_lpf_copy = (c.n_tc > 1 && has_resize != 0) as c_int;
     if y_stride * f.sbh as isize * 4 != f.lf.cdef_buf_plane_sz[0] as isize
         || uv_stride * f.sbh as isize * 8 != f.lf.cdef_buf_plane_sz[1] as isize
@@ -4471,7 +4475,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
         f.lf.cdef_buf_sbh = f.sbh;
     }
 
-    let sb128 = (*f.seq_hdr).sb128;
+    let sb128 = seq_hdr.sb128;
     let num_lines = if c.n_tc > 1 { (f.sbh * 4) << sb128 } else { 12 };
     y_stride = f.sr_cur.p.stride[0];
     uv_stride = f.sr_cur.p.stride[1];
@@ -4556,7 +4560,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
         }
         f.lf.lr_mask_sz = lr_mask_sz;
     }
-    f.lf.restore_planes = (*f.frame_hdr)
+    f.lf.restore_planes = frame_hdr
         .restoration
         .r#type
         .iter()
@@ -4564,11 +4568,11 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
         .map(|(i, &r#type)| ((r#type != RAV1D_RESTORATION_NONE) as u8) << i)
         .sum::<u8>()
         .into();
-    if (*f.frame_hdr).loopfilter.sharpness != f.lf.last_sharpness {
-        rav1d_calc_eih(&mut f.lf.lim_lut.0, (*f.frame_hdr).loopfilter.sharpness);
-        f.lf.last_sharpness = (*f.frame_hdr).loopfilter.sharpness;
+    if frame_hdr.loopfilter.sharpness != f.lf.last_sharpness {
+        rav1d_calc_eih(&mut f.lf.lim_lut.0, frame_hdr.loopfilter.sharpness);
+        f.lf.last_sharpness = frame_hdr.loopfilter.sharpness;
     }
-    rav1d_calc_lf_values(&mut f.lf.lvl, &*f.frame_hdr, &[0, 0, 0, 0]);
+    rav1d_calc_lf_values(&mut f.lf.lvl, &frame_hdr, &[0, 0, 0, 0]);
     slice::from_raw_parts_mut(f.lf.mask, num_sb128.try_into().unwrap()).fill_with(Default::default);
 
     let ipred_edge_sz = f.sbh * f.sb128w << hbd;
@@ -4588,7 +4592,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
         f.ipred_edge_sz = ipred_edge_sz;
     }
 
-    let re_sz = f.sb128h * (*f.frame_hdr).tiling.cols;
+    let re_sz = f.sb128h * frame_hdr.tiling.cols;
     if re_sz != f.lf.re_sz {
         freep(&mut *f.lf.tx_lpf_right_edge.as_mut_ptr().offset(0) as *mut *mut u8 as *mut c_void);
         f.lf.tx_lpf_right_edge[0] = malloc(re_sz as usize * 32 * 2) as *mut u8;
@@ -4601,11 +4605,11 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     }
 
     // init ref mvs
-    if (*f.frame_hdr).frame_type.is_inter_or_switch() || (*f.frame_hdr).allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
         let ret = rav1d_refmvs_init_frame(
             &mut f.rf,
-            f.seq_hdr,
-            f.frame_hdr,
+            seq_hdr,
+            frame_hdr,
             f.refpoc.as_ptr(),
             f.mvs,
             f.refrefpoc.as_ptr(),
@@ -4619,19 +4623,14 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     }
 
     // setup dequant tables
-    init_quant_tables(
-        &*f.seq_hdr,
-        &*f.frame_hdr,
-        (*f.frame_hdr).quant.yac,
-        &mut f.dq,
-    );
-    if (*f.frame_hdr).quant.qm != 0 {
+    init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &mut f.dq);
+    if frame_hdr.quant.qm != 0 {
         for i in 0..N_RECT_TX_SIZES {
-            f.qm[i][0] = dav1d_qm_tbl[(*f.frame_hdr).quant.qm_y as usize][0][i]
+            f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i]
                 .map_or(std::ptr::null(), |qm| qm.as_ptr());
-            f.qm[i][1] = dav1d_qm_tbl[(*f.frame_hdr).quant.qm_u as usize][1][i]
+            f.qm[i][1] = dav1d_qm_tbl[frame_hdr.quant.qm_u as usize][1][i]
                 .map_or(std::ptr::null(), |qm| qm.as_ptr());
-            f.qm[i][2] = dav1d_qm_tbl[(*f.frame_hdr).quant.qm_v as usize][1][i]
+            f.qm[i][2] = dav1d_qm_tbl[frame_hdr.quant.qm_v as usize][1][i]
                 .map_or(std::ptr::null(), |qm| qm.as_ptr());
         }
     } else {
@@ -4639,16 +4638,17 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     }
 
     // setup jnt_comp weights
-    if (*f.frame_hdr).switchable_comp_refs != 0 {
-        let ref_pocs: [_; 7] = array::from_fn(|i| (*f.refp[i].p.frame_hdr).frame_offset);
+    if frame_hdr.switchable_comp_refs != 0 {
+        let ref_pocs: [_; 7] =
+            array::from_fn(|i| f.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset);
         for i in 0..ref_pocs.len() {
             for j in i + 1..ref_pocs.len() {
                 let d = [j, i].map(|ij| {
                     cmp::min(
                         (get_poc_diff(
-                            (*f.seq_hdr).order_hint_n_bits,
+                            seq_hdr.order_hint_n_bits,
                             ref_pocs[ij],
-                            (*f.cur.frame_hdr).frame_offset,
+                            f.cur.frame_hdr.as_ref().unwrap().frame_offset,
                         ))
                         .unsigned_abs(),
                         31,
@@ -4688,14 +4688,15 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
 
 pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> Rav1dResult {
     let c = &*f.c;
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
-    if (*f.frame_hdr).refresh_context != 0 {
+    if frame_hdr.refresh_context != 0 {
         rav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
     }
 
     let uses_2pass = c.n_fc > 1;
 
-    let tiling = &(*f.frame_hdr).tiling;
+    let tiling = &frame_hdr.tiling;
 
     let n_bytes = tiling.n_bytes.try_into().unwrap();
     let rows: usize = tiling.rows.try_into().unwrap();
@@ -4753,7 +4754,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
                 tile_col = 0;
                 tile_row += 1;
             }
-            if j == tiling.update as usize && (*f.frame_hdr).refresh_context != 0 {
+            if j == tiling.update as usize && frame_hdr.refresh_context != 0 {
                 f.task_thread.update_set = true;
             }
             data = rest_data;
@@ -4767,7 +4768,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
         {
             reset_context(
                 ctx,
-                (*f.frame_hdr).frame_type.is_key_or_intra(),
+                frame_hdr.frame_type.is_key_or_intra(),
                 if uses_2pass {
                     1 + (n >= sb128w * rows) as c_int
                 } else {
@@ -4789,19 +4790,22 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
     t.f = f;
     t.frame_thread.pass = 0;
 
-    for ctx in slice::from_raw_parts_mut(
-        f.a,
-        (f.sb128w * (*f.frame_hdr).tiling.rows).try_into().unwrap(),
-    ) {
-        reset_context(ctx, (*f.frame_hdr).frame_type.is_key_or_intra(), 0);
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+
+    for ctx in
+        slice::from_raw_parts_mut(f.a, (f.sb128w * frame_hdr.tiling.rows).try_into().unwrap())
+    {
+        reset_context(ctx, frame_hdr.frame_type.is_key_or_intra(), 0);
     }
 
     // no threading - we explicitly interleave tile/sbrow decoding
     // and post-filtering, so that the full process runs in-line
-    let Rav1dFrameHeader_tiling { rows, cols, .. } = (*f.frame_hdr).tiling;
+    let Rav1dFrameHeader_tiling { rows, cols, .. } = frame_hdr.tiling;
     let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
+    // Need to clone this because `(f.bd_fn.filter_sbrow)(f, sby);` takes a `&mut` to `f` within the loop.
+    let row_start_sb = frame_hdr.tiling.row_start_sb.clone();
     for (tile_row, (sbh_start_end, ts)) in iter::zip(
-        (*f.frame_hdr).tiling.row_start_sb[..rows + 1].windows(2),
+        row_start_sb[..rows + 1].windows(2),
         slice::from_raw_parts_mut(f.ts, rows * cols).chunks_exact_mut(cols),
     )
     .enumerate()
@@ -4812,9 +4816,11 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
         let sbh_end = cmp::min(sbh_end.into(), f.sbh);
 
         for sby in sbh_start.into()..sbh_end {
-            t.by = sby << 4 + (*f.seq_hdr).sb128;
+            let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+            let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+            t.by = sby << 4 + seq_hdr.sb128;
             let by_end = t.by + f.sb_step >> 1;
-            if (*f.frame_hdr).use_ref_frame_mvs != 0 {
+            if frame_hdr.use_ref_frame_mvs != 0 {
                 ((*f.c).refmvs_dsp.load_tmvs).expect("non-null function pointer")(
                     &mut f.rf,
                     tile_row as c_int,
@@ -4828,7 +4834,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
                 t.ts = tile;
                 rav1d_decode_tile_sbrow(t).map_err(|()| EINVAL)?;
             }
-            if (*f.frame_hdr).frame_type.is_inter_or_switch() {
+            if frame_hdr.frame_type.is_inter_or_switch() {
                 rav1d_refmvs_save_tmvs(
                     &(*f.c).refmvs_dsp,
                     &mut t.rt,
@@ -4861,7 +4867,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
     }
     // TODO(kkysen) use array::zip when stable
     for i in 0..7 {
-        if !f.refp[i].p.frame_hdr.is_null() {
+        if f.refp[i].p.frame_hdr.is_some() {
             rav1d_thread_picture_unref(&mut f.refp[i]);
         }
         rav1d_ref_dec(&mut f.ref_mvs_ref[i]);
@@ -4869,20 +4875,23 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
     rav1d_picture_unref_internal(&mut f.cur);
     rav1d_thread_picture_unref(&mut f.sr_cur);
     rav1d_cdf_thread_unref(&mut f.in_cdf);
-    if !f.frame_hdr.is_null() && (*f.frame_hdr).refresh_context != 0 {
-        if !f.out_cdf.progress.is_null() {
-            ::core::intrinsics::atomic_store_seqcst(
-                f.out_cdf.progress,
-                if retval.is_ok() { 1 } else { TILE_ERROR as u32 },
-            );
+    if let Some(frame_hdr) = &f.frame_hdr {
+        if frame_hdr.refresh_context != 0 {
+            if !f.out_cdf.progress.is_null() {
+                ::core::intrinsics::atomic_store_seqcst(
+                    f.out_cdf.progress,
+                    if retval.is_ok() { 1 } else { TILE_ERROR as u32 },
+                );
+            }
+            rav1d_cdf_thread_unref(&mut f.out_cdf);
         }
-        rav1d_cdf_thread_unref(&mut f.out_cdf);
     }
+
     rav1d_ref_dec(&mut f.cur_segmap_ref);
     rav1d_ref_dec(&mut f.prev_segmap_ref);
     rav1d_ref_dec(&mut f.mvs_ref);
-    rav1d_ref_dec(&mut f.seq_hdr_ref);
-    rav1d_ref_dec(&mut f.frame_hdr_ref);
+    let _ = mem::take(&mut f.seq_hdr);
+    let _ = mem::take(&mut f.frame_hdr);
     for tile in &mut f.tiles {
         rav1d_data_unref_internal(&mut tile.data);
     }
@@ -4918,11 +4927,12 @@ pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> Rav1dResul
             res = f.task_thread.retval;
         } else {
             res = rav1d_decode_frame_main(f);
-            if res.is_ok() && (*f.frame_hdr).refresh_context != 0 && f.task_thread.update_set {
+            let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+            if res.is_ok() && frame_hdr.refresh_context != 0 && f.task_thread.update_set {
                 rav1d_cdf_thread_update(
-                    f.frame_hdr,
+                    frame_hdr,
                     f.out_cdf.data.cdf,
-                    &mut (*f.ts.offset((*f.frame_hdr).tiling.update as isize)).cdf,
+                    &mut (*f.ts.offset(frame_hdr.tiling.update as isize)).cdf,
                 );
             }
         }
@@ -4992,16 +5002,12 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         (&mut *c.fc, ptr::null_mut())
     };
 
-    f.seq_hdr = c.seq_hdr;
-    f.seq_hdr_ref = c.seq_hdr_ref;
-    rav1d_ref_inc(f.seq_hdr_ref);
-    f.frame_hdr = c.frame_hdr;
-    f.frame_hdr_ref = c.frame_hdr_ref;
-    c.frame_hdr = ptr::null_mut();
-    c.frame_hdr_ref = ptr::null_mut();
-    f.dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
+    f.seq_hdr = c.seq_hdr.clone();
+    f.frame_hdr = mem::take(&mut c.frame_hdr);
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    f.dsp = &mut c.dsp[seq_hdr.hbd as usize];
 
-    let bpc = 8 + 2 * (*f.seq_hdr).hbd;
+    let bpc = 8 + 2 * seq_hdr.hbd;
 
     unsafe fn on_error(
         f: &mut Rav1dFrameContext,
@@ -5010,11 +5016,11 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     ) {
         f.task_thread.error = 1;
         rav1d_cdf_thread_unref(&mut f.in_cdf);
-        if (*f.frame_hdr).refresh_context != 0 {
+        if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {
             rav1d_cdf_thread_unref(&mut f.out_cdf);
         }
         for i in 0..7 {
-            if !f.refp[i].p.frame_hdr.is_null() {
+            if f.refp[i].p.frame_hdr.is_some() {
                 rav1d_thread_picture_unref(&mut f.refp[i]);
             }
             rav1d_ref_dec(&mut f.ref_mvs_ref[i]);
@@ -5027,8 +5033,8 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_picture_unref_internal(&mut f.cur);
         rav1d_thread_picture_unref(&mut f.sr_cur);
         rav1d_ref_dec(&mut f.mvs_ref);
-        rav1d_ref_dec(&mut f.seq_hdr_ref);
-        rav1d_ref_dec(&mut f.frame_hdr_ref);
+        let _ = mem::take(&mut f.seq_hdr);
+        let _ = mem::take(&mut f.frame_hdr);
         c.cached_error_props = c.in_0.m.clone();
 
         for mut tile in f.tiles.drain(..) {
@@ -5044,7 +5050,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // we should probably initialize all the fn ptrs
     // when `c` is allocated during [`rav1d_open`].
     if !(*f.dsp).initialized {
-        let dsp = &mut c.dsp[(*f.seq_hdr).hbd as usize];
+        let dsp = &mut c.dsp[seq_hdr.hbd as usize];
         dsp.initialized = true;
 
         match bpc {
@@ -5072,14 +5078,14 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 writeln!(
                     c.logger,
                     "Compiled without support for {}-bit decoding",
-                    8 + 2 * (*f.seq_hdr).hbd
+                    8 + 2 * seq_hdr.hbd
                 );
                 on_error(f, c, out_delayed);
                 return Err(ENOPROTOOPT);
             }
         }
     }
-    if (*f.seq_hdr).hbd == 0 {
+    if seq_hdr.hbd == 0 {
         #[cfg(feature = "bitdepth_8")]
         {
             f.bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth8>();
@@ -5096,22 +5102,23 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     let mut ref_coded_width = <[i32; 7]>::default();
-    if (*f.frame_hdr).frame_type.is_inter_or_switch() {
-        if (*f.frame_hdr).primary_ref_frame != RAV1D_PRIMARY_REF_NONE {
-            let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    if frame_hdr.frame_type.is_inter_or_switch() {
+        if frame_hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE {
+            let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
             if c.refs[pri_ref].p.p.data[0].is_null() {
                 on_error(f, c, out_delayed);
                 return Err(EINVAL);
             }
         }
         for i in 0..7 {
-            let refidx = (*f.frame_hdr).refidx[i] as usize;
+            let refidx = frame_hdr.refidx[i] as usize;
             if c.refs[refidx].p.p.data[0].is_null()
-                || ((*f.frame_hdr).size.width[0] * 2) < c.refs[refidx].p.p.p.w
-                || ((*f.frame_hdr).size.height * 2) < c.refs[refidx].p.p.p.h
-                || (*f.frame_hdr).size.width[0] > c.refs[refidx].p.p.p.w * 16
-                || (*f.frame_hdr).size.height > c.refs[refidx].p.p.p.h * 16
-                || (*f.seq_hdr).layout != c.refs[refidx].p.p.p.layout
+                || (frame_hdr.size.width[0] * 2) < c.refs[refidx].p.p.p.w
+                || (frame_hdr.size.height * 2) < c.refs[refidx].p.p.p.h
+                || frame_hdr.size.width[0] > c.refs[refidx].p.p.p.w * 16
+                || frame_hdr.size.height > c.refs[refidx].p.p.p.h * 16
+                || seq_hdr.layout != c.refs[refidx].p.p.p.layout
                 || bpc != c.refs[refidx].p.p.p.bpc
             {
                 for j in 0..i {
@@ -5121,33 +5128,33 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 return Err(EINVAL);
             }
             rav1d_thread_picture_ref(&mut f.refp[i], &mut c.refs[refidx].p);
-            ref_coded_width[i] = (*c.refs[refidx].p.p.frame_hdr).size.width[0];
-            if (*f.frame_hdr).size.width[0] != c.refs[refidx].p.p.p.w
-                || (*f.frame_hdr).size.height != c.refs[refidx].p.p.p.h
+            ref_coded_width[i] = c.refs[refidx].p.p.frame_hdr.as_ref().unwrap().size.width[0];
+            if frame_hdr.size.width[0] != c.refs[refidx].p.p.p.w
+                || frame_hdr.size.height != c.refs[refidx].p.p.p.h
             {
-                f.svc[i][0].scale = scale_fac(c.refs[refidx].p.p.p.w, (*f.frame_hdr).size.width[0]);
-                f.svc[i][1].scale = scale_fac(c.refs[refidx].p.p.p.h, (*f.frame_hdr).size.height);
+                f.svc[i][0].scale = scale_fac(c.refs[refidx].p.p.p.w, frame_hdr.size.width[0]);
+                f.svc[i][1].scale = scale_fac(c.refs[refidx].p.p.p.h, frame_hdr.size.height);
                 f.svc[i][0].step = f.svc[i][0].scale + 8 >> 4;
                 f.svc[i][1].step = f.svc[i][1].scale + 8 >> 4;
             } else {
                 f.svc[i][1].scale = 0;
                 f.svc[i][0].scale = f.svc[i][1].scale;
             }
-            f.gmv_warp_allowed[i] = ((*f.frame_hdr).gmv[i].r#type > RAV1D_WM_TYPE_TRANSLATION
-                && (*f.frame_hdr).force_integer_mv == 0
-                && !rav1d_get_shear_params(&mut (*f.frame_hdr).gmv[i])
+            f.gmv_warp_allowed[i] = (frame_hdr.gmv[i].r#type > RAV1D_WM_TYPE_TRANSLATION
+                && frame_hdr.force_integer_mv == 0
+                && !rav1d_get_shear_params(&frame_hdr.gmv[i])
                 && f.svc[i][0].scale == 0) as u8;
         }
     }
 
     // setup entropy
-    if (*f.frame_hdr).primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-        rav1d_cdf_thread_init_static(&mut f.in_cdf, (*f.frame_hdr).quant.yac);
+    if frame_hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
+        rav1d_cdf_thread_init_static(&mut f.in_cdf, frame_hdr.quant.yac);
     } else {
-        let pri_ref = (*f.frame_hdr).refidx[(*f.frame_hdr).primary_ref_frame as usize] as usize;
+        let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
         rav1d_cdf_thread_ref(&mut f.in_cdf, &mut c.cdf[pri_ref]);
     }
-    if (*f.frame_hdr).refresh_context != 0 {
+    if frame_hdr.refresh_context != 0 {
         let res = rav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.n_fc > 1) as c_int);
         if res.is_err() {
             on_error(f, c, out_delayed);
@@ -5166,9 +5173,11 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         return res;
     }
 
-    if (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1] {
-        let res =
-            rav1d_picture_alloc_copy(c, &mut f.cur, (*f.frame_hdr).size.width[0], &mut f.sr_cur.p);
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+
+    if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
+        let res = rav1d_picture_alloc_copy(c, &mut f.cur, frame_hdr.size.width[0], &mut f.sr_cur.p);
         if res.is_err() {
             on_error(f, c, out_delayed);
             return res;
@@ -5176,7 +5185,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     } else {
         rav1d_picture_ref(&mut f.cur, &mut f.sr_cur.p);
     }
-    if (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1] {
+    if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         f.resize_step[0] = scale_fac(f.cur.p.w, f.sr_cur.p.p.w);
         let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
         let in_cw = f.cur.p.w + ss_hor >> ss_hor;
@@ -5188,7 +5197,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
     // move f->cur into output queue
     if c.n_fc == 1 {
-        if (*f.frame_hdr).show_frame != 0 || c.output_invisible_frames {
+        if frame_hdr.show_frame != 0 || c.output_invisible_frames {
             rav1d_thread_picture_ref(&mut c.out, &mut f.sr_cur);
             c.event_flags |= f.sr_cur.flags.into();
         }
@@ -5196,28 +5205,28 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_thread_picture_ref(out_delayed, &mut f.sr_cur);
     }
 
-    f.w4 = (*f.frame_hdr).size.width[0] + 3 >> 2;
-    f.h4 = (*f.frame_hdr).size.height + 3 >> 2;
-    f.bw = ((*f.frame_hdr).size.width[0] + 7 >> 3) << 1;
-    f.bh = ((*f.frame_hdr).size.height + 7 >> 3) << 1;
+    f.w4 = frame_hdr.size.width[0] + 3 >> 2;
+    f.h4 = frame_hdr.size.height + 3 >> 2;
+    f.bw = (frame_hdr.size.width[0] + 7 >> 3) << 1;
+    f.bh = (frame_hdr.size.height + 7 >> 3) << 1;
     f.sb128w = f.bw + 31 >> 5;
     f.sb128h = f.bh + 31 >> 5;
-    f.sb_shift = 4 + (*f.seq_hdr).sb128;
-    f.sb_step = 16 << (*f.seq_hdr).sb128;
+    f.sb_shift = 4 + seq_hdr.sb128;
+    f.sb_step = 16 << seq_hdr.sb128;
     f.sbh = f.bh + f.sb_step - 1 >> f.sb_shift;
     f.b4_stride = (f.bw + 31 & !31) as ptrdiff_t;
     f.bitdepth_max = (1 << f.cur.p.bpc) - 1;
     *&mut f.task_thread.error = 0;
     let uses_2pass = (c.n_fc > 1) as c_int;
-    let cols = (*f.frame_hdr).tiling.cols;
-    let rows = (*f.frame_hdr).tiling.rows;
+    let cols = frame_hdr.tiling.cols;
+    let rows = frame_hdr.tiling.rows;
     ::core::intrinsics::atomic_store_seqcst(
         &mut f.task_thread.task_counter,
         cols * rows + f.sbh << uses_2pass,
     );
 
     // ref_mvs
-    if (*f.frame_hdr).frame_type.is_inter_or_switch() || (*f.frame_hdr).allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
         f.mvs_ref = rav1d_ref_create_using_pool(
             c.refmvs_pool,
             ::core::mem::size_of::<refmvs_temporal_block>()
@@ -5230,16 +5239,16 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             return Err(ENOMEM);
         }
         f.mvs = (*f.mvs_ref).data.cast::<refmvs_temporal_block>();
-        if (*f.frame_hdr).allow_intrabc == 0 {
+        if frame_hdr.allow_intrabc == 0 {
             for i in 0..7 {
-                f.refpoc[i] = (*f.refp[i].p.frame_hdr).frame_offset as c_uint;
+                f.refpoc[i] = f.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset as c_uint;
             }
         } else {
             f.refpoc.fill(0);
         }
-        if (*f.frame_hdr).use_ref_frame_mvs != 0 {
+        if frame_hdr.use_ref_frame_mvs != 0 {
             for i in 0..7 {
-                let refidx = (*f.frame_hdr).refidx[i] as usize;
+                let refidx = frame_hdr.refidx[i] as usize;
                 let ref_w = (ref_coded_width[i] + 7 >> 3) << 1;
                 let ref_h = (f.refp[i].p.p.h + 7 >> 3) << 1;
                 if !c.refs[refidx].refmvs.is_null() && ref_w == f.bw && ref_h == f.bh {
@@ -5263,21 +5272,20 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     // segmap
-    if (*f.frame_hdr).segmentation.enabled != 0 {
+    if frame_hdr.segmentation.enabled != 0 {
         // By default, the previous segmentation map is not initialised.
         f.prev_segmap_ref = ptr::null_mut();
         f.prev_segmap = ptr::null();
 
         // We might need a previous frame's segmentation map.
         // This happens if there is either no update or a temporal update.
-        if (*f.frame_hdr).segmentation.temporal != 0 || (*f.frame_hdr).segmentation.update_map == 0
-        {
-            let pri_ref = (*f.frame_hdr).primary_ref_frame as usize;
+        if frame_hdr.segmentation.temporal != 0 || frame_hdr.segmentation.update_map == 0 {
+            let pri_ref = frame_hdr.primary_ref_frame as usize;
             assert!(pri_ref != RAV1D_PRIMARY_REF_NONE as usize);
             let ref_w = (ref_coded_width[pri_ref] + 7 >> 3) << 1;
             let ref_h = (f.refp[pri_ref].p.p.h + 7 >> 3) << 1;
             if ref_w == f.bw && ref_h == f.bh {
-                f.prev_segmap_ref = c.refs[(*f.frame_hdr).refidx[pri_ref] as usize].segmap;
+                f.prev_segmap_ref = c.refs[frame_hdr.refidx[pri_ref] as usize].segmap;
                 if !f.prev_segmap_ref.is_null() {
                     rav1d_ref_inc(f.prev_segmap_ref);
                     f.prev_segmap = (*f.prev_segmap_ref).data.cast::<u8>();
@@ -5285,7 +5293,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
         }
 
-        if (*f.frame_hdr).segmentation.update_map != 0 {
+        if frame_hdr.segmentation.update_map != 0 {
             // We're updating an existing map,
             // but need somewhere to put the new values.
             // Allocate them here (the data actually gets set elsewhere).
@@ -5324,16 +5332,16 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     // update references etc.
-    let refresh_frame_flags = (*f.frame_hdr).refresh_frame_flags as c_uint;
+    let refresh_frame_flags = frame_hdr.refresh_frame_flags as c_uint;
     for i in 0..8 {
         if refresh_frame_flags & (1 << i) != 0 {
-            if !c.refs[i].p.p.frame_hdr.is_null() {
+            if c.refs[i].p.p.frame_hdr.is_some() {
                 rav1d_thread_picture_unref(&mut c.refs[i].p);
             }
             rav1d_thread_picture_ref(&mut c.refs[i].p, &mut f.sr_cur);
 
             rav1d_cdf_thread_unref(&mut c.cdf[i]);
-            if (*f.frame_hdr).refresh_context != 0 {
+            if frame_hdr.refresh_context != 0 {
                 rav1d_cdf_thread_ref(&mut c.cdf[i], &mut f.out_cdf);
             } else {
                 rav1d_cdf_thread_ref(&mut c.cdf[i], &mut f.in_cdf);
@@ -5345,7 +5353,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 rav1d_ref_inc(f.cur_segmap_ref);
             }
             rav1d_ref_dec(&mut c.refs[i].refmvs);
-            if (*f.frame_hdr).allow_intrabc == 0 {
+            if frame_hdr.allow_intrabc == 0 {
                 c.refs[i].refmvs = f.mvs_ref;
                 if !f.mvs_ref.is_null() {
                     rav1d_ref_inc(f.mvs_ref);
@@ -5361,7 +5369,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             rav1d_thread_picture_unref(&mut c.out);
             for i in 0..8 {
                 if refresh_frame_flags & (1 << i) != 0 {
-                    if !c.refs[i].p.p.frame_hdr.is_null() {
+                    if c.refs[i].p.p.frame_hdr.is_some() {
                         rav1d_thread_picture_unref(&mut c.refs[i].p);
                     }
                     rav1d_cdf_thread_unref(&mut c.cdf[i]);

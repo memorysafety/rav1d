@@ -2,7 +2,9 @@ use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::headers::DRav1d;
+use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
@@ -28,7 +30,6 @@ use crate::src::mem::Rav1dMemPoolBuffer;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_wrap;
-use crate::src::r#ref::Rav1dRef;
 use bitflags::bitflags;
 use libc::free;
 use libc::malloc;
@@ -174,10 +175,8 @@ unsafe fn picture_alloc_with_edges(
     p: *mut Rav1dPicture,
     w: c_int,
     h: c_int,
-    seq_hdr: *mut Rav1dSequenceHeader,
-    seq_hdr_ref: *mut Rav1dRef,
-    frame_hdr: *mut Rav1dFrameHeader,
-    frame_hdr_ref: *mut Rav1dRef,
+    seq_hdr: &Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    frame_hdr: &Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     content_light: &Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
     itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
@@ -202,13 +201,11 @@ unsafe fn picture_alloc_with_edges(
     }
     (*p).p.w = w;
     (*p).p.h = h;
-    (*p).seq_hdr = seq_hdr;
-    (*p).frame_hdr = frame_hdr;
-    (*p).p.layout = (*seq_hdr).layout;
+    (*p).seq_hdr = seq_hdr.clone();
+    (*p).frame_hdr = frame_hdr.clone();
+    (*p).p.layout = seq_hdr.as_ref().unwrap().layout;
     (*p).p.bpc = bpc;
     (*p).m = Default::default();
-    (*p).seq_hdr_ref = seq_hdr_ref;
-    (*p).frame_hdr_ref = frame_hdr_ref;
     let res = (*p_allocator).alloc_picture(p);
     if res.is_err() {
         free(pic_ctx as *mut c_void);
@@ -233,12 +230,6 @@ unsafe fn picture_alloc_with_edges(
             io::Error::last_os_error(),
         );
         return Err(ENOMEM);
-    }
-    if !seq_hdr_ref.is_null() {
-        rav1d_ref_inc(seq_hdr_ref);
-    }
-    if !frame_hdr_ref.is_null() {
-        rav1d_ref_inc(frame_hdr_ref);
     }
     rav1d_picture_copy_props(p, content_light, mastering_display, itut_t35, props);
 
@@ -269,15 +260,14 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
 ) -> Rav1dResult {
     let p: *mut Rav1dThreadPicture = &mut (*f).sr_cur;
     let have_frame_mt = ((*c).n_fc > 1 as c_uint) as c_int;
+    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
     let res = picture_alloc_with_edges(
         c,
         &mut (*p).p,
-        (*(*f).frame_hdr).size.width[1],
-        (*(*f).frame_hdr).size.height,
-        (*f).seq_hdr,
-        (*f).seq_hdr_ref,
-        (*f).frame_hdr,
-        (*f).frame_hdr_ref,
+        frame_hdr.size.width[1],
+        frame_hdr.size.height,
+        &(*f).seq_hdr,
+        &(*f).frame_hdr,
         &(*c).content_light,
         &(*c).mastering_display,
         &(*c).itut_t35,
@@ -295,15 +285,15 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         return res;
     }
     let _ = mem::take(&mut (*c).itut_t35);
-    let flags_mask = if (*(*f).frame_hdr).show_frame != 0 || (*c).output_invisible_frames {
+    let flags_mask = if frame_hdr.show_frame != 0 || (*c).output_invisible_frames {
         PictureFlags::empty()
     } else {
         PictureFlags::NEW_SEQUENCE | PictureFlags::NEW_OP_PARAMS_INFO
     };
     (*p).flags = (*c).frame_flags;
     (*c).frame_flags &= flags_mask;
-    (*p).visible = (*(*f).frame_hdr).show_frame != 0;
-    (*p).showable = (*(*f).frame_hdr).showable_frame != 0;
+    (*p).visible = frame_hdr.show_frame != 0;
+    (*p).showable = frame_hdr.showable_frame != 0;
     if have_frame_mt != 0 {
         *(&mut *((*p).progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
         *(&mut *((*p).progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
@@ -323,10 +313,8 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         dst,
         w,
         (*src).p.h,
-        (*src).seq_hdr,
-        (*src).seq_hdr_ref,
-        (*src).frame_hdr,
-        (*src).frame_hdr_ref,
+        &(*src).seq_hdr,
+        &(*src).frame_hdr,
         &(*src).content_light,
         &(*src).mastering_display,
         &(*src).itut_t35,
@@ -348,12 +336,6 @@ pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPictur
             return;
         }
         rav1d_ref_inc(src.r#ref);
-    }
-    if !src.frame_hdr_ref.is_null() {
-        rav1d_ref_inc(src.frame_hdr_ref);
-    }
-    if !src.seq_hdr_ref.is_null() {
-        rav1d_ref_inc(src.seq_hdr_ref);
     }
     *dst = src.clone();
 }
@@ -393,8 +375,6 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
         m: _,
         data,
         mut r#ref,
-        mut frame_hdr_ref,
-        mut seq_hdr_ref,
         ..
     } = mem::take(p);
     if !r#ref.is_null() {
@@ -403,8 +383,6 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
         }
         rav1d_ref_dec(&mut r#ref);
     }
-    rav1d_ref_dec(&mut seq_hdr_ref);
-    rav1d_ref_dec(&mut frame_hdr_ref);
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
