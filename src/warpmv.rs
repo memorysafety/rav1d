@@ -48,7 +48,7 @@ fn resolve_divisor_32(d: u32) -> (c_int, c_int) {
     (shift + 14, div_lut[f as usize] as c_int)
 }
 
-pub(crate) fn rav1d_get_shear_params(wm: &mut Rav1dWarpedMotionParams) -> bool {
+pub(crate) fn rav1d_get_shear_params(wm: &Rav1dWarpedMotionParams) -> bool {
     let mat = &wm.matrix;
 
     if mat[2] <= 0 {
@@ -67,7 +67,7 @@ pub(crate) fn rav1d_get_shear_params(wm: &mut Rav1dWarpedMotionParams) -> bool {
     let delta =
         iclip_wmp(mat[5] - apply_sign64((v2.abs() + rnd as i64 >> shift) as c_int, v2) - 0x10000)
             as i16;
-    wm.abcd = [alpha, beta, gamma, delta];
+    wm.abcd.set([alpha, beta, gamma, delta]);
 
     4 * (alpha as i32).abs() + 7 * (beta as i32).abs() >= 0x10000
         || 4 * (gamma as i32).abs() + 4 * (delta as i32).abs() >= 0x10000
