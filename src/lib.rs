@@ -14,6 +14,7 @@ use crate::include::dav1d::dav1d::Rav1dSettings;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_ALL;
+use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
@@ -484,7 +485,7 @@ unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
 pub(crate) unsafe fn rav1d_parse_sequence_header(
     ptr: *const u8,
     sz: usize,
-) -> Rav1dResult<Rav1dSequenceHeader> {
+) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
     let mut buf = Rav1dData::default();
     let s = Rav1dSettings {
         n_threads: 1,
@@ -493,7 +494,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     };
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
     rav1d_open(&mut c, &s)?;
-    || -> Rav1dResult<Rav1dSequenceHeader> {
+    || -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
         if !ptr.is_null() {
             rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void)?;
         }
@@ -509,8 +510,11 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
             return Err(ENOENT);
         }
 
-        let seq_hdr = (*c).seq_hdr.take().and_then(Arc::into_inner).unwrap();
-        Ok(seq_hdr.rav1d)
+        (*c).seq_hdr
+            .take()
+            .and_then(Arc::into_inner)
+            .map(Ok)
+            .unwrap()
     }()
     .inspect_err(|_| {
         rav1d_data_unref_internal(&mut buf);
@@ -527,7 +531,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     (|| {
         validate_input!((!out.is_null(), EINVAL))?;
         let seq_hdr = rav1d_parse_sequence_header(ptr, sz)?;
-        out.write(seq_hdr.into());
+        out.write(seq_hdr.dav1d);
         Ok(())
     })()
     .into()
