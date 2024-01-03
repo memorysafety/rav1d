@@ -106,7 +106,6 @@ use crate::src::r#ref::rav1d_ref_create_using_pool;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_is_writable;
-use crate::src::tables::dav1d_default_wm_params;
 use crate::src::thread_task::FRAME_ERROR;
 use libc::pthread_cond_wait;
 use libc::pthread_mutex_lock;
@@ -1487,7 +1486,7 @@ unsafe fn parse_gmv(
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<[Rav1dWarpedMotionParams; RAV1D_REFS_PER_FRAME]> {
-    let mut gmv = array::from_fn(|_| dav1d_default_wm_params.clone());
+    let mut gmv = array::from_fn(|_| Rav1dWarpedMotionParams::default());
 
     if frame_type.is_inter_or_switch() {
         for (i, gmv) in gmv.iter_mut().enumerate() {
@@ -1504,16 +1503,16 @@ unsafe fn parse_gmv(
                 continue;
             }
 
-            let ref_gmv;
-            if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-                ref_gmv = &dav1d_default_wm_params;
+            let default_gmv = Default::default();
+            let ref_gmv = if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
+                &default_gmv
             } else {
                 let pri_ref = refidx[primary_ref_frame as usize];
                 if (c.refs[pri_ref as usize].p.p.frame_hdr).is_null() {
                     return Err(EINVAL);
                 }
-                ref_gmv = &(*c.refs[pri_ref as usize].p.p.frame_hdr).gmv[i];
-            }
+                &(*c.refs[pri_ref as usize].p.p.frame_hdr).gmv[i]
+            };
             let mat = &mut gmv.matrix;
             let ref_mat = &ref_gmv.matrix;
             let bits;

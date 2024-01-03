@@ -745,11 +745,19 @@ pub const interintra_allowed_mask: c_uint = 0
     | 1 << BS_8x8
     | 0;
 
-pub(crate) static dav1d_default_wm_params: Rav1dWarpedMotionParams = Rav1dWarpedMotionParams {
-    r#type: RAV1D_WM_TYPE_IDENTITY,
-    matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
-    abcd: [0; 4],
-};
+/// This can't be `const` because [`Atomic`] uses `trait fn`s,
+/// which can't be `const`.
+///
+/// [`Atomic`]: atomig::Atomic
+impl Default for Rav1dWarpedMotionParams {
+    fn default() -> Self {
+        Self {
+            r#type: RAV1D_WM_TYPE_IDENTITY,
+            matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
+            abcd: Default::default(),
+        }
+    }
+}
 
 pub static dav1d_cdef_directions: [[i8; 2]; 12] = [
     [1 * 12 + 0, 2 * 12 + 0],
