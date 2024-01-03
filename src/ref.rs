@@ -125,8 +125,3 @@ pub unsafe fn rav1d_ref_dec(pref: *mut *mut Rav1dRef) {
         }
     }
 }
-
-pub unsafe fn rav1d_ref_is_writable(r#ref: *mut Rav1dRef) -> c_int {
-    return (::core::intrinsics::atomic_load_seqcst(&mut (*r#ref).ref_cnt as *mut atomic_int) == 1
-        && !((*r#ref).data).is_null()) as c_int;
-}

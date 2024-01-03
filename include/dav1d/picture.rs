@@ -21,7 +21,6 @@ use libc::uintptr_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::ptr;
-use std::ptr::addr_of_mut;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
@@ -69,8 +68,8 @@ impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
 
 #[repr(C)]
 pub struct Dav1dPicture {
-    pub seq_hdr: *mut Dav1dSequenceHeader,
-    pub frame_hdr: *mut Dav1dFrameHeader,
+    pub seq_hdr: Option<NonNull<Dav1dSequenceHeader>>,
+    pub frame_hdr: Option<NonNull<Dav1dFrameHeader>>,
     pub data: [*mut c_void; 3],
     pub stride: [ptrdiff_t; 2],
     pub p: Dav1dPictureParameters,
@@ -79,8 +78,8 @@ pub struct Dav1dPicture {
     pub mastering_display: Option<NonNull<Rav1dMasteringDisplay>>,
     pub itut_t35: Option<NonNull<Dav1dITUTT35>>,
     pub reserved: [uintptr_t; 4],
-    pub frame_hdr_ref: *mut Dav1dRef,
-    pub seq_hdr_ref: *mut Dav1dRef,
+    pub frame_hdr_ref: Option<RawArc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>, // opaque, so we can change this
+    pub seq_hdr_ref: Option<RawArc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>, // opaque, so we can change this
     pub content_light_ref: Option<RawArc<Rav1dContentLightLevel>>, // opaque, so we can change this
     pub mastering_display_ref: Option<RawArc<Rav1dMasteringDisplay>>, // opaque, so we can change this
     pub itut_t35_ref: Option<RawArc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>, // opaque, so we can change this
@@ -92,8 +91,8 @@ pub struct Dav1dPicture {
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dPicture {
-    pub seq_hdr: *mut Rav1dSequenceHeader,
-    pub frame_hdr: *mut Rav1dFrameHeader,
+    pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     pub data: [*mut c_void; 3],
     pub stride: [ptrdiff_t; 2],
     pub p: Rav1dPictureParameters,
@@ -101,8 +100,6 @@ pub(crate) struct Rav1dPicture {
     pub content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     pub itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
-    pub frame_hdr_ref: *mut Rav1dRef,
-    pub seq_hdr_ref: *mut Rav1dRef,
     pub r#ref: *mut Rav1dRef,
     pub allocator_data: *mut c_void,
 }
@@ -110,8 +107,8 @@ pub(crate) struct Rav1dPicture {
 impl From<Dav1dPicture> for Rav1dPicture {
     fn from(value: Dav1dPicture) -> Self {
         let Dav1dPicture {
-            seq_hdr,
-            frame_hdr,
+            seq_hdr: _,
+            frame_hdr: _,
             data,
             stride,
             p,
@@ -129,35 +126,13 @@ impl From<Dav1dPicture> for Rav1dPicture {
             r#ref,
             allocator_data,
         } = value;
-        assert_eq!(seq_hdr.is_null(), seq_hdr_ref.is_null());
-        assert_eq!(frame_hdr.is_null(), frame_hdr_ref.is_null());
         Self {
-            // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
-            seq_hdr: if seq_hdr.is_null() {
-                ptr::null_mut()
-            } else {
-                unsafe {
-                    addr_of_mut!(
-                        (*(seq_hdr_ref.read())
-                            .data
-                            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
-                        .rav1d
-                    )
-                }
-            },
-            // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
-            frame_hdr: if frame_hdr.is_null() {
-                ptr::null_mut()
-            } else {
-                unsafe {
-                    addr_of_mut!(
-                        (*(frame_hdr_ref.read())
-                            .data
-                            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-                        .rav1d
-                    )
-                }
-            },
+            // We don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
+            // Safety: `raw` came from [`RawArc::from_arc`].
+            seq_hdr: seq_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
+            // We don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
+            // Safety: `raw` came from [`RawArc::from_arc`].
+            frame_hdr: frame_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
             data,
             stride,
             p: p.into(),
@@ -169,8 +144,6 @@ impl From<Dav1dPicture> for Rav1dPicture {
             // We don't `.update_rav1d` [`Rav1dITUTT35`] because never read it.
             // Safety: `raw` came from [`RawArc::from_arc`].
             itut_t35: itut_t35_ref.map(|raw| unsafe { raw.into_arc() }),
-            frame_hdr_ref,
-            seq_hdr_ref,
             r#ref,
             allocator_data,
         }
@@ -189,51 +162,25 @@ impl From<Rav1dPicture> for Dav1dPicture {
             content_light,
             mastering_display,
             itut_t35,
-            frame_hdr_ref,
-            seq_hdr_ref,
             r#ref,
             allocator_data,
         } = value;
-        assert_eq!(seq_hdr.is_null(), seq_hdr_ref.is_null());
-        assert_eq!(frame_hdr.is_null(), frame_hdr_ref.is_null());
         Self {
-            // `DRav1d::from_rav1d` is called right after [`parse_seq_hdr`].
-            seq_hdr: if seq_hdr.is_null() {
-                ptr::null_mut()
-            } else {
-                unsafe {
-                    addr_of_mut!(
-                        (*(seq_hdr_ref.read())
-                            .data
-                            .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
-                        .dav1d
-                    )
-                }
-            },
-            // `DRav1d::from_rav1d` is called in [`parse_frame_hdr`].
-            frame_hdr: if frame_hdr.is_null() {
-                ptr::null_mut()
-            } else {
-                unsafe {
-                    addr_of_mut!(
-                        (*(frame_hdr_ref.read())
-                            .data
-                            .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-                        .dav1d
-                    )
-                }
-            },
+            // [`DRav1d::from_rav1d`] is called right after [`parse_seq_hdr`].
+            seq_hdr: seq_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
+            // [`DRav1d::from_rav1d`] is called in [`parse_frame_hdr`].
+            frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             data,
             stride,
             p: p.into(),
             m: m.into(),
             content_light: content_light.as_ref().map(|arc| arc.as_ref().into()),
             mastering_display: mastering_display.as_ref().map(|arc| arc.as_ref().into()),
-            // `DRav1d::from_rav1d` is called in [`rav1d_parse_obus`].
+            // [`DRav1d::from_rav1d`] is called in [`rav1d_parse_obus`].
             itut_t35: itut_t35.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             reserved: Default::default(),
-            frame_hdr_ref,
-            seq_hdr_ref,
+            frame_hdr_ref: frame_hdr.map(RawArc::from_arc),
+            seq_hdr_ref: seq_hdr.map(RawArc::from_arc),
             content_light_ref: content_light.map(RawArc::from_arc),
             mastering_display_ref: mastering_display.map(RawArc::from_arc),
             itut_t35_ref: itut_t35.map(RawArc::from_arc),
@@ -252,8 +199,8 @@ impl From<Rav1dPicture> for Dav1dPicture {
 impl Default for Rav1dPicture {
     fn default() -> Self {
         Self {
-            seq_hdr: ptr::null_mut(),
-            frame_hdr: ptr::null_mut(),
+            seq_hdr: None,
+            frame_hdr: None,
             data: [ptr::null_mut(); 3],
             stride: Default::default(),
             p: Default::default(),
@@ -261,8 +208,6 @@ impl Default for Rav1dPicture {
             content_light: None,
             mastering_display: None,
             itut_t35: None,
-            frame_hdr_ref: ptr::null_mut(),
-            seq_hdr_ref: ptr::null_mut(),
             r#ref: ptr::null_mut(),
             allocator_data: ptr::null_mut(),
         }

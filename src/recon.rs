@@ -117,8 +117,13 @@ use std::ops::BitOr;
 use std::slice;
 
 /// TODO: add feature and compile-time guard around this code
-pub(crate) unsafe fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
-    false && (*f.frame_hdr).frame_offset == 2 && t.by >= 0 && t.by < 4 && t.bx >= 8 && t.bx < 12
+pub(crate) fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
+    false
+        && f.frame_hdr.as_ref().unwrap().frame_offset == 2
+        && t.by >= 0
+        && t.by < 4
+        && t.bx >= 8
+        && t.bx < 12
 }
 
 pub(crate) type recon_b_intra_fn =
@@ -451,7 +456,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let ts: *mut Rav1dTileState = (*t).ts;
     let chroma = (plane != 0) as c_int;
     let f: *const Rav1dFrameContext = (*t).f;
-    let lossless = (*(*f).frame_hdr).segmentation.lossless[b.seg_id as usize];
+    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+    let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = DEBUG_BLOCK_INFO(&*f, &*t) as c_int;
     if dbg != 0 {
@@ -492,7 +498,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
         } else {
             get_uv_inter_txtp(&*t_dim, *txtp) as c_uint
         }) as TxfmType;
-    } else if (*(*f).frame_hdr).segmentation.qidx[b.seg_id as usize] == 0 {
+    } else if frame_hdr.segmentation.qidx[b.seg_id as usize] == 0 {
         *txtp = DCT_DCT;
     } else {
         let idx: c_uint;
@@ -504,8 +510,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 } else {
                     b.c2rust_unnamed.c2rust_unnamed.y_mode as c_int
                 }) as IntraPredMode;
-            if (*(*f).frame_hdr).reduced_txtp_set != 0 || (*t_dim).min as c_int == TX_16X16 as c_int
-            {
+            if frame_hdr.reduced_txtp_set != 0 || (*t_dim).min as c_int == TX_16X16 as c_int {
                 idx = rav1d_msac_decode_symbol_adapt4(
                     &mut (*ts).msac,
                     &mut (*ts).cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize],
@@ -534,8 +539,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 );
             }
         } else {
-            if (*(*f).frame_hdr).reduced_txtp_set != 0 || (*t_dim).max as c_int == TX_32X32 as c_int
-            {
+            if frame_hdr.reduced_txtp_set != 0 || (*t_dim).max as c_int == TX_32X32 as c_int {
                 idx = rav1d_msac_decode_bool_adapt(
                     &mut (*ts).msac,
                     &mut (*ts).cdf.m.txtp_inter3[(*t_dim).min as usize],
@@ -2542,7 +2546,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
         .as_mut_ptr();
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
-    let intra_edge_filter_flag = (*(*f).seq_hdr).intra_edge_filter << 10;
+    let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
+    let intra_edge_filter_flag = seq_hdr.intra_edge_filter << 10;
     let mut init_y = 0;
     while init_y < h4 {
         let sub_h4 = cmp::min(h4, 16 + init_y);
@@ -2665,7 +2670,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             &mut angle,
                             (*t_dim).w as c_int,
                             (*t_dim).h as c_int,
-                            (*(*f).seq_hdr).intra_edge_filter,
+                            seq_hdr.intra_edge_filter,
                             edge,
                             BD::from_c((*f).bitdepth_max),
                         );
@@ -3070,7 +3075,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     &mut angle,
                                     (*uv_t_dim).w as c_int,
                                     (*uv_t_dim).h as c_int,
-                                    (*(*f).seq_hdr).intra_edge_filter,
+                                    seq_hdr.intra_edge_filter,
                                     edge,
                                     BD::from_c((*f).bitdepth_max),
                                 );
@@ -3282,8 +3287,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     let uvdstoff: ptrdiff_t = 4
         * ((t.bx >> ss_hor) as isize
             + (t.by >> ss_ver) as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize);
-    if (*(*f).frame_hdr).frame_type.is_key_or_intra() {
-        if (*(*f).frame_hdr).size.super_res.enabled != 0 {
+    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+    if frame_hdr.frame_type.is_key_or_intra() {
+        if frame_hdr.size.super_res.enabled != 0 {
             unreachable!();
         }
         res = mc::<BD>(
@@ -3361,11 +3367,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 0 as c_int,
                 refp,
                 if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int == MM_WARP as c_int {
-                    &mut t.warpmv
+                    &t.warpmv
                 } else {
-                    &mut *((*(*f).frame_hdr).gmv).as_mut_ptr().offset(
-                        *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref).as_ptr().offset(0) as isize,
-                    )
+                    &frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                 },
             );
             if res != 0 {
@@ -3744,12 +3748,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int
                                 == MM_WARP as c_int
                             {
-                                &mut t.warpmv
+                                &t.warpmv
                             } else {
-                                &mut *((*(*f).frame_hdr).gmv).as_mut_ptr().offset(
-                                    *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref).as_ptr().offset(0)
-                                        as isize,
-                                )
+                                &frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                             },
                         );
                         if res != 0 {
@@ -3949,11 +3950,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     b_dim,
                     0 as c_int,
                     refp,
-                    &mut *((*(*f).frame_hdr).gmv).as_mut_ptr().offset(
-                        *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                            .as_ptr()
-                            .offset(i as isize) as isize,
-                    ),
+                    &frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize],
                 );
                 if res != 0 {
                     return res;
@@ -4123,11 +4120,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             b_dim,
                             1 + pl,
                             refp,
-                            &mut *((*(*f).frame_hdr).gmv).as_mut_ptr().offset(
-                                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                                    .as_ptr()
-                                    .offset(i as isize) as isize,
-                            ),
+                            &frame_hdr.gmv
+                                [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize],
                         );
                         if res != 0 {
                             return res;
@@ -4462,8 +4456,9 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     f: &mut Rav1dFrameContext,
     sby: c_int,
 ) {
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if (*f.c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint == 0
-        || (*f.frame_hdr).loopfilter.level_y[0] == 0 && (*f.frame_hdr).loopfilter.level_y[1] == 0
+        || frame_hdr.loopfilter.level_y[0] == 0 && frame_hdr.loopfilter.level_y[1] == 0
     {
         return;
     }
@@ -4479,8 +4474,9 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
             (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
     ];
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let mask: *mut Av1Filter =
-        (f.lf.mask).offset(((sby >> ((*f.seq_hdr).sb128 == 0) as c_int) * f.sb128w) as isize);
+        (f.lf.mask).offset(((sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w) as isize);
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
         p.as_ptr(),
@@ -4506,14 +4502,16 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
             (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
     ];
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let mask: *mut Av1Filter =
-        (f.lf.mask).offset(((sby >> ((*f.seq_hdr).sb128 == 0) as c_int) * f.sb128w) as isize);
+        (f.lf.mask).offset(((sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w) as isize);
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if (*f.c).inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
-        && ((*f.frame_hdr).loopfilter.level_y[0] != 0 || (*f.frame_hdr).loopfilter.level_y[1] != 0)
+        && (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0)
     {
         rav1d_loopfilter_sbrow_rows::<BD>(f, p.as_ptr(), mask, sby);
     }
-    if (*f.seq_hdr).cdef != 0 || f.lf.restore_planes != 0 {
+    if seq_hdr.cdef != 0 || f.lf.restore_planes != 0 {
         rav1d_copy_lpf::<BD>(f, p.as_ptr(), sby);
     }
 }
@@ -4537,10 +4535,11 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(tc: &mut Rav1dTaskCon
             (y as isize * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize,
         ),
     ];
-    let prev_mask: *mut Av1Filter = ((*f).lf.mask)
-        .offset(((sby - 1 >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
-    let mask: *mut Av1Filter = ((*f).lf.mask)
-        .offset(((sby >> ((*(*f).seq_hdr).sb128 == 0) as c_int) * (*f).sb128w) as isize);
+    let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
+    let prev_mask: *mut Av1Filter =
+        ((*f).lf.mask).offset(((sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * (*f).sb128w) as isize);
+    let mask: *mut Av1Filter =
+        ((*f).lf.mask).offset(((sby >> (seq_hdr.sb128 == 0) as c_int) * (*f).sb128w) as isize);
     let start = sby * sbsz;
     if sby != 0 {
         let ss_ver =
@@ -4654,10 +4653,12 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(f: &mut Rav1dFrameConte
 pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(f: &mut Rav1dFrameContext, sby: c_int) {
     rav1d_filter_sbrow_deblock_cols::<BD>(f, sby);
     rav1d_filter_sbrow_deblock_rows::<BD>(f, sby);
-    if (*f.seq_hdr).cdef != 0 {
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    if seq_hdr.cdef != 0 {
         rav1d_filter_sbrow_cdef::<BD>(&mut *(*f.c).tc, sby);
     }
-    if (*f.frame_hdr).size.width[0] != (*f.frame_hdr).size.width[1] {
+    if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         rav1d_filter_sbrow_resize::<BD>(f, sby);
     }
     if f.lf.restore_planes != 0 {

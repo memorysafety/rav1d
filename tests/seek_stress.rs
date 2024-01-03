@@ -47,7 +47,6 @@ use rav1d::include::dav1d::dav1d::Dav1dSettings;
 use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::headers::Dav1dColorPrimaries;
-use rav1d::include::dav1d::headers::Dav1dFrameHeader;
 use rav1d::include::dav1d::headers::Dav1dSequenceHeader;
 use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingParameterInfo;
 use rav1d::include::dav1d::headers::Dav1dSequenceHeaderOperatingPoint;
@@ -146,8 +145,8 @@ unsafe fn decode_rand(
 ) -> c_int {
     let mut res = 0;
     let mut p: Dav1dPicture = Dav1dPicture {
-        seq_hdr: 0 as *mut Dav1dSequenceHeader,
-        frame_hdr: 0 as *mut Dav1dFrameHeader,
+        seq_hdr: None,
+        frame_hdr: None,
         data: [0 as *mut c_void; 3],
         stride: [0; 2],
         p: Dav1dPictureParameters {
@@ -170,8 +169,8 @@ unsafe fn decode_rand(
         mastering_display: None,
         itut_t35: None,
         reserved: [0; 4],
-        frame_hdr_ref: 0 as *mut Dav1dRef,
-        seq_hdr_ref: 0 as *mut Dav1dRef,
+        frame_hdr_ref: None,
+        seq_hdr_ref: None,
         content_light_ref: None,
         mastering_display_ref: None,
         itut_t35_ref: None,
@@ -201,8 +200,8 @@ unsafe fn decode_all(
 ) -> c_int {
     let mut res: c_int;
     let mut p: Dav1dPicture = Dav1dPicture {
-        seq_hdr: 0 as *mut Dav1dSequenceHeader,
-        frame_hdr: 0 as *mut Dav1dFrameHeader,
+        seq_hdr: None,
+        frame_hdr: None,
         data: [0 as *mut c_void; 3],
         stride: [0; 2],
         p: Dav1dPictureParameters {
@@ -225,8 +224,8 @@ unsafe fn decode_all(
         mastering_display: None,
         itut_t35: None,
         reserved: [0; 4],
-        frame_hdr_ref: 0 as *mut Dav1dRef,
-        seq_hdr_ref: 0 as *mut Dav1dRef,
+        frame_hdr_ref: None,
+        seq_hdr_ref: None,
         content_light_ref: None,
         mastering_display_ref: None,
         itut_t35_ref: None,

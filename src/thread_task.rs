@@ -357,10 +357,12 @@ unsafe fn create_filter_sbrow(
     pass: c_int,
     res_t: *mut *mut Rav1dTask,
 ) -> c_int {
-    let has_deblock = ((*(*f).frame_hdr).loopfilter.level_y[0] != 0
-        || (*(*f).frame_hdr).loopfilter.level_y[1] != 0) as c_int;
-    let has_cdef = (*(*f).seq_hdr).cdef;
-    let has_resize = ((*(*f).frame_hdr).size.width[0] != (*(*f).frame_hdr).size.width[1]) as c_int;
+    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+    let has_deblock =
+        (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0) as c_int;
+    let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
+    let has_cdef = seq_hdr.cdef;
+    let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let has_lr = (*f).lf.restore_planes;
     let mut tasks: *mut Rav1dTask = (*f).task_thread.tasks;
     let uses_2pass = ((*(*f).c).n_fc > 1 as c_uint) as c_int;
@@ -435,7 +437,8 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
 ) -> Rav1dResult {
     let mut tasks: *mut Rav1dTask = (*f).task_thread.tile_tasks[0];
     let uses_2pass = ((*(*f).c).n_fc > 1 as c_uint) as c_int;
-    let num_tasks = (*(*f).frame_hdr).tiling.cols * (*(*f).frame_hdr).tiling.rows;
+    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+    let num_tasks = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
     if pass < 2 {
         let alloc_num_tasks = num_tasks * (1 + uses_2pass);
         if alloc_num_tasks > (*f).task_thread.num_tile_tasks {
@@ -585,7 +588,8 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
         error = (p2 == TILE_ERROR) as c_int;
         error |= ::core::intrinsics::atomic_or_seqcst(&mut (*f).task_thread.error, error);
     }
-    if error == 0 && frame_mt != 0 && !(*(*f).frame_hdr).frame_type.is_key_or_intra() {
+    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+    if error == 0 && frame_mt != 0 && !frame_hdr.frame_type.is_key_or_intra() {
         let p: *const Rav1dThreadPicture = &mut (*f).sr_cur;
         let ss_ver =
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
@@ -951,7 +955,8 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             {
                                                 unreachable!();
                                             }
-                                            let tile_row_base = (*(*f).frame_hdr).tiling.cols
+                                            let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+                                            let tile_row_base = frame_hdr.tiling.cols
                                                 * (*f).frame_thread.next_tile_row[p as usize];
                                             if p != 0 {
                                                 let prog: *mut atomic_int =
@@ -973,9 +978,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                             match current_block {
                                                 5395695591151878490 => {}
                                                 _ => {
+                                                    let frame_hdr =
+                                                        &***(*f).frame_hdr.as_ref().unwrap();
                                                     let mut tc_0 = 0;
                                                     loop {
-                                                        if !(tc_0 < (*(*f).frame_hdr).tiling.cols) {
+                                                        if !(tc_0 < frame_hdr.tiling.cols) {
                                                             current_block = 3222590281903869779;
                                                             break;
                                                         }
@@ -1013,11 +1020,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                                     (*f).frame_thread.next_tile_row
                                                                         [p as usize]
                                                                         + 1;
-                                                                let start = (*(*f).frame_hdr)
-                                                                    .tiling
-                                                                    .row_start_sb
-                                                                    [ntr as usize]
-                                                                    as c_int;
+                                                                let start =
+                                                                    frame_hdr.tiling.row_start_sb
+                                                                        [ntr as usize]
+                                                                        as c_int;
                                                                 if (*next_t).sby == start {
                                                                     (*f).frame_thread
                                                                         .next_tile_row
@@ -1161,7 +1167,8 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     {
                                         res_0 = rav1d_decode_frame_init_cdf(&mut *f);
                                     }
-                                    if (*(*f).frame_hdr).refresh_context != 0
+                                    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+                                    if frame_hdr.refresh_context != 0
                                         && !(*f).task_thread.update_set
                                     {
                                         ::core::intrinsics::atomic_store_seqcst(
@@ -1197,8 +1204,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                 );
                                                 ::core::intrinsics::atomic_xsub_seqcst(
                                                     &mut (*f).task_thread.task_counter,
-                                                    (*(*f).frame_hdr).tiling.cols
-                                                        * (*(*f).frame_hdr).tiling.rows
+                                                    frame_hdr.tiling.cols * frame_hdr.tiling.rows
                                                         + (*f).sbh,
                                                 );
                                                 ::core::intrinsics::atomic_store_seqcst(
@@ -1321,18 +1327,18 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         error_0 = ::core::intrinsics::atomic_load_seqcst(
                                             &mut (*f).task_thread.error,
                                         );
-                                        if (*(*f).frame_hdr).refresh_context != 0
+                                        let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+                                        if frame_hdr.refresh_context != 0
                                             && (*tc).frame_thread.pass <= 1
                                             && (*f).task_thread.update_set
-                                            && (*(*f).frame_hdr).tiling.update == tile_idx
+                                            && frame_hdr.tiling.update == tile_idx
                                         {
                                             if error_0 == 0 {
                                                 rav1d_cdf_thread_update(
-                                                    (*f).frame_hdr,
+                                                    frame_hdr,
                                                     (*f).out_cdf.data.cdf,
-                                                    &mut (*((*f).ts).offset(
-                                                        (*(*f).frame_hdr).tiling.update as isize,
-                                                    ))
+                                                    &mut (*((*f).ts)
+                                                        .offset(frame_hdr.tiling.update as isize))
                                                     .cdf,
                                                 );
                                             }
@@ -1455,8 +1461,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 {
                                     ((*f).bd_fn.filter_sbrow_deblock_rows)(&mut *f, sby);
                                 }
-                                if (*(*f).frame_hdr).loopfilter.level_y[0] != 0
-                                    || (*(*f).frame_hdr).loopfilter.level_y[1] != 0
+                                let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
+                                let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+                                if frame_hdr.loopfilter.level_y[0] != 0
+                                    || frame_hdr.loopfilter.level_y[1] != 0
                                 {
                                     error_0 = ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error,
@@ -1473,7 +1481,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     {
                                         pthread_cond_signal(&mut (*ttd).cond);
                                     }
-                                } else if (*(*f).seq_hdr).cdef != 0 || (*f).lf.restore_planes != 0 {
+                                } else if seq_hdr.cdef != 0 || (*f).lf.restore_planes != 0 {
                                     ::core::intrinsics::atomic_or_seqcst(
                                         &mut *((*f).frame_thread.copy_lpf_progress)
                                             .offset((sby >> 5) as isize)
@@ -1504,7 +1512,8 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         }
                         match current_block {
                             5292528706010880565 => {
-                                if (*(*f).seq_hdr).cdef != 0 {
+                                let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
+                                if seq_hdr.cdef != 0 {
                                     if ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
@@ -1526,9 +1535,8 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         }
                         match current_block {
                             12196494833634779273 => {
-                                if (*(*f).frame_hdr).size.width[0]
-                                    != (*(*f).frame_hdr).size.width[1]
-                                {
+                                let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+                                if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                                     if ::core::intrinsics::atomic_load_seqcst(
                                         &mut (*f).task_thread.error as *mut atomic_int,
                                     ) == 0
