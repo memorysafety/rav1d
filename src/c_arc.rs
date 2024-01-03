@@ -2,9 +2,9 @@ use crate::src::c_box::CBox;
 use crate::src::error::Rav1dResult;
 use std::marker::PhantomData;
 use std::mem;
-use std::ops::AddAssign;
 use std::ops::Deref;
 use std::ptr::NonNull;
+use std::slice::SliceIndex;
 use std::sync::Arc;
 use to_method::To;
 
@@ -153,10 +153,17 @@ impl<T: ?Sized> CArc<T> {
     }
 }
 
-impl<T> AddAssign<usize> for CArc<[T]> {
-    /// Slice [`Self::stable_ref`].
-    fn add_assign(&mut self, rhs: usize) {
-        self.stable_ref = self[rhs..].into();
+impl<T> CArc<[T]> {
+    /// Slice [`Self::stable_ref`] in-place.
+    ///
+    /// The slice stays owned by the [`Arc`],
+    /// but the [`Self::stable_ref`]/[`Self::as_ref`]/[`Self::deref`] view into it
+    /// is assigned to the new sub-slice.
+    pub fn slice_in_place<I>(&mut self, range: I)
+    where
+        I: SliceIndex<[T], Output = [T]>,
+    {
+        self.stable_ref = self.as_ref()[range].into();
     }
 }
 
