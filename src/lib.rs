@@ -686,22 +686,26 @@ unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
     if output_picture_ready(c, false) {
         return Ok(());
     }
-    while !c.in_0.as_ref().is_empty() {
-        let r#in = mem::take(&mut c.in_0); // Take so we don't have 2 `&mut`s.
-        let len = rav1d_parse_obus(c, &r#in.data.as_ref().unwrap(), &r#in.m, false);
-        c.in_0 = r#in; // Restore into `c` right after.
-        match len {
-            Err(_) => {
-                let _ = mem::take(&mut c.in_0);
-            }
-            Ok(len) => {
-                c.in_0.data.as_mut().unwrap().slice_in_place(len..);
-                if c.in_0.data.as_ref().unwrap().is_empty() {
-                    let _ = mem::take(&mut c.in_0);
+    // Take so we don't have 2 `&mut`s.
+    let Rav1dData {
+        data: r#in,
+        m: props,
+    } = mem::take(&mut c.in_0);
+    let Some(mut r#in) = r#in else { return Ok(()) };
+    while !r#in.is_empty() {
+        let len = rav1d_parse_obus(c, &r#in, &props, false);
+        if let Ok(len) = len {
+            r#in.slice_in_place(len..);
+        }
+        // Note that [`output_picture_ready`] doesn't read [`Rav1dContext::in_0`].
+        if output_picture_ready(c, false) {
+            // Restore into `c` when there's still data left.
+            if !r#in.is_empty() {
+                c.in_0 = Rav1dData {
+                    data: Some(r#in),
+                    m: props,
                 }
             }
-        }
-        if output_picture_ready(c, false) {
             break;
         }
         len?;
