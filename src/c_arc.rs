@@ -8,6 +8,12 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 use to_method::To;
 
+pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
+    let raw = Arc::into_raw(arc).cast_mut();
+    // Safety: [`Arc::into_raw`] never returns null.
+    unsafe { NonNull::new_unchecked(raw) }
+}
+
 /// A C/custom [`Arc`].
 ///
 /// That is, it is analogous to an [`Arc`],
@@ -132,10 +138,7 @@ pub struct RawCArc<T: ?Sized>(NonNull<PhantomData<CBox<T>>>);
 impl<T: ?Sized> CArc<T> {
     /// Convert into a raw, opaque form suitable for C FFI.
     pub fn into_raw(self) -> RawCArc<T> {
-        let raw = Arc::into_raw(self.owner);
-        // Safety: [`Arc::into_raw`] guarantees it always returns non-null ptrs.
-        let raw = unsafe { NonNull::new_unchecked(raw.cast_mut()) };
-        RawCArc(raw.cast())
+        RawCArc(arc_into_raw(self.owner).cast())
     }
 
     /// # Safety

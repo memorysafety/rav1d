@@ -4,6 +4,12 @@ use std::ops::Deref;
 use std::ptr::drop_in_place;
 use std::ptr::NonNull;
 
+pub fn box_into_raw<T: ?Sized>(r#box: Box<T>) -> NonNull<T> {
+    let raw = Box::into_raw(r#box);
+    // Safety: [`Box::into_raw`] never returns null.
+    unsafe { NonNull::new_unchecked(raw) }
+}
+
 pub type FnFree = unsafe extern "C" fn(ptr: *const u8, cookie: *mut c_void);
 
 /// A `free` "closure", i.e. a [`FnFree`] and an enclosed context [`Self::cookie`].
@@ -82,11 +88,8 @@ impl<T: ?Sized> CBox<T> {
     }
 
     pub fn from_box(data: Box<T>) -> Self {
-        let data = Box::into_raw(data);
-        // Safety: [`Box::into_raw`] guarantees it always returns non-null ptrs.
-        let data = unsafe { NonNull::new_unchecked(data) };
         Self {
-            data,
+            data: box_into_raw(data),
             free: None,
             _phantom: PhantomData,
         }
