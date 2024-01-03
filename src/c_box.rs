@@ -68,7 +68,7 @@ impl<T: ?Sized> Drop for CBox<T> {
                 // so we have to do this ourselves first.
                 unsafe { drop_in_place(ptr) };
                 let ptr = ptr.cast();
-                // Safety: See safety docs on [`Self::data`].
+                // Safety: See safety docs on [`Self::data`] and [`Self::from_c`].
                 unsafe { free.free(ptr) }
             }
         }
@@ -76,7 +76,11 @@ impl<T: ?Sized> Drop for CBox<T> {
 }
 
 impl<T: ?Sized> CBox<T> {
-    pub fn from_c(data: NonNull<T>, free: Free) -> Self {
+    /// # Safety
+    ///
+    /// `data` must be valid to dereference
+    /// until `free` is called on it, which must deallocate it.
+    pub unsafe fn from_c(data: NonNull<T>, free: Free) -> Self {
         Self::C {
             data,
             free,
