@@ -182,7 +182,7 @@ unsafe fn picture_alloc_with_edges(
     itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     bpc: c_int,
     props: &Rav1dDataProps,
-    p_allocator: *mut Rav1dPicAllocator,
+    p_allocator: &mut Rav1dPicAllocator,
     extra: usize,
     extra_ptr: *mut *mut c_void,
 ) -> Rav1dResult {
@@ -206,12 +206,12 @@ unsafe fn picture_alloc_with_edges(
     p.p.layout = seq_hdr.as_ref().unwrap().layout;
     p.p.bpc = bpc;
     p.m = Default::default();
-    let res = (*p_allocator).alloc_picture(p);
+    let res = p_allocator.alloc_picture(p);
     if res.is_err() {
         free(pic_ctx as *mut c_void);
         return res;
     }
-    (*pic_ctx).allocator = (*p_allocator).clone();
+    (*pic_ctx).allocator = p_allocator.clone();
     // TODO(kkysen) A normal assignment here as it used to be
     // calls `fn drop` on `(*pic_ctx).pic`, which segfaults as it is uninitialized.
     // We need to figure out the right thing to do here.
@@ -222,7 +222,7 @@ unsafe fn picture_alloc_with_edges(
         pic_ctx as *mut c_void,
     );
     if p.r#ref.is_null() {
-        (*p_allocator).release_picture(p);
+        p_allocator.release_picture(p);
         free(pic_ctx as *mut c_void);
         writeln!(
             c.logger,
