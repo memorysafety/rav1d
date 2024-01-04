@@ -301,14 +301,14 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
 
 pub(crate) unsafe fn rav1d_picture_alloc_copy(
     c: &mut Rav1dContext,
-    dst: *mut Rav1dPicture,
+    dst: &mut Rav1dPicture,
     w: c_int,
     src: *const Rav1dPicture,
 ) -> Rav1dResult {
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
     let res = picture_alloc_with_edges(
         &c.logger,
-        &mut *dst,
+        dst,
         w,
         (*src).p.h,
         &(*src).seq_hdr,
