@@ -262,7 +262,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     let p = &mut f.sr_cur;
     let have_frame_mt = c.n_fc > 1;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let res = picture_alloc_with_edges(
+    picture_alloc_with_edges(
         &c.logger,
         &mut p.p,
         frame_hdr.size.width[1],
@@ -281,10 +281,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
             0
         },
         &mut p.progress as *mut *mut atomic_uint as *mut *mut c_void,
-    );
-    if res.is_err() {
-        return res;
-    }
+    )?;
     let _ = mem::take(&mut c.itut_t35);
     let flags_mask = if frame_hdr.show_frame != 0 || c.output_invisible_frames {
         PictureFlags::empty()
@@ -299,7 +296,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         *(&mut *(p.progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
         *(&mut *(p.progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
     }
-    res
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_picture_alloc_copy(
