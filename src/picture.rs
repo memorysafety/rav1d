@@ -245,9 +245,9 @@ pub unsafe fn rav1d_picture_copy_props(
     content_light: &Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
     itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
-    props: *const Rav1dDataProps,
+    props: &Rav1dDataProps,
 ) {
-    p.m = (*props).clone();
+    p.m = props.clone();
     p.content_light = content_light.clone();
     p.mastering_display = mastering_display.clone();
     p.itut_t35 = itut_t35.clone();
