@@ -191,9 +191,7 @@ unsafe fn picture_alloc_with_edges(
         writeln!(logger, "Picture already allocated!",);
         return Err(EGeneric);
     }
-    if !(bpc > 0 && bpc <= 16) {
-        unreachable!();
-    }
+    assert!(bpc > 0 && bpc <= 16);
     let pic_ctx: *mut pic_ctx_context =
         malloc(extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>()))
             as *mut pic_ctx_context;
