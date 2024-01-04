@@ -34,8 +34,6 @@ use libc::free;
 use libc::malloc;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
-use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::io;
 use std::mem;
@@ -88,16 +86,16 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
     cookie: *mut c_void,
 ) -> Dav1dResult {
-    if !(::core::mem::size_of::<Rav1dMemPoolBuffer>() as c_ulong <= 64 as c_ulong) {
+    if !(::core::mem::size_of::<Rav1dMemPoolBuffer>() <= 64) {
         unreachable!();
     }
     let mut p = p_c.read().to::<Rav1dPicture>();
     let hbd = (p.p.bpc > 8) as c_int;
-    let aligned_w = p.p.w + 127 & !(127 as c_int);
-    let aligned_h = p.p.h + 127 & !(127 as c_int);
-    let has_chroma = (p.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint) as c_int;
-    let ss_ver = (p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor = (p.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let aligned_w = p.p.w + 127 & !127;
+    let aligned_h = p.p.h + 127 & !127;
+    let has_chroma = (p.p.layout != Rav1dPixelLayout::I400) as c_int;
+    let ss_ver = (p.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (p.p.layout != Rav1dPixelLayout::I444) as c_int;
     let mut y_stride: ptrdiff_t = (aligned_w << hbd) as ptrdiff_t;
     let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
         y_stride >> ss_hor
