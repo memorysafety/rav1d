@@ -96,8 +96,8 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let has_chroma = p.p.layout != Rav1dPixelLayout::I400;
     let ss_ver = (p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (p.p.layout != Rav1dPixelLayout::I444) as c_int;
-    let mut y_stride: ptrdiff_t = (aligned_w << hbd) as ptrdiff_t;
-    let mut uv_stride: ptrdiff_t = if has_chroma { y_stride >> ss_hor } else { 0 };
+    let mut y_stride = (aligned_w << hbd) as ptrdiff_t;
+    let mut uv_stride = if has_chroma { y_stride >> ss_hor } else { 0 };
     if y_stride & 1023 == 0 {
         y_stride += 64;
     }
@@ -106,10 +106,10 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     }
     p.stride[0] = y_stride;
     p.stride[1] = uv_stride;
-    let y_sz: usize = (y_stride * aligned_h as isize) as usize;
-    let uv_sz: usize = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
-    let pic_size: usize = y_sz.wrapping_add(2usize.wrapping_mul(uv_sz));
-    let buf: *mut Rav1dMemPoolBuffer = rav1d_mem_pool_pop(
+    let y_sz = (y_stride * aligned_h as isize) as usize;
+    let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
+    let pic_size = y_sz.wrapping_add(2usize.wrapping_mul(uv_sz));
+    let buf = rav1d_mem_pool_pop(
         cookie as *mut Rav1dMemPool,
         pic_size
             .wrapping_add(64)
@@ -119,7 +119,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
         return Rav1dResult::<()>::Err(ENOMEM).into();
     }
     p.allocator_data = buf as *mut c_void;
-    let data: *mut u8 = (*buf).data as *mut u8;
+    let data = (*buf).data as *mut u8;
     p.data[0] = data as *mut c_void;
     p.data[1] = (if has_chroma {
         data.offset(y_sz as isize)
