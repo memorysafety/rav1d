@@ -14,6 +14,7 @@ use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
+use crate::include::dav1d::headers::Rav1dFrameHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dFrameHeader_cdef;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta;
 use crate::include::dav1d::headers::Rav1dFrameHeader_delta_lf;
@@ -601,12 +602,11 @@ unsafe fn parse_seq_hdr(
 unsafe fn parse_frame_size(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
+    refidx: Option<&[c_int; RAV1D_REFS_PER_FRAME]>,
     frame_size_override: c_int,
     gb: &mut GetBits,
-    use_ref: bool,
 ) -> Rav1dResult<Rav1dFrameSize> {
-    if use_ref {
+    if let Some(refidx) = refidx {
         for i in 0..7 {
             if rav1d_get_bit(gb) != 0 {
                 let r#ref = &c.refs[refidx[i as usize] as usize].p;
@@ -1755,105 +1755,133 @@ unsafe fn parse_frame_hdr(
     spatial_id: c_int,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader> {
-    let mut hdr = MaybeUninit::<Rav1dFrameHeader>::zeroed().assume_init();
-
-    hdr.temporal_id = temporal_id;
-    hdr.spatial_id = spatial_id;
-
     let debug = Debug::new(false, "HDR", gb);
 
     debug.post(gb, "show_existing_frame");
-    hdr.show_existing_frame =
+    let show_existing_frame =
         (seqhdr.reduced_still_picture_header == 0 && rav1d_get_bit(gb) != 0) as c_int;
-    if hdr.show_existing_frame != 0 {
-        hdr.existing_frame_idx = rav1d_get_bits(gb, 3) as c_int;
+    let existing_frame_idx;
+    let mut frame_presentation_delay;
+    if show_existing_frame != 0 {
+        existing_frame_idx = rav1d_get_bits(gb, 3) as c_int;
         if seqhdr.decoder_model_info_present != 0 && seqhdr.equal_picture_interval == 0 {
-            hdr.frame_presentation_delay =
+            frame_presentation_delay =
                 rav1d_get_bits(gb, seqhdr.frame_presentation_delay_length) as c_int;
+        } else {
+            // Default initialization.
+            frame_presentation_delay = Default::default();
         }
+        let frame_id;
         if seqhdr.frame_id_numbers_present != 0 {
-            hdr.frame_id = rav1d_get_bits(gb, seqhdr.frame_id_n_bits) as c_int;
-            let ref_frame_hdr = c.refs[hdr.existing_frame_idx as usize].p.p.frame_hdr;
-            if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != hdr.frame_id {
+            frame_id = rav1d_get_bits(gb, seqhdr.frame_id_n_bits) as c_int;
+            let ref_frame_hdr = c.refs[existing_frame_idx as usize].p.p.frame_hdr;
+            if ref_frame_hdr.is_null() || (*ref_frame_hdr).frame_id != frame_id {
                 return Err(EINVAL);
             }
+        } else {
+            // Default initialization.
+            frame_id = Default::default();
         }
-        return Ok(hdr);
+        return Ok(Rav1dFrameHeader {
+            spatial_id,
+            temporal_id,
+            show_existing_frame,
+            existing_frame_idx,
+            frame_presentation_delay,
+            frame_id,
+            // TODO(kkysen) I'm still using this vs. `Default::default()`
+            // because [`Default`] requires `#[derive(Default)]` on almost all of the type,
+            // and I think an [`Option`] somewhere could avoid that.
+            // There are also `enum`s that don't have a clear default other than being 0.
+            ..MaybeUninit::zeroed().assume_init()
+        });
+    } else {
+        // Default initialization.
+        existing_frame_idx = Default::default();
+        frame_presentation_delay = Default::default();
     }
 
-    hdr.frame_type = if seqhdr.reduced_still_picture_header != 0 {
+    let frame_type = if seqhdr.reduced_still_picture_header != 0 {
         Rav1dFrameType::Key
     } else {
         Rav1dFrameType::from_repr(rav1d_get_bits(gb, 2) as usize).unwrap()
     };
-    hdr.show_frame = (seqhdr.reduced_still_picture_header != 0 || rav1d_get_bit(gb) != 0) as c_int;
-    if hdr.show_frame != 0 {
+    let show_frame = (seqhdr.reduced_still_picture_header != 0 || rav1d_get_bit(gb) != 0) as c_int;
+    let showable_frame;
+    if show_frame != 0 {
         if seqhdr.decoder_model_info_present != 0 && seqhdr.equal_picture_interval == 0 {
-            hdr.frame_presentation_delay =
+            frame_presentation_delay =
                 rav1d_get_bits(gb, seqhdr.frame_presentation_delay_length) as c_int;
         }
-        hdr.showable_frame = (hdr.frame_type != Rav1dFrameType::Key) as c_int;
+        showable_frame = (frame_type != Rav1dFrameType::Key) as c_int;
     } else {
-        hdr.showable_frame = rav1d_get_bit(gb) as c_int;
+        showable_frame = rav1d_get_bit(gb) as c_int;
     }
-    hdr.error_resilient_mode = (hdr.frame_type == Rav1dFrameType::Key && hdr.show_frame != 0
-        || hdr.frame_type == Rav1dFrameType::Switch
+    let error_resilient_mode = (frame_type == Rav1dFrameType::Key && show_frame != 0
+        || frame_type == Rav1dFrameType::Switch
         || seqhdr.reduced_still_picture_header != 0
         || rav1d_get_bit(gb) != 0) as c_int;
     debug.post(gb, "frametype_bits");
-    hdr.disable_cdf_update = rav1d_get_bit(gb) as c_int;
-    hdr.allow_screen_content_tools = (if seqhdr.screen_content_tools == RAV1D_ADAPTIVE {
+    let disable_cdf_update = rav1d_get_bit(gb) as c_int;
+    let allow_screen_content_tools = (if seqhdr.screen_content_tools == RAV1D_ADAPTIVE {
         rav1d_get_bit(gb)
     } else {
         seqhdr.screen_content_tools
     }) as c_int;
-    if hdr.allow_screen_content_tools != 0 {
-        hdr.force_integer_mv = (if seqhdr.force_integer_mv == RAV1D_ADAPTIVE {
+    let mut force_integer_mv;
+    if allow_screen_content_tools != 0 {
+        force_integer_mv = (if seqhdr.force_integer_mv == RAV1D_ADAPTIVE {
             rav1d_get_bit(gb)
         } else {
             seqhdr.force_integer_mv
         }) as c_int;
     } else {
-        hdr.force_integer_mv = 0;
+        force_integer_mv = 0;
     }
 
-    if hdr.frame_type.is_key_or_intra() {
-        hdr.force_integer_mv = 1;
+    if frame_type.is_key_or_intra() {
+        force_integer_mv = 1;
     }
 
+    let frame_id;
     if seqhdr.frame_id_numbers_present != 0 {
-        hdr.frame_id = rav1d_get_bits(gb, seqhdr.frame_id_n_bits) as c_int;
+        frame_id = rav1d_get_bits(gb, seqhdr.frame_id_n_bits) as c_int;
+    } else {
+        // Default initialization.
+        frame_id = Default::default();
     }
 
-    hdr.frame_size_override = (if seqhdr.reduced_still_picture_header != 0 {
+    let frame_size_override = (if seqhdr.reduced_still_picture_header != 0 {
         0
-    } else if hdr.frame_type == Rav1dFrameType::Switch {
+    } else if frame_type == Rav1dFrameType::Switch {
         1
     } else {
         rav1d_get_bit(gb)
     }) as c_int;
     debug.post(gb, "frame_size_override_flag");
-    hdr.frame_offset = if seqhdr.order_hint != 0 {
+    let frame_offset = if seqhdr.order_hint != 0 {
         rav1d_get_bits(gb, seqhdr.order_hint_n_bits) as c_int
     } else {
         0
     };
-    hdr.primary_ref_frame = if hdr.error_resilient_mode == 0 && hdr.frame_type.is_inter_or_switch()
-    {
+    let primary_ref_frame = if error_resilient_mode == 0 && frame_type.is_inter_or_switch() {
         rav1d_get_bits(gb, 3) as c_int
     } else {
         RAV1D_PRIMARY_REF_NONE
     };
 
+    let buffer_removal_time_present;
+    let mut operating_points =
+        [Rav1dFrameHeaderOperatingPoint::default(); RAV1D_MAX_OPERATING_POINTS];
     if seqhdr.decoder_model_info_present != 0 {
-        hdr.buffer_removal_time_present = rav1d_get_bit(gb) as c_int;
-        if hdr.buffer_removal_time_present != 0 {
+        buffer_removal_time_present = rav1d_get_bit(gb) as c_int;
+        if buffer_removal_time_present != 0 {
             for i in 0..seqhdr.num_operating_points {
                 let seqop = &seqhdr.operating_points[i as usize];
-                let op = &mut hdr.operating_points[i as usize];
+                let op = &mut operating_points[i as usize];
                 if seqop.decoder_model_param_present != 0 {
-                    let in_temporal_layer = seqop.idc >> hdr.temporal_id & 1;
-                    let in_spatial_layer = seqop.idc >> hdr.spatial_id + 8 & 1;
+                    let in_temporal_layer = seqop.idc >> temporal_id & 1;
+                    let in_spatial_layer = seqop.idc >> spatial_id + 8 & 1;
                     if seqop.idc == 0 || in_temporal_layer != 0 && in_spatial_layer != 0 {
                         op.buffer_removal_time =
                             rav1d_get_bits(gb, seqhdr.buffer_removal_delay_length) as c_int;
@@ -1861,109 +1889,124 @@ unsafe fn parse_frame_hdr(
                 }
             }
         }
+    } else {
+        // Default initialization.
+        buffer_removal_time_present = Default::default();
     }
 
-    if hdr.frame_type.is_key_or_intra() {
-        hdr.refresh_frame_flags = if hdr.frame_type == Rav1dFrameType::Key && hdr.show_frame != 0 {
+    let refresh_frame_flags;
+    let size;
+    let refidx;
+    let allow_intrabc;
+    let use_ref_frame_mvs;
+    let frame_ref_short_signaling;
+    let hp;
+    let subpel_filter_mode;
+    let switchable_motion_mode;
+    if frame_type.is_key_or_intra() {
+        refresh_frame_flags = if frame_type == Rav1dFrameType::Key && show_frame != 0 {
             0xff
         } else {
             rav1d_get_bits(gb, 8) as c_int
         };
-        if hdr.refresh_frame_flags != 0xff
-            && hdr.error_resilient_mode != 0
-            && seqhdr.order_hint != 0
-        {
+        if refresh_frame_flags != 0xff && error_resilient_mode != 0 && seqhdr.order_hint != 0 {
             for _ in 0..8 {
                 rav1d_get_bits(gb, seqhdr.order_hint_n_bits);
             }
         }
         if c.strict_std_compliance
-            && hdr.frame_type == Rav1dFrameType::Intra
-            && hdr.refresh_frame_flags == 0xff
+            && frame_type == Rav1dFrameType::Intra
+            && refresh_frame_flags == 0xff
         {
             return Err(EINVAL);
         }
-        hdr.size = parse_frame_size(c, seqhdr, &hdr.refidx, hdr.frame_size_override, gb, false)?;
-        hdr.allow_intrabc = (hdr.allow_screen_content_tools != 0
-            && hdr.size.super_res.enabled == 0
+        size = parse_frame_size(c, seqhdr, None, frame_size_override, gb)?;
+        allow_intrabc = (allow_screen_content_tools != 0
+            && size.super_res.enabled == 0
             && rav1d_get_bit(gb) != 0) as c_int;
-        hdr.use_ref_frame_mvs = 0;
+        use_ref_frame_mvs = 0;
+
+        // Default initialization.
+        refidx = Default::default();
+        frame_ref_short_signaling = Default::default();
+        hp = Default::default();
+        subpel_filter_mode = Default::default();
+        switchable_motion_mode = Default::default();
     } else {
-        hdr.allow_intrabc = 0;
-        hdr.refresh_frame_flags = if hdr.frame_type == Rav1dFrameType::Switch {
+        allow_intrabc = 0;
+        refresh_frame_flags = if frame_type == Rav1dFrameType::Switch {
             0xff
         } else {
             rav1d_get_bits(gb, 8) as c_int
         };
-        if hdr.error_resilient_mode != 0 && seqhdr.order_hint != 0 {
+        if error_resilient_mode != 0 && seqhdr.order_hint != 0 {
             for _ in 0..8 {
                 rav1d_get_bits(gb, seqhdr.order_hint_n_bits);
             }
         }
-        hdr.frame_ref_short_signaling = (seqhdr.order_hint != 0 && rav1d_get_bit(gb) != 0) as c_int;
-        hdr.refidx = parse_refidx(
+        frame_ref_short_signaling = (seqhdr.order_hint != 0 && rav1d_get_bit(gb) != 0) as c_int;
+        refidx = parse_refidx(
             c,
             seqhdr,
-            hdr.frame_ref_short_signaling,
-            hdr.frame_offset,
-            hdr.frame_id,
+            frame_ref_short_signaling,
+            frame_offset,
+            frame_id,
             gb,
         )?;
-        let use_ref = hdr.error_resilient_mode == 0 && hdr.frame_size_override != 0;
-        hdr.size = parse_frame_size(c, seqhdr, &hdr.refidx, hdr.frame_size_override, gb, use_ref)?;
-        hdr.hp = (hdr.force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
-        hdr.subpel_filter_mode = if rav1d_get_bit(gb) != 0 {
+        let use_ref = error_resilient_mode == 0 && frame_size_override != 0;
+        size = parse_frame_size(
+            c,
+            seqhdr,
+            Some(&refidx).filter(|_| use_ref),
+            frame_size_override,
+            gb,
+        )?;
+        hp = (force_integer_mv == 0 && rav1d_get_bit(gb) != 0) as c_int;
+        subpel_filter_mode = if rav1d_get_bit(gb) != 0 {
             RAV1D_FILTER_SWITCHABLE
         } else {
             rav1d_get_bits(gb, 2) as Rav1dFilterMode
         };
-        hdr.switchable_motion_mode = rav1d_get_bit(gb) as c_int;
-        hdr.use_ref_frame_mvs = (hdr.error_resilient_mode == 0
+        switchable_motion_mode = rav1d_get_bit(gb) as c_int;
+        use_ref_frame_mvs = (error_resilient_mode == 0
             && seqhdr.ref_frame_mvs != 0
             && seqhdr.order_hint != 0
-            && hdr.frame_type.is_inter_or_switch()
+            && frame_type.is_inter_or_switch()
             && rav1d_get_bit(gb) != 0) as c_int;
     }
     debug.post(gb, "frametype-specific-bits");
 
-    hdr.refresh_context = (seqhdr.reduced_still_picture_header == 0
-        && hdr.disable_cdf_update == 0
+    let refresh_context = (seqhdr.reduced_still_picture_header == 0
+        && disable_cdf_update == 0
         && rav1d_get_bit(gb) == 0) as c_int;
     debug.post(gb, "refresh_context");
 
-    hdr.tiling = parse_tiling(seqhdr, &hdr.size, &debug, gb)?;
-    hdr.quant = parse_quant(seqhdr, &debug, gb);
-    hdr.segmentation = parse_segmentation(
+    let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;
+    let quant = parse_quant(seqhdr, &debug, gb);
+    let segmentation = parse_segmentation(c, primary_ref_frame, &refidx, &quant, &debug, gb)?;
+    let all_lossless = segmentation.lossless.iter().all(|&it| it != 0) as c_int;
+    let delta = parse_delta(&quant, allow_intrabc, &debug, gb);
+    let loopfilter = parse_loopfilter(
         c,
-        hdr.primary_ref_frame,
-        &hdr.refidx,
-        &hdr.quant,
+        seqhdr,
+        all_lossless,
+        allow_intrabc,
+        primary_ref_frame,
+        &refidx,
         &debug,
         gb,
     )?;
-    hdr.all_lossless = hdr.segmentation.lossless.iter().all(|&it| it != 0) as c_int;
-    hdr.delta = parse_delta(&hdr.quant, hdr.allow_intrabc, &debug, gb);
-    hdr.loopfilter = parse_loopfilter(
-        c,
+    let cdef = parse_cdef(seqhdr, all_lossless, allow_intrabc, &debug, gb);
+    let restoration = parse_restoration(
         seqhdr,
-        hdr.all_lossless,
-        hdr.allow_intrabc,
-        hdr.primary_ref_frame,
-        &hdr.refidx,
-        &debug,
-        gb,
-    )?;
-    hdr.cdef = parse_cdef(seqhdr, hdr.all_lossless, hdr.allow_intrabc, &debug, gb);
-    hdr.restoration = parse_restoration(
-        seqhdr,
-        hdr.all_lossless,
-        hdr.size.super_res.enabled,
-        hdr.allow_intrabc,
+        all_lossless,
+        size.super_res.enabled,
+        allow_intrabc,
         &debug,
         gb,
     );
 
-    hdr.txfm_mode = if hdr.all_lossless != 0 {
+    let txfm_mode = if all_lossless != 0 {
         RAV1D_TX_4X4_ONLY
     } else if rav1d_get_bit(gb) != 0 {
         RAV1D_TX_SWITCHABLE
@@ -1971,51 +2014,87 @@ unsafe fn parse_frame_hdr(
         RAV1D_TX_LARGEST
     };
     debug.post(gb, "txfmmode");
-    hdr.switchable_comp_refs = if hdr.frame_type.is_inter_or_switch() {
+    let switchable_comp_refs = if frame_type.is_inter_or_switch() {
         rav1d_get_bit(gb) as c_int
     } else {
         0
     };
     debug.post(gb, "refmode");
-    hdr.skip_mode = parse_skip_mode(
+    let skip_mode = parse_skip_mode(
         c,
         seqhdr,
-        hdr.switchable_comp_refs,
-        hdr.frame_type,
-        hdr.frame_offset,
-        &hdr.refidx,
+        switchable_comp_refs,
+        frame_type,
+        frame_offset,
+        &refidx,
         &debug,
         gb,
     )?;
-    hdr.warp_motion = (hdr.error_resilient_mode == 0
-        && hdr.frame_type.is_inter_or_switch()
+    let warp_motion = (error_resilient_mode == 0
+        && frame_type.is_inter_or_switch()
         && seqhdr.warped_motion != 0
         && rav1d_get_bit(gb) != 0) as c_int;
     debug.post(gb, "warpmotionbit");
-    hdr.reduced_txtp_set = rav1d_get_bit(gb) as c_int;
+    let reduced_txtp_set = rav1d_get_bit(gb) as c_int;
     debug.post(gb, "reducedtxtpset");
 
-    hdr.gmv = parse_gmv(
-        c,
-        hdr.frame_type,
-        hdr.primary_ref_frame,
-        &hdr.refidx,
-        hdr.hp,
-        &debug,
-        gb,
-    )?;
-    hdr.film_grain = parse_film_grain(
+    let gmv = parse_gmv(c, frame_type, primary_ref_frame, &refidx, hp, &debug, gb)?;
+    let film_grain = parse_film_grain(
         c,
         seqhdr,
-        hdr.show_frame,
-        hdr.showable_frame,
-        hdr.frame_type,
-        &hdr.refidx,
+        show_frame,
+        showable_frame,
+        frame_type,
+        &refidx,
         &debug,
         gb,
     )?;
 
-    Ok(hdr)
+    Ok(Rav1dFrameHeader {
+        size,
+        film_grain,
+        frame_type,
+        frame_offset,
+        temporal_id,
+        spatial_id,
+        show_existing_frame,
+        existing_frame_idx,
+        frame_id,
+        frame_presentation_delay,
+        show_frame,
+        showable_frame,
+        error_resilient_mode,
+        disable_cdf_update,
+        allow_screen_content_tools,
+        force_integer_mv,
+        frame_size_override,
+        primary_ref_frame,
+        buffer_removal_time_present,
+        operating_points,
+        refresh_frame_flags,
+        allow_intrabc,
+        frame_ref_short_signaling,
+        refidx,
+        hp,
+        subpel_filter_mode,
+        switchable_motion_mode,
+        use_ref_frame_mvs,
+        refresh_context,
+        tiling,
+        quant,
+        segmentation,
+        delta,
+        all_lossless,
+        loopfilter,
+        cdef,
+        restoration,
+        txfm_mode,
+        switchable_comp_refs,
+        skip_mode,
+        warp_motion,
+        reduced_txtp_set,
+        gmv,
+    })
 }
 
 unsafe fn parse_tile_hdr(
