@@ -67,6 +67,9 @@ impl From<PictureFlags> for Rav1dEventFlags {
 pub(crate) struct Rav1dThreadPicture {
     pub p: Rav1dPicture,
     pub visible: bool,
+    /// This can be set for inter frames, non-key intra frames,
+    /// or for invisible keyframes that have not yet been made visible
+    /// using the show-existing-frame mechanism.
     pub showable: bool,
     pub flags: PictureFlags,
     pub progress: *mut atomic_uint,
