@@ -256,24 +256,24 @@ pub fn rav1d_picture_copy_props(
 
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
     c: &mut Rav1dContext,
-    f: *mut Rav1dFrameContext,
+    f: &mut Rav1dFrameContext,
     bpc: c_int,
 ) -> Rav1dResult {
-    let p: *mut Rav1dThreadPicture = &mut (*f).sr_cur;
+    let p: *mut Rav1dThreadPicture = &mut f.sr_cur;
     let have_frame_mt = (c.n_fc > 1 as c_uint) as c_int;
-    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let res = picture_alloc_with_edges(
         &c.logger,
         &mut (*p).p,
         frame_hdr.size.width[1],
         frame_hdr.size.height,
-        &(*f).seq_hdr,
-        &(*f).frame_hdr,
+        &f.seq_hdr,
+        &f.frame_hdr,
         &c.content_light,
         &c.mastering_display,
         &c.itut_t35,
         bpc,
-        &mut (*f).tiles[0].data.m,
+        &mut f.tiles[0].data.m,
         &mut c.allocator,
         if have_frame_mt != 0 {
             (::core::mem::size_of::<atomic_int>()).wrapping_mul(2)
