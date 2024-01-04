@@ -73,7 +73,6 @@ use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_ROT_ZOOM;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::rav1d_cdf_thread_ref;
 use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::data::rav1d_data_ref;
@@ -114,6 +113,7 @@ use std::fmt;
 use std::mem;
 use std::mem::MaybeUninit;
 use std::slice;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 struct Debug {
@@ -2564,9 +2564,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                     c.cached_error_props = (*out_delayed).p.m.clone();
                     rav1d_thread_picture_unref(out_delayed);
                 } else if !((*out_delayed).p.data[0]).is_null() {
-                    let progress = ::core::intrinsics::atomic_load_relaxed(
-                        &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
-                    );
+                    let progress = (*(*out_delayed).progress.add(1)).load(Ordering::Relaxed);
                     if ((*out_delayed).visible || c.output_invisible_frames)
                         && progress != FRAME_ERROR
                     {

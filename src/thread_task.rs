@@ -613,11 +613,8 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
             }
             match current_block_14 {
                 2370887241019905314 => {
-                    let p3: c_uint = ::core::intrinsics::atomic_load_seqcst(
-                        &mut *((*((*f).refp).as_mut_ptr().offset(n as isize)).progress)
-                            .offset((tp == 0) as c_int as isize)
-                            as *mut atomic_uint,
-                    );
+                    let p3 = (*(*f).refp[n as usize].progress.add((tp == 0) as usize))
+                        .load(Ordering::SeqCst);
                     if p3 < lowest {
                         return 1 as c_int;
                     }
@@ -638,9 +635,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
 #[inline]
 unsafe fn get_frame_progress(c: *const Rav1dContext, f: *const Rav1dFrameContext) -> c_int {
     let frame_prog: c_uint = if (*c).n_fc > 1 as c_uint {
-        ::core::intrinsics::atomic_load_seqcst(
-            &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint
-        )
+        (*(*f).sr_cur.progress.add(1)).load(Ordering::SeqCst)
     } else {
         0 as c_int as c_uint
     };
@@ -683,14 +678,8 @@ unsafe fn abort_frame(f: *mut Rav1dFrameContext, error: Rav1dResult) {
         &mut *((*f).task_thread.done).as_mut_ptr().offset(1) as *mut atomic_int,
         1 as c_int,
     );
-    ::core::intrinsics::atomic_store_seqcst(
-        &mut *((*f).sr_cur.progress).offset(0) as *mut atomic_uint,
-        FRAME_ERROR,
-    );
-    ::core::intrinsics::atomic_store_seqcst(
-        &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint,
-        FRAME_ERROR,
-    );
+    (*(*f).sr_cur.progress.add(0)).store(FRAME_ERROR, Ordering::SeqCst);
+    (*(*f).sr_cur.progress.add(1)).store(FRAME_ERROR, Ordering::SeqCst);
     rav1d_decode_frame_exit(&mut *f, error);
     pthread_cond_signal(&mut (*f).task_thread.cond);
 }
@@ -1190,12 +1179,8 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                     frame_hdr.tiling.cols * frame_hdr.tiling.rows
                                                         + (*f).sbh,
                                                 );
-                                                ::core::intrinsics::atomic_store_seqcst(
-                                                    &mut *((*f).sr_cur.progress)
-                                                        .offset((p_0 - 1) as isize)
-                                                        as *mut atomic_uint,
-                                                    FRAME_ERROR,
-                                                );
+                                                (*(*f).sr_cur.progress.add((p_0 - 1) as usize))
+                                                    .store(FRAME_ERROR, Ordering::SeqCst);
                                                 if p_0 == 2
                                                     && ::core::intrinsics::atomic_load_seqcst(
                                                         &mut *((*f).task_thread.done)
@@ -1558,9 +1543,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 unreachable!();
                             }
                             if !((*f).sr_cur.p.data[0]).is_null() {
-                                ::core::intrinsics::atomic_store_seqcst(
-                                    &mut *((*f).sr_cur.progress).offset(0) as *mut atomic_uint,
+                                (*(*f).sr_cur.progress.add(0)).store(
                                     if error_0 != 0 { FRAME_ERROR } else { y },
+                                    Ordering::SeqCst,
                                 );
                             }
                             (*f).frame_thread.entropy_progress.store(
@@ -1624,9 +1609,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                             };
                             if (*c).n_fc > 1 as c_uint && !((*f).sr_cur.p.data[0]).is_null() {
-                                ::core::intrinsics::atomic_store_seqcst(
-                                    &mut *((*f).sr_cur.progress).offset(1) as *mut atomic_uint,
+                                (*(*f).sr_cur.progress.add(1)).store(
                                     if error_0 != 0 { FRAME_ERROR } else { y_0 },
+                                    Ordering::SeqCst,
                                 );
                             }
                             pthread_mutex_unlock(&mut (*f).task_thread.lock);
