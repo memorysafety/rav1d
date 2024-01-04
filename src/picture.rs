@@ -299,7 +299,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         *(&mut *(p.progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
         *(&mut *(p.progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
     }
-    return res;
+    res
 }
 
 pub(crate) unsafe fn rav1d_picture_alloc_copy(
