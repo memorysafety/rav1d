@@ -42,6 +42,7 @@ use std::mem;
 use std::ptr;
 use std::ptr::addr_of_mut;
 use std::sync::atomic::AtomicU32;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 bitflags! {
@@ -62,6 +63,41 @@ impl From<PictureFlags> for Rav1dEventFlags {
     }
 }
 
+#[derive(Default)]
+#[repr(C)]
+pub(crate) struct ThreadPictureProgress {
+    data: [AtomicU32; 2],
+}
+
+impl Clone for ThreadPictureProgress {
+    fn clone(&self) -> Self {
+        let [block, pixel] = &self.data;
+        Self {
+            data: [
+                AtomicU32::new(block.load(Ordering::SeqCst)),
+                AtomicU32::new(pixel.load(Ordering::SeqCst)),
+            ],
+        }
+    }
+}
+
+impl ThreadPictureProgress {
+    /// Block data (including segmentation map and motion vectors).
+    pub fn block_data(&self) -> &AtomicU32 {
+        &self.data[0]
+    }
+
+    /// Pixel data.
+    pub fn pixel_data(&self) -> &AtomicU32 {
+        &self.data[1]
+    }
+
+    pub fn select(&self, is_pixel_data: bool) -> &AtomicU32 {
+        &self.data[is_pixel_data as usize]
+    }
+}
+
+#[derive(Default)]
 #[repr(C)]
 pub(crate) struct Rav1dThreadPicture {
     pub p: Rav1dPicture,
@@ -71,29 +107,13 @@ pub(crate) struct Rav1dThreadPicture {
     /// using the show-existing-frame mechanism.
     pub showable: bool,
     pub flags: PictureFlags,
-    /// `[0]`: block data (including segmentation map and motion vectors)
-    /// `[1]`: pixel data
-    pub progress: *mut AtomicU32,
-}
-
-// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
-impl Default for Rav1dThreadPicture {
-    fn default() -> Self {
-        Self {
-            p: Default::default(),
-            visible: Default::default(),
-            showable: Default::default(),
-            flags: Default::default(),
-            progress: ptr::null_mut(),
-        }
-    }
+    pub progress: ThreadPictureProgress,
 }
 
 #[repr(C)]
 pub(crate) struct pic_ctx_context {
     pub allocator: Rav1dPicAllocator,
     pub pic: Rav1dPicture,
-    pub extra_ptr: *mut c_void,
 }
 
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
@@ -188,8 +208,6 @@ unsafe fn picture_alloc_with_edges(
     bpc: c_int,
     props: &Rav1dDataProps,
     p_allocator: &mut Rav1dPicAllocator,
-    extra: usize,
-    extra_ptr: *mut *mut c_void,
 ) -> Rav1dResult {
     if !p.data[0].is_null() {
         writeln!(logger, "Picture already allocated!",);
@@ -197,8 +215,7 @@ unsafe fn picture_alloc_with_edges(
     }
     assert!(bpc > 0 && bpc <= 16);
     let pic_ctx: *mut pic_ctx_context =
-        malloc(extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>()))
-            as *mut pic_ctx_context;
+        malloc(::core::mem::size_of::<pic_ctx_context>()) as *mut pic_ctx_context;
     if pic_ctx.is_null() {
         return Err(ENOMEM);
     }
@@ -236,10 +253,6 @@ unsafe fn picture_alloc_with_edges(
     }
     rav1d_picture_copy_props(p, content_light, mastering_display, itut_t35, props);
 
-    if extra != 0 && !extra_ptr.is_null() {
-        *extra_ptr = &mut (*pic_ctx).extra_ptr as *mut *mut c_void as *mut c_void;
-    }
-
     Ok(())
 }
 
@@ -261,8 +274,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     f: &mut Rav1dFrameContext,
     bpc: c_int,
 ) -> Rav1dResult {
-    let p = &mut f.sr_cur;
-    let have_frame_mt = c.n_fc > 1;
+    let p: &mut Rav1dThreadPicture = &mut f.sr_cur;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     picture_alloc_with_edges(
         &c.logger,
@@ -277,12 +289,6 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         bpc,
         &mut f.tiles[0].data.m,
         &mut c.allocator,
-        if have_frame_mt {
-            (::core::mem::size_of::<AtomicU32>()).wrapping_mul(2)
-        } else {
-            0
-        },
-        &mut p.progress as *mut *mut AtomicU32 as *mut *mut c_void,
     )?;
     let _ = mem::take(&mut c.itut_t35);
     let flags_mask = if frame_hdr.show_frame != 0 || c.output_invisible_frames {
@@ -294,10 +300,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     c.frame_flags &= flags_mask;
     p.visible = frame_hdr.show_frame != 0;
     p.showable = frame_hdr.showable_frame != 0;
-    if have_frame_mt {
-        *p.progress.add(0) = Default::default();
-        *p.progress.add(1) = Default::default();
-    }
+    p.progress = Default::default();
     Ok(())
 }
 
@@ -321,8 +324,6 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         src.p.bpc,
         &src.m,
         &mut (*pic_ctx).allocator,
-        0 as c_int as usize,
-        0 as *mut *mut c_void,
     )
 }
 
@@ -358,7 +359,7 @@ pub(crate) unsafe fn rav1d_thread_picture_ref(
     rav1d_picture_ref(&mut (*dst).p, &(*src).p);
     (*dst).visible = (*src).visible;
     (*dst).showable = (*src).showable;
-    (*dst).progress = (*src).progress;
+    (*dst).progress = (*src).progress.clone();
     (*dst).flags = (*src).flags;
 }
 
@@ -386,5 +387,5 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
     rav1d_picture_unref_internal(&mut (*p).p);
-    (*p).progress = 0 as *mut AtomicU32;
+    let _ = mem::take(&mut (*p).progress);
 }
