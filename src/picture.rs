@@ -86,9 +86,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
     cookie: *mut c_void,
 ) -> Dav1dResult {
-    if !(::core::mem::size_of::<Rav1dMemPoolBuffer>() <= 64) {
-        unreachable!();
-    }
+    assert!(::core::mem::size_of::<Rav1dMemPoolBuffer>() <= 64);
     let mut p = p_c.read().to::<Rav1dPicture>();
     let hbd = (p.p.bpc > 8) as c_int;
     let aligned_w = p.p.w + 127 & !127;
