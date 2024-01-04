@@ -122,15 +122,15 @@ use std::mem::MaybeUninit;
 struct Debug {
     enabled: bool,
     name: &'static str,
-    init_ptr: *const u8,
+    start: c_uint,
 }
 
 impl Debug {
-    pub const fn new(enabled: bool, name: &'static str, gb: &GetBits) -> Self {
+    pub const unsafe fn new(enabled: bool, name: &'static str, gb: &GetBits) -> Self {
         Self {
             enabled,
             name,
-            init_ptr: gb.ptr,
+            start: gb.pos(),
         }
     }
 
@@ -138,12 +138,12 @@ impl Debug {
         let &Self {
             enabled,
             name: _,
-            init_ptr,
+            start,
         } = self;
         Self {
             enabled,
             name,
-            init_ptr,
+            start,
         }
     }
 
@@ -151,12 +151,12 @@ impl Debug {
         let &Self {
             enabled,
             name,
-            init_ptr,
+            start,
         } = self;
         if !enabled {
             return;
         }
-        let offset = gb.ptr.offset_from(init_ptr) * 8 - gb.bits_left as isize;
+        let offset = gb.pos() - start;
         println!("{name}: {msg} [off={offset}]");
     }
 
@@ -2109,7 +2109,7 @@ unsafe fn check_for_overrun(
     obu_len: c_uint,
 ) -> c_int {
     // Make sure we haven't actually read past the end of the `gb` buffer
-    if gb.error != 0 {
+    if gb.has_error() != 0 {
         writeln!(c.logger, "Overrun in OBU bit buffer");
         return 1;
     }
@@ -2154,16 +2154,7 @@ unsafe fn parse_obus(
         len + init_byte_pos
     }
 
-    let mut gb = GetBits {
-        state: 0,
-        bits_left: 0,
-        error: 0,
-        ptr: 0 as *const u8,
-        ptr_start: 0 as *const u8,
-        ptr_end: 0 as *const u8,
-    };
-
-    gb.init(r#in.data, r#in.sz);
+    let mut gb = GetBits::new(r#in.data, r#in.sz);
 
     // obu header
     gb.get_bit(); // obu_forbidden_bit
@@ -2186,7 +2177,7 @@ unsafe fn parse_obus(
     } else {
         r#in.sz as c_uint - 1 - has_extension as c_uint
     };
-    if gb.error != 0 {
+    if gb.has_error() != 0 {
         return Err(EINVAL);
     }
 
@@ -2408,7 +2399,7 @@ unsafe fn parse_obus(
             // obu metadata type field
             let meta_type = gb.get_uleb128() as ObuMetaType;
             let meta_type_len = ((gb.pos() - init_bit_pos) >> 3) as c_int;
-            if gb.error != 0 {
+            if gb.has_error() != 0 {
                 return Err(EINVAL);
             }
 
