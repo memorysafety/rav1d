@@ -93,19 +93,15 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let hbd = (p.p.bpc > 8) as c_int;
     let aligned_w = p.p.w + 127 & !127;
     let aligned_h = p.p.h + 127 & !127;
-    let has_chroma = (p.p.layout != Rav1dPixelLayout::I400) as c_int;
+    let has_chroma = p.p.layout != Rav1dPixelLayout::I400;
     let ss_ver = (p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (p.p.layout != Rav1dPixelLayout::I444) as c_int;
     let mut y_stride: ptrdiff_t = (aligned_w << hbd) as ptrdiff_t;
-    let mut uv_stride: ptrdiff_t = if has_chroma != 0 {
-        y_stride >> ss_hor
-    } else {
-        0
-    };
+    let mut uv_stride: ptrdiff_t = if has_chroma { y_stride >> ss_hor } else { 0 };
     if y_stride & 1023 == 0 {
         y_stride += 64;
     }
-    if uv_stride & 1023 == 0 && has_chroma != 0 {
+    if uv_stride & 1023 == 0 && has_chroma {
         uv_stride += 64;
     }
     p.stride[0] = y_stride;
@@ -125,12 +121,12 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p.allocator_data = buf as *mut c_void;
     let data: *mut u8 = (*buf).data as *mut u8;
     p.data[0] = data as *mut c_void;
-    p.data[1] = (if has_chroma != 0 {
+    p.data[1] = (if has_chroma {
         data.offset(y_sz as isize)
     } else {
         0 as *mut u8
     }) as *mut c_void;
-    p.data[2] = (if has_chroma != 0 {
+    p.data[2] = (if has_chroma {
         data.offset(y_sz as isize).offset(uv_sz as isize)
     } else {
         0 as *mut u8
