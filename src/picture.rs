@@ -240,7 +240,7 @@ unsafe fn picture_alloc_with_edges(
     Ok(())
 }
 
-pub unsafe fn rav1d_picture_copy_props(
+pub fn rav1d_picture_copy_props(
     p: &mut Rav1dPicture,
     content_light: &Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
