@@ -72,6 +72,8 @@ pub(crate) struct Rav1dThreadPicture {
     /// using the show-existing-frame mechanism.
     pub showable: bool,
     pub flags: PictureFlags,
+    /// `[0]`: block data (including segmentation map and motion vectors)
+    /// `[1]`: pixel data
     pub progress: *mut atomic_uint,
 }
 
