@@ -293,8 +293,8 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     p.visible = frame_hdr.show_frame != 0;
     p.showable = frame_hdr.showable_frame != 0;
     if have_frame_mt {
-        *(&mut *(p.progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
-        *(&mut *(p.progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
+        *p.progress.add(0) = 0;
+        *p.progress.add(1) = 0;
     }
     Ok(())
 }
