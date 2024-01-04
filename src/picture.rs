@@ -306,7 +306,7 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     src: &Rav1dPicture,
 ) -> Rav1dResult {
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
-    let res = picture_alloc_with_edges(
+    picture_alloc_with_edges(
         &c.logger,
         dst,
         w,
@@ -321,8 +321,7 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         &mut (*pic_ctx).allocator,
         0 as c_int as usize,
         0 as *mut *mut c_void,
-    );
-    return res;
+    )
 }
 
 pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {
