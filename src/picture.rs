@@ -39,6 +39,7 @@ use std::io;
 use std::mem;
 use std::ptr;
 use std::ptr::addr_of_mut;
+use std::slice;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use to_method::To as _;
@@ -115,18 +116,14 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
         return Rav1dResult::<()>::Err(ENOMEM).into();
     }
     p.allocator_data = buf as *mut c_void;
-    let data = (*buf).data as *mut u8;
-    p.data[0] = data as *mut c_void;
-    p.data[1] = (if has_chroma {
-        data.offset(y_sz as isize)
-    } else {
-        0 as *mut u8
-    }) as *mut c_void;
-    p.data[2] = (if has_chroma {
-        data.offset(y_sz as isize).offset(uv_sz as isize)
-    } else {
-        0 as *mut u8
-    }) as *mut c_void;
+
+    let data = slice::from_raw_parts_mut((*buf).data as *mut u8, pic_size);
+    let (data0, data12) = data.split_at_mut(y_sz);
+    let (data1, data2) = data12.split_at_mut(uv_sz);
+    // Note that `data[1]` and `data[2]`
+    // were previously null instead of an empty slice when `!has_chroma`,
+    // but this way is simpler and more uniform, especially when we move to slices.
+    p.data = [data0, data1, data2].map(|data| data.as_mut_ptr().cast());
     p_c.write(p.into());
     Rav1dResult::Ok(()).into()
 }
