@@ -105,6 +105,7 @@ use std::mem;
 use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr::NonNull;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Once;
 use to_method::To as _;
@@ -660,9 +661,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             return error;
         }
         if !((*out_delayed).p.data[0]).is_null() {
-            let progress: c_uint = ::core::intrinsics::atomic_load_relaxed(
-                &mut *((*out_delayed).progress).offset(1) as *mut atomic_uint,
-            );
+            let progress = (*(*out_delayed).progress.add(1)).load(Ordering::Relaxed);
             if ((*out_delayed).visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags |= (*out_delayed).flags.into();
