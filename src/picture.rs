@@ -106,12 +106,10 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p.stride[1] = uv_stride;
     let y_sz = (y_stride * aligned_h as isize) as usize;
     let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
-    let pic_size = y_sz.wrapping_add(2usize.wrapping_mul(uv_sz));
+    let pic_size = y_sz + 2 * uv_sz;
     let buf = rav1d_mem_pool_pop(
         cookie as *mut Rav1dMemPool,
-        pic_size
-            .wrapping_add(64)
-            .wrapping_sub(::core::mem::size_of::<Rav1dMemPoolBuffer>()),
+        pic_size + 64 - ::core::mem::size_of::<Rav1dMemPoolBuffer>(),
     );
     if buf.is_null() {
         return Rav1dResult::<()>::Err(ENOMEM).into();
