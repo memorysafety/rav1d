@@ -1135,7 +1135,7 @@ pub struct Dav1dSegmentationData {
     pub globalmv: c_int,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dSegmentationData {
     pub delta_q: c_int,
@@ -1206,7 +1206,7 @@ pub struct Dav1dSegmentationDataSet {
     pub last_active_segid: c_int,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dSegmentationDataSet {
     pub d: [Rav1dSegmentationData; RAV1D_MAX_SEGMENTS as usize],
@@ -1284,7 +1284,7 @@ impl From<Rav1dLoopfilterModeRefDeltas> for Dav1dLoopfilterModeRefDeltas {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Rav1dFilmGrainData {
     pub seed: c_uint,
     pub num_y_points: c_int,
@@ -2161,6 +2161,14 @@ pub(crate) struct Rav1dFrameSize {
 
 #[derive(Clone)]
 #[repr(C)]
+pub(crate) struct Rav1dFrameSkipMode {
+    pub allowed: c_int,
+    pub enabled: c_int,
+    pub refs: [c_int; 2],
+}
+
+#[derive(Clone)]
+#[repr(C)]
 pub(crate) struct Rav1dFrameHeader {
     pub size: Rav1dFrameSize,
     pub film_grain: Rav1dFrameHeader_film_grain,
@@ -2201,9 +2209,7 @@ pub(crate) struct Rav1dFrameHeader {
     pub restoration: Rav1dFrameHeader_restoration,
     pub txfm_mode: Rav1dTxfmMode,
     pub switchable_comp_refs: c_int,
-    pub skip_mode_allowed: c_int,
-    pub skip_mode_enabled: c_int,
-    pub skip_mode_refs: [c_int; 2],
+    pub skip_mode: Rav1dFrameSkipMode,
     pub warp_motion: c_int,
     pub reduced_txtp_set: c_int,
     pub gmv: [Rav1dWarpedMotionParams; RAV1D_REFS_PER_FRAME],
@@ -2310,9 +2316,11 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             restoration: restoration.into(),
             txfm_mode,
             switchable_comp_refs,
-            skip_mode_allowed,
-            skip_mode_enabled,
-            skip_mode_refs,
+            skip_mode: Rav1dFrameSkipMode {
+                allowed: skip_mode_allowed,
+                enabled: skip_mode_enabled,
+                refs: skip_mode_refs,
+            },
             warp_motion,
             reduced_txtp_set,
             gmv: gmv.map(|c| c.into()),
@@ -2370,9 +2378,12 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             restoration,
             txfm_mode,
             switchable_comp_refs,
-            skip_mode_allowed,
-            skip_mode_enabled,
-            skip_mode_refs,
+            skip_mode:
+                Rav1dFrameSkipMode {
+                    allowed: skip_mode_allowed,
+                    enabled: skip_mode_enabled,
+                    refs: skip_mode_refs,
+                },
             warp_motion,
             reduced_txtp_set,
             gmv,
