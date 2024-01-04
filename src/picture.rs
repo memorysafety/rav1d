@@ -241,16 +241,16 @@ unsafe fn picture_alloc_with_edges(
 }
 
 pub unsafe fn rav1d_picture_copy_props(
-    p: *mut Rav1dPicture,
+    p: &mut Rav1dPicture,
     content_light: &Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
     itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     props: *const Rav1dDataProps,
 ) {
-    (*p).m = (*props).clone();
-    (*p).content_light = content_light.clone();
-    (*p).mastering_display = mastering_display.clone();
-    (*p).itut_t35 = itut_t35.clone();
+    p.m = (*props).clone();
+    p.content_light = content_light.clone();
+    p.mastering_display = mastering_display.clone();
+    p.itut_t35 = itut_t35.clone();
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
