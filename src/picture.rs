@@ -259,12 +259,12 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     f: &mut Rav1dFrameContext,
     bpc: c_int,
 ) -> Rav1dResult {
-    let p: *mut Rav1dThreadPicture = &mut f.sr_cur;
+    let p = &mut f.sr_cur;
     let have_frame_mt = (c.n_fc > 1 as c_uint) as c_int;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let res = picture_alloc_with_edges(
         &c.logger,
-        &mut (*p).p,
+        &mut p.p,
         frame_hdr.size.width[1],
         frame_hdr.size.height,
         &f.seq_hdr,
@@ -280,7 +280,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         } else {
             0
         },
-        &mut (*p).progress as *mut *mut atomic_uint as *mut *mut c_void,
+        &mut p.progress as *mut *mut atomic_uint as *mut *mut c_void,
     );
     if res.is_err() {
         return res;
@@ -291,13 +291,13 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     } else {
         PictureFlags::NEW_SEQUENCE | PictureFlags::NEW_OP_PARAMS_INFO
     };
-    (*p).flags = c.frame_flags;
+    p.flags = c.frame_flags;
     c.frame_flags &= flags_mask;
-    (*p).visible = frame_hdr.show_frame != 0;
-    (*p).showable = frame_hdr.showable_frame != 0;
+    p.visible = frame_hdr.show_frame != 0;
+    p.showable = frame_hdr.showable_frame != 0;
     if have_frame_mt != 0 {
-        *(&mut *((*p).progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
-        *(&mut *((*p).progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
+        *(&mut *(p.progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
+        *(&mut *(p.progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
     }
     return res;
 }
