@@ -260,7 +260,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     bpc: c_int,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
-    let have_frame_mt = (c.n_fc > 1 as c_uint) as c_int;
+    let have_frame_mt = c.n_fc > 1;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let res = picture_alloc_with_edges(
         &c.logger,
@@ -275,7 +275,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         bpc,
         &mut f.tiles[0].data.m,
         &mut c.allocator,
-        if have_frame_mt != 0 {
+        if have_frame_mt {
             (::core::mem::size_of::<atomic_int>()).wrapping_mul(2)
         } else {
             0
@@ -295,7 +295,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     c.frame_flags &= flags_mask;
     p.visible = frame_hdr.show_frame != 0;
     p.showable = frame_hdr.showable_frame != 0;
-    if have_frame_mt != 0 {
+    if have_frame_mt {
         *(&mut *(p.progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
         *(&mut *(p.progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
     }
