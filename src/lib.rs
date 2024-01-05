@@ -660,7 +660,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             return error;
         }
         if !((*out_delayed).p.data[0]).is_null() {
-            let progress = (*(*out_delayed).progress)[1].load(Ordering::Relaxed);
+            let progress = (*out_delayed).progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if ((*out_delayed).visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags |= (*out_delayed).flags.into();
