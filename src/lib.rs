@@ -75,7 +75,6 @@ use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::r#ref::rav1d_ref_dec;
-use crate::src::r#ref::Rav1dRef;
 use crate::src::refmvs::rav1d_refmvs_clear;
 use crate::src::refmvs::rav1d_refmvs_dsp_init;
 use crate::src::refmvs::rav1d_refmvs_init;
@@ -491,72 +490,39 @@ unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
 }
 
 pub(crate) unsafe fn rav1d_parse_sequence_header(
-    out: &mut Rav1dSequenceHeader,
     ptr: *const u8,
     sz: usize,
-) -> Rav1dResult {
-    unsafe fn rav1d_parse_sequence_header_error(
-        res: Rav1dResult,
-        mut c: *mut Rav1dContext,
-        buf: *mut Rav1dData,
-    ) -> Rav1dResult {
-        rav1d_data_unref_internal(buf);
-        rav1d_close(&mut c);
-        res
-    }
-
-    let mut buf: Rav1dData = {
-        let init = Rav1dData {
-            data: 0 as *const u8,
-            sz: 0,
-            r#ref: 0 as *mut Rav1dRef,
-            m: Rav1dDataProps {
-                timestamp: 0,
-                duration: 0,
-                offset: 0,
-                size: 0,
-                user_data: Default::default(),
-            },
-        };
-        init
+) -> Rav1dResult<Rav1dSequenceHeader> {
+    let mut buf = Rav1dData::default();
+    let s = Rav1dSettings {
+        n_threads: 1,
+        logger: None,
+        ..Default::default()
     };
-    let mut res;
-    let mut s = Rav1dSettings::default();
-    s.n_threads = 1 as c_int;
-    s.logger = None;
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
-    res = rav1d_open(&mut c, &mut s);
-    if res.is_err() {
-        return res;
-    }
-    if !ptr.is_null() {
-        res = rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void);
-        if res.is_err() {
-            return rav1d_parse_sequence_header_error(res, c, &mut buf);
+    rav1d_open(&mut c, &s)?;
+    || -> Rav1dResult<Rav1dSequenceHeader> {
+        if !ptr.is_null() {
+            rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void)?;
         }
-    }
 
-    while buf.sz > 0 {
-        let res = rav1d_parse_obus(&mut *c, &mut buf, 1 as c_int);
-        let res = match res {
-            Ok(res) => res,
-            Err(res) => return rav1d_parse_sequence_header_error(Err(res), c, &mut buf),
-        };
+        while buf.sz > 0 {
+            let len = rav1d_parse_obus(&mut *c, &mut buf, true)?;
+            assert!(len <= buf.sz);
+            buf.sz -= len;
+            buf.data = buf.data.add(len);
+        }
 
-        assert!(res as usize <= buf.sz);
-        buf.sz -= res as usize;
-        buf.data = (buf.data).offset(res as isize);
-    }
+        if (*c).seq_hdr.is_null() {
+            return Err(ENOENT);
+        }
 
-    if ((*c).seq_hdr).is_null() {
-        res = Err(ENOENT);
-        return rav1d_parse_sequence_header_error(res, c, &mut buf);
-    }
-
-    *out = (*(*c).seq_hdr).clone();
-    res = Ok(());
-
-    return rav1d_parse_sequence_header_error(res, c, &mut buf);
+        Ok((*(*c).seq_hdr).clone())
+    }()
+    .inspect_err(|_| {
+        rav1d_data_unref_internal(&mut buf);
+        rav1d_close(&mut c);
+    })
 }
 
 #[no_mangle]
@@ -567,10 +533,9 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 ) -> Dav1dResult {
     (|| {
         validate_input!((!out.is_null(), EINVAL))?;
-        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
-        let result = rav1d_parse_sequence_header(&mut out_rust, ptr, sz);
-        out.write(out_rust.into());
-        result
+        let seq_hdr = rav1d_parse_sequence_header(ptr, sz)?;
+        out.write(seq_hdr.into());
+        Ok(())
     })()
     .into()
 }
@@ -611,32 +576,32 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     res
 }
 
-unsafe extern "C" fn output_picture_ready(c: *mut Rav1dContext, drain: c_int) -> c_int {
-    if (*c).cached_error.is_err() {
-        return 1 as c_int;
+unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
+    if c.cached_error.is_err() {
+        return true;
     }
-    if !(*c).all_layers && (*c).max_spatial_id {
-        if !((*c).out.p.data[0]).is_null() && !((*c).cache.p.data[0]).is_null() {
-            if (*c).max_spatial_id == ((*(*c).cache.p.frame_hdr).spatial_id != 0)
-                || (*c).out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
+    if !c.all_layers && c.max_spatial_id {
+        if !c.out.p.data[0].is_null() && !c.cache.p.data[0].is_null() {
+            if c.max_spatial_id == ((*c.cache.p.frame_hdr).spatial_id != 0)
+                || c.out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
-                return 1 as c_int;
+                return true;
             }
-            rav1d_thread_picture_unref(&mut (*c).cache);
-            rav1d_thread_picture_move_ref(&mut (*c).cache, &mut (*c).out);
-            return 0 as c_int;
+            rav1d_thread_picture_unref(&mut c.cache);
+            rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
+            return false;
         } else {
-            if !((*c).cache.p.data[0]).is_null() && drain != 0 {
-                return 1 as c_int;
+            if !c.cache.p.data[0].is_null() && drain {
+                return true;
             } else {
-                if !((*c).out.p.data[0]).is_null() {
-                    rav1d_thread_picture_move_ref(&mut (*c).cache, &mut (*c).out);
-                    return 0 as c_int;
+                if !c.out.p.data[0].is_null() {
+                    rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
+                    return false;
                 }
             }
         }
     }
-    return !((*c).out.p.data[0]).is_null() as c_int;
+    !c.out.p.data[0].is_null()
 }
 
 unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
@@ -706,7 +671,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 c.event_flags |= (*out_delayed).flags.into();
             }
             rav1d_thread_picture_unref(out_delayed);
-            if output_picture_ready(c, 0 as c_int) != 0 {
+            if output_picture_ready(c, false) {
                 return output_image(c, out);
             }
         }
@@ -715,37 +680,35 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             break;
         }
     }
-    if output_picture_ready(c, 1 as c_int) != 0 {
+    if output_picture_ready(c, true) {
         return output_image(c, out);
     }
     return Err(EAGAIN);
 }
 
-unsafe fn gen_picture(c: *mut Rav1dContext) -> Rav1dResult {
-    let mut res;
-    let in_0: *mut Rav1dData = &mut (*c).in_0;
-    if output_picture_ready(c, 0 as c_int) != 0 {
+unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
+    if output_picture_ready(c, false) {
         return Ok(());
     }
-    while (*in_0).sz > 0 {
-        res = rav1d_parse_obus(&mut *c, &mut *in_0, 0 as c_int);
-        match res {
-            Err(_) => rav1d_data_unref_internal(in_0),
-            Ok(res) => {
-                if !(res <= (*in_0).sz) {
-                    unreachable!();
-                }
-                (*in_0).sz = ((*in_0).sz as c_ulong).wrapping_sub(res as c_ulong) as usize as usize;
-                (*in_0).data = ((*in_0).data).offset(res as isize);
-                if (*in_0).sz == 0 {
-                    rav1d_data_unref_internal(in_0);
+    while c.in_0.sz > 0 {
+        let r#in = mem::take(&mut c.in_0); // Take so we don't have 2 `&mut`s.
+        let len = rav1d_parse_obus(c, &r#in, false);
+        c.in_0 = r#in; // Restore into `c` right after.
+        match len {
+            Err(_) => rav1d_data_unref_internal(&mut c.in_0),
+            Ok(len) => {
+                assert!(len <= c.in_0.sz);
+                c.in_0.sz -= len;
+                c.in_0.data = c.in_0.data.add(len);
+                if c.in_0.sz == 0 {
+                    rav1d_data_unref_internal(&mut c.in_0);
                 }
             }
         }
-        if output_picture_ready(c, 0 as c_int) != 0 {
+        if output_picture_ready(c, false) {
             break;
         }
-        res?;
+        len?;
     }
     Ok(())
 }
@@ -786,24 +749,16 @@ pub(crate) unsafe fn rav1d_get_picture(
     c: &mut Rav1dContext,
     out: &mut Rav1dPicture,
 ) -> Rav1dResult {
-    let drain = c.drain;
-    c.drain = 1 as c_int;
-    let res = gen_picture(c);
-    if res.is_err() {
-        return res;
-    }
-    if c.cached_error.is_err() {
-        let res_0 = c.cached_error;
-        c.cached_error = Ok(());
-        return res_0;
-    }
-    if output_picture_ready(c, (c.n_fc == 1 as c_uint) as c_int) != 0 {
+    let drain = mem::replace(&mut c.drain, 1);
+    gen_picture(c)?;
+    mem::replace(&mut c.cached_error, Ok(()))?;
+    if output_picture_ready(c, c.n_fc == 1) {
         return output_image(c, out);
     }
-    if c.n_fc > 1 as c_uint && drain != 0 {
+    if c.n_fc > 1 && drain != 0 {
         return drain_picture(c, out);
     }
-    return Err(EAGAIN);
+    Err(EAGAIN)
 }
 
 #[no_mangle]

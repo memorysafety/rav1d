@@ -2101,11 +2101,7 @@ fn check_for_overrun(
     0
 }
 
-unsafe fn parse_obus(
-    c: &mut Rav1dContext,
-    r#in: &mut Rav1dData,
-    global: c_int,
-) -> Rav1dResult<usize> {
+unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Rav1dResult<usize> {
     unsafe fn skip(c: &mut Rav1dContext, len: usize, init_byte_pos: usize) -> usize {
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
@@ -2183,7 +2179,7 @@ unsafe fn parse_obus(
 
     unsafe fn parse_tile_grp(
         c: &mut Rav1dContext,
-        r#in: &mut Rav1dData,
+        r#in: &Rav1dData,
         gb: &mut GetBits,
         init_bit_pos: usize,
         init_byte_pos: usize,
@@ -2283,7 +2279,7 @@ unsafe fn parse_obus(
             c.seq_hdr = seq_hdr;
         }
         RAV1D_OBU_REDUNDANT_FRAME_HDR if !c.frame_hdr.is_null() => {}
-        RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR if global != 0 => {}
+        RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR if global => {}
         RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
             if c.seq_hdr.is_null() {
                 return Err(EINVAL);
@@ -2351,13 +2347,13 @@ unsafe fn parse_obus(
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
                 gb.bytealign();
-                if global == 0 {
+                if !global {
                     parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
                 }
             }
         }
         RAV1D_OBU_TILE_GRP => {
-            if global == 0 {
+            if !global {
                 parse_tile_grp(c, r#in, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
         }
@@ -2577,7 +2573,7 @@ unsafe fn parse_obus(
                     c.mastering_display_ref,
                     c.itut_t35,
                     c.itut_t35_ref,
-                    &mut r#in.m,
+                    &r#in.m,
                 );
                 // Must be removed from the context after being attached to the frame
                 rav1d_ref_dec(&mut c.itut_t35_ref);
@@ -2654,7 +2650,7 @@ unsafe fn parse_obus(
                     c.mastering_display_ref,
                     c.itut_t35,
                     c.itut_t35_ref,
-                    &mut r#in.m,
+                    &r#in.m,
                 );
                 // Must be removed from the context after being attached to the frame
                 rav1d_ref_dec(&mut c.itut_t35_ref);
@@ -2727,8 +2723,8 @@ unsafe fn parse_obus(
 
 pub(crate) unsafe fn rav1d_parse_obus(
     c: &mut Rav1dContext,
-    r#in: &mut Rav1dData,
-    global: c_int,
+    r#in: &Rav1dData,
+    global: bool,
 ) -> Rav1dResult<usize> {
     parse_obus(c, r#in, global).inspect_err(|_| {
         c.cached_error_props = r#in.m.clone();
