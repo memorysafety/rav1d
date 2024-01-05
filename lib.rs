@@ -29,9 +29,7 @@ pub mod include {
 pub mod src {
     pub mod align;
     mod assume;
-    #[allow(dead_code)] // TODO(kkysen) Temporary
     pub(crate) mod c_arc;
-    #[allow(dead_code)] // TODO(kkysen) Temporary
     pub(crate) mod c_box;
     mod cdef;
     mod cdef_apply;

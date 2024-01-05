@@ -322,8 +322,8 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const u8,
-                r#ref: 0 as *mut Dav1dRef,
+                data: None,
+                r#ref: None,
             },
         },
         content_light: 0 as *mut Dav1dContentLightLevel,
@@ -350,8 +350,8 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             offset: 0,
             size: 0,
             user_data: Dav1dUserData {
-                data: 0 as *const u8,
-                r#ref: 0 as *mut Dav1dRef,
+                data: None,
+                r#ref: None,
             },
         },
     };

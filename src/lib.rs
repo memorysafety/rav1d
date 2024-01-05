@@ -5,7 +5,6 @@ use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::common::Rav1dUserData;
 use crate::include::dav1d::data::Dav1dData;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Dav1dContext;
@@ -34,12 +33,9 @@ use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
 use crate::src::data::rav1d_data_create_internal;
-use crate::src::data::rav1d_data_props_copy;
-use crate::src::data::rav1d_data_props_unref_internal;
 use crate::src::data::rav1d_data_ref;
 use crate::src::data::rav1d_data_unref_internal;
 use crate::src::data::rav1d_data_wrap_internal;
-use crate::src::data::rav1d_data_wrap_user_data_internal;
 use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
@@ -117,6 +113,7 @@ use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr::NonNull;
 use std::sync::Once;
+use to_method::To as _;
 
 #[cfg(target_os = "linux")]
 use libc::dlsym;
@@ -518,10 +515,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
                 duration: 0,
                 offset: 0,
                 size: 0,
-                user_data: Rav1dUserData {
-                    data: 0 as *const u8,
-                    r#ref: 0 as *mut Rav1dRef,
-                },
+                user_data: Default::default(),
             },
         };
         init
@@ -699,7 +693,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let error = (*f).task_thread.retval;
         if error.is_err() {
             (*f).task_thread.retval = Ok(());
-            rav1d_data_props_copy(&mut c.cached_error_props, &mut (*out_delayed).p.m);
+            c.cached_error_props = (*out_delayed).p.m.clone();
             rav1d_thread_picture_unref(out_delayed);
             return error;
         }
@@ -943,7 +937,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     rav1d_ref_dec(&mut (*c).mastering_display_ref);
     rav1d_ref_dec(&mut (*c).content_light_ref);
     rav1d_ref_dec(&mut (*c).itut_t35_ref);
-    rav1d_data_props_unref_internal(&mut (*c).cached_error_props);
+    let _ = mem::take(&mut (*c).cached_error_props);
     if (*c).n_fc == 1 as c_uint && (*c).n_tc == 1 as c_uint {
         return;
     }
@@ -1172,16 +1166,6 @@ pub unsafe extern "C" fn dav1d_get_event_flags(
     .into()
 }
 
-pub(crate) unsafe fn rav1d_get_decode_error_data_props(
-    c: &mut Rav1dContext,
-    out: &mut Rav1dDataProps,
-) -> Rav1dResult {
-    rav1d_data_props_unref_internal(out);
-    *out = c.cached_error_props.clone();
-    c.cached_error_props = Default::default();
-    Ok(())
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     c: *mut Dav1dContext,
@@ -1190,10 +1174,8 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
-        let result = rav1d_get_decode_error_data_props(&mut *c, &mut out_rust);
-        out.write(out_rust.into());
-        result
+        out.write(mem::take(&mut (*c).cached_error_props).into());
+        Ok(())
     })()
     .into()
 }
@@ -1248,15 +1230,6 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     result.into()
 }
 
-pub(crate) unsafe fn rav1d_data_wrap_user_data(
-    buf: *mut Rav1dData,
-    user_data: *const u8,
-    free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
-    cookie: *mut c_void,
-) -> Rav1dResult {
-    return rav1d_data_wrap_user_data_internal(buf, user_data, free_callback, cookie);
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     buf: *mut Dav1dData,
@@ -1264,10 +1237,16 @@ pub unsafe extern "C" fn dav1d_data_wrap_user_data(
     free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     cookie: *mut c_void,
 ) -> Dav1dResult {
-    let mut buf_rust = buf.read().into();
-    let result = rav1d_data_wrap_user_data(&mut buf_rust, user_data, free_callback, cookie);
-    buf.write(buf_rust.into());
-    result.into()
+    || -> Rav1dResult {
+        let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
+        // Note that `dav1d` doesn't do this check, but they do for the similar [`dav1d_data_wrap`].
+        let user_data = validate_input!(NonNull::new(user_data.cast_mut()).ok_or(EINVAL))?;
+        let mut data = buf.as_ptr().read().to::<Rav1dData>();
+        data.wrap_user_data(user_data, free_callback, cookie)?;
+        buf.as_ptr().write(data.into());
+        Ok(())
+    }()
+    .into()
 }
 
 pub(crate) unsafe fn rav1d_data_unref(buf: *mut Rav1dData) {
@@ -1282,13 +1261,9 @@ pub unsafe extern "C" fn dav1d_data_unref(buf: *mut Dav1dData) {
     result
 }
 
-pub(crate) unsafe fn rav1d_data_props_unref(props: *mut Rav1dDataProps) {
-    rav1d_data_props_unref_internal(props);
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_data_props_unref(props: *mut Dav1dDataProps) {
-    let mut props_rust = props.read().into();
-    rav1d_data_props_unref(&mut props_rust);
-    props.write(props_rust.into());
+    let props = validate_input!(NonNull::new(props).ok_or(()));
+    let Ok(mut props) = props else { return };
+    let _ = mem::take(props.as_mut()).to::<Rav1dDataProps>();
 }
