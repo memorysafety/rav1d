@@ -39,7 +39,6 @@ use std::ffi::c_void;
 use std::io;
 use std::mem;
 use std::ptr;
-use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
@@ -190,11 +189,10 @@ unsafe fn picture_alloc_with_edges(
         free(pic_ctx as *mut c_void);
         return res;
     }
-    (*pic_ctx).allocator = p_allocator.clone();
-    // TODO(kkysen) A normal assignment here as it used to be
-    // calls `fn drop` on `(*pic_ctx).pic`, which segfaults as it is uninitialized.
-    // We need to figure out the right thing to do here.
-    addr_of_mut!((*pic_ctx).pic).write(p.clone());
+    pic_ctx.write(pic_ctx_context {
+        allocator: p_allocator.clone(),
+        pic: p.clone(),
+    });
     p.r#ref = rav1d_ref_wrap(
         p.data[0] as *const u8,
         Some(free_buffer),
