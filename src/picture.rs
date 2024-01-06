@@ -14,6 +14,7 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::include::dav1d::picture::Rav1dPictureParameters;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::ENOMEM;
@@ -175,12 +176,14 @@ unsafe fn picture_alloc_with_edges(
     if pic_ctx.is_null() {
         return Err(ENOMEM);
     }
-    p.p.w = w;
-    p.p.h = h;
+    p.p = Rav1dPictureParameters {
+        w,
+        h,
+        layout: seq_hdr.as_ref().unwrap().layout,
+        bpc,
+    };
     p.seq_hdr = seq_hdr.clone();
     p.frame_hdr = frame_hdr.clone();
-    p.p.layout = seq_hdr.as_ref().unwrap().layout;
-    p.p.bpc = bpc;
     p.m = Default::default();
     let res = p_allocator.alloc_picture(p);
     if res.is_err() {
