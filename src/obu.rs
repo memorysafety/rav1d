@@ -2515,13 +2515,12 @@ unsafe fn parse_obus(
                 );
                 rav1d_picture_copy_props(
                     &mut (*c).out.p,
-                    &c.content_light,
-                    &c.mastering_display,
-                    &c.itut_t35,
-                    props,
+                    c.content_light.clone(),
+                    c.mastering_display.clone(),
+                    // Must be moved from the context to the frame.
+                    c.itut_t35.take(),
+                    props.clone(),
                 );
-                // Must be removed from the context after being attached to the frame
-                let _ = mem::take(&mut c.itut_t35);
                 c.event_flags |= c.refs[frame_hdr.existing_frame_idx as usize].p.flags.into();
             } else {
                 pthread_mutex_lock(&mut c.task_thread.lock);
@@ -2584,13 +2583,12 @@ unsafe fn parse_obus(
                 (*out_delayed).visible = true;
                 rav1d_picture_copy_props(
                     &mut (*out_delayed).p,
-                    &c.content_light,
-                    &c.mastering_display,
-                    &c.itut_t35,
-                    props,
+                    c.content_light.clone(),
+                    c.mastering_display.clone(),
+                    // Must be moved from the context to the frame.
+                    c.itut_t35.take(),
+                    props.clone(),
                 );
-                // Must be removed from the context after being attached to the frame
-                let _ = mem::take(&mut c.itut_t35);
                 pthread_mutex_unlock(&mut c.task_thread.lock);
             }
             if c.refs[frame_hdr.existing_frame_idx as usize]
