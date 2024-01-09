@@ -77,13 +77,13 @@ pub struct Dav1dPicture {
     pub m: Dav1dDataProps,
     pub content_light: Option<NonNull<Rav1dContentLightLevel>>,
     pub mastering_display: Option<NonNull<Rav1dMasteringDisplay>>,
-    pub itut_t35: *mut Dav1dITUTT35,
+    pub itut_t35: Option<NonNull<Dav1dITUTT35>>,
     pub reserved: [uintptr_t; 4],
     pub frame_hdr_ref: *mut Dav1dRef,
     pub seq_hdr_ref: *mut Dav1dRef,
     pub content_light_ref: Option<RawArc<Rav1dContentLightLevel>>, // opaque, so we can change this
     pub mastering_display_ref: Option<RawArc<Rav1dMasteringDisplay>>, // opaque, so we can change this
-    pub itut_t35_ref: *mut Dav1dRef,
+    pub itut_t35_ref: Option<RawArc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>, // opaque, so we can change this
     pub reserved_ref: [uintptr_t; 4],
     pub r#ref: *mut Dav1dRef,
     pub allocator_data: *mut c_void,
@@ -100,10 +100,9 @@ pub(crate) struct Rav1dPicture {
     pub m: Rav1dDataProps,
     pub content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-    pub itut_t35: *mut Rav1dITUTT35,
+    pub itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     pub frame_hdr_ref: *mut Rav1dRef,
     pub seq_hdr_ref: *mut Rav1dRef,
-    pub itut_t35_ref: *mut Rav1dRef,
     pub r#ref: *mut Rav1dRef,
     pub allocator_data: *mut c_void,
 }
@@ -119,7 +118,7 @@ impl From<Dav1dPicture> for Rav1dPicture {
             m,
             content_light: _,
             mastering_display: _,
-            itut_t35,
+            itut_t35: _,
             reserved: _,
             frame_hdr_ref,
             seq_hdr_ref,
@@ -167,22 +166,11 @@ impl From<Dav1dPicture> for Rav1dPicture {
             content_light: content_light_ref.map(|raw| unsafe { raw.into_arc() }),
             // Safety: `raw` came from [`RawArc::from_arc`].
             mastering_display: mastering_display_ref.map(|raw| unsafe { raw.into_arc() }),
-            // `.update_rav1d()` happens in `#[no_mangle] extern "C"`/`DAV1D_API` calls
-            itut_t35: if itut_t35.is_null() {
-                ptr::null_mut()
-            } else {
-                unsafe {
-                    addr_of_mut!(
-                        (*(itut_t35_ref.read())
-                            .data
-                            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-                        .rav1d
-                    )
-                }
-            },
+            // We don't `.update_rav1d` [`Rav1dITUTT35`] because never read it.
+            // Safety: `raw` came from [`RawArc::from_arc`].
+            itut_t35: itut_t35_ref.map(|raw| unsafe { raw.into_arc() }),
             frame_hdr_ref,
             seq_hdr_ref,
-            itut_t35_ref,
             r#ref,
             allocator_data,
         }
@@ -203,7 +191,6 @@ impl From<Rav1dPicture> for Dav1dPicture {
             itut_t35,
             frame_hdr_ref,
             seq_hdr_ref,
-            itut_t35_ref,
             r#ref,
             allocator_data,
         } = value;
@@ -243,24 +230,13 @@ impl From<Rav1dPicture> for Dav1dPicture {
             content_light: content_light.as_ref().map(|arc| arc.as_ref().into()),
             mastering_display: mastering_display.as_ref().map(|arc| arc.as_ref().into()),
             // `DRav1d::from_rav1d` is called in [`rav1d_parse_obus`].
-            itut_t35: if itut_t35.is_null() {
-                ptr::null_mut()
-            } else {
-                unsafe {
-                    addr_of_mut!(
-                        (*(itut_t35_ref.read())
-                            .data
-                            .cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>())
-                        .dav1d
-                    )
-                }
-            },
+            itut_t35: itut_t35.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             reserved: Default::default(),
             frame_hdr_ref,
             seq_hdr_ref,
             content_light_ref: content_light.map(RawArc::from_arc),
             mastering_display_ref: mastering_display.map(RawArc::from_arc),
-            itut_t35_ref,
+            itut_t35_ref: itut_t35.map(RawArc::from_arc),
             reserved_ref: Default::default(),
             r#ref,
             allocator_data,
@@ -284,10 +260,9 @@ impl Default for Rav1dPicture {
             m: Default::default(),
             content_light: None,
             mastering_display: None,
-            itut_t35: ptr::null_mut(),
+            itut_t35: None,
             frame_hdr_ref: ptr::null_mut(),
             seq_hdr_ref: ptr::null_mut(),
-            itut_t35_ref: ptr::null_mut(),
             r#ref: ptr::null_mut(),
             allocator_data: ptr::null_mut(),
         }
