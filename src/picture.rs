@@ -37,10 +37,14 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::io;
+use std::iter;
 use std::mem;
 use std::ptr;
 use std::ptr::addr_of_mut;
+use std::slice;
 use std::sync::Arc;
 
 bitflags! {
@@ -410,4 +414,61 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
     rav1d_picture_unref_internal(&mut (*p).p);
     (*p).progress = 0 as *mut atomic_uint;
+}
+
+impl Rav1dPicture {
+    /// Split the [`Rav1dPicture`] into row chunks like how `md5_write` does.
+    pub fn chunks(&self) -> impl Iterator<Item = &[u8]> {
+        let hbd = (self.p.bpc > 8) as usize;
+        let w = self.p.w as usize;
+        let h = self.p.h as usize;
+        let [y_stride, uv_stride] = self.stride.map(|it| it as usize);
+
+        let for_pl = move |skip: bool, w: usize, h: usize, stride: usize, data: *const c_void| {
+            let h = if skip { 0 } else { h };
+            let len = if h == 0 {
+                0
+            } else {
+                (h - 1) * stride + (w << hbd)
+            };
+            let data = unsafe { slice::from_raw_parts(data.cast::<u8>(), len) };
+            (0..h).map(move |i| &data[i * stride..][..w << hbd])
+        };
+
+        let has_uv = self.p.layout != Rav1dPixelLayout::I400;
+
+        let ss_ver = (self.p.layout == Rav1dPixelLayout::I420) as usize;
+        let ss_hor = (self.p.layout != Rav1dPixelLayout::I444) as usize;
+        let cw = (w + ss_hor) >> ss_hor;
+        let ch = (h + ss_ver) >> ss_ver;
+
+        [
+            (true, w, h, y_stride),
+            (has_uv, cw, ch, uv_stride),
+            (has_uv, cw, ch, uv_stride),
+        ]
+        .into_iter()
+        .enumerate()
+        .flat_map(move |(pl, (keep, w, h, stride))| for_pl(!keep, w, h, stride, self.data[pl]))
+    }
+}
+
+impl PartialEq for Rav1dPicture {
+    fn eq(&self, other: &Self) -> bool {
+        self.p == other.p
+            && self.stride == other.stride
+            && iter::zip(self.chunks(), other.chunks()).all(|(a, b)| a == b)
+    }
+}
+
+impl Eq for Rav1dPicture {}
+
+impl Hash for Rav1dPicture {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.p.hash(state);
+        self.stride.hash(state);
+        for chunk in self.chunks() {
+            chunk.hash(state);
+        }
+    }
 }
