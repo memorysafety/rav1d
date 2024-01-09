@@ -3,12 +3,6 @@
 version = 3
 
 [[package]]
-name = "atomig"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcecf20a3720c354e7648983ee8046436dea13caf0fe8f84a791c7fba456cf0f"
-
-[[package]]
 name = "bitflags"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -91,7 +85,6 @@ dependencies = [
 name = "rav1d"
 version = "0.2.0"
 dependencies = [
- "atomig",
  "bitflags",
  "cc",
  "cfg-if",

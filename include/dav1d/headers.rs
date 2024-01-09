@@ -1,9 +1,8 @@
 use crate::src::enum_map::EnumKey;
-use atomig::Atom;
-use atomig::Atomic;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
+use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use strum::EnumCount;
 use strum::FromRepr;
@@ -166,37 +165,30 @@ impl Dav1dWarpedMotionParams {
     }
 }
 
-#[derive(Clone, Copy, Default)]
-pub(crate) struct InnerAbcd([i16; 4]);
-
-impl Atom for InnerAbcd {
-    type Repr = u64;
-
-    fn pack(self) -> Self::Repr {
-        let [[b1, b2], [b3, b4], [b5, b6], [b7, b8]] = self.0.map(|x| x.to_ne_bytes());
-        Self::Repr::from_ne_bytes([b1, b2, b3, b4, b5, b6, b7, b8])
-    }
-
-    fn unpack(src: Self::Repr) -> Self {
-        let [b1, b2, b3, b4, b5, b6, b7, b8] = src.to_ne_bytes();
-        Self([[b1, b2], [b3, b4], [b5, b6], [b7, b8]].map(i16::from_ne_bytes))
-    }
-}
-
 #[derive(Default)]
-pub struct Abcd(Atomic<InnerAbcd>);
+pub struct Abcd(AtomicU64);
 
 impl Abcd {
+    fn pack(unpacked: [i16; 4]) -> u64 {
+        let [[b1, b2], [b3, b4], [b5, b6], [b7, b8]] = unpacked.map(|x| x.to_ne_bytes());
+        u64::from_ne_bytes([b1, b2, b3, b4, b5, b6, b7, b8])
+    }
+
+    fn unpack(packed: u64) -> [i16; 4] {
+        let [b1, b2, b3, b4, b5, b6, b7, b8] = packed.to_ne_bytes();
+        [[b1, b2], [b3, b4], [b5, b6], [b7, b8]].map(i16::from_ne_bytes)
+    }
+
     pub fn new(abcd: [i16; 4]) -> Self {
-        Self(Atomic::new(InnerAbcd(abcd)))
+        Self(AtomicU64::new(Self::pack(abcd)))
     }
 
     pub fn get(&self) -> [i16; 4] {
-        self.0.load(Ordering::SeqCst).0
+        Self::unpack(self.0.load(Ordering::SeqCst))
     }
 
     pub fn set(&self, abcd: [i16; 4]) {
-        self.0.store(InnerAbcd(abcd), Ordering::SeqCst);
+        self.0.store(Self::pack(abcd), Ordering::SeqCst);
     }
 }
 
