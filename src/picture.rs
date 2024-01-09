@@ -39,6 +39,7 @@ use std::io;
 use std::mem;
 use std::ptr;
 use std::ptr::addr_of_mut;
+use std::sync::Arc;
 
 bitflags! {
     #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -175,10 +176,8 @@ unsafe fn picture_alloc_with_edges(
     seq_hdr_ref: *mut Rav1dRef,
     frame_hdr: *mut Rav1dFrameHeader,
     frame_hdr_ref: *mut Rav1dRef,
-    content_light: *mut Rav1dContentLightLevel,
-    content_light_ref: *mut Rav1dRef,
-    mastering_display: *mut Rav1dMasteringDisplay,
-    mastering_display_ref: *mut Rav1dRef,
+    content_light: &Option<Arc<Rav1dContentLightLevel>>,
+    mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
     itut_t35: *mut Rav1dITUTT35,
     itut_t35_ref: *mut Rav1dRef,
     bpc: c_int,
@@ -243,9 +242,7 @@ unsafe fn picture_alloc_with_edges(
     rav1d_picture_copy_props(
         p,
         content_light,
-        content_light_ref,
         mastering_display,
-        mastering_display_ref,
         itut_t35,
         itut_t35_ref,
         props,
@@ -260,29 +257,16 @@ unsafe fn picture_alloc_with_edges(
 
 pub unsafe fn rav1d_picture_copy_props(
     p: *mut Rav1dPicture,
-    content_light: *mut Rav1dContentLightLevel,
-    content_light_ref: *mut Rav1dRef,
-    mastering_display: *mut Rav1dMasteringDisplay,
-    mastering_display_ref: *mut Rav1dRef,
+    content_light: &Option<Arc<Rav1dContentLightLevel>>,
+    mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
     itut_t35: *mut Rav1dITUTT35,
     itut_t35_ref: *mut Rav1dRef,
     props: *const Rav1dDataProps,
 ) {
     (*p).m = (*props).clone();
 
-    rav1d_ref_dec(&mut (*p).content_light_ref);
-    (*p).content_light_ref = content_light_ref;
-    (*p).content_light = content_light;
-    if !content_light_ref.is_null() {
-        rav1d_ref_inc(content_light_ref);
-    }
-
-    rav1d_ref_dec(&mut (*p).mastering_display_ref);
-    (*p).mastering_display_ref = mastering_display_ref;
-    (*p).mastering_display = mastering_display;
-    if !mastering_display_ref.is_null() {
-        rav1d_ref_inc(mastering_display_ref);
-    }
+    (*p).content_light = content_light.clone();
+    (*p).mastering_display = mastering_display.clone();
 
     rav1d_ref_dec(&mut (*p).itut_t35_ref);
     (*p).itut_t35_ref = itut_t35_ref;
@@ -308,10 +292,8 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         (*f).seq_hdr_ref,
         (*f).frame_hdr,
         (*f).frame_hdr_ref,
-        (*c).content_light,
-        (*c).content_light_ref,
-        (*c).mastering_display,
-        (*c).mastering_display_ref,
+        &(*c).content_light,
+        &(*c).mastering_display,
         (*c).itut_t35,
         (*c).itut_t35_ref,
         bpc,
@@ -361,10 +343,8 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         (*src).seq_hdr_ref,
         (*src).frame_hdr,
         (*src).frame_hdr_ref,
-        (*src).content_light,
-        (*src).content_light_ref,
-        (*src).mastering_display,
-        (*src).mastering_display_ref,
+        &(*src).content_light,
+        &(*src).mastering_display,
         (*src).itut_t35,
         (*src).itut_t35_ref,
         (*src).p.bpc,
@@ -391,12 +371,6 @@ pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPictur
     }
     if !src.seq_hdr_ref.is_null() {
         rav1d_ref_inc(src.seq_hdr_ref);
-    }
-    if !src.content_light_ref.is_null() {
-        rav1d_ref_inc(src.content_light_ref);
-    }
-    if !src.mastering_display_ref.is_null() {
-        rav1d_ref_inc(src.mastering_display_ref);
     }
     if !src.itut_t35_ref.is_null() {
         rav1d_ref_inc(src.itut_t35_ref);
@@ -441,8 +415,6 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
         mut r#ref,
         mut frame_hdr_ref,
         mut seq_hdr_ref,
-        mut content_light_ref,
-        mut mastering_display_ref,
         mut itut_t35_ref,
         ..
     } = mem::take(p);
@@ -454,8 +426,6 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
     }
     rav1d_ref_dec(&mut seq_hdr_ref);
     rav1d_ref_dec(&mut frame_hdr_ref);
-    rav1d_ref_dec(&mut content_light_ref);
-    rav1d_ref_dec(&mut mastering_display_ref);
     rav1d_ref_dec(&mut itut_t35_ref);
 }
 

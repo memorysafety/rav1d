@@ -75,6 +75,7 @@ use libc::pthread_mutex_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::sync::Arc;
 
 #[repr(C)]
 pub(crate) struct Rav1dDSPContext {
@@ -208,10 +209,8 @@ pub struct Rav1dContext {
     pub(crate) frame_hdr_pool: *mut Rav1dMemPool,
     pub(crate) frame_hdr_ref: *mut Rav1dRef,
     pub(crate) frame_hdr: *mut Rav1dFrameHeader,
-    pub(crate) content_light_ref: *mut Rav1dRef,
-    pub(crate) content_light: *mut Rav1dContentLightLevel,
-    pub(crate) mastering_display_ref: *mut Rav1dRef,
-    pub(crate) mastering_display: *mut Rav1dMasteringDisplay,
+    pub(crate) content_light: Option<Arc<Rav1dContentLightLevel>>,
+    pub(crate) mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     pub(crate) itut_t35_ref: *mut Rav1dRef,
     pub(crate) itut_t35: *mut Rav1dITUTT35,
 

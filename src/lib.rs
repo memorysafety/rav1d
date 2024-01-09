@@ -18,11 +18,9 @@ use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
-use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dITUTT35;
-use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -886,11 +884,9 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
     (*c).seq_hdr = 0 as *mut Rav1dSequenceHeader;
     rav1d_ref_dec(&mut (*c).seq_hdr_ref);
-    (*c).mastering_display = 0 as *mut Rav1dMasteringDisplay;
-    (*c).content_light = 0 as *mut Rav1dContentLightLevel;
+    let _ = mem::take(&mut (*c).content_light);
+    let _ = mem::take(&mut (*c).mastering_display);
     (*c).itut_t35 = 0 as *mut Rav1dITUTT35;
-    rav1d_ref_dec(&mut (*c).mastering_display_ref);
-    rav1d_ref_dec(&mut (*c).content_light_ref);
     rav1d_ref_dec(&mut (*c).itut_t35_ref);
     let _ = mem::take(&mut (*c).cached_error_props);
     if (*c).n_fc == 1 as c_uint && (*c).n_tc == 1 as c_uint {
@@ -1095,8 +1091,8 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     }
     rav1d_ref_dec(&mut (*c).seq_hdr_ref);
     rav1d_ref_dec(&mut (*c).frame_hdr_ref);
-    rav1d_ref_dec(&mut (*c).mastering_display_ref);
-    rav1d_ref_dec(&mut (*c).content_light_ref);
+    let _ = mem::take(&mut (*c).mastering_display);
+    let _ = mem::take(&mut (*c).content_light);
     rav1d_ref_dec(&mut (*c).itut_t35_ref);
     rav1d_mem_pool_end((*c).seq_hdr_pool);
     rav1d_mem_pool_end((*c).frame_hdr_pool);
