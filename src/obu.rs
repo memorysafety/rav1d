@@ -2462,17 +2462,7 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
 
                         let country_code = country_code as u8;
                         let country_code_extension_byte = country_code_extension_byte as u8;
-                        // We need our public headers to be C++ compatible, so payload can't be
-                        // a flexible array member
-                        let payload = (*r#ref)
-                            .data
-                            .cast::<u8>()
-                            .offset(::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
-                                as isize);
-                        let payload_size = payload_size as usize;
-                        for i in 0..payload_size {
-                            *payload.offset(i as isize) = gb.get_bits(8) as u8;
-                        }
+                        let payload = (0..payload_size).map(|_| gb.get_bits(8) as u8).collect(); // TODO(kkysen) fallible allocation
 
                         let itut_t35_metadatas =
                             (*r#ref).data.cast::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>();
@@ -2480,7 +2470,6 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                             country_code,
                             country_code_extension_byte,
                             payload,
-                            payload_size,
                         }));
                         rav1d_ref_dec(&mut c.itut_t35_ref);
                         c.itut_t35 = &mut (*itut_t35_metadatas).rav1d;
