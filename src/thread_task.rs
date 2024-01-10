@@ -49,6 +49,7 @@ use std::ffi::c_int;
 use std::ffi::c_long;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::mem;
 use std::process::abort;
 use std::ptr;
 use std::sync::atomic::AtomicI32;
@@ -292,28 +293,27 @@ unsafe fn insert_task(f: &mut Rav1dFrameContext, t: *mut Rav1dTask, cond_signal:
 
 #[inline]
 unsafe fn add_pending(f: &mut Rav1dFrameContext, t: *mut Rav1dTask) {
-    pthread_mutex_lock(&mut f.task_thread.pending_tasks.lock);
+    let mut pending_tasks = f.task_thread.pending_tasks.lock().unwrap();
     (*t).next = 0 as *mut Rav1dTask;
-    if (f.task_thread.pending_tasks.head).is_null() {
-        f.task_thread.pending_tasks.head = t;
+    if pending_tasks.head.is_null() {
+        pending_tasks.head = t;
     } else {
-        (*f.task_thread.pending_tasks.tail).next = t;
+        (*pending_tasks.tail).next = t;
     }
-    f.task_thread.pending_tasks.tail = t;
+    pending_tasks.tail = t;
     f.task_thread.pending_tasks_merge.store(1, Ordering::SeqCst);
-    pthread_mutex_unlock(&mut f.task_thread.pending_tasks.lock);
 }
 
 #[inline]
 unsafe fn merge_pending_frame(f: &mut Rav1dFrameContext) -> c_int {
     let merge = f.task_thread.pending_tasks_merge.load(Ordering::SeqCst);
     if merge != 0 {
-        pthread_mutex_lock(&mut f.task_thread.pending_tasks.lock);
-        let mut t: *mut Rav1dTask = f.task_thread.pending_tasks.head;
-        f.task_thread.pending_tasks.head = 0 as *mut Rav1dTask;
-        f.task_thread.pending_tasks.tail = 0 as *mut Rav1dTask;
-        f.task_thread.pending_tasks_merge.store(0, Ordering::SeqCst);
-        pthread_mutex_unlock(&mut f.task_thread.pending_tasks.lock);
+        let mut t = {
+            let mut pending_tasks = f.task_thread.pending_tasks.lock().unwrap();
+            let old_head = mem::take(&mut *pending_tasks).head;
+            f.task_thread.pending_tasks_merge.store(0, Ordering::SeqCst);
+            old_head
+        };
         while !t.is_null() {
             let tmp: *mut Rav1dTask = (*t).next;
             insert_task(f, t, 0 as c_int);
@@ -458,19 +458,18 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     }
     (*prev_t).next = 0 as *mut Rav1dTask;
     f.task_thread.done[(pass & 1) as usize].store(0, Ordering::SeqCst);
-    pthread_mutex_lock(&mut f.task_thread.pending_tasks.lock);
-    if !((f.task_thread.pending_tasks.head).is_null() || pass == 2) {
+    let mut pending_tasks = f.task_thread.pending_tasks.lock().unwrap();
+    if !(pending_tasks.head.is_null() || pass == 2) {
         unreachable!();
     }
-    if (f.task_thread.pending_tasks.head).is_null() {
-        f.task_thread.pending_tasks.head = &mut *tasks.offset(0) as *mut Rav1dTask;
+    if pending_tasks.head.is_null() {
+        pending_tasks.head = tasks.offset(0);
     } else {
-        (*f.task_thread.pending_tasks.tail).next = &mut *tasks.offset(0) as *mut Rav1dTask;
+        (*pending_tasks.tail).next = tasks.offset(0);
     }
-    f.task_thread.pending_tasks.tail = prev_t;
+    pending_tasks.tail = prev_t;
     f.task_thread.pending_tasks_merge.store(1, Ordering::SeqCst);
     f.task_thread.init_done.store(1, Ordering::SeqCst);
-    pthread_mutex_unlock(&mut f.task_thread.pending_tasks.lock);
     Ok(())
 }
 

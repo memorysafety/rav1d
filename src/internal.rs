@@ -78,9 +78,11 @@ use libc::pthread_mutex_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::ptr;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 #[repr(C)]
 pub(crate) struct Rav1dDSPContext {
@@ -408,9 +410,17 @@ pub struct Rav1dFrameContext_lf {
 
 #[repr(C)]
 pub struct Rav1dFrameContext_task_thread_pending_tasks {
-    pub lock: pthread_mutex_t,
     pub head: *mut Rav1dTask,
     pub tail: *mut Rav1dTask,
+}
+
+impl Default for Rav1dFrameContext_task_thread_pending_tasks {
+    fn default() -> Self {
+        Self {
+            head: ptr::null_mut(),
+            tail: ptr::null_mut(),
+        }
+    }
 }
 
 #[repr(C)]
@@ -438,7 +448,7 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub task_cur_prev: *mut Rav1dTask,
     // async task insertion
     pub pending_tasks_merge: AtomicI32,
-    pub pending_tasks: Rav1dFrameContext_task_thread_pending_tasks,
+    pub pending_tasks: Mutex<Rav1dFrameContext_task_thread_pending_tasks>,
 }
 
 // threading (refer to tc[] for per-thread things)
