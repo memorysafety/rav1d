@@ -4850,7 +4850,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
 pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: Rav1dResult) {
     let c = &*f.c;
     if !f.sr_cur.p.data[0].is_null() {
-        f.task_thread.error = 0;
+        f.task_thread.error = AtomicI32::new(0);
     }
     if c.n_fc > 1 && retval.is_err() && !f.frame_thread.cf.is_null() {
         slice::from_raw_parts_mut(
@@ -4905,7 +4905,7 @@ pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> Rav1dResul
             pthread_mutex_lock(&mut (*f.task_thread.ttd).lock);
             pthread_cond_signal(&mut (*f.task_thread.ttd).cond);
             if res.is_ok() {
-                while f.task_thread.done[0] == 0
+                while f.task_thread.done[0].load(Ordering::Relaxed) == 0
                 // TODO(kkysen) Make `.task_counter` an `AtomicI32`, but that requires recursively removing `impl Copy`s.
                     || (*(addr_of_mut!(f.task_thread.task_counter) as *mut AtomicI32))
                         .load(Ordering::SeqCst)
@@ -4953,10 +4953,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             pthread_cond_wait(&mut f.task_thread.cond, &mut c.task_thread.lock);
         }
         let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
-        if !out_delayed.p.data[0].is_null()
-            || ::core::intrinsics::atomic_load_seqcst(&mut f.task_thread.error as *mut atomic_int)
-                != 0
-        {
+        if !out_delayed.p.data[0].is_null() || f.task_thread.error.load(Ordering::SeqCst) != 0 {
             let first = ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
             if first + 1 < c.n_fc {
                 ::core::intrinsics::atomic_xadd_seqcst(&mut c.task_thread.first, 1);
@@ -5003,7 +5000,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         c: &mut Rav1dContext,
         out_delayed: *mut Rav1dThreadPicture,
     ) {
-        f.task_thread.error = 1;
+        f.task_thread.error = AtomicI32::new(1);
         rav1d_cdf_thread_unref(&mut f.in_cdf);
         if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {
             rav1d_cdf_thread_unref(&mut f.out_cdf);
@@ -5203,14 +5200,13 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     f.sbh = f.bh + f.sb_step - 1 >> f.sb_shift;
     f.b4_stride = (f.bw + 31 & !31) as ptrdiff_t;
     f.bitdepth_max = (1 << f.cur.p.bpc) - 1;
-    *&mut f.task_thread.error = 0;
+    f.task_thread.error = AtomicI32::new(0);
     let uses_2pass = (c.n_fc > 1) as c_int;
     let cols = frame_hdr.tiling.cols;
     let rows = frame_hdr.tiling.rows;
-    ::core::intrinsics::atomic_store_seqcst(
-        &mut f.task_thread.task_counter,
-        cols * rows + f.sbh << uses_2pass,
-    );
+    f.task_thread
+        .task_counter
+        .store(cols * rows + f.sbh << uses_2pass, Ordering::SeqCst);
 
     // ref_mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {

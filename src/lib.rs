@@ -20,7 +20,6 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::include::stdatomic::atomic_int;
 use crate::src::align::Align64;
 use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::cpu::rav1d_init_cpu;
@@ -619,9 +618,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let out_delayed: *mut Rav1dThreadPicture =
             &mut *(c.frame_thread.out_delayed).offset(next as isize) as *mut Rav1dThreadPicture;
         if !((*out_delayed).p.data[0]).is_null()
-            || ::core::intrinsics::atomic_load_seqcst(
-                &mut (*f).task_thread.error as *mut atomic_int,
-            ) != 0
+            || (*f).task_thread.error.load(Ordering::SeqCst) != 0
         {
             let mut first: c_uint =
                 ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);

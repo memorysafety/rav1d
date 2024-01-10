@@ -428,12 +428,12 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub init_task: Rav1dTask,
     pub num_tasks: c_int,
     pub num_tile_tasks: c_int,
-    pub init_done: atomic_int,
-    pub done: [atomic_int; 2],
+    pub init_done: AtomicI32,
+    pub done: [AtomicI32; 2],
     pub retval: Rav1dResult,
     pub update_set: bool, // whether we need to update CDF reference
-    pub error: atomic_int,
-    pub task_counter: atomic_int,
+    pub error: AtomicI32,
+    pub task_counter: AtomicI32,
     pub task_head: *mut Rav1dTask,
     pub task_tail: *mut Rav1dTask,
     // Points to the task directly before the cur pointer in the queue.
