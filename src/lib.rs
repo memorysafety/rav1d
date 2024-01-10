@@ -385,15 +385,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
                 pthread_mutex_destroy(&mut (*f).task_thread.lock);
                 return error(c, c_out, &mut thread_attr);
             }
-            if pthread_mutex_init(
-                &mut (*f).task_thread.pending_tasks.lock,
-                0 as *const pthread_mutexattr_t,
-            ) != 0
-            {
-                pthread_cond_destroy(&mut (*f).task_thread.cond);
-                pthread_mutex_destroy(&mut (*f).task_thread.lock);
-                return error(c, c_out, &mut thread_attr);
-            }
+            (*f).task_thread.pending_tasks = Default::default();
         }
         (*f).c = c;
         (*f).task_thread.ttd = &mut (*c).task_thread;
@@ -890,16 +882,11 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             *fresh2 = 0 as *mut Rav1dTask;
             let ref mut fresh3 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_cur_prev;
             *fresh3 = 0 as *mut Rav1dTask;
-            let ref mut fresh4 = (*((*c).fc).offset(i_1 as isize))
+            *(*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
-                .head;
-            *fresh4 = 0 as *mut Rav1dTask;
-            let ref mut fresh5 = (*((*c).fc).offset(i_1 as isize))
-                .task_thread
-                .pending_tasks
-                .tail;
-            *fresh5 = 0 as *mut Rav1dTask;
+                .get_mut()
+                .unwrap() = Default::default();
             *&mut (*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks_merge = AtomicI32::new(0);
@@ -1013,7 +1000,7 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
             freep(&mut (*f).frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
         }
         if (*c).n_tc > 1 as c_uint {
-            pthread_mutex_destroy(&mut (*f).task_thread.pending_tasks.lock);
+            let _ = mem::take(&mut (*f).task_thread.pending_tasks); // TODO: remove when context is owned
             pthread_cond_destroy(&mut (*f).task_thread.cond);
             pthread_mutex_destroy(&mut (*f).task_thread.lock);
         }
