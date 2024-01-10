@@ -73,7 +73,6 @@ use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_ROT_ZOOM;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
-use crate::include::stdatomic::atomic_int;
 use crate::src::c_arc::CArc;
 use crate::src::cdf::rav1d_cdf_thread_ref;
 use crate::src::cdf::rav1d_cdf_thread_unref;
@@ -2541,9 +2540,7 @@ unsafe fn parse_obus(
                 }
                 let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
                 if !(*out_delayed).p.data[0].is_null()
-                    || ::core::intrinsics::atomic_load_seqcst(
-                        &mut (*f).task_thread.error as *mut atomic_int,
-                    ) != 0
+                    || (*f).task_thread.error.load(Ordering::SeqCst) != 0
                 {
                     let first = ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
                     if first + 1 < c.n_fc {
