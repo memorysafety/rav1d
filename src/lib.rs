@@ -101,6 +101,7 @@ use std::process::abort;
 use std::ptr;
 use std::ptr::NonNull;
 use std::slice;
+use std::sync::atomic::AtomicI32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Once;
@@ -906,8 +907,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             *fresh5 = 0 as *mut Rav1dTask;
             *&mut (*((*c).fc).offset(i_1 as isize))
                 .task_thread
-                .pending_tasks
-                .merge = 0 as c_int;
+                .pending_tasks_merge = AtomicI32::new(0);
             i_1 = i_1.wrapping_add(1);
         }
         *&mut (*c).task_thread.first = 0 as c_int as c_uint;

@@ -412,7 +412,6 @@ pub struct Rav1dFrameContext_lf {
 
 #[repr(C)]
 pub struct Rav1dFrameContext_task_thread_pending_tasks {
-    pub merge: atomic_int,
     pub lock: pthread_mutex_t,
     pub head: *mut Rav1dTask,
     pub tail: *mut Rav1dTask,
@@ -442,6 +441,7 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     // [head;cur-1] when picking one for execution.
     pub task_cur_prev: *mut Rav1dTask,
     // async task insertion
+    pub pending_tasks_merge: AtomicI32,
     pub pending_tasks: Rav1dFrameContext_task_thread_pending_tasks,
 }
 

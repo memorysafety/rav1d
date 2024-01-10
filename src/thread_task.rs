@@ -318,22 +318,23 @@ unsafe fn add_pending(f: *mut Rav1dFrameContext, t: *mut Rav1dTask) {
         (*(*f).task_thread.pending_tasks.tail).next = t;
     }
     (*f).task_thread.pending_tasks.tail = t;
-    ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.pending_tasks.merge, 1 as c_int);
+    (*f).task_thread
+        .pending_tasks_merge
+        .store(1, Ordering::SeqCst);
     pthread_mutex_unlock(&mut (*f).task_thread.pending_tasks.lock);
 }
 
 #[inline]
 unsafe fn merge_pending_frame(f: *mut Rav1dFrameContext) -> c_int {
-    let merge = ::core::intrinsics::atomic_load_seqcst(&mut (*f).task_thread.pending_tasks.merge);
+    let merge = (*f).task_thread.pending_tasks_merge.load(Ordering::SeqCst);
     if merge != 0 {
         pthread_mutex_lock(&mut (*f).task_thread.pending_tasks.lock);
         let mut t: *mut Rav1dTask = (*f).task_thread.pending_tasks.head;
         (*f).task_thread.pending_tasks.head = 0 as *mut Rav1dTask;
         (*f).task_thread.pending_tasks.tail = 0 as *mut Rav1dTask;
-        ::core::intrinsics::atomic_store_seqcst(
-            &mut (*f).task_thread.pending_tasks.merge,
-            0 as c_int,
-        );
+        (*f).task_thread
+            .pending_tasks_merge
+            .store(0, Ordering::SeqCst);
         pthread_mutex_unlock(&mut (*f).task_thread.pending_tasks.lock);
         while !t.is_null() {
             let tmp: *mut Rav1dTask = (*t).next;
@@ -490,7 +491,9 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
         (*(*f).task_thread.pending_tasks.tail).next = &mut *tasks.offset(0) as *mut Rav1dTask;
     }
     (*f).task_thread.pending_tasks.tail = prev_t;
-    ::core::intrinsics::atomic_store_seqcst(&mut (*f).task_thread.pending_tasks.merge, 1 as c_int);
+    (*f).task_thread
+        .pending_tasks_merge
+        .store(1, Ordering::SeqCst);
     (*f).task_thread.init_done.store(1, Ordering::SeqCst);
     pthread_mutex_unlock(&mut (*f).task_thread.pending_tasks.lock);
     Ok(())
