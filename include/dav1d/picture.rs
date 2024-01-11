@@ -27,6 +27,9 @@ use std::ptr;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
+pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
+pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;
+
 #[repr(C)]
 pub struct Dav1dPictureParameters {
     pub w: c_int,
