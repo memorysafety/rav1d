@@ -1033,7 +1033,7 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         rav1d_free_aligned((*f).ts as *mut c_void);
         rav1d_free_aligned((*f).ipred_edge[0] as *mut c_void);
         free((*f).a as *mut c_void);
-        (*f).tiles = Default::default(); // TODO(kkysen) Remove when dropped properly.
+        let _ = mem::take(&mut (*f).tiles);
         free((*f).lf.mask as *mut c_void);
         free((*f).lf.lr_mask as *mut c_void);
         free((*f).lf.level as *mut c_void);
