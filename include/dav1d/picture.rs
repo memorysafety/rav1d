@@ -225,17 +225,19 @@ impl Default for Rav1dPicture {
 pub struct Dav1dPicAllocator {
     pub cookie: *mut c_void,
     pub alloc_picture_callback:
-        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> Dav1dResult>,
+        Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult>,
     pub release_picture_callback:
-        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> ()>,
+        Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> ()>,
 }
 
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dPicAllocator {
     pub cookie: *mut c_void,
-    pub alloc_picture_callback: unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> Dav1dResult,
-    pub release_picture_callback: unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> (),
+    pub alloc_picture_callback:
+        unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult,
+    pub release_picture_callback:
+        unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> (),
 }
 
 impl TryFrom<Dav1dPicAllocator> for Rav1dPicAllocator {
