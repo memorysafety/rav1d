@@ -223,9 +223,62 @@ impl Default for Rav1dPicture {
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dPicAllocator {
+    /// Custom data to pass to the allocator callbacks.
     pub cookie: *mut c_void,
+
+    /// Allocate the picture buffer based on the [`Dav1dPictureParameters`].
+    ///
+    /// [`data`]`[0]`, [`data`]`[1]` and [`data`]`[2]`
+    /// must be [`DAV1D_PICTURE_ALIGNMENT`]-byte aligned
+    /// and with a pixel width/height multiple of 128 pixels.
+    /// Any allocated memory area should also be padded by [`DAV1D_PICTURE_ALIGNMENT`] bytes.
+    /// [`data`]`[1]` and [`data`]`[2]` must share the same [`stride`]`[1]`.
+    ///
+    /// This function will be called on the main thread
+    /// (the thread which calls [`dav1d_get_picture`]).
+    ///
+    /// # Args
+    ///
+    /// * `pic`: The picture to allocate the buffer for.
+    ///     The callback needs to fill the picture
+    ///     [`data`]`[0]`, [`data`]`[1]`, [`data`]`[2]`,
+    ///     [`stride`]`[0]`, and [`stride`]`[1]`.
+    ///     The allocator can fill the pic [`allocator_data`] pointer
+    ///     with a custom pointer that will be passed to
+    ///     [`release_picture_callback`].
+    ///
+    /// * `cookie`: Custom pointer passed to all calls.
+    ///
+    /// *Note*: No fields other than [`data`], [`stride`] and [`allocator_data`]
+    /// must be filled by this callback.
+    ///
+    /// # Return
+    ///
+    /// 0 on success. A negative `DAV1D_ERR` value on error.
+    /// <!--- TODO(kkysen) Translate `DAV1D_ERR` -->
+    ///
+    /// [`data`]: Dav1dPicture::data
+    /// [`stride`]: Dav1dPicture::data
+    /// [`dav1d_get_picture`]: crate::src::lib::dav1d_get_picture
+    /// [`allocator_data`]: Dav1dPicture::allocator_data
+    /// [`release_picture_callback`]: Self::release_picture_callback
     pub alloc_picture_callback:
         Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult>,
+
+    /// Release the picture buffer.
+    ///
+    /// If frame threading is used, this function may be called by the main thread
+    /// (the thread which calls [`dav1d_get_picture`]),
+    /// or any of the frame threads and thus must be thread-safe.
+    /// If frame threading is not used, this function will only be called on the main thread.
+    ///
+    /// # Args
+    ///
+    /// * `pic`: The picture that was filled by [`alloc_picture_callback`].
+    /// * `cookie`: Custom pointer passed to all calls.
+    ///
+    /// [`dav1d_get_picture`]: crate::src::lib::dav1d_get_picture
+    /// [`alloc_picture_callback`]: Self::alloc_picture_callback
     pub release_picture_callback:
         Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> ()>,
 }
@@ -233,9 +286,14 @@ pub struct Dav1dPicAllocator {
 #[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dPicAllocator {
+    /// See [`Dav1dPicAllocator::cookie`].
     pub cookie: *mut c_void,
+
+    /// See [`Dav1dPicAllocator::alloc_picture_callback`].
     pub alloc_picture_callback:
         unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult,
+
+    /// See [`Dav1dPicAllocator::release_picture_callback`].
     pub release_picture_callback:
         unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> (),
 }
