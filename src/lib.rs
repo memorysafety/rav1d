@@ -15,10 +15,8 @@ use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
 use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_ALL;
 use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -107,6 +105,7 @@ use std::mem;
 use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr::NonNull;
+use std::sync::Arc;
 use std::sync::Once;
 use to_method::To as _;
 
@@ -283,9 +282,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
     (*c).cached_error_props = Default::default();
-    if rav1d_mem_pool_init(&mut (*c).seq_hdr_pool).is_err()
-        || rav1d_mem_pool_init(&mut (*c).frame_hdr_pool).is_err()
-        || rav1d_mem_pool_init(&mut (*c).segmap_pool).is_err()
+    if rav1d_mem_pool_init(&mut (*c).segmap_pool).is_err()
         || rav1d_mem_pool_init(&mut (*c).refmvs_pool).is_err()
         || rav1d_mem_pool_init(&mut (*c).cdf_pool).is_err()
     {
@@ -488,7 +485,7 @@ unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
 pub(crate) unsafe fn rav1d_parse_sequence_header(
     ptr: *const u8,
     sz: usize,
-) -> Rav1dResult<Rav1dSequenceHeader> {
+) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
     let mut buf = Rav1dData::default();
     let s = Rav1dSettings {
         n_threads: 1,
@@ -497,7 +494,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     };
     let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
     rav1d_open(&mut c, &s)?;
-    || -> Rav1dResult<Rav1dSequenceHeader> {
+    || -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
         if !ptr.is_null() {
             rav1d_data_wrap_internal(&mut buf, ptr, sz, Some(dummy_free), 0 as *mut c_void)?;
         }
@@ -509,11 +506,15 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
             buf.data = buf.data.add(len);
         }
 
-        if (*c).seq_hdr.is_null() {
+        if (*c).seq_hdr.is_none() {
             return Err(ENOENT);
         }
 
-        Ok((*(*c).seq_hdr).clone())
+        (*c).seq_hdr
+            .take()
+            .and_then(Arc::into_inner)
+            .map(Ok)
+            .unwrap()
     }()
     .inspect_err(|_| {
         rav1d_data_unref_internal(&mut buf);
@@ -530,7 +531,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     (|| {
         validate_input!((!out.is_null(), EINVAL))?;
         let seq_hdr = rav1d_parse_sequence_header(ptr, sz)?;
-        out.write(seq_hdr.into());
+        out.write(seq_hdr.dav1d);
         Ok(())
     })()
     .into()
@@ -547,7 +548,7 @@ impl Rav1dFilmGrainData {
 
 impl Rav1dPicture {
     unsafe fn has_grain(&self) -> bool {
-        (*self.frame_hdr).film_grain.data.has_grain()
+        self.frame_hdr.as_ref().unwrap().film_grain.data.has_grain()
     }
 }
 
@@ -578,7 +579,7 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
     }
     if !c.all_layers && c.max_spatial_id {
         if !c.out.p.data[0].is_null() && !c.cache.p.data[0].is_null() {
-            if c.max_spatial_id == ((*c.cache.p.frame_hdr).spatial_id != 0)
+            if c.max_spatial_id == (c.cache.p.frame_hdr.as_ref().unwrap().spatial_id != 0)
                 || c.out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
                 return true;
@@ -829,20 +830,8 @@ pub unsafe extern "C" fn dav1d_apply_grain(
         validate_input!((!in_0.is_null(), EINVAL))?;
         let c = &mut *c;
         let in_0 = in_0.read();
-        if let Some(mut seq_hdr_ref) = NonNull::new(in_0.seq_hdr_ref) {
-            (*seq_hdr_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>())
-            .update_rav1d();
-        }
-        if let Some(mut frame_hdr_ref) = NonNull::new(in_0.frame_hdr_ref) {
-            (*frame_hdr_ref
-                .as_mut()
-                .data
-                .cast::<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>())
-            .update_rav1d();
-        }
+        // Don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
+        // Don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
         // Don't `.update_rav1d()` [`Rav1dITUTT35`] because we never read it.
         let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
         let in_rust = in_0.into();
@@ -855,17 +844,17 @@ pub unsafe extern "C" fn dav1d_apply_grain(
 
 pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     rav1d_data_unref_internal(&mut (*c).in_0);
-    if !((*c).out.p.frame_hdr).is_null() {
+    if (*c).out.p.frame_hdr.is_some() {
         rav1d_thread_picture_unref(&mut (*c).out);
     }
-    if !((*c).cache.p.frame_hdr).is_null() {
+    if (*c).cache.p.frame_hdr.is_some() {
         rav1d_thread_picture_unref(&mut (*c).cache);
     }
     (*c).drain = 0 as c_int;
     (*c).cached_error = Ok(());
     let mut i = 0;
     while i < 8 {
-        if !((*c).refs[i as usize].p.p.frame_hdr).is_null() {
+        if (*c).refs[i as usize].p.p.frame_hdr.is_some() {
             rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
         }
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
@@ -873,9 +862,8 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i as isize));
         i += 1;
     }
-    (*c).frame_hdr = 0 as *mut Rav1dFrameHeader;
-    (*c).seq_hdr = 0 as *mut Rav1dSequenceHeader;
-    rav1d_ref_dec(&mut (*c).seq_hdr_ref);
+    let _ = mem::take(&mut (*c).frame_hdr); // TODO(kkysen) Why wasn't [`rav1d_ref_dec`] called on it?
+    let _ = mem::take(&mut (*c).seq_hdr);
     let _ = mem::take(&mut (*c).content_light);
     let _ = mem::take(&mut (*c).mastering_display);
     let _ = mem::take(&mut (*c).itut_t35);
@@ -939,7 +927,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             let out_delayed: *mut Rav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
                 .offset(next as isize)
                 as *mut Rav1dThreadPicture;
-            if !((*out_delayed).p.frame_hdr).is_null() {
+            if (*out_delayed).p.frame_hdr.is_some() {
                 rav1d_thread_picture_unref(out_delayed);
             }
             n = n.wrapping_add(1);
@@ -1054,10 +1042,10 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     if (*c).n_fc > 1 as c_uint && !((*c).frame_thread.out_delayed).is_null() {
         let mut n_2: c_uint = 0 as c_int as c_uint;
         while n_2 < (*c).n_fc {
-            if !((*((*c).frame_thread.out_delayed).offset(n_2 as isize))
+            if (*((*c).frame_thread.out_delayed).offset(n_2 as isize))
                 .p
-                .frame_hdr)
-                .is_null()
+                .frame_hdr
+                .is_some()
             {
                 rav1d_thread_picture_unref(
                     &mut *((*c).frame_thread.out_delayed).offset(n_2 as isize),
@@ -1074,20 +1062,18 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     let mut n_4 = 0;
     while n_4 < 8 {
         rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(n_4 as isize));
-        if !((*c).refs[n_4 as usize].p.p.frame_hdr).is_null() {
+        if (*c).refs[n_4 as usize].p.p.frame_hdr.is_some() {
             rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).p);
         }
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).refmvs);
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).segmap);
         n_4 += 1;
     }
-    rav1d_ref_dec(&mut (*c).seq_hdr_ref);
-    rav1d_ref_dec(&mut (*c).frame_hdr_ref);
+    let _ = mem::take(&mut (*c).seq_hdr);
+    let _ = mem::take(&mut (*c).frame_hdr);
     let _ = mem::take(&mut (*c).mastering_display);
     let _ = mem::take(&mut (*c).content_light);
     let _ = mem::take(&mut (*c).itut_t35);
-    rav1d_mem_pool_end((*c).seq_hdr_pool);
-    rav1d_mem_pool_end((*c).frame_hdr_pool);
     rav1d_mem_pool_end((*c).segmap_pool);
     rav1d_mem_pool_end((*c).refmvs_pool);
     rav1d_mem_pool_end((*c).cdf_pool);

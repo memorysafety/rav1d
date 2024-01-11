@@ -206,7 +206,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let mut ptrs: [*mut BD::Pixel; 3] = [*p.offset(0), *p.offset(1), *p.offset(2)];
     let sbsz = 16;
     let sb64w = (*f).sb128w << 1;
-    let damping = (*(*f).frame_hdr).cdef.damping + bitdepth_min_8;
+    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+    let damping = frame_hdr.cdef.damping + bitdepth_min_8;
     let layout: Rav1dPixelLayout = (*f).cur.p.layout;
     let uv_idx =
         (Rav1dPixelLayout::I444 as c_int as c_uint).wrapping_sub(layout as c_uint) as c_int;
@@ -217,8 +218,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         [(layout as c_uint == Rav1dPixelLayout::I422 as c_int as c_uint) as c_int as usize])
         .as_ptr();
     let have_tt = ((*(*f).c).n_tc > 1 as c_uint) as c_int;
-    let sb128 = (*(*f).seq_hdr).sb128;
-    let resize = ((*(*f).frame_hdr).size.width[0] != (*(*f).frame_hdr).size.width[1]) as c_int;
+    let sb128 = (*f).seq_hdr.as_ref().unwrap().sb128;
+    let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let y_stride: ptrdiff_t = BD::pxstride((*f).cur.stride[0] as usize) as isize;
     let uv_stride: ptrdiff_t = BD::pxstride((*f).cur.stride[1] as usize) as isize;
     let mut bit = 0;
@@ -276,8 +277,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
             let cdef_idx = (*lflvl.offset(sb128x as isize)).cdef_idx[sb64_idx as usize] as c_int;
             if cdef_idx == -(1 as c_int)
-                || (*(*f).frame_hdr).cdef.y_strength[cdef_idx as usize] == 0
-                    && (*(*f).frame_hdr).cdef.uv_strength[cdef_idx as usize] == 0
+                || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
+                    && frame_hdr.cdef.uv_strength[cdef_idx as usize] == 0
             {
                 last_skip = 1 as c_int;
             } else {
@@ -286,8 +287,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     .offset(by_idx as isize) as *const [u16; 2];
                 noskip_mask = ((*noskip_row.offset(0))[1] as c_uint) << 16
                     | (*noskip_row.offset(0))[0] as c_uint;
-                y_lvl = (*(*f).frame_hdr).cdef.y_strength[cdef_idx as usize];
-                uv_lvl = (*(*f).frame_hdr).cdef.uv_strength[cdef_idx as usize];
+                y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
+                uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];
                 flag = ((y_lvl != 0) as c_int + (((uv_lvl != 0) as c_int) << 1)) as Backup2x8Flags;
                 y_pri_lvl = (y_lvl >> 2) << bitdepth_min_8;
                 y_sec_lvl = y_lvl & 3;
