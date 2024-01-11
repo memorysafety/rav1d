@@ -613,7 +613,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
             }
             match current_block_14 {
                 2370887241019905314 => {
-                    let p3 = (*(*f).refp[n as usize].progress)[(tp == 0) as usize]
+                    let p3 = (*f).refp[n as usize].progress.as_ref().unwrap()[(tp == 0) as usize]
                         .load(Ordering::SeqCst);
                     if p3 < lowest {
                         return 1 as c_int;
@@ -633,12 +633,14 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
 }
 
 #[inline]
-unsafe fn get_frame_progress(c: *const Rav1dContext, f: *const Rav1dFrameContext) -> c_int {
-    let frame_prog: c_uint = if (*c).n_fc > 1 as c_uint {
-        (*(*f).sr_cur.progress)[1].load(Ordering::SeqCst)
-    } else {
-        0 as c_int as c_uint
-    };
+unsafe fn get_frame_progress(f: *const Rav1dFrameContext) -> c_int {
+    // Note that `progress.is_some() == c.n_fc > 1`.
+    let frame_prog = (*f)
+        .sr_cur
+        .progress
+        .as_ref()
+        .map(|progress| progress[1].load(Ordering::SeqCst))
+        .unwrap_or(0);
     if frame_prog >= FRAME_ERROR {
         return (*f).sbh - 1;
     }
@@ -678,8 +680,9 @@ unsafe fn abort_frame(f: *mut Rav1dFrameContext, error: Rav1dResult) {
         &mut *((*f).task_thread.done).as_mut_ptr().offset(1) as *mut atomic_int,
         1 as c_int,
     );
-    (*(*f).sr_cur.progress)[0].store(FRAME_ERROR, Ordering::SeqCst);
-    (*(*f).sr_cur.progress)[1].store(FRAME_ERROR, Ordering::SeqCst);
+    let progress = &**(*f).sr_cur.progress.as_ref().unwrap();
+    progress[0].store(FRAME_ERROR, Ordering::SeqCst);
+    progress[1].store(FRAME_ERROR, Ordering::SeqCst);
     rav1d_decode_frame_exit(&mut *f, error);
     pthread_cond_signal(&mut (*f).task_thread.cond);
 }
@@ -1154,9 +1157,8 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         );
                                     }
                                     if res_0.is_ok() {
-                                        if !((*c).n_fc > 1 as c_uint) {
-                                            unreachable!();
-                                        }
+                                        // Note that `progress.is_some() == (*c).n_fc > 1`.
+                                        let progress = &**(*f).sr_cur.progress.as_ref().unwrap();
                                         let mut p_0 = 1;
                                         while p_0 <= 2 {
                                             let res_1 =
@@ -1179,7 +1181,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                                     frame_hdr.tiling.cols * frame_hdr.tiling.rows
                                                         + (*f).sbh,
                                                 );
-                                                (*(*f).sr_cur.progress)[(p_0 - 1) as usize]
+                                                progress[(p_0 - 1) as usize]
                                                     .store(FRAME_ERROR, Ordering::SeqCst);
                                                 if p_0 == 2
                                                     && ::core::intrinsics::atomic_load_seqcst(
@@ -1539,11 +1541,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             } else {
                                 ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                             };
-                            if !((*c).n_fc > 1 as c_uint) {
-                                unreachable!();
-                            }
+                            // Note that `progress.is_some() == (*c).n_fc > 1`.
+                            let progress = &**(*f).sr_cur.progress.as_ref().unwrap();
                             if !((*f).sr_cur.p.data[0]).is_null() {
-                                (*(*f).sr_cur.progress)[0].store(
+                                progress[0].store(
                                     if error_0 != 0 { FRAME_ERROR } else { y },
                                     Ordering::SeqCst,
                                 );
@@ -1600,7 +1601,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             (*f).frame_thread.frame_progress[(sby >> 5) as usize]
                                 .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
                             pthread_mutex_lock(&mut (*f).task_thread.lock);
-                            sby = get_frame_progress(c, f);
+                            sby = get_frame_progress(f);
                             error_0 =
                                 ::core::intrinsics::atomic_load_seqcst(&mut (*f).task_thread.error);
                             let y_0: c_uint = if sby + 1 == sbh {
@@ -1608,11 +1609,14 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             } else {
                                 ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                             };
-                            if (*c).n_fc > 1 as c_uint && !((*f).sr_cur.p.data[0]).is_null() {
-                                (*(*f).sr_cur.progress)[1].store(
-                                    if error_0 != 0 { FRAME_ERROR } else { y_0 },
-                                    Ordering::SeqCst,
-                                );
+                            // Note that `progress.is_some() == (*c).n_fc > 1`.
+                            if let Some(progress) = &(*f).sr_cur.progress {
+                                if !((*f).sr_cur.p.data[0]).is_null() {
+                                    progress[1].store(
+                                        if error_0 != 0 { FRAME_ERROR } else { y_0 },
+                                        Ordering::SeqCst,
+                                    );
+                                }
                             }
                             pthread_mutex_unlock(&mut (*f).task_thread.lock);
                             if sby + 1 == sbh {
