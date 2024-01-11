@@ -187,11 +187,11 @@ impl Abcd {
     }
 
     pub fn get(&self) -> [i16; 4] {
-        Self::unpack(self.0.load(Ordering::SeqCst))
+        Self::unpack(self.0.load(Ordering::Relaxed))
     }
 
     pub fn set(&self, abcd: [i16; 4]) {
-        self.0.store(Self::pack(abcd), Ordering::SeqCst);
+        self.0.store(Self::pack(abcd), Ordering::Relaxed);
     }
 }
 
