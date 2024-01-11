@@ -23,6 +23,7 @@ use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::log::Rav1dLog as _;
+use crate::src::log::Rav1dLogger;
 use crate::src::mem::rav1d_mem_pool_pop;
 use crate::src::mem::rav1d_mem_pool_push;
 use crate::src::mem::Rav1dMemPool;
@@ -171,8 +172,8 @@ unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut c_void) {
 }
 
 unsafe fn picture_alloc_with_edges(
-    c: *mut Rav1dContext,
-    p: *mut Rav1dPicture,
+    logger: &Option<Rav1dLogger>,
+    p: &mut Rav1dPicture,
     w: c_int,
     h: c_int,
     seq_hdr: &Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
@@ -181,51 +182,49 @@ unsafe fn picture_alloc_with_edges(
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
     itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     bpc: c_int,
-    props: *const Rav1dDataProps,
-    p_allocator: *mut Rav1dPicAllocator,
+    props: &Rav1dDataProps,
+    p_allocator: &mut Rav1dPicAllocator,
     extra: usize,
     extra_ptr: *mut *mut c_void,
 ) -> Rav1dResult {
-    if !((*p).data[0]).is_null() {
-        writeln!((*c).logger, "Picture already allocated!",);
+    if !p.data[0].is_null() {
+        writeln!(logger, "Picture already allocated!",);
         return Err(EGeneric);
     }
-    if !(bpc > 0 && bpc <= 16) {
-        unreachable!();
-    }
+    assert!(bpc > 0 && bpc <= 16);
     let pic_ctx: *mut pic_ctx_context =
         malloc(extra.wrapping_add(::core::mem::size_of::<pic_ctx_context>()))
             as *mut pic_ctx_context;
     if pic_ctx.is_null() {
         return Err(ENOMEM);
     }
-    (*p).p.w = w;
-    (*p).p.h = h;
-    (*p).seq_hdr = seq_hdr.clone();
-    (*p).frame_hdr = frame_hdr.clone();
-    (*p).p.layout = seq_hdr.as_ref().unwrap().layout;
-    (*p).p.bpc = bpc;
-    (*p).m = Default::default();
-    let res = (*p_allocator).alloc_picture(p);
+    p.p.w = w;
+    p.p.h = h;
+    p.seq_hdr = seq_hdr.clone();
+    p.frame_hdr = frame_hdr.clone();
+    p.p.layout = seq_hdr.as_ref().unwrap().layout;
+    p.p.bpc = bpc;
+    p.m = Default::default();
+    let res = p_allocator.alloc_picture(p);
     if res.is_err() {
         free(pic_ctx as *mut c_void);
         return res;
     }
-    (*pic_ctx).allocator = (*p_allocator).clone();
+    (*pic_ctx).allocator = p_allocator.clone();
     // TODO(kkysen) A normal assignment here as it used to be
     // calls `fn drop` on `(*pic_ctx).pic`, which segfaults as it is uninitialized.
     // We need to figure out the right thing to do here.
-    addr_of_mut!((*pic_ctx).pic).write((*p).clone());
-    (*p).r#ref = rav1d_ref_wrap(
-        (*p).data[0] as *const u8,
+    addr_of_mut!((*pic_ctx).pic).write(p.clone());
+    p.r#ref = rav1d_ref_wrap(
+        p.data[0] as *const u8,
         Some(free_buffer),
         pic_ctx as *mut c_void,
     );
-    if ((*p).r#ref).is_null() {
-        (*p_allocator).release_picture(p);
+    if p.r#ref.is_null() {
+        p_allocator.release_picture(p);
         free(pic_ctx as *mut c_void);
         writeln!(
-            (*c).logger,
+            logger,
             "Failed to wrap picture: {}",
             io::Error::last_os_error(),
         );
@@ -240,91 +239,87 @@ unsafe fn picture_alloc_with_edges(
     Ok(())
 }
 
-pub unsafe fn rav1d_picture_copy_props(
-    p: *mut Rav1dPicture,
+pub fn rav1d_picture_copy_props(
+    p: &mut Rav1dPicture,
     content_light: &Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
     itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
-    props: *const Rav1dDataProps,
+    props: &Rav1dDataProps,
 ) {
-    (*p).m = (*props).clone();
-    (*p).content_light = content_light.clone();
-    (*p).mastering_display = mastering_display.clone();
-    (*p).itut_t35 = itut_t35.clone();
+    p.m = props.clone();
+    p.content_light = content_light.clone();
+    p.mastering_display = mastering_display.clone();
+    p.itut_t35 = itut_t35.clone();
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
-    c: *mut Rav1dContext,
-    f: *mut Rav1dFrameContext,
+    c: &mut Rav1dContext,
+    f: &mut Rav1dFrameContext,
     bpc: c_int,
 ) -> Rav1dResult {
-    let p: *mut Rav1dThreadPicture = &mut (*f).sr_cur;
-    let have_frame_mt = ((*c).n_fc > 1 as c_uint) as c_int;
-    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
-    let res = picture_alloc_with_edges(
-        c,
-        &mut (*p).p,
+    let p = &mut f.sr_cur;
+    let have_frame_mt = c.n_fc > 1;
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    picture_alloc_with_edges(
+        &c.logger,
+        &mut p.p,
         frame_hdr.size.width[1],
         frame_hdr.size.height,
-        &(*f).seq_hdr,
-        &(*f).frame_hdr,
-        &(*c).content_light,
-        &(*c).mastering_display,
-        &(*c).itut_t35,
+        &f.seq_hdr,
+        &f.frame_hdr,
+        &c.content_light,
+        &c.mastering_display,
+        &c.itut_t35,
         bpc,
-        &mut (*f).tiles[0].data.m,
-        &mut (*c).allocator,
-        if have_frame_mt != 0 {
+        &mut f.tiles[0].data.m,
+        &mut c.allocator,
+        if have_frame_mt {
             (::core::mem::size_of::<atomic_int>()).wrapping_mul(2)
         } else {
             0
         },
-        &mut (*p).progress as *mut *mut atomic_uint as *mut *mut c_void,
-    );
-    if res.is_err() {
-        return res;
-    }
-    let _ = mem::take(&mut (*c).itut_t35);
-    let flags_mask = if frame_hdr.show_frame != 0 || (*c).output_invisible_frames {
+        &mut p.progress as *mut *mut atomic_uint as *mut *mut c_void,
+    )?;
+    let _ = mem::take(&mut c.itut_t35);
+    let flags_mask = if frame_hdr.show_frame != 0 || c.output_invisible_frames {
         PictureFlags::empty()
     } else {
         PictureFlags::NEW_SEQUENCE | PictureFlags::NEW_OP_PARAMS_INFO
     };
-    (*p).flags = (*c).frame_flags;
-    (*c).frame_flags &= flags_mask;
-    (*p).visible = frame_hdr.show_frame != 0;
-    (*p).showable = frame_hdr.showable_frame != 0;
-    if have_frame_mt != 0 {
-        *(&mut *((*p).progress).offset(0) as *mut atomic_uint) = 0 as c_int as c_uint;
-        *(&mut *((*p).progress).offset(1) as *mut atomic_uint) = 0 as c_int as c_uint;
+    p.flags = c.frame_flags;
+    c.frame_flags &= flags_mask;
+    p.visible = frame_hdr.show_frame != 0;
+    p.showable = frame_hdr.showable_frame != 0;
+    if have_frame_mt {
+        *p.progress.add(0) = 0;
+        *p.progress.add(1) = 0;
     }
-    return res;
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_picture_alloc_copy(
-    c: *mut Rav1dContext,
-    dst: *mut Rav1dPicture,
+    c: &mut Rav1dContext,
+    dst: &mut Rav1dPicture,
     w: c_int,
-    src: *const Rav1dPicture,
+    src: &Rav1dPicture,
 ) -> Rav1dResult {
     let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
-    let res = picture_alloc_with_edges(
-        c,
+    picture_alloc_with_edges(
+        &c.logger,
         dst,
         w,
-        (*src).p.h,
-        &(*src).seq_hdr,
-        &(*src).frame_hdr,
-        &(*src).content_light,
-        &(*src).mastering_display,
-        &(*src).itut_t35,
-        (*src).p.bpc,
-        &(*src).m,
+        src.p.h,
+        &src.seq_hdr,
+        &src.frame_hdr,
+        &src.content_light,
+        &src.mastering_display,
+        &src.itut_t35,
+        src.p.bpc,
+        &src.m,
         &mut (*pic_ctx).allocator,
         0 as c_int as usize,
         0 as *mut *mut c_void,
-    );
-    return res;
+    )
 }
 
 pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {
