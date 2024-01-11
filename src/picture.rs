@@ -150,8 +150,8 @@ impl Default for Rav1dPicAllocator {
     fn default() -> Self {
         Self {
             cookie: ptr::null_mut(),
-            alloc_picture_callback: Some(dav1d_default_picture_alloc),
-            release_picture_callback: Some(dav1d_default_picture_release),
+            alloc_picture_callback: dav1d_default_picture_alloc,
+            release_picture_callback: dav1d_default_picture_release,
         }
     }
 }

@@ -224,7 +224,7 @@ pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usi
 pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1dResult {
     (|| {
         validate_input!((!s.is_null(), EINVAL))?;
-        rav1d_get_frame_delay(&s.read().into()).map(|frame_delay| frame_delay as c_uint)
+        rav1d_get_frame_delay(&s.read().try_into()?).map(|frame_delay| frame_delay as c_uint)
     })()
     .into()
 }
@@ -247,8 +247,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     initted.call_once(|| init_internal());
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
-    validate_input!((s.allocator.alloc_picture_callback.is_some(), EINVAL))?;
-    validate_input!((s.allocator.release_picture_callback.is_some(), EINVAL))?;
     validate_input!((s.operating_point >= 0 && s.operating_point <= 31, EINVAL))?;
     validate_input!((
         s.decode_frame_type >= RAV1D_DECODEFRAMETYPE_ALL
@@ -288,8 +286,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     {
         return error(c, c_out, &mut thread_attr);
     }
-    if (*c).allocator.alloc_picture_callback == Some(dav1d_default_picture_alloc)
-        && (*c).allocator.release_picture_callback == Some(dav1d_default_picture_release)
+    if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
+        && (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {
         if !((*c).allocator.cookie).is_null() {
             return error(c, c_out, &mut thread_attr);
@@ -298,8 +296,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             return error(c, c_out, &mut thread_attr);
         }
         (*c).allocator.cookie = (*c).picture_pool as *mut c_void;
-    } else if (*c).allocator.alloc_picture_callback == Some(dav1d_default_picture_alloc)
-        || (*c).allocator.release_picture_callback == Some(dav1d_default_picture_release)
+    } else if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
+        || (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {
         return error(c, c_out, &mut thread_attr);
     }
@@ -471,7 +469,7 @@ pub unsafe extern "C" fn dav1d_open(
     (|| {
         validate_input!((!c_out.is_null(), EINVAL))?;
         validate_input!((!s.is_null(), EINVAL))?;
-        rav1d_open(&mut *c_out, &s.read().into())
+        rav1d_open(&mut *c_out, &s.read().try_into()?)
     })()
     .into()
 }

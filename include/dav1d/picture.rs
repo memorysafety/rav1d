@@ -1,3 +1,4 @@
+use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Dav1dRef;
@@ -14,6 +15,8 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::src::c_arc::RawArc;
 use crate::src::error::Dav1dResult;
+use crate::src::error::Rav1dError;
+use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dResult;
 use crate::src::r#ref::Rav1dRef;
 use libc::ptrdiff_t;
@@ -228,24 +231,24 @@ pub struct Dav1dPicAllocator {
 #[repr(C)]
 pub(crate) struct Rav1dPicAllocator {
     pub cookie: *mut c_void,
-    pub alloc_picture_callback:
-        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> Dav1dResult>,
-    pub release_picture_callback:
-        Option<unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> ()>,
+    pub alloc_picture_callback: unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> Dav1dResult,
+    pub release_picture_callback: unsafe extern "C" fn(*mut Dav1dPicture, *mut c_void) -> (),
 }
 
-impl From<Dav1dPicAllocator> for Rav1dPicAllocator {
-    fn from(value: Dav1dPicAllocator) -> Self {
+impl TryFrom<Dav1dPicAllocator> for Rav1dPicAllocator {
+    type Error = Rav1dError;
+
+    fn try_from(value: Dav1dPicAllocator) -> Result<Self, Self::Error> {
         let Dav1dPicAllocator {
             cookie,
             alloc_picture_callback,
             release_picture_callback,
         } = value;
-        Self {
+        Ok(Self {
             cookie,
-            alloc_picture_callback,
-            release_picture_callback,
-        }
+            alloc_picture_callback: validate_input!(alloc_picture_callback.ok_or(EINVAL))?,
+            release_picture_callback: validate_input!(release_picture_callback.ok_or(EINVAL))?,
+        })
     }
 }
 
@@ -258,8 +261,8 @@ impl From<Rav1dPicAllocator> for Dav1dPicAllocator {
         } = value;
         Self {
             cookie,
-            alloc_picture_callback,
-            release_picture_callback,
+            alloc_picture_callback: Some(alloc_picture_callback),
+            release_picture_callback: Some(release_picture_callback),
         }
     }
 }
@@ -267,17 +270,14 @@ impl From<Rav1dPicAllocator> for Dav1dPicAllocator {
 impl Rav1dPicAllocator {
     pub unsafe fn alloc_picture(&mut self, p: *mut Rav1dPicture) -> Rav1dResult {
         let mut p_c = p.read().into();
-        let result = self
-            .alloc_picture_callback
-            .expect("non-null function pointer")(&mut p_c, self.cookie);
+        let result = (self.alloc_picture_callback)(&mut p_c, self.cookie);
         p.write(p_c.into());
         result.try_into().unwrap()
     }
 
     pub unsafe fn release_picture(&mut self, p: *mut Rav1dPicture) {
         let mut p_c = p.read().into();
-        self.release_picture_callback
-            .expect("non-null function pointer")(&mut p_c, self.cookie);
+        (self.release_picture_callback)(&mut p_c, self.cookie);
         p.write(p_c.into());
     }
 }

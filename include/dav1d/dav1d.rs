@@ -1,5 +1,6 @@
 use crate::include::dav1d::picture::Dav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
+use crate::src::error::Rav1dError;
 use crate::src::internal::Rav1dContext;
 pub use crate::src::log::Dav1dLogger;
 use crate::src::log::Rav1dLogger;
@@ -111,8 +112,10 @@ pub(crate) struct Rav1dSettings {
     pub decode_frame_type: Rav1dDecodeFrameType,
 }
 
-impl From<Dav1dSettings> for Rav1dSettings {
-    fn from(value: Dav1dSettings) -> Self {
+impl TryFrom<Dav1dSettings> for Rav1dSettings {
+    type Error = Rav1dError;
+
+    fn try_from(value: Dav1dSettings) -> Result<Self, Self::Error> {
         let Dav1dSettings {
             n_threads,
             max_frame_delay,
@@ -128,20 +131,20 @@ impl From<Dav1dSettings> for Rav1dSettings {
             decode_frame_type,
             reserved: _,
         } = value;
-        Self {
+        Ok(Self {
             n_threads,
             max_frame_delay,
             apply_grain: apply_grain != 0,
             operating_point,
             all_layers: all_layers != 0,
             frame_size_limit,
-            allocator: allocator.into(),
+            allocator: allocator.try_into()?,
             logger: logger.into(),
             strict_std_compliance: strict_std_compliance != 0,
             output_invisible_frames: output_invisible_frames != 0,
             inloop_filters,
             decode_frame_type,
-        }
+        })
     }
 }
 
