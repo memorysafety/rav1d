@@ -27,7 +27,6 @@ use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
@@ -4988,9 +4987,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             c.cached_error_props = out_delayed.p.m.clone();
             rav1d_thread_picture_unref(out_delayed);
         } else if !out_delayed.p.data[0].is_null() {
-            let progress = ::core::intrinsics::atomic_load_relaxed(
-                &mut *(out_delayed.progress).offset(1) as *mut atomic_uint,
-            );
+            let progress = (*out_delayed.progress)[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
                 c.event_flags |= out_delayed.flags.into();

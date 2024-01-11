@@ -14,8 +14,6 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::ENOMEM;
@@ -43,6 +41,7 @@ use std::io;
 use std::mem;
 use std::ptr;
 use std::ptr::addr_of_mut;
+use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 
 bitflags! {
@@ -67,9 +66,14 @@ impl From<PictureFlags> for Rav1dEventFlags {
 pub(crate) struct Rav1dThreadPicture {
     pub p: Rav1dPicture,
     pub visible: bool,
+    /// This can be set for inter frames, non-key intra frames,
+    /// or for invisible keyframes that have not yet been made visible
+    /// using the show-existing-frame mechanism.
     pub showable: bool,
     pub flags: PictureFlags,
-    pub progress: *mut atomic_uint,
+    /// `[0]`: block data (including segmentation map and motion vectors)
+    /// `[1]`: pixel data
+    pub progress: *mut [AtomicU32; 2],
 }
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
@@ -274,11 +278,11 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         &mut f.tiles[0].data.m,
         &mut c.allocator,
         if have_frame_mt {
-            (::core::mem::size_of::<atomic_int>()).wrapping_mul(2)
+            ::core::mem::size_of::<[AtomicU32; 2]>()
         } else {
             0
         },
-        &mut p.progress as *mut *mut atomic_uint as *mut *mut c_void,
+        &mut p.progress as *mut *mut [AtomicU32; 2] as *mut *mut c_void,
     )?;
     let _ = mem::take(&mut c.itut_t35);
     let flags_mask = if frame_hdr.show_frame != 0 || c.output_invisible_frames {
@@ -291,8 +295,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     p.visible = frame_hdr.show_frame != 0;
     p.showable = frame_hdr.showable_frame != 0;
     if have_frame_mt {
-        *p.progress.add(0) = 0;
-        *p.progress.add(1) = 0;
+        *p.progress = Default::default();
     }
     Ok(())
 }
@@ -382,5 +385,5 @@ pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
     rav1d_picture_unref_internal(&mut (*p).p);
-    (*p).progress = 0 as *mut atomic_uint;
+    (*p).progress = 0 as *mut [AtomicU32; 2];
 }
