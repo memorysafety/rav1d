@@ -2,6 +2,8 @@ use crate::src::enum_map::EnumKey;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
 use strum::EnumCount;
 use strum::FromRepr;
 
@@ -163,33 +165,61 @@ impl Dav1dWarpedMotionParams {
     }
 }
 
+#[derive(Default)]
+pub struct Abcd(AtomicU64);
+
+impl Abcd {
+    fn pack(unpacked: [i16; 4]) -> u64 {
+        let [[b1, b2], [b3, b4], [b5, b6], [b7, b8]] = unpacked.map(|x| x.to_ne_bytes());
+        u64::from_ne_bytes([b1, b2, b3, b4, b5, b6, b7, b8])
+    }
+
+    fn unpack(packed: u64) -> [i16; 4] {
+        let [b1, b2, b3, b4, b5, b6, b7, b8] = packed.to_ne_bytes();
+        [[b1, b2], [b3, b4], [b5, b6], [b7, b8]].map(i16::from_ne_bytes)
+    }
+
+    pub fn new(abcd: [i16; 4]) -> Self {
+        Self(AtomicU64::new(Self::pack(abcd)))
+    }
+
+    pub fn get(&self) -> [i16; 4] {
+        Self::unpack(self.0.load(Ordering::SeqCst))
+    }
+
+    pub fn set(&self, abcd: [i16; 4]) {
+        self.0.store(Self::pack(abcd), Ordering::SeqCst);
+    }
+}
+
+impl Clone for Abcd {
+    fn clone(&self) -> Self {
+        Self::new(self.get())
+    }
+}
+
 #[derive(Clone)]
-#[repr(C)]
-pub(crate) struct Rav1dWarpedMotionParams {
+pub struct Rav1dWarpedMotionParams {
     pub r#type: Rav1dWarpedMotionType,
     pub matrix: [i32; 6],
-    pub abcd: [i16; 4],
+    pub abcd: Abcd,
 }
 
 impl Rav1dWarpedMotionParams {
-    #[allow(dead_code)] // TODO(kkysen) remove when we use this
-    pub const fn alpha(&self) -> i16 {
-        self.abcd[0]
+    pub fn alpha(&self) -> i16 {
+        self.abcd.get()[0]
     }
 
-    #[allow(dead_code)] // TODO(kkysen) remove when we use this
-    pub const fn beta(&self) -> i16 {
-        self.abcd[1]
+    pub fn beta(&self) -> i16 {
+        self.abcd.get()[1]
     }
 
-    #[allow(dead_code)] // TODO(kkysen) remove when we use this
-    pub const fn gamma(&self) -> i16 {
-        self.abcd[2]
+    pub fn gamma(&self) -> i16 {
+        self.abcd.get()[2]
     }
 
-    #[allow(dead_code)] // TODO(kkysen) remove when we use this
-    pub const fn delta(&self) -> i16 {
-        self.abcd[3]
+    pub fn delta(&self) -> i16 {
+        self.abcd.get()[3]
     }
 }
 
@@ -203,7 +233,7 @@ impl From<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
         Self {
             r#type,
             matrix,
-            abcd,
+            abcd: Abcd::new(abcd),
         }
     }
 }
@@ -218,14 +248,14 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
         Self {
             r#type,
             matrix,
-            abcd,
+            abcd: abcd.get(),
         }
     }
 }
 
 // TODO(kkysen) Eventually the [`impl Default`] might not be needed.
 #[derive(Clone, Copy, PartialEq, Eq, EnumCount, FromRepr, Default)]
-pub(crate) enum Rav1dPixelLayout {
+pub enum Rav1dPixelLayout {
     #[default]
     I400 = 0,
     I420 = 1,
