@@ -98,9 +98,6 @@ use crate::src::picture::PictureFlags;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::thread_task::FRAME_ERROR;
-use libc::pthread_cond_wait;
-use libc::pthread_mutex_lock;
-use libc::pthread_mutex_unlock;
 use std::array;
 use std::cmp;
 use std::ffi::c_int;
@@ -2517,7 +2514,7 @@ unsafe fn parse_obus(
                 );
                 c.event_flags |= c.refs[frame_hdr.existing_frame_idx as usize].p.flags.into();
             } else {
-                pthread_mutex_lock(&mut c.task_thread.lock);
+                let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
                 // Need to append this to the frame output queue.
                 let next = c.frame_thread.next;
                 c.frame_thread.next += 1;
@@ -2527,10 +2524,7 @@ unsafe fn parse_obus(
 
                 let f = &mut *c.fc.offset(next as isize);
                 while !(*f).tiles.is_empty() {
-                    pthread_cond_wait(
-                        &mut (*f).task_thread.cond,
-                        &mut (*(*f).task_thread.ttd).lock,
-                    );
+                    task_thread_lock = (*f).task_thread.cond.wait(task_thread_lock).unwrap();
                 }
                 let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
                 if !(*out_delayed).p.data.data[0].is_null()
@@ -2548,8 +2542,10 @@ unsafe fn parse_obus(
                         Ordering::SeqCst,
                         Ordering::SeqCst,
                     );
-                    if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
-                        c.task_thread.cur -= 1;
+                    if c.task_thread.cur.load(Ordering::Relaxed) != 0
+                        && c.task_thread.cur.load(Ordering::Relaxed) < c.n_fc
+                    {
+                        c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
                     }
                 }
                 let error = (*f).task_thread.retval;
@@ -2582,7 +2578,6 @@ unsafe fn parse_obus(
                     c.itut_t35.take(),
                     props.clone(),
                 );
-                pthread_mutex_unlock(&mut c.task_thread.lock);
             }
             if c.refs[frame_hdr.existing_frame_idx as usize]
                 .p

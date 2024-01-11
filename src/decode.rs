@@ -220,10 +220,6 @@ use crate::src::warpmv::rav1d_get_shear_params;
 use crate::src::warpmv::rav1d_set_affine_mv2d;
 use libc::free;
 use libc::malloc;
-use libc::pthread_cond_signal;
-use libc::pthread_cond_wait;
-use libc::pthread_mutex_lock;
-use libc::pthread_mutex_unlock;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::array;
@@ -237,6 +233,7 @@ use std::ptr;
 use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 
 #[cfg(feature = "bitdepth_8")]
@@ -4902,8 +4899,8 @@ pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> Rav1dResul
     if res.is_ok() {
         if (*f.c).n_tc > 1 {
             res = rav1d_task_create_tile_sbrow(f, 0, 1);
-            pthread_mutex_lock(&mut (*f.task_thread.ttd).lock);
-            pthread_cond_signal(&mut (*f.task_thread.ttd).cond);
+            let mut task_thread_lock = (*f.task_thread.ttd).delayed_fg.lock().unwrap();
+            (*f.task_thread.ttd).cond.notify_one();
             if res.is_ok() {
                 while f.task_thread.done[0].load(Ordering::Relaxed) == 0
                 // TODO(kkysen) Make `.task_counter` an `AtomicI32`, but that requires recursively removing `impl Copy`s.
@@ -4911,10 +4908,10 @@ pub(crate) unsafe fn rav1d_decode_frame(f: &mut Rav1dFrameContext) -> Rav1dResul
                         .load(Ordering::SeqCst)
                         > 0
                 {
-                    pthread_cond_wait(&mut f.task_thread.cond, &mut (*f.task_thread.ttd).lock);
+                    task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
                 }
             }
-            pthread_mutex_unlock(&mut (*f.task_thread.ttd).lock);
+            drop(task_thread_lock);
             res = f.task_thread.retval;
         } else {
             res = rav1d_decode_frame_main(f);
@@ -4940,8 +4937,8 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
 
 pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // wait for c->out_delayed[next] and move into c->out if visible
-    let (f, out) = if c.n_fc > 1 {
-        pthread_mutex_lock(&mut c.task_thread.lock);
+    let (f, out, _task_thread_lock) = if c.n_fc > 1 {
+        let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
         let next = c.frame_thread.next;
         c.frame_thread.next += 1;
         if c.frame_thread.next == c.n_fc {
@@ -4950,7 +4947,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
         let f = &mut *c.fc.offset(next as isize);
         while !f.tiles.is_empty() {
-            pthread_cond_wait(&mut f.task_thread.cond, &mut c.task_thread.lock);
+            task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
         if !out_delayed.p.data.data[0].is_null() || f.task_thread.error.load(Ordering::SeqCst) != 0
@@ -4967,8 +4964,10 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 Ordering::SeqCst,
                 Ordering::SeqCst,
             );
-            if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
-                c.task_thread.cur -= 1;
+            // `cur` is not actually mutated from multiple threads concurrently
+            let cur = c.task_thread.cur.load(Ordering::Relaxed);
+            if cur != 0 && cur < c.n_fc {
+                c.task_thread.cur = AtomicU32::new(cur - 1);
             }
         }
         let error = f.task_thread.retval;
@@ -4985,9 +4984,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
             rav1d_thread_picture_unref(out_delayed);
         }
-        (f, out_delayed as *mut _)
+        (f, out_delayed as *mut _, Some(task_thread_lock))
     } else {
-        (&mut *c.fc, &mut c.out as *mut _)
+        (&mut *c.fc, &mut c.out as *mut _, None)
     };
 
     f.seq_hdr = c.seq_hdr.clone();
@@ -4997,11 +4996,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
     let bpc = 8 + 2 * seq_hdr.hbd;
 
-    unsafe fn on_error(
-        f: &mut Rav1dFrameContext,
-        c: &mut Rav1dContext,
-        out: *mut Rav1dThreadPicture,
-    ) {
+    unsafe fn on_error(f: &mut Rav1dFrameContext, c: &Rav1dContext, out: *mut Rav1dThreadPicture) {
         f.task_thread.error = AtomicI32::new(1);
         rav1d_cdf_thread_unref(&mut f.in_cdf);
         if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {
@@ -5019,13 +5014,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_ref_dec(&mut f.mvs_ref);
         let _ = mem::take(&mut f.seq_hdr);
         let _ = mem::take(&mut f.frame_hdr);
-        *c.cached_error_props.get_mut().unwrap() = c.in_0.m.clone();
+        *c.cached_error_props.lock().unwrap() = c.in_0.m.clone();
 
         f.tiles.clear();
-
-        if c.n_fc > 1 {
-            pthread_mutex_unlock(&mut c.task_thread.lock);
-        }
     }
 
     // TODO(kkysen) Rather than lazy initializing this,
@@ -5149,7 +5140,11 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     mem::swap(&mut f.tiles, &mut c.tiles);
 
     // allocate frame
-    let res = rav1d_thread_picture_alloc(c, f, bpc);
+
+    // We must take itut_t35 out of the context before the call so borrowck can
+    // see we mutably borrow `c.itut_t35` disjointly from the task thread lock.
+    let itut_t35 = c.itut_t35.take();
+    let res = rav1d_thread_picture_alloc(c, f, bpc, itut_t35);
     if res.is_err() {
         on_error(f, c, out);
         return res;
@@ -5363,7 +5358,6 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
     } else {
         rav1d_task_frame_init(f);
-        pthread_mutex_unlock(&mut c.task_thread.lock);
     }
 
     Ok(())
