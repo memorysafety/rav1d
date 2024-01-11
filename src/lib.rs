@@ -77,16 +77,9 @@ use libc::pthread_attr_destroy;
 use libc::pthread_attr_init;
 use libc::pthread_attr_setstacksize;
 use libc::pthread_attr_t;
-use libc::pthread_cond_broadcast;
-use libc::pthread_cond_destroy;
-use libc::pthread_cond_init;
-use libc::pthread_cond_wait;
-use libc::pthread_condattr_t;
 use libc::pthread_join;
 use libc::pthread_mutex_destroy;
 use libc::pthread_mutex_init;
-use libc::pthread_mutex_lock;
-use libc::pthread_mutex_unlock;
 use libc::pthread_mutexattr_t;
 use libc::pthread_t;
 use std::cmp;
@@ -105,6 +98,8 @@ use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::sync::Condvar;
+use std::sync::Mutex;
 use std::sync::Once;
 use to_method::To as _;
 
@@ -342,23 +337,10 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         ::core::mem::size_of::<Rav1dTaskContext>().wrapping_mul((*c).n_tc as usize),
     );
     if (*c).n_tc > 1 as c_uint {
-        if pthread_mutex_init(&mut (*c).task_thread.lock, 0 as *const pthread_mutexattr_t) != 0 {
-            return error(c, c_out, &mut thread_attr);
-        }
-        if pthread_cond_init(&mut (*c).task_thread.cond, 0 as *const pthread_condattr_t) != 0 {
-            pthread_mutex_destroy(&mut (*c).task_thread.lock);
-            return error(c, c_out, &mut thread_attr);
-        }
-        if pthread_cond_init(
-            &mut (*c).task_thread.delayed_fg.cond,
-            0 as *const pthread_condattr_t,
-        ) != 0
-        {
-            pthread_cond_destroy(&mut (*c).task_thread.cond);
-            pthread_mutex_destroy(&mut (*c).task_thread.lock);
-            return error(c, c_out, &mut thread_attr);
-        }
-        (*c).task_thread.cur = (*c).n_fc;
+        (*c).task_thread.delayed_fg = Mutex::new(mem::zeroed());
+        (*c).task_thread.cond = Condvar::new();
+        (*c).task_thread.cur = AtomicU32::new((*c).n_fc);
+        (*c).task_thread.delayed_fg_cond = Condvar::new();
         (*c).task_thread.reset_task_cur = AtomicU32::new(u32::MAX);
         (*c).task_thread.cond_signaled = AtomicI32::new(0);
         (*c).task_thread.inited = 1 as c_int;
@@ -381,10 +363,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             {
                 return error(c, c_out, &mut thread_attr);
             }
-            if pthread_cond_init(&mut (*f).task_thread.cond, 0 as *const pthread_condattr_t) != 0 {
-                pthread_mutex_destroy(&mut (*f).task_thread.lock);
-                return error(c, c_out, &mut thread_attr);
-            }
+            (*f).task_thread.cond = Condvar::new();
             (*f).task_thread.pending_tasks = Default::default();
         }
         (*f).c = c;
@@ -408,14 +387,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             {
                 return error(c, c_out, &mut thread_attr);
             }
-            if pthread_cond_init(
-                &mut (*t).task_thread.td.cond,
-                0 as *const pthread_condattr_t,
-            ) != 0
-            {
-                pthread_mutex_destroy(&mut (*t).task_thread.td.lock);
-                return error(c, c_out, &mut thread_attr);
-            }
+            (*t).task_thread.td.cond = Condvar::new();
             if pthread_create(
                 &mut (*t).task_thread.td.thread,
                 &mut thread_attr,
@@ -423,7 +395,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
                 t as *mut c_void,
             ) != 0
             {
-                pthread_cond_destroy(&mut (*t).task_thread.td.cond);
                 pthread_mutex_destroy(&mut (*t).task_thread.td.lock);
                 return error(c, c_out, &mut thread_attr);
             }
@@ -601,12 +572,9 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let next: c_uint = c.frame_thread.next;
         let f: *mut Rav1dFrameContext =
             &mut *(c.fc).offset(next as isize) as *mut Rav1dFrameContext;
-        pthread_mutex_lock(&mut c.task_thread.lock);
+        let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
         while !(*f).tiles.is_empty() {
-            pthread_cond_wait(
-                &mut (*f).task_thread.cond,
-                &mut (*(*f).task_thread.ttd).lock,
-            );
+            task_thread_lock = (*f).task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed: *mut Rav1dThreadPicture =
             &mut *(c.frame_thread.out_delayed).offset(next as isize) as *mut Rav1dThreadPicture;
@@ -625,19 +593,20 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 Ordering::SeqCst,
                 Ordering::SeqCst,
             );
-            if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
-                c.task_thread.cur = (c.task_thread.cur).wrapping_sub(1);
+            if c.task_thread.cur.load(Ordering::Relaxed) != 0
+                && c.task_thread.cur.load(Ordering::Relaxed) < c.n_fc
+            {
+                c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
             }
             drained = 1 as c_int;
         } else if drained != 0 {
-            pthread_mutex_unlock(&mut c.task_thread.lock);
             break;
         }
         c.frame_thread.next = (c.frame_thread.next).wrapping_add(1);
         if c.frame_thread.next == c.n_fc {
             c.frame_thread.next = 0 as c_int as c_uint;
         }
-        pthread_mutex_unlock(&mut c.task_thread.lock);
+        drop(task_thread_lock);
         let error = (*f).task_thread.retval;
         if error.is_err() {
             (*f).task_thread.retval = Ok(());
@@ -864,13 +833,13 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     }
     (*c).flush.store(1, Ordering::SeqCst);
     if (*c).n_tc > 1 as c_uint {
-        pthread_mutex_lock(&mut (*c).task_thread.lock);
+        let mut task_thread_lock = (*c).task_thread.delayed_fg.lock().unwrap();
         let mut i_0: c_uint = 0 as c_int as c_uint;
         while i_0 < (*c).n_tc {
             let tc: *mut Rav1dTaskContext =
                 &mut *((*c).tc).offset(i_0 as isize) as *mut Rav1dTaskContext;
             while !(*tc).task_thread.flushed {
-                pthread_cond_wait(&mut (*tc).task_thread.td.cond, &mut (*c).task_thread.lock);
+                task_thread_lock = (*tc).task_thread.td.cond.wait(task_thread_lock).unwrap();
             }
             i_0 = i_0.wrapping_add(1);
         }
@@ -893,12 +862,11 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             i_1 = i_1.wrapping_add(1);
         }
         (*c).task_thread.first = AtomicU32::new(0);
-        (*c).task_thread.cur = (*c).n_fc;
+        (*c).task_thread.cur = AtomicU32::new((*c).n_fc);
         (*c).task_thread
             .reset_task_cur
             .store(u32::MAX, Ordering::SeqCst);
         (*c).task_thread.cond_signaled.store(0, Ordering::SeqCst);
-        pthread_mutex_unlock(&mut (*c).task_thread.lock);
     }
     if (*c).n_fc > 1 as c_uint {
         let mut n: c_uint = 0 as c_int as c_uint;
@@ -956,14 +924,14 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     if !((*c).tc).is_null() {
         let ttd: *mut TaskThreadData = &mut (*c).task_thread;
         if (*ttd).inited != 0 {
-            pthread_mutex_lock(&mut (*ttd).lock);
+            let task_thread_lock = (*ttd).delayed_fg.lock().unwrap();
             let mut n: c_uint = 0 as c_int as c_uint;
             while n < (*c).n_tc && (*((*c).tc).offset(n as isize)).task_thread.td.inited != 0 {
                 (*((*c).tc).offset(n as isize)).task_thread.die = true;
                 n = n.wrapping_add(1);
             }
-            pthread_cond_broadcast(&mut (*ttd).cond);
-            pthread_mutex_unlock(&mut (*ttd).lock);
+            (*ttd).cond.notify_all();
+            drop(task_thread_lock);
             let mut n_0: c_uint = 0 as c_int as c_uint;
             while n_0 < (*c).n_tc {
                 let pf: *mut Rav1dTaskContext =
@@ -972,13 +940,9 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
                     break;
                 }
                 pthread_join((*pf).task_thread.td.thread, 0 as *mut *mut c_void);
-                pthread_cond_destroy(&mut (*pf).task_thread.td.cond);
                 pthread_mutex_destroy(&mut (*pf).task_thread.td.lock);
                 n_0 = n_0.wrapping_add(1);
             }
-            pthread_cond_destroy(&mut (*ttd).delayed_fg.cond);
-            pthread_cond_destroy(&mut (*ttd).cond);
-            pthread_mutex_destroy(&mut (*ttd).lock);
         }
         rav1d_free_aligned((*c).tc as *mut c_void);
     }
@@ -1001,7 +965,6 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         }
         if (*c).n_tc > 1 as c_uint {
             let _ = mem::take(&mut (*f).task_thread.pending_tasks); // TODO: remove when context is owned
-            pthread_cond_destroy(&mut (*f).task_thread.cond);
             pthread_mutex_destroy(&mut (*f).task_thread.lock);
         }
         mem::take(&mut (*f).frame_thread.frame_progress); // TODO: remove when context is owned

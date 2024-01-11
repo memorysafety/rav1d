@@ -263,10 +263,13 @@ pub fn rav1d_picture_copy_props(
     p.itut_t35 = itut_t35;
 }
 
+// itut_t35 was taken out of the c.itut_t35 originally, but that violates Rust
+// borrowing rules so we need to pass it to this function explicitly.
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
-    c: &mut Rav1dContext,
+    c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
     bpc: c_int,
+    itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
     let have_frame_mt = c.n_fc > 1;
@@ -280,10 +283,10 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         f.frame_hdr.clone(),
         c.content_light.clone(),
         c.mastering_display.clone(),
-        c.itut_t35.take(),
+        itut_t35,
         bpc,
         f.tiles[0].data.m.clone(),
-        &mut c.allocator,
+        &c.allocator,
     )?;
     let flags_mask = if frame_hdr.show_frame != 0 || c.output_invisible_frames {
         PictureFlags::empty()
@@ -302,7 +305,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
 }
 
 pub(crate) unsafe fn rav1d_picture_alloc_copy(
-    c: &mut Rav1dContext,
+    c: &Rav1dContext,
     dst: &mut Rav1dPicture,
     w: c_int,
     src: &Rav1dPicture,

@@ -73,7 +73,6 @@ use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::thread_data::thread_data;
 use atomig::Atomic;
-use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
@@ -82,6 +81,7 @@ use std::ptr;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
+use std::sync::Condvar;
 use std::sync::Mutex;
 
 #[repr(C)]
@@ -158,27 +158,32 @@ impl BitDepthDependentType for Grain {
 #[repr(C)]
 pub(crate) struct TaskThreadData_delayed_fg {
     pub exec: c_int,
-    pub cond: pthread_cond_t,
     pub in_0: *const Rav1dPicture,
     pub out: *mut Rav1dPicture,
     pub type_0: TaskType,
-    pub progress: [AtomicI32; 2], /* [0]=started, [1]=completed */
     pub grain: BitDepthUnion<Grain>,
 }
 
 #[repr(C)]
 pub(crate) struct TaskThreadData {
-    pub lock: pthread_mutex_t,
-    pub cond: pthread_cond_t,
+    pub cond: Condvar,
     pub first: AtomicU32,
-    pub cur: c_uint,
+    pub cur: AtomicU32,
     /// This is used for delayed reset of the task cur pointer when
     /// such operation is needed but the thread doesn't enter a critical
     /// section (typically when executing the next sbrow task locklessly).
     /// See [`crate::src::thread_task::reset_task_cur`].
     pub reset_task_cur: AtomicU32,
     pub cond_signaled: AtomicI32,
-    pub delayed_fg: TaskThreadData_delayed_fg,
+    pub delayed_fg_progress: [AtomicI32; 2], /* [0]=started, [1]=completed */
+    pub delayed_fg_cond: Condvar,
+    /// This lock has a dual purpose - protecting the delayed_fg structure, as
+    /// well as synchronizing tasks across threads. Many cases do not use the
+    /// inner data when holding the lock but instead use it to sequence
+    /// operations. Rather than disentagle these related uses in the original C
+    /// code, we have kept a single mutex and put the delayed_fg structure into
+    /// it.
+    pub delayed_fg: Mutex<TaskThreadData_delayed_fg>,
     pub inited: c_int,
 }
 
@@ -426,7 +431,7 @@ impl Default for Rav1dFrameContext_task_thread_pending_tasks {
 #[repr(C)]
 pub(crate) struct Rav1dFrameContext_task_thread {
     pub lock: pthread_mutex_t,
-    pub cond: pthread_cond_t,
+    pub cond: Condvar,
     pub ttd: *mut TaskThreadData,
     pub tasks: *mut Rav1dTask,
     pub tile_tasks: [*mut Rav1dTask; 2],
