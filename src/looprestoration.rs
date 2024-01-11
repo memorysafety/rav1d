@@ -1584,7 +1584,7 @@ unsafe fn rotate_ab_4(A_ptrs: &mut [*mut i32; 4], B_ptrs: &mut [*mut i16; 4]) {
 unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
-    left: *const [BD::Pixel; 4],
+    left: *const LeftPixelRow<BD::Pixel>,
     src: *const BD::Pixel,
     w: c_int,
     edges: LrEdgeFlags,
@@ -1596,8 +1596,8 @@ unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
                 fn $name(
                     sumsq: *mut i32,
                     sum: *mut i16,
-                    left: *const c_void,
-                    src: *const c_void,
+                    left: *const LeftPixelRow<DynPixel>,
+                    src: *const DynPixel,
                     w: c_int,
                     edges: LrEdgeFlags,
                     bitdepth_max: c_int,
@@ -1616,7 +1616,7 @@ unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
 unsafe fn rav1d_sgr_box5_row_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
-    left: *const [BD::Pixel; 4],
+    left: *const LeftPixelRow<BD::Pixel>,
     src: *const BD::Pixel,
     w: c_int,
     edges: LrEdgeFlags,
@@ -1628,8 +1628,8 @@ unsafe fn rav1d_sgr_box5_row_h_neon<BD: BitDepth>(
                 fn $name(
                     sumsq: *mut i32,
                     sum: *mut i16,
-                    left: *const c_void,
-                    src: *const c_void,
+                    left: *const LeftPixelRow<DynPixel>,
+                    src: *const DynPixel,
                     w: c_int,
                     edges: LrEdgeFlags,
                     bitdepth_max: c_int,
@@ -1650,7 +1650,7 @@ unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
     sum3: *mut i16,
     sumsq5: *mut i32,
     sum5: *mut i16,
-    left: *const [BD::Pixel; 4],
+    left: *const LeftPixelRow<BD::Pixel>,
     src: *const BD::Pixel,
     w: c_int,
     edges: LrEdgeFlags,
@@ -1664,8 +1664,8 @@ unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
                     sum3: *mut i16,
                     sumsq5: *mut i32,
                     sum5: *mut i16,
-                    left: *const c_void,
-                    src: *const c_void,
+                    left: *const LeftPixelRow<DynPixel>,
+                    src: *const DynPixel,
                     w: c_int,
                     edges: LrEdgeFlags,
                     bitdepth_max: c_int,
@@ -1808,7 +1808,7 @@ unsafe fn rav1d_sgr_finish_weighted2_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    dst: *mut c_void,
+                    dst: *mut DynPixel,
                     stride: ptrdiff_t,
                     A_ptrs: *mut *mut i32,
                     B_ptrs: *mut *mut i16,
@@ -1852,7 +1852,7 @@ unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
             extern "C" {
                 fn $name(
                     tmp: *mut i16,
-                    src: *const c_void,
+                    src: *const DynPixel,
                     src_stride: ptrdiff_t,
                     A_ptrs: *mut *mut i32,
                     B_ptrs: *mut *mut i16,
@@ -1895,7 +1895,7 @@ unsafe fn rav1d_sgr_finish_filter2_2rows_neon<BD: BitDepth>(
             extern "C" {
                 fn $name(
                     tmp: *mut i16,
-                    src: *const c_void,
+                    src: *const DynPixel,
                     src_stride: ptrdiff_t,
                     A_ptrs: *mut *mut i32,
                     B_ptrs: *mut *mut i16,
@@ -1928,7 +1928,7 @@ unsafe fn sgr_box3_hv_neon<BD: BitDepth>(
     sum: &mut [*mut i16; 3],
     AA: *mut i32,
     BB: *mut i16,
-    left: *const [BD::Pixel; 4],
+    left: *const LeftPixelRow<BD::Pixel>,
     src: *const BD::Pixel,
     w: c_int,
     s: c_int,
@@ -2015,9 +2015,9 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
         ($name:ident) => {{
             extern "C" {
                 fn $name(
-                    dst: *mut c_void,
+                    dst: *mut DynPixel,
                     dst_stride: ptrdiff_t,
-                    src: *const c_void,
+                    src: *const DynPixel,
                     src_stride: ptrdiff_t,
                     t1: *const i16,
                     t2: *const i16,
@@ -2055,7 +2055,7 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
 unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const [BD::Pixel; 4],
+    mut left: *const LeftPixelRow<BD::Pixel>,
     mut lpf: *const BD::Pixel,
     w: c_int,
     mut h: c_int,
@@ -2107,7 +2107,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
         rav1d_sgr_box3_row_h_neon(
             sumsq_rows[0],
             sum_rows[0],
-            0 as *const [BD::Pixel; 4],
+            0 as *const LeftPixelRow<BD::Pixel>,
             lpf,
             w,
             edges,
@@ -2117,7 +2117,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
         rav1d_sgr_box3_row_h_neon(
             sumsq_rows[1],
             sum_rows[1],
-            0 as *const [BD::Pixel; 4],
+            0 as *const LeftPixelRow<BD::Pixel>,
             lpf,
             w,
             edges,
@@ -2257,7 +2257,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut sum_ptrs,
                 A_ptrs[2],
                 B_ptrs[2],
-                0 as *const [BD::Pixel; 4],
+                0 as *const LeftPixelRow<BD::Pixel>,
                 lpf_bottom,
                 w,
                 (*params).sgr.s1 as c_int,
@@ -2281,7 +2281,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut sum_ptrs,
                 A_ptrs[2],
                 B_ptrs[2],
-                0 as *const [BD::Pixel; 4],
+                0 as *const LeftPixelRow<BD::Pixel>,
                 lpf_bottom,
                 w,
                 (*params).sgr.s1 as c_int,
@@ -2367,7 +2367,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
 unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const [BD::Pixel; 4],
+    mut left: *const LeftPixelRow<BD::Pixel>,
     mut lpf: *const BD::Pixel,
     w: c_int,
     mut h: c_int,
@@ -2422,7 +2422,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
         rav1d_sgr_box5_row_h_neon(
             sumsq_rows[0],
             sum_rows[0],
-            0 as *const [BD::Pixel; 4],
+            0 as *const LeftPixelRow<BD::Pixel>,
             lpf,
             w,
             edges,
@@ -2432,7 +2432,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
         rav1d_sgr_box5_row_h_neon(
             sumsq_rows[1],
             sum_rows[1],
-            0 as *const [BD::Pixel; 4],
+            0 as *const LeftPixelRow<BD::Pixel>,
             lpf,
             w,
             edges,
@@ -2603,7 +2603,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
             rav1d_sgr_box5_row_h_neon(
                 sumsq_ptrs[3],
                 sum_ptrs[3],
-                0 as *const [BD::Pixel; 4],
+                0 as *const LeftPixelRow<BD::Pixel>,
                 lpf_bottom,
                 w,
                 edges,
@@ -2613,7 +2613,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
             rav1d_sgr_box5_row_h_neon(
                 sumsq_ptrs[4],
                 sum_ptrs[4],
-                0 as *const [BD::Pixel; 4],
+                0 as *const LeftPixelRow<BD::Pixel>,
                 lpf_bottom,
                 w,
                 edges,
@@ -2725,7 +2725,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
 unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    mut left: *const [BD::Pixel; 4],
+    mut left: *const LeftPixelRow<BD::Pixel>,
     mut lpf: *const BD::Pixel,
     w: c_int,
     mut h: c_int,
@@ -2811,7 +2811,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sum3_rows[0],
             sumsq5_rows[0],
             sum5_rows[0],
-            0 as *const [BD::Pixel; 4],
+            0 as *const LeftPixelRow<BD::Pixel>,
             lpf,
             w,
             edges,
@@ -2823,7 +2823,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             sum3_rows[1],
             sumsq5_rows[1],
             sum5_rows[1],
-            0 as *const [BD::Pixel; 4],
+            0 as *const LeftPixelRow<BD::Pixel>,
             lpf,
             w,
             edges,
@@ -3169,7 +3169,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sum3_ptrs[2],
                 sumsq5_ptrs[3],
                 sum5_ptrs[3],
-                0 as *const [BD::Pixel; 4],
+                0 as *const LeftPixelRow<BD::Pixel>,
                 lpf_bottom,
                 w,
                 edges,
@@ -3193,7 +3193,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 sum3_ptrs[2],
                 sumsq5_ptrs[4],
                 sum5_ptrs[4],
-                0 as *const [BD::Pixel; 4],
+                0 as *const LeftPixelRow<BD::Pixel>,
                 lpf_bottom,
                 w,
                 edges,
