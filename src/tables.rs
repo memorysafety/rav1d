@@ -745,10 +745,6 @@ pub const interintra_allowed_mask: c_uint = 0
     | 1 << BS_8x8
     | 0;
 
-/// This can't be `const` because [`Atomic`] uses `trait fn`s,
-/// which can't be `const`.
-///
-/// [`Atomic`]: atomig::Atomic
 impl Default for Rav1dWarpedMotionParams {
     fn default() -> Self {
         Self {
