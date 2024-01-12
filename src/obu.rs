@@ -2249,7 +2249,8 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
             match &c.seq_hdr {
                 None => {
                     c.frame_hdr = None;
-                    c.frame_flags |= PictureFlags::NEW_SEQUENCE;
+                    c.frame_flags
+                        .fetch_or(PictureFlags::NEW_SEQUENCE, Ordering::Relaxed);
                 }
                 Some(c_seq_hdr) if !seq_hdr.eq_without_operating_parameter_info(&c_seq_hdr) => {
                     // See 7.5, `operating_parameter_info` is allowed to change in
@@ -2265,13 +2266,15 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                         rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
                         rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
                     }
-                    c.frame_flags |= PictureFlags::NEW_SEQUENCE;
+                    c.frame_flags
+                        .fetch_or(PictureFlags::NEW_SEQUENCE, Ordering::Relaxed);
                 }
                 Some(c_seq_hdr)
                     if seq_hdr.operating_parameter_info != c_seq_hdr.operating_parameter_info =>
                 {
                     // If operating_parameter_info changed, signal it
-                    c.frame_flags |= PictureFlags::NEW_OP_PARAMS_INFO;
+                    c.frame_flags
+                        .fetch_or(PictureFlags::NEW_OP_PARAMS_INFO, Ordering::Relaxed);
                 }
                 _ => {}
             }
@@ -2463,7 +2466,10 @@ unsafe fn parse_obus(c: &mut Rav1dContext, r#in: &Rav1dData, global: bool) -> Ra
                 }
             }
         }
-        RAV1D_OBU_TD => c.frame_flags |= PictureFlags::NEW_TEMPORAL_UNIT,
+        RAV1D_OBU_TD => {
+            c.frame_flags
+                .fetch_or(PictureFlags::NEW_TEMPORAL_UNIT, Ordering::Relaxed);
+        }
         RAV1D_OBU_PADDING => {} // Ignore OBUs we don't care about.
         _ => {
             // Print a warning, but don't fail for unknown types.

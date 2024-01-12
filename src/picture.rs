@@ -43,6 +43,7 @@ use std::ptr;
 use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicU32;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use to_method::To as _;
 
@@ -257,8 +258,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     } else {
         PictureFlags::NEW_SEQUENCE | PictureFlags::NEW_OP_PARAMS_INFO
     };
-    p.flags = c.frame_flags;
-    c.frame_flags &= flags_mask;
+    p.flags = c.frame_flags.fetch_and(flags_mask, Ordering::Relaxed);
     p.visible = frame_hdr.show_frame != 0;
     p.showable = frame_hdr.showable_frame != 0;
     p.progress = if have_frame_mt {
