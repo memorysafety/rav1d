@@ -1,4 +1,3 @@
-use crate::include::common::attributes::clz;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -7,7 +6,6 @@ use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::ulog2;
 use crate::src::tables::dav1d_cdef_directions;
-
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -19,7 +17,7 @@ use cfg_if::cfg_if;
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+#[cfg(feature = "asm")]
 use crate::include::common::bitdepth::BPC;
 
 pub type CdefEdgeFlags = c_uint;
@@ -689,7 +687,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
         tmp, tmp_stride, dst, dst_stride, left, top, bottom, w, h, edges,
     );
     if pri_strength != 0 {
-        let bitdepth_min_8 = 32 - clz(bd.bitdepth_max().as_::<c_uint>()) - 8;
+        let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
         let pri_tap = 4 - (pri_strength >> bitdepth_min_8 & 1);
         let pri_shift = cmp::max(0 as c_int, damping - ulog2(pri_strength as c_uint));
         if sec_strength != 0 {
@@ -828,7 +826,7 @@ unsafe extern "C" fn cdef_filter_block_4x4_c_erased<BD: BitDepth>(
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
 ) {
-    cdef_filter_block_c::<BD>(
+    cdef_filter_block_c(
         dst.cast(),
         stride,
         left.cast(),
@@ -920,7 +918,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     var: *mut c_uint,
     bd: BD,
 ) -> c_int {
-    let bitdepth_min_8 = 32 - clz(bd.bitdepth_max().as_::<c_uint>()) - 8;
+    let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
     let mut partial_sum_hv: [[c_int; 8]; 2] = [[0 as c_int, 0, 0, 0, 0, 0, 0, 0], [0; 8]];
     let mut partial_sum_diag: [[c_int; 15]; 2] = [
         [0 as c_int, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -1029,16 +1027,14 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 unsafe fn cdef_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dCdefDSPContext) {
-    use crate::include::common::bitdepth::BPC;
-
     let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::SSE2) {
-        return;
-    }
 
     match BD::BPC {
         BPC::BPC8 => {
+            if !flags.contains(CpuFlags::SSE2) {
+                return;
+            }
+
             (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_sse2;
             (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_sse2;
             (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_sse2;
