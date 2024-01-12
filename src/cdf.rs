@@ -5653,12 +5653,12 @@ pub unsafe fn rav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
 }
 
 pub unsafe fn rav1d_cdf_thread_alloc(
-    c: *mut Rav1dContext,
+    c: &Rav1dContext,
     cdf: *mut CdfThreadContext,
     have_frame_mt: c_int,
 ) -> Rav1dResult {
     (*cdf).r#ref = rav1d_ref_create_using_pool(
-        (*c).cdf_pool,
+        c.cdf_pool,
         (::core::mem::size_of::<CdfContext>()).wrapping_add(::core::mem::size_of::<AtomicU32>()),
     );
     if ((*cdf).r#ref).is_null() {
