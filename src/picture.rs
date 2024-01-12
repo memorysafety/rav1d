@@ -29,6 +29,8 @@ use crate::src::mem::Rav1dMemPoolBuffer;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_wrap;
+use atomig::Atom;
+use atomig::AtomLogic;
 use bitflags::bitflags;
 use libc::free;
 use libc::malloc;
@@ -44,9 +46,11 @@ use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use to_method::To as _;
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Atom, AtomLogic)]
+pub struct PictureFlags(u8);
+
 bitflags! {
-    #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
-    pub struct PictureFlags: u8 {
+    impl PictureFlags: u8 {
         const NEW_SEQUENCE = 1 << 0;
         const NEW_OP_PARAMS_INFO = 1 << 1;
         const NEW_TEMPORAL_UNIT = 1 << 2;
