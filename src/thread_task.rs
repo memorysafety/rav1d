@@ -82,22 +82,22 @@ unsafe fn rav1d_set_thread_name(name: *const c_char) {
 #[inline]
 unsafe fn reset_task_cur(
     c: &Rav1dContext,
-    ttd: *mut TaskThreadData,
+    ttd: &mut TaskThreadData,
     mut frame_idx: c_uint,
 ) -> c_int {
     let min_frame_idx: c_uint;
     let cur_frame_idx: c_uint;
     let current_block: u64;
-    let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
+    let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut ttd.first);
     let mut reset_frame_idx: c_uint =
-        ::core::intrinsics::atomic_xchg_seqcst(&mut (*ttd).reset_task_cur, u32::MAX);
+        ::core::intrinsics::atomic_xchg_seqcst(&mut ttd.reset_task_cur, u32::MAX);
     if reset_frame_idx < first {
         if frame_idx == u32::MAX {
             return 0 as c_int;
         }
         reset_frame_idx = u32::MAX;
     }
-    if (*ttd).cur == 0
+    if ttd.cur == 0
         && ((*(c.fc).offset(first as isize))
             .task_thread
             .task_cur_prev)
@@ -107,10 +107,10 @@ unsafe fn reset_task_cur(
     }
     if reset_frame_idx != u32::MAX {
         if frame_idx == u32::MAX {
-            if reset_frame_idx > first.wrapping_add((*ttd).cur) {
+            if reset_frame_idx > first.wrapping_add(ttd.cur) {
                 return 0 as c_int;
             }
-            (*ttd).cur = reset_frame_idx.wrapping_sub(first);
+            ttd.cur = reset_frame_idx.wrapping_sub(first);
             current_block = 12921688021154394536;
         } else {
             current_block = 5399440093318478209;
@@ -127,26 +127,26 @@ unsafe fn reset_task_cur(
                 frame_idx = frame_idx.wrapping_add(c.n_fc);
             }
             min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
-            cur_frame_idx = first.wrapping_add((*ttd).cur);
-            if (*ttd).cur < c.n_fc && cur_frame_idx < min_frame_idx {
+            cur_frame_idx = first.wrapping_add(ttd.cur);
+            if ttd.cur < c.n_fc && cur_frame_idx < min_frame_idx {
                 return 0 as c_int;
             }
-            (*ttd).cur = min_frame_idx.wrapping_sub(first);
-            while (*ttd).cur < c.n_fc {
+            ttd.cur = min_frame_idx.wrapping_sub(first);
+            while ttd.cur < c.n_fc {
                 if !((*(c.fc)
-                    .offset(first.wrapping_add((*ttd).cur).wrapping_rem(c.n_fc) as isize))
+                    .offset(first.wrapping_add(ttd.cur).wrapping_rem(c.n_fc) as isize))
                 .task_thread
                 .task_head)
                     .is_null()
                 {
                     break;
                 }
-                (*ttd).cur = ((*ttd).cur).wrapping_add(1);
+                ttd.cur = (ttd.cur).wrapping_add(1);
             }
         }
         _ => {}
     }
-    let mut i: c_uint = (*ttd).cur;
+    let mut i: c_uint = ttd.cur;
     while i < c.n_fc {
         let ref mut fresh0 = (*(c.fc)
             .offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize))
@@ -159,25 +159,25 @@ unsafe fn reset_task_cur(
 }
 
 #[inline]
-unsafe fn reset_task_cur_async(ttd: *mut TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
-    let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
+unsafe fn reset_task_cur_async(ttd: &mut TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
+    let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut ttd.first);
     if frame_idx < first {
         frame_idx = frame_idx.wrapping_add(n_frames);
     }
     let mut last_idx: c_uint = frame_idx;
     loop {
         frame_idx = last_idx;
-        last_idx = ::core::intrinsics::atomic_xchg_seqcst(&mut (*ttd).reset_task_cur, frame_idx);
+        last_idx = ::core::intrinsics::atomic_xchg_seqcst(&mut ttd.reset_task_cur, frame_idx);
         if !(last_idx < frame_idx) {
             break;
         }
     }
     if frame_idx == first
-        && ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first as *mut atomic_uint) != first
+        && ::core::intrinsics::atomic_load_seqcst(&mut ttd.first as *mut atomic_uint) != first
     {
         let mut expected: c_uint = frame_idx;
         let fresh1 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
-            &mut (*ttd).reset_task_cur,
+            &mut ttd.reset_task_cur,
             *&mut expected,
             u32::MAX,
         );
@@ -194,7 +194,7 @@ unsafe fn insert_tasks_between(
     b: *mut Rav1dTask,
     cond_signal: c_int,
 ) {
-    let ttd: *mut TaskThreadData = (*f).task_thread.ttd;
+    let ttd: &mut TaskThreadData = &mut *(*f).task_thread.ttd;
     if ::core::intrinsics::atomic_load_seqcst((*(*f).c).flush) != 0 {
         return;
     }
@@ -213,11 +213,11 @@ unsafe fn insert_tasks_between(
     reset_task_cur(&*(*f).c, ttd, (*first).frame_idx);
     if cond_signal != 0
         && ::core::intrinsics::atomic_or_seqcst(
-            &mut (*ttd).cond_signaled as *mut atomic_int,
+            &mut ttd.cond_signaled as *mut atomic_int,
             1 as c_int,
         ) == 0
     {
-        pthread_cond_signal(&mut (*ttd).cond);
+        pthread_cond_signal(&mut ttd.cond);
     }
 }
 
@@ -518,21 +518,21 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
     in_0: &Rav1dPicture,
 ) {
     let ttd: &mut TaskThreadData = &mut c.task_thread;
-    (*ttd).delayed_fg.in_0 = in_0;
-    (*ttd).delayed_fg.out = out;
-    (*ttd).delayed_fg.type_0 = RAV1D_TASK_TYPE_FG_PREP;
-    *(&mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int) = 0 as c_int;
-    *(&mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int) = 0 as c_int;
-    pthread_mutex_lock(&mut (*ttd).lock);
-    (*ttd).delayed_fg.exec = 1 as c_int;
-    pthread_cond_signal(&mut (*ttd).cond);
-    pthread_cond_wait(&mut (*ttd).delayed_fg.cond, &mut (*ttd).lock);
-    pthread_mutex_unlock(&mut (*ttd).lock);
+    ttd.delayed_fg.in_0 = in_0;
+    ttd.delayed_fg.out = out;
+    ttd.delayed_fg.type_0 = RAV1D_TASK_TYPE_FG_PREP;
+    *(&mut *(ttd.delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int) = 0 as c_int;
+    *(&mut *(ttd.delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int) = 0 as c_int;
+    pthread_mutex_lock(&mut ttd.lock);
+    ttd.delayed_fg.exec = 1 as c_int;
+    pthread_cond_signal(&mut ttd.cond);
+    pthread_cond_wait(&mut ttd.delayed_fg.cond, &mut ttd.lock);
+    pthread_mutex_unlock(&mut ttd.lock);
 }
 
 #[inline]
 unsafe fn ensure_progress(
-    ttd: *mut TaskThreadData,
+    ttd: &mut TaskThreadData,
     f: *mut Rav1dFrameContext,
     t: *mut Rav1dTask,
     type_0: TaskType,
@@ -546,7 +546,7 @@ unsafe fn ensure_progress(
         (*t).recon_progress = (*t).deblock_progress;
         *target = (*t).sby;
         add_pending(f, t);
-        pthread_mutex_lock(&mut (*ttd).lock);
+        pthread_mutex_lock(&mut ttd.lock);
         return 1 as c_int;
     }
     return 0 as c_int;
@@ -680,9 +680,9 @@ unsafe fn abort_frame(f: *mut Rav1dFrameContext, error: Rav1dResult) {
 }
 
 #[inline]
-unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: *mut TaskThreadData) {
-    let in_0 = (*ttd).delayed_fg.in_0;
-    let out = (*ttd).delayed_fg.out;
+unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: &mut TaskThreadData) {
+    let in_0 = ttd.delayed_fg.in_0;
+    let out = ttd.delayed_fg.out;
     let mut off = 0;
     if (*out).p.bpc != 8 as c_int {
         off = ((*out).p.bpc >> 1) - 4;
@@ -690,15 +690,15 @@ unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: *mut TaskThreadData) {
     let mut row;
     let mut progmax;
     let mut done;
-    match (*ttd).delayed_fg.type_0 as c_uint {
+    match ttd.delayed_fg.type_0 as c_uint {
         11 => {
-            (*ttd).delayed_fg.exec = 0 as c_int;
-            if ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).cond_signaled as *mut atomic_int)
+            ttd.delayed_fg.exec = 0 as c_int;
+            if ::core::intrinsics::atomic_load_seqcst(&mut ttd.cond_signaled as *mut atomic_int)
                 != 0
             {
-                pthread_cond_signal(&mut (*ttd).cond);
+                pthread_cond_signal(&mut ttd.cond);
             }
-            pthread_mutex_unlock(&mut (*ttd).lock);
+            pthread_mutex_unlock(&mut ttd.lock);
             match (*out).p.bpc {
                 #[cfg(feature = "bitdepth_8")]
                 8 => {
@@ -706,7 +706,7 @@ unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: *mut TaskThreadData) {
                         &(*(c.dsp).as_ptr().offset(0)).fg,
                         &mut *out,
                         &*in_0,
-                        BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain),
+                        BitDepth8::select_mut(&mut ttd.delayed_fg.grain),
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
@@ -715,16 +715,16 @@ unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: *mut TaskThreadData) {
                         &(*(c.dsp).as_ptr().offset(off as isize)).fg,
                         &mut *out,
                         &*in_0,
-                        BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain),
+                        BitDepth16::select_mut(&mut ttd.delayed_fg.grain),
                     );
                 }
                 _ => {
                     abort();
                 }
             }
-            (*ttd).delayed_fg.type_0 = RAV1D_TASK_TYPE_FG_APPLY;
-            pthread_mutex_lock(&mut (*ttd).lock);
-            (*ttd).delayed_fg.exec = 1 as c_int;
+            ttd.delayed_fg.type_0 = RAV1D_TASK_TYPE_FG_APPLY;
+            pthread_mutex_lock(&mut ttd.lock);
+            ttd.delayed_fg.exec = 1 as c_int;
         }
         12 => {}
         _ => {
@@ -732,21 +732,21 @@ unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: *mut TaskThreadData) {
         }
     }
     row = ::core::intrinsics::atomic_xadd_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
+        &mut *(ttd.delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
         1 as c_int,
     );
-    pthread_mutex_unlock(&mut (*ttd).lock);
+    pthread_mutex_unlock(&mut ttd.lock);
     progmax = (*out).p.h + 31 >> 5;
     loop {
         if (row + 1) < progmax {
-            pthread_cond_signal(&mut (*ttd).cond);
+            pthread_cond_signal(&mut ttd.cond);
         } else if row + 1 >= progmax {
-            pthread_mutex_lock(&mut (*ttd).lock);
-            (*ttd).delayed_fg.exec = 0 as c_int;
+            pthread_mutex_lock(&mut ttd.lock);
+            ttd.delayed_fg.exec = 0 as c_int;
             if row >= progmax {
                 break;
             }
-            pthread_mutex_unlock(&mut (*ttd).lock);
+            pthread_mutex_unlock(&mut ttd.lock);
         }
         match (*out).p.bpc {
             #[cfg(feature = "bitdepth_8")]
@@ -755,7 +755,7 @@ unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: *mut TaskThreadData) {
                     &(*(c.dsp).as_ptr().offset(0)).fg,
                     &mut *out,
                     &*in_0,
-                    BitDepth8::select_mut(&mut (*ttd).delayed_fg.grain),
+                    BitDepth8::select_mut(&mut ttd.delayed_fg.grain),
                     row as usize,
                 );
             }
@@ -765,7 +765,7 @@ unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: *mut TaskThreadData) {
                     &(*(c.dsp).as_ptr().offset(off as isize)).fg,
                     &mut *out,
                     &*in_0,
-                    BitDepth16::select_mut(&mut (*ttd).delayed_fg.grain),
+                    BitDepth16::select_mut(&mut ttd.delayed_fg.grain),
                     row as usize,
                 );
             }
@@ -774,54 +774,54 @@ unsafe fn delayed_fg_task(c: &Rav1dContext, ttd: *mut TaskThreadData) {
             }
         }
         row = ::core::intrinsics::atomic_xadd_seqcst(
-            &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
+            &mut *(ttd.delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
             1 as c_int,
         );
         #[allow(unused_assignments)]
         // TODO(kkysen) non-trivial due to the atomics, so leaving for later
         {
             done = ::core::intrinsics::atomic_xadd_seqcst(
-                &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
+                &mut *(ttd.delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
                 1 as c_int,
             ) + 1;
         }
         if row < progmax {
             continue;
         }
-        pthread_mutex_lock(&mut (*ttd).lock);
-        (*ttd).delayed_fg.exec = 0 as c_int;
+        pthread_mutex_lock(&mut ttd.lock);
+        ttd.delayed_fg.exec = 0 as c_int;
         break;
     }
     done = ::core::intrinsics::atomic_xadd_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
+        &mut *(ttd.delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
         1 as c_int,
     ) + 1;
     progmax = ::core::intrinsics::atomic_load_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
+        &mut *(ttd.delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
     );
     if !(done < progmax) {
-        pthread_cond_signal(&mut (*ttd).delayed_fg.cond);
+        pthread_cond_signal(&mut ttd.delayed_fg.cond);
     }
 }
 
 pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
     let tc: *mut Rav1dTaskContext = data as *mut Rav1dTaskContext;
     let c: &Rav1dContext = &*(*tc).c;
-    let ttd: *mut TaskThreadData = (*tc).task_thread.ttd;
+    let ttd: &mut TaskThreadData = &mut *(*tc).task_thread.ttd;
 
     rav1d_set_thread_name(b"dav1d-worker\0" as *const u8 as *const c_char);
 
-    let park = |tc: *mut Rav1dTaskContext, ttd: *mut TaskThreadData| {
+    let park = |tc: *mut Rav1dTaskContext, ttd: &mut TaskThreadData| {
         (*tc).task_thread.flushed = true;
         pthread_cond_signal(&mut (*tc).task_thread.td.cond);
         // we want to be woken up next time progress is signaled
-        ::core::intrinsics::atomic_store_seqcst(&mut (*ttd).cond_signaled, 0 as c_int);
-        pthread_cond_wait(&mut (*ttd).cond, &mut (*ttd).lock);
+        ::core::intrinsics::atomic_store_seqcst(&mut ttd.cond_signaled, 0 as c_int);
+        pthread_cond_wait(&mut ttd.cond, &mut ttd.lock);
         (*tc).task_thread.flushed = false;
         reset_task_cur(c, ttd, u32::MAX);
     };
 
-    pthread_mutex_lock(&mut (*ttd).lock);
+    pthread_mutex_lock(&mut ttd.lock);
     'outer: while !(*tc).task_thread.die {
         if ::core::intrinsics::atomic_load_seqcst(c.flush) != 0 {
             park(tc, ttd);
@@ -829,7 +829,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         }
 
         merge_pending(c);
-        if (*ttd).delayed_fg.exec != 0 {
+        if ttd.delayed_fg.exec != 0 {
             // run delayed film grain first
             delayed_fg_task(c, ttd);
             continue 'outer;
@@ -839,7 +839,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
             if c.n_fc > 1 as c_uint {
                 // run init tasks second
                 'init_tasks: for i in 0..c.n_fc {
-                    let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
+                    let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut ttd.first);
                     let f = &mut *(c.fc)
                         .offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize);
                     if f.task_thread.init_done.load(Ordering::SeqCst) != 0 {
@@ -876,10 +876,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                 }
             }
             // run decoding tasks last
-            while (*ttd).cur < c.n_fc {
-                let first_0: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
+            while ttd.cur < c.n_fc {
+                let first_0: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut ttd.first);
                 let f = &mut *(c.fc)
-                    .offset(first_0.wrapping_add((*ttd).cur).wrapping_rem(c.n_fc) as isize);
+                    .offset(first_0.wrapping_add(ttd.cur).wrapping_rem(c.n_fc) as isize);
                 merge_pending_frame(f);
                 let mut prev_t = f.task_thread.task_cur_prev.as_mut();
                 let mut next_t = if let Some(prev_t) = prev_t.as_deref_mut() {
@@ -978,7 +978,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                     prev_t = Some(t);
                     f.task_thread.task_cur_prev = prev_t.as_deref_mut().unwrap() as *mut Rav1dTask;
                 }
-                (*ttd).cur = ((*ttd).cur).wrapping_add(1);
+                ttd.cur = (ttd.cur).wrapping_add(1);
             }
             if reset_task_cur(c, ttd, u32::MAX) != 0 {
                 continue 'outer;
@@ -1004,15 +1004,15 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         if t.type_0 as c_uint > RAV1D_TASK_TYPE_INIT_CDF as c_int as c_uint
             && (f.task_thread.task_head).is_null()
         {
-            (*ttd).cur = ((*ttd).cur).wrapping_add(1);
+            ttd.cur = (ttd.cur).wrapping_add(1);
         }
         t.next = 0 as *mut Rav1dTask;
         // we don't need to check cond_signaled here, since we found a task
         // after the last signal so we want to re-signal the next waiting thread
         // and again won't need to signal after that
-        ::core::intrinsics::atomic_store_seqcst(&mut (*ttd).cond_signaled, 1 as c_int);
-        pthread_cond_signal(&mut (*ttd).cond);
-        pthread_mutex_unlock(&mut (*ttd).lock);
+        ::core::intrinsics::atomic_store_seqcst(&mut ttd.cond_signaled, 1 as c_int);
+        pthread_cond_signal(&mut ttd.cond);
+        pthread_mutex_unlock(&mut ttd.lock);
 
         'found_unlocked: loop {
             let flush = ::core::intrinsics::atomic_load_seqcst(c.flush);
@@ -1035,7 +1035,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             1 as c_int as c_uint
                         }) as c_int;
                         if res.is_err() || p1_3 == TILE_ERROR {
-                            pthread_mutex_lock(&mut (*ttd).lock);
+                            pthread_mutex_lock(&mut ttd.lock);
                             abort_frame(f, if res.is_err() { res } else { Err(EINVAL) });
                             reset_task_cur(c, ttd, t.frame_idx);
                         } else {
@@ -1044,7 +1044,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 continue 'found_unlocked;
                             }
                             add_pending(f, t);
-                            pthread_mutex_lock(&mut (*ttd).lock);
+                            pthread_mutex_lock(&mut ttd.lock);
                         }
                         continue 'outer;
                     }
@@ -1075,7 +1075,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             while p_0 <= 2 {
                                 let res_1 = rav1d_task_create_tile_sbrow(f, p_0, 0 as c_int);
                                 if res_1.is_err() {
-                                    pthread_mutex_lock(&mut (*ttd).lock);
+                                    pthread_mutex_lock(&mut ttd.lock);
                                     // memory allocation failed
                                     f.task_thread.done[(2 - p_0) as usize]
                                         .store(1 as c_int, Ordering::SeqCst);
@@ -1098,14 +1098,14 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         rav1d_decode_frame_exit(&mut *f, Err(ENOMEM));
                                         pthread_cond_signal(&mut f.task_thread.cond);
                                     } else {
-                                        pthread_mutex_unlock(&mut (*ttd).lock);
+                                        pthread_mutex_unlock(&mut ttd.lock);
                                     }
                                 }
                                 p_0 += 1;
                             }
-                            pthread_mutex_lock(&mut (*ttd).lock);
+                            pthread_mutex_lock(&mut ttd.lock);
                         } else {
-                            pthread_mutex_lock(&mut (*ttd).lock);
+                            pthread_mutex_lock(&mut ttd.lock);
                             abort_frame(f, res_0);
                             reset_task_cur(c, ttd, t.frame_idx);
                             f.task_thread.init_done.store(1, Ordering::SeqCst);
@@ -1153,11 +1153,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 );
                                 reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                                 if ::core::intrinsics::atomic_or_seqcst(
-                                    &mut (*ttd).cond_signaled as *mut atomic_int,
+                                    &mut ttd.cond_signaled as *mut atomic_int,
                                     1 as c_int,
                                 ) == 0
                                 {
-                                    pthread_cond_signal(&mut (*ttd).cond);
+                                    pthread_cond_signal(&mut ttd.cond);
                                 }
                                 continue 'found_unlocked;
                             }
@@ -1167,9 +1167,9 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 progress,
                             );
                             add_pending(f, t);
-                            pthread_mutex_lock(&mut (*ttd).lock);
+                            pthread_mutex_lock(&mut ttd.lock);
                         } else {
-                            pthread_mutex_lock(&mut (*ttd).lock);
+                            pthread_mutex_lock(&mut ttd.lock);
                             ::core::intrinsics::atomic_store_seqcst(
                                 &mut *((*ts_0).progress).as_mut_ptr().offset(p_1 as isize)
                                     as *mut atomic_int,
@@ -1220,11 +1220,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 unreachable!();
                             }
                             if ::core::intrinsics::atomic_or_seqcst(
-                                &mut (*ttd).cond_signaled as *mut atomic_int,
+                                &mut ttd.cond_signaled as *mut atomic_int,
                                 1 as c_int,
                             ) == 0
                             {
-                                pthread_cond_signal(&mut (*ttd).cond);
+                                pthread_cond_signal(&mut ttd.cond);
                             }
                         }
                         continue 'outer;
@@ -1264,11 +1264,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             );
                             reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                             if ::core::intrinsics::atomic_or_seqcst(
-                                &mut (*ttd).cond_signaled as *mut atomic_int,
+                                &mut ttd.cond_signaled as *mut atomic_int,
                                 1 as c_int,
                             ) == 0
                             {
-                                pthread_cond_signal(&mut (*ttd).cond);
+                                pthread_cond_signal(&mut ttd.cond);
                             }
                         } else if seq_hdr.cdef != 0 || f.lf.restore_planes != 0 {
                             f.frame_thread.copy_lpf_progress[(sby >> 5) as usize]
@@ -1284,7 +1284,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     t.deblock_progress = 0 as c_int;
                                     t.recon_progress = (*t).deblock_progress;
                                     add_pending(f, t);
-                                    pthread_mutex_lock(&mut (*ttd).lock);
+                                    pthread_mutex_lock(&mut ttd.lock);
                                     continue 'outer;
                                 }
                             }
@@ -1300,11 +1300,11 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             }
                             reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                             if ::core::intrinsics::atomic_or_seqcst(
-                                &mut (*ttd).cond_signaled as *mut atomic_int,
+                                &mut ttd.cond_signaled as *mut atomic_int,
                                 1 as c_int,
                             ) == 0
                             {
-                                pthread_cond_signal(&mut (*ttd).cond);
+                                pthread_cond_signal(&mut ttd.cond);
                             }
                         }
                         task_type = RAV1D_TASK_TYPE_SUPER_RESOLUTION;
@@ -1364,7 +1364,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                 if sby + 1 == sbh {
                     f.task_thread.done[1].store(1, Ordering::SeqCst);
                 }
-                pthread_mutex_lock(&mut (*ttd).lock);
+                pthread_mutex_lock(&mut ttd.lock);
                 let num_tasks = f.task_thread.task_counter.fetch_sub(1, Ordering::SeqCst) - 1;
                 if (sby + 1) < sbh && num_tasks != 0 {
                     reset_task_cur(c, ttd, t.frame_idx);
@@ -1412,7 +1412,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
             if sby + 1 == sbh {
                 f.task_thread.done[0].store(1, Ordering::SeqCst);
             }
-            pthread_mutex_lock(&mut (*ttd).lock);
+            pthread_mutex_lock(&mut ttd.lock);
             let num_tasks_0 = f.task_thread.task_counter.fetch_sub(1, Ordering::SeqCst) - 1;
             if (sby + 1) < sbh && num_tasks_0 != 0 {
                 reset_task_cur(c, ttd, t.frame_idx);
@@ -1440,7 +1440,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
             break 'found_unlocked;
         }
     }
-    pthread_mutex_unlock(&mut (*ttd).lock);
+    pthread_mutex_unlock(&mut ttd.lock);
 
     return 0 as *mut c_void;
 }
