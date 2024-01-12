@@ -234,8 +234,9 @@ pub struct Dav1dPicAllocator {
     /// Any allocated memory area should also be padded by [`DAV1D_PICTURE_ALIGNMENT`] bytes.
     /// [`data`]`[1]` and [`data`]`[2]` must share the same [`stride`]`[1]`.
     ///
-    /// This function will be called on the main thread
-    /// (the thread which calls [`dav1d_get_picture`]).
+    /// # Safety
+    ///
+    /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe.
     ///
     /// # Args
     ///
@@ -259,13 +260,16 @@ pub struct Dav1dPicAllocator {
     ///
     /// [`data`]: Dav1dPicture::data
     /// [`stride`]: Dav1dPicture::data
-    /// [`dav1d_get_picture`]: crate::src::lib::dav1d_get_picture
     /// [`allocator_data`]: Dav1dPicture::allocator_data
     /// [`release_picture_callback`]: Self::release_picture_callback
     pub alloc_picture_callback:
         Option<unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult>,
 
     /// Release the picture buffer.
+    ///
+    /// # Safety
+    ///
+    /// If frame threading is used, accesses to `cookie` must be thread-safe.
     ///
     /// If frame threading is used, this function may be called by the main thread
     /// (the thread which calls [`dav1d_get_picture`]),
@@ -290,10 +294,24 @@ pub(crate) struct Rav1dPicAllocator {
     pub cookie: *mut c_void,
 
     /// See [`Dav1dPicAllocator::alloc_picture_callback`].
+    ///
+    /// # Safety
+    ///
+    /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe.
+    /// If [`Self::cookie`] is accessed in Rust and has interior mutability, it must go through [`UnsafeCell`].
+    ///
+    /// [`UnsafeCell`]: std::cell::UnsafeCell
     pub alloc_picture_callback:
         unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult,
 
     /// See [`Dav1dPicAllocator::release_picture_callback`].
+    ///
+    /// # Safety
+    ///
+    /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe.
+    /// If [`Self::cookie`] is accessed in Rust and has interior mutability, it must go through [`UnsafeCell`].
+    ///
+    /// [`UnsafeCell`]: std::cell::UnsafeCell
     pub release_picture_callback:
         unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> (),
 }
@@ -331,14 +349,14 @@ impl From<Rav1dPicAllocator> for Dav1dPicAllocator {
 }
 
 impl Rav1dPicAllocator {
-    pub unsafe fn alloc_picture(&mut self, p: *mut Rav1dPicture) -> Rav1dResult {
+    pub unsafe fn alloc_picture(&self, p: *mut Rav1dPicture) -> Rav1dResult {
         let mut p_c = p.read().into();
         let result = (self.alloc_picture_callback)(&mut p_c, self.cookie);
         p.write(p_c.into());
         result.try_into().unwrap()
     }
 
-    pub unsafe fn release_picture(&mut self, p: *mut Rav1dPicture) {
+    pub unsafe fn release_picture(&self, p: *mut Rav1dPicture) {
         let mut p_c = p.read().into();
         (self.release_picture_callback)(&mut p_c, self.cookie);
         p.write(p_c.into());
