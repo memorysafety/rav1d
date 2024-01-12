@@ -1580,7 +1580,7 @@ unsafe fn rotate_ab_4(A_ptrs: &mut [*mut i32; 4], B_ptrs: &mut [*mut i16; 4]) {
     B_ptrs.rotate_left(1);
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
 unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
@@ -1591,7 +1591,7 @@ unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
     bd: BD,
 ) {
     macro_rules! asm_fn {
-        ($name:ident) => {{
+        (fn $name:ident) => {{
             extern "C" {
                 fn $name(
                     sumsq: *mut i32,
@@ -1606,13 +1606,19 @@ unsafe fn rav1d_sgr_box3_row_h_neon<BD: BitDepth>(
             $name
         }};
     }
-    (match BD::BPC {
-        BPC::BPC8 => asm_fn!(dav1d_sgr_box3_row_h_8bpc_neon),
-        BPC::BPC16 => asm_fn!(dav1d_sgr_box3_row_h_16bpc_neon),
-    })(sumsq, sum, left.cast(), src.cast(), w, edges, bd.into_c())
+
+    bd_fn!(asm_fn, BD, sgr_box3_row_h, neon)(
+        sumsq,
+        sum,
+        left.cast(),
+        src.cast(),
+        w,
+        edges,
+        bd.into_c(),
+    )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
 unsafe fn rav1d_sgr_box5_row_h_neon<BD: BitDepth>(
     sumsq: *mut i32,
     sum: *mut i16,
@@ -1623,7 +1629,7 @@ unsafe fn rav1d_sgr_box5_row_h_neon<BD: BitDepth>(
     bd: BD,
 ) {
     macro_rules! asm_fn {
-        ($name:ident) => {{
+        (fn $name:ident) => {{
             extern "C" {
                 fn $name(
                     sumsq: *mut i32,
@@ -1638,13 +1644,19 @@ unsafe fn rav1d_sgr_box5_row_h_neon<BD: BitDepth>(
             $name
         }};
     }
-    (match BD::BPC {
-        BPC::BPC8 => asm_fn!(dav1d_sgr_box5_row_h_8bpc_neon),
-        BPC::BPC16 => asm_fn!(dav1d_sgr_box5_row_h_16bpc_neon),
-    })(sumsq, sum, left.cast(), src.cast(), w, edges, bd.into_c())
+
+    bd_fn!(asm_fn, BD, sgr_box5_row_h, neon)(
+        sumsq,
+        sum,
+        left.cast(),
+        src.cast(),
+        w,
+        edges,
+        bd.into_c(),
+    )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
 unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
     sumsq3: *mut i32,
     sum3: *mut i16,
@@ -1657,7 +1669,7 @@ unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
     bd: BD,
 ) {
     macro_rules! asm_fn {
-        ($name:ident) => {{
+        (fn $name:ident) => {{
             extern "C" {
                 fn $name(
                     sumsq3: *mut i32,
@@ -1674,10 +1686,7 @@ unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
             $name
         }};
     }
-    (match BD::BPC {
-        BPC::BPC8 => asm_fn!(dav1d_sgr_box35_row_h_8bpc_neon),
-        BPC::BPC16 => asm_fn!(dav1d_sgr_box35_row_h_16bpc_neon),
-    })(
+    bd_fn!(asm_fn, BD, sgr_box35_row_h, neon)(
         sumsq3,
         sum3,
         sumsq5,
@@ -1766,7 +1775,7 @@ unsafe fn rav1d_sgr_finish_weighted1_neon<BD: BitDepth>(
     bd: BD,
 ) {
     macro_rules! asm_fn {
-        ($name:ident) => {{
+        (fn $name:ident) => {{
             extern "C" {
                 fn $name(
                     dst: *mut c_void,
@@ -1780,10 +1789,7 @@ unsafe fn rav1d_sgr_finish_weighted1_neon<BD: BitDepth>(
             $name
         }};
     }
-    (match BD::BPC {
-        BPC::BPC8 => asm_fn!(dav1d_sgr_finish_weighted1_8bpc_neon),
-        BPC::BPC16 => asm_fn!(dav1d_sgr_finish_weighted1_16bpc_neon),
-    })(
+    bd_fn!(asm_fn, BD, sgr_finish_weighted1, neon)(
         dst.cast(),
         A_ptrs.as_mut_ptr(),
         B_ptrs.as_mut_ptr(),
@@ -1805,7 +1811,7 @@ unsafe fn rav1d_sgr_finish_weighted2_neon<BD: BitDepth>(
     bd: BD,
 ) {
     macro_rules! asm_fn {
-        ($name:ident) => {{
+        (fn $name:ident) => {{
             extern "C" {
                 fn $name(
                     dst: *mut DynPixel,
@@ -1821,10 +1827,7 @@ unsafe fn rav1d_sgr_finish_weighted2_neon<BD: BitDepth>(
             $name
         }};
     }
-    (match BD::BPC {
-        BPC::BPC8 => asm_fn!(dav1d_sgr_finish_weighted2_8bpc_neon),
-        BPC::BPC16 => asm_fn!(dav1d_sgr_finish_weighted2_16bpc_neon),
-    })(
+    bd_fn!(asm_fn, BD, sgr_finish_weighted2, neon)(
         dst.cast(),
         (stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
         A_ptrs.as_mut_ptr(),
@@ -1836,7 +1839,7 @@ unsafe fn rav1d_sgr_finish_weighted2_neon<BD: BitDepth>(
     )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
 unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
     tmp: *mut i16,
     src: *const BD::Pixel,
@@ -1848,7 +1851,7 @@ unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
     bd: BD,
 ) {
     macro_rules! asm_fn {
-        ($name:ident) => {{
+        (fn $name:ident) => {{
             extern "C" {
                 fn $name(
                     tmp: *mut i16,
@@ -1864,10 +1867,7 @@ unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
             $name
         }};
     }
-    (match BD::BPC {
-        BPC::BPC8 => asm_fn!(dav1d_sgr_finish_filter1_2rows_8bpc_neon),
-        BPC::BPC16 => asm_fn!(dav1d_sgr_finish_filter1_2rows_16bpc_neon),
-    })(
+    bd_fn!(asm_fn, BD, sgr_finish_filter1_2rows, neon)(
         tmp,
         src.cast(),
         (src_stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
@@ -1879,7 +1879,7 @@ unsafe fn rav1d_sgr_finish_filter1_2rows_neon<BD: BitDepth>(
     )
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[cfg(all(feature = "asm", any(target_arch = "aarch64")))]
 unsafe fn rav1d_sgr_finish_filter2_2rows_neon<BD: BitDepth>(
     tmp: *mut i16,
     src: *const BD::Pixel,
@@ -1891,7 +1891,7 @@ unsafe fn rav1d_sgr_finish_filter2_2rows_neon<BD: BitDepth>(
     bd: BD,
 ) {
     macro_rules! asm_fn {
-        ($name:ident) => {{
+        (fn $name:ident) => {{
             extern "C" {
                 fn $name(
                     tmp: *mut i16,
@@ -1907,10 +1907,7 @@ unsafe fn rav1d_sgr_finish_filter2_2rows_neon<BD: BitDepth>(
             $name
         }};
     }
-    (match BD::BPC {
-        BPC::BPC8 => asm_fn!(dav1d_sgr_finish_filter2_2rows_8bpc_neon),
-        BPC::BPC16 => asm_fn!(dav1d_sgr_finish_filter2_2rows_16bpc_neon),
-    })(
+    bd_fn!(asm_fn, BD, sgr_finish_filter2_2rows, neon)(
         tmp,
         src.cast(),
         (src_stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
@@ -2012,7 +2009,7 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
 
     let wt: [i16; 2] = [w0 as i16, w1 as i16];
     macro_rules! asm_fn {
-        ($name:ident) => {{
+        (fn $name:ident) => {{
             extern "C" {
                 fn $name(
                     dst: *mut DynPixel,
@@ -2030,10 +2027,7 @@ unsafe fn sgr_finish_mix_neon<BD: BitDepth>(
             $name
         }};
     }
-    (match BD::BPC {
-        BPC::BPC8 => asm_fn!(dav1d_sgr_weighted2_8bpc_neon),
-        BPC::BPC16 => asm_fn!(dav1d_sgr_weighted2_16bpc_neon),
-    })(
+    bd_fn!(asm_fn, BD, sgr_weighted2, neon)(
         dst.cast(),
         (stride * std::mem::size_of::<BD::Pixel>()) as ptrdiff_t,
         dst.cast(),
