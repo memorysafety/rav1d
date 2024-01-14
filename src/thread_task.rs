@@ -1543,7 +1543,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             };
                             // Note that `progress.is_some() == (*c).n_fc > 1`.
                             let progress = &**(*f).sr_cur.progress.as_ref().unwrap();
-                            if !((*f).sr_cur.p.data[0]).is_null() {
+                            if !(*f).sr_cur.p.data_is_null() {
                                 progress[0].store(
                                     if error_0 != 0 { FRAME_ERROR } else { y },
                                     Ordering::SeqCst,
@@ -1611,7 +1611,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             };
                             // Note that `progress.is_some() == (*c).n_fc > 1`.
                             if let Some(progress) = &(*f).sr_cur.progress {
-                                if !((*f).sr_cur.p.data[0]).is_null() {
+                                if !(*f).sr_cur.p.data_is_null() {
                                     progress[1].store(
                                         if error_0 != 0 { FRAME_ERROR } else { y_0 },
                                         Ordering::SeqCst,

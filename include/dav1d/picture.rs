@@ -18,13 +18,17 @@ use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dResult;
+use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::Rav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
+use std::sync::atomic::AtomicI32;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
@@ -99,7 +103,7 @@ pub struct Dav1dPicture {
 pub(crate) struct Rav1dPicture {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
-    pub data: [*mut c_void; 3],
+    data: [*mut c_void; 3],
     pub stride: [ptrdiff_t; 2],
     pub p: Rav1dPictureParameters,
     pub m: Rav1dDataProps,
@@ -217,6 +221,53 @@ impl Default for Rav1dPicture {
             r#ref: ptr::null_mut(),
             allocator_data: ptr::null_mut(),
         }
+    }
+}
+
+impl Rav1dPicture {
+    pub fn data_is_null(&self) -> bool {
+        self.data[0].is_null()
+    }
+
+    // TODO(kkysen) Temporary, but for now guarantees aliased XOR mutable.
+    pub unsafe fn data(&self) -> [*const c_void; 3] {
+        self.data.map(|data| data.cast_const())
+    }
+
+    /// # Safety
+    ///
+    /// This must be the only mutable access to the pixel data.
+    ///
+    /// TODO(kkysen) Replace this with a [`Mutex`].
+    pub unsafe fn data_mut_unchecked(&self) -> [*mut c_void; 3] {
+        self.data
+    }
+
+    // TODO(kkysen) Temporary, but for now guarantees aliased XOR mutable.
+    pub unsafe fn data_mut(&self) -> [*mut c_void; 3] {
+        let ref_count = &(*self.r#ref).ref_cnt;
+        let ref_count = unsafe { mem::transmute::<&i32, &AtomicI32>(ref_count) };
+        assert_eq!(ref_count.load(Ordering::SeqCst), 1);
+        self.data_mut_unchecked()
+    }
+
+    pub fn set_data(&mut self, data: [*mut c_void; 3]) {
+        self.data = data;
+    }
+}
+
+pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
+    let Rav1dPicture {
+        m: _,
+        data,
+        mut r#ref,
+        ..
+    } = mem::take(p);
+    if !r#ref.is_null() {
+        if validate_input!(!data[0].is_null()).is_err() {
+            return;
+        }
+        rav1d_ref_dec(&mut r#ref);
     }
 }
 

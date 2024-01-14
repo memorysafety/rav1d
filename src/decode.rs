@@ -28,6 +28,7 @@ use crate::include::dav1d::headers::RAV1D_TX_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::picture::rav1d_picture_unref_internal;
 use crate::include::stdatomic::atomic_int;
 use crate::src::align::Align16;
 use crate::src::cdef::rav1d_cdef_dsp_init;
@@ -178,7 +179,6 @@ use crate::src::msac::rav1d_msac_decode_uniform;
 use crate::src::msac::rav1d_msac_init;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::rav1d_picture_ref;
-use crate::src::picture::rav1d_picture_unref_internal;
 use crate::src::picture::rav1d_thread_picture_alloc;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
@@ -4676,8 +4676,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(f: &mut Rav1dFrameContext) -> Rav1d
     // what they point at, as long as the pointers are valid.
     let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400) as usize;
     f.lf.mask_ptr = f.lf.mask;
-    f.lf.p = array::from_fn(|i| f.cur.data[has_chroma * i].cast());
-    f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data[has_chroma * i].cast());
+    f.lf.p = array::from_fn(|i| f.cur.data_mut_unchecked()[has_chroma * i].cast());
+    f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data_mut_unchecked()[has_chroma * i].cast());
 
     Ok(())
 }
@@ -4851,7 +4851,7 @@ unsafe fn rav1d_decode_frame_main(f: &mut Rav1dFrameContext) -> Rav1dResult {
 
 pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: Rav1dResult) {
     let c = &*f.c;
-    if !f.sr_cur.p.data[0].is_null() {
+    if !f.sr_cur.p.data_is_null() {
         f.task_thread.error = 0;
     }
     if c.n_fc > 1 && retval.is_err() && !f.frame_thread.cf.is_null() {
@@ -4958,7 +4958,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             pthread_cond_wait(&mut f.task_thread.cond, &mut c.task_thread.lock);
         }
         let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
-        if !out_delayed.p.data[0].is_null()
+        if !out_delayed.p.data_is_null()
             || ::core::intrinsics::atomic_load_seqcst(&mut f.task_thread.error as *mut atomic_int)
                 != 0
         {
@@ -4983,7 +4983,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             c.cached_error = error;
             c.cached_error_props = out_delayed.p.m.clone();
             rav1d_thread_picture_unref(out_delayed);
-        } else if !out_delayed.p.data[0].is_null() {
+        } else if !out_delayed.p.data_is_null() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);
@@ -5100,14 +5100,14 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if frame_hdr.frame_type.is_inter_or_switch() {
         if frame_hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE {
             let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
-            if c.refs[pri_ref].p.p.data[0].is_null() {
+            if c.refs[pri_ref].p.p.data_is_null() {
                 on_error(f, c, out_delayed);
                 return Err(EINVAL);
             }
         }
         for i in 0..7 {
             let refidx = frame_hdr.refidx[i] as usize;
-            if c.refs[refidx].p.p.data[0].is_null()
+            if c.refs[refidx].p.p.data_is_null()
                 || (frame_hdr.size.width[0] * 2) < c.refs[refidx].p.p.p.w
                 || (frame_hdr.size.height * 2) < c.refs[refidx].p.p.p.h
                 || frame_hdr.size.width[0] > c.refs[refidx].p.p.p.w * 16

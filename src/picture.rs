@@ -11,6 +11,7 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
+use crate::include::dav1d::picture::rav1d_picture_unref_internal;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
@@ -28,7 +29,6 @@ use crate::src::mem::rav1d_mem_pool_pop;
 use crate::src::mem::rav1d_mem_pool_push;
 use crate::src::mem::Rav1dMemPool;
 use crate::src::mem::Rav1dMemPoolBuffer;
-use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::r#ref::rav1d_ref_wrap;
 use bitflags::bitflags;
@@ -124,7 +124,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     // Note that `data[1]` and `data[2]`
     // were previously null instead of an empty slice when `!has_chroma`,
     // but this way is simpler and more uniform, especially when we move to slices.
-    p.data = [data0, data1, data2].map(|data| data.as_mut_ptr().cast());
+    p.set_data([data0, data1, data2].map(|data| data.as_mut_ptr().cast()));
     p_c.write(p.into());
     Rav1dResult::Ok(()).into()
 }
@@ -166,7 +166,7 @@ unsafe fn picture_alloc_with_edges(
     props: Rav1dDataProps,
     p_allocator: &Rav1dPicAllocator,
 ) -> Rav1dResult {
-    if !p.data[0].is_null() {
+    if !p.data_is_null() {
         writeln!(logger, "Picture already allocated!",);
         return Err(EGeneric);
     }
@@ -195,7 +195,7 @@ unsafe fn picture_alloc_with_edges(
         pic: p.clone(),
     });
     p.r#ref = rav1d_ref_wrap(
-        p.data[0] as *const u8,
+        p.data()[0] as *const u8,
         Some(free_buffer),
         pic_ctx as *mut c_void,
     );
@@ -290,11 +290,11 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
 }
 
 pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {
-    if validate_input!(dst.data[0].is_null()).is_err() {
+    if validate_input!(dst.data_is_null()).is_err() {
         return;
     }
     if !src.r#ref.is_null() {
-        if validate_input!(!src.data[0].is_null()).is_err() {
+        if validate_input!(!src.data_is_null()).is_err() {
             return;
         }
         rav1d_ref_inc(src.r#ref);
@@ -303,11 +303,11 @@ pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPictur
 }
 
 pub(crate) unsafe fn rav1d_picture_move_ref(dst: &mut Rav1dPicture, src: &mut Rav1dPicture) {
-    if validate_input!(dst.data[0].is_null()).is_err() {
+    if validate_input!(dst.data_is_null()).is_err() {
         return;
     }
     if !src.r#ref.is_null() {
-        if validate_input!(!src.data[0].is_null()).is_err() {
+        if validate_input!(!src.data_is_null()).is_err() {
             return;
         }
     }
@@ -330,21 +330,6 @@ pub(crate) unsafe fn rav1d_thread_picture_move_ref(
     src: *mut Rav1dThreadPicture,
 ) {
     *dst = mem::take(&mut *src);
-}
-
-pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
-    let Rav1dPicture {
-        m: _,
-        data,
-        mut r#ref,
-        ..
-    } = mem::take(p);
-    if !r#ref.is_null() {
-        if validate_input!(!data[0].is_null()).is_err() {
-            return;
-        }
-        rav1d_ref_dec(&mut r#ref);
-    }
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
