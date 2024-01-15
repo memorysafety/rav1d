@@ -91,20 +91,20 @@ pub struct Dav1dPicture {
     pub itut_t35_ref: Option<RawArc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>, // opaque, so we can change this
     pub reserved_ref: [uintptr_t; 4],
     pub r#ref: *mut Dav1dRef,
-    pub allocator_data: *mut c_void,
+    pub allocator_data: Option<NonNull<c_void>>,
 }
 
 #[derive(Clone)]
 pub(crate) struct Rav1dPictureData {
     pub data: [*mut c_void; 3],
-    pub allocator_data: *mut c_void,
+    pub allocator_data: Option<NonNull<c_void>>,
 }
 
 impl Default for Rav1dPictureData {
     fn default() -> Self {
         Self {
             data: [ptr::null_mut(); 3],
-            allocator_data: ptr::null_mut(),
+            allocator_data: Default::default(),
         }
     }
 }

@@ -92,6 +92,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
+use std::ptr::NonNull;
 
 unsafe fn get_time_nanos() -> u64 {
     let mut ts: libc::timespec = libc::timespec {
@@ -238,7 +239,7 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1
     if buf.is_null() {
         return Dav1dResult(-12);
     }
-    (*p).allocator_data = buf as *mut c_void;
+    (*p).allocator_data = NonNull::new(buf.cast());
     let align_m1: ptrdiff_t = (DAV1D_PICTURE_ALIGNMENT - 1) as ptrdiff_t;
     let data: *mut u8 = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut u8;
     (*p).data[0] = data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void;
@@ -260,7 +261,9 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1
 }
 
 unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut c_void) {
-    free((*p).allocator_data);
+    if let Some(data) = (*p).allocator_data {
+        free(data.as_ptr());
+    }
 }
 
 unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
@@ -334,7 +337,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         itut_t35_ref: None,
         reserved_ref: [0; 4],
         r#ref: 0 as *mut Dav1dRef,
-        allocator_data: 0 as *mut c_void,
+        allocator_data: None,
     };
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {

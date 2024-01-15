@@ -176,7 +176,7 @@ unsafe fn decode_rand(
         itut_t35_ref: None,
         reserved_ref: [0; 4],
         r#ref: 0 as *mut Dav1dRef,
-        allocator_data: 0 as *mut c_void,
+        allocator_data: None,
     };
     let num_frames: c_int = xor128_rand() % (fps * 5 as c_double) as c_int;
     let mut i = 0;
@@ -231,7 +231,7 @@ unsafe fn decode_all(
         itut_t35_ref: None,
         reserved_ref: [0; 4],
         r#ref: 0 as *mut Dav1dRef,
-        allocator_data: 0 as *mut c_void,
+        allocator_data: None,
     };
     loop {
         res = decode_frame(&mut p, c, data);

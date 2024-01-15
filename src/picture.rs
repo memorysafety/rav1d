@@ -43,6 +43,7 @@ use std::ffi::c_void;
 use std::io;
 use std::mem;
 use std::ptr;
+use std::ptr::NonNull;
 use std::slice;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
@@ -132,7 +133,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let data = [data0, data1, data2].map(|data| data.as_mut_ptr().cast());
     p.data = Rav1dPictureData {
         data,
-        allocator_data: buf.cast(),
+        allocator_data: NonNull::new(buf.cast()),
     };
     p_c.write(p.into());
     Rav1dResult::Ok(()).into()
@@ -141,7 +142,8 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
 pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut c_void) {
     rav1d_mem_pool_push(
         cookie as *mut Rav1dMemPool,
-        (*p).allocator_data as *mut Rav1dMemPoolBuffer,
+        (*p).allocator_data
+            .map_or_else(ptr::null_mut, |data| data.as_ptr()) as *mut Rav1dMemPoolBuffer,
     );
 }
 
