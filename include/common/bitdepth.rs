@@ -174,7 +174,11 @@ pub trait BitDepth: Clone + Copy {
         clip(pixel, 0.into(), self.bitdepth_max())
     }
 
-    fn pxstride(n: usize) -> usize;
+    fn pxstride(n: usize) -> usize {
+        let scale = mem::size_of::<Self::Pixel>();
+        debug_assert!(n % scale == 0);
+        n / scale
+    }
 
     fn bitdepth(&self) -> u8;
 
@@ -236,10 +240,6 @@ impl BitDepth for BitDepth8 {
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
         DisplayPixel8(pixel)
-    }
-
-    fn pxstride(n: usize) -> usize {
-        n
     }
 
     fn bitdepth(&self) -> u8 {
@@ -317,11 +317,6 @@ impl BitDepth for BitDepth16 {
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
         DisplayPixel16(pixel)
-    }
-
-    fn pxstride(n: usize) -> usize {
-        debug_assert!(n & 1 == 0);
-        n >> 1
     }
 
     fn bitdepth(&self) -> u8 {
