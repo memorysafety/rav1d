@@ -242,21 +242,26 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1
     (*p).allocator_data = NonNull::new(buf.cast());
     let align_m1: ptrdiff_t = (DAV1D_PICTURE_ALIGNMENT - 1) as ptrdiff_t;
     let data: *mut u8 = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut u8;
-    (*p).data[0] = data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void;
-    (*p).data[1] = (if has_chroma != 0 {
-        data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(1) as isize)
-            .offset(-(uv_stride as isize))
-    } else {
-        0 as *mut u8
-    }) as *mut c_void;
-    (*p).data[2] = (if has_chroma != 0 {
-        data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(2) as isize)
-            .offset(-(uv_stride as isize))
-    } else {
-        0 as *mut u8
-    }) as *mut c_void;
+    (*p).data[0] =
+        NonNull::new(data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void);
+    (*p).data[1] = NonNull::new(
+        (if has_chroma != 0 {
+            data.offset(y_sz as isize)
+                .offset(uv_sz.wrapping_mul(1) as isize)
+                .offset(-(uv_stride as isize))
+        } else {
+            0 as *mut u8
+        }) as *mut c_void,
+    );
+    (*p).data[2] = NonNull::new(
+        (if has_chroma != 0 {
+            data.offset(y_sz as isize)
+                .offset(uv_sz.wrapping_mul(2) as isize)
+                .offset(-(uv_stride as isize))
+        } else {
+            0 as *mut u8
+        }) as *mut c_void,
+    );
     Dav1dResult(0)
 }
 
@@ -308,7 +313,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     let mut p: Dav1dPicture = Dav1dPicture {
         seq_hdr: None,
         frame_hdr: None,
-        data: [0 as *mut c_void; 3],
+        data: Default::default(),
         stride: [0; 2],
         p: Dav1dPictureParameters {
             w: 0,

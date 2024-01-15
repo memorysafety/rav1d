@@ -76,7 +76,7 @@ impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
 pub struct Dav1dPicture {
     pub seq_hdr: Option<NonNull<Dav1dSequenceHeader>>,
     pub frame_hdr: Option<NonNull<Dav1dFrameHeader>>,
-    pub data: [*mut c_void; 3],
+    pub data: [Option<NonNull<c_void>>; 3],
     pub stride: [ptrdiff_t; 2],
     pub p: Dav1dPictureParameters,
     pub m: Dav1dDataProps,
@@ -154,7 +154,7 @@ impl From<Dav1dPicture> for Rav1dPicture {
             // Safety: `raw` came from [`RawArc::from_arc`].
             frame_hdr: frame_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
             data: Rav1dPictureData {
-                data,
+                data: data.map(|data| data.map_or_else(ptr::null_mut, NonNull::as_ptr)),
                 allocator_data,
             },
             stride,
@@ -195,7 +195,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
             seq_hdr: seq_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             // [`DRav1d::from_rav1d`] is called in [`parse_frame_hdr`].
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
-            data,
+            data: data.map(NonNull::new),
             stride,
             p: p.into(),
             m: m.into(),

@@ -147,7 +147,7 @@ unsafe fn decode_rand(
     let mut p: Dav1dPicture = Dav1dPicture {
         seq_hdr: None,
         frame_hdr: None,
-        data: [0 as *mut c_void; 3],
+        data: Default::default(),
         stride: [0; 2],
         p: Dav1dPictureParameters {
             w: 0,
@@ -202,7 +202,7 @@ unsafe fn decode_all(
     let mut p: Dav1dPicture = Dav1dPicture {
         seq_hdr: None,
         frame_hdr: None,
-        data: [0 as *mut c_void; 3],
+        data: Default::default(),
         stride: [0; 2],
         p: Dav1dPictureParameters {
             w: 0,
