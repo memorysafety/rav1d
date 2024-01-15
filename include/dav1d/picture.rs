@@ -95,11 +95,26 @@ pub struct Dav1dPicture {
 }
 
 #[derive(Clone)]
+pub(crate) struct Rav1dPictureData {
+    pub data: [*mut c_void; 3],
+    pub allocator_data: *mut c_void,
+}
+
+impl Default for Rav1dPictureData {
+    fn default() -> Self {
+        Self {
+            data: [ptr::null_mut(); 3],
+            allocator_data: ptr::null_mut(),
+        }
+    }
+}
+
+#[derive(Clone)]
 #[repr(C)]
 pub(crate) struct Rav1dPicture {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
-    pub data: [*mut c_void; 3],
+    pub data: Rav1dPictureData,
     pub stride: [ptrdiff_t; 2],
     pub p: Rav1dPictureParameters,
     pub m: Rav1dDataProps,
@@ -107,7 +122,6 @@ pub(crate) struct Rav1dPicture {
     pub mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     pub itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     pub r#ref: *mut Rav1dRef,
-    pub allocator_data: *mut c_void,
 }
 
 impl From<Dav1dPicture> for Rav1dPicture {
@@ -139,7 +153,10 @@ impl From<Dav1dPicture> for Rav1dPicture {
             // We don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
             // Safety: `raw` came from [`RawArc::from_arc`].
             frame_hdr: frame_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
-            data,
+            data: Rav1dPictureData {
+                data,
+                allocator_data,
+            },
             stride,
             p: p.into(),
             m: m.into(),
@@ -151,7 +168,6 @@ impl From<Dav1dPicture> for Rav1dPicture {
             // Safety: `raw` came from [`RawArc::from_arc`].
             itut_t35: itut_t35_ref.map(|raw| unsafe { raw.into_arc() }),
             r#ref,
-            allocator_data,
         }
     }
 }
@@ -161,7 +177,11 @@ impl From<Rav1dPicture> for Dav1dPicture {
         let Rav1dPicture {
             seq_hdr,
             frame_hdr,
-            data,
+            data:
+                Rav1dPictureData {
+                    data,
+                    allocator_data,
+                },
             stride,
             p,
             m,
@@ -169,7 +189,6 @@ impl From<Rav1dPicture> for Dav1dPicture {
             mastering_display,
             itut_t35,
             r#ref,
-            allocator_data,
         } = value;
         Self {
             // [`DRav1d::from_rav1d`] is called right after [`parse_seq_hdr`].
@@ -207,7 +226,7 @@ impl Default for Rav1dPicture {
         Self {
             seq_hdr: None,
             frame_hdr: None,
-            data: [ptr::null_mut(); 3],
+            data: Default::default(),
             stride: Default::default(),
             p: Default::default(),
             m: Default::default(),
@@ -215,7 +234,6 @@ impl Default for Rav1dPicture {
             mastering_display: None,
             itut_t35: None,
             r#ref: ptr::null_mut(),
-            allocator_data: ptr::null_mut(),
         }
     }
 }

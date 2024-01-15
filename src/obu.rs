@@ -2506,7 +2506,7 @@ unsafe fn parse_obus(
                 }
                 _ => {}
             }
-            if c.refs[frame_hdr.existing_frame_idx as usize].p.p.data[0].is_null() {
+            if c.refs[frame_hdr.existing_frame_idx as usize].p.p.data.data[0].is_null() {
                 return Err(EINVAL);
             }
             if c.strict_std_compliance && !c.refs[frame_hdr.existing_frame_idx as usize].p.showable
@@ -2544,7 +2544,7 @@ unsafe fn parse_obus(
                     );
                 }
                 let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
-                if !(*out_delayed).p.data[0].is_null()
+                if !(*out_delayed).p.data.data[0].is_null()
                     || (*f).task_thread.error.load(Ordering::SeqCst) != 0
                 {
                     let first = c.task_thread.first.load(Ordering::SeqCst);
@@ -2569,7 +2569,7 @@ unsafe fn parse_obus(
                     (*f).task_thread.retval = Ok(());
                     c.cached_error_props = (*out_delayed).p.m.clone();
                     rav1d_thread_picture_unref(out_delayed);
-                } else if !((*out_delayed).p.data[0]).is_null() {
+                } else if !((*out_delayed).p.data.data[0]).is_null() {
                     let progress =
                         (*out_delayed).progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
                     if ((*out_delayed).visible || c.output_invisible_frames)
