@@ -206,6 +206,20 @@ pub type save_tmvs_fn = Option<
     ) -> (),
 >;
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
+extern "C" {
+    fn dav1d_save_tmvs_neon(
+        rp: *mut refmvs_temporal_block,
+        stride: ptrdiff_t,
+        rr: *const *const refmvs_block,
+        ref_sign: *const u8,
+        col_end8: c_int,
+        row_end8: c_int,
+        col_start8: c_int,
+        row_start8: c_int,
+    );
+}
+
 pub type splat_mv_fn = Option<
     unsafe extern "C" fn(*mut *mut refmvs_block, usize, &refmvs_block, usize, usize, usize) -> (),
 >;
@@ -1652,6 +1666,7 @@ unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
 unsafe fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
     let flags = rav1d_get_cpu_flags();
     if flags.contains(CpuFlags::NEON) {
+        (*c).save_tmvs = Some(dav1d_save_tmvs_neon);
         (*c).splat_mv = Some(ffi::dav1d_splat_mv_neon);
     }
 }
