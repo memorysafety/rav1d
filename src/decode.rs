@@ -4709,10 +4709,11 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
         let mut data = tile.data.as_ref();
         for (j, (ts, tile_start_off)) in iter::zip(
             slice::from_raw_parts_mut(f.ts, end + 1),
-            slice::from_raw_parts(
-                f.frame_thread.tile_start_off,
-                if uses_2pass { end + 1 } else { 0 },
-            )
+            if uses_2pass {
+                slice::from_raw_parts(f.frame_thread.tile_start_off, end + 1)
+            } else {
+                &[]
+            }
             .into_iter()
             .map(|&it| it as usize)
             .chain(iter::repeat(0)),
