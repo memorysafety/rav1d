@@ -17,7 +17,6 @@ use crate::src::c_arc::RawArc;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dResult;
 use crate::src::r#ref::Rav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
@@ -344,20 +343,5 @@ impl From<Rav1dPicAllocator> for Dav1dPicAllocator {
             alloc_picture_callback: Some(alloc_picture_callback),
             release_picture_callback: Some(release_picture_callback),
         }
-    }
-}
-
-impl Rav1dPicAllocator {
-    pub unsafe fn alloc_picture(&self, p: *mut Rav1dPicture) -> Rav1dResult {
-        let mut p_c = p.read().into();
-        let result = (self.alloc_picture_callback)(&mut p_c, self.cookie);
-        p.write(p_c.into());
-        result.try_into().unwrap()
-    }
-
-    pub unsafe fn release_picture(&self, p: *mut Rav1dPicture) {
-        let mut p_c = p.read().into();
-        (self.release_picture_callback)(&mut p_c, self.cookie);
-        p.write(p_c.into());
     }
 }
