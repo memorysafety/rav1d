@@ -1,7 +1,4 @@
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::DynCoef;
-use crate::include::common::bitdepth::DynPixel;
-use crate::include::common::intops::iclip_u8;
 use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -39,81 +36,13 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::WHT_WHT;
-use libc::memset;
-use libc::ptrdiff_t;
 use std::ffi::c_int;
-use std::ffi::c_void;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use cfg_if::cfg_if;
-
-pub type pixel = u8;
-pub type coef = i16;
-
-unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    coeff: *mut DynCoef,
-    eob: c_int,
-    _bitdepth_max: c_int,
-) {
-    inv_txfm_add_wht_wht_4x4_rust(dst.cast(), stride, coeff.cast(), eob);
-}
-
-unsafe fn inv_txfm_add_wht_wht_4x4_rust(
-    mut dst: *mut pixel,
-    stride: ptrdiff_t,
-    coeff: *mut coef,
-    _eob: c_int,
-) {
-    use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
-
-    let mut tmp: [i32; 16] = [0; 16];
-    let mut c: *mut i32 = tmp.as_mut_ptr();
-    let mut y = 0;
-    while y < 4 {
-        let mut x = 0;
-        while x < 4 {
-            *c.offset(x as isize) = *coeff.offset((y + x * 4) as isize) as c_int >> 2;
-            x += 1;
-        }
-        dav1d_inv_wht4_1d_c(c, 1 as c_int as ptrdiff_t);
-        y += 1;
-        c = c.offset(4);
-    }
-    memset(
-        coeff as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<coef>()
-            .wrapping_mul(4)
-            .wrapping_mul(4),
-    );
-    let mut x_0 = 0;
-    while x_0 < 4 {
-        dav1d_inv_wht4_1d_c(
-            &mut *tmp.as_mut_ptr().offset(x_0 as isize),
-            4 as c_int as ptrdiff_t,
-        );
-        x_0 += 1;
-    }
-    c = tmp.as_mut_ptr();
-    let mut y_0 = 0;
-    while y_0 < 4 {
-        let mut x_1 = 0;
-        while x_1 < 4 {
-            let fresh1 = c;
-            c = c.offset(1);
-            *dst.offset(x_1 as isize) =
-                iclip_u8(*dst.offset(x_1 as isize) as c_int + *fresh1) as pixel;
-            x_1 += 1;
-        }
-        y_0 += 1;
-        dst = dst.offset(stride as isize);
-    }
-}
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
@@ -796,7 +725,7 @@ pub unsafe fn rav1d_itx_dsp_init_8bpc(c: *mut Rav1dInvTxfmDSPContext, mut _bpc: 
     // TODO(legare): Temporary import until init fns are deduplicated.
     use crate::src::itx::*;
 
-    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(inv_txfm_add_wht_wht_4x4_c_erased);
+    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(inv_txfm_add_wht_wht_4x4_c_erased::<BitDepth8>);
     (*c).itxfm_add[TX_4X4 as usize][DCT_DCT as usize] =
         Some(inv_txfm_add_dct_dct_4x4_c_erased::<BitDepth8>);
     (*c).itxfm_add[TX_4X4 as usize][IDTX as usize] =
