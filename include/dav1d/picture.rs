@@ -109,7 +109,12 @@ impl Default for Rav1dPictureData {
     }
 }
 
-#[derive(Clone)]
+// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
+// It's needed currently for a [`mem::take`] that simulates a move,
+// but once everything is Rusty, we may not need to clear the `dst` anymore.
+// This also applies to the `#[derive(Default)]`
+// on [`Rav1dPictureParameters`] and [`Rav1dPixelLayout`].
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dPicture {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
@@ -212,28 +217,6 @@ impl From<Rav1dPicture> for Dav1dPicture {
             reserved_ref: Default::default(),
             r#ref,
             allocator_data,
-        }
-    }
-}
-
-// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
-// It's needed currently for a [`mem::take`] that simulates a move,
-// but once everything is Rusty, we may not need to clear the `dst` anymore.
-// This also applies to the `#[derive(Default)]`
-// on [`Rav1dPictureParameters`] and [`Rav1dPixelLayout`].
-impl Default for Rav1dPicture {
-    fn default() -> Self {
-        Self {
-            seq_hdr: None,
-            frame_hdr: None,
-            data: Default::default(),
-            stride: Default::default(),
-            p: Default::default(),
-            m: Default::default(),
-            content_light: None,
-            mastering_display: None,
-            itut_t35: None,
-            r#ref: None,
         }
     }
 }
