@@ -409,3 +409,73 @@ inv_txfm_fn64!(32, 64, 1);
 inv_txfm_fn64!(64, 16, 2);
 inv_txfm_fn64!(64, 32, 1);
 inv_txfm_fn64!(64, 64, 2);
+
+// TODO(perl): Temporarily pub until mod is deduplicated
+pub(crate) unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased<BD: BitDepth>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    coeff: *mut DynCoef,
+    eob: c_int,
+    bitdepth_max: c_int,
+) {
+    inv_txfm_add_wht_wht_4x4_rust::<BD>(
+        dst.cast(),
+        stride,
+        coeff.cast(),
+        eob,
+        BD::from_c(bitdepth_max),
+    );
+}
+
+unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
+    mut dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    coeff: *mut BD::Coef,
+    _eob: c_int,
+    bd: BD,
+) {
+    use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
+
+    let mut tmp: [i32; 16] = [0; 16];
+    let mut c: *mut i32 = tmp.as_mut_ptr();
+    let mut y = 0;
+    while y < 4 {
+        let mut x = 0;
+        while x < 4 {
+            *c.offset(x as isize) = (*coeff.offset((y + x * 4) as isize)).as_::<i32>() >> 2;
+            x += 1;
+        }
+        dav1d_inv_wht4_1d_c(c, 1 as c_int as ptrdiff_t);
+        y += 1;
+        c = c.offset(4);
+    }
+    memset(
+        coeff as *mut c_void,
+        0 as c_int,
+        ::core::mem::size_of::<BD::Coef>()
+            .wrapping_mul(4)
+            .wrapping_mul(4),
+    );
+    let mut x_0 = 0;
+    while x_0 < 4 {
+        dav1d_inv_wht4_1d_c(
+            &mut *tmp.as_mut_ptr().offset(x_0 as isize),
+            4 as c_int as ptrdiff_t,
+        );
+        x_0 += 1;
+    }
+    c = tmp.as_mut_ptr();
+    let mut y_0 = 0;
+    while y_0 < 4 {
+        let mut x_1 = 0;
+        while x_1 < 4 {
+            let fresh1 = c;
+            c = c.offset(1);
+            *dst.offset(x_1 as isize) =
+                bd.iclip_pixel((*dst.offset(x_1 as isize)).as_::<c_int>() + *fresh1);
+            x_1 += 1;
+        }
+        y_0 += 1;
+        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+    }
+}
