@@ -15,6 +15,7 @@ use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::include::dav1d::picture::Rav1dPictureParameters;
+use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::ENOMEM;
@@ -87,7 +88,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
     cookie: *mut c_void,
 ) -> Dav1dResult {
-    assert!(::core::mem::size_of::<Rav1dMemPoolBuffer>() <= 64);
+    assert!(::core::mem::size_of::<Rav1dMemPoolBuffer>() <= RAV1D_PICTURE_ALIGNMENT);
     let mut p = p_c.read().to::<Rav1dPicture>();
     let hbd = (p.p.bpc > 8) as c_int;
     let aligned_w = p.p.w + 127 & !127;
@@ -98,10 +99,10 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let mut y_stride = (aligned_w << hbd) as ptrdiff_t;
     let mut uv_stride = if has_chroma { y_stride >> ss_hor } else { 0 };
     if y_stride & 1023 == 0 {
-        y_stride += 64;
+        y_stride += RAV1D_PICTURE_ALIGNMENT as isize;
     }
     if uv_stride & 1023 == 0 && has_chroma {
-        uv_stride += 64;
+        uv_stride += RAV1D_PICTURE_ALIGNMENT as isize;
     }
     p.stride[0] = y_stride;
     p.stride[1] = uv_stride;
@@ -110,7 +111,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let pic_size = y_sz + 2 * uv_sz;
     let buf = rav1d_mem_pool_pop(
         cookie as *mut Rav1dMemPool,
-        pic_size + 64 - ::core::mem::size_of::<Rav1dMemPoolBuffer>(),
+        pic_size + RAV1D_PICTURE_ALIGNMENT - ::core::mem::size_of::<Rav1dMemPoolBuffer>(),
     );
     if buf.is_null() {
         return Rav1dResult::<()>::Err(ENOMEM).into();

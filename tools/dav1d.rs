@@ -77,6 +77,7 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::include::dav1d::picture::Dav1dPicture;
 use rav1d::include::dav1d::picture::Dav1dPictureParameters;
+use rav1d::include::dav1d::picture::DAV1D_PICTURE_ALIGNMENT;
 use rav1d::src::lib::dav1d_close;
 use rav1d::src::lib::dav1d_data_unref;
 use rav1d::src::lib::dav1d_get_picture;
@@ -223,22 +224,22 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1
         0
     };
     if y_stride & 1023 == 0 {
-        y_stride += 64;
+        y_stride += DAV1D_PICTURE_ALIGNMENT as isize;
     }
     if uv_stride & 1023 == 0 && has_chroma != 0 {
-        uv_stride += 64;
+        uv_stride += DAV1D_PICTURE_ALIGNMENT as isize;
     }
     (*p).stride[0] = -y_stride;
     (*p).stride[1] = -uv_stride;
     let y_sz: usize = (y_stride * aligned_h as isize) as usize;
     let uv_sz: usize = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size: usize = y_sz.wrapping_add(2 * uv_sz);
-    let buf: *mut u8 = malloc(pic_size.wrapping_add(64)) as *mut u8;
+    let buf: *mut u8 = malloc(pic_size.wrapping_add(DAV1D_PICTURE_ALIGNMENT)) as *mut u8;
     if buf.is_null() {
         return Dav1dResult(-12);
     }
     (*p).allocator_data = buf as *mut c_void;
-    let align_m1: ptrdiff_t = (64 - 1) as ptrdiff_t;
+    let align_m1: ptrdiff_t = (DAV1D_PICTURE_ALIGNMENT - 1) as ptrdiff_t;
     let data: *mut u8 = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut u8;
     (*p).data[0] = data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void;
     (*p).data[1] = (if has_chroma != 0 {
