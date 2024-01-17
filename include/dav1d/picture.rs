@@ -90,7 +90,7 @@ pub struct Dav1dPicture {
     pub mastering_display_ref: Option<RawArc<Rav1dMasteringDisplay>>, // opaque, so we can change this
     pub itut_t35_ref: Option<RawArc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>, // opaque, so we can change this
     pub reserved_ref: [uintptr_t; 4],
-    pub r#ref: *mut Dav1dRef,
+    pub r#ref: Option<NonNull<Dav1dRef>>,
     pub allocator_data: Option<NonNull<c_void>>,
 }
 
@@ -121,7 +121,7 @@ pub(crate) struct Rav1dPicture {
     pub content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     pub itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
-    pub r#ref: *mut Rav1dRef,
+    pub r#ref: Option<NonNull<Rav1dRef>>,
 }
 
 impl From<Dav1dPicture> for Rav1dPicture {
@@ -233,7 +233,7 @@ impl Default for Rav1dPicture {
             content_light: None,
             mastering_display: None,
             itut_t35: None,
-            r#ref: ptr::null_mut(),
+            r#ref: None,
         }
     }
 }

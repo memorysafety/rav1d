@@ -205,12 +205,12 @@ unsafe fn picture_alloc_with_edges(
         allocator: p_allocator.clone(),
         pic: p.clone(),
     });
-    p.r#ref = rav1d_ref_wrap(
+    p.r#ref = NonNull::new(rav1d_ref_wrap(
         p.data.data[0] as *const u8,
         Some(free_buffer),
         pic_ctx as *mut c_void,
-    );
-    if p.r#ref.is_null() {
+    ));
+    if p.r#ref.is_none() {
         p_allocator.release_picture(p);
         free(pic_ctx as *mut c_void);
         writeln!(
@@ -282,7 +282,8 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     w: c_int,
     src: &Rav1dPicture,
 ) -> Rav1dResult {
-    let pic_ctx: *mut pic_ctx_context = (*(*src).r#ref).user_data as *mut pic_ctx_context;
+    let pic_ctx: *mut pic_ctx_context =
+        (*src).r#ref.unwrap().as_mut().user_data as *mut pic_ctx_context;
     picture_alloc_with_edges(
         &c.logger,
         dst,
@@ -303,11 +304,11 @@ pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPictur
     if validate_input!(dst.data.data[0].is_null()).is_err() {
         return;
     }
-    if !src.r#ref.is_null() {
+    if let Some(r#ref) = src.r#ref {
         if validate_input!(!src.data.data[0].is_null()).is_err() {
             return;
         }
-        rav1d_ref_inc(src.r#ref);
+        rav1d_ref_inc(r#ref.as_ptr());
     }
     *dst = src.clone();
 }
@@ -316,7 +317,7 @@ pub(crate) unsafe fn rav1d_picture_move_ref(dst: &mut Rav1dPicture, src: &mut Ra
     if validate_input!(dst.data.data[0].is_null()).is_err() {
         return;
     }
-    if !src.r#ref.is_null() {
+    if src.r#ref.is_some() {
         if validate_input!(!src.data.data[0].is_null()).is_err() {
             return;
         }
@@ -343,17 +344,12 @@ pub(crate) unsafe fn rav1d_thread_picture_move_ref(
 }
 
 pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
-    let Rav1dPicture {
-        m: _,
-        data,
-        mut r#ref,
-        ..
-    } = mem::take(p);
-    if !r#ref.is_null() {
+    let Rav1dPicture { data, r#ref, .. } = mem::take(p);
+    if let Some(r#ref) = r#ref {
         if validate_input!(!data.data[0].is_null()).is_err() {
             return;
         }
-        rav1d_ref_dec(&mut r#ref);
+        rav1d_ref_dec(&mut r#ref.as_ptr());
     }
 }
 

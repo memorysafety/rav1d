@@ -59,7 +59,6 @@ use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::dav1d::Dav1dContext;
 use rav1d::include::dav1d::dav1d::Dav1dLogger;
-use rav1d::include::dav1d::dav1d::Dav1dRef;
 use rav1d::include::dav1d::dav1d::Dav1dSettings;
 use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
@@ -341,7 +340,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
         mastering_display_ref: None,
         itut_t35_ref: None,
         reserved_ref: [0; 4],
-        r#ref: 0 as *mut Dav1dRef,
+        r#ref: None,
         allocator_data: None,
     };
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;

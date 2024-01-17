@@ -42,7 +42,6 @@ use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::dav1d::Dav1dContext;
 use rav1d::include::dav1d::dav1d::Dav1dLogger;
-use rav1d::include::dav1d::dav1d::Dav1dRef;
 use rav1d::include::dav1d::dav1d::Dav1dSettings;
 use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
@@ -175,7 +174,7 @@ unsafe fn decode_rand(
         mastering_display_ref: None,
         itut_t35_ref: None,
         reserved_ref: [0; 4],
-        r#ref: 0 as *mut Dav1dRef,
+        r#ref: None,
         allocator_data: None,
     };
     let num_frames: c_int = xor128_rand() % (fps * 5 as c_double) as c_int;
@@ -230,7 +229,7 @@ unsafe fn decode_all(
         mastering_display_ref: None,
         itut_t35_ref: None,
         reserved_ref: [0; 4],
-        r#ref: 0 as *mut Dav1dRef,
+        r#ref: None,
         allocator_data: None,
     };
     loop {
