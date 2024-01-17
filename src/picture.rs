@@ -14,6 +14,7 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::include::dav1d::picture::Rav1dPictureParameters;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::ENOMEM;
@@ -38,7 +39,6 @@ use std::ffi::c_void;
 use std::io;
 use std::mem;
 use std::ptr;
-use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
@@ -175,23 +175,24 @@ unsafe fn picture_alloc_with_edges(
     if pic_ctx.is_null() {
         return Err(ENOMEM);
     }
-    p.p.w = w;
-    p.p.h = h;
+    p.p = Rav1dPictureParameters {
+        w,
+        h,
+        layout: seq_hdr.as_ref().unwrap().layout,
+        bpc,
+    };
     p.seq_hdr = seq_hdr.clone();
     p.frame_hdr = frame_hdr.clone();
-    p.p.layout = seq_hdr.as_ref().unwrap().layout;
-    p.p.bpc = bpc;
     p.m = Default::default();
     let res = p_allocator.alloc_picture(p);
     if res.is_err() {
         free(pic_ctx as *mut c_void);
         return res;
     }
-    (*pic_ctx).allocator = p_allocator.clone();
-    // TODO(kkysen) A normal assignment here as it used to be
-    // calls `fn drop` on `(*pic_ctx).pic`, which segfaults as it is uninitialized.
-    // We need to figure out the right thing to do here.
-    addr_of_mut!((*pic_ctx).pic).write(p.clone());
+    pic_ctx.write(pic_ctx_context {
+        allocator: p_allocator.clone(),
+        pic: p.clone(),
+    });
     p.r#ref = rav1d_ref_wrap(
         p.data[0] as *const u8,
         Some(free_buffer),
