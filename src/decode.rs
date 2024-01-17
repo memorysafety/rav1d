@@ -74,6 +74,7 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
 use crate::src::ipred::rav1d_intra_pred_dsp_init;
+use crate::src::itx::rav1d_itx_dsp_init;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BS_128x128;
@@ -216,12 +217,6 @@ use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::Ordering;
-
-#[cfg(feature = "bitdepth_8")]
-use crate::src::itx_tmpl_8::rav1d_itx_dsp_init_8bpc;
-
-#[cfg(feature = "bitdepth_16")]
-use crate::src::itx_tmpl_16::rav1d_itx_dsp_init_16bpc;
 
 fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
@@ -4959,7 +4954,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             8 => {
                 rav1d_cdef_dsp_init::<BitDepth8>(&mut dsp.cdef);
                 rav1d_intra_pred_dsp_init::<BitDepth8>(&mut dsp.ipred);
-                rav1d_itx_dsp_init_8bpc(&mut dsp.itx, bpc);
+                rav1d_itx_dsp_init::<BitDepth8>(&mut dsp.itx, bpc);
                 rav1d_loop_filter_dsp_init::<BitDepth8>(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
                 rav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
@@ -4969,7 +4964,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             10 | 12 => {
                 rav1d_cdef_dsp_init::<BitDepth16>(&mut dsp.cdef);
                 rav1d_intra_pred_dsp_init::<BitDepth16>(&mut dsp.ipred);
-                rav1d_itx_dsp_init_16bpc(&mut dsp.itx, bpc);
+                rav1d_itx_dsp_init::<BitDepth16>(&mut dsp.itx, bpc);
                 rav1d_loop_filter_dsp_init::<BitDepth16>(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
                 rav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);

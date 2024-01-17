@@ -54,9 +54,6 @@ pub mod src {
     mod ipred_prepare;
     mod itx;
     mod itx_1d;
-    #[cfg(feature = "bitdepth_16")]
-    mod itx_tmpl_16;
-    mod itx_tmpl_8;
     mod levels;
     mod lf_apply;
     mod lf_mask;
