@@ -156,13 +156,13 @@ unsafe fn picture_alloc_with_edges(
     p: &mut Rav1dPicture,
     w: c_int,
     h: c_int,
-    seq_hdr: &Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
-    frame_hdr: &Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
-    content_light: &Option<Arc<Rav1dContentLightLevel>>,
-    mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
-    itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
+    seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
+    frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
+    content_light: Option<Arc<Rav1dContentLightLevel>>,
+    mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
+    itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     bpc: c_int,
-    props: &Rav1dDataProps,
+    props: Rav1dDataProps,
     p_allocator: &mut Rav1dPicAllocator,
 ) -> Rav1dResult {
     if !p.data[0].is_null() {
@@ -181,8 +181,8 @@ unsafe fn picture_alloc_with_edges(
         layout: seq_hdr.as_ref().unwrap().layout,
         bpc,
     };
-    p.seq_hdr = seq_hdr.clone();
-    p.frame_hdr = frame_hdr.clone();
+    p.seq_hdr = seq_hdr;
+    p.frame_hdr = frame_hdr;
     p.m = Default::default();
     let res = p_allocator.alloc_picture(p);
     if res.is_err() {
@@ -215,15 +215,15 @@ unsafe fn picture_alloc_with_edges(
 
 pub fn rav1d_picture_copy_props(
     p: &mut Rav1dPicture,
-    content_light: &Option<Arc<Rav1dContentLightLevel>>,
-    mastering_display: &Option<Arc<Rav1dMasteringDisplay>>,
-    itut_t35: &Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
-    props: &Rav1dDataProps,
+    content_light: Option<Arc<Rav1dContentLightLevel>>,
+    mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
+    itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
+    props: Rav1dDataProps,
 ) {
-    p.m = props.clone();
-    p.content_light = content_light.clone();
-    p.mastering_display = mastering_display.clone();
-    p.itut_t35 = itut_t35.clone();
+    p.m = props;
+    p.content_light = content_light;
+    p.mastering_display = mastering_display;
+    p.itut_t35 = itut_t35;
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
@@ -239,16 +239,15 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         &mut p.p,
         frame_hdr.size.width[1],
         frame_hdr.size.height,
-        &f.seq_hdr,
-        &f.frame_hdr,
-        &c.content_light,
-        &c.mastering_display,
-        &c.itut_t35,
+        f.seq_hdr.clone(),
+        f.frame_hdr.clone(),
+        c.content_light.clone(),
+        c.mastering_display.clone(),
+        c.itut_t35.take(),
         bpc,
-        &mut f.tiles[0].data.m,
+        f.tiles[0].data.m.clone(),
         &mut c.allocator,
     )?;
-    let _ = mem::take(&mut c.itut_t35);
     let flags_mask = if frame_hdr.show_frame != 0 || c.output_invisible_frames {
         PictureFlags::empty()
     } else {
@@ -278,13 +277,13 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         dst,
         w,
         src.p.h,
-        &src.seq_hdr,
-        &src.frame_hdr,
-        &src.content_light,
-        &src.mastering_display,
-        &src.itut_t35,
+        src.seq_hdr.clone(),
+        src.frame_hdr.clone(),
+        src.content_light.clone(),
+        src.mastering_display.clone(),
+        src.itut_t35.clone(),
         src.p.bpc,
-        &src.m,
+        src.m.clone(),
         &mut (*pic_ctx).allocator,
     )
 }
