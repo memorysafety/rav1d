@@ -30,6 +30,7 @@ use std::sync::Arc;
 pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
 pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Dav1dPictureParameters {
     pub w: c_int,
@@ -72,6 +73,7 @@ impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Dav1dPicture {
     pub seq_hdr: Option<NonNull<Dav1dSequenceHeader>>,

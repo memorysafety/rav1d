@@ -75,7 +75,6 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::include::dav1d::picture::DAV1D_PICTURE_ALIGNMENT;
 use rav1d::src::lib::dav1d_close;
 use rav1d::src::lib::dav1d_data_unref;
@@ -309,40 +308,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     };
     let mut in_0: *mut DemuxerContext = 0 as *mut DemuxerContext;
     let mut out: *mut MuxerContext = 0 as *mut MuxerContext;
-    let mut p: Dav1dPicture = Dav1dPicture {
-        seq_hdr: None,
-        frame_hdr: None,
-        data: Default::default(),
-        stride: [0; 2],
-        p: Dav1dPictureParameters {
-            w: 0,
-            h: 0,
-            layout: DAV1D_PIXEL_LAYOUT_I400,
-            bpc: 0,
-        },
-        m: Dav1dDataProps {
-            timestamp: 0,
-            duration: 0,
-            offset: 0,
-            size: 0,
-            user_data: Dav1dUserData {
-                data: None,
-                r#ref: None,
-            },
-        },
-        content_light: None,
-        mastering_display: None,
-        itut_t35: None,
-        reserved: [0; 4],
-        frame_hdr_ref: None,
-        seq_hdr_ref: None,
-        content_light_ref: None,
-        mastering_display_ref: None,
-        itut_t35_ref: None,
-        reserved_ref: [0; 4],
-        r#ref: None,
-        allocator_data: None,
-    };
+    let mut p = Default::default();
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
         data: None,
