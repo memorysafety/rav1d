@@ -40,7 +40,6 @@ use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
-use crate::src::data::rav1d_data_unref_internal;
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
@@ -4707,8 +4706,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(f: &mut Rav1dFrameContext) -> R
         let start = tile.hdr.start.try_into().unwrap();
         let end: usize = tile.hdr.end.try_into().unwrap();
 
-        let mut data = slice::from_raw_parts(tile.data.data, tile.data.sz);
-
+        let mut data = tile.data.as_ref();
         for (j, (ts, tile_start_off)) in iter::zip(
             slice::from_raw_parts_mut(f.ts, end + 1),
             slice::from_raw_parts(
@@ -4888,9 +4886,6 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
     rav1d_ref_dec(&mut f.mvs_ref);
     let _ = mem::take(&mut f.seq_hdr);
     let _ = mem::take(&mut f.frame_hdr);
-    for tile in &mut f.tiles {
-        rav1d_data_unref_internal(&mut tile.data);
-    }
     f.tiles.clear();
     f.task_thread.retval = retval;
 }
@@ -5031,9 +5026,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         let _ = mem::take(&mut f.frame_hdr);
         c.cached_error_props = c.in_0.m.clone();
 
-        for mut tile in f.tiles.drain(..) {
-            rav1d_data_unref_internal(&mut tile.data);
-        }
+        f.tiles.clear();
 
         if c.n_fc > 1 {
             pthread_mutex_unlock(&mut c.task_thread.lock);

@@ -337,9 +337,9 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     };
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
-        data: 0 as *const u8,
+        data: None,
         sz: 0,
-        r#ref: 0 as *mut Dav1dRef,
+        r#ref: None,
         m: Dav1dDataProps {
             timestamp: 0,
             duration: 0,
@@ -474,7 +474,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
             }; 32],
         };
         let mut seq_skip: c_uint = 0 as c_int as c_uint;
-        while dav1d_parse_sequence_header(&mut seq, data.data, data.sz).0 != 0 {
+        while dav1d_parse_sequence_header(&mut seq, data.data.unwrap().as_ptr(), data.sz).0 != 0 {
             res = input_read(in_0, &mut data);
             if res < 0 {
                 input_close(in_0);
