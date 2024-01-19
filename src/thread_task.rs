@@ -864,7 +864,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                     // pending Q, so maybe return the tasks, set init_done,
                     // and add to pending Q only then.
                     let p1 = (if !((*f).in_cdf.progress).is_null() {
-                        ::core::intrinsics::atomic_load_seqcst((*f).in_cdf.progress)
+                        (*(*f).in_cdf.progress).load(Ordering::SeqCst)
                     } else {
                         1 as c_int as c_uint
                     }) as c_int;
@@ -1040,7 +1040,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         }
                         let res = rav1d_decode_frame_init(&mut *f);
                         let p1_3 = (if !((*f).in_cdf.progress).is_null() {
-                            ::core::intrinsics::atomic_load_seqcst((*f).in_cdf.progress)
+                            (*(*f).in_cdf.progress).load(Ordering::SeqCst)
                         } else {
                             1 as c_int as c_uint
                         }) as c_int;
@@ -1068,13 +1068,13 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         }
                         let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
                         if frame_hdr.refresh_context != 0 && !(*f).task_thread.update_set {
-                            ::core::intrinsics::atomic_store_seqcst(
-                                (*f).out_cdf.progress,
+                            (*(*f).out_cdf.progress).store(
                                 (if res_0.is_err() {
                                     TILE_ERROR
                                 } else {
                                     1 as c_int
                                 }) as c_uint,
+                                Ordering::SeqCst,
                             );
                         }
                         if res_0.is_ok() {
@@ -1204,10 +1204,10 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     );
                                 }
                                 if (*c).n_fc > 1 as c_uint {
-                                    ::core::intrinsics::atomic_store_seqcst(
-                                        (*f).out_cdf.progress,
+                                    (*(*f).out_cdf.progress).store(
                                         (if error_0 != 0 { TILE_ERROR } else { 1 as c_int })
                                             as c_uint,
+                                        Ordering::SeqCst,
                                     );
                                 }
                             }

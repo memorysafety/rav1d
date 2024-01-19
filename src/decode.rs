@@ -4873,9 +4873,9 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(f: &mut Rav1dFrameContext, retval: 
     if let Some(frame_hdr) = &f.frame_hdr {
         if frame_hdr.refresh_context != 0 {
             if !f.out_cdf.progress.is_null() {
-                ::core::intrinsics::atomic_store_seqcst(
-                    f.out_cdf.progress,
+                (*f.out_cdf.progress).store(
                     if retval.is_ok() { 1 } else { TILE_ERROR as u32 },
+                    Ordering::SeqCst,
                 );
             }
             rav1d_cdf_thread_unref(&mut f.out_cdf);

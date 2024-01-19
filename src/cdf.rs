@@ -1,7 +1,6 @@
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
-use crate::include::stdatomic::atomic_uint;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align4;
@@ -28,6 +27,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::ptr;
+use std::sync::atomic::AtomicU32;
 
 #[repr(C)]
 pub struct CdfContext {
@@ -136,7 +136,7 @@ pub struct CdfModeContext {
 pub struct CdfThreadContext {
     pub r#ref: *mut Rav1dRef,
     pub data: CdfThreadContext_data,
-    pub progress: *mut atomic_uint,
+    pub progress: *mut AtomicU32,
 }
 
 #[derive(Clone, Copy)]
@@ -5659,15 +5659,15 @@ pub unsafe fn rav1d_cdf_thread_alloc(
 ) -> Rav1dResult {
     (*cdf).r#ref = rav1d_ref_create_using_pool(
         (*c).cdf_pool,
-        (::core::mem::size_of::<CdfContext>()).wrapping_add(::core::mem::size_of::<atomic_uint>()),
+        (::core::mem::size_of::<CdfContext>()).wrapping_add(::core::mem::size_of::<AtomicU32>()),
     );
     if ((*cdf).r#ref).is_null() {
         return Err(ENOMEM);
     }
     (*cdf).data.cdf = (*(*cdf).r#ref).data as *mut CdfContext;
     if have_frame_mt != 0 {
-        (*cdf).progress = &mut *((*cdf).data.cdf).offset(1) as *mut CdfContext as *mut atomic_uint;
-        *(*cdf).progress = 0 as c_int as c_uint;
+        (*cdf).progress = &mut *((*cdf).data.cdf).offset(1) as *mut CdfContext as *mut AtomicU32;
+        (*cdf).progress.write(AtomicU32::new(0));
     }
     Ok(())
 }
