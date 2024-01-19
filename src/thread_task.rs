@@ -556,18 +556,14 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: *mut Rav1dFrameContext, frame_mt: c_i
     let tp = ((*t).type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint) as c_int;
     let tile_idx = t.offset_from((*f).task_thread.tile_tasks[tp as usize]) as c_long as c_int;
     let ts: *mut Rav1dTileState = &mut *((*f).ts).offset(tile_idx as isize) as *mut Rav1dTileState;
-    let p1 = ::core::intrinsics::atomic_load_seqcst(
-        &mut *((*ts).progress).as_mut_ptr().offset(tp as isize) as *mut atomic_int,
-    );
+    let p1 = (*ts).progress[tp as usize].load(Ordering::SeqCst);
     if p1 < (*t).sby {
         return 1 as c_int;
     }
     let mut error = (p1 == TILE_ERROR) as c_int;
     error |= (*f).task_thread.error.fetch_or(error, Ordering::SeqCst);
     if error == 0 && frame_mt != 0 && tp == 0 {
-        let p2 = ::core::intrinsics::atomic_load_seqcst(
-            &mut *((*ts).progress).as_mut_ptr().offset(1) as *mut atomic_int,
-        );
+        let p2 = (*ts).progress[1].load(Ordering::SeqCst);
         if p2 <= (*t).sby {
             return 1 as c_int;
         }
@@ -921,10 +917,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 let ts: *mut Rav1dTileState = &mut *((*f).ts)
                                     .offset((tile_row_base + tc_0) as isize)
                                     as *mut Rav1dTileState;
-                                let p2 = ::core::intrinsics::atomic_load_seqcst(
-                                    &mut *((*ts).progress).as_mut_ptr().offset(p as isize)
-                                        as *mut atomic_int,
-                                );
+                                let p2 = (*ts).progress[p as usize].load(Ordering::SeqCst);
                                 if p2 < (*t).recon_progress {
                                     break 'next;
                                 }
@@ -1144,11 +1137,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             (*t).sby += 1;
                             (*t).deps_skip = 0 as c_int;
                             if check_tile(t, f, uses_2pass) == 0 {
-                                ::core::intrinsics::atomic_store_seqcst(
-                                    &mut *((*ts_0).progress).as_mut_ptr().offset(p_1 as isize)
-                                        as *mut atomic_int,
-                                    progress,
-                                );
+                                (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
                                 reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
                                 if ::core::intrinsics::atomic_or_seqcst(
                                     &mut (*ttd).cond_signaled as *mut atomic_int,
@@ -1159,20 +1148,12 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 }
                                 continue 'found_unlocked;
                             }
-                            ::core::intrinsics::atomic_store_seqcst(
-                                &mut *((*ts_0).progress).as_mut_ptr().offset(p_1 as isize)
-                                    as *mut atomic_int,
-                                progress,
-                            );
+                            (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
                             add_pending(f, t);
                             pthread_mutex_lock(&mut (*ttd).lock);
                         } else {
                             pthread_mutex_lock(&mut (*ttd).lock);
-                            ::core::intrinsics::atomic_store_seqcst(
-                                &mut *((*ts_0).progress).as_mut_ptr().offset(p_1 as isize)
-                                    as *mut atomic_int,
-                                progress,
-                            );
+                            (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
                             reset_task_cur(c, ttd, (*t).frame_idx);
                             error_0 = (*f).task_thread.error.load(Ordering::SeqCst);
                             let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();

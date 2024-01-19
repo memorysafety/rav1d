@@ -540,7 +540,7 @@ pub struct Rav1dTileState {
     pub tiling: Rav1dTileState_tiling,
 
     // in sby units, TILE_ERROR after a decoding error
-    pub progress: [atomic_int; 2], /* 0: reconstruction, 1: entropy */
+    pub progress: [AtomicI32; 2], /* 0: reconstruction, 1: entropy */
     pub frame_thread: [Rav1dTileState_frame_thread; 2], /* 0: reconstruction, 1: entropy */
 
     // in fullpel units, [0] = Y, [1] = UV, used for progress requirements

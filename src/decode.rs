@@ -3921,7 +3921,7 @@ unsafe fn setup_tile(
     }
 
     if (*f.c).n_tc > 1 {
-        ts.progress.fill(row_sb_start as atomic_int);
+        ts.progress.fill_with(|| AtomicI32::new(row_sb_start));
     }
 }
 
