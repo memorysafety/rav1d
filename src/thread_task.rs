@@ -194,7 +194,7 @@ unsafe fn insert_tasks_between(
     cond_signal: c_int,
 ) {
     let ttd: *mut TaskThreadData = (*f).task_thread.ttd;
-    if ::core::intrinsics::atomic_load_seqcst((*(*f).c).flush) != 0 {
+    if (*(*f).c).flush.load(Ordering::SeqCst) != 0 {
         return;
     }
     if !(a.is_null() || (*a).next == b) {
@@ -804,7 +804,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
 
     pthread_mutex_lock(&mut (*ttd).lock);
     'outer: while !(*tc).task_thread.die {
-        if ::core::intrinsics::atomic_load_seqcst((*c).flush) != 0 {
+        if (*c).flush.load(Ordering::SeqCst) != 0 {
             park(tc, ttd);
             continue 'outer;
         }
@@ -1004,7 +1004,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         pthread_mutex_unlock(&mut (*ttd).lock);
 
         'found_unlocked: loop {
-            let flush = ::core::intrinsics::atomic_load_seqcst((*c).flush);
+            let flush = (*c).flush.load(Ordering::SeqCst);
             let mut error_0 = (*f).task_thread.error.fetch_or(flush, Ordering::SeqCst) | flush;
 
             // run it

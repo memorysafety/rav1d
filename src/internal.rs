@@ -220,10 +220,7 @@ pub struct Rav1dContext {
     pub(crate) in_0: Rav1dData,
     pub(crate) out: Rav1dThreadPicture,
     pub(crate) cache: Rav1dThreadPicture,
-    // flush is a pointer to prevent compiler errors about atomic_load()
-    // not taking const arguments
-    pub(crate) flush_mem: atomic_int,
-    pub(crate) flush: *mut atomic_int,
+    pub(crate) flush: AtomicI32,
     pub(crate) frame_thread: Rav1dContext_frame_thread,
 
     // task threading (refer to tc[] for per_thread thingies)

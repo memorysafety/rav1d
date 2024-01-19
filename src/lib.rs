@@ -312,8 +312,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             );
         }
     }
-    (*c).flush = &mut (*c).flush_mem;
-    *(*c).flush = 0 as c_int;
+    (*c).flush = AtomicI32::new(0);
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     (*c).n_tc = n_tc as c_uint;
     (*c).n_fc = n_fc as c_uint;
@@ -875,7 +874,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     if (*c).n_fc == 1 as c_uint && (*c).n_tc == 1 as c_uint {
         return;
     }
-    ::core::intrinsics::atomic_store_seqcst((*c).flush, 1 as c_int);
+    (*c).flush.store(1, Ordering::SeqCst);
     if (*c).n_tc > 1 as c_uint {
         pthread_mutex_lock(&mut (*c).task_thread.lock);
         let mut i_0: c_uint = 0 as c_int as c_uint;
@@ -938,7 +937,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         }
         (*c).frame_thread.next = 0 as c_int as c_uint;
     }
-    ::core::intrinsics::atomic_store_seqcst((*c).flush, 0 as c_int);
+    (*c).flush.store(0, Ordering::SeqCst);
 }
 
 #[no_mangle]

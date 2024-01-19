@@ -4076,7 +4076,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
             f.a.offset((off_2pass + col_sb128_start + tile_row * f.sb128w) as isize);
         for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
             t.bx = bx;
-            if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
+            if c.flush.load(Ordering::Acquire) != 0 {
                 return Err(());
             }
             decode_sb(t, root_bl, c.intra_edge.root[root_bl as usize])?;
@@ -4114,7 +4114,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(t: &mut Rav1dTaskContext) -> Result
             .offset((sb128y * f.sb128w + col_sb128_start) as isize);
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.bx = bx;
-        if ::core::intrinsics::atomic_load_acquire(c.flush) != 0 {
+        if c.flush.load(Ordering::Acquire) != 0 {
             return Err(());
         }
         let cdef_idx = &mut (*t.lf_mask).cdef_idx;
