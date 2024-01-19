@@ -1,4 +1,3 @@
-use crate::include::stdatomic::atomic_int;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_mem_pool_pop;
@@ -9,12 +8,14 @@ use libc::free;
 use libc::malloc;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::sync::atomic::AtomicI32;
+use std::sync::atomic::Ordering;
 
 #[repr(C)]
 pub struct Rav1dRef {
     pub(crate) data: *mut c_void,
     pub(crate) const_data: *const c_void,
-    pub(crate) ref_cnt: atomic_int,
+    pub(crate) ref_cnt: AtomicI32,
     pub(crate) free_ref: c_int,
     pub(crate) free_callback: Option<unsafe extern "C" fn(*const u8, *mut c_void) -> ()>,
     pub(crate) user_data: *mut c_void,
@@ -22,7 +23,7 @@ pub struct Rav1dRef {
 
 #[inline]
 pub unsafe fn rav1d_ref_inc(r#ref: *mut Rav1dRef) {
-    ::core::intrinsics::atomic_xadd_relaxed(&mut (*r#ref).ref_cnt, 1 as c_int);
+    (*r#ref).ref_cnt.fetch_add(1, Ordering::Relaxed);
 }
 
 unsafe extern "C" fn default_free_callback(data: *const u8, user_data: *mut c_void) {
@@ -48,7 +49,7 @@ pub unsafe fn rav1d_ref_create(mut size: usize) -> *mut Rav1dRef {
     (*res).data = data as *mut c_void;
     (*res).user_data = (*res).data;
     (*res).const_data = (*res).user_data;
-    *&mut (*res).ref_cnt = 1 as c_int;
+    (*res).ref_cnt = AtomicI32::new(1);
     (*res).free_ref = 0 as c_int;
     (*res).free_callback = Some(default_free_callback);
     return res;
@@ -78,7 +79,7 @@ pub unsafe fn rav1d_ref_create_using_pool(
         &mut *(buf as *mut Rav1dRef).offset(-(1 as c_int) as isize) as *mut Rav1dRef;
     (*res).data = (*buf).data;
     (*res).const_data = pool as *const c_void;
-    *&mut (*res).ref_cnt = 1 as c_int;
+    (*res).ref_cnt = AtomicI32::new(1);
     (*res).free_ref = 0 as c_int;
     (*res).free_callback = Some(pool_free_callback);
     (*res).user_data = buf as *mut c_void;
@@ -96,7 +97,7 @@ pub unsafe fn rav1d_ref_wrap(
     }
     (*res).data = 0 as *mut c_void;
     (*res).const_data = ptr as *const c_void;
-    *&mut (*res).ref_cnt = 1 as c_int;
+    (*res).ref_cnt = AtomicI32::new(1);
     (*res).free_ref = 1 as c_int;
     (*res).free_callback = free_callback;
     (*res).user_data = user_data;
@@ -112,9 +113,7 @@ pub unsafe fn rav1d_ref_dec(pref: *mut *mut Rav1dRef) {
         return;
     }
     *pref = 0 as *mut Rav1dRef;
-    if ::core::intrinsics::atomic_xsub_seqcst(&mut (*r#ref).ref_cnt as *mut atomic_int, 1 as c_int)
-        == 1
-    {
+    if (*r#ref).ref_cnt.fetch_sub(1, Ordering::SeqCst) == 1 {
         let free_ref = (*r#ref).free_ref;
         ((*r#ref).free_callback).expect("non-null function pointer")(
             (*r#ref).const_data as *const u8,
