@@ -21,8 +21,6 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 use crate::src::align::*;
 use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
@@ -170,14 +168,14 @@ pub(crate) struct TaskThreadData_delayed_fg {
 pub(crate) struct TaskThreadData {
     pub lock: pthread_mutex_t,
     pub cond: pthread_cond_t,
-    pub first: atomic_uint,
+    pub first: AtomicU32,
     pub cur: c_uint,
     /// This is used for delayed reset of the task cur pointer when
     /// such operation is needed but the thread doesn't enter a critical
     /// section (typically when executing the next sbrow task locklessly).
     /// See [`crate::src::thread_task::reset_task_cur`].
-    pub reset_task_cur: atomic_uint,
-    pub cond_signaled: atomic_int,
+    pub reset_task_cur: AtomicU32,
+    pub cond_signaled: AtomicI32,
     pub delayed_fg: TaskThreadData_delayed_fg,
     pub inited: c_int,
 }

@@ -102,6 +102,7 @@ use std::ptr;
 use std::ptr::NonNull;
 use std::slice;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Once;
@@ -358,8 +359,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             return error(c, c_out, &mut thread_attr);
         }
         (*c).task_thread.cur = (*c).n_fc;
-        *&mut (*c).task_thread.reset_task_cur = u32::MAX;
-        *&mut (*c).task_thread.cond_signaled = 0 as c_int;
+        (*c).task_thread.reset_task_cur = AtomicU32::new(u32::MAX);
+        (*c).task_thread.cond_signaled = AtomicI32::new(0);
         (*c).task_thread.inited = 1 as c_int;
     }
     if (*c).n_fc > 1 as c_uint {
@@ -620,23 +621,18 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         if !((*out_delayed).p.data[0]).is_null()
             || (*f).task_thread.error.load(Ordering::SeqCst) != 0
         {
-            let mut first: c_uint =
-                ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
+            let first: c_uint = c.task_thread.first.load(Ordering::SeqCst);
             if first.wrapping_add(1 as c_uint) < c.n_fc {
-                ::core::intrinsics::atomic_xadd_seqcst(&mut c.task_thread.first, 1 as c_uint);
+                c.task_thread.first.fetch_add(1, Ordering::SeqCst);
             } else {
-                ::core::intrinsics::atomic_store_seqcst(
-                    &mut c.task_thread.first,
-                    0 as c_int as c_uint,
-                );
+                c.task_thread.first.store(0, Ordering::SeqCst);
             }
-            let fresh0 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
-                &mut c.task_thread.reset_task_cur,
-                *&mut first,
+            let _ = c.task_thread.reset_task_cur.compare_exchange(
+                first,
                 u32::MAX,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
             );
-            *&mut first = fresh0.0;
-            fresh0.1;
             if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
                 c.task_thread.cur = (c.task_thread.cur).wrapping_sub(1);
             }
@@ -909,10 +905,12 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
                 .pending_tasks_merge = AtomicI32::new(0);
             i_1 = i_1.wrapping_add(1);
         }
-        *&mut (*c).task_thread.first = 0 as c_int as c_uint;
+        (*c).task_thread.first = AtomicU32::new(0);
         (*c).task_thread.cur = (*c).n_fc;
-        ::core::intrinsics::atomic_store_seqcst(&mut (*c).task_thread.reset_task_cur, u32::MAX);
-        ::core::intrinsics::atomic_store_seqcst(&mut (*c).task_thread.cond_signaled, 0 as c_int);
+        (*c).task_thread
+            .reset_task_cur
+            .store(u32::MAX, Ordering::SeqCst);
+        (*c).task_thread.cond_signaled.store(0, Ordering::SeqCst);
         pthread_mutex_unlock(&mut (*c).task_thread.lock);
     }
     if (*c).n_fc > 1 as c_uint {

@@ -2547,16 +2547,17 @@ unsafe fn parse_obus(
                 if !(*out_delayed).p.data[0].is_null()
                     || (*f).task_thread.error.load(Ordering::SeqCst) != 0
                 {
-                    let first = ::core::intrinsics::atomic_load_seqcst(&mut c.task_thread.first);
+                    let first = c.task_thread.first.load(Ordering::SeqCst);
                     if first + 1 < c.n_fc {
-                        ::core::intrinsics::atomic_xadd_seqcst(&mut c.task_thread.first, 1);
+                        c.task_thread.first.fetch_add(1, Ordering::SeqCst);
                     } else {
-                        ::core::intrinsics::atomic_store_seqcst(&mut c.task_thread.first, 0);
+                        c.task_thread.first.store(0, Ordering::SeqCst);
                     }
-                    ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
-                        &mut c.task_thread.reset_task_cur,
+                    let _ = c.task_thread.reset_task_cur.compare_exchange(
                         first,
                         u32::MAX,
+                        Ordering::SeqCst,
+                        Ordering::SeqCst,
                     );
                     if c.task_thread.cur != 0 && c.task_thread.cur < c.n_fc {
                         c.task_thread.cur -= 1;
