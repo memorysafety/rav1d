@@ -520,8 +520,8 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
     (*ttd).delayed_fg.in_0 = in_0;
     (*ttd).delayed_fg.out = out;
     (*ttd).delayed_fg.type_0 = RAV1D_TASK_TYPE_FG_PREP;
-    *(&mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int) = 0 as c_int;
-    *(&mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int) = 0 as c_int;
+    (*ttd).delayed_fg.progress[0] = AtomicI32::new(0);
+    (*ttd).delayed_fg.progress[1] = AtomicI32::new(0);
     pthread_mutex_lock(&mut (*ttd).lock);
     (*ttd).delayed_fg.exec = 1 as c_int;
     pthread_cond_signal(&mut (*ttd).cond);
@@ -730,10 +730,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
             abort();
         }
     }
-    row = ::core::intrinsics::atomic_xadd_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
-        1 as c_int,
-    );
+    row = (*ttd).delayed_fg.progress[0].fetch_add(1, Ordering::SeqCst);
     pthread_mutex_unlock(&mut (*ttd).lock);
     progmax = (*out).p.h + 31 >> 5;
     loop {
@@ -772,17 +769,11 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
                 abort();
             }
         }
-        row = ::core::intrinsics::atomic_xadd_seqcst(
-            &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
-            1 as c_int,
-        );
+        row = (*ttd).delayed_fg.progress[0].fetch_add(1, Ordering::SeqCst);
         #[allow(unused_assignments)]
         // TODO(kkysen) non-trivial due to the atomics, so leaving for later
         {
-            done = ::core::intrinsics::atomic_xadd_seqcst(
-                &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
-                1 as c_int,
-            ) + 1;
+            done = (*ttd).delayed_fg.progress[1].fetch_add(1, Ordering::SeqCst) + 1;
         }
         if row < progmax {
             continue;
@@ -791,13 +782,8 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
         (*ttd).delayed_fg.exec = 0 as c_int;
         break;
     }
-    done = ::core::intrinsics::atomic_xadd_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(1) as *mut atomic_int,
-        1 as c_int,
-    ) + 1;
-    progmax = ::core::intrinsics::atomic_load_seqcst(
-        &mut *((*ttd).delayed_fg.progress).as_mut_ptr().offset(0) as *mut atomic_int,
-    );
+    done = (*ttd).delayed_fg.progress[1].fetch_add(1, Ordering::SeqCst) + 1;
+    progmax = (*ttd).delayed_fg.progress[0].load(Ordering::SeqCst);
     if !(done < progmax) {
         pthread_cond_signal(&mut (*ttd).delayed_fg.cond);
     }

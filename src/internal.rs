@@ -161,7 +161,7 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub in_0: *const Rav1dPicture,
     pub out: *mut Rav1dPicture,
     pub type_0: TaskType,
-    pub progress: [atomic_int; 2], /* [0]=started, [1]=completed */
+    pub progress: [AtomicI32; 2], /* [0]=started, [1]=completed */
     pub grain: BitDepthUnion<Grain>,
 }
 
