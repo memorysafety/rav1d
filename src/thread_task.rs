@@ -5,8 +5,6 @@ use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::include::stdatomic::atomic_int;
-use crate::include::stdatomic::atomic_uint;
 use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::decode::rav1d_decode_frame_init;
@@ -87,9 +85,8 @@ unsafe fn reset_task_cur(
     let min_frame_idx: c_uint;
     let cur_frame_idx: c_uint;
     let current_block: u64;
-    let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
-    let mut reset_frame_idx: c_uint =
-        ::core::intrinsics::atomic_xchg_seqcst(&mut (*ttd).reset_task_cur, u32::MAX);
+    let first = (*ttd).first.load(Ordering::SeqCst);
+    let mut reset_frame_idx: c_uint = (*ttd).reset_task_cur.swap(u32::MAX, Ordering::SeqCst);
     if reset_frame_idx < first {
         if frame_idx == u32::MAX {
             return 0 as c_int;
@@ -159,29 +156,25 @@ unsafe fn reset_task_cur(
 
 #[inline]
 unsafe fn reset_task_cur_async(ttd: *mut TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
-    let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
+    let first = (*ttd).first.load(Ordering::SeqCst);
     if frame_idx < first {
         frame_idx = frame_idx.wrapping_add(n_frames);
     }
     let mut last_idx: c_uint = frame_idx;
     loop {
         frame_idx = last_idx;
-        last_idx = ::core::intrinsics::atomic_xchg_seqcst(&mut (*ttd).reset_task_cur, frame_idx);
+        last_idx = (*ttd).reset_task_cur.swap(frame_idx, Ordering::SeqCst);
         if !(last_idx < frame_idx) {
             break;
         }
     }
-    if frame_idx == first
-        && ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first as *mut atomic_uint) != first
-    {
-        let mut expected: c_uint = frame_idx;
-        let fresh1 = ::core::intrinsics::atomic_cxchg_seqcst_seqcst(
-            &mut (*ttd).reset_task_cur,
-            *&mut expected,
+    if frame_idx == first && (*ttd).first.load(Ordering::SeqCst) != first {
+        let _ = (*ttd).reset_task_cur.compare_exchange(
+            frame_idx,
             u32::MAX,
+            Ordering::SeqCst,
+            Ordering::SeqCst,
         );
-        *&mut expected = fresh1.0;
-        fresh1.1;
     }
 }
 
@@ -210,12 +203,7 @@ unsafe fn insert_tasks_between(
     }
     (*last).next = b;
     reset_task_cur((*f).c, ttd, (*first).frame_idx);
-    if cond_signal != 0
-        && ::core::intrinsics::atomic_or_seqcst(
-            &mut (*ttd).cond_signaled as *mut atomic_int,
-            1 as c_int,
-        ) == 0
-    {
+    if cond_signal != 0 && (*ttd).cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
         pthread_cond_signal(&mut (*ttd).cond);
     }
 }
@@ -688,9 +676,7 @@ unsafe fn delayed_fg_task(c: *const Rav1dContext, ttd: *mut TaskThreadData) {
     match (*ttd).delayed_fg.type_0 as c_uint {
         11 => {
             (*ttd).delayed_fg.exec = 0 as c_int;
-            if ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).cond_signaled as *mut atomic_int)
-                != 0
-            {
+            if (*ttd).cond_signaled.load(Ordering::SeqCst) != 0 {
                 pthread_cond_signal(&mut (*ttd).cond);
             }
             pthread_mutex_unlock(&mut (*ttd).lock);
@@ -796,7 +782,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         (*tc).task_thread.flushed = true;
         pthread_cond_signal(&mut (*tc).task_thread.td.cond);
         // we want to be woken up next time progress is signaled
-        ::core::intrinsics::atomic_store_seqcst(&mut (*ttd).cond_signaled, 0 as c_int);
+        (*ttd).cond_signaled.store(0, Ordering::SeqCst);
         pthread_cond_wait(&mut (*ttd).cond, &mut (*ttd).lock);
         (*tc).task_thread.flushed = false;
         reset_task_cur(c, ttd, u32::MAX);
@@ -823,7 +809,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         if (*c).n_fc > 1 as c_uint {
             // run init tasks second
             'init_tasks: for i in 0..(*c).n_fc {
-                let first: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
+                let first = (*ttd).first.load(Ordering::SeqCst);
                 f = &mut *((*c).fc).offset(first.wrapping_add(i).wrapping_rem((*c).n_fc) as isize)
                     as *mut Rav1dFrameContext;
                 if (*f).task_thread.init_done.load(Ordering::SeqCst) != 0 {
@@ -863,7 +849,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         if !found {
             // run decoding tasks last
             'decoding: while (*ttd).cur < (*c).n_fc {
-                let first_0: c_uint = ::core::intrinsics::atomic_load_seqcst(&mut (*ttd).first);
+                let first_0 = (*ttd).first.load(Ordering::SeqCst);
                 f = &mut *((*c).fc)
                     .offset(first_0.wrapping_add((*ttd).cur).wrapping_rem((*c).n_fc) as isize)
                     as *mut Rav1dFrameContext;
@@ -999,7 +985,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         // we don't need to check cond_signaled here, since we found a task
         // after the last signal so we want to re-signal the next waiting thread
         // and again won't need to signal after that
-        ::core::intrinsics::atomic_store_seqcst(&mut (*ttd).cond_signaled, 1 as c_int);
+        (*ttd).cond_signaled.store(1, Ordering::SeqCst);
         pthread_cond_signal(&mut (*ttd).cond);
         pthread_mutex_unlock(&mut (*ttd).lock);
 
@@ -1139,11 +1125,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             if check_tile(t, f, uses_2pass) == 0 {
                                 (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
                                 reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
-                                if ::core::intrinsics::atomic_or_seqcst(
-                                    &mut (*ttd).cond_signaled as *mut atomic_int,
-                                    1 as c_int,
-                                ) == 0
-                                {
+                                if (*ttd).cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                     pthread_cond_signal(&mut (*ttd).cond);
                                 }
                                 continue 'found_unlocked;
@@ -1199,11 +1181,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             if !((*f).task_thread.task_counter.load(Ordering::SeqCst) >= 0) {
                                 unreachable!();
                             }
-                            if ::core::intrinsics::atomic_or_seqcst(
-                                &mut (*ttd).cond_signaled as *mut atomic_int,
-                                1 as c_int,
-                            ) == 0
-                            {
+                            if (*ttd).cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 pthread_cond_signal(&mut (*ttd).cond);
                             }
                         }
@@ -1243,11 +1221,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 Ordering::SeqCst,
                             );
                             reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
-                            if ::core::intrinsics::atomic_or_seqcst(
-                                &mut (*ttd).cond_signaled as *mut atomic_int,
-                                1 as c_int,
-                            ) == 0
-                            {
+                            if (*ttd).cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 pthread_cond_signal(&mut (*ttd).cond);
                             }
                         } else if seq_hdr.cdef != 0 || (*f).lf.restore_planes != 0 {
@@ -1279,11 +1253,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                 ((*f).bd_fn.filter_sbrow_cdef)(&mut *tc, sby);
                             }
                             reset_task_cur_async(ttd, (*t).frame_idx, (*c).n_fc);
-                            if ::core::intrinsics::atomic_or_seqcst(
-                                &mut (*ttd).cond_signaled as *mut atomic_int,
-                                1 as c_int,
-                            ) == 0
-                            {
+                            if (*ttd).cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 pthread_cond_signal(&mut (*ttd).cond);
                             }
                         }
