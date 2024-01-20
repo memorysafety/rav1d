@@ -74,6 +74,7 @@ use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::thread_data::thread_data;
+use atomig::Atomic;
 use libc::pthread_cond_t;
 use libc::pthread_mutex_t;
 use libc::ptrdiff_t;
@@ -253,7 +254,7 @@ pub struct Rav1dContext {
     pub(crate) inloop_filters: Rav1dInloopFilterType,
     pub(crate) decode_frame_type: Rav1dDecodeFrameType,
     pub(crate) drain: c_int,
-    pub(crate) frame_flags: PictureFlags,
+    pub(crate) frame_flags: Atomic<PictureFlags>,
     pub(crate) event_flags: Rav1dEventFlags,
     pub(crate) cached_error_props: Rav1dDataProps,
     pub(crate) cached_error: Rav1dResult,
