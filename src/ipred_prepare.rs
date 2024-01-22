@@ -18,6 +18,7 @@ use crate::src::levels::SMOOTH_H_PRED;
 use crate::src::levels::SMOOTH_PRED;
 use crate::src::levels::SMOOTH_V_PRED;
 use crate::src::levels::TOP_DC_PRED;
+use crate::src::levels::VERT_LEFT_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::Z1_PRED;
 use crate::src::levels::Z2_PRED;
@@ -143,31 +144,27 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     if !(y < h && x < w) {
         unreachable!();
     }
-    match mode as c_uint {
-        1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 => {
-            *angle = av1_mode_to_angle_map
-                [(mode as c_uint).wrapping_sub(VERT_PRED as c_int as c_uint) as usize]
-                as c_int
-                + 3 * *angle;
+    match mode {
+        VERT_PRED..=VERT_LEFT_PRED => {
+            *angle = av1_mode_to_angle_map[(mode - VERT_PRED) as usize] as c_int + 3 * *angle;
             if *angle <= 90 {
-                mode = (if *angle < 90 && have_top != 0 {
-                    Z1_PRED as c_int
+                mode = if *angle < 90 && have_top != 0 {
+                    Z1_PRED
                 } else {
-                    VERT_PRED as c_int
-                }) as IntraPredMode;
+                    VERT_PRED
+                };
             } else if *angle < 180 {
                 mode = Z2_PRED;
             } else {
-                mode = (if *angle > 180 && have_left != 0 {
-                    Z3_PRED as c_int
+                mode = if *angle > 180 && have_left != 0 {
+                    Z3_PRED
                 } else {
-                    HOR_PRED as c_int
-                }) as IntraPredMode;
+                    HOR_PRED
+                };
             }
         }
-        0 | 12 => {
-            mode = av1_mode_conv[mode as usize][have_left as usize][have_top as usize]
-                as IntraPredMode;
+        DC_PRED | PAETH_PRED => {
+            mode = av1_mode_conv[mode as usize][have_left as usize][have_top as usize];
         }
         _ => {}
     }
@@ -226,12 +223,12 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             .needs
             .contains(Needs::BOTTOM_LEFT)
         {
-            let have_bottomleft = (if have_left == 0 || y + th >= h {
-                0 as c_int as c_uint
+            let have_bottomleft = if have_left == 0 || y + th >= h {
+                false
             } else {
-                edge_flags as c_uint & EDGE_I444_LEFT_HAS_BOTTOM as c_int as c_uint
-            }) as c_int;
-            if have_bottomleft != 0 {
+                (edge_flags & EDGE_I444_LEFT_HAS_BOTTOM) != 0
+            };
+            if have_bottomleft {
                 let px_have_0 = cmp::min(sz, h - y - th << 2);
                 let mut i_0 = 0;
                 while i_0 < px_have_0 {
@@ -287,7 +284,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             BD::pixel_set(
                 slice::from_raw_parts_mut(top, sz_0.try_into().unwrap()),
                 if have_left != 0 {
-                    *dst.offset(-(1 as c_int) as isize)
+                    *dst.offset(-1)
                 } else {
                     ((1 << bitdepth >> 1) - 1).as_::<BD::Pixel>()
                 },
@@ -298,16 +295,16 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             .needs
             .contains(Needs::TOP_RIGHT)
         {
-            let have_topright = (if have_top == 0 || x + tw >= w {
-                0 as c_int as c_uint
+            let have_topright = if have_top == 0 || x + tw >= w {
+                false
             } else {
-                edge_flags as c_uint & EDGE_I444_TOP_HAS_RIGHT as c_int as c_uint
-            }) as c_int;
-            if have_topright != 0 {
+                (edge_flags & EDGE_I444_TOP_HAS_RIGHT) != 0
+            };
+            if have_topright {
                 let px_have_2 = cmp::min(sz_0, w - x - tw << 2);
                 memcpy(
                     top.offset(sz_0 as isize) as *mut c_void,
-                    &*dst_top.offset(sz_0 as isize) as *const BD::Pixel as *const c_void,
+                    dst_top.offset(sz_0 as isize) as *const c_void,
                     (px_have_2 << 1) as usize,
                 );
                 if px_have_2 < sz_0 {
@@ -334,22 +331,20 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .contains(Needs::TOP_LEFT)
     {
         if have_left != 0 {
-            *topleft_out = (if have_top != 0 {
-                (*dst_top.offset(-(1 as c_int) as isize)).as_::<c_int>()
+            *topleft_out = if have_top != 0 {
+                *dst_top.offset(-1)
             } else {
-                (*dst.offset(-(1 as c_int) as isize)).as_::<c_int>()
-            })
-            .as_::<BD::Pixel>();
+                *dst.offset(-1)
+            };
         } else {
-            *topleft_out = (if have_top != 0 {
-                (*dst_top).as_::<c_int>()
+            *topleft_out = if have_top != 0 {
+                *dst_top
             } else {
-                (1 as c_int) << bitdepth >> 1
-            })
-            .as_::<BD::Pixel>();
+                (1 << bitdepth >> 1).as_::<BD::Pixel>()
+            };
         }
-        if mode as c_uint == Z2_PRED as c_int as c_uint && tw + th >= 6 && filter_edge != 0 {
-            *topleft_out = (((*topleft_out.offset(-(1 as c_int) as isize)).as_::<c_int>()
+        if mode == Z2_PRED && tw + th >= 6 && filter_edge != 0 {
+            *topleft_out = (((*topleft_out.offset(-1)).as_::<c_int>()
                 + (*topleft_out.offset(1)).as_::<c_int>())
                 * 5
                 + (*topleft_out.offset(0)).as_::<c_int>() * 6
