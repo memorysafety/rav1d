@@ -131,7 +131,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     edge_flags: EdgeFlags,
     dst: *const BD::Pixel,
     stride: ptrdiff_t,
-    prefilter_toplevel_sb_edge: *const BD::Pixel,
+    prefilter_toplevel_sb_edge: &[BD::Pixel],
     mut mode: IntraPredMode,
     angle: &mut c_int,
     tw: c_int,
@@ -181,8 +181,8 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 .contains(Needs::LEFT)
                 && !have_left)
     {
-        if !prefilter_toplevel_sb_edge.is_null() {
-            dst_top = &*prefilter_toplevel_sb_edge.offset((x * 4) as isize) as *const BD::Pixel;
+        if prefilter_toplevel_sb_edge.len() != 0 {
+            dst_top = prefilter_toplevel_sb_edge[(x * 4) as usize..].as_ptr();
         } else {
             dst_top = &*dst.offset(-(BD::pxstride(stride as usize) as isize)) as *const BD::Pixel;
         }
