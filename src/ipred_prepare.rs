@@ -123,9 +123,9 @@ static av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED
 
 pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     x: c_int,
-    have_left: c_int,
+    have_left: bool,
     y: c_int,
-    have_top: c_int,
+    have_top: bool,
     w: c_int,
     h: c_int,
     edge_flags: EdgeFlags,
@@ -133,7 +133,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     stride: ptrdiff_t,
     prefilter_toplevel_sb_edge: *const BD::Pixel,
     mut mode: IntraPredMode,
-    angle: *mut c_int,
+    angle: &mut c_int,
     tw: c_int,
     th: c_int,
     filter_edge: c_int,
@@ -148,7 +148,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         VERT_PRED..=VERT_LEFT_PRED => {
             *angle = av1_mode_to_angle_map[(mode - VERT_PRED) as usize] as c_int + 3 * *angle;
             if *angle <= 90 {
-                mode = if *angle < 90 && have_top != 0 {
+                mode = if *angle < 90 && have_top {
                     Z1_PRED
                 } else {
                     VERT_PRED
@@ -156,7 +156,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             } else if *angle < 180 {
                 mode = Z2_PRED;
             } else {
-                mode = if *angle > 180 && have_left != 0 {
+                mode = if *angle > 180 && have_left {
                     Z3_PRED
                 } else {
                     HOR_PRED
@@ -169,7 +169,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         _ => {}
     }
     let mut dst_top: *const BD::Pixel = 0 as *const BD::Pixel;
-    if have_top != 0
+    if have_top
         && (av1_intra_prediction_edges[mode as usize]
             .needs
             .contains(Needs::TOP)
@@ -179,7 +179,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             || av1_intra_prediction_edges[mode as usize]
                 .needs
                 .contains(Needs::LEFT)
-                && have_left == 0)
+                && !have_left)
     {
         if !prefilter_toplevel_sb_edge.is_null() {
             dst_top = &*prefilter_toplevel_sb_edge.offset((x * 4) as isize) as *const BD::Pixel;
@@ -193,7 +193,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     {
         let sz = th << 2;
         let left: *mut BD::Pixel = &mut *topleft_out.offset(-sz as isize) as *mut BD::Pixel;
-        if have_left != 0 {
+        if have_left {
             let px_have = cmp::min(sz, h - y << 2);
             let mut i = 0;
             while i < px_have {
@@ -211,7 +211,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         } else {
             BD::pixel_set(
                 slice::from_raw_parts_mut(left, sz.try_into().unwrap()),
-                if have_top != 0 {
+                if have_top {
                     *dst_top
                 } else {
                     ((1 << bitdepth >> 1) + 1).as_::<BD::Pixel>()
@@ -223,7 +223,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             .needs
             .contains(Needs::BOTTOM_LEFT)
         {
-            let have_bottomleft = if have_left == 0 || y + th >= h {
+            let have_bottomleft = if !have_left || y + th >= h {
                 false
             } else {
                 (edge_flags & EDGE_I444_LEFT_HAS_BOTTOM) != 0
@@ -263,7 +263,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     {
         let sz_0 = tw << 2;
         let top: *mut BD::Pixel = &mut *topleft_out.offset(1) as *mut BD::Pixel;
-        if have_top != 0 {
+        if have_top {
             let px_have_1 = cmp::min(sz_0, w - x << 2);
             memcpy(
                 top as *mut c_void,
@@ -283,7 +283,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         } else {
             BD::pixel_set(
                 slice::from_raw_parts_mut(top, sz_0.try_into().unwrap()),
-                if have_left != 0 {
+                if have_left {
                     *dst.offset(-1)
                 } else {
                     ((1 << bitdepth >> 1) - 1).as_::<BD::Pixel>()
@@ -295,7 +295,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             .needs
             .contains(Needs::TOP_RIGHT)
         {
-            let have_topright = if have_top == 0 || x + tw >= w {
+            let have_topright = if !have_top || x + tw >= w {
                 false
             } else {
                 (edge_flags & EDGE_I444_TOP_HAS_RIGHT) != 0
@@ -330,14 +330,14 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .needs
         .contains(Needs::TOP_LEFT)
     {
-        if have_left != 0 {
-            *topleft_out = if have_top != 0 {
+        if have_left {
+            *topleft_out = if have_top {
                 *dst_top.offset(-1)
             } else {
                 *dst.offset(-1)
             };
         } else {
-            *topleft_out = if have_top != 0 {
+            *topleft_out = if have_top {
                 *dst_top
             } else {
                 (1 << bitdepth >> 1).as_::<BD::Pixel>()

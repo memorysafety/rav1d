@@ -2659,9 +2659,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         }
                         m = rav1d_prepare_intra_edges(
                             t.bx,
-                            (t.bx > (*ts).tiling.col_start) as c_int,
+                            t.bx > (*ts).tiling.col_start,
                             t.by,
-                            (t.by > (*ts).tiling.row_start) as c_int,
+                            t.by > (*ts).tiling.row_start,
                             (*ts).tiling.col_end,
                             (*ts).tiling.row_end,
                             edge_flags,
@@ -2867,9 +2867,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             let ystart = (*ts).tiling.row_start >> ss_ver;
                             let m: IntraPredMode = rav1d_prepare_intra_edges(
                                 xpos,
-                                (xpos > xstart) as c_int,
+                                xpos > xstart,
                                 ypos,
-                                (ypos > ystart) as c_int,
+                                ypos > ystart,
                                 (*ts).tiling.col_end >> ss_hor,
                                 (*ts).tiling.row_end >> ss_ver,
                                 0 as EdgeFlags,
@@ -3064,9 +3064,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 ystart = (*ts).tiling.row_start >> ss_ver;
                                 m = rav1d_prepare_intra_edges(
                                     xpos,
-                                    (xpos > xstart) as c_int,
+                                    xpos > xstart,
                                     ypos,
-                                    (ypos > ystart) as c_int,
+                                    ypos > ystart,
                                     (*ts).tiling.col_end >> ss_hor,
                                     (*ts).tiling.row_end >> ss_ver,
                                     edge_flags,
@@ -3451,9 +3451,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
             m = rav1d_prepare_intra_edges(
                 t.bx,
-                (t.bx > (*ts).tiling.col_start) as c_int,
+                t.bx > (*ts).tiling.col_start,
                 t.by,
-                (t.by > (*ts).tiling.row_start) as c_int,
+                t.by > (*ts).tiling.row_start,
                 (*ts).tiling.col_end,
                 (*ts).tiling.row_end,
                 0 as EdgeFlags,
@@ -3869,9 +3869,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         }
                         m = rav1d_prepare_intra_edges(
                             t.bx >> ss_hor,
-                            (t.bx >> ss_hor > (*ts).tiling.col_start >> ss_hor) as c_int,
+                            t.bx >> ss_hor > (*ts).tiling.col_start >> ss_hor,
                             t.by >> ss_ver,
-                            (t.by >> ss_ver > (*ts).tiling.row_start >> ss_ver) as c_int,
+                            t.by >> ss_ver > (*ts).tiling.row_start >> ss_ver,
                             (*ts).tiling.col_end >> ss_hor,
                             (*ts).tiling.row_end >> ss_ver,
                             0 as EdgeFlags,
