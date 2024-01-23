@@ -142,9 +142,9 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     let stride = BD::pxstride(stride as usize) as isize;
     let first_pos = if have_left { -1 } else { 0 } + if have_top { -stride } else { 0 };
     let last_pos = if have_left {
-        (4 * h - 1) as isize * stride
+        (4 * (h - y) - 1) as isize * stride
     } else if have_top {
-        4 * w as isize
+        4 * (w - x) as isize
     } else {
         0
     };
