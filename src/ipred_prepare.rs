@@ -27,6 +27,7 @@ use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
+use std::slice;
 
 #[inline]
 pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
@@ -165,8 +166,9 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         }
         _ => {}
     }
-    let mut dst_top: *const BD::Pixel = 0 as *const BD::Pixel;
-    if have_top
+
+    // `dst_top` starts with either the top or top-left sample depending on whether have_left is true
+    let dst_top = if have_top
         && (av1_intra_prediction_edges[mode as usize]
             .needs
             .contains(Needs::TOP)
@@ -178,12 +180,20 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 .contains(Needs::LEFT)
                 && !have_left)
     {
+        let n = (4 * w) as usize + have_left as usize;
         if prefilter_toplevel_sb_edge.len() != 0 {
-            dst_top = prefilter_toplevel_sb_edge[(x * 4) as usize..].as_ptr();
+            let offset = (x * 4) as usize - have_left as usize;
+            &prefilter_toplevel_sb_edge[offset..offset + n]
         } else {
-            dst_top = &*dst.offset(-(BD::pxstride(stride as usize) as isize)) as *const BD::Pixel;
+            slice::from_raw_parts(
+                dst.offset(-(BD::pxstride(stride as usize) as isize) - have_left as isize),
+                n,
+            )
         }
-    }
+    } else {
+        &[]
+    };
+
     if av1_intra_prediction_edges[mode as usize]
         .needs
         .contains(Needs::LEFT)
@@ -205,7 +215,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             BD::pixel_set(
                 left,
                 if have_top {
-                    *dst_top
+                    dst_top[0] // have_left is always false
                 } else {
                     ((1 << bitdepth >> 1) + 1).as_::<BD::Pixel>()
                 },
@@ -253,9 +263,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         let top = &mut topleft_out[(topleft_origin + 1)..];
         if have_top {
             let px_have_1 = cmp::min(sz_0, w - x << 2);
-            for i in 0..px_have_1 {
-                top[i as usize] = *dst_top.offset(i as isize);
-            }
+            BD::pixel_copy(top, &dst_top[have_left as usize..], px_have_1 as usize);
             if px_have_1 < sz_0 {
                 let fill_value = top[px_have_1 as usize - 1];
                 BD::pixel_set(
@@ -287,9 +295,11 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             if have_topright {
                 let top_right = &mut top[sz_0 as usize..];
                 let px_have_2 = cmp::min(sz_0, w - x - tw << 2);
-                for i in 0..px_have_2 {
-                    top_right[i as usize] = *dst_top.offset((sz_0 + i) as isize);
-                }
+                BD::pixel_copy(
+                    top_right,
+                    &dst_top[(sz_0 as usize + have_left as usize)..],
+                    px_have_2 as usize,
+                );
                 if px_have_2 < sz_0 {
                     let fill_value = top_right[px_have_2 as usize - 1];
                     BD::pixel_set(
@@ -311,19 +321,13 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     {
         // top-left sample and immediate neighbours
         let corner = &mut topleft_out[(topleft_origin - 1)..(topleft_origin + 2)];
-        if have_left {
-            corner[1] = if have_top {
-                *dst_top.offset(-1)
-            } else {
-                *dst.offset(-1)
-            };
+        corner[1] = if have_top {
+            dst_top[0]
+        } else if have_left {
+            *dst.offset(-1)
         } else {
-            corner[1] = if have_top {
-                *dst_top
-            } else {
-                (1 << bitdepth >> 1).as_::<BD::Pixel>()
-            };
-        }
+            (1 << bitdepth >> 1).as_::<BD::Pixel>()
+        };
         if mode == Z2_PRED && tw + th >= 6 && filter_edge != 0 {
             corner[1] = ((corner[0].as_::<c_int>() + corner[2].as_::<c_int>()) * 5
                 + corner[1].as_::<c_int>() * 6
