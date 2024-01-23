@@ -1353,10 +1353,13 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
             };
             // Note that `progress.is_some() == (*c).n_fc > 1`.
             if let Some(progress) = &(*f).sr_cur.progress {
-                progress[1].store(
-                    if error_0 != 0 { FRAME_ERROR } else { y_0 },
-                    Ordering::SeqCst,
-                );
+                // upon flush, this can be free'ed already
+                if !((*f).sr_cur.p.data[0]).is_null() {
+                    progress[1].store(
+                        if error_0 != 0 { FRAME_ERROR } else { y_0 },
+                        Ordering::SeqCst,
+                    );
+                }
             }
             pthread_mutex_unlock(&mut (*f).task_thread.lock);
             if sby + 1 == sbh {
