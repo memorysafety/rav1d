@@ -2675,7 +2675,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             (*t_dim).w as c_int,
                             (*t_dim).h as c_int,
                             seq_hdr.intra_edge_filter,
-                            edge,
+                            &mut BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
+                                .0
+                                .edge,
+                            128,
                             BD::from_c((*f).bitdepth_max),
                         );
                         (*dsp).ipred.intra_pred[m as usize].call(
@@ -2889,7 +2892,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 (*uv_t_dim).w as c_int,
                                 (*uv_t_dim).h as c_int,
                                 0 as c_int,
-                                edge,
+                                &mut BD::select_mut(
+                                    &mut t.scratch.c2rust_unnamed_0.interintra_edge,
+                                )
+                                .0
+                                .edge,
+                                128,
                                 BD::from_c((*f).bitdepth_max),
                             );
                             (*dsp).ipred.cfl_pred[m as usize].call(
@@ -3090,7 +3098,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     (*uv_t_dim).w as c_int,
                                     (*uv_t_dim).h as c_int,
                                     seq_hdr.intra_edge_filter,
-                                    edge,
+                                    &mut BD::select_mut(
+                                        &mut t.scratch.c2rust_unnamed_0.interintra_edge,
+                                    )
+                                    .0
+                                    .edge,
+                                    128,
                                     BD::from_c((*f).bitdepth_max),
                                 );
                                 angle |= intra_edge_filter_flag;
@@ -3479,7 +3492,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 bw4,
                 bh4,
                 0 as c_int,
-                tl_edge,
+                &mut BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
+                    .0
+                    .edge,
+                32,
                 BD::from_c((*f).bitdepth_max),
             );
             (*dsp).ipred.intra_pred[m as usize].call(
@@ -3900,7 +3916,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             cbw4,
                             cbh4,
                             0 as c_int,
-                            tl_edge,
+                            &mut BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
+                                .0
+                                .edge,
+                            32,
                             BD::from_c((*f).bitdepth_max),
                         );
                         (*dsp).ipred.intra_pred[m as usize].call(
