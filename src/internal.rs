@@ -73,7 +73,6 @@ use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::thread_data::thread_data;
 use atomig::Atomic;
-use libc::pthread_mutex_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -430,7 +429,7 @@ impl Default for Rav1dFrameContext_task_thread_pending_tasks {
 
 #[repr(C)]
 pub(crate) struct Rav1dFrameContext_task_thread {
-    pub lock: pthread_mutex_t,
+    pub lock: Mutex<()>,
     pub cond: Condvar,
     pub ttd: *mut TaskThreadData,
     pub tasks: *mut Rav1dTask,
