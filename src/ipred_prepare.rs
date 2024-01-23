@@ -307,7 +307,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .contains(Needs::TOP_LEFT)
     {
         // top-left sample and immediate neighbours
-        let corner = &mut topleft_out[(topleft_origin - 1)..(topleft_origin + 2)];
+        let corner = <&mut [_; 3]>::try_from(&mut topleft_out[topleft_origin - 1..][..3]).unwrap();
         corner[1] = if have_top {
             dst_top[0]
         } else if have_left {
