@@ -118,7 +118,7 @@ static av1_intra_prediction_edges: [av1_intra_prediction_edge; N_IMPL_INTRA_PRED
     b
 };
 
-pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
+pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     x: c_int,
     have_left: bool,
     y: c_int,
@@ -149,7 +149,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         0
     };
     let dst = if last_pos > first_pos {
-        slice::from_raw_parts(dst.offset(first_pos), (last_pos - first_pos) as usize)
+        unsafe { slice::from_raw_parts(dst.offset(first_pos), (last_pos - first_pos) as usize) }
     } else {
         &[]
     };
