@@ -384,7 +384,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 hmask[1] = (*mask.offset(x as isize))[1][1] as u32;
                 hmask[2] = (*mask.offset(x as isize))[2][1] as u32;
             }
-            hmask[3] = 0 as c_int as u32;
+            // hmask[3] = 0; already initialized above
             (*dsp).lf.loop_filter_sb[0][0](
                 dst.offset((x * 4) as isize).cast(),
                 ls,
@@ -469,7 +469,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 hmask[0] = (*mask.offset(x as isize))[0][1] as u32;
                 hmask[1] = (*mask.offset(x as isize))[1][1] as u32;
             }
-            hmask[2] = 0 as c_int as u32;
+            // hmask[2] = 0; Already initialized to 0 above
             (*dsp).lf.loop_filter_sb[1][0](
                 u.offset((x * 4) as isize).cast(),
                 ls,
