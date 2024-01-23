@@ -78,9 +78,6 @@ use libc::pthread_attr_init;
 use libc::pthread_attr_setstacksize;
 use libc::pthread_attr_t;
 use libc::pthread_join;
-use libc::pthread_mutex_destroy;
-use libc::pthread_mutex_init;
-use libc::pthread_mutexattr_t;
 use libc::pthread_t;
 use std::cmp;
 use std::ffi::c_char;
@@ -377,13 +374,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         (*t).c = c;
         *BitDepth16::select_mut(&mut (*t).cf) = Align64([0; 32 * 32]);
         if (*c).n_tc > 1 as c_uint {
-            if pthread_mutex_init(
-                &mut (*t).task_thread.td.lock,
-                0 as *const pthread_mutexattr_t,
-            ) != 0
-            {
-                return error(c, c_out, &mut thread_attr);
-            }
             (*t).task_thread.td.cond = Condvar::new();
             if pthread_create(
                 &mut (*t).task_thread.td.thread,
@@ -392,7 +382,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
                 t as *mut c_void,
             ) != 0
             {
-                pthread_mutex_destroy(&mut (*t).task_thread.td.lock);
                 return error(c, c_out, &mut thread_attr);
             }
             (*t).task_thread.td.inited = 1 as c_int;
@@ -937,7 +926,6 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
                     break;
                 }
                 pthread_join((*pf).task_thread.td.thread, 0 as *mut *mut c_void);
-                pthread_mutex_destroy(&mut (*pf).task_thread.td.lock);
                 n_0 = n_0.wrapping_add(1);
             }
         }
