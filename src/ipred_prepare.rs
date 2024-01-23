@@ -250,8 +250,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
                     BD::pixel_set(bottom_left, bottom_left[sz - px_have], sz - px_have);
                 }
             } else {
-                let fill_value = bottom_left[sz];
-                BD::pixel_set(bottom_left, fill_value, sz);
+                BD::pixel_set(bottom_left, bottom_left[sz], sz);
             }
         }
     }
@@ -298,8 +297,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 }
             } else {
                 let fill_value = top[sz - 1];
-                let top_right = &mut top[sz..];
-                BD::pixel_set(top_right, fill_value, sz);
+                BD::pixel_set(&mut top[sz..], fill_value, sz);
             }
         }
     }
