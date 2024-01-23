@@ -195,7 +195,8 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 .contains(Needs::LEFT)
                 && !have_left)
     {
-        let n = (4 * w) as usize + have_left as usize;
+        let px_have = cmp::min(8 * tw, 4 * (w - x)) as usize;
+        let n = px_have + have_left as usize;
         if prefilter_toplevel_sb_edge.len() != 0 {
             let offset = (x * 4) as usize - have_left as usize;
             &prefilter_toplevel_sb_edge[offset..offset + n]
