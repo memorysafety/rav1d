@@ -359,10 +359,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         let f: *mut Rav1dFrameContext =
             &mut *((*c).fc).offset(n as isize) as *mut Rav1dFrameContext;
         if (*c).n_tc > 1 as c_uint {
-            if pthread_mutex_init(&mut (*f).task_thread.lock, 0 as *const pthread_mutexattr_t) != 0
-            {
-                return error(c, c_out, &mut thread_attr);
-            }
+            (*f).task_thread.lock = Mutex::new(());
             (*f).task_thread.cond = Condvar::new();
             (*f).task_thread.pending_tasks = Default::default();
         }
@@ -965,7 +962,6 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         }
         if (*c).n_tc > 1 as c_uint {
             let _ = mem::take(&mut (*f).task_thread.pending_tasks); // TODO: remove when context is owned
-            pthread_mutex_destroy(&mut (*f).task_thread.lock);
         }
         mem::take(&mut (*f).frame_thread.frame_progress); // TODO: remove when context is owned
         mem::take(&mut (*f).frame_thread.copy_lpf_progress); // TODO: remove when context is owned

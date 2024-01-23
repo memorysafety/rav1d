@@ -39,8 +39,6 @@ use crate::src::internal::RAV1D_TASK_TYPE_TILE_ENTROPY;
 use crate::src::internal::RAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
 use crate::src::picture::Rav1dThreadPicture;
 use libc::memset;
-use libc::pthread_mutex_lock;
-use libc::pthread_mutex_unlock;
 use libc::realloc;
 use std::cmp;
 use std::ffi::c_char;
@@ -1373,25 +1371,26 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
             // t->type != DAV1D_TASK_TYPE_ENTROPY_PROGRESS
             f.frame_thread.frame_progress[(sby >> 5) as usize]
                 .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
-            pthread_mutex_lock(&mut f.task_thread.lock);
-            sby = get_frame_progress(f);
-            error_0 = f.task_thread.error.load(Ordering::SeqCst);
-            let y_0: c_uint = if sby + 1 == sbh {
-                u32::MAX
-            } else {
-                ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
-            };
-            // Note that `progress.is_some() == c.n_fc > 1`.
-            if let Some(progress) = &f.sr_cur.progress {
-                // upon flush, this can be free'ed already
-                if !(f.sr_cur.p.data.data[0]).is_null() {
-                    progress[1].store(
-                        if error_0 != 0 { FRAME_ERROR } else { y_0 },
-                        Ordering::SeqCst,
-                    );
+            {
+                let _task_thread_lock = f.task_thread.lock.lock().unwrap();
+                sby = get_frame_progress(f);
+                error_0 = f.task_thread.error.load(Ordering::SeqCst);
+                let y_0: c_uint = if sby + 1 == sbh {
+                    u32::MAX
+                } else {
+                    ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
+                };
+                // Note that `progress.is_some() == c.n_fc > 1`.
+                if let Some(progress) = &f.sr_cur.progress {
+                    // upon flush, this can be free'ed already
+                    if !(f.sr_cur.p.data.data[0]).is_null() {
+                        progress[1].store(
+                            if error_0 != 0 { FRAME_ERROR } else { y_0 },
+                            Ordering::SeqCst,
+                        );
+                    }
                 }
             }
-            pthread_mutex_unlock(&mut f.task_thread.lock);
             if sby + 1 == sbh {
                 f.task_thread.done[0].store(1, Ordering::SeqCst);
             }
