@@ -173,7 +173,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     c: &Rav1dContext,
-    f: *mut Rav1dFrameContext,
+    f: &mut Rav1dFrameContext,
     src: *const *mut BD::Pixel,
     sby: c_int,
 ) {
@@ -202,7 +202,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         if restore_planes & LR_RESTORE_Y as c_int != 0 || resize == 0 {
             backup_lpf::<BD>(
                 c,
-                &*f,
+                f,
                 dst[0],
                 *lr_stride.offset(0),
                 (*src.offset(0)).offset(
@@ -224,7 +224,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 (sby * 4) as isize * BD::pxstride(*src_stride.offset(0) as usize) as isize;
             backup_lpf::<BD>(
                 c,
-                &*f,
+                f,
                 ((*f).lf.cdef_lpf_line[0] as *mut BD::Pixel).offset(cdef_off_y as isize),
                 *src_stride.offset(0),
                 (*src.offset(0)).offset(
@@ -258,7 +258,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             if restore_planes & LR_RESTORE_U as c_int != 0 || resize == 0 {
                 backup_lpf::<BD>(
                     c,
-                    &*f,
+                    f,
                     dst[1],
                     *lr_stride.offset(1),
                     (*src.offset(1)).offset(
@@ -278,7 +278,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             if have_tt != 0 && resize != 0 {
                 backup_lpf::<BD>(
                     c,
-                    &*f,
+                    f,
                     ((*f).lf.cdef_lpf_line[1] as *mut BD::Pixel).offset(cdef_off_uv as isize),
                     *src_stride.offset(1),
                     (*src.offset(1)).offset(
@@ -320,7 +320,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             if have_tt != 0 && resize != 0 {
                 backup_lpf::<BD>(
                     c,
-                    &*f,
+                    f,
                     ((*f).lf.cdef_lpf_line[2] as *mut BD::Pixel).offset(cdef_off_uv as isize),
                     *src_stride.offset(1),
                     (*src.offset(2)).offset(
