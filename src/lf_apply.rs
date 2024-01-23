@@ -359,7 +359,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     have_left: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
-    mask: *const [[u16; 2]; 3],
+    mask: &[[[u16; 2]; 3]; 32],
     dst: *mut BD::Pixel,
     ls: ptrdiff_t,
     w: c_int,
@@ -371,18 +371,18 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 4] = [0; 4];
             if starty4 == 0 {
-                hmask[0] = (*mask.offset(x as isize))[0][0] as u32;
-                hmask[1] = (*mask.offset(x as isize))[1][0] as u32;
-                hmask[2] = (*mask.offset(x as isize))[2][0] as u32;
+                hmask[0] = mask[x as usize][0][0] as u32;
+                hmask[1] = mask[x as usize][1][0] as u32;
+                hmask[2] = mask[x as usize][2][0] as u32;
                 if endy4 > 16 {
-                    hmask[0] |= ((*mask.offset(x as isize))[0][1] as u32) << 16;
-                    hmask[1] |= ((*mask.offset(x as isize))[1][1] as u32) << 16;
-                    hmask[2] |= ((*mask.offset(x as isize))[2][1] as u32) << 16;
+                    hmask[0] |= (mask[x as usize][0][1] as u32) << 16;
+                    hmask[1] |= (mask[x as usize][1][1] as u32) << 16;
+                    hmask[2] |= (mask[x as usize][2][1] as u32) << 16;
                 }
             } else {
-                hmask[0] = (*mask.offset(x as isize))[0][1] as u32;
-                hmask[1] = (*mask.offset(x as isize))[1][1] as u32;
-                hmask[2] = (*mask.offset(x as isize))[2][1] as u32;
+                hmask[0] = mask[x as usize][0][1] as u32;
+                hmask[1] = mask[x as usize][1][1] as u32;
+                hmask[2] = mask[x as usize][2][1] as u32;
             }
             // hmask[3] = 0; already initialized above
             (*dsp).lf.loop_filter_sb[0][0](
@@ -405,7 +405,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     have_top: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
-    mask: *const [[u16; 2]; 3],
+    mask: &[[[u16; 2]; 3]; 32],
     mut dst: *mut BD::Pixel,
     ls: ptrdiff_t,
     w: c_int,
@@ -416,12 +416,9 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 4] = [
-                (*mask.offset(y as isize))[0][0] as u32
-                    | ((*mask.offset(y as isize))[0][1] as u32) << 16,
-                (*mask.offset(y as isize))[1][0] as u32
-                    | ((*mask.offset(y as isize))[1][1] as u32) << 16,
-                (*mask.offset(y as isize))[2][0] as u32
-                    | ((*mask.offset(y as isize))[2][1] as u32) << 16,
+                mask[y as usize][0][0] as u32 | (mask[y as usize][0][1] as u32) << 16,
+                mask[y as usize][1][0] as u32 | (mask[y as usize][1][1] as u32) << 16,
+                mask[y as usize][2][0] as u32 | (mask[y as usize][2][1] as u32) << 16,
                 0,
             ];
             (*dsp).lf.loop_filter_sb[0][1](
@@ -445,7 +442,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     have_left: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
-    mask: *const [[u16; 2]; 2],
+    mask: &[[[u16; 2]; 2]; 32],
     u: *mut BD::Pixel,
     v: *mut BD::Pixel,
     ls: ptrdiff_t,
@@ -459,15 +456,15 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 3] = [0; 3];
             if starty4 == 0 {
-                hmask[0] = (*mask.offset(x as isize))[0][0] as u32;
-                hmask[1] = (*mask.offset(x as isize))[1][0] as u32;
+                hmask[0] = mask[x as usize][0][0] as u32;
+                hmask[1] = mask[x as usize][1][0] as u32;
                 if endy4 > 16 >> ss_ver {
-                    hmask[0] |= ((*mask.offset(x as isize))[0][1] as u32) << (16 >> ss_ver);
-                    hmask[1] |= ((*mask.offset(x as isize))[1][1] as u32) << (16 >> ss_ver);
+                    hmask[0] |= (mask[x as usize][0][1] as u32) << (16 >> ss_ver);
+                    hmask[1] |= (mask[x as usize][1][1] as u32) << (16 >> ss_ver);
                 }
             } else {
-                hmask[0] = (*mask.offset(x as isize))[0][1] as u32;
-                hmask[1] = (*mask.offset(x as isize))[1][1] as u32;
+                hmask[0] = mask[x as usize][0][1] as u32;
+                hmask[1] = mask[x as usize][1][1] as u32;
             }
             // hmask[2] = 0; Already initialized to 0 above
             (*dsp).lf.loop_filter_sb[1][0](
@@ -500,7 +497,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     have_top: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
-    mask: *const [[u16; 2]; 2],
+    mask: &[[[u16; 2]; 2]; 32],
     u: *mut BD::Pixel,
     v: *mut BD::Pixel,
     ls: ptrdiff_t,
@@ -514,10 +511,8 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 3] = [
-                (*mask.offset(y as isize))[0][0] as u32
-                    | ((*mask.offset(y as isize))[0][1] as u32) << (16 >> ss_hor),
-                (*mask.offset(y as isize))[1][0] as u32
-                    | ((*mask.offset(y as isize))[1][1] as u32) << (16 >> ss_hor),
+                mask[y as usize][0][0] as u32 | (mask[y as usize][0][1] as u32) << (16 >> ss_hor),
+                mask[y as usize][1][0] as u32 | (mask[y as usize][1][1] as u32) << (16 >> ss_hor),
                 0,
             ];
             (*dsp).lf.loop_filter_sb[1][1](
@@ -702,7 +697,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             have_left,
             level_ptr,
             (*f).b4_stride,
-            ((*lflvl.offset(x as isize)).filter_y[0]).as_mut_ptr() as *const [[u16; 2]; 3],
+            &(*lflvl.offset(x as isize)).filter_y[0],
             ptr,
             (*f).cur.stride[0],
             cmp::min(32 as c_int, (*f).w4 - x * 32),
@@ -727,7 +722,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             have_left,
             level_ptr,
             (*f).b4_stride,
-            ((*lflvl.offset(x as isize)).filter_uv[0]).as_mut_ptr() as *const [[u16; 2]; 2],
+            &(*lflvl.offset(x as isize)).filter_uv[0],
             &mut *p[1].offset(uv_off as isize),
             &mut *p[2].offset(uv_off as isize),
             (*f).cur.stride[1],
@@ -768,7 +763,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             have_top,
             level_ptr,
             (*f).b4_stride,
-            ((*lflvl.offset(x as isize)).filter_y[1]).as_mut_ptr() as *const [[u16; 2]; 3],
+            &(*lflvl.offset(x as isize)).filter_y[1],
             ptr,
             (*f).cur.stride[0],
             cmp::min(32, (*f).w4 - x * 32),
@@ -794,7 +789,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             have_top,
             level_ptr,
             (*f).b4_stride,
-            ((*lflvl.offset(x as isize)).filter_uv[1]).as_mut_ptr() as *const [[u16; 2]; 2],
+            &(*lflvl.offset(x as isize)).filter_uv[1],
             &mut *p[1].offset(uv_off as isize),
             &mut *p[2].offset(uv_off as isize),
             (*f).cur.stride[1],
