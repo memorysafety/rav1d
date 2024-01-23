@@ -2655,9 +2655,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             let sby = t.by >> (*f).sb_shift;
                             top_sb_edge =
                                 top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
-                            slice::from_raw_parts(top_sb_edge, (*f).sb128w as usize * 128)
+                            Some(slice::from_raw_parts(
+                                top_sb_edge,
+                                (*f).sb128w as usize * 128,
+                            ))
                         } else {
-                            &[]
+                            None
                         };
                         m = rav1d_prepare_intra_edges(
                             t.bx,
@@ -2865,9 +2868,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 let sby = t.by >> (*f).sb_shift;
                                 top_sb_edge =
                                     top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
-                                slice::from_raw_parts(top_sb_edge, (*f).sb128w as usize * 128)
+                                Some(slice::from_raw_parts(
+                                    top_sb_edge,
+                                    (*f).sb128w as usize * 128,
+                                ))
                             } else {
-                                &[]
+                                None
                             };
                             let xpos = t.bx >> ss_hor;
                             let ypos = t.by >> ss_ver;
@@ -3061,9 +3067,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     let sby = t.by >> (*f).sb_shift;
                                     top_sb_edge = top_sb_edge
                                         .offset(((*f).sb128w * 128 * (sby - 1)) as isize);
-                                    slice::from_raw_parts(top_sb_edge, (*f).sb128w as usize * 128)
+                                    Some(slice::from_raw_parts(
+                                        top_sb_edge,
+                                        (*f).sb128w as usize * 128,
+                                    ))
                                 } else {
-                                    &[]
+                                    None
                                 };
                                 uv_mode = (if b.c2rust_unnamed.c2rust_unnamed.uv_mode as c_int
                                     == CFL_PRED as c_int
@@ -3466,9 +3475,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 let mut top_sb_edge: *const BD::Pixel = (*f).ipred_edge[0] as *const BD::Pixel;
                 let sby = t.by >> (*f).sb_shift;
                 top_sb_edge = top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
-                slice::from_raw_parts(top_sb_edge, (*f).sb128w as usize * 128)
+                Some(slice::from_raw_parts(
+                    top_sb_edge,
+                    (*f).sb128w as usize * 128,
+                ))
             } else {
-                &[]
+                None
             };
             m = rav1d_prepare_intra_edges(
                 t.bx,
@@ -3890,9 +3902,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             let sby = t.by >> (*f).sb_shift;
                             top_sb_edge =
                                 top_sb_edge.offset(((*f).sb128w * 128 * (sby - 1)) as isize);
-                            slice::from_raw_parts(top_sb_edge, (*f).sb128w as usize * 128)
+                            Some(slice::from_raw_parts(
+                                top_sb_edge,
+                                (*f).sb128w as usize * 128,
+                            ))
                         } else {
-                            &[]
+                            None
                         };
                         m = rav1d_prepare_intra_edges(
                             t.bx >> ss_hor,

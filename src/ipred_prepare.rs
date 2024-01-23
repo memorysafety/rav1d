@@ -128,7 +128,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     edge_flags: EdgeFlags,
     dst: *const BD::Pixel,
     stride: ptrdiff_t,
-    prefilter_toplevel_sb_edge: &[BD::Pixel],
+    prefilter_toplevel_sb_edge: Option<&[BD::Pixel]>,
     mut mode: IntraPredMode,
     angle: &mut c_int,
     tw: c_int,
@@ -197,7 +197,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     {
         let px_have = cmp::min(8 * tw, 4 * (w - x)) as usize;
         let n = px_have + have_left as usize;
-        if prefilter_toplevel_sb_edge.len() != 0 {
+        if let Some(prefilter_toplevel_sb_edge) = prefilter_toplevel_sb_edge {
             let offset = (x * 4) as usize - have_left as usize;
             &prefilter_toplevel_sb_edge[offset..offset + n]
         } else {
