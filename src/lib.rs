@@ -641,7 +641,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let error = (*f).task_thread.retval;
         if error.is_err() {
             (*f).task_thread.retval = Ok(());
-            c.cached_error_props = (*out_delayed).p.m.clone();
+            *c.cached_error_props.get_mut().unwrap() = (*out_delayed).p.m.clone();
             rav1d_thread_picture_unref(out_delayed);
             return error;
         }
@@ -1087,7 +1087,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        out.write(mem::take(&mut (*c).cached_error_props).into());
+        out.write(mem::take(&mut *((*c).cached_error_props).get_mut().unwrap()).into());
         Ok(())
     })()
     .into()

@@ -4975,7 +4975,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         if error.is_err() {
             f.task_thread.retval = Ok(());
             c.cached_error = error;
-            c.cached_error_props = out_delayed.p.m.clone();
+            *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
             rav1d_thread_picture_unref(out_delayed);
         } else if !out_delayed.p.data.data[0].is_null() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
@@ -5023,7 +5023,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         rav1d_ref_dec(&mut f.mvs_ref);
         let _ = mem::take(&mut f.seq_hdr);
         let _ = mem::take(&mut f.frame_hdr);
-        c.cached_error_props = c.in_0.m.clone();
+        *c.cached_error_props.get_mut().unwrap() = c.in_0.m.clone();
 
         f.tiles.clear();
 
