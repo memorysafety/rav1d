@@ -4940,7 +4940,7 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
 
 pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // wait for c->out_delayed[next] and move into c->out if visible
-    let (f, out_delayed) = if c.n_fc > 1 {
+    let (f, out) = if c.n_fc > 1 {
         pthread_mutex_lock(&mut c.task_thread.lock);
         let next = c.frame_thread.next;
         c.frame_thread.next += 1;
@@ -4987,7 +4987,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
         (f, out_delayed as *mut _)
     } else {
-        (&mut *c.fc, ptr::null_mut())
+        (&mut *c.fc, &mut c.out as *mut _)
     };
 
     f.seq_hdr = c.seq_hdr.clone();
@@ -5000,7 +5000,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     unsafe fn on_error(
         f: &mut Rav1dFrameContext,
         c: &mut Rav1dContext,
-        out_delayed: *mut Rav1dThreadPicture,
+        out: *mut Rav1dThreadPicture,
     ) {
         f.task_thread.error = AtomicI32::new(1);
         rav1d_cdf_thread_unref(&mut f.in_cdf);
@@ -5013,11 +5013,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
             rav1d_ref_dec(&mut f.ref_mvs_ref[i]);
         }
-        if c.n_fc == 1 {
-            rav1d_thread_picture_unref(&mut c.out);
-        } else {
-            rav1d_thread_picture_unref(out_delayed);
-        }
+        rav1d_thread_picture_unref(out);
         rav1d_picture_unref_internal(&mut f.cur);
         rav1d_thread_picture_unref(&mut f.sr_cur);
         rav1d_ref_dec(&mut f.mvs_ref);
@@ -5066,7 +5062,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                     "Compiled without support for {}-bit decoding",
                     8 + 2 * seq_hdr.hbd
                 );
-                on_error(f, c, out_delayed);
+                on_error(f, c, out);
                 return Err(ENOPROTOOPT);
             }
         }
@@ -5093,7 +5089,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         if frame_hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE {
             let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
             if c.refs[pri_ref].p.p.data.data[0].is_null() {
-                on_error(f, c, out_delayed);
+                on_error(f, c, out);
                 return Err(EINVAL);
             }
         }
@@ -5110,7 +5106,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 for j in 0..i {
                     rav1d_thread_picture_unref(&mut f.refp[j]);
                 }
-                on_error(f, c, out_delayed);
+                on_error(f, c, out);
                 return Err(EINVAL);
             }
             rav1d_thread_picture_ref(&mut f.refp[i], &mut c.refs[refidx].p);
@@ -5143,7 +5139,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if frame_hdr.refresh_context != 0 {
         let res = rav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.n_fc > 1) as c_int);
         if res.is_err() {
-            on_error(f, c, out_delayed);
+            on_error(f, c, out);
             return res;
         }
     }
@@ -5155,7 +5151,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // allocate frame
     let res = rav1d_thread_picture_alloc(c, f, bpc);
     if res.is_err() {
-        on_error(f, c, out_delayed);
+        on_error(f, c, out);
         return res;
     }
 
@@ -5165,7 +5161,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         let res = rav1d_picture_alloc_copy(c, &mut f.cur, frame_hdr.size.width[0], &mut f.sr_cur.p);
         if res.is_err() {
-            on_error(f, c, out_delayed);
+            on_error(f, c, out);
             return res;
         }
     } else {
@@ -5188,7 +5184,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             c.event_flags |= f.sr_cur.flags.into();
         }
     } else {
-        rav1d_thread_picture_ref(out_delayed, &mut f.sr_cur);
+        rav1d_thread_picture_ref(out, &mut f.sr_cur);
     }
 
     f.w4 = frame_hdr.size.width[0] + 3 >> 2;
@@ -5220,7 +5216,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 * (f.b4_stride >> 1) as usize,
         );
         if f.mvs_ref.is_null() {
-            on_error(f, c, out_delayed);
+            on_error(f, c, out);
             return Err(ENOMEM);
         }
         f.mvs = (*f.mvs_ref).data.cast::<refmvs_temporal_block>();
@@ -5288,7 +5284,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             );
             if f.cur_segmap_ref.is_null() {
                 rav1d_ref_dec(&mut f.prev_segmap_ref);
-                on_error(f, c, out_delayed);
+                on_error(f, c, out);
                 return Err(ENOMEM);
             }
             f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
@@ -5304,7 +5300,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 ::core::mem::size_of::<u8>() * f.b4_stride as usize * 32 * f.sb128h as usize;
             f.cur_segmap_ref = rav1d_ref_create_using_pool(c.segmap_pool, segmap_size);
             if f.cur_segmap_ref.is_null() {
-                on_error(f, c, out_delayed);
+                on_error(f, c, out);
                 return Err(ENOMEM);
             }
             f.cur_segmap = (*f.cur_segmap_ref).data.cast::<u8>();
@@ -5362,7 +5358,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                     rav1d_ref_dec(&mut c.refs[i].refmvs);
                 }
             }
-            on_error(f, c, out_delayed);
+            on_error(f, c, out);
             return res;
         }
     } else {
