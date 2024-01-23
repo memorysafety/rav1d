@@ -365,26 +365,26 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     endy4: c_int,
 ) {
     let dsp: *const Rav1dDSPContext = (*f).dsp;
-    for x in 0..w {
+    for x in 0..w as usize {
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 4] = [0; 4];
             if starty4 == 0 {
-                hmask[0] = mask[x as usize][0][0] as u32;
-                hmask[1] = mask[x as usize][1][0] as u32;
-                hmask[2] = mask[x as usize][2][0] as u32;
+                hmask[0] = mask[x][0][0] as u32;
+                hmask[1] = mask[x][1][0] as u32;
+                hmask[2] = mask[x][2][0] as u32;
                 if endy4 > 16 {
-                    hmask[0] |= (mask[x as usize][0][1] as u32) << 16;
-                    hmask[1] |= (mask[x as usize][1][1] as u32) << 16;
-                    hmask[2] |= (mask[x as usize][2][1] as u32) << 16;
+                    hmask[0] |= (mask[x][0][1] as u32) << 16;
+                    hmask[1] |= (mask[x][1][1] as u32) << 16;
+                    hmask[2] |= (mask[x][2][1] as u32) << 16;
                 }
             } else {
-                hmask[0] = mask[x as usize][0][1] as u32;
-                hmask[1] = mask[x as usize][1][1] as u32;
-                hmask[2] = mask[x as usize][2][1] as u32;
+                hmask[0] = mask[x][0][1] as u32;
+                hmask[1] = mask[x][1][1] as u32;
+                hmask[2] = mask[x][2][1] as u32;
             }
             // hmask[3] = 0; already initialized above
             (*dsp).lf.loop_filter_sb[0][0](
-                dst.offset((x * 4) as isize).cast(),
+                dst.add(x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
                 &lvl[x as usize],
