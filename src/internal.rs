@@ -253,7 +253,7 @@ pub struct Rav1dContext {
     pub(crate) drain: c_int,
     pub(crate) frame_flags: Atomic<PictureFlags>,
     pub(crate) event_flags: Rav1dEventFlags,
-    pub(crate) cached_error_props: Rav1dDataProps,
+    pub(crate) cached_error_props: Mutex<Rav1dDataProps>,
     pub(crate) cached_error: Rav1dResult,
 
     pub(crate) logger: Option<Rav1dLogger>,
