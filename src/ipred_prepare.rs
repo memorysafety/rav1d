@@ -139,6 +139,21 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
     bd: BD,
 ) -> IntraPredMode {
     let bitdepth = bd.bitdepth();
+    let stride = BD::pxstride(stride as usize) as isize;
+    let first_pos = if have_left { -1 } else { 0 } + if have_top { -stride } else { 0 };
+    let last_pos = if have_left {
+        (4 * h - 1) as isize * stride
+    } else if have_top {
+        4 * w as isize
+    } else {
+        0
+    };
+    let dst = if last_pos > first_pos {
+        slice::from_raw_parts(dst.offset(first_pos), (last_pos - first_pos) as usize)
+    } else {
+        &[]
+    };
+    let dst_origin = (-first_pos) as usize;
     if !(y < h && x < w) {
         unreachable!();
     }
@@ -185,10 +200,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             let offset = (x * 4) as usize - have_left as usize;
             &prefilter_toplevel_sb_edge[offset..offset + n]
         } else {
-            slice::from_raw_parts(
-                dst.offset(-(BD::pxstride(stride as usize) as isize) - have_left as isize),
-                n,
-            )
+            &dst[..n]
         }
     } else {
         &[]
@@ -204,8 +216,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             let px_have = cmp::min(sz, h - y << 2);
             let mut i = 0;
             while i < px_have {
-                left[(sz - 1 - i) as usize] =
-                    *dst.offset(BD::pxstride(stride as usize) as isize * i as isize - 1);
+                left[(sz - 1 - i) as usize] = dst[i as usize * stride as usize + dst_origin - 1];
                 i += 1;
             }
             if px_have < sz {
@@ -236,10 +247,8 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 let px_have_0 = cmp::min(sz, h - y - th << 2);
                 let mut i_0 = 0;
                 while i_0 < px_have_0 {
-                    bottom_left[(sz - 1 - i_0) as usize] = *dst.offset(
-                        ((sz + i_0) as isize * BD::pxstride(stride as usize) as isize - 1 as isize)
-                            as isize,
-                    );
+                    bottom_left[(sz - 1 - i_0) as usize] =
+                        dst[(sz + i_0) as usize * stride as usize + dst_origin - 1];
                     i_0 += 1;
                 }
                 if px_have_0 < sz {
@@ -276,7 +285,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
             BD::pixel_set(
                 top,
                 if have_left {
-                    *dst.offset(-1)
+                    dst[dst_origin - 1]
                 } else {
                     ((1 << bitdepth >> 1) - 1).as_::<BD::Pixel>()
                 },
@@ -324,7 +333,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         corner[1] = if have_top {
             dst_top[0]
         } else if have_left {
-            *dst.offset(-1)
+            dst[dst_origin - 1]
         } else {
             (1 << bitdepth >> 1).as_::<BD::Pixel>()
         };
