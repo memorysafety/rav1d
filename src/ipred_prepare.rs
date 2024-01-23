@@ -210,17 +210,15 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .needs
         .contains(Needs::LEFT)
     {
-        let sz = th << 2;
-        let left = &mut topleft_out[(topleft_origin - sz as usize)..];
+        let sz = 4 * th as usize;
+        let left = &mut topleft_out[(topleft_origin - sz)..];
         if have_left {
-            let px_have = cmp::min(sz, h - y << 2);
-            let mut i = 0;
-            while i < px_have {
-                left[(sz - 1 - i) as usize] = dst[i as usize * stride as usize + dst_origin - 1];
-                i += 1;
+            let px_have = cmp::min(sz, (h - y << 2) as usize);
+            for i in 0..px_have {
+                left[sz - 1 - i] = dst[i * stride as usize + dst_origin - 1];
             }
             if px_have < sz {
-                BD::pixel_set(left, left[(sz - px_have) as usize], (sz - px_have) as usize);
+                BD::pixel_set(left, left[sz - px_have], sz - px_have);
             }
         } else {
             BD::pixel_set(
@@ -230,37 +228,30 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 } else {
                     ((1 << bitdepth >> 1) + 1).as_::<BD::Pixel>()
                 },
-                sz as usize,
+                sz,
             );
         }
         if av1_intra_prediction_edges[mode as usize]
             .needs
             .contains(Needs::BOTTOM_LEFT)
         {
-            let bottom_left = &mut topleft_out[(topleft_origin - 2 * sz as usize)..];
+            let bottom_left = &mut topleft_out[(topleft_origin - 2 * sz)..];
             let have_bottomleft = if !have_left || y + th >= h {
                 false
             } else {
                 (edge_flags & EDGE_I444_LEFT_HAS_BOTTOM) != 0
             };
             if have_bottomleft {
-                let px_have_0 = cmp::min(sz, h - y - th << 2);
-                let mut i_0 = 0;
-                while i_0 < px_have_0 {
-                    bottom_left[(sz - 1 - i_0) as usize] =
-                        dst[(sz + i_0) as usize * stride as usize + dst_origin - 1];
-                    i_0 += 1;
+                let px_have = cmp::min(sz, (h - y - th << 2) as usize);
+                for i in 0..px_have {
+                    bottom_left[sz - 1 - i] = dst[(sz + i) * stride as usize + dst_origin - 1];
                 }
-                if px_have_0 < sz {
-                    BD::pixel_set(
-                        bottom_left,
-                        bottom_left[(sz - px_have_0) as usize],
-                        (sz - px_have_0) as usize,
-                    );
+                if px_have < sz {
+                    BD::pixel_set(bottom_left, bottom_left[sz - px_have], sz - px_have);
                 }
             } else {
-                let fill_value = bottom_left[sz as usize];
-                BD::pixel_set(bottom_left, fill_value, sz as usize);
+                let fill_value = bottom_left[sz];
+                BD::pixel_set(bottom_left, fill_value, sz);
             }
         }
     }
@@ -268,18 +259,14 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .needs
         .contains(Needs::TOP)
     {
-        let sz_0 = tw << 2;
+        let sz = 4 * tw as usize;
         let top = &mut topleft_out[(topleft_origin + 1)..];
         if have_top {
-            let px_have_1 = cmp::min(sz_0, w - x << 2);
-            BD::pixel_copy(top, &dst_top[have_left as usize..], px_have_1 as usize);
-            if px_have_1 < sz_0 {
-                let fill_value = top[px_have_1 as usize - 1];
-                BD::pixel_set(
-                    &mut top[px_have_1 as usize..],
-                    fill_value,
-                    (sz_0 - px_have_1) as usize,
-                );
+            let px_have = cmp::min(sz, (w - x << 2) as usize);
+            BD::pixel_copy(top, &dst_top[have_left as usize..], px_have);
+            if px_have < sz {
+                let fill_value = top[px_have - 1];
+                BD::pixel_set(&mut top[px_have..], fill_value, sz - px_have);
             }
         } else {
             BD::pixel_set(
@@ -289,7 +276,7 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 } else {
                     ((1 << bitdepth >> 1) - 1).as_::<BD::Pixel>()
                 },
-                sz_0.try_into().unwrap(),
+                sz,
             );
         }
         if av1_intra_prediction_edges[mode as usize]
@@ -302,25 +289,17 @@ pub unsafe fn rav1d_prepare_intra_edges<BD: BitDepth>(
                 (edge_flags & EDGE_I444_TOP_HAS_RIGHT) != 0
             };
             if have_topright {
-                let top_right = &mut top[sz_0 as usize..];
-                let px_have_2 = cmp::min(sz_0, w - x - tw << 2);
-                BD::pixel_copy(
-                    top_right,
-                    &dst_top[(sz_0 as usize + have_left as usize)..],
-                    px_have_2 as usize,
-                );
-                if px_have_2 < sz_0 {
-                    let fill_value = top_right[px_have_2 as usize - 1];
-                    BD::pixel_set(
-                        &mut top_right[px_have_2 as usize..],
-                        fill_value,
-                        (sz_0 - px_have_2) as usize,
-                    );
+                let top_right = &mut top[sz..];
+                let px_have = cmp::min(sz, (w - x - tw << 2) as usize);
+                BD::pixel_copy(top_right, &dst_top[(sz + have_left as usize)..], px_have);
+                if px_have < sz {
+                    let fill_value = top_right[px_have - 1];
+                    BD::pixel_set(&mut top_right[px_have..], fill_value, sz - px_have);
                 }
             } else {
-                let fill_value = top[sz_0 as usize - 1];
-                let top_right = &mut top[sz_0 as usize..];
-                BD::pixel_set(top_right, fill_value, sz_0 as usize);
+                let fill_value = top[sz - 1];
+                let top_right = &mut top[sz..];
+                BD::pixel_set(top_right, fill_value, sz);
             }
         }
     }
