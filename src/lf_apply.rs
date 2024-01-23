@@ -145,8 +145,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     } else {
         while row + stripe_h <= row_h {
             let n_lines_0 = 4 - (row + stripe_h + 1 == h) as c_int;
-            let mut i = 0;
-            while i < 4 {
+            for i in 0..4 {
                 BD::pixel_copy(
                     slice::from_raw_parts_mut(dst, src_w as usize),
                     slice::from_raw_parts(
@@ -162,7 +161,6 @@ unsafe fn backup_lpf<BD: BitDepth>(
                 );
                 dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
                 src = src.offset(BD::pxstride(src_stride as usize) as isize);
-                i += 1;
             }
             row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
@@ -547,7 +545,6 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     sby: c_int,
     start_of_tile_row: c_int,
 ) {
-    let mut x;
     let mut have_left;
     let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
@@ -570,7 +567,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
     let mut tile_col = 1;
     loop {
-        x = frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int;
+        let mut x = frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int;
         if x << sbl2 >= (*f).bw {
             break;
         }
@@ -631,10 +628,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     }
     if start_of_tile_row != 0 {
         let mut a: *const BlockContext;
-        x = 0;
         a = &mut *((*f).a).offset(((*f).sb128w * (start_of_tile_row - 1)) as isize)
             as *mut BlockContext;
-        while x < (*f).sb128w {
+        for x in 0..(*f).sb128w {
             let y_vmask: *mut [u16; 2] =
                 ((*lflvl.offset(x as isize)).filter_y[1][starty4 as usize]).as_mut_ptr();
             let w: c_uint = cmp::min(32 as c_int, (*f).w4 - (x << 5)) as c_uint;
@@ -683,7 +679,6 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                     i_0 = i_0.wrapping_add(1);
                 }
             }
-            x += 1;
             a = a.offset(1);
         }
     }
