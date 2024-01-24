@@ -203,7 +203,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .contains(Needs::LEFT)
     {
         let sz = 4 * th as usize;
-        let left = &mut topleft_out[(topleft_origin - sz)..];
+        let left = &mut topleft_out[topleft_origin - sz..];
         if have_left {
             let px_have = cmp::min(sz, (h - y << 2) as usize);
             for i in 0..px_have {
@@ -227,7 +227,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             .needs
             .contains(Needs::BOTTOM_LEFT)
         {
-            let bottom_left = &mut topleft_out[(topleft_origin - 2 * sz)..];
+            let bottom_left = &mut topleft_out[topleft_origin - 2 * sz..];
             let have_bottomleft = if !have_left || y + th >= h {
                 false
             } else {
@@ -251,7 +251,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .contains(Needs::TOP)
     {
         let sz = 4 * tw as usize;
-        let top = &mut topleft_out[(topleft_origin + 1)..];
+        let top = &mut topleft_out[topleft_origin + 1..];
         if have_top {
             let px_have = cmp::min(sz, (w - x << 2) as usize);
             BD::pixel_copy(top, &dst_top[have_left as usize..], px_have);
@@ -282,7 +282,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             if have_topright {
                 let top_right = &mut top[sz..];
                 let px_have = cmp::min(sz, (w - x - tw << 2) as usize);
-                BD::pixel_copy(top_right, &dst_top[(sz + have_left as usize)..], px_have);
+                BD::pixel_copy(top_right, &dst_top[sz + have_left as usize..], px_have);
                 if px_have < sz {
                     let fill_value = top_right[px_have - 1];
                     BD::pixel_set(&mut top_right[px_have..], fill_value, sz - px_have);
