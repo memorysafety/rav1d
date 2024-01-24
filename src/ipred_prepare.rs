@@ -190,7 +190,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         let n = px_have + have_left as usize;
         if let Some(prefilter_toplevel_sb_edge) = prefilter_toplevel_sb_edge {
             let offset = (x * 4) as usize - have_left as usize;
-            &prefilter_toplevel_sb_edge[offset..offset + n]
+            &prefilter_toplevel_sb_edge[offset..][..n]
         } else {
             &dst[(dst_offset as isize - stride) as usize - have_left as usize..][..n]
         }
