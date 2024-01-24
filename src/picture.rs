@@ -169,7 +169,7 @@ unsafe fn picture_alloc_with_edges(
     itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     bpc: c_int,
     props: Rav1dDataProps,
-    p_allocator: &mut Rav1dPicAllocator,
+    p_allocator: &Rav1dPicAllocator,
 ) -> Rav1dResult {
     if !p.data[0].is_null() {
         writeln!(logger, "Picture already allocated!",);
