@@ -135,7 +135,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     th: c_int,
     filter_edge: c_int,
     topleft_out: &mut [BD::Pixel],
-    topleft_origin: usize, // position of top-left sample in `topleft_out`
+    topleft_out_offset: usize, // position of top-left sample in `topleft_out`
     bd: BD,
 ) -> IntraPredMode {
     assert!(y < h && x < w);
@@ -203,7 +203,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .contains(Needs::LEFT)
     {
         let sz = 4 * th as usize;
-        let left = &mut topleft_out[topleft_origin - sz..];
+        let left = &mut topleft_out[topleft_out_offset - sz..];
         if have_left {
             let px_have = cmp::min(sz, (h - y << 2) as usize);
             for i in 0..px_have {
@@ -227,7 +227,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             .needs
             .contains(Needs::BOTTOM_LEFT)
         {
-            let bottom_left = &mut topleft_out[topleft_origin - 2 * sz..];
+            let bottom_left = &mut topleft_out[topleft_out_offset - 2 * sz..];
             let have_bottomleft = if !have_left || y + th >= h {
                 false
             } else {
@@ -251,7 +251,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .contains(Needs::TOP)
     {
         let sz = 4 * tw as usize;
-        let top = &mut topleft_out[topleft_origin + 1..];
+        let top = &mut topleft_out[topleft_out_offset + 1..];
         if have_top {
             let px_have = cmp::min(sz, (w - x << 2) as usize);
             BD::pixel_copy(top, &dst_top[have_left as usize..], px_have);
@@ -298,7 +298,8 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         .contains(Needs::TOP_LEFT)
     {
         // top-left sample and immediate neighbours
-        let corner = <&mut [_; 3]>::try_from(&mut topleft_out[topleft_origin - 1..][..3]).unwrap();
+        let corner =
+            <&mut [_; 3]>::try_from(&mut topleft_out[topleft_out_offset - 1..][..3]).unwrap();
         corner[1] = if have_top {
             dst_top[0]
         } else if have_left {
