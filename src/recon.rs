@@ -2542,10 +2542,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
         as *const TxfmInfo;
     let uv_t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(b.uvtx as isize) as *const TxfmInfo;
-    let edge = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
-        .0
-        .edge[128..]
-        .as_mut_ptr();
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
@@ -2662,6 +2658,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         } else {
                             None
                         };
+                        let interintra_edge =
+                            BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge);
+                        let edge_array = &mut interintra_edge.0.edge;
+                        let edge_offset = 128 as usize;
                         m = rav1d_prepare_intra_edges(
                             t.bx,
                             t.bx > (*ts).tiling.col_start,
@@ -2678,12 +2678,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             (*t_dim).w as c_int,
                             (*t_dim).h as c_int,
                             seq_hdr.intra_edge_filter,
-                            &mut BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
-                                .0
-                                .edge,
-                            128,
+                            edge_array,
+                            edge_offset,
                             BD::from_c((*f).bitdepth_max),
                         );
+                        let edge = edge_array.as_ptr().add(edge_offset);
                         (*dsp).ipred.intra_pred[m as usize].call(
                             dst,
                             (*f).cur.stride[0],
@@ -2879,6 +2878,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             let ypos = t.by >> ss_ver;
                             let xstart = (*ts).tiling.col_start >> ss_hor;
                             let ystart = (*ts).tiling.row_start >> ss_ver;
+                            let interintra_edge =
+                                BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge);
+                            let edge_array = &mut interintra_edge.0.edge;
+                            let edge_offset = 128 as usize;
                             let m: IntraPredMode = rav1d_prepare_intra_edges(
                                 xpos,
                                 xpos > xstart,
@@ -2895,14 +2898,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 (*uv_t_dim).w as c_int,
                                 (*uv_t_dim).h as c_int,
                                 0 as c_int,
-                                &mut BD::select_mut(
-                                    &mut t.scratch.c2rust_unnamed_0.interintra_edge,
-                                )
-                                .0
-                                .edge,
-                                128,
+                                edge_array,
+                                edge_offset,
                                 BD::from_c((*f).bitdepth_max),
                             );
+                            let edge = edge_array.as_ptr().add(edge_offset);
                             (*dsp).ipred.cfl_pred[m as usize].call(
                                 uv_dst[pl as usize],
                                 stride,
@@ -3085,6 +3085,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 ypos = t.by >> ss_ver;
                                 xstart = (*ts).tiling.col_start >> ss_hor;
                                 ystart = (*ts).tiling.row_start >> ss_ver;
+                                let interintra_edge =
+                                    BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge);
+                                let edge_array = &mut interintra_edge.0.edge;
+                                let edge_offset = 128 as usize;
                                 m = rav1d_prepare_intra_edges(
                                     xpos,
                                     xpos > xstart,
@@ -3101,15 +3105,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     (*uv_t_dim).w as c_int,
                                     (*uv_t_dim).h as c_int,
                                     seq_hdr.intra_edge_filter,
-                                    &mut BD::select_mut(
-                                        &mut t.scratch.c2rust_unnamed_0.interintra_edge,
-                                    )
-                                    .0
-                                    .edge,
-                                    128,
+                                    edge_array,
+                                    edge_offset,
                                     BD::from_c((*f).bitdepth_max),
                                 );
                                 angle |= intra_edge_filter_flag;
+                                let edge = edge_array.as_ptr().add(edge_offset);
                                 (*dsp).ipred.intra_pred[m as usize].call(
                                     dst,
                                     stride,
@@ -3446,10 +3447,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
         if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
-            let tl_edge = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
-                .0
-                .edge[32..]
-                .as_mut_ptr();
+            let interintra_edge = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge);
+            let tl_edge_array = &mut interintra_edge.0.edge;
+            let tl_edge_offset = 32 as usize;
             let mut m: IntraPredMode = (if b
                 .c2rust_unnamed
                 .c2rust_unnamed_0
@@ -3466,10 +3466,6 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     .c2rust_unnamed
                     .interintra_mode as c_int
             }) as IntraPredMode;
-            let tmp = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
-                .0
-                .interintra
-                .as_mut_ptr();
             let mut angle = 0;
             let top_sb_edge_slice = if t.by & (*f).sb_step - 1 == 0 {
                 let mut top_sb_edge: *const BD::Pixel = (*f).ipred_edge[0] as *const BD::Pixel;
@@ -3498,12 +3494,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 bw4,
                 bh4,
                 0 as c_int,
-                &mut BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
-                    .0
-                    .edge,
-                32,
+                tl_edge_array,
+                tl_edge_offset,
                 BD::from_c((*f).bitdepth_max),
             );
+            let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
+            let tmp = interintra_edge.0.interintra.as_mut_ptr();
             (*dsp).ipred.intra_pred[m as usize].call(
                 tmp,
                 ((4 * bw4) as c_ulong).wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
@@ -3866,15 +3862,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     };
                     let mut pl = 0;
                     while pl < 2 {
-                        let tmp = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
-                            .0
-                            .interintra
-                            .as_mut_ptr();
-                        let tl_edge =
-                            BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
-                                .0
-                                .edge[32..]
-                                .as_mut_ptr();
+                        let interintra_edge =
+                            BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge);
+                        let tl_edge_array = &mut interintra_edge.0.edge;
+                        let tl_edge_offset = 32 as usize;
                         let mut m: IntraPredMode = (if b
                             .c2rust_unnamed
                             .c2rust_unnamed_0
@@ -3925,12 +3916,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             cbw4,
                             cbh4,
                             0 as c_int,
-                            &mut BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge)
-                                .0
-                                .edge,
-                            32,
+                            tl_edge_array,
+                            tl_edge_offset,
                             BD::from_c((*f).bitdepth_max),
                         );
+                        let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
+                        let tmp = interintra_edge.0.interintra.as_mut_ptr();
                         (*dsp).ipred.intra_pred[m as usize].call(
                             tmp,
                             ((cbw4 * 4) as c_ulong)
