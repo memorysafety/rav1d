@@ -297,10 +297,8 @@ pub(crate) struct Rav1dPicAllocator {
     ///
     /// # Safety
     ///
-    /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe.
-    /// If [`Self::cookie`] is accessed in Rust and has interior mutability, it must go through [`UnsafeCell`].
-    ///
-    /// [`UnsafeCell`]: std::cell::UnsafeCell
+    /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe,
+    /// i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`].
     pub alloc_picture_callback:
         unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> Dav1dResult,
 
@@ -308,10 +306,8 @@ pub(crate) struct Rav1dPicAllocator {
     ///
     /// # Safety
     ///
-    /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe.
-    /// If [`Self::cookie`] is accessed in Rust and has interior mutability, it must go through [`UnsafeCell`].
-    ///
-    /// [`UnsafeCell`]: std::cell::UnsafeCell
+    /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe,
+    /// i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`].
     pub release_picture_callback:
         unsafe extern "C" fn(pic: *mut Dav1dPicture, cookie: *mut c_void) -> (),
 }
