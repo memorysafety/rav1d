@@ -138,6 +138,8 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     topleft_origin: usize, // position of top-left sample in `topleft_out`
     bd: BD,
 ) -> IntraPredMode {
+    assert!(y < h && x < w);
+
     let bitdepth = bd.bitdepth();
     let stride = BD::pxstride(stride as usize) as isize;
     let first_pos = if have_left { -1 } else { 0 } + if have_top { -stride } else { 0 };
@@ -154,9 +156,6 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         &[]
     };
     let dst_origin = (-first_pos) as usize;
-    if !(y < h && x < w) {
-        unreachable!();
-    }
     match mode {
         VERT_PRED..=VERT_LEFT_PRED => {
             *angle = av1_mode_to_angle_map[(mode - VERT_PRED) as usize] as c_int + 3 * *angle;
