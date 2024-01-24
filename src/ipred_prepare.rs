@@ -27,7 +27,6 @@ use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
-use std::slice;
 
 #[inline]
 pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
@@ -126,7 +125,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     w: c_int,
     h: c_int,
     edge_flags: EdgeFlags,
-    dst: *const BD::Pixel,
+    dst: &[BD::Pixel], // contains 4*h first rows of picture, last row in slice contains 4*w samples
     stride: ptrdiff_t,
     prefilter_toplevel_sb_edge: Option<&[BD::Pixel]>,
     mut mode: IntraPredMode,
@@ -143,10 +142,8 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     let bitdepth = bd.bitdepth();
     let stride = BD::pxstride(stride as usize) as isize;
 
-    let dst_size = 4 * h as usize * stride.abs() as usize;
     let dst_offset = 4 * x as usize
         + (if stride >= 0 { 4 * y } else { 4 * (h - y) - 1 }) as usize * stride.abs() as usize;
-    let dst = unsafe { slice::from_raw_parts(dst.sub(dst_offset), dst_size) };
 
     match mode {
         VERT_PRED..=VERT_LEFT_PRED => {
