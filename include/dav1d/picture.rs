@@ -250,6 +250,14 @@ pub struct Dav1dPicAllocator {
     ///     with a custom pointer that will be passed to
     ///     [`release_picture_callback`].
     ///
+    ///     The only fields of `pic` that will be already set are:
+    ///     * [`Dav1dPicture::p`]
+    ///     * [`Dav1dPicture::seq_hdr`]
+    ///     * [`Dav1dPicture::frame_hdr`]
+    ///     
+    ///     This is not a change from the original `DAV1D_API`,
+    ///     just a clarification of it.
+    ///
     /// * `cookie`: Custom pointer passed to all calls.
     ///
     /// *Note*: No fields other than [`data`], [`stride`] and [`allocator_data`]
@@ -281,6 +289,23 @@ pub struct Dav1dPicAllocator {
     /// # Args
     ///
     /// * `pic`: The picture that was filled by [`alloc_picture_callback`].
+    ///     
+    ///     The only fields of `pic` that will be set are
+    ///     the ones allocated by [`Self::alloc_picture_callback`]:
+    ///     * [`Dav1dPicture::data`]
+    ///     * [`Dav1dPicture::allocator_data`]
+    ///     
+    ///     NOTE: This is a slight change from the original `DAV1D_API`, which was underspecified.
+    ///     However, all known uses of this API follow this already:
+    ///     * `libdav1d`: [`dav1d_default_picture_release`](https://code.videolan.org/videolan/dav1d/-/blob/16ed8e8b99f2fcfffe016e929d3626e15267ad3e/src/picture.c#L85-87)
+    ///     * `dav1d`: [`picture_release`](https://code.videolan.org/videolan/dav1d/-/blob/16ed8e8b99f2fcfffe016e929d3626e15267ad3e/tools/dav1d.c#L180-182)
+    ///     * `dav1dplay`: [`placebo_release_pic`](https://code.videolan.org/videolan/dav1d/-/blob/16ed8e8b99f2fcfffe016e929d3626e15267ad3e/examples/dp_renderer_placebo.c#L375-383)
+    ///     * `libplacebo`: [`pl_release_dav1dpicture`](https://github.com/haasn/libplacebo/blob/34e019bfedaa5a64f268d8f9263db352c0a8f67f/src/include/libplacebo/utils/dav1d_internal.h#L594-L607)
+    ///     * `ffmpeg`: [`libdav1d_picture_release`](https://github.com/FFmpeg/FFmpeg/blob/00b288da73f45acb78b74bcc40f73c7ba1fff7cb/libavcodec/libdav1d.c#L124-L129)
+    ///
+    ///     Making this API safe without this slight tightening of the API
+    ///     [is very difficult](https://github.com/memorysafety/rav1d/pull/685#discussion_r1458171639).
+    ///
     /// * `cookie`: Custom pointer passed to all calls.
     ///
     /// [`dav1d_get_picture`]: crate::src::lib::dav1d_get_picture
