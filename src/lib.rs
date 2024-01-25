@@ -907,109 +907,127 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     if flush != 0 {
         rav1d_flush(c);
     }
-    if !((*c).tc).is_null() {
-        let ttd: *mut TaskThreadData = &mut (*c).task_thread;
-        if (*ttd).inited != 0 {
-            let task_thread_lock = (*ttd).delayed_fg.lock().unwrap();
-            let mut n: c_uint = 0 as c_int as c_uint;
-            while n < (*c).n_tc && (*((*c).tc).offset(n as isize)).task_thread.td.inited != 0 {
-                (*((*c).tc).offset(n as isize)).task_thread.die = true;
-                n = n.wrapping_add(1);
-            }
-            (*ttd).cond.notify_all();
-            drop(task_thread_lock);
-            let mut n_0: c_uint = 0 as c_int as c_uint;
-            while n_0 < (*c).n_tc {
-                let pf: *mut Rav1dTaskContext =
-                    &mut *((*c).tc).offset(n_0 as isize) as *mut Rav1dTaskContext;
-                if (*pf).task_thread.td.inited == 0 {
-                    break;
-                }
-                pthread_join((*pf).task_thread.td.thread, 0 as *mut *mut c_void);
-                n_0 = n_0.wrapping_add(1);
-            }
-        }
-        rav1d_free_aligned((*c).tc as *mut c_void);
-    }
-    let mut n_1: c_uint = 0 as c_int as c_uint;
-    while !((*c).fc).is_null() && n_1 < (*c).n_fc {
-        let f: *mut Rav1dFrameContext =
-            &mut *((*c).fc).offset(n_1 as isize) as *mut Rav1dFrameContext;
-        if (*c).n_fc > 1 as c_uint {
-            freep(
-                &mut (*f).tile_thread.lowest_pixel_mem as *mut *mut [[c_int; 2]; 7] as *mut c_void,
-            );
-            freep(&mut (*f).frame_thread.b as *mut *mut Av1Block as *mut c_void);
-            rav1d_freep_aligned(&mut (*f).frame_thread.pal_idx as *mut *mut u8 as *mut c_void);
-            rav1d_freep_aligned(&mut (*f).frame_thread.cf as *mut *mut DynCoef as *mut c_void);
-            freep(&mut (*f).frame_thread.tile_start_off as *mut *mut c_int as *mut c_void);
-            rav1d_freep_aligned(
-                &mut (*f).frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut c_void,
-            );
-            freep(&mut (*f).frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
-        }
-        if (*c).n_tc > 1 as c_uint {
-            let _ = mem::take(&mut (*f).task_thread.pending_tasks); // TODO: remove when context is owned
-        }
-        mem::take(&mut (*f).frame_thread.frame_progress); // TODO: remove when context is owned
-        mem::take(&mut (*f).frame_thread.copy_lpf_progress); // TODO: remove when context is owned
-        freep(&mut (*f).task_thread.tasks as *mut *mut Rav1dTask as *mut c_void);
-        freep(
-            &mut *((*f).task_thread.tile_tasks).as_mut_ptr().offset(0) as *mut *mut Rav1dTask
-                as *mut c_void,
-        );
-        rav1d_free_aligned((*f).ts as *mut c_void);
-        rav1d_free_aligned((*f).ipred_edge[0] as *mut c_void);
-        free((*f).a as *mut c_void);
-        let _ = mem::take(&mut (*f).tiles);
-        free((*f).lf.mask as *mut c_void);
-        free((*f).lf.lr_mask as *mut c_void);
-        free((*f).lf.level as *mut c_void);
-        free((*f).lf.tx_lpf_right_edge[0] as *mut c_void);
-        free((*f).lf.start_of_tile_row as *mut c_void);
-        rav1d_refmvs_clear(&mut (*f).rf);
-        rav1d_free_aligned((*f).lf.cdef_line_buf as *mut c_void);
-        rav1d_free_aligned((*f).lf.lr_line_buf as *mut c_void);
-        n_1 = n_1.wrapping_add(1);
-    }
-    rav1d_free_aligned((*c).fc as *mut c_void);
-    if (*c).n_fc > 1 as c_uint && !((*c).frame_thread.out_delayed).is_null() {
-        let mut n_2: c_uint = 0 as c_int as c_uint;
-        while n_2 < (*c).n_fc {
-            if (*((*c).frame_thread.out_delayed).offset(n_2 as isize))
-                .p
-                .frame_hdr
-                .is_some()
-            {
-                rav1d_thread_picture_unref(
-                    &mut *((*c).frame_thread.out_delayed).offset(n_2 as isize),
-                );
-            }
-            n_2 = n_2.wrapping_add(1);
-        }
-        free((*c).frame_thread.out_delayed as *mut c_void);
-    }
-    let _ = mem::take(&mut (*c).tiles);
-    let mut n_4 = 0;
-    while n_4 < 8 {
-        rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(n_4 as isize));
-        if (*c).refs[n_4 as usize].p.p.frame_hdr.is_some() {
-            rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).p);
-        }
-        rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).refmvs);
-        rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(n_4 as isize)).segmap);
-        n_4 += 1;
-    }
-    let _ = mem::take(&mut (*c).seq_hdr);
-    let _ = mem::take(&mut (*c).frame_hdr);
-    let _ = mem::take(&mut (*c).mastering_display);
-    let _ = mem::take(&mut (*c).content_light);
-    let _ = mem::take(&mut (*c).itut_t35);
-    rav1d_mem_pool_end((*c).segmap_pool);
-    rav1d_mem_pool_end((*c).refmvs_pool);
-    rav1d_mem_pool_end((*c).cdf_pool);
-    rav1d_mem_pool_end((*c).picture_pool);
+    c.drop_in_place();
     rav1d_freep_aligned(c_out as *mut _ as *mut c_void);
+}
+
+impl Drop for Rav1dContext {
+    fn drop(&mut self) {
+        // SAFETY: TODO(SJC): This is not safe and will be made safe once we
+        // remove all pointers from the structure. We can't make the drop
+        // function unsafe because the Drop trait requires a safe function.
+        unsafe {
+            if !(self.tc).is_null() {
+                let ttd: *mut TaskThreadData = &mut self.task_thread;
+                if (*ttd).inited != 0 {
+                    let task_thread_lock = (*ttd).delayed_fg.lock().unwrap();
+                    let mut n: c_uint = 0 as c_int as c_uint;
+                    while n < self.n_tc
+                        && (*(self.tc).offset(n as isize)).task_thread.td.inited != 0
+                    {
+                        (*(self.tc).offset(n as isize)).task_thread.die = true;
+                        n = n.wrapping_add(1);
+                    }
+                    (*ttd).cond.notify_all();
+                    drop(task_thread_lock);
+                    let mut n_0: c_uint = 0 as c_int as c_uint;
+                    while n_0 < self.n_tc {
+                        let pf: *mut Rav1dTaskContext =
+                            &mut *(self.tc).offset(n_0 as isize) as *mut Rav1dTaskContext;
+                        if (*pf).task_thread.td.inited == 0 {
+                            break;
+                        }
+                        pthread_join((*pf).task_thread.td.thread, 0 as *mut *mut c_void);
+                        n_0 = n_0.wrapping_add(1);
+                    }
+                }
+                rav1d_free_aligned(self.tc as *mut c_void);
+            }
+            let mut n_1: c_uint = 0 as c_int as c_uint;
+            while !(self.fc).is_null() && n_1 < self.n_fc {
+                let f: *mut Rav1dFrameContext =
+                    &mut *(self.fc).offset(n_1 as isize) as *mut Rav1dFrameContext;
+                if self.n_fc > 1 as c_uint {
+                    freep(
+                        &mut (*f).tile_thread.lowest_pixel_mem as *mut *mut [[c_int; 2]; 7]
+                            as *mut c_void,
+                    );
+                    freep(&mut (*f).frame_thread.b as *mut *mut Av1Block as *mut c_void);
+                    rav1d_freep_aligned(
+                        &mut (*f).frame_thread.pal_idx as *mut *mut u8 as *mut c_void,
+                    );
+                    rav1d_freep_aligned(
+                        &mut (*f).frame_thread.cf as *mut *mut DynCoef as *mut c_void,
+                    );
+                    freep(&mut (*f).frame_thread.tile_start_off as *mut *mut c_int as *mut c_void);
+                    rav1d_freep_aligned(
+                        &mut (*f).frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut c_void,
+                    );
+                    freep(&mut (*f).frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
+                }
+                if self.n_tc > 1 as c_uint {
+                    let _ = mem::take(&mut (*f).task_thread.pending_tasks); // TODO: remove when context is owned
+                }
+                mem::take(&mut (*f).frame_thread.frame_progress); // TODO: remove when context is owned
+                mem::take(&mut (*f).frame_thread.copy_lpf_progress); // TODO: remove when context is owned
+                freep(&mut (*f).task_thread.tasks as *mut *mut Rav1dTask as *mut c_void);
+                freep(&mut *((*f).task_thread.tile_tasks).as_mut_ptr().offset(0)
+                    as *mut *mut Rav1dTask as *mut c_void);
+                rav1d_free_aligned((*f).ts as *mut c_void);
+                rav1d_free_aligned((*f).ipred_edge[0] as *mut c_void);
+                free((*f).a as *mut c_void);
+                let _ = mem::take(&mut (*f).tiles);
+                free((*f).lf.mask as *mut c_void);
+                free((*f).lf.lr_mask as *mut c_void);
+                free((*f).lf.level as *mut c_void);
+                free((*f).lf.tx_lpf_right_edge[0] as *mut c_void);
+                free((*f).lf.start_of_tile_row as *mut c_void);
+                rav1d_refmvs_clear(&mut (*f).rf);
+                rav1d_free_aligned((*f).lf.cdef_line_buf as *mut c_void);
+                rav1d_free_aligned((*f).lf.lr_line_buf as *mut c_void);
+                n_1 = n_1.wrapping_add(1);
+            }
+            rav1d_free_aligned(self.fc as *mut c_void);
+            if self.n_fc > 1 as c_uint && !(self.frame_thread.out_delayed).is_null() {
+                let mut n_2: c_uint = 0 as c_int as c_uint;
+                while n_2 < self.n_fc {
+                    if (*(self.frame_thread.out_delayed).offset(n_2 as isize))
+                        .p
+                        .frame_hdr
+                        .is_some()
+                    {
+                        rav1d_thread_picture_unref(
+                            &mut *(self.frame_thread.out_delayed).offset(n_2 as isize),
+                        );
+                    }
+                    n_2 = n_2.wrapping_add(1);
+                }
+                free(self.frame_thread.out_delayed as *mut c_void);
+            }
+            let _ = mem::take(&mut self.tiles);
+            let mut n_4 = 0;
+            while n_4 < 8 {
+                rav1d_cdf_thread_unref(&mut *(self.cdf).as_mut_ptr().offset(n_4 as isize));
+                if self.refs[n_4 as usize].p.p.frame_hdr.is_some() {
+                    rav1d_thread_picture_unref(
+                        &mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p,
+                    );
+                }
+                rav1d_ref_dec(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).refmvs);
+                rav1d_ref_dec(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).segmap);
+                n_4 += 1;
+            }
+            let _ = mem::take(&mut self.seq_hdr);
+            let _ = mem::take(&mut self.frame_hdr);
+            let _ = mem::take(&mut self.mastering_display);
+            let _ = mem::take(&mut self.content_light);
+            let _ = mem::take(&mut self.itut_t35);
+            rav1d_mem_pool_end(self.segmap_pool);
+            rav1d_mem_pool_end(self.refmvs_pool);
+            rav1d_mem_pool_end(self.cdf_pool);
+            rav1d_mem_pool_end(self.picture_pool);
+        }
+    }
 }
 
 #[no_mangle]
