@@ -188,6 +188,7 @@ unsafe fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_fr
 }
 
 unsafe fn insert_tasks_between(
+    c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
     first: *mut Rav1dTask,
     last: *mut Rav1dTask,
@@ -196,7 +197,7 @@ unsafe fn insert_tasks_between(
     cond_signal: c_int,
 ) {
     let ttd: &mut TaskThreadData = &mut *f.task_thread.ttd;
-    if (*f.c).flush.load(Ordering::SeqCst) != 0 {
+    if c.flush.load(Ordering::SeqCst) != 0 {
         return;
     }
     if !(a.is_null() || (*a).next == b) {
@@ -211,13 +212,14 @@ unsafe fn insert_tasks_between(
         f.task_thread.task_tail = last;
     }
     (*last).next = b;
-    reset_task_cur(&*f.c, ttd, (*first).frame_idx);
+    reset_task_cur(c, ttd, (*first).frame_idx);
     if cond_signal != 0 && ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
         ttd.cond.notify_one();
     }
 }
 
 unsafe fn insert_tasks(
+    c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
     first: *mut Rav1dTask,
     last: *mut Rav1dTask,
@@ -235,28 +237,28 @@ unsafe fn insert_tasks(
                 current_block_34 = 11174649648027449784;
             } else {
                 if (*first).sby < (*t_ptr).sby {
-                    insert_tasks_between(f, first, last, prev_t, t_ptr, cond_signal);
+                    insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
                     return;
                 }
                 current_block_34 = 15904375183555213903;
             }
         } else {
             if (*first).type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint {
-                insert_tasks_between(f, first, last, prev_t, t_ptr, cond_signal);
+                insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
                 return;
             }
             if (*first).sby > (*t_ptr).sby {
                 current_block_34 = 11174649648027449784;
             } else {
                 if (*first).sby < (*t_ptr).sby {
-                    insert_tasks_between(f, first, last, prev_t, t_ptr, cond_signal);
+                    insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
                     return;
                 }
                 if (*first).type_0 as c_uint > (*t_ptr).type_0 as c_uint {
                     current_block_34 = 11174649648027449784;
                 } else {
                     if ((*first).type_0 as c_uint) < (*t_ptr).type_0 as c_uint {
-                        insert_tasks_between(f, first, last, prev_t, t_ptr, cond_signal);
+                        insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
                         return;
                     }
                     current_block_34 = 15904375183555213903;
@@ -288,7 +290,7 @@ unsafe fn insert_tasks(
                     unreachable!();
                 }
                 if !(t_tile_idx > p_tile_idx) {
-                    insert_tasks_between(f, first, last, prev_t, t_ptr, cond_signal);
+                    insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
                     return;
                 }
             }
@@ -297,12 +299,17 @@ unsafe fn insert_tasks(
         prev_t = t_ptr;
         t_ptr = (*t_ptr).next;
     }
-    insert_tasks_between(f, first, last, prev_t, 0 as *mut Rav1dTask, cond_signal);
+    insert_tasks_between(c, f, first, last, prev_t, 0 as *mut Rav1dTask, cond_signal);
 }
 
 #[inline]
-unsafe fn insert_task(f: &mut Rav1dFrameContext, t: *mut Rav1dTask, cond_signal: c_int) {
-    insert_tasks(f, t, t, cond_signal);
+unsafe fn insert_task(
+    c: &Rav1dContext,
+    f: &mut Rav1dFrameContext,
+    t: *mut Rav1dTask,
+    cond_signal: c_int,
+) {
+    insert_tasks(c, f, t, t, cond_signal);
 }
 
 #[inline]
@@ -319,7 +326,7 @@ unsafe fn add_pending(f: &mut Rav1dFrameContext, t: *mut Rav1dTask) {
 }
 
 #[inline]
-unsafe fn merge_pending_frame(f: &mut Rav1dFrameContext) -> c_int {
+unsafe fn merge_pending_frame(c: &Rav1dContext, f: &mut Rav1dFrameContext) -> c_int {
     let merge = f.task_thread.pending_tasks_merge.load(Ordering::SeqCst);
     if merge != 0 {
         let mut t = {
@@ -330,7 +337,7 @@ unsafe fn merge_pending_frame(f: &mut Rav1dFrameContext) -> c_int {
         };
         while !t.is_null() {
             let tmp: *mut Rav1dTask = (*t).next;
-            insert_task(f, t, 0 as c_int);
+            insert_task(c, f, t, 0 as c_int);
             t = tmp;
         }
     }
@@ -342,13 +349,14 @@ unsafe fn merge_pending(c: &Rav1dContext) -> c_int {
     let mut res = 0;
     let mut i: c_uint = 0 as c_int as c_uint;
     while i < c.n_fc {
-        res |= merge_pending_frame(&mut *(c.fc).offset(i as isize));
+        res |= merge_pending_frame(c, &mut *(c.fc).offset(i as isize));
         i = i.wrapping_add(1);
     }
     return res;
 }
 
 unsafe fn create_filter_sbrow(
+    c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
     pass: c_int,
     res_t: *mut *mut Rav1dTask,
@@ -361,7 +369,7 @@ unsafe fn create_filter_sbrow(
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let has_lr = f.lf.restore_planes;
     let mut tasks: *mut Rav1dTask = f.task_thread.tasks;
-    let uses_2pass = ((*f.c).n_fc > 1 as c_uint) as c_int;
+    let uses_2pass = (c.n_fc > 1 as c_uint) as c_int;
     let num_tasks = f.sbh * (1 + uses_2pass);
     if num_tasks > f.task_thread.num_tasks {
         let size: usize = (::core::mem::size_of::<Rav1dTask>()).wrapping_mul(num_tasks as usize);
@@ -404,19 +412,19 @@ unsafe fn create_filter_sbrow(
     } else {
         RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS as c_int
     }) as TaskType;
-    (*t).frame_idx =
-        (f as *mut Rav1dFrameContext).offset_from((*f.c).fc) as c_long as c_int as c_uint;
+    (*t).frame_idx = (f as *mut Rav1dFrameContext).offset_from(c.fc) as c_long as c_int as c_uint;
     *res_t = t;
     return 0 as c_int;
 }
 
 pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
+    c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
     pass: c_int,
     _cond_signal: c_int,
 ) -> Rav1dResult {
     let mut tasks: *mut Rav1dTask = f.task_thread.tile_tasks[0];
-    let uses_2pass = ((*f.c).n_fc > 1 as c_uint) as c_int;
+    let uses_2pass = (c.n_fc > 1 as c_uint) as c_int;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let num_tasks = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
     if pass < 2 {
@@ -436,7 +444,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     }
     tasks = tasks.offset((num_tasks * (pass & 1)) as isize);
     let mut pf_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
-    if create_filter_sbrow(f, pass, &mut pf_t) != 0 {
+    if create_filter_sbrow(c, f, pass, &mut pf_t) != 0 {
         return Err(EGeneric);
     }
     let mut prev_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
@@ -459,7 +467,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
             RAV1D_TASK_TYPE_TILE_ENTROPY as c_int
         }) as TaskType;
         (*t).frame_idx =
-            (f as *mut Rav1dFrameContext).offset_from((*f.c).fc) as c_long as c_int as c_uint;
+            (f as *mut Rav1dFrameContext).offset_from(c.fc) as c_long as c_int as c_uint;
         if !prev_t.is_null() {
             (*prev_t).next = t;
         }
@@ -487,8 +495,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_task_frame_init(f: &mut Rav1dFrameContext) {
-    let c: &Rav1dContext = &*f.c;
+pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, f: &mut Rav1dFrameContext) {
     f.task_thread.init_done.store(0, Ordering::SeqCst);
     let t: *mut Rav1dTask = &mut f.task_thread.init_task;
     (*t).type_0 = RAV1D_TASK_TYPE_INIT;
@@ -497,7 +504,7 @@ pub(crate) unsafe fn rav1d_task_frame_init(f: &mut Rav1dFrameContext) {
     (*t).sby = 0 as c_int;
     (*t).deblock_progress = 0 as c_int;
     (*t).recon_progress = (*t).deblock_progress;
-    insert_task(f, t, 1 as c_int);
+    insert_task(c, f, t, 1 as c_int);
 }
 
 pub(crate) unsafe fn rav1d_task_delayed_fg(
@@ -644,7 +651,7 @@ unsafe fn get_frame_progress(f: &Rav1dFrameContext) -> c_int {
 }
 
 #[inline]
-unsafe fn abort_frame(f: &mut Rav1dFrameContext, error: Rav1dResult) {
+unsafe fn abort_frame(c: &Rav1dContext, f: &mut Rav1dFrameContext, error: Rav1dResult) {
     f.task_thread.error.store(
         if error == Err(EINVAL) {
             1 as c_int
@@ -659,7 +666,7 @@ unsafe fn abort_frame(f: &mut Rav1dFrameContext, error: Rav1dResult) {
     let progress = &**f.sr_cur.progress.as_ref().unwrap();
     progress[0].store(FRAME_ERROR, Ordering::SeqCst);
     progress[1].store(FRAME_ERROR, Ordering::SeqCst);
-    rav1d_decode_frame_exit(&mut *f, error);
+    rav1d_decode_frame_exit(c, &mut *f, error);
     f.task_thread.cond.notify_one();
 }
 
@@ -864,7 +871,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         .wrapping_add(ttd.cur.load(Ordering::Relaxed))
                         .wrapping_rem(c.n_fc) as isize,
                 );
-                merge_pending_frame(f);
+                merge_pending_frame(c, f);
                 let mut prev_t = f.task_thread.task_cur_prev.as_mut();
                 let mut next_t = if let Some(prev_t) = prev_t.as_deref_mut() {
                     prev_t.next.as_mut()
@@ -934,7 +941,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     f.frame_thread.next_tile_row[p as usize] = ntr;
                                 }
                                 (*next_t).recon_progress = (*next_t).sby + 1;
-                                insert_task(f, next_t, 0 as c_int);
+                                insert_task(c, f, next_t, 0 as c_int);
                             }
                             break 'found (f, t, prev_t);
                         } else if t.type_0 as c_uint == RAV1D_TASK_TYPE_CDEF as c_int as c_uint {
@@ -1011,7 +1018,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         if !(c.n_fc > 1 as c_uint) {
                             unreachable!();
                         }
-                        let res = rav1d_decode_frame_init(f);
+                        let res = rav1d_decode_frame_init(c, f);
                         let p1_3 = (if !(f.in_cdf.progress).is_null() {
                             (*f.in_cdf.progress).load(Ordering::SeqCst)
                         } else {
@@ -1020,7 +1027,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         if res.is_err() || p1_3 == TILE_ERROR {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.delayed_fg.lock().unwrap());
-                            abort_frame(f, if res.is_err() { res } else { Err(EINVAL) });
+                            abort_frame(c, f, if res.is_err() { res } else { Err(EINVAL) });
                             reset_task_cur(c, ttd, t.frame_idx);
                         } else {
                             t.type_0 = RAV1D_TASK_TYPE_INIT_CDF;
@@ -1039,7 +1046,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         }
                         let mut res_0 = Err(EINVAL);
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            res_0 = rav1d_decode_frame_init_cdf(f);
+                            res_0 = rav1d_decode_frame_init_cdf(c, f);
                         }
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.refresh_context != 0 && !f.task_thread.update_set {
@@ -1058,7 +1065,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             }
                             let mut p_0 = 1;
                             while p_0 <= 2 {
-                                let res_1 = rav1d_task_create_tile_sbrow(f, p_0, 0 as c_int);
+                                let res_1 = rav1d_task_create_tile_sbrow(c, f, p_0, 0 as c_int);
                                 if res_1.is_err() {
                                     assert!(
                                         task_thread_lock.is_none(),
@@ -1084,7 +1091,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                         if f.task_thread.task_counter.load(Ordering::SeqCst) != 0 {
                                             unreachable!();
                                         }
-                                        rav1d_decode_frame_exit(&mut *f, Err(ENOMEM));
+                                        rav1d_decode_frame_exit(c, &mut *f, Err(ENOMEM));
                                         f.task_thread.cond.notify_one();
                                     } else {
                                         drop(
@@ -1101,7 +1108,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         } else {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.delayed_fg.lock().unwrap());
-                            abort_frame(f, res_0);
+                            abort_frame(c, f, res_0);
                             reset_task_cur(c, ttd, t.frame_idx);
                             f.task_thread.init_done.store(1, Ordering::SeqCst);
                         }
@@ -1131,7 +1138,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     as c_int
                         };
                         if error_0 == 0 {
-                            error_0 = match rav1d_decode_tile_sbrow(tc) {
+                            error_0 = match rav1d_decode_tile_sbrow(c, tc) {
                                 Ok(()) => 0,
                                 Err(()) => 1,
                             };
@@ -1189,6 +1196,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                             {
                                 error_0 = f.task_thread.error.load(Ordering::SeqCst);
                                 rav1d_decode_frame_exit(
+                                    c,
                                     f,
                                     if error_0 == 1 {
                                         Err(EINVAL)
@@ -1211,7 +1219,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                     }
                     RAV1D_TASK_TYPE_DEBLOCK_COLS => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            (f.bd_fn.filter_sbrow_deblock_cols)(f, sby);
+                            (f.bd_fn.filter_sbrow_deblock_cols)(c, f, sby);
                         }
                         if ensure_progress(
                             ttd,
@@ -1230,7 +1238,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                     }
                     RAV1D_TASK_TYPE_DEBLOCK_ROWS => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            (f.bd_fn.filter_sbrow_deblock_rows)(f, sby);
+                            (f.bd_fn.filter_sbrow_deblock_rows)(c, f, sby);
                         }
                         // signal deblock progress
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
@@ -1277,7 +1285,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn.filter_sbrow_cdef)(tc, sby);
+                                (f.bd_fn.filter_sbrow_cdef)(c, tc, sby);
                             }
                             reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
@@ -1291,7 +1299,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn.filter_sbrow_resize)(f, sby);
+                                (f.bd_fn.filter_sbrow_resize)(c, f, sby);
                             }
                         }
                         task_type = RAV1D_TASK_TYPE_LOOP_RESTORATION;
@@ -1301,7 +1309,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0
                             && f.lf.restore_planes != 0
                         {
-                            (f.bd_fn.filter_sbrow_lr)(f, sby);
+                            (f.bd_fn.filter_sbrow_lr)(c, f, sby);
                         }
                         task_type = RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
                         continue 'fallthrough;
@@ -1354,6 +1362,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                 {
                     error_0 = f.task_thread.error.load(Ordering::SeqCst);
                     rav1d_decode_frame_exit(
+                        c,
                         f,
                         if error_0 == 1 {
                             Err(EINVAL)
@@ -1407,6 +1416,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
             {
                 error_0 = f.task_thread.error.load(Ordering::SeqCst);
                 rav1d_decode_frame_exit(
+                    c,
                     f,
                     if error_0 == 1 {
                         Err(EINVAL)

@@ -296,7 +296,7 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: unsafe fn(&mut Rav1dTaskContext, c_int) -> (),
+    pub filter_sbrow_cdef: unsafe fn(&Rav1dContext, &mut Rav1dTaskContext, c_int) -> (),
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
@@ -491,7 +491,6 @@ pub(crate) struct Rav1dFrameContext {
     pub resize_step: [c_int; 2],             /* y, uv */
     pub resize_start: [c_int; 2],            /* y, uv */
 
-    pub c: *const Rav1dContext,
     pub ts: *mut Rav1dTileState,
     pub n_ts: c_int,
     pub dsp: *const Rav1dDSPContext,

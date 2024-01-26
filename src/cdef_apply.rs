@@ -7,6 +7,7 @@ use crate::src::cdef::CDEF_HAVE_BOTTOM;
 use crate::src::cdef::CDEF_HAVE_LEFT;
 use crate::src::cdef::CDEF_HAVE_RIGHT;
 use crate::src::cdef::CDEF_HAVE_TOP;
+use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
@@ -182,6 +183,7 @@ unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
 }
 
 pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
+    c: &Rav1dContext,
     tc: *mut Rav1dTaskContext,
     p: *const *mut BD::Pixel,
     lflvl: *const Av1Filter,
@@ -217,7 +219,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let uv_dir: *const u8 = (uv_dirs
         [(layout as c_uint == Rav1dPixelLayout::I422 as c_int as c_uint) as c_int as usize])
         .as_ptr();
-    let have_tt = ((*(*f).c).n_tc > 1 as c_uint) as c_int;
+    let have_tt = (c.n_tc > 1 as c_uint) as c_int;
     let sb128 = (*f).seq_hdr.as_ref().unwrap().sb128;
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let y_stride: ptrdiff_t = BD::pxstride((*f).cur.stride[0] as usize) as isize;

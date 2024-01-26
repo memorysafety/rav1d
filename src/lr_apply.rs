@@ -4,6 +4,7 @@ use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
 use crate::src::align::Align16;
+use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::lf_mask::Av1RestorationUnit;
@@ -27,6 +28,7 @@ pub const LR_RESTORE_U: LrRestorePlanes = 2;
 pub const LR_RESTORE_Y: LrRestorePlanes = 1;
 
 unsafe fn lr_stripe<BD: BitDepth>(
+    c: &Rav1dContext,
     f: *const Rav1dFrameContext,
     mut p: *mut BD::Pixel,
     mut left: *const [BD::Pixel; 4],
@@ -50,7 +52,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         } else {
             0 as c_int
         }) >> 6 - ss_ver + seq_hdr.sb128;
-    let have_tt = ((*(*f).c).n_tc > 1 as c_uint) as c_int;
+    let have_tt = (c.n_tc > 1 as c_uint) as c_int;
     let mut lpf: *const BD::Pixel = ((*f).lf.lr_lpf_line[plane as usize] as *mut BD::Pixel)
         .offset(
             (have_tt * (sby * ((4 as c_int) << seq_hdr.sb128) - 4)) as isize
@@ -166,6 +168,7 @@ unsafe fn backup4xU<BD: BitDepth>(
 }
 
 unsafe fn lr_sbrow<BD: BitDepth>(
+    c: &Rav1dContext,
     f: *const Rav1dFrameContext,
     mut p: *mut BD::Pixel,
     y: c_int,
@@ -223,6 +226,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
         }
         if restore != 0 {
             lr_stripe::<BD>(
+                c,
                 f,
                 p,
                 (pre_lr_border[(bit == 0) as c_int as usize]).as_mut_ptr() as *const [BD::Pixel; 4],
@@ -249,6 +253,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
         );
         let unit_w = w - x;
         lr_stripe::<BD>(
+            c,
             f,
             p,
             (pre_lr_border[(bit == 0) as c_int as usize]).as_mut_ptr() as *const [BD::Pixel; 4],
@@ -264,6 +269,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
+    c: &Rav1dContext,
     f: *mut Rav1dFrameContext,
     dst: *const *mut BD::Pixel,
     sby: c_int,
@@ -280,6 +286,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         let row_h = cmp::min(next_row_y - 8 * not_last, h);
         let y_stripe = (sby << 6 + seq_hdr.sb128) - offset_y;
         lr_sbrow::<BD>(
+            c,
             f,
             (*dst.offset(0)).offset(
                 -(offset_y as isize * BD::pxstride(*dst_stride.offset(0) as usize) as isize),
@@ -304,6 +311,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128) - offset_uv;
         if restore_planes & LR_RESTORE_U as c_int != 0 {
             lr_sbrow::<BD>(
+                c,
                 f,
                 (*dst.offset(1)).offset(
                     -(offset_uv as isize * BD::pxstride(*dst_stride.offset(1) as usize) as isize),
@@ -317,6 +325,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         }
         if restore_planes & LR_RESTORE_V as c_int != 0 {
             lr_sbrow::<BD>(
+                c,
                 f,
                 (*dst.offset(2)).offset(
                     -(offset_uv as isize * BD::pxstride(*dst_stride.offset(1) as usize) as isize),
