@@ -38,6 +38,7 @@ use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
+use crate::src::internal::Rav1dTaskContext_borrow;
 use crate::src::internal::TaskThreadData;
 use crate::src::intra_edge::rav1d_init_mode_tree;
 use crate::src::levels::Av1Block;
@@ -375,15 +376,18 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         (*t).f = &mut *((*c).fc).offset(0) as *mut Rav1dFrameContext;
         (&mut (*t).task_thread.ttd as *mut Arc<TaskThreadData>)
             .write(Arc::clone(&(*c).task_thread));
-        (*t).c = c;
         *BitDepth16::select_mut(&mut (*t).cf) = Align64([0; 32 * 32]);
         if (*c).n_tc > 1 as c_uint {
             (*t).task_thread.td.cond = Condvar::new();
+            let thread_args = Box::new(Rav1dTaskContext_borrow {
+                c: &*c,
+                tc: &mut *t,
+            });
             if pthread_create(
                 &mut (*t).task_thread.td.thread,
                 &mut thread_attr,
                 Some(rav1d_worker_task),
-                t as *mut c_void,
+                Box::into_raw(thread_args).cast(),
             ) != 0
             {
                 return error(c, c_out, &mut thread_attr);
