@@ -59,7 +59,6 @@ use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::dav1d::Dav1dContext;
 use rav1d::include::dav1d::dav1d::Dav1dLogger;
-use rav1d::include::dav1d::dav1d::Dav1dRef;
 use rav1d::include::dav1d::dav1d::Dav1dSettings;
 use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
@@ -76,7 +75,6 @@ use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I420;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I444;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::include::dav1d::picture::DAV1D_PICTURE_ALIGNMENT;
 use rav1d::src::lib::dav1d_close;
 use rav1d::src::lib::dav1d_data_unref;
@@ -92,6 +90,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulonglong;
 use std::ffi::c_void;
+use std::ptr::NonNull;
 
 unsafe fn get_time_nanos() -> u64 {
     let mut ts: libc::timespec = libc::timespec {
@@ -238,29 +237,36 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1
     if buf.is_null() {
         return Dav1dResult(-12);
     }
-    (*p).allocator_data = buf as *mut c_void;
+    (*p).allocator_data = NonNull::new(buf.cast());
     let align_m1: ptrdiff_t = (DAV1D_PICTURE_ALIGNMENT - 1) as ptrdiff_t;
     let data: *mut u8 = (buf as ptrdiff_t + align_m1 & !align_m1) as *mut u8;
-    (*p).data[0] = data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void;
-    (*p).data[1] = (if has_chroma != 0 {
-        data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(1) as isize)
-            .offset(-(uv_stride as isize))
-    } else {
-        0 as *mut u8
-    }) as *mut c_void;
-    (*p).data[2] = (if has_chroma != 0 {
-        data.offset(y_sz as isize)
-            .offset(uv_sz.wrapping_mul(2) as isize)
-            .offset(-(uv_stride as isize))
-    } else {
-        0 as *mut u8
-    }) as *mut c_void;
+    (*p).data[0] =
+        NonNull::new(data.offset(y_sz as isize).offset(-(y_stride as isize)) as *mut c_void);
+    (*p).data[1] = NonNull::new(
+        (if has_chroma != 0 {
+            data.offset(y_sz as isize)
+                .offset(uv_sz.wrapping_mul(1) as isize)
+                .offset(-(uv_stride as isize))
+        } else {
+            0 as *mut u8
+        }) as *mut c_void,
+    );
+    (*p).data[2] = NonNull::new(
+        (if has_chroma != 0 {
+            data.offset(y_sz as isize)
+                .offset(uv_sz.wrapping_mul(2) as isize)
+                .offset(-(uv_stride as isize))
+        } else {
+            0 as *mut u8
+        }) as *mut c_void,
+    );
     Dav1dResult(0)
 }
 
 unsafe extern "C" fn picture_release(p: *mut Dav1dPicture, _: *mut c_void) {
-    free((*p).allocator_data);
+    if let Some(data) = (*p).allocator_data {
+        free(data.as_ptr());
+    }
 }
 
 unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
@@ -302,40 +308,7 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     };
     let mut in_0: *mut DemuxerContext = 0 as *mut DemuxerContext;
     let mut out: *mut MuxerContext = 0 as *mut MuxerContext;
-    let mut p: Dav1dPicture = Dav1dPicture {
-        seq_hdr: None,
-        frame_hdr: None,
-        data: [0 as *mut c_void; 3],
-        stride: [0; 2],
-        p: Dav1dPictureParameters {
-            w: 0,
-            h: 0,
-            layout: DAV1D_PIXEL_LAYOUT_I400,
-            bpc: 0,
-        },
-        m: Dav1dDataProps {
-            timestamp: 0,
-            duration: 0,
-            offset: 0,
-            size: 0,
-            user_data: Dav1dUserData {
-                data: None,
-                r#ref: None,
-            },
-        },
-        content_light: None,
-        mastering_display: None,
-        itut_t35: None,
-        reserved: [0; 4],
-        frame_hdr_ref: None,
-        seq_hdr_ref: None,
-        content_light_ref: None,
-        mastering_display_ref: None,
-        itut_t35_ref: None,
-        reserved_ref: [0; 4],
-        r#ref: 0 as *mut Dav1dRef,
-        allocator_data: 0 as *mut c_void,
-    };
+    let mut p = Default::default();
     let mut c: *mut Dav1dContext = 0 as *mut Dav1dContext;
     let mut data: Dav1dData = Dav1dData {
         data: None,

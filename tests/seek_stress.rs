@@ -42,7 +42,6 @@ use rav1d::include::dav1d::common::Dav1dUserData;
 use rav1d::include::dav1d::data::Dav1dData;
 use rav1d::include::dav1d::dav1d::Dav1dContext;
 use rav1d::include::dav1d::dav1d::Dav1dLogger;
-use rav1d::include::dav1d::dav1d::Dav1dRef;
 use rav1d::include::dav1d::dav1d::Dav1dSettings;
 use rav1d::include::dav1d::dav1d::DAV1D_DECODEFRAMETYPE_ALL;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
@@ -57,7 +56,6 @@ use rav1d::include::dav1d::headers::DAV1D_OFF;
 use rav1d::include::dav1d::headers::DAV1D_PIXEL_LAYOUT_I400;
 use rav1d::include::dav1d::picture::Dav1dPicAllocator;
 use rav1d::include::dav1d::picture::Dav1dPicture;
-use rav1d::include::dav1d::picture::Dav1dPictureParameters;
 use rav1d::src::lib::dav1d_close;
 use rav1d::src::lib::dav1d_flush;
 use rav1d::src::lib::dav1d_get_picture;
@@ -144,40 +142,7 @@ unsafe fn decode_rand(
     fps: c_double,
 ) -> c_int {
     let mut res = 0;
-    let mut p: Dav1dPicture = Dav1dPicture {
-        seq_hdr: None,
-        frame_hdr: None,
-        data: [0 as *mut c_void; 3],
-        stride: [0; 2],
-        p: Dav1dPictureParameters {
-            w: 0,
-            h: 0,
-            layout: DAV1D_PIXEL_LAYOUT_I400,
-            bpc: 0,
-        },
-        m: Dav1dDataProps {
-            timestamp: 0,
-            duration: 0,
-            offset: 0,
-            size: 0,
-            user_data: Dav1dUserData {
-                data: None,
-                r#ref: None,
-            },
-        },
-        content_light: None,
-        mastering_display: None,
-        itut_t35: None,
-        reserved: [0; 4],
-        frame_hdr_ref: None,
-        seq_hdr_ref: None,
-        content_light_ref: None,
-        mastering_display_ref: None,
-        itut_t35_ref: None,
-        reserved_ref: [0; 4],
-        r#ref: 0 as *mut Dav1dRef,
-        allocator_data: 0 as *mut c_void,
-    };
+    let mut p = Default::default();
     let num_frames: c_int = xor128_rand() % (fps * 5 as c_double) as c_int;
     let mut i = 0;
     while i < num_frames {
@@ -199,40 +164,7 @@ unsafe fn decode_all(
     data: *mut Dav1dData,
 ) -> c_int {
     let mut res: c_int;
-    let mut p: Dav1dPicture = Dav1dPicture {
-        seq_hdr: None,
-        frame_hdr: None,
-        data: [0 as *mut c_void; 3],
-        stride: [0; 2],
-        p: Dav1dPictureParameters {
-            w: 0,
-            h: 0,
-            layout: DAV1D_PIXEL_LAYOUT_I400,
-            bpc: 0,
-        },
-        m: Dav1dDataProps {
-            timestamp: 0,
-            duration: 0,
-            offset: 0,
-            size: 0,
-            user_data: Dav1dUserData {
-                data: None,
-                r#ref: None,
-            },
-        },
-        content_light: None,
-        mastering_display: None,
-        itut_t35: None,
-        reserved: [0; 4],
-        frame_hdr_ref: None,
-        seq_hdr_ref: None,
-        content_light_ref: None,
-        mastering_display_ref: None,
-        itut_t35_ref: None,
-        reserved_ref: [0; 4],
-        r#ref: 0 as *mut Dav1dRef,
-        allocator_data: 0 as *mut c_void,
-    };
+    let mut p = Default::default();
     loop {
         res = decode_frame(&mut p, c, data);
         if res != 0 {

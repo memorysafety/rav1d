@@ -17,7 +17,6 @@ use crate::src::c_arc::RawArc;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dResult;
 use crate::src::r#ref::Rav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
@@ -30,6 +29,7 @@ use std::sync::Arc;
 pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
 pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Dav1dPictureParameters {
     pub w: c_int,
@@ -72,11 +72,12 @@ impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Dav1dPicture {
     pub seq_hdr: Option<NonNull<Dav1dSequenceHeader>>,
     pub frame_hdr: Option<NonNull<Dav1dFrameHeader>>,
-    pub data: [*mut c_void; 3],
+    pub data: [Option<NonNull<c_void>>; 3],
     pub stride: [ptrdiff_t; 2],
     pub p: Dav1dPictureParameters,
     pub m: Dav1dDataProps,
@@ -90,24 +91,43 @@ pub struct Dav1dPicture {
     pub mastering_display_ref: Option<RawArc<Rav1dMasteringDisplay>>, // opaque, so we can change this
     pub itut_t35_ref: Option<RawArc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>, // opaque, so we can change this
     pub reserved_ref: [uintptr_t; 4],
-    pub r#ref: *mut Dav1dRef,
-    pub allocator_data: *mut c_void,
+    pub r#ref: Option<NonNull<Dav1dRef>>,
+    pub allocator_data: Option<NonNull<c_void>>,
 }
 
 #[derive(Clone)]
+pub(crate) struct Rav1dPictureData {
+    pub data: [*mut c_void; 3],
+    pub allocator_data: Option<NonNull<c_void>>,
+}
+
+impl Default for Rav1dPictureData {
+    fn default() -> Self {
+        Self {
+            data: [ptr::null_mut(); 3],
+            allocator_data: Default::default(),
+        }
+    }
+}
+
+// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
+// It's needed currently for a [`mem::take`] that simulates a move,
+// but once everything is Rusty, we may not need to clear the `dst` anymore.
+// This also applies to the `#[derive(Default)]`
+// on [`Rav1dPictureParameters`] and [`Rav1dPixelLayout`].
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dPicture {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
-    pub data: [*mut c_void; 3],
+    pub data: Rav1dPictureData,
     pub stride: [ptrdiff_t; 2],
     pub p: Rav1dPictureParameters,
     pub m: Rav1dDataProps,
     pub content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     pub itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
-    pub r#ref: *mut Rav1dRef,
-    pub allocator_data: *mut c_void,
+    pub r#ref: Option<NonNull<Rav1dRef>>,
 }
 
 impl From<Dav1dPicture> for Rav1dPicture {
@@ -139,7 +159,10 @@ impl From<Dav1dPicture> for Rav1dPicture {
             // We don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
             // Safety: `raw` came from [`RawArc::from_arc`].
             frame_hdr: frame_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
-            data,
+            data: Rav1dPictureData {
+                data: data.map(|data| data.map_or_else(ptr::null_mut, NonNull::as_ptr)),
+                allocator_data,
+            },
             stride,
             p: p.into(),
             m: m.into(),
@@ -151,7 +174,6 @@ impl From<Dav1dPicture> for Rav1dPicture {
             // Safety: `raw` came from [`RawArc::from_arc`].
             itut_t35: itut_t35_ref.map(|raw| unsafe { raw.into_arc() }),
             r#ref,
-            allocator_data,
         }
     }
 }
@@ -161,7 +183,11 @@ impl From<Rav1dPicture> for Dav1dPicture {
         let Rav1dPicture {
             seq_hdr,
             frame_hdr,
-            data,
+            data:
+                Rav1dPictureData {
+                    data,
+                    allocator_data,
+                },
             stride,
             p,
             m,
@@ -169,14 +195,13 @@ impl From<Rav1dPicture> for Dav1dPicture {
             mastering_display,
             itut_t35,
             r#ref,
-            allocator_data,
         } = value;
         Self {
             // [`DRav1d::from_rav1d`] is called right after [`parse_seq_hdr`].
             seq_hdr: seq_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             // [`DRav1d::from_rav1d`] is called in [`parse_frame_hdr`].
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
-            data,
+            data: data.map(NonNull::new),
             stride,
             p: p.into(),
             m: m.into(),
@@ -193,29 +218,6 @@ impl From<Rav1dPicture> for Dav1dPicture {
             reserved_ref: Default::default(),
             r#ref,
             allocator_data,
-        }
-    }
-}
-
-// TODO(kkysen) Eventually the [`impl Default`] might not be needed.
-// It's needed currently for a [`mem::take`] that simulates a move,
-// but once everything is Rusty, we may not need to clear the `dst` anymore.
-// This also applies to the `#[derive(Default)]`
-// on [`Rav1dPictureParameters`] and [`Rav1dPixelLayout`].
-impl Default for Rav1dPicture {
-    fn default() -> Self {
-        Self {
-            seq_hdr: None,
-            frame_hdr: None,
-            data: [ptr::null_mut(); 3],
-            stride: Default::default(),
-            p: Default::default(),
-            m: Default::default(),
-            content_light: None,
-            mastering_display: None,
-            itut_t35: None,
-            r#ref: ptr::null_mut(),
-            allocator_data: ptr::null_mut(),
         }
     }
 }
@@ -248,6 +250,14 @@ pub struct Dav1dPicAllocator {
     ///     with a custom pointer that will be passed to
     ///     [`release_picture_callback`].
     ///
+    ///     The only fields of `pic` that will be already set are:
+    ///     * [`Dav1dPicture::p`]
+    ///     * [`Dav1dPicture::seq_hdr`]
+    ///     * [`Dav1dPicture::frame_hdr`]
+    ///     
+    ///     This is not a change from the original `DAV1D_API`,
+    ///     just a clarification of it.
+    ///
     /// * `cookie`: Custom pointer passed to all calls.
     ///
     /// *Note*: No fields other than [`data`], [`stride`] and [`allocator_data`]
@@ -279,6 +289,23 @@ pub struct Dav1dPicAllocator {
     /// # Args
     ///
     /// * `pic`: The picture that was filled by [`alloc_picture_callback`].
+    ///     
+    ///     The only fields of `pic` that will be set are
+    ///     the ones allocated by [`Self::alloc_picture_callback`]:
+    ///     * [`Dav1dPicture::data`]
+    ///     * [`Dav1dPicture::allocator_data`]
+    ///     
+    ///     NOTE: This is a slight change from the original `DAV1D_API`, which was underspecified.
+    ///     However, all known uses of this API follow this already:
+    ///     * `libdav1d`: [`dav1d_default_picture_release`](https://code.videolan.org/videolan/dav1d/-/blob/16ed8e8b99f2fcfffe016e929d3626e15267ad3e/src/picture.c#L85-87)
+    ///     * `dav1d`: [`picture_release`](https://code.videolan.org/videolan/dav1d/-/blob/16ed8e8b99f2fcfffe016e929d3626e15267ad3e/tools/dav1d.c#L180-182)
+    ///     * `dav1dplay`: [`placebo_release_pic`](https://code.videolan.org/videolan/dav1d/-/blob/16ed8e8b99f2fcfffe016e929d3626e15267ad3e/examples/dp_renderer_placebo.c#L375-383)
+    ///     * `libplacebo`: [`pl_release_dav1dpicture`](https://github.com/haasn/libplacebo/blob/34e019bfedaa5a64f268d8f9263db352c0a8f67f/src/include/libplacebo/utils/dav1d_internal.h#L594-L607)
+    ///     * `ffmpeg`: [`libdav1d_picture_release`](https://github.com/FFmpeg/FFmpeg/blob/00b288da73f45acb78b74bcc40f73c7ba1fff7cb/libavcodec/libdav1d.c#L124-L129)
+    ///
+    ///     Making this API safe without this slight tightening of the API
+    ///     [is very difficult](https://github.com/memorysafety/rav1d/pull/685#discussion_r1458171639).
+    ///
     /// * `cookie`: Custom pointer passed to all calls.
     ///
     /// [`dav1d_get_picture`]: crate::src::lib::dav1d_get_picture
@@ -341,20 +368,5 @@ impl From<Rav1dPicAllocator> for Dav1dPicAllocator {
             alloc_picture_callback: Some(alloc_picture_callback),
             release_picture_callback: Some(release_picture_callback),
         }
-    }
-}
-
-impl Rav1dPicAllocator {
-    pub unsafe fn alloc_picture(&self, p: *mut Rav1dPicture) -> Rav1dResult {
-        let mut p_c = p.read().into();
-        let result = (self.alloc_picture_callback)(&mut p_c, self.cookie);
-        p.write(p_c.into());
-        result.try_into().unwrap()
-    }
-
-    pub unsafe fn release_picture(&self, p: *mut Rav1dPicture) {
-        let mut p_c = p.read().into();
-        (self.release_picture_callback)(&mut p_c, self.cookie);
-        p.write(p_c.into());
     }
 }
