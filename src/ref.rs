@@ -1,5 +1,3 @@
-use crate::src::mem::rav1d_alloc_aligned;
-use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_mem_pool_pop;
 use crate::src::mem::rav1d_mem_pool_push;
 use crate::src::mem::Rav1dMemPool;
@@ -24,35 +22,6 @@ pub struct Rav1dRef {
 #[inline]
 pub unsafe fn rav1d_ref_inc(r#ref: *mut Rav1dRef) {
     (*r#ref).ref_cnt.fetch_add(1, Ordering::Relaxed);
-}
-
-unsafe extern "C" fn default_free_callback(data: *const u8, user_data: *mut c_void) {
-    if !(data == user_data as *const u8) {
-        unreachable!();
-    }
-    rav1d_free_aligned(user_data);
-}
-
-pub unsafe fn rav1d_ref_create(mut size: usize) -> *mut Rav1dRef {
-    size = size
-        .wrapping_add(::core::mem::size_of::<*mut c_void>())
-        .wrapping_sub(1)
-        & !(::core::mem::size_of::<*mut c_void>()).wrapping_sub(1);
-    let data: *mut u8 = rav1d_alloc_aligned(
-        size.wrapping_add(::core::mem::size_of::<Rav1dRef>()),
-        64 as c_int as usize,
-    ) as *mut u8;
-    if data.is_null() {
-        return 0 as *mut Rav1dRef;
-    }
-    let res: *mut Rav1dRef = data.offset(size as isize) as *mut Rav1dRef;
-    (*res).data = data as *mut c_void;
-    (*res).user_data = (*res).data;
-    (*res).const_data = (*res).user_data;
-    (*res).ref_cnt = AtomicI32::new(1);
-    (*res).free_ref = 0 as c_int;
-    (*res).free_callback = Some(default_free_callback);
-    return res;
 }
 
 unsafe extern "C" fn pool_free_callback(data: *const u8, user_data: *mut c_void) {

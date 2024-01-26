@@ -5,7 +5,6 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_INTRA;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_REFERENCE;
 use crate::include::dav1d::headers::DRav1d;
-use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Rav1dColorPrimaries;
@@ -79,7 +78,6 @@ use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::decode::rav1d_submit_frame;
 use crate::src::env::get_poc_diff;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ERANGE;
 use crate::src::error::Rav1dResult;
 use crate::src::getbits::GetBits;
@@ -97,7 +95,6 @@ use crate::src::picture::rav1d_picture_copy_props;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
-use crate::src::r#ref::rav1d_ref_create;
 use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::thread_task::FRAME_ERROR;
@@ -2442,14 +2439,6 @@ unsafe fn parse_obus(
                     if payload_size <= 0 {
                         writeln!(c.logger, "Malformed ITU-T T.35 metadata message format");
                     } else {
-                        let r#ref = rav1d_ref_create(
-                            ::core::mem::size_of::<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>()
-                                + payload_size as usize * ::core::mem::size_of::<u8>(),
-                        );
-                        if r#ref.is_null() {
-                            return Err(ENOMEM);
-                        }
-
                         let country_code = country_code as u8;
                         let country_code_extension_byte = country_code_extension_byte as u8;
                         let payload = (0..payload_size).map(|_| gb.get_bits(8) as u8).collect(); // TODO(kkysen) fallible allocation
