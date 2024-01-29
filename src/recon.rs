@@ -2677,7 +2677,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             slice::from_raw_parts(
                                 ((*f).cur.data.data[0] as *const BD::Pixel)
                                     .offset(cmp::min(data_diff, 0)),
-                                data_diff.abs() as usize + data_width as usize,
+                                data_diff.unsigned_abs() + data_width as usize,
                             ),
                             (*f).cur.stride[0],
                             top_sb_edge_slice,
@@ -2905,7 +2905,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 slice::from_raw_parts(
                                     ((*f).cur.data.data[1 + pl as usize] as *const BD::Pixel)
                                         .offset(cmp::min(data_diff, 0)),
-                                    data_diff.abs() as usize + data_width as usize,
+                                    data_diff.unsigned_abs() + data_width as usize,
                                 ),
                                 stride,
                                 top_sb_edge_slice,
@@ -3121,7 +3121,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     slice::from_raw_parts(
                                         ((*f).cur.data.data[1 + pl as usize] as *const BD::Pixel)
                                             .offset(cmp::min(data_diff, 0)),
-                                        data_diff.abs() as usize + data_width as usize,
+                                        data_diff.unsigned_abs() + data_width as usize,
                                     ),
                                     stride,
                                     top_sb_edge_slice,
@@ -3517,7 +3517,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 0 as EdgeFlags,
                 slice::from_raw_parts(
                     ((*f).cur.data.data[0] as *const BD::Pixel).offset(cmp::min(data_diff, 0)),
-                    data_diff.abs() as usize + data_width as usize,
+                    data_diff.unsigned_abs() + data_width as usize,
                 ),
                 (*f).cur.stride[0],
                 top_sb_edge_slice,
@@ -3947,7 +3947,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             slice::from_raw_parts(
                                 ((*f).cur.data.data[1 + pl as usize] as *const BD::Pixel)
                                     .offset(cmp::min(data_diff, 0)),
-                                data_diff.abs() as usize + data_width as usize,
+                                data_diff.unsigned_abs() + data_width as usize,
                             ),
                             (*f).cur.stride[1],
                             top_sb_edge_slice,

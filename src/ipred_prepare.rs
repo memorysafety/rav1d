@@ -143,7 +143,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     let stride = BD::pxstride(stride as usize) as isize;
 
     let dst_offset = 4 * x as usize
-        + (if stride >= 0 { 4 * y } else { 4 * (h - y) - 1 }) as usize * stride.abs() as usize;
+        + (if stride >= 0 { 4 * y } else { 4 * (h - y) - 1 }) as usize * stride.unsigned_abs();
 
     match mode {
         VERT_PRED..=VERT_LEFT_PRED => {
