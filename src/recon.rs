@@ -2892,7 +2892,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             let edge_array = &mut interintra_edge.0.edge;
                             let edge_offset = 128;
                             let data_stride = BD::pxstride((*f).cur.stride[1] as usize) as isize;
-                            let data_width = 4 * (*ts).tiling.col_end >> ss_ver;
+                            let data_width = 4 * (*ts).tiling.col_end >> ss_hor;
                             let data_height = 4 * (*ts).tiling.row_end >> ss_ver;
                             let data_diff = (data_height - 1) as isize * data_stride;
                             let uvdst_slice = slice::from_raw_parts(
@@ -3109,7 +3109,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 let edge_offset = 128;
                                 let data_stride =
                                     BD::pxstride((*f).cur.stride[1] as usize) as isize;
-                                let data_width = 4 * (*ts).tiling.col_end >> ss_ver;
+                                let data_width = 4 * (*ts).tiling.col_end >> ss_hor;
                                 let data_height = 4 * (*ts).tiling.row_end >> ss_ver;
                                 let data_diff = (data_height - 1) as isize * data_stride;
                                 let dstuv_slice = slice::from_raw_parts(
