@@ -398,7 +398,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     starty4: c_int,
     endy4: c_int,
 ) {
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp: &Rav1dDSPContext = &*f.dsp;
     for x in 0..w as usize {
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 4] = [0; 4];
@@ -444,7 +444,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     starty4: c_int,
     endy4: c_int,
 ) {
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp: &Rav1dDSPContext = &*f.dsp;
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 4] = [
@@ -483,7 +483,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     endy4: c_int,
     ss_ver: c_int,
 ) {
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp: &Rav1dDSPContext = &*f.dsp;
     for x in 0..w {
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 3] = [0; 3];
@@ -538,7 +538,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     endy4: c_int,
     ss_hor: c_int,
 ) {
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp: &Rav1dDSPContext = &*f.dsp;
     let mut off_l: ptrdiff_t = 0;
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
