@@ -207,14 +207,14 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     -(offset as isize * BD::pxstride(*src_stride.offset(0) as usize) as isize),
                 ),
                 *src_stride.offset(0),
-                0 as c_int,
+                0,
                 seq_hdr.sb128,
                 y_stripe,
                 row_h,
                 w,
                 h,
-                0 as c_int,
-                1 as c_int,
+                0,
+                1,
             );
         }
         if have_tt != 0 && resize != 0 {
@@ -229,14 +229,14 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     -offset as isize * BD::pxstride(*src_stride.offset(0) as usize) as isize,
                 ),
                 *src_stride.offset(0),
-                0 as c_int,
+                0,
                 seq_hdr.sb128,
                 y_stripe,
                 row_h,
                 w,
                 h,
-                0 as c_int,
-                0 as c_int,
+                0,
+                0,
             );
         }
     }
@@ -270,7 +270,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     w_0,
                     h_0,
                     ss_hor,
-                    1 as c_int,
+                    1,
                 );
             }
             if have_tt != 0 && resize != 0 {
@@ -290,7 +290,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     w_0,
                     h_0,
                     ss_hor,
-                    0 as c_int,
+                    0,
                 );
             }
         }
@@ -312,7 +312,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     w_0,
                     h_0,
                     ss_hor,
-                    1 as c_int,
+                    1,
                 );
             }
             if have_tt != 0 && resize != 0 {
@@ -332,7 +332,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     w_0,
                     h_0,
                     ss_hor,
-                    0 as c_int,
+                    0,
                 );
             }
         }
@@ -706,11 +706,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
-    let mut uv_off: ptrdiff_t;
+    let mut uv_off: ptrdiff_t = 0;
     let mut level_ptr =
         &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
     have_left = false;
-    uv_off = 0;
     for x in 0..(*f).sb128w {
         filter_plane_cols_uv::<BD>(
             f,
@@ -774,10 +773,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
 
-    let mut uv_off: ptrdiff_t;
+    let mut uv_off: ptrdiff_t = 0;
     let mut level_ptr =
         &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
-    uv_off = 0;
     for x in 0..(*f).sb128w {
         filter_plane_rows_uv::<BD>(
             f,
