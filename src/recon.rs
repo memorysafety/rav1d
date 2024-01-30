@@ -4540,7 +4540,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
         rav1d_loopfilter_sbrow_rows::<BD>(f, &p, mask_offset as usize, sby);
     }
     if cdef != 0 || f.lf.restore_planes != 0 {
-        rav1d_copy_lpf::<BD>(c, &mut *f, p.as_ptr(), sby);
+        rav1d_copy_lpf::<BD>(c, &mut *f, &p, sby);
     }
 }
 
