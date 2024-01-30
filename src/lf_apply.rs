@@ -181,7 +181,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let offset = 8 * (sby != 0) as c_int;
-    let src_stride: *const ptrdiff_t = (f.cur.stride).as_mut_ptr();
+    let src_stride = &f.cur.stride;
     let lr_stride: *const ptrdiff_t = (f.sr_cur.p.stride).as_mut_ptr();
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let tt_off = have_tt * sby * ((4 as c_int) << seq_hdr.sb128);
@@ -207,10 +207,9 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 c,
                 dst[0],
                 *lr_stride.offset(0),
-                (*src.offset(0)).offset(
-                    -(offset as isize * BD::pxstride(*src_stride.offset(0) as usize) as isize),
-                ),
-                *src_stride.offset(0),
+                (*src.offset(0))
+                    .offset(-(offset as isize * BD::pxstride(src_stride[0] as usize) as isize)),
+                src_stride[0],
                 0,
                 seq_hdr.sb128,
                 y_stripe,
@@ -228,18 +227,17 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         }
         if have_tt != 0 && resize != 0 {
             let cdef_off_y: ptrdiff_t =
-                (sby * 4) as isize * BD::pxstride(*src_stride.offset(0) as usize) as isize;
+                (sby * 4) as isize * BD::pxstride(src_stride[0] as usize) as isize;
             backup_lpf::<BD>(
                 c,
                 cdef_line_buf
                     .as_mut_ptr()
                     .add(f.lf.cdef_lpf_line[0])
                     .offset(cdef_off_y),
-                *src_stride.offset(0),
-                (*src.offset(0)).offset(
-                    -offset as isize * BD::pxstride(*src_stride.offset(0) as usize) as isize,
-                ),
-                *src_stride.offset(0),
+                src_stride[0],
+                (*src.offset(0))
+                    .offset(-offset as isize * BD::pxstride(src_stride[0] as usize) as isize),
+                src_stride[0],
                 0,
                 seq_hdr.sb128,
                 y_stripe,
@@ -267,7 +265,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         let offset_uv = offset >> ss_ver;
         let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128) - offset_uv;
         let cdef_off_uv: ptrdiff_t =
-            sby as isize * 4 * BD::pxstride(*src_stride.offset(1) as usize) as isize;
+            sby as isize * 4 * BD::pxstride(src_stride[1] as usize) as isize;
         if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_U as c_int != 0 {
             if restore_planes & LR_RESTORE_U as c_int != 0 || resize == 0 {
                 backup_lpf::<BD>(
@@ -275,9 +273,9 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     dst[1],
                     *lr_stride.offset(1),
                     (*src.offset(1)).offset(
-                        -offset_uv as isize * BD::pxstride(*src_stride.offset(1) as usize) as isize,
+                        -offset_uv as isize * BD::pxstride(src_stride[1] as usize) as isize,
                     ),
-                    *src_stride.offset(1),
+                    src_stride[1],
                     ss_ver,
                     seq_hdr.sb128,
                     y_stripe_0,
@@ -300,11 +298,11 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                         .as_mut_ptr()
                         .add(f.lf.cdef_lpf_line[1])
                         .offset(cdef_off_uv),
-                    *src_stride.offset(1),
+                    src_stride[1],
                     (*src.offset(1)).offset(
-                        -offset_uv as isize * BD::pxstride(*src_stride.offset(1) as usize) as isize,
+                        -offset_uv as isize * BD::pxstride(src_stride[1] as usize) as isize,
                     ),
-                    *src_stride.offset(1),
+                    src_stride[1],
                     ss_ver,
                     seq_hdr.sb128,
                     y_stripe_0,
@@ -328,9 +326,9 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     dst[2],
                     *lr_stride.offset(1),
                     (*src.offset(2)).offset(
-                        -offset_uv as isize * BD::pxstride(*src_stride.offset(1) as usize) as isize,
+                        -offset_uv as isize * BD::pxstride(src_stride[1] as usize) as isize,
                     ),
-                    *src_stride.offset(1),
+                    src_stride[1],
                     ss_ver,
                     seq_hdr.sb128,
                     y_stripe_0,
@@ -353,11 +351,11 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                         .as_mut_ptr()
                         .add(f.lf.cdef_lpf_line[2])
                         .offset(cdef_off_uv),
-                    *src_stride.offset(1),
+                    src_stride[1],
                     (*src.offset(2)).offset(
-                        -offset_uv as isize * BD::pxstride(*src_stride.offset(1) as usize) as isize,
+                        -offset_uv as isize * BD::pxstride(src_stride[1] as usize) as isize,
                     ),
-                    *src_stride.offset(1),
+                    src_stride[1],
                     ss_ver,
                     seq_hdr.sb128,
                     y_stripe_0,
