@@ -421,7 +421,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 dst.add(x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
-                &lvl[x as usize],
+                lvl[x..].as_ptr(),
                 b4_stride,
                 &f.lf.lim_lut.0,
                 endy4 - starty4,
@@ -583,7 +583,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let mut have_left;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
-    let starty4 = (sby & is_sb64) << 4;
+    let starty4 = ((sby & is_sb64) as u32) << 4;
     let sbsz = 32 >> is_sb64;
     let sbl2 = 5 - is_sb64;
     let halign = (f.bh + 31 & !31) as usize;
@@ -593,8 +593,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let hmask = 16 >> ss_hor;
     let vmax = (1 as c_uint) << vmask;
     let hmax = (1 as c_uint) << hmask;
-    let endy4 = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
-    let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
+    let endy4 = starty4 + cmp::min(f.h4 - sby * sbsz, sbsz) as u32;
+    let uv_endy4 = (endy4 + ss_ver as u32) >> ss_ver;
     let (lpf_y, lpf_uv) = f.lf.tx_lpf_right_edge.get();
     let mut lpf_y = &lpf_y[(sby << sbl2) as usize..];
     let mut lpf_uv = &lpf_uv[(sby << sbl2 - ss_ver) as usize..];
@@ -610,7 +610,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         x >>= is_sb64;
         let y_hmask: &mut [[u16; 2]; 3] =
             &mut (*lflvl.offset(x as isize)).filter_y[0][bx4 as usize];
-        for y in starty4 as u32..endy4 as u32 {
+        for y in starty4..endy4 {
             let mask: u32 = 1 << y;
             let sidx = (mask >= 0x10000) as usize;
             let smask = (mask >> (sidx << 4)) as u16;
@@ -619,22 +619,20 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             y_hmask[2][sidx] &= !smask;
             y_hmask[1][sidx] &= !smask;
             y_hmask[0][sidx] &= !smask;
-            y_hmask[cmp::min(idx, lpf_y[(y - starty4 as u32) as usize] as usize)][sidx] |= smask;
+            y_hmask[cmp::min(idx, lpf_y[(y - starty4) as usize] as usize)][sidx] |= smask;
         }
         if f.cur.p.layout != Rav1dPixelLayout::I400 {
             let uv_hmask: &mut [[u16; 2]; 2] =
                 &mut (*lflvl.offset(x as isize)).filter_uv[0][cbx4 as usize];
-            for y in (starty4 >> ss_ver) as u32..uv_endy4 {
+            for y in starty4 >> ss_ver..uv_endy4 {
                 let uv_mask: u32 = 1 << y;
                 let sidx = (uv_mask >= vmax) as usize;
                 let smask = (uv_mask >> (sidx << 4 - ss_ver)) as u16;
                 let idx = (uv_hmask[1][sidx] & smask != 0) as usize;
                 uv_hmask[1][sidx] &= !smask;
                 uv_hmask[0][sidx] &= !smask;
-                uv_hmask[cmp::min(
-                    idx,
-                    lpf_uv[(y - (starty4 >> ss_ver) as u32) as usize] as usize,
-                ) as usize][sidx] |= smask;
+                uv_hmask[cmp::min(idx, lpf_uv[(y - (starty4 >> ss_ver)) as usize] as usize)]
+                    [sidx] |= smask;
             }
         }
         lpf_y = &lpf_y[halign..];
@@ -642,12 +640,12 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         tile_col += 1;
     }
     if start_of_tile_row != 0 {
-        let mut a: *const BlockContext;
-        a = &mut *(f.a).offset((f.sb128w * (start_of_tile_row - 1)) as isize) as *mut BlockContext;
+        let mut a: &[BlockContext] = slice::from_raw_parts(f.a, f.a_sz as usize);
+        a = &a[(f.sb128w * (start_of_tile_row - 1)) as usize..];
         for x in 0..f.sb128w {
             let y_vmask: &mut [[u16; 2]; 3] =
                 &mut (*lflvl.offset(x as isize)).filter_y[1][starty4 as usize];
-            let w: c_uint = cmp::min(32 as c_int, f.w4 - (x << 5)) as c_uint;
+            let w = cmp::min(32, f.w4 - (x << 5)) as u32;
             for i in 0..w {
                 let mask: u32 = 1 << i;
                 let sidx = (mask >= 0x10000) as usize;
@@ -657,7 +655,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                 y_vmask[2][sidx] &= !smask;
                 y_vmask[1][sidx] &= !smask;
                 y_vmask[0][sidx] &= !smask;
-                y_vmask[cmp::min(idx, (*a).tx_lpf_y[i as usize] as usize)][sidx] |= smask;
+                y_vmask[cmp::min(idx, a[0].tx_lpf_y[i as usize] as usize)][sidx] |= smask;
             }
             if f.cur.p.layout != Rav1dPixelLayout::I400 {
                 let cw: c_uint = w.wrapping_add(ss_hor as c_uint) >> ss_hor;
@@ -670,10 +668,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                     let idx = (uv_vmask[1][sidx] & smask != 0) as usize;
                     uv_vmask[1][sidx] &= !smask;
                     uv_vmask[0][sidx] &= !smask;
-                    uv_vmask[cmp::min(idx, (*a).tx_lpf_uv[i as usize] as usize)][sidx] |= smask;
+                    uv_vmask[cmp::min(idx, a[0].tx_lpf_uv[i as usize] as usize)][sidx] |= smask;
                 }
             }
-            a = a.offset(1);
+            a = &a[1..];
         }
     }
     let mut ptr: *mut BD::Pixel;
@@ -689,8 +687,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             &(*lflvl.offset(x as isize)).filter_y[0],
             ptr,
             f.cur.stride[0],
-            cmp::min(32 as c_int, f.w4 - x * 32),
-            starty4,
+            cmp::min(32, f.w4 - x * 32),
+            starty4 as c_int,
             endy4 as c_int,
         );
         have_left = true;
@@ -710,11 +708,11 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             level_ptr,
             f.b4_stride,
             &(*lflvl.offset(x as isize)).filter_uv[0],
-            &mut *p[1].offset(uv_off as isize),
-            &mut *p[2].offset(uv_off as isize),
+            &mut *p[1].offset(uv_off),
+            &mut *p[2].offset(uv_off),
             f.cur.stride[1],
-            cmp::min(32 as c_int, f.w4 - x * 32) + ss_hor >> ss_hor,
-            starty4 >> ss_ver,
+            cmp::min(32, f.w4 - x * 32) + ss_hor >> ss_hor,
+            starty4 as c_int >> ss_ver,
             uv_endy4 as c_int,
             ss_ver,
         );
