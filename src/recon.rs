@@ -4496,18 +4496,41 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     }
     let y = sby * f.sb_step * 4;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let p: [*mut BD::Pixel; 3] = [
-        (f.lf.p[0] as *mut BD::Pixel).offset((y as isize * BD::pxstride(f.cur.stride[0])) as isize),
-        (f.lf.p[1] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-        (f.lf.p[2] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
+    let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+
+    let datay_stride = BD::pxstride((*f).cur.stride[0]);
+    let datay_width = (*f).cur.p.w;
+    let datay_height = (*f).cur.p.h;
+    let datay_diff = (datay_height - 1) as isize * datay_stride;
+    let datauv_stride = BD::pxstride((*f).cur.stride[1]);
+    let datauv_width = datay_width >> ss_hor;
+    let datauv_height = datay_height >> ss_ver;
+    let datauv_diff = (datauv_height - 1) as isize * datauv_stride;
+
+    let mut p: [&mut [BD::Pixel]; 3] = [
+        slice::from_raw_parts_mut(
+            (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(datay_diff, 0)),
+            datay_diff.unsigned_abs() + datay_width as usize,
+        ),
+        slice::from_raw_parts_mut(
+            (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(datauv_diff, 0)),
+            datauv_diff.unsigned_abs() + datauv_width as usize,
+        ),
+        slice::from_raw_parts_mut(
+            (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(datauv_diff, 0)),
+            datauv_diff.unsigned_abs() + datauv_width as usize,
+        ),
+    ];
+    let p_offset: [usize; 2] = [
+        (cmp::max(0, -datay_diff) + y as isize * datay_stride) as usize,
+        (cmp::max(0, -datauv_diff) + y as isize * datauv_stride >> ss_ver) as usize,
     ];
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
-        &p,
+        &mut p,
+        &p_offset,
         mask_offset as usize,
         sby,
         *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
