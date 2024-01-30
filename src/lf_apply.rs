@@ -586,7 +586,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let starty4 = (sby & is_sb64) << 4;
     let sbsz = 32 >> is_sb64;
     let sbl2 = 5 - is_sb64;
-    let halign = f.bh + 31 & !(31 as c_int);
+    let halign = (f.bh + 31 & !31) as usize;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let vmask = 16 >> ss_ver;
@@ -619,10 +619,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             y_hmask[2][sidx] &= !smask;
             y_hmask[1][sidx] &= !smask;
             y_hmask[0][sidx] &= !smask;
-            y_hmask[cmp::min(
-                idx,
-                lpf_y[y.wrapping_sub(starty4 as c_uint) as usize] as usize,
-            )][sidx] |= smask;
+            y_hmask[cmp::min(idx, lpf_y[(y - starty4 as u32) as usize] as usize)][sidx] |= smask;
         }
         if f.cur.p.layout != Rav1dPixelLayout::I400 {
             let uv_hmask: &mut [[u16; 2]; 2] =
@@ -636,12 +633,12 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                 uv_hmask[0][sidx] &= !smask;
                 uv_hmask[cmp::min(
                     idx,
-                    lpf_uv[y.wrapping_sub((starty4 >> ss_ver) as u32) as usize] as usize,
+                    lpf_uv[(y - (starty4 >> ss_ver) as u32) as usize] as usize,
                 ) as usize][sidx] |= smask;
             }
         }
-        lpf_y = &lpf_y[halign as usize..];
-        lpf_uv = &lpf_uv[(halign >> ss_ver) as usize..];
+        lpf_y = &lpf_y[halign..];
+        lpf_uv = &lpf_uv[(halign >> ss_ver)..];
         tile_col += 1;
     }
     if start_of_tile_row != 0 {
