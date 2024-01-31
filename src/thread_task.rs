@@ -52,6 +52,7 @@ use std::ptr;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::sync::MutexGuard;
 
 #[cfg(target_os = "linux")]
@@ -196,7 +197,7 @@ unsafe fn insert_tasks_between(
     b: *mut Rav1dTask,
     cond_signal: c_int,
 ) {
-    let ttd: &mut TaskThreadData = &mut *f.task_thread.ttd;
+    let ttd: &TaskThreadData = &*f.task_thread.ttd;
     if c.flush.load(Ordering::SeqCst) != 0 {
         return;
     }
@@ -512,13 +513,13 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
     out: &mut Rav1dPicture,
     in_0: &Rav1dPicture,
 ) {
-    let ttd: &mut TaskThreadData = &mut c.task_thread;
+    let ttd: &TaskThreadData = &c.task_thread;
     let mut delayed_fg = ttd.delayed_fg.lock().unwrap();
     delayed_fg.in_0 = in_0;
     delayed_fg.out = out;
     delayed_fg.type_0 = RAV1D_TASK_TYPE_FG_PREP;
-    ttd.delayed_fg_progress[0] = AtomicI32::new(0);
-    ttd.delayed_fg_progress[1] = AtomicI32::new(0);
+    ttd.delayed_fg_progress[0].store(0, Ordering::SeqCst);
+    ttd.delayed_fg_progress[1].store(0, Ordering::SeqCst);
     delayed_fg.exec = 1 as c_int;
     ttd.cond.notify_one();
     drop(ttd.delayed_fg_cond.wait(delayed_fg).unwrap());
@@ -791,14 +792,18 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
 pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
     let tc: &mut Rav1dTaskContext = &mut *(data as *mut Rav1dTaskContext);
     let c: &Rav1dContext = &*tc.c;
-    let ttd: &mut TaskThreadData = &mut *tc.task_thread.ttd;
+
+    // We clone the Arc here for the lifetime of this function to avoid an
+    // immutable borrow of tc across the call to park
+    let ttd_clone = Arc::clone(&tc.task_thread.ttd);
+    let ttd = &*ttd_clone;
 
     rav1d_set_thread_name(b"dav1d-worker\0" as *const u8 as *const c_char);
 
     unsafe fn park<'ttd>(
         c: &Rav1dContext,
         tc: &mut Rav1dTaskContext,
-        ttd: &'ttd TaskThreadData,
+        ttd: &TaskThreadData,
         task_thread_lock: MutexGuard<'ttd, TaskThreadData_delayed_fg>,
     ) -> MutexGuard<'ttd, TaskThreadData_delayed_fg> {
         tc.task_thread.flushed = true;

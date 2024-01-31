@@ -333,15 +333,18 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         0 as c_int,
         ::core::mem::size_of::<Rav1dTaskContext>().wrapping_mul((*c).n_tc as usize),
     );
-    if (*c).n_tc > 1 as c_uint {
-        (*c).task_thread.delayed_fg = Mutex::new(mem::zeroed());
-        (*c).task_thread.cond = Condvar::new();
-        (*c).task_thread.cur = AtomicU32::new((*c).n_fc);
-        (*c).task_thread.delayed_fg_cond = Condvar::new();
-        (*c).task_thread.reset_task_cur = AtomicU32::new(u32::MAX);
-        (*c).task_thread.cond_signaled = AtomicI32::new(0);
-        (*c).task_thread.inited = 1 as c_int;
-    }
+    let ttd = TaskThreadData {
+        cond: Condvar::new(),
+        first: AtomicU32::new(0),
+        cur: AtomicU32::new((*c).n_fc),
+        reset_task_cur: AtomicU32::new(u32::MAX),
+        cond_signaled: AtomicI32::new(0),
+        delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
+        delayed_fg_cond: Condvar::new(),
+        delayed_fg: Mutex::new(mem::zeroed()),
+        inited: 1,
+    };
+    (&mut (*c).task_thread as *mut Arc<TaskThreadData>).write(Arc::new(ttd));
     if (*c).n_fc > 1 as c_uint {
         (*c).frame_thread.out_delayed = calloc(
             (*c).n_fc as usize,
@@ -360,7 +363,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             (*f).task_thread.cond = Condvar::new();
             (*f).task_thread.pending_tasks = Default::default();
         }
-        (*f).task_thread.ttd = &mut (*c).task_thread;
+        (&mut (*f).task_thread.ttd as *mut Arc<TaskThreadData>)
+            .write(Arc::clone(&(*c).task_thread));
         (*f).lf.last_sharpness = -(1 as c_int);
         rav1d_refmvs_init(&mut (*f).rf);
         n = n.wrapping_add(1);
@@ -369,7 +373,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     while m < (*c).n_tc {
         let t: *mut Rav1dTaskContext = &mut *((*c).tc).offset(m as isize) as *mut Rav1dTaskContext;
         (*t).f = &mut *((*c).fc).offset(0) as *mut Rav1dFrameContext;
-        (*t).task_thread.ttd = &mut (*c).task_thread;
+        (&mut (*t).task_thread.ttd as *mut Arc<TaskThreadData>)
+            .write(Arc::clone(&(*c).task_thread));
         (*t).c = c;
         *BitDepth16::select_mut(&mut (*t).cf) = Align64([0; 32 * 32]);
         if (*c).n_tc > 1 as c_uint {
@@ -846,8 +851,8 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
                 .pending_tasks_merge = AtomicI32::new(0);
             i_1 = i_1.wrapping_add(1);
         }
-        (*c).task_thread.first = AtomicU32::new(0);
-        (*c).task_thread.cur = AtomicU32::new((*c).n_fc);
+        (*c).task_thread.first.store(0, Ordering::SeqCst);
+        (*c).task_thread.cur.store((*c).n_fc, Ordering::SeqCst);
         (*c).task_thread
             .reset_task_cur
             .store(u32::MAX, Ordering::SeqCst);
@@ -917,9 +922,9 @@ impl Drop for Rav1dContext {
         // function unsafe because the Drop trait requires a safe function.
         unsafe {
             if !(self.tc).is_null() {
-                let ttd: *mut TaskThreadData = &mut self.task_thread;
-                if (*ttd).inited != 0 {
-                    let task_thread_lock = (*ttd).delayed_fg.lock().unwrap();
+                let ttd: &TaskThreadData = &*self.task_thread;
+                if ttd.inited != 0 {
+                    let task_thread_lock = ttd.delayed_fg.lock().unwrap();
                     let mut n: c_uint = 0 as c_int as c_uint;
                     while n < self.n_tc
                         && (*(self.tc).offset(n as isize)).task_thread.td.inited != 0
@@ -927,7 +932,7 @@ impl Drop for Rav1dContext {
                         (*(self.tc).offset(n as isize)).task_thread.die = true;
                         n = n.wrapping_add(1);
                     }
-                    (*ttd).cond.notify_all();
+                    ttd.cond.notify_all();
                     drop(task_thread_lock);
                     let mut n_0: c_uint = 0 as c_int as c_uint;
                     while n_0 < self.n_tc {

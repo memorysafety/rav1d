@@ -233,7 +233,6 @@ use std::ptr;
 use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicI32;
-use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 
 #[cfg(feature = "bitdepth_8")]
@@ -4971,7 +4970,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             // `cur` is not actually mutated from multiple threads concurrently
             let cur = c.task_thread.cur.load(Ordering::Relaxed);
             if cur != 0 && cur < c.n_fc {
-                c.task_thread.cur = AtomicU32::new(cur - 1);
+                c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
             }
         }
         let error = f.task_thread.retval;
