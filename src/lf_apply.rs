@@ -392,7 +392,8 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: &[[[u16; 2]; 3]; 32],
-    dst: *mut BD::Pixel,
+    dst: &mut [BD::Pixel],
+    dst_offset: usize,
     ls: ptrdiff_t,
     w: c_int,
     starty4: c_int,
@@ -418,7 +419,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
             }
             // hmask[3] = 0; already initialized above
             (*dsp).lf.loop_filter_sb[0][0](
-                dst.add(x * 4).cast(),
+                dst.as_mut_ptr().add(dst_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
                 lvl[x..].as_ptr(),
@@ -475,8 +476,9 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: &[[[u16; 2]; 2]; 32],
-    u: *mut BD::Pixel,
-    v: *mut BD::Pixel,
+    u: &mut [BD::Pixel],
+    v: &mut [BD::Pixel],
+    uv_offset: usize,
     ls: ptrdiff_t,
     w: c_int,
     starty4: c_int,
@@ -484,7 +486,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     ss_ver: c_int,
 ) {
     let dsp: &Rav1dDSPContext = &*f.dsp;
-    for x in 0..w {
+    for x in 0..w as usize {
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 3] = [0; 3];
             if starty4 == 0 {
@@ -500,7 +502,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
             }
             // hmask[2] = 0; Already initialized to 0 above
             (*dsp).lf.loop_filter_sb[1][0](
-                u.offset((x * 4) as isize).cast(),
+                u.as_mut_ptr().add(uv_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
                 unaligned_lvl_slice(&lvl[x as usize..], 2).as_ptr(),
@@ -510,7 +512,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 f.bitdepth_max,
             );
             (*dsp).lf.loop_filter_sb[1][0](
-                v.offset((x * 4) as isize).cast(),
+                v.as_mut_ptr().add(uv_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
                 unaligned_lvl_slice(&lvl[x as usize..], 3).as_ptr(),
@@ -675,9 +677,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             a = &a[1..];
         }
     }
-    let mut slice: &mut [BD::Pixel];
     let mut level_ptr = &f.lf.level[(f.b4_stride * sby as isize * sbsz as isize) as usize..];
-    slice = p[0];
+    let mut offset = p_offset[0];
     have_left = false;
     for x in 0..f.sb128w {
         filter_plane_cols_y::<BD>(
@@ -686,7 +687,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             level_ptr,
             f.b4_stride,
             &(*lflvl.offset(x as isize)).filter_y[0],
-            slice.as_mut_ptr().offset(p_offset[0] as isize),
+            p[0],
+            offset,
             f.cur.stride[0],
             cmp::min(32, f.w4 - x * 32),
             starty4 as c_int,
@@ -694,13 +696,14 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         );
         have_left = true;
         level_ptr = &level_ptr[32..];
-        slice = &mut slice[128..];
+        offset += 128;
     }
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
-    let mut uv_off: ptrdiff_t = 0;
     let mut level_ptr = &f.lf.level[(f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    let (pu, pv) = p[1..].split_at_mut(1);
+    let mut uv_off = p_offset[1];
     have_left = false;
     for x in 0..f.sb128w {
         filter_plane_cols_uv::<BD>(
@@ -709,12 +712,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             level_ptr,
             f.b4_stride,
             &(*lflvl.offset(x as isize)).filter_uv[0],
-            p[1][uv_off as usize..]
-                .as_mut_ptr()
-                .offset(p_offset[1] as isize),
-            p[2][uv_off as usize..]
-                .as_mut_ptr()
-                .offset(p_offset[1] as isize),
+            pu[0],
+            pv[0],
+            uv_off,
             f.cur.stride[1],
             cmp::min(32, f.w4 - x * 32) + ss_hor >> ss_hor,
             starty4 as c_int >> ss_ver,
