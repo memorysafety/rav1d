@@ -76,6 +76,7 @@ use libc::pthread_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::mem;
 use std::ptr;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
@@ -716,6 +717,37 @@ pub(crate) struct Rav1dTaskContext {
     pub tl_4x4_filter: Filter2d,
     pub frame_thread: Rav1dTaskContext_frame_thread,
     pub task_thread: Arc<Rav1dTaskContext_task_thread>,
+}
+
+impl Rav1dTaskContext {
+    pub(crate) unsafe fn new(
+        f: *mut Rav1dFrameContext,
+        task_thread: Arc<Rav1dTaskContext_task_thread>,
+    ) -> Self {
+        Self {
+            f,
+            ts: ptr::null_mut(),
+            bx: 0,
+            by: 0,
+            l: mem::zeroed(),
+            a: ptr::null_mut(),
+            rt: mem::zeroed(),
+            cf: Default::default(),
+            al_pal: Default::default(),
+            pal_sz_uv: Default::default(),
+            txtp_map: [0u8; 1024],
+            scratch: mem::zeroed(),
+            warpmv: mem::zeroed(),
+            lf_mask: ptr::null_mut(),
+            top_pre_cdef_toggle: 0,
+            cur_sb_cdef_idx_ptr: ptr::null_mut(),
+            tl_4x4_filter: mem::zeroed(),
+            frame_thread: Rav1dTaskContext_frame_thread {
+                pass: 0,
+            },
+            task_thread,
+        }
+    }
 }
 
 // TODO(SJC): This is a temporary struct to pass a single pointer that holds
