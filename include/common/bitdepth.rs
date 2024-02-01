@@ -6,6 +6,7 @@ use std::ffi::c_void;
 use std::fmt;
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::mem;
 use std::ops::Add;
 use std::ops::Mul;
 use std::ops::Shr;
@@ -420,6 +421,25 @@ where
 {
     fn clone(&self) -> Self {
         *self
+    }
+}
+
+impl<T: BitDepthDependentType> Default for BitDepthUnion<T>
+where
+    T::T<BitDepth8>: Default + Copy,
+    T::T<BitDepth16>: Default + Copy,
+{
+    fn default() -> Self {
+        // Create as default whichever variant is larger.
+        if mem::size_of::<T::T<BitDepth8>>() > mem::size_of::<T::T<BitDepth16>>() {
+            Self {
+                bpc8: Default::default(),
+            }
+        } else {
+            Self {
+                bpc16: Default::default(),
+            }
+        }
     }
 }
 
