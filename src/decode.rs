@@ -4834,7 +4834,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameContext) -
             }
 
             // loopfilter + cdef + restoration
-            (f.bd_fn.filter_sbrow)(c, f, sby);
+            (f.bd_fn.filter_sbrow)(c, f, t, sby);
         }
     }
 
