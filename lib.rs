@@ -76,7 +76,6 @@ pub mod src {
     mod refmvs;
     mod scan;
     mod tables;
-    mod thread_data;
     mod thread_task;
     mod warpmv;
     mod wedge;

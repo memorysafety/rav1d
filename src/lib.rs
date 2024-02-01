@@ -35,10 +35,12 @@ use crate::src::error::Rav1dResult;
 use crate::src::fg_apply;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_borrow;
+use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::intra_edge::rav1d_init_mode_tree;
 use crate::src::levels::Av1Block;
@@ -342,7 +344,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
         delayed_fg_cond: Condvar::new(),
         delayed_fg: Mutex::new(mem::zeroed()),
-        inited: 1,
     };
     (&mut (*c).task_thread as *mut Arc<TaskThreadData>).write(Arc::new(ttd));
     ptr::addr_of_mut!((*c).frame_thread.out_delayed).write(if (*c).n_fc > 1 {
@@ -369,17 +370,20 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     while m < (*c).n_tc {
         let t: *mut Rav1dTaskContext = &mut *((*c).tc).offset(m as isize) as *mut Rav1dTaskContext;
         (*t).f = &mut *((*c).fc).offset(0) as *mut Rav1dFrameContext;
-        (&mut (*t).task_thread.ttd as *mut Arc<TaskThreadData>)
-            .write(Arc::clone(&(*c).task_thread));
+        let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(Arc::clone(
+            &(*c).task_thread,
+        )));
+        (&mut (*t).task_thread as *mut Arc<Rav1dTaskContext_task_thread>)
+            .write(Arc::clone(&thread_data));
         *BitDepth16::select_mut(&mut (*t).cf) = Align64([0; 32 * 32]);
-        if (*c).n_tc > 1 as c_uint {
-            (*t).task_thread.td.cond = Condvar::new();
+        let handle = if (*c).n_tc > 1 as c_uint {
             let thread_args = Box::new(Rav1dTaskContext_borrow {
                 c: &*c,
                 tc: &mut *t,
             });
+            let mut thread = 0;
             if pthread_create(
-                &mut (*t).task_thread.td.thread,
+                &mut thread,
                 &mut thread_attr,
                 Some(rav1d_worker_task),
                 Box::into_raw(thread_args).cast(),
@@ -387,8 +391,14 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             {
                 return error(c, c_out, &mut thread_attr);
             }
-            (*t).task_thread.td.inited = 1 as c_int;
-        }
+            Some(thread)
+        } else {
+            None
+        };
+        (*c).tc_shared.push(Rav1dContextTaskThread {
+            handle,
+            thread_data,
+        });
         m = m.wrapping_add(1);
     }
     rav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
@@ -826,8 +836,8 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         while i_0 < (*c).n_tc {
             let tc: *mut Rav1dTaskContext =
                 &mut *((*c).tc).offset(i_0 as isize) as *mut Rav1dTaskContext;
-            while !(*tc).task_thread.flushed {
-                task_thread_lock = (*tc).task_thread.td.cond.wait(task_thread_lock).unwrap();
+            while !(*tc).task_thread.flushed.load(Ordering::Relaxed) {
+                task_thread_lock = (*tc).task_thread.cond.wait(task_thread_lock).unwrap();
             }
             i_0 = i_0.wrapping_add(1);
         }
@@ -919,26 +929,17 @@ impl Drop for Rav1dContext {
         unsafe {
             if !(self.tc).is_null() {
                 let ttd: &TaskThreadData = &*self.task_thread;
-                if ttd.inited != 0 {
+                if self.n_tc > 1 {
                     let task_thread_lock = ttd.delayed_fg.lock().unwrap();
-                    let mut n: c_uint = 0 as c_int as c_uint;
-                    while n < self.n_tc
-                        && (*(self.tc).offset(n as isize)).task_thread.td.inited != 0
-                    {
-                        (*(self.tc).offset(n as isize)).task_thread.die = true;
-                        n = n.wrapping_add(1);
+                    for tc in &self.tc_shared {
+                        tc.thread_data.die.store(true, Ordering::Relaxed);
                     }
                     ttd.cond.notify_all();
                     drop(task_thread_lock);
-                    let mut n_0: c_uint = 0 as c_int as c_uint;
-                    while n_0 < self.n_tc {
-                        let pf: *mut Rav1dTaskContext =
-                            &mut *(self.tc).offset(n_0 as isize) as *mut Rav1dTaskContext;
-                        if (*pf).task_thread.td.inited == 0 {
-                            break;
+                    for tc in &self.tc_shared {
+                        if let Some(handle) = tc.handle {
+                            pthread_join(handle, 0 as *mut *mut c_void);
                         }
-                        pthread_join((*pf).task_thread.td.thread, 0 as *mut *mut c_void);
-                        n_0 = n_0.wrapping_add(1);
                     }
                 }
                 rav1d_free_aligned(self.tc as *mut c_void);
