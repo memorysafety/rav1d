@@ -1,4 +1,3 @@
-use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
@@ -20,7 +19,6 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::align::Align64;
 use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
@@ -39,7 +37,6 @@ use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
-use crate::src::internal::Rav1dTaskContext_borrow;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::intra_edge::rav1d_init_mode_tree;
@@ -79,8 +76,6 @@ use libc::pthread_attr_destroy;
 use libc::pthread_attr_init;
 use libc::pthread_attr_setstacksize;
 use libc::pthread_attr_t;
-use libc::pthread_join;
-use libc::pthread_t;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
@@ -100,6 +95,7 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::Once;
+use std::thread;
 use to_method::To as _;
 
 #[cfg(target_os = "linux")]
@@ -107,15 +103,6 @@ use libc::dlsym;
 
 #[cfg(target_os = "linux")]
 use libc::sysconf;
-
-extern "C" {
-    fn pthread_create(
-        __newthread: *mut pthread_t,
-        __attr: *const pthread_attr_t,
-        __start_routine: Option<unsafe extern "C" fn(*mut c_void) -> *mut c_void>,
-        __arg: *mut c_void,
-    ) -> c_int;
-}
 
 #[cold]
 fn init_internal() {
@@ -323,18 +310,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         0 as c_int,
         ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
     );
-    (*c).tc = rav1d_alloc_aligned(
-        ::core::mem::size_of::<Rav1dTaskContext>().wrapping_mul((*c).n_tc as usize),
-        64 as c_int as usize,
-    ) as *mut Rav1dTaskContext;
-    if ((*c).tc).is_null() {
-        return error(c, c_out, &mut thread_attr);
-    }
-    memset(
-        (*c).tc as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<Rav1dTaskContext>().wrapping_mul((*c).n_tc as usize),
-    );
     let ttd = TaskThreadData {
         cond: Condvar::new(),
         first: AtomicU32::new(0),
@@ -366,41 +341,32 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         rav1d_refmvs_init(&mut (*f).rf);
         n = n.wrapping_add(1);
     }
-    let mut m: c_uint = 0 as c_int as c_uint;
-    while m < (*c).n_tc {
-        let t: *mut Rav1dTaskContext = &mut *((*c).tc).offset(m as isize) as *mut Rav1dTaskContext;
-        (*t).f = &mut *((*c).fc).offset(0) as *mut Rav1dFrameContext;
-        let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(Arc::clone(
-            &(*c).task_thread,
-        )));
-        (&mut (*t).task_thread as *mut Arc<Rav1dTaskContext_task_thread>)
-            .write(Arc::clone(&thread_data));
-        *BitDepth16::select_mut(&mut (*t).cf) = Align64([0; 32 * 32]);
-        let handle = if (*c).n_tc > 1 as c_uint {
-            let thread_args = Box::new(Rav1dTaskContext_borrow {
-                c: &*c,
-                tc: &mut *t,
-            });
-            let mut thread = 0;
-            if pthread_create(
-                &mut thread,
-                &mut thread_attr,
-                Some(rav1d_worker_task),
-                Box::into_raw(thread_args).cast(),
-            ) != 0
-            {
-                return error(c, c_out, &mut thread_attr);
+    (*c).tc = (0..(*c).n_tc)
+        .map(|_| {
+            let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(Arc::clone(
+                &(*c).task_thread,
+            )));
+            if (*c).n_tc > 1 {
+                // TODO(SJC): can be removed when c is not a raw pointer
+                let context_borrow = &*c;
+                let thread_data_copy = Arc::clone(&thread_data);
+                let handle = thread::spawn(|| rav1d_worker_task(context_borrow, thread_data_copy));
+                Rav1dContextTaskThread {
+                    handle: Some(handle),
+                    thread_data,
+                }
+            } else {
+                (*c).main_tc = Some(Mutex::new(Box::new(Rav1dTaskContext::new(
+                    &mut *((*c).fc).offset(0),
+                    Arc::clone(&thread_data),
+                ))));
+                Rav1dContextTaskThread {
+                    handle: None,
+                    thread_data,
+                }
             }
-            Some(thread)
-        } else {
-            None
-        };
-        (*c).tc_shared.push(Rav1dContextTaskThread {
-            handle,
-            thread_data,
-        });
-        m = m.wrapping_add(1);
-    }
+        })
+        .collect();
     rav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
     (*c).intra_edge.root[BL_128X128 as c_int as usize] =
         &mut (*((*c).intra_edge.branch_sb128).as_mut_ptr().offset(0)).node;
@@ -832,14 +798,10 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     (*c).flush.store(1, Ordering::SeqCst);
     if (*c).n_tc > 1 as c_uint {
         let mut task_thread_lock = (*c).task_thread.delayed_fg.lock().unwrap();
-        let mut i_0: c_uint = 0 as c_int as c_uint;
-        while i_0 < (*c).n_tc {
-            let tc: *mut Rav1dTaskContext =
-                &mut *((*c).tc).offset(i_0 as isize) as *mut Rav1dTaskContext;
-            while !(*tc).task_thread.flushed.load(Ordering::Relaxed) {
-                task_thread_lock = (*tc).task_thread.cond.wait(task_thread_lock).unwrap();
+        for tc in (*c).tc.iter() {
+            while !tc.flushed() {
+                task_thread_lock = tc.thread_data.cond.wait(task_thread_lock).unwrap();
             }
-            i_0 = i_0.wrapping_add(1);
         }
         let mut i_1: c_uint = 0 as c_int as c_uint;
         while i_1 < (*c).n_fc {
@@ -927,22 +889,19 @@ impl Drop for Rav1dContext {
         // remove all pointers from the structure. We can't make the drop
         // function unsafe because the Drop trait requires a safe function.
         unsafe {
-            if !(self.tc).is_null() {
+            if self.n_tc > 1 {
                 let ttd: &TaskThreadData = &*self.task_thread;
-                if self.n_tc > 1 {
-                    let task_thread_lock = ttd.delayed_fg.lock().unwrap();
-                    for tc in &self.tc_shared {
-                        tc.thread_data.die.store(true, Ordering::Relaxed);
-                    }
-                    ttd.cond.notify_all();
-                    drop(task_thread_lock);
-                    for tc in &self.tc_shared {
-                        if let Some(handle) = tc.handle {
-                            pthread_join(handle, 0 as *mut *mut c_void);
-                        }
+                let task_thread_lock = ttd.delayed_fg.lock().unwrap();
+                for tc in self.tc.iter() {
+                    tc.thread_data.die.store(true, Ordering::Relaxed);
+                }
+                ttd.cond.notify_all();
+                drop(task_thread_lock);
+                for task_thread in self.tc.iter_mut() {
+                    if let Some(handle) = task_thread.handle.take() {
+                        handle.join().expect("Could not join task thread");
                     }
                 }
-                rav1d_free_aligned(self.tc as *mut c_void);
             }
             let mut n_1: c_uint = 0 as c_int as c_uint;
             while !(self.fc).is_null() && n_1 < self.n_fc {

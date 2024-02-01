@@ -72,7 +72,6 @@ use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use atomig::Atomic;
-use libc::pthread_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -85,6 +84,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
+use std::thread::JoinHandle;
 
 #[repr(C)]
 pub(crate) struct Rav1dDSPContext {
@@ -166,6 +166,9 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub grain: BitDepthUnion<Grain>,
 }
 
+// TODO(SJC): Remove when TaskThreadData_delayed_fg is thread-safe
+unsafe impl Send for TaskThreadData_delayed_fg {}
+
 #[repr(C)]
 pub(crate) struct TaskThreadData {
     pub cond: Condvar,
@@ -208,7 +211,7 @@ pub struct Rav1dContext_intra_edge {
 pub(crate) struct Rav1dContextTaskThread {
     /// Thread join handle, if this task is on a worker thread. The main thread
     /// task does not contain a handle.
-    pub handle: Option<pthread_t>,
+    pub handle: Option<JoinHandle<()>>,
     /// Data shared between the main thread and a worker thread.
     pub thread_data: Arc<Rav1dTaskContext_task_thread>,
 }
@@ -224,9 +227,16 @@ pub struct Rav1dContext {
     pub(crate) fc: *mut Rav1dFrameContext,
     pub(crate) n_fc: c_uint,
 
-    pub(crate) tc: *mut Rav1dTaskContext,
-    pub(crate) tc_shared: Vec<Rav1dContextTaskThread>,
+    /// Task context if we aren't using worker threads
+    // This Rav1dTaskContext is heap-allocated because we don't want to bloat
+    // the size of Rav1dContext, especially when it isn't used when we have
+    // worker threads.
+    pub(crate) main_tc: Option<Mutex<Box<Rav1dTaskContext>>>,
+    /// Worker thread join handles and communication
+    pub(crate) tc: Box<[Rav1dContextTaskThread]>,
+    /// Number of worker threads
     pub(crate) n_tc: c_uint,
+
     /// Cache of OBUs that make up a single frame before we submit them
     /// to a frame worker to be decoded.
     pub(crate) tiles: Vec<Rav1dTileGroup>,
@@ -281,6 +291,11 @@ pub struct Rav1dContext {
 
     pub(crate) picture_pool: *mut Rav1dMemPool,
 }
+
+// TODO(SJC): Remove when Rav1dContext is thread-safe
+unsafe impl Send for Rav1dContext {}
+// TODO(SJC): Remove when Rav1dContext is thread-safe
+unsafe impl Sync for Rav1dContext {}
 
 #[derive(Clone)]
 #[repr(C)]
@@ -742,19 +757,8 @@ impl Rav1dTaskContext {
             top_pre_cdef_toggle: 0,
             cur_sb_cdef_idx_ptr: ptr::null_mut(),
             tl_4x4_filter: mem::zeroed(),
-            frame_thread: Rav1dTaskContext_frame_thread {
-                pass: 0,
-            },
+            frame_thread: Rav1dTaskContext_frame_thread { pass: 0 },
             task_thread,
         }
     }
-}
-
-// TODO(SJC): This is a temporary struct to pass a single pointer that holds
-// both a Rav1dContext and Rav1dTaskContext to the start routine in
-// pthread_create. We need to pass the Rav1dTaskContext into the thread by value
-// and remove it from the context structure.
-pub(crate) struct Rav1dTaskContext_borrow<'c> {
-    pub c: &'c Rav1dContext,
-    pub tc: &'c mut Rav1dTaskContext,
 }
