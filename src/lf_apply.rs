@@ -703,11 +703,15 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     ptr = *p.offset(0);
     have_left = 0 as c_int;
     x = 0 as c_int;
-    while x < (*f).sb128w {
+    let mut level_ptr: &[[u8; 4]] =
+        &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
+    ptr = *p.offset(0);
+    have_left = 0 as c_int;
+    for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks(32)) {
         filter_plane_cols_y::<BD>(
             f,
             have_left,
-            level_ptr as *const [u8; 4],
+            level_ptr.as_ptr(),
             (*f).b4_stride,
             ((*lflvl.offset(x as isize)).filter_y[0]).as_mut_ptr() as *const [[u16; 2]; 3],
             ptr,
@@ -716,26 +720,21 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             starty4,
             endy4 as c_int,
         );
-        x += 1;
         have_left = 1 as c_int;
         ptr = ptr.offset(128);
-        level_ptr = level_ptr.offset(32);
     }
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
     let mut uv_off: ptrdiff_t;
-    level_ptr = ((*f).lf.level)
-        .as_ptr()
-        .offset((*f).b4_stride * (sby * sbsz >> ss_ver) as isize);
+    level_ptr = &((*f).lf.level)[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
     uv_off = 0 as c_int as ptrdiff_t;
     have_left = 0 as c_int;
-    x = 0 as c_int;
-    while x < (*f).sb128w {
+    for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks((32 >> ss_hor) as usize)) {
         filter_plane_cols_uv::<BD>(
             f,
             have_left,
-            level_ptr as *const [u8; 4],
+            level_ptr.as_ptr(),
             (*f).b4_stride,
             ((*lflvl.offset(x as isize)).filter_uv[0]).as_mut_ptr() as *const [[u16; 2]; 2],
             &mut *(*p.offset(1)).offset(uv_off as isize),
@@ -746,10 +745,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             uv_endy4 as c_int,
             ss_ver,
         );
-        x += 1;
         have_left = 1 as c_int;
         uv_off += 128 >> ss_hor;
-        level_ptr = level_ptr.offset((32 >> ss_hor) as isize);
     }
 }
 
