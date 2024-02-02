@@ -697,8 +697,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         }
     }
     let mut ptr: *mut BD::Pixel;
-    let mut level_ptr: *mut [u8; 4] =
-        ((*f).lf.level).offset((*f).b4_stride * sby as isize * sbsz as isize);
+    let mut level_ptr: *const [u8; 4] = ((*f).lf.level)
+        .as_ptr()
+        .offset((*f).b4_stride * sby as isize * sbsz as isize);
     ptr = *p.offset(0);
     have_left = 0 as c_int;
     x = 0 as c_int;
@@ -724,7 +725,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         return;
     }
     let mut uv_off: ptrdiff_t;
-    level_ptr = ((*f).lf.level).offset((*f).b4_stride * (sby * sbsz >> ss_ver) as isize);
+    level_ptr = ((*f).lf.level)
+        .as_ptr()
+        .offset((*f).b4_stride * (sby * sbsz >> ss_ver) as isize);
     uv_off = 0 as c_int as ptrdiff_t;
     have_left = 0 as c_int;
     x = 0 as c_int;
@@ -769,8 +772,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let endy4: c_uint = (starty4 + cmp::min((*f).h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
     let mut ptr: *mut BD::Pixel;
-    let mut level_ptr: *mut [u8; 4] =
-        ((*f).lf.level).offset((*f).b4_stride * sby as isize * sbsz as isize);
+    let mut level_ptr: *const [u8; 4] = ((*f).lf.level)
+        .as_ptr()
+        .offset((*f).b4_stride * sby as isize * sbsz as isize);
     ptr = *p.offset(0);
     x = 0 as c_int;
     while x < (*f).sb128w {
@@ -795,7 +799,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
     let mut uv_off: ptrdiff_t;
-    level_ptr = ((*f).lf.level).offset((*f).b4_stride * (sby * sbsz >> ss_ver) as isize);
+    level_ptr = ((*f).lf.level)
+        .as_ptr()
+        .offset((*f).b4_stride * (sby * sbsz >> ss_ver) as isize);
     uv_off = 0 as c_int as ptrdiff_t;
     x = 0 as c_int;
     while x < (*f).sb128w {

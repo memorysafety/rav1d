@@ -987,7 +987,7 @@ impl Drop for Rav1dContext {
                 let _ = mem::take(&mut (*f).tiles);
                 free((*f).lf.mask as *mut c_void);
                 free((*f).lf.lr_mask as *mut c_void);
-                free((*f).lf.level as *mut c_void);
+                let _ = mem::take(&mut (*f).lf.level);
                 free((*f).lf.tx_lpf_right_edge[0] as *mut c_void);
                 free((*f).lf.start_of_tile_row as *mut c_void);
                 rav1d_refmvs_clear(&mut (*f).rf);

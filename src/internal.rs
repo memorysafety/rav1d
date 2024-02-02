@@ -382,7 +382,7 @@ pub struct Rav1dFrameContext_frame_thread {
 /// loopfilter
 #[repr(C)]
 pub struct Rav1dFrameContext_lf {
-    pub level: *mut [u8; 4],
+    pub level: Box<[[u8; 4]]>,
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
     pub mask_sz: c_int, /* w*h */

@@ -355,7 +355,7 @@ fn mask_edges_chroma(
 
 pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     lflvl: &mut Av1Filter,
-    level_cache: *mut [u8; 4],
+    level_cache: &mut [[u8; 4]],
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
     bx: c_int,
@@ -381,10 +381,6 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     let by4 = by & 31;
 
     if bw4 != 0 && bh4 != 0 {
-        // TODO: Remove when `level_cache` is already a slice coming from a `Vec`.
-        // That refactor is complex, though, so for now we make it a slice by how elements are accessed.
-        let level_cache_len = (by * b4_stride + bx) + ((bh4 - 1) * b4_stride + bw4);
-        let level_cache = std::slice::from_raw_parts_mut(level_cache, level_cache_len);
         let offset = by * b4_stride + bx;
         for y in 0..bh4 {
             let offset = offset + y * b4_stride;
@@ -420,11 +416,6 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
 
-    // TODO: Remove when `level_cache` is already a slice coming from a `Vec`.
-    // That refactor is complex, though, so for now we make it a slice by how elements are accessed.
-    let level_cache_len =
-        ((by >> ss_ver) * b4_stride + (bx >> ss_hor)) + ((cbh4 - 1) * b4_stride + cbw4);
-    let level_cache = std::slice::from_raw_parts_mut(level_cache, level_cache_len);
     let offset = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for y in 0..cbh4 {
         let offset = offset + y * b4_stride;
@@ -451,7 +442,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
 
 pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     lflvl: &mut Av1Filter,
-    level_cache: *mut [u8; 4],
+    level_cache: &mut [[u8; 4]],
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
     r#ref: usize,
@@ -482,10 +473,6 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     let by4 = by & 31;
 
     if bw4 != 0 && bh4 != 0 {
-        // TODO: Remove when `level_cache` is already a slice coming from a `Vec`.
-        // That refactor is complex, though, so for now we make it a slice by how elements are accessed.
-        let level_cache_len = (by * b4_stride + bx) + ((bh4 - 1) * b4_stride + bw4);
-        let level_cache = std::slice::from_raw_parts_mut(level_cache, level_cache_len);
         let offset = by * b4_stride + bx;
         for y in 0..bh4 {
             let offset = offset + y * b4_stride;
@@ -532,11 +519,6 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
 
-    // TODO: Remove when `level_cache` is already a slice coming from a `Vec`.
-    // That refactor is complex, though, so for now we make it a slice by how elements are accessed.
-    let level_cache_len =
-        ((by >> ss_ver) * b4_stride + (bx >> ss_hor)) + ((cbh4 - 1) * b4_stride + cbw4);
-    let level_cache = std::slice::from_raw_parts_mut(level_cache, level_cache_len);
     let offset = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for y in 0..cbh4 {
         let offset = offset + y * b4_stride;
