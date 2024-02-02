@@ -2526,8 +2526,8 @@ unsafe fn parse_obus(
                 while !(*f).tiles.is_empty() {
                     task_thread_lock = (*f).task_thread.cond.wait(task_thread_lock).unwrap();
                 }
-                let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
-                if !(*out_delayed).p.data.data[0].is_null()
+                let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
+                if !out_delayed.p.data.data[0].is_null()
                     || (*f).task_thread.error.load(Ordering::SeqCst) != 0
                 {
                     let first = c.task_thread.first.load(Ordering::SeqCst);
@@ -2552,13 +2552,12 @@ unsafe fn parse_obus(
                 if error.is_err() {
                     c.cached_error = error;
                     (*f).task_thread.retval = Ok(());
-                    *c.cached_error_props.get_mut().unwrap() = (*out_delayed).p.m.clone();
+                    *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
                     rav1d_thread_picture_unref(out_delayed);
-                } else if !((*out_delayed).p.data.data[0]).is_null() {
+                } else if !(out_delayed.p.data.data[0]).is_null() {
                     let progress =
-                        (*out_delayed).progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
-                    if ((*out_delayed).visible || c.output_invisible_frames)
-                        && progress != FRAME_ERROR
+                        out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
+                    if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR
                     {
                         rav1d_thread_picture_ref(&mut c.out, out_delayed);
                         c.event_flags |= out_delayed.flags.into();
@@ -2569,9 +2568,9 @@ unsafe fn parse_obus(
                     out_delayed,
                     &mut c.refs[frame_hdr.existing_frame_idx as usize].p,
                 );
-                (*out_delayed).visible = true;
+                out_delayed.visible = true;
                 rav1d_picture_copy_props(
-                    &mut (*out_delayed).p,
+                    &mut out_delayed.p,
                     c.content_light.clone(),
                     c.mastering_display.clone(),
                     // Must be moved from the context to the frame.

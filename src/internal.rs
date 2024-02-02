@@ -124,7 +124,7 @@ pub const RAV1D_TASK_TYPE_INIT: TaskType = 0;
 
 #[repr(C)]
 pub(crate) struct Rav1dContext_frame_thread {
-    pub out_delayed: *mut Rav1dThreadPicture,
+    pub out_delayed: Box<[Rav1dThreadPicture]>,
     pub next: c_uint,
 }
 

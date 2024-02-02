@@ -4952,7 +4952,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         while !f.tiles.is_empty() {
             task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
         }
-        let out_delayed = &mut *c.frame_thread.out_delayed.offset(next as isize);
+        let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if !out_delayed.p.data.data[0].is_null() || f.task_thread.error.load(Ordering::SeqCst) != 0
         {
             let first = c.task_thread.first.load(Ordering::SeqCst);
