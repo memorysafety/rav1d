@@ -228,7 +228,7 @@ pub struct Rav1dContext {
     pub(crate) frame_thread: Rav1dContext_frame_thread,
 
     // task threading (refer to tc[] for per_thread thingies)
-    pub(crate) task_thread: TaskThreadData,
+    pub(crate) task_thread: Arc<TaskThreadData>,
 
     // reference/entropy state
     pub(crate) segmap_pool: *mut Rav1dMemPool,
@@ -431,7 +431,7 @@ impl Default for Rav1dFrameContext_task_thread_pending_tasks {
 pub(crate) struct Rav1dFrameContext_task_thread {
     pub lock: Mutex<()>,
     pub cond: Condvar,
-    pub ttd: *mut TaskThreadData,
+    pub ttd: Arc<TaskThreadData>,
     pub tasks: *mut Rav1dTask,
     pub tile_tasks: [*mut Rav1dTask; 2],
     pub init_task: Rav1dTask,
@@ -657,7 +657,7 @@ pub struct Rav1dTaskContext_frame_thread {
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext_task_thread {
     pub td: thread_data,
-    pub ttd: *mut TaskThreadData,
+    pub ttd: Arc<TaskThreadData>,
     pub fttd: *mut FrameTileThreadData,
     pub flushed: bool,
     pub die: bool,
