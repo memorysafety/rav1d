@@ -401,10 +401,8 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     starty4: c_int,
     endy4: c_int,
 ) {
-    let mut lvl = lvl.as_ptr();
     let dsp: *const Rav1dDSPContext = (*f).dsp;
-    let mut y = starty4;
-    while y < endy4 {
+    for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(have_top == 0 && y == 0) {
             let vmask: [u32; 4] = [
                 (*mask.offset(y as isize))[0][0] as c_uint
@@ -419,16 +417,14 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 dst.cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(1) as *const u8 as *const [u8; 4],
+                &*(*lvl.as_ptr().offset(0)).as_ptr().offset(1) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
                 (*f).bitdepth_max,
             );
         }
-        y += 1;
         dst = dst.offset(4 * BD::pxstride(ls as usize) as isize);
-        lvl = lvl.offset(b4_stride as isize);
     }
 }
 
@@ -502,10 +498,9 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     endy4: c_int,
     ss_hor: c_int,
 ) {
-    let mut lvl = lvl.as_ptr();
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut off_l: ptrdiff_t = 0 as c_int as ptrdiff_t;
-    for y in starty4..endy4 {
+    for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(have_top == 0 && y == 0) {
             let vmask: [u32; 3] = [
                 (*mask.offset(y as isize))[0][0] as c_uint
@@ -518,7 +513,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 u.offset(off_l as isize).cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(2) as *const u8 as *const [u8; 4],
+                &*(*lvl.as_ptr().offset(0)).as_ptr().offset(2) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
@@ -528,7 +523,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 v.offset(off_l as isize).cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.offset(0)).as_ptr().offset(3) as *const u8 as *const [u8; 4],
+                &*(*lvl.as_ptr().offset(0)).as_ptr().offset(3) as *const u8 as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
@@ -536,7 +531,6 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
             );
         }
         off_l += 4 * BD::pxstride(ls as usize) as isize;
-        lvl = lvl.offset(b4_stride as isize);
     }
 }
 
@@ -741,6 +735,16 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     }
 }
 
+fn prefixes<T>(slice: &[T], n: usize) -> impl Iterator<Item = &[T]> {
+    let mut offset = 0;
+
+    std::iter::from_fn(move || {
+        let new = slice.get(offset..)?;
+        offset = offset.saturating_add(n);
+        Some(new)
+    })
+}
+
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     p: *const *mut BD::Pixel,
@@ -762,7 +766,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let mut level_ptr: &[[u8; 4]] =
         &((*f).lf.level)[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
     ptr = *p.offset(0);
-    for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks(32)) {
+    for (x, level_ptr) in (0..(*f).sb128w).zip(prefixes(level_ptr, 32)) {
         filter_plane_rows_y::<BD>(
             f,
             have_top,
@@ -784,7 +788,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let mut uv_off: ptrdiff_t;
     level_ptr = &((*f).lf.level)[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
     uv_off = 0 as c_int as ptrdiff_t;
-    for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks((32 >> ss_hor) as usize)) {
+    for (x, level_ptr) in (0..(*f).sb128w).zip(prefixes(level_ptr, (32 >> ss_hor) as usize)) {
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
