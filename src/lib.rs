@@ -360,7 +360,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             (*f).task_thread.cond = Condvar::new();
             (*f).task_thread.pending_tasks = Default::default();
         }
-        (*f).c = c;
         (*f).task_thread.ttd = &mut (*c).task_thread;
         (*f).lf.last_sharpness = -(1 as c_int);
         rav1d_refmvs_init(&mut (*f).rf);
@@ -863,7 +862,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             }
             let f: *mut Rav1dFrameContext =
                 &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
-            rav1d_decode_frame_exit(&mut *f, Err(EGeneric));
+            rav1d_decode_frame_exit(&*c, &mut *f, Err(EGeneric));
             (*f).task_thread.retval = Ok(());
             let out_delayed: *mut Rav1dThreadPicture = &mut *((*c).frame_thread.out_delayed)
                 .offset(next as isize)
