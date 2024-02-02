@@ -132,7 +132,8 @@ pub(crate) type recon_b_intra_fn =
 
 pub(crate) type recon_b_inter_fn = unsafe fn(&mut Rav1dTaskContext, BlockSize, &Av1Block) -> c_int;
 
-pub(crate) type filter_sbrow_fn = unsafe fn(&Rav1dContext, &mut Rav1dFrameContext, c_int) -> ();
+pub(crate) type filter_sbrow_fn =
+    unsafe fn(&Rav1dContext, &mut Rav1dFrameContext, &mut Rav1dTaskContext, c_int) -> ();
 
 pub(crate) type backup_ipred_edge_fn = unsafe fn(&mut Rav1dTaskContext) -> ();
 
@@ -4457,6 +4458,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
+    _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
@@ -4492,6 +4494,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
+    _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
     let y = sby * f.sb_step * 4;
@@ -4580,6 +4583,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
+    _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
     let sbsz = f.sb_step;
@@ -4646,6 +4650,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
+    _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
     if c.inloop_filters as c_uint & RAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
@@ -4667,20 +4672,21 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
     f: &mut Rav1dFrameContext,
+    t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
-    rav1d_filter_sbrow_deblock_cols::<BD>(c, f, sby);
-    rav1d_filter_sbrow_deblock_rows::<BD>(c, f, sby);
+    rav1d_filter_sbrow_deblock_cols::<BD>(c, f, t, sby);
+    rav1d_filter_sbrow_deblock_rows::<BD>(c, f, t, sby);
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if seq_hdr.cdef != 0 {
-        rav1d_filter_sbrow_cdef::<BD>(c, &mut *c.tc, sby);
+        rav1d_filter_sbrow_cdef::<BD>(c, t, sby);
     }
     if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
-        rav1d_filter_sbrow_resize::<BD>(c, f, sby);
+        rav1d_filter_sbrow_resize::<BD>(c, f, t, sby);
     }
     if f.lf.restore_planes != 0 {
-        rav1d_filter_sbrow_lr::<BD>(c, f, sby);
+        rav1d_filter_sbrow_lr::<BD>(c, f, t, sby);
     }
 }
 
