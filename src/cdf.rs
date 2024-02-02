@@ -5620,7 +5620,7 @@ pub unsafe fn rav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: c_i
     (*cdf).data.qcat = get_qcat_idx(qidx) as c_uint;
 }
 
-pub unsafe fn rav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadContext) {
+pub unsafe fn rav1d_cdf_thread_copy(dst: *mut CdfContext, src: &CdfThreadContext) {
     if !((*src).r#ref).is_null() {
         memcpy(
             dst as *mut c_void,
@@ -5629,22 +5629,10 @@ pub unsafe fn rav1d_cdf_thread_copy(dst: *mut CdfContext, src: *const CdfThreadC
         );
     } else {
         (*dst).m = av1_default_cdf.clone();
-        memcpy(
-            ((*dst).kfym.0).as_mut_ptr() as *mut c_void,
-            default_kf_y_mode_cdf.0.as_ptr() as *const c_void,
-            ::core::mem::size_of::<[[[u16; 16]; 5]; 5]>(),
-        );
+        (*dst).kfym.0.copy_from_slice(&default_kf_y_mode_cdf.0);
         (*dst).coef = av1_default_coef_cdf[(*src).data.qcat as usize].clone();
-        memcpy(
-            ((*dst).mv.joint.0).as_mut_ptr() as *mut c_void,
-            default_mv_joint_cdf.0.as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>(),
-        );
-        memcpy(
-            ((*dst).dmv.joint.0).as_mut_ptr() as *mut c_void,
-            default_mv_joint_cdf.0.as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>(),
-        );
+        (*dst).mv.joint.0.copy_from_slice(&default_mv_joint_cdf.0);
+        (*dst).dmv.joint.0.copy_from_slice(&default_mv_joint_cdf.0);
         (*dst).dmv.comp[1] = default_mv_component_cdf.clone();
         (*dst).dmv.comp[0] = (*dst).dmv.comp[1].clone();
         (*dst).mv.comp[1] = (*dst).dmv.comp[0].clone();
