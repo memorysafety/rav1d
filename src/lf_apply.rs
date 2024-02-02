@@ -392,7 +392,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
 unsafe fn filter_plane_rows_y<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     have_top: c_int,
-    mut lvl: *const [u8; 4],
+    lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: *const [[u16; 2]; 3],
     mut dst: *mut BD::Pixel,
@@ -401,6 +401,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     starty4: c_int,
     endy4: c_int,
 ) {
+    let mut lvl = lvl.as_ptr();
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut y = starty4;
     while y < endy4 {
@@ -490,7 +491,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
 unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     have_top: c_int,
-    mut lvl: *const [u8; 4],
+    lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: *const [[u16; 2]; 2],
     u: *mut BD::Pixel,
@@ -501,10 +502,10 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     endy4: c_int,
     ss_hor: c_int,
 ) {
+    let mut lvl = lvl.as_ptr();
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut off_l: ptrdiff_t = 0 as c_int as ptrdiff_t;
-    let mut y = starty4;
-    while y < endy4 {
+    for y in starty4..endy4 {
         if !(have_top == 0 && y == 0) {
             let vmask: [u32; 3] = [
                 (*mask.offset(y as isize))[0][0] as c_uint
@@ -534,7 +535,6 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 (*f).bitdepth_max,
             );
         }
-        y += 1;
         off_l += 4 * BD::pxstride(ls as usize) as isize;
         lvl = lvl.offset(b4_stride as isize);
     }
@@ -766,7 +766,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         filter_plane_rows_y::<BD>(
             f,
             have_top,
-            level_ptr.as_ptr(),
+            level_ptr,
             (*f).b4_stride,
             ((*lflvl.offset(x as isize)).filter_y[1]).as_mut_ptr() as *const [[u16; 2]; 3],
             ptr,
@@ -788,7 +788,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
-            level_ptr.as_ptr(),
+            level_ptr,
             (*f).b4_stride,
             ((*lflvl.offset(x as isize)).filter_uv[1]).as_mut_ptr() as *const [[u16; 2]; 2],
             &mut *(*p.offset(1)).offset(uv_off as isize),
