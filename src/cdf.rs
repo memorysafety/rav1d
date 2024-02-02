@@ -4884,9 +4884,9 @@ static av1_default_coef_cdf: [CdfCoefContext; 4] = [
 ];
 
 pub(crate) unsafe fn rav1d_cdf_thread_update(
-    hdr: *const Rav1dFrameHeader,
+    hdr: &Rav1dFrameHeader,
     dst: *mut CdfContext,
-    src: *const CdfContext,
+    src: &CdfContext,
 ) {
     let mut i = 0;
     while i < N_BS_SIZES as c_int {
