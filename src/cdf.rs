@@ -4888,716 +4888,170 @@ pub(crate) unsafe fn rav1d_cdf_thread_update(
     dst: *mut CdfContext,
     src: &CdfContext,
 ) {
-    let mut i = 0;
-    while i < N_BS_SIZES as c_int {
-        (*dst).m.use_filter_intra[i as usize][0] = (*src).m.use_filter_intra[i as usize][0];
-        (*dst).m.use_filter_intra[i as usize][1] = 0 as c_int as u16;
-        i += 1;
-    }
-    memcpy(
-        ((*dst).m.filter_intra).0.as_mut_ptr() as *mut c_void,
-        ((*src).m.filter_intra).0.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 8]>(),
-    );
-    (*dst).m.filter_intra[4] = 0 as c_int as u16;
-    let mut k = 0;
-    while k < 2 {
-        let mut j = 0;
-        while j < N_INTRA_PRED_MODES as c_int {
-            memcpy(
-                ((*dst).m.uv_mode[k as usize][j as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).m.uv_mode[k as usize][j as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 16]>(),
-            );
-            (*dst).m.uv_mode[k as usize][j as usize]
-                [(N_UV_INTRA_PRED_MODES as c_int - 1 - (k == 0) as c_int) as usize] =
-                0 as c_int as u16;
-            j += 1;
+    macro_rules! update_cdf_1d {
+        ($n1d:expr, $($name:tt)+) => {
+            (*dst).$($name)+.copy_from_slice(&src.$($name)+);
+            (*dst).$($name)+[$n1d] = 0
         }
-        k += 1;
     }
-    let mut j_0 = 0;
-    while j_0 < 8 {
-        memcpy(
-            ((*dst).m.angle_delta[j_0 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.angle_delta[j_0 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 8]>(),
-        );
-        (*dst).m.angle_delta[j_0 as usize][6] = 0 as c_int as u16;
-        j_0 += 1;
-    }
-    let mut k_0 = 0;
-    while k_0 < N_TX_SIZES as c_int - 1 {
-        let mut j_1 = 0;
-        while j_1 < 3 {
-            memcpy(
-                ((*dst).m.txsz[k_0 as usize][j_1 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).m.txsz[k_0 as usize][j_1 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 4]>(),
-            );
-            (*dst).m.txsz[k_0 as usize][j_1 as usize][cmp::min(k_0 + 1, 2 as c_int) as usize] =
-                0 as c_int as u16;
-            j_1 += 1;
-        }
-        k_0 += 1;
-    }
-    let mut k_1 = 0;
-    while k_1 < 2 {
-        let mut j_2 = 0;
-        while j_2 < N_INTRA_PRED_MODES as c_int {
-            memcpy(
-                ((*dst).m.txtp_intra1[k_1 as usize][j_2 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).m.txtp_intra1[k_1 as usize][j_2 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>(),
-            );
-            (*dst).m.txtp_intra1[k_1 as usize][j_2 as usize][6] = 0 as c_int as u16;
-            j_2 += 1;
-        }
-        k_1 += 1;
-    }
-    let mut k_2 = 0;
-    while k_2 < 3 {
-        let mut j_3 = 0;
-        while j_3 < N_INTRA_PRED_MODES as c_int {
-            memcpy(
-                ((*dst).m.txtp_intra2[k_2 as usize][j_3 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).m.txtp_intra2[k_2 as usize][j_3 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>(),
-            );
-            (*dst).m.txtp_intra2[k_2 as usize][j_3 as usize][4] = 0 as c_int as u16;
-            j_3 += 1;
-        }
-        k_2 += 1;
-    }
-    let mut i_0 = 0;
-    while i_0 < 3 {
-        (*dst).m.skip[i_0 as usize][0] = (*src).m.skip[i_0 as usize][0];
-        (*dst).m.skip[i_0 as usize][1] = 0 as c_int as u16;
-        i_0 += 1;
-    }
-    let mut k_3 = 0;
-    while k_3 < N_BL_LEVELS as c_int {
-        let mut j_4 = 0;
-        while j_4 < 4 {
-            memcpy(
-                ((*dst).m.partition[k_3 as usize][j_4 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).m.partition[k_3 as usize][j_4 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 16]>(),
-            );
-            (*dst).m.partition[k_3 as usize][j_4 as usize]
-                [dav1d_partition_type_count[k_3 as usize] as usize] = 0 as c_int as u16;
-            j_4 += 1;
-        }
-        k_3 += 1;
-    }
-    let mut j_5 = 0;
-    while j_5 < N_TX_SIZES as c_int {
-        let mut i_1 = 0;
-        while i_1 < 13 {
-            (*dst).coef.skip[j_5 as usize][i_1 as usize][0] =
-                (*src).coef.skip[j_5 as usize][i_1 as usize][0];
-            (*dst).coef.skip[j_5 as usize][i_1 as usize][1] = 0 as c_int as u16;
-            i_1 += 1;
-        }
-        j_5 += 1;
-    }
-    let mut k_4 = 0;
-    while k_4 < 2 {
-        let mut j_6 = 0;
-        while j_6 < 2 {
-            memcpy(
-                ((*dst).coef.eob_bin_16[k_4 as usize][j_6 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).coef.eob_bin_16[k_4 as usize][j_6 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>(),
-            );
-            (*dst).coef.eob_bin_16[k_4 as usize][j_6 as usize][4] = 0 as c_int as u16;
-            j_6 += 1;
-        }
-        k_4 += 1;
-    }
-    let mut k_5 = 0;
-    while k_5 < 2 {
-        let mut j_7 = 0;
-        while j_7 < 2 {
-            memcpy(
-                ((*dst).coef.eob_bin_32[k_5 as usize][j_7 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).coef.eob_bin_32[k_5 as usize][j_7 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>(),
-            );
-            (*dst).coef.eob_bin_32[k_5 as usize][j_7 as usize][5] = 0 as c_int as u16;
-            j_7 += 1;
-        }
-        k_5 += 1;
-    }
-    let mut k_6 = 0;
-    while k_6 < 2 {
-        let mut j_8 = 0;
-        while j_8 < 2 {
-            memcpy(
-                ((*dst).coef.eob_bin_64[k_6 as usize][j_8 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).coef.eob_bin_64[k_6 as usize][j_8 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>(),
-            );
-            (*dst).coef.eob_bin_64[k_6 as usize][j_8 as usize][6] = 0 as c_int as u16;
-            j_8 += 1;
-        }
-        k_6 += 1;
-    }
-    let mut k_7 = 0;
-    while k_7 < 2 {
-        let mut j_9 = 0;
-        while j_9 < 2 {
-            memcpy(
-                ((*dst).coef.eob_bin_128[k_7 as usize][j_9 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).coef.eob_bin_128[k_7 as usize][j_9 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>(),
-            );
-            (*dst).coef.eob_bin_128[k_7 as usize][j_9 as usize][7] = 0 as c_int as u16;
-            j_9 += 1;
-        }
-        k_7 += 1;
-    }
-    let mut k_8 = 0;
-    while k_8 < 2 {
-        let mut j_10 = 0;
-        while j_10 < 2 {
-            memcpy(
-                ((*dst).coef.eob_bin_256[k_8 as usize][j_10 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).coef.eob_bin_256[k_8 as usize][j_10 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 16]>(),
-            );
-            (*dst).coef.eob_bin_256[k_8 as usize][j_10 as usize][8] = 0 as c_int as u16;
-            j_10 += 1;
-        }
-        k_8 += 1;
-    }
-    let mut j_11 = 0;
-    while j_11 < 2 {
-        memcpy(
-            ((*dst).coef.eob_bin_512[j_11 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).coef.eob_bin_512[j_11 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>(),
-        );
-        (*dst).coef.eob_bin_512[j_11 as usize][9] = 0 as c_int as u16;
-        j_11 += 1;
-    }
-    let mut j_12 = 0;
-    while j_12 < 2 {
-        memcpy(
-            ((*dst).coef.eob_bin_1024[j_12 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).coef.eob_bin_1024[j_12 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>(),
-        );
-        (*dst).coef.eob_bin_1024[j_12 as usize][10] = 0 as c_int as u16;
-        j_12 += 1;
-    }
-    let mut k_9 = 0;
-    while k_9 < N_TX_SIZES as c_int {
-        let mut j_13 = 0;
-        while j_13 < 2 {
-            let mut i_2 = 0;
-            while i_2 < 11 {
-                (*dst).coef.eob_hi_bit[k_9 as usize][j_13 as usize][i_2 as usize][0] =
-                    (*src).coef.eob_hi_bit[k_9 as usize][j_13 as usize][i_2 as usize][0];
-                (*dst).coef.eob_hi_bit[k_9 as usize][j_13 as usize][i_2 as usize][1] =
-                    0 as c_int as u16;
-                i_2 += 1;
+
+    macro_rules! update_cdf_2d {
+        ($n1d:expr, $n2d:expr, $($name:tt)+) => {
+            for j in 0..$n1d {
+                update_cdf_1d!($n2d, $($name)+[j]);
             }
-            j_13 += 1;
         }
-        k_9 += 1;
     }
-    let mut l = 0;
-    while l < N_TX_SIZES as c_int {
-        let mut k_10 = 0;
-        while k_10 < 2 {
-            let mut j_14 = 0;
-            while j_14 < 4 {
-                memcpy(
-                    ((*dst).coef.eob_base_tok[l as usize][k_10 as usize][j_14 as usize])
-                        .as_mut_ptr() as *mut c_void,
-                    ((*src).coef.eob_base_tok[l as usize][k_10 as usize][j_14 as usize]).as_ptr()
-                        as *const c_void,
-                    ::core::mem::size_of::<[u16; 4]>(),
-                );
-                (*dst).coef.eob_base_tok[l as usize][k_10 as usize][j_14 as usize][2] =
-                    0 as c_int as u16;
-                j_14 += 1;
+
+    macro_rules! update_cdf_3d {
+        ($n1d:expr, $n2d:expr, $n3d:expr, $($name:tt)+) => {
+            for k in 0..$n1d {
+                update_cdf_2d!($n2d, $n3d, $($name)+[k]);
             }
-            k_10 += 1;
         }
-        l += 1;
     }
-    let mut l_0 = 0;
-    while l_0 < N_TX_SIZES as c_int {
-        let mut k_11 = 0;
-        while k_11 < 2 {
-            let mut j_15 = 0;
-            while j_15 < 41 {
-                memcpy(
-                    ((*dst).coef.base_tok[l_0 as usize][k_11 as usize][j_15 as usize]).as_mut_ptr()
-                        as *mut c_void,
-                    ((*src).coef.base_tok[l_0 as usize][k_11 as usize][j_15 as usize]).as_ptr()
-                        as *const c_void,
-                    ::core::mem::size_of::<[u16; 4]>(),
-                );
-                (*dst).coef.base_tok[l_0 as usize][k_11 as usize][j_15 as usize][3] =
-                    0 as c_int as u16;
-                j_15 += 1;
+
+    macro_rules! update_cdf_4d {
+        ($n1d:expr, $n2d:expr, $n3d:expr, $n4d:expr, $($name:tt)+) => {
+            for l in 0..$n1d {
+                update_cdf_3d!($n2d, $n3d, $n4d, $($name)+[l]);
             }
-            k_11 += 1;
         }
-        l_0 += 1;
     }
-    let mut j_16 = 0;
-    while j_16 < 2 {
-        let mut i_3 = 0;
-        while i_3 < 3 {
-            (*dst).coef.dc_sign[j_16 as usize][i_3 as usize][0] =
-                (*src).coef.dc_sign[j_16 as usize][i_3 as usize][0];
-            (*dst).coef.dc_sign[j_16 as usize][i_3 as usize][1] = 0 as c_int as u16;
-            i_3 += 1;
+
+    macro_rules! update_bit_0d {
+        ($($name:tt)+) => {
+            (*dst).$($name)+[0] = src.$($name)+[0];
+            (*dst).$($name)+[1] = 0
         }
-        j_16 += 1;
     }
-    let mut l_1 = 0;
-    while l_1 < 4 {
-        let mut k_12 = 0;
-        while k_12 < 2 {
-            let mut j_17 = 0;
-            while j_17 < 21 {
-                memcpy(
-                    ((*dst).coef.br_tok[l_1 as usize][k_12 as usize][j_17 as usize]).as_mut_ptr()
-                        as *mut c_void,
-                    ((*src).coef.br_tok[l_1 as usize][k_12 as usize][j_17 as usize]).as_ptr()
-                        as *const c_void,
-                    ::core::mem::size_of::<[u16; 4]>(),
-                );
-                (*dst).coef.br_tok[l_1 as usize][k_12 as usize][j_17 as usize][3] =
-                    0 as c_int as u16;
-                j_17 += 1;
+
+    macro_rules! update_bit_1d {
+        ($n1d:expr, $($name:tt)+) => {
+            for i in 0..$n1d {
+                update_bit_0d!( $($name)+[i]);
             }
-            k_12 += 1;
         }
-        l_1 += 1;
     }
-    let mut j_18 = 0;
-    while j_18 < 3 {
-        memcpy(
-            ((*dst).m.seg_id[j_18 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.seg_id[j_18 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 8]>(),
-        );
-        (*dst).m.seg_id[j_18 as usize][(RAV1D_MAX_SEGMENTS - 1) as usize] = 0 as c_int as u16;
-        j_18 += 1;
-    }
-    memcpy(
-        ((*dst).m.cfl_sign).0.as_mut_ptr() as *mut c_void,
-        ((*src).m.cfl_sign).0.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 8]>(),
-    );
-    (*dst).m.cfl_sign[7] = 0 as c_int as u16;
-    let mut j_19 = 0;
-    while j_19 < 6 {
-        memcpy(
-            ((*dst).m.cfl_alpha[j_19 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.cfl_alpha[j_19 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>(),
-        );
-        (*dst).m.cfl_alpha[j_19 as usize][15] = 0 as c_int as u16;
-        j_19 += 1;
-    }
-    (*dst).m.restore_wiener[0] = (*src).m.restore_wiener[0];
-    (*dst).m.restore_wiener[1] = 0 as c_int as u16;
-    (*dst).m.restore_sgrproj[0] = (*src).m.restore_sgrproj[0];
-    (*dst).m.restore_sgrproj[1] = 0 as c_int as u16;
-    memcpy(
-        ((*dst).m.restore_switchable).0.as_mut_ptr() as *mut c_void,
-        ((*src).m.restore_switchable).0.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 4]>(),
-    );
-    (*dst).m.restore_switchable[2] = 0 as c_int as u16;
-    memcpy(
-        ((*dst).m.delta_q).0.as_mut_ptr() as *mut c_void,
-        ((*src).m.delta_q).0.as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 4]>(),
-    );
-    (*dst).m.delta_q[3] = 0 as c_int as u16;
-    let mut j_20 = 0;
-    while j_20 < 5 {
-        memcpy(
-            ((*dst).m.delta_lf[j_20 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.delta_lf[j_20 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>(),
-        );
-        (*dst).m.delta_lf[j_20 as usize][3] = 0 as c_int as u16;
-        j_20 += 1;
-    }
-    let mut j_21 = 0;
-    while j_21 < 7 {
-        let mut i_4 = 0;
-        while i_4 < 3 {
-            (*dst).m.pal_y[j_21 as usize][i_4 as usize][0] =
-                (*src).m.pal_y[j_21 as usize][i_4 as usize][0];
-            (*dst).m.pal_y[j_21 as usize][i_4 as usize][1] = 0 as c_int as u16;
-            i_4 += 1;
-        }
-        j_21 += 1;
-    }
-    let mut i_5 = 0;
-    while i_5 < 2 {
-        (*dst).m.pal_uv[i_5 as usize][0] = (*src).m.pal_uv[i_5 as usize][0];
-        (*dst).m.pal_uv[i_5 as usize][1] = 0 as c_int as u16;
-        i_5 += 1;
-    }
-    let mut k_13 = 0;
-    while k_13 < 2 {
-        let mut j_22 = 0;
-        while j_22 < 7 {
-            memcpy(
-                ((*dst).m.pal_sz[k_13 as usize][j_22 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).m.pal_sz[k_13 as usize][j_22 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 8]>(),
-            );
-            (*dst).m.pal_sz[k_13 as usize][j_22 as usize][6] = 0 as c_int as u16;
-            j_22 += 1;
-        }
-        k_13 += 1;
-    }
-    let mut l_2 = 0;
-    while l_2 < 2 {
-        let mut k_14 = 0;
-        while k_14 < 7 {
-            let mut j_23 = 0;
-            while j_23 < 5 {
-                memcpy(
-                    ((*dst).m.color_map[l_2 as usize][k_14 as usize][j_23 as usize]).as_mut_ptr()
-                        as *mut c_void,
-                    ((*src).m.color_map[l_2 as usize][k_14 as usize][j_23 as usize]).as_ptr()
-                        as *const c_void,
-                    ::core::mem::size_of::<[u16; 8]>(),
-                );
-                (*dst).m.color_map[l_2 as usize][k_14 as usize][j_23 as usize]
-                    [(k_14 + 1) as usize] = 0 as c_int as u16;
-                j_23 += 1;
+
+    macro_rules! update_bit_2d {
+        ($n1d:expr, $n2d:expr, $($name:tt)+) => {
+            for j in 0..$n1d {
+                update_bit_1d!($n2d, $($name)+[j]);
             }
-            k_14 += 1;
         }
-        l_2 += 1;
     }
-    let mut j_24 = 0;
-    while j_24 < 7 {
-        let mut i_6 = 0;
-        while i_6 < 3 {
-            (*dst).m.txpart[j_24 as usize][i_6 as usize][0] =
-                (*src).m.txpart[j_24 as usize][i_6 as usize][0];
-            (*dst).m.txpart[j_24 as usize][i_6 as usize][1] = 0 as c_int as u16;
-            i_6 += 1;
+
+    macro_rules! update_bit_3d {
+        ($n1d:expr, $n2d:expr, $n3d:expr, $($name:tt)+) => {
+            for k in 0..$n1d {
+                update_bit_2d!($n2d, $n3d, $($name)+[k]);
+            }
         }
-        j_24 += 1;
     }
-    let mut j_25 = 0;
-    while j_25 < 2 {
-        memcpy(
-            ((*dst).m.txtp_inter1[j_25 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.txtp_inter1[j_25 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>(),
+
+    update_bit_1d!(N_BS_SIZES, m.use_filter_intra);
+    update_cdf_1d!(4, m.filter_intra.0);
+    for k in 0..2 {
+        update_cdf_2d!(
+            N_INTRA_PRED_MODES,
+            N_UV_INTRA_PRED_MODES - 1 - (k == 0) as usize,
+            m.uv_mode[k]
         );
-        (*dst).m.txtp_inter1[j_25 as usize][15] = 0 as c_int as u16;
-        j_25 += 1;
     }
-    memcpy(
-        ((*dst).m.txtp_inter2.0).as_mut_ptr() as *mut c_void,
-        ((*src).m.txtp_inter2.0).as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 16]>(),
-    );
-    (*dst).m.txtp_inter2[11] = 0 as c_int as u16;
-    let mut i_7 = 0;
-    while i_7 < 4 {
-        (*dst).m.txtp_inter3[i_7 as usize][0] = (*src).m.txtp_inter3[i_7 as usize][0];
-        (*dst).m.txtp_inter3[i_7 as usize][1] = 0 as c_int as u16;
-        i_7 += 1;
+    update_cdf_2d!(8, 6, m.angle_delta);
+    for k in 0..N_TX_SIZES - 1 {
+        update_cdf_2d!(3, cmp::min(k + 1, 2), m.txsz[k]);
     }
+    update_cdf_3d!(2, N_INTRA_PRED_MODES, 6, m.txtp_intra1);
+    update_cdf_3d!(3, N_INTRA_PRED_MODES, 4, m.txtp_intra2);
+    update_bit_1d!(3, m.skip);
+    for k in 0..N_BL_LEVELS {
+        update_cdf_2d!(4, dav1d_partition_type_count[k] as usize, m.partition[k]);
+    }
+    update_bit_2d!(N_TX_SIZES, 13, coef.skip);
+    update_cdf_3d!(2, 2, 4, coef.eob_bin_16);
+    update_cdf_3d!(2, 2, 5, coef.eob_bin_32);
+    update_cdf_3d!(2, 2, 6, coef.eob_bin_64);
+    update_cdf_3d!(2, 2, 7, coef.eob_bin_128);
+    update_cdf_3d!(2, 2, 8, coef.eob_bin_256);
+    update_cdf_2d!(2, 9, coef.eob_bin_512);
+    update_cdf_2d!(2, 10, coef.eob_bin_1024);
+    update_bit_3d!(N_TX_SIZES, 2, 11 /*22*/, coef.eob_hi_bit);
+    update_cdf_4d!(N_TX_SIZES, 2, 4, 2, coef.eob_base_tok);
+    update_cdf_4d!(N_TX_SIZES, 2, 41 /*42*/, 3, coef.base_tok);
+    update_bit_2d!(2, 3, coef.dc_sign);
+    update_cdf_4d!(4, 2, 21, 3, coef.br_tok);
+    update_cdf_2d!(3, (RAV1D_MAX_SEGMENTS - 1) as usize, m.seg_id);
+    update_cdf_1d!(7, m.cfl_sign.0);
+    update_cdf_2d!(6, 15, m.cfl_alpha);
+    update_bit_0d!(m.restore_wiener);
+    update_bit_0d!(m.restore_sgrproj);
+    update_cdf_1d!(2, m.restore_switchable.0);
+    update_cdf_1d!(3, m.delta_q.0);
+    update_cdf_2d!(5, 3, m.delta_lf);
+    update_bit_2d!(7, 3, m.pal_y);
+    update_bit_1d!(2, m.pal_uv);
+    update_cdf_3d!(2, 7, 6, m.pal_sz);
+    for l in 0..2 {
+        for k in 0..7 {
+            update_cdf_2d!(5, k + 1, m.color_map[l][k]);
+        }
+    }
+    update_bit_2d!(7, 3, m.txpart);
+    update_cdf_2d!(2, 15, m.txtp_inter1);
+    update_cdf_1d!(11, m.txtp_inter2.0);
+    update_bit_1d!(4, m.txtp_inter3);
+
     if (*hdr).frame_type.is_key_or_intra() {
-        (*dst).m.intrabc[0] = (*src).m.intrabc[0];
-        (*dst).m.intrabc[1] = 0 as c_int as u16;
-        memcpy(
-            ((*dst).dmv.joint.0).as_mut_ptr() as *mut c_void,
-            ((*src).dmv.joint.0).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>(),
-        );
-        (*dst).dmv.joint[(N_MV_JOINTS as c_int - 1) as usize] = 0 as c_int as u16;
-        let mut k_15 = 0;
-        while k_15 < 2 {
-            memcpy(
-                ((*dst).dmv.comp[k_15 as usize].classes.0).as_mut_ptr() as *mut c_void,
-                ((*src).dmv.comp[k_15 as usize].classes.0).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 16]>(),
-            );
-            (*dst).dmv.comp[k_15 as usize].classes[10] = 0 as c_int as u16;
-            (*dst).dmv.comp[k_15 as usize].class0[0] = (*src).dmv.comp[k_15 as usize].class0[0];
-            (*dst).dmv.comp[k_15 as usize].class0[1] = 0 as c_int as u16;
-            let mut i_8 = 0;
-            while i_8 < 10 {
-                (*dst).dmv.comp[k_15 as usize].classN[i_8 as usize][0] =
-                    (*src).dmv.comp[k_15 as usize].classN[i_8 as usize][0];
-                (*dst).dmv.comp[k_15 as usize].classN[i_8 as usize][1] = 0 as c_int as u16;
-                i_8 += 1;
-            }
-            (*dst).dmv.comp[k_15 as usize].sign[0] = (*src).dmv.comp[k_15 as usize].sign[0];
-            (*dst).dmv.comp[k_15 as usize].sign[1] = 0 as c_int as u16;
-            k_15 += 1;
+        update_bit_0d!(m.intrabc);
+
+        update_cdf_1d!(N_MV_JOINTS - 1, dmv.joint.0);
+        for k in 0..2 {
+            update_cdf_1d!(10, dmv.comp[k].classes.0);
+            update_bit_0d!(dmv.comp[k].class0);
+            update_bit_1d!(10, dmv.comp[k].classN);
+            update_bit_0d!(dmv.comp[k].sign);
         }
         return;
     }
-    let mut i_9 = 0;
-    while i_9 < 3 {
-        (*dst).m.skip_mode.0[i_9 as usize][0] = (*src).m.skip_mode.0[i_9 as usize][0];
-        (*dst).m.skip_mode.0[i_9 as usize][1] = 0 as c_int as u16;
-        i_9 += 1;
-    }
-    let mut j_26 = 0;
-    while j_26 < 4 {
-        memcpy(
-            ((*dst).m.y_mode.0[j_26 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.y_mode.0[j_26 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>(),
-        );
-        (*dst).m.y_mode.0[j_26 as usize][(N_INTRA_PRED_MODES as c_int - 1) as usize] =
-            0 as c_int as u16;
-        j_26 += 1;
-    }
-    let mut k_16 = 0;
-    while k_16 < 2 {
-        let mut j_27 = 0;
-        while j_27 < 8 {
-            memcpy(
-                ((*dst).m.filter.0[k_16 as usize][j_27 as usize]).as_mut_ptr() as *mut c_void,
-                ((*src).m.filter.0[k_16 as usize][j_27 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 4]>(),
-            );
-            (*dst).m.filter.0[k_16 as usize][j_27 as usize]
-                [(RAV1D_N_SWITCHABLE_FILTERS as c_int - 1) as usize] = 0 as c_int as u16;
-            j_27 += 1;
-        }
-        k_16 += 1;
-    }
-    let mut i_10 = 0;
-    while i_10 < 6 {
-        (*dst).m.newmv_mode.0[i_10 as usize][0] = (*src).m.newmv_mode.0[i_10 as usize][0];
-        (*dst).m.newmv_mode.0[i_10 as usize][1] = 0 as c_int as u16;
-        i_10 += 1;
-    }
-    let mut i_11 = 0;
-    while i_11 < 2 {
-        (*dst).m.globalmv_mode.0[i_11 as usize][0] = (*src).m.globalmv_mode.0[i_11 as usize][0];
-        (*dst).m.globalmv_mode.0[i_11 as usize][1] = 0 as c_int as u16;
-        i_11 += 1;
-    }
-    let mut i_12 = 0;
-    while i_12 < 6 {
-        (*dst).m.refmv_mode.0[i_12 as usize][0] = (*src).m.refmv_mode.0[i_12 as usize][0];
-        (*dst).m.refmv_mode.0[i_12 as usize][1] = 0 as c_int as u16;
-        i_12 += 1;
-    }
-    let mut i_13 = 0;
-    while i_13 < 3 {
-        (*dst).m.drl_bit.0[i_13 as usize][0] = (*src).m.drl_bit.0[i_13 as usize][0];
-        (*dst).m.drl_bit.0[i_13 as usize][1] = 0 as c_int as u16;
-        i_13 += 1;
-    }
-    let mut j_28 = 0;
-    while j_28 < 8 {
-        memcpy(
-            ((*dst).m.comp_inter_mode.0[j_28 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.comp_inter_mode.0[j_28 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 8]>(),
-        );
-        (*dst).m.comp_inter_mode.0[j_28 as usize]
-            [(N_COMP_INTER_PRED_MODES as c_int - 1) as usize] = 0 as c_int as u16;
-        j_28 += 1;
-    }
-    let mut i_14 = 0;
-    while i_14 < 4 {
-        (*dst).m.intra.0[i_14 as usize][0] = (*src).m.intra.0[i_14 as usize][0];
-        (*dst).m.intra.0[i_14 as usize][1] = 0 as c_int as u16;
-        i_14 += 1;
-    }
-    let mut i_15 = 0;
-    while i_15 < 5 {
-        (*dst).m.comp.0[i_15 as usize][0] = (*src).m.comp.0[i_15 as usize][0];
-        (*dst).m.comp.0[i_15 as usize][1] = 0 as c_int as u16;
-        i_15 += 1;
-    }
-    let mut i_16 = 0;
-    while i_16 < 5 {
-        (*dst).m.comp_dir.0[i_16 as usize][0] = (*src).m.comp_dir.0[i_16 as usize][0];
-        (*dst).m.comp_dir.0[i_16 as usize][1] = 0 as c_int as u16;
-        i_16 += 1;
-    }
-    let mut i_17 = 0;
-    while i_17 < 6 {
-        (*dst).m.jnt_comp.0[i_17 as usize][0] = (*src).m.jnt_comp.0[i_17 as usize][0];
-        (*dst).m.jnt_comp.0[i_17 as usize][1] = 0 as c_int as u16;
-        i_17 += 1;
-    }
-    let mut i_18 = 0;
-    while i_18 < 6 {
-        (*dst).m.mask_comp.0[i_18 as usize][0] = (*src).m.mask_comp.0[i_18 as usize][0];
-        (*dst).m.mask_comp.0[i_18 as usize][1] = 0 as c_int as u16;
-        i_18 += 1;
-    }
-    let mut i_19 = 0;
-    while i_19 < 9 {
-        (*dst).m.wedge_comp.0[i_19 as usize][0] = (*src).m.wedge_comp.0[i_19 as usize][0];
-        (*dst).m.wedge_comp.0[i_19 as usize][1] = 0 as c_int as u16;
-        i_19 += 1;
-    }
-    let mut j_29 = 0;
-    while j_29 < 9 {
-        memcpy(
-            ((*dst).m.wedge_idx.0[j_29 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.wedge_idx.0[j_29 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>(),
-        );
-        (*dst).m.wedge_idx[j_29 as usize][15] = 0 as c_int as u16;
-        j_29 += 1;
-    }
-    let mut j_30 = 0;
-    while j_30 < 6 {
-        let mut i_20 = 0;
-        while i_20 < 3 {
-            (*dst).m.r#ref[j_30 as usize][i_20 as usize][0] =
-                (*src).m.r#ref[j_30 as usize][i_20 as usize][0];
-            (*dst).m.r#ref[j_30 as usize][i_20 as usize][1] = 0 as c_int as u16;
-            i_20 += 1;
-        }
-        j_30 += 1;
-    }
-    let mut j_31 = 0;
-    while j_31 < 3 {
-        let mut i_21 = 0;
-        while i_21 < 3 {
-            (*dst).m.comp_fwd_ref[j_31 as usize][i_21 as usize][0] =
-                (*src).m.comp_fwd_ref[j_31 as usize][i_21 as usize][0];
-            (*dst).m.comp_fwd_ref[j_31 as usize][i_21 as usize][1] = 0 as c_int as u16;
-            i_21 += 1;
-        }
-        j_31 += 1;
-    }
-    let mut j_32 = 0;
-    while j_32 < 2 {
-        let mut i_22 = 0;
-        while i_22 < 3 {
-            (*dst).m.comp_bwd_ref[j_32 as usize][i_22 as usize][0] =
-                (*src).m.comp_bwd_ref[j_32 as usize][i_22 as usize][0];
-            (*dst).m.comp_bwd_ref[j_32 as usize][i_22 as usize][1] = 0 as c_int as u16;
-            i_22 += 1;
-        }
-        j_32 += 1;
-    }
-    let mut j_33 = 0;
-    while j_33 < 3 {
-        let mut i_23 = 0;
-        while i_23 < 3 {
-            (*dst).m.comp_uni_ref[j_33 as usize][i_23 as usize][0] =
-                (*src).m.comp_uni_ref[j_33 as usize][i_23 as usize][0];
-            (*dst).m.comp_uni_ref[j_33 as usize][i_23 as usize][1] = 0 as c_int as u16;
-            i_23 += 1;
-        }
-        j_33 += 1;
-    }
-    let mut i_24 = 0;
-    while i_24 < 3 {
-        (*dst).m.seg_pred[i_24 as usize][0] = (*src).m.seg_pred[i_24 as usize][0];
-        (*dst).m.seg_pred[i_24 as usize][1] = 0 as c_int as u16;
-        i_24 += 1;
-    }
-    let mut i_25 = 0;
-    while i_25 < 4 {
-        (*dst).m.interintra[i_25 as usize][0] = (*src).m.interintra[i_25 as usize][0];
-        (*dst).m.interintra[i_25 as usize][1] = 0 as c_int as u16;
-        i_25 += 1;
-    }
-    let mut i_26 = 0;
-    while i_26 < 7 {
-        (*dst).m.interintra_wedge[i_26 as usize][0] = (*src).m.interintra_wedge[i_26 as usize][0];
-        (*dst).m.interintra_wedge[i_26 as usize][1] = 0 as c_int as u16;
-        i_26 += 1;
-    }
-    let mut j_34 = 0;
-    while j_34 < 4 {
-        memcpy(
-            ((*dst).m.interintra_mode[j_34 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.interintra_mode[j_34 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>(),
-        );
-        (*dst).m.interintra_mode[j_34 as usize][3] = 0 as c_int as u16;
-        j_34 += 1;
-    }
-    let mut j_35 = 0;
-    while j_35 < N_BS_SIZES as c_int {
-        memcpy(
-            ((*dst).m.motion_mode[j_35 as usize]).as_mut_ptr() as *mut c_void,
-            ((*src).m.motion_mode[j_35 as usize]).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>(),
-        );
-        (*dst).m.motion_mode[j_35 as usize][2] = 0 as c_int as u16;
-        j_35 += 1;
-    }
-    let mut i_27 = 0;
-    while i_27 < N_BS_SIZES as c_int {
-        (*dst).m.obmc[i_27 as usize][0] = (*src).m.obmc[i_27 as usize][0];
-        (*dst).m.obmc[i_27 as usize][1] = 0 as c_int as u16;
-        i_27 += 1;
-    }
-    memcpy(
-        ((*dst).mv.joint.0).as_mut_ptr() as *mut c_void,
-        ((*src).mv.joint.0).as_ptr() as *const c_void,
-        ::core::mem::size_of::<[u16; 4]>(),
-    );
-    (*dst).mv.joint[(N_MV_JOINTS as c_int - 1) as usize] = 0 as c_int as u16;
-    let mut k_17 = 0;
-    while k_17 < 2 {
-        memcpy(
-            ((*dst).mv.comp[k_17 as usize].classes.0).as_mut_ptr() as *mut c_void,
-            ((*src).mv.comp[k_17 as usize].classes.0).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 16]>(),
-        );
-        (*dst).mv.comp[k_17 as usize].classes[10] = 0 as c_int as u16;
-        (*dst).mv.comp[k_17 as usize].class0[0] = (*src).mv.comp[k_17 as usize].class0[0];
-        (*dst).mv.comp[k_17 as usize].class0[1] = 0 as c_int as u16;
-        let mut i_28 = 0;
-        while i_28 < 10 {
-            (*dst).mv.comp[k_17 as usize].classN[i_28 as usize][0] =
-                (*src).mv.comp[k_17 as usize].classN[i_28 as usize][0];
-            (*dst).mv.comp[k_17 as usize].classN[i_28 as usize][1] = 0 as c_int as u16;
-            i_28 += 1;
-        }
-        let mut j_36 = 0;
-        while j_36 < 2 {
-            memcpy(
-                ((*dst).mv.comp[k_17 as usize].class0_fp[j_36 as usize]).as_mut_ptr()
-                    as *mut c_void,
-                ((*src).mv.comp[k_17 as usize].class0_fp[j_36 as usize]).as_ptr() as *const c_void,
-                ::core::mem::size_of::<[u16; 4]>(),
-            );
-            (*dst).mv.comp[k_17 as usize].class0_fp[j_36 as usize][3] = 0 as c_int as u16;
-            j_36 += 1;
-        }
-        memcpy(
-            ((*dst).mv.comp[k_17 as usize].classN_fp.0).as_mut_ptr() as *mut c_void,
-            ((*src).mv.comp[k_17 as usize].classN_fp.0).as_ptr() as *const c_void,
-            ::core::mem::size_of::<[u16; 4]>(),
-        );
-        (*dst).mv.comp[k_17 as usize].classN_fp[3] = 0 as c_int as u16;
-        (*dst).mv.comp[k_17 as usize].class0_hp[0] = (*src).mv.comp[k_17 as usize].class0_hp[0];
-        (*dst).mv.comp[k_17 as usize].class0_hp[1] = 0 as c_int as u16;
-        (*dst).mv.comp[k_17 as usize].classN_hp[0] = (*src).mv.comp[k_17 as usize].classN_hp[0];
-        (*dst).mv.comp[k_17 as usize].classN_hp[1] = 0 as c_int as u16;
-        (*dst).mv.comp[k_17 as usize].sign[0] = (*src).mv.comp[k_17 as usize].sign[0];
-        (*dst).mv.comp[k_17 as usize].sign[1] = 0 as c_int as u16;
-        k_17 += 1;
+
+    update_bit_1d!(3, m.skip_mode);
+    update_cdf_2d!(4, N_INTRA_PRED_MODES - 1, m.y_mode);
+    update_cdf_3d!(2, 8, RAV1D_N_SWITCHABLE_FILTERS - 1, m.filter);
+    update_bit_1d!(6, m.newmv_mode);
+    update_bit_1d!(2, m.globalmv_mode);
+    update_bit_1d!(6, m.refmv_mode);
+    update_bit_1d!(3, m.drl_bit);
+    update_cdf_2d!(8, N_COMP_INTER_PRED_MODES - 1, m.comp_inter_mode);
+    update_bit_1d!(4, m.intra);
+    update_bit_1d!(5, m.comp);
+    update_bit_1d!(5, m.comp_dir);
+    update_bit_1d!(6, m.jnt_comp);
+    update_bit_1d!(6, m.mask_comp);
+    update_bit_1d!(9, m.wedge_comp);
+    update_cdf_2d!(9, 15, m.wedge_idx);
+    update_bit_2d!(6, 3, m.r#ref);
+    update_bit_2d!(3, 3, m.comp_fwd_ref);
+    update_bit_2d!(2, 3, m.comp_bwd_ref);
+    update_bit_2d!(3, 3, m.comp_uni_ref);
+    update_bit_1d!(3, m.seg_pred);
+    update_bit_1d!(4, m.interintra);
+    update_bit_1d!(7, m.interintra_wedge);
+    update_cdf_2d!(4, 3, m.interintra_mode);
+    update_cdf_2d!(N_BS_SIZES, 2, m.motion_mode);
+    update_bit_1d!(N_BS_SIZES, m.obmc);
+
+    update_cdf_1d!(N_MV_JOINTS - 1, mv.joint.0);
+    for k in 0..2 {
+        update_cdf_1d!(10, mv.comp[k].classes.0);
+        update_bit_0d!(mv.comp[k].class0);
+        update_bit_1d!(10, mv.comp[k].classN);
+        update_cdf_2d!(2, 3, mv.comp[k].class0_fp);
+        update_cdf_1d!(3, mv.comp[k].classN_fp.0);
+        update_bit_0d!(mv.comp[k].class0_hp);
+        update_bit_0d!(mv.comp[k].classN_hp);
+        update_bit_0d!(mv.comp[k].sign);
     }
 }
 
