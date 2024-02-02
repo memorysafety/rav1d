@@ -4925,7 +4925,7 @@ pub(crate) unsafe fn rav1d_decode_frame(
             if res.is_ok() && frame_hdr.refresh_context != 0 && f.task_thread.update_set {
                 rav1d_cdf_thread_update(
                     frame_hdr,
-                    f.out_cdf.data.cdf,
+                    &mut *f.out_cdf.data.cdf,
                     &(*f.ts.offset(frame_hdr.tiling.update as isize)).cdf,
                 );
             }

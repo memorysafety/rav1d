@@ -4883,15 +4883,15 @@ static av1_default_coef_cdf: [CdfCoefContext; 4] = [
     },
 ];
 
-pub(crate) unsafe fn rav1d_cdf_thread_update(
+pub(crate) fn rav1d_cdf_thread_update(
     hdr: &Rav1dFrameHeader,
-    dst: *mut CdfContext,
+    dst: &mut CdfContext,
     src: &CdfContext,
 ) {
     macro_rules! update_cdf_1d {
         ($n1d:expr, $($name:tt)+) => {
-            (*dst).$($name)+.copy_from_slice(&src.$($name)+);
-            (*dst).$($name)+[$n1d] = 0
+            dst.$($name)+.copy_from_slice(&src.$($name)+);
+            dst.$($name)+[$n1d] = 0
         }
     }
 
@@ -4921,8 +4921,8 @@ pub(crate) unsafe fn rav1d_cdf_thread_update(
 
     macro_rules! update_bit_0d {
         ($($name:tt)+) => {
-            (*dst).$($name)+[0] = src.$($name)+[0];
-            (*dst).$($name)+[1] = 0
+            dst.$($name)+[0] = src.$($name)+[0];
+            dst.$($name)+[1] = 0
         }
     }
 

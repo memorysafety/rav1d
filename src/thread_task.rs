@@ -1185,7 +1185,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 if error_0 == 0 {
                                     rav1d_cdf_thread_update(
                                         frame_hdr,
-                                        f.out_cdf.data.cdf,
+                                        &mut *f.out_cdf.data.cdf,
                                         &(*(f.ts).offset(frame_hdr.tiling.update as isize)).cdf,
                                     );
                                 }
