@@ -20,6 +20,7 @@ use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
+use crate::src::internal::Rav1dTaskContext_borrow;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskThreadData_delayed_fg;
@@ -790,8 +791,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
 }
 
 pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
-    let tc: &mut Rav1dTaskContext = &mut *(data as *mut Rav1dTaskContext);
-    let c: &Rav1dContext = &*tc.c;
+    let Rav1dTaskContext_borrow { c, tc } = *Box::from_raw(data as *mut Rav1dTaskContext_borrow);
 
     // We clone the Arc here for the lifetime of this function to avoid an
     // immutable borrow of tc across the call to park

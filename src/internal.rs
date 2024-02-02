@@ -665,7 +665,6 @@ pub(crate) struct Rav1dTaskContext_task_thread {
 
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext {
-    pub c: *const Rav1dContext,
     pub f: *const Rav1dFrameContext,
     pub ts: *mut Rav1dTileState,
     pub bx: c_int,
@@ -691,4 +690,13 @@ pub(crate) struct Rav1dTaskContext {
     pub tl_4x4_filter: Filter2d,
     pub frame_thread: Rav1dTaskContext_frame_thread,
     pub task_thread: Rav1dTaskContext_task_thread,
+}
+
+// TODO(SJC): This is a temporary struct to pass a single pointer that holds
+// both a Rav1dContext and Rav1dTaskContext to the start routine in
+// pthread_create. We need to pass the Rav1dTaskContext into the thread by value
+// and remove it from the context structure.
+pub(crate) struct Rav1dTaskContext_borrow<'c> {
+    pub c: &'c Rav1dContext,
+    pub tc: &'c mut Rav1dTaskContext,
 }
