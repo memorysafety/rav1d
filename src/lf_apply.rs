@@ -535,7 +535,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     f: *const Rav1dFrameContext,
-    p: *const *mut BD::Pixel,
+    p: &[*mut BD::Pixel; 3],
     lflvl: *mut Av1Filter,
     sby: c_int,
     start_of_tile_row: c_int,
@@ -689,7 +689,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let mut ptr: *mut BD::Pixel;
     let mut level_ptr: &[[u8; 4]] =
         &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
-    ptr = *p.offset(0);
+    ptr = p[0];
     have_left = 0 as c_int;
     for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks(32)) {
         filter_plane_cols_y::<BD>(
@@ -721,8 +721,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             level_ptr,
             (*f).b4_stride,
             ((*lflvl.offset(x as isize)).filter_uv[0]).as_mut_ptr() as *const [[u16; 2]; 2],
-            &mut *(*p.offset(1)).offset(uv_off as isize),
-            &mut *(*p.offset(2)).offset(uv_off as isize),
+            &mut *p[1].offset(uv_off as isize),
+            &mut *p[2].offset(uv_off as isize),
             (*f).cur.stride[1],
             cmp::min(32 as c_int, (*f).w4 - x * 32) + ss_hor >> ss_hor,
             starty4 >> ss_ver,
@@ -748,7 +748,7 @@ fn suffixes<T>(slice: &[T], n: usize) -> impl Iterator<Item = &[T]> {
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     f: *const Rav1dFrameContext,
-    p: *const *mut BD::Pixel,
+    p: &[*mut BD::Pixel; 3],
     lflvl: *mut Av1Filter,
     sby: c_int,
 ) {
@@ -764,7 +764,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let mut ptr: *mut BD::Pixel;
     let mut level_ptr: &[[u8; 4]] =
         &((*f).lf.level)[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
-    ptr = *p.offset(0);
+    ptr = p[0];
     for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, 32)) {
         filter_plane_rows_y::<BD>(
             f,
@@ -794,8 +794,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             level_ptr,
             (*f).b4_stride,
             ((*lflvl.offset(x as isize)).filter_uv[1]).as_mut_ptr() as *const [[u16; 2]; 2],
-            &mut *(*p.offset(1)).offset(uv_off as isize),
-            &mut *(*p.offset(2)).offset(uv_off as isize),
+            &mut *p[1].offset(uv_off as isize),
+            &mut *p[2].offset(uv_off as isize),
             (*f).cur.stride[1],
             cmp::min(32 as c_int, (*f).w4 - x * 32) + ss_hor >> ss_hor,
             starty4 >> ss_ver,
