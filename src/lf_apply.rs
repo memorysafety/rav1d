@@ -377,8 +377,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 dst.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
-                &*(*lvl.as_ptr().offset(x as isize)).as_ptr().offset(0) as *const u8
-                    as *const [u8; 4],
+                lvl[x as usize][0..].as_ptr() as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
@@ -417,7 +416,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 dst.cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.as_ptr().offset(0)).as_ptr().offset(1) as *const u8 as *const [u8; 4],
+                lvl[0][1..].as_ptr() as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
@@ -463,7 +462,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 u.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
-                &*lvl[x as usize].as_ptr().offset(2) as *const u8 as *const [u8; 4],
+                lvl[x as usize][2..].as_ptr() as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
@@ -473,7 +472,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 v.offset((x * 4) as isize).cast(),
                 ls,
                 hmask.as_mut_ptr(),
-                &*lvl[x as usize].as_ptr().offset(3) as *const u8 as *const [u8; 4],
+                lvl[x as usize][3..].as_ptr() as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 endy4 - starty4,
@@ -513,7 +512,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 u.offset(off_l as isize).cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.as_ptr().offset(0)).as_ptr().offset(2) as *const u8 as *const [u8; 4],
+                lvl[0][2..].as_ptr() as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
@@ -523,7 +522,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 v.offset(off_l as isize).cast(),
                 ls,
                 vmask.as_ptr(),
-                &*(*lvl.as_ptr().offset(0)).as_ptr().offset(3) as *const u8 as *const [u8; 4],
+                lvl[0][3..].as_ptr() as *const [u8; 4],
                 b4_stride,
                 &(*f).lf.lim_lut.0,
                 w,
@@ -735,7 +734,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     }
 }
 
-fn prefixes<T>(slice: &[T], n: usize) -> impl Iterator<Item = &[T]> {
+/// Gives the same starting positions as `chunks`,
+/// but gives the whole remaining slice at that position
+fn suffixes<T>(slice: &[T], n: usize) -> impl Iterator<Item = &[T]> {
     let mut offset = 0;
 
     std::iter::from_fn(move || {
@@ -756,17 +757,15 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
     let starty4 = (sby & is_sb64) << 4;
     let sbsz = 32 >> is_sb64;
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor =
-        ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let ss_ver = ((*f).cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = ((*f).cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let endy4: c_uint = (starty4 + cmp::min((*f).h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
     let mut ptr: *mut BD::Pixel;
     let mut level_ptr: &[[u8; 4]] =
         &((*f).lf.level)[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
     ptr = *p.offset(0);
-    for (x, level_ptr) in (0..(*f).sb128w).zip(prefixes(level_ptr, 32)) {
+    for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, 32)) {
         filter_plane_rows_y::<BD>(
             f,
             have_top,
@@ -788,7 +787,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let mut uv_off: ptrdiff_t;
     level_ptr = &((*f).lf.level)[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
     uv_off = 0 as c_int as ptrdiff_t;
-    for (x, level_ptr) in (0..(*f).sb128w).zip(prefixes(level_ptr, (32 >> ss_hor) as usize)) {
+    for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, (32 >> ss_hor) as usize)) {
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
