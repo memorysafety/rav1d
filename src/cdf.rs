@@ -4890,7 +4890,7 @@ pub(crate) fn rav1d_cdf_thread_update(
 ) {
     macro_rules! update_cdf_1d {
         ($n1d:expr, $($name:tt)+) => {
-            dst.$($name)+.copy_from_slice(&src.$($name)+);
+            dst.$($name)+ = src.$($name)+;
             dst.$($name)+[$n1d] = 0
         }
     }
@@ -5083,10 +5083,10 @@ pub unsafe fn rav1d_cdf_thread_copy(dst: *mut CdfContext, src: &CdfThreadContext
         );
     } else {
         (*dst).m = av1_default_cdf.clone();
-        (*dst).kfym.0.copy_from_slice(&default_kf_y_mode_cdf.0);
+        (*dst).kfym = default_kf_y_mode_cdf;
         (*dst).coef = av1_default_coef_cdf[(*src).data.qcat as usize].clone();
-        (*dst).mv.joint.0.copy_from_slice(&default_mv_joint_cdf.0);
-        (*dst).dmv.joint.0.copy_from_slice(&default_mv_joint_cdf.0);
+        (*dst).mv.joint = default_mv_joint_cdf;
+        (*dst).dmv.joint = default_mv_joint_cdf;
         (*dst).dmv.comp[1] = default_mv_component_cdf.clone();
         (*dst).dmv.comp[0] = (*dst).dmv.comp[1].clone();
         (*dst).mv.comp[1] = (*dst).dmv.comp[0].clone();
