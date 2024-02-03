@@ -565,7 +565,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         while !(*f).tiles.is_empty() {
             task_thread_lock = (*f).task_thread.cond.wait(task_thread_lock).unwrap();
         }
-        let out_delayed: &mut Rav1dThreadPicture = &mut (c.frame_thread.out_delayed)[next as usize];
+        let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if !out_delayed.p.data.data[0].is_null()
             || (*f).task_thread.error.load(Ordering::SeqCst) != 0
         {
@@ -867,7 +867,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
                 &mut *((*c).fc).offset(next as isize) as *mut Rav1dFrameContext;
             rav1d_decode_frame_exit(&*c, &mut *f, Err(EGeneric));
             (*f).task_thread.retval = Ok(());
-            let out_delayed = &mut ((*c).frame_thread.out_delayed)[next as usize];
+            let out_delayed = &mut (*c).frame_thread.out_delayed[next as usize];
             if out_delayed.p.frame_hdr.is_some() {
                 rav1d_thread_picture_unref(out_delayed);
             }
@@ -988,10 +988,10 @@ impl Drop for Rav1dContext {
                 n_1 = n_1.wrapping_add(1);
             }
             rav1d_free_aligned(self.fc as *mut c_void);
-            if self.n_fc > 1 as c_uint && !(self.frame_thread.out_delayed).is_empty() {
+            if self.n_fc > 1 as c_uint && !self.frame_thread.out_delayed.is_empty() {
                 let mut n_2: c_uint = 0 as c_int as c_uint;
                 while n_2 < self.n_fc {
-                    if (self.frame_thread.out_delayed[n_2 as usize])
+                    if self.frame_thread.out_delayed[n_2 as usize]
                         .p
                         .frame_hdr
                         .is_some()
@@ -1002,7 +1002,7 @@ impl Drop for Rav1dContext {
                     }
                     n_2 = n_2.wrapping_add(1);
                 }
-                let _ = std::mem::take(&mut self.frame_thread.out_delayed);
+                let _ = mem::take(&mut self.frame_thread.out_delayed);
             }
             let _ = mem::take(&mut self.tiles);
             let mut n_4 = 0;
