@@ -345,11 +345,11 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         inited: 1,
     };
     (&mut (*c).task_thread as *mut Arc<TaskThreadData>).write(Arc::new(ttd));
-    if (*c).n_fc > 1 {
-        (*c).frame_thread.out_delayed = std::iter::repeat_with(Rav1dThreadPicture::default)
-            .take((*c).n_fc as usize)
-            .collect();
-    }
+    ptr::addr_of_mut!((*c).frame_thread.out_delayed).write(if (*c).n_fc > 1 {
+        (0..(*c).n_fc).map(|_| Default::default()).collect()
+    } else {
+        Box::new([])
+    });
     let mut n: c_uint = 0 as c_int as c_uint;
     while n < (*c).n_fc {
         let f: *mut Rav1dFrameContext =
