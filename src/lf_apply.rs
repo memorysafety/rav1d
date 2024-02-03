@@ -711,8 +711,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     }
     let mut uv_off: ptrdiff_t;
     let level_ptr = &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
-    uv_off = 0 as c_int as ptrdiff_t;
     have_left = 0 as c_int;
+    uv_off = 0;
     for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks(32 >> ss_hor)) {
         filter_plane_cols_uv::<BD>(
             f,
@@ -733,27 +733,13 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     }
 }
 
-/// Gives the same starting positions as `chunks`,
-/// but gives the whole remaining slice at that position
-fn suffixes<T>(slice: &[T], n: usize) -> impl Iterator<Item = &[T]> {
-    let mut offset = 0;
-
-    std::iter::from_fn(move || {
-        let new = slice.get(offset..)?;
-        if new.is_empty() {
-            return None;
-        }
-        offset = offset.saturating_add(n);
-        Some(new)
-    })
-}
-
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     f: *const Rav1dFrameContext,
     p: &[*mut BD::Pixel; 3],
     lflvl: *mut Av1Filter,
     sby: c_int,
 ) {
+    // Don't filter outside the frame
     let have_top = (sby > 0) as c_int;
     let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
@@ -763,10 +749,11 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let ss_hor = ((*f).cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let endy4: c_uint = (starty4 + cmp::min((*f).h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
+
     let mut ptr: *mut BD::Pixel;
-    let level_ptr = &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
+    let mut level_ptr = &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
     ptr = p[0];
-    for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, 32)) {
+    for x in 0..(*f).sb128w {
         filter_plane_rows_y::<BD>(
             f,
             have_top,
@@ -775,20 +762,24 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             ((*lflvl.offset(x as isize)).filter_y[1]).as_mut_ptr() as *const [[u16; 2]; 3],
             ptr,
             (*f).cur.stride[0],
-            cmp::min(32 as c_int, (*f).w4 - x * 32),
+            cmp::min(32, (*f).w4 - x * 32),
             starty4,
             endy4 as c_int,
         );
         ptr = ptr.offset(128);
+        level_ptr = &level_ptr[32..];
     }
+
     let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
+
     let mut uv_off: ptrdiff_t;
-    let level_ptr = &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
-    uv_off = 0 as c_int as ptrdiff_t;
-    for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, 32 >> ss_hor)) {
+    let mut level_ptr =
+        &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    uv_off = 0;
+    for x in 0..(*f).sb128w {
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
@@ -804,5 +795,6 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             ss_hor,
         );
         uv_off += 128 >> ss_hor;
+        level_ptr = &level_ptr[32 >> ss_hor..];
     }
 }
