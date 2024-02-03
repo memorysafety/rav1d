@@ -1452,7 +1452,7 @@ unsafe fn decode_b(
     }
 
     let ts = &mut *t.ts;
-    let f = &*t.f;
+    let f = &mut *t.f;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let mut b_mem = Default::default();
     let b = if t.frame_thread.pass != 0 {

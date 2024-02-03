@@ -665,7 +665,7 @@ pub(crate) struct Rav1dTaskContext_task_thread {
 
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext {
-    pub f: *const Rav1dFrameContext,
+    pub f: *mut Rav1dFrameContext,
     pub ts: *mut Rav1dTileState,
     pub bx: c_int,
     pub by: c_int,
