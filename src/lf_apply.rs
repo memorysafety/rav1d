@@ -687,8 +687,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         }
     }
     let mut ptr: *mut BD::Pixel;
-    let mut level_ptr: &[[u8; 4]] =
-        &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
+    let level_ptr = &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
     ptr = p[0];
     have_left = 0 as c_int;
     for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks(32)) {
@@ -711,10 +710,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         return;
     }
     let mut uv_off: ptrdiff_t;
-    level_ptr = &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    let level_ptr = &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
     uv_off = 0 as c_int as ptrdiff_t;
     have_left = 0 as c_int;
-    for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks((32 >> ss_hor) as usize)) {
+    for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks(32 >> ss_hor)) {
         filter_plane_cols_uv::<BD>(
             f,
             have_left,
@@ -765,8 +764,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let endy4: c_uint = (starty4 + cmp::min((*f).h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
     let mut ptr: *mut BD::Pixel;
-    let mut level_ptr: &[[u8; 4]] =
-        &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
+    let level_ptr = &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
     ptr = p[0];
     for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, 32)) {
         filter_plane_rows_y::<BD>(
@@ -788,9 +786,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
     let mut uv_off: ptrdiff_t;
-    level_ptr = &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    let level_ptr = &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
     uv_off = 0 as c_int as ptrdiff_t;
-    for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, (32 >> ss_hor) as usize)) {
+    for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, 32 >> ss_hor)) {
         filter_plane_rows_uv::<BD>(
             f,
             have_top,
