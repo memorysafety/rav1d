@@ -711,7 +711,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         return;
     }
     let mut uv_off: ptrdiff_t;
-    level_ptr = &((*f).lf.level)[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    level_ptr = &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
     uv_off = 0 as c_int as ptrdiff_t;
     have_left = 0 as c_int;
     for (x, level_ptr) in (0..(*f).sb128w).zip(level_ptr.chunks((32 >> ss_hor) as usize)) {
@@ -741,6 +741,9 @@ fn suffixes<T>(slice: &[T], n: usize) -> impl Iterator<Item = &[T]> {
 
     std::iter::from_fn(move || {
         let new = slice.get(offset..)?;
+        if new.is_empty() {
+            return None;
+        }
         offset = offset.saturating_add(n);
         Some(new)
     })
@@ -763,7 +766,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
     let mut ptr: *mut BD::Pixel;
     let mut level_ptr: &[[u8; 4]] =
-        &((*f).lf.level)[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
+        &(*f).lf.level[((*f).b4_stride * sby as isize * sbsz as isize) as usize..];
     ptr = p[0];
     for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, 32)) {
         filter_plane_rows_y::<BD>(
@@ -785,7 +788,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
     let mut uv_off: ptrdiff_t;
-    level_ptr = &((*f).lf.level)[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    level_ptr = &(*f).lf.level[((*f).b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
     uv_off = 0 as c_int as ptrdiff_t;
     for (x, level_ptr) in (0..(*f).sb128w).zip(suffixes(level_ptr, (32 >> ss_hor) as usize)) {
         filter_plane_rows_uv::<BD>(

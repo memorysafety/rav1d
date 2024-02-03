@@ -4515,7 +4515,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     // update allocation for loopfilter masks
     if num_sb128 != f.lf.mask_sz {
         freep(&mut f.lf.mask as *mut *mut Av1Filter as *mut c_void);
-        let _ = std::mem::take(&mut f.lf.level);
+        let _ = mem::take(&mut f.lf.level);
         f.lf.mask =
             malloc(::core::mem::size_of::<Av1Filter>() * num_sb128 as usize) as *mut Av1Filter;
         // over-allocate by 3 bytes since some of the SIMD implementations
