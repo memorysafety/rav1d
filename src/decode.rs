@@ -1452,7 +1452,7 @@ unsafe fn decode_b(
     }
 
     let ts = &mut *t.ts;
-    let f = &*t.f;
+    let f = &mut *t.f;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let mut b_mem = Default::default();
     let b = if t.frame_thread.pass != 0 {
@@ -2161,7 +2161,7 @@ unsafe fn decode_b(
         if frame_hdr.loopfilter.level_y != [0, 0] {
             rav1d_create_lf_mask_intra(
                 &mut *t.lf_mask,
-                f.lf.level,
+                &mut f.lf.level,
                 f.b4_stride,
                 &*ts.lflvl.offset(b.seg_id as isize),
                 t.bx,
@@ -3151,7 +3151,7 @@ unsafe fn decode_b(
             }
             rav1d_create_lf_mask_inter(
                 &mut *t.lf_mask,
-                f.lf.level,
+                &mut f.lf.level,
                 f.b4_stride,
                 // In C, the inner dimensions (`ref`, `is_gmv`) are offset,
                 // but then cast back to a pointer to the full array,
@@ -4515,14 +4515,13 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     // update allocation for loopfilter masks
     if num_sb128 != f.lf.mask_sz {
         freep(&mut f.lf.mask as *mut *mut Av1Filter as *mut c_void);
-        freep(&mut f.lf.level as *mut *mut [u8; 4] as *mut c_void);
+        let _ = mem::take(&mut f.lf.level);
         f.lf.mask =
             malloc(::core::mem::size_of::<Av1Filter>() * num_sb128 as usize) as *mut Av1Filter;
         // over-allocate by 3 bytes since some of the SIMD implementations
         // index this from the level type and can thus over-read by up to 3
-        f.lf.level = malloc(::core::mem::size_of::<[u8; 4]>() * num_sb128 as usize * 32 * 32 + 3)
-            as *mut [u8; 4];
-        if f.lf.mask.is_null() || f.lf.level.is_null() {
+        f.lf.level = vec![[0u8; 4]; num_sb128 as usize * 32 * 32 + 3].into(); // TODO fallible allocation
+        if f.lf.mask.is_null() {
             f.lf.mask_sz = 0;
             return Err(ENOMEM);
         }

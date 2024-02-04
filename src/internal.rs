@@ -382,7 +382,7 @@ pub struct Rav1dFrameContext_frame_thread {
 /// loopfilter
 #[repr(C)]
 pub struct Rav1dFrameContext_lf {
-    pub level: *mut [u8; 4],
+    pub level: Box<[[u8; 4]]>,
     pub mask: *mut Av1Filter,
     pub lr_mask: *mut Av1Restoration,
     pub mask_sz: c_int, /* w*h */
@@ -665,7 +665,7 @@ pub(crate) struct Rav1dTaskContext_task_thread {
 
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext {
-    pub f: *const Rav1dFrameContext,
+    pub f: *mut Rav1dFrameContext,
     pub ts: *mut Rav1dTileState,
     pub bx: c_int,
     pub by: c_int,

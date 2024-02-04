@@ -4484,7 +4484,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         (f.lf.mask).offset(((sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w) as isize);
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
-        p.as_ptr(),
+        &p,
         mask,
         sby,
         *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
@@ -4516,7 +4516,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     if c.inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
         && (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0)
     {
-        rav1d_loopfilter_sbrow_rows::<BD>(f, p.as_ptr(), mask, sby);
+        rav1d_loopfilter_sbrow_rows::<BD>(f, &p, mask, sby);
     }
     if seq_hdr.cdef != 0 || f.lf.restore_planes != 0 {
         rav1d_copy_lpf::<BD>(c, f, p.as_ptr(), sby);
