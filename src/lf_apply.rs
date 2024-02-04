@@ -143,8 +143,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     } else {
         while row + stripe_h <= row_h {
             let n_lines_0 = 4 - (row + stripe_h + 1 == h) as c_int;
-            let mut i = 0;
-            while i < 4 {
+            for i in 0..4 {
                 BD::pixel_copy(
                     slice::from_raw_parts_mut(dst, src_w as usize),
                     slice::from_raw_parts(
@@ -160,7 +159,6 @@ unsafe fn backup_lpf<BD: BitDepth>(
                 );
                 dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
                 src = src.offset(BD::pxstride(src_stride as usize) as isize);
-                i += 1;
             }
             row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
@@ -613,10 +611,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     // fix lpf strength at tile row boundaries
     if start_of_tile_row != 0 {
         let mut a: *const BlockContext;
-        x = 0 as c_int;
         a = &mut *((*f).a).offset(((*f).sb128w * (start_of_tile_row - 1)) as isize)
             as *mut BlockContext;
-        while x < (*f).sb128w {
+        for x in 0..(*f).sb128w {
             let y_vmask = &mut ((*lflvl.offset(x as isize)).filter_y[1][starty4 as usize]);
             let w: c_uint = cmp::min(32 as c_int, (*f).w4 - (x << 5)) as c_uint;
             let mut mask = 1u32;
@@ -651,7 +648,6 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                     uv_mask <<= 1;
                 }
             }
-            x += 1;
             a = a.offset(1);
         }
     }
