@@ -241,12 +241,10 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         }
     }
     if (seq_hdr.cdef != 0 || restore_planes & (LR_RESTORE_U as c_int | LR_RESTORE_V as c_int) != 0)
-        && (*f).cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
+        && (*f).cur.p.layout != Rav1dPixelLayout::I400
     {
-        let ss_ver = ((*f).sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint)
-            as c_int;
-        let ss_hor = ((*f).sr_cur.p.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint)
-            as c_int;
+        let ss_ver = ((*f).sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
+        let ss_hor = ((*f).sr_cur.p.p.layout != Rav1dPixelLayout::I444) as c_int;
         let h_0 = (*f).cur.p.h + ss_ver >> ss_ver;
         let w_0 = (*f).bw << 2 - ss_hor;
         let row_h_0 = cmp::min((sby + 1) << 6 - ss_ver + seq_hdr.sb128, h_0 - 1);
@@ -555,10 +553,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let sbsz = 32 >> is_sb64;
     let sbl2 = 5 - is_sb64;
     let halign = (*f).bh + 31 & !(31 as c_int);
-    let ss_ver =
-        ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor =
-        ((*f).cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let ss_ver = ((*f).cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = ((*f).cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let vmask = 16 >> ss_ver;
     let hmask = 16 >> ss_hor;
     let vmax: c_uint = (1 as c_uint) << vmask;
@@ -607,7 +603,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             y = y.wrapping_add(1);
             mask <<= 1;
         }
-        if (*f).cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint {
+        if (*f).cur.p.layout != Rav1dPixelLayout::I400 {
             let uv_hmask: *mut [u16; 2] =
                 ((*lflvl.offset(x as isize)).filter_uv[0][cbx4 as usize]).as_mut_ptr();
             let mut y_0: c_uint = (starty4 >> ss_ver) as c_uint;
@@ -665,7 +661,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                 mask_0 <<= 1;
                 i = i.wrapping_add(1);
             }
-            if (*f).cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint {
+            if (*f).cur.p.layout != Rav1dPixelLayout::I400 {
                 let cw: c_uint = w.wrapping_add(ss_hor as c_uint) >> ss_hor;
                 let uv_vmask: *mut [u16; 2] = ((*lflvl.offset(x as isize)).filter_uv[1]
                     [(starty4 >> ss_ver) as usize])
