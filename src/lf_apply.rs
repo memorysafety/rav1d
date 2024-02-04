@@ -615,30 +615,23 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         a = &mut *((*f).a).offset(((*f).sb128w * (start_of_tile_row - 1)) as isize)
             as *mut BlockContext;
         while x < (*f).sb128w {
-            let y_vmask: *mut [u16; 2] =
-                ((*lflvl.offset(x as isize)).filter_y[1][starty4 as usize]).as_mut_ptr();
+            let y_vmask = &mut ((*lflvl.offset(x as isize)).filter_y[1][starty4 as usize]);
             let w: c_uint = cmp::min(32 as c_int, (*f).w4 - (x << 5)) as c_uint;
-            let mut mask_0: c_uint = 1 as c_int as c_uint;
-            let mut i: c_uint = 0 as c_int as c_uint;
-            while i < w {
-                let sidx_1 = (mask_0 >= 0x10000 as c_uint) as c_int;
-                let smask_1: c_uint = mask_0 >> (sidx_1 << 4);
-                let idx_1 = 2 as c_int
-                    * ((*y_vmask.offset(2))[sidx_1 as usize] as c_uint & smask_1 != 0) as c_int
-                    + ((*y_vmask.offset(1))[sidx_1 as usize] as c_uint & smask_1 != 0) as c_int;
-                let ref mut fresh7 = (*y_vmask.offset(2))[sidx_1 as usize];
-                *fresh7 = (*fresh7 as c_uint & !smask_1) as u16;
-                let ref mut fresh8 = (*y_vmask.offset(1))[sidx_1 as usize];
-                *fresh8 = (*fresh8 as c_uint & !smask_1) as u16;
-                let ref mut fresh9 = (*y_vmask.offset(0))[sidx_1 as usize];
-                *fresh9 = (*fresh9 as c_uint & !smask_1) as u16;
-                let ref mut fresh10 = (*y_vmask
-                    .offset(cmp::min(idx_1, (*a).tx_lpf_y[i as usize] as c_int) as isize))
-                    [sidx_1 as usize];
-                *fresh10 = (*fresh10 as c_uint | smask_1) as u16;
-                mask_0 <<= 1;
-                i = i.wrapping_add(1);
+            let mut mask = 1u32;
+            for i in 0..w as usize {
+                let sidx = (mask >= 0x10000 as c_uint) as usize;
+                let smask = (mask >> (sidx << 4)) as u16;
+                let idx = 2 * (y_vmask[2][sidx] & smask != 0) as usize
+                    + (y_vmask[1][sidx] & smask != 0) as usize;
+
+                y_vmask[2][sidx] &= !smask;
+                y_vmask[1][sidx] &= !smask;
+                y_vmask[0][sidx] &= !smask;
+                y_vmask[cmp::min(idx, (*a).tx_lpf_y[i as usize] as usize)][sidx] |= smask;
+
+                mask <<= 1;
             }
+
             if (*f).cur.p.layout != Rav1dPixelLayout::I400 {
                 let cw: c_uint = w.wrapping_add(ss_hor as c_uint) >> ss_hor;
                 let uv_vmask: *mut [u16; 2] = ((*lflvl.offset(x as isize)).filter_uv[1]
