@@ -572,35 +572,22 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         if x << sbl2 >= (*f).bw {
             break;
         }
-        let bx4 = if x & is_sb64 != 0 {
-            16 as c_int
-        } else {
-            0 as c_int
-        };
+        let bx4 = if x & is_sb64 != 0 { 16 } else { 0 };
         let cbx4 = bx4 >> ss_hor;
         x >>= is_sb64;
-        let y_hmask: *mut [u16; 2] =
-            ((*lflvl.offset(x as isize)).filter_y[0][bx4 as usize]).as_mut_ptr();
-        let mut y: c_uint = starty4 as c_uint;
-        let mut mask: c_uint = ((1 as c_int) << y) as c_uint;
-        while y < endy4 {
-            let sidx = (mask >= 0x10000 as c_uint) as c_int;
-            let smask: c_uint = mask >> (sidx << 4);
-            let idx = 2 as c_int
-                * ((*y_hmask.offset(2))[sidx as usize] as c_uint & smask != 0) as c_int
-                + ((*y_hmask.offset(1))[sidx as usize] as c_uint & smask != 0) as c_int;
-            let ref mut fresh0 = (*y_hmask.offset(2))[sidx as usize];
-            *fresh0 = (*fresh0 as c_uint & !smask) as u16;
-            let ref mut fresh1 = (*y_hmask.offset(1))[sidx as usize];
-            *fresh1 = (*fresh1 as c_uint & !smask) as u16;
-            let ref mut fresh2 = (*y_hmask.offset(0))[sidx as usize];
-            *fresh2 = (*fresh2 as c_uint & !smask) as u16;
-            let ref mut fresh3 = (*y_hmask.offset(cmp::min(
-                idx,
-                *lpf_y.offset(y.wrapping_sub(starty4 as c_uint) as isize) as c_int,
-            ) as isize))[sidx as usize];
-            *fresh3 = (*fresh3 as c_uint | smask) as u16;
-            y = y.wrapping_add(1);
+        let y_hmask = &mut (*lflvl.offset(x as isize)).filter_y[0][bx4 as usize];
+        let mut mask = (1 << starty4) as u32;
+        for i in 0..endy4 as usize - starty4 as usize {
+            let sidx = (mask >= 0x10000 as c_uint) as usize;
+            let smask = (mask >> (sidx << 4)) as u16;
+            let idx = 2 * (y_hmask[2][sidx] & smask != 0) as usize
+                + (y_hmask[1][sidx] & smask != 0) as usize;
+
+            y_hmask[2][sidx] &= !smask;
+            y_hmask[1][sidx] &= !smask;
+            y_hmask[0][sidx] &= !smask;
+            y_hmask[cmp::min(idx, *lpf_y.add(i) as usize)][sidx] |= smask;
+
             mask <<= 1;
         }
         if (*f).cur.p.layout != Rav1dPixelLayout::I400 {
