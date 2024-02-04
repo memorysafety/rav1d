@@ -591,26 +591,17 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             mask <<= 1;
         }
         if (*f).cur.p.layout != Rav1dPixelLayout::I400 {
-            let uv_hmask: *mut [u16; 2] =
-                ((*lflvl.offset(x as isize)).filter_uv[0][cbx4 as usize]).as_mut_ptr();
-            let mut y_0: c_uint = (starty4 >> ss_ver) as c_uint;
-            let mut uv_mask: c_uint = ((1 as c_int) << y_0) as c_uint;
-            while y_0 < uv_endy4 {
-                let sidx_0 = (uv_mask >= vmax) as c_int;
-                let smask_0: c_uint = uv_mask >> (sidx_0 << 4 - ss_ver);
-                let idx_0 =
-                    ((*uv_hmask.offset(1))[sidx_0 as usize] as c_uint & smask_0 != 0) as c_int;
-                let ref mut fresh4 = (*uv_hmask.offset(1))[sidx_0 as usize];
-                *fresh4 = (*fresh4 as c_uint & !smask_0) as u16;
-                let ref mut fresh5 = (*uv_hmask.offset(0))[sidx_0 as usize];
-                *fresh5 = (*fresh5 as c_uint & !smask_0) as u16;
-                let ref mut fresh6 = (*uv_hmask.offset(cmp::min(
-                    idx_0,
-                    *lpf_uv.offset(y_0.wrapping_sub((starty4 >> ss_ver) as c_uint) as isize)
-                        as c_int,
-                ) as isize))[sidx_0 as usize];
-                *fresh6 = (*fresh6 as c_uint | smask_0) as u16;
-                y_0 = y_0.wrapping_add(1);
+            let uv_hmask = &mut (*lflvl.offset(x as isize)).filter_uv[0][cbx4 as usize];
+            let mut uv_mask = (1 << (starty4 >> ss_ver)) as u32;
+            for i in 0..(uv_endy4 - (starty4 >> ss_ver) as u32) as usize {
+                let sidx = (uv_mask >= vmax) as usize;
+                let smask = (uv_mask >> (sidx << 4 - ss_ver)) as u16;
+                let idx = (uv_hmask[1][sidx] & smask != 0) as usize;
+
+                uv_hmask[1][sidx] &= !smask;
+                uv_hmask[0][sidx] &= !smask;
+                uv_hmask[cmp::min(idx, *lpf_uv.add(i) as usize)][sidx] |= smask;
+
                 uv_mask <<= 1;
             }
         }
