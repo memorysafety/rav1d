@@ -609,6 +609,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         lpf_uv = lpf_uv.offset((halign >> ss_ver) as isize);
         tile_col += 1;
     }
+
+    // fix lpf strength at tile row boundaries
     if start_of_tile_row != 0 {
         let mut a: *const BlockContext;
         x = 0 as c_int;
@@ -634,26 +636,19 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 
             if (*f).cur.p.layout != Rav1dPixelLayout::I400 {
                 let cw: c_uint = w.wrapping_add(ss_hor as c_uint) >> ss_hor;
-                let uv_vmask: *mut [u16; 2] = ((*lflvl.offset(x as isize)).filter_uv[1]
-                    [(starty4 >> ss_ver) as usize])
-                    .as_mut_ptr();
-                let mut uv_mask_0: c_uint = 1 as c_int as c_uint;
-                let mut i_0: c_uint = 0 as c_int as c_uint;
-                while i_0 < cw {
-                    let sidx_2 = (uv_mask_0 >= hmax) as c_int;
-                    let smask_2: c_uint = uv_mask_0 >> (sidx_2 << 4 - ss_hor);
-                    let idx_2 =
-                        ((*uv_vmask.offset(1))[sidx_2 as usize] as c_uint & smask_2 != 0) as c_int;
-                    let ref mut fresh11 = (*uv_vmask.offset(1))[sidx_2 as usize];
-                    *fresh11 = (*fresh11 as c_uint & !smask_2) as u16;
-                    let ref mut fresh12 = (*uv_vmask.offset(0))[sidx_2 as usize];
-                    *fresh12 = (*fresh12 as c_uint & !smask_2) as u16;
-                    let ref mut fresh13 = (*uv_vmask
-                        .offset(cmp::min(idx_2, (*a).tx_lpf_uv[i_0 as usize] as c_int) as isize))
-                        [sidx_2 as usize];
-                    *fresh13 = (*fresh13 as c_uint | smask_2) as u16;
-                    uv_mask_0 <<= 1;
-                    i_0 = i_0.wrapping_add(1);
+                let uv_vmask =
+                    &mut (*lflvl.offset(x as isize)).filter_uv[1][(starty4 >> ss_ver) as usize];
+                let mut uv_mask = 1u32;
+                for i in 0..cw as usize {
+                    let sidx = (uv_mask >= hmax) as usize;
+                    let smask = (uv_mask >> (sidx << 4 - ss_hor)) as u16;
+                    let idx = (uv_vmask[1][sidx as usize] & smask != 0) as usize;
+
+                    uv_vmask[1][sidx] &= !smask;
+                    uv_vmask[0][sidx] &= !smask;
+                    uv_vmask[cmp::min(idx, (*a).tx_lpf_uv[i] as usize)][sidx] |= smask;
+
+                    uv_mask <<= 1;
                 }
             }
             x += 1;
