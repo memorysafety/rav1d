@@ -365,7 +365,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub frame_progress: Vec<AtomicU32>,
     pub copy_lpf_progress: Vec<AtomicU32>,
     // indexed using t->by * f->b4_stride + t->bx
-    pub b: *mut Av1Block,
+    pub b: Box<[Av1Block]>,
     pub cbi: *mut CodedBlockInfo,
     // indexed using (t->by >> 1) * (f->b4_stride >> 1) + (t->bx >> 1)
     pub pal: *mut [[u16; 8]; 3], /* [3 plane][8 idx] */
