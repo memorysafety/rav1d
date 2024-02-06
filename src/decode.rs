@@ -4533,7 +4533,6 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
                 .resize_with(num_sb128 as usize * 32 * 32, Default::default);
 
             // TODO: fallible allocation
-            f.frame_thread.cbi.clear();
             f.frame_thread
                 .cbi
                 .resize_with(num_sb128 as usize * 32 * 32, Default::default);
