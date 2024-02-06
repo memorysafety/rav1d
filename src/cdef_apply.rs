@@ -121,8 +121,7 @@ unsafe fn backup2x8<BD: BitDepth>(
 ) {
     let mut y_off: ptrdiff_t = 0 as c_int as ptrdiff_t;
     if flag as c_uint & BACKUP_2X8_Y as c_int as c_uint != 0 {
-        let mut y = 0;
-        while y < 8 {
+        for y in 0..8 {
             BD::pixel_copy(
                 &mut (*dst.offset(0))[y as usize],
                 slice::from_raw_parts(
@@ -132,7 +131,6 @@ unsafe fn backup2x8<BD: BitDepth>(
                 ),
                 2,
             );
-            y += 1;
             y_off += BD::pxstride(*src_stride.offset(0) as usize) as isize;
         }
     }
@@ -145,8 +143,7 @@ unsafe fn backup2x8<BD: BitDepth>(
     let ss_hor = (layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     x_off >>= ss_hor;
     y_off = 0 as c_int as ptrdiff_t;
-    let mut y = 0;
-    while y < 8 >> ss_ver {
+    for y in 0..8 >> ss_ver {
         BD::pixel_copy(
             &mut (*dst.offset(1))[y as usize],
             slice::from_raw_parts(
@@ -165,7 +162,6 @@ unsafe fn backup2x8<BD: BitDepth>(
             ),
             2,
         );
-        y += 1;
         y_off += BD::pxstride(*src_stride.offset(1) as usize) as isize;
     }
 }
@@ -225,8 +221,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let y_stride: ptrdiff_t = BD::pxstride((*f).cur.stride[0] as usize) as isize;
     let uv_stride: ptrdiff_t = BD::pxstride((*f).cur.stride[1] as usize) as isize;
     let mut bit = 0;
-    let mut by = by_start;
-    while by < by_end {
+    for by in (by_start..by_end).step_by(2) {
         let tf = (*tc).top_pre_cdef_toggle;
         let by_idx = (by & 30) >> 1;
         if by + 2 >= (*f).bh {
@@ -262,9 +257,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             edges as c_uint | CDEF_HAVE_RIGHT as c_int as c_uint,
         );
         let mut prev_flag: Backup2x8Flags = 0 as Backup2x8Flags;
-        let mut sbx = 0;
         let mut last_skip = 1;
-        while sbx < sb64w {
+        for sbx in 0..sb64w {
             let noskip_row: *const [u16; 2];
             let noskip_mask: c_uint;
             let y_lvl;
@@ -301,8 +295,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                 uv_sec_lvl += (uv_sec_lvl == 3) as c_int;
                 uv_sec_lvl <<= bitdepth_min_8;
                 bptrs = [iptrs[0], iptrs[1], iptrs[2]];
-                let mut bx = sbx * sbsz;
-                while bx < cmp::min((sbx + 1) * sbsz, (*f).bw) {
+                for bx in (sbx * sbsz..cmp::min((sbx + 1) * sbsz, (*f).bw)).step_by(2) {
                     let uvdir;
                     let do_left;
                     let mut dir;
@@ -457,8 +450,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             } else {
                                 0 as c_int
                             };
-                            let mut pl = 1;
-                            while pl <= 2 {
+                            for pl in 1..=2 {
                                 let current_block_77: u64;
                                 if have_tt == 0 {
                                     current_block_77 = 5687667889785024198;
@@ -466,22 +458,19 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     if resize != 0 {
                                         offset = ((sby - 1) * 4) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
-                                        top = &mut *((*((*f).lf.cdef_lpf_line)
-                                            .as_mut_ptr()
-                                            .offset(pl as isize))
-                                            as *mut BD::Pixel)
-                                            .offset(offset as isize);
+                                        top =
+                                            &mut *((*((*f).lf.cdef_lpf_line).as_mut_ptr().add(pl))
+                                                as *mut BD::Pixel)
+                                                .offset(offset as isize);
                                     } else {
                                         let line_0 = sby * ((4 as c_int) << sb128) - 4;
                                         offset = line_0 as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
-                                        top = &mut *((*((*f).lf.lr_lpf_line)
-                                            .as_mut_ptr()
-                                            .offset(pl as isize))
+                                        top = &mut *((*((*f).lf.lr_lpf_line).as_mut_ptr().add(pl))
                                             as *mut BD::Pixel)
                                             .offset(offset as isize);
                                     }
-                                    bot = (bptrs[pl as usize])
+                                    bot = (bptrs[pl])
                                         .offset(((8 >> ss_ver) as isize * uv_stride) as isize);
                                     current_block_77 = 6540614962658479183;
                                 } else if sbrow_start == 0 && by + 2 >= by_end {
@@ -491,24 +480,21 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                         .as_mut_ptr()
                                         .offset(tf as isize))
                                     .as_mut_ptr()
-                                    .offset(pl as isize))
+                                    .add(pl))
                                         as *mut BD::Pixel)
                                         .offset(top_offset as isize);
                                     if resize != 0 {
                                         offset = (sby * 4 + 2) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
-                                        bot = &mut *((*((*f).lf.cdef_lpf_line)
-                                            .as_mut_ptr()
-                                            .offset(pl as isize))
-                                            as *mut BD::Pixel)
-                                            .offset(offset as isize);
+                                        bot =
+                                            &mut *((*((*f).lf.cdef_lpf_line).as_mut_ptr().add(pl))
+                                                as *mut BD::Pixel)
+                                                .offset(offset as isize);
                                     } else {
                                         let line_1 = sby * ((4 as c_int) << sb128) + 4 * sb128 + 2;
                                         offset = line_1 as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
-                                        bot = &mut *((*((*f).lf.lr_lpf_line)
-                                            .as_mut_ptr()
-                                            .offset(pl as isize))
+                                        bot = &mut *((*((*f).lf.lr_lpf_line).as_mut_ptr().add(pl))
                                             as *mut BD::Pixel)
                                             .offset(offset as isize);
                                     }
@@ -523,22 +509,22 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                             .as_mut_ptr()
                                             .offset(tf as isize))
                                         .as_mut_ptr()
-                                        .offset(pl as isize))
+                                        .add(pl))
                                             as *mut BD::Pixel)
                                             .offset(
                                                 (have_tt as isize * offset_0
                                                     + (bx * 4 >> ss_hor) as isize)
                                                     as isize,
                                             );
-                                        bot = (bptrs[pl as usize])
+                                        bot = (bptrs[pl])
                                             .offset(((8 >> ss_ver) as isize * uv_stride) as isize);
                                     }
                                     _ => {}
                                 }
                                 (*dsp).cdef.fb[uv_idx as usize](
-                                    bptrs[pl as usize].cast(),
+                                    bptrs[pl].cast(),
                                     (*f).cur.stride[1],
-                                    (lr_bak[bit as usize][pl as usize]).as_mut_ptr().cast(),
+                                    (lr_bak[bit as usize][pl]).as_mut_ptr().cast(),
                                     top.cast(),
                                     bot.cast(),
                                     uv_pri_lvl,
@@ -548,7 +534,6 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     edges,
                                     (*f).bitdepth_max,
                                 );
-                                pl += 1;
                             }
                         }
                         bit ^= 1 as c_int;
@@ -557,7 +542,6 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     bptrs[0] = (bptrs[0]).offset(8);
                     bptrs[1] = (bptrs[1]).offset((8 >> ss_hor) as isize);
                     bptrs[2] = (bptrs[2]).offset((8 >> ss_hor) as isize);
-                    bx += 2 as c_int;
                     edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
                         edges as c_uint | CDEF_HAVE_LEFT as c_int as c_uint,
                     );
@@ -566,7 +550,6 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             iptrs[0] = (iptrs[0]).offset((sbsz * 4) as isize);
             iptrs[1] = (iptrs[1]).offset((sbsz * 4 >> ss_hor) as isize);
             iptrs[2] = (iptrs[2]).offset((sbsz * 4 >> ss_hor) as isize);
-            sbx += 1;
             edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
                 edges as c_uint | CDEF_HAVE_LEFT as c_int as c_uint,
             );
@@ -577,7 +560,6 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         ptrs[2] =
             (ptrs[2]).offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
         (*tc).top_pre_cdef_toggle ^= 1 as c_int;
-        by += 2 as c_int;
         edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
             edges as c_uint | CDEF_HAVE_TOP as c_int as c_uint,
         );
