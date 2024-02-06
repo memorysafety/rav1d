@@ -51,13 +51,13 @@ unsafe fn backup2lines<BD: BitDepth>(
             (2 * y_stride) as usize,
         );
     }
-    if layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint {
+    if layout != Rav1dPixelLayout::I400 {
         let uv_stride: ptrdiff_t = BD::pxstride(*stride.offset(1) as usize) as isize;
         if uv_stride < 0 {
-            let uv_off = if layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint {
-                3 as c_int
+            let uv_off = if layout == Rav1dPixelLayout::I420 {
+                3
             } else {
-                7 as c_int
+                7
             };
             BD::pixel_copy(
                 slice::from_raw_parts_mut(
@@ -84,10 +84,10 @@ unsafe fn backup2lines<BD: BitDepth>(
                 (-2 * uv_stride) as usize,
             );
         } else {
-            let uv_off = if layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint {
-                2 as c_int
+            let uv_off = if layout == Rav1dPixelLayout::I420 {
+                2
             } else {
-                6 as c_int
+                6
             };
             BD::pixel_copy(
                 slice::from_raw_parts_mut(*dst.offset(1) as *mut BD::Pixel, 2 * uv_stride as usize),
@@ -134,13 +134,11 @@ unsafe fn backup2x8<BD: BitDepth>(
             y_off += BD::pxstride(*src_stride.offset(0) as usize) as isize;
         }
     }
-    if layout as c_uint == Rav1dPixelLayout::I400 as c_int as c_uint
-        || flag as c_uint & BACKUP_2X8_UV as c_int as c_uint == 0
-    {
+    if layout == Rav1dPixelLayout::I400 || flag & BACKUP_2X8_UV == 0 {
         return;
     }
-    let ss_ver = (layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor = (layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
     x_off >>= ss_hor;
     y_off = 0 as c_int as ptrdiff_t;
     for y in 0..8 >> ss_ver {
@@ -207,14 +205,11 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
     let damping = frame_hdr.cdef.damping + bitdepth_min_8;
     let layout: Rav1dPixelLayout = (*f).cur.p.layout;
-    let uv_idx =
-        (Rav1dPixelLayout::I444 as c_int as c_uint).wrapping_sub(layout as c_uint) as c_int;
-    let ss_ver = (layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor = (layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let uv_idx = (Rav1dPixelLayout::I444 as c_uint).wrapping_sub(layout as c_uint) as c_int;
+    let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
     static uv_dirs: [[u8; 8]; 2] = [[0, 1, 2, 3, 4, 5, 6, 7], [7, 0, 2, 4, 5, 6, 6, 6]];
-    let uv_dir: *const u8 = (uv_dirs
-        [(layout as c_uint == Rav1dPixelLayout::I422 as c_int as c_uint) as c_int as usize])
-        .as_ptr();
+    let uv_dir: *const u8 = (uv_dirs[(layout == Rav1dPixelLayout::I422) as usize]).as_ptr();
     let have_tt = (c.tc.len() > 1) as c_int;
     let sb128 = (*f).seq_hdr.as_ref().unwrap().sb128;
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
@@ -442,7 +437,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             );
                         }
                         if !(uv_lvl == 0) {
-                            if !(layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint) {
+                            if !(layout != Rav1dPixelLayout::I400) {
                                 unreachable!();
                             }
                             uvdir = if uv_pri_lvl != 0 {
