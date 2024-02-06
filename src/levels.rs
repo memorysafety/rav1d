@@ -294,7 +294,6 @@ pub struct Av1Block_inter {
     pub tx_split1: u16,
 }
 
-#[derive(Clone, Copy)]
 #[repr(C)]
 pub union Av1Block_intra_inter {
     pub c2rust_unnamed: Av1Block_intra,
