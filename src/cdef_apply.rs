@@ -145,7 +145,7 @@ unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
 pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: *mut Rav1dTaskContext,
-    p: *const *mut BD::Pixel,
+    p: &[*mut BD::Pixel; 3],
     lflvl: *const Av1Filter,
     by_start: c_int,
     by_end: c_int,
@@ -161,7 +161,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         } else {
             0
         })) as CdefEdgeFlags;
-    let mut ptrs: [*mut BD::Pixel; 3] = [*p.offset(0), *p.offset(1), *p.offset(2)];
+    let mut ptrs: [*mut BD::Pixel; 3] = *p;
     let sbsz = 16;
     let sb64w = (*f).sb128w << 1;
     let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
