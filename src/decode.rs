@@ -4529,7 +4529,6 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
         if c.n_fc > 1 {
             freep(&mut f.frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
-            f.frame_thread.b.clear();
             f.frame_thread
                 .b
                 .resize_with(num_sb128 as usize * 32 * 32, Default::default);
