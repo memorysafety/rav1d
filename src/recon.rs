@@ -4499,33 +4499,36 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
 
-    let datay_stride = BD::pxstride((*f).cur.stride[0]);
-    let datay_width = (*f).cur.p.w;
-    let datay_height = (*f).cur.p.h;
-    let datay_diff = (datay_height - 1) as isize * datay_stride;
-    let datauv_stride = BD::pxstride((*f).cur.stride[1]);
-    let datauv_width = datay_width >> ss_hor;
-    let datauv_height = datay_height >> ss_ver;
-    let datauv_diff = (datauv_height - 1) as isize * datauv_stride;
+    let (mut p, p_offset) = {
+        let y_stride = BD::pxstride((*f).cur.stride[0]);
+        let y_width = (*f).cur.p.w + 127 & !127;
+        let y_height = (*f).cur.p.h + 127 & !127;
+        let y_span = (y_height - 1) as isize * y_stride;
+        let uv_stride = BD::pxstride((*f).cur.stride[1]);
+        let uv_width = y_width >> ss_hor;
+        let uv_height = y_height >> ss_ver;
+        let uv_span = (uv_height - 1) as isize * uv_stride;
 
-    let mut p: [&mut [BD::Pixel]; 3] = [
-        slice::from_raw_parts_mut(
-            (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(datay_diff, 0)),
-            datay_diff.unsigned_abs() + datay_width as usize,
-        ),
-        slice::from_raw_parts_mut(
-            (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(datauv_diff, 0)),
-            datauv_diff.unsigned_abs() + datauv_width as usize,
-        ),
-        slice::from_raw_parts_mut(
-            (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(datauv_diff, 0)),
-            datauv_diff.unsigned_abs() + datauv_width as usize,
-        ),
-    ];
-    let p_offset: [usize; 2] = [
-        (cmp::max(0, -datay_diff) + y as isize * datay_stride) as usize,
-        (cmp::max(0, -datauv_diff) + y as isize * datauv_stride >> ss_ver) as usize,
-    ];
+        let p: [&mut [BD::Pixel]; 3] = [
+            slice::from_raw_parts_mut(
+                (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(y_span, 0)),
+                y_span.unsigned_abs() + y_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+            slice::from_raw_parts_mut(
+                (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+            slice::from_raw_parts_mut(
+                (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+        ];
+        let p_offset: [usize; 2] = [
+            (cmp::max(0, -y_span) + y as isize * y_stride) as usize,
+            (cmp::max(0, -uv_span) + y as isize * uv_stride >> ss_ver) as usize,
+        ];
+        (p, p_offset)
+    };
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     rav1d_loopfilter_sbrow_cols::<BD>(
@@ -4548,33 +4551,36 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
 
-    let datay_stride = BD::pxstride(f.cur.stride[0]);
-    let datay_width = f.cur.p.w + 127 & !127;
-    let datay_height = f.cur.p.h + 127 & !127;
-    let datay_diff = (datay_height - 1) as isize * datay_stride;
-    let datauv_stride = BD::pxstride(f.cur.stride[1]);
-    let datauv_width = datay_width >> ss_hor;
-    let datauv_height = datay_height >> ss_ver;
-    let datauv_diff = (datauv_height - 1) as isize * datauv_stride;
+    let (mut p, p_offset) = {
+        let y_stride = BD::pxstride((*f).cur.stride[0]);
+        let y_width = (*f).cur.p.w + 127 & !127;
+        let y_height = (*f).cur.p.h + 127 & !127;
+        let y_span = (y_height - 1) as isize * y_stride;
+        let uv_stride = BD::pxstride((*f).cur.stride[1]);
+        let uv_width = y_width >> ss_hor;
+        let uv_height = y_height >> ss_ver;
+        let uv_span = (uv_height - 1) as isize * uv_stride;
 
-    let mut p: [&mut [BD::Pixel]; 3] = [
-        slice::from_raw_parts_mut(
-            (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(datay_diff, 0)),
-            datay_diff.unsigned_abs() + datay_width as usize + RAV1D_PICTURE_ALIGNMENT,
-        ),
-        slice::from_raw_parts_mut(
-            (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(datauv_diff, 0)),
-            datauv_diff.unsigned_abs() + datauv_width as usize + RAV1D_PICTURE_ALIGNMENT,
-        ),
-        slice::from_raw_parts_mut(
-            (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(datauv_diff, 0)),
-            datauv_diff.unsigned_abs() + datauv_width as usize + RAV1D_PICTURE_ALIGNMENT,
-        ),
-    ];
-    let p_offset: [usize; 2] = [
-        (cmp::max(0, -datay_diff) + y as isize * datay_stride) as usize,
-        (cmp::max(0, -datauv_diff) + y as isize * datauv_stride >> ss_ver) as usize,
-    ];
+        let p: [&mut [BD::Pixel]; 3] = [
+            slice::from_raw_parts_mut(
+                (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(y_span, 0)),
+                y_span.unsigned_abs() + y_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+            slice::from_raw_parts_mut(
+                (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+            slice::from_raw_parts_mut(
+                (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+        ];
+        let p_offset: [usize; 2] = [
+            (cmp::max(0, -y_span) + y as isize * y_stride) as usize,
+            (cmp::max(0, -uv_span) + y as isize * uv_stride >> ss_ver) as usize,
+        ];
+        (p, p_offset)
+    };
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let sb128 = seq_hdr.sb128;
     let cdef = seq_hdr.cdef;
