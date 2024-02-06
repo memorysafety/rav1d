@@ -88,8 +88,8 @@ unsafe fn backup2lines<BD: BitDepth>(
 }
 
 unsafe fn backup2x8<BD: BitDepth>(
-    dst: *mut [[BD::Pixel; 2]; 8],
-    src: *const *mut BD::Pixel,
+    dst: &mut [[[BD::Pixel; 2]; 8]; 3],
+    src: &[*mut BD::Pixel; 3],
     src_stride: *const ptrdiff_t,
     mut x_off: c_int,
     layout: Rav1dPixelLayout,
@@ -99,12 +99,8 @@ unsafe fn backup2x8<BD: BitDepth>(
     if flag as c_uint & BACKUP_2X8_Y as c_int as c_uint != 0 {
         for y in 0..8 {
             BD::pixel_copy(
-                &mut (*dst.offset(0))[y as usize],
-                slice::from_raw_parts(
-                    &mut *(*src.offset(0)).offset((y_off + x_off as isize - 2 as isize) as isize)
-                        as *mut BD::Pixel,
-                    2,
-                ),
+                &mut dst[0][y],
+                slice::from_raw_parts(&mut *src[0].offset(y_off + x_off as isize - 2), 2),
                 2,
             );
             y_off += BD::pxstride(*src_stride.offset(0) as usize) as isize;
@@ -119,21 +115,13 @@ unsafe fn backup2x8<BD: BitDepth>(
     y_off = 0 as c_int as ptrdiff_t;
     for y in 0..8 >> ss_ver {
         BD::pixel_copy(
-            &mut (*dst.offset(1))[y as usize],
-            slice::from_raw_parts(
-                &mut *(*src.offset(1)).offset((y_off + x_off as isize - 2 as isize) as isize)
-                    as *mut BD::Pixel,
-                2,
-            ),
+            &mut dst[1][y],
+            slice::from_raw_parts(src[1].offset(y_off + x_off as isize - 2), 2),
             2,
         );
         BD::pixel_copy(
-            &mut (*dst.offset(2))[y as usize],
-            slice::from_raw_parts(
-                &mut *(*src.offset(2)).offset((y_off + x_off as isize - 2 as isize) as isize)
-                    as *mut BD::Pixel,
-                2,
-            ),
+            &mut dst[2][y],
+            slice::from_raw_parts(src[2].offset(y_off + x_off as isize - 2), 2),
             2,
         );
         y_off += BD::pxstride(*src_stride.offset(1) as usize) as isize;
@@ -293,8 +281,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         if do_left != 0 && edges as c_uint & CDEF_HAVE_LEFT as c_int as c_uint != 0
                         {
                             backup2x8::<BD>(
-                                (lr_bak[bit as usize]).as_mut_ptr(),
-                                bptrs.as_mut_ptr() as *const *mut BD::Pixel,
+                                &mut lr_bak[bit as usize],
+                                &bptrs,
                                 ((*f).cur.stride).as_mut_ptr() as *const ptrdiff_t,
                                 0 as c_int,
                                 layout,
@@ -303,8 +291,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         }
                         if edges as c_uint & CDEF_HAVE_RIGHT as c_int as c_uint != 0 {
                             backup2x8::<BD>(
-                                (lr_bak[(bit == 0) as c_int as usize]).as_mut_ptr(),
-                                bptrs.as_mut_ptr() as *const *mut BD::Pixel,
+                                &mut lr_bak[(bit == 0) as usize],
+                                &bptrs,
                                 ((*f).cur.stride).as_mut_ptr() as *const ptrdiff_t,
                                 8 as c_int,
                                 layout,
