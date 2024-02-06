@@ -309,7 +309,7 @@ impl Default for Av1Block_intra_inter {
     }
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 #[repr(C)]
 pub struct Av1Block {
     pub bl: u8,
