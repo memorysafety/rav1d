@@ -491,7 +491,8 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: &[[[u16; 2]; 3]; 32],
-    mut dst: *mut BD::Pixel,
+    dst: &mut [BD::Pixel],
+    mut dst_offset: usize,
     ls: ptrdiff_t,
     w: c_int,
     starty4: c_int,
@@ -507,7 +508,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 0,
             ];
             (*dsp).lf.loop_filter_sb[0][1](
-                dst.cast(),
+                dst.as_mut_ptr().add(dst_offset).cast(),
                 ls,
                 vmask.as_ptr(),
                 unaligned_lvl_slice(&lvl[0..], 1).as_ptr(),
@@ -517,7 +518,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 f.bitdepth_max,
             );
         }
-        dst = dst.offset(4 * BD::pxstride(ls as usize) as isize);
+        dst_offset = (dst_offset as isize + 4 * BD::pxstride(ls as usize) as isize) as usize;
     }
 }
 
@@ -584,8 +585,9 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
     mask: &[[[u16; 2]; 2]; 32],
-    u: *mut BD::Pixel,
-    v: *mut BD::Pixel,
+    u: &mut [BD::Pixel],
+    v: &mut [BD::Pixel],
+    uv_offset: usize,
     ls: ptrdiff_t,
     w: c_int,
     starty4: c_int,
@@ -593,7 +595,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     ss_hor: c_int,
 ) {
     let dsp: &Rav1dDSPContext = &*f.dsp;
-    let mut off_l: ptrdiff_t = 0;
+    let mut off_l = uv_offset as ptrdiff_t;
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 3] = [
@@ -602,7 +604,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 0,
             ];
             (*dsp).lf.loop_filter_sb[1][1](
-                u.offset(off_l as isize).cast(),
+                u.as_mut_ptr().offset(off_l).cast(),
                 ls,
                 vmask.as_ptr(),
                 unaligned_lvl_slice(&lvl[0..], 2).as_ptr(),
@@ -612,7 +614,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 f.bitdepth_max,
             );
             (*dsp).lf.loop_filter_sb[1][1](
-                v.offset(off_l as isize).cast(),
+                v.as_mut_ptr().offset(off_l).cast(),
                 ls,
                 vmask.as_ptr(),
                 unaligned_lvl_slice(&lvl[0..], 3).as_ptr(),
@@ -797,9 +799,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let endy4: c_uint = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
 
-    let mut slice: &mut [BD::Pixel];
     let mut level_ptr = &f.lf.level[(f.b4_stride * sby as isize * sbsz as isize) as usize..];
-    slice = p[0];
     for x in 0..f.sb128w {
         filter_plane_rows_y::<BD>(
             f,
@@ -807,13 +807,13 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             level_ptr,
             f.b4_stride,
             &lflvl[x as usize].filter_y[1],
-            slice.as_mut_ptr().offset(p_offset[0] as isize),
+            p[0],
+            p_offset[0] + 128 * x as usize,
             f.cur.stride[0],
             cmp::min(32, f.w4 - x * 32),
             starty4,
             endy4 as c_int,
         );
-        slice = &mut slice[128..];
         level_ptr = &level_ptr[32..];
     }
 
@@ -822,8 +822,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
         return;
     }
 
-    let mut uv_off: ptrdiff_t = 0;
+    let mut uv_off: usize = 0;
     let mut level_ptr = &f.lf.level[(f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    let uv = p[1..].split_at_mut(1);
     for x in 0..f.sb128w {
         filter_plane_rows_uv::<BD>(
             f,
@@ -831,8 +832,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             level_ptr,
             f.b4_stride,
             &lflvl[x as usize].filter_uv[1],
-            p[1][uv_off as usize..].as_mut_ptr().add(p_offset[1]),
-            p[2][uv_off as usize..].as_mut_ptr().add(p_offset[1]),
+            uv.0[0],
+            uv.1[0],
+            p_offset[1] + uv_off,
             f.cur.stride[1],
             cmp::min(32 as c_int, f.w4 - x * 32) + ss_hor >> ss_hor,
             starty4 >> ss_ver,
