@@ -23,34 +23,28 @@ pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
 pub const BACKUP_2X8_Y: Backup2x8Flags = 1;
 
 unsafe fn backup2lines<BD: BitDepth>(
-    dst: *const *mut BD::Pixel,
-    src: *const *mut BD::Pixel,
+    dst: &[*mut BD::Pixel],
+    src: &[*mut BD::Pixel; 3],
     stride: *const ptrdiff_t,
     layout: Rav1dPixelLayout,
 ) {
     let y_stride: ptrdiff_t = BD::pxstride(*stride.offset(0) as usize) as isize;
     if y_stride < 0 {
+        let len = (-2 * y_stride) as usize;
         BD::pixel_copy(
-            slice::from_raw_parts_mut(
-                *dst.offset(y_stride as isize) as *mut BD::Pixel,
-                (-2 * y_stride) as usize,
-            ),
-            slice::from_raw_parts(
-                *src.offset((7 as isize * y_stride) as isize) as *const BD::Pixel,
-                (-2 * y_stride) as usize,
-            ),
-            (-2 * y_stride) as usize,
+            slice::from_raw_parts_mut(dst[0].offset(y_stride), len),
+            slice::from_raw_parts(src[0].offset(7 * y_stride), len),
+            len,
         );
     } else {
+        let len = 2 * y_stride as usize;
         BD::pixel_copy(
-            slice::from_raw_parts_mut(*dst as *mut BD::Pixel, (2 * y_stride) as usize),
-            slice::from_raw_parts(
-                (*src.offset(0)).offset(6 as isize * y_stride as isize) as *const BD::Pixel,
-                (2 * y_stride) as usize,
-            ),
-            (2 * y_stride) as usize,
+            slice::from_raw_parts_mut(dst[0], len),
+            slice::from_raw_parts(src[0].offset(6 * y_stride), len),
+            len,
         );
     }
+
     if layout != Rav1dPixelLayout::I400 {
         let uv_stride: ptrdiff_t = BD::pxstride(*stride.offset(1) as usize) as isize;
         if uv_stride < 0 {
@@ -59,29 +53,17 @@ unsafe fn backup2lines<BD: BitDepth>(
             } else {
                 7
             };
+
+            let len = (-2 * uv_stride) as usize;
             BD::pixel_copy(
-                slice::from_raw_parts_mut(
-                    (*dst.offset(1)).offset(uv_stride as isize) as *mut BD::Pixel,
-                    (-2 * uv_stride) as usize,
-                ),
-                slice::from_raw_parts(
-                    (*src.offset(1)).offset((uv_off as isize * uv_stride) as isize)
-                        as *const BD::Pixel,
-                    (-2 * uv_stride) as usize,
-                ),
-                (-2 * uv_stride) as usize,
+                slice::from_raw_parts_mut(dst[1].offset(uv_stride), len),
+                slice::from_raw_parts(src[1].offset(uv_off * uv_stride), len),
+                len,
             );
             BD::pixel_copy(
-                slice::from_raw_parts_mut(
-                    (*dst.offset(2)).offset(uv_stride as isize) as *mut BD::Pixel,
-                    (-2 * uv_stride) as usize,
-                ),
-                slice::from_raw_parts(
-                    (*src.offset(2)).offset((uv_off as isize * uv_stride) as isize)
-                        as *const BD::Pixel,
-                    (-2 * uv_stride) as usize,
-                ),
-                (-2 * uv_stride) as usize,
+                slice::from_raw_parts_mut(dst[2].offset(uv_stride), len),
+                slice::from_raw_parts(src[2].offset(uv_off * uv_stride), len),
+                len,
             );
         } else {
             let uv_off = if layout == Rav1dPixelLayout::I420 {
@@ -89,23 +71,17 @@ unsafe fn backup2lines<BD: BitDepth>(
             } else {
                 6
             };
+
+            let len = 2 * uv_stride as usize;
             BD::pixel_copy(
-                slice::from_raw_parts_mut(*dst.offset(1) as *mut BD::Pixel, 2 * uv_stride as usize),
-                slice::from_raw_parts(
-                    (*src.offset(1)).offset((uv_off as isize * uv_stride) as isize)
-                        as *const BD::Pixel,
-                    2 * uv_stride as usize,
-                ),
-                2 * uv_stride as usize,
+                slice::from_raw_parts_mut(dst[1], len),
+                slice::from_raw_parts(src[1].offset(uv_off * uv_stride), len),
+                len,
             );
             BD::pixel_copy(
-                slice::from_raw_parts_mut(*dst.offset(2) as *mut BD::Pixel, 2 * uv_stride as usize),
-                slice::from_raw_parts(
-                    (*src.offset(2)).offset((uv_off as isize * uv_stride) as isize)
-                        as *const BD::Pixel,
-                    2 * uv_stride as usize,
-                ),
-                2 * uv_stride as usize,
+                slice::from_raw_parts_mut(dst[2], len),
+                slice::from_raw_parts(src[2].offset(uv_off * uv_stride), len),
+                len,
             );
         }
     }
@@ -236,8 +212,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     .offset(((have_tt * sby * 8) as isize * uv_stride) as isize),
             ];
             backup2lines::<BD>(
-                cdef_top_bak.as_ptr(),
-                ptrs.as_mut_ptr() as *const *mut BD::Pixel,
+                &cdef_top_bak,
+                &ptrs,
                 ((*f).cur.stride).as_mut_ptr() as *const ptrdiff_t,
                 layout,
             );
