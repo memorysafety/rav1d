@@ -1620,7 +1620,7 @@ unsafe fn decode_b(
         if frame_hdr.segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
                 let seg_id = get_prev_frame_segid(
-                    f.frame_hdr.as_ref().unwrap(),
+                    frame_hdr,
                     t.by,
                     t.bx,
                     w4,
@@ -1648,7 +1648,7 @@ unsafe fn decode_b(
                 // temporal predicted seg_id
                 if !(f.prev_segmap).is_null() {
                     let seg_id = get_prev_frame_segid(
-                        f.frame_hdr.as_ref().unwrap(),
+                        frame_hdr,
                         t.by,
                         t.bx,
                         w4,
@@ -1739,7 +1739,7 @@ unsafe fn decode_b(
             // temporal predicted seg_id
             if !(f.prev_segmap).is_null() {
                 let seg_id = get_prev_frame_segid(
-                    f.frame_hdr.as_ref().unwrap(),
+                    frame_hdr,
                     t.by,
                     t.bx,
                     w4,
