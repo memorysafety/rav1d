@@ -96,7 +96,7 @@ unsafe fn backup2x8<BD: BitDepth>(
     flag: Backup2x8Flags,
 ) {
     let mut y_off: ptrdiff_t = 0 as c_int as ptrdiff_t;
-    if flag as c_uint & BACKUP_2X8_Y as c_int as c_uint != 0 {
+    if flag & BACKUP_2X8_Y != 0 {
         for y in 0..8 {
             BD::pixel_copy(
                 &mut dst[0][y],
@@ -130,13 +130,15 @@ unsafe fn backup2x8<BD: BitDepth>(
 
 unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
     if var == 0 {
-        return 0 as c_int;
+        return 0;
     }
+
     let i = if var >> 6 != 0 {
         cmp::min(ulog2(var >> 6), 12 as c_int)
     } else {
-        0 as c_int
+        0
     };
+
     return strength * (4 + i) + 8 >> 4;
 }
 
@@ -151,17 +153,13 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     sby: c_int,
 ) {
     let f: *mut Rav1dFrameContext = (*tc).f as *mut Rav1dFrameContext;
-    let bitdepth_min_8 = if 16 == 8 {
-        0 as c_int
-    } else {
-        (*f).cur.p.bpc - 8
-    };
+    let bitdepth_min_8 = if 16 == 8 { 0 } else { (*f).cur.p.bpc - 8 };
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut edges: CdefEdgeFlags = (CDEF_HAVE_BOTTOM as c_int
         | (if by_start > 0 {
             CDEF_HAVE_TOP as c_int
         } else {
-            0 as c_int
+            0
         })) as CdefEdgeFlags;
     let mut ptrs: [*mut BD::Pixel; 3] = [*p.offset(0), *p.offset(1), *p.offset(2)];
     let sbsz = 16;
@@ -172,8 +170,10 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let uv_idx = (Rav1dPixelLayout::I444 as c_uint).wrapping_sub(layout as c_uint) as c_int;
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
+
     static uv_dirs: [[u8; 8]; 2] = [[0, 1, 2, 3, 4, 5, 6, 7], [7, 0, 2, 4, 5, 6, 6, 6]];
-    let uv_dir: *const u8 = (uv_dirs[(layout == Rav1dPixelLayout::I422) as usize]).as_ptr();
+    let uv_dir: &[u8; 8] = &uv_dirs[(layout == Rav1dPixelLayout::I422) as usize];
+
     let have_tt = (c.tc.len() > 1) as c_int;
     let sb128 = (*f).seq_hdr.as_ref().unwrap().sb128;
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
@@ -405,9 +405,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 unreachable!();
                             }
                             uvdir = if uv_pri_lvl != 0 {
-                                *uv_dir.offset(dir as isize) as c_int
+                                uv_dir[dir as usize] as c_int
                             } else {
-                                0 as c_int
+                                0
                             };
                             for pl in 1..=2 {
                                 let current_block_77: u64;
