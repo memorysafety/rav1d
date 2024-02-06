@@ -203,7 +203,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         }
         let mut lr_bak: Align16<[[[[BD::Pixel; 2]; 8]; 3]; 2]> =
             Align16([[[[0.into(); 2]; 8]; 3]; 2]);
-        let mut iptrs: [*mut BD::Pixel; 3] = [ptrs[0], ptrs[1], ptrs[2]];
+        let mut iptrs: [*mut BD::Pixel; 3] = ptrs;
         edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
             edges as c_uint & !(CDEF_HAVE_LEFT as c_int) as c_uint,
         );
@@ -257,7 +257,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     let mut top: *const BD::Pixel;
                     let mut bot: *const BD::Pixel;
                     let mut offset: ptrdiff_t;
-                    let current_block_84: u64;
+                    let st_y: bool;
                     if bx + 2 >= (*f).bw {
                         edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
                             edges as c_uint & !(CDEF_HAVE_RIGHT as c_int) as c_uint,
@@ -307,7 +307,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         top = 0 as *const BD::Pixel;
                         bot = 0 as *const BD::Pixel;
                         if have_tt == 0 {
-                            current_block_84 = 17728966195399430138;
+                            st_y = true;
                         } else if sbrow_start != 0 && by == by_start {
                             if resize != 0 {
                                 offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
@@ -322,7 +322,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     .offset(offset as isize);
                             }
                             bot = (bptrs[0]).offset((8 * y_stride) as isize);
-                            current_block_84 = 17075014677070940716;
+                            st_y = false;
                         } else if sbrow_start == 0 && by + 2 >= by_end {
                             top = &mut *((*(*((*f).lf.cdef_line).as_mut_ptr().offset(tf as isize))
                                 .as_mut_ptr()
@@ -343,26 +343,21 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     as *mut BD::Pixel)
                                     .offset(offset as isize);
                             }
-                            current_block_84 = 17075014677070940716;
+                            st_y = false;
                         } else {
-                            current_block_84 = 17728966195399430138;
+                            st_y = true;
                         }
-                        match current_block_84 {
-                            17728966195399430138 => {
-                                offset = (sby * 4) as isize * y_stride;
-                                top = &mut *((*(*((*f).lf.cdef_line)
-                                    .as_mut_ptr()
-                                    .offset(tf as isize))
+
+                        if st_y {
+                            offset = (sby * 4) as isize * y_stride;
+                            top = &mut *((*(*((*f).lf.cdef_line).as_mut_ptr().offset(tf as isize))
                                 .as_mut_ptr()
                                 .offset(0))
-                                    as *mut BD::Pixel)
-                                    .offset(
-                                        (have_tt as isize * offset + (bx * 4) as isize) as isize,
-                                    );
-                                bot = (bptrs[0]).offset((8 * y_stride) as isize);
-                            }
-                            _ => {}
+                                as *mut BD::Pixel)
+                                .offset((have_tt as isize * offset + (bx * 4) as isize) as isize);
+                            bot = (bptrs[0]).offset((8 * y_stride) as isize);
                         }
+
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
@@ -405,9 +400,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 0
                             };
                             for pl in 1..=2 {
-                                let current_block_77: u64;
+                                let st_uv: bool;
                                 if have_tt == 0 {
-                                    current_block_77 = 5687667889785024198;
+                                    st_uv = true;
                                 } else if sbrow_start != 0 && by == by_start {
                                     if resize != 0 {
                                         offset = ((sby - 1) * 4) as isize * uv_stride
@@ -426,7 +421,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     }
                                     bot = (bptrs[pl])
                                         .offset(((8 >> ss_ver) as isize * uv_stride) as isize);
-                                    current_block_77 = 6540614962658479183;
+                                    st_uv = false;
                                 } else if sbrow_start == 0 && by + 2 >= by_end {
                                     let top_offset: ptrdiff_t = (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
@@ -452,29 +447,28 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                             as *mut BD::Pixel)
                                             .offset(offset as isize);
                                     }
-                                    current_block_77 = 6540614962658479183;
+                                    st_uv = false;
                                 } else {
-                                    current_block_77 = 5687667889785024198;
+                                    st_uv = true;
                                 }
-                                match current_block_77 {
-                                    5687667889785024198 => {
-                                        let offset_0: ptrdiff_t = (sby * 8) as isize * uv_stride;
-                                        top = &mut *((*(*((*f).lf.cdef_line)
-                                            .as_mut_ptr()
-                                            .offset(tf as isize))
+
+                                if st_uv {
+                                    let offset_0: ptrdiff_t = (sby * 8) as isize * uv_stride;
+                                    top = &mut *((*(*((*f).lf.cdef_line)
                                         .as_mut_ptr()
-                                        .add(pl))
-                                            as *mut BD::Pixel)
-                                            .offset(
-                                                (have_tt as isize * offset_0
-                                                    + (bx * 4 >> ss_hor) as isize)
-                                                    as isize,
-                                            );
-                                        bot = (bptrs[pl])
-                                            .offset(((8 >> ss_ver) as isize * uv_stride) as isize);
-                                    }
-                                    _ => {}
+                                        .offset(tf as isize))
+                                    .as_mut_ptr()
+                                    .add(pl))
+                                        as *mut BD::Pixel)
+                                        .offset(
+                                            (have_tt as isize * offset_0
+                                                + (bx * 4 >> ss_hor) as isize)
+                                                as isize,
+                                        );
+                                    bot = (bptrs[pl])
+                                        .offset(((8 >> ss_ver) as isize * uv_stride) as isize);
                                 }
+
                                 (*dsp).cdef.fb[uv_idx as usize](
                                     bptrs[pl].cast(),
                                     (*f).cur.stride[1],
