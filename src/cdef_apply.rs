@@ -144,7 +144,7 @@ unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
 
 pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
-    tc: *mut Rav1dTaskContext,
+    tc: &mut Rav1dTaskContext,
     p: &[*mut BD::Pixel; 3],
     lflvl: *const Av1Filter,
     by_start: c_int,
@@ -152,7 +152,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     sbrow_start: c_int,
     sby: c_int,
 ) {
-    let f: *mut Rav1dFrameContext = (*tc).f as *mut Rav1dFrameContext;
+    let f: *mut Rav1dFrameContext = tc.f as *mut Rav1dFrameContext;
     let bitdepth_min_8 = if 16 == 8 { 0 } else { (*f).cur.p.bpc - 8 };
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut edges: CdefEdgeFlags = (CDEF_HAVE_BOTTOM as c_int
@@ -181,7 +181,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let uv_stride: ptrdiff_t = BD::pxstride((*f).cur.stride[1] as usize) as isize;
     let mut bit = 0;
     for by in (by_start..by_end).step_by(2) {
-        let tf = (*tc).top_pre_cdef_toggle;
+        let tf = tc.top_pre_cdef_toggle;
         let by_idx = (by & 30) >> 1;
         if by + 2 >= (*f).bh {
             edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
@@ -518,7 +518,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             (ptrs[1]).offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
         ptrs[2] =
             (ptrs[2]).offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
-        (*tc).top_pre_cdef_toggle ^= 1 as c_int;
+        tc.top_pre_cdef_toggle ^= 1 as c_int;
         edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
             edges as c_uint | CDEF_HAVE_TOP as c_int as c_uint,
         );
