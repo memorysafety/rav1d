@@ -961,7 +961,7 @@ impl Drop for Rav1dContext {
                     rav1d_freep_aligned(
                         &mut (*f).frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut c_void,
                     );
-                    mem::take(&mut (*f).frame_thread.cbi); // TODO: remove when context is owned
+                    let _ = mem::take(&mut (*f).frame_thread.cbi); // TODO: remove when context is owned
                 }
                 if self.n_tc > 1 as c_uint {
                     let _ = mem::take(&mut (*f).task_thread.pending_tasks); // TODO: remove when context is owned

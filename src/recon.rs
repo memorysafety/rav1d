@@ -1707,7 +1707,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         let mut cf_ctx: u8 = 0;
         let eob;
         let cf: *mut BD::Coef;
-        let mut cbi = None;
+        let mut cbi = &mut Default::default();
         if (*t).frame_thread.pass != 0 {
             let p = (*t).frame_thread.pass & 1;
             if ((*ts).frame_thread[p as usize].cf).is_null() {
@@ -1720,10 +1720,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                         * cmp::min((*t_dim).h as c_int, 8 as c_int)
                         * 16) as isize,
                 ) as *mut DynCoef;
-            cbi = Some(
-                &mut (*f).frame_thread.cbi
-                    [((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as usize],
-            );
+            cbi = &mut (*f).frame_thread.cbi
+                [((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as usize];
         } else {
             cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
         }
@@ -1768,12 +1766,10 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 }
             });
             if (*t).frame_thread.pass == 1 {
-                let cbi = cbi.as_mut().unwrap();
                 cbi.eob[0] = eob as i16;
                 cbi.txtp[0] = txtp as u8;
             }
         } else {
-            let cbi = cbi.as_mut().unwrap();
             eob = cbi.eob[0] as c_int;
             txtp = cbi.txtp[0] as TxfmType;
         }
