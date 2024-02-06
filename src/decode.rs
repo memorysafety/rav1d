@@ -1619,15 +1619,8 @@ unsafe fn decode_b(
     if frame_hdr.segmentation.enabled != 0 {
         if frame_hdr.segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
-                let seg_id = get_prev_frame_segid(
-                    frame_hdr,
-                    t.by,
-                    t.bx,
-                    w4,
-                    h4,
-                    f.prev_segmap,
-                    f.b4_stride,
-                );
+                let seg_id =
+                    get_prev_frame_segid(frame_hdr, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= RAV1D_MAX_SEGMENTS.into() {
                     return Err(());
                 }
@@ -1738,15 +1731,8 @@ unsafe fn decode_b(
         } {
             // temporal predicted seg_id
             if !(f.prev_segmap).is_null() {
-                let seg_id = get_prev_frame_segid(
-                    frame_hdr,
-                    t.by,
-                    t.bx,
-                    w4,
-                    h4,
-                    f.prev_segmap,
-                    f.b4_stride,
-                );
+                let seg_id =
+                    get_prev_frame_segid(frame_hdr, t.by, t.bx, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= RAV1D_MAX_SEGMENTS.into() {
                     return Err(());
                 }
@@ -3000,10 +2986,7 @@ unsafe fn decode_b(
             } else {
                 *b.interintra_type_mut() = INTER_INTRA_NONE;
             }
-            if dbg
-                && seq_hdr.inter_intra != 0
-                && interintra_allowed_mask & (1 << bs) != 0
-            {
+            if dbg && seq_hdr.inter_intra != 0 && interintra_allowed_mask & (1 << bs) != 0 {
                 println!(
                     "Post-interintra[t={},m={},w={}]: r={}",
                     b.interintra_type(),
@@ -4546,7 +4529,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
         if c.n_fc > 1 {
             freep(&mut f.frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
-            f.frame_thread.b = vec![Default::default(); num_sb128 as usize * 32 * 32].into(); // TODO: fallible allocation
+            f.frame_thread.b.clear();
+            f.frame_thread
+                .b
+                .resize_with(num_sb128 as usize * 32 * 32, Default::default);
             f.frame_thread.cbi =
                 malloc(::core::mem::size_of::<CodedBlockInfo>() * num_sb128 as usize * 32 * 32)
                     as *mut CodedBlockInfo;
