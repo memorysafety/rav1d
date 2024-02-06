@@ -351,6 +351,7 @@ impl Rav1dFrameContext_bd_fn {
     }
 }
 
+#[derive(Default, Clone, Copy)]
 #[repr(C)]
 pub struct CodedBlockInfo {
     pub eob: [i16; 3], /* plane */
@@ -366,7 +367,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub copy_lpf_progress: Vec<AtomicU32>,
     // indexed using t->by * f->b4_stride + t->bx
     pub b: Vec<Av1Block>,
-    pub cbi: *mut CodedBlockInfo,
+    pub cbi: Box<[CodedBlockInfo]>,
     // indexed using (t->by >> 1) * (f->b4_stride >> 1) + (t->bx >> 1)
     pub pal: *mut [[u16; 8]; 3], /* [3 plane][8 idx] */
     // iterated over inside tile state
