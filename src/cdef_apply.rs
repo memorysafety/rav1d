@@ -171,8 +171,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
 
-    static uv_dirs: [[u8; 8]; 2] = [[0, 1, 2, 3, 4, 5, 6, 7], [7, 0, 2, 4, 5, 6, 6, 6]];
-    let uv_dir: &[u8; 8] = &uv_dirs[(layout == Rav1dPixelLayout::I422) as usize];
+    static UV_DIRS: [[u8; 8]; 2] = [[0, 1, 2, 3, 4, 5, 6, 7], [7, 0, 2, 4, 5, 6, 6, 6]];
+    let uv_dir: &[u8; 8] = &UV_DIRS[(layout == Rav1dPixelLayout::I422) as usize];
 
     let have_tt = (c.tc.len() > 1) as c_int;
     let sb128 = (*f).seq_hdr.as_ref().unwrap().sb128;
