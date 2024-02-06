@@ -951,7 +951,7 @@ impl Drop for Rav1dContext {
                         &mut (*f).tile_thread.lowest_pixel_mem as *mut *mut [[c_int; 2]; 7]
                             as *mut c_void,
                     );
-                    mem::take(&mut (*f).frame_thread.b); // TODO: remove when context is owned
+                    let _ = mem::take(&mut (*f).frame_thread.b); // TODO: remove when context is owned
                     rav1d_freep_aligned(
                         &mut (*f).frame_thread.pal_idx as *mut *mut u8 as *mut c_void,
                     );
