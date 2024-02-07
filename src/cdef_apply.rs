@@ -211,7 +211,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             edges as c_uint | CDEF_HAVE_RIGHT as c_int as c_uint,
         );
         let mut prev_flag: Backup2x8Flags = 0 as Backup2x8Flags;
-        let mut last_skip = 1;
+        let mut last_skip = true;
         for sbx in 0..sb64w {
             let noskip_row: *const [u16; 2];
             let noskip_mask: c_uint;
@@ -230,7 +230,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                 || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
                     && frame_hdr.cdef.uv_strength[cdef_idx as usize] == 0
             {
-                last_skip = 1 as c_int;
+                last_skip = true;
             } else {
                 noskip_row = &*((*lflvl.offset(sb128x as isize)).noskip_mask)
                     .as_ptr()
@@ -265,9 +265,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     }
                     let bx_mask: u32 = (3 as c_uint) << (bx & 30);
                     if noskip_mask & bx_mask == 0 {
-                        last_skip = 1;
+                        last_skip = true;
                     } else {
-                        do_left = (if last_skip != 0 {
+                        do_left = (if last_skip {
                             flag
                         } else {
                             (prev_flag ^ flag) & flag
@@ -457,7 +457,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             }
                         }
                         bit ^= 1 as c_int;
-                        last_skip = 0 as c_int;
+                        last_skip = false;
                     }
                     bptrs[0] = bptrs[0].add(8);
                     bptrs[1] = bptrs[1].add(8 >> ss_hor);
