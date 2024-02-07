@@ -8,6 +8,7 @@ use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::lf_mask::Av1Filter;
+use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -19,9 +20,13 @@ const CDEF_HAVE_LEFT: CdefEdgeFlags = CdefEdgeFlags::CDEF_HAVE_LEFT;
 const CDEF_HAVE_RIGHT: CdefEdgeFlags = CdefEdgeFlags::CDEF_HAVE_RIGHT;
 const CDEF_HAVE_TOP: CdefEdgeFlags = CdefEdgeFlags::CDEF_HAVE_TOP;
 
-pub type Backup2x8Flags = c_uint;
-pub const BACKUP_2X8_UV: Backup2x8Flags = 2;
-pub const BACKUP_2X8_Y: Backup2x8Flags = 1;
+bitflags! {
+    #[derive(Clone, Copy)]
+    struct Backup2x8Flags : u32 {
+        const BACKUP_2X8_UV = 2;
+        const BACKUP_2X8_Y = 1;
+    }
+}
 
 unsafe fn backup2lines<BD: BitDepth>(
     dst: &[*mut BD::Pixel],
@@ -97,7 +102,7 @@ unsafe fn backup2x8<BD: BitDepth>(
     flag: Backup2x8Flags,
 ) {
     let mut y_off: ptrdiff_t = 0 as c_int as ptrdiff_t;
-    if flag & BACKUP_2X8_Y != 0 {
+    if flag.contains(Backup2x8Flags::BACKUP_2X8_Y) {
         for y in 0..8 {
             BD::pixel_copy(
                 &mut dst[0][y],
@@ -107,7 +112,7 @@ unsafe fn backup2x8<BD: BitDepth>(
             y_off += BD::pxstride(src_stride[0] as usize) as isize;
         }
     }
-    if layout == Rav1dPixelLayout::I400 || flag & BACKUP_2X8_UV == 0 {
+    if layout == Rav1dPixelLayout::I400 || !flag.contains(Backup2x8Flags::BACKUP_2X8_UV) {
         return;
     }
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
@@ -204,7 +209,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         let mut iptrs: [*mut BD::Pixel; 3] = ptrs;
         edges.remove(CDEF_HAVE_LEFT);
         edges.insert(CDEF_HAVE_RIGHT);
-        let mut prev_flag: Backup2x8Flags = 0 as Backup2x8Flags;
+        let mut prev_flag: Backup2x8Flags = Backup2x8Flags::empty();
         let mut last_skip = true;
         for sbx in 0..sb64w {
             let noskip_row: *const [u16; 2];
@@ -233,7 +238,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     | (*noskip_row.offset(0))[0] as c_uint;
                 y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
                 uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];
-                flag = ((y_lvl != 0) as c_int + (((uv_lvl != 0) as c_int) << 1)) as Backup2x8Flags;
+                flag = Backup2x8Flags::from_bits_truncate(
+                    (y_lvl != 0) as u32 + (((uv_lvl != 0) as u32) << 1),
+                );
                 y_pri_lvl = (y_lvl >> 2) << bitdepth_min_8;
                 y_sec_lvl = y_lvl & 3;
                 y_sec_lvl += (y_sec_lvl == 3) as c_int;
@@ -259,13 +266,13 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     if noskip_mask & bx_mask == 0 {
                         last_skip = true;
                     } else {
-                        do_left = (if last_skip {
+                        do_left = if last_skip {
                             flag
                         } else {
                             (prev_flag ^ flag) & flag
-                        }) as c_int;
+                        };
                         prev_flag = flag;
-                        if do_left != 0 && edges.contains(CDEF_HAVE_LEFT) {
+                        if !do_left.is_empty() && edges.contains(CDEF_HAVE_LEFT) {
                             backup2x8::<BD>(
                                 &mut lr_bak[bit as usize],
                                 &bptrs,
