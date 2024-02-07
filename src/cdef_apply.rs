@@ -459,26 +459,24 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         bit ^= 1 as c_int;
                         last_skip = 0 as c_int;
                     }
-                    bptrs[0] = (bptrs[0]).offset(8);
-                    bptrs[1] = (bptrs[1]).offset((8 >> ss_hor) as isize);
-                    bptrs[2] = (bptrs[2]).offset((8 >> ss_hor) as isize);
+                    bptrs[0] = bptrs[0].add(8);
+                    bptrs[1] = bptrs[1].add(8 >> ss_hor);
+                    bptrs[2] = bptrs[2].add(8 >> ss_hor);
                     edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
                         edges as c_uint | CDEF_HAVE_LEFT as c_int as c_uint,
                     );
                 }
             }
-            iptrs[0] = (iptrs[0]).offset((sbsz * 4) as isize);
-            iptrs[1] = (iptrs[1]).offset((sbsz * 4 >> ss_hor) as isize);
-            iptrs[2] = (iptrs[2]).offset((sbsz * 4 >> ss_hor) as isize);
+            iptrs[0] = iptrs[0].add(sbsz as usize * 4);
+            iptrs[1] = iptrs[1].add(sbsz as usize * 4 >> ss_hor);
+            iptrs[2] = iptrs[2].add(sbsz as usize * 4 >> ss_hor);
             edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
                 edges as c_uint | CDEF_HAVE_LEFT as c_int as c_uint,
             );
         }
-        ptrs[0] = (ptrs[0]).offset(8 * BD::pxstride((*f).cur.stride[0] as usize) as isize);
-        ptrs[1] =
-            (ptrs[1]).offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
-        ptrs[2] =
-            (ptrs[2]).offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
+        ptrs[0] = ptrs[0].offset(8 * BD::pxstride((*f).cur.stride[0] as usize) as isize);
+        ptrs[1] = ptrs[1].offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
+        ptrs[2] = ptrs[2].offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
         tc.top_pre_cdef_toggle ^= 1 as c_int;
         edges = ::core::mem::transmute::<c_uint, CdefEdgeFlags>(
             edges as c_uint | CDEF_HAVE_TOP as c_int as c_uint,
