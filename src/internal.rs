@@ -419,7 +419,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub b: Vec<Av1Block>,
     pub cbi: Vec<CodedBlockInfo>,
     // indexed using (t->by >> 1) * (f->b4_stride >> 1) + (t->bx >> 1)
-    pub pal: *mut [[u16; 8]; 3], /* [3 plane][8 idx] */
+    pub pal: Vec<[[u16; 8]; 3]>, /* [3 plane][8 idx] */
     // iterated over inside tile state
     pub pal_idx: *mut u8,
     pub cf: *mut DynCoef,

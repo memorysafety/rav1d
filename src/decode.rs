@@ -788,10 +788,8 @@ unsafe fn read_pal_plane(
 
     // parse new entries
     let pal = if t.frame_thread.pass != 0 {
-        &mut (*(f.frame_thread.pal).offset(
-            ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
-                + ((t.bx >> 1) + (t.by & 1)) as isize,
-        ))[pli]
+        &mut f.frame_thread.pal[(((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+            + ((t.bx >> 1) + (t.by & 1)) as isize) as usize][pli]
     } else {
         &mut t.scratch.c2rust_unnamed_0.pal[pli]
     };
@@ -872,10 +870,8 @@ unsafe fn read_pal_uv(
     let ts = &mut *t.ts;
 
     let pal = if t.frame_thread.pass != 0 {
-        &mut (*(f.frame_thread.pal).offset(
-            ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
-                + ((t.bx >> 1) + (t.by & 1)) as isize,
-        ))[2]
+        &mut f.frame_thread.pal[(((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+            + ((t.bx >> 1) + (t.by & 1)) as isize) as usize][2]
     } else {
         &mut t.scratch.c2rust_unnamed_0.pal[2]
     };
@@ -2242,7 +2238,7 @@ unsafe fn decode_b_inner(
             let pal = if t.frame_thread.pass != 0 {
                 let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                     + ((t.bx >> 1) + (t.by & 1)) as isize;
-                &(*f.frame_thread.pal.offset(index))[0]
+                &f.frame_thread.pal[index as usize][0]
             } else {
                 &t.scratch.c2rust_unnamed_0.pal[0]
             };
@@ -2266,7 +2262,7 @@ unsafe fn decode_b_inner(
                 let pal = if t.frame_thread.pass != 0 {
                     let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                         + ((t.bx >> 1) + (t.by & 1)) as isize;
-                    &*f.frame_thread.pal.offset(index)
+                    &f.frame_thread.pal[index as usize]
                 } else {
                     &t.scratch.c2rust_unnamed_0.pal
                 };
@@ -4388,17 +4384,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
         if frame_hdr.allow_screen_content_tools != 0 {
             if num_sb128 != f.frame_thread.pal_sz {
-                rav1d_freep_aligned(
-                    &mut f.frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut c_void,
-                );
-                f.frame_thread.pal = rav1d_alloc_aligned(
-                    ::core::mem::size_of::<[[u16; 8]; 3]>() * num_sb128 as usize * 16 * 16,
-                    64,
-                ) as *mut [[u16; 8]; 3];
-                if f.frame_thread.pal.is_null() {
-                    f.frame_thread.pal_sz = 0;
-                    return Err(ENOMEM);
-                }
+                // TODO: Fallible allocation
+                f.frame_thread
+                    .pal
+                    .resize_with(num_sb128 as usize * 16 * 16, Default::default);
                 f.frame_thread.pal_sz = num_sb128;
             }
 
@@ -4415,8 +4404,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
                 }
                 f.frame_thread.pal_idx_sz = pal_idx_sz;
             }
-        } else if !f.frame_thread.pal.is_null() {
-            rav1d_freep_aligned(&mut f.frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut c_void);
+        } else if !f.frame_thread.pal.is_empty() {
+            let _ = mem::take(&mut f.frame_thread.pal);
             rav1d_freep_aligned(&mut f.frame_thread.pal_idx as *mut *mut u8 as *mut c_void);
             f.frame_thread.pal_idx_sz = 0;
             f.frame_thread.pal_sz = f.frame_thread.pal_idx_sz;
