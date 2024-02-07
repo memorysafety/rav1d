@@ -192,12 +192,12 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             && edges as c_uint & CDEF_HAVE_BOTTOM as c_int as c_uint != 0
         {
             let cdef_top_bak: [*mut BD::Pixel; 3] = [
-                ((*f).lf.cdef_line[(tf == 0) as c_int as usize][0] as *mut BD::Pixel)
-                    .offset(((have_tt * sby * 4) as isize * y_stride) as isize),
-                ((*f).lf.cdef_line[(tf == 0) as c_int as usize][1] as *mut BD::Pixel)
-                    .offset(((have_tt * sby * 8) as isize * uv_stride) as isize),
-                ((*f).lf.cdef_line[(tf == 0) as c_int as usize][2] as *mut BD::Pixel)
-                    .offset(((have_tt * sby * 8) as isize * uv_stride) as isize),
+                ((*f).lf.cdef_line[(tf == 0) as usize][0] as *mut BD::Pixel)
+                    .offset((have_tt * sby * 4) as isize * y_stride),
+                ((*f).lf.cdef_line[(tf == 0) as usize][1] as *mut BD::Pixel)
+                    .offset((have_tt * sby * 8) as isize * uv_stride),
+                ((*f).lf.cdef_line[(tf == 0) as usize][2] as *mut BD::Pixel)
+                    .offset((have_tt * sby * 8) as isize * uv_stride),
             ];
             backup2lines::<BD>(&cdef_top_bak, &ptrs, &(*f).cur.stride, layout);
         }
@@ -265,7 +265,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     }
                     let bx_mask: u32 = (3 as c_uint) << (bx & 30);
                     if noskip_mask & bx_mask == 0 {
-                        last_skip = 1 as c_int;
+                        last_skip = 1;
                     } else {
                         do_left = (if last_skip != 0 {
                             flag
