@@ -6,6 +6,7 @@ use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::ulog2;
 use crate::src::tables::dav1d_cdef_directions;
+use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -20,11 +21,16 @@ use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::BPC;
 
-pub type CdefEdgeFlags = c_uint;
-pub const CDEF_HAVE_BOTTOM: CdefEdgeFlags = 8;
-pub const CDEF_HAVE_TOP: CdefEdgeFlags = 4;
-pub const CDEF_HAVE_RIGHT: CdefEdgeFlags = 2;
-pub const CDEF_HAVE_LEFT: CdefEdgeFlags = 1;
+bitflags! {
+    #[repr(transparent)]
+    #[derive(Clone, Copy)]
+    pub struct CdefEdgeFlags: u32 {
+        const CDEF_HAVE_BOTTOM = 1 << 3;
+        const CDEF_HAVE_TOP = 1 << 2;
+        const CDEF_HAVE_RIGHT = 1 << 1;
+        const CDEF_HAVE_LEFT = 1 << 0;
+    }
+}
 
 pub type cdef_fn = unsafe extern "C" fn(
     *mut DynPixel,
@@ -574,7 +580,7 @@ unsafe fn padding<BD: BitDepth>(
     let mut x_end = w + 2;
     let mut y_start = -(2 as c_int);
     let mut y_end = h + 2;
-    if edges as c_uint & CDEF_HAVE_TOP as c_int as c_uint == 0 {
+    if !edges.contains(CdefEdgeFlags::CDEF_HAVE_TOP) {
         fill(
             tmp.offset(-2).offset(-((2 * tmp_stride) as isize)),
             tmp_stride,
@@ -583,7 +589,7 @@ unsafe fn padding<BD: BitDepth>(
         );
         y_start = 0 as c_int;
     }
-    if edges as c_uint & CDEF_HAVE_BOTTOM as c_int as c_uint == 0 {
+    if !edges.contains(CdefEdgeFlags::CDEF_HAVE_BOTTOM) {
         fill(
             tmp.offset((h as isize * tmp_stride) as isize)
                 .offset(-(2 as c_int as isize)),
@@ -593,7 +599,7 @@ unsafe fn padding<BD: BitDepth>(
         );
         y_end -= 2 as c_int;
     }
-    if edges as c_uint & CDEF_HAVE_LEFT as c_int as c_uint == 0 {
+    if !edges.contains(CdefEdgeFlags::CDEF_HAVE_LEFT) {
         fill(
             tmp.offset((y_start as isize * tmp_stride) as isize)
                 .offset(-(2 as c_int as isize)),
@@ -603,7 +609,7 @@ unsafe fn padding<BD: BitDepth>(
         );
         x_start = 0 as c_int;
     }
-    if edges as c_uint & CDEF_HAVE_RIGHT as c_int as c_uint == 0 {
+    if !edges.contains(CdefEdgeFlags::CDEF_HAVE_RIGHT) {
         fill(
             tmp.offset((y_start as isize * tmp_stride) as isize)
                 .offset(w as isize),
@@ -1147,7 +1153,7 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
                 dir,
                 damping,
                 8,
-                edges as usize,
+                edges.bits() as usize,
             );
         }
         BPC::BPC16 => {
@@ -1161,7 +1167,7 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
                 dir,
                 damping,
                 8,
-                edges as usize,
+                edges.bits() as usize,
                 bitdepth_max,
             );
         }
@@ -1197,7 +1203,7 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased<BD: BitDepth>(
                 dir,
                 damping,
                 8,
-                edges as usize,
+                edges.bits() as usize,
             );
         }
         BPC::BPC16 => {
@@ -1211,7 +1217,7 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased<BD: BitDepth>(
                 dir,
                 damping,
                 8,
-                edges as usize,
+                edges.bits() as usize,
                 bitdepth_max,
             );
         }
@@ -1247,7 +1253,7 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
                 dir,
                 damping,
                 4,
-                edges as usize,
+                edges.bits() as usize,
             );
         }
         BPC::BPC16 => {
@@ -1261,7 +1267,7 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
                 dir,
                 damping,
                 4,
-                edges as usize,
+                edges.bits() as usize,
                 bitdepth_max,
             );
         }
