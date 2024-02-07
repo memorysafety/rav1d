@@ -268,13 +268,12 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         last_skip = 1 as c_int;
                     } else {
                         do_left = (if last_skip != 0 {
-                            flag as c_uint
+                            flag
                         } else {
-                            (prev_flag as c_uint ^ flag as c_uint) & flag as c_uint
+                            (prev_flag ^ flag) & flag
                         }) as c_int;
                         prev_flag = flag;
-                        if do_left != 0 && edges as c_uint & CDEF_HAVE_LEFT as c_int as c_uint != 0
-                        {
+                        if do_left != 0 && edges & CDEF_HAVE_LEFT != 0 {
                             backup2x8::<BD>(
                                 &mut lr_bak[bit as usize],
                                 &bptrs,
@@ -313,13 +312,13 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
                                 top = &mut *((*((*f).lf.cdef_lpf_line).as_mut_ptr().offset(0))
                                     as *mut BD::Pixel)
-                                    .offset(offset as isize);
+                                    .offset(offset);
                             } else {
                                 offset = (sby * ((4 as c_int) << sb128) - 4) as isize * y_stride
                                     + (bx * 4) as isize;
                                 top = &mut *((*((*f).lf.lr_lpf_line).as_mut_ptr().offset(0))
                                     as *mut BD::Pixel)
-                                    .offset(offset as isize);
+                                    .offset(offset);
                             }
                             bot = (bptrs[0]).offset((8 * y_stride) as isize);
                             st_y = false;
@@ -335,13 +334,13 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 offset = (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize;
                                 bot = &mut *((*((*f).lf.cdef_lpf_line).as_mut_ptr().offset(0))
                                     as *mut BD::Pixel)
-                                    .offset(offset as isize);
+                                    .offset(offset);
                             } else {
                                 let line = sby * ((4 as c_int) << sb128) + 4 * sb128 + 2;
                                 offset = line as isize * y_stride + (bx * 4) as isize;
                                 bot = &mut *((*((*f).lf.lr_lpf_line).as_mut_ptr().offset(0))
                                     as *mut BD::Pixel)
-                                    .offset(offset as isize);
+                                    .offset(offset);
                             }
                             st_y = false;
                         } else {
