@@ -46,6 +46,7 @@ pub mod src {
     mod fg_apply;
     mod filmgrain;
     mod getbits;
+    mod unstable_extensions;
     pub(crate) mod wrap_fn_ptr;
     // TODO(kkysen) Temporarily `pub(crate)` due to a `pub use` until TAIT.
     pub(super) mod internal;

@@ -8,6 +8,8 @@ use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
+use crate::src::unstable_extensions::as_chunks;
+use crate::src::unstable_extensions::flatten;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -350,12 +352,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
 /// This optimizes to a single slice with a bounds check.
 #[inline(always)]
 fn unaligned_lvl_slice(lvl: &[[u8; 4]], y: usize) -> &[[u8; 4]] {
-    // Safety: `[u8; 4]` is transmutable to `u8`s.
-    let (_, lvl, _) = unsafe { lvl.align_to::<u8>() };
-    let lvl = &lvl[y..];
-    // Safety: `[u8; 4]` is transmutable to `u8`s.
-    let (_, lvl, _) = unsafe { lvl.align_to::<[u8; 4]>() };
-    lvl
+    as_chunks(&flatten(lvl)[y..]).0
 }
 
 #[inline]
