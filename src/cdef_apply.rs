@@ -138,7 +138,7 @@ unsafe fn backup2x8<BD: BitDepth>(
     }
 }
 
-unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
+fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
     if var == 0 {
         return 0;
     }
@@ -149,7 +149,7 @@ unsafe fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
         0
     };
 
-    return strength * (4 + i) + 8 >> 4;
+    strength * (4 + i) + 8 >> 4
 }
 
 pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
