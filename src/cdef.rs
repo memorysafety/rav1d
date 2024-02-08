@@ -25,10 +25,10 @@ bitflags! {
     #[repr(transparent)]
     #[derive(Clone, Copy)]
     pub struct CdefEdgeFlags: u32 {
-        const CDEF_HAVE_LEFT = 1 << 0;
-        const CDEF_HAVE_RIGHT = 1 << 1;
-        const CDEF_HAVE_TOP = 1 << 2;
-        const CDEF_HAVE_BOTTOM = 1 << 3;
+        const HAVE_LEFT = 1 << 0;
+        const HAVE_RIGHT = 1 << 1;
+        const HAVE_TOP = 1 << 2;
+        const HAVE_BOTTOM = 1 << 3;
     }
 }
 
@@ -580,7 +580,7 @@ unsafe fn padding<BD: BitDepth>(
     let mut x_end = w + 2;
     let mut y_start = -(2 as c_int);
     let mut y_end = h + 2;
-    if !edges.contains(CdefEdgeFlags::CDEF_HAVE_TOP) {
+    if !edges.contains(CdefEdgeFlags::HAVE_TOP) {
         fill(
             tmp.offset(-2).offset(-((2 * tmp_stride) as isize)),
             tmp_stride,
@@ -589,7 +589,7 @@ unsafe fn padding<BD: BitDepth>(
         );
         y_start = 0 as c_int;
     }
-    if !edges.contains(CdefEdgeFlags::CDEF_HAVE_BOTTOM) {
+    if !edges.contains(CdefEdgeFlags::HAVE_BOTTOM) {
         fill(
             tmp.offset((h as isize * tmp_stride) as isize)
                 .offset(-(2 as c_int as isize)),
@@ -599,7 +599,7 @@ unsafe fn padding<BD: BitDepth>(
         );
         y_end -= 2 as c_int;
     }
-    if !edges.contains(CdefEdgeFlags::CDEF_HAVE_LEFT) {
+    if !edges.contains(CdefEdgeFlags::HAVE_LEFT) {
         fill(
             tmp.offset((y_start as isize * tmp_stride) as isize)
                 .offset(-(2 as c_int as isize)),
@@ -609,7 +609,7 @@ unsafe fn padding<BD: BitDepth>(
         );
         x_start = 0 as c_int;
     }
-    if !edges.contains(CdefEdgeFlags::CDEF_HAVE_RIGHT) {
+    if !edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
         fill(
             tmp.offset((y_start as isize * tmp_stride) as isize)
                 .offset(w as isize),
