@@ -191,6 +191,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0] as usize) as isize;
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1] as usize) as isize;
+
     let mut bit = 0;
     for by in (by_start..by_end).step_by(2) {
         let tf = tc.top_pre_cdef_toggle;
@@ -198,9 +199,11 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         if by + 2 >= f.bh {
             edges.remove(CdefEdgeFlags::HAVE_BOTTOM);
         }
+
         if (!have_tt || sbrow_start || (by + 2) < by_end)
             && edges.contains(CdefEdgeFlags::HAVE_BOTTOM)
         {
+            // backup pre-filter data for next iteration
             let cdef_top_bak: [*mut BD::Pixel; 3] = [
                 (f.lf.cdef_line[(tf == 0) as usize][0] as *mut BD::Pixel)
                     .offset(have_tt as isize * sby as isize * 4 * y_stride),
@@ -211,25 +214,28 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             ];
             backup2lines::<BD>(&cdef_top_bak, &ptrs, &f.cur.stride, layout);
         }
-        let mut lr_bak: Align16<[[[[BD::Pixel; 2]; 8]; 3]; 2]> =
-            Align16([[[[0.into(); 2]; 8]; 3]; 2]);
+
+        let mut lr_bak =
+            Align16([[[[0.into(); 2 /* x */]; 8 /* y */]; 3 /* plane */ ]; 2 /* idx */]);
         let mut iptrs: [*mut BD::Pixel; 3] = ptrs;
         edges.remove(CdefEdgeFlags::HAVE_LEFT);
         edges.insert(CdefEdgeFlags::HAVE_RIGHT);
-        let mut prev_flag: Backup2x8Flags = Backup2x8Flags::empty();
+        let mut prev_flag = Backup2x8Flags::empty();
         let mut last_skip = true;
         for sbx in 0..sb64w {
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
             let cdef_idx = (*lflvl.offset(sb128x as isize)).cdef_idx[sb64_idx as usize] as c_int;
-            if cdef_idx == -(1 as c_int)
+            if cdef_idx == -1
                 || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
                     && frame_hdr.cdef.uv_strength[cdef_idx as usize] == 0
             {
                 last_skip = true;
             } else {
+                // Create a complete 32-bit mask for the sb row ahead of time.
                 let noskip_row = (*lflvl.offset(sb128x as isize)).noskip_mask[by_idx as usize];
                 let noskip_mask = (noskip_row[1] as u32) << 16 | noskip_row[0] as u32;
+
                 let y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
                 let uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];
                 let flag =
@@ -247,59 +253,62 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
 
                 let mut bptrs = iptrs;
                 for bx in (sbx * sbsz..cmp::min((sbx + 1) * sbsz, f.bw)).step_by(2) {
-                    let uvdir;
-                    let do_left;
-                    let mut dir;
-                    let mut variance: c_uint;
-                    let mut top: *const BD::Pixel;
-                    let mut bot: *const BD::Pixel;
-                    let mut offset: ptrdiff_t;
-                    let st_y: bool;
                     if bx + 2 >= f.bw {
                         edges.remove(CdefEdgeFlags::HAVE_RIGHT);
                     }
-                    let bx_mask: u32 = (3 as c_uint) << (bx & 30);
+
+                    // check if this 8x8 block had any coded coefficients; if not, go to the next block
+                    let bx_mask: u32 = 3 << (bx & 30);
                     if noskip_mask & bx_mask == 0 {
                         last_skip = true;
                     } else {
-                        do_left = if last_skip {
+                        let do_left = if last_skip {
                             flag
                         } else {
                             (prev_flag ^ flag) & flag
                         };
                         prev_flag = flag;
                         if !do_left.is_empty() && edges.contains(CdefEdgeFlags::HAVE_LEFT) {
+                            // we didn't backup the prefilter data because it wasn't
+                            // there, so do it here instead
                             backup2x8::<BD>(
                                 &mut lr_bak[bit as usize],
                                 &bptrs,
                                 &f.cur.stride,
-                                0 as c_int,
+                                0,
                                 layout,
                                 do_left as Backup2x8Flags,
                             );
                         }
                         if edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
+                            // backup pre-filter data for next iteration
                             backup2x8::<BD>(
                                 &mut lr_bak[(bit == 0) as usize],
                                 &bptrs,
                                 &f.cur.stride,
-                                8 as c_int,
+                                8,
                                 layout,
                                 flag,
                             );
                         }
-                        dir = 0;
-                        variance = 0;
-                        if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            dir = (dsp.cdef.dir)(
+
+                        let mut variance = 0;
+                        let dir = if y_pri_lvl != 0 || uv_pri_lvl != 0 {
+                            (dsp.cdef.dir)(
                                 bptrs[0].cast(),
                                 f.cur.stride[0],
                                 &mut variance,
                                 f.bitdepth_max,
-                            );
-                        }
-                        top = 0 as *const BD::Pixel;
-                        bot = 0 as *const BD::Pixel;
+                            )
+                        } else {
+                            0
+                        };
+
+                        let mut top = 0 as *const BD::Pixel;
+                        let mut bot = 0 as *const BD::Pixel;
+                        let mut offset: ptrdiff_t;
+                        let st_y: bool;
+
                         if !have_tt {
                             st_y = true;
                         } else if sbrow_start && by == by_start {
@@ -374,7 +383,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             if !(layout != Rav1dPixelLayout::I400) {
                                 unreachable!();
                             }
-                            uvdir = if uv_pri_lvl != 0 {
+                            let uvdir = if uv_pri_lvl != 0 {
                                 uv_dir[dir as usize] as c_int
                             } else {
                                 0
