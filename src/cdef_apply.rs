@@ -194,7 +194,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
 
     let mut bit = false;
     for by in (by_start..by_end).step_by(2) {
-        let tf = tc.top_pre_cdef_toggle;
+        let tf = tc.top_pre_cdef_toggle != 0;
         let by_idx = (by & 30) >> 1;
         if by + 2 >= f.bh {
             edges.remove(CdefEdgeFlags::HAVE_BOTTOM);
@@ -205,11 +205,11 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         {
             // backup pre-filter data for next iteration
             let cdef_top_bak: [*mut BD::Pixel; 3] = [
-                (f.lf.cdef_line[(tf == 0) as usize][0] as *mut BD::Pixel)
+                (f.lf.cdef_line[!tf as usize][0] as *mut BD::Pixel)
                     .offset(have_tt as isize * sby as isize * 4 * y_stride),
-                (f.lf.cdef_line[(tf == 0) as usize][1] as *mut BD::Pixel)
+                (f.lf.cdef_line[!tf as usize][1] as *mut BD::Pixel)
                     .offset(have_tt as isize * sby as isize * 8 * uv_stride),
-                (f.lf.cdef_line[(tf == 0) as usize][2] as *mut BD::Pixel)
+                (f.lf.cdef_line[!tf as usize][2] as *mut BD::Pixel)
                     .offset(have_tt as isize * sby as isize * 8 * uv_stride),
             ];
             backup2lines::<BD>(&cdef_top_bak, &ptrs, &f.cur.stride, layout);
