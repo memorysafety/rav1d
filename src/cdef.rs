@@ -25,10 +25,10 @@ bitflags! {
     #[repr(transparent)]
     #[derive(Clone, Copy)]
     pub struct CdefEdgeFlags: u32 {
-        const CDEF_HAVE_BOTTOM = 1 << 3;
-        const CDEF_HAVE_TOP = 1 << 2;
-        const CDEF_HAVE_RIGHT = 1 << 1;
         const CDEF_HAVE_LEFT = 1 << 0;
+        const CDEF_HAVE_RIGHT = 1 << 1;
+        const CDEF_HAVE_TOP = 1 << 2;
+        const CDEF_HAVE_BOTTOM = 1 << 3;
     }
 }
 

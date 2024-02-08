@@ -16,11 +16,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::slice;
 
-const CDEF_HAVE_BOTTOM: CdefEdgeFlags = CdefEdgeFlags::CDEF_HAVE_BOTTOM;
-const CDEF_HAVE_LEFT: CdefEdgeFlags = CdefEdgeFlags::CDEF_HAVE_LEFT;
-const CDEF_HAVE_RIGHT: CdefEdgeFlags = CdefEdgeFlags::CDEF_HAVE_RIGHT;
-const CDEF_HAVE_TOP: CdefEdgeFlags = CdefEdgeFlags::CDEF_HAVE_TOP;
-
 bitflags! {
     #[derive(Clone, Copy)]
     struct Backup2x8Flags: u8 {
@@ -166,9 +161,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     };
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut edges: CdefEdgeFlags = if by_start > 0 {
-        CDEF_HAVE_BOTTOM | CDEF_HAVE_TOP
+        CdefEdgeFlags::CDEF_HAVE_BOTTOM | CdefEdgeFlags::CDEF_HAVE_TOP
     } else {
-        CDEF_HAVE_BOTTOM
+        CdefEdgeFlags::CDEF_HAVE_BOTTOM
     };
     let mut ptrs: [*mut BD::Pixel; 3] = *p;
     let sbsz = 16;
@@ -193,10 +188,10 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         let tf = tc.top_pre_cdef_toggle;
         let by_idx = (by & 30) >> 1;
         if by + 2 >= (*f).bh {
-            edges.remove(CDEF_HAVE_BOTTOM);
+            edges.remove(CdefEdgeFlags::CDEF_HAVE_BOTTOM);
         }
         if (have_tt == 0 || sbrow_start != 0 || (by + 2) < by_end)
-            && edges.contains(CDEF_HAVE_BOTTOM)
+            && edges.contains(CdefEdgeFlags::CDEF_HAVE_BOTTOM)
         {
             let cdef_top_bak: [*mut BD::Pixel; 3] = [
                 ((*f).lf.cdef_line[(tf == 0) as usize][0] as *mut BD::Pixel)
@@ -211,8 +206,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         let mut lr_bak: Align16<[[[[BD::Pixel; 2]; 8]; 3]; 2]> =
             Align16([[[[0.into(); 2]; 8]; 3]; 2]);
         let mut iptrs: [*mut BD::Pixel; 3] = ptrs;
-        edges.remove(CDEF_HAVE_LEFT);
-        edges.insert(CDEF_HAVE_RIGHT);
+        edges.remove(CdefEdgeFlags::CDEF_HAVE_LEFT);
+        edges.insert(CdefEdgeFlags::CDEF_HAVE_RIGHT);
         let mut prev_flag: Backup2x8Flags = Backup2x8Flags::empty();
         let mut last_skip = true;
         for sbx in 0..sb64w {
@@ -264,7 +259,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     let mut offset: ptrdiff_t;
                     let st_y: bool;
                     if bx + 2 >= (*f).bw {
-                        edges.remove(CDEF_HAVE_RIGHT);
+                        edges.remove(CdefEdgeFlags::CDEF_HAVE_RIGHT);
                     }
                     let bx_mask: u32 = (3 as c_uint) << (bx & 30);
                     if noskip_mask & bx_mask == 0 {
@@ -276,7 +271,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             (prev_flag ^ flag) & flag
                         };
                         prev_flag = flag;
-                        if !do_left.is_empty() && edges.contains(CDEF_HAVE_LEFT) {
+                        if !do_left.is_empty() && edges.contains(CdefEdgeFlags::CDEF_HAVE_LEFT) {
                             backup2x8::<BD>(
                                 &mut lr_bak[bit as usize],
                                 &bptrs,
@@ -286,7 +281,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 do_left as Backup2x8Flags,
                             );
                         }
-                        if edges.contains(CDEF_HAVE_RIGHT) {
+                        if edges.contains(CdefEdgeFlags::CDEF_HAVE_RIGHT) {
                             backup2x8::<BD>(
                                 &mut lr_bak[(bit == 0) as usize],
                                 &bptrs,
@@ -465,18 +460,18 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     bptrs[0] = bptrs[0].add(8);
                     bptrs[1] = bptrs[1].add(8 >> ss_hor);
                     bptrs[2] = bptrs[2].add(8 >> ss_hor);
-                    edges.insert(CDEF_HAVE_LEFT);
+                    edges.insert(CdefEdgeFlags::CDEF_HAVE_LEFT);
                 }
             }
             iptrs[0] = iptrs[0].add(sbsz as usize * 4);
             iptrs[1] = iptrs[1].add(sbsz as usize * 4 >> ss_hor);
             iptrs[2] = iptrs[2].add(sbsz as usize * 4 >> ss_hor);
-            edges.insert(CDEF_HAVE_LEFT);
+            edges.insert(CdefEdgeFlags::CDEF_HAVE_LEFT);
         }
         ptrs[0] = ptrs[0].offset(8 * BD::pxstride((*f).cur.stride[0] as usize) as isize);
         ptrs[1] = ptrs[1].offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
         ptrs[2] = ptrs[2].offset(8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver);
         tc.top_pre_cdef_toggle ^= 1 as c_int;
-        edges.insert(CDEF_HAVE_TOP);
+        edges.insert(CdefEdgeFlags::CDEF_HAVE_TOP);
     }
 }
