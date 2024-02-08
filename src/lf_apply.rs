@@ -44,7 +44,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = ((64 as c_int) << (cdef_backup & sb128)) - 8 * (row == 0) as c_int >> ss_ver;
     src = src.offset((stripe_h - 2) as isize * BD::pxstride(src_stride as usize) as isize);
-    if c.n_tc == 1 as c_uint {
+    if c.tc.len() == 1 {
         if row != 0 {
             let top = (4 as c_int) << sb128;
             // Copy the top part of the stored loop filtered pixels from the
@@ -175,7 +175,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     src: *const *mut BD::Pixel,
     sby: c_int,
 ) {
-    let have_tt = (c.n_tc > 1 as c_uint) as c_int;
+    let have_tt = (c.tc.len() > 1) as c_int;
     let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
     let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let offset = 8 * (sby != 0) as c_int;

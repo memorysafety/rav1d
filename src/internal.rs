@@ -240,11 +240,9 @@ pub struct Rav1dContext {
     pub(crate) fc: *mut Rav1dFrameContext,
     pub(crate) n_fc: c_uint,
 
-    /// Worker thread join handles and communication, or single thread task
-    /// context if n_tc == 1
+    /// Worker thread join handles and communication, or main thread task
+    /// context if single-threaded
     pub(crate) tc: Box<[Rav1dContextTaskThread]>,
-    /// Number of worker threads
-    pub(crate) n_tc: c_uint,
 
     /// Cache of OBUs that make up a single frame before we submit them
     /// to a frame worker to be decoded.

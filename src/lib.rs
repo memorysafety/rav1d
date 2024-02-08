@@ -297,7 +297,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     }
     (*c).flush = AtomicI32::new(0);
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
-    (*c).n_tc = n_tc as c_uint;
     (*c).n_fc = n_fc as c_uint;
     (*c).fc = rav1d_alloc_aligned(
         ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
@@ -331,7 +330,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     while n < (*c).n_fc {
         let f: *mut Rav1dFrameContext =
             &mut *((*c).fc).offset(n as isize) as *mut Rav1dFrameContext;
-        if (*c).n_tc > 1 as c_uint {
+        if n_tc > 1 {
             (*f).task_thread.lock = Mutex::new(());
             (*f).task_thread.cond = Condvar::new();
             (*f).task_thread.pending_tasks = Default::default();
@@ -342,12 +341,12 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         rav1d_refmvs_init(&mut (*f).rf);
         n = n.wrapping_add(1);
     }
-    (*c).tc = (0..(*c).n_tc)
+    (*c).tc = (0..n_tc)
         .map(|_| {
             let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(Arc::clone(
                 &(*c).task_thread,
             )));
-            if (*c).n_tc > 1 {
+            if n_tc > 1 {
                 // TODO(SJC): can be removed when c is not a raw pointer
                 let context_borrow = &*c;
                 let thread_data_copy = Arc::clone(&thread_data);
@@ -712,7 +711,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
         rav1d_picture_unref_internal(out);
         return res;
     } else {
-        if c.n_tc > 1 as c_uint {
+        if c.tc.len() > 1 {
             rav1d_task_delayed_fg(c, out, in_0);
         } else {
             match out.p.bpc {
@@ -791,11 +790,11 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     let _ = mem::take(&mut (*c).mastering_display);
     let _ = mem::take(&mut (*c).itut_t35);
     let _ = mem::take(&mut (*c).cached_error_props);
-    if (*c).n_fc == 1 as c_uint && (*c).n_tc == 1 as c_uint {
+    if (*c).n_fc == 1 as c_uint && (*c).tc.len() == 1 {
         return;
     }
     (*c).flush.store(1, Ordering::SeqCst);
-    if (*c).n_tc > 1 as c_uint {
+    if (*c).tc.len() > 1 {
         let mut task_thread_lock = (*c).task_thread.delayed_fg.lock().unwrap();
         for tc in (*c).tc.iter() {
             while !tc.flushed() {
@@ -888,7 +887,7 @@ impl Drop for Rav1dContext {
         // remove all pointers from the structure. We can't make the drop
         // function unsafe because the Drop trait requires a safe function.
         unsafe {
-            if self.n_tc > 1 {
+            if self.tc.len() > 1 {
                 let ttd: &TaskThreadData = &*self.task_thread;
                 let task_thread_lock = ttd.delayed_fg.lock().unwrap();
                 for tc in self.tc.iter() {
@@ -925,7 +924,7 @@ impl Drop for Rav1dContext {
                     );
                     freep(&mut (*f).frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
                 }
-                if self.n_tc > 1 as c_uint {
+                if self.tc.len() > 1 {
                     let _ = mem::take(&mut (*f).task_thread.pending_tasks); // TODO: remove when context is owned
                 }
                 mem::take(&mut (*f).frame_thread.frame_progress); // TODO: remove when context is owned

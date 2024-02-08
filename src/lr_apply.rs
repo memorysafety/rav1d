@@ -52,7 +52,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         } else {
             0 as c_int
         }) >> 6 - ss_ver + seq_hdr.sb128;
-    let have_tt = (c.n_tc > 1 as c_uint) as c_int;
+    let have_tt = (c.tc.len() > 1) as c_int;
     let mut lpf: *const BD::Pixel = ((*f).lf.lr_lpf_line[plane as usize] as *mut BD::Pixel)
         .offset(
             (have_tt * (sby * ((4 as c_int) << seq_hdr.sb128) - 4)) as isize
