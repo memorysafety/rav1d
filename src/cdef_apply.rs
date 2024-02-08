@@ -219,16 +219,6 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         let mut prev_flag: Backup2x8Flags = Backup2x8Flags::empty();
         let mut last_skip = true;
         for sbx in 0..sb64w {
-            let noskip_row: *const [u16; 2];
-            let noskip_mask: c_uint;
-            let y_lvl;
-            let uv_lvl;
-            let flag: Backup2x8Flags;
-            let y_pri_lvl;
-            let mut y_sec_lvl;
-            let uv_pri_lvl;
-            let mut uv_sec_lvl;
-            let mut bptrs: [*mut BD::Pixel; 3];
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
             let cdef_idx = (*lflvl.offset(sb128x as isize)).cdef_idx[sb64_idx as usize] as c_int;
@@ -238,24 +228,24 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             {
                 last_skip = true;
             } else {
-                noskip_row = &*((*lflvl.offset(sb128x as isize)).noskip_mask)
-                    .as_ptr()
-                    .offset(by_idx as isize) as *const [u16; 2];
-                noskip_mask = ((*noskip_row.offset(0))[1] as c_uint) << 16
-                    | (*noskip_row.offset(0))[0] as c_uint;
-                y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
-                uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];
-                flag =
+                let noskip_row = (*lflvl.offset(sb128x as isize)).noskip_mask[by_idx as usize];
+                let noskip_mask = (noskip_row[1] as u32) << 16 | noskip_row[0] as u32;
+                let y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
+                let uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];
+                let flag =
                     Backup2x8Flags::Y.select(y_lvl != 0) | Backup2x8Flags::UV.select(uv_lvl != 0);
-                y_pri_lvl = (y_lvl >> 2) << bitdepth_min_8;
-                y_sec_lvl = y_lvl & 3;
+
+                let y_pri_lvl = (y_lvl >> 2) << bitdepth_min_8;
+                let mut y_sec_lvl = y_lvl & 3;
                 y_sec_lvl += (y_sec_lvl == 3) as c_int;
                 y_sec_lvl <<= bitdepth_min_8;
-                uv_pri_lvl = (uv_lvl >> 2) << bitdepth_min_8;
-                uv_sec_lvl = uv_lvl & 3;
+
+                let uv_pri_lvl = (uv_lvl >> 2) << bitdepth_min_8;
+                let mut uv_sec_lvl = uv_lvl & 3;
                 uv_sec_lvl += (uv_sec_lvl == 3) as c_int;
                 uv_sec_lvl <<= bitdepth_min_8;
-                bptrs = [iptrs[0], iptrs[1], iptrs[2]];
+
+                let mut bptrs = iptrs;
                 for bx in (sbx * sbsz..cmp::min((sbx + 1) * sbsz, f.bw)).step_by(2) {
                     let uvdir;
                     let do_left;
