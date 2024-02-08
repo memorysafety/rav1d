@@ -24,6 +24,16 @@ bitflags! {
     }
 }
 
+impl Backup2x8Flags {
+    pub const fn select(&self, select: bool) -> Self {
+        if select {
+            *self
+        } else {
+            Self::empty()
+        }
+    }
+}
+
 unsafe fn backup2lines<BD: BitDepth>(
     dst: &[*mut BD::Pixel],
     src: &[*mut BD::Pixel; 3],
@@ -237,9 +247,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                     | (*noskip_row.offset(0))[0] as c_uint;
                 y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
                 uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];
-                flag = Backup2x8Flags::from_bits_truncate(
-                    (y_lvl != 0) as u8 + (((uv_lvl != 0) as u8) << 1),
-                );
+                flag =
+                    Backup2x8Flags::Y.select(y_lvl != 0) | Backup2x8Flags::UV.select(uv_lvl != 0);
                 y_pri_lvl = (y_lvl >> 2) << bitdepth_min_8;
                 y_sec_lvl = y_lvl & 3;
                 y_sec_lvl += (y_sec_lvl == 3) as c_int;
