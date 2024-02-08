@@ -192,7 +192,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0] as usize) as isize;
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1] as usize) as isize;
 
-    let mut bit = 0;
+    let mut bit = false;
     for by in (by_start..by_end).step_by(2) {
         let tf = tc.top_pre_cdef_toggle;
         let by_idx = (by & 30) >> 1;
@@ -283,7 +283,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         if edges.contains(CdefEdgeFlags::HAVE_RIGHT) {
                             // backup pre-filter data for next iteration
                             backup2x8::<BD>(
-                                &mut lr_bak[(bit == 0) as usize],
+                                &mut lr_bak[!bit as usize],
                                 &bptrs,
                                 &f.cur.stride,
                                 8,
@@ -457,7 +457,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 );
                             }
                         }
-                        bit ^= 1 as c_int;
+                        bit = !bit;
                         last_skip = false;
                     }
                     bptrs[0] = bptrs[0].add(8);
