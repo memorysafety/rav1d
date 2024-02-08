@@ -806,18 +806,18 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         ttd: &TaskThreadData,
         task_thread_lock: MutexGuard<'ttd, TaskThreadData_delayed_fg>,
     ) -> MutexGuard<'ttd, TaskThreadData_delayed_fg> {
-        tc.task_thread.flushed = true;
-        tc.task_thread.td.cond.notify_one();
+        tc.task_thread.flushed.store(true, Ordering::Relaxed);
+        tc.task_thread.cond.notify_one();
         // we want to be woken up next time progress is signaled
         ttd.cond_signaled.store(0, Ordering::SeqCst);
         let task_thread_lock = ttd.cond.wait(task_thread_lock).unwrap();
-        tc.task_thread.flushed = false;
+        tc.task_thread.flushed.store(false, Ordering::Relaxed);
         reset_task_cur(c, ttd, u32::MAX);
         task_thread_lock
     }
 
     let mut task_thread_lock = Some(ttd.delayed_fg.lock().unwrap());
-    'outer: while !tc.task_thread.die {
+    'outer: while !tc.task_thread.die.load(Ordering::Relaxed) {
         if c.flush.load(Ordering::SeqCst) != 0 {
             task_thread_lock = Some(park(c, tc, ttd, task_thread_lock.take().unwrap()));
             continue 'outer;

@@ -71,14 +71,16 @@ use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
-use crate::src::thread_data::thread_data;
 use atomig::Atomic;
+use libc::pthread_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ptr;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
@@ -183,7 +185,6 @@ pub(crate) struct TaskThreadData {
     /// code, we have kept a single mutex and put the delayed_fg structure into
     /// it.
     pub delayed_fg: Mutex<TaskThreadData_delayed_fg>,
-    pub inited: c_int,
 }
 
 #[repr(C)]
@@ -203,12 +204,27 @@ pub struct Rav1dContext_intra_edge {
     pub tip_sb64: [EdgeTip; 64],
 }
 
+pub(crate) struct Rav1dContextTaskThread {
+    /// Thread join handle, if this task is on a worker thread. The main thread
+    /// task does not contain a handle.
+    pub handle: Option<pthread_t>,
+    /// Data shared between the main thread and a worker thread.
+    pub thread_data: Arc<Rav1dTaskContext_task_thread>,
+}
+
+impl Rav1dContextTaskThread {
+    pub fn flushed(&self) -> bool {
+        self.thread_data.flushed.load(Ordering::Relaxed)
+    }
+}
+
 #[repr(C)]
 pub struct Rav1dContext {
     pub(crate) fc: *mut Rav1dFrameContext,
     pub(crate) n_fc: c_uint,
 
     pub(crate) tc: *mut Rav1dTaskContext,
+    pub(crate) tc_shared: Vec<Rav1dContextTaskThread>,
     pub(crate) n_tc: c_uint,
     /// Cache of OBUs that make up a single frame before we submit them
     /// to a frame worker to be decoded.
@@ -656,11 +672,21 @@ pub struct Rav1dTaskContext_frame_thread {
 
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext_task_thread {
-    pub td: thread_data,
+    pub cond: Condvar,
     pub ttd: Arc<TaskThreadData>,
-    pub fttd: *mut FrameTileThreadData,
-    pub flushed: bool,
-    pub die: bool,
+    pub flushed: AtomicBool,
+    pub die: AtomicBool,
+}
+
+impl Rav1dTaskContext_task_thread {
+    pub(crate) fn new(ttd: Arc<TaskThreadData>) -> Self {
+        Self {
+            cond: Condvar::new(),
+            ttd,
+            flushed: AtomicBool::new(false),
+            die: AtomicBool::new(false),
+        }
+    }
 }
 
 #[repr(C)]
@@ -689,7 +715,7 @@ pub(crate) struct Rav1dTaskContext {
     // keeps it accessible
     pub tl_4x4_filter: Filter2d,
     pub frame_thread: Rav1dTaskContext_frame_thread,
-    pub task_thread: Rav1dTaskContext_task_thread,
+    pub task_thread: Arc<Rav1dTaskContext_task_thread>,
 }
 
 // TODO(SJC): This is a temporary struct to pass a single pointer that holds
