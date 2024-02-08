@@ -1,4 +1,5 @@
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::align::Align16;
@@ -22,9 +23,9 @@ const CDEF_HAVE_TOP: CdefEdgeFlags = CdefEdgeFlags::CDEF_HAVE_TOP;
 
 bitflags! {
     #[derive(Clone, Copy)]
-    struct Backup2x8Flags : u32 {
-        const BACKUP_2X8_UV = 2;
-        const BACKUP_2X8_Y = 1;
+    struct Backup2x8Flags: u8 {
+        const BACKUP_2X8_Y = 1 << 0;
+        const BACKUP_2X8_UV = 1 << 1;
     }
 }
 
@@ -159,7 +160,10 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     sby: c_int,
 ) {
     let f: *mut Rav1dFrameContext = tc.f as *mut Rav1dFrameContext;
-    let bitdepth_min_8 = if 16 == 8 { 0 } else { (*f).cur.p.bpc - 8 };
+    let bitdepth_min_8 = match BD::BPC {
+        BPC::BPC8 => 0,
+        BPC::BPC16 => (*f).cur.p.bpc - 8,
+    };
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let mut edges: CdefEdgeFlags = if by_start > 0 {
         CDEF_HAVE_BOTTOM | CDEF_HAVE_TOP
@@ -239,7 +243,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                 y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
                 uv_lvl = frame_hdr.cdef.uv_strength[cdef_idx as usize];
                 flag = Backup2x8Flags::from_bits_truncate(
-                    (y_lvl != 0) as u32 + (((uv_lvl != 0) as u32) << 1),
+                    (y_lvl != 0) as u8 + (((uv_lvl != 0) as u8) << 1),
                 );
                 y_pri_lvl = (y_lvl >> 2) << bitdepth_min_8;
                 y_sec_lvl = y_lvl & 3;
