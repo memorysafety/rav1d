@@ -34,6 +34,7 @@ use crate::src::fg_apply;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
+use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
@@ -352,16 +353,14 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
                 let thread_data_copy = Arc::clone(&thread_data);
                 let handle = thread::spawn(|| rav1d_worker_task(context_borrow, thread_data_copy));
                 Rav1dContextTaskThread {
-                    handle: Some(handle),
+                    task: Rav1dContextTaskType::Worker(handle),
                     thread_data,
                 }
             } else {
-                (*c).main_tc = Some(Mutex::new(Box::new(Rav1dTaskContext::new(
-                    &mut *((*c).fc).offset(0),
-                    Arc::clone(&thread_data),
-                ))));
                 Rav1dContextTaskThread {
-                    handle: None,
+                    task: Rav1dContextTaskType::Single(Mutex::new(Box::new(
+                        Rav1dTaskContext::new(&mut *((*c).fc).offset(0), Arc::clone(&thread_data)),
+                    ))),
                     thread_data,
                 }
             }
@@ -897,8 +896,9 @@ impl Drop for Rav1dContext {
                 }
                 ttd.cond.notify_all();
                 drop(task_thread_lock);
-                for task_thread in self.tc.iter_mut() {
-                    if let Some(handle) = task_thread.handle.take() {
+                let tc = mem::take(&mut self.tc);
+                for task_thread in tc.into_vec() {
+                    if let Rav1dContextTaskType::Worker(handle) = task_thread.task {
                         handle.join().expect("Could not join task thread");
                     }
                 }

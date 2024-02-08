@@ -208,11 +208,24 @@ pub struct Rav1dContext_intra_edge {
     pub tip_sb64: [EdgeTip; 64],
 }
 
+pub(crate) enum Rav1dContextTaskType {
+    /// Worker thread in a multi-threaded context.
+    Worker(JoinHandle<()>),
+    /// Main thread in a single-threaded context. There are no worker threads so
+    /// we need to store a Rav1dTaskContext for work that requires it.
+    // This Rav1dTaskContext is heap-allocated because we don't want to bloat
+    // the size of Rav1dContext, especially when it isn't used when we have
+    // worker threads. This is wrapped in a mutex so we can have inner
+    // mutability in rav1d_decode_frame_main where we need a mutable reference
+    // to this task context along with an immutable reference to Rav1dContext.
+    Single(Mutex<Box<Rav1dTaskContext>>),
+}
+
 pub(crate) struct Rav1dContextTaskThread {
-    /// Thread join handle, if this task is on a worker thread. The main thread
-    /// task does not contain a handle.
-    pub handle: Option<JoinHandle<()>>,
-    /// Data shared between the main thread and a worker thread.
+    /// Type of the task thread, along with either the thread join handle for
+    /// worker threads or the single-threaded task context.
+    pub task: Rav1dContextTaskType,
+    /// Thread specific data shared between the main thread and a worker thread.
     pub thread_data: Arc<Rav1dTaskContext_task_thread>,
 }
 
@@ -227,12 +240,8 @@ pub struct Rav1dContext {
     pub(crate) fc: *mut Rav1dFrameContext,
     pub(crate) n_fc: c_uint,
 
-    /// Task context if we aren't using worker threads
-    // This Rav1dTaskContext is heap-allocated because we don't want to bloat
-    // the size of Rav1dContext, especially when it isn't used when we have
-    // worker threads.
-    pub(crate) main_tc: Option<Mutex<Box<Rav1dTaskContext>>>,
-    /// Worker thread join handles and communication
+    /// Worker thread join handles and communication, or single thread task
+    /// context if n_tc == 1
     pub(crate) tc: Box<[Rav1dContextTaskThread]>,
     /// Number of worker threads
     pub(crate) n_tc: c_uint,
