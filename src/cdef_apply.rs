@@ -5,7 +5,6 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::align::Align16;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::lf_mask::Av1Filter;
 use bitflags::bitflags;
@@ -168,7 +167,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         BPC::BPC8 => 0,
         BPC::BPC16 => f.cur.p.bpc - 8,
     };
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp = &*f.dsp;
     let mut edges: CdefEdgeFlags = if by_start > 0 {
         CdefEdgeFlags::HAVE_BOTTOM | CdefEdgeFlags::HAVE_TOP
     } else {
@@ -302,7 +301,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         dir = 0;
                         variance = 0;
                         if y_pri_lvl != 0 || uv_pri_lvl != 0 {
-                            dir = ((*dsp).cdef.dir)(
+                            dir = (dsp.cdef.dir)(
                                 bptrs[0].cast(),
                                 f.cur.stride[0],
                                 &mut variance,
@@ -352,7 +351,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         if y_pri_lvl != 0 {
                             let adj_y_pri_lvl = adjust_strength(y_pri_lvl, variance);
                             if adj_y_pri_lvl != 0 || y_sec_lvl != 0 {
-                                (*dsp).cdef.fb[0](
+                                dsp.cdef.fb[0](
                                     bptrs[0].cast(),
                                     f.cur.stride[0],
                                     (lr_bak[bit as usize][0]).as_mut_ptr().cast(),
@@ -367,7 +366,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 );
                             }
                         } else if y_sec_lvl != 0 {
-                            (*dsp).cdef.fb[0](
+                            dsp.cdef.fb[0](
                                 bptrs[0].cast(),
                                 f.cur.stride[0],
                                 (lr_bak[bit as usize][0]).as_mut_ptr().cast(),
@@ -444,7 +443,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     bot = bptrs[pl].offset((8 >> ss_ver) * uv_stride);
                                 }
 
-                                (*dsp).cdef.fb[uv_idx as usize](
+                                dsp.cdef.fb[uv_idx as usize](
                                     bptrs[pl].cast(),
                                     f.cur.stride[1],
                                     (lr_bak[bit as usize][pl]).as_mut_ptr().cast(),
