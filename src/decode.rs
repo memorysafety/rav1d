@@ -73,6 +73,7 @@ use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameContext_bd_fn;
 use crate::src::internal::Rav1dTaskContext;
@@ -4780,9 +4781,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
 unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameContext) -> Rav1dResult {
     assert!(c.n_tc == 1);
 
-    let t = &mut *c.tc.offset((f as *mut Rav1dFrameContext).offset_from(c.fc));
-    t.f = f;
-    t.frame_thread.pass = 0;
+    let Rav1dContextTaskType::Single(t) = &c.tc[0].task else {
+        panic!("Expected a single-threaded context");
+    };
+    let mut t = t.lock().unwrap();
 
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
@@ -4826,14 +4828,14 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameContext) -
             }
             for tile in &mut ts[..] {
                 t.ts = tile;
-                rav1d_decode_tile_sbrow(c, t).map_err(|()| EINVAL)?;
+                rav1d_decode_tile_sbrow(c, &mut t).map_err(|()| EINVAL)?;
             }
             if frame_hdr.frame_type.is_inter_or_switch() {
                 rav1d_refmvs_save_tmvs(&c.refmvs_dsp, &mut t.rt, 0, f.bw >> 1, t.by >> 1, by_end);
             }
 
             // loopfilter + cdef + restoration
-            (f.bd_fn.filter_sbrow)(c, f, t, sby);
+            (f.bd_fn.filter_sbrow)(c, f, &mut t, sby);
         }
     }
 

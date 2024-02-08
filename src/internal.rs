@@ -72,10 +72,10 @@ use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use atomig::Atomic;
-use libc::pthread_t;
 use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::mem;
 use std::ptr;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
@@ -84,6 +84,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
+use std::thread::JoinHandle;
 
 #[repr(C)]
 pub(crate) struct Rav1dDSPContext {
@@ -165,6 +166,9 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub grain: BitDepthUnion<Grain>,
 }
 
+// TODO(SJC): Remove when TaskThreadData_delayed_fg is thread-safe
+unsafe impl Send for TaskThreadData_delayed_fg {}
+
 #[repr(C)]
 pub(crate) struct TaskThreadData {
     pub cond: Condvar,
@@ -204,11 +208,24 @@ pub struct Rav1dContext_intra_edge {
     pub tip_sb64: [EdgeTip; 64],
 }
 
+pub(crate) enum Rav1dContextTaskType {
+    /// Worker thread in a multi-threaded context.
+    Worker(JoinHandle<()>),
+    /// Main thread in a single-threaded context. There are no worker threads so
+    /// we need to store a Rav1dTaskContext for work that requires it.
+    // This Rav1dTaskContext is heap-allocated because we don't want to bloat
+    // the size of Rav1dContext, especially when it isn't used when we have
+    // worker threads. This is wrapped in a mutex so we can have inner
+    // mutability in rav1d_decode_frame_main where we need a mutable reference
+    // to this task context along with an immutable reference to Rav1dContext.
+    Single(Mutex<Box<Rav1dTaskContext>>),
+}
+
 pub(crate) struct Rav1dContextTaskThread {
-    /// Thread join handle, if this task is on a worker thread. The main thread
-    /// task does not contain a handle.
-    pub handle: Option<pthread_t>,
-    /// Data shared between the main thread and a worker thread.
+    /// Type of the task thread, along with either the thread join handle for
+    /// worker threads or the single-threaded task context.
+    pub task: Rav1dContextTaskType,
+    /// Thread specific data shared between the main thread and a worker thread.
     pub thread_data: Arc<Rav1dTaskContext_task_thread>,
 }
 
@@ -223,9 +240,12 @@ pub struct Rav1dContext {
     pub(crate) fc: *mut Rav1dFrameContext,
     pub(crate) n_fc: c_uint,
 
-    pub(crate) tc: *mut Rav1dTaskContext,
-    pub(crate) tc_shared: Vec<Rav1dContextTaskThread>,
+    /// Worker thread join handles and communication, or single thread task
+    /// context if n_tc == 1
+    pub(crate) tc: Box<[Rav1dContextTaskThread]>,
+    /// Number of worker threads
     pub(crate) n_tc: c_uint,
+
     /// Cache of OBUs that make up a single frame before we submit them
     /// to a frame worker to be decoded.
     pub(crate) tiles: Vec<Rav1dTileGroup>,
@@ -280,6 +300,11 @@ pub struct Rav1dContext {
 
     pub(crate) picture_pool: *mut Rav1dMemPool,
 }
+
+// TODO(SJC): Remove when Rav1dContext is thread-safe
+unsafe impl Send for Rav1dContext {}
+// TODO(SJC): Remove when Rav1dContext is thread-safe
+unsafe impl Sync for Rav1dContext {}
 
 #[derive(Clone)]
 #[repr(C)]
@@ -718,11 +743,31 @@ pub(crate) struct Rav1dTaskContext {
     pub task_thread: Arc<Rav1dTaskContext_task_thread>,
 }
 
-// TODO(SJC): This is a temporary struct to pass a single pointer that holds
-// both a Rav1dContext and Rav1dTaskContext to the start routine in
-// pthread_create. We need to pass the Rav1dTaskContext into the thread by value
-// and remove it from the context structure.
-pub(crate) struct Rav1dTaskContext_borrow<'c> {
-    pub c: &'c Rav1dContext,
-    pub tc: &'c mut Rav1dTaskContext,
+impl Rav1dTaskContext {
+    pub(crate) unsafe fn new(
+        f: *mut Rav1dFrameContext,
+        task_thread: Arc<Rav1dTaskContext_task_thread>,
+    ) -> Self {
+        Self {
+            f,
+            ts: ptr::null_mut(),
+            bx: 0,
+            by: 0,
+            l: mem::zeroed(),
+            a: ptr::null_mut(),
+            rt: mem::zeroed(),
+            cf: Default::default(),
+            al_pal: Default::default(),
+            pal_sz_uv: Default::default(),
+            txtp_map: [0u8; 1024],
+            scratch: mem::zeroed(),
+            warpmv: mem::zeroed(),
+            lf_mask: ptr::null_mut(),
+            top_pre_cdef_toggle: 0,
+            cur_sb_cdef_idx_ptr: ptr::null_mut(),
+            tl_4x4_filter: mem::zeroed(),
+            frame_thread: Rav1dTaskContext_frame_thread { pass: 0 },
+            task_thread,
+        }
+    }
 }

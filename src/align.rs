@@ -37,6 +37,7 @@ macro_rules! impl_ArrayDefault {
 impl_ArrayDefault!(u8);
 impl_ArrayDefault!(i8);
 impl_ArrayDefault!(i16);
+impl_ArrayDefault!(i32);
 
 macro_rules! def_align {
     ($align:literal, $name:ident) => {

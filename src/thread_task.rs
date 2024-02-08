@@ -20,7 +20,7 @@ use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
-use crate::src::internal::Rav1dTaskContext_borrow;
+use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskThreadData_delayed_fg;
@@ -790,8 +790,11 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
     }
 }
 
-pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
-    let Rav1dTaskContext_borrow { c, tc } = *Box::from_raw(data as *mut Rav1dTaskContext_borrow);
+pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_task_thread>) {
+    let mut tc = Rav1dTaskContext::new(
+        &mut *((*c).fc).offset(0) as *mut Rav1dFrameContext,
+        task_thread,
+    );
 
     // We clone the Arc here for the lifetime of this function to avoid an
     // immutable borrow of tc across the call to park
@@ -819,7 +822,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
     let mut task_thread_lock = Some(ttd.delayed_fg.lock().unwrap());
     'outer: while !tc.task_thread.die.load(Ordering::Relaxed) {
         if c.flush.load(Ordering::SeqCst) != 0 {
-            task_thread_lock = Some(park(c, tc, ttd, task_thread_lock.take().unwrap()));
+            task_thread_lock = Some(park(c, &mut tc, ttd, task_thread_lock.take().unwrap()));
             continue 'outer;
         }
 
@@ -981,7 +984,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
             if merge_pending(c) != 0 {
                 continue 'outer;
             }
-            task_thread_lock = Some(park(c, tc, ttd, task_thread_lock.take().unwrap()));
+            task_thread_lock = Some(park(c, &mut tc, ttd, task_thread_lock.take().unwrap()));
             continue 'outer;
         };
         // found:
@@ -1143,7 +1146,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                                     as c_int
                         };
                         if error_0 == 0 {
-                            error_0 = match rav1d_decode_tile_sbrow(c, tc) {
+                            error_0 = match rav1d_decode_tile_sbrow(c, &mut tc) {
                                 Ok(()) => 0,
                                 Err(()) => 1,
                             };
@@ -1224,7 +1227,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                     }
                     RAV1D_TASK_TYPE_DEBLOCK_COLS => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            (f.bd_fn.filter_sbrow_deblock_cols)(c, f, tc, sby);
+                            (f.bd_fn.filter_sbrow_deblock_cols)(c, f, &mut tc, sby);
                         }
                         if ensure_progress(
                             ttd,
@@ -1243,7 +1246,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                     }
                     RAV1D_TASK_TYPE_DEBLOCK_ROWS => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            (f.bd_fn.filter_sbrow_deblock_rows)(c, f, tc, sby);
+                            (f.bd_fn.filter_sbrow_deblock_rows)(c, f, &mut tc, sby);
                         }
                         // signal deblock progress
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
@@ -1290,7 +1293,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn.filter_sbrow_cdef)(c, tc, sby);
+                                (f.bd_fn.filter_sbrow_cdef)(c, &mut tc, sby);
                             }
                             reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
@@ -1304,7 +1307,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn.filter_sbrow_resize)(c, f, tc, sby);
+                                (f.bd_fn.filter_sbrow_resize)(c, f, &mut tc, sby);
                             }
                         }
                         task_type = RAV1D_TASK_TYPE_LOOP_RESTORATION;
@@ -1314,7 +1317,7 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0
                             && f.lf.restore_planes != 0
                         {
-                            (f.bd_fn.filter_sbrow_lr)(c, f, tc, sby);
+                            (f.bd_fn.filter_sbrow_lr)(c, f, &mut tc, sby);
                         }
                         task_type = RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
                         continue 'fallthrough;
@@ -1439,6 +1442,4 @@ pub unsafe extern "C" fn rav1d_worker_task(data: *mut c_void) -> *mut c_void {
         }
     }
     drop(task_thread_lock.take().expect("thread lock was not held"));
-
-    return 0 as *mut c_void;
 }
