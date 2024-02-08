@@ -110,7 +110,7 @@ unsafe fn backup2x8<BD: BitDepth>(
         for y in 0..8 {
             BD::pixel_copy(
                 &mut dst[0][y],
-                slice::from_raw_parts(&mut *src[0].offset(y_off + x_off as isize - 2), 2),
+                slice::from_raw_parts(src[0].offset(y_off + x_off as isize - 2), 2),
                 2,
             );
             y_off += BD::pxstride(src_stride[0] as usize) as isize;
