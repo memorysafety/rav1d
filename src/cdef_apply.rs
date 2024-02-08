@@ -159,7 +159,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     lflvl: *const Av1Filter,
     by_start: c_int,
     by_end: c_int,
-    sbrow_start: c_int,
+    sbrow_start: bool,
     sby: c_int,
 ) {
     let f = &*tc.f;
@@ -198,7 +198,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         if by + 2 >= f.bh {
             edges.remove(CdefEdgeFlags::HAVE_BOTTOM);
         }
-        if (have_tt == 0 || sbrow_start != 0 || (by + 2) < by_end)
+        if (have_tt == 0 || sbrow_start || (by + 2) < by_end)
             && edges.contains(CdefEdgeFlags::HAVE_BOTTOM)
         {
             let cdef_top_bak: [*mut BD::Pixel; 3] = [
@@ -312,7 +312,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         bot = 0 as *const BD::Pixel;
                         if have_tt == 0 {
                             st_y = true;
-                        } else if sbrow_start != 0 && by == by_start {
+                        } else if sbrow_start && by == by_start {
                             if resize != 0 {
                                 offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
                                 top = f.lf.cdef_lpf_line[0].cast::<BD::Pixel>().offset(offset);
@@ -323,7 +323,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             }
                             bot = bptrs[0].offset(8 * y_stride as isize);
                             st_y = false;
-                        } else if sbrow_start == 0 && by + 2 >= by_end {
+                        } else if !sbrow_start && by + 2 >= by_end {
                             top = f.lf.cdef_line[tf as usize][0]
                                 .cast::<BD::Pixel>()
                                 .offset((sby * 4) as isize * y_stride + (bx * 4) as isize);
@@ -393,7 +393,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 let st_uv: bool;
                                 if have_tt == 0 {
                                     st_uv = true;
-                                } else if sbrow_start != 0 && by == by_start {
+                                } else if sbrow_start && by == by_start {
                                     if resize != 0 {
                                         offset = ((sby - 1) * 4) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
@@ -409,7 +409,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     }
                                     bot = bptrs[pl].offset(((8 >> ss_ver) * uv_stride) as isize);
                                     st_uv = false;
-                                } else if sbrow_start == 0 && by + 2 >= by_end {
+                                } else if !sbrow_start && by + 2 >= by_end {
                                     let top_offset: ptrdiff_t = (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
                                     top = f.lf.cdef_line[tf as usize][pl]
