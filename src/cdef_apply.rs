@@ -188,7 +188,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
 
     let have_tt = c.tc.len() > 1;
     let sb128 = f.seq_hdr.as_ref().unwrap().sb128;
-    let resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
+    let resize = frame_hdr.size.width[0] != frame_hdr.size.width[1];
     let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0] as usize) as isize;
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1] as usize) as isize;
 
@@ -312,7 +312,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         if !have_tt {
                             st_y = true;
                         } else if sbrow_start && by == by_start {
-                            if resize != 0 {
+                            if resize {
                                 offset = ((sby - 1) * 4) as isize * y_stride + (bx * 4) as isize;
                                 top = f.lf.cdef_lpf_line[0].cast::<BD::Pixel>().offset(offset);
                             } else {
@@ -326,7 +326,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             top = f.lf.cdef_line[tf as usize][0]
                                 .cast::<BD::Pixel>()
                                 .offset((sby * 4) as isize * y_stride + (bx * 4) as isize);
-                            if resize != 0 {
+                            if resize {
                                 offset = (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize;
                                 bot = f.lf.cdef_lpf_line[0].cast::<BD::Pixel>().offset(offset);
                             } else {
@@ -393,7 +393,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 if !have_tt {
                                     st_uv = true;
                                 } else if sbrow_start && by == by_start {
-                                    if resize != 0 {
+                                    if resize {
                                         offset = ((sby - 1) * 4) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
                                         top = f.lf.cdef_lpf_line[pl]
@@ -414,7 +414,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     top = f.lf.cdef_line[tf as usize][pl]
                                         .cast::<BD::Pixel>()
                                         .offset(top_offset);
-                                    if resize != 0 {
+                                    if resize {
                                         offset = (sby * 4 + 2) as isize * uv_stride
                                             + (bx * 4 >> ss_hor) as isize;
                                         bot = f.lf.cdef_lpf_line[pl]
