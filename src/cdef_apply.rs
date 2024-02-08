@@ -353,7 +353,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 dsp.cdef.fb[0](
                                     bptrs[0].cast(),
                                     f.cur.stride[0],
-                                    (lr_bak[bit as usize][0]).as_mut_ptr().cast(),
+                                    lr_bak[bit as usize][0].as_mut_ptr().cast(),
                                     top.cast(),
                                     bot.cast(),
                                     adj_y_pri_lvl,
@@ -379,7 +379,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 f.bitdepth_max,
                             );
                         }
-                        if !(uv_lvl == 0) {
+                        if uv_lvl != 0 {
                             if !(layout != Rav1dPixelLayout::I400) {
                                 unreachable!();
                             }
@@ -445,7 +445,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 dsp.cdef.fb[uv_idx as usize](
                                     bptrs[pl].cast(),
                                     f.cur.stride[1],
-                                    (lr_bak[bit as usize][pl]).as_mut_ptr().cast(),
+                                    lr_bak[bit as usize][pl].as_mut_ptr().cast(),
                                     top.cast(),
                                     bot.cast(),
                                     uv_pri_lvl,
