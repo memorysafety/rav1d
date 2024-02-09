@@ -4383,12 +4383,11 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
 
         if frame_hdr.allow_screen_content_tools != 0 {
-            if num_sb128 != f.frame_thread.pal_sz {
+            if num_sb128 as usize != f.frame_thread.pal_sz() {
                 // TODO: Fallible allocation
                 f.frame_thread
                     .pal
                     .resize_with(num_sb128 as usize * 16 * 16, Default::default);
-                f.frame_thread.pal_sz = num_sb128;
             }
 
             let pal_idx_sz = num_sb128 * size_mul[1] as c_int;
@@ -4408,7 +4407,6 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             let _ = mem::take(&mut f.frame_thread.pal);
             rav1d_freep_aligned(&mut f.frame_thread.pal_idx as *mut *mut u8 as *mut c_void);
             f.frame_thread.pal_idx_sz = 0;
-            f.frame_thread.pal_sz = f.frame_thread.pal_idx_sz;
         }
     }
 

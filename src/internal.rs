@@ -423,11 +423,16 @@ pub struct Rav1dFrameContext_frame_thread {
     // iterated over inside tile state
     pub pal_idx: *mut u8,
     pub cf: *mut DynCoef,
-    pub pal_sz: c_int,
     pub pal_idx_sz: c_int,
     pub cf_sz: c_int,
     // start offsets per tile
     pub tile_start_off: *mut u32,
+}
+
+impl Rav1dFrameContext_frame_thread {
+    pub fn pal_sz(&self) -> usize {
+        self.pal.len() / (16 * 16)
+    }
 }
 
 /// loopfilter
