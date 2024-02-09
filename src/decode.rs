@@ -71,7 +71,6 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
-use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dFrameContext;
@@ -4529,18 +4528,15 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             return Err(ENOMEM);
         }
         if c.n_fc > 1 {
-            freep(&mut f.frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
             // TODO: Fallible allocation
             f.frame_thread
                 .b
                 .resize_with(num_sb128 as usize * 32 * 32, Default::default);
-            f.frame_thread.cbi =
-                malloc(::core::mem::size_of::<CodedBlockInfo>() * num_sb128 as usize * 32 * 32)
-                    as *mut CodedBlockInfo;
-            if f.frame_thread.cbi.is_null() {
-                f.lf.mask_sz = 0;
-                return Err(ENOMEM);
-            }
+
+            // TODO: fallible allocation
+            f.frame_thread
+                .cbi
+                .resize_with(num_sb128 as usize * 32 * 32, Default::default);
         }
         f.lf.mask_sz = num_sb128;
     }

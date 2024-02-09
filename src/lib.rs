@@ -31,7 +31,6 @@ use crate::src::error::Rav1dError::ENOENT;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::fg_apply;
-use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
@@ -922,7 +921,7 @@ impl Drop for Rav1dContext {
                     rav1d_freep_aligned(
                         &mut (*f).frame_thread.pal as *mut *mut [[u16; 8]; 3] as *mut c_void,
                     );
-                    freep(&mut (*f).frame_thread.cbi as *mut *mut CodedBlockInfo as *mut c_void);
+                    let _ = mem::take(&mut (*f).frame_thread.cbi); // TODO: remove when context is owned
                 }
                 if self.n_tc > 1 as c_uint {
                     let _ = mem::take(&mut (*f).task_thread.pending_tasks); // TODO: remove when context is owned

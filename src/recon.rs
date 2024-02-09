@@ -15,7 +15,6 @@ use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
-use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -1616,7 +1615,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     y_off: c_int,
     mut dst: *mut BD::Pixel,
 ) {
-    let f: *const Rav1dFrameContext = (*t).f;
+    let f: *mut Rav1dFrameContext = (*t).f;
     let ts: *mut Rav1dTileState = (*t).ts;
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let t_dim: *const TxfmInfo =
@@ -1708,7 +1707,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         let mut cf_ctx: u8 = 0;
         let eob;
         let cf: *mut BD::Coef;
-        let mut cbi: *mut CodedBlockInfo = 0 as *mut CodedBlockInfo;
+        let mut cbi = &mut Default::default();
         if (*t).frame_thread.pass != 0 {
             let p = (*t).frame_thread.pass & 1;
             if ((*ts).frame_thread[p as usize].cf).is_null() {
@@ -1721,9 +1720,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                         * cmp::min((*t_dim).h as c_int, 8 as c_int)
                         * 16) as isize,
                 ) as *mut DynCoef;
-            cbi = &mut *((*f).frame_thread.cbi)
-                .offset(((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as isize)
-                as *mut CodedBlockInfo;
+            cbi = &mut (*f).frame_thread.cbi
+                [((*t).by as isize * (*f).b4_stride + (*t).bx as isize) as usize];
         } else {
             cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
         }
@@ -1768,12 +1766,12 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 }
             });
             if (*t).frame_thread.pass == 1 {
-                (*cbi).eob[0] = eob as i16;
-                (*cbi).txtp[0] = txtp as u8;
+                cbi.eob[0] = eob as i16;
+                cbi.txtp[0] = txtp as u8;
             }
         } else {
-            eob = (*cbi).eob[0] as c_int;
-            txtp = (*cbi).txtp[0] as TxfmType;
+            eob = cbi.eob[0] as c_int;
+            txtp = cbi.txtp[0] as TxfmType;
         }
         if (*t).frame_thread.pass & 1 == 0 {
             if dst.is_null() {
@@ -1816,7 +1814,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     bs: BlockSize,
     b: &Av1Block,
 ) {
-    let f: *const Rav1dFrameContext = t.f;
+    let f: *mut Rav1dFrameContext = t.f;
     let ss_ver =
         ((*f).cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor =
@@ -1891,9 +1889,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
             y = init_y;
             t.by += init_y;
             while y < sub_h4 {
-                let cbi: *mut CodedBlockInfo = &mut *((*f).frame_thread.cbi)
-                    .offset((t.by as isize * (*f).b4_stride) as isize)
-                    as *mut CodedBlockInfo;
+                let cbi = &mut (*f).frame_thread.cbi[(t.by as isize * (*f).b4_stride) as usize..];
                 let mut x_off = (init_x != 0) as c_int;
                 x = init_x;
                 t.bx += init_x;
@@ -1913,7 +1909,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                     } else {
                         let mut cf_ctx: u8 = 0x40 as c_int as u8;
                         let mut txtp: TxfmType = DCT_DCT;
-                        let ref mut fresh4 = (*cbi.offset(t.bx as isize)).eob[0];
+                        let ref mut fresh4 = cbi[t.bx as usize].eob[0];
                         *fresh4 = decode_coefs::<BD>(
                             t,
                             &mut (*t.a).lcoef.0[(bx4 + x) as usize..],
@@ -1938,7 +1934,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 (*ts).msac.rng,
                             );
                         }
-                        (*cbi.offset(t.bx as isize)).txtp[0] = txtp as u8;
+                        cbi[t.bx as usize].txtp[0] = txtp as u8;
                         (*ts).frame_thread[1].cf = ((*ts).frame_thread[1].cf as *mut BD::Coef)
                             .offset(
                                 (cmp::min((*t_dim).w as c_int, 8 as c_int)
@@ -1975,9 +1971,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                     y = init_y >> ss_ver;
                     t.by += init_y;
                     while y < sub_ch4 {
-                        let cbi: *mut CodedBlockInfo = &mut *((*f).frame_thread.cbi)
-                            .offset((t.by as isize * (*f).b4_stride) as isize)
-                            as *mut CodedBlockInfo;
+                        let cbi =
+                            &mut (*f).frame_thread.cbi[(t.by as isize * (*f).b4_stride) as usize..];
                         x = init_x >> ss_hor;
                         t.bx += init_x;
                         while x < sub_cw4 {
@@ -1988,8 +1983,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
                                     as TxfmType;
                             }
-                            let ref mut fresh5 =
-                                (*cbi.offset(t.bx as isize)).eob[(1 + pl) as usize];
+                            let ref mut fresh5 = cbi[t.bx as usize].eob[(1 + pl) as usize];
                             *fresh5 = decode_coefs::<BD>(
                                 t,
                                 &mut (*t.a).ccoef.0[pl as usize][(cbx4 + x) as usize..],
@@ -2016,7 +2010,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     (*ts).msac.rng,
                                 );
                             }
-                            (*cbi.offset(t.bx as isize)).txtp[(1 + pl) as usize] = txtp as u8;
+                            cbi[t.bx as usize].txtp[(1 + pl) as usize] = txtp as u8;
                             (*ts).frame_thread[1].cf =
                                 ((*ts).frame_thread[1].cf as *mut BD::Coef).offset(
                                     ((*uv_t_dim).w as c_int * (*uv_t_dim).h as c_int * 16) as isize,
@@ -2513,7 +2507,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     b: &Av1Block,
 ) {
     let ts: *mut Rav1dTileState = t.ts;
-    let f: *const Rav1dFrameContext = t.f;
+    let f: *mut Rav1dFrameContext = t.f;
 
     let dbg = DEBUG_BLOCK_INFO(&*f, t);
 
@@ -2741,11 +2735,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         * cmp::min((*t_dim).h as c_int, 8 as c_int)
                                         * 16) as isize,
                                 ) as *mut DynCoef;
-                            let cbi: *const CodedBlockInfo = &mut *((*f).frame_thread.cbi)
-                                .offset((t.by as isize * (*f).b4_stride + t.bx as isize) as isize)
-                                as *mut CodedBlockInfo;
-                            eob = (*cbi).eob[0] as c_int;
-                            txtp = (*cbi).txtp[0] as TxfmType;
+                            let cbi = &mut (*f).frame_thread.cbi
+                                [(t.by as isize * (*f).b4_stride + t.bx as isize) as usize];
+                            eob = cbi.eob[0] as c_int;
+                            txtp = cbi.txtp[0] as TxfmType;
                         } else {
                             let mut cf_ctx: u8 = 0;
                             cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
@@ -3195,14 +3188,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                                 as isize,
                                         )
                                         as *mut DynCoef;
-                                    let cbi: *const CodedBlockInfo = &mut *((*f).frame_thread.cbi)
-                                        .offset(
-                                            (t.by as isize * (*f).b4_stride + t.bx as isize)
-                                                as isize,
-                                        )
-                                        as *mut CodedBlockInfo;
-                                    eob = (*cbi).eob[(pl + 1) as usize] as c_int;
-                                    txtp = (*cbi).txtp[(pl + 1) as usize] as TxfmType;
+                                    let cbi = &mut (*f).frame_thread.cbi
+                                        [(t.by as isize * (*f).b4_stride + t.bx as isize) as usize];
+                                    eob = cbi.eob[(pl + 1) as usize] as c_int;
+                                    txtp = cbi.txtp[(pl + 1) as usize] as TxfmType;
                                 } else {
                                     let mut cf_ctx: u8 = 0;
                                     cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
@@ -3312,7 +3301,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     b: &Av1Block,
 ) -> c_int {
     let ts: *mut Rav1dTileState = t.ts;
-    let f: *const Rav1dFrameContext = t.f;
+    let f: *mut Rav1dFrameContext = t.f;
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
@@ -4429,12 +4418,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     ((*ts).frame_thread[p as usize].cf as *mut BD::Coef).offset(
                                         ((*uvtx).w as c_int * (*uvtx).h as c_int * 16) as isize,
                                     ) as *mut DynCoef;
-                                let cbi: *const CodedBlockInfo =
-                                    &mut *((*f).frame_thread.cbi).offset(
-                                        (t.by as isize * (*f).b4_stride + t.bx as isize) as isize,
-                                    ) as *mut CodedBlockInfo;
-                                eob = (*cbi).eob[(1 + pl) as usize] as c_int;
-                                txtp = (*cbi).txtp[(1 + pl) as usize] as TxfmType;
+                                let cbi = &mut (*f).frame_thread.cbi
+                                    [(t.by as isize * (*f).b4_stride + t.bx as isize) as usize];
+                                eob = cbi.eob[(1 + pl) as usize] as c_int;
+                                txtp = cbi.txtp[(1 + pl) as usize] as TxfmType;
                             } else {
                                 let mut cf_ctx: u8 = 0;
                                 cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
