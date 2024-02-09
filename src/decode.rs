@@ -3860,10 +3860,8 @@ unsafe fn setup_tile(
 
     let size_mul = &ss_size_mul[f.cur.p.layout];
     for p in 0..2 {
-        ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_null() {
-            f.frame_thread
-                .pal_idx
-                .offset((tile_start_off * size_mul[1] as usize / 4) as isize)
+        ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_empty() {
+            f.frame_thread.pal_idx[tile_start_off * size_mul[1] as usize / 4..].as_ptr() as *mut u8
         } else {
             ptr::null_mut()
         };
@@ -4389,22 +4387,15 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
                 .resize(num_sb128 as usize * 16 * 16, Default::default());
 
             let pal_idx_sz = num_sb128 * size_mul[1] as c_int;
-            if pal_idx_sz != f.frame_thread.pal_idx_sz {
-                rav1d_freep_aligned(&mut f.frame_thread.pal_idx as *mut *mut u8 as *mut c_void);
-                f.frame_thread.pal_idx = rav1d_alloc_aligned(
-                    ::core::mem::size_of::<u8>() * pal_idx_sz as usize * 128 * 128 / 4,
-                    64,
-                ) as *mut u8;
-                if f.frame_thread.pal_idx.is_null() {
-                    f.frame_thread.pal_idx_sz = 0;
-                    return Err(ENOMEM);
-                }
-                f.frame_thread.pal_idx_sz = pal_idx_sz;
+            if pal_idx_sz as usize != f.frame_thread.pal_idx_sz() {
+                // TODO: Fallible allocation
+                f.frame_thread
+                    .pal_idx
+                    .resize_with(pal_idx_sz as usize * 128 * 128 / 4, Default::default);
             }
         } else if !f.frame_thread.pal.is_empty() {
             let _ = mem::take(&mut f.frame_thread.pal);
-            rav1d_freep_aligned(&mut f.frame_thread.pal_idx as *mut *mut u8 as *mut c_void);
-            f.frame_thread.pal_idx_sz = 0;
+            let _ = mem::take(&mut f.frame_thread.pal_idx);
         }
     }
 

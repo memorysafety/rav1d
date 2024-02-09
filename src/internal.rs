@@ -421,12 +421,17 @@ pub struct Rav1dFrameContext_frame_thread {
     // indexed using (t->by >> 1) * (f->b4_stride >> 1) + (t->bx >> 1)
     pub pal: AlignedVec64<[[u16; 8]; 3]>, /* [3 plane][8 idx] */
     // iterated over inside tile state
-    pub pal_idx: *mut u8,
+    pub pal_idx: Vec<Align64<u8>>,
     pub cf: *mut DynCoef,
-    pub pal_idx_sz: c_int,
     pub cf_sz: c_int,
     // start offsets per tile
     pub tile_start_off: *mut u32,
+}
+
+impl Rav1dFrameContext_frame_thread {
+    pub fn pal_idx_sz(&self) -> usize {
+        self.pal_idx.len() / (128 * 128 / 4)
+    }
 }
 
 /// loopfilter
