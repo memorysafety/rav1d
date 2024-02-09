@@ -105,7 +105,8 @@ unsafe fn backup2x8<BD: BitDepth>(
     layout: Rav1dPixelLayout,
     flag: Backup2x8Flags,
 ) {
-    let mut y_off: ptrdiff_t = 0 as c_int as ptrdiff_t;
+    let mut y_off = 0;
+
     if flag.contains(Backup2x8Flags::Y) {
         for y in 0..8 {
             BD::pixel_copy(
@@ -116,13 +117,16 @@ unsafe fn backup2x8<BD: BitDepth>(
             y_off += BD::pxstride(src_stride[0] as usize) as isize;
         }
     }
+
     if layout == Rav1dPixelLayout::I400 || !flag.contains(Backup2x8Flags::UV) {
         return;
     }
+
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (layout != Rav1dPixelLayout::I444) as c_int;
+
     x_off >>= ss_hor;
-    y_off = 0 as c_int as ptrdiff_t;
+    y_off = 0;
     for y in 0..8 >> ss_ver {
         BD::pixel_copy(
             &mut dst[1][y],
