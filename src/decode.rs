@@ -3865,14 +3865,11 @@ unsafe fn setup_tile(
         } else {
             ptr::null_mut()
         };
-        ts.frame_thread[p].cf = if !f.frame_thread.cf.is_null() {
-            f.frame_thread
-                .cf
-                .cast::<u8>()
-                .offset(
-                    (tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int) as isize,
-                )
-                .cast::<DynCoef>()
+        ts.frame_thread[p].cf = if !f.frame_thread.cf.is_empty() {
+            f.frame_thread.cf
+                [(tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int) as usize..]
+                .as_ptr()
+                .cast::<DynCoef>() as *mut _
         } else {
             ptr::null_mut()
         };
@@ -4364,20 +4361,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
 
         let cf_sz = (num_sb128 * size_mul[0] as c_int) << hbd;
-        if cf_sz != f.frame_thread.cf_sz {
-            rav1d_freep_aligned(&mut f.frame_thread.cf as *mut *mut DynCoef as *mut c_void);
-            f.frame_thread.cf =
-                rav1d_alloc_aligned(cf_sz as usize * 128 * 128 / 2, 64) as *mut DynCoef;
-            if f.frame_thread.cf.is_null() {
-                f.frame_thread.cf_sz = 0;
-                return Err(ENOMEM);
-            }
-            slice::from_raw_parts_mut(
-                f.frame_thread.cf.cast::<u8>(),
-                usize::try_from(cf_sz).unwrap() * 128 * 128 / 2,
-            )
-            .fill(0);
-            f.frame_thread.cf_sz = cf_sz;
+        if cf_sz as usize != f.frame_thread.cf_sz() {
+            f.frame_thread.cf.clear();
+            // TODO: Fallible allocation
+            f.frame_thread.cf.resize(cf_sz as usize * 128 * 128 / 2, 0);
         }
 
         if frame_hdr.allow_screen_content_tools != 0 {
@@ -4852,12 +4839,8 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
     if !f.sr_cur.p.data.data[0].is_null() {
         f.task_thread.error = AtomicI32::new(0);
     }
-    if c.n_fc > 1 && retval.is_err() && !f.frame_thread.cf.is_null() {
-        slice::from_raw_parts_mut(
-            f.frame_thread.cf.cast::<u8>(),
-            usize::try_from(f.frame_thread.cf_sz).unwrap() * 128 * 128 / 2,
-        )
-        .fill(0);
+    if c.n_fc > 1 && retval.is_err() && !f.frame_thread.cf.is_empty() {
+        f.frame_thread.cf.fill_with(Default::default)
     }
     // TODO(kkysen) use array::zip when stable
     for i in 0..7 {

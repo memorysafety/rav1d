@@ -422,10 +422,15 @@ pub struct Rav1dFrameContext_frame_thread {
     pub pal: AlignedVec64<[[u16; 8]; 3]>, /* [3 plane][8 idx] */
     // iterated over inside tile state
     pub pal_idx: AlignedVec64<u8>,
-    pub cf: *mut DynCoef,
-    pub cf_sz: c_int,
+    pub cf: AlignedVec64<u8>, // AlignedVec64<DynCoef>
     // start offsets per tile
     pub tile_start_off: *mut u32,
+}
+
+impl Rav1dFrameContext_frame_thread {
+    pub fn cf_sz(&self) -> usize {
+        self.cf.len() / (128 * 128 / 2)
+    }
 }
 
 /// loopfilter

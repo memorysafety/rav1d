@@ -1,6 +1,5 @@
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -905,7 +904,7 @@ impl Drop for Rav1dContext {
                     );
                     let _ = mem::take(&mut f.frame_thread.b); // TODO: remove when context is owned
                     let _ = mem::take(&mut f.frame_thread.pal_idx); // TODO: remove when context is owned
-                    rav1d_freep_aligned(&mut f.frame_thread.cf as *mut *mut DynCoef as *mut c_void);
+                    let _ = mem::take(&mut f.frame_thread.cf); // TODO: remove when context is owned
                     freep(&mut f.frame_thread.tile_start_off as *mut *mut u32 as *mut c_void);
                     let _ = mem::take(&mut f.frame_thread.pal); // TODO: remove when context is owned
                     let _ = mem::take(&mut f.frame_thread.cbi); // TODO: remove when context is owned
