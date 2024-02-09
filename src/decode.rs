@@ -3520,7 +3520,7 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &mut f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
+            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
             bp = if b.bl == bl { b.bp } else { PARTITION_SPLIT };
         }
         let b = &dav1d_block_sizes[bl as usize][bp as usize];
@@ -3671,7 +3671,7 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &mut f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
+            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
             is_split = b.bl != bl;
         }
 
@@ -3719,7 +3719,7 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &mut f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
+            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
             is_split = b.bl != bl;
         }
 

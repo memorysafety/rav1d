@@ -3196,7 +3196,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                                 as isize,
                                         )
                                         as *mut DynCoef;
-                                    let cbi = &mut (*f).frame_thread.cbi
+                                    let cbi = &(*f).frame_thread.cbi
                                         [(t.by as isize * (*f).b4_stride + t.bx as isize) as usize];
                                     eob = cbi.eob[(pl + 1) as usize] as c_int;
                                     txtp = cbi.txtp[(pl + 1) as usize] as TxfmType;
@@ -4426,7 +4426,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     ((*ts).frame_thread[p as usize].cf as *mut BD::Coef).offset(
                                         ((*uvtx).w as c_int * (*uvtx).h as c_int * 16) as isize,
                                     ) as *mut DynCoef;
-                                let cbi = &mut (*f).frame_thread.cbi
+                                let cbi = &(*f).frame_thread.cbi
                                     [(t.by as isize * (*f).b4_stride + t.bx as isize) as usize];
                                 eob = cbi.eob[(1 + pl) as usize] as c_int;
                                 txtp = cbi.txtp[(1 + pl) as usize] as TxfmType;
