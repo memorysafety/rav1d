@@ -4387,12 +4387,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
                 .resize(num_sb128 as usize * 16 * 16, Default::default());
 
             let pal_idx_sz = num_sb128 * size_mul[1] as c_int;
-            if pal_idx_sz as usize != f.frame_thread.pal_idx_sz() {
-                // TODO: Fallible allocation
-                f.frame_thread
-                    .pal_idx
-                    .resize_with(pal_idx_sz as usize * 128 * 128 / 4, Default::default);
-            }
+            // TODO: Fallible allocation
+            f.frame_thread
+                .pal_idx
+                .resize_with(pal_idx_sz as usize * 128 * 128 / 4, Default::default);
         } else if !f.frame_thread.pal.is_empty() {
             let _ = mem::take(&mut f.frame_thread.pal);
             let _ = mem::take(&mut f.frame_thread.pal_idx);
