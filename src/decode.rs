@@ -3922,7 +3922,7 @@ unsafe fn setup_tile(
         ts.lr_ref[p] = *lr_ref;
     }
 
-    if c.n_tc > 1 {
+    if c.tc.len() > 1 {
         ts.progress.fill_with(|| AtomicI32::new(row_sb_start));
     }
 }
@@ -4071,7 +4071,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         t.frame_thread.pass,
     );
     if t.frame_thread.pass == 2 {
-        let off_2pass = if c.n_tc > 1 {
+        let off_2pass = if c.tc.len() > 1 {
             f.sb128w * frame_hdr.tiling.rows
         } else {
             0
@@ -4097,7 +4097,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         return Err(());
     }
 
-    if c.n_tc > 1 && frame_hdr.use_ref_frame_mvs != 0 {
+    if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
         c.refmvs_dsp.load_tmvs.expect("non-null function pointer")(
             &f.rf,
             ts.tiling.row,
@@ -4197,7 +4197,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         }
     }
 
-    if seq_hdr.ref_frame_mvs != 0 && c.n_tc > 1 && frame_hdr.frame_type.is_inter_or_switch() {
+    if seq_hdr.ref_frame_mvs != 0 && c.tc.len() > 1 && frame_hdr.frame_type.is_inter_or_switch() {
         rav1d_refmvs_save_tmvs(
             &c.refmvs_dsp,
             &mut t.rt,
@@ -4282,7 +4282,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         f.n_ts = n_ts;
     }
 
-    let a_sz = f.sb128w * frame_hdr.tiling.rows * (1 + (c.n_fc > 1 && c.n_tc > 1) as c_int);
+    let a_sz = f.sb128w * frame_hdr.tiling.rows * (1 + (c.n_fc > 1 && c.tc.len() > 1) as c_int);
     if a_sz != f.a_sz {
         freep(&mut f.a as *mut *mut BlockContext as *mut c_void);
         f.a = malloc(::core::mem::size_of::<BlockContext>() * a_sz as usize) as *mut BlockContext;
@@ -4401,7 +4401,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     let mut y_stride = f.cur.stride[0];
     let mut uv_stride = f.cur.stride[1];
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
-    let need_cdef_lpf_copy = (c.n_tc > 1 && has_resize != 0) as c_int;
+    let need_cdef_lpf_copy = (c.tc.len() > 1 && has_resize != 0) as c_int;
     if y_stride * f.sbh as isize * 4 != f.lf.cdef_buf_plane_sz[0] as isize
         || uv_stride * f.sbh as isize * 8 != f.lf.cdef_buf_plane_sz[1] as isize
         || need_cdef_lpf_copy != f.lf.need_cdef_lpf_copy
@@ -4473,7 +4473,11 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     }
 
     let sb128 = seq_hdr.sb128;
-    let num_lines = if c.n_tc > 1 { (f.sbh * 4) << sb128 } else { 12 };
+    let num_lines = if c.tc.len() > 1 {
+        (f.sbh * 4) << sb128
+    } else {
+        12
+    };
     y_stride = f.sr_cur.p.stride[0];
     uv_stride = f.sr_cur.p.stride[1];
     if y_stride * num_lines as isize != f.lf.lr_buf_plane_sz[0] as isize
@@ -4607,7 +4611,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             f.mvs,
             f.refrefpoc.as_ptr(),
             f.ref_mvs.as_ptr(),
-            c.n_tc as c_int,
+            c.tc.len() as c_int,
             c.n_fc as c_int,
         );
         if ret.is_err() {
@@ -4756,7 +4760,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
         }
     }
 
-    if c.n_tc > 1 {
+    if c.tc.len() > 1 {
         for (n, ctx) in slice::from_raw_parts_mut(f.a, sb128w * rows * (1 + uses_2pass as usize))
             .iter_mut()
             .enumerate()
@@ -4777,7 +4781,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
 }
 
 unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameContext) -> Rav1dResult {
-    assert!(c.n_tc == 1);
+    assert!(c.tc.len() == 1);
 
     let Rav1dContextTaskType::Single(t) = &c.tc[0].task else {
         panic!("Expected a single-threaded context");
@@ -4891,7 +4895,7 @@ pub(crate) unsafe fn rav1d_decode_frame(
     f: &mut Rav1dFrameContext,
 ) -> Rav1dResult {
     assert!(c.n_fc == 1);
-    // if n_tc > 1 (but n_fc == 1), we could run init/exit in the task
+    // if.tc.len() > 1 (but n_fc == 1), we could run init/exit in the task
     // threads also. Not sure it makes a measurable difference.
     let mut res = rav1d_decode_frame_init(c, f);
     if res.is_ok() {
@@ -4899,7 +4903,7 @@ pub(crate) unsafe fn rav1d_decode_frame(
     }
     // wait until all threads have completed
     if res.is_ok() {
-        if c.n_tc > 1 {
+        if c.tc.len() > 1 {
             res = rav1d_task_create_tile_sbrow(c, f, 0, 1);
             let mut task_thread_lock = (*f.task_thread.ttd).delayed_fg.lock().unwrap();
             (*f.task_thread.ttd).cond.notify_one();
