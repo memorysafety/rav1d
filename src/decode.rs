@@ -2262,7 +2262,7 @@ unsafe fn decode_b_inner(
                 let pal = if t.frame_thread.pass != 0 {
                     let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                         + ((t.bx >> 1) + (t.by & 1)) as isize;
-                    &f.frame_thread.pal[index as usize]
+                    &f.frame_thread.pal[index as usize].0
                 } else {
                     &t.scratch.c2rust_unnamed_0.pal
                 };
