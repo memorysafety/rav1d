@@ -3645,13 +3645,13 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             (if t.frame_thread.pass != 2 as c_int {
                                 t.tl_4x4_filter as c_uint
                             } else {
-                                (*((*f).frame_thread.b).offset(
-                                    ((t.by - 1) as isize * (*f).b4_stride + t.bx as isize - 1)
-                                        as isize,
-                                ))
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .filter2d as c_uint
+                                (*f).frame_thread.b[((t.by - 1) as isize * (*f).b4_stride
+                                    + t.bx as isize
+                                    - 1)
+                                    as usize]
+                                    .c2rust_unnamed
+                                    .c2rust_unnamed_0
+                                    .filter2d as c_uint
                             }) as Filter2d,
                         );
                         if res != 0 {
@@ -3693,12 +3693,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             (if t.frame_thread.pass != 2 as c_int {
                                 left_filter_2d as c_uint
                             } else {
-                                (*((*f).frame_thread.b).offset(
-                                    (t.by as isize * (*f).b4_stride + t.bx as isize - 1) as isize,
-                                ))
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .filter2d as c_uint
+                                (*f).frame_thread.b
+                                    [(t.by as isize * (*f).b4_stride + t.bx as isize - 1) as usize]
+                                    .c2rust_unnamed
+                                    .c2rust_unnamed_0
+                                    .filter2d as c_uint
                             }) as Filter2d,
                         );
                         if res != 0 {
@@ -3748,12 +3747,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             (if t.frame_thread.pass != 2 as c_int {
                                 top_filter_2d as c_uint
                             } else {
-                                (*((*f).frame_thread.b).offset(
-                                    ((t.by - 1) as isize * (*f).b4_stride + t.bx as isize) as isize,
-                                ))
-                                .c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .filter2d as c_uint
+                                (*f).frame_thread.b[((t.by - 1) as isize * (*f).b4_stride
+                                    + t.bx as isize)
+                                    as usize]
+                                    .c2rust_unnamed
+                                    .c2rust_unnamed_0
+                                    .filter2d as c_uint
                             }) as Filter2d,
                         );
                         if res != 0 {

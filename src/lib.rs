@@ -41,7 +41,6 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::intra_edge::rav1d_init_mode_tree;
-use crate::src::levels::Av1Block;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_64X64;
 use crate::src::log::Rav1dLog as _;
@@ -912,7 +911,7 @@ impl Drop for Rav1dContext {
                         &mut (*f).tile_thread.lowest_pixel_mem as *mut *mut [[c_int; 2]; 7]
                             as *mut c_void,
                     );
-                    freep(&mut (*f).frame_thread.b as *mut *mut Av1Block as *mut c_void);
+                    let _ = mem::take(&mut (*f).frame_thread.b); // TODO: remove when context is owned
                     rav1d_freep_aligned(
                         &mut (*f).frame_thread.pal_idx as *mut *mut u8 as *mut c_void,
                     );
