@@ -4524,9 +4524,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         let _ = mem::take(&mut f.lf.level);
         f.lf.mask =
             malloc(::core::mem::size_of::<Av1Filter>() * num_sb128 as usize) as *mut Av1Filter;
-        // over-allocate by 3 bytes since some of the SIMD implementations
-        // index this from the level type and can thus over-read by up to 3
-        f.lf.level = vec![[0u8; 4]; num_sb128 as usize * 32 * 32 + 3].into(); // TODO fallible allocation
+        // over-allocate one element (4 bytes) since some of the SIMD implementations
+        // index this from the level type and can thus over-read by up to 3 bytes.
+        f.lf.level
+            .resize(num_sb128 as usize * 32 * 32 + 1, [0u8; 4]); // TODO: Fallible allocation
         if f.lf.mask.is_null() {
             f.lf.mask_sz = 0;
             return Err(ENOMEM);
