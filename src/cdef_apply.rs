@@ -35,7 +35,7 @@ impl Backup2x8Flags {
 }
 
 unsafe fn backup2lines<BD: BitDepth>(
-    dst: &[*mut BD::Pixel],
+    dst: &[*mut BD::Pixel; 3],
     src: &[*mut BD::Pixel; 3],
     stride: &[ptrdiff_t; 2],
     layout: Rav1dPixelLayout,
