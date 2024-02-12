@@ -4631,11 +4631,11 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
                 -((8 * BD::pxstride((*f).cur.stride[1] as usize) as isize >> ss_ver) as isize),
             ),
         ];
-        rav1d_cdef_brow::<BD>(c, tc, &p_up, prev_mask, start - 2, start, 1 as c_int, sby);
+        rav1d_cdef_brow::<BD>(c, tc, &p_up, prev_mask, start - 2, start, true, sby);
     }
     let n_blks = sbsz - 2 * ((sby + 1) < (*f).sbh) as c_int;
     let end = cmp::min(start + n_blks, (*f).bh);
-    rav1d_cdef_brow::<BD>(c, tc, &p, mask, start, end, 0 as c_int, sby);
+    rav1d_cdef_brow::<BD>(c, tc, &p, mask, start, end, false, sby);
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
