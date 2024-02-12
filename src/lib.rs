@@ -915,8 +915,8 @@ impl Drop for Rav1dContext {
                 if self.tc.len() > 1 {
                     let _ = mem::take(&mut f.task_thread.pending_tasks); // TODO: remove when context is owned
                 }
-                mem::take(&mut f.frame_thread.frame_progress); // TODO: remove when context is owned
-                mem::take(&mut f.frame_thread.copy_lpf_progress); // TODO: remove when context is owned
+                mem::take(&mut f.frame_thread_progress.frame); // TODO: remove when context is owned
+                mem::take(&mut f.frame_thread_progress.copy_lpf); // TODO: remove when context is owned
                 freep(&mut f.task_thread.tasks as *mut *mut Rav1dTask as *mut c_void);
                 freep(
                     &mut *(f.task_thread.tile_tasks).as_mut_ptr().offset(0) as *mut *mut Rav1dTask
