@@ -1106,7 +1106,7 @@ unsafe fn read_vartx_tree(
             t.by += h as c_int;
         }
         t.by -= bh4 as c_int;
-        if debug_block_info!(&*f, &*t) {
+        if debug_block_info!(f, &*t) {
             println!(
                 "Post-vartxtree[{}/{}]: r={}",
                 tx_split[0],

@@ -315,7 +315,7 @@ unsafe fn insert_task(
 }
 
 #[inline]
-unsafe fn add_pending(f: &mut Rav1dFrameContext, t: *mut Rav1dTask) {
+unsafe fn add_pending(f: &Rav1dFrameContext, t: *mut Rav1dTask) {
     let mut pending_tasks = f.task_thread.pending_tasks.lock().unwrap();
     (*t).next = 0 as *mut Rav1dTask;
     if pending_tasks.head.is_null() {
@@ -529,7 +529,7 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
 #[inline]
 unsafe fn ensure_progress<'l, 'ttd: 'l>(
     ttd: &'ttd TaskThreadData,
-    f: *mut Rav1dFrameContext,
+    f: &Rav1dFrameContext,
     t: *mut Rav1dTask,
     type_0: TaskType,
     state: &AtomicI32,
@@ -542,7 +542,7 @@ unsafe fn ensure_progress<'l, 'ttd: 'l>(
         (*t).deblock_progress = 0 as c_int;
         (*t).recon_progress = (*t).deblock_progress;
         *target = (*t).sby;
-        add_pending(&mut *f, t);
+        add_pending(f, t);
         *task_thread_lock = Some(ttd.delayed_fg.lock().unwrap());
         return 1 as c_int;
     }
@@ -668,7 +668,7 @@ unsafe fn abort_frame(c: &Rav1dContext, f: &mut Rav1dFrameContext, error: Rav1dR
     let progress = &**f.sr_cur.progress.as_ref().unwrap();
     progress[0].store(FRAME_ERROR, Ordering::SeqCst);
     progress[1].store(FRAME_ERROR, Ordering::SeqCst);
-    rav1d_decode_frame_exit(c, &mut *f, error);
+    rav1d_decode_frame_exit(c, f, error);
     f.task_thread.cond.notify_one();
 }
 
@@ -1099,7 +1099,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                         if f.task_thread.task_counter.load(Ordering::SeqCst) != 0 {
                                             unreachable!();
                                         }
-                                        rav1d_decode_frame_exit(c, &mut *f, Err(ENOMEM));
+                                        rav1d_decode_frame_exit(c, f, Err(ENOMEM));
                                         f.task_thread.cond.notify_one();
                                     } else {
                                         drop(
