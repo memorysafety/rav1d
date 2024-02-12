@@ -41,15 +41,14 @@ unsafe fn backup2lines<BD: BitDepth>(
     layout: Rav1dPixelLayout,
 ) {
     let y_stride: ptrdiff_t = BD::pxstride(stride[0] as usize) as isize;
+    let len = 2 * y_stride.unsigned_abs();
     if y_stride < 0 {
-        let len = (-2 * y_stride) as usize;
         BD::pixel_copy(
             slice::from_raw_parts_mut(dst[0].offset(y_stride), len),
             slice::from_raw_parts(src[0].offset(7 * y_stride), len),
             len,
         );
     } else {
-        let len = 2 * y_stride as usize;
         BD::pixel_copy(
             slice::from_raw_parts_mut(dst[0], len),
             slice::from_raw_parts(src[0].offset(6 * y_stride), len),
@@ -59,6 +58,7 @@ unsafe fn backup2lines<BD: BitDepth>(
 
     if layout != Rav1dPixelLayout::I400 {
         let uv_stride: ptrdiff_t = BD::pxstride(stride[1] as usize) as isize;
+        let len = 2 * uv_stride.unsigned_abs();
         if uv_stride < 0 {
             let uv_off = if layout == Rav1dPixelLayout::I420 {
                 3
@@ -66,7 +66,6 @@ unsafe fn backup2lines<BD: BitDepth>(
                 7
             };
 
-            let len = (-2 * uv_stride) as usize;
             BD::pixel_copy(
                 slice::from_raw_parts_mut(dst[1].offset(uv_stride), len),
                 slice::from_raw_parts(src[1].offset(uv_off * uv_stride), len),
@@ -84,7 +83,6 @@ unsafe fn backup2lines<BD: BitDepth>(
                 6
             };
 
-            let len = 2 * uv_stride as usize;
             BD::pixel_copy(
                 slice::from_raw_parts_mut(dst[1], len),
                 slice::from_raw_parts(src[1].offset(uv_off * uv_stride), len),
