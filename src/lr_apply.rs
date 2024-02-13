@@ -243,7 +243,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
     f: &mut Rav1dFrameData,
-    dst: *const *mut BD::Pixel,
+    dst: &[*mut BD::Pixel; 3],
     sby: c_int,
 ) {
     let offset_y = 8 * (sby != 0) as c_int;
@@ -260,7 +260,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         lr_sbrow::<BD>(
             c,
             f,
-            (*dst.offset(0)).offset(
+            dst[0].offset(
                 -(offset_y as isize * BD::pxstride(*dst_stride.offset(0) as usize) as isize),
             ),
             y_stripe,
@@ -283,7 +283,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                (*dst.offset(1)).offset(
+                dst[1].offset(
                     -(offset_uv as isize * BD::pxstride(*dst_stride.offset(1) as usize) as isize),
                 ),
                 y_stripe_0,
@@ -297,7 +297,7 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                (*dst.offset(2)).offset(
+                dst[2].offset(
                     -(offset_uv as isize * BD::pxstride(*dst_stride.offset(1) as usize) as isize),
                 ),
                 y_stripe_0,

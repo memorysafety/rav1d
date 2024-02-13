@@ -4715,7 +4715,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
         (f.lf.sr_p[2] as *mut BD::Pixel)
             .offset(y as isize * BD::pxstride(f.sr_cur.p.stride[1] as usize) as isize >> ss_ver),
     ];
-    rav1d_lr_sbrow::<BD>(c, f, sr_p.as_ptr(), sby);
+    rav1d_lr_sbrow::<BD>(c, f, &sr_p, sby);
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
