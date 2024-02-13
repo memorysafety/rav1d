@@ -31,7 +31,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     mut p: *mut BD::Pixel,
-    mut left: *const [BD::Pixel; 4],
+    mut left: &[[BD::Pixel; 4]],
     x: c_int,
     mut y: c_int,
     plane: c_int,
@@ -100,7 +100,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         lr_fn(
             p.cast(),
             stride,
-            left.cast(),
+            left.as_ptr().cast(),
             lpf.cast(),
             unit_w,
             stripe_h,
@@ -108,7 +108,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
             edges,
             f.bitdepth_max,
         );
-        left = left.offset(stripe_h as isize);
+        left = &left[stripe_h as usize..];
         y += stripe_h;
         p = p.offset(stripe_h as isize * BD::pxstride(stride as usize) as isize);
         edges = edges | LR_HAVE_TOP;
@@ -205,7 +205,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
                 c,
                 f,
                 p,
-                (pre_lr_border[!bit as usize]).as_mut_ptr() as *const [BD::Pixel; 4],
+                &pre_lr_border[!bit as usize],
                 x,
                 y,
                 plane,
@@ -228,7 +228,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
             c,
             f,
             p,
-            (pre_lr_border[!bit as usize]).as_mut_ptr() as *const [BD::Pixel; 4],
+            &pre_lr_border[!bit as usize],
             x,
             y,
             plane,
