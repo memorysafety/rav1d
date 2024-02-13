@@ -5003,7 +5003,7 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_cdf_1d!(11, m.txtp_inter2.0);
     update_bit_1d!(4, m.txtp_inter3);
 
-    if (*hdr).frame_type.is_key_or_intra() {
+    if hdr.frame_type.is_key_or_intra() {
         update_bit_0d!(m.intrabc);
 
         update_cdf_1d!(N_MV_JOINTS - 1, dmv.joint.0);
