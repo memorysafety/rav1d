@@ -237,7 +237,7 @@ impl Rav1dContextTaskThread {
 
 #[repr(C)]
 pub struct Rav1dContext {
-    pub(crate) fc: *mut Rav1dFrameContext,
+    pub(crate) fc: *mut Rav1dFrameData,
     pub(crate) n_fc: c_uint,
 
     /// Worker thread join handles and communication, or main thread task
@@ -503,7 +503,7 @@ pub struct FrameTileThreadData {
 }
 
 #[repr(C)]
-pub(crate) struct Rav1dFrameContext {
+pub(crate) struct Rav1dFrameData {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     pub refp: [Rav1dThreadPicture; 7],
@@ -715,7 +715,7 @@ impl Rav1dTaskContext_task_thread {
 
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext {
-    pub f: *mut Rav1dFrameContext,
+    pub f: *mut Rav1dFrameData,
     pub ts: *mut Rav1dTileState,
     pub bx: c_int,
     pub by: c_int,
@@ -744,7 +744,7 @@ pub(crate) struct Rav1dTaskContext {
 
 impl Rav1dTaskContext {
     pub(crate) unsafe fn new(
-        f: *mut Rav1dFrameContext,
+        f: *mut Rav1dFrameData,
         task_thread: Arc<Rav1dTaskContext_task_thread>,
     ) -> Self {
         Self {

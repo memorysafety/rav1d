@@ -73,8 +73,8 @@ use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameContext_bd_fn;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
 use crate::src::internal::Rav1dTileState;
@@ -3812,7 +3812,7 @@ static ss_size_mul: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPix
 unsafe fn setup_tile(
     c: &Rav1dContext,
     ts: &mut Rav1dTileState,
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     data: &[u8],
     tile_row: usize,
     tile_col: usize,
@@ -4232,7 +4232,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 
 pub(crate) unsafe fn rav1d_decode_frame_init(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
 ) -> Rav1dResult {
     if f.sbh > f.lf.start_of_tile_row_sz {
         free(f.lf.start_of_tile_row as *mut c_void);
@@ -4677,7 +4677,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
 pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
 ) -> Rav1dResult {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
@@ -4772,7 +4772,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
     Ok(())
 }
 
-unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameContext) -> Rav1dResult {
+unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dResult {
     assert!(c.tc.len() == 1);
 
     let Rav1dContextTaskType::Single(t) = &c.tc[0].task else {
@@ -4838,7 +4838,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameContext) -
 
 pub(crate) unsafe fn rav1d_decode_frame_exit(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     retval: Rav1dResult,
 ) {
     if !f.sr_cur.p.data.data[0].is_null() {
@@ -4882,10 +4882,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
     f.task_thread.retval = retval;
 }
 
-pub(crate) unsafe fn rav1d_decode_frame(
-    c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
-) -> Rav1dResult {
+pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dResult {
     assert!(c.n_fc == 1);
     // if.tc.len() > 1 (but n_fc == 1), we could run init/exit in the task
     // threads also. Not sure it makes a measurable difference.
@@ -4994,7 +4991,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
     let bpc = 8 + 2 * seq_hdr.hbd;
 
-    unsafe fn on_error(f: &mut Rav1dFrameContext, c: &Rav1dContext, out: *mut Rav1dThreadPicture) {
+    unsafe fn on_error(f: &mut Rav1dFrameData, c: &Rav1dContext, out: *mut Rav1dThreadPicture) {
         f.task_thread.error = AtomicI32::new(1);
         rav1d_cdf_thread_unref(&mut f.in_cdf);
         if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {

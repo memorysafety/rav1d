@@ -3,7 +3,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::env::BlockContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
-use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
@@ -22,7 +22,7 @@ use std::slice;
 // stripe with the top of the next super block row.
 unsafe fn backup_lpf<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     mut dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
@@ -171,7 +171,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     src: *const *mut BD::Pixel,
     sby: c_int,
 ) {
@@ -353,7 +353,7 @@ fn unaligned_lvl_slice(lvl: &[[u8; 4]], y: usize) -> &[[u8; 4]] {
 
 #[inline]
 unsafe fn filter_plane_cols_y<BD: BitDepth>(
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     have_left: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
@@ -399,7 +399,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
 
 #[inline]
 unsafe fn filter_plane_rows_y<BD: BitDepth>(
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     have_top: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
@@ -436,7 +436,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
 
 #[inline]
 unsafe fn filter_plane_cols_uv<BD: BitDepth>(
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     have_left: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
@@ -491,7 +491,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
 
 #[inline]
 unsafe fn filter_plane_rows_uv<BD: BitDepth>(
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     have_top: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
@@ -539,7 +539,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     p: &[*mut BD::Pixel; 3],
     lflvl: *mut Av1Filter,
     sby: c_int,
@@ -730,7 +730,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     p: &[*mut BD::Pixel; 3],
     lflvl: *mut Av1Filter,
     sby: c_int,

@@ -17,7 +17,7 @@ use crate::src::error::Rav1dResult;
 use crate::src::fg_apply::rav1d_apply_grain_row;
 use crate::src::fg_apply::rav1d_prep_grain;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
@@ -191,7 +191,7 @@ unsafe fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_fr
 
 unsafe fn insert_tasks_between(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     first: *mut Rav1dTask,
     last: *mut Rav1dTask,
     a: *mut Rav1dTask,
@@ -222,7 +222,7 @@ unsafe fn insert_tasks_between(
 
 unsafe fn insert_tasks(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     first: *mut Rav1dTask,
     last: *mut Rav1dTask,
     cond_signal: c_int,
@@ -307,7 +307,7 @@ unsafe fn insert_tasks(
 #[inline]
 unsafe fn insert_task(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     t: *mut Rav1dTask,
     cond_signal: c_int,
 ) {
@@ -315,7 +315,7 @@ unsafe fn insert_task(
 }
 
 #[inline]
-unsafe fn add_pending(f: &Rav1dFrameContext, t: *mut Rav1dTask) {
+unsafe fn add_pending(f: &Rav1dFrameData, t: *mut Rav1dTask) {
     let mut pending_tasks = f.task_thread.pending_tasks.lock().unwrap();
     (*t).next = 0 as *mut Rav1dTask;
     if pending_tasks.head.is_null() {
@@ -328,7 +328,7 @@ unsafe fn add_pending(f: &Rav1dFrameContext, t: *mut Rav1dTask) {
 }
 
 #[inline]
-unsafe fn merge_pending_frame(c: &Rav1dContext, f: &mut Rav1dFrameContext) -> c_int {
+unsafe fn merge_pending_frame(c: &Rav1dContext, f: &mut Rav1dFrameData) -> c_int {
     let merge = f.task_thread.pending_tasks_merge.load(Ordering::SeqCst);
     if merge != 0 {
         let mut t = {
@@ -359,7 +359,7 @@ unsafe fn merge_pending(c: &Rav1dContext) -> c_int {
 
 unsafe fn create_filter_sbrow(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     pass: c_int,
     res_t: *mut *mut Rav1dTask,
 ) -> c_int {
@@ -414,14 +414,14 @@ unsafe fn create_filter_sbrow(
     } else {
         RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS as c_int
     }) as TaskType;
-    (*t).frame_idx = (f as *mut Rav1dFrameContext).offset_from(c.fc) as c_long as c_int as c_uint;
+    (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
     *res_t = t;
     return 0 as c_int;
 }
 
 pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     pass: c_int,
     _cond_signal: c_int,
 ) -> Rav1dResult {
@@ -468,8 +468,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
         } else {
             RAV1D_TASK_TYPE_TILE_ENTROPY as c_int
         }) as TaskType;
-        (*t).frame_idx =
-            (f as *mut Rav1dFrameContext).offset_from(c.fc) as c_long as c_int as c_uint;
+        (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
         if !prev_t.is_null() {
             (*prev_t).next = t;
         }
@@ -497,12 +496,12 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, f: &mut Rav1dFrameContext) {
+pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, f: &mut Rav1dFrameData) {
     f.task_thread.init_done.store(0, Ordering::SeqCst);
     let t: *mut Rav1dTask = &mut f.task_thread.init_task;
     (*t).type_0 = RAV1D_TASK_TYPE_INIT;
     // TODO(SJC): add a frame context index so we don't have to rely on linear offsets
-    (*t).frame_idx = (f as *mut Rav1dFrameContext).offset_from(c.fc) as c_long as c_int as c_uint;
+    (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
     (*t).sby = 0 as c_int;
     (*t).deblock_progress = 0 as c_int;
     (*t).recon_progress = (*t).deblock_progress;
@@ -529,7 +528,7 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
 #[inline]
 unsafe fn ensure_progress<'l, 'ttd: 'l>(
     ttd: &'ttd TaskThreadData,
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     t: *mut Rav1dTask,
     type_0: TaskType,
     state: &AtomicI32,
@@ -550,7 +549,7 @@ unsafe fn ensure_progress<'l, 'ttd: 'l>(
 }
 
 #[inline]
-unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameContext, frame_mt: c_int) -> c_int {
+unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int) -> c_int {
     let tp = ((*t).type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint) as c_int;
     let tile_idx = t.offset_from(f.task_thread.tile_tasks[tp as usize]) as c_long as c_int;
     let ts: *mut Rav1dTileState = &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
@@ -624,7 +623,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameContext, frame_mt: c_i
 }
 
 #[inline]
-unsafe fn get_frame_progress(f: &Rav1dFrameContext) -> c_int {
+unsafe fn get_frame_progress(f: &Rav1dFrameData) -> c_int {
     // Note that `progress.is_some() == c.n_fc > 1`.
     let frame_prog = f
         .sr_cur
@@ -653,7 +652,7 @@ unsafe fn get_frame_progress(f: &Rav1dFrameContext) -> c_int {
 }
 
 #[inline]
-unsafe fn abort_frame(c: &Rav1dContext, f: &mut Rav1dFrameContext, error: Rav1dResult) {
+unsafe fn abort_frame(c: &Rav1dContext, f: &mut Rav1dFrameData, error: Rav1dResult) {
     f.task_thread.error.store(
         if error == Err(EINVAL) {
             1 as c_int
@@ -792,7 +791,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
 
 pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_task_thread>) {
     let mut tc = Rav1dTaskContext::new(
-        &mut *((*c).fc).offset(0) as *mut Rav1dFrameContext,
+        &mut *((*c).fc).offset(0) as *mut Rav1dFrameData,
         task_thread,
     );
 

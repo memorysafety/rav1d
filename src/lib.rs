@@ -34,7 +34,7 @@ use crate::src::fg_apply;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
@@ -297,16 +297,16 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     (*c).n_fc = n_fc as c_uint;
     (*c).fc = rav1d_alloc_aligned(
-        ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
+        ::core::mem::size_of::<Rav1dFrameData>().wrapping_mul((*c).n_fc as usize),
         32 as c_int as usize,
-    ) as *mut Rav1dFrameContext;
+    ) as *mut Rav1dFrameData;
     if ((*c).fc).is_null() {
         return error(c, c_out, &mut thread_attr);
     }
     memset(
         (*c).fc as *mut c_void,
         0 as c_int,
-        ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
+        ::core::mem::size_of::<Rav1dFrameData>().wrapping_mul((*c).n_fc as usize),
     );
     let ttd = TaskThreadData {
         cond: Condvar::new(),
@@ -326,7 +326,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     });
     let mut n: c_uint = 0 as c_int as c_uint;
     while n < (*c).n_fc {
-        let f: &mut Rav1dFrameContext = &mut *((*c).fc).offset(n as isize);
+        let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(n as isize);
         if n_tc > 1 {
             f.task_thread.lock = Mutex::new(());
             f.task_thread.cond = Condvar::new();
@@ -529,7 +529,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
     let mut drained = 0;
     loop {
         let next: c_uint = c.frame_thread.next;
-        let f: &mut Rav1dFrameContext = &mut *(c.fc).offset(next as isize);
+        let f: &mut Rav1dFrameData = &mut *(c.fc).offset(next as isize);
         let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
         while !f.tiles.is_empty() {
             task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
@@ -827,7 +827,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             if next == (*c).n_fc {
                 next = 0 as c_int as c_uint;
             }
-            let f: &mut Rav1dFrameContext = &mut *((*c).fc).offset(next as isize);
+            let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(next as isize);
             rav1d_decode_frame_exit(&*c, f, Err(EGeneric));
             f.task_thread.retval = Ok(());
             let out_delayed = &mut (*c).frame_thread.out_delayed[next as usize];
@@ -897,7 +897,7 @@ impl Drop for Rav1dContext {
             }
             let mut n_1: c_uint = 0 as c_int as c_uint;
             while !(self.fc).is_null() && n_1 < self.n_fc {
-                let f: &mut Rav1dFrameContext = &mut *(self.fc).offset(n_1 as isize);
+                let f: &mut Rav1dFrameData = &mut *(self.fc).offset(n_1 as isize);
                 if self.n_fc > 1 as c_uint {
                     freep(
                         &mut f.tile_thread.lowest_pixel_mem as *mut *mut [[c_int; 2]; 7]
