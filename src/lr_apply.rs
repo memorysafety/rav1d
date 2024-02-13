@@ -188,9 +188,22 @@ unsafe fn lr_sbrow<BD: BitDepth>(
     let unit_size = (1 as c_int) << unit_size_log2;
     let half_unit_size = unit_size >> 1;
     let max_unit_size = unit_size + half_unit_size;
+
+    // Y coordinate of the sbrow (y is 8 luma pixel rows above row_y)
     let row_y = y + (8 >> ss_ver) * (y != 0) as c_int;
+
+    // FIXME This is an ugly hack to lookup the proper AV1Filter unit for
+    // chroma planes. Question: For Multithreaded decoding, is it better
+    // to store the chroma LR information with collocated Luma information?
+    // In other words. For a chroma restoration unit locate at 128,128 and
+    // with a 4:2:0 chroma subsampling, do we store the filter information at
+    // the AV1Filter unit located at (128,128) or (256,256)
+    // TODO Support chroma subsampling.
     let shift_hor = 7 - ss_hor;
-    let mut pre_lr_border: Align16<[[[BD::Pixel; 4]; 136]; 2]> = Align16([[[0.into(); 4]; 136]; 2]);
+
+    // maximum sbrow height is 128 + 8 rows offset
+    let mut pre_lr_border: Align16<[[[BD::Pixel; 4]; 128 + 8]; 2]> =
+        Align16([[[0.into(); 4]; 128 + 8]; 2]);
     let mut lr = [Av1RestorationUnit::default(); 2];
     let mut edges: LrEdgeFlags = ((if y > 0 {
         LR_HAVE_TOP as c_int
