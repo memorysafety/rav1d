@@ -139,19 +139,19 @@ unsafe fn lr_stripe<BD: BitDepth>(
 }
 
 unsafe fn backup4xU<BD: BitDepth>(
-    mut dst: *mut [BD::Pixel; 4],
+    mut dst: &mut [[BD::Pixel; 4]],
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     mut u: c_int,
 ) {
     while u > 0 {
         BD::pixel_copy(
-            slice::from_raw_parts_mut(&mut *dst as *mut BD::Pixel, 4),
+            &mut dst[0],
             slice::from_raw_parts(&*src as *const BD::Pixel, 4),
             4,
         );
         u -= 1;
-        dst = dst.offset(1);
+        dst = &mut dst[1..];
         src = src.offset(BD::pxstride(src_stride as usize) as isize);
     }
 }
@@ -214,7 +214,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
             != RAV1D_RESTORATION_NONE as c_int) as c_int;
         if restore_next != 0 {
             backup4xU::<BD>(
-                (pre_lr_border[bit as usize]).as_mut_ptr(),
+                &mut pre_lr_border[bit as usize],
                 p.offset(unit_size as isize).offset(-4),
                 p_stride,
                 row_h - y,
