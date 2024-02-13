@@ -184,18 +184,16 @@ unsafe fn lr_sbrow<BD: BitDepth>(
     let sb_idx = (aligned_unit_pos >> 7) * f.sr_sb128w;
     let unit_idx = (aligned_unit_pos >> 6 & 1) << 1;
     lr[0] = (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[plane as usize][unit_idx as usize];
-    let mut restore = (lr[0].r#type != RAV1D_RESTORATION_NONE) as c_int;
+    let mut restore = lr[0].r#type != RAV1D_RESTORATION_NONE;
     let mut x = 0;
-    let mut bit = 0;
+    let mut bit = false;
     while x + max_unit_size <= w {
         let next_x = x + unit_size;
         let next_u_idx = unit_idx + (next_x >> shift_hor - 1 & 1);
-        lr[(bit == 0) as usize] = (*(f.lf.lr_mask)
-            .offset((sb_idx + (next_x >> shift_hor)) as isize))
-        .lr[plane as usize][next_u_idx as usize];
-        let restore_next = (lr[(bit == 0) as c_int as usize].r#type as c_int
-            != RAV1D_RESTORATION_NONE as c_int) as c_int;
-        if restore_next != 0 {
+        lr[!bit as usize] = (*(f.lf.lr_mask).offset((sb_idx + (next_x >> shift_hor)) as isize)).lr
+            [plane as usize][next_u_idx as usize];
+        let restore_next = lr[!bit as usize].r#type != RAV1D_RESTORATION_NONE;
+        if restore_next {
             backup4xU::<BD>(
                 &mut pre_lr_border[bit as usize],
                 p.offset(unit_size as isize).offset(-4),
@@ -203,12 +201,12 @@ unsafe fn lr_sbrow<BD: BitDepth>(
                 row_h - y,
             );
         }
-        if restore != 0 {
+        if restore {
             lr_stripe::<BD>(
                 c,
                 f,
                 p,
-                (pre_lr_border[(bit == 0) as usize]).as_mut_ptr() as *const [BD::Pixel; 4],
+                (pre_lr_border[!bit as usize]).as_mut_ptr() as *const [BD::Pixel; 4],
                 x,
                 y,
                 plane,
@@ -222,16 +220,16 @@ unsafe fn lr_sbrow<BD: BitDepth>(
         restore = restore_next;
         p = p.offset(unit_size as isize);
         edges = edges | LR_HAVE_LEFT;
-        bit ^= 1;
+        bit = !bit;
     }
-    if restore != 0 {
+    if restore {
         edges = edges & !LR_HAVE_RIGHT;
         let unit_w = w - x;
         lr_stripe::<BD>(
             c,
             f,
             p,
-            (pre_lr_border[(bit == 0) as usize]).as_mut_ptr() as *const [BD::Pixel; 4],
+            (pre_lr_border[!bit as usize]).as_mut_ptr() as *const [BD::Pixel; 4],
             x,
             y,
             plane,
