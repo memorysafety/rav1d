@@ -4690,7 +4690,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
     if frame_hdr.refresh_context != 0 {
-        rav1d_cdf_thread_copy(f.out_cdf.data.cdf, &mut f.in_cdf);
+        rav1d_cdf_thread_copy(f.out_cdf.data.cdf, &f.in_cdf);
     }
 
     let uses_2pass = c.n_fc > 1;
@@ -4925,8 +4925,8 @@ pub(crate) unsafe fn rav1d_decode_frame(
             if res.is_ok() && frame_hdr.refresh_context != 0 && f.task_thread.update_set {
                 rav1d_cdf_thread_update(
                     frame_hdr,
-                    f.out_cdf.data.cdf,
-                    &mut (*f.ts.offset(frame_hdr.tiling.update as isize)).cdf,
+                    &mut *f.out_cdf.data.cdf,
+                    &(*f.ts.offset(frame_hdr.tiling.update as isize)).cdf,
                 );
             }
         }
