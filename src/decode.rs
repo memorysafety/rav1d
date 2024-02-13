@@ -2262,7 +2262,7 @@ unsafe fn decode_b_inner(
                 let pal = if t.frame_thread.pass != 0 {
                     let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                         + ((t.bx >> 1) + (t.by & 1)) as isize;
-                    &f.frame_thread.pal[index as usize].0
+                    &f.frame_thread.pal[index as usize]
                 } else {
                     &t.scratch.c2rust_unnamed_0.pal
                 };
@@ -4383,12 +4383,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
 
         if frame_hdr.allow_screen_content_tools != 0 {
-            if num_sb128 as usize != f.frame_thread.pal_sz() {
-                // TODO: Fallible allocation
-                f.frame_thread
-                    .pal
-                    .resize_with(num_sb128 as usize * 16 * 16, Default::default);
-            }
+            // TODO: Fallible allocation
+            f.frame_thread
+                .pal
+                .resize(num_sb128 as usize * 16 * 16, Default::default());
 
             let pal_idx_sz = num_sb128 * size_mul[1] as c_int;
             if pal_idx_sz != f.frame_thread.pal_idx_sz {

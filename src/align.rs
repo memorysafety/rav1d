@@ -5,8 +5,15 @@
 //! make them easier to use in common cases, e.g. [`From`] and
 //! [`Index`]/[`IndexMut`] (since it's usually array fields that require
 //! specific aligment for use with SIMD instructions).
+
+use std::marker::PhantomData;
+use std::mem;
+use std::mem::MaybeUninit;
+use std::ops::Deref;
+use std::ops::DerefMut;
 use std::ops::Index;
 use std::ops::IndexMut;
+use std::slice;
 
 /// [`Default`] isn't `impl`emented for all arrays `[T; N]`
 /// because they were implemented before `const` generics
@@ -87,3 +94,99 @@ def_align!(8, Align8);
 def_align!(16, Align16);
 def_align!(32, Align32);
 def_align!(64, Align64);
+
+/// A [`Vec`] that uses a 64-byte aligned allocation.
+///
+/// Only works with [`Copy`] types so that we don't have to handle drop logic.
+pub struct AlignedVec64<T: Copy> {
+    inner: Vec<MaybeUninit<Align64<[u8; 64]>>>,
+
+    /// The number of `T`s in [`Self::inner`] currently initialized.
+    len: usize,
+    _phantom: PhantomData<T>,
+}
+
+impl<T: Copy> AlignedVec64<T> {
+    pub const fn new() -> Self {
+        Self {
+            inner: Vec::new(),
+            len: 0,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Returns the number of elements in the vector.
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    pub fn as_ptr(&self) -> *const T {
+        self.inner.as_ptr().cast()
+    }
+
+    pub fn as_mut_ptr(&mut self) -> *mut T {
+        self.inner.as_mut_ptr().cast()
+    }
+
+    /// Extracts a slice containing the entire vector.
+    pub fn as_slice(&self) -> &[T] {
+        // Safety: The first `len` elements have been initialized to `T`s in
+        // `Self::resize_with`.
+        unsafe { slice::from_raw_parts(self.as_ptr(), self.len) }
+    }
+
+    /// Extracts a mutable slice of the entire vector.
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        // Safety: The first `len` elements have been initialized to `T`s in
+        // `Self::resize_with`.
+        unsafe { slice::from_raw_parts_mut(self.as_mut_ptr(), self.len) }
+    }
+
+    pub fn resize(&mut self, new_len: usize, value: T) {
+        let old_len = self.len();
+
+        // Resize the underlying vector to have enough chunks for the new length.
+        //
+        // NOTE: We don't need to `drop` any elements if the `Vec` is truncated since
+        // `T: Copy`.
+        let new_bytes = mem::size_of::<T>() * new_len;
+        let new_chunks = if (new_bytes % 64) == 0 {
+            new_bytes / 64
+        } else {
+            (new_bytes / 64) + 1
+        };
+        self.inner.resize_with(new_chunks, MaybeUninit::uninit);
+
+        // If we grew the vector, initialize the new elements past `len`.
+        for offset in old_len..new_len {
+            // SAFETY: We've allocated enough space to write up to `new_len` elements into
+            // the buffer.
+            unsafe {
+                self.as_mut_ptr().add(offset).write(value);
+            }
+        }
+
+        self.len = new_len;
+    }
+}
+
+impl<T: Copy> Deref for AlignedVec64<T> {
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
+    }
+}
+
+impl<T: Copy> DerefMut for AlignedVec64<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_mut_slice()
+    }
+}
+
+// NOTE: Custom impl so that we don't require `T: Default`.
+impl<T: Copy> Default for AlignedVec64<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
