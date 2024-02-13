@@ -60,55 +60,38 @@ unsafe fn lr_stripe<BD: BitDepth>(
         filter: [[0; 8]; 2].into(),
     };
     if lr.r#type as c_int == RAV1D_RESTORATION_WIENER as c_int {
-        let filter: *mut [i16; 8] = (params.filter.0).as_mut_ptr();
-        let ref mut fresh0 = (*filter.offset(0))[6];
-        *fresh0 = lr.filter_h[0] as i16;
-        (*filter.offset(0))[0] = *fresh0;
-        let ref mut fresh1 = (*filter.offset(0))[5];
-        *fresh1 = lr.filter_h[1] as i16;
-        (*filter.offset(0))[1] = *fresh1;
-        let ref mut fresh2 = (*filter.offset(0))[4];
-        *fresh2 = lr.filter_h[2] as i16;
-        (*filter.offset(0))[2] = *fresh2;
-        (*filter.offset(0))[3] = (-((*filter.offset(0))[0] as c_int
-            + (*filter.offset(0))[1] as c_int
-            + (*filter.offset(0))[2] as c_int)
-            * 2) as i16;
-        let ref mut fresh3 = (*filter.offset(0))[3];
+        let filter: &mut [[i16; 8]] = &mut params.filter.0[0..];
+        filter[0][0] = lr.filter_h[0] as i16;
+        filter[0][1] = lr.filter_h[1] as i16;
+        filter[0][2] = lr.filter_h[2] as i16;
+        filter[0][6] = filter[0][0];
+        filter[0][5] = filter[0][1];
+        filter[0][4] = filter[0][2];
+        filter[0][3] = -(filter[0][0] + filter[0][1] + filter[0][2]) * 2;
         if BD::BITDEPTH != 8 {
             // For 8-bit SIMD it's beneficial to handle the +128 separately
             // in order to avoid overflows.
-            *fresh3 = (*fresh3 + 128) as i16;
+            filter[0][3] += 128;
         }
-        let ref mut fresh4 = (*filter.offset(1))[6];
-        *fresh4 = lr.filter_v[0] as i16;
-        (*filter.offset(1))[0] = *fresh4;
-        let ref mut fresh5 = (*filter.offset(1))[5];
-        *fresh5 = lr.filter_v[1] as i16;
-        (*filter.offset(1))[1] = *fresh5;
-        let ref mut fresh6 = (*filter.offset(1))[4];
-        *fresh6 = lr.filter_v[2] as i16;
-        (*filter.offset(1))[2] = *fresh6;
-        (*filter.offset(1))[3] = (128 as c_int
-            - ((*filter.offset(1))[0] as c_int
-                + (*filter.offset(1))[1] as c_int
-                + (*filter.offset(1))[2] as c_int)
-                * 2) as i16;
-        lr_fn = (*dsp).lr.wiener[((*filter.offset(0))[0] as c_int | (*filter.offset(1))[0] as c_int
-            == 0) as c_int as usize];
+
+        filter[1][0] = lr.filter_v[0] as i16;
+        filter[1][1] = lr.filter_v[1] as i16;
+        filter[1][2] = lr.filter_v[2] as i16;
+        filter[1][6] = filter[1][0];
+        filter[1][5] = filter[1][1];
+        filter[1][4] = filter[1][2];
+        filter[1][3] = 128 - (filter[1][0] + filter[1][1] + filter[1][2]) * 2;
+
+        lr_fn = (*dsp).lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
     } else {
-        if !(lr.r#type as c_int == RAV1D_RESTORATION_SGRPROJ as c_int) {
-            unreachable!();
-        }
-        let sgr_params: *const u16 = (dav1d_sgr_params[lr.sgr_idx as usize]).as_ptr();
-        params.sgr.s0 = *sgr_params.offset(0) as u32;
-        params.sgr.s1 = *sgr_params.offset(1) as u32;
+        assert_eq!(lr.r#type, RAV1D_RESTORATION_SGRPROJ);
+        let sgr_params: &[u16] = &dav1d_sgr_params[lr.sgr_idx as usize];
+        params.sgr.s0 = sgr_params[0] as u32;
+        params.sgr.s1 = sgr_params[1] as u32;
         params.sgr.w0 = lr.sgr_weights[0] as i16;
-        params.sgr.w1 =
-            (128 as c_int - (lr.sgr_weights[0] as c_int + lr.sgr_weights[1] as c_int)) as i16;
-        lr_fn = (*dsp).lr.sgr[((*sgr_params.offset(0) != 0) as c_int
-            + (*sgr_params.offset(1) != 0) as c_int * 2
-            - 1) as usize];
+        params.sgr.w1 = 128 - (lr.sgr_weights[0] as i16 + lr.sgr_weights[1] as i16);
+        lr_fn =
+            (*dsp).lr.sgr[(sgr_params[0] != 0) as usize + (sgr_params[1] != 0) as usize * 2 - 1];
     }
     while y + stripe_h <= row_h {
         // Change the HAVE_BOTTOM bit in edges to (sby + 1 != f->sbh || y + stripe_h != row_h)
