@@ -41,7 +41,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
     mut edges: LrEdgeFlags,
 ) {
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp: &Rav1dDSPContext = &*f.dsp;
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma & (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
@@ -82,7 +82,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         filter[1][4] = filter[1][2];
         filter[1][3] = 128 - (filter[1][0] + filter[1][1] + filter[1][2]) * 2;
 
-        lr_fn = (*dsp).lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
+        lr_fn = dsp.lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
     } else {
         assert_eq!(lr.r#type, RAV1D_RESTORATION_SGRPROJ);
         let sgr_params: &[u16] = &dav1d_sgr_params[lr.sgr_idx as usize];
@@ -90,8 +90,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         params.sgr.s1 = sgr_params[1] as u32;
         params.sgr.w0 = lr.sgr_weights[0] as i16;
         params.sgr.w1 = 128 - (lr.sgr_weights[0] as i16 + lr.sgr_weights[1] as i16);
-        lr_fn =
-            (*dsp).lr.sgr[(sgr_params[0] != 0) as usize + (sgr_params[1] != 0) as usize * 2 - 1];
+        lr_fn = dsp.lr.sgr[(sgr_params[0] != 0) as usize + (sgr_params[1] != 0) as usize * 2 - 1];
     }
     while y + stripe_h <= row_h {
         // Change the HAVE_BOTTOM bit in edges to (sby + 1 != f->sbh || y + stripe_h != row_h)
