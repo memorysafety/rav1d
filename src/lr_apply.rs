@@ -20,6 +20,7 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::slice;
 
 pub type LrRestorePlanes = c_uint;
 pub const LR_RESTORE_V: LrRestorePlanes = 4;
@@ -46,12 +47,23 @@ unsafe fn lr_stripe<BD: BitDepth>(
     let stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
     let sby = y + (if y != 0 { 8 << ss_ver } else { 0 }) >> 6 - ss_ver + seq_hdr.sb128;
     let have_tt = (c.tc.len() > 1) as c_int;
-    let mut lpf: *const BD::Pixel = (f.lf.lr_lpf_line[plane as usize] as *mut BD::Pixel)
-        .offset(
-            (have_tt * (sby * ((4 as c_int) << seq_hdr.sb128) - 4)) as isize
-                * BD::pxstride(stride as usize) as isize,
-        )
-        .offset(x as isize);
+    // `lpf_offset` can be negative when `have_tt` is 1 and `sby` is 0.
+    // To avoid defining a slice with elements outside the allocated memory area, a
+    // variable `lpf_ptr_offset` is added to keep track of a negative offset that
+    // has to be added when casting the slice to a raw pointer.
+    let lpf_offset = (have_tt * (sby * (4 << seq_hdr.sb128) - 4)) as isize
+        * BD::pxstride(stride as usize) as isize
+        + x as isize;
+    let mut lpf_ptr_offset = if lpf_offset < 0 {
+        -4 * BD::pxstride(stride as usize) as isize
+    } else {
+        0
+    };
+    let mut lpf = slice::from_raw_parts(
+        (f.lf.lr_lpf_line[plane as usize] as *const BD::Pixel).offset(lpf_offset - lpf_ptr_offset),
+        BD::pxstride(f.lf.lr_buf_plane_sz[(plane != 0) as usize] as usize)
+            - (lpf_offset - lpf_ptr_offset) as usize,
+    );
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = cmp::min(64 - 8 * (y == 0) as c_int >> ss_ver, row_h - y);
     let lr_fn: looprestorationfilter_fn;
@@ -100,7 +112,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
             p.as_mut_ptr().cast(),
             stride,
             left.as_ptr().cast(),
-            lpf.cast(),
+            lpf.as_ptr().offset(lpf_ptr_offset).cast(),
             unit_w,
             stripe_h,
             &mut params,
@@ -116,7 +128,9 @@ unsafe fn lr_stripe<BD: BitDepth>(
             break;
         }
         p = &mut p[p_offset as usize..];
-        lpf = lpf.offset(4 * BD::pxstride(stride as usize) as isize);
+
+        lpf = &lpf[(4 * BD::pxstride(stride as usize) as isize + lpf_ptr_offset) as usize..];
+        lpf_ptr_offset = 0;
     }
 }
 
