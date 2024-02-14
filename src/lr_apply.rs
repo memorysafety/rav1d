@@ -135,14 +135,17 @@ unsafe fn lr_stripe<BD: BitDepth>(
 }
 
 unsafe fn backup4xU<BD: BitDepth>(
-    mut dst: &mut [[BD::Pixel; 4]],
+    dst: &mut [[BD::Pixel; 4]],
     src: &[BD::Pixel],
     src_stride: ptrdiff_t,
     u: c_int,
 ) {
-    for (_, src) in (0..u).zip(src.chunks(BD::pxstride(src_stride as usize))) {
-        BD::pixel_copy(&mut dst[0], src, 4);
-        dst = &mut dst[1..];
+    for (src, dst) in src
+        .chunks(BD::pxstride(src_stride as usize))
+        .zip(dst)
+        .take(u as usize)
+    {
+        BD::pixel_copy(dst, src, 4);
     }
 }
 
