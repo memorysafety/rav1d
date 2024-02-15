@@ -470,7 +470,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
-    let dbg = debug_block_info!(&*f, &*t) as c_int;
+    let dbg = (debug_block_info!(&*f, &*t) && plane != 0 && false) as c_int;
     if dbg != 0 {
         printf(
             b"Start: r=%d\n\0" as *const u8 as *const c_char,
