@@ -1,6 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynCoef;
+use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
@@ -1425,7 +1426,11 @@ unsafe fn decode_coefs<BD: BitDepth>(
         0 as *const u8
     };
     let dq_shift = cmp::max(0 as c_int, (*t_dim).ctx as c_int - 2);
-    let cf_max = !(!(127 as c_uint) << (if 16 == 8 { 8 as c_int } else { f.cur.p.bpc })) as c_int;
+    let cf_max = !(!(127 as c_uint)
+        << (match BD::BPC {
+            BPC::BPC8 => 8,
+            BPC::BPC16 => f.cur.p.bpc,
+        })) as c_int;
     let mut cul_level: c_uint;
     let dc_sign_level: c_uint;
     if dc_tok == 0 {
