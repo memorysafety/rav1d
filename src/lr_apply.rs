@@ -31,7 +31,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     mut p: &mut [BD::Pixel],
-    mut left: &[[BD::Pixel; 4]],
+    left: &[[BD::Pixel; 4]; 128 + 8],
     x: c_int,
     mut y: c_int,
     plane: c_int,
@@ -59,11 +59,10 @@ unsafe fn lr_stripe<BD: BitDepth>(
     } else {
         0
     };
-    let mut lpf = slice::from_raw_parts(
-        (f.lf.lr_lpf_line[plane as usize] as *const BD::Pixel).offset(lpf_offset - lpf_ptr_offset),
-        BD::pxstride(f.lf.lr_buf_plane_sz[(plane != 0) as usize] as usize)
-            - (lpf_offset - lpf_ptr_offset) as usize,
-    );
+    let mut lpf = &slice::from_raw_parts(
+        f.lf.lr_lpf_line[plane as usize] as *const BD::Pixel,
+        BD::pxstride(f.lf.lr_buf_plane_sz[(plane != 0) as usize] as usize),
+    )[(lpf_offset - lpf_ptr_offset) as usize..];
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = cmp::min(64 - 8 * (y == 0) as c_int >> ss_ver, row_h - y);
     let lr_fn: looprestorationfilter_fn;
@@ -71,13 +70,13 @@ unsafe fn lr_stripe<BD: BitDepth>(
         filter: [[0; 8]; 2].into(),
     };
     if lr.r#type as c_int == RAV1D_RESTORATION_WIENER as c_int {
-        let filter: &mut [[i16; 8]] = &mut params.filter.0[0..];
+        let filter = &mut params.filter.0;
         filter[0][0] = lr.filter_h[0] as i16;
         filter[0][1] = lr.filter_h[1] as i16;
         filter[0][2] = lr.filter_h[2] as i16;
-        filter[0][6] = filter[0][0];
-        filter[0][5] = filter[0][1];
-        filter[0][4] = filter[0][2];
+        filter[0][6] = lr.filter_h[0] as i16;
+        filter[0][5] = lr.filter_h[1] as i16;
+        filter[0][4] = lr.filter_h[2] as i16;
         filter[0][3] = -(filter[0][0] + filter[0][1] + filter[0][2]) * 2;
         if BD::BITDEPTH != 8 {
             // For 8-bit SIMD it's beneficial to handle the +128 separately
@@ -88,26 +87,26 @@ unsafe fn lr_stripe<BD: BitDepth>(
         filter[1][0] = lr.filter_v[0] as i16;
         filter[1][1] = lr.filter_v[1] as i16;
         filter[1][2] = lr.filter_v[2] as i16;
-        filter[1][6] = filter[1][0];
-        filter[1][5] = filter[1][1];
-        filter[1][4] = filter[1][2];
+        filter[1][6] = lr.filter_v[0] as i16;
+        filter[1][5] = lr.filter_v[1] as i16;
+        filter[1][4] = lr.filter_v[2] as i16;
         filter[1][3] = 128 - (filter[1][0] + filter[1][1] + filter[1][2]) * 2;
 
         lr_fn = dsp.lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
     } else {
         assert_eq!(lr.r#type, RAV1D_RESTORATION_SGRPROJ);
-        let sgr_params: &[u16] = &dav1d_sgr_params[lr.sgr_idx as usize];
+        let sgr_params = &dav1d_sgr_params[lr.sgr_idx as usize];
         params.sgr.s0 = sgr_params[0] as u32;
         params.sgr.s1 = sgr_params[1] as u32;
         params.sgr.w0 = lr.sgr_weights[0] as i16;
         params.sgr.w1 = 128 - (lr.sgr_weights[0] as i16 + lr.sgr_weights[1] as i16);
         lr_fn = dsp.lr.sgr[(sgr_params[0] != 0) as usize + (sgr_params[1] != 0) as usize * 2 - 1];
     }
+    let mut left = &left[..];
     while y + stripe_h <= row_h {
         // Change the HAVE_BOTTOM bit in edges to (sby + 1 != f->sbh || y + stripe_h != row_h)
-        edges = edges
-            ^ (-((sby + 1 != f.sbh || y + stripe_h != row_h) as c_int) as LrEdgeFlags ^ edges)
-                & LR_HAVE_BOTTOM;
+        edges ^= (-((sby + 1 != f.sbh || y + stripe_h != row_h) as c_int) as LrEdgeFlags ^ edges)
+            & LR_HAVE_BOTTOM;
         lr_fn(
             p.as_mut_ptr().cast(),
             stride,
@@ -121,8 +120,8 @@ unsafe fn lr_stripe<BD: BitDepth>(
         );
         left = &left[stripe_h as usize..];
         y += stripe_h;
-        edges = edges | LR_HAVE_TOP;
         let p_offset = stripe_h as isize * BD::pxstride(stride as usize) as isize;
+        edges |= LR_HAVE_TOP;
         stripe_h = cmp::min(64 >> ss_ver, row_h - y);
         if stripe_h == 0 {
             break;
@@ -134,16 +133,15 @@ unsafe fn lr_stripe<BD: BitDepth>(
     }
 }
 
-unsafe fn backup4xU<BD: BitDepth>(
-    dst: &mut [[BD::Pixel; 4]],
+fn backup4xU<BD: BitDepth>(
+    dst: &mut [[BD::Pixel; 4]; 128 + 8],
     src: &[BD::Pixel],
     src_stride: ptrdiff_t,
     u: c_int,
 ) {
     for (src, dst) in src
         .chunks(BD::pxstride(src_stride as usize))
-        .zip(dst)
-        .take(u as usize)
+        .zip(&mut dst[..u as usize])
     {
         BD::pixel_copy(dst, src, 4);
     }
@@ -229,11 +227,11 @@ unsafe fn lr_sbrow<BD: BitDepth>(
         x = next_x;
         restore = restore_next;
         p = &mut p[unit_size as usize..];
-        edges = edges | LR_HAVE_LEFT;
+        edges |= LR_HAVE_LEFT;
         bit = !bit;
     }
     if restore {
-        edges = edges & !LR_HAVE_RIGHT;
+        edges &= !LR_HAVE_RIGHT;
         let unit_w = w - x;
         lr_stripe::<BD>(
             c,
