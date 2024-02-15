@@ -116,15 +116,25 @@ use std::ffi::c_void;
 use std::ops::BitOr;
 use std::slice;
 
-/// TODO: add feature and compile-time guard around this code
-pub(crate) fn DEBUG_BLOCK_INFO(f: &Rav1dFrameContext, t: &Rav1dTaskContext) -> bool {
-    false
-        && f.frame_hdr.as_ref().unwrap().frame_offset == 2
-        && t.by >= 0
-        && t.by < 4
-        && t.bx >= 8
-        && t.bx < 12
+// TODO: add feature and compile-time guard around this code
+/// Determine if we should print debug information for the current block.
+///
+/// Takes a [`Rav1dFrameContext`] and a [`Rav1dTaskContext`] as arguments to
+/// determine the current block and frame offset.
+///
+/// This a macro rather than a function so that the compiler can see which
+/// specific fields are used to avoid borrowck errors.
+macro_rules! debug_block_info {
+    ($f:expr, $t:expr) => {
+        false
+            && $f.frame_hdr.as_ref().unwrap().frame_offset == 2
+            && $t.by >= 0
+            && $t.by < 4
+            && $t.bx >= 8
+            && $t.bx < 12
+    };
 }
+pub(crate) use debug_block_info;
 
 pub(crate) type recon_b_intra_fn =
     unsafe fn(&mut Rav1dTaskContext, BlockSize, EdgeFlags, &Av1Block) -> ();
@@ -460,7 +470,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
-    let dbg = DEBUG_BLOCK_INFO(&*f, &*t) as c_int;
+    let dbg = (debug_block_info!(&*f, &*t) && plane != 0 && false) as c_int;
     if dbg != 0 {
         printf(
             b"Start: r=%d\n\0" as *const u8 as *const c_char,
@@ -1615,7 +1625,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     y_off: c_int,
     mut dst: *mut BD::Pixel,
 ) {
-    let f: *mut Rav1dFrameContext = (*t).f;
+    let f: &mut Rav1dFrameContext = &mut *(*t).f;
     let ts: *mut Rav1dTileState = (*t).ts;
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let t_dim: *const TxfmInfo =
@@ -1739,7 +1749,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 &mut txtp,
                 &mut cf_ctx,
             );
-            if DEBUG_BLOCK_INFO(&*f, &*t) {
+            if debug_block_info!(f, &*t) {
                 printf(
                     b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8 as *const c_char,
                     ytx as c_uint,
@@ -1778,7 +1788,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 unreachable!();
             }
             if eob >= 0 {
-                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
+                if debug_block_info!(f, &*t) && 0 != 0 {
                     coef_dump(
                         cf,
                         cmp::min((*t_dim).h as usize, 8) * 4,
@@ -1795,7 +1805,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     eob,
                     (*f).bitdepth_max,
                 );
-                if DEBUG_BLOCK_INFO(&*f, &*t) && 0 != 0 {
+                if debug_block_info!(f, &*t) && 0 != 0 {
                     hex_dump::<BD>(
                         dst,
                         (*f).cur.stride[0] as usize,
@@ -1924,7 +1934,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             &mut cf_ctx,
                         ) as i16;
                         let eob = *fresh4 as c_int;
-                        if DEBUG_BLOCK_INFO(&*f, t) {
+                        if debug_block_info!(&*f, t) {
                             printf(
                                 b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8
                                     as *const c_char,
@@ -1998,7 +2008,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 &mut cf_ctx,
                             ) as i16;
                             let eob = *fresh5 as c_int;
-                            if DEBUG_BLOCK_INFO(&*f, t) {
+                            if debug_block_info!(&*f, t) {
                                 printf(
                                     b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d\n\0"
                                         as *const u8
@@ -2177,7 +2187,7 @@ unsafe fn mc<BD: BitDepth>(
         let top = pos_y >> 10;
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx as usize][0].step >> 10) + 1;
         let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx as usize][1].step >> 10) + 1;
-        if DEBUG_BLOCK_INFO(&*f, &*t) {
+        if debug_block_info!(&*f, &*t) {
             printf(
                 b"Off %dx%d [%d,%d,%d], size %dx%d [%d,%d]\n\0" as *const u8 as *const c_char,
                 left,
@@ -2214,7 +2224,7 @@ unsafe fn mc<BD: BitDepth>(
             ref_stride = (320 as c_int as c_ulong)
                 .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                 as ptrdiff_t;
-            if DEBUG_BLOCK_INFO(&*f, &*t) {
+            if debug_block_info!(&*f, &*t) {
                 printf(b"Emu\n\0" as *const u8 as *const c_char);
             }
         } else {
@@ -2509,8 +2519,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     let ts: *mut Rav1dTileState = t.ts;
     let f: *mut Rav1dFrameContext = t.f;
 
-    let dbg = DEBUG_BLOCK_INFO(&*f, t);
-
     let dsp: *const Rav1dDSPContext = (*f).dsp;
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
@@ -2580,7 +2588,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     bw4 * 4,
                     bh4 * 4,
                 );
-                if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                if debug_block_info!(&*f, t) && 0 != 0 {
                     hex_dump::<BD>(
                         dst,
                         BD::pxstride((*f).cur.stride[0] as usize),
@@ -2697,7 +2705,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             4 * (*f).bh - 4 * t.by,
                             BD::from_c((*f).bitdepth_max),
                         );
-                        if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                        if debug_block_info!(&*f, t) && 0 != 0 {
                             hex_dump::<BD>(
                                 edge.offset(-(((*t_dim).h as c_int * 4) as isize)),
                                 (*t_dim).h as usize * 4,
@@ -2755,7 +2763,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 &mut txtp,
                                 &mut cf_ctx,
                             );
-                            if DEBUG_BLOCK_INFO(&*f, t) {
+                            if debug_block_info!(&*f, t) {
                                 printf(
                                     b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8
                                         as *const c_char,
@@ -2778,7 +2786,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             );
                         }
                         if eob >= 0 {
-                            if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                            if debug_block_info!(&*f, t) && 0 != 0 {
                                 coef_dump(
                                     cf,
                                     cmp::min((*t_dim).h as usize, 8) * 4,
@@ -2796,7 +2804,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 eob,
                                 (*f).bitdepth_max,
                             );
-                            if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                            if debug_block_info!(&*f, t) && 0 != 0 {
                                 hex_dump::<BD>(
                                     dst,
                                     (*f).cur.stride[0] as usize,
@@ -2927,7 +2935,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         }
                         pl += 1;
                     }
-                    if dbg && 0 != 0 {
+                    if debug_block_info!(&*f, t) && 0 != 0 {
                         ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
                         hex_dump::<BD>(
                             uv_dst[0],
@@ -2989,7 +2997,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         cbw4 * 4,
                         cbh4 * 4,
                     );
-                    if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                    if debug_block_info!(&*f, t) && 0 != 0 {
                         hex_dump::<BD>(
                             ((*f).cur.data.data[1] as *mut BD::Pixel).offset(uv_dstoff as isize),
                             BD::pxstride((*f).cur.stride[1] as usize),
@@ -3143,7 +3151,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     4 * (*f).bh + ss_ver - 4 * (t.by & !ss_ver) >> ss_ver,
                                     BD::from_c((*f).bitdepth_max),
                                 );
-                                if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                                if debug_block_info!(&*f, t) && 0 != 0 {
                                     hex_dump::<BD>(
                                         edge.offset(-(((*uv_t_dim).h as c_int * 4) as isize)),
                                         (*uv_t_dim).h as usize * 4,
@@ -3208,7 +3216,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         &mut txtp,
                                         &mut cf_ctx,
                                     );
-                                    if DEBUG_BLOCK_INFO(&*f, t) {
+                                    if debug_block_info!(&*f, t) {
                                         printf(
                                             b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d [x=%d,cbx4=%d]\n\0"
                                                 as *const u8 as *const c_char,
@@ -3240,7 +3248,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     );
                                 }
                                 if eob >= 0 {
-                                    if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                                    if debug_block_info!(&*f, t) && 0 != 0 {
                                         coef_dump(
                                             cf,
                                             (*uv_t_dim).h as usize * 4,
@@ -3257,7 +3265,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         eob,
                                         (*f).bitdepth_max,
                                     );
-                                    if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                                    if debug_block_info!(&*f, t) && 0 != 0 {
                                         hex_dump::<BD>(
                                             dst,
                                             stride as usize,
@@ -4283,7 +4291,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
     }
-    if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+    if debug_block_info!(&*f, t) && 0 != 0 {
         hex_dump::<BD>(
             dst,
             (*f).cur.stride[0] as usize,
@@ -4441,7 +4449,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     &mut txtp,
                                     &mut cf_ctx,
                                 );
-                                if DEBUG_BLOCK_INFO(&*f, t) {
+                                if debug_block_info!(&*f, t) {
                                     printf(
                                         b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d\n\0"
                                             as *const u8
@@ -4472,7 +4480,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 );
                             }
                             if eob >= 0 {
-                                if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                                if debug_block_info!(&*f, t) && 0 != 0 {
                                     coef_dump(
                                         cf,
                                         (*uvtx).h as usize * 4,
@@ -4489,7 +4497,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     eob,
                                     (*f).bitdepth_max,
                                 );
-                                if DEBUG_BLOCK_INFO(&*f, t) && 0 != 0 {
+                                if debug_block_info!(&*f, t) && 0 != 0 {
                                     hex_dump::<BD>(
                                         &mut *uvdst.offset((4 * x) as isize),
                                         (*f).cur.stride[1] as usize,
