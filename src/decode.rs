@@ -73,7 +73,6 @@ use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dFrameContext_bd_fn;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
@@ -1474,7 +1473,7 @@ unsafe fn decode_b_inner(
     }
 
     let ts = &mut *t.ts;
-    let bd_fn = f.bd_fn.clone();
+    let bd_fn = f.bd_fn();
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
@@ -4115,7 +4114,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 t.a = (t.a).offset(1);
             }
         }
-        (f.bd_fn.backup_ipred_edge)(f, t);
+        (f.bd_fn().backup_ipred_edge)(f, t);
         return Ok(());
     }
 
@@ -4241,7 +4240,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 
     // backup pre-loopfilter pixels for intra prediction of the next sbrow
     if t.frame_thread.pass != 1 {
-        (f.bd_fn.backup_ipred_edge)(f, t);
+        (f.bd_fn().backup_ipred_edge)(f, t);
     }
 
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
@@ -4831,7 +4830,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
     // and post-filtering, so that the full process runs in-line
     let Rav1dFrameHeader_tiling { rows, cols, .. } = frame_hdr.tiling;
     let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
-    // Need to clone this because `(f.bd_fn.filter_sbrow)(f, sby);` takes a `&mut` to `f` within the loop.
+    // Need to clone this because `(f.bd_fn().filter_sbrow)(f, sby);` takes a `&mut` to `f` within the loop.
     let row_start_sb = frame_hdr.tiling.row_start_sb.clone();
     for (tile_row, (sbh_start_end, ts)) in iter::zip(
         row_start_sb[..rows + 1].windows(2),
@@ -4868,7 +4867,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             }
 
             // loopfilter + cdef + restoration
-            (f.bd_fn.filter_sbrow)(c, f, &mut t, sby);
+            (f.bd_fn().filter_sbrow)(c, f, &mut t, sby);
         }
     }
 
@@ -5090,17 +5089,6 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 on_error(f, c, out);
                 return Err(ENOPROTOOPT);
             }
-        }
-    }
-    if seq_hdr.hbd == 0 {
-        #[cfg(feature = "bitdepth_8")]
-        {
-            f.bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth8>();
-        }
-    } else {
-        #[cfg(feature = "bitdepth_16")]
-        {
-            f.bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth16>();
         }
     }
 

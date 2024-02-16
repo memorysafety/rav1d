@@ -331,8 +331,6 @@ pub struct ScalableMotionParams {
     pub step: c_int,
 }
 
-#[repr(C)]
-#[derive(Clone)]
 pub(crate) struct Rav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
     pub recon_b_inter: recon_b_inter_fn,
@@ -554,7 +552,6 @@ pub(crate) struct Rav1dFrameData {
     pub ts: *mut Rav1dTileState,
     pub n_ts: c_int,
     pub dsp: *const Rav1dDSPContext,
-    pub bd_fn: Rav1dFrameContext_bd_fn,
 
     pub ipred_edge_sz: c_int,
     pub ipred_edge: [*mut DynPixel; 3],
@@ -585,6 +582,11 @@ pub(crate) struct Rav1dFrameData {
 }
 
 impl Rav1dFrameData {
+    pub fn bd_fn(&self) -> &'static Rav1dFrameContext_bd_fn {
+        let bpc = BPC::from_bitdepth_max(self.bitdepth_max);
+        Rav1dFrameContext_bd_fn::get(bpc)
+    }
+
     pub fn frame_hdr(&self) -> &Rav1dFrameHeader {
         self.frame_hdr.as_ref().unwrap()
     }
