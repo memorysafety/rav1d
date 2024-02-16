@@ -85,6 +85,16 @@ pub enum BPC {
     BPC16,
 }
 
+impl BPC {
+    pub fn from_bitdepth_max(bitdepth_max: c_int) -> Self {
+        if bitdepth_max == BitDepth8::new(()).bitdepth_max().into() {
+            Self::BPC8
+        } else {
+            Self::BPC16
+        }
+    }
+}
+
 pub trait BitDepth: Clone + Copy {
     const BPC: BPC;
     const BITDEPTH: u8;
