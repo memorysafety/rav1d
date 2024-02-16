@@ -1145,7 +1145,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                     as c_int
                         };
                         if error_0 == 0 {
-                            error_0 = match rav1d_decode_tile_sbrow(c, &mut tc) {
+                            error_0 = match rav1d_decode_tile_sbrow(c, &mut tc, f) {
                                 Ok(()) => 0,
                                 Err(()) => 1,
                             };
@@ -1292,7 +1292,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn.filter_sbrow_cdef)(c, &mut tc, sby);
+                                (f.bd_fn.filter_sbrow_cdef)(c, f, &mut tc, sby);
                             }
                             reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
