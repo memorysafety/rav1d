@@ -790,10 +790,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
 }
 
 pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_task_thread>) {
-    let mut tc = Rav1dTaskContext::new(
-        &mut *((*c).fc).offset(0) as *mut Rav1dFrameData,
-        task_thread,
-    );
+    let mut tc = Rav1dTaskContext::new(task_thread);
 
     // We clone the Arc here for the lifetime of this function to avoid an
     // immutable borrow of tc across the call to park
@@ -1016,7 +1013,6 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
             let mut error_0 = f.task_thread.error.fetch_or(flush, Ordering::SeqCst) | flush;
 
             // run it
-            tc.f = f;
             let mut sby = t.sby;
             let mut task_type = t.type_0 as c_uint;
             'fallthrough: loop {

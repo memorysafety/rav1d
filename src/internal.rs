@@ -734,7 +734,6 @@ impl Rav1dTaskContext_task_thread {
 
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext {
-    pub f: *mut Rav1dFrameData,
     pub ts: *mut Rav1dTileState,
     pub bx: c_int,
     pub by: c_int,
@@ -762,12 +761,8 @@ pub(crate) struct Rav1dTaskContext {
 }
 
 impl Rav1dTaskContext {
-    pub(crate) unsafe fn new(
-        f: *mut Rav1dFrameData,
-        task_thread: Arc<Rav1dTaskContext_task_thread>,
-    ) -> Self {
+    pub(crate) unsafe fn new(task_thread: Arc<Rav1dTaskContext_task_thread>) -> Self {
         Self {
-            f,
             ts: ptr::null_mut(),
             bx: 0,
             by: 0,

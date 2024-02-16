@@ -354,7 +354,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             } else {
                 Rav1dContextTaskThread {
                     task: Rav1dContextTaskType::Single(Mutex::new(Box::new(
-                        Rav1dTaskContext::new(&mut *((*c).fc).offset(0), Arc::clone(&thread_data)),
+                        Rav1dTaskContext::new(Arc::clone(&thread_data)),
                     ))),
                     thread_data,
                 }
