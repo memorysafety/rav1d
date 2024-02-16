@@ -22,7 +22,7 @@ use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
 use crate::src::mem::rav1d_mem_pool_pop;
@@ -267,7 +267,7 @@ pub fn rav1d_picture_copy_props(
 // borrowing rules so we need to pass it to this function explicitly.
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     bpc: c_int,
     itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
 ) -> Rav1dResult {

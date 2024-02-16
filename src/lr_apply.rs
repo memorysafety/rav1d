@@ -6,7 +6,7 @@ use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
 use crate::src::align::Align16;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
-use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::looprestoration::looprestorationfilter_fn;
 use crate::src::looprestoration::LooprestorationParams;
@@ -29,7 +29,7 @@ pub const LR_RESTORE_Y: LrRestorePlanes = 1;
 
 unsafe fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     mut p: *mut BD::Pixel,
     mut left: *const [BD::Pixel; 4],
     x: c_int,
@@ -169,7 +169,7 @@ unsafe fn backup4xU<BD: BitDepth>(
 
 unsafe fn lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameContext,
+    f: &Rav1dFrameData,
     mut p: *mut BD::Pixel,
     y: c_int,
     w: c_int,
@@ -270,7 +270,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     dst: *const *mut BD::Pixel,
     sby: c_int,
 ) {

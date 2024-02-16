@@ -18,7 +18,7 @@ use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
-use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
 use crate::src::intra_edge::EdgeFlags;
@@ -120,7 +120,7 @@ use std::slice;
 // TODO: add feature and compile-time guard around this code
 /// Determine if we should print debug information for the current block.
 ///
-/// Takes a [`Rav1dFrameContext`] and a [`Rav1dTaskContext`] as arguments to
+/// Takes a [`Rav1dFrameData`] and a [`Rav1dTaskContext`] as arguments to
 /// determine the current block and frame offset.
 ///
 /// This a macro rather than a function so that the compiler can see which
@@ -143,7 +143,7 @@ pub(crate) type recon_b_intra_fn =
 pub(crate) type recon_b_inter_fn = unsafe fn(&mut Rav1dTaskContext, BlockSize, &Av1Block) -> c_int;
 
 pub(crate) type filter_sbrow_fn =
-    unsafe fn(&Rav1dContext, &mut Rav1dFrameContext, &mut Rav1dTaskContext, c_int) -> ();
+    unsafe fn(&Rav1dContext, &mut Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
 
 pub(crate) type backup_ipred_edge_fn = unsafe fn(&mut Rav1dTaskContext) -> ();
 
@@ -467,7 +467,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let current_block: u64;
     let ts: *mut Rav1dTileState = (*t).ts;
     let chroma = (plane != 0) as c_int;
-    let f: &Rav1dFrameContext = &*(*t).f;
+    let f: &Rav1dFrameData = &*(*t).f;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
@@ -1629,7 +1629,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     y_off: c_int,
     mut dst: *mut BD::Pixel,
 ) {
-    let f: &mut Rav1dFrameContext = &mut *(*t).f;
+    let f: &mut Rav1dFrameData = &mut *(*t).f;
     let ts: *mut Rav1dTileState = (*t).ts;
     let dsp: *const Rav1dDSPContext = f.dsp;
     let t_dim: *const TxfmInfo =
@@ -1827,7 +1827,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     bs: BlockSize,
     b: &Av1Block,
 ) {
-    let f: &mut Rav1dFrameContext = &mut *t.f;
+    let f: &mut Rav1dFrameData = &mut *t.f;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     let bx4 = t.bx & 31;
@@ -2076,7 +2076,7 @@ unsafe fn mc<BD: BitDepth>(
     {
         unreachable!();
     }
-    let f: &Rav1dFrameContext = &*(*t).f;
+    let f: &Rav1dFrameData = &*(*t).f;
     let ss_ver =
         (pl != 0 && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor =
@@ -2272,7 +2272,7 @@ unsafe fn obmc<BD: BitDepth>(
     if !((*t).bx & 1 == 0 && (*t).by & 1 == 0) {
         unreachable!();
     }
-    let f: &Rav1dFrameContext = &*(*t).f;
+    let f: &Rav1dFrameData = &*(*t).f;
     let r: *mut *mut refmvs_block = &mut *((*t).rt.r)
         .as_mut_ptr()
         .offset((((*t).by & 31) + 5) as isize)
@@ -2403,7 +2403,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     {
         unreachable!();
     }
-    let f: &Rav1dFrameContext = &*(*t).f;
+    let f: &Rav1dFrameData = &*(*t).f;
     let dsp: *const Rav1dDSPContext = f.dsp;
     let ss_ver =
         (pl != 0 && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
@@ -2507,7 +2507,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     b: &Av1Block,
 ) {
     let ts: *mut Rav1dTileState = t.ts;
-    let f: &mut Rav1dFrameContext = &mut *t.f;
+    let f: &mut Rav1dFrameData = &mut *t.f;
 
     let dsp: *const Rav1dDSPContext = f.dsp;
     let bx4 = t.bx & 31;
@@ -3288,7 +3288,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     b: &Av1Block,
 ) -> c_int {
     let ts: *mut Rav1dTileState = t.ts;
-    let f: &mut Rav1dFrameContext = &mut *t.f;
+    let f: &mut Rav1dFrameData = &mut *t.f;
     let dsp: *const Rav1dDSPContext = f.dsp;
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
@@ -4478,7 +4478,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4514,7 +4514,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4549,7 +4549,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     tc: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
-    let f: &Rav1dFrameContext = &*tc.f;
+    let f: &Rav1dFrameData = &*tc.f;
     if c.inloop_filters as c_uint & RAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
         return;
     }
@@ -4593,7 +4593,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4660,7 +4660,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4682,7 +4682,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameContext,
+    f: &mut Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4702,7 +4702,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(t: &mut Rav1dTaskContext) {
-    let f: &Rav1dFrameContext = &*t.f;
+    let f: &Rav1dFrameData = &*t.f;
     let ts: *mut Rav1dTileState = t.ts;
     let sby = t.by >> f.sb_shift;
     let sby_off = f.sb128w * 128 * sby;
