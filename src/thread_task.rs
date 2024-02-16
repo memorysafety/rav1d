@@ -385,18 +385,18 @@ unsafe fn create_filter_sbrow(
     }
     tasks = tasks.offset((f.sbh * (pass & 1)) as isize);
     if pass & 1 != 0 {
-        f.frame_thread.entropy_progress = AtomicI32::new(0);
+        f.frame_thread_progress.entropy = AtomicI32::new(0);
     } else {
         let prog_sz = ((f.sbh + 31 & !(31 as c_int)) >> 5) as usize;
-        f.frame_thread.frame_progress.clear();
-        f.frame_thread
-            .frame_progress
+        f.frame_thread_progress.frame.clear();
+        f.frame_thread_progress
+            .frame
             .resize_with(prog_sz, || AtomicU32::new(0));
-        f.frame_thread.copy_lpf_progress.clear();
-        f.frame_thread
-            .copy_lpf_progress
+        f.frame_thread_progress.copy_lpf.clear();
+        f.frame_thread_progress
+            .copy_lpf
             .resize_with(prog_sz, || AtomicU32::new(0));
-        f.frame_thread.deblock_progress.store(0, Ordering::SeqCst);
+        f.frame_thread_progress.deblock.store(0, Ordering::SeqCst);
     }
     f.frame_thread.next_tile_row[(pass & 1) as usize] = 0 as c_int;
     let t: *mut Rav1dTask = &mut *tasks.offset(0) as *mut Rav1dTask;
@@ -637,14 +637,14 @@ unsafe fn get_frame_progress(f: &Rav1dFrameData) -> c_int {
     let mut idx = (frame_prog >> f.sb_shift + 7) as c_int;
     let mut prog;
     loop {
-        let val: c_uint = !(f.frame_thread.frame_progress)[idx as usize].load(Ordering::SeqCst);
+        let val: c_uint = !(f.frame_thread_progress.frame)[idx as usize].load(Ordering::SeqCst);
         prog = if val != 0 { ctz(val) } else { 32 as c_int };
         if prog != 32 as c_int {
             break;
         }
         prog = 0 as c_int;
         idx += 1;
-        if !((idx as usize) < f.frame_thread.frame_progress.len()) {
+        if !((idx as usize) < f.frame_thread_progress.frame.len()) {
             break;
         }
     }
@@ -913,7 +913,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             let tile_row_base =
                                 frame_hdr.tiling.cols * f.frame_thread.next_tile_row[p as usize];
                             if p != 0 {
-                                let p1_0 = f.frame_thread.entropy_progress.load(Ordering::SeqCst);
+                                let p1_0 = f.frame_thread_progress.entropy.load(Ordering::SeqCst);
                                 if p1_0 < t.sby {
                                     break 'next;
                                 }
@@ -952,7 +952,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             }
                             break 'found (f, t, prev_t);
                         } else if t.type_0 as c_uint == RAV1D_TASK_TYPE_CDEF as c_int as c_uint {
-                            let p1_1 = f.frame_thread.copy_lpf_progress[(t.sby - 1 >> 5) as usize]
+                            let p1_1 = f.frame_thread_progress.copy_lpf[(t.sby - 1 >> 5) as usize]
                                 .load(Ordering::SeqCst);
                             if p1_1 as c_uint & (1 as c_uint) << (t.sby - 1 & 31) != 0 {
                                 break 'found (f, t, prev_t);
@@ -961,7 +961,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             if t.deblock_progress == 0 {
                                 unreachable!();
                             }
-                            let p1_2 = f.frame_thread.deblock_progress.load(Ordering::SeqCst);
+                            let p1_2 = f.frame_thread_progress.deblock.load(Ordering::SeqCst);
                             if p1_2 >= t.deblock_progress {
                                 f.task_thread
                                     .error
@@ -1233,7 +1233,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             f,
                             t,
                             RAV1D_TASK_TYPE_DEBLOCK_ROWS,
-                            &f.frame_thread.deblock_progress,
+                            &f.frame_thread_progress.deblock,
                             &mut t.deblock_progress,
                             &mut task_thread_lock,
                         ) != 0
@@ -1254,7 +1254,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             || frame_hdr.loopfilter.level_y[1] != 0
                         {
                             error_0 = f.task_thread.error.load(Ordering::SeqCst);
-                            f.frame_thread.deblock_progress.store(
+                            f.frame_thread_progress.deblock.store(
                                 if error_0 != 0 { TILE_ERROR } else { sby + 1 },
                                 Ordering::SeqCst,
                             );
@@ -1263,12 +1263,12 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 ttd.cond.notify_one();
                             }
                         } else if seq_hdr.cdef != 0 || f.lf.restore_planes != 0 {
-                            f.frame_thread.copy_lpf_progress[(sby >> 5) as usize]
+                            f.frame_thread_progress.copy_lpf[(sby >> 5) as usize]
                                 .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
                             // CDEF needs the top buffer to be saved by lr_copy_lpf of the
                             // previous sbrow
                             if sby != 0 {
-                                let prog_1 = f.frame_thread.copy_lpf_progress
+                                let prog_1 = f.frame_thread_progress.copy_lpf
                                     [(sby - 1 >> 5) as usize]
                                     .load(Ordering::SeqCst);
                                 if !prog_1 as c_uint & (1 as c_uint) << (sby - 1 & 31) != 0 {
@@ -1349,7 +1349,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 if !(f.sr_cur.p.data.data[0]).is_null() {
                     progress[0].store(if error_0 != 0 { FRAME_ERROR } else { y }, Ordering::SeqCst);
                 }
-                f.frame_thread.entropy_progress.store(
+                f.frame_thread_progress.entropy.store(
                     if error_0 != 0 { TILE_ERROR } else { sby + 1 },
                     Ordering::SeqCst,
                 );
@@ -1385,7 +1385,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 continue 'outer;
             }
             // t->type != DAV1D_TASK_TYPE_ENTROPY_PROGRESS
-            f.frame_thread.frame_progress[(sby >> 5) as usize]
+            f.frame_thread_progress.frame[(sby >> 5) as usize]
                 .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
             {
                 let _task_thread_lock = f.task_thread.lock.lock().unwrap();

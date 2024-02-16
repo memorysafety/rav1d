@@ -400,10 +400,6 @@ pub struct CodedBlockInfo {
 #[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
     pub next_tile_row: [c_int; 2], /* 0: reconstruction, 1: entropy */
-    pub entropy_progress: AtomicI32,
-    pub deblock_progress: AtomicI32, // in sby units
-    pub frame_progress: Vec<AtomicU32>,
-    pub copy_lpf_progress: Vec<AtomicU32>,
     // indexed using t->by * f->b4_stride + t->bx
     pub b: Vec<Av1Block>,
     pub cbi: Vec<CodedBlockInfo>,
@@ -502,6 +498,13 @@ pub struct FrameTileThreadData {
     pub lowest_pixel_mem_sz: c_int,
 }
 
+pub(crate) struct Rav1dFrameContext_frame_thread_progress {
+    pub entropy: AtomicI32,
+    pub deblock: AtomicI32, // in sby units
+    pub frame: Vec<AtomicU32>,
+    pub copy_lpf: Vec<AtomicU32>,
+}
+
 #[repr(C)]
 pub(crate) struct Rav1dFrameData {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
@@ -558,6 +561,7 @@ pub(crate) struct Rav1dFrameData {
     pub bitdepth_max: c_int,
 
     pub frame_thread: Rav1dFrameContext_frame_thread,
+    pub frame_thread_progress: Rav1dFrameContext_frame_thread_progress,
     pub lf: Rav1dFrameContext_lf,
     pub task_thread: Rav1dFrameContext_task_thread,
     pub tile_thread: FrameTileThreadData,
