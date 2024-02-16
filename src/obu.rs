@@ -2523,12 +2523,12 @@ unsafe fn parse_obus(
                 }
 
                 let f = &mut *c.fc.offset(next as isize);
-                while !(*f).tiles.is_empty() {
-                    task_thread_lock = (*f).task_thread.cond.wait(task_thread_lock).unwrap();
+                while !f.tiles.is_empty() {
+                    task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
                 }
                 let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
                 if !out_delayed.p.data.data[0].is_null()
-                    || (*f).task_thread.error.load(Ordering::SeqCst) != 0
+                    || f.task_thread.error.load(Ordering::SeqCst) != 0
                 {
                     let first = c.task_thread.first.load(Ordering::SeqCst);
                     if first + 1 < c.n_fc {
@@ -2548,10 +2548,10 @@ unsafe fn parse_obus(
                         c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
                     }
                 }
-                let error = (*f).task_thread.retval;
+                let error = f.task_thread.retval;
                 if error.is_err() {
                     c.cached_error = error;
-                    (*f).task_thread.retval = Ok(());
+                    f.task_thread.retval = Ok(());
                     *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
                     rav1d_thread_picture_unref(out_delayed);
                 } else if !(out_delayed.p.data.data[0]).is_null() {

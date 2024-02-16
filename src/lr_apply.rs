@@ -29,7 +29,7 @@ pub const LR_RESTORE_Y: LrRestorePlanes = 1;
 
 unsafe fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
-    f: *const Rav1dFrameContext,
+    f: &Rav1dFrameContext,
     mut p: *mut BD::Pixel,
     mut left: *const [BD::Pixel; 4],
     x: c_int,
@@ -40,12 +40,12 @@ unsafe fn lr_stripe<BD: BitDepth>(
     lr: Av1RestorationUnit,
     mut edges: LrEdgeFlags,
 ) {
-    let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
-    let dsp: *const Rav1dDSPContext = (*f).dsp;
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
+    let dsp: *const Rav1dDSPContext = f.dsp;
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let stride: ptrdiff_t = (*f).sr_cur.p.stride[chroma as usize];
+        & (f.sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
+    let stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
     let sby =
         y + (if y != 0 {
             (8 as c_int) << ss_ver
@@ -53,7 +53,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
             0 as c_int
         }) >> 6 - ss_ver + seq_hdr.sb128;
     let have_tt = (c.tc.len() > 1) as c_int;
-    let mut lpf: *const BD::Pixel = ((*f).lf.lr_lpf_line[plane as usize] as *mut BD::Pixel)
+    let mut lpf: *const BD::Pixel = (f.lf.lr_lpf_line[plane as usize] as *mut BD::Pixel)
         .offset(
             (have_tt * (sby * ((4 as c_int) << seq_hdr.sb128) - 4)) as isize
                 * BD::pxstride(stride as usize) as isize,
@@ -120,7 +120,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         // Change the HAVE_BOTTOM bit in edges to (sby + 1 != f->sbh || y + stripe_h != row_h)
         edges = ::core::mem::transmute::<c_uint, LrEdgeFlags>(
             edges as c_uint
-                ^ (-((sby + 1 != (*f).sbh || y + stripe_h != row_h) as c_int) as c_uint
+                ^ (-((sby + 1 != f.sbh || y + stripe_h != row_h) as c_int) as c_uint
                     ^ edges as c_uint)
                     & LR_HAVE_BOTTOM as c_int as c_uint,
         );
@@ -133,7 +133,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
             stripe_h,
             &mut params,
             edges,
-            (*f).bitdepth_max,
+            f.bitdepth_max,
         );
         left = left.offset(stripe_h as isize);
         y += stripe_h;
@@ -169,7 +169,7 @@ unsafe fn backup4xU<BD: BitDepth>(
 
 unsafe fn lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: *const Rav1dFrameContext,
+    f: &Rav1dFrameContext,
     mut p: *mut BD::Pixel,
     y: c_int,
     w: c_int,
@@ -179,11 +179,11 @@ unsafe fn lr_sbrow<BD: BitDepth>(
 ) {
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
+        & (f.sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor = chroma
-        & ((*f).sr_cur.p.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
-    let p_stride: ptrdiff_t = (*f).sr_cur.p.stride[chroma as usize];
-    let frame_hdr = &***(*f).frame_hdr.as_ref().unwrap();
+        & (f.sr_cur.p.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let p_stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let unit_size_log2 = frame_hdr.restoration.unit_size[(plane != 0) as c_int as usize];
     let unit_size = (1 as c_int) << unit_size_log2;
     let half_unit_size = unit_size >> 1;
@@ -202,16 +202,16 @@ unsafe fn lr_sbrow<BD: BitDepth>(
         aligned_unit_pos -= unit_size;
     }
     aligned_unit_pos <<= ss_ver;
-    let sb_idx = (aligned_unit_pos >> 7) * (*f).sr_sb128w;
+    let sb_idx = (aligned_unit_pos >> 7) * f.sr_sb128w;
     let unit_idx = (aligned_unit_pos >> 6 & 1) << 1;
-    lr[0] = (*((*f).lf.lr_mask).offset(sb_idx as isize)).lr[plane as usize][unit_idx as usize];
+    lr[0] = (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[plane as usize][unit_idx as usize];
     let mut restore = (lr[0].r#type as c_int != RAV1D_RESTORATION_NONE as c_int) as c_int;
     let mut x = 0;
     let mut bit = 0;
     while x + max_unit_size <= w {
         let next_x = x + unit_size;
         let next_u_idx = unit_idx + (next_x >> shift_hor - 1 & 1);
-        lr[(bit == 0) as c_int as usize] = (*((*f).lf.lr_mask)
+        lr[(bit == 0) as c_int as usize] = (*(f.lf.lr_mask)
             .offset((sb_idx + (next_x >> shift_hor)) as isize))
         .lr[plane as usize][next_u_idx as usize];
         let restore_next = (lr[(bit == 0) as c_int as usize].r#type as c_int
@@ -270,18 +270,18 @@ unsafe fn lr_sbrow<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: *mut Rav1dFrameContext,
+    f: &mut Rav1dFrameContext,
     dst: *const *mut BD::Pixel,
     sby: c_int,
 ) {
     let offset_y = 8 * (sby != 0) as c_int;
-    let dst_stride: *const ptrdiff_t = ((*f).sr_cur.p.stride).as_mut_ptr();
-    let restore_planes = (*f).lf.restore_planes;
-    let not_last = ((sby + 1) < (*f).sbh) as c_int;
-    let seq_hdr = &***(*f).seq_hdr.as_ref().unwrap();
+    let dst_stride: *const ptrdiff_t = (f.sr_cur.p.stride).as_mut_ptr();
+    let restore_planes = f.lf.restore_planes;
+    let not_last = ((sby + 1) < f.sbh) as c_int;
+    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     if restore_planes & LR_RESTORE_Y as c_int != 0 {
-        let h = (*f).sr_cur.p.p.h;
-        let w = (*f).sr_cur.p.p.w;
+        let h = f.sr_cur.p.p.h;
+        let w = f.sr_cur.p.p.w;
         let next_row_y = (sby + 1) << 6 + seq_hdr.sb128;
         let row_h = cmp::min(next_row_y - 8 * not_last, h);
         let y_stripe = (sby << 6 + seq_hdr.sb128) - offset_y;
@@ -299,12 +299,12 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         );
     }
     if restore_planes & (LR_RESTORE_U as c_int | LR_RESTORE_V as c_int) != 0 {
-        let ss_ver = ((*f).sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint)
-            as c_int;
-        let ss_hor = ((*f).sr_cur.p.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint)
-            as c_int;
-        let h_0 = (*f).sr_cur.p.p.h + ss_ver >> ss_ver;
-        let w_0 = (*f).sr_cur.p.p.w + ss_hor >> ss_hor;
+        let ss_ver =
+            (f.sr_cur.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
+        let ss_hor =
+            (f.sr_cur.p.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+        let h_0 = f.sr_cur.p.p.h + ss_ver >> ss_ver;
+        let w_0 = f.sr_cur.p.p.w + ss_hor >> ss_hor;
         let next_row_y_0 = (sby + 1) << 6 - ss_ver + seq_hdr.sb128;
         let row_h_0 = cmp::min(next_row_y_0 - (8 >> ss_ver) * not_last, h_0);
         let offset_uv = offset_y >> ss_ver;
