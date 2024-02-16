@@ -1,8 +1,11 @@
 use crate::include::common::bitdepth::BitDepth;
+use crate::include::common::bitdepth::BitDepth16;
+use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::BitDepthDependentType;
 use crate::include::common::bitdepth::BitDepthUnion;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::BPC;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
@@ -345,7 +348,7 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
 }
 
 impl Rav1dFrameContext_bd_fn {
-    pub fn new<BD: BitDepth>() -> Self {
+    pub const fn new<BD: BitDepth>() -> Self {
         Self {
             recon_b_inter: rav1d_recon_b_inter::<BD>,
             recon_b_intra: rav1d_recon_b_intra::<BD>,
@@ -357,6 +360,15 @@ impl Rav1dFrameContext_bd_fn {
             filter_sbrow_lr: rav1d_filter_sbrow_lr::<BD>,
             backup_ipred_edge: rav1d_backup_ipred_edge::<BD>,
             read_coef_blocks: rav1d_read_coef_blocks::<BD>,
+        }
+    }
+
+    pub const fn get(bpc: BPC) -> &'static Self {
+        const BPC8: Rav1dFrameContext_bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth8>();
+        const BPC16: Rav1dFrameContext_bd_fn = Rav1dFrameContext_bd_fn::new::<BitDepth16>();
+        match bpc {
+            BPC::BPC8 => &BPC8,
+            BPC::BPC16 => &BPC16,
         }
     }
 
