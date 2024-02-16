@@ -1429,6 +1429,36 @@ unsafe fn decode_b(
     bp: BlockPartition,
     intra_edge_flags: EdgeFlags,
 ) -> Result<(), ()> {
+    let f = &mut *t.f;
+    // Pull out the current block from Rav1dFrameData so that we can operate on
+    // it without borrow check errors.
+    let (mut b_mem, b_idx) = if t.frame_thread.pass != 0 {
+        let b_idx = (t.by as isize * f.b4_stride + t.bx as isize) as usize;
+        (mem::take(&mut f.frame_thread.b[b_idx]), Some(b_idx))
+    } else {
+        (Default::default(), None)
+    };
+    let b = &mut b_mem;
+    let res = decode_b_inner(c, t, f, bl, bs, bp, intra_edge_flags, b);
+    if let Some(i) = b_idx {
+        let _old_b = mem::replace(&mut f.frame_thread.b[i], b_mem);
+        // TODO(SJC): We should be able to compare Av1Blocks, but there are C
+        // unions in them.
+        // assert_eq!(old_b, Default::default());
+    }
+    res
+}
+
+unsafe fn decode_b_inner(
+    c: &Rav1dContext,
+    t: &mut Rav1dTaskContext,
+    f: &mut Rav1dFrameData,
+    bl: BlockLevel,
+    bs: BlockSize,
+    bp: BlockPartition,
+    intra_edge_flags: EdgeFlags,
+    b: &mut Av1Block,
+) -> Result<(), ()> {
     use std::fmt;
 
     /// Helper struct for printing a number as a signed hexidecimal value.
@@ -1442,14 +1472,7 @@ unsafe fn decode_b(
     }
 
     let ts = &mut *t.ts;
-    let f = &mut *t.f;
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let mut b_mem = Default::default();
-    let b = if t.frame_thread.pass != 0 {
-        &mut f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize]
-    } else {
-        &mut b_mem
-    };
+    let bd_fn = f.bd_fn.clone();
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bx4 = t.bx & 31;
     let by4 = t.by & 31;
@@ -1471,7 +1494,7 @@ unsafe fn decode_b(
 
     if t.frame_thread.pass == 2 {
         if b.intra != 0 {
-            f.bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
+            bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
 
             let y_mode = b.y_mode();
             let y_mode_nofilt = if y_mode == FILTER_PRED {
@@ -1488,7 +1511,7 @@ unsafe fn decode_b(
                     case.set(&mut dir.intra.0, 1);
                 },
             );
-            if frame_hdr.frame_type.is_inter_or_switch() {
+            if f.frame_hdr().frame_type.is_inter_or_switch() {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 {
                     let block = &mut *r.offset(x as isize);
@@ -1514,7 +1537,7 @@ unsafe fn decode_b(
                 );
             }
         } else {
-            if frame_hdr.frame_type.is_inter_or_switch() /* not intrabc */
+            if f.frame_hdr().frame_type.is_inter_or_switch() /* not intrabc */
                 && b.comp_type() == COMP_INTER_NONE
                 && b.motion_mode() as MotionMode == MM_WARP
             {
@@ -1548,7 +1571,7 @@ unsafe fn decode_b(
                     }
                 }
             }
-            f.bd_fn.recon_b_inter(t, bs, b)?;
+            bd_fn.recon_b_inter(t, bs, b)?;
 
             let filter = &dav1d_filter_dir[b.filter2d() as usize];
             CaseSet::<32, false>::many(
@@ -1562,7 +1585,7 @@ unsafe fn decode_b(
                 },
             );
 
-            if frame_hdr.frame_type.is_inter_or_switch() {
+            if f.frame_hdr().frame_type.is_inter_or_switch() {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 let r = std::slice::from_raw_parts_mut(r, bw4 as usize);
                 for r in r {
@@ -1605,6 +1628,7 @@ unsafe fn decode_b(
 
     // segment_id (if seg_feature for skip/ref/gmv is enabled)
     let mut seg_pred = false;
+    let frame_hdr: &Rav1dFrameHeader = &f.frame_hdr.as_ref().unwrap();
     if frame_hdr.segmentation.enabled != 0 {
         if frame_hdr.segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
@@ -2036,6 +2060,7 @@ unsafe fn decode_b(
             }
         }
 
+        let seq_hdr = f.seq_hdr();
         if b.y_mode() == DC_PRED
             && b.pal_sz()[0] == 0
             && cmp::max(b_dim[2], b_dim[3]) <= 3
@@ -2117,7 +2142,7 @@ unsafe fn decode_b(
             }
         }
 
-        let t_dim = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
+        let t_dim = if f.frame_hdr().segmentation.lossless[b.seg_id as usize] != 0 {
             b.uvtx = TX_4X4 as u8;
             *b.tx_mut() = b.uvtx;
             &dav1d_txfm_dimensions[TX_4X4 as usize]
@@ -2125,7 +2150,7 @@ unsafe fn decode_b(
             *b.tx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
             let mut t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
-            if frame_hdr.txfm_mode == RAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
+            if f.frame_hdr().txfm_mode == RAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
                 let depth = rav1d_msac_decode_symbol_adapt4(
@@ -2147,12 +2172,12 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            f.bd_fn.read_coef_blocks(t, bs, b);
+            bd_fn.read_coef_blocks(t, bs, b);
         } else {
-            f.bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
+            bd_fn.recon_b_intra(t, bs, intra_edge_flags, b);
         }
 
-        if frame_hdr.loopfilter.level_y != [0, 0] {
+        if f.frame_hdr().loopfilter.level_y != [0, 0] {
             rav1d_create_lf_mask_intra(
                 &mut *t.lf_mask,
                 &mut f.lf.level,
@@ -2203,7 +2228,7 @@ unsafe fn decode_b(
                     &mut t.pal_sz_uv[dir_index],
                     if has_chroma { b.pal_sz()[1] } else { 0 },
                 );
-                if frame_hdr.frame_type.is_inter_or_switch() {
+                if f.frame_hdr().frame_type.is_inter_or_switch() {
                     case.set(&mut dir.comp_type.0, COMP_INTER_NONE);
                     case.set(&mut dir.r#ref[0], -1);
                     case.set(&mut dir.r#ref[1], -1);
@@ -2255,10 +2280,10 @@ unsafe fn decode_b(
                 }
             }
         }
-        if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
+        if f.frame_hdr().frame_type.is_inter_or_switch() || f.frame_hdr().allow_intrabc != 0 {
             splat_intraref(c, t, bs, bw4 as usize, bh4 as usize);
         }
-    } else if frame_hdr.frame_type.is_key_or_intra() {
+    } else if f.frame_hdr().frame_type.is_key_or_intra() {
         // intra block copy
         let mut mvstack = [Default::default(); 8];
         let mut n_mvs = 0;
@@ -2365,10 +2390,10 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            f.bd_fn.read_coef_blocks(t, bs, b);
+            bd_fn.read_coef_blocks(t, bs, b);
             *b.filter2d_mut() = FILTER_2D_BILINEAR as u8;
         } else {
-            f.bd_fn.recon_b_inter(t, bs, b)?;
+            bd_fn.recon_b_inter(t, bs, b)?;
         }
 
         splat_intrabc_mv(c, t, bs, b, bw4 as usize, bh4 as usize);
@@ -3128,11 +3153,12 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            f.bd_fn.read_coef_blocks(t, bs, b);
+            bd_fn.read_coef_blocks(t, bs, b);
         } else {
-            f.bd_fn.recon_b_inter(t, bs, b)?;
+            bd_fn.recon_b_inter(t, bs, b)?;
         }
 
+        let frame_hdr = f.frame_hdr();
         if frame_hdr.loopfilter.level_y != [0, 0] {
             let is_globalmv =
                 (b.inter_mode() == if is_comp { GLOBALMV_GLOBALMV } else { GLOBALMV }) as c_int;
@@ -3220,6 +3246,7 @@ unsafe fn decode_b(
     }
 
     // update contexts
+    let frame_hdr = f.frame_hdr();
     if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
         // Need checked casts here because we're using `from_raw_parts_mut` and an overflow would be UB.
         let [by, bx, bh4, bw4] = [t.by, t.bx, bh4, bw4].map(|it| usize::try_from(it).unwrap());

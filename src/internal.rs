@@ -329,6 +329,7 @@ pub struct ScalableMotionParams {
 }
 
 #[repr(C)]
+#[derive(Clone)]
 pub(crate) struct Rav1dFrameContext_bd_fn {
     pub recon_b_intra: recon_b_intra_fn,
     pub recon_b_inter: recon_b_inter_fn,
@@ -565,6 +566,16 @@ pub(crate) struct Rav1dFrameData {
     pub lf: Rav1dFrameContext_lf,
     pub task_thread: Rav1dFrameContext_task_thread,
     pub tile_thread: FrameTileThreadData,
+}
+
+impl Rav1dFrameData {
+    pub fn frame_hdr(&self) -> &Rav1dFrameHeader {
+        self.frame_hdr.as_ref().unwrap()
+    }
+
+    pub fn seq_hdr(&self) -> &Rav1dSequenceHeader {
+        self.seq_hdr.as_ref().unwrap()
+    }
 }
 
 #[repr(C)]
