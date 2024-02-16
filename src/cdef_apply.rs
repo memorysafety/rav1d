@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::align::Align16;
 use crate::src::cdef::CdefEdgeFlags;
 use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::lf_mask::Av1Filter;
 use bitflags::bitflags;
@@ -157,6 +158,7 @@ fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
 pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: &mut Rav1dTaskContext,
+    f: &Rav1dFrameData,
     p: &[*mut BD::Pixel; 3],
     lflvl: *const Av1Filter,
     by_start: c_int,
@@ -164,7 +166,6 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     sbrow_start: bool,
     sby: c_int,
 ) {
-    let f = &*tc.f;
     let bitdepth_min_8 = match BD::BPC {
         BPC::BPC8 => 0,
         BPC::BPC16 => f.cur.p.bpc - 8,

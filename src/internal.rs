@@ -336,7 +336,8 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
     pub filter_sbrow: filter_sbrow_fn,
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
-    pub filter_sbrow_cdef: unsafe fn(&Rav1dContext, &mut Rav1dTaskContext, c_int) -> (),
+    pub filter_sbrow_cdef:
+        unsafe fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> (),
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
@@ -361,21 +362,23 @@ impl Rav1dFrameContext_bd_fn {
 
     pub unsafe fn recon_b_intra(
         &self,
+        f: &Rav1dFrameData,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         flags: EdgeFlags,
         block: &Av1Block,
     ) {
-        (self.recon_b_intra)(context, block_size, flags, block);
+        (self.recon_b_intra)(f, context, block_size, flags, block);
     }
 
     pub unsafe fn recon_b_inter(
         &self,
+        f: &mut Rav1dFrameData,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         block: &Av1Block,
     ) -> Result<(), ()> {
-        match (self.recon_b_inter)(context, block_size, block) {
+        match (self.recon_b_inter)(f, context, block_size, block) {
             0 => Ok(()),
             _ => Err(()),
         }
@@ -383,11 +386,12 @@ impl Rav1dFrameContext_bd_fn {
 
     pub unsafe fn read_coef_blocks(
         &self,
+        f: &mut Rav1dFrameData,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         block: &Av1Block,
     ) {
-        (self.read_coef_blocks)(context, block_size, block);
+        (self.read_coef_blocks)(f, context, block_size, block);
     }
 }
 
@@ -730,7 +734,6 @@ impl Rav1dTaskContext_task_thread {
 
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext {
-    pub f: *mut Rav1dFrameData,
     pub ts: *mut Rav1dTileState,
     pub bx: c_int,
     pub by: c_int,
@@ -758,12 +761,8 @@ pub(crate) struct Rav1dTaskContext {
 }
 
 impl Rav1dTaskContext {
-    pub(crate) unsafe fn new(
-        f: *mut Rav1dFrameData,
-        task_thread: Arc<Rav1dTaskContext_task_thread>,
-    ) -> Self {
+    pub(crate) unsafe fn new(task_thread: Arc<Rav1dTaskContext_task_thread>) -> Self {
         Self {
-            f,
             ts: ptr::null_mut(),
             bx: 0,
             by: 0,

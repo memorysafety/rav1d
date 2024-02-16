@@ -790,10 +790,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
 }
 
 pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_task_thread>) {
-    let mut tc = Rav1dTaskContext::new(
-        &mut *((*c).fc).offset(0) as *mut Rav1dFrameData,
-        task_thread,
-    );
+    let mut tc = Rav1dTaskContext::new(task_thread);
 
     // We clone the Arc here for the lifetime of this function to avoid an
     // immutable borrow of tc across the call to park
@@ -1016,7 +1013,6 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
             let mut error_0 = f.task_thread.error.fetch_or(flush, Ordering::SeqCst) | flush;
 
             // run it
-            tc.f = f;
             let mut sby = t.sby;
             let mut task_type = t.type_0 as c_uint;
             'fallthrough: loop {
@@ -1145,7 +1141,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                     as c_int
                         };
                         if error_0 == 0 {
-                            error_0 = match rav1d_decode_tile_sbrow(c, &mut tc) {
+                            error_0 = match rav1d_decode_tile_sbrow(c, &mut tc, f) {
                                 Ok(()) => 0,
                                 Err(()) => 1,
                             };
@@ -1292,7 +1288,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn.filter_sbrow_cdef)(c, &mut tc, sby);
+                                (f.bd_fn.filter_sbrow_cdef)(c, f, &mut tc, sby);
                             }
                             reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
