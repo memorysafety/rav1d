@@ -1222,7 +1222,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                     }
                     RAV1D_TASK_TYPE_DEBLOCK_COLS => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            (f.bd_fn.filter_sbrow_deblock_cols)(c, f, &mut tc, sby);
+                            (f.bd_fn().filter_sbrow_deblock_cols)(c, f, &mut tc, sby);
                         }
                         if ensure_progress(
                             ttd,
@@ -1241,7 +1241,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                     }
                     RAV1D_TASK_TYPE_DEBLOCK_ROWS => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            (f.bd_fn.filter_sbrow_deblock_rows)(c, f, &mut tc, sby);
+                            (f.bd_fn().filter_sbrow_deblock_rows)(c, f, &mut tc, sby);
                         }
                         // signal deblock progress
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
@@ -1288,7 +1288,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn.filter_sbrow_cdef)(c, f, &mut tc, sby);
+                                (f.bd_fn().filter_sbrow_cdef)(c, f, &mut tc, sby);
                             }
                             reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
@@ -1302,7 +1302,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn.filter_sbrow_resize)(c, f, &mut tc, sby);
+                                (f.bd_fn().filter_sbrow_resize)(c, f, &mut tc, sby);
                             }
                         }
                         task_type = RAV1D_TASK_TYPE_LOOP_RESTORATION;
@@ -1312,7 +1312,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         if f.task_thread.error.load(Ordering::SeqCst) == 0
                             && f.lf.restore_planes != 0
                         {
-                            (f.bd_fn.filter_sbrow_lr)(c, f, &mut tc, sby);
+                            (f.bd_fn().filter_sbrow_lr)(c, f, &mut tc, sby);
                         }
                         task_type = RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
                         continue 'fallthrough;
