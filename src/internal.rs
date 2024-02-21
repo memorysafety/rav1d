@@ -427,7 +427,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub pal_idx_sz: c_int,
     pub cf_sz: c_int,
     // start offsets per tile
-    pub tile_start_off: *mut c_int,
+    pub tile_start_off: *mut u32,
 }
 
 /// loopfilter
