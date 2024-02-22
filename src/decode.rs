@@ -4105,7 +4105,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             if c.flush.load(Ordering::Acquire) != 0 {
                 return Err(());
             }
-            decode_sb(c, t, f, root_bl, c.intra_edge.root[root_bl as usize])?;
+            decode_sb(c, t, f, root_bl, c.intra_edge.root(root_bl))?;
             if t.bx & 16 != 0 || f.seq_hdr().sb128 != 0 {
                 t.a = (t.a).offset(1);
             }
@@ -4213,7 +4213,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 read_restoration_info(t, f, lr, p, frame_type);
             }
         }
-        decode_sb(c, t, f, root_bl, c.intra_edge.root[root_bl as usize])?;
+        decode_sb(c, t, f, root_bl, c.intra_edge.root(root_bl))?;
         if t.bx & 16 != 0 || f.seq_hdr().sb128 != 0 {
             t.a = (t.a).offset(1);
             t.lf_mask = (t.lf_mask).offset(1);

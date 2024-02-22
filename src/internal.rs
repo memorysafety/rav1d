@@ -40,8 +40,11 @@ use crate::src::intra_edge::EdgeTip;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
+use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
+use crate::src::levels::BL_128X128;
+use crate::src::levels::BL_64X64;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
@@ -204,11 +207,20 @@ pub(crate) struct Rav1dContext_refs {
 
 #[repr(C)]
 pub struct Rav1dContext_intra_edge {
-    pub root: [*mut EdgeNode; 2],
     pub branch_sb128: [EdgeBranch; 85],
     pub branch_sb64: [EdgeBranch; 21],
     pub tip_sb128: [EdgeTip; 256],
     pub tip_sb64: [EdgeTip; 64],
+}
+
+impl Rav1dContext_intra_edge {
+    pub fn root(&self, bl: BlockLevel) -> &EdgeNode {
+        match bl {
+            BL_128X128 => &self.branch_sb128[0].node,
+            BL_64X64 => &self.branch_sb64[0].node,
+            _ => unreachable!(),
+        }
+    }
 }
 
 pub(crate) enum Rav1dContextTaskType {
