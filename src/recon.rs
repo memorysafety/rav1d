@@ -2573,13 +2573,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     pal_idx = (t.scratch.c2rust_unnamed_0.pal_idx).as_mut_ptr();
                 }
                 let pal: *const u16 = if t.frame_thread.pass != 0 {
-                    ((*(f.frame_thread.pal).offset(
-                        (((t.by as isize >> 1) + (t.bx as isize & 1)) * (f.b4_stride >> 1)
-                            + ((t.bx >> 1) + (t.by & 1)) as isize) as isize,
-                    ))[0])
-                        .as_mut_ptr()
+                    let index = (((t.by as isize >> 1) + (t.bx as isize & 1)) * (f.b4_stride >> 1)
+                        + ((t.bx >> 1) + (t.by & 1)) as isize)
+                        as isize;
+                    f.frame_thread.pal[index as usize][0].as_ptr()
                 } else {
-                    (t.scratch.c2rust_unnamed_0.pal[0]).as_mut_ptr()
+                    (t.scratch.c2rust_unnamed_0.pal[0]).as_ptr()
                 };
                 (*f.dsp).ipred.pal_pred.call::<BD>(
                     dst,
@@ -2958,12 +2957,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         if ((*ts).frame_thread[p as usize].pal_idx).is_null() {
                             unreachable!();
                         }
-                        pal = (*(f.frame_thread.pal).offset(
-                            (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
-                                + ((t.bx as isize >> 1) as isize + (t.by as isize & 1)) as isize)
-                                as isize,
-                        ))
-                        .as_mut_ptr() as *const [u16; 8];
+                        let index = (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+                            + ((t.bx as isize >> 1) as isize + (t.by as isize & 1)) as isize)
+                            as isize;
+                        pal = &f.frame_thread.pal[index as usize][0] as *const [u16; 8];
                         pal_idx = (*ts).frame_thread[p as usize].pal_idx;
                         (*ts).frame_thread[p as usize].pal_idx = ((*ts).frame_thread[p as usize]
                             .pal_idx)
