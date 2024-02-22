@@ -7,9 +7,7 @@ use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_CDEF;
-use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_DEBLOCK;
-use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_RESTORATION;
+use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
@@ -4526,7 +4524,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     sby: c_int,
 ) {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    if c.inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint == 0
+    if !c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
         || frame_hdr.loopfilter.level_y[0] == 0 && frame_hdr.loopfilter.level_y[1] == 0
     {
         return;
@@ -4577,7 +4575,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     let mask: *mut Av1Filter =
         (f.lf.mask).offset(((sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w) as isize);
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    if c.inloop_filters as c_uint & RAV1D_INLOOPFILTER_DEBLOCK as c_int as c_uint != 0
+    if c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
         && (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0)
     {
         rav1d_loopfilter_sbrow_rows::<BD>(f, &p, mask, sby);
@@ -4593,7 +4591,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     tc: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
-    if c.inloop_filters as c_uint & RAV1D_INLOOPFILTER_CDEF as c_int as c_uint == 0 {
+    if !c.inloop_filters.contains(Rav1dInloopFilterType::CDEF) {
         return;
     }
     let sbsz = f.sb_step;
@@ -4645,14 +4643,11 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let p: [*const BD::Pixel; 3] = [
         (f.lf.p[0] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride(f.cur.stride[0] as usize) as isize) as isize)
-            as *const BD::Pixel,
-        (f.lf.p[1] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
-        ) as *const BD::Pixel,
-        (f.lf.p[2] as *mut BD::Pixel).offset(
-            (y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver) as isize,
-        ) as *const BD::Pixel,
+            .offset(y as isize * BD::pxstride(f.cur.stride[0] as usize) as isize),
+        (f.lf.p[1] as *mut BD::Pixel)
+            .offset(y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver),
+        (f.lf.p[2] as *mut BD::Pixel)
+            .offset(y as isize * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver),
     ];
     let sr_p: [*mut BD::Pixel; 3] = [
         (f.lf.sr_p[0] as *mut BD::Pixel)
@@ -4707,7 +4702,10 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
-    if c.inloop_filters as c_uint & RAV1D_INLOOPFILTER_RESTORATION as c_int as c_uint == 0 {
+    if !c
+        .inloop_filters
+        .contains(Rav1dInloopFilterType::RESTORATION)
+    {
         return;
     }
     let y = sby * f.sb_step * 4;

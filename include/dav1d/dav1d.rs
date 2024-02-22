@@ -13,19 +13,37 @@ pub type Dav1dContext = Rav1dContext;
 pub type Dav1dRef = Rav1dRef;
 
 pub type Dav1dInloopFilterType = c_uint;
-pub const DAV1D_INLOOPFILTER_ALL: Dav1dInloopFilterType = 7;
-pub const DAV1D_INLOOPFILTER_RESTORATION: Dav1dInloopFilterType = 4;
-pub const DAV1D_INLOOPFILTER_CDEF: Dav1dInloopFilterType = 2;
-pub const DAV1D_INLOOPFILTER_DEBLOCK: Dav1dInloopFilterType = 1;
-pub const DAV1D_INLOOPFILTER_NONE: Dav1dInloopFilterType = 0;
+pub const DAV1D_INLOOPFILTER_ALL: Dav1dInloopFilterType =
+    Rav1dInloopFilterType::all().bits() as Dav1dInloopFilterType;
+pub const DAV1D_INLOOPFILTER_NONE: Dav1dInloopFilterType =
+    Rav1dInloopFilterType::empty().bits() as Dav1dInloopFilterType;
+pub const DAV1D_INLOOPFILTER_DEBLOCK: Dav1dInloopFilterType =
+    Rav1dInloopFilterType::DEBLOCK.bits() as Dav1dInloopFilterType;
+pub const DAV1D_INLOOPFILTER_CDEF: Dav1dInloopFilterType =
+    Rav1dInloopFilterType::CDEF.bits() as Dav1dInloopFilterType;
+pub const DAV1D_INLOOPFILTER_RESTORATION: Dav1dInloopFilterType =
+    Rav1dInloopFilterType::RESTORATION.bits() as Dav1dInloopFilterType;
 
-pub(crate) type Rav1dInloopFilterType = c_uint;
-pub(crate) const RAV1D_INLOOPFILTER_ALL: Rav1dInloopFilterType = DAV1D_INLOOPFILTER_ALL;
-pub(crate) const RAV1D_INLOOPFILTER_RESTORATION: Rav1dInloopFilterType =
-    DAV1D_INLOOPFILTER_RESTORATION;
-pub(crate) const RAV1D_INLOOPFILTER_CDEF: Rav1dInloopFilterType = DAV1D_INLOOPFILTER_CDEF;
-pub(crate) const RAV1D_INLOOPFILTER_DEBLOCK: Rav1dInloopFilterType = DAV1D_INLOOPFILTER_DEBLOCK;
-pub(crate) const _RAV1D_INLOOPFILTER_NONE: Rav1dInloopFilterType = DAV1D_INLOOPFILTER_NONE;
+bitflags! {
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+    pub(crate) struct Rav1dInloopFilterType: u8 {
+        const DEBLOCK = 1 << 1;
+        const CDEF = 1 << 2;
+        const RESTORATION = 1 << 3;
+    }
+}
+
+impl From<Rav1dInloopFilterType> for Dav1dInloopFilterType {
+    fn from(value: Rav1dInloopFilterType) -> Self {
+        value.bits().into()
+    }
+}
+
+impl From<Dav1dInloopFilterType> for Rav1dInloopFilterType {
+    fn from(value: Dav1dInloopFilterType) -> Self {
+        Self::from_bits_retain(value as u8)
+    }
+}
 
 pub type Dav1dDecodeFrameType = c_uint;
 pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType = 3;
@@ -142,7 +160,7 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             logger: logger.into(),
             strict_std_compliance: strict_std_compliance != 0,
             output_invisible_frames: output_invisible_frames != 0,
-            inloop_filters,
+            inloop_filters: inloop_filters.into(),
             decode_frame_type,
         })
     }
@@ -175,7 +193,7 @@ impl From<Rav1dSettings> for Dav1dSettings {
             logger: logger.into(),
             strict_std_compliance: strict_std_compliance as c_int,
             output_invisible_frames: output_invisible_frames as c_int,
-            inloop_filters,
+            inloop_filters: inloop_filters.into(),
             decode_frame_type,
             reserved: Default::default(),
         }
