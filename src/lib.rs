@@ -9,10 +9,10 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Dav1dContext;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Dav1dSettings;
+use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::dav1d::Rav1dSettings;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
 use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
-use crate::include::dav1d::dav1d::RAV1D_INLOOPFILTER_ALL;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
@@ -133,7 +133,7 @@ impl Default for Rav1dSettings {
             logger: Default::default(),
             strict_std_compliance: false,
             output_invisible_frames: false,
-            inloop_filters: RAV1D_INLOOPFILTER_ALL,
+            inloop_filters: Rav1dInloopFilterType::all(),
             decode_frame_type: RAV1D_DECODEFRAMETYPE_ALL,
         }
     }
