@@ -20,7 +20,7 @@ pub const EDGE_TOP_HAS_RIGHT: EdgeFlags =
 
 const B: usize = 4;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum EdgeKind {
     Tip,
     Branch,
@@ -181,14 +181,14 @@ impl DefaultValue for EdgeBranch {
 }
 
 struct EdgeIndices {
-    pub branch: [EdgeIndex; 3],
-    pub tip: EdgeIndex,
+    branch: [EdgeIndex; 3],
+    tip: EdgeIndex,
 }
 
 #[repr(C)]
 struct IntraEdge<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize> {
-    pub branch: [EdgeBranch; N_BRANCH],
-    pub tip: [EdgeTip; N_TIP],
+    branch: [EdgeBranch; N_BRANCH],
+    tip: [EdgeTip; N_TIP],
 }
 
 const fn level_index(mut level: u8) -> u8 {
@@ -300,27 +300,54 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
         self
     }
 
+    /// Check that all indices are in bound so that bounds checks are not needed at runtime.
+    const fn check_indices(self) -> Self {
+        let mut i = 0;
+        while i < self.branch.len() {
+            let mut j = 0;
+            while j < B {
+                let edge = self.branch[i].split[j];
+                let index = edge.index as usize;
+                match edge.kind {
+                    EdgeKind::Branch => assert!(index < self.branch.len()),
+                    EdgeKind::Tip => assert!(index < self.tip.len()),
+                }
+                j += 1;
+            }
+            i += 1;
+        }
+
+        self
+    }
+
     const fn new() -> Self {
         Self {
             branch: [EdgeBranch::DEFAULT; N_BRANCH],
             tip: [EdgeTip::DEFAULT; N_TIP],
         }
         .init()
+        .check_indices()
     }
 
-    pub const fn branch(&self, branch: EdgeIndex) -> &EdgeBranch {
-        // Only a debug assert since it is still memory safe without it.
-        debug_assert!(matches!(branch.kind, EdgeKind::Branch));
-        &self.branch[branch.index as usize]
+    fn edge<E, const N: usize>(edges: &[E; N], edge: EdgeIndex, kind: EdgeKind) -> &E {
+        assert!(edge.kind == kind);
+        if cfg!(debug_assertions) {
+            &edges[edge.index as usize]
+        } else {
+            // Safety: Already checked in `Self::check_indices`, and `EdgeIndex`'s fields are private.
+            unsafe { edges.get_unchecked(edge.index as usize) }
+        }
     }
 
-    pub const fn tip(&self, tip: EdgeIndex) -> &EdgeTip {
-        // Only a debug assert since it is still memory safe without it.
-        debug_assert!(matches!(tip.kind, EdgeKind::Tip));
-        &self.tip[tip.index as usize]
+    pub fn branch(&self, branch: EdgeIndex) -> &EdgeBranch {
+        Self::edge(&self.branch, branch, EdgeKind::Branch)
     }
 
-    pub const fn node(&self, node: EdgeIndex) -> &EdgeNode {
+    pub fn tip(&self, tip: EdgeIndex) -> &EdgeTip {
+        Self::edge(&self.tip, tip, EdgeKind::Tip)
+    }
+
+    pub fn node(&self, node: EdgeIndex) -> &EdgeNode {
         match node.kind {
             EdgeKind::Branch => &self.branch(node).node,
             EdgeKind::Tip => &self.tip(node).node,
@@ -336,6 +363,7 @@ pub struct IntraEdges {
 }
 
 impl IntraEdges {
+    #[inline(always)]
     const fn new() -> Self {
         Self {
             sb128: IntraEdge::new(),
@@ -343,7 +371,8 @@ impl IntraEdges {
         }
     }
 
-    pub const fn branch(&self, sb128: bool, branch: EdgeIndex) -> &EdgeBranch {
+    pub fn branch(&self, sb128: bool, branch: EdgeIndex) -> &EdgeBranch {
+        assert!(branch.kind == EdgeKind::Branch); // Optimizes better before the `if`.
         if sb128 {
             self.sb128.branch(branch)
         } else {
@@ -351,7 +380,8 @@ impl IntraEdges {
         }
     }
 
-    pub const fn tip(&self, sb128: bool, tip: EdgeIndex) -> &EdgeTip {
+    pub fn tip(&self, sb128: bool, tip: EdgeIndex) -> &EdgeTip {
+        assert!(tip.kind == EdgeKind::Tip); // Optimizes better before the `if`.
         if sb128 {
             self.sb128.tip(tip)
         } else {
@@ -359,7 +389,7 @@ impl IntraEdges {
         }
     }
 
-    pub const fn node(&self, sb128: bool, node: EdgeIndex) -> &EdgeNode {
+    pub fn node(&self, sb128: bool, node: EdgeIndex) -> &EdgeNode {
         if sb128 {
             self.sb128.node(node)
         } else {
