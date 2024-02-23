@@ -176,62 +176,65 @@ impl EdgeBranch {
     }
 }
 
-fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
-    tree: &mut IntraEdge<SB128, N_BRANCH, N_TIP>,
-    branch_index: EdgeIndex,
-    bl: BlockLevel,
-    indices: &mut EdgeIndices,
-    top_has_right: bool,
-    left_has_bottom: bool,
-) {
-    let mut branch = EdgeBranch::new(
-        (if top_has_right {
-            EDGE_TOP_HAS_RIGHT
-        } else {
-            0 as EdgeFlags
-        }) | (if left_has_bottom {
-            EDGE_LEFT_HAS_BOTTOM
-        } else {
-            0 as EdgeFlags
-        }),
-        bl,
-    );
-    if bl == BL_16X16 {
-        let mut n = 0;
-        while n < B as u8 {
-            let (tip, next) = indices.tip.pop_front();
-            indices.tip = next;
-            branch.split[n as usize] = tip;
-            let edge_flags = (if n == 3 || (n == 1 && !top_has_right) {
-                0 as EdgeFlags
-            } else {
+impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
+    IntraEdge<SB128, N_BRANCH, N_TIP>
+{
+    fn init_mode_node(
+        &mut self,
+        branch_index: EdgeIndex,
+        bl: BlockLevel,
+        indices: &mut EdgeIndices,
+        top_has_right: bool,
+        left_has_bottom: bool,
+    ) {
+        let mut branch = EdgeBranch::new(
+            (if top_has_right {
                 EDGE_TOP_HAS_RIGHT
-            }) | (if !(n == 0 || (n == 2 && left_has_bottom)) {
-                0 as EdgeFlags
             } else {
+                0 as EdgeFlags
+            }) | (if left_has_bottom {
                 EDGE_LEFT_HAS_BOTTOM
-            });
-            tree.tip[tip.index as usize] = EdgeTip::new(edge_flags);
-            n += 1;
-        }
-    } else {
-        let mut n = 0;
-        while n < B as u8 {
-            let (child_branch, next) = indices.branch[bl as usize].pop_front();
-            indices.branch[bl as usize] = next;
-            branch.split[n as usize] = child_branch;
-            init_mode_node(
-                tree,
-                child_branch,
-                bl + 1,
-                indices,
-                !(n == 3 || (n == 1 && !top_has_right)),
-                n == 0 || (n == 2 && left_has_bottom),
-            );
-            n += 1;
-        }
-    };
-    tree.branch[branch_index.index as usize] = branch;
+            } else {
+                0 as EdgeFlags
+            }),
+            bl,
+        );
+        if bl == BL_16X16 {
+            let mut n = 0;
+            while n < B as u8 {
+                let (tip, next) = indices.tip.pop_front();
+                indices.tip = next;
+                branch.split[n as usize] = tip;
+                let edge_flags = (if n == 3 || (n == 1 && !top_has_right) {
+                    0 as EdgeFlags
+                } else {
+                    EDGE_TOP_HAS_RIGHT
+                }) | (if !(n == 0 || (n == 2 && left_has_bottom)) {
+                    0 as EdgeFlags
+                } else {
+                    EDGE_LEFT_HAS_BOTTOM
+                });
+                self.tip[tip.index as usize] = EdgeTip::new(edge_flags);
+                n += 1;
+            }
+        } else {
+            let mut n = 0;
+            while n < B as u8 {
+                let (child_branch, next) = indices.branch[bl as usize].pop_front();
+                indices.branch[bl as usize] = next;
+                branch.split[n as usize] = child_branch;
+                self.init_mode_node(
+                    child_branch,
+                    bl + 1,
+                    indices,
+                    !(n == 3 || (n == 1 && !top_has_right)),
+                    n == 0 || (n == 2 && left_has_bottom),
+                );
+                n += 1;
+            }
+        };
+        self.branch[branch_index.index as usize] = branch;
+    }
 }
 
 const fn level_index(mut level: u8) -> u8 {
@@ -260,14 +263,8 @@ pub fn rav1d_init_mode_tree(tree: &mut IntraEdges, allow_sb128: bool) {
         indices.branch[BL_128X128 as usize].index = level_index(1);
         indices.branch[BL_64X64 as usize].index = level_index(2);
         indices.branch[BL_32X32 as usize].index = level_index(3);
-        init_mode_node(
-            &mut tree.sb128,
-            EdgeIndex::root(),
-            BL_128X128,
-            &mut indices,
-            true,
-            false,
-        );
+        tree.sb128
+            .init_mode_node(EdgeIndex::root(), BL_128X128, &mut indices, true, false);
         assert_eq!(indices.branch[BL_128X128 as usize].index, level_index(2));
         assert_eq!(indices.branch[BL_64X64 as usize].index, level_index(3));
         assert_eq!(indices.branch[BL_32X32 as usize].index, level_index(4));
@@ -275,14 +272,8 @@ pub fn rav1d_init_mode_tree(tree: &mut IntraEdges, allow_sb128: bool) {
     } else {
         indices.branch[BL_64X64 as usize].index = level_index(1);
         indices.branch[BL_32X32 as usize].index = level_index(2);
-        init_mode_node(
-            &mut tree.sb64,
-            EdgeIndex::root(),
-            BL_64X64,
-            &mut indices,
-            true,
-            false,
-        );
+        tree.sb64
+            .init_mode_node(EdgeIndex::root(), BL_64X64, &mut indices, true, false);
         assert_eq!(indices.branch[BL_64X64 as usize].index, level_index(2));
         assert_eq!(indices.branch[BL_32X32 as usize].index, level_index(3));
         assert_eq!(indices.tip.index, tree.sb64.tip.len() as u8);
