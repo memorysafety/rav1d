@@ -214,6 +214,7 @@ unsafe fn init_mode_node(
 }
 
 pub unsafe fn rav1d_init_mode_tree(root: *mut EdgeBranch, nt: &mut [EdgeTip], allow_sb128: bool) {
+    
     let mut mem = ModeSelMem {
         nwc: [ptr::null_mut(); 3],
         nt: nt.as_mut_ptr(),
@@ -235,4 +236,32 @@ pub unsafe fn rav1d_init_mode_tree(root: *mut EdgeBranch, nt: &mut [EdgeTip], al
         assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(1 + 4 + 16));
     };
     assert_eq!(mem.nt, nt.as_mut_ptr_range().end);
+}
+
+#[repr(C)]
+pub struct IntraEdge128 {
+    pub branch: [EdgeBranch; 85],
+    pub tip: [EdgeTip; 256],
+}
+
+#[repr(C)]
+pub struct IntraEdge64 {
+    pub branch: [EdgeBranch; 21],
+    pub tip: [EdgeTip; 64],
+}
+
+#[repr(C)]
+pub struct IntraEdge {
+    pub sb128: IntraEdge128,
+    pub sb64: IntraEdge64,
+}
+
+impl IntraEdge {
+    pub fn root(&self, bl: BlockLevel) -> &EdgeNode {
+        match bl {
+            BL_128X128 => &self.sb128.branch[0].node,
+            BL_64X64 => &self.sb64.branch[0].node,
+            _ => unreachable!(),
+        }
+    }
 }
