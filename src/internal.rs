@@ -444,9 +444,8 @@ pub struct Rav1dFrameContext_frame_thread {
 #[repr(C)]
 pub struct Rav1dFrameContext_lf {
     pub level: Vec<[u8; 4]>,
-    pub mask: *mut Av1Filter,
+    pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: *mut Av1Restoration,
-    pub mask_sz: c_int, /* w*h */
     pub lr_mask_sz: c_int,
     pub cdef_buf_plane_sz: [c_int; 2], /* stride*sbh*4 */
     pub cdef_buf_sbh: c_int,
@@ -468,8 +467,6 @@ pub struct Rav1dFrameContext_lf {
     pub need_cdef_lpf_copy: c_int,
     pub p: [*mut DynPixel; 3],
     pub sr_p: [*mut DynPixel; 3],
-    pub mask_ptr: *mut Av1Filter,
-    pub prev_mask_ptr: *mut Av1Filter,
     pub restore_planes: c_int, // enum LrRestorePlanes
 }
 

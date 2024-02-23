@@ -7,7 +7,6 @@ use crate::src::cdef::CdefEdgeFlags;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
-use crate::src::lf_mask::Av1Filter;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -160,7 +159,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     tc: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     p: &[*mut BD::Pixel; 3],
-    lflvl: *const Av1Filter,
+    lflvl_offset: i32,
     by_start: c_int,
     by_end: c_int,
     sbrow_start: bool,
@@ -228,7 +227,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         for sbx in 0..sb64w {
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
-            let cdef_idx = (*lflvl.offset(sb128x as isize)).cdef_idx[sb64_idx as usize] as c_int;
+            let cdef_idx =
+                f.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx[sb64_idx as usize] as c_int;
             if cdef_idx == -1
                 || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
                     && frame_hdr.cdef.uv_strength[cdef_idx as usize] == 0
@@ -236,7 +236,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                 last_skip = true;
             } else {
                 // Create a complete 32-bit mask for the sb row ahead of time.
-                let noskip_row = (*lflvl.offset(sb128x as isize)).noskip_mask[by_idx as usize];
+                let noskip_row =
+                    f.lf.mask[(lflvl_offset + sb128x) as usize].noskip_mask[by_idx as usize];
                 let noskip_mask = (noskip_row[1] as u32) << 16 | noskip_row[0] as u32;
 
                 let y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];

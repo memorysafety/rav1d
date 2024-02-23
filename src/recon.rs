@@ -76,7 +76,6 @@ use crate::src::levels::WHT_WHT;
 use crate::src::lf_apply::rav1d_copy_lpf;
 use crate::src::lf_apply::rav1d_loopfilter_sbrow_cols;
 use crate::src::lf_apply::rav1d_loopfilter_sbrow_rows;
-use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply::rav1d_lr_sbrow;
 use crate::src::msac::rav1d_msac_decode_bool_adapt;
 use crate::src::msac::rav1d_msac_decode_bool_equi;
@@ -4539,12 +4538,11 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         ),
     ];
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let mask: *mut Av1Filter =
-        (f.lf.mask).offset(((sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w) as isize);
+    let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
         &p,
-        mask,
+        mask_offset as usize,
         sby,
         *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
     );
@@ -4569,15 +4567,16 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
         ),
     ];
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let mask: *mut Av1Filter =
-        (f.lf.mask).offset(((sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w) as isize);
+    let sb128 = seq_hdr.sb128;
+    let cdef = seq_hdr.cdef;
+    let mask_offset = (sby >> (sb128 == 0) as c_int) * f.sb128w;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
         && (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0)
     {
-        rav1d_loopfilter_sbrow_rows::<BD>(f, &p, mask, sby);
+        rav1d_loopfilter_sbrow_rows::<BD>(f, &p, mask_offset as usize, sby);
     }
-    if seq_hdr.cdef != 0 || f.lf.restore_planes != 0 {
+    if cdef != 0 || f.lf.restore_planes != 0 {
         rav1d_copy_lpf::<BD>(c, &mut *f, p.as_ptr(), sby);
     }
 }
@@ -4605,10 +4604,8 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
         ),
     ];
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let prev_mask: *mut Av1Filter =
-        (f.lf.mask).offset(((sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w) as isize);
-    let mask: *mut Av1Filter =
-        (f.lf.mask).offset(((sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w) as isize);
+    let prev_mask = (sby - 1 >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
+    let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     let start = sby * sbsz;
     if sby != 0 {
         let ss_ver =
@@ -4624,9 +4621,10 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
         ];
         rav1d_cdef_brow::<BD>(c, tc, f, &p_up, prev_mask, start - 2, start, true, sby);
     }
+
     let n_blks = sbsz - 2 * ((sby + 1) < f.sbh) as c_int;
     let end = cmp::min(start + n_blks, f.bh);
-    rav1d_cdef_brow::<BD>(c, tc, f, &p, mask, start, end, false, sby);
+    rav1d_cdef_brow::<BD>(c, tc, f, &p, mask_offset, start, end, false, sby);
 }
 
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(

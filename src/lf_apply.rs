@@ -4,7 +4,6 @@ use crate::src::env::BlockContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
-use crate::src::lf_mask::Av1Filter;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
 use crate::src::lr_apply::LR_RESTORE_Y;
@@ -539,12 +538,13 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &mut Rav1dFrameData,
     p: &[*mut BD::Pixel; 3],
-    lflvl: *mut Av1Filter,
+    lflvl_offset: usize,
     sby: c_int,
     start_of_tile_row: c_int,
 ) {
+    let lflvl = f.lf.mask[lflvl_offset..].as_mut_ptr();
     let mut have_left;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
@@ -730,11 +730,13 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
-    f: &Rav1dFrameData,
+    f: &mut Rav1dFrameData,
     p: &[*mut BD::Pixel; 3],
-    lflvl: *mut Av1Filter,
+    lflvl_offset: usize,
     sby: c_int,
 ) {
+    let lflvl = f.lf.mask[lflvl_offset..].as_mut_ptr();
+
     // Don't filter outside the frame
     let have_top = sby > 0;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
