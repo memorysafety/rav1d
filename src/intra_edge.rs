@@ -166,9 +166,7 @@ unsafe fn init_mode_node(
     top_has_right: bool,
     left_has_bottom: bool,
 ) {
-    init_edges(
-        &mut nwc.node,
-        bl,
+    *nwc = EdgeBranch::new(
         (if top_has_right {
             EDGE_TOP_HAS_RIGHT
         } else {
@@ -178,6 +176,7 @@ unsafe fn init_mode_node(
         } else {
             0 as EdgeFlags
         }),
+        bl,
     );
     if bl == BL_16X16 {
         let nt = slice::from_raw_parts_mut(mem.nt, nwc.split.len());
