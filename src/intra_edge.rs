@@ -324,6 +324,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
     }
 }
 
+/// A tree to keep track of which edges are available.
 #[repr(C)]
 pub struct IntraEdges {
     pub sb128: IntraEdge<true, 85, 256>,
@@ -361,4 +362,8 @@ impl IntraEdges {
             self.sb64.node(node)
         }
     }
+}
+
+impl DefaultValue for IntraEdges {
+    const DEFAULT: Self = Self::new();
 }

@@ -34,7 +34,6 @@ use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::filmgrain::GRAIN_HEIGHT;
 use crate::src::filmgrain::GRAIN_WIDTH;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::IntraEdges;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
@@ -265,9 +264,6 @@ pub struct Rav1dContext {
 
     pub(crate) dsp: [Rav1dDSPContext; 3], /* 8, 10, 12 bits/component */
     pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,
-
-    // tree to keep track of which edges are available
-    pub(crate) intra_edge: IntraEdges,
 
     pub(crate) allocator: Rav1dPicAllocator,
     pub(crate) apply_grain: bool,

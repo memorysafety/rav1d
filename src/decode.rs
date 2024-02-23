@@ -80,6 +80,7 @@ use crate::src::internal::Rav1dTileState;
 use crate::src::internal::ScalableMotionParams;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
+use crate::src::intra_edge::IntraEdges;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::ipred::rav1d_intra_pred_dsp_init;
 use crate::src::levels::mv;
@@ -3499,6 +3500,7 @@ unsafe fn decode_sb(
     let have_v_split = f.bh > t.by + hsz;
 
     let sb128 = f.seq_hdr().sb128 != 0;
+    let intra_edge = &IntraEdges::DEFAULT;
 
     if !have_h_split && !have_v_split {
         assert!(bl < BL_8X8);
@@ -3507,7 +3509,7 @@ unsafe fn decode_sb(
             t,
             f,
             bl + 1,
-            c.intra_edge.branch(sb128, edge_index).split[0],
+            intra_edge.branch(sb128, edge_index).split[0],
         );
     }
 
@@ -3561,18 +3563,18 @@ unsafe fn decode_sb(
 
         match bp {
             PARTITION_NONE => {
-                let node = c.intra_edge.node(sb128, edge_index);
+                let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.o)?;
             }
             PARTITION_H => {
-                let node = c.intra_edge.node(sb128, edge_index);
+                let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.h[0])?;
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[0], bp, node.h[1])?;
                 t.by -= hsz;
             }
             PARTITION_V => {
-                let node = c.intra_edge.node(sb128, edge_index);
+                let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[0], bp, node.v[1])?;
@@ -3580,7 +3582,7 @@ unsafe fn decode_sb(
             }
             PARTITION_SPLIT => {
                 if bl == BL_8X8 {
-                    let tip = c.intra_edge.tip(sb128, edge_index);
+                    let tip = intra_edge.tip(sb128, edge_index);
                     assert!(hsz == 1);
                     decode_b(c, t, f, bl, BS_4x4, bp, tip.split[0])?;
                     let tl_filter = t.tl_4x4_filter;
@@ -3603,7 +3605,7 @@ unsafe fn decode_sb(
                             (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63) as *mut DynCoef;
                     }
                 } else {
-                    let branch = c.intra_edge.branch(sb128, edge_index);
+                    let branch = intra_edge.branch(sb128, edge_index);
                     decode_sb(c, t, f, bl + 1, branch.split[0])?;
                     t.bx += hsz;
                     decode_sb(c, t, f, bl + 1, branch.split[1])?;
@@ -3617,7 +3619,7 @@ unsafe fn decode_sb(
                 }
             }
             PARTITION_T_TOP_SPLIT => {
-                let branch = c.intra_edge.branch(sb128, edge_index);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.tts[0])?;
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[0], bp, branch.tts[1])?;
@@ -3627,7 +3629,7 @@ unsafe fn decode_sb(
                 t.by -= hsz;
             }
             PARTITION_T_BOTTOM_SPLIT => {
-                let branch = c.intra_edge.branch(sb128, edge_index);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.tbs[0])?;
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[1], bp, branch.tbs[1])?;
@@ -3637,7 +3639,7 @@ unsafe fn decode_sb(
                 t.by -= hsz;
             }
             PARTITION_T_LEFT_SPLIT => {
-                let branch = c.intra_edge.branch(sb128, edge_index);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.tls[0])?;
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[0], bp, branch.tls[1])?;
@@ -3647,7 +3649,7 @@ unsafe fn decode_sb(
                 t.bx -= hsz;
             }
             PARTITION_T_RIGHT_SPLIT => {
-                let branch = c.intra_edge.branch(sb128, edge_index);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.trs[0])?;
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[1], bp, branch.trs[1])?;
@@ -3657,7 +3659,7 @@ unsafe fn decode_sb(
                 t.bx -= hsz;
             }
             PARTITION_H4 => {
-                let branch = c.intra_edge.branch(sb128, edge_index);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.h4[0])?;
                 t.by += hsz >> 1;
                 decode_b(c, t, f, bl, b[0], bp, branch.h4[1])?;
@@ -3670,7 +3672,7 @@ unsafe fn decode_sb(
                 t.by -= hsz * 3 >> 1;
             }
             PARTITION_V4 => {
-                let branch = c.intra_edge.branch(sb128, edge_index);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.v4[0])?;
                 t.bx += hsz >> 1;
                 decode_b(c, t, f, bl, b[0], bp, branch.v4[1])?;
@@ -3711,14 +3713,14 @@ unsafe fn decode_sb(
 
         assert!(bl < BL_8X8);
         if is_split {
-            let branch = c.intra_edge.branch(sb128, edge_index);
+            let branch = intra_edge.branch(sb128, edge_index);
             bp = PARTITION_SPLIT;
             decode_sb(c, t, f, bl + 1, branch.split[0])?;
             t.bx += hsz;
             decode_sb(c, t, f, bl + 1, branch.split[1])?;
             t.bx -= hsz;
         } else {
-            let node = c.intra_edge.node(sb128, edge_index);
+            let node = intra_edge.node(sb128, edge_index);
             bp = PARTITION_H;
             decode_b(
                 c,
@@ -3761,14 +3763,14 @@ unsafe fn decode_sb(
 
         assert!(bl < BL_8X8);
         if is_split {
-            let branch = c.intra_edge.branch(sb128, edge_index);
+            let branch = intra_edge.branch(sb128, edge_index);
             bp = PARTITION_SPLIT;
             decode_sb(c, t, f, bl + 1, branch.split[0])?;
             t.by += hsz;
             decode_sb(c, t, f, bl + 1, branch.split[2])?;
             t.by -= hsz;
         } else {
-            let node = c.intra_edge.node(sb128, edge_index);
+            let node = intra_edge.node(sb128, edge_index);
             bp = PARTITION_V;
             decode_b(
                 c,
