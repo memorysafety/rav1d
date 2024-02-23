@@ -175,9 +175,8 @@ impl EdgeBranch {
     }
 }
 
-fn init_mode_node(
-    tree: &mut IntraEdges,
-    sb128: bool,
+fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
+    tree: &mut IntraEdge<SB128, N_BRANCH, N_TIP>,
     branch_index: EdgeIndex,
     bl: BlockLevel,
     indices: &mut EdgeIndices,
@@ -209,7 +208,7 @@ fn init_mode_node(
             } else {
                 EDGE_LEFT_HAS_BOTTOM
             });
-            tree.set_tip(sb128, tip, EdgeTip::new(edge_flags));
+            tree.set_tip(tip, EdgeTip::new(edge_flags));
         }
     } else {
         for n in 0..B as u8 {
@@ -217,7 +216,6 @@ fn init_mode_node(
             branch.split[n as usize] = child_branch;
             init_mode_node(
                 tree,
-                sb128,
                 child_branch,
                 bl + 1,
                 indices,
@@ -226,7 +224,7 @@ fn init_mode_node(
             );
         }
     };
-    tree.set_branch(sb128, branch_index, branch);
+    tree.set_branch(branch_index, branch);
 }
 
 const fn level_index(mut level: u8) -> u8 {
@@ -256,8 +254,7 @@ pub fn rav1d_init_mode_tree(tree: &mut IntraEdges, allow_sb128: bool) {
         indices.branch[BL_64X64 as usize].index = level_index(2);
         indices.branch[BL_32X32 as usize].index = level_index(3);
         init_mode_node(
-            tree,
-            allow_sb128,
+            &mut tree.sb128,
             EdgeIndex::root(),
             BL_128X128,
             &mut indices,
@@ -272,8 +269,7 @@ pub fn rav1d_init_mode_tree(tree: &mut IntraEdges, allow_sb128: bool) {
         indices.branch[BL_64X64 as usize].index = level_index(1);
         indices.branch[BL_32X32 as usize].index = level_index(2);
         init_mode_node(
-            tree,
-            allow_sb128,
+            &mut tree.sb64,
             EdgeIndex::root(),
             BL_64X64,
             &mut indices,
@@ -287,12 +283,14 @@ pub fn rav1d_init_mode_tree(tree: &mut IntraEdges, allow_sb128: bool) {
 }
 
 #[repr(C)]
-pub struct IntraEdge<const N_BRANCH: usize, const N_TIP: usize> {
+pub struct IntraEdge<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize> {
     pub branch: [EdgeBranch; N_BRANCH],
     pub tip: [EdgeTip; N_TIP],
 }
 
-impl<const N_BRANCH: usize, const N_TIP: usize> IntraEdge<N_BRANCH, N_TIP> {
+impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
+    IntraEdge<SB128, N_BRANCH, N_TIP>
+{
     pub const fn branch(&self, branch: EdgeIndex) -> &EdgeBranch {
         // Only a debug assert since it is still memory safe without it.
         debug_assert!(matches!(branch.kind, EdgeKind::Branch));
@@ -327,8 +325,8 @@ impl<const N_BRANCH: usize, const N_TIP: usize> IntraEdge<N_BRANCH, N_TIP> {
 
 #[repr(C)]
 pub struct IntraEdges {
-    pub sb128: IntraEdge<85, 256>,
-    pub sb64: IntraEdge<21, 64>,
+    pub sb128: IntraEdge<true, 85, 256>,
+    pub sb64: IntraEdge<false, 21, 64>,
 }
 
 impl IntraEdges {
@@ -353,22 +351,6 @@ impl IntraEdges {
             self.sb128.node(node)
         } else {
             self.sb64.node(node)
-        }
-    }
-
-    pub fn set_branch(&mut self, sb128: bool, branch: EdgeIndex, value: EdgeBranch) {
-        if sb128 {
-            self.sb128.set_branch(branch, value);
-        } else {
-            self.sb64.set_branch(branch, value);
-        }
-    }
-
-    pub fn set_tip(&mut self, sb128: bool, tip: EdgeIndex, value: EdgeTip) {
-        if sb128 {
-            self.sb128.set_tip(tip, value);
-        } else {
-            self.sb64.set_tip(tip, value);
         }
     }
 }
