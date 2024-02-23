@@ -264,11 +264,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
         (self, indices)
     }
 
-    const fn new() -> Self {
-        let mut this = Self {
-            branch: [EdgeBranch::DEFAULT; N_BRANCH],
-            tip: [EdgeTip::DEFAULT; N_TIP],
-        };
+    const fn init(mut self) -> Self {
         let mut indices = EdgeIndices {
             branch: [EdgeIndex {
                 index: 0,
@@ -289,7 +285,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
         }
 
         let bl = if SB128 { BL_128X128 } else { BL_64X64 };
-        (this, indices) = this.init_mode_node(EdgeIndex::root(), bl, indices, true, false);
+        (self, indices) = self.init_mode_node(EdgeIndex::root(), bl, indices, true, false);
 
         let mut bl = BL_128X128;
         while bl <= BL_32X32 {
@@ -299,9 +295,17 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
             }
             bl += 1;
         }
-        assert!(indices.tip.index == this.tip.len() as u8);
+        assert!(indices.tip.index == self.tip.len() as u8);
 
-        this
+        self
+    }
+
+    const fn new() -> Self {
+        Self {
+            branch: [EdgeBranch::DEFAULT; N_BRANCH],
+            tip: [EdgeTip::DEFAULT; N_TIP],
+        }
+        .init()
     }
 
     pub const fn branch(&self, branch: EdgeIndex) -> &EdgeBranch {
