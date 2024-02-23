@@ -21,6 +21,8 @@ pub const EDGE_LEFT_HAS_BOTTOM: EdgeFlags =
 pub const EDGE_TOP_HAS_RIGHT: EdgeFlags =
     EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT;
 
+const B: usize = 4;
+
 #[repr(C)]
 pub struct EdgeNode {
     pub o: EdgeFlags,
@@ -31,7 +33,7 @@ pub struct EdgeNode {
 #[repr(C)]
 pub struct EdgeTip {
     pub node: EdgeNode,
-    pub split: [EdgeFlags; 4],
+    pub split: [EdgeFlags; B],
 }
 
 #[repr(C)]
@@ -43,7 +45,7 @@ pub struct EdgeBranch {
     pub trs: [EdgeFlags; 3],
     pub h4: [EdgeFlags; 4],
     pub v4: [EdgeFlags; 4],
-    pub split: [*mut EdgeNode; 4],
+    pub split: [*mut EdgeNode; B],
 }
 
 struct ModeSelMem {
@@ -179,8 +181,8 @@ unsafe fn init_mode_node(
         bl,
     );
     if bl == BL_16X16 {
-        let nt = slice::from_raw_parts_mut(mem.nt, nwc.split.len());
-        mem.nt = mem.nt.offset(nt.len() as isize);
+        let nt = slice::from_raw_parts_mut(mem.nt, B);
+        mem.nt = mem.nt.offset(B as isize);
         for (n, (split, nt)) in iter::zip(&mut nwc.split, nt).enumerate() {
             *split = &mut nt.node;
             init_edges(
@@ -198,8 +200,8 @@ unsafe fn init_mode_node(
             );
         }
     } else {
-        let nwc_children = slice::from_raw_parts_mut(mem.nwc[bl as usize], nwc.split.len());
-        mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(nwc_children.len() as isize);
+        let nwc_children = slice::from_raw_parts_mut(mem.nwc[bl as usize], B);
+        mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(B as isize);
         for (n, (split, nwc_child)) in iter::zip(&mut nwc.split, nwc_children).enumerate() {
             *split = &mut nwc_child.node;
             init_mode_node(
@@ -214,7 +216,6 @@ unsafe fn init_mode_node(
 }
 
 pub unsafe fn rav1d_init_mode_tree(root: *mut EdgeBranch, nt: &mut [EdgeTip], allow_sb128: bool) {
-    
     let mut mem = ModeSelMem {
         nwc: [ptr::null_mut(); 3],
         nt: nt.as_mut_ptr(),
