@@ -51,25 +51,37 @@ struct ModeSelMem {
     pub nt: *mut EdgeTip,
 }
 
+impl EdgeTip {
+    const fn new(edge_flags: EdgeFlags) -> Self {
+        let o = edge_flags;
+        let h = [
+            edge_flags | EDGE_LEFT_HAS_BOTTOM,
+            edge_flags & (EDGE_LEFT_HAS_BOTTOM | EDGE_I420_TOP_HAS_RIGHT),
+        ];
+        let v = [
+            edge_flags | EDGE_TOP_HAS_RIGHT,
+            edge_flags
+                & (EDGE_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM),
+        ];
+        let node = EdgeNode { o, h, v };
+
+        let split = [
+            EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM,
+            (edge_flags & EDGE_TOP_HAS_RIGHT) | EDGE_I422_LEFT_HAS_BOTTOM,
+            edge_flags | EDGE_I444_TOP_HAS_RIGHT,
+            edge_flags
+                & (EDGE_I420_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM),
+        ];
+
+        Self { node, split }
+    }
+}
+
 unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
     (*node).o = edge_flags;
 
     if bl == BL_8X8 {
-        let nt = &mut *(node as *mut EdgeTip);
-        let node = &mut nt.node;
-
-        node.h[0] = edge_flags | EDGE_LEFT_HAS_BOTTOM;
-        node.h[1] = edge_flags & (EDGE_LEFT_HAS_BOTTOM | EDGE_I420_TOP_HAS_RIGHT);
-
-        node.v[0] = edge_flags | EDGE_TOP_HAS_RIGHT;
-        node.v[1] = edge_flags
-            & (EDGE_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
-
-        nt.split[0] = EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM;
-        nt.split[1] = (edge_flags & EDGE_TOP_HAS_RIGHT) | EDGE_I422_LEFT_HAS_BOTTOM;
-        nt.split[2] = edge_flags | EDGE_I444_TOP_HAS_RIGHT;
-        nt.split[3] = edge_flags
-            & (EDGE_I420_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
+        node.cast::<EdgeTip>().write(EdgeTip::new(edge_flags));
     } else {
         let nwc = &mut *(node as *mut EdgeBranch);
         let node = &mut nwc.node;
