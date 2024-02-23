@@ -251,24 +251,18 @@ pub unsafe fn rav1d_init_mode_tree(root: *mut EdgeBranch, nt: &mut [EdgeTip], al
 }
 
 #[repr(C)]
-pub struct IntraEdge128 {
-    pub branch: [EdgeBranch; 85],
-    pub tip: [EdgeTip; 256],
+pub struct IntraEdge<const N_BRANCH: usize, const N_TIP: usize> {
+    pub branch: [EdgeBranch; N_BRANCH],
+    pub tip: [EdgeTip; N_TIP],
 }
 
 #[repr(C)]
-pub struct IntraEdge64 {
-    pub branch: [EdgeBranch; 21],
-    pub tip: [EdgeTip; 64],
+pub struct IntraEdges {
+    pub sb128: IntraEdge<85, 256>,
+    pub sb64: IntraEdge<21, 64>,
 }
 
-#[repr(C)]
-pub struct IntraEdge {
-    pub sb128: IntraEdge128,
-    pub sb64: IntraEdge64,
-}
-
-impl IntraEdge {
+impl IntraEdges {
     pub fn root(&self, bl: BlockLevel) -> &EdgeNode {
         match bl {
             BL_128X128 => &self.sb128.branch[0].node,
