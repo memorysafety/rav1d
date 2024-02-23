@@ -399,7 +399,7 @@ unsafe fn create_filter_sbrow(
     } else {
         TaskType::ReconstructionProgress
     };
-    (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
+    (*t).frame_idx = f.index as c_uint;
     *res_t = t;
     return 0 as c_int;
 }
@@ -453,7 +453,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
         } else {
             TaskType::TileEntropy
         };
-        (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
+        (*t).frame_idx = f.index as c_uint;
         if !prev_t.is_null() {
             (*prev_t).next = t;
         }
@@ -485,8 +485,7 @@ pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, f: &mut Rav1dFrameD
     f.task_thread.init_done.store(0, Ordering::SeqCst);
     let t: *mut Rav1dTask = &mut f.task_thread.init_task;
     (*t).type_0 = TaskType::Init;
-    // TODO(SJC): add a frame context index so we don't have to rely on linear offsets
-    (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
+    (*t).frame_idx = f.index as c_uint;
     (*t).sby = 0 as c_int;
     (*t).deblock_progress = 0 as c_int;
     (*t).recon_progress = (*t).deblock_progress;

@@ -533,6 +533,9 @@ pub(crate) struct Rav1dFrameContext_frame_thread_progress {
 
 #[repr(C)]
 pub(crate) struct Rav1dFrameData {
+    /// Index in [`Rav1dContext::fc`]
+    pub index: usize,
+
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     pub refp: [Rav1dThreadPicture; 7],
