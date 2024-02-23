@@ -194,12 +194,7 @@ unsafe fn init_mode_node(
     };
 }
 
-pub unsafe fn rav1d_init_mode_tree(
-    root_node: *mut EdgeNode,
-    nt: &mut [EdgeTip],
-    allow_sb128: bool,
-) {
-    let root = root_node as *mut EdgeBranch;
+pub unsafe fn rav1d_init_mode_tree(root: *mut EdgeBranch, nt: &mut [EdgeTip], allow_sb128: bool) {
     let mut mem = ModeSelMem {
         nwc: [ptr::null_mut(); 3],
         nt: nt.as_mut_ptr(),

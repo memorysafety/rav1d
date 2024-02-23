@@ -40,8 +40,6 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::intra_edge::rav1d_init_mode_tree;
-use crate::src::levels::BL_128X128;
-use crate::src::levels::BL_64X64;
 use crate::src::log::Rav1dLog as _;
 use crate::src::mem::freep;
 use crate::src::mem::rav1d_alloc_aligned;
@@ -362,17 +360,13 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         })
         .collect();
     rav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
-    (*c).intra_edge.root[BL_128X128 as c_int as usize] =
-        &mut (*((*c).intra_edge.branch_sb128).as_mut_ptr().offset(0)).node;
     rav1d_init_mode_tree(
-        (*c).intra_edge.root[BL_128X128 as c_int as usize],
+        &mut (*c).intra_edge.branch_sb128[0],
         &mut (*c).intra_edge.tip_sb128,
         true,
     );
-    (*c).intra_edge.root[BL_64X64 as c_int as usize] =
-        &mut (*((*c).intra_edge.branch_sb64).as_mut_ptr().offset(0)).node;
     rav1d_init_mode_tree(
-        (*c).intra_edge.root[BL_64X64 as c_int as usize],
+        &mut (*c).intra_edge.branch_sb64[0],
         &mut (*c).intra_edge.tip_sb64,
         false,
     );
