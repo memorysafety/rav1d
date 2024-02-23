@@ -1,3 +1,4 @@
+use crate::src::enum_map::DefaultValue;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_16X16;
@@ -30,6 +31,10 @@ pub struct EdgeNode {
 pub struct EdgeTip {
     pub node: EdgeNode,
     pub split: [EdgeFlags; B],
+}
+
+impl DefaultValue for EdgeTip {
+    const DEFAULT: Self = Self::new(0 as EdgeFlags);
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -70,6 +75,10 @@ pub struct EdgeBranch {
     pub h4: [EdgeFlags; 4],
     pub v4: [EdgeFlags; 4],
     pub split: [EdgeIndex; B],
+}
+
+impl DefaultValue for EdgeBranch {
+    const DEFAULT: Self = Self::new(0 as EdgeFlags, 0 as BlockLevel);
 }
 
 struct EdgeIndices {
@@ -179,14 +188,15 @@ impl EdgeBranch {
 impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
     IntraEdge<SB128, N_BRANCH, N_TIP>
 {
-    fn init_mode_node(
-        &mut self,
+    #[must_use]
+    const fn init_mode_node(
+        mut self,
         branch_index: EdgeIndex,
         bl: BlockLevel,
-        indices: &mut EdgeIndices,
+        mut indices: EdgeIndices,
         top_has_right: bool,
         left_has_bottom: bool,
-    ) {
+    ) -> (Self, EdgeIndices) {
         let mut branch = EdgeBranch::new(
             (if top_has_right {
                 EDGE_TOP_HAS_RIGHT
@@ -223,7 +233,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
                 let (child_branch, next) = indices.branch[bl as usize].pop_front();
                 indices.branch[bl as usize] = next;
                 branch.split[n as usize] = child_branch;
-                self.init_mode_node(
+                (self, indices) = self.init_mode_node(
                     child_branch,
                     bl + 1,
                     indices,
@@ -234,6 +244,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
             }
         };
         self.branch[branch_index.index as usize] = branch;
+        (self, indices)
     }
 }
 
@@ -251,7 +262,11 @@ const fn level_index(mut level: u8) -> u8 {
 impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
     IntraEdge<SB128, N_BRANCH, N_TIP>
 {
-    fn init(&mut self) {
+    const fn new() -> Self {
+        let mut this = Self {
+            branch: [EdgeBranch::DEFAULT; N_BRANCH],
+            tip: [EdgeTip::DEFAULT; N_TIP],
+        };
         let mut indices = EdgeIndices {
             branch: [EdgeIndex {
                 index: 0,
@@ -264,30 +279,37 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
         };
 
         let sb128 = SB128 as u8;
-        let bl = if SB128 { BL_128X128 } else { BL_64X64 };
 
-        for bl in BL_128X128..=BL_32X32 {
+        let mut bl = BL_128X128;
+        while bl <= BL_32X32 {
             indices.branch[bl as usize].index = level_index(bl + sb128);
+            bl += 1;
         }
 
-        self.init_mode_node(EdgeIndex::root(), bl, &mut indices, true, false);
+        let bl = if SB128 { BL_128X128 } else { BL_64X64 };
+        (this, indices) = this.init_mode_node(EdgeIndex::root(), bl, indices, true, false);
 
-        for bl in BL_128X128..=BL_32X32 {
+        let mut bl = BL_128X128;
+        while bl <= BL_32X32 {
             let index = indices.branch[bl as usize].index;
             if index != 0 {
-                assert_eq!(index, level_index(1 + bl + sb128));
+                assert!(index == level_index(1 + bl + sb128));
             }
+            bl += 1;
         }
-        assert_eq!(indices.tip.index, self.tip.len() as u8);
+        assert!(indices.tip.index == this.tip.len() as u8);
+
+        this
     }
 }
 
-pub fn rav1d_init_mode_tree(tree: &mut IntraEdges, allow_sb128: bool) {
-    if allow_sb128 {
-        tree.sb128.init();
-    } else {
-        tree.sb64.init();
-    };
+impl IntraEdges {
+    pub const fn new() -> Self {
+        Self {
+            sb128: IntraEdge::new(),
+            sb64: IntraEdge::new(),
+        }
+    }
 }
 
 #[repr(C)]
