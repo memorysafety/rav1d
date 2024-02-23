@@ -196,7 +196,8 @@ fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
         bl,
     );
     if bl == BL_16X16 {
-        for n in 0..B as u8 {
+        let mut n = 0;
+        while n < B as u8 {
             let tip = indices.tip.pop_front();
             branch.split[n as usize] = tip;
             let edge_flags = (if n == 3 || (n == 1 && !top_has_right) {
@@ -209,9 +210,11 @@ fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
                 EDGE_LEFT_HAS_BOTTOM
             });
             tree.tip[tip.index as usize] = EdgeTip::new(edge_flags);
+            n += 1;
         }
     } else {
-        for n in 0..B as u8 {
+        let mut n = 0;
+        while n < B as u8 {
             let child_branch = indices.branch[bl as usize].pop_front();
             branch.split[n as usize] = child_branch;
             init_mode_node(
@@ -222,6 +225,7 @@ fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
                 !(n == 3 || (n == 1 && !top_has_right)),
                 n == 0 || (n == 2 && left_has_bottom),
             );
+            n += 1;
         }
     };
     tree.branch[branch_index.index as usize] = branch;
