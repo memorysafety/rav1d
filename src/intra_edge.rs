@@ -208,7 +208,7 @@ fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
             } else {
                 EDGE_LEFT_HAS_BOTTOM
             });
-            tree.set_tip(tip, EdgeTip::new(edge_flags));
+            tree.tip[tip.index as usize] = EdgeTip::new(edge_flags);
         }
     } else {
         for n in 0..B as u8 {
@@ -224,7 +224,7 @@ fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
             );
         }
     };
-    tree.set_branch(branch_index, branch);
+    tree.branch[branch_index.index as usize] = branch;
 }
 
 const fn level_index(mut level: u8) -> u8 {
@@ -308,18 +308,6 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
             EdgeKind::Branch => &self.branch(node).node,
             EdgeKind::Tip => &self.tip(node).node,
         }
-    }
-
-    pub fn set_branch(&mut self, branch: EdgeIndex, value: EdgeBranch) {
-        // Only a debug assert since it is still memory safe without it.
-        debug_assert!(matches!(branch.kind, EdgeKind::Branch));
-        self.branch[branch.index as usize] = value;
-    }
-
-    pub fn set_tip(&mut self, tip: EdgeIndex, value: EdgeTip) {
-        // Only a debug assert since it is still memory safe without it.
-        debug_assert!(matches!(tip.kind, EdgeKind::Tip));
-        self.tip[tip.index as usize] = value;
     }
 }
 
