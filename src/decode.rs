@@ -4361,11 +4361,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
 
         let cf_sz = (num_sb128 * size_mul[0] as c_int) << hbd;
-        if cf_sz as usize != f.frame_thread.cf_sz() {
-            f.frame_thread.cf.clear();
-            // TODO: Fallible allocation
-            f.frame_thread.cf.resize(cf_sz as usize * 128 * 128 / 2, 0);
-        }
+        // TODO: Fallible allocation
+        f.frame_thread.cf.resize(cf_sz as usize * 128 * 128 / 2, 0);
 
         if frame_hdr.allow_screen_content_tools != 0 {
             // TODO: Fallible allocation

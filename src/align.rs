@@ -168,11 +168,6 @@ impl<T: Copy> AlignedVec64<T> {
 
         self.len = new_len;
     }
-
-    pub fn clear(&mut self) {
-        self.inner.clear();
-        self.len = 0;
-    }
 }
 
 impl<T: Copy> Deref for AlignedVec64<T> {

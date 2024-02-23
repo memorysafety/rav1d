@@ -427,12 +427,6 @@ pub struct Rav1dFrameContext_frame_thread {
     pub tile_start_off: *mut u32,
 }
 
-impl Rav1dFrameContext_frame_thread {
-    pub fn cf_sz(&self) -> usize {
-        self.cf.len() / (128 * 128 / 2)
-    }
-}
-
 /// loopfilter
 #[repr(C)]
 pub struct Rav1dFrameContext_lf {
