@@ -186,7 +186,7 @@ struct EdgeIndices {
 }
 
 #[repr(C)]
-pub struct IntraEdge<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize> {
+struct IntraEdge<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize> {
     pub branch: [EdgeBranch; N_BRANCH],
     pub tip: [EdgeTip; N_TIP],
 }
@@ -327,12 +327,12 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
 /// A tree to keep track of which edges are available.
 #[repr(C)]
 pub struct IntraEdges {
-    pub sb128: IntraEdge<true, 85, 256>,
-    pub sb64: IntraEdge<false, 21, 64>,
+    sb128: IntraEdge<true, 85, 256>,
+    sb64: IntraEdge<false, 21, 64>,
 }
 
 impl IntraEdges {
-    pub const fn new() -> Self {
+    const fn new() -> Self {
         Self {
             sb128: IntraEdge::new(),
             sb64: IntraEdge::new(),
