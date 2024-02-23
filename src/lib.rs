@@ -360,16 +360,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         })
         .collect();
     rav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
-    rav1d_init_mode_tree(
-        &mut (*c).intra_edge.sb128.branch[0],
-        &mut (*c).intra_edge.sb128.tip,
-        true,
-    );
-    rav1d_init_mode_tree(
-        &mut (*c).intra_edge.sb64.branch[0],
-        &mut (*c).intra_edge.sb64.tip,
-        false,
-    );
+    rav1d_init_mode_tree(&mut (*c).intra_edge, true);
+    rav1d_init_mode_tree(&mut (*c).intra_edge, false);
     pthread_attr_destroy(&mut thread_attr);
     Ok(())
 }

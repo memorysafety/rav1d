@@ -3,10 +3,6 @@ use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_16X16;
 use crate::src::levels::BL_32X32;
 use crate::src::levels::BL_64X64;
-use crate::src::levels::BL_8X8;
-use std::iter;
-use std::ptr;
-use std::slice;
 
 pub type EdgeFlags = u8;
 pub const EDGE_I420_LEFT_HAS_BOTTOM: EdgeFlags = 32;
@@ -36,6 +32,33 @@ pub struct EdgeTip {
     pub split: [EdgeFlags; B],
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum EdgeKind {
+    Tip,
+    Branch,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct EdgeIndex {
+    index: u8,
+    kind: EdgeKind,
+}
+
+impl EdgeIndex {
+    pub const fn root() -> Self {
+        Self {
+            index: 0,
+            kind: EdgeKind::Branch,
+        }
+    }
+
+    pub fn pop_front(&mut self) -> Self {
+        let front = *self;
+        self.index = self.index.wrapping_add(1);
+        front
+    }
+}
+
 #[repr(C)]
 pub struct EdgeBranch {
     pub node: EdgeNode,
@@ -45,12 +68,12 @@ pub struct EdgeBranch {
     pub trs: [EdgeFlags; 3],
     pub h4: [EdgeFlags; 4],
     pub v4: [EdgeFlags; 4],
-    pub split: [*mut EdgeNode; B],
+    pub split: [EdgeIndex; B],
 }
 
-struct ModeSelMem {
-    pub nwc: [*mut EdgeBranch; 3],
-    pub nt: *mut EdgeTip,
+struct EdgeIndices {
+    pub branch: [EdgeIndex; 3],
+    pub tip: EdgeIndex,
 }
 
 impl EdgeTip {
@@ -137,7 +160,7 @@ impl EdgeBranch {
             0 as EdgeFlags,
         ];
 
-        let split = [ptr::null_mut(); 4];
+        let split = [EdgeIndex::root(); 4];
 
         Self {
             node,
@@ -152,23 +175,16 @@ impl EdgeBranch {
     }
 }
 
-unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
-    if bl == BL_8X8 {
-        node.cast::<EdgeTip>().write(EdgeTip::new(edge_flags));
-    } else {
-        node.cast::<EdgeBranch>()
-            .write(EdgeBranch::new(edge_flags, bl));
-    };
-}
-
-unsafe fn init_mode_node(
-    nwc: &mut EdgeBranch,
+fn init_mode_node(
+    tree: &mut IntraEdges,
+    sb128: bool,
+    branch_index: EdgeIndex,
     bl: BlockLevel,
-    mem: &mut ModeSelMem,
+    indices: &mut EdgeIndices,
     top_has_right: bool,
     left_has_bottom: bool,
 ) {
-    *nwc = EdgeBranch::new(
+    let mut branch = EdgeBranch::new(
         (if top_has_right {
             EDGE_TOP_HAS_RIGHT
         } else {
@@ -181,41 +197,39 @@ unsafe fn init_mode_node(
         bl,
     );
     if bl == BL_16X16 {
-        let nt = slice::from_raw_parts_mut(mem.nt, B);
-        mem.nt = mem.nt.offset(B as isize);
-        for (n, (split, nt)) in iter::zip(&mut nwc.split, nt).enumerate() {
-            *split = &mut nt.node;
-            init_edges(
-                &mut nt.node,
-                bl + 1,
-                ((if n == 3 || (n == 1 && !top_has_right) {
-                    0 as EdgeFlags
-                } else {
-                    EDGE_TOP_HAS_RIGHT
-                }) | (if !(n == 0 || (n == 2 && left_has_bottom)) {
-                    0 as EdgeFlags
-                } else {
-                    EDGE_LEFT_HAS_BOTTOM
-                })) as EdgeFlags,
-            );
+        for n in 0..B as u8 {
+            let tip = indices.tip.pop_front();
+            branch.split[n as usize] = tip;
+            let edge_flags = (if n == 3 || (n == 1 && !top_has_right) {
+                0 as EdgeFlags
+            } else {
+                EDGE_TOP_HAS_RIGHT
+            }) | (if !(n == 0 || (n == 2 && left_has_bottom)) {
+                0 as EdgeFlags
+            } else {
+                EDGE_LEFT_HAS_BOTTOM
+            });
+            tree.set_tip(sb128, tip, EdgeTip::new(edge_flags));
         }
     } else {
-        let nwc_children = slice::from_raw_parts_mut(mem.nwc[bl as usize], B);
-        mem.nwc[bl as usize] = mem.nwc[bl as usize].offset(B as isize);
-        for (n, (split, nwc_child)) in iter::zip(&mut nwc.split, nwc_children).enumerate() {
-            *split = &mut nwc_child.node;
+        for n in 0..B as u8 {
+            let child_branch = indices.branch[bl as usize].pop_front();
+            branch.split[n as usize] = child_branch;
             init_mode_node(
-                nwc_child,
+                tree,
+                sb128,
+                child_branch,
                 bl + 1,
-                mem,
+                indices,
                 !(n == 3 || (n == 1 && !top_has_right)),
                 n == 0 || (n == 2 && left_has_bottom),
             );
         }
     };
+    tree.set_branch(sb128, branch_index, branch);
 }
 
-const fn level_index(mut level: u8) -> isize {
+const fn level_index(mut level: u8) -> u8 {
     let mut level_size = 1;
     let mut index = 0;
     while level > 0 {
@@ -223,37 +237,92 @@ const fn level_index(mut level: u8) -> isize {
         level_size *= B;
         level -= 1;
     }
-    index as isize
+    index as u8
 }
 
-pub unsafe fn rav1d_init_mode_tree(root: *mut EdgeBranch, nt: &mut [EdgeTip], allow_sb128: bool) {
-    let mut mem = ModeSelMem {
-        nwc: [ptr::null_mut(); 3],
-        nt: nt.as_mut_ptr(),
+pub fn rav1d_init_mode_tree(tree: &mut IntraEdges, allow_sb128: bool) {
+    let mut indices = EdgeIndices {
+        branch: [EdgeIndex {
+            index: 0,
+            kind: EdgeKind::Branch,
+        }; 3],
+        tip: EdgeIndex {
+            index: 0,
+            kind: EdgeKind::Tip,
+        },
     };
     if allow_sb128 {
-        mem.nwc[BL_128X128 as usize] = root.offset(level_index(1));
-        mem.nwc[BL_64X64 as usize] = root.offset(level_index(2));
-        mem.nwc[BL_32X32 as usize] = root.offset(level_index(3));
-        init_mode_node(&mut *root, BL_128X128, &mut mem, true, false);
-        assert_eq!(mem.nwc[BL_128X128 as usize], root.offset(level_index(2)));
-        assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(level_index(3)));
-        assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(level_index(4)));
+        indices.branch[BL_128X128 as usize].index = level_index(1);
+        indices.branch[BL_64X64 as usize].index = level_index(2);
+        indices.branch[BL_32X32 as usize].index = level_index(3);
+        init_mode_node(
+            tree,
+            allow_sb128,
+            EdgeIndex::root(),
+            BL_128X128,
+            &mut indices,
+            true,
+            false,
+        );
+        assert_eq!(indices.branch[BL_128X128 as usize].index, level_index(2));
+        assert_eq!(indices.branch[BL_64X64 as usize].index, level_index(3));
+        assert_eq!(indices.branch[BL_32X32 as usize].index, level_index(4));
+        assert_eq!(indices.tip.index, tree.sb128.tip.len() as u8);
     } else {
-        mem.nwc[BL_128X128 as usize] = ptr::null_mut();
-        mem.nwc[BL_64X64 as usize] = root.offset(level_index(1));
-        mem.nwc[BL_32X32 as usize] = root.offset(level_index(2));
-        init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
-        assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(level_index(2)));
-        assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(level_index(3)));
+        indices.branch[BL_64X64 as usize].index = level_index(1);
+        indices.branch[BL_32X32 as usize].index = level_index(2);
+        init_mode_node(
+            tree,
+            allow_sb128,
+            EdgeIndex::root(),
+            BL_64X64,
+            &mut indices,
+            true,
+            false,
+        );
+        assert_eq!(indices.branch[BL_64X64 as usize].index, level_index(2));
+        assert_eq!(indices.branch[BL_32X32 as usize].index, level_index(3));
+        assert_eq!(indices.tip.index, tree.sb64.tip.len() as u8);
     };
-    assert_eq!(mem.nt, nt.as_mut_ptr_range().end);
 }
 
 #[repr(C)]
 pub struct IntraEdge<const N_BRANCH: usize, const N_TIP: usize> {
     pub branch: [EdgeBranch; N_BRANCH],
     pub tip: [EdgeTip; N_TIP],
+}
+
+impl<const N_BRANCH: usize, const N_TIP: usize> IntraEdge<N_BRANCH, N_TIP> {
+    pub const fn branch(&self, branch: EdgeIndex) -> &EdgeBranch {
+        // Only a debug assert since it is still memory safe without it.
+        debug_assert!(matches!(branch.kind, EdgeKind::Branch));
+        &self.branch[branch.index as usize]
+    }
+
+    pub const fn tip(&self, tip: EdgeIndex) -> &EdgeTip {
+        // Only a debug assert since it is still memory safe without it.
+        debug_assert!(matches!(tip.kind, EdgeKind::Tip));
+        &self.tip[tip.index as usize]
+    }
+
+    pub const fn node(&self, node: EdgeIndex) -> &EdgeNode {
+        match node.kind {
+            EdgeKind::Branch => &self.branch(node).node,
+            EdgeKind::Tip => &self.tip(node).node,
+        }
+    }
+
+    pub fn set_branch(&mut self, branch: EdgeIndex, value: EdgeBranch) {
+        // Only a debug assert since it is still memory safe without it.
+        debug_assert!(matches!(branch.kind, EdgeKind::Branch));
+        self.branch[branch.index as usize] = value;
+    }
+
+    pub fn set_tip(&mut self, tip: EdgeIndex, value: EdgeTip) {
+        // Only a debug assert since it is still memory safe without it.
+        debug_assert!(matches!(tip.kind, EdgeKind::Tip));
+        self.tip[tip.index as usize] = value;
+    }
 }
 
 #[repr(C)]
@@ -263,11 +332,43 @@ pub struct IntraEdges {
 }
 
 impl IntraEdges {
-    pub fn root(&self, bl: BlockLevel) -> &EdgeNode {
-        match bl {
-            BL_128X128 => &self.sb128.branch[0].node,
-            BL_64X64 => &self.sb64.branch[0].node,
-            _ => unreachable!(),
+    pub const fn branch(&self, sb128: bool, branch: EdgeIndex) -> &EdgeBranch {
+        if sb128 {
+            self.sb128.branch(branch)
+        } else {
+            self.sb64.branch(branch)
+        }
+    }
+
+    pub const fn tip(&self, sb128: bool, tip: EdgeIndex) -> &EdgeTip {
+        if sb128 {
+            self.sb128.tip(tip)
+        } else {
+            self.sb64.tip(tip)
+        }
+    }
+
+    pub const fn node(&self, sb128: bool, node: EdgeIndex) -> &EdgeNode {
+        if sb128 {
+            self.sb128.node(node)
+        } else {
+            self.sb64.node(node)
+        }
+    }
+
+    pub fn set_branch(&mut self, sb128: bool, branch: EdgeIndex, value: EdgeBranch) {
+        if sb128 {
+            self.sb128.set_branch(branch, value);
+        } else {
+            self.sb64.set_branch(branch, value);
+        }
+    }
+
+    pub fn set_tip(&mut self, sb128: bool, tip: EdgeIndex, value: EdgeTip) {
+        if sb128 {
+            self.sb128.set_tip(tip, value);
+        } else {
+            self.sb64.set_tip(tip, value);
         }
     }
 }
