@@ -215,26 +215,37 @@ unsafe fn init_mode_node(
     };
 }
 
+const fn level_index(mut level: u8) -> isize {
+    let mut level_size = 1;
+    let mut index = 0;
+    while level > 0 {
+        index += level_size;
+        level_size *= B;
+        level -= 1;
+    }
+    index as isize
+}
+
 pub unsafe fn rav1d_init_mode_tree(root: *mut EdgeBranch, nt: &mut [EdgeTip], allow_sb128: bool) {
     let mut mem = ModeSelMem {
         nwc: [ptr::null_mut(); 3],
         nt: nt.as_mut_ptr(),
     };
     if allow_sb128 {
-        mem.nwc[BL_128X128 as usize] = root.offset(1);
-        mem.nwc[BL_64X64 as usize] = root.offset(1 + 4);
-        mem.nwc[BL_32X32 as usize] = root.offset(1 + 4 + 16);
+        mem.nwc[BL_128X128 as usize] = root.offset(level_index(1));
+        mem.nwc[BL_64X64 as usize] = root.offset(level_index(2));
+        mem.nwc[BL_32X32 as usize] = root.offset(level_index(3));
         init_mode_node(&mut *root, BL_128X128, &mut mem, true, false);
-        assert_eq!(mem.nwc[BL_128X128 as usize], root.offset(1 + 4));
-        assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(1 + 4 + 16));
-        assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(1 + 4 + 16 + 64));
+        assert_eq!(mem.nwc[BL_128X128 as usize], root.offset(level_index(2)));
+        assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(level_index(3)));
+        assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(level_index(4)));
     } else {
         mem.nwc[BL_128X128 as usize] = ptr::null_mut();
-        mem.nwc[BL_64X64 as usize] = root.offset(1);
-        mem.nwc[BL_32X32 as usize] = root.offset(1 + 4);
+        mem.nwc[BL_64X64 as usize] = root.offset(level_index(1));
+        mem.nwc[BL_32X32 as usize] = root.offset(level_index(2));
         init_mode_node(&mut *root, BL_64X64, &mut mem, true, false);
-        assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(1 + 4));
-        assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(1 + 4 + 16));
+        assert_eq!(mem.nwc[BL_64X64 as usize], root.offset(level_index(2)));
+        assert_eq!(mem.nwc[BL_32X32 as usize], root.offset(level_index(3)));
     };
     assert_eq!(mem.nt, nt.as_mut_ptr_range().end);
 }
