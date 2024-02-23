@@ -77,52 +77,85 @@ impl EdgeTip {
     }
 }
 
-unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
-    (*node).o = edge_flags;
+impl EdgeBranch {
+    const fn new(edge_flags: EdgeFlags, bl: BlockLevel) -> Self {
+        let o = edge_flags;
+        let h = [
+            edge_flags | EDGE_LEFT_HAS_BOTTOM,
+            edge_flags & EDGE_LEFT_HAS_BOTTOM,
+        ];
+        let v = [
+            edge_flags | EDGE_TOP_HAS_RIGHT,
+            edge_flags & EDGE_TOP_HAS_RIGHT,
+        ];
+        let node = EdgeNode { o, h, v };
 
+        let h4 = [
+            edge_flags | EDGE_LEFT_HAS_BOTTOM,
+            EDGE_LEFT_HAS_BOTTOM
+                | (if bl == BL_16X16 {
+                    edge_flags & EDGE_I420_TOP_HAS_RIGHT
+                } else {
+                    0 as EdgeFlags
+                }),
+            EDGE_LEFT_HAS_BOTTOM,
+            edge_flags & EDGE_LEFT_HAS_BOTTOM,
+        ];
+
+        let v4 = [
+            edge_flags | EDGE_TOP_HAS_RIGHT,
+            EDGE_TOP_HAS_RIGHT
+                | (if bl == BL_16X16 {
+                    edge_flags & (EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM)
+                } else {
+                    0 as EdgeFlags
+                }),
+            EDGE_TOP_HAS_RIGHT,
+            edge_flags & EDGE_TOP_HAS_RIGHT,
+        ];
+
+        let tls = [
+            EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM,
+            edge_flags & EDGE_LEFT_HAS_BOTTOM,
+            edge_flags & EDGE_TOP_HAS_RIGHT,
+        ];
+        let trs = [
+            edge_flags | EDGE_TOP_HAS_RIGHT,
+            edge_flags | EDGE_LEFT_HAS_BOTTOM,
+            0 as EdgeFlags,
+        ];
+        let tts = [
+            EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM,
+            edge_flags & EDGE_TOP_HAS_RIGHT,
+            edge_flags & EDGE_LEFT_HAS_BOTTOM,
+        ];
+        let tbs = [
+            edge_flags | EDGE_LEFT_HAS_BOTTOM,
+            edge_flags | EDGE_TOP_HAS_RIGHT,
+            0 as EdgeFlags,
+        ];
+
+        let split = [ptr::null_mut(); 4];
+
+        Self {
+            node,
+            h4,
+            v4,
+            tls,
+            trs,
+            tts,
+            tbs,
+            split,
+        }
+    }
+}
+
+unsafe fn init_edges(node: *mut EdgeNode, bl: BlockLevel, edge_flags: EdgeFlags) {
     if bl == BL_8X8 {
         node.cast::<EdgeTip>().write(EdgeTip::new(edge_flags));
     } else {
-        let nwc = &mut *(node as *mut EdgeBranch);
-        let node = &mut nwc.node;
-
-        node.h[0] = edge_flags | EDGE_LEFT_HAS_BOTTOM;
-        node.h[1] = edge_flags & EDGE_LEFT_HAS_BOTTOM;
-
-        node.v[0] = edge_flags | EDGE_TOP_HAS_RIGHT;
-        node.v[1] = edge_flags & EDGE_TOP_HAS_RIGHT;
-
-        nwc.h4[0] = edge_flags | EDGE_LEFT_HAS_BOTTOM;
-        nwc.h4[1] = EDGE_LEFT_HAS_BOTTOM;
-        nwc.h4[2] = nwc.h4[1];
-        nwc.h4[3] = edge_flags & EDGE_LEFT_HAS_BOTTOM;
-        if bl == BL_16X16 {
-            nwc.h4[1] |= edge_flags & EDGE_I420_TOP_HAS_RIGHT;
-        }
-
-        nwc.v4[0] = edge_flags | EDGE_TOP_HAS_RIGHT;
-        nwc.v4[1] = EDGE_TOP_HAS_RIGHT;
-        nwc.v4[2] = nwc.v4[1];
-        nwc.v4[3] = edge_flags & EDGE_TOP_HAS_RIGHT;
-        if bl == BL_16X16 {
-            nwc.v4[1] |= edge_flags & (EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM);
-        }
-
-        nwc.tls[0] = EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM;
-        nwc.tls[1] = edge_flags & EDGE_LEFT_HAS_BOTTOM;
-        nwc.tls[2] = edge_flags & EDGE_TOP_HAS_RIGHT;
-
-        nwc.trs[0] = edge_flags | EDGE_TOP_HAS_RIGHT;
-        nwc.trs[1] = edge_flags | EDGE_LEFT_HAS_BOTTOM;
-        nwc.trs[2] = 0 as EdgeFlags;
-
-        nwc.tts[0] = EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM;
-        nwc.tts[1] = edge_flags & EDGE_TOP_HAS_RIGHT;
-        nwc.tts[2] = edge_flags & EDGE_LEFT_HAS_BOTTOM;
-
-        nwc.tbs[0] = edge_flags | EDGE_LEFT_HAS_BOTTOM;
-        nwc.tbs[1] = edge_flags | EDGE_TOP_HAS_RIGHT;
-        nwc.tbs[2] = 0 as EdgeFlags;
+        node.cast::<EdgeBranch>()
+            .write(EdgeBranch::new(edge_flags, bl));
     };
 }
 
