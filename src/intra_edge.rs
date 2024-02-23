@@ -20,30 +20,13 @@ pub const EDGE_TOP_HAS_RIGHT: EdgeFlags =
 
 const B: usize = 4;
 
-#[repr(C)]
-pub struct EdgeNode {
-    pub o: EdgeFlags,
-    pub h: [EdgeFlags; 2],
-    pub v: [EdgeFlags; 2],
-}
-
-#[repr(C)]
-pub struct EdgeTip {
-    pub node: EdgeNode,
-    pub split: [EdgeFlags; B],
-}
-
-impl DefaultValue for EdgeTip {
-    const DEFAULT: Self = Self::new(0 as EdgeFlags);
-}
-
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub enum EdgeKind {
     Tip,
     Branch,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct EdgeIndex {
     index: u8,
     kind: EdgeKind,
@@ -66,6 +49,19 @@ impl EdgeIndex {
 }
 
 #[repr(C)]
+pub struct EdgeNode {
+    pub o: EdgeFlags,
+    pub h: [EdgeFlags; 2],
+    pub v: [EdgeFlags; 2],
+}
+
+#[repr(C)]
+pub struct EdgeTip {
+    pub node: EdgeNode,
+    pub split: [EdgeFlags; B],
+}
+
+#[repr(C)]
 pub struct EdgeBranch {
     pub node: EdgeNode,
     pub tts: [EdgeFlags; 3],
@@ -75,15 +71,6 @@ pub struct EdgeBranch {
     pub h4: [EdgeFlags; 4],
     pub v4: [EdgeFlags; 4],
     pub split: [EdgeIndex; B],
-}
-
-impl DefaultValue for EdgeBranch {
-    const DEFAULT: Self = Self::new(0 as EdgeFlags, 0 as BlockLevel);
-}
-
-struct EdgeIndices {
-    pub branch: [EdgeIndex; 3],
-    pub tip: EdgeIndex,
 }
 
 impl EdgeTip {
@@ -185,6 +172,36 @@ impl EdgeBranch {
     }
 }
 
+impl DefaultValue for EdgeTip {
+    const DEFAULT: Self = Self::new(0 as EdgeFlags);
+}
+
+impl DefaultValue for EdgeBranch {
+    const DEFAULT: Self = Self::new(0 as EdgeFlags, 0 as BlockLevel);
+}
+
+struct EdgeIndices {
+    pub branch: [EdgeIndex; 3],
+    pub tip: EdgeIndex,
+}
+
+#[repr(C)]
+pub struct IntraEdge<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize> {
+    pub branch: [EdgeBranch; N_BRANCH],
+    pub tip: [EdgeTip; N_TIP],
+}
+
+const fn level_index(mut level: u8) -> u8 {
+    let mut level_size = 1;
+    let mut index = 0;
+    while level > 0 {
+        index += level_size;
+        level_size *= B;
+        level -= 1;
+    }
+    index as u8
+}
+
 impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
     IntraEdge<SB128, N_BRANCH, N_TIP>
 {
@@ -246,22 +263,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
         self.branch[branch_index.index as usize] = branch;
         (self, indices)
     }
-}
 
-const fn level_index(mut level: u8) -> u8 {
-    let mut level_size = 1;
-    let mut index = 0;
-    while level > 0 {
-        index += level_size;
-        level_size *= B;
-        level -= 1;
-    }
-    index as u8
-}
-
-impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
-    IntraEdge<SB128, N_BRANCH, N_TIP>
-{
     const fn new() -> Self {
         let mut this = Self {
             branch: [EdgeBranch::DEFAULT; N_BRANCH],
@@ -301,26 +303,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
 
         this
     }
-}
 
-impl IntraEdges {
-    pub const fn new() -> Self {
-        Self {
-            sb128: IntraEdge::new(),
-            sb64: IntraEdge::new(),
-        }
-    }
-}
-
-#[repr(C)]
-pub struct IntraEdge<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize> {
-    pub branch: [EdgeBranch; N_BRANCH],
-    pub tip: [EdgeTip; N_TIP],
-}
-
-impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
-    IntraEdge<SB128, N_BRANCH, N_TIP>
-{
     pub const fn branch(&self, branch: EdgeIndex) -> &EdgeBranch {
         // Only a debug assert since it is still memory safe without it.
         debug_assert!(matches!(branch.kind, EdgeKind::Branch));
@@ -348,6 +331,13 @@ pub struct IntraEdges {
 }
 
 impl IntraEdges {
+    pub const fn new() -> Self {
+        Self {
+            sb128: IntraEdge::new(),
+            sb64: IntraEdge::new(),
+        }
+    }
+
     pub const fn branch(&self, sb128: bool, branch: EdgeIndex) -> &EdgeBranch {
         if sb128 {
             self.sb128.branch(branch)
