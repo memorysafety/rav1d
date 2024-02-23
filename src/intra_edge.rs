@@ -248,35 +248,45 @@ const fn level_index(mut level: u8) -> u8 {
     index as u8
 }
 
+impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
+    IntraEdge<SB128, N_BRANCH, N_TIP>
+{
+    fn init(&mut self) {
+        let mut indices = EdgeIndices {
+            branch: [EdgeIndex {
+                index: 0,
+                kind: EdgeKind::Branch,
+            }; 3],
+            tip: EdgeIndex {
+                index: 0,
+                kind: EdgeKind::Tip,
+            },
+        };
+
+        let sb128 = SB128 as u8;
+        let bl = if SB128 { BL_128X128 } else { BL_64X64 };
+
+        for bl in BL_128X128..=BL_32X32 {
+            indices.branch[bl as usize].index = level_index(bl + sb128);
+        }
+
+        self.init_mode_node(EdgeIndex::root(), bl, &mut indices, true, false);
+
+        for bl in BL_128X128..=BL_32X32 {
+            let index = indices.branch[bl as usize].index;
+            if index != 0 {
+                assert_eq!(index, level_index(1 + bl + sb128));
+            }
+        }
+        assert_eq!(indices.tip.index, self.tip.len() as u8);
+    }
+}
+
 pub fn rav1d_init_mode_tree(tree: &mut IntraEdges, allow_sb128: bool) {
-    let mut indices = EdgeIndices {
-        branch: [EdgeIndex {
-            index: 0,
-            kind: EdgeKind::Branch,
-        }; 3],
-        tip: EdgeIndex {
-            index: 0,
-            kind: EdgeKind::Tip,
-        },
-    };
     if allow_sb128 {
-        indices.branch[BL_128X128 as usize].index = level_index(1);
-        indices.branch[BL_64X64 as usize].index = level_index(2);
-        indices.branch[BL_32X32 as usize].index = level_index(3);
-        tree.sb128
-            .init_mode_node(EdgeIndex::root(), BL_128X128, &mut indices, true, false);
-        assert_eq!(indices.branch[BL_128X128 as usize].index, level_index(2));
-        assert_eq!(indices.branch[BL_64X64 as usize].index, level_index(3));
-        assert_eq!(indices.branch[BL_32X32 as usize].index, level_index(4));
-        assert_eq!(indices.tip.index, tree.sb128.tip.len() as u8);
+        tree.sb128.init();
     } else {
-        indices.branch[BL_64X64 as usize].index = level_index(1);
-        indices.branch[BL_32X32 as usize].index = level_index(2);
-        tree.sb64
-            .init_mode_node(EdgeIndex::root(), BL_64X64, &mut indices, true, false);
-        assert_eq!(indices.branch[BL_64X64 as usize].index, level_index(2));
-        assert_eq!(indices.branch[BL_32X32 as usize].index, level_index(3));
-        assert_eq!(indices.tip.index, tree.sb64.tip.len() as u8);
+        tree.sb64.init();
     };
 }
 
