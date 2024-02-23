@@ -97,6 +97,12 @@ static const struct cpu {
     { "AVX-512 (Ice Lake)", "avx512icl", DAV1D_X86_CPU_FLAG_AVX512ICL },
 #elif ARCH_AARCH64 || ARCH_ARM
     { "NEON",               "neon",      DAV1D_ARM_CPU_FLAG_NEON },
+    { "DOTPROD",            "dotprod",   DAV1D_ARM_CPU_FLAG_DOTPROD },
+    { "I8MM",               "i8mm",      DAV1D_ARM_CPU_FLAG_I8MM },
+#if ARCH_AARCH64
+    { "SVE",                "sve",       DAV1D_ARM_CPU_FLAG_SVE },
+    { "SVE2",               "sve2",      DAV1D_ARM_CPU_FLAG_SVE2 },
+#endif /* ARCH_AARCH64 */
 #elif ARCH_PPC64LE
     { "VSX",                "vsx",       DAV1D_PPC_CPU_FLAG_VSX },
 #elif ARCH_LOONGARCH
