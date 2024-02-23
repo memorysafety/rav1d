@@ -52,10 +52,11 @@ impl EdgeIndex {
         }
     }
 
-    pub fn pop_front(&mut self) -> Self {
-        let front = *self;
+    #[must_use]
+    pub const fn pop_front(mut self) -> (Self, Self) {
+        let front = self;
         self.index = self.index.wrapping_add(1);
-        front
+        (front, self)
     }
 }
 
@@ -198,7 +199,8 @@ fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
     if bl == BL_16X16 {
         let mut n = 0;
         while n < B as u8 {
-            let tip = indices.tip.pop_front();
+            let (tip, next) = indices.tip.pop_front();
+            indices.tip = next;
             branch.split[n as usize] = tip;
             let edge_flags = (if n == 3 || (n == 1 && !top_has_right) {
                 0 as EdgeFlags
@@ -215,7 +217,8 @@ fn init_mode_node<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>(
     } else {
         let mut n = 0;
         while n < B as u8 {
-            let child_branch = indices.branch[bl as usize].pop_front();
+            let (child_branch, next) = indices.branch[bl as usize].pop_front();
+            indices.branch[bl as usize] = next;
             branch.split[n as usize] = child_branch;
             init_mode_node(
                 tree,
