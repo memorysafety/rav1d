@@ -9,10 +9,9 @@ use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Dav1dContext;
 use crate::include::dav1d::dav1d::Dav1dEventFlags;
 use crate::include::dav1d::dav1d::Dav1dSettings;
+use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::dav1d::Rav1dSettings;
-use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_ALL;
-use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_KEY;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
@@ -134,7 +133,7 @@ impl Default for Rav1dSettings {
             strict_std_compliance: false,
             output_invisible_frames: false,
             inloop_filters: Rav1dInloopFilterType::all(),
-            decode_frame_type: RAV1D_DECODEFRAMETYPE_ALL,
+            decode_frame_type: Rav1dDecodeFrameType::All,
         }
     }
 }
@@ -228,8 +227,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     validate_input!((s.operating_point >= 0 && s.operating_point <= 31, EINVAL))?;
     validate_input!((
-        s.decode_frame_type >= RAV1D_DECODEFRAMETYPE_ALL
-            && s.decode_frame_type <= RAV1D_DECODEFRAMETYPE_KEY,
+        s.decode_frame_type >= Rav1dDecodeFrameType::All
+            && s.decode_frame_type <= Rav1dDecodeFrameType::Key,
         EINVAL
     ))?;
     let mut thread_attr: pthread_attr_t = std::mem::zeroed();

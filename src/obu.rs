@@ -2,8 +2,7 @@ use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
-use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_INTRA;
-use crate::include::dav1d::dav1d::RAV1D_DECODEFRAMETYPE_REFERENCE;
+use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
@@ -2481,12 +2480,12 @@ unsafe fn parse_obus(
                 .frame_type
             {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
-                    if c.decode_frame_type > RAV1D_DECODEFRAMETYPE_REFERENCE {
+                    if c.decode_frame_type > Rav1dDecodeFrameType::Reference {
                         return Ok(skip(c, len, init_byte_pos));
                     }
                 }
                 Rav1dFrameType::Intra => {
-                    if c.decode_frame_type > RAV1D_DECODEFRAMETYPE_INTRA {
+                    if c.decode_frame_type > Rav1dDecodeFrameType::Intra {
                         return Ok(skip(c, len, init_byte_pos));
                     }
                 }
@@ -2614,16 +2613,16 @@ unsafe fn parse_obus(
         } else if c.n_tiles == frame_hdr.tiling.cols * frame_hdr.tiling.rows {
             match frame_hdr.frame_type {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
-                    if c.decode_frame_type > RAV1D_DECODEFRAMETYPE_REFERENCE
-                        || c.decode_frame_type == RAV1D_DECODEFRAMETYPE_REFERENCE
+                    if c.decode_frame_type > Rav1dDecodeFrameType::Reference
+                        || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
                         return Ok(skip(c, len, init_byte_pos));
                     }
                 }
                 Rav1dFrameType::Intra => {
-                    if c.decode_frame_type > RAV1D_DECODEFRAMETYPE_INTRA
-                        || c.decode_frame_type == RAV1D_DECODEFRAMETYPE_REFERENCE
+                    if c.decode_frame_type > Rav1dDecodeFrameType::Intra
+                        || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
                         return Ok(skip(c, len, init_byte_pos));
