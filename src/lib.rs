@@ -226,11 +226,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     validate_input!((s.operating_point >= 0 && s.operating_point <= 31, EINVAL))?;
-    validate_input!((
-        s.decode_frame_type >= Rav1dDecodeFrameType::All
-            && s.decode_frame_type <= Rav1dDecodeFrameType::Key,
-        EINVAL
-    ))?;
     let mut thread_attr: pthread_attr_t = std::mem::zeroed();
     if pthread_attr_init(&mut thread_attr) != 0 {
         return Err(ENOMEM);
