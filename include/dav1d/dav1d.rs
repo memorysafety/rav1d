@@ -8,6 +8,7 @@ use crate::src::r#ref::Rav1dRef;
 use bitflags::bitflags;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use strum::FromRepr;
 
 pub type Dav1dContext = Rav1dContext;
 pub type Dav1dRef = Rav1dRef;
@@ -55,7 +56,8 @@ pub const DAV1D_DECODEFRAMETYPE_INTRA: Dav1dDecodeFrameType =
 pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType =
     Rav1dDecodeFrameType::Key as Dav1dDecodeFrameType;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr)]
 pub(crate) enum Rav1dDecodeFrameType {
     /// decode and return all frames
     All = 0,
@@ -70,20 +72,6 @@ pub(crate) enum Rav1dDecodeFrameType {
 impl From<Rav1dDecodeFrameType> for Dav1dDecodeFrameType {
     fn from(value: Rav1dDecodeFrameType) -> Self {
         value as Self
-    }
-}
-
-impl TryFrom<Dav1dDecodeFrameType> for Rav1dDecodeFrameType {
-    type Error = Rav1dError;
-
-    fn try_from(value: Dav1dDecodeFrameType) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Self::All),
-            1 => Ok(Self::Reference),
-            2 => Ok(Self::Intra),
-            3 => Ok(Self::Key),
-            _ => Err(Rav1dError::EINVAL),
-        }
     }
 }
 
@@ -190,7 +178,8 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             strict_std_compliance: strict_std_compliance != 0,
             output_invisible_frames: output_invisible_frames != 0,
             inloop_filters: inloop_filters.into(),
-            decode_frame_type: decode_frame_type.try_into()?,
+            decode_frame_type: Rav1dDecodeFrameType::from_repr(decode_frame_type as u8)
+                .ok_or(Rav1dError::EINVAL)?,
         })
     }
 }
