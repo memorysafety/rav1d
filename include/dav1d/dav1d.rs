@@ -75,6 +75,15 @@ impl From<Rav1dDecodeFrameType> for Dav1dDecodeFrameType {
     }
 }
 
+impl TryFrom<Dav1dDecodeFrameType> for Rav1dDecodeFrameType {
+    type Error = Rav1dError;
+
+    fn try_from(value: Dav1dDecodeFrameType) -> Result<Self, Self::Error> {
+        let value = u8::try_from(value).map_err(|_| Rav1dError::EINVAL)?;
+        Self::from_repr(value).ok_or(Rav1dError::EINVAL)
+    }
+}
+
 pub type Dav1dEventFlags = c_uint;
 pub const DAV1D_EVENT_FLAG_NEW_SEQUENCE: Dav1dEventFlags =
     Rav1dEventFlags::NEW_SEQUENCE.bits() as Dav1dEventFlags;
@@ -178,8 +187,7 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             strict_std_compliance: strict_std_compliance != 0,
             output_invisible_frames: output_invisible_frames != 0,
             inloop_filters: inloop_filters.into(),
-            decode_frame_type: Rav1dDecodeFrameType::from_repr(decode_frame_type as u8)
-                .ok_or(Rav1dError::EINVAL)?,
+            decode_frame_type: decode_frame_type.try_into()?,
         })
     }
 }
