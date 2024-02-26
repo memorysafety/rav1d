@@ -896,16 +896,11 @@ impl Drop for Rav1dContext {
                         &mut f.tile_thread.lowest_pixel_mem as *mut *mut [[c_int; 2]; 7]
                             as *mut c_void,
                     );
-                    let _ = mem::take(&mut f.frame_thread.b); // TODO: remove when context is owned
-                    let _ = mem::take(&mut f.frame_thread.pal_idx); // TODO: remove when context is owned
-                    let _ = mem::take(&mut f.frame_thread.cf); // TODO: remove when context is owned
-                    freep(&mut f.frame_thread.tile_start_off as *mut *mut u32 as *mut c_void);
-                    let _ = mem::take(&mut f.frame_thread.pal); // TODO: remove when context is owned
-                    let _ = mem::take(&mut f.frame_thread.cbi); // TODO: remove when context is owned
                 }
                 if self.tc.len() > 1 {
                     let _ = mem::take(&mut f.task_thread.pending_tasks); // TODO: remove when context is owned
                 }
+                let _ = mem::take(&mut f.frame_thread); // TODO: remove when context is owned
                 mem::take(&mut f.frame_thread_progress.frame); // TODO: remove when context is owned
                 mem::take(&mut f.frame_thread_progress.copy_lpf); // TODO: remove when context is owned
                 freep(&mut f.task_thread.tasks as *mut *mut Rav1dTask as *mut c_void);

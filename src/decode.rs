@@ -4286,13 +4286,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     let n_ts = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
     if n_ts != f.n_ts {
         if c.n_fc > 1 {
-            freep(&mut f.frame_thread.tile_start_off as *mut *mut u32 as *mut c_void);
-            f.frame_thread.tile_start_off =
-                malloc(::core::mem::size_of::<u32>() * n_ts as usize) as *mut u32;
-            if f.frame_thread.tile_start_off.is_null() {
-                f.n_ts = 0;
-                return Err(ENOMEM);
-            }
+            // TODO: Fallible allocation
+            f.frame_thread.tile_start_off.resize(n_ts as usize, 0);
         }
         rav1d_free_aligned(f.ts as *mut c_void);
         f.ts = rav1d_alloc_aligned(::core::mem::size_of::<Rav1dTileState>() * n_ts as usize, 32)
@@ -4330,7 +4325,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
                 - frame_hdr.tiling.row_start_sb[tile_row as usize] as u32)
                 * sb_step4;
             for tile_col in 0..frame_hdr.tiling.cols {
-                *f.frame_thread.tile_start_off.offset(tile_idx as isize) = row_off
+                f.frame_thread.tile_start_off[tile_idx] = row_off
                     + b_diff * frame_hdr.tiling.col_start_sb[tile_col as usize] as u32 * sb_step4;
 
                 tile_idx += 1;
@@ -4698,7 +4693,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
         for (j, (ts, tile_start_off)) in iter::zip(
             slice::from_raw_parts_mut(f.ts, end + 1),
             if uses_2pass {
-                slice::from_raw_parts(f.frame_thread.tile_start_off, end + 1)
+                &f.frame_thread.tile_start_off[..end + 1]
             } else {
                 &[]
             }

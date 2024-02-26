@@ -424,6 +424,10 @@ pub struct CodedBlockInfo {
     pub txtp: [u8; 3], /* plane */
 }
 
+// TODO: Temporary `Default` impl to support using `mem::take` to manually drop
+// this field. Remove once the context is fully owned and can be dropped
+// normally.
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
     pub next_tile_row: [c_int; 2], /* 0: reconstruction, 1: entropy */
@@ -436,7 +440,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub pal_idx: AlignedVec64<u8>,
     pub cf: AlignedVec64<u8>, // AlignedVec64<DynCoef>
     // start offsets per tile
-    pub tile_start_off: *mut u32,
+    pub tile_start_off: Vec<u32>,
 }
 
 /// loopfilter
