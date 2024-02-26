@@ -50,8 +50,9 @@ unsafe fn backup_lpf<BD: BitDepth>(
     };
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = ((64 as c_int) << (cdef_backup & sb128)) - 8 * (row == 0) as c_int >> ss_ver;
-    src_offset = src_offset
-        .wrapping_add_signed((stripe_h - 2) as isize * BD::pxstride(src_stride as usize) as isize);
+    src_offset = (src_offset as isize
+        + (stripe_h - 2) as isize * BD::pxstride(src_stride as usize) as isize)
+        as usize;
     if c.tc.len() == 1 {
         if row != 0 {
             let top = (4 as c_int) << sb128;
@@ -754,7 +755,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         return;
     }
     let mut level_ptr = &f.lf.level[(f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
-    let (pu, pv) = p[1..].split_at_mut(1);
+    let [_, pu, pv] = p;
     let mut uv_off = p_offset[1];
     have_left = false;
     for x in 0..f.sb128w {
@@ -764,8 +765,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             level_ptr,
             f.b4_stride,
             &lflvl[x as usize].filter_uv[0],
-            pu[0],
-            pv[0],
+            pu,
+            pv,
             uv_off,
             f.cur.stride[1],
             cmp::min(32, f.w4 - x * 32) + ss_hor >> ss_hor,
@@ -824,7 +825,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
 
     let mut uv_off: usize = 0;
     let mut level_ptr = &f.lf.level[(f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
-    let uv = p[1..].split_at_mut(1);
+    let [_, pu, pv] = p;
     for x in 0..f.sb128w {
         filter_plane_rows_uv::<BD>(
             f,
@@ -832,8 +833,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             level_ptr,
             f.b4_stride,
             &lflvl[x as usize].filter_uv[1],
-            uv.0[0],
-            uv.1[0],
+            pu,
+            pv,
             p_offset[1] + uv_off,
             f.cur.stride[1],
             cmp::min(32 as c_int, f.w4 - x * 32) + ss_hor >> ss_hor,
