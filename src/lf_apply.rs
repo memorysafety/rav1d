@@ -215,6 +215,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         (tt_off as isize * uv_stride - cmp::min(uv_span, 0)) as usize,
     ];
 
+    // TODO Also check block level restore type to reduce copying.
     let restore_planes = f.lf.restore_planes;
 
     let cdef_line_buf = BD::cast_pixel_slice_mut(&mut f.lf.cdef_line_buf);
@@ -453,6 +454,8 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     endy4: c_int,
 ) {
     let dsp: &Rav1dDSPContext = &*f.dsp;
+
+    // filter edges between columns (e.g. block1 | block2)
     for x in 0..w as usize {
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 4] = [0; 4];
@@ -500,6 +503,10 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     endy4: c_int,
 ) {
     let dsp: &Rav1dDSPContext = &*f.dsp;
+
+    //                                 block1
+    // filter edges between rows (e.g. ------)
+    //                                 block2
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 4] = [
@@ -540,6 +547,8 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     ss_ver: c_int,
 ) {
     let dsp: &Rav1dDSPContext = &*f.dsp;
+
+    // filter edges between columns (e.g. block1 | block2)
     for x in 0..w as usize {
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 3] = [0; 3];
@@ -597,6 +606,10 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
 ) {
     let dsp: &Rav1dDSPContext = &*f.dsp;
     let mut off_l = uv_offset as ptrdiff_t;
+
+    //                                 block1
+    // filter edges between rows (e.g. ------)
+    //                                 block2
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 3] = [
@@ -638,7 +651,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     start_of_tile_row: c_int,
 ) {
     let lflvl = &mut f.lf.mask[lflvl_offset..];
-    let mut have_left;
+    let mut have_left; // Don't filter outside the frame
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
     let starty4 = ((sby & is_sb64) as u32) << 4;
@@ -657,6 +670,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let mut lpf_y = &lpf_y[(sby << sbl2) as usize..];
     let mut lpf_uv = &lpf_uv[(sby << sbl2 - ss_ver) as usize..];
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+
+    // fix lpf strength at tile col boundaries
     let mut tile_col = 1;
     loop {
         let mut x = frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int;
@@ -695,6 +710,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         lpf_uv = &lpf_uv[(halign >> ss_ver)..];
         tile_col += 1;
     }
+
+    // fix lpf strength at tile row boundaries
     if start_of_tile_row != 0 {
         let mut a: &[BlockContext] = slice::from_raw_parts(f.a, f.a_sz as usize);
         a = &a[(f.sb128w * (start_of_tile_row - 1)) as usize..];
