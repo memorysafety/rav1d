@@ -47,6 +47,12 @@ impl_ArrayDefault!(i16);
 impl_ArrayDefault!(i32);
 impl_ArrayDefault!(u16);
 
+pub trait AlignedByteChunk
+where
+    Self: Sized,
+{
+}
+
 macro_rules! def_align {
     ($align:literal, $name:ident) => {
         #[derive(Clone, Copy)]
@@ -84,6 +90,8 @@ macro_rules! def_align {
                 <Self as ArrayDefault>::default()
             }
         }
+
+        impl AlignedByteChunk for $name<[u8; $align]> {}
     };
 }
 
@@ -95,19 +103,25 @@ def_align!(16, Align16);
 def_align!(32, Align32);
 def_align!(64, Align64);
 
-/// A [`Vec`] that uses a 64-byte aligned allocation.
+/// A [`Vec`] that uses [`mem::size_of`]`::<C>()` aligned allocations.
 ///
 /// Only works with [`Copy`] types so that we don't have to handle drop logic.
-pub struct AlignedVec64<T: Copy> {
-    inner: Vec<MaybeUninit<Align64<[u8; 64]>>>,
+pub struct AlignedVec<T: Copy, C: AlignedByteChunk> {
+    inner: Vec<MaybeUninit<C>>,
 
     /// The number of `T`s in [`Self::inner`] currently initialized.
     len: usize,
     _phantom: PhantomData<T>,
 }
 
-impl<T: Copy> AlignedVec64<T> {
+impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
+    /// Must check in all constructors.
+    const fn check_byte_chunk_type_is_aligned() {
+        assert!(mem::size_of::<C>() == mem::align_of::<C>());
+    }
+
     pub const fn new() -> Self {
+        Self::check_byte_chunk_type_is_aligned();
         Self {
             inner: Vec::new(),
             len: 0,
@@ -147,13 +161,13 @@ impl<T: Copy> AlignedVec64<T> {
 
         // Resize the underlying vector to have enough chunks for the new length.
         //
-        // NOTE: We don't need to `drop` any elements if the `Vec` is truncated since
-        // `T: Copy`.
+        // NOTE: We don't need to `drop` any elements if the `Vec` is truncated since `T: Copy`.
         let new_bytes = mem::size_of::<T>() * new_len;
-        let new_chunks = if (new_bytes % 64) == 0 {
-            new_bytes / 64
+        let chunk_size = mem::size_of::<C>();
+        let new_chunks = if (new_bytes % chunk_size) == 0 {
+            new_bytes / chunk_size
         } else {
-            (new_bytes / 64) + 1
+            (new_bytes / chunk_size) + 1
         };
         self.inner.resize_with(new_chunks, MaybeUninit::uninit);
 
@@ -170,7 +184,7 @@ impl<T: Copy> AlignedVec64<T> {
     }
 }
 
-impl<T: Copy> Deref for AlignedVec64<T> {
+impl<T: Copy, C: AlignedByteChunk> Deref for AlignedVec<T, C> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -178,15 +192,17 @@ impl<T: Copy> Deref for AlignedVec64<T> {
     }
 }
 
-impl<T: Copy> DerefMut for AlignedVec64<T> {
+impl<T: Copy, C: AlignedByteChunk> DerefMut for AlignedVec<T, C> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.as_mut_slice()
     }
 }
 
 // NOTE: Custom impl so that we don't require `T: Default`.
-impl<T: Copy> Default for AlignedVec64<T> {
+impl<T: Copy, C: AlignedByteChunk> Default for AlignedVec<T, C> {
     fn default() -> Self {
         Self::new()
     }
 }
+
+pub type AlignedVec64<T> = AlignedVec<T, Align64<[u8; 64]>>;

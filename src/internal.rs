@@ -424,22 +424,28 @@ pub struct CodedBlockInfo {
     pub txtp: [u8; 3], /* plane */
 }
 
-// TODO: Temporary `Default` impl to support using `mem::take` to manually drop
-// this field. Remove once the context is fully owned and can be dropped
-// normally.
 #[derive(Default)]
 #[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
-    pub next_tile_row: [c_int; 2], /* 0: reconstruction, 1: entropy */
-    // indexed using t->by * f->b4_stride + t->bx
+    /// Indices: 0: reconstruction, 1: entropy.
+    pub next_tile_row: [c_int; 2],
+
+    /// Indexed using `t.by * f.b4_stride + t.bx`.
     pub b: Vec<Av1Block>,
+
     pub cbi: Vec<CodedBlockInfo>,
-    // indexed using (t->by >> 1) * (f->b4_stride >> 1) + (t->bx >> 1)
-    pub pal: AlignedVec64<[[u16; 8]; 3]>, /* [3 plane][8 idx] */
-    // iterated over inside tile state
+
+    /// Indexed using `(t.by >> 1) * (f.b4_stride >> 1) + (t.bx >> 1)`.
+    /// Inner indices are `[3 plane][8 idx]`.
+    pub pal: AlignedVec64<[[u16; 8]; 3]>,
+
+    /// Iterated over inside tile state.
     pub pal_idx: AlignedVec64<u8>,
-    pub cf: AlignedVec64<u8>, // AlignedVec64<DynCoef>
-    // start offsets per tile
+
+    /// [`AlignedVec64`]`<`[`DynCoef`]`>`
+    pub cf: AlignedVec64<u8>,
+
+    /// Start offsets per tile
     pub tile_start_off: Vec<u32>,
 }
 
