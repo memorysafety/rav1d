@@ -4237,23 +4237,15 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
     // up the initial value in neighbour tiles when running the loopfilter
     let mut align_h = f.bh + 31 & !31;
-    slice::from_raw_parts_mut(
-        f.lf.tx_lpf_right_edge[0],
-        (align_h * tile_col + t.by + sb_step).try_into().unwrap(),
-    )[(align_h * tile_col + t.by).try_into().unwrap()..][..sb_step.try_into().unwrap()]
-        .copy_from_slice(&t.l.tx_lpf_y.0[(t.by & 16) as usize..][..sb_step.try_into().unwrap()]);
+    let (tx_lpf_right_edge_y, tx_lpf_right_edge_uv) = f.lf.tx_lpf_right_edge_mut();
+    tx_lpf_right_edge_y[(align_h * tile_col + t.by) as usize..][..sb_step as usize]
+        .copy_from_slice(&t.l.tx_lpf_y.0[(t.by & 16) as usize..][..sb_step as usize]);
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     align_h >>= ss_ver;
-    slice::from_raw_parts_mut(
-        f.lf.tx_lpf_right_edge[1],
-        (align_h * tile_col + (t.by >> ss_ver) + (sb_step >> ss_ver))
-            .try_into()
-            .unwrap(),
-    )[(align_h * tile_col + (t.by >> ss_ver)).try_into().unwrap()..]
-        [..(sb_step >> ss_ver).try_into().unwrap()]
+    tx_lpf_right_edge_uv[(align_h * tile_col + (t.by >> ss_ver)) as usize..]
+        [..(sb_step >> ss_ver) as usize]
         .copy_from_slice(
-            &t.l.tx_lpf_uv.0[((t.by & 16) >> ss_ver) as usize..]
-                [..(sb_step >> ss_ver).try_into().unwrap()],
+            &t.l.tx_lpf_uv.0[((t.by & 16) >> ss_ver) as usize..][..(sb_step >> ss_ver) as usize],
         );
 
     Ok(())
@@ -4562,16 +4554,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     }
 
     let re_sz = f.sb128h * frame_hdr.tiling.cols;
-    if re_sz != f.lf.re_sz {
-        freep(&mut *f.lf.tx_lpf_right_edge.as_mut_ptr().offset(0) as *mut *mut u8 as *mut c_void);
-        f.lf.tx_lpf_right_edge[0] = malloc(re_sz as usize * 32 * 2) as *mut u8;
-        if f.lf.tx_lpf_right_edge[0].is_null() {
-            f.lf.re_sz = 0;
-            return Err(ENOMEM);
-        }
-        f.lf.tx_lpf_right_edge[1] = f.lf.tx_lpf_right_edge[0].offset((re_sz * 32) as isize);
-        f.lf.re_sz = re_sz;
-    }
+    // TODO: Fallible allocation
+    f.lf.tx_lpf_right_edge.resize(re_sz as usize * 32 * 2, 0);
 
     // init ref mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
