@@ -33,6 +33,7 @@ use crate::src::fg_apply;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
+use crate::src::internal::Rav1dFrameContext_frame_thread;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
@@ -82,6 +83,7 @@ use std::mem;
 use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr;
+use std::ptr::addr_of_mut;
 use std::ptr::NonNull;
 use std::slice;
 use std::sync::atomic::AtomicI32;
@@ -324,6 +326,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     let mut n: c_uint = 0 as c_int as c_uint;
     while n < (*c).n_fc {
         let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(n as isize);
+        addr_of_mut!(f.frame_thread).write(Default::default());
         if n_tc > 1 {
             f.task_thread.lock = Mutex::new(());
             f.task_thread.cond = Condvar::new();

@@ -424,9 +424,6 @@ pub struct CodedBlockInfo {
     pub txtp: [u8; 3], /* plane */
 }
 
-// TODO: Temporary `Default` impl to support using `mem::take` to manually drop
-// this field. Remove once the context is fully owned and can be dropped
-// normally.
 #[derive(Default)]
 #[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
