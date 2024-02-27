@@ -2212,7 +2212,9 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
         }
     }
 
-    while track == Track::main && h > 0 {
+    // h > 0 can be true only if track == Track::main
+    // The original C code uses goto statements and skips over this loop when h <= 0
+    while h > 0 {
         sgr_box3_hv_neon(
             &mut sumsq_ptrs,
             &mut sum_ptrs,
@@ -2552,7 +2554,9 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
         }
     }
 
-    while track == Track::main && h > 0 {
+    // h > 0 can be true only if track == Track::main
+    // The original C code uses goto statements and skips over this loop when h <= 0
+    while h > 0 {
         rav1d_sgr_box5_row_h_neon(sumsq_ptrs[3], sum_ptrs[3], left, src, w, edges, bd);
         left = left.offset(1);
         src = src.add(stride);
@@ -3073,7 +3077,9 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
         }
     }
 
-    while track == Track::main && h > 0 {
+    // h > 0 can be true only if track == Track::main
+    // The original C code uses goto statements and skips over this loop when h <= 0
+    while h > 0 {
         rav1d_sgr_box35_row_h_neon(
             sumsq3_ptrs[2],
             sum3_ptrs[2],
