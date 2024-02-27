@@ -11,6 +11,7 @@ use crate::src::levels::TX_4X4;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
 use libc::ptrdiff_t;
+use std::cell::Cell;
 use std::cmp;
 use std::ffi::c_int;
 
@@ -42,7 +43,7 @@ pub struct Av1Filter {
 
 #[repr(C)]
 pub struct Av1Restoration {
-    pub lr: [[Av1RestorationUnit; 4]; 3],
+    pub lr: [[Cell<Av1RestorationUnit>; 4]; 3],
 }
 
 /// In `txa`, the array lengths represent from inner to outer:

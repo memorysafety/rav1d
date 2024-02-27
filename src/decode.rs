@@ -3925,18 +3925,20 @@ unsafe fn setup_tile(
             if sb128x >= f.sr_sb128w {
                 continue;
             }
-            &mut (*f.lf.lr_mask.offset((sb_idx + sb128x) as isize)).lr[p][u_idx as usize]
+            &(*f.lf.lr_mask.offset((sb_idx + sb128x) as isize)).lr[p][u_idx as usize]
         } else {
-            &mut (*f.lf.lr_mask.offset(sb_idx as isize)).lr[p][unit_idx as usize]
+            &(*f.lf.lr_mask.offset(sb_idx as isize)).lr[p][unit_idx as usize]
         };
 
-        *lr_ref = Av1RestorationUnit {
+        let lr = lr_ref.get();
+        let lr = Av1RestorationUnit {
             filter_v: [3, -7, 15],
             filter_h: [3, -7, 15],
             sgr_weights: [-32, 31],
-            ..*lr_ref
+            ..lr
         };
-        ts.lr_ref[p] = *lr_ref;
+        lr_ref.set(lr);
+        ts.lr_ref[p] = lr;
     }
 
     if c.tc.len() > 1 {
@@ -4185,8 +4187,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                     let px_x = x << unit_size_log2 + ss_hor;
                     let sb_idx = (t.by >> 5) * f.sr_sb128w + (px_x >> 7);
                     let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
-                    let lr =
-                        &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize];
+                    let lr = (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize]
+                        .get_mut();
 
                     read_restoration_info(t, f, lr, p, frame_type);
                 }
@@ -4203,7 +4205,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 }
                 let sb_idx = (t.by >> 5) * f.sr_sb128w + (t.bx >> 5);
                 let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
-                let lr = &mut (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize];
+                let lr =
+                    (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize].get_mut();
 
                 read_restoration_info(t, f, lr, p, frame_type);
             }
