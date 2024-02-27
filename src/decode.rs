@@ -152,7 +152,6 @@ use crate::src::lf_mask::rav1d_calc_eih;
 use crate::src::lf_mask::rav1d_calc_lf_values;
 use crate::src::lf_mask::rav1d_create_lf_mask_inter;
 use crate::src::lf_mask::rav1d_create_lf_mask_intra;
-use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
@@ -4129,9 +4128,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     t.pal_sz_uv[1] = Default::default();
     let sb128y = t.by >> 5;
     t.a = f.a.offset((col_sb128_start + tile_row * f.sb128w) as isize);
-    t.lf_mask =
-        f.lf.mask
-            .offset((sb128y * f.sb128w + col_sb128_start) as isize);
+    t.lf_mask = f.lf.mask[(sb128y * f.sb128w + col_sb128_start) as usize..].as_mut_ptr();
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.bx = bx;
         if c.flush.load(Ordering::Acquire) != 0 {
@@ -4501,30 +4498,24 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     }
 
     // update allocation for loopfilter masks
-    if num_sb128 != f.lf.mask_sz {
-        freep(&mut f.lf.mask as *mut *mut Av1Filter as *mut c_void);
-        f.lf.mask =
-            malloc(::core::mem::size_of::<Av1Filter>() * num_sb128 as usize) as *mut Av1Filter;
-        // over-allocate one element (4 bytes) since some of the SIMD implementations
-        // index this from the level type and can thus over-read by up to 3 bytes.
-        f.lf.level
-            .resize(num_sb128 as usize * 32 * 32 + 1, [0u8; 4]); // TODO: Fallible allocation
-        if f.lf.mask.is_null() {
-            f.lf.mask_sz = 0;
-            return Err(ENOMEM);
-        }
-        if c.n_fc > 1 {
-            // TODO: Fallible allocation
-            f.frame_thread
-                .b
-                .resize_with(num_sb128 as usize * 32 * 32, Default::default);
 
-            // TODO: fallible allocation
-            f.frame_thread
-                .cbi
-                .resize_with(num_sb128 as usize * 32 * 32, Default::default);
-        }
-        f.lf.mask_sz = num_sb128;
+    f.lf.mask.clear();
+    // TODO: Fallible allocation.
+    f.lf.mask.resize_with(num_sb128 as usize, Default::default);
+    // over-allocate one element (4 bytes) since some of the SIMD implementations
+    // index this from the level type and can thus over-read by up to 3 bytes.
+    f.lf.level
+        .resize(num_sb128 as usize * 32 * 32 + 1, [0u8; 4]); // TODO: Fallible allocation
+    if c.n_fc > 1 {
+        // TODO: Fallible allocation
+        f.frame_thread
+            .b
+            .resize_with(num_sb128 as usize * 32 * 32, Default::default);
+
+        // TODO: fallible allocation
+        f.frame_thread
+            .cbi
+            .resize_with(num_sb128 as usize * 32 * 32, Default::default);
     }
 
     f.sr_sb128w = f.sr_cur.p.p.w + 127 >> 7;
@@ -4552,7 +4543,6 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         f.lf.last_sharpness = frame_hdr.loopfilter.sharpness;
     }
     rav1d_calc_lf_values(&mut f.lf.lvl, &frame_hdr, &[0, 0, 0, 0]);
-    slice::from_raw_parts_mut(f.lf.mask, num_sb128.try_into().unwrap()).fill_with(Default::default);
 
     let ipred_edge_sz = f.sbh * f.sb128w << hbd;
     if ipred_edge_sz != f.ipred_edge_sz {
@@ -4658,7 +4648,6 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     // We never dereference those pointers, so it doesn't really matter
     // what they point at, as long as the pointers are valid.
     let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400) as usize;
-    f.lf.mask_ptr = f.lf.mask;
     f.lf.p = array::from_fn(|i| f.cur.data.data[has_chroma * i].cast());
     f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data.data[has_chroma * i].cast());
 

@@ -912,7 +912,7 @@ impl Drop for Rav1dContext {
                 rav1d_free_aligned(f.ipred_edge[0] as *mut c_void);
                 free(f.a as *mut c_void);
                 let _ = mem::take(&mut f.tiles);
-                free(f.lf.mask as *mut c_void);
+                let _ = mem::take(&mut f.lf.mask); // TODO: remove when context is owned
                 free(f.lf.lr_mask as *mut c_void);
                 let _ = mem::take(&mut f.lf.level);
                 free(f.lf.tx_lpf_right_edge[0] as *mut c_void);
