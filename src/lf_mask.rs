@@ -41,6 +41,7 @@ pub struct Av1Filter {
     pub noskip_mask: [[u16; 2]; 16],
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Av1Restoration {
     pub lr: [[Cell<Av1RestorationUnit>; 4]; 3],

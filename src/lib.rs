@@ -913,7 +913,7 @@ impl Drop for Rav1dContext {
                 free(f.a as *mut c_void);
                 let _ = mem::take(&mut f.tiles);
                 let _ = mem::take(&mut f.lf.mask); // TODO: remove when context is owned
-                free(f.lf.lr_mask as *mut c_void);
+                let _ = mem::take(&mut f.lf.lr_mask); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.lf.level);
                 free(f.lf.tx_lpf_right_edge[0] as *mut c_void);
                 free(f.lf.start_of_tile_row as *mut c_void);
