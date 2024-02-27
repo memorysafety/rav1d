@@ -2897,12 +2897,12 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             h -= 1;
             if h <= 0 {
                 track = Track::vert2;
+            } else {
+                // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
+                // one of them to point at the previously unused rows[4].
+                sumsq5_ptrs[3] = sumsq5_rows[4];
+                sum5_ptrs[3] = sum5_rows[4];
             }
-
-            // ptrs are rotated by 2; both [3] and [4] now point at rows[0]; set
-            // one of them to point at the previously unused rows[4].
-            sumsq5_ptrs[3] = sumsq5_rows[4];
-            sum5_ptrs[3] = sum5_rows[4];
         }
     } else {
         rav1d_sgr_box35_row_h_neon(
