@@ -2627,16 +2627,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let m: IntraPredMode;
                     if !(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] != 0) {
                         angle = b.c2rust_unnamed.c2rust_unnamed.y_angle as c_int;
-                        edge_flags =
-                            (if (y > init_y || !sb_has_tr) && x + (*t_dim).w as c_int >= sub_w4 {
-                                EdgeFlags::empty()
-                            } else {
-                                EdgeFlags::EDGE_I444_TOP_HAS_RIGHT
-                            }) | (if x > init_x || !sb_has_bl && y + (*t_dim).h as c_int >= sub_h4 {
-                                EdgeFlags::empty()
-                            } else {
-                                EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM
-                            });
+                        edge_flags = EdgeFlags::union_all([
+                            EdgeFlags::EDGE_I444_TOP_HAS_RIGHT.select(
+                                !((y > init_y || !sb_has_tr) && x + (*t_dim).w as c_int >= sub_w4),
+                            ),
+                            EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM.select(
+                                !(x > init_x || (!sb_has_bl && y + (*t_dim).h as c_int >= sub_h4)),
+                            ),
+                        ]);
                         let top_sb_edge_slice = if t.by & f.sb_step - 1 == 0 {
                             let mut top_sb_edge: *const BD::Pixel =
                                 f.ipred_edge[0] as *mut BD::Pixel;
