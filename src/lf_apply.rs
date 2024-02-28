@@ -50,61 +50,51 @@ unsafe fn backup_lpf<BD: BitDepth>(
     };
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = ((64 as c_int) << (cdef_backup & sb128)) - 8 * (row == 0) as c_int >> ss_ver;
-    src_offset = (src_offset as isize
-        + (stripe_h - 2) as isize * BD::pxstride(src_stride as usize) as isize)
-        as usize;
+    src_offset =
+        (src_offset as isize + (stripe_h - 2) as isize * BD::pxstride(src_stride)) as usize;
     if c.tc.len() == 1 {
         if row != 0 {
             let top = (4 as c_int) << sb128;
             // Copy the top part of the stored loop filtered pixels from the
             // previous sb row needed above the first stripe of this sb row.
             if dst_stride < 0 {
-                let mut dst_offset_delta1 = 3 * BD::pxstride(-dst_stride as usize);
+                let mut dst_offset_delta1 = 3 * BD::pxstride(-dst_stride) as usize;
                 let dst_tmp = dst.split_at_mut(dst_offset - dst_offset_delta1);
                 let mut dst_offset_delta0 =
-                    dst_offset - top as usize * BD::pxstride(-dst_stride as usize);
+                    dst_offset - top as usize * BD::pxstride(-dst_stride) as usize;
                 dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
-                dst_offset_delta0 -= BD::pxstride(-dst_stride as usize);
-                dst_offset_delta1 -= BD::pxstride(-dst_stride as usize);
+                dst_offset_delta0 -= BD::pxstride(-dst_stride) as usize;
+                dst_offset_delta1 -= BD::pxstride(-dst_stride) as usize;
                 dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
-                dst_offset_delta0 -= BD::pxstride(-dst_stride as usize);
-                dst_offset_delta1 -= BD::pxstride(-dst_stride as usize);
+                dst_offset_delta0 -= BD::pxstride(-dst_stride) as usize;
+                dst_offset_delta1 -= BD::pxstride(-dst_stride) as usize;
                 dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
-                dst_offset_delta0 -= BD::pxstride(-dst_stride as usize);
-                dst_offset_delta1 -= BD::pxstride(-dst_stride as usize);
+                dst_offset_delta0 -= BD::pxstride(-dst_stride) as usize;
+                dst_offset_delta1 -= BD::pxstride(-dst_stride) as usize;
                 dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
             } else {
                 let mut dst_offset_delta = 0;
                 let dst_tmp = dst.split_at_mut(
-                    (dst_offset as isize
-                        + top as isize * BD::pxstride(dst_stride as usize) as isize)
-                        as usize,
+                    (dst_offset as isize + top as isize * BD::pxstride(dst_stride)) as usize,
                 );
                 dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
-                dst_offset_delta = (dst_offset_delta as isize
-                    + BD::pxstride(dst_stride as usize) as isize)
-                    as usize;
+                dst_offset_delta = (dst_offset_delta as isize + BD::pxstride(dst_stride)) as usize;
                 dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
-                dst_offset_delta = (dst_offset_delta as isize
-                    + BD::pxstride(dst_stride as usize) as isize)
-                    as usize;
+                dst_offset_delta = (dst_offset_delta as isize + BD::pxstride(dst_stride)) as usize;
                 dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
-                dst_offset_delta = (dst_offset_delta as isize
-                    + BD::pxstride(dst_stride as usize) as isize)
-                    as usize;
+                dst_offset_delta = (dst_offset_delta as isize + BD::pxstride(dst_stride)) as usize;
                 dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
             }
         }
-        dst_offset =
-            (dst_offset as isize + 4 * BD::pxstride(dst_stride as usize) as isize) as usize;
+        dst_offset = (dst_offset as isize + 4 * BD::pxstride(dst_stride)) as usize;
     }
     if lr_backup != 0 && frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         while row + stripe_h <= row_h {
@@ -123,27 +113,24 @@ unsafe fn backup_lpf<BD: BitDepth>(
             );
             row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
-            src_offset = (src_offset as isize
-                + stripe_h as isize * BD::pxstride(src_stride as usize) as isize)
-                as usize;
-            dst_offset = (dst_offset as isize
-                + n_lines as isize * BD::pxstride(dst_stride as usize) as isize)
-                as usize;
+            src_offset =
+                (src_offset as isize + stripe_h as isize * BD::pxstride(src_stride)) as usize;
+            dst_offset =
+                (dst_offset as isize + n_lines as isize * BD::pxstride(dst_stride)) as usize;
 
             if n_lines == 3 {
                 if dst_stride < 0 {
-                    let dst_tmp = dst.split_at_mut(dst_offset + BD::pxstride(-dst_stride as usize));
+                    let dst_tmp = dst.split_at_mut(dst_offset + BD::pxstride(-dst_stride) as usize);
                     dst_tmp.0[dst_offset..][..dst_w as usize]
                         .copy_from_slice(&dst_tmp.1[..dst_w as usize]);
                 } else {
                     let dst_tmp = dst.split_at_mut(dst_offset);
                     dst_tmp.1[..dst_w as usize].copy_from_slice(
-                        &dst_tmp.0[dst_offset - BD::pxstride(dst_stride as usize)..]
+                        &dst_tmp.0[dst_offset - BD::pxstride(dst_stride) as usize..]
                             [..dst_w as usize],
                     );
                 }
-                dst_offset =
-                    (dst_offset as isize + BD::pxstride(dst_stride as usize) as isize) as usize;
+                dst_offset = (dst_offset as isize + BD::pxstride(dst_stride)) as usize;
             }
         }
     } else {
@@ -154,22 +141,19 @@ unsafe fn backup_lpf<BD: BitDepth>(
                 BD::pixel_copy(
                     dst_tmp.1,
                     if i == n_lines_0 {
-                        &dst_tmp.0[dst_offset - BD::pxstride(dst_stride as usize)..]
+                        &dst_tmp.0[dst_offset - BD::pxstride(dst_stride) as usize..]
                     } else {
                         &src[src_offset..]
                     },
                     src_w as usize,
                 );
-                dst_offset =
-                    (dst_offset as isize + BD::pxstride(dst_stride as usize) as isize) as usize;
-                src_offset =
-                    (src_offset as isize + BD::pxstride(src_stride as usize) as isize) as usize;
+                dst_offset = (dst_offset as isize + BD::pxstride(dst_stride)) as usize;
+                src_offset = (src_offset as isize + BD::pxstride(src_stride)) as usize;
             }
             row += stripe_h; // unmodified stripe_h for the 1st stripe
             stripe_h = 64 >> ss_ver;
-            src_offset = src_offset.wrapping_add_signed(
-                (stripe_h - 4) as isize * BD::pxstride(src_stride as usize) as isize,
-            );
+            src_offset =
+                src_offset.wrapping_add_signed((stripe_h - 4) as isize * BD::pxstride(src_stride));
         }
     };
 }
@@ -191,8 +175,8 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     let tt_off = have_tt * sby * ((4 as c_int) << seq_hdr.sb128);
 
     let lr_plane_sz = &f.lf.lr_buf_plane_sz;
-    let y_stride = BD::pxstride(lr_stride[0] as usize) as isize;
-    let uv_stride = BD::pxstride(lr_stride[1] as usize) as isize;
+    let y_stride = BD::pxstride(lr_stride[0]);
+    let uv_stride = BD::pxstride(lr_stride[1]);
     let y_span = lr_plane_sz[0] as isize - y_stride;
     let uv_span = lr_plane_sz[1] as isize / 2 - uv_stride;
 
@@ -232,9 +216,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                 dst_offset[0],
                 lr_stride[0],
                 src[0],
-                (src_offset[0] as isize
-                    - offset as isize * BD::pxstride(src_stride[0] as usize) as isize)
-                    as usize,
+                (src_offset[0] as isize - offset as isize * BD::pxstride(src_stride[0])) as usize,
                 src_stride[0],
                 0,
                 seq_hdr.sb128,
@@ -252,8 +234,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             );
         }
         if have_tt != 0 && resize != 0 {
-            let cdef_off_y: ptrdiff_t =
-                (sby * 4) as isize * BD::pxstride(src_stride[0] as usize) as isize;
+            let cdef_off_y: ptrdiff_t = (sby * 4) as isize * BD::pxstride(src_stride[0]);
             let cdef_plane_y_sz = 4 * f.sbh as isize * y_stride;
             let y_span = cdef_plane_y_sz - y_stride;
             backup_lpf::<BD>(
@@ -298,8 +279,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         let row_h_0 = cmp::min((sby + 1) << 6 - ss_ver + seq_hdr.sb128, h_0 - 1);
         let offset_uv = offset >> ss_ver;
         let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128) - offset_uv;
-        let cdef_off_uv: ptrdiff_t =
-            sby as isize * 4 * BD::pxstride(src_stride[1] as usize) as isize;
+        let cdef_off_uv: ptrdiff_t = sby as isize * 4 * BD::pxstride(src_stride[1]);
         if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_U as c_int != 0 {
             if restore_planes & LR_RESTORE_U as c_int != 0 || resize == 0 {
                 backup_lpf::<BD>(
@@ -308,8 +288,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     dst_offset[1],
                     lr_stride[1],
                     src[1],
-                    (src_offset[1] as isize
-                        - offset_uv as isize * BD::pxstride(src_stride[1] as usize) as isize)
+                    (src_offset[1] as isize - offset_uv as isize * BD::pxstride(src_stride[1]))
                         as usize,
                     src_stride[1],
                     ss_ver,
@@ -342,8 +321,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
                     src_stride[1],
                     src[1],
-                    (src_offset[1] as isize
-                        - offset_uv as isize * BD::pxstride(src_stride[1] as usize) as isize)
+                    (src_offset[1] as isize - offset_uv as isize * BD::pxstride(src_stride[1]))
                         as usize,
                     src_stride[1],
                     ss_ver,
@@ -370,8 +348,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     dst_offset[1],
                     lr_stride[1],
                     src[2],
-                    (src_offset[1] as isize
-                        - offset_uv as isize * BD::pxstride(src_stride[1] as usize) as isize)
+                    (src_offset[1] as isize - offset_uv as isize * BD::pxstride(src_stride[1]))
                         as usize,
                     src_stride[1],
                     ss_ver,
@@ -404,8 +381,7 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
                     src_stride[1],
                     src[2],
-                    (src_offset[1] as isize
-                        - offset_uv as isize * BD::pxstride(src_stride[1] as usize) as isize)
+                    (src_offset[1] as isize - offset_uv as isize * BD::pxstride(src_stride[1]))
                         as usize,
                     src_stride[1],
                     ss_ver,
@@ -526,7 +502,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 f.bitdepth_max,
             );
         }
-        dst_offset = (dst_offset as isize + 4 * BD::pxstride(ls as usize) as isize) as usize;
+        dst_offset = (dst_offset as isize + 4 * BD::pxstride(ls)) as usize;
     }
 }
 
@@ -638,7 +614,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 f.bitdepth_max,
             );
         }
-        off_l += 4 * BD::pxstride(ls as usize) as isize;
+        off_l += 4 * BD::pxstride(ls);
     }
 }
 
