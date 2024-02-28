@@ -205,4 +205,5 @@ impl<T: Copy, C: AlignedByteChunk> Default for AlignedVec<T, C> {
     }
 }
 
+pub type AlignedVec32<T> = AlignedVec<T, Align32<[u8; 32]>>;
 pub type AlignedVec64<T> = AlignedVec<T, Align64<[u8; 64]>>;

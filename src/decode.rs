@@ -4387,74 +4387,52 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     let mut uv_stride = f.cur.stride[1];
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let need_cdef_lpf_copy = (c.tc.len() > 1 && has_resize != 0) as c_int;
-    if y_stride * f.sbh as isize * 4 != f.lf.cdef_buf_plane_sz[0] as isize
-        || uv_stride * f.sbh as isize * 8 != f.lf.cdef_buf_plane_sz[1] as isize
-        || need_cdef_lpf_copy != f.lf.need_cdef_lpf_copy
-        || f.sbh != f.lf.cdef_buf_sbh
-    {
-        rav1d_free_aligned(f.lf.cdef_line_buf as *mut c_void);
-        let mut alloc_sz: usize = 64;
-        alloc_sz += (y_stride.unsigned_abs() * 4 * f.sbh as usize) << need_cdef_lpf_copy;
-        alloc_sz += (uv_stride.unsigned_abs() * 8 * f.sbh as usize) << need_cdef_lpf_copy;
-        f.lf.cdef_line_buf = rav1d_alloc_aligned(alloc_sz, 32) as *mut u8;
-        let mut ptr = f.lf.cdef_line_buf;
-        if ptr.is_null() {
-            f.lf.cdef_buf_plane_sz[1] = 0;
-            f.lf.cdef_buf_plane_sz[0] = f.lf.cdef_buf_plane_sz[1];
-            return Err(ENOMEM);
-        }
+    let mut alloc_sz: usize = 64;
+    alloc_sz += (y_stride.unsigned_abs() * 4 * f.sbh as usize) << need_cdef_lpf_copy;
+    alloc_sz += (uv_stride.unsigned_abs() * 8 * f.sbh as usize) << need_cdef_lpf_copy;
+    // TODO: Fallible allocation.
+    f.lf.cdef_line_buf.resize(alloc_sz, 0);
+    let mut ptr = f.lf.cdef_line_buf.as_mut_ptr();
 
-        ptr = ptr.offset(32);
+    ptr = ptr.offset(32);
+    if y_stride < 0 {
+        f.lf.cdef_line[0][0] = ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
+        f.lf.cdef_line[1][0] = ptr.offset(-(y_stride * (f.sbh as isize * 4 - 3))) as *mut DynPixel;
+    } else {
+        f.lf.cdef_line[0][0] = ptr.offset(y_stride * 0) as *mut DynPixel;
+        f.lf.cdef_line[1][0] = ptr.offset(y_stride * 2) as *mut DynPixel;
+    }
+    ptr = ptr.offset(y_stride.abs() * f.sbh as isize * 4);
+    if uv_stride < 0 {
+        f.lf.cdef_line[0][1] = ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut DynPixel;
+        f.lf.cdef_line[0][2] = ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 3))) as *mut DynPixel;
+        f.lf.cdef_line[1][1] = ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 5))) as *mut DynPixel;
+        f.lf.cdef_line[1][2] = ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 7))) as *mut DynPixel;
+    } else {
+        f.lf.cdef_line[0][1] = ptr.offset(uv_stride * 0) as *mut DynPixel;
+        f.lf.cdef_line[0][2] = ptr.offset(uv_stride * 2) as *mut DynPixel;
+        f.lf.cdef_line[1][1] = ptr.offset(uv_stride * 4) as *mut DynPixel;
+        f.lf.cdef_line[1][2] = ptr.offset(uv_stride * 6) as *mut DynPixel;
+    }
+
+    if need_cdef_lpf_copy != 0 {
+        ptr = ptr.offset(uv_stride.abs() * f.sbh as isize * 8);
         if y_stride < 0 {
-            f.lf.cdef_line[0][0] =
+            f.lf.cdef_lpf_line[0] =
                 ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
-            f.lf.cdef_line[1][0] =
-                ptr.offset(-(y_stride * (f.sbh as isize * 4 - 3))) as *mut DynPixel;
         } else {
-            f.lf.cdef_line[0][0] = ptr.offset(y_stride * 0) as *mut DynPixel;
-            f.lf.cdef_line[1][0] = ptr.offset(y_stride * 2) as *mut DynPixel;
+            f.lf.cdef_lpf_line[0] = ptr as *mut DynPixel;
         }
         ptr = ptr.offset(y_stride.abs() * f.sbh as isize * 4);
         if uv_stride < 0 {
-            f.lf.cdef_line[0][1] =
+            f.lf.cdef_lpf_line[1] =
+                ptr.offset(-(uv_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
+            f.lf.cdef_lpf_line[2] =
                 ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut DynPixel;
-            f.lf.cdef_line[0][2] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 3))) as *mut DynPixel;
-            f.lf.cdef_line[1][1] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 5))) as *mut DynPixel;
-            f.lf.cdef_line[1][2] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 7))) as *mut DynPixel;
         } else {
-            f.lf.cdef_line[0][1] = ptr.offset(uv_stride * 0) as *mut DynPixel;
-            f.lf.cdef_line[0][2] = ptr.offset(uv_stride * 2) as *mut DynPixel;
-            f.lf.cdef_line[1][1] = ptr.offset(uv_stride * 4) as *mut DynPixel;
-            f.lf.cdef_line[1][2] = ptr.offset(uv_stride * 6) as *mut DynPixel;
+            f.lf.cdef_lpf_line[1] = ptr as *mut DynPixel;
+            f.lf.cdef_lpf_line[2] = ptr.offset(uv_stride * f.sbh as isize * 4) as *mut DynPixel;
         }
-
-        if need_cdef_lpf_copy != 0 {
-            ptr = ptr.offset(uv_stride.abs() * f.sbh as isize * 8);
-            if y_stride < 0 {
-                f.lf.cdef_lpf_line[0] =
-                    ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
-            } else {
-                f.lf.cdef_lpf_line[0] = ptr as *mut DynPixel;
-            }
-            ptr = ptr.offset(y_stride.abs() * f.sbh as isize * 4);
-            if uv_stride < 0 {
-                f.lf.cdef_lpf_line[1] =
-                    ptr.offset(-(uv_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
-                f.lf.cdef_lpf_line[2] =
-                    ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut DynPixel;
-            } else {
-                f.lf.cdef_lpf_line[1] = ptr as *mut DynPixel;
-                f.lf.cdef_lpf_line[2] = ptr.offset(uv_stride * f.sbh as isize * 4) as *mut DynPixel;
-            }
-        }
-
-        f.lf.cdef_buf_plane_sz[0] = y_stride as c_int * f.sbh * 4;
-        f.lf.cdef_buf_plane_sz[1] = uv_stride as c_int * f.sbh * 8;
-        f.lf.need_cdef_lpf_copy = need_cdef_lpf_copy;
-        f.lf.cdef_buf_sbh = f.sbh;
     }
 
     let sb128 = seq_hdr.sb128;

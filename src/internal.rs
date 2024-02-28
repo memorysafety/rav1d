@@ -428,14 +428,12 @@ pub struct Rav1dFrameContext_lf {
     pub level: Vec<[u8; 4]>,
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
-    pub cdef_buf_plane_sz: [c_int; 2], /* stride*sbh*4 */
-    pub cdef_buf_sbh: c_int,
     pub lr_buf_plane_sz: [c_int; 2], /* (stride*sbh*4) << sb128 if n_tc > 1, else stride*4 */
     pub lim_lut: Align16<Av1FilterLUT>,
     pub last_sharpness: c_int,
     pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub tx_lpf_right_edge: Vec<u8>,  /* len = h*2 */
-    pub cdef_line_buf: *mut u8,
+    pub cdef_line_buf: AlignedVec32<u8>, /* AlignedVec32<DynPixel> */
     pub lr_line_buf: *mut u8,
     pub cdef_line: [[*mut DynPixel; 3]; 2], /* [2 pre/post][3 plane] */
     pub cdef_lpf_line: [*mut DynPixel; 3],  /* plane */
@@ -444,7 +442,6 @@ pub struct Rav1dFrameContext_lf {
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: *mut u8,
     pub start_of_tile_row_sz: c_int,
-    pub need_cdef_lpf_copy: c_int,
     pub p: [*mut DynPixel; 3],
     pub sr_p: [*mut DynPixel; 3],
     pub restore_planes: c_int, // enum LrRestorePlanes
