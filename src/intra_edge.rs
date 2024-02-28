@@ -280,7 +280,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
                 indices.tip = next;
                 branch.split[n as usize] = tip;
                 let thr = EdgeFlags::TOP_HAS_RIGHT.select(!(n == 3 || (n == 1 && !top_has_right)));
-                let lhb = EdgeFlags::LEFT_HAS_BOTTOM.select(n == 0 || n == 2 && left_has_bottom);
+                let lhb = EdgeFlags::LEFT_HAS_BOTTOM.select(n == 0 || (n == 2 && left_has_bottom));
                 self.tip[tip.index as usize] = EdgeTip::new(thr.union(lhb));
                 n += 1;
             }
