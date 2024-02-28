@@ -8,8 +8,11 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::mem;
 use std::ops::Add;
+use std::ops::Div;
 use std::ops::Mul;
+use std::ops::Rem;
 use std::ops::Shr;
+use to_method::To as _;
 
 pub trait FromPrimitive<T> {
     fn from_prim(t: T) -> Self;
@@ -174,7 +177,15 @@ pub trait BitDepth: Clone + Copy {
         clip(pixel, 0.into(), self.bitdepth_max())
     }
 
-    fn pxstride(n: usize) -> usize;
+    /// `T` is generally meant to be `usize` or `isize`.
+    fn pxstride<T>(n: T) -> T
+    where
+        T: Copy + Eq + TryFrom<usize> + From<u8> + Div<Output = T> + Rem<Output = T>,
+    {
+        let scale = mem::size_of::<Self::Pixel>().try_to::<T>().ok().unwrap();
+        debug_assert!(n % scale == 0.into());
+        n / scale
+    }
 
     fn bitdepth(&self) -> u8;
 
@@ -236,10 +247,6 @@ impl BitDepth for BitDepth8 {
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
         DisplayPixel8(pixel)
-    }
-
-    fn pxstride(n: usize) -> usize {
-        n
     }
 
     fn bitdepth(&self) -> u8 {
@@ -317,11 +324,6 @@ impl BitDepth for BitDepth16 {
 
     fn display(pixel: Self::Pixel) -> Self::DisplayPixel {
         DisplayPixel16(pixel)
-    }
-
-    fn pxstride(n: usize) -> usize {
-        debug_assert!(n & 1 == 0);
-        n >> 1
     }
 
     fn bitdepth(&self) -> u8 {
