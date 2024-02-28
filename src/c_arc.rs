@@ -1,13 +1,11 @@
 use crate::src::c_box::CBox;
 use crate::src::error::Rav1dResult;
 use std::marker::PhantomData;
-use std::mem;
 use std::ops::Deref;
 use std::pin::Pin;
 use std::ptr::NonNull;
 use std::slice::SliceIndex;
 use std::sync::Arc;
-use to_method::To;
 
 pub fn arc_into_raw<T: ?Sized>(arc: Arc<T>) -> NonNull<T> {
     let raw = Arc::into_raw(arc).cast_mut();
@@ -51,6 +49,9 @@ impl<T: ?Sized> AsRef<T> for CArc<T> {
     fn as_ref(&self) -> &T {
         #[cfg(debug_assertions)]
         {
+            use std::mem;
+            use to_method::To;
+
             // Some extra checks to check if our ptrs are definitely invalid.
 
             let real_ref = (*self.owner).as_ref().get_ref();

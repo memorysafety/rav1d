@@ -33,7 +33,6 @@ use crate::src::fg_apply;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dFrameContext_frame_thread;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
