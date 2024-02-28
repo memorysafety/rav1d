@@ -151,7 +151,6 @@ use crate::src::lf_mask::rav1d_calc_eih;
 use crate::src::lf_mask::rav1d_calc_lf_values;
 use crate::src::lf_mask::rav1d_create_lf_mask_inter;
 use crate::src::lf_mask::rav1d_create_lf_mask_intra;
-use crate::src::lf_mask::Av1Restoration;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
 use crate::src::loopfilter::rav1d_loop_filter_dsp_init;
@@ -3934,9 +3933,9 @@ unsafe fn setup_tile(
             if sb128x >= f.sr_sb128w {
                 continue;
             }
-            &(*f.lf.lr_mask.offset((sb_idx + sb128x) as isize)).lr[p][u_idx as usize]
+            &f.lf.lr_mask[(sb_idx + sb128x) as usize].lr[p][u_idx as usize]
         } else {
-            &(*f.lf.lr_mask.offset(sb_idx as isize)).lr[p][unit_idx as usize]
+            &f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
         };
 
         let lr = lr_ref.get();
@@ -3956,13 +3955,12 @@ unsafe fn setup_tile(
 }
 
 unsafe fn read_restoration_info(
-    t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    ts: &mut Rav1dTileState,
     lr: &mut Av1RestorationUnit,
     p: usize,
     frame_type: Rav1dRestorationType,
+    debug_block_info: bool,
 ) {
-    let ts = &mut *t.ts;
     let lr_ref = ts.lr_ref[p];
 
     if frame_type == RAV1D_RESTORATION_SWITCHABLE {
@@ -4016,7 +4014,7 @@ unsafe fn read_restoration_info(
         lr.filter_h[2] = msac_decode_lr_subexp(ts, lr_ref.filter_h[2], 3, 17);
         lr.sgr_weights = lr_ref.sgr_weights;
         ts.lr_ref[p] = *lr;
-        if debug_block_info!(f, t) {
+        if debug_block_info {
             println!(
                 "Post-lr_wiener[pl={},v[{},{},{}],h[{},{},{}]]: r={}",
                 p,
@@ -4046,7 +4044,7 @@ unsafe fn read_restoration_info(
         lr.filter_v = lr_ref.filter_v;
         lr.filter_h = lr_ref.filter_h;
         ts.lr_ref[p] = *lr;
-        if debug_block_info!(f, t) {
+        if debug_block_info {
             println!(
                 "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",
                 p, lr.sgr_idx, lr.sgr_weights[0], lr.sgr_weights[1], ts.msac.rng,
@@ -4153,7 +4151,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             cdef_idx[0] = -1;
             t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
         }
-        let frame_hdr = f.frame_hdr();
+        let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
         // Restoration filter
         for p in 0..3 {
             if (f.lf.restore_planes >> p) & 1 == 0 {
@@ -4194,10 +4192,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                     let px_x = x << unit_size_log2 + ss_hor;
                     let sb_idx = (t.by >> 5) * f.sr_sb128w + (px_x >> 7);
                     let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
-                    let lr = (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize]
-                        .get_mut();
+                    let lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize].get_mut();
 
-                    read_restoration_info(t, f, lr, p, frame_type);
+                    read_restoration_info(&mut *t.ts, lr, p, frame_type, debug_block_info!(f, t));
                 }
             } else {
                 let x = 4 * t.bx >> ss_hor;
@@ -4212,10 +4209,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 }
                 let sb_idx = (t.by >> 5) * f.sr_sb128w + (t.bx >> 5);
                 let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
-                let lr =
-                    (*(f.lf.lr_mask).offset(sb_idx as isize)).lr[p][unit_idx as usize].get_mut();
+                let lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize].get_mut();
 
-                read_restoration_info(t, f, lr, p, frame_type);
+                read_restoration_info(&mut *t.ts, lr, p, frame_type, debug_block_info!(f, t));
             }
         }
         decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
@@ -4530,16 +4526,9 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
     f.sr_sb128w = f.sr_cur.p.p.w + 127 >> 7;
     let lr_mask_sz = f.sr_sb128w * f.sb128h;
-    if lr_mask_sz != f.lf.lr_mask_sz {
-        freep(&mut f.lf.lr_mask as *mut *mut Av1Restoration as *mut c_void);
-        f.lf.lr_mask = malloc(::core::mem::size_of::<Av1Restoration>() * lr_mask_sz as usize)
-            as *mut Av1Restoration;
-        if f.lf.lr_mask.is_null() {
-            f.lf.lr_mask_sz = 0;
-            return Err(ENOMEM);
-        }
-        f.lf.lr_mask_sz = lr_mask_sz;
-    }
+    // TODO: Fallible allocation
+    f.lf.lr_mask
+        .resize_with(lr_mask_sz as usize, Default::default);
     f.lf.restore_planes = frame_hdr
         .restoration
         .r#type

@@ -427,8 +427,7 @@ pub struct Rav1dFrameContext_frame_thread {
 pub struct Rav1dFrameContext_lf {
     pub level: Vec<[u8; 4]>,
     pub mask: Vec<Av1Filter>, /* len = w*h */
-    pub lr_mask: *mut Av1Restoration,
-    pub lr_mask_sz: c_int,
+    pub lr_mask: Vec<Av1Restoration>,
     pub cdef_buf_plane_sz: [c_int; 2], /* stride*sbh*4 */
     pub cdef_buf_sbh: c_int,
     pub lr_buf_plane_sz: [c_int; 2], /* (stride*sbh*4) << sb128 if n_tc > 1, else stride*4 */
