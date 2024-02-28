@@ -33,18 +33,12 @@ use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::filmgrain::GRAIN_HEIGHT;
 use crate::src::filmgrain::GRAIN_WIDTH;
-use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EdgeNode;
-use crate::src::intra_edge::EdgeTip;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
-use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
-use crate::src::levels::BL_128X128;
-use crate::src::levels::BL_64X64;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
@@ -205,24 +199,6 @@ pub(crate) struct Rav1dContext_refs {
     pub refpoc: [c_uint; 7],
 }
 
-#[repr(C)]
-pub struct Rav1dContext_intra_edge {
-    pub branch_sb128: [EdgeBranch; 85],
-    pub branch_sb64: [EdgeBranch; 21],
-    pub tip_sb128: [EdgeTip; 256],
-    pub tip_sb64: [EdgeTip; 64],
-}
-
-impl Rav1dContext_intra_edge {
-    pub fn root(&self, bl: BlockLevel) -> &EdgeNode {
-        match bl {
-            BL_128X128 => &self.branch_sb128[0].node,
-            BL_64X64 => &self.branch_sb64[0].node,
-            _ => unreachable!(),
-        }
-    }
-}
-
 pub(crate) enum Rav1dContextTaskType {
     /// Worker thread in a multi-threaded context.
     Worker(JoinHandle<()>),
@@ -288,9 +264,6 @@ pub struct Rav1dContext {
 
     pub(crate) dsp: [Rav1dDSPContext; 3], /* 8, 10, 12 bits/component */
     pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,
-
-    // tree to keep track of which edges are available
-    pub(crate) intra_edge: Rav1dContext_intra_edge,
 
     pub(crate) allocator: Rav1dPicAllocator,
     pub(crate) apply_grain: bool,

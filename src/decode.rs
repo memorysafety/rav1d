@@ -78,10 +78,9 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::ScalableMotionParams;
-use crate::src::intra_edge::EdgeBranch;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EdgeNode;
-use crate::src::intra_edge::EdgeTip;
+use crate::src::intra_edge::EdgeIndex;
+use crate::src::intra_edge::IntraEdges;
 use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::ipred::rav1d_intra_pred_dsp_init;
 use crate::src::levels::mv;
@@ -3492,16 +3491,25 @@ unsafe fn decode_sb(
     t: &mut Rav1dTaskContext,
     f: &mut Rav1dFrameData,
     bl: BlockLevel,
-    node: *const EdgeNode,
+    edge_index: EdgeIndex,
 ) -> Result<(), ()> {
     let ts = &mut *t.ts;
     let hsz = 16 >> bl;
     let have_h_split = f.bw > t.bx + hsz;
     let have_v_split = f.bh > t.by + hsz;
 
+    let sb128 = f.seq_hdr().sb128 != 0;
+    let intra_edge = &IntraEdges::DEFAULT;
+
     if !have_h_split && !have_v_split {
         assert!(bl < BL_8X8);
-        return decode_sb(c, t, f, bl + 1, (*(node as *const EdgeBranch)).split[0]);
+        return decode_sb(
+            c,
+            t,
+            f,
+            bl + 1,
+            intra_edge.branch(sb128, edge_index).split[0],
+        );
     }
 
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
@@ -3554,18 +3562,18 @@ unsafe fn decode_sb(
 
         match bp {
             PARTITION_NONE => {
-                let node = &*node;
+                let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.o)?;
             }
             PARTITION_H => {
-                let node = &*node;
+                let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.h[0])?;
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[0], bp, node.h[1])?;
                 t.by -= hsz;
             }
             PARTITION_V => {
-                let node = &*node;
+                let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[0], bp, node.v[1])?;
@@ -3573,7 +3581,7 @@ unsafe fn decode_sb(
             }
             PARTITION_SPLIT => {
                 if bl == BL_8X8 {
-                    let tip = &*(node as *const EdgeTip);
+                    let tip = intra_edge.tip(sb128, edge_index);
                     assert!(hsz == 1);
                     decode_b(c, t, f, bl, BS_4x4, bp, tip.split[0])?;
                     let tl_filter = t.tl_4x4_filter;
@@ -3596,7 +3604,7 @@ unsafe fn decode_sb(
                             (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63) as *mut DynCoef;
                     }
                 } else {
-                    let branch = &*(node as *const EdgeBranch);
+                    let branch = intra_edge.branch(sb128, edge_index);
                     decode_sb(c, t, f, bl + 1, branch.split[0])?;
                     t.bx += hsz;
                     decode_sb(c, t, f, bl + 1, branch.split[1])?;
@@ -3610,7 +3618,7 @@ unsafe fn decode_sb(
                 }
             }
             PARTITION_T_TOP_SPLIT => {
-                let branch = &*(node as *const EdgeBranch);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.tts[0])?;
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[0], bp, branch.tts[1])?;
@@ -3620,7 +3628,7 @@ unsafe fn decode_sb(
                 t.by -= hsz;
             }
             PARTITION_T_BOTTOM_SPLIT => {
-                let branch = &*(node as *const EdgeBranch);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.tbs[0])?;
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[1], bp, branch.tbs[1])?;
@@ -3630,7 +3638,7 @@ unsafe fn decode_sb(
                 t.by -= hsz;
             }
             PARTITION_T_LEFT_SPLIT => {
-                let branch = &*(node as *const EdgeBranch);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.tls[0])?;
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[0], bp, branch.tls[1])?;
@@ -3640,7 +3648,7 @@ unsafe fn decode_sb(
                 t.bx -= hsz;
             }
             PARTITION_T_RIGHT_SPLIT => {
-                let branch = &*(node as *const EdgeBranch);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.trs[0])?;
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[1], bp, branch.trs[1])?;
@@ -3650,7 +3658,7 @@ unsafe fn decode_sb(
                 t.bx -= hsz;
             }
             PARTITION_H4 => {
-                let branch = &*(node as *const EdgeBranch);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.h4[0])?;
                 t.by += hsz >> 1;
                 decode_b(c, t, f, bl, b[0], bp, branch.h4[1])?;
@@ -3663,7 +3671,7 @@ unsafe fn decode_sb(
                 t.by -= hsz * 3 >> 1;
             }
             PARTITION_V4 => {
-                let branch = &*(node as *const EdgeBranch);
+                let branch = intra_edge.branch(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, branch.v4[0])?;
                 t.bx += hsz >> 1;
                 decode_b(c, t, f, bl, b[0], bp, branch.v4[1])?;
@@ -3704,13 +3712,14 @@ unsafe fn decode_sb(
 
         assert!(bl < BL_8X8);
         if is_split {
-            let branch = &*(node as *const EdgeBranch);
+            let branch = intra_edge.branch(sb128, edge_index);
             bp = PARTITION_SPLIT;
             decode_sb(c, t, f, bl + 1, branch.split[0])?;
             t.bx += hsz;
             decode_sb(c, t, f, bl + 1, branch.split[1])?;
             t.bx -= hsz;
         } else {
+            let node = intra_edge.node(sb128, edge_index);
             bp = PARTITION_H;
             decode_b(
                 c,
@@ -3719,7 +3728,7 @@ unsafe fn decode_sb(
                 bl,
                 dav1d_block_sizes[bl as usize][bp as usize][0],
                 bp,
-                (*node).h[0],
+                node.h[0],
             )?;
         }
     } else {
@@ -3753,13 +3762,14 @@ unsafe fn decode_sb(
 
         assert!(bl < BL_8X8);
         if is_split {
-            let branch = &*(node as *const EdgeBranch);
+            let branch = intra_edge.branch(sb128, edge_index);
             bp = PARTITION_SPLIT;
             decode_sb(c, t, f, bl + 1, branch.split[0])?;
             t.by += hsz;
             decode_sb(c, t, f, bl + 1, branch.split[2])?;
             t.by -= hsz;
         } else {
+            let node = intra_edge.node(sb128, edge_index);
             bp = PARTITION_V;
             decode_b(
                 c,
@@ -3768,7 +3778,7 @@ unsafe fn decode_sb(
                 bl,
                 dav1d_block_sizes[bl as usize][bp as usize][0],
                 bp,
-                (*node).v[0],
+                node.v[0],
             )?;
         }
     }
@@ -4101,7 +4111,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             if c.flush.load(Ordering::Acquire) != 0 {
                 return Err(());
             }
-            decode_sb(c, t, f, root_bl, c.intra_edge.root(root_bl))?;
+            decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
             if t.bx & 16 != 0 || f.seq_hdr().sb128 != 0 {
                 t.a = (t.a).offset(1);
             }
@@ -4208,7 +4218,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 read_restoration_info(t, f, lr, p, frame_type);
             }
         }
-        decode_sb(c, t, f, root_bl, c.intra_edge.root(root_bl))?;
+        decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
         if t.bx & 16 != 0 || f.seq_hdr().sb128 != 0 {
             t.a = (t.a).offset(1);
             t.lf_mask = (t.lf_mask).offset(1);
