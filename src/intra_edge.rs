@@ -169,25 +169,23 @@ impl EdgeBranch {
 
         let h4 = [
             edge_flags.union(EdgeFlags::LEFT_HAS_BOTTOM),
-            EdgeFlags::LEFT_HAS_BOTTOM.union(if bl == BL_16X16 {
-                edge_flags.intersection(EdgeFlags::I420_TOP_HAS_RIGHT)
-            } else {
-                EdgeFlags::empty()
-            }),
+            EdgeFlags::LEFT_HAS_BOTTOM.union(
+                (edge_flags.intersection(EdgeFlags::I420_TOP_HAS_RIGHT)).select(bl == BL_16X16),
+            ),
             EdgeFlags::LEFT_HAS_BOTTOM,
             edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
         ];
 
         let v4 = [
             edge_flags.union(EdgeFlags::TOP_HAS_RIGHT),
-            EdgeFlags::TOP_HAS_RIGHT.union(if bl == BL_16X16 {
-                edge_flags.intersection(EdgeFlags::union_all([
-                    EdgeFlags::I420_LEFT_HAS_BOTTOM,
-                    EdgeFlags::I422_LEFT_HAS_BOTTOM,
-                ]))
-            } else {
-                EdgeFlags::empty()
-            }),
+            EdgeFlags::TOP_HAS_RIGHT.union(
+                edge_flags
+                    .intersection(EdgeFlags::union_all([
+                        edge_flags.intersection(EdgeFlags::I420_LEFT_HAS_BOTTOM),
+                        edge_flags.intersection(EdgeFlags::I422_LEFT_HAS_BOTTOM),
+                    ]))
+                    .select(bl == BL_16X16),
+            ),
             EdgeFlags::TOP_HAS_RIGHT,
             edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
         ];
