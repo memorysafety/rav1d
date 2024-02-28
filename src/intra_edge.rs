@@ -269,18 +269,23 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
         top_has_right: bool,
         left_has_bottom: bool,
     ) -> (Self, EdgeIndices) {
-        let thr = EdgeFlags::TOP_HAS_RIGHT.select(top_has_right);
-        let lhb = EdgeFlags::LEFT_HAS_BOTTOM.select(left_has_bottom);
-        let mut branch = EdgeBranch::new(thr.union(lhb), bl);
+        let mut branch = EdgeBranch::new(
+            EdgeFlags::union_all([
+                EdgeFlags::TOP_HAS_RIGHT.select(top_has_right),
+                EdgeFlags::LEFT_HAS_BOTTOM.select(left_has_bottom),
+            ]),
+            bl,
+        );
         if bl == BL_16X16 {
             let mut n = 0;
             while n < B as u8 {
                 let (tip, next) = indices.tip.pop_front();
                 indices.tip = next;
                 branch.split[n as usize] = tip;
-                let thr = EdgeFlags::TOP_HAS_RIGHT.select(!(n == 3 || (n == 1 && !top_has_right)));
-                let lhb = EdgeFlags::LEFT_HAS_BOTTOM.select(n == 0 || (n == 2 && left_has_bottom));
-                self.tip[tip.index as usize] = EdgeTip::new(thr.union(lhb));
+                self.tip[tip.index as usize] = EdgeTip::new(EdgeFlags::union_all([
+                    EdgeFlags::TOP_HAS_RIGHT.select(!(n == 3 || (n == 1 && !top_has_right))),
+                    EdgeFlags::LEFT_HAS_BOTTOM.select(n == 0 || (n == 2 && left_has_bottom)),
+                ]));
                 n += 1;
             }
         } else {
