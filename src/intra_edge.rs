@@ -1,3 +1,4 @@
+use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::enum_map::DefaultValue;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BL_128X128;
@@ -54,11 +55,11 @@ impl EdgeFlags {
     }
 }
 
-impl Shr<u32> for EdgeFlags {
+impl Shr<Rav1dPixelLayout> for EdgeFlags {
     type Output = Self;
 
-    fn shr(self, rhs: u32) -> Self::Output {
-        Self::from_bits_retain(self.bits() >> rhs)
+    fn shr(self, rhs: Rav1dPixelLayout) -> Self::Output {
+        Self::from_bits_retain(self.bits() >> (rhs as u32).wrapping_sub(1))
     }
 }
 

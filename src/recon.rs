@@ -3000,19 +3000,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 } else if init_y != 0 {
                     false
                 } else {
-                    intra_edge_flags.contains(
-                        EdgeFlags::I420_TOP_HAS_RIGHT >> (f.cur.p.layout as c_uint).wrapping_sub(1),
-                    )
+                    intra_edge_flags.contains(EdgeFlags::I420_TOP_HAS_RIGHT >> f.cur.p.layout)
                 };
                 let uv_sb_has_bl = if init_x != 0 {
                     false
                 } else if init_y + 16 >> ss_ver < ch4 {
                     true
                 } else {
-                    intra_edge_flags.contains(
-                        EdgeFlags::I420_LEFT_HAS_BOTTOM
-                            >> (f.cur.p.layout as c_uint).wrapping_sub(1),
-                    )
+                    intra_edge_flags.contains(EdgeFlags::I420_LEFT_HAS_BOTTOM >> f.cur.p.layout)
                 };
                 let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
                 let mut pl = 0;
