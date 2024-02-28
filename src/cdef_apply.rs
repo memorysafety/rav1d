@@ -38,7 +38,7 @@ unsafe fn backup2lines<BD: BitDepth>(
     stride: &[ptrdiff_t; 2],
     layout: Rav1dPixelLayout,
 ) {
-    let y_stride: ptrdiff_t = BD::pxstride(stride[0] as usize) as isize;
+    let y_stride: ptrdiff_t = BD::pxstride(stride[0]);
     let len = 2 * y_stride.unsigned_abs();
     if y_stride < 0 {
         BD::pixel_copy(
@@ -55,7 +55,7 @@ unsafe fn backup2lines<BD: BitDepth>(
     }
 
     if layout != Rav1dPixelLayout::I400 {
-        let uv_stride: ptrdiff_t = BD::pxstride(stride[1] as usize) as isize;
+        let uv_stride: ptrdiff_t = BD::pxstride(stride[1]);
         let len = 2 * uv_stride.unsigned_abs();
         if uv_stride < 0 {
             let uv_off = if layout == Rav1dPixelLayout::I420 {
@@ -112,7 +112,7 @@ unsafe fn backup2x8<BD: BitDepth>(
                 slice::from_raw_parts(src[0].offset(y_off + x_off as isize - 2), 2),
                 2,
             );
-            y_off += BD::pxstride(src_stride[0] as usize) as isize;
+            y_off += BD::pxstride(src_stride[0]);
         }
     }
 
@@ -136,7 +136,7 @@ unsafe fn backup2x8<BD: BitDepth>(
             slice::from_raw_parts(src[2].offset(y_off + x_off as isize - 2), 2),
             2,
         );
-        y_off += BD::pxstride(src_stride[1] as usize) as isize;
+        y_off += BD::pxstride(src_stride[1]);
     }
 }
 
@@ -191,8 +191,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let have_tt = c.tc.len() > 1;
     let sb128 = f.seq_hdr.as_ref().unwrap().sb128;
     let resize = frame_hdr.size.width[0] != frame_hdr.size.width[1];
-    let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0] as usize) as isize;
-    let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1] as usize) as isize;
+    let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0]);
+    let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1]);
 
     let mut bit = false;
     for by in (by_start..by_end).step_by(2) {
@@ -475,9 +475,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             iptrs[2] = iptrs[2].add(sbsz as usize * 4 >> ss_hor);
             edges.insert(CdefEdgeFlags::HAVE_LEFT);
         }
-        ptrs[0] = ptrs[0].offset(8 * BD::pxstride(f.cur.stride[0] as usize) as isize);
-        ptrs[1] = ptrs[1].offset(8 * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver);
-        ptrs[2] = ptrs[2].offset(8 * BD::pxstride(f.cur.stride[1] as usize) as isize >> ss_ver);
+        ptrs[0] = ptrs[0].offset(8 * BD::pxstride(f.cur.stride[0]));
+        ptrs[1] = ptrs[1].offset(8 * BD::pxstride(f.cur.stride[1]) >> ss_ver);
+        ptrs[2] = ptrs[2].offset(8 * BD::pxstride(f.cur.stride[1]) >> ss_ver);
         tc.top_pre_cdef_toggle ^= 1 as c_int;
         edges.insert(CdefEdgeFlags::HAVE_TOP);
     }
