@@ -171,7 +171,9 @@ impl EdgeBranch {
         let h4 = [
             edge_flags.union(EdgeFlags::LEFT_HAS_BOTTOM),
             EdgeFlags::LEFT_HAS_BOTTOM.union(
-                (edge_flags.intersection(EdgeFlags::I420_TOP_HAS_RIGHT)).select(bl == BL_16X16),
+                edge_flags
+                    .intersection(EdgeFlags::I420_TOP_HAS_RIGHT)
+                    .select(bl == BL_16X16),
             ),
             EdgeFlags::LEFT_HAS_BOTTOM,
             edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
