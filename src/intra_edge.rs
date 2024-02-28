@@ -192,7 +192,7 @@ impl EdgeBranch {
         ];
 
         let tls = [
-            EdgeFlags::TOP_HAS_RIGHT.union(EdgeFlags::LEFT_HAS_BOTTOM),
+            EdgeFlags::all(),
             edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
             edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
         ];
@@ -202,7 +202,7 @@ impl EdgeBranch {
             EdgeFlags::empty(),
         ];
         let tts = [
-            EdgeFlags::TOP_HAS_RIGHT.union(EdgeFlags::LEFT_HAS_BOTTOM),
+            EdgeFlags::all(),
             edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
             edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
         ];
