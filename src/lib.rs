@@ -116,6 +116,25 @@ pub unsafe extern "C" fn dav1d_version() -> *const c_char {
     rav1d_version().as_ptr().cast()
 }
 
+pub const DAV1D_API_VERSION_MAJOR: u8 = 6;
+pub const DAV1D_API_VERSION_MINOR: u8 = 8;
+pub const DAV1D_API_VERSION_PATCH: u8 = 0;
+
+/// Get the `dav1d` library C API version.
+///
+/// Return a value in the format `0x00XXYYZZ`, where `XX` is the major version,
+/// `YY` the minor version, and `ZZ` the patch version.
+#[no_mangle]
+#[cold]
+pub extern "C" fn dav1d_version_api() -> c_uint {
+    u32::from_be_bytes([
+        0,
+        DAV1D_API_VERSION_MAJOR,
+        DAV1D_API_VERSION_MINOR,
+        DAV1D_API_VERSION_PATCH,
+    ])
+}
+
 impl Default for Rav1dSettings {
     fn default() -> Self {
         Self {

@@ -49,7 +49,6 @@ use libc::malloc;
 use libc::memset;
 use libc::ptrdiff_t;
 use libc::snprintf;
-use libc::strcmp;
 use libc::strcpy;
 use libc::strerror;
 use libc::EAGAIN;
@@ -83,6 +82,10 @@ use rav1d::src::lib::dav1d_open;
 use rav1d::src::lib::dav1d_parse_sequence_header;
 use rav1d::src::lib::dav1d_send_data;
 use rav1d::src::lib::dav1d_version;
+use rav1d::src::lib::dav1d_version_api;
+use rav1d::src::lib::DAV1D_API_VERSION_MAJOR;
+use rav1d::src::lib::DAV1D_API_VERSION_MINOR;
+use rav1d::src::lib::DAV1D_API_VERSION_PATCH;
 use rav1d::Dav1dResult;
 use std::ffi::c_char;
 use std::ffi::c_double;
@@ -334,13 +337,18 @@ unsafe fn main_0(argc: c_int, argv: *const *mut c_char) -> c_int {
     let mut elapsed: u64 = 0;
     let i_fps: c_double;
     let mut frametimes: *mut libc::FILE = 0 as *mut libc::FILE;
-    let version: *const c_char = dav1d_version();
-    if strcmp(version, b"966d63c1\0" as *const u8 as *const c_char) != 0 {
+    let [_, major, minor, patch] = dav1d_version_api().to_be_bytes();
+    if DAV1D_API_VERSION_MAJOR != major || DAV1D_API_VERSION_MINOR > minor {
         fprintf(
             stderr,
-            b"Version mismatch (library: %s, executable: %s)\n\0" as *const u8 as *const c_char,
-            version,
-            b"966d63c1\0" as *const u8 as *const c_char,
+            b"Version mismatch (library: %d.%d.%d, executable: %d.%d.%d)\n\0" as *const u8
+                as *const c_char,
+            major as c_int,
+            minor as c_int,
+            patch as c_int,
+            DAV1D_API_VERSION_MAJOR as c_int,
+            DAV1D_API_VERSION_MINOR as c_int,
+            DAV1D_API_VERSION_PATCH as c_int,
         );
         return 1 as c_int;
     }
