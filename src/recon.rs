@@ -20,10 +20,6 @@ use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EDGE_I420_LEFT_HAS_BOTTOM;
-use crate::src::intra_edge::EDGE_I420_TOP_HAS_RIGHT;
-use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
-use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::ipred_prepare::rav1d_prepare_intra_edges;
 use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
@@ -2598,20 +2594,20 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
             let intra_flags = sm_flag(&*t.a, bx4 as usize)
                 | sm_flag(&mut t.l, by4 as usize)
                 | intra_edge_filter_flag;
-            let sb_has_tr = (if (init_x + 16) < w4 {
-                1 as c_int as c_uint
+            let sb_has_tr = if (init_x + 16) < w4 {
+                true
             } else if init_y != 0 {
-                0 as c_int as c_uint
+                false
             } else {
-                intra_edge_flags as c_uint & EDGE_I444_TOP_HAS_RIGHT as c_int as c_uint
-            }) as c_int;
-            let sb_has_bl = (if init_x != 0 {
-                0 as c_int as c_uint
+                intra_edge_flags.contains(EdgeFlags::EDGE_I444_TOP_HAS_RIGHT)
+            };
+            let sb_has_bl = if init_x != 0 {
+                false
             } else if (init_y + 16) < h4 {
-                1 as c_int as c_uint
+                true
             } else {
-                intra_edge_flags as c_uint & EDGE_I444_LEFT_HAS_BOTTOM as c_int as c_uint
-            }) as c_int;
+                intra_edge_flags.contains(EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM)
+            };
             let mut y;
             let mut x;
             let sub_w4 = cmp::min(w4, init_x + 16);
@@ -2631,19 +2627,16 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let m: IntraPredMode;
                     if !(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] != 0) {
                         angle = b.c2rust_unnamed.c2rust_unnamed.y_angle as c_int;
-                        edge_flags = ((if (y > init_y || sb_has_tr == 0)
-                            && x + (*t_dim).w as c_int >= sub_w4
-                        {
-                            0 as c_int
-                        } else {
-                            EDGE_I444_TOP_HAS_RIGHT as c_int
-                        }) | (if x > init_x
-                            || sb_has_bl == 0 && y + (*t_dim).h as c_int >= sub_h4
-                        {
-                            0 as c_int
-                        } else {
-                            EDGE_I444_LEFT_HAS_BOTTOM as c_int
-                        })) as EdgeFlags;
+                        edge_flags =
+                            (if (y > init_y || !sb_has_tr) && x + (*t_dim).w as c_int >= sub_w4 {
+                                EdgeFlags::empty()
+                            } else {
+                                EdgeFlags::EDGE_I444_TOP_HAS_RIGHT
+                            }) | (if x > init_x || !sb_has_bl && y + (*t_dim).h as c_int >= sub_h4 {
+                                EdgeFlags::empty()
+                            } else {
+                                EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM
+                            });
                         let top_sb_edge_slice = if t.by & f.sb_step - 1 == 0 {
                             let mut top_sb_edge: *const BD::Pixel =
                                 f.ipred_edge[0] as *mut BD::Pixel;
@@ -2898,7 +2891,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 ypos > ystart,
                                 (*ts).tiling.col_end >> ss_hor,
                                 (*ts).tiling.row_end >> ss_ver,
-                                0 as EdgeFlags,
+                                EdgeFlags::empty(),
                                 uvdst_slice,
                                 stride,
                                 top_sb_edge_slice,
@@ -3004,26 +2997,26 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 }
                 let sm_uv_fl =
                     sm_uv_flag(&*t.a, cbx4 as usize) | sm_uv_flag(&mut t.l, cby4 as usize);
-                let uv_sb_has_tr = (if init_x + 16 >> ss_hor < cw4 {
-                    1 as c_int as c_uint
+                let uv_sb_has_tr = if init_x + 16 >> ss_hor < cw4 {
+                    true
                 } else if init_y != 0 {
-                    0 as c_int as c_uint
+                    false
                 } else {
-                    intra_edge_flags as c_uint
-                        & (EDGE_I420_TOP_HAS_RIGHT as c_int
-                            >> (f.cur.p.layout as c_uint).wrapping_sub(1 as c_int as c_uint))
-                            as c_uint
-                }) as c_int;
-                let uv_sb_has_bl = (if init_x != 0 {
-                    0 as c_int as c_uint
+                    intra_edge_flags.contains(
+                        EdgeFlags::EDGE_I420_TOP_HAS_RIGHT
+                            >> (f.cur.p.layout as c_uint).wrapping_sub(1),
+                    )
+                };
+                let uv_sb_has_bl = if init_x != 0 {
+                    false
                 } else if init_y + 16 >> ss_ver < ch4 {
-                    1 as c_int as c_uint
+                    true
                 } else {
-                    intra_edge_flags as c_uint
-                        & (EDGE_I420_LEFT_HAS_BOTTOM as c_int
-                            >> (f.cur.p.layout as c_uint).wrapping_sub(1 as c_int as c_uint))
-                            as c_uint
-                }) as c_int;
+                    intra_edge_flags.contains(
+                        EdgeFlags::EDGE_I420_LEFT_HAS_BOTTOM
+                            >> (f.cur.p.layout as c_uint).wrapping_sub(1),
+                    )
+                };
                 let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
                 let mut pl = 0;
                 while pl < 2 {
@@ -3055,19 +3048,19 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 || b.c2rust_unnamed.c2rust_unnamed.pal_sz[1] as c_int != 0)
                             {
                                 angle = b.c2rust_unnamed.c2rust_unnamed.uv_angle as c_int;
-                                edge_flags = ((if (y > init_y >> ss_ver || uv_sb_has_tr == 0)
+                                edge_flags = (if (y > init_y >> ss_ver || !uv_sb_has_tr)
                                     && x + (*uv_t_dim).w as c_int >= sub_cw4
                                 {
-                                    0 as c_int
+                                    EdgeFlags::empty()
                                 } else {
-                                    EDGE_I444_TOP_HAS_RIGHT as c_int
+                                    EdgeFlags::EDGE_I444_TOP_HAS_RIGHT
                                 }) | (if x > init_x >> ss_hor
-                                    || uv_sb_has_bl == 0 && y + (*uv_t_dim).h as c_int >= sub_ch4
+                                    || !uv_sb_has_bl && y + (*uv_t_dim).h as c_int >= sub_ch4
                                 {
-                                    0 as c_int
+                                    EdgeFlags::empty()
                                 } else {
-                                    EDGE_I444_LEFT_HAS_BOTTOM as c_int
-                                })) as EdgeFlags;
+                                    EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM
+                                });
                                 let top_sb_edge_slice = if t.by & !ss_ver & f.sb_step - 1 == 0 {
                                     let mut top_sb_edge: *const BD::Pixel =
                                         f.ipred_edge[(1 + pl) as usize] as *const BD::Pixel;
@@ -3504,7 +3497,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 t.by > (*ts).tiling.row_start,
                 (*ts).tiling.col_end,
                 (*ts).tiling.row_end,
-                0 as EdgeFlags,
+                EdgeFlags::empty(),
                 dst_slice,
                 f.cur.stride[0],
                 top_sb_edge_slice,
@@ -3933,7 +3926,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.by >> ss_ver > (*ts).tiling.row_start >> ss_ver,
                             (*ts).tiling.col_end >> ss_hor,
                             (*ts).tiling.row_end >> ss_ver,
-                            0 as EdgeFlags,
+                            EdgeFlags::empty(),
                             dstuv_slice,
                             f.cur.stride[1],
                             top_sb_edge_slice,

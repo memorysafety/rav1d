@@ -4,19 +4,62 @@ use crate::src::levels::BL_128X128;
 use crate::src::levels::BL_16X16;
 use crate::src::levels::BL_32X32;
 use crate::src::levels::BL_64X64;
+use bitflags::bitflags;
+use std::ops::Shr;
 
-pub type EdgeFlags = u8;
-pub const EDGE_I420_LEFT_HAS_BOTTOM: EdgeFlags = 32;
-pub const EDGE_I422_LEFT_HAS_BOTTOM: EdgeFlags = 16;
-pub const EDGE_I444_LEFT_HAS_BOTTOM: EdgeFlags = 8;
-pub const EDGE_I420_TOP_HAS_RIGHT: EdgeFlags = 4;
-pub const EDGE_I422_TOP_HAS_RIGHT: EdgeFlags = 2;
-pub const EDGE_I444_TOP_HAS_RIGHT: EdgeFlags = 1;
+bitflags! {
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+    pub(crate) struct EdgeFlags: u8 {
+        const EDGE_I444_TOP_HAS_RIGHT = 1 << 0;
+        const EDGE_I422_TOP_HAS_RIGHT = 1 << 1;
+        const EDGE_I420_TOP_HAS_RIGHT = 1 << 2;
+        const EDGE_I444_LEFT_HAS_BOTTOM = 1 << 3;
+        const EDGE_I422_LEFT_HAS_BOTTOM = 1 << 4;
+        const EDGE_I420_LEFT_HAS_BOTTOM = 1 << 5;
+    }
+}
 
-pub const EDGE_LEFT_HAS_BOTTOM: EdgeFlags =
-    EDGE_I444_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM | EDGE_I420_LEFT_HAS_BOTTOM;
-pub const EDGE_TOP_HAS_RIGHT: EdgeFlags =
-    EDGE_I444_TOP_HAS_RIGHT | EDGE_I422_TOP_HAS_RIGHT | EDGE_I420_TOP_HAS_RIGHT;
+impl EdgeFlags {
+    const EDGE_LEFT_HAS_BOTTOM: Self = Self::union_all([
+        Self::EDGE_I444_LEFT_HAS_BOTTOM,
+        Self::EDGE_I422_LEFT_HAS_BOTTOM,
+        Self::EDGE_I420_LEFT_HAS_BOTTOM,
+    ]);
+
+    const EDGE_TOP_HAS_RIGHT: Self = Self::union_all([
+        Self::EDGE_I444_TOP_HAS_RIGHT,
+        Self::EDGE_I422_TOP_HAS_RIGHT,
+        Self::EDGE_I420_TOP_HAS_RIGHT,
+    ]);
+
+    pub const fn union_all<const N: usize>(flags: [Self; N]) -> Self {
+        let mut i = 0;
+        let mut output = Self::empty();
+
+        while i < N {
+            output = output.union(flags[i]);
+            i += 1;
+        }
+
+        output
+    }
+
+    pub(crate) const fn select(&self, select: bool) -> Self {
+        if select {
+            *self
+        } else {
+            Self::empty()
+        }
+    }
+}
+
+impl Shr<u32> for EdgeFlags {
+    type Output = Self;
+
+    fn shr(self, rhs: u32) -> Self::Output {
+        Self::from_bits_retain(self.bits() >> rhs)
+    }
+}
 
 const B: usize = 4;
 
@@ -77,22 +120,36 @@ impl EdgeTip {
     const fn new(edge_flags: EdgeFlags) -> Self {
         let o = edge_flags;
         let h = [
-            edge_flags | EDGE_LEFT_HAS_BOTTOM,
-            edge_flags & (EDGE_LEFT_HAS_BOTTOM | EDGE_I420_TOP_HAS_RIGHT),
+            edge_flags.union(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
+            edge_flags.intersection(EdgeFlags::union_all([
+                EdgeFlags::EDGE_LEFT_HAS_BOTTOM,
+                EdgeFlags::EDGE_I420_TOP_HAS_RIGHT,
+            ])),
         ];
         let v = [
-            edge_flags | EDGE_TOP_HAS_RIGHT,
-            edge_flags
-                & (EDGE_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM),
+            edge_flags.union(EdgeFlags::EDGE_TOP_HAS_RIGHT),
+            edge_flags.intersection(EdgeFlags::union_all([
+                EdgeFlags::EDGE_TOP_HAS_RIGHT,
+                EdgeFlags::EDGE_I420_LEFT_HAS_BOTTOM,
+                EdgeFlags::EDGE_I422_LEFT_HAS_BOTTOM,
+            ])),
         ];
         let node = EdgeNode { o, h, v };
 
         let split = [
-            EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM,
-            (edge_flags & EDGE_TOP_HAS_RIGHT) | EDGE_I422_LEFT_HAS_BOTTOM,
-            edge_flags | EDGE_I444_TOP_HAS_RIGHT,
+            EdgeFlags::union_all([
+                EdgeFlags::EDGE_TOP_HAS_RIGHT,
+                EdgeFlags::EDGE_LEFT_HAS_BOTTOM,
+            ]),
             edge_flags
-                & (EDGE_I420_TOP_HAS_RIGHT | EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM),
+                .intersection(EdgeFlags::EDGE_TOP_HAS_RIGHT)
+                .union(EdgeFlags::EDGE_I422_LEFT_HAS_BOTTOM),
+            edge_flags.union(EdgeFlags::EDGE_I444_TOP_HAS_RIGHT),
+            edge_flags.intersection(EdgeFlags::union_all([
+                EdgeFlags::EDGE_I420_TOP_HAS_RIGHT,
+                EdgeFlags::EDGE_I420_LEFT_HAS_BOTTOM,
+                EdgeFlags::EDGE_I422_LEFT_HAS_BOTTOM,
+            ])),
         ];
 
         Self { node, split }
@@ -103,58 +160,59 @@ impl EdgeBranch {
     const fn new(edge_flags: EdgeFlags, bl: BlockLevel) -> Self {
         let o = edge_flags;
         let h = [
-            edge_flags | EDGE_LEFT_HAS_BOTTOM,
-            edge_flags & EDGE_LEFT_HAS_BOTTOM,
+            edge_flags.union(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
+            edge_flags.intersection(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
         ];
         let v = [
-            edge_flags | EDGE_TOP_HAS_RIGHT,
-            edge_flags & EDGE_TOP_HAS_RIGHT,
+            edge_flags.union(EdgeFlags::EDGE_TOP_HAS_RIGHT),
+            edge_flags.intersection(EdgeFlags::EDGE_TOP_HAS_RIGHT),
         ];
         let node = EdgeNode { o, h, v };
 
         let h4 = [
-            edge_flags | EDGE_LEFT_HAS_BOTTOM,
-            EDGE_LEFT_HAS_BOTTOM
-                | (if bl == BL_16X16 {
-                    edge_flags & EDGE_I420_TOP_HAS_RIGHT
-                } else {
-                    0 as EdgeFlags
-                }),
-            EDGE_LEFT_HAS_BOTTOM,
-            edge_flags & EDGE_LEFT_HAS_BOTTOM,
+            edge_flags.union(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
+            EdgeFlags::EDGE_LEFT_HAS_BOTTOM.union(if bl == BL_16X16 {
+                edge_flags.intersection(EdgeFlags::EDGE_I420_TOP_HAS_RIGHT)
+            } else {
+                EdgeFlags::empty()
+            }),
+            EdgeFlags::EDGE_LEFT_HAS_BOTTOM,
+            edge_flags.intersection(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
         ];
 
         let v4 = [
-            edge_flags | EDGE_TOP_HAS_RIGHT,
-            EDGE_TOP_HAS_RIGHT
-                | (if bl == BL_16X16 {
-                    edge_flags & (EDGE_I420_LEFT_HAS_BOTTOM | EDGE_I422_LEFT_HAS_BOTTOM)
-                } else {
-                    0 as EdgeFlags
-                }),
-            EDGE_TOP_HAS_RIGHT,
-            edge_flags & EDGE_TOP_HAS_RIGHT,
+            edge_flags.union(EdgeFlags::EDGE_TOP_HAS_RIGHT),
+            EdgeFlags::EDGE_TOP_HAS_RIGHT.union(if bl == BL_16X16 {
+                edge_flags.intersection(EdgeFlags::union_all([
+                    EdgeFlags::EDGE_I420_LEFT_HAS_BOTTOM,
+                    EdgeFlags::EDGE_I422_LEFT_HAS_BOTTOM,
+                ]))
+            } else {
+                EdgeFlags::empty()
+            }),
+            EdgeFlags::EDGE_TOP_HAS_RIGHT,
+            edge_flags.intersection(EdgeFlags::EDGE_TOP_HAS_RIGHT),
         ];
 
         let tls = [
-            EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM,
-            edge_flags & EDGE_LEFT_HAS_BOTTOM,
-            edge_flags & EDGE_TOP_HAS_RIGHT,
+            EdgeFlags::EDGE_TOP_HAS_RIGHT.union(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
+            edge_flags.intersection(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
+            edge_flags.intersection(EdgeFlags::EDGE_TOP_HAS_RIGHT),
         ];
         let trs = [
-            edge_flags | EDGE_TOP_HAS_RIGHT,
-            edge_flags | EDGE_LEFT_HAS_BOTTOM,
-            0 as EdgeFlags,
+            edge_flags.union(EdgeFlags::EDGE_TOP_HAS_RIGHT),
+            edge_flags.union(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
+            EdgeFlags::empty(),
         ];
         let tts = [
-            EDGE_TOP_HAS_RIGHT | EDGE_LEFT_HAS_BOTTOM,
-            edge_flags & EDGE_TOP_HAS_RIGHT,
-            edge_flags & EDGE_LEFT_HAS_BOTTOM,
+            EdgeFlags::EDGE_TOP_HAS_RIGHT.union(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
+            edge_flags.intersection(EdgeFlags::EDGE_TOP_HAS_RIGHT),
+            edge_flags.intersection(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
         ];
         let tbs = [
-            edge_flags | EDGE_LEFT_HAS_BOTTOM,
-            edge_flags | EDGE_TOP_HAS_RIGHT,
-            0 as EdgeFlags,
+            edge_flags.union(EdgeFlags::EDGE_LEFT_HAS_BOTTOM),
+            edge_flags.union(EdgeFlags::EDGE_TOP_HAS_RIGHT),
+            EdgeFlags::empty(),
         ];
 
         let split = [EdgeIndex::root(); 4];
@@ -173,11 +231,11 @@ impl EdgeBranch {
 }
 
 impl DefaultValue for EdgeTip {
-    const DEFAULT: Self = Self::new(0 as EdgeFlags);
+    const DEFAULT: Self = Self::new(EdgeFlags::empty());
 }
 
 impl DefaultValue for EdgeBranch {
-    const DEFAULT: Self = Self::new(0 as EdgeFlags, 0 as BlockLevel);
+    const DEFAULT: Self = Self::new(EdgeFlags::empty(), 0 as BlockLevel);
 }
 
 struct EdgeIndices {
@@ -214,34 +272,20 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
         top_has_right: bool,
         left_has_bottom: bool,
     ) -> (Self, EdgeIndices) {
-        let mut branch = EdgeBranch::new(
-            (if top_has_right {
-                EDGE_TOP_HAS_RIGHT
-            } else {
-                0 as EdgeFlags
-            }) | (if left_has_bottom {
-                EDGE_LEFT_HAS_BOTTOM
-            } else {
-                0 as EdgeFlags
-            }),
-            bl,
-        );
+        let thr = EdgeFlags::EDGE_TOP_HAS_RIGHT.select(top_has_right);
+        let lhb = EdgeFlags::EDGE_LEFT_HAS_BOTTOM.select(left_has_bottom);
+        let mut branch = EdgeBranch::new(thr.union(lhb), bl);
         if bl == BL_16X16 {
             let mut n = 0;
             while n < B as u8 {
                 let (tip, next) = indices.tip.pop_front();
                 indices.tip = next;
                 branch.split[n as usize] = tip;
-                let edge_flags = (if n == 3 || (n == 1 && !top_has_right) {
-                    0 as EdgeFlags
-                } else {
-                    EDGE_TOP_HAS_RIGHT
-                }) | (if !(n == 0 || (n == 2 && left_has_bottom)) {
-                    0 as EdgeFlags
-                } else {
-                    EDGE_LEFT_HAS_BOTTOM
-                });
-                self.tip[tip.index as usize] = EdgeTip::new(edge_flags);
+                let thr =
+                    EdgeFlags::EDGE_TOP_HAS_RIGHT.select(!(n == 3 || (n == 1 && !top_has_right)));
+                let lhb =
+                    EdgeFlags::EDGE_LEFT_HAS_BOTTOM.select(n == 0 || n == 2 && left_has_bottom);
+                self.tip[tip.index as usize] = EdgeTip::new(thr.union(lhb));
                 n += 1;
             }
         } else {
