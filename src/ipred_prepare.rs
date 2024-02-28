@@ -226,7 +226,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             let have_bottomleft = if !have_left || y + th >= h {
                 false
             } else {
-                edge_flags.contains(EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM)
+                edge_flags.contains(EdgeFlags::I444_LEFT_HAS_BOTTOM)
             };
             if have_bottomleft {
                 let px_have = cmp::min(sz, (h - y - th << 2) as usize);
@@ -272,7 +272,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             let have_topright = if !have_top || x + tw >= w {
                 false
             } else {
-                edge_flags.contains(EdgeFlags::EDGE_I444_TOP_HAS_RIGHT)
+                edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT)
             };
             if have_topright {
                 let top_right = &mut top[sz..];

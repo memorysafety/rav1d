@@ -465,7 +465,7 @@ unsafe fn find_matching_ref(
     let mut have_topright = cmp::max(bw4, bh4) < 32
         && have_top
         && t.bx + bw4 < (*t.ts).tiling.col_end
-        && intra_edge_flags.contains(EdgeFlags::EDGE_I444_TOP_HAS_RIGHT);
+        && intra_edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT);
 
     let bs = |rp: &refmvs_block| dav1d_block_dimensions[rp.0.bs as usize];
     let matches = |rp: &refmvs_block| rp.0.r#ref.r#ref[0] == r#ref + 1 && rp.0.r#ref.r#ref[1] == -1;

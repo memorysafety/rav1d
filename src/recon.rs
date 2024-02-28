@@ -2599,14 +2599,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
             } else if init_y != 0 {
                 false
             } else {
-                intra_edge_flags.contains(EdgeFlags::EDGE_I444_TOP_HAS_RIGHT)
+                intra_edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT)
             };
             let sb_has_bl = if init_x != 0 {
                 false
             } else if (init_y + 16) < h4 {
                 true
             } else {
-                intra_edge_flags.contains(EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM)
+                intra_edge_flags.contains(EdgeFlags::I444_LEFT_HAS_BOTTOM)
             };
             let mut y;
             let mut x;
@@ -2628,10 +2628,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     if !(b.c2rust_unnamed.c2rust_unnamed.pal_sz[0] != 0) {
                         angle = b.c2rust_unnamed.c2rust_unnamed.y_angle as c_int;
                         edge_flags = EdgeFlags::union_all([
-                            EdgeFlags::EDGE_I444_TOP_HAS_RIGHT.select(
+                            EdgeFlags::I444_TOP_HAS_RIGHT.select(
                                 !((y > init_y || !sb_has_tr) && x + (*t_dim).w as c_int >= sub_w4),
                             ),
-                            EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM.select(
+                            EdgeFlags::I444_LEFT_HAS_BOTTOM.select(
                                 !(x > init_x || (!sb_has_bl && y + (*t_dim).h as c_int >= sub_h4)),
                             ),
                         ]);
@@ -3001,8 +3001,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     false
                 } else {
                     intra_edge_flags.contains(
-                        EdgeFlags::EDGE_I420_TOP_HAS_RIGHT
-                            >> (f.cur.p.layout as c_uint).wrapping_sub(1),
+                        EdgeFlags::I420_TOP_HAS_RIGHT >> (f.cur.p.layout as c_uint).wrapping_sub(1),
                     )
                 };
                 let uv_sb_has_bl = if init_x != 0 {
@@ -3011,7 +3010,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     true
                 } else {
                     intra_edge_flags.contains(
-                        EdgeFlags::EDGE_I420_LEFT_HAS_BOTTOM
+                        EdgeFlags::I420_LEFT_HAS_BOTTOM
                             >> (f.cur.p.layout as c_uint).wrapping_sub(1),
                     )
                 };
@@ -3051,13 +3050,13 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 {
                                     EdgeFlags::empty()
                                 } else {
-                                    EdgeFlags::EDGE_I444_TOP_HAS_RIGHT
+                                    EdgeFlags::I444_TOP_HAS_RIGHT
                                 }) | (if x > init_x >> ss_hor
                                     || !uv_sb_has_bl && y + (*uv_t_dim).h as c_int >= sub_ch4
                                 {
                                     EdgeFlags::empty()
                                 } else {
-                                    EdgeFlags::EDGE_I444_LEFT_HAS_BOTTOM
+                                    EdgeFlags::I444_LEFT_HAS_BOTTOM
                                 });
                                 let top_sb_edge_slice = if t.by & !ss_ver & f.sb_step - 1 == 0 {
                                     let mut top_sb_edge: *const BD::Pixel =

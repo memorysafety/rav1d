@@ -787,7 +787,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
 
     // top/right
     if n_rows != !0
-        && edge_flags.contains(EdgeFlags::EDGE_I444_TOP_HAS_RIGHT)
+        && edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT)
         && cmp::max(bw4, bh4) <= 16
         && bw4 + bx4 < rt.tile_col.end
     {
