@@ -627,7 +627,7 @@ unsafe fn padding<BD: BitDepth>(
                 (*top.offset(x as isize)).as_::<i16>();
             x += 1;
         }
-        top = top.offset(BD::pxstride(src_stride as usize) as isize);
+        top = top.offset(BD::pxstride(src_stride));
         y += 1;
     }
     let mut y_0 = 0;
@@ -647,7 +647,7 @@ unsafe fn padding<BD: BitDepth>(
             *tmp.offset(x_1 as isize) = (*src.offset(x_1 as isize)).as_::<i16>();
             x_1 += 1;
         }
-        src = src.offset(BD::pxstride(src_stride as usize) as isize);
+        src = src.offset(BD::pxstride(src_stride));
         tmp = tmp.offset(tmp_stride as isize);
         y_1 += 1;
     }
@@ -658,7 +658,7 @@ unsafe fn padding<BD: BitDepth>(
             *tmp.offset(x_2 as isize) = (*bottom.offset(x_2 as isize)).as_::<i16>();
             x_2 += 1;
         }
-        bottom = bottom.offset(BD::pxstride(src_stride as usize) as isize);
+        bottom = bottom.offset(BD::pxstride(src_stride));
         tmp = tmp.offset(tmp_stride as isize);
         y_2 += 1;
     }
@@ -744,7 +744,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                             .as_::<BD::Pixel>();
                     x += 1;
                 }
-                dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
+                dst = dst.offset(BD::pxstride(dst_stride));
                 tmp = tmp.offset(tmp_stride as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -772,7 +772,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                         (px_0 + (sum_0 - (sum_0 < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
                     x_0 += 1;
                 }
-                dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
+                dst = dst.offset(BD::pxstride(dst_stride));
                 tmp = tmp.offset(tmp_stride as isize);
                 h -= 1;
                 if !(h != 0) {
@@ -809,7 +809,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
                     (px_1 + (sum_1 - (sum_1 < 0) as c_int + 8 >> 4)).as_::<BD::Pixel>();
                 x_1 += 1;
             }
-            dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
+            dst = dst.offset(BD::pxstride(dst_stride));
             tmp = tmp.offset(tmp_stride as isize);
             h -= 1;
             if !(h != 0) {
@@ -951,7 +951,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
             partial_sum_alt[3][((y >> 1) + x) as usize] += px;
             x += 1;
         }
-        img = img.offset(BD::pxstride(stride as usize) as isize);
+        img = img.offset(BD::pxstride(stride));
         y += 1;
     }
     let mut cost: [c_uint; 8] = [0 as c_int as c_uint, 0, 0, 0, 0, 0, 0, 0];
