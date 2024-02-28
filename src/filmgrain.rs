@@ -612,11 +612,11 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
 
         let add_noise_y = |x, y, grain| {
             let src = src_row
-                .offset(y as isize * BD::pxstride(stride as usize) as isize)
+                .offset(y as isize * BD::pxstride(stride))
                 .add(x)
                 .add(bx);
             let dst = dst_row
-                .offset(y as isize * BD::pxstride(stride as usize) as isize)
+                .offset(y as isize * BD::pxstride(stride))
                 .add(x)
                 .add(bx);
             let noise = round2(
@@ -750,7 +750,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
             let lx = bx.wrapping_add(x) << sx;
             let ly = y << sy;
             let luma = luma_row
-                .offset(ly as isize * BD::pxstride(luma_stride as usize) as isize)
+                .offset(ly as isize * BD::pxstride(luma_stride))
                 .offset(lx as isize);
             let mut avg = *luma.offset(0);
             if is_sx {
@@ -758,10 +758,10 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                     .as_::<BD::Pixel>();
             }
             let src = src_row
-                .offset(y as isize * BD::pxstride(stride as usize) as isize)
+                .offset(y as isize * BD::pxstride(stride))
                 .add(bx.wrapping_add(x));
             let dst = dst_row
-                .offset(y as isize * BD::pxstride(stride as usize) as isize)
+                .offset(y as isize * BD::pxstride(stride))
                 .add(bx.wrapping_add(x));
             let mut val = avg.as_::<c_int>();
             if !data.chroma_scaling_from_luma {
