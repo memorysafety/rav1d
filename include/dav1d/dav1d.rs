@@ -8,6 +8,7 @@ use crate::src::r#ref::Rav1dRef;
 use bitflags::bitflags;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use strum::FromRepr;
 
 pub type Dav1dContext = Rav1dContext;
 pub type Dav1dRef = Rav1dRef;
@@ -46,17 +47,42 @@ impl From<Dav1dInloopFilterType> for Rav1dInloopFilterType {
 }
 
 pub type Dav1dDecodeFrameType = c_uint;
-pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType = 3;
-pub const DAV1D_DECODEFRAMETYPE_INTRA: Dav1dDecodeFrameType = 2;
-pub const DAV1D_DECODEFRAMETYPE_REFERENCE: Dav1dDecodeFrameType = 1;
-pub const DAV1D_DECODEFRAMETYPE_ALL: Dav1dDecodeFrameType = 0;
+pub const DAV1D_DECODEFRAMETYPE_ALL: Dav1dDecodeFrameType =
+    Rav1dDecodeFrameType::All as Dav1dDecodeFrameType;
+pub const DAV1D_DECODEFRAMETYPE_REFERENCE: Dav1dDecodeFrameType =
+    Rav1dDecodeFrameType::Reference as Dav1dDecodeFrameType;
+pub const DAV1D_DECODEFRAMETYPE_INTRA: Dav1dDecodeFrameType =
+    Rav1dDecodeFrameType::Intra as Dav1dDecodeFrameType;
+pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType =
+    Rav1dDecodeFrameType::Key as Dav1dDecodeFrameType;
 
-pub(crate) type Rav1dDecodeFrameType = c_uint;
-pub(crate) const RAV1D_DECODEFRAMETYPE_KEY: Rav1dDecodeFrameType = DAV1D_DECODEFRAMETYPE_KEY;
-pub(crate) const RAV1D_DECODEFRAMETYPE_INTRA: Rav1dDecodeFrameType = DAV1D_DECODEFRAMETYPE_INTRA;
-pub(crate) const RAV1D_DECODEFRAMETYPE_REFERENCE: Rav1dDecodeFrameType =
-    DAV1D_DECODEFRAMETYPE_REFERENCE;
-pub(crate) const RAV1D_DECODEFRAMETYPE_ALL: Rav1dDecodeFrameType = DAV1D_DECODEFRAMETYPE_ALL;
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr)]
+pub(crate) enum Rav1dDecodeFrameType {
+    /// decode and return all frames
+    All = 0,
+    /// decode and return frames referenced by other frames only
+    Reference = 1,
+    /// decode and return intra frames only (includes keyframes)
+    Intra = 2,
+    /// decode and return keyframes only
+    Key = 3,
+}
+
+impl From<Rav1dDecodeFrameType> for Dav1dDecodeFrameType {
+    fn from(value: Rav1dDecodeFrameType) -> Self {
+        value as Self
+    }
+}
+
+impl TryFrom<Dav1dDecodeFrameType> for Rav1dDecodeFrameType {
+    type Error = Rav1dError;
+
+    fn try_from(value: Dav1dDecodeFrameType) -> Result<Self, Self::Error> {
+        let value = u8::try_from(value).map_err(|_| Rav1dError::EINVAL)?;
+        Self::from_repr(value).ok_or(Rav1dError::EINVAL)
+    }
+}
 
 pub type Dav1dEventFlags = c_uint;
 pub const DAV1D_EVENT_FLAG_NEW_SEQUENCE: Dav1dEventFlags =
@@ -161,7 +187,7 @@ impl TryFrom<Dav1dSettings> for Rav1dSettings {
             strict_std_compliance: strict_std_compliance != 0,
             output_invisible_frames: output_invisible_frames != 0,
             inloop_filters: inloop_filters.into(),
-            decode_frame_type,
+            decode_frame_type: decode_frame_type.try_into()?,
         })
     }
 }
@@ -194,7 +220,7 @@ impl From<Rav1dSettings> for Dav1dSettings {
             strict_std_compliance: strict_std_compliance as c_int,
             output_invisible_frames: output_invisible_frames as c_int,
             inloop_filters: inloop_filters.into(),
-            decode_frame_type,
+            decode_frame_type: decode_frame_type.into(),
             reserved: Default::default(),
         }
     }
