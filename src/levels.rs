@@ -1,5 +1,6 @@
 use std::ffi::c_uint;
 use std::ops::Neg;
+use strum::EnumCount;
 
 pub type ObuMetaType = c_uint;
 pub const OBU_META_TIMECODE: ObuMetaType = 5;
@@ -16,13 +17,28 @@ pub const TX_16X16: TxfmSize = 2;
 pub const TX_8X8: TxfmSize = 1;
 pub const TX_4X4: TxfmSize = 0;
 
-pub type BlockLevel = u8;
-pub const N_BL_LEVELS: usize = 5;
-pub const BL_8X8: BlockLevel = 4;
-pub const BL_16X16: BlockLevel = 3;
-pub const BL_32X32: BlockLevel = 2;
-pub const BL_64X64: BlockLevel = 1;
-pub const BL_128X128: BlockLevel = 0;
+#[repr(u8)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, EnumCount)]
+pub enum BlockLevel {
+    #[default]
+    Bl128x128 = 0,
+    Bl64x64 = 1,
+    Bl32x32 = 2,
+    Bl16x16 = 3,
+    Bl8x8 = 4,
+}
+
+impl BlockLevel {
+    pub const fn decrease(self) -> Option<Self> {
+        match self {
+            BlockLevel::Bl8x8 => None,
+            BlockLevel::Bl16x16 => Some(BlockLevel::Bl8x8),
+            BlockLevel::Bl32x32 => Some(BlockLevel::Bl16x16),
+            BlockLevel::Bl64x64 => Some(BlockLevel::Bl32x32),
+            BlockLevel::Bl128x128 => Some(BlockLevel::Bl64x64),
+        }
+    }
+}
 
 pub type RectTxfmSize = u8;
 pub const N_RECT_TX_SIZES: usize = 19; // TODO(kkysen) symbolicate in Dav1dFrameContext::qm once deduplicated
@@ -311,7 +327,7 @@ impl Default for Av1Block_intra_inter {
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Block {
-    pub bl: u8,
+    pub bl: BlockLevel,
     pub bs: u8,
     pub bp: u8,
     pub intra: u8,

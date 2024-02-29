@@ -93,9 +93,6 @@ use crate::src::levels::BlockSize;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxfmSize;
-use crate::src::levels::BL_128X128;
-use crate::src::levels::BL_64X64;
-use crate::src::levels::BL_8X8;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::COMP_INTER_AVG;
 use crate::src::levels::COMP_INTER_NONE;
@@ -1613,7 +1610,7 @@ unsafe fn decode_b_inner(
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
 
-    b.bl = bl as u8;
+    b.bl = bl;
     b.bp = bp as u8;
     b.bs = bs as u8;
 
@@ -3492,7 +3489,7 @@ unsafe fn decode_sb(
     edge_index: EdgeIndex,
 ) -> Result<(), ()> {
     let ts = &mut *t.ts;
-    let hsz = 16 >> bl;
+    let hsz = 16 >> bl as u8;
     let have_h_split = f.bw > t.bx + hsz;
     let have_v_split = f.bh > t.by + hsz;
 
@@ -3500,12 +3497,15 @@ unsafe fn decode_sb(
     let intra_edge = &IntraEdges::DEFAULT;
 
     if !have_h_split && !have_v_split {
-        assert!(bl < BL_8X8);
+        let next_bl = bl
+            .decrease()
+            .expect("BlockLevel::BL_8X8 should never make it here");
+
         return decode_sb(
             c,
             t,
             f,
-            bl + 1,
+            next_bl,
             intra_edge.branch(sb128, edge_index).split[0],
         );
     }
@@ -3519,9 +3519,9 @@ unsafe fn decode_sb(
     let pc = if t.frame_thread.pass == 2 {
         None
     } else {
-        if false && bl == BL_64X64 {
+        if false && bl == BlockLevel::Bl64x64 {
             println!(
-                "poc={},y={},x={},bl={},r={}",
+                "poc={},y={},x={},bl={:?},r={}",
                 frame_hdr.frame_offset, t.by, t.bx, bl, ts.msac.rng,
             );
         }
@@ -3548,7 +3548,7 @@ unsafe fn decode_sb(
             }
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
+                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
                     frame_hdr.frame_offset, t.by, t.bx, bl, ctx, bp, ts.msac.rng,
                 );
             }
@@ -3578,41 +3578,44 @@ unsafe fn decode_sb(
                 t.bx -= hsz;
             }
             PARTITION_SPLIT => {
-                if bl == BL_8X8 {
-                    let tip = intra_edge.tip(sb128, edge_index);
-                    assert!(hsz == 1);
-                    decode_b(c, t, f, bl, BS_4x4, bp, tip.split[0])?;
-                    let tl_filter = t.tl_4x4_filter;
-                    t.bx += 1;
-                    decode_b(c, t, f, bl, BS_4x4, bp, tip.split[1])?;
-                    t.bx -= 1;
-                    t.by += 1;
-                    decode_b(c, t, f, bl, BS_4x4, bp, tip.split[2])?;
-                    t.bx += 1;
-                    t.tl_4x4_filter = tl_filter;
-                    decode_b(c, t, f, bl, BS_4x4, bp, tip.split[3])?;
-                    t.bx -= 1;
-                    t.by -= 1;
-                    if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {
-                        // In 8-bit mode with 2-pass decoding the coefficient buffer
-                        // can end up misaligned due to skips here.
-                        // Work around the issue by explicitly realigning the buffer.
-                        let p = (t.frame_thread.pass & 1) as usize;
-                        ts.frame_thread[p].cf =
-                            (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63) as *mut DynCoef;
+                match bl.decrease() {
+                    None => {
+                        let tip = intra_edge.tip(sb128, edge_index);
+                        assert!(hsz == 1);
+                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[0])?;
+                        let tl_filter = t.tl_4x4_filter;
+                        t.bx += 1;
+                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[1])?;
+                        t.bx -= 1;
+                        t.by += 1;
+                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[2])?;
+                        t.bx += 1;
+                        t.tl_4x4_filter = tl_filter;
+                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[3])?;
+                        t.bx -= 1;
+                        t.by -= 1;
+                        if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {
+                            // In 8-bit mode with 2-pass decoding the coefficient buffer
+                            // can end up misaligned due to skips here.
+                            // Work around the issue by explicitly realigning the buffer.
+                            let p = (t.frame_thread.pass & 1) as usize;
+                            ts.frame_thread[p].cf =
+                                (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63) as *mut DynCoef;
+                        }
                     }
-                } else {
-                    let branch = intra_edge.branch(sb128, edge_index);
-                    decode_sb(c, t, f, bl + 1, branch.split[0])?;
-                    t.bx += hsz;
-                    decode_sb(c, t, f, bl + 1, branch.split[1])?;
-                    t.bx -= hsz;
-                    t.by += hsz;
-                    decode_sb(c, t, f, bl + 1, branch.split[2])?;
-                    t.bx += hsz;
-                    decode_sb(c, t, f, bl + 1, branch.split[3])?;
-                    t.bx -= hsz;
-                    t.by -= hsz;
+                    Some(next_bl) => {
+                        let branch = intra_edge.branch(sb128, edge_index);
+                        decode_sb(c, t, f, next_bl, branch.split[0])?;
+                        t.bx += hsz;
+                        decode_sb(c, t, f, next_bl, branch.split[1])?;
+                        t.bx -= hsz;
+                        t.by += hsz;
+                        decode_sb(c, t, f, next_bl, branch.split[2])?;
+                        t.bx += hsz;
+                        decode_sb(c, t, f, next_bl, branch.split[3])?;
+                        t.bx -= hsz;
+                        t.by -= hsz;
+                    }
                 }
             }
             PARTITION_T_TOP_SPLIT => {
@@ -3689,7 +3692,7 @@ unsafe fn decode_sb(
             is_split = rav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl));
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
+                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
                     frame_hdr.frame_offset,
                     t.by,
                     t.bx,
@@ -3708,13 +3711,16 @@ unsafe fn decode_sb(
             is_split = b.bl != bl;
         }
 
-        assert!(bl < BL_8X8);
+        let next_bl = bl
+            .decrease()
+            .expect("BlockLevel::BL_8X8 should never make it here");
+
         if is_split {
             let branch = intra_edge.branch(sb128, edge_index);
             bp = PARTITION_SPLIT;
-            decode_sb(c, t, f, bl + 1, branch.split[0])?;
+            decode_sb(c, t, f, next_bl, branch.split[0])?;
             t.bx += hsz;
-            decode_sb(c, t, f, bl + 1, branch.split[1])?;
+            decode_sb(c, t, f, next_bl, branch.split[1])?;
             t.bx -= hsz;
         } else {
             let node = intra_edge.node(sb128, edge_index);
@@ -3739,7 +3745,7 @@ unsafe fn decode_sb(
             }
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
+                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
                     frame_hdr.frame_offset,
                     t.by,
                     t.bx,
@@ -3758,13 +3764,16 @@ unsafe fn decode_sb(
             is_split = b.bl != bl;
         }
 
-        assert!(bl < BL_8X8);
+        let next_bl = bl
+            .decrease()
+            .expect("BlockLevel::BL_8X8 should never make it here");
+
         if is_split {
             let branch = intra_edge.branch(sb128, edge_index);
             bp = PARTITION_SPLIT;
-            decode_sb(c, t, f, bl + 1, branch.split[0])?;
+            decode_sb(c, t, f, next_bl, branch.split[0])?;
             t.by += hsz;
-            decode_sb(c, t, f, bl + 1, branch.split[2])?;
+            decode_sb(c, t, f, next_bl, branch.split[2])?;
             t.by -= hsz;
         } else {
             let node = intra_edge.node(sb128, edge_index);
@@ -3781,7 +3790,7 @@ unsafe fn decode_sb(
         }
     }
 
-    if t.frame_thread.pass != 2 && (bp != PARTITION_SPLIT || bl == BL_8X8) {
+    if t.frame_thread.pass != 2 && (bp != PARTITION_SPLIT || bl == BlockLevel::Bl8x8) {
         CaseSet::<16, false>::many(
             [(&mut *t.a, 0), (&mut t.l, 1)],
             [hsz as usize; 2],
@@ -4059,9 +4068,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 ) -> Result<(), ()> {
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let root_bl = if seq_hdr.sb128 != 0 {
-        BL_128X128
+        BlockLevel::Bl128x128
     } else {
-        BL_64X64
+        BlockLevel::Bl64x64
     };
     let ts = &mut *t.ts;
     let sb_step = f.sb_step;
@@ -4142,7 +4151,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             return Err(());
         }
         let cdef_idx = &mut (*t.lf_mask).cdef_idx;
-        if root_bl == BL_128X128 {
+        if root_bl == BlockLevel::Bl128x128 {
             *cdef_idx = [-1; 4];
             t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
         } else {

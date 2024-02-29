@@ -8,7 +8,7 @@ use crate::src::align::Align8;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
-use crate::src::levels::N_BL_LEVELS;
+use crate::src::levels::BlockLevel;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
@@ -28,6 +28,7 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::ptr;
 use std::sync::atomic::AtomicU32;
+use strum::EnumCount;
 
 #[repr(C)]
 pub struct CdfContext {
@@ -81,7 +82,7 @@ pub struct CdfModeContext {
     pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
     pub uv_mode: Align32<[[[u16; N_UV_INTRA_PRED_MODES + 2]; N_INTRA_PRED_MODES]; 2]>,
     pub wedge_idx: Align32<[[u16; 16]; 9]>,
-    pub partition: Align32<[[[u16; N_PARTITIONS + 6]; 4]; N_BL_LEVELS]>,
+    pub partition: Align32<[[[u16; N_PARTITIONS + 6]; 4]; BlockLevel::COUNT]>,
     pub cfl_alpha: Align32<[[u16; 16]; 6]>,
     pub txtp_inter1: Align32<[[u16; 16]; 2]>,
     pub txtp_inter2: Align32<[u16; 16]>,
@@ -4966,7 +4967,7 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_cdf_3d!(2, N_INTRA_PRED_MODES, 6, m.txtp_intra1);
     update_cdf_3d!(3, N_INTRA_PRED_MODES, 4, m.txtp_intra2);
     update_bit_1d!(3, m.skip);
-    for k in 0..N_BL_LEVELS {
+    for k in 0..BlockLevel::COUNT {
         update_cdf_2d!(4, dav1d_partition_type_count[k] as usize, m.partition[k]);
     }
     update_bit_2d!(N_TX_SIZES, 13, coef.skip);

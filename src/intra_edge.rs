@@ -1,10 +1,6 @@
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::enum_map::DefaultValue;
 use crate::src::levels::BlockLevel;
-use crate::src::levels::BL_128X128;
-use crate::src::levels::BL_16X16;
-use crate::src::levels::BL_32X32;
-use crate::src::levels::BL_64X64;
 use bitflags::bitflags;
 use std::ops::Shr;
 
@@ -173,7 +169,7 @@ impl EdgeBranch {
             EdgeFlags::LEFT_HAS_BOTTOM.union(
                 edge_flags
                     .intersection(EdgeFlags::I420_TOP_HAS_RIGHT)
-                    .select(bl == BL_16X16),
+                    .select(matches!(bl, BlockLevel::Bl16x16)),
             ),
             EdgeFlags::LEFT_HAS_BOTTOM,
             edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
@@ -187,7 +183,7 @@ impl EdgeBranch {
                         EdgeFlags::I420_LEFT_HAS_BOTTOM,
                         EdgeFlags::I422_LEFT_HAS_BOTTOM,
                     ]))
-                    .select(bl == BL_16X16),
+                    .select(matches!(bl, BlockLevel::Bl16x16)),
             ),
             EdgeFlags::TOP_HAS_RIGHT,
             edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
@@ -234,7 +230,7 @@ impl DefaultValue for EdgeTip {
 }
 
 impl DefaultValue for EdgeBranch {
-    const DEFAULT: Self = Self::new(EdgeFlags::empty(), 0 as BlockLevel);
+    const DEFAULT: Self = Self::new(EdgeFlags::empty(), BlockLevel::Bl128x128);
 }
 
 struct EdgeIndices {
@@ -278,7 +274,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
             ]),
             bl,
         );
-        if bl == BL_16X16 {
+        if matches!(bl, BlockLevel::Bl16x16) {
             let mut n = 0;
             while n < B as u8 {
                 let (tip, next) = indices.tip.pop_front();
@@ -298,7 +294,10 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
                 branch.split[n as usize] = child_branch;
                 (self, indices) = self.init_mode_node(
                     child_branch,
-                    bl + 1,
+                    match bl.decrease() {
+                        None => panic!("BlockLevel::BL_8X8 should never make it here"),
+                        Some(next_bl) => next_bl,
+                    },
                     indices,
                     !(n == 3 || (n == 1 && !top_has_right)),
                     n == 0 || (n == 2 && left_has_bottom),
@@ -324,17 +323,21 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
 
         let sb128 = SB128 as u8;
 
-        let mut bl = BL_128X128;
-        while bl <= BL_32X32 {
-            indices.branch[bl as usize].index = level_index(bl + sb128);
+        let mut bl = BlockLevel::Bl128x128 as u8;
+        while bl <= BlockLevel::Bl32x32 as u8 {
+            indices.branch[bl as usize].index = level_index(bl as u8 + sb128);
             bl += 1;
         }
 
-        let bl = if SB128 { BL_128X128 } else { BL_64X64 };
+        let bl = if SB128 {
+            BlockLevel::Bl128x128
+        } else {
+            BlockLevel::Bl64x64
+        };
         (self, indices) = self.init_mode_node(EdgeIndex::root(), bl, indices, true, false);
 
-        let mut bl = BL_128X128;
-        while bl <= BL_32X32 {
+        let mut bl = BlockLevel::Bl128x128 as u8;
+        while bl <= BlockLevel::Bl32x32 as u8 {
             let index = indices.branch[bl as usize].index;
             if index != 0 {
                 assert!(index == level_index(1 + bl + sb128));
