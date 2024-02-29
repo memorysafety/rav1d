@@ -139,7 +139,7 @@ impl EdgeTip {
         let node = EdgeNode { o, h, v };
 
         let split = [
-            EdgeFlags::union_all([EdgeFlags::TOP_HAS_RIGHT, EdgeFlags::LEFT_HAS_BOTTOM]),
+            EdgeFlags::all(),
             edge_flags
                 .intersection(EdgeFlags::TOP_HAS_RIGHT)
                 .union(EdgeFlags::I422_LEFT_HAS_BOTTOM),
@@ -184,8 +184,8 @@ impl EdgeBranch {
             EdgeFlags::TOP_HAS_RIGHT.union(
                 edge_flags
                     .intersection(EdgeFlags::union_all([
-                        edge_flags.intersection(EdgeFlags::I420_LEFT_HAS_BOTTOM),
-                        edge_flags.intersection(EdgeFlags::I422_LEFT_HAS_BOTTOM),
+                        EdgeFlags::I420_LEFT_HAS_BOTTOM,
+                        EdgeFlags::I422_LEFT_HAS_BOTTOM,
                     ]))
                     .select(bl == BL_16X16),
             ),
