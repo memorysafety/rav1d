@@ -2463,12 +2463,12 @@ unsafe fn parse_obus(
                         let country_code = country_code as u8;
                         let country_code_extension_byte = country_code_extension_byte as u8;
                         let payload = (0..payload_size).map(|_| gb.get_bits(8) as u8).collect(); // TODO(kkysen) fallible allocation
-
-                        c.itut_t35 = Some(Arc::new(DRav1d::from_rav1d(Rav1dITUTT35 {
+                        let itut_t35 = Rav1dITUTT35 {
                             country_code,
                             country_code_extension_byte,
                             payload,
-                        }))); // TODO(kkysen) fallible allocation
+                        };
+                        c.itut_t35.try_lock().unwrap().push(itut_t35); // TODO fallible allocation
                     }
                 }
                 Some(ObuMetaType::Scalability | ObuMetaType::Timecode) => {} // Ignore metadata OBUs we don't care about.

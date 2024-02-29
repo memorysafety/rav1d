@@ -46,6 +46,7 @@ use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use to_method::To as _;
+use try_lock::TryLock;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Atom, AtomLogic)]
 pub struct PictureFlags(u8);
@@ -231,11 +232,7 @@ unsafe fn picture_alloc_with_edges(
     h: c_int,
     seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
-    content_light: Option<Arc<Rav1dContentLightLevel>>,
-    mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-    itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
     bpc: c_int,
-    props: Rav1dDataProps,
     p_allocator: &Rav1dPicAllocator,
 ) -> Rav1dResult {
     if !p.data.data[0].is_null() {
@@ -243,8 +240,7 @@ unsafe fn picture_alloc_with_edges(
         return Err(EGeneric);
     }
     assert!(bpc > 0 && bpc <= 16);
-    let mut pic = p_allocator.alloc_picture_data(w, h, seq_hdr.unwrap(), frame_hdr)?;
-    rav1d_picture_copy_props(&mut pic, content_light, mastering_display, itut_t35, props);
+    let pic = p_allocator.alloc_picture_data(w, h, seq_hdr.unwrap(), frame_hdr)?;
     *p = pic;
 
     Ok(())
@@ -254,7 +250,7 @@ pub fn rav1d_picture_copy_props(
     p: &mut Rav1dPicture,
     content_light: Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-    itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
+    itut_t35: Arc<TryLock<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
     props: Rav1dDataProps,
 ) {
     p.m = props;
@@ -269,7 +265,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     c: &Rav1dContext,
     f: &mut Rav1dFrameData,
     bpc: c_int,
-    itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
+    itut_t35: Arc<TryLock<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
     let have_frame_mt = c.n_fc > 1;
@@ -281,13 +277,18 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         frame_hdr.size.height,
         f.seq_hdr.clone(),
         f.frame_hdr.clone(),
+        bpc,
+        &c.allocator,
+    )?;
+
+    rav1d_picture_copy_props(
+        &mut p.p,
         c.content_light.clone(),
         c.mastering_display.clone(),
         itut_t35,
-        bpc,
         f.tiles[0].data.m.clone(),
-        &c.allocator,
-    )?;
+    );
+
     let flags_mask = if frame_hdr.show_frame != 0 || c.output_invisible_frames {
         PictureFlags::empty()
     } else {
@@ -319,13 +320,18 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         src.p.h,
         src.seq_hdr.clone(),
         src.frame_hdr.clone(),
+        src.p.bpc,
+        &mut (*pic_ctx).allocator,
+    )?;
+
+    rav1d_picture_copy_props(
+        dst,
         src.content_light.clone(),
         src.mastering_display.clone(),
         src.itut_t35.clone(),
-        src.p.bpc,
         src.m.clone(),
-        &mut (*pic_ctx).allocator,
-    )
+    );
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {

@@ -42,6 +42,29 @@ impl<R, D> Deref for DRav1d<R, D> {
     }
 }
 
+impl<R, D> Default for DRav1d<R, D>
+where
+    R: Default,
+    D: Default,
+{
+    fn default() -> Self {
+        Self {
+            rav1d: Default::default(),
+            dav1d: Default::default(),
+        }
+    }
+}
+
+impl<R, D> DRav1d<Vec<R>, Vec<D>>
+where
+    R: Clone + Into<D>,
+{
+    pub fn push(&mut self, value: R) {
+        self.rav1d.push(value.clone());
+        self.dav1d.push(value.into());
+    }
+}
+
 // Constants from Section 3. "Symbols and abbreviated terms"
 pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
 pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
