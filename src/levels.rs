@@ -1,4 +1,3 @@
-use crate::src::enum_map::DefaultValue;
 use std::ffi::c_uint;
 use std::ops::Neg;
 use strum::EnumCount;
@@ -27,10 +26,6 @@ pub enum BlockLevel {
     Bl32x32 = 2,
     Bl16x16 = 3,
     Bl8x8 = 4,
-}
-
-impl DefaultValue for BlockLevel {
-    const DEFAULT: Self = Self::Bl128x128;
 }
 
 impl BlockLevel {

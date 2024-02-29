@@ -230,7 +230,7 @@ impl DefaultValue for EdgeTip {
 }
 
 impl DefaultValue for EdgeBranch {
-    const DEFAULT: Self = Self::new(EdgeFlags::empty(), BlockLevel::DEFAULT);
+    const DEFAULT: Self = Self::new(EdgeFlags::empty(), BlockLevel::Bl128x128);
 }
 
 struct EdgeIndices {
