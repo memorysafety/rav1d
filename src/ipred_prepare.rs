@@ -3,8 +3,6 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::src::const_fn::const_for;
 use crate::src::env::BlockContext;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EDGE_I444_LEFT_HAS_BOTTOM;
-use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
@@ -228,7 +226,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             let have_bottomleft = if !have_left || y + th >= h {
                 false
             } else {
-                (edge_flags & EDGE_I444_LEFT_HAS_BOTTOM) != 0
+                edge_flags.contains(EdgeFlags::I444_LEFT_HAS_BOTTOM)
             };
             if have_bottomleft {
                 let px_have = cmp::min(sz, (h - y - th << 2) as usize);
@@ -274,7 +272,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             let have_topright = if !have_top || x + tw >= w {
                 false
             } else {
-                (edge_flags & EDGE_I444_TOP_HAS_RIGHT) != 0
+                edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT)
             };
             if have_topright {
                 let top_right = &mut top[sz..];

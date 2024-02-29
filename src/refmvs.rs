@@ -9,7 +9,6 @@ use crate::src::env::get_poc_diff;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::intra_edge::EdgeFlags;
-use crate::src::intra_edge::EDGE_I444_TOP_HAS_RIGHT;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
 use crate::src::mem::rav1d_alloc_aligned;
@@ -788,7 +787,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
 
     // top/right
     if n_rows != !0
-        && edge_flags & EDGE_I444_TOP_HAS_RIGHT != 0
+        && edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT)
         && cmp::max(bw4, bh4) <= 16
         && bw4 + bx4 < rt.tile_col.end
     {
