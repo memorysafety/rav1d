@@ -7,7 +7,6 @@ use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
-use crate::src::levels::BL_128X128;
 use crate::src::levels::COMP_INTER_AVG;
 use crate::src::levels::COMP_INTER_NONE;
 use crate::src::levels::COMP_INTER_SEG;
@@ -101,7 +100,8 @@ pub fn get_partition_ctx(
     yb8: c_int,
     xb8: c_int,
 ) -> u8 {
-    (a.partition[xb8 as usize] >> (4 - bl) & 1) + ((l.partition[yb8 as usize] >> (4 - bl) & 1) << 1)
+    (a.partition[xb8 as usize] >> (4 - bl as u8) & 1)
+        + ((l.partition[yb8 as usize] >> (4 - bl as u8) & 1) << 1)
 }
 
 #[inline]
@@ -111,7 +111,7 @@ pub fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
     // PARTITION_T_BOTTOM_SPLIT and PARTITION_T_LEFT_SPLIT are neighbors.
     out +=
         r#in[(PARTITION_SPLIT - 1) as usize] as i32 - r#in[PARTITION_T_LEFT_SPLIT as usize] as i32;
-    if bl != BL_128X128 {
+    if bl != BlockLevel::BL_128X128 {
         out += r#in[(PARTITION_H4 - 1) as usize] as i32 - r#in[PARTITION_H4 as usize] as i32;
     }
     out as u32
@@ -128,7 +128,7 @@ pub fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
     // PARTITION_V4 is always zero, and the probability for
     // PARTITION_T_RIGHT_SPLIT is zero in 128x128 blocks.
     out += r#in[(PARTITION_T_LEFT_SPLIT - 1) as usize] as i32;
-    if bl != BL_128X128 {
+    if bl != BlockLevel::BL_128X128 {
         out += r#in[(PARTITION_V4 - 1) as usize] as i32
             - r#in[PARTITION_T_RIGHT_SPLIT as usize] as i32;
     }
