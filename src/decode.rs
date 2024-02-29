@@ -3497,9 +3497,9 @@ unsafe fn decode_sb(
     let intra_edge = &IntraEdges::DEFAULT;
 
     if !have_h_split && !have_v_split {
-        let Some(next_bl) = bl.decrease() else {
-            unreachable!("BlockLevel::BL_8X8 should never make it here");
-        };
+        let next_bl = bl
+            .decrease()
+            .expect("BlockLevel::BL_8X8 should never make it here");
 
         return decode_sb(
             c,
@@ -3711,9 +3711,9 @@ unsafe fn decode_sb(
             is_split = b.bl != bl;
         }
 
-        let Some(next_bl) = bl.decrease() else {
-            unreachable!("BlockLevel::BL_8X8 should never make it here");
-        };
+        let next_bl = bl
+            .decrease()
+            .expect("BlockLevel::BL_8X8 should never make it here");
 
         if is_split {
             let branch = intra_edge.branch(sb128, edge_index);
@@ -3764,9 +3764,9 @@ unsafe fn decode_sb(
             is_split = b.bl != bl;
         }
 
-        let Some(next_bl) = bl.decrease() else {
-            unreachable!("BlockLevel::BL_8X8 should never make it here");
-        };
+        let next_bl = bl
+            .decrease()
+            .expect("BlockLevel::BL_8X8 should never make it here");
 
         if is_split {
             let branch = intra_edge.branch(sb128, edge_index);
