@@ -243,7 +243,7 @@ pub struct Rav1dContext {
     pub(crate) frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>, // TODO(kkysen) Previously pooled.
     pub(crate) content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub(crate) mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-    pub(crate) itut_t35: Option<Arc<DRav1d<Rav1dITUTT35, Dav1dITUTT35>>>,
+    pub(crate) itut_t35: Option<Arc<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
 
     // decoded output picture queue
     pub(crate) in_0: Rav1dData,

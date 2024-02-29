@@ -117,7 +117,7 @@ pub unsafe extern "C" fn dav1d_version() -> *const c_char {
 }
 
 pub const DAV1D_API_VERSION_MAJOR: u8 = 6;
-pub const DAV1D_API_VERSION_MINOR: u8 = 8;
+pub const DAV1D_API_VERSION_MINOR: u8 = 9;
 pub const DAV1D_API_VERSION_PATCH: u8 = 0;
 
 /// Get the `dav1d` library C API version.
