@@ -3521,8 +3521,8 @@ unsafe fn decode_sb(
     } else {
         if false && bl == BlockLevel::Bl64x64 {
             println!(
-                "poc={},y={},x={},bl={},r={}",
-                frame_hdr.frame_offset, t.by, t.bx, bl as u8, ts.msac.rng,
+                "poc={},y={},x={},bl={:?},r={}",
+                frame_hdr.frame_offset, t.by, t.bx, bl, ts.msac.rng,
             );
         }
         bx8 = (t.bx & 31) >> 1;
@@ -3548,8 +3548,8 @@ unsafe fn decode_sb(
             }
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
-                    frame_hdr.frame_offset, t.by, t.bx, bl as u8, ctx, bp, ts.msac.rng,
+                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
+                    frame_hdr.frame_offset, t.by, t.bx, bl, ctx, bp, ts.msac.rng,
                 );
             }
         } else {
@@ -3692,11 +3692,11 @@ unsafe fn decode_sb(
             is_split = rav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl));
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
+                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
                     frame_hdr.frame_offset,
                     t.by,
                     t.bx,
-                    bl as u8,
+                    bl,
                     ctx,
                     if is_split {
                         PARTITION_SPLIT
@@ -3745,11 +3745,11 @@ unsafe fn decode_sb(
             }
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={},ctx={},bp={}: r={}",
+                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
                     frame_hdr.frame_offset,
                     t.by,
                     t.bx,
-                    bl as u8,
+                    bl,
                     ctx,
                     if is_split {
                         PARTITION_SPLIT
