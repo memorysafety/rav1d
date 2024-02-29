@@ -100,8 +100,11 @@ pub fn get_partition_ctx(
     yb8: c_int,
     xb8: c_int,
 ) -> u8 {
-    (a.partition[xb8 as usize] >> (4 - bl as u8) & 1)
-        + ((l.partition[yb8 as usize] >> (4 - bl as u8) & 1) << 1)
+    // the right-most ("index zero") bit of the partition represents the 8x8 block level,
+    // but the BlockLevel enum represents the variants numerically in the opposite order
+    // (128x128 = 0, 8x8 = 4). The shift corrects the ordering.
+    let shift = 4 - bl as u8;
+    ((a.partition[xb8 as usize] >> shift) & 1) + (((l.partition[yb8 as usize] >> shift) & 1) << 1)
 }
 
 #[inline]
