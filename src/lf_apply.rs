@@ -560,10 +560,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let hmax = (1 as c_uint) << hmask;
     let endy4 = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
-    let mut lpf_y: *const u8 = &mut *(*(f.lf.tx_lpf_right_edge).as_ptr().offset(0))
-        .offset((sby << sbl2) as isize) as *mut u8;
-    let mut lpf_uv: *const u8 = &mut *(*(f.lf.tx_lpf_right_edge).as_ptr().offset(1))
-        .offset((sby << sbl2 - ss_ver) as isize) as *mut u8;
+    let (lpf_y, lpf_uv) = f.lf.tx_lpf_right_edge();
+    let mut lpf_y = &lpf_y[(sby << sbl2) as usize..];
+    let mut lpf_uv = &lpf_uv[(sby << sbl2 - ss_ver) as usize..];
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let mut tile_col = 1;
     loop {
@@ -592,7 +591,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             *fresh2 = (*fresh2 as c_uint & !smask) as u16;
             let ref mut fresh3 = (*y_hmask.offset(cmp::min(
                 idx,
-                *lpf_y.offset(y.wrapping_sub(starty4 as c_uint) as isize) as c_int,
+                lpf_y[y.wrapping_sub(starty4 as c_uint) as usize] as c_int,
             ) as isize))[sidx as usize];
             *fresh3 = (*fresh3 as c_uint | smask) as u16;
             y = y.wrapping_add(1);
@@ -614,16 +613,15 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                 *fresh5 = (*fresh5 as c_uint & !smask_0) as u16;
                 let ref mut fresh6 = (*uv_hmask.offset(cmp::min(
                     idx_0,
-                    *lpf_uv.offset(y_0.wrapping_sub((starty4 >> ss_ver) as c_uint) as isize)
-                        as c_int,
+                    lpf_uv[y_0.wrapping_sub((starty4 >> ss_ver) as c_uint) as usize] as c_int,
                 ) as isize))[sidx_0 as usize];
                 *fresh6 = (*fresh6 as c_uint | smask_0) as u16;
                 y_0 = y_0.wrapping_add(1);
                 uv_mask <<= 1;
             }
         }
-        lpf_y = lpf_y.offset(halign as isize);
-        lpf_uv = lpf_uv.offset((halign >> ss_ver) as isize);
+        lpf_y = &lpf_y[halign as usize..];
+        lpf_uv = &lpf_uv[(halign >> ss_ver) as usize..];
         tile_col += 1;
     }
     if start_of_tile_row != 0 {

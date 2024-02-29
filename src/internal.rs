@@ -431,11 +431,10 @@ pub struct Rav1dFrameContext_lf {
     pub cdef_buf_plane_sz: [c_int; 2], /* stride*sbh*4 */
     pub cdef_buf_sbh: c_int,
     pub lr_buf_plane_sz: [c_int; 2], /* (stride*sbh*4) << sb128 if n_tc > 1, else stride*4 */
-    pub re_sz: c_int,                /* h */
     pub lim_lut: Align16<Av1FilterLUT>,
     pub last_sharpness: c_int,
     pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
-    pub tx_lpf_right_edge: [*mut u8; 2],
+    pub tx_lpf_right_edge: Vec<u8>,  /* len = h*2 */
     pub cdef_line_buf: *mut u8,
     pub lr_line_buf: *mut u8,
     pub cdef_line: [[*mut DynPixel; 3]; 2], /* [2 pre/post][3 plane] */
@@ -449,6 +448,18 @@ pub struct Rav1dFrameContext_lf {
     pub p: [*mut DynPixel; 3],
     pub sr_p: [*mut DynPixel; 3],
     pub restore_planes: c_int, // enum LrRestorePlanes
+}
+
+impl Rav1dFrameContext_lf {
+    pub fn tx_lpf_right_edge(&self) -> (&[u8], &[u8]) {
+        let mid = self.tx_lpf_right_edge.len() / 2;
+        self.tx_lpf_right_edge.split_at(mid)
+    }
+
+    pub fn tx_lpf_right_edge_mut(&mut self) -> (&mut [u8], &mut [u8]) {
+        let mid = self.tx_lpf_right_edge.len() / 2;
+        self.tx_lpf_right_edge.split_at_mut(mid)
+    }
 }
 
 #[repr(C)]
