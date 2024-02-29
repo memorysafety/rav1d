@@ -1,9 +1,7 @@
+use crate::src::enum_map::DefaultValue;
 use std::ffi::c_uint;
 use std::ops::Neg;
-
 use strum::EnumCount;
-
-use crate::src::enum_map::DefaultValue;
 
 pub type ObuMetaType = c_uint;
 pub const OBU_META_TIMECODE: ObuMetaType = 5;

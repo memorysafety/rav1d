@@ -1,5 +1,3 @@
-use strum::EnumCount;
-
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SHARP;
@@ -120,6 +118,7 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
 use std::ffi::c_uint;
+use strum::EnumCount;
 
 #[repr(C)]
 pub struct TxfmInfo {
