@@ -12,6 +12,7 @@ use std::ops::Div;
 use std::ops::Mul;
 use std::ops::Rem;
 use std::ops::Shr;
+use std::slice;
 
 pub trait FromPrimitive<T> {
     fn from_prim(t: T) -> Self;
@@ -206,6 +207,34 @@ pub trait BitDepth: Clone + Copy {
     fn bitdepth_max(&self) -> Self::Pixel;
 
     fn get_intermediate_bits(&self) -> u8;
+
+    fn cast_pixel_slice(bytes: &[u8]) -> &[Self::Pixel] {
+        let size = mem::size_of::<Self::Pixel>();
+
+        // Check that the number of elements is a multiple of the new element
+        // size and that the alignment is correct for the new element type.
+        debug_assert!(bytes.len() % size == 0);
+        assert!(bytes.as_ptr() as usize % mem::align_of::<Self::Pixel>() == 0);
+
+        let len = bytes.len() / size;
+
+        // SAFETY: We've checked that alignment and the number of elements is correct.
+        unsafe { slice::from_raw_parts(bytes.as_ptr().cast(), len) }
+    }
+
+    fn cast_pixel_slice_mut(bytes: &mut [u8]) -> &mut [Self::Pixel] {
+        let size = mem::size_of::<Self::Pixel>();
+
+        // Check that the number of elements is a multiple of the new element
+        // size and that the alignment is correct for the new element type.
+        debug_assert!(bytes.len() % size == 0);
+        assert!(bytes.as_ptr() as usize % mem::align_of::<Self::Pixel>() == 0);
+
+        let len = bytes.len() / size;
+
+        // SAFETY: We've checked that alignment and the number of elements is correct.
+        unsafe { slice::from_raw_parts_mut(bytes.as_mut_ptr().cast(), len) }
+    }
 
     const PREP_BIAS: i16;
 

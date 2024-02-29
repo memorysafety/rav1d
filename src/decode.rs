@@ -3,6 +3,7 @@ use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
@@ -4391,29 +4392,43 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     alloc_sz += (uv_stride.unsigned_abs() * 8 * f.sbh as usize) << need_cdef_lpf_copy;
     // TODO: Fallible allocation.
     f.lf.cdef_line_buf.resize(alloc_sz, 0);
-    let mut ptr = f.lf.cdef_line_buf.as_mut_ptr();
 
-    ptr = ptr.offset(32);
+    let bpc = BPC::from_bitdepth_max(f.bitdepth_max);
+    let y_stride_px = bpc.pxstride(f.cur.stride[0]);
+    let uv_stride_px = bpc.pxstride(f.cur.stride[1]);
+
+    let mut offset = bpc.pxstride(32usize);
     if y_stride < 0 {
-        f.lf.cdef_line[0][0] = ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
-        f.lf.cdef_line[1][0] = ptr.offset(-(y_stride * (f.sbh as isize * 4 - 3))) as *mut DynPixel;
+        f.lf.cdef_line[0][0] =
+            offset.wrapping_add_signed(-(y_stride_px * (f.sbh as isize * 4 - 1)));
+        f.lf.cdef_line[1][0] =
+            offset.wrapping_add_signed(-(y_stride_px * (f.sbh as isize * 4 - 3)));
     } else {
-        f.lf.cdef_line[0][0] = ptr.offset(y_stride * 0) as *mut DynPixel;
-        f.lf.cdef_line[1][0] = ptr.offset(y_stride * 2) as *mut DynPixel;
+        f.lf.cdef_line[0][0] = offset.wrapping_add_signed(y_stride_px * 0);
+        f.lf.cdef_line[1][0] = offset.wrapping_add_signed(y_stride_px * 2);
     }
-    ptr = ptr.offset(y_stride.abs() * f.sbh as isize * 4);
+    offset = offset.wrapping_add_signed(y_stride_px.abs() * f.sbh as isize * 4);
     if uv_stride < 0 {
-        f.lf.cdef_line[0][1] = ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut DynPixel;
-        f.lf.cdef_line[0][2] = ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 3))) as *mut DynPixel;
-        f.lf.cdef_line[1][1] = ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 5))) as *mut DynPixel;
-        f.lf.cdef_line[1][2] = ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 7))) as *mut DynPixel;
+        f.lf.cdef_line[0][1] =
+            offset.wrapping_add_signed(-(uv_stride_px * (f.sbh as isize * 8 - 1)));
+        f.lf.cdef_line[0][2] =
+            offset.wrapping_add_signed(-(uv_stride_px * (f.sbh as isize * 8 - 3)));
+        f.lf.cdef_line[1][1] =
+            offset.wrapping_add_signed(-(uv_stride_px * (f.sbh as isize * 8 - 5)));
+        f.lf.cdef_line[1][2] =
+            offset.wrapping_add_signed(-(uv_stride_px * (f.sbh as isize * 8 - 7)));
     } else {
-        f.lf.cdef_line[0][1] = ptr.offset(uv_stride * 0) as *mut DynPixel;
-        f.lf.cdef_line[0][2] = ptr.offset(uv_stride * 2) as *mut DynPixel;
-        f.lf.cdef_line[1][1] = ptr.offset(uv_stride * 4) as *mut DynPixel;
-        f.lf.cdef_line[1][2] = ptr.offset(uv_stride * 6) as *mut DynPixel;
+        f.lf.cdef_line[0][1] = offset.wrapping_add_signed(uv_stride_px * 0);
+        f.lf.cdef_line[0][2] = offset.wrapping_add_signed(uv_stride_px * 2);
+        f.lf.cdef_line[1][1] = offset.wrapping_add_signed(uv_stride_px * 4);
+        f.lf.cdef_line[1][2] = offset.wrapping_add_signed(uv_stride_px * 6);
     }
 
+    let mut ptr =
+        f.lf.cdef_line_buf
+            .as_mut_ptr()
+            .add(32)
+            .offset(y_stride.abs() * f.sbh as isize * 4);
     if need_cdef_lpf_copy != 0 {
         ptr = ptr.offset(uv_stride.abs() * f.sbh as isize * 8);
         if y_stride < 0 {

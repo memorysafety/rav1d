@@ -323,7 +323,7 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
     pub filter_sbrow_cdef:
-        unsafe fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> (),
+        unsafe fn(&Rav1dContext, &mut Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> (),
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
@@ -462,9 +462,9 @@ pub struct Rav1dFrameContext_lf {
     pub tx_lpf_right_edge: TxLpfRightEdge,
     pub cdef_line_buf: AlignedVec32<u8>, /* AlignedVec32<DynPixel> */
     pub lr_line_buf: *mut u8,
-    pub cdef_line: [[*mut DynPixel; 3]; 2], /* [2 pre/post][3 plane] */
-    pub cdef_lpf_line: [*mut DynPixel; 3],  /* plane */
-    pub lr_lpf_line: [*mut DynPixel; 3],    /* plane */
+    pub cdef_line: [[usize; 3]; 2],        /* [2 pre/post][3 plane] */
+    pub cdef_lpf_line: [*mut DynPixel; 3], /* plane */
+    pub lr_lpf_line: [*mut DynPixel; 3],   /* plane */
 
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: *mut u8,

@@ -4568,7 +4568,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &Rav1dFrameData,
+    f: &mut Rav1dFrameData,
     tc: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4721,10 +4721,10 @@ pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
     rav1d_filter_sbrow_deblock_cols::<BD>(c, f, t, sby);
     rav1d_filter_sbrow_deblock_rows::<BD>(c, f, t, sby);
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if seq_hdr.cdef != 0 {
         rav1d_filter_sbrow_cdef::<BD>(c, f, t, sby);
     }
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         rav1d_filter_sbrow_resize::<BD>(c, f, t, sby);
     }
