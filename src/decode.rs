@@ -3519,7 +3519,7 @@ unsafe fn decode_sb(
     let pc = if t.frame_thread.pass == 2 {
         None
     } else {
-        if false && bl == BlockLevel::BL_64X64 {
+        if false && bl == BlockLevel::Bl64x64 {
             println!(
                 "poc={},y={},x={},bl={},r={}",
                 frame_hdr.frame_offset, t.by, t.bx, bl as u8, ts.msac.rng,
@@ -3790,7 +3790,7 @@ unsafe fn decode_sb(
         }
     }
 
-    if t.frame_thread.pass != 2 && (bp != PARTITION_SPLIT || bl == BlockLevel::BL_8X8) {
+    if t.frame_thread.pass != 2 && (bp != PARTITION_SPLIT || bl == BlockLevel::Bl8x8) {
         CaseSet::<16, false>::many(
             [(&mut *t.a, 0), (&mut t.l, 1)],
             [hsz as usize; 2],
@@ -4068,9 +4068,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 ) -> Result<(), ()> {
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let root_bl = if seq_hdr.sb128 != 0 {
-        BlockLevel::BL_128X128
+        BlockLevel::Bl128x128
     } else {
-        BlockLevel::BL_64X64
+        BlockLevel::Bl64x64
     };
     let ts = &mut *t.ts;
     let sb_step = f.sb_step;
@@ -4151,7 +4151,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             return Err(());
         }
         let cdef_idx = &mut (*t.lf_mask).cdef_idx;
-        if root_bl == BlockLevel::BL_128X128 {
+        if root_bl == BlockLevel::Bl128x128 {
             *cdef_idx = [-1; 4];
             t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
         } else {

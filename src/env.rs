@@ -111,7 +111,7 @@ pub fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
     // PARTITION_T_BOTTOM_SPLIT and PARTITION_T_LEFT_SPLIT are neighbors.
     out +=
         r#in[(PARTITION_SPLIT - 1) as usize] as i32 - r#in[PARTITION_T_LEFT_SPLIT as usize] as i32;
-    if bl != BlockLevel::BL_128X128 {
+    if bl != BlockLevel::Bl128x128 {
         out += r#in[(PARTITION_H4 - 1) as usize] as i32 - r#in[PARTITION_H4 as usize] as i32;
     }
     out as u32
@@ -128,7 +128,7 @@ pub fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
     // PARTITION_V4 is always zero, and the probability for
     // PARTITION_T_RIGHT_SPLIT is zero in 128x128 blocks.
     out += r#in[(PARTITION_T_LEFT_SPLIT - 1) as usize] as i32;
-    if bl != BlockLevel::BL_128X128 {
+    if bl != BlockLevel::Bl128x128 {
         out += r#in[(PARTITION_V4 - 1) as usize] as i32
             - r#in[PARTITION_T_RIGHT_SPLIT as usize] as i32;
     }

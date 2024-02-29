@@ -24,25 +24,25 @@ pub const TX_4X4: TxfmSize = 0;
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, EnumCount)]
 pub enum BlockLevel {
     #[default]
-    BL_128X128 = 0,
-    BL_64X64 = 1,
-    BL_32X32 = 2,
-    BL_16X16 = 3,
-    BL_8X8 = 4,
+    Bl128x128 = 0,
+    Bl64x64 = 1,
+    Bl32x32 = 2,
+    Bl16x16 = 3,
+    Bl8x8 = 4,
 }
 
 impl DefaultValue for BlockLevel {
-    const DEFAULT: Self = Self::BL_128X128;
+    const DEFAULT: Self = Self::Bl128x128;
 }
 
 impl BlockLevel {
     pub const fn decrease(self) -> Option<Self> {
         match self {
-            BlockLevel::BL_8X8 => None,
-            BlockLevel::BL_16X16 => Some(BlockLevel::BL_8X8),
-            BlockLevel::BL_32X32 => Some(BlockLevel::BL_16X16),
-            BlockLevel::BL_64X64 => Some(BlockLevel::BL_32X32),
-            BlockLevel::BL_128X128 => Some(BlockLevel::BL_64X64),
+            BlockLevel::Bl8x8 => None,
+            BlockLevel::Bl16x16 => Some(BlockLevel::Bl8x8),
+            BlockLevel::Bl32x32 => Some(BlockLevel::Bl16x16),
+            BlockLevel::Bl64x64 => Some(BlockLevel::Bl32x32),
+            BlockLevel::Bl128x128 => Some(BlockLevel::Bl64x64),
         }
     }
 }

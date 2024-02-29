@@ -169,7 +169,7 @@ impl EdgeBranch {
             EdgeFlags::LEFT_HAS_BOTTOM.union(
                 edge_flags
                     .intersection(EdgeFlags::I420_TOP_HAS_RIGHT)
-                    .select(matches!(bl, BlockLevel::BL_16X16)),
+                    .select(matches!(bl, BlockLevel::Bl16x16)),
             ),
             EdgeFlags::LEFT_HAS_BOTTOM,
             edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
@@ -183,7 +183,7 @@ impl EdgeBranch {
                         EdgeFlags::I420_LEFT_HAS_BOTTOM,
                         EdgeFlags::I422_LEFT_HAS_BOTTOM,
                     ]))
-                    .select(matches!(bl, BlockLevel::BL_16X16)),
+                    .select(matches!(bl, BlockLevel::Bl16x16)),
             ),
             EdgeFlags::TOP_HAS_RIGHT,
             edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
@@ -274,7 +274,7 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
             ]),
             bl,
         );
-        if matches!(bl, BlockLevel::BL_16X16) {
+        if matches!(bl, BlockLevel::Bl16x16) {
             let mut n = 0;
             while n < B as u8 {
                 let (tip, next) = indices.tip.pop_front();
@@ -323,21 +323,21 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
 
         let sb128 = SB128 as u8;
 
-        let mut bl = BlockLevel::BL_128X128 as u8;
-        while bl <= BlockLevel::BL_32X32 as u8 {
+        let mut bl = BlockLevel::Bl128x128 as u8;
+        while bl <= BlockLevel::Bl32x32 as u8 {
             indices.branch[bl as usize].index = level_index(bl as u8 + sb128);
             bl += 1;
         }
 
         let bl = if SB128 {
-            BlockLevel::BL_128X128
+            BlockLevel::Bl128x128
         } else {
-            BlockLevel::BL_64X64
+            BlockLevel::Bl64x64
         };
         (self, indices) = self.init_mode_node(EdgeIndex::root(), bl, indices, true, false);
 
-        let mut bl = BlockLevel::BL_128X128 as u8;
-        while bl <= BlockLevel::BL_32X32 as u8 {
+        let mut bl = BlockLevel::Bl128x128 as u8;
+        while bl <= BlockLevel::Bl32x32 as u8 {
             let index = indices.branch[bl as usize].index;
             if index != 0 {
                 assert!(index == level_index(1 + bl + sb128));
