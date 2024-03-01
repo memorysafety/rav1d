@@ -51,14 +51,6 @@ use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
-use crate::include::dav1d::headers::RAV1D_OBU_FRAME;
-use crate::include::dav1d::headers::RAV1D_OBU_FRAME_HDR;
-use crate::include::dav1d::headers::RAV1D_OBU_METADATA;
-use crate::include::dav1d::headers::RAV1D_OBU_PADDING;
-use crate::include::dav1d::headers::RAV1D_OBU_REDUNDANT_FRAME_HDR;
-use crate::include::dav1d::headers::RAV1D_OBU_SEQ_HDR;
-use crate::include::dav1d::headers::RAV1D_OBU_TD;
-use crate::include::dav1d::headers::RAV1D_OBU_TILE_GRP;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
@@ -2132,7 +2124,8 @@ unsafe fn parse_obus(
 
     // obu header
     gb.get_bit(); // obu_forbidden_bit
-    let r#type = gb.get_bits(4) as Rav1dObuType;
+    let raw_type = gb.get_bits(4);
+    let r#type = Rav1dObuType::try_from(raw_type);
     let has_extension = gb.get_bit() as c_int;
     let has_length_field = gb.get_bit() as c_int;
     gb.get_bit(); // reserved
@@ -2170,9 +2163,10 @@ unsafe fn parse_obus(
     }
 
     // skip obu not belonging to the selected temporal/spatial layer
-    if r#type != RAV1D_OBU_SEQ_HDR
-        && r#type != RAV1D_OBU_TD
-        && has_extension != 0
+    if !matches!(
+        r#type,
+        Ok(Rav1dObuType::RAV1D_OBU_SEQ_HDR | Rav1dObuType::RAV1D_OBU_TD)
+    ) && has_extension != 0
         && c.operating_point_idc != 0
     {
         let in_temporal_layer = (c.operating_point_idc >> temporal_id & 1) as c_int;
@@ -2232,7 +2226,7 @@ unsafe fn parse_obus(
     }
 
     match r#type {
-        RAV1D_OBU_SEQ_HDR => {
+        Ok(Rav1dObuType::RAV1D_OBU_SEQ_HDR) => {
             let seq_hdr = parse_seq_hdr(c, &mut gb).inspect_err(|_| {
                 writeln!(c.logger, "Error parsing sequence header");
             })?;
@@ -2277,9 +2271,17 @@ unsafe fn parse_obus(
             }
             c.seq_hdr = Some(Arc::new(DRav1d::from_rav1d(seq_hdr))); // TODO(kkysen) fallible allocation
         }
-        RAV1D_OBU_REDUNDANT_FRAME_HDR if c.frame_hdr.is_some() => {}
-        RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR if global => {}
-        RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
+        Ok(Rav1dObuType::RAV1D_OBU_REDUNDANT_FRAME_HDR) if c.frame_hdr.is_some() => {}
+        Ok(
+            Rav1dObuType::RAV1D_OBU_REDUNDANT_FRAME_HDR
+            | Rav1dObuType::RAV1D_OBU_FRAME
+            | Rav1dObuType::RAV1D_OBU_FRAME_HDR,
+        ) if global => {}
+        Ok(
+            Rav1dObuType::RAV1D_OBU_REDUNDANT_FRAME_HDR
+            | Rav1dObuType::RAV1D_OBU_FRAME
+            | Rav1dObuType::RAV1D_OBU_FRAME_HDR,
+        ) => {
             c.frame_hdr = None;
             // TODO(kkysen) C originally re-used this allocation,
             // but it was also pooling, which we've dropped for now.
@@ -2295,7 +2297,7 @@ unsafe fn parse_obus(
 
             c.tiles.clear();
             c.n_tiles = 0;
-            if r#type != RAV1D_OBU_FRAME {
+            if r#type != Ok(Rav1dObuType::RAV1D_OBU_FRAME) {
                 // This is actually a frame header OBU,
                 // so read the trailing bit and check for overrun.
                 gb.get_bit();
@@ -2316,7 +2318,7 @@ unsafe fn parse_obus(
                 return Err(ERANGE);
             }
 
-            if r#type == RAV1D_OBU_FRAME {
+            if r#type == Ok(Rav1dObuType::RAV1D_OBU_FRAME) {
                 // OBU_FRAMEs shouldn't be signaled with `show_existing_frame`.
                 if frame_hdr.show_existing_frame != 0 {
                     return Err(EINVAL);
@@ -2325,7 +2327,7 @@ unsafe fn parse_obus(
 
             c.frame_hdr = Some(Arc::new(DRav1d::from_rav1d(frame_hdr))); // TODO(kkysen) fallible allocation
 
-            if r#type == RAV1D_OBU_FRAME {
+            if r#type == Ok(Rav1dObuType::RAV1D_OBU_FRAME) {
                 // This is the frame header at the start of a frame OBU.
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
@@ -2335,12 +2337,12 @@ unsafe fn parse_obus(
                 }
             }
         }
-        RAV1D_OBU_TILE_GRP => {
+        Ok(Rav1dObuType::RAV1D_OBU_TILE_GRP) => {
             if !global {
                 parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
         }
-        RAV1D_OBU_METADATA => {
+        Ok(Rav1dObuType::RAV1D_OBU_METADATA) => {
             let debug = Debug::new(false, "OBU", &gb);
 
             // obu metadata type field
@@ -2448,18 +2450,14 @@ unsafe fn parse_obus(
                 }
             }
         }
-        RAV1D_OBU_TD => {
+        Ok(Rav1dObuType::RAV1D_OBU_TD) => {
             c.frame_flags
                 .fetch_or(PictureFlags::NEW_TEMPORAL_UNIT, Ordering::Relaxed);
         }
-        RAV1D_OBU_PADDING => {} // Ignore OBUs we don't care about.
-        _ => {
+        Ok(Rav1dObuType::RAV1D_OBU_PADDING) => {} // Ignore OBUs we don't care about.
+        Err(_) => {
             // Print a warning, but don't fail for unknown types.
-            writeln!(
-                c.logger,
-                "Unknown OBU type {} of size {}",
-                r#type as c_uint, len,
-            );
+            writeln!(c.logger, "Unknown OBU type {raw_type} of size {len}");
         }
     }
 

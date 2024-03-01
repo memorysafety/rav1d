@@ -1,4 +1,5 @@
 use crate::src::enum_map::EnumKey;
+use crate::src::error::Rav1dError;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
@@ -59,24 +60,37 @@ pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
 pub(crate) const RAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_TOTAL_REFS_PER_FRAME;
 
 pub type Dav1dObuType = c_uint;
-pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
-pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
-pub const DAV1D_OBU_FRAME: Dav1dObuType = 6;
-pub const DAV1D_OBU_METADATA: Dav1dObuType = 5;
-pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = 4;
-pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = 3;
-pub const DAV1D_OBU_TD: Dav1dObuType = 2;
-pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = 1;
+pub const DAV1D_OBU_PADDING: Dav1dObuType = Rav1dObuType::RAV1D_OBU_PADDING as _;
+pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType =
+    Rav1dObuType::RAV1D_OBU_REDUNDANT_FRAME_HDR as _;
+pub const DAV1D_OBU_FRAME: Dav1dObuType = Rav1dObuType::RAV1D_OBU_FRAME as _;
+pub const DAV1D_OBU_METADATA: Dav1dObuType = Rav1dObuType::RAV1D_OBU_METADATA as _;
+pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = Rav1dObuType::RAV1D_OBU_TILE_GRP as _;
+pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = Rav1dObuType::RAV1D_OBU_FRAME_HDR as _;
+pub const DAV1D_OBU_TD: Dav1dObuType = Rav1dObuType::RAV1D_OBU_TD as _;
+pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = Rav1dObuType::RAV1D_OBU_SEQ_HDR as _;
 
-pub(crate) type Rav1dObuType = c_uint;
-pub(crate) const RAV1D_OBU_PADDING: Rav1dObuType = DAV1D_OBU_PADDING;
-pub(crate) const RAV1D_OBU_REDUNDANT_FRAME_HDR: Rav1dObuType = DAV1D_OBU_REDUNDANT_FRAME_HDR;
-pub(crate) const RAV1D_OBU_FRAME: Rav1dObuType = DAV1D_OBU_FRAME;
-pub(crate) const RAV1D_OBU_METADATA: Rav1dObuType = DAV1D_OBU_METADATA;
-pub(crate) const RAV1D_OBU_TILE_GRP: Rav1dObuType = DAV1D_OBU_TILE_GRP;
-pub(crate) const RAV1D_OBU_FRAME_HDR: Rav1dObuType = DAV1D_OBU_FRAME_HDR;
-pub(crate) const RAV1D_OBU_TD: Rav1dObuType = DAV1D_OBU_TD;
-pub(crate) const RAV1D_OBU_SEQ_HDR: Rav1dObuType = DAV1D_OBU_SEQ_HDR;
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dObuType {
+    RAV1D_OBU_SEQ_HDR = 1,
+    RAV1D_OBU_TD = 2,
+    RAV1D_OBU_FRAME_HDR = 3,
+    RAV1D_OBU_TILE_GRP = 4,
+    RAV1D_OBU_METADATA = 5,
+    RAV1D_OBU_FRAME = 6,
+    RAV1D_OBU_REDUNDANT_FRAME_HDR = 7,
+    RAV1D_OBU_PADDING = 15,
+}
+
+impl TryFrom<Dav1dObuType> for Rav1dObuType {
+    type Error = Rav1dError;
+
+    fn try_from(value: Dav1dObuType) -> Result<Self, Self::Error> {
+        let value = u8::try_from(value).map_err(|_| Rav1dError::EINVAL)?;
+        Self::from_repr(value).ok_or(Rav1dError::EINVAL)
+    }
+}
 
 pub type Dav1dTxfmMode = c_uint;
 pub const DAV1D_N_TX_MODES: usize = 3;
