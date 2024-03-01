@@ -2163,10 +2163,8 @@ unsafe fn parse_obus(
     }
 
     // skip obu not belonging to the selected temporal/spatial layer
-    if !matches!(
-        r#type,
-        Ok(Rav1dObuType::RAV1D_OBU_SEQ_HDR | Rav1dObuType::RAV1D_OBU_TD)
-    ) && has_extension != 0
+    if !matches!(r#type, Ok(Rav1dObuType::SeqHdr | Rav1dObuType::Td))
+        && has_extension != 0
         && c.operating_point_idc != 0
     {
         let in_temporal_layer = (c.operating_point_idc >> temporal_id & 1) as c_int;
@@ -2226,7 +2224,7 @@ unsafe fn parse_obus(
     }
 
     match r#type {
-        Ok(Rav1dObuType::RAV1D_OBU_SEQ_HDR) => {
+        Ok(Rav1dObuType::SeqHdr) => {
             let seq_hdr = parse_seq_hdr(c, &mut gb).inspect_err(|_| {
                 writeln!(c.logger, "Error parsing sequence header");
             })?;
@@ -2271,17 +2269,10 @@ unsafe fn parse_obus(
             }
             c.seq_hdr = Some(Arc::new(DRav1d::from_rav1d(seq_hdr))); // TODO(kkysen) fallible allocation
         }
-        Ok(Rav1dObuType::RAV1D_OBU_REDUNDANT_FRAME_HDR) if c.frame_hdr.is_some() => {}
-        Ok(
-            Rav1dObuType::RAV1D_OBU_REDUNDANT_FRAME_HDR
-            | Rav1dObuType::RAV1D_OBU_FRAME
-            | Rav1dObuType::RAV1D_OBU_FRAME_HDR,
-        ) if global => {}
-        Ok(
-            Rav1dObuType::RAV1D_OBU_REDUNDANT_FRAME_HDR
-            | Rav1dObuType::RAV1D_OBU_FRAME
-            | Rav1dObuType::RAV1D_OBU_FRAME_HDR,
-        ) => {
+        Ok(Rav1dObuType::RedundantFrameHdr) if c.frame_hdr.is_some() => {}
+        Ok(Rav1dObuType::RedundantFrameHdr | Rav1dObuType::Frame | Rav1dObuType::FrameHdr)
+            if global => {}
+        Ok(Rav1dObuType::RedundantFrameHdr | Rav1dObuType::Frame | Rav1dObuType::FrameHdr) => {
             c.frame_hdr = None;
             // TODO(kkysen) C originally re-used this allocation,
             // but it was also pooling, which we've dropped for now.
@@ -2297,7 +2288,7 @@ unsafe fn parse_obus(
 
             c.tiles.clear();
             c.n_tiles = 0;
-            if r#type != Ok(Rav1dObuType::RAV1D_OBU_FRAME) {
+            if r#type != Ok(Rav1dObuType::Frame) {
                 // This is actually a frame header OBU,
                 // so read the trailing bit and check for overrun.
                 gb.get_bit();
@@ -2318,7 +2309,7 @@ unsafe fn parse_obus(
                 return Err(ERANGE);
             }
 
-            if r#type == Ok(Rav1dObuType::RAV1D_OBU_FRAME) {
+            if r#type == Ok(Rav1dObuType::Frame) {
                 // OBU_FRAMEs shouldn't be signaled with `show_existing_frame`.
                 if frame_hdr.show_existing_frame != 0 {
                     return Err(EINVAL);
@@ -2327,7 +2318,7 @@ unsafe fn parse_obus(
 
             c.frame_hdr = Some(Arc::new(DRav1d::from_rav1d(frame_hdr))); // TODO(kkysen) fallible allocation
 
-            if r#type == Ok(Rav1dObuType::RAV1D_OBU_FRAME) {
+            if r#type == Ok(Rav1dObuType::Frame) {
                 // This is the frame header at the start of a frame OBU.
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
@@ -2337,12 +2328,12 @@ unsafe fn parse_obus(
                 }
             }
         }
-        Ok(Rav1dObuType::RAV1D_OBU_TILE_GRP) => {
+        Ok(Rav1dObuType::TileGrp) => {
             if !global {
                 parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
         }
-        Ok(Rav1dObuType::RAV1D_OBU_METADATA) => {
+        Ok(Rav1dObuType::Metadata) => {
             let debug = Debug::new(false, "OBU", &gb);
 
             // obu metadata type field
@@ -2450,11 +2441,11 @@ unsafe fn parse_obus(
                 }
             }
         }
-        Ok(Rav1dObuType::RAV1D_OBU_TD) => {
+        Ok(Rav1dObuType::Td) => {
             c.frame_flags
                 .fetch_or(PictureFlags::NEW_TEMPORAL_UNIT, Ordering::Relaxed);
         }
-        Ok(Rav1dObuType::RAV1D_OBU_PADDING) => {} // Ignore OBUs we don't care about.
+        Ok(Rav1dObuType::Padding) => {} // Ignore OBUs we don't care about.
         Err(_) => {
             // Print a warning, but don't fail for unknown types.
             writeln!(c.logger, "Unknown OBU type {raw_type} of size {len}");

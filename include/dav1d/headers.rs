@@ -60,27 +60,26 @@ pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
 pub(crate) const RAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_TOTAL_REFS_PER_FRAME;
 
 pub type Dav1dObuType = c_uint;
-pub const DAV1D_OBU_PADDING: Dav1dObuType = Rav1dObuType::RAV1D_OBU_PADDING as _;
-pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType =
-    Rav1dObuType::RAV1D_OBU_REDUNDANT_FRAME_HDR as _;
-pub const DAV1D_OBU_FRAME: Dav1dObuType = Rav1dObuType::RAV1D_OBU_FRAME as _;
-pub const DAV1D_OBU_METADATA: Dav1dObuType = Rav1dObuType::RAV1D_OBU_METADATA as _;
-pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = Rav1dObuType::RAV1D_OBU_TILE_GRP as _;
-pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = Rav1dObuType::RAV1D_OBU_FRAME_HDR as _;
-pub const DAV1D_OBU_TD: Dav1dObuType = Rav1dObuType::RAV1D_OBU_TD as _;
-pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = Rav1dObuType::RAV1D_OBU_SEQ_HDR as _;
+pub const DAV1D_OBU_PADDING: Dav1dObuType = Rav1dObuType::Padding as _;
+pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = Rav1dObuType::RedundantFrameHdr as _;
+pub const DAV1D_OBU_FRAME: Dav1dObuType = Rav1dObuType::Frame as _;
+pub const DAV1D_OBU_METADATA: Dav1dObuType = Rav1dObuType::Metadata as _;
+pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = Rav1dObuType::TileGrp as _;
+pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = Rav1dObuType::FrameHdr as _;
+pub const DAV1D_OBU_TD: Dav1dObuType = Rav1dObuType::Td as _;
+pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = Rav1dObuType::SeqHdr as _;
 
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
 pub enum Rav1dObuType {
-    RAV1D_OBU_SEQ_HDR = 1,
-    RAV1D_OBU_TD = 2,
-    RAV1D_OBU_FRAME_HDR = 3,
-    RAV1D_OBU_TILE_GRP = 4,
-    RAV1D_OBU_METADATA = 5,
-    RAV1D_OBU_FRAME = 6,
-    RAV1D_OBU_REDUNDANT_FRAME_HDR = 7,
-    RAV1D_OBU_PADDING = 15,
+    SeqHdr = 1,
+    Td = 2,
+    FrameHdr = 3,
+    TileGrp = 4,
+    Metadata = 5,
+    Frame = 6,
+    RedundantFrameHdr = 7,
+    Padding = 15,
 }
 
 impl TryFrom<Dav1dObuType> for Rav1dObuType {
