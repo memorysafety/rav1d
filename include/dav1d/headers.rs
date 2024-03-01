@@ -1,5 +1,4 @@
 use crate::src::enum_map::EnumKey;
-use crate::src::error::Rav1dError;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ops::BitAnd;
@@ -60,16 +59,16 @@ pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
 pub(crate) const RAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_TOTAL_REFS_PER_FRAME;
 
 pub type Dav1dObuType = c_uint;
-pub const DAV1D_OBU_PADDING: Dav1dObuType = Rav1dObuType::Padding as _;
-pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = Rav1dObuType::RedundantFrameHdr as _;
-pub const DAV1D_OBU_FRAME: Dav1dObuType = Rav1dObuType::Frame as _;
-pub const DAV1D_OBU_METADATA: Dav1dObuType = Rav1dObuType::Metadata as _;
-pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = Rav1dObuType::TileGrp as _;
-pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = Rav1dObuType::FrameHdr as _;
-pub const DAV1D_OBU_TD: Dav1dObuType = Rav1dObuType::Td as _;
-pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = Rav1dObuType::SeqHdr as _;
+pub const DAV1D_OBU_PADDING: Dav1dObuType = Rav1dObuType::Padding as Dav1dObuType;
+pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType =
+    Rav1dObuType::RedundantFrameHdr as Dav1dObuType;
+pub const DAV1D_OBU_FRAME: Dav1dObuType = Rav1dObuType::Frame as Dav1dObuType;
+pub const DAV1D_OBU_METADATA: Dav1dObuType = Rav1dObuType::Metadata as Dav1dObuType;
+pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = Rav1dObuType::TileGrp as Dav1dObuType;
+pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = Rav1dObuType::FrameHdr as Dav1dObuType;
+pub const DAV1D_OBU_TD: Dav1dObuType = Rav1dObuType::Td as Dav1dObuType;
+pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = Rav1dObuType::SeqHdr as Dav1dObuType;
 
-#[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
 pub enum Rav1dObuType {
     SeqHdr = 1,
@@ -80,15 +79,6 @@ pub enum Rav1dObuType {
     Frame = 6,
     RedundantFrameHdr = 7,
     Padding = 15,
-}
-
-impl TryFrom<Dav1dObuType> for Rav1dObuType {
-    type Error = Rav1dError;
-
-    fn try_from(value: Dav1dObuType) -> Result<Self, Self::Error> {
-        let value = u8::try_from(value).map_err(|_| Rav1dError::EINVAL)?;
-        Self::from_repr(value).ok_or(Rav1dError::EINVAL)
-    }
 }
 
 pub type Dav1dTxfmMode = c_uint;
