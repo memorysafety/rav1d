@@ -12,7 +12,6 @@ use std::ops::Div;
 use std::ops::Mul;
 use std::ops::Rem;
 use std::ops::Shr;
-use to_method::To as _;
 
 pub trait FromPrimitive<T> {
     fn from_prim(t: T) -> Self;
@@ -96,11 +95,28 @@ impl BPC {
             Self::BPC16
         }
     }
+
+    pub const fn bitdepth(&self) -> u8 {
+        match self {
+            Self::BPC8 => 8,
+            Self::BPC16 => 16,
+        }
+    }
+
+    /// `T` is generally meant to be `usize` or `isize`.
+    pub fn pxstride<T>(&self, n: T) -> T
+    where
+        T: Copy + Eq + From<u8> + Div<Output = T> + Rem<Output = T>,
+    {
+        let scale = (self.bitdepth() / 8).into();
+        debug_assert!(n % scale == 0.into());
+        n / scale
+    }
 }
 
 pub trait BitDepth: Clone + Copy {
     const BPC: BPC;
-    const BITDEPTH: u8;
+    const BITDEPTH: u8 = Self::BPC.bitdepth();
 
     type Pixel: Copy
         + Ord
@@ -182,9 +198,7 @@ pub trait BitDepth: Clone + Copy {
     where
         T: Copy + Eq + TryFrom<usize> + From<u8> + Div<Output = T> + Rem<Output = T>,
     {
-        let scale = mem::size_of::<Self::Pixel>().try_to::<T>().ok().unwrap();
-        debug_assert!(n % scale == 0.into());
-        n / scale
+        Self::BPC.pxstride(n)
     }
 
     fn bitdepth(&self) -> u8;
@@ -222,7 +236,6 @@ pub struct BitDepth8 {
 
 impl BitDepth for BitDepth8 {
     const BPC: BPC = BPC::BPC8;
-    const BITDEPTH: u8 = 8;
 
     type Pixel = u8;
 
@@ -299,7 +312,6 @@ pub struct BitDepth16 {
 
 impl BitDepth for BitDepth16 {
     const BPC: BPC = BPC::BPC16;
-    const BITDEPTH: u8 = 16;
 
     type Pixel = u16;
 
