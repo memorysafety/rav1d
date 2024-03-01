@@ -2351,7 +2351,7 @@ unsafe fn parse_obus(
             }
 
             match ObuMetaType::from_repr(meta_type) {
-                Some(ObuMetaType::OBU_META_HDR_CLL) => {
+                Some(ObuMetaType::HdrCll) => {
                     let debug = debug.named("CLLOBU");
                     let max_content_light_level = gb.get_bits(16) as c_int;
                     debug.log(
@@ -2378,7 +2378,7 @@ unsafe fn parse_obus(
                         max_frame_average_light_level,
                     })); // TODO(kkysen) fallible allocation
                 }
-                Some(ObuMetaType::OBU_META_HDR_MDCV) => {
+                Some(ObuMetaType::HdrMdcv) => {
                     let debug = debug.named("MDCVOBU");
                     let primaries = array::from_fn(|i| {
                         let primary = [gb.get_bits(16) as u16, gb.get_bits(16) as u16];
@@ -2408,7 +2408,7 @@ unsafe fn parse_obus(
                         min_luminance,
                     })); // TODO(kkysen) fallible allocation
                 }
-                Some(ObuMetaType::OBU_META_ITUT_T35) => {
+                Some(ObuMetaType::ItutT32) => {
                     let mut payload_size = len as c_int;
                     // Don't take into account all the trailing bits for `payload_size`.
                     while payload_size > 0 && r#in[init_byte_pos + payload_size as usize - 1] == 0 {
@@ -2441,7 +2441,7 @@ unsafe fn parse_obus(
                         }))); // TODO(kkysen) fallible allocation
                     }
                 }
-                Some(ObuMetaType::OBU_META_SCALABILITY | ObuMetaType::OBU_META_TIMECODE) => {} // Ignore metadata OBUs we don't care about.
+                Some(ObuMetaType::Scalability | ObuMetaType::Timecode) => {} // Ignore metadata OBUs we don't care about.
                 None => {
                     // Print a warning, but don't fail for unknown types.
                     writeln!(c.logger, "Unknown Metadata OBU type {meta_type}");

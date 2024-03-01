@@ -5,11 +5,11 @@ use strum::{EnumCount, FromRepr};
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
 pub enum ObuMetaType {
-    OBU_META_HDR_CLL = 1,
-    OBU_META_HDR_MDCV = 2,
-    OBU_META_SCALABILITY = 3,
-    OBU_META_ITUT_T35 = 4,
-    OBU_META_TIMECODE = 5,
+    HdrCll = 1,
+    HdrMdcv = 2,
+    Scalability = 3,
+    ItutT32 = 4,
+    Timecode = 5,
 }
 
 pub type TxfmSize = u8;
