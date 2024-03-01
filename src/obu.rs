@@ -84,11 +84,6 @@ use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dTileGroup;
 use crate::src::internal::Rav1dTileGroupHeader;
 use crate::src::levels::ObuMetaType;
-use crate::src::levels::OBU_META_HDR_CLL;
-use crate::src::levels::OBU_META_HDR_MDCV;
-use crate::src::levels::OBU_META_ITUT_T35;
-use crate::src::levels::OBU_META_SCALABILITY;
-use crate::src::levels::OBU_META_TIMECODE;
 use crate::src::log::Rav1dLog as _;
 use crate::src::picture::rav1d_picture_copy_props;
 use crate::src::picture::rav1d_thread_picture_ref;
@@ -2349,14 +2344,14 @@ unsafe fn parse_obus(
             let debug = Debug::new(false, "OBU", &gb);
 
             // obu metadata type field
-            let meta_type = gb.get_uleb128() as ObuMetaType;
+            let meta_type = gb.get_uleb128();
             let meta_type_len = ((gb.pos() - init_bit_pos) >> 3) as c_int;
             if gb.has_error() != 0 {
                 return Err(EINVAL);
             }
 
-            match meta_type {
-                OBU_META_HDR_CLL => {
+            match ObuMetaType::from_repr(meta_type) {
+                Some(ObuMetaType::OBU_META_HDR_CLL) => {
                     let debug = debug.named("CLLOBU");
                     let max_content_light_level = gb.get_bits(16) as c_int;
                     debug.log(
@@ -2383,7 +2378,7 @@ unsafe fn parse_obus(
                         max_frame_average_light_level,
                     })); // TODO(kkysen) fallible allocation
                 }
-                OBU_META_HDR_MDCV => {
+                Some(ObuMetaType::OBU_META_HDR_MDCV) => {
                     let debug = debug.named("MDCVOBU");
                     let primaries = array::from_fn(|i| {
                         let primary = [gb.get_bits(16) as u16, gb.get_bits(16) as u16];
@@ -2413,7 +2408,7 @@ unsafe fn parse_obus(
                         min_luminance,
                     })); // TODO(kkysen) fallible allocation
                 }
-                OBU_META_ITUT_T35 => {
+                Some(ObuMetaType::OBU_META_ITUT_T35) => {
                     let mut payload_size = len as c_int;
                     // Don't take into account all the trailing bits for `payload_size`.
                     while payload_size > 0 && r#in[init_byte_pos + payload_size as usize - 1] == 0 {
@@ -2446,10 +2441,10 @@ unsafe fn parse_obus(
                         }))); // TODO(kkysen) fallible allocation
                     }
                 }
-                OBU_META_SCALABILITY | OBU_META_TIMECODE => {} // Ignore metadata OBUs we don't care about.
-                _ => {
+                Some(ObuMetaType::OBU_META_SCALABILITY | ObuMetaType::OBU_META_TIMECODE) => {} // Ignore metadata OBUs we don't care about.
+                None => {
                     // Print a warning, but don't fail for unknown types.
-                    writeln!(c.logger, "Unknown Metadata OBU type {meta_type}",);
+                    writeln!(c.logger, "Unknown Metadata OBU type {meta_type}");
                 }
             }
         }
