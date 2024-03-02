@@ -3,7 +3,6 @@ use std::ops::Neg;
 use strum::EnumCount;
 use strum::FromRepr;
 
-#[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
 pub enum ObuMetaType {
     HdrCll = 1,

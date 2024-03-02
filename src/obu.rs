@@ -2350,7 +2350,7 @@ unsafe fn parse_obus(
                 return Err(EINVAL);
             }
 
-            match ObuMetaType::from_repr(meta_type) {
+            match ObuMetaType::from_repr(meta_type as usize) {
                 Some(ObuMetaType::HdrCll) => {
                     let debug = debug.named("CLLOBU");
                     let max_content_light_level = gb.get_bits(16) as c_int;
