@@ -39,6 +39,7 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingParameterInfo;
 use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dTransferCharacteristics;
+use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_ADAPTIVE;
 use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
@@ -64,9 +65,6 @@ use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
 use crate::include::dav1d::headers::RAV1D_TRC_UNKNOWN;
-use crate::include::dav1d::headers::RAV1D_TX_4X4_ONLY;
-use crate::include::dav1d::headers::RAV1D_TX_LARGEST;
-use crate::include::dav1d::headers::RAV1D_TX_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_ROT_ZOOM;
@@ -1972,11 +1970,11 @@ unsafe fn parse_frame_hdr(
     );
 
     let txfm_mode = if all_lossless != 0 {
-        RAV1D_TX_4X4_ONLY
+        Rav1dTxfmMode::Only4x4
     } else if gb.get_bit() {
-        RAV1D_TX_SWITCHABLE
+        Rav1dTxfmMode::Switchable
     } else {
-        RAV1D_TX_LARGEST
+        Rav1dTxfmMode::Largest
     };
     debug.post(gb, "txfmmode");
     let switchable_comp_refs = if frame_type.is_inter_or_switch() {
