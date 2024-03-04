@@ -82,16 +82,31 @@ pub enum Rav1dObuType {
 }
 
 pub type Dav1dTxfmMode = c_uint;
-pub const DAV1D_N_TX_MODES: usize = 3;
-pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = 2;
-pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = 1;
-pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = 0;
+pub const DAV1D_N_TX_MODES: usize = Rav1dTxfmMode::COUNT;
+pub const DAV1D_TX_4X4_ONLY: Dav1dTxfmMode = Rav1dTxfmMode::Only4x4 as Dav1dTxfmMode;
+pub const DAV1D_TX_LARGEST: Dav1dTxfmMode = Rav1dTxfmMode::Largest as Dav1dTxfmMode;
+pub const DAV1D_TX_SWITCHABLE: Dav1dTxfmMode = Rav1dTxfmMode::Switchable as Dav1dTxfmMode;
 
-pub(crate) type Rav1dTxfmMode = c_uint;
-pub(crate) const _RAV1D_N_TX_MODES: usize = DAV1D_N_TX_MODES;
-pub(crate) const RAV1D_TX_SWITCHABLE: Rav1dTxfmMode = DAV1D_TX_SWITCHABLE;
-pub(crate) const RAV1D_TX_LARGEST: Rav1dTxfmMode = DAV1D_TX_LARGEST;
-pub(crate) const RAV1D_TX_4X4_ONLY: Rav1dTxfmMode = DAV1D_TX_4X4_ONLY;
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
+pub enum Rav1dTxfmMode {
+    Only4x4 = 0,
+    Largest = 1,
+    Switchable = 2,
+}
+
+impl From<Rav1dTxfmMode> for Dav1dTxfmMode {
+    fn from(value: Rav1dTxfmMode) -> Self {
+        value as Dav1dTxfmMode
+    }
+}
+
+impl TryFrom<Dav1dTxfmMode> for Rav1dTxfmMode {
+    type Error = ();
+
+    fn try_from(value: Dav1dTxfmMode) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
+}
 
 pub type Dav1dFilterMode = u8;
 pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
@@ -2334,7 +2349,7 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             loopfilter: loopfilter.into(),
             cdef: cdef.into(),
             restoration: restoration.into(),
-            txfm_mode,
+            txfm_mode: txfm_mode.try_into().unwrap(),
             switchable_comp_refs,
             skip_mode: Rav1dFrameSkipMode {
                 allowed: skip_mode_allowed,
@@ -2451,7 +2466,7 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             loopfilter: loopfilter.into(),
             cdef: cdef.into(),
             restoration: restoration.into(),
-            txfm_mode,
+            txfm_mode: txfm_mode.into(),
             switchable_comp_refs,
             skip_mode_allowed,
             skip_mode_enabled,

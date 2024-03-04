@@ -8,12 +8,12 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::Dav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
+use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
 use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
@@ -24,7 +24,6 @@ use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
-use crate::include::dav1d::headers::RAV1D_TX_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
@@ -1042,14 +1041,14 @@ unsafe fn read_vartx_tree(
     let mut tx_split = [0u16; 2];
     *b.max_ytx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let txfm_mode = frame_hdr.txfm_mode as Dav1dTxfmMode;
+    let txfm_mode = frame_hdr.txfm_mode;
     if b.skip == 0
         && (frame_hdr.segmentation.lossless[b.seg_id as usize] != 0
             || b.max_ytx() as TxfmSize == TX_4X4)
     {
         b.uvtx = TX_4X4 as u8;
         *b.max_ytx_mut() = b.uvtx;
-        if txfm_mode == RAV1D_TX_SWITCHABLE {
+        if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [&mut t.l, &mut *t.a],
                 [bh4 as usize, bw4 as usize],
@@ -1059,8 +1058,8 @@ unsafe fn read_vartx_tree(
                 },
             );
         }
-    } else if txfm_mode != RAV1D_TX_SWITCHABLE || b.skip != 0 {
-        if txfm_mode == RAV1D_TX_SWITCHABLE {
+    } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip != 0 {
+        if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [(&mut t.l, 1), (&mut *t.a, 0)],
                 [bh4 as usize, bw4 as usize],
@@ -2140,7 +2139,7 @@ unsafe fn decode_b_inner(
             *b.tx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
             let mut t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
-            if f.frame_hdr().txfm_mode == RAV1D_TX_SWITCHABLE && t_dim.max > TX_4X4 as u8 {
+            if f.frame_hdr().txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
                 let depth = rav1d_msac_decode_symbol_adapt4(
