@@ -4251,7 +4251,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
     // up the initial value in neighbour tiles when running the loopfilter
     let mut align_h = f.bh + 31 & !31;
-    let (tx_lpf_right_edge_y, tx_lpf_right_edge_uv) = f.lf.tx_lpf_right_edge_mut();
+    let (tx_lpf_right_edge_y, tx_lpf_right_edge_uv) = f.lf.tx_lpf_right_edge.get_mut();
     tx_lpf_right_edge_y[(align_h * tile_col + t.by) as usize..][..sb_step as usize]
         .copy_from_slice(&t.l.tx_lpf_y.0[(t.by & 16) as usize..][..sb_step as usize]);
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
@@ -4540,7 +4540,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
     let re_sz = f.sb128h * frame_hdr.tiling.cols;
     // TODO: Fallible allocation
-    f.lf.tx_lpf_right_edge.resize(re_sz as usize * 32 * 2, 0);
+    f.lf.tx_lpf_right_edge.resize(re_sz as usize, 0);
 
     // init ref mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {

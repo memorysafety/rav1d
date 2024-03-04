@@ -560,7 +560,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let hmax = (1 as c_uint) << hmask;
     let endy4 = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
-    let (lpf_y, lpf_uv) = f.lf.tx_lpf_right_edge();
+    let (lpf_y, lpf_uv) = f.lf.tx_lpf_right_edge.get();
     let mut lpf_y = &lpf_y[(sby << sbl2) as usize..];
     let mut lpf_uv = &lpf_uv[(sby << sbl2 - ss_ver) as usize..];
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
