@@ -55,42 +55,25 @@ unsafe fn backup_lpf<BD: BitDepth>(
     if c.tc.len() == 1 {
         if row != 0 {
             let top = 4 << sb128;
+            let px_abs_stride = BD::pxstride(dst_stride.unsigned_abs());
+            let top_size = top * px_abs_stride;
             // Copy the top part of the stored loop filtered pixels from the
             // previous sb row needed above the first stripe of this sb row.
-            if dst_stride < 0 {
-                let mut dst_offset_delta1 = 3 * BD::pxstride(-dst_stride) as usize;
-                let dst_tmp = dst.split_at_mut(dst_offset - dst_offset_delta1);
-                let mut dst_offset_delta0 = dst_offset - (top * BD::pxstride(-dst_stride)) as usize;
-                dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
-                    .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
-                dst_offset_delta0 -= BD::pxstride(-dst_stride) as usize;
-                dst_offset_delta1 -= BD::pxstride(-dst_stride) as usize;
-                dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
-                    .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
-                dst_offset_delta0 -= BD::pxstride(-dst_stride) as usize;
-                dst_offset_delta1 -= BD::pxstride(-dst_stride) as usize;
-                dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
-                    .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
-                dst_offset_delta0 -= BD::pxstride(-dst_stride) as usize;
-                dst_offset_delta1 -= BD::pxstride(-dst_stride) as usize;
-                dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
-                    .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
+            let (dst, dst_top) = if dst_stride < 0 {
+                let dst = &mut dst[dst_offset - top_size - 3 * px_abs_stride..];
+                let (dst_top, dst) = dst.split_at_mut(top_size);
+                (dst, dst_top)
             } else {
-                let mut dst_offset_delta = 0;
-                let dst_tmp = dst.split_at_mut(
-                    (dst_offset as isize + (top * BD::pxstride(dst_stride))) as usize,
+                let dst = &mut dst[dst_offset..];
+                dst.split_at_mut(top_size)
+            };
+
+            for i in 0..4 {
+                BD::pixel_copy(
+                    &mut dst[i * px_abs_stride..],
+                    &dst_top[i * px_abs_stride..],
+                    dst_w as usize,
                 );
-                dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
-                    .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
-                dst_offset_delta = (dst_offset_delta as isize + BD::pxstride(dst_stride)) as usize;
-                dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
-                    .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
-                dst_offset_delta = (dst_offset_delta as isize + BD::pxstride(dst_stride)) as usize;
-                dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
-                    .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
-                dst_offset_delta = (dst_offset_delta as isize + BD::pxstride(dst_stride)) as usize;
-                dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
-                    .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
             }
         }
         dst_offset = (dst_offset as isize + 4 * BD::pxstride(dst_stride)) as usize;
