@@ -10,9 +10,9 @@ checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
 
 [[package]]
 name = "atomig"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcecf20a3720c354e7648983ee8046436dea13caf0fe8f84a791c7fba456cf0f"
+checksum = "0eaf2a17b11f7923d0abe0e07377c7f0f1255a8267f05c8a9cba8dc039acc821"
 dependencies = [
  "atomig-macro",
 ]

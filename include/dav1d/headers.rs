@@ -1,4 +1,5 @@
 use crate::src::enum_map::EnumKey;
+use atomig::Atomic;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::fmt;
@@ -8,7 +9,6 @@ use std::fmt::Formatter;
 use std::ops::BitAnd;
 use std::ops::Deref;
 use std::ops::Sub;
-use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -318,29 +318,19 @@ impl Dav1dWarpedMotionParams {
 }
 
 #[derive(Default)]
-pub struct Abcd(AtomicU64);
+pub struct Abcd(Atomic<[i16; 4]>);
 
 impl Abcd {
-    fn pack(unpacked: [i16; 4]) -> u64 {
-        let [[b1, b2], [b3, b4], [b5, b6], [b7, b8]] = unpacked.map(|x| x.to_ne_bytes());
-        u64::from_ne_bytes([b1, b2, b3, b4, b5, b6, b7, b8])
-    }
-
-    fn unpack(packed: u64) -> [i16; 4] {
-        let [b1, b2, b3, b4, b5, b6, b7, b8] = packed.to_ne_bytes();
-        [[b1, b2], [b3, b4], [b5, b6], [b7, b8]].map(i16::from_ne_bytes)
-    }
-
     pub fn new(abcd: [i16; 4]) -> Self {
-        Self(AtomicU64::new(Self::pack(abcd)))
+        Self(Atomic::new(abcd))
     }
 
     pub fn get(&self) -> [i16; 4] {
-        Self::unpack(self.0.load(Ordering::Relaxed))
+        self.0.load(Ordering::Relaxed)
     }
 
     pub fn set(&self, abcd: [i16; 4]) {
-        self.0.store(Self::pack(abcd), Ordering::Relaxed);
+        self.0.store(abcd, Ordering::Relaxed);
     }
 }
 
