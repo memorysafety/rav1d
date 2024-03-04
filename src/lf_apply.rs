@@ -54,14 +54,13 @@ unsafe fn backup_lpf<BD: BitDepth>(
         (src_offset as isize + (stripe_h - 2) as isize * BD::pxstride(src_stride)) as usize;
     if c.tc.len() == 1 {
         if row != 0 {
-            let top = (4 as c_int) << sb128;
+            let top = 4 << sb128;
             // Copy the top part of the stored loop filtered pixels from the
             // previous sb row needed above the first stripe of this sb row.
             if dst_stride < 0 {
                 let mut dst_offset_delta1 = 3 * BD::pxstride(-dst_stride) as usize;
                 let dst_tmp = dst.split_at_mut(dst_offset - dst_offset_delta1);
-                let mut dst_offset_delta0 =
-                    dst_offset - top as usize * BD::pxstride(-dst_stride) as usize;
+                let mut dst_offset_delta0 = dst_offset - (top * BD::pxstride(-dst_stride)) as usize;
                 dst_tmp.1[dst_offset_delta1..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.0[dst_offset_delta0..][..dst_w as usize]);
                 dst_offset_delta0 -= BD::pxstride(-dst_stride) as usize;
@@ -79,7 +78,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
             } else {
                 let mut dst_offset_delta = 0;
                 let dst_tmp = dst.split_at_mut(
-                    (dst_offset as isize + top as isize * BD::pxstride(dst_stride)) as usize,
+                    (dst_offset as isize + (top * BD::pxstride(dst_stride))) as usize,
                 );
                 dst_tmp.0[dst_offset + dst_offset_delta..][..dst_w as usize]
                     .copy_from_slice(&dst_tmp.1[dst_offset_delta..][..dst_w as usize]);
