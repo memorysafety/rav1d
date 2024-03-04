@@ -221,7 +221,7 @@ unsafe fn splat_dc<BD: BitDepth>(
                     x = (x as c_ulong).wrapping_add(::core::mem::size_of::<u64>() as c_ulong >> 1)
                         as c_int as c_int;
                 }
-                dst = dst.offset(BD::pxstride(stride as usize) as isize);
+                dst = dst.offset(BD::pxstride(stride));
                 y += 1;
             }
         }
@@ -248,7 +248,7 @@ unsafe fn cfl_pred<BD: BitDepth>(
             x += 1;
         }
         ac = ac.offset(width as isize);
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
 }
@@ -422,7 +422,7 @@ unsafe fn ipred_v_rust<BD: BitDepth>(
             &slice::from_raw_parts(topleft, width + 1)[1..],
             width,
         );
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
 }
@@ -471,7 +471,7 @@ unsafe fn ipred_h_rust<BD: BitDepth>(
             *topleft.offset(-(1 + y) as isize),
             width,
         );
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
 }
@@ -532,7 +532,7 @@ unsafe fn ipred_paeth_rust<BD: BitDepth>(
             .as_::<BD::Pixel>();
             x += 1;
         }
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
 }
@@ -589,7 +589,7 @@ unsafe fn ipred_smooth_rust<BD: BitDepth>(
             *dst.offset(x as isize) = (pred + 256 >> 9).as_::<BD::Pixel>();
             x += 1;
         }
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
 }
@@ -641,7 +641,7 @@ unsafe fn ipred_smooth_v_rust<BD: BitDepth>(
             *dst.offset(x as isize) = (pred + 128 >> 8).as_::<BD::Pixel>();
             x += 1;
         }
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
 }
@@ -693,7 +693,7 @@ unsafe fn ipred_smooth_h_rust<BD: BitDepth>(
             *dst.offset(x as isize) = (pred + 128 >> 8).as_::<BD::Pixel>();
             x += 1;
         }
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
 }
@@ -936,7 +936,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
             }
         }
         y += 1;
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         xpos += dx;
     }
 }
@@ -1074,7 +1074,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         }
         y += 1;
         xpos -= dx;
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
     }
 }
 
@@ -1154,16 +1154,14 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
             if base < max_base_y {
                 let v = (*left.offset(-base as isize)).as_::<c_int>() * (64 - frac)
                     + (*left.offset(-(base + 1) as isize)).as_::<c_int>() * frac;
-                *dst.offset(
-                    (y as isize * BD::pxstride(stride as usize) as isize + x as isize) as isize,
-                ) = (v + 32 >> 6).as_::<BD::Pixel>();
+                *dst.offset((y as isize * BD::pxstride(stride) + x as isize) as isize) =
+                    (v + 32 >> 6).as_::<BD::Pixel>();
                 y += 1;
                 base += base_inc;
             } else {
                 loop {
-                    *dst.offset(
-                        (y as isize * BD::pxstride(stride as usize) as isize + x as isize) as isize,
-                    ) = *left.offset(-max_base_y as isize);
+                    *dst.offset((y as isize * BD::pxstride(stride) + x as isize) as isize) =
+                        *left.offset(-max_base_y as isize);
                     y += 1;
                     if !(y < height) {
                         break;
@@ -1281,17 +1279,17 @@ unsafe fn ipred_filter_rust<BD: BitDepth>(
                     xx += 1;
                     flt_ptr = flt_ptr.offset(FLT_INCR);
                 }
-                ptr = ptr.offset(BD::pxstride(stride as usize) as isize);
+                ptr = ptr.offset(BD::pxstride(stride));
                 yy += 1;
             }
             left = &mut *dst.offset((x + 4 - 1) as isize) as *mut BD::Pixel;
-            left_stride = BD::pxstride(stride as usize) as isize;
+            left_stride = BD::pxstride(stride);
             top = top.offset(4);
             topleft = &*top.offset(-(1 as c_int) as isize) as *const BD::Pixel;
             x += 4 as c_int;
         }
-        top = &mut *dst.offset(BD::pxstride(stride as usize) as isize) as *mut BD::Pixel;
-        dst = &mut *dst.offset((BD::pxstride(stride as usize) * 2) as isize) as *mut BD::Pixel;
+        top = &mut *dst.offset(BD::pxstride(stride)) as *mut BD::Pixel;
+        dst = &mut *dst.offset(BD::pxstride(stride) * 2) as *mut BD::Pixel;
         y += 2 as c_int;
     }
 }
@@ -1350,15 +1348,11 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
                 ac_sum += (*ypx.offset((x * 2 + 1) as isize)).as_::<c_int>();
             }
             if ss_ver != 0 {
-                ac_sum += (*ypx.offset(
-                    ((x << ss_hor) as isize + BD::pxstride(stride as usize) as isize) as isize,
-                ))
-                .as_::<c_int>();
-                if ss_hor != 0 {
-                    ac_sum += (*ypx.offset(
-                        ((x * 2 + 1) as isize + BD::pxstride(stride as usize) as isize) as isize,
-                    ))
+                ac_sum += (*ypx.offset(((x << ss_hor) as isize + BD::pxstride(stride)) as isize))
                     .as_::<c_int>();
+                if ss_hor != 0 {
+                    ac_sum += (*ypx.offset(((x * 2 + 1) as isize + BD::pxstride(stride)) as isize))
+                        .as_::<c_int>();
                 }
             }
             *ac.offset(x as isize) =
@@ -1370,7 +1364,7 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
             x += 1;
         }
         ac = ac.offset(width as isize);
-        ypx = ypx.offset((BD::pxstride(stride as usize) << ss_ver) as isize);
+        ypx = ypx.offset(BD::pxstride(stride) << ss_ver);
         y += 1;
     }
     while y < height {
@@ -1449,7 +1443,7 @@ unsafe fn pal_pred_rust<BD: BitDepth>(
             x += 1;
         }
         idx = idx.offset(w as isize);
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
 }
