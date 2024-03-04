@@ -927,7 +927,7 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let mut mid: [i16; 120] = [0; 120];
     let mut mid_ptr: *mut i16 = mid.as_mut_ptr();
-    src = src.offset(-((3 * BD::pxstride(src_stride as usize)) as isize));
+    src = src.offset(-3 * BD::pxstride(src_stride));
     let mut y = 0;
     while y < 15 {
         let mut x = 0;
@@ -949,7 +949,7 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
             x += 1;
             tmx += *abcd.offset(0) as c_int;
         }
-        src = src.offset(BD::pxstride(src_stride as usize) as isize);
+        src = src.offset(BD::pxstride(src_stride));
         mid_ptr = mid_ptr.offset(8);
         y += 1;
         mx += *abcd.offset(1) as c_int;
@@ -985,7 +985,7 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
             tmy += *abcd.offset(2) as c_int;
         }
         mid_ptr = mid_ptr.offset(8);
-        dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(dst_stride));
         y_0 += 1;
         my += *abcd.offset(3) as c_int;
     }
@@ -1004,7 +1004,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     let intermediate_bits = bd.get_intermediate_bits();
     let mut mid: [i16; 120] = [0; 120];
     let mut mid_ptr: *mut i16 = mid.as_mut_ptr();
-    src = src.offset(-((3 * BD::pxstride(src_stride as usize)) as isize));
+    src = src.offset(-3 * BD::pxstride(src_stride));
     let mut y = 0;
     while y < 15 {
         let mut x = 0;
@@ -1026,7 +1026,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
             x += 1;
             tmx += *abcd.offset(0) as c_int;
         }
-        src = src.offset(BD::pxstride(src_stride as usize) as isize);
+        src = src.offset(BD::pxstride(src_stride));
         mid_ptr = mid_ptr.offset(8);
         y += 1;
         mx += *abcd.offset(1) as c_int;
@@ -1074,8 +1074,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     ref_stride: ptrdiff_t,
 ) {
     r#ref = r#ref.offset(
-        iclip(y as c_int, 0 as c_int, ih as c_int - 1) as isize
-            * BD::pxstride(ref_stride as usize) as isize
+        iclip(y as c_int, 0 as c_int, ih as c_int - 1) as isize * BD::pxstride(ref_stride)
             + iclip(x as c_int, 0 as c_int, iw as c_int - 1) as isize,
     );
     let left_ext = iclip(-x as c_int, 0 as c_int, bw as c_int - 1);
@@ -1089,7 +1088,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
         unreachable!();
     }
     let mut blk: *mut BD::Pixel =
-        dst.offset((top_ext as isize * BD::pxstride(dst_stride as usize) as isize) as isize);
+        dst.offset((top_ext as isize * BD::pxstride(dst_stride)) as isize);
     let center_w = (bw - left_ext as isize - right_ext as isize) as c_int;
     let center_h = (bh - top_ext as isize - bottom_ext as isize) as c_int;
     let mut y_0 = 0;
@@ -1116,11 +1115,11 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
                 right_ext as usize,
             );
         }
-        r#ref = r#ref.offset(BD::pxstride(ref_stride as usize) as isize);
-        blk = blk.offset(BD::pxstride(dst_stride as usize) as isize);
+        r#ref = r#ref.offset(BD::pxstride(ref_stride));
+        blk = blk.offset(BD::pxstride(dst_stride));
         y_0 += 1;
     }
-    blk = dst.offset((top_ext as isize * BD::pxstride(dst_stride as usize) as isize) as isize);
+    blk = dst.offset((top_ext as isize * BD::pxstride(dst_stride)) as isize);
     let mut y_1 = 0;
     while y_1 < top_ext {
         BD::pixel_copy(
@@ -1128,21 +1127,18 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             std::slice::from_raw_parts(blk, bw as usize),
             bw as usize,
         );
-        dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(dst_stride));
         y_1 += 1;
     }
-    dst = dst.offset((center_h as isize * BD::pxstride(dst_stride as usize) as isize) as isize);
+    dst = dst.offset((center_h as isize * BD::pxstride(dst_stride)) as isize);
     let mut y_2 = 0;
     while y_2 < bottom_ext {
         BD::pixel_copy(
             std::slice::from_raw_parts_mut(dst, bw as usize),
-            std::slice::from_raw_parts(
-                dst.offset(-(BD::pxstride(dst_stride as usize) as isize)),
-                bw as usize,
-            ),
+            std::slice::from_raw_parts(dst.offset(-BD::pxstride(dst_stride)), bw as usize),
             bw as usize,
         );
-        dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(dst_stride));
         y_2 += 1;
     }
 }
@@ -1198,8 +1194,8 @@ unsafe fn resize_rust<BD: BitDepth>(
             mx &= 0x3fff as c_int;
             x += 1;
         }
-        dst = dst.offset(BD::pxstride(dst_stride as usize) as isize);
-        src = src.offset(BD::pxstride(src_stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(dst_stride));
+        src = src.offset(BD::pxstride(src_stride));
         h -= 1;
         if !(h != 0) {
             break;

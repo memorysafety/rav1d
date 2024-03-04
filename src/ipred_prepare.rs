@@ -138,7 +138,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     assert!(y < h && x < w);
 
     let bitdepth = bd.bitdepth();
-    let stride = BD::pxstride(stride as usize) as isize;
+    let stride = BD::pxstride(stride);
 
     let dst_offset = 4 * x as usize
         + (if stride >= 0 { 4 * y } else { 4 * (h - y) - 1 }) as usize * stride.unsigned_abs();

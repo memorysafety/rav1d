@@ -47,8 +47,8 @@ unsafe fn lr_stripe<BD: BitDepth>(
     let stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
     let sby = y + (if y != 0 { 8 << ss_ver } else { 0 }) >> 6 - ss_ver + seq_hdr.sb128;
     let have_tt = (c.tc.len() > 1) as c_int;
-    let lpf_stride = BD::pxstride(stride as usize) as isize;
-    let lpf_plane_sz = BD::pxstride(f.lf.lr_buf_plane_sz[(plane != 0) as usize] as usize) as isize;
+    let lpf_stride = BD::pxstride(stride);
+    let lpf_plane_sz = BD::pxstride(f.lf.lr_buf_plane_sz[(plane != 0) as usize] as isize);
     let mut lpf_offset = cmp::max(lpf_stride - lpf_plane_sz, 0);
     let lpf = &slice::from_raw_parts(
         (f.lf.lr_lpf_line[plane as usize] as *const BD::Pixel).offset(-lpf_offset),
@@ -112,7 +112,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         );
         left = &left[stripe_h as usize..];
         y += stripe_h;
-        let p_offset = stripe_h as isize * BD::pxstride(stride as usize) as isize;
+        let p_offset = stripe_h as isize * BD::pxstride(stride);
         edges |= LR_HAVE_TOP;
         stripe_h = cmp::min(64 >> ss_ver, row_h - y);
         if stripe_h == 0 {
@@ -262,8 +262,8 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         lr_sbrow::<BD>(
             c,
             f,
-            &mut dst[0][dst_offset[0]
-                - (offset_y as isize * BD::pxstride(dst_stride[0] as usize) as isize) as usize..],
+            &mut dst[0]
+                [dst_offset[0] - (offset_y as isize * BD::pxstride(dst_stride[0])) as usize..],
             y_stripe,
             w,
             h,
@@ -284,9 +284,8 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                &mut dst[1][dst_offset[1]
-                    - (offset_uv as isize * BD::pxstride(dst_stride[1] as usize) as isize)
-                        as usize..],
+                &mut dst[1]
+                    [dst_offset[1] - (offset_uv as isize * BD::pxstride(dst_stride[1])) as usize..],
                 y_stripe,
                 w,
                 h,
@@ -298,9 +297,8 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                &mut dst[2][dst_offset[1]
-                    - (offset_uv as isize * BD::pxstride(dst_stride[1] as usize) as isize)
-                        as usize..],
+                &mut dst[2]
+                    [dst_offset[1] - (offset_uv as isize * BD::pxstride(dst_stride[1])) as usize..],
                 y_stripe,
                 w,
                 h,

@@ -775,7 +775,7 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
                     E,
                     I,
                     H,
-                    BD::pxstride(stride as usize) as isize,
+                    BD::pxstride(stride),
                     1 as c_int as ptrdiff_t,
                     (4 as c_int) << idx,
                     bd,
@@ -783,7 +783,7 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
             }
         }
         y <<= 1;
-        dst = dst.offset(4 * BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(4 * BD::pxstride(stride));
         l = l.offset(b4_stride as isize);
     }
 }
@@ -844,7 +844,7 @@ unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
                     I,
                     H,
                     1 as c_int as ptrdiff_t,
-                    BD::pxstride(stride as usize) as isize,
+                    BD::pxstride(stride),
                     (4 as c_int) << idx,
                     bd,
                 );
@@ -907,7 +907,7 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
                     E,
                     I,
                     H,
-                    BD::pxstride(stride as usize) as isize,
+                    BD::pxstride(stride),
                     1 as c_int as ptrdiff_t,
                     4 + 2 * idx,
                     bd,
@@ -915,7 +915,7 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
             }
         }
         y <<= 1;
-        dst = dst.offset(4 * BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(4 * BD::pxstride(stride));
         l = l.offset(b4_stride as isize);
     }
 }
@@ -972,7 +972,7 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
                     I,
                     H,
                     1 as c_int as ptrdiff_t,
-                    BD::pxstride(stride as usize) as isize,
+                    BD::pxstride(stride),
                     4 + 2 * idx,
                     bd,
                 );
