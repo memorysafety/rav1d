@@ -1,13 +1,16 @@
 use std::ffi::c_uint;
 use std::ops::Neg;
 use strum::EnumCount;
+use strum::FromRepr;
 
-pub type ObuMetaType = c_uint;
-pub const OBU_META_TIMECODE: ObuMetaType = 5;
-pub const OBU_META_ITUT_T35: ObuMetaType = 4;
-pub const OBU_META_SCALABILITY: ObuMetaType = 3;
-pub const OBU_META_HDR_MDCV: ObuMetaType = 2;
-pub const OBU_META_HDR_CLL: ObuMetaType = 1;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum ObuMetaType {
+    HdrCll = 1,
+    HdrMdcv = 2,
+    Scalability = 3,
+    ItutT32 = 4,
+    Timecode = 5,
+}
 
 pub type TxfmSize = u8;
 pub const N_TX_SIZES: usize = 5;

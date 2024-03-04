@@ -59,24 +59,27 @@ pub(crate) const RAV1D_REFS_PER_FRAME: usize = DAV1D_REFS_PER_FRAME;
 pub(crate) const RAV1D_TOTAL_REFS_PER_FRAME: usize = DAV1D_TOTAL_REFS_PER_FRAME;
 
 pub type Dav1dObuType = c_uint;
-pub const DAV1D_OBU_PADDING: Dav1dObuType = 15;
-pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType = 7;
-pub const DAV1D_OBU_FRAME: Dav1dObuType = 6;
-pub const DAV1D_OBU_METADATA: Dav1dObuType = 5;
-pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = 4;
-pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = 3;
-pub const DAV1D_OBU_TD: Dav1dObuType = 2;
-pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = 1;
+pub const DAV1D_OBU_PADDING: Dav1dObuType = Rav1dObuType::Padding as Dav1dObuType;
+pub const DAV1D_OBU_REDUNDANT_FRAME_HDR: Dav1dObuType =
+    Rav1dObuType::RedundantFrameHdr as Dav1dObuType;
+pub const DAV1D_OBU_FRAME: Dav1dObuType = Rav1dObuType::Frame as Dav1dObuType;
+pub const DAV1D_OBU_METADATA: Dav1dObuType = Rav1dObuType::Metadata as Dav1dObuType;
+pub const DAV1D_OBU_TILE_GRP: Dav1dObuType = Rav1dObuType::TileGrp as Dav1dObuType;
+pub const DAV1D_OBU_FRAME_HDR: Dav1dObuType = Rav1dObuType::FrameHdr as Dav1dObuType;
+pub const DAV1D_OBU_TD: Dav1dObuType = Rav1dObuType::Td as Dav1dObuType;
+pub const DAV1D_OBU_SEQ_HDR: Dav1dObuType = Rav1dObuType::SeqHdr as Dav1dObuType;
 
-pub(crate) type Rav1dObuType = c_uint;
-pub(crate) const RAV1D_OBU_PADDING: Rav1dObuType = DAV1D_OBU_PADDING;
-pub(crate) const RAV1D_OBU_REDUNDANT_FRAME_HDR: Rav1dObuType = DAV1D_OBU_REDUNDANT_FRAME_HDR;
-pub(crate) const RAV1D_OBU_FRAME: Rav1dObuType = DAV1D_OBU_FRAME;
-pub(crate) const RAV1D_OBU_METADATA: Rav1dObuType = DAV1D_OBU_METADATA;
-pub(crate) const RAV1D_OBU_TILE_GRP: Rav1dObuType = DAV1D_OBU_TILE_GRP;
-pub(crate) const RAV1D_OBU_FRAME_HDR: Rav1dObuType = DAV1D_OBU_FRAME_HDR;
-pub(crate) const RAV1D_OBU_TD: Rav1dObuType = DAV1D_OBU_TD;
-pub(crate) const RAV1D_OBU_SEQ_HDR: Rav1dObuType = DAV1D_OBU_SEQ_HDR;
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dObuType {
+    SeqHdr = 1,
+    Td = 2,
+    FrameHdr = 3,
+    TileGrp = 4,
+    Metadata = 5,
+    Frame = 6,
+    RedundantFrameHdr = 7,
+    Padding = 15,
+}
 
 pub type Dav1dTxfmMode = c_uint;
 pub const DAV1D_N_TX_MODES: usize = 3;

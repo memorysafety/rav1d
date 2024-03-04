@@ -51,14 +51,6 @@ use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
 use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
-use crate::include::dav1d::headers::RAV1D_OBU_FRAME;
-use crate::include::dav1d::headers::RAV1D_OBU_FRAME_HDR;
-use crate::include::dav1d::headers::RAV1D_OBU_METADATA;
-use crate::include::dav1d::headers::RAV1D_OBU_PADDING;
-use crate::include::dav1d::headers::RAV1D_OBU_REDUNDANT_FRAME_HDR;
-use crate::include::dav1d::headers::RAV1D_OBU_SEQ_HDR;
-use crate::include::dav1d::headers::RAV1D_OBU_TD;
-use crate::include::dav1d::headers::RAV1D_OBU_TILE_GRP;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
@@ -84,11 +76,6 @@ use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dTileGroup;
 use crate::src::internal::Rav1dTileGroupHeader;
 use crate::src::levels::ObuMetaType;
-use crate::src::levels::OBU_META_HDR_CLL;
-use crate::src::levels::OBU_META_HDR_MDCV;
-use crate::src::levels::OBU_META_ITUT_T35;
-use crate::src::levels::OBU_META_SCALABILITY;
-use crate::src::levels::OBU_META_TIMECODE;
 use crate::src::log::Rav1dLog as _;
 use crate::src::picture::rav1d_picture_copy_props;
 use crate::src::picture::rav1d_thread_picture_ref;
@@ -2137,21 +2124,22 @@ unsafe fn parse_obus(
 
     // obu header
     gb.get_bit(); // obu_forbidden_bit
-    let r#type = gb.get_bits(4) as Rav1dObuType;
-    let has_extension = gb.get_bit() as c_int;
-    let has_length_field = gb.get_bit() as c_int;
+    let raw_type = gb.get_bits(4);
+    let r#type = Rav1dObuType::from_repr(raw_type as usize);
+    let has_extension = gb.get_bit();
+    let has_length_field = gb.get_bit();
     gb.get_bit(); // reserved
 
     let mut temporal_id = 0;
     let mut spatial_id = 0;
-    if has_extension != 0 {
+    if has_extension {
         temporal_id = gb.get_bits(3) as c_int;
         spatial_id = gb.get_bits(2) as c_int;
         gb.get_bits(3); // reserved
     }
 
     // obu length field
-    let len = if has_length_field != 0 {
+    let len = if has_length_field {
         gb.get_uleb128() as usize
     } else {
         r#in.len() - 1 - has_extension as usize
@@ -2175,9 +2163,8 @@ unsafe fn parse_obus(
     }
 
     // skip obu not belonging to the selected temporal/spatial layer
-    if r#type != RAV1D_OBU_SEQ_HDR
-        && r#type != RAV1D_OBU_TD
-        && has_extension != 0
+    if !matches!(r#type, Some(Rav1dObuType::SeqHdr | Rav1dObuType::Td))
+        && has_extension
         && c.operating_point_idc != 0
     {
         let in_temporal_layer = (c.operating_point_idc >> temporal_id & 1) as c_int;
@@ -2237,7 +2224,7 @@ unsafe fn parse_obus(
     }
 
     match r#type {
-        RAV1D_OBU_SEQ_HDR => {
+        Some(Rav1dObuType::SeqHdr) => {
             let seq_hdr = parse_seq_hdr(c, &mut gb).inspect_err(|_| {
                 writeln!(c.logger, "Error parsing sequence header");
             })?;
@@ -2282,9 +2269,10 @@ unsafe fn parse_obus(
             }
             c.seq_hdr = Some(Arc::new(DRav1d::from_rav1d(seq_hdr))); // TODO(kkysen) fallible allocation
         }
-        RAV1D_OBU_REDUNDANT_FRAME_HDR if c.frame_hdr.is_some() => {}
-        RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR if global => {}
-        RAV1D_OBU_REDUNDANT_FRAME_HDR | RAV1D_OBU_FRAME | RAV1D_OBU_FRAME_HDR => {
+        Some(Rav1dObuType::RedundantFrameHdr) if c.frame_hdr.is_some() => {}
+        Some(Rav1dObuType::RedundantFrameHdr | Rav1dObuType::Frame | Rav1dObuType::FrameHdr)
+            if global => {}
+        Some(Rav1dObuType::RedundantFrameHdr | Rav1dObuType::Frame | Rav1dObuType::FrameHdr) => {
             c.frame_hdr = None;
             // TODO(kkysen) C originally re-used this allocation,
             // but it was also pooling, which we've dropped for now.
@@ -2300,7 +2288,7 @@ unsafe fn parse_obus(
 
             c.tiles.clear();
             c.n_tiles = 0;
-            if r#type != RAV1D_OBU_FRAME {
+            if r#type != Some(Rav1dObuType::Frame) {
                 // This is actually a frame header OBU,
                 // so read the trailing bit and check for overrun.
                 gb.get_bit();
@@ -2321,7 +2309,7 @@ unsafe fn parse_obus(
                 return Err(ERANGE);
             }
 
-            if r#type == RAV1D_OBU_FRAME {
+            if r#type == Some(Rav1dObuType::Frame) {
                 // OBU_FRAMEs shouldn't be signaled with `show_existing_frame`.
                 if frame_hdr.show_existing_frame != 0 {
                     return Err(EINVAL);
@@ -2330,7 +2318,7 @@ unsafe fn parse_obus(
 
             c.frame_hdr = Some(Arc::new(DRav1d::from_rav1d(frame_hdr))); // TODO(kkysen) fallible allocation
 
-            if r#type == RAV1D_OBU_FRAME {
+            if r#type == Some(Rav1dObuType::Frame) {
                 // This is the frame header at the start of a frame OBU.
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
@@ -2340,23 +2328,23 @@ unsafe fn parse_obus(
                 }
             }
         }
-        RAV1D_OBU_TILE_GRP => {
+        Some(Rav1dObuType::TileGrp) => {
             if !global {
                 parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
         }
-        RAV1D_OBU_METADATA => {
+        Some(Rav1dObuType::Metadata) => {
             let debug = Debug::new(false, "OBU", &gb);
 
             // obu metadata type field
-            let meta_type = gb.get_uleb128() as ObuMetaType;
+            let meta_type = gb.get_uleb128();
             let meta_type_len = ((gb.pos() - init_bit_pos) >> 3) as c_int;
             if gb.has_error() != 0 {
                 return Err(EINVAL);
             }
 
-            match meta_type {
-                OBU_META_HDR_CLL => {
+            match ObuMetaType::from_repr(meta_type as usize) {
+                Some(ObuMetaType::HdrCll) => {
                     let debug = debug.named("CLLOBU");
                     let max_content_light_level = gb.get_bits(16) as c_int;
                     debug.log(
@@ -2383,7 +2371,7 @@ unsafe fn parse_obus(
                         max_frame_average_light_level,
                     })); // TODO(kkysen) fallible allocation
                 }
-                OBU_META_HDR_MDCV => {
+                Some(ObuMetaType::HdrMdcv) => {
                     let debug = debug.named("MDCVOBU");
                     let primaries = array::from_fn(|i| {
                         let primary = [gb.get_bits(16) as u16, gb.get_bits(16) as u16];
@@ -2413,7 +2401,7 @@ unsafe fn parse_obus(
                         min_luminance,
                     })); // TODO(kkysen) fallible allocation
                 }
-                OBU_META_ITUT_T35 => {
+                Some(ObuMetaType::ItutT32) => {
                     let mut payload_size = len as c_int;
                     // Don't take into account all the trailing bits for `payload_size`.
                     while payload_size > 0 && r#in[init_byte_pos + payload_size as usize - 1] == 0 {
@@ -2446,25 +2434,21 @@ unsafe fn parse_obus(
                         }))); // TODO(kkysen) fallible allocation
                     }
                 }
-                OBU_META_SCALABILITY | OBU_META_TIMECODE => {} // Ignore metadata OBUs we don't care about.
-                _ => {
+                Some(ObuMetaType::Scalability | ObuMetaType::Timecode) => {} // Ignore metadata OBUs we don't care about.
+                None => {
                     // Print a warning, but don't fail for unknown types.
-                    writeln!(c.logger, "Unknown Metadata OBU type {meta_type}",);
+                    writeln!(c.logger, "Unknown Metadata OBU type {meta_type}");
                 }
             }
         }
-        RAV1D_OBU_TD => {
+        Some(Rav1dObuType::Td) => {
             c.frame_flags
                 .fetch_or(PictureFlags::NEW_TEMPORAL_UNIT, Ordering::Relaxed);
         }
-        RAV1D_OBU_PADDING => {} // Ignore OBUs we don't care about.
-        _ => {
+        Some(Rav1dObuType::Padding) => {} // Ignore OBUs we don't care about.
+        None => {
             // Print a warning, but don't fail for unknown types.
-            writeln!(
-                c.logger,
-                "Unknown OBU type {} of size {}",
-                r#type as c_uint, len,
-            );
+            writeln!(c.logger, "Unknown OBU type {raw_type} of size {len}");
         }
     }
 
