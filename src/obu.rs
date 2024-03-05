@@ -1140,7 +1140,7 @@ unsafe fn parse_segmentation(
 
 fn parse_delta(
     quant: &Rav1dFrameHeader_quant,
-    allow_intrabc: c_int,
+    allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_delta {
@@ -1158,7 +1158,7 @@ fn parse_delta(
         Rav1dFrameHeader_delta_q { present, res_log2 }
     };
     let lf = {
-        let present = (q.present != 0 && allow_intrabc == 0 && gb.get_bit()) as c_int;
+        let present = (q.present != 0 && !allow_intrabc && gb.get_bit()) as c_int;
         let res_log2 = if present != 0 {
             gb.get_bits(2) as c_int
         } else {
@@ -1183,7 +1183,7 @@ unsafe fn parse_loopfilter(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: bool,
-    allow_intrabc: c_int,
+    allow_intrabc: bool,
     primary_ref_frame: c_int,
     refidx: &[c_int; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
@@ -1196,7 +1196,7 @@ unsafe fn parse_loopfilter(
     let mode_ref_delta_update;
     let mut mode_ref_deltas;
     let sharpness;
-    if all_lossless || allow_intrabc != 0 {
+    if all_lossless || allow_intrabc {
         level_y = [0; 2];
         level_v = 0;
         level_u = level_v;
@@ -1265,7 +1265,7 @@ unsafe fn parse_loopfilter(
 fn parse_cdef(
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: bool,
-    allow_intrabc: c_int,
+    allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_cdef {
@@ -1273,7 +1273,7 @@ fn parse_cdef(
     let n_bits;
     let mut y_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
     let mut uv_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
-    if !all_lossless && seqhdr.cdef != 0 && allow_intrabc == 0 {
+    if !all_lossless && seqhdr.cdef != 0 && !allow_intrabc {
         damping = gb.get_bits(2) as c_int + 3;
         n_bits = gb.get_bits(2) as c_int;
         for i in 0..1 << n_bits {
@@ -1303,13 +1303,13 @@ fn parse_restoration(
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: bool,
     super_res_enabled: c_int,
-    allow_intrabc: c_int,
+    allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_restoration {
     let r#type;
     let unit_size;
-    if (!all_lossless || super_res_enabled != 0) && seqhdr.restoration != 0 && allow_intrabc == 0 {
+    if (!all_lossless || super_res_enabled != 0) && seqhdr.restoration != 0 && !allow_intrabc {
         let type_0 = Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap();
         r#type = if seqhdr.monochrome == 0 {
             [
@@ -1878,8 +1878,7 @@ unsafe fn parse_frame_hdr(
             return Err(EINVAL);
         }
         size = parse_frame_size(c, seqhdr, None, frame_size_override, gb)?;
-        allow_intrabc =
-            (allow_screen_content_tools && size.super_res.enabled == 0 && gb.get_bit()) as c_int;
+        allow_intrabc = allow_screen_content_tools && size.super_res.enabled == 0 && gb.get_bit();
         use_ref_frame_mvs = 0;
 
         // Default initialization.
@@ -1889,7 +1888,7 @@ unsafe fn parse_frame_hdr(
         subpel_filter_mode = Rav1dFilterMode::Regular8Tap;
         switchable_motion_mode = Default::default();
     } else {
-        allow_intrabc = 0;
+        allow_intrabc = false;
         refresh_frame_flags = if frame_type == Rav1dFrameType::Switch {
             0xff
         } else {

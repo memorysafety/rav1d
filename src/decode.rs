@@ -1905,7 +1905,7 @@ unsafe fn decode_b_inner(
                 println!("Post-intra[{}]: r={}", b.intra, ts.msac.rng);
             }
         }
-    } else if frame_hdr.allow_intrabc != 0 {
+    } else if frame_hdr.allow_intrabc {
         b.intra = (!rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intrabc.0)) as u8;
         if debug_block_info!(f, t) {
             println!("Post-intrabcflag[{}]: r={}", b.intra, ts.msac.rng);
@@ -2264,7 +2264,7 @@ unsafe fn decode_b_inner(
                 }
             }
         }
-        if f.frame_hdr().frame_type.is_inter_or_switch() || f.frame_hdr().allow_intrabc != 0 {
+        if f.frame_hdr().frame_type.is_inter_or_switch() || f.frame_hdr().allow_intrabc {
             splat_intraref(c, t, bs, bw4 as usize, bh4 as usize);
         }
     } else if f.frame_hdr().frame_type.is_key_or_intra() {
@@ -4074,7 +4074,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     let col_sb_start = frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int;
     let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
 
-    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
         rav1d_refmvs_tile_sbrow_init(
             &mut t.rt,
             &f.rf,
@@ -4546,7 +4546,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     f.lf.tx_lpf_right_edge.resize(re_sz as usize, 0);
 
     // init ref mvs
-    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
         let ret = rav1d_refmvs_init_frame(
             &mut f.rf,
             seq_hdr,
@@ -5133,7 +5133,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         .store(cols * rows + f.sbh << uses_2pass, Ordering::SeqCst);
 
     // ref_mvs
-    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
         f.mvs_ref = rav1d_ref_create_using_pool(
             c.refmvs_pool,
             ::core::mem::size_of::<refmvs_temporal_block>()
@@ -5146,7 +5146,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             return Err(ENOMEM);
         }
         f.mvs = (*f.mvs_ref).data.cast::<refmvs_temporal_block>();
-        if frame_hdr.allow_intrabc == 0 {
+        if !frame_hdr.allow_intrabc {
             for i in 0..7 {
                 f.refpoc[i] = f.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset as c_uint;
             }
@@ -5260,7 +5260,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 rav1d_ref_inc(f.cur_segmap_ref);
             }
             rav1d_ref_dec(&mut c.refs[i].refmvs);
-            if frame_hdr.allow_intrabc == 0 {
+            if !frame_hdr.allow_intrabc {
                 c.refs[i].refmvs = f.mvs_ref;
                 if !f.mvs_ref.is_null() {
                     rav1d_ref_inc(f.mvs_ref);
