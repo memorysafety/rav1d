@@ -644,9 +644,9 @@ fn fix_int_mv_precision(mv: &mut mv) {
 
 #[inline]
 pub(crate) fn fix_mv_precision(hdr: &Rav1dFrameHeader, mv: &mut mv) {
-    if hdr.force_integer_mv != 0 {
+    if hdr.force_integer_mv {
         fix_int_mv_precision(mv);
-    } else if (*hdr).hp == 0 {
+    } else if !(*hdr).hp {
         mv.x = (mv.x - (mv.x >> 15)) & !1;
         mv.y = (mv.y - (mv.y >> 15)) & !1;
     }
@@ -671,7 +671,7 @@ pub(crate) fn get_gmv_2d(
                 y: (gmv.matrix[0] >> 13) as i16,
                 x: (gmv.matrix[1] >> 13) as i16,
             };
-            if hdr.force_integer_mv != 0 {
+            if hdr.force_integer_mv {
                 fix_int_mv_precision(&mut res);
             }
             return res;
@@ -685,13 +685,13 @@ pub(crate) fn get_gmv_2d(
     let y = by4 * 4 + bh4 * 2 - 1;
     let xc = (gmv.matrix[2] - (1 << 16)) * x + gmv.matrix[3] * y + gmv.matrix[0];
     let yc = (gmv.matrix[5] - (1 << 16)) * y + gmv.matrix[4] * x + gmv.matrix[1];
-    let shift = 16 - (3 - (hdr.hp == 0) as c_int);
+    let shift = 16 - (3 - !hdr.hp as c_int);
     let round = 1 << shift >> 1;
     let mut res = mv {
-        y: apply_sign(yc.abs() + round >> shift << (hdr.hp == 0) as c_int, yc) as i16,
-        x: apply_sign(xc.abs() + round >> shift << (hdr.hp == 0) as c_int, xc) as i16,
+        y: apply_sign(yc.abs() + round >> shift << !hdr.hp as c_int, yc) as i16,
+        x: apply_sign(xc.abs() + round >> shift << !hdr.hp as c_int, xc) as i16,
     };
-    if hdr.force_integer_mv != 0 {
+    if hdr.force_integer_mv {
         fix_int_mv_precision(&mut res);
     }
     return res;
