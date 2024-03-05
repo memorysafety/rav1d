@@ -4424,28 +4424,23 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         f.lf.cdef_line[1][2] = offset.wrapping_add_signed(uv_stride_px * 6);
     }
 
-    let mut ptr =
-        f.lf.cdef_line_buf
-            .as_mut_ptr()
-            .add(32)
-            .offset(y_stride.abs() * f.sbh as isize * 4);
     if need_cdef_lpf_copy != 0 {
-        ptr = ptr.offset(uv_stride.abs() * f.sbh as isize * 8);
+        offset = offset.wrapping_add_signed(uv_stride_px.abs() * f.sbh as isize * 8);
         if y_stride < 0 {
             f.lf.cdef_lpf_line[0] =
-                ptr.offset(-(y_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
+                offset.wrapping_add_signed(-(y_stride_px * (f.sbh as isize * 4 - 1)));
         } else {
-            f.lf.cdef_lpf_line[0] = ptr as *mut DynPixel;
+            f.lf.cdef_lpf_line[0] = offset;
         }
-        ptr = ptr.offset(y_stride.abs() * f.sbh as isize * 4);
+        offset = offset.wrapping_add_signed(y_stride_px.abs() * f.sbh as isize * 4);
         if uv_stride < 0 {
             f.lf.cdef_lpf_line[1] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 4 - 1))) as *mut DynPixel;
+                offset.wrapping_add_signed(-(uv_stride_px * (f.sbh as isize * 4 - 1)));
             f.lf.cdef_lpf_line[2] =
-                ptr.offset(-(uv_stride * (f.sbh as isize * 8 - 1))) as *mut DynPixel;
+                offset.wrapping_add_signed(-(uv_stride_px * (f.sbh as isize * 8 - 1)));
         } else {
-            f.lf.cdef_lpf_line[1] = ptr as *mut DynPixel;
-            f.lf.cdef_lpf_line[2] = ptr.offset(uv_stride * f.sbh as isize * 4) as *mut DynPixel;
+            f.lf.cdef_lpf_line[1] = offset;
+            f.lf.cdef_lpf_line[2] = offset.wrapping_add_signed(uv_stride_px * f.sbh as isize * 4);
         }
     }
 

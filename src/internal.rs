@@ -462,9 +462,9 @@ pub struct Rav1dFrameContext_lf {
     pub tx_lpf_right_edge: TxLpfRightEdge,
     pub cdef_line_buf: AlignedVec32<u8>, /* AlignedVec32<DynPixel> */
     pub lr_line_buf: *mut u8,
-    pub cdef_line: [[usize; 3]; 2],        /* [2 pre/post][3 plane] */
-    pub cdef_lpf_line: [*mut DynPixel; 3], /* plane */
-    pub lr_lpf_line: [*mut DynPixel; 3],   /* plane */
+    pub cdef_line: [[usize; 3]; 2],      /* [2 pre/post][3 plane] */
+    pub cdef_lpf_line: [usize; 3],       /* plane */
+    pub lr_lpf_line: [*mut DynPixel; 3], /* plane */
 
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: *mut u8,
