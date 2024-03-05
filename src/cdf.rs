@@ -1,6 +1,6 @@
+use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
-use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
 use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align4;
@@ -5019,7 +5019,12 @@ pub(crate) fn rav1d_cdf_thread_update(
 
     update_bit_1d!(3, m.skip_mode);
     update_cdf_2d!(4, N_INTRA_PRED_MODES - 1, m.y_mode);
-    update_cdf_3d!(2, 8, RAV1D_N_SWITCHABLE_FILTERS - 1, m.filter);
+    update_cdf_3d!(
+        2,
+        8,
+        Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize - 1,
+        m.filter
+    );
     update_bit_1d!(6, m.newmv_mode);
     update_bit_1d!(2, m.globalmv_mode);
     update_bit_1d!(6, m.refmv_mode);

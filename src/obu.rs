@@ -45,7 +45,6 @@ use crate::include::dav1d::headers::RAV1D_ADAPTIVE;
 use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_UNKNOWN;
-use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_MAX_CDEF_STRENGTHS;
 use crate::include::dav1d::headers::RAV1D_MAX_OPERATING_POINTS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
@@ -1880,7 +1879,7 @@ unsafe fn parse_frame_hdr(
         refidx = Default::default();
         frame_ref_short_signaling = Default::default();
         hp = Default::default();
-        subpel_filter_mode = Default::default();
+        subpel_filter_mode = Rav1dFilterMode::Regular8Tap;
         switchable_motion_mode = Default::default();
     } else {
         allow_intrabc = 0;
@@ -1913,9 +1912,9 @@ unsafe fn parse_frame_hdr(
         )?;
         hp = (force_integer_mv == 0 && gb.get_bit()) as c_int;
         subpel_filter_mode = if gb.get_bit() {
-            RAV1D_FILTER_SWITCHABLE
+            Rav1dFilterMode::Switchable
         } else {
-            gb.get_bits(2) as Rav1dFilterMode
+            Rav1dFilterMode::from_repr(gb.get_bits(2) as u8).unwrap()
         };
         switchable_motion_mode = gb.get_bit() as c_int;
         use_ref_frame_mvs = (error_resilient_mode == 0

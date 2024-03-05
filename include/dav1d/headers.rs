@@ -109,22 +109,44 @@ impl TryFrom<Dav1dTxfmMode> for Rav1dTxfmMode {
 }
 
 pub type Dav1dFilterMode = u8;
-pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = 4;
-pub const DAV1D_N_FILTERS: usize = 4;
-pub const DAV1D_FILTER_BILINEAR: Dav1dFilterMode = 3;
-pub const DAV1D_N_SWITCHABLE_FILTERS: usize = 3;
-pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = 2;
-pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode = 1;
-pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode = 0;
+pub const DAV1D_N_SWITCHABLE_FILTERS: usize = Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize;
+pub const DAV1D_N_FILTERS: usize = Rav1dFilterMode::N_FILTERS as usize;
+pub const DAV1D_FILTER_SWITCHABLE: Dav1dFilterMode = Rav1dFilterMode::Switchable as Dav1dFilterMode;
+pub const DAV1D_FILTER_BILINEAR: Dav1dFilterMode = Rav1dFilterMode::Bilinear as Dav1dFilterMode;
+pub const DAV1D_FILTER_8TAP_SHARP: Dav1dFilterMode = Rav1dFilterMode::Sharp8Tap as Dav1dFilterMode;
+pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode =
+    Rav1dFilterMode::Smooth8Tap as Dav1dFilterMode;
+pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode =
+    Rav1dFilterMode::Regular8Tap as Dav1dFilterMode;
 
-pub type Rav1dFilterMode = u8;
-pub const RAV1D_FILTER_SWITCHABLE: Rav1dFilterMode = DAV1D_FILTER_SWITCHABLE;
-pub const RAV1D_N_FILTERS: usize = DAV1D_N_FILTERS;
-pub const RAV1D_FILTER_BILINEAR: Rav1dFilterMode = DAV1D_FILTER_BILINEAR;
-pub const RAV1D_N_SWITCHABLE_FILTERS: usize = DAV1D_N_SWITCHABLE_FILTERS;
-pub const RAV1D_FILTER_8TAP_SHARP: Rav1dFilterMode = DAV1D_FILTER_8TAP_SHARP;
-pub const RAV1D_FILTER_8TAP_SMOOTH: Rav1dFilterMode = DAV1D_FILTER_8TAP_SMOOTH;
-pub const RAV1D_FILTER_8TAP_REGULAR: Rav1dFilterMode = DAV1D_FILTER_8TAP_REGULAR;
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dFilterMode {
+    Regular8Tap = 0,
+    Smooth8Tap = 1,
+    Sharp8Tap = 2,
+    Bilinear = 3,
+    Switchable = 4,
+}
+
+impl Rav1dFilterMode {
+    pub const N_FILTERS: u8 = 4;
+    pub const N_SWITCHABLE_FILTERS: u8 = 3;
+}
+
+impl From<Rav1dFilterMode> for Dav1dFilterMode {
+    fn from(value: Rav1dFilterMode) -> Self {
+        value as Dav1dFilterMode
+    }
+}
+
+impl TryFrom<Dav1dFilterMode> for Rav1dFilterMode {
+    type Error = ();
+
+    fn try_from(value: Dav1dFilterMode) -> Result<Self, Self::Error> {
+        Self::from_repr(value as u8).ok_or(())
+    }
+}
 
 pub type Dav1dAdaptiveBoolean = c_uint;
 pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
@@ -2337,7 +2359,7 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             frame_ref_short_signaling,
             refidx,
             hp,
-            subpel_filter_mode,
+            subpel_filter_mode: subpel_filter_mode.try_into().unwrap(),
             switchable_motion_mode,
             use_ref_frame_mvs,
             refresh_context,
@@ -2454,7 +2476,7 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             frame_ref_short_signaling,
             refidx,
             hp,
-            subpel_filter_mode,
+            subpel_filter_mode: subpel_filter_mode.into(),
             switchable_motion_mode,
             use_ref_frame_mvs,
             refresh_context,

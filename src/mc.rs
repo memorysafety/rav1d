@@ -3,9 +3,7 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SHARP;
-use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SMOOTH;
+use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
@@ -1489,40 +1487,48 @@ macro_rules! filter_fns {
 
 filter_fns!(
     regular,
-    RAV1D_FILTER_8TAP_REGULAR,
-    RAV1D_FILTER_8TAP_REGULAR
+    Rav1dFilterMode::Regular8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Regular8Tap as Dav1dFilterMode
 );
 filter_fns!(
     regular_sharp,
-    RAV1D_FILTER_8TAP_REGULAR,
-    RAV1D_FILTER_8TAP_SHARP
+    Rav1dFilterMode::Regular8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Sharp8Tap as Dav1dFilterMode
 );
 filter_fns!(
     regular_smooth,
-    RAV1D_FILTER_8TAP_REGULAR,
-    RAV1D_FILTER_8TAP_SMOOTH
+    Rav1dFilterMode::Regular8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Smooth8Tap as Dav1dFilterMode
 );
-filter_fns!(smooth, RAV1D_FILTER_8TAP_SMOOTH, RAV1D_FILTER_8TAP_SMOOTH);
+filter_fns!(
+    smooth,
+    Rav1dFilterMode::Smooth8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Smooth8Tap as Dav1dFilterMode
+);
 filter_fns!(
     smooth_regular,
-    RAV1D_FILTER_8TAP_SMOOTH,
-    RAV1D_FILTER_8TAP_REGULAR
+    Rav1dFilterMode::Smooth8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Regular8Tap as Dav1dFilterMode
 );
 filter_fns!(
     smooth_sharp,
-    RAV1D_FILTER_8TAP_SMOOTH,
-    RAV1D_FILTER_8TAP_SHARP
+    Rav1dFilterMode::Smooth8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Sharp8Tap as Dav1dFilterMode
 );
-filter_fns!(sharp, RAV1D_FILTER_8TAP_SHARP, RAV1D_FILTER_8TAP_SHARP);
+filter_fns!(
+    sharp,
+    Rav1dFilterMode::Sharp8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Sharp8Tap as Dav1dFilterMode
+);
 filter_fns!(
     sharp_regular,
-    RAV1D_FILTER_8TAP_SHARP,
-    RAV1D_FILTER_8TAP_REGULAR
+    Rav1dFilterMode::Sharp8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Regular8Tap as Dav1dFilterMode
 );
 filter_fns!(
     sharp_smooth,
-    RAV1D_FILTER_8TAP_SHARP,
-    RAV1D_FILTER_8TAP_SMOOTH
+    Rav1dFilterMode::Sharp8Tap as Dav1dFilterMode,
+    Rav1dFilterMode::Smooth8Tap as Dav1dFilterMode
 );
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.

@@ -8,6 +8,7 @@ use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::headers::Dav1dFilterMode;
+use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
@@ -15,10 +16,7 @@ use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::RAV1D_FILTER_SWITCHABLE;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
-use crate::include::dav1d::headers::RAV1D_N_SWITCHABLE_FILTERS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
@@ -2221,8 +2219,8 @@ unsafe fn decode_b_inner(
                     case.set(&mut dir.comp_type.0, COMP_INTER_NONE);
                     case.set(&mut dir.r#ref[0], -1);
                     case.set(&mut dir.r#ref[1], -1);
-                    case.set(&mut dir.filter.0[0], RAV1D_N_SWITCHABLE_FILTERS as u8);
-                    case.set(&mut dir.filter.0[1], RAV1D_N_SWITCHABLE_FILTERS as u8);
+                    case.set(&mut dir.filter.0[0], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
+                    case.set(&mut dir.filter.0[1], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
                 }
             },
         );
@@ -3094,14 +3092,14 @@ unsafe fn decode_b_inner(
         }
 
         // subpel filter
-        let filter = if frame_hdr.subpel_filter_mode == RAV1D_FILTER_SWITCHABLE {
+        let filter = if frame_hdr.subpel_filter_mode == Rav1dFilterMode::Switchable {
             if has_subpel_filter {
                 let comp = b.comp_type() != COMP_INTER_NONE;
                 let ctx1 = get_filter_ctx(&*t.a, &t.l, comp, false, b.r#ref()[0], by4, bx4);
                 let filter0 = rav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.filter.0[0][ctx1 as usize],
-                    RAV1D_N_SWITCHABLE_FILTERS as usize - 1,
+                    Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize - 1,
                 ) as Dav1dFilterMode;
                 if seq_hdr.dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&*t.a, &t.l, comp, true, b.r#ref()[0], by4, bx4);
@@ -3114,7 +3112,7 @@ unsafe fn decode_b_inner(
                     let filter1 = rav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.filter.0[1][ctx2 as usize],
-                        RAV1D_N_SWITCHABLE_FILTERS as usize - 1,
+                        Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize - 1,
                     ) as Dav1dFilterMode;
                     if debug_block_info!(f, t) {
                         println!(
@@ -3133,10 +3131,10 @@ unsafe fn decode_b_inner(
                     [filter0; 2]
                 }
             } else {
-                [RAV1D_FILTER_8TAP_REGULAR; 2]
+                [Rav1dFilterMode::Regular8Tap as u8; 2]
             }
         } else {
-            [frame_hdr.subpel_filter_mode; 2]
+            [frame_hdr.subpel_filter_mode as u8; 2]
         };
         *b.filter2d_mut() = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
 
@@ -3836,7 +3834,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
         ccoef.fill(0x40);
     }
     for filter in &mut ctx.filter.0 {
-        filter.fill(RAV1D_N_SWITCHABLE_FILTERS as u8);
+        filter.fill(Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8);
     }
     ctx.seg_pred.0.fill(0);
     ctx.pal_sz.0.fill(0);
