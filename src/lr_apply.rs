@@ -30,7 +30,8 @@ pub const LR_RESTORE_Y: LrRestorePlanes = 1;
 unsafe fn lr_stripe<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
-    mut p: &mut [BD::Pixel],
+    p: &mut [BD::Pixel],
+    mut p_offset: usize,
     left: &[[BD::Pixel; 4]; 128 + 8],
     x: c_int,
     mut y: c_int,
@@ -100,7 +101,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
         edges ^= (-((sby + 1 != f.sbh || y + stripe_h != row_h) as c_int) as LrEdgeFlags ^ edges)
             & LR_HAVE_BOTTOM;
         lr_fn(
-            p.as_mut_ptr().cast(),
+            p.as_mut_ptr().add(p_offset).cast(),
             stride,
             left.as_ptr().cast(),
             lpf.as_ptr().offset(lpf_offset).cast(),
@@ -112,13 +113,12 @@ unsafe fn lr_stripe<BD: BitDepth>(
         );
         left = &left[stripe_h as usize..];
         y += stripe_h;
-        let p_offset = stripe_h as isize * BD::pxstride(stride);
+        p_offset = (p_offset as isize + stripe_h as isize * BD::pxstride(stride)) as usize;
         edges |= LR_HAVE_TOP;
         stripe_h = cmp::min(64 >> ss_ver, row_h - y);
         if stripe_h == 0 {
             break;
         }
-        p = &mut p[p_offset as usize..];
 
         lpf_offset += 4 * lpf_stride;
     }
@@ -127,14 +127,26 @@ unsafe fn lr_stripe<BD: BitDepth>(
 fn backup4xU<BD: BitDepth>(
     dst: &mut [[BD::Pixel; 4]; 128 + 8],
     src: &[BD::Pixel],
+    src_offset: usize,
     src_stride: ptrdiff_t,
     u: c_int,
 ) {
-    for (src, dst) in src
-        .chunks(BD::pxstride(src_stride as usize))
-        .zip(&mut dst[..u as usize])
-    {
-        BD::pixel_copy(dst, src, 4);
+    let abs_px_stride = BD::pxstride(src_stride.unsigned_abs());
+    if src_stride < 0 {
+        for (src, dst) in src[src_offset - (u - 1) as usize * abs_px_stride..]
+            .chunks(abs_px_stride)
+            .rev()
+            .zip(&mut dst[..u as usize])
+        {
+            BD::pixel_copy(dst, src, 4);
+        }
+    } else {
+        for (src, dst) in src[src_offset..]
+            .chunks(abs_px_stride)
+            .zip(&mut dst[..u as usize])
+        {
+            BD::pixel_copy(dst, src, 4);
+        }
     }
 }
 
@@ -142,6 +154,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
     f: &Rav1dFrameData,
     mut p: &mut [BD::Pixel],
+    p_offset: usize,
     y: c_int,
     w: c_int,
     h: c_int,
@@ -197,6 +210,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
             backup4xU::<BD>(
                 &mut pre_lr_border[bit as usize],
                 &p[unit_size as usize - 4..],
+                p_offset,
                 p_stride,
                 row_h - y,
             );
@@ -206,6 +220,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
                 c,
                 f,
                 p,
+                p_offset,
                 &pre_lr_border[!bit as usize],
                 x,
                 y,
@@ -229,6 +244,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
             c,
             f,
             p,
+            p_offset,
             &pre_lr_border[!bit as usize],
             x,
             y,
@@ -262,8 +278,8 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         lr_sbrow::<BD>(
             c,
             f,
-            &mut dst[0]
-                [dst_offset[0] - (offset_y as isize * BD::pxstride(dst_stride[0])) as usize..],
+            dst[0],
+            (dst_offset[0] as isize - offset_y as isize * BD::pxstride(dst_stride[0])) as usize,
             y_stripe,
             w,
             h,
@@ -284,8 +300,9 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                &mut dst[1]
-                    [dst_offset[1] - (offset_uv as isize * BD::pxstride(dst_stride[1])) as usize..],
+                dst[1],
+                (dst_offset[1] as isize - offset_uv as isize * BD::pxstride(dst_stride[1]))
+                    as usize,
                 y_stripe,
                 w,
                 h,
@@ -297,8 +314,9 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
             lr_sbrow::<BD>(
                 c,
                 f,
-                &mut dst[2]
-                    [dst_offset[1] - (offset_uv as isize * BD::pxstride(dst_stride[1])) as usize..],
+                dst[2],
+                (dst_offset[1] as isize - offset_uv as isize * BD::pxstride(dst_stride[1]))
+                    as usize,
                 y_stripe,
                 w,
                 h,
