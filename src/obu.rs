@@ -556,7 +556,7 @@ unsafe fn parse_frame_size(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     refidx: Option<&[c_int; RAV1D_REFS_PER_FRAME]>,
-    frame_size_override: c_int,
+    frame_size_override: bool,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameSize> {
     if let Some(refidx) = refidx {
@@ -597,7 +597,7 @@ unsafe fn parse_frame_size(
 
     let width1;
     let height;
-    if frame_size_override != 0 {
+    if frame_size_override {
         width1 = gb.get_bits(seqhdr.width_n_bits) as c_int + 1;
         height = gb.get_bits(seqhdr.height_n_bits) as c_int + 1;
     } else {
@@ -1808,13 +1808,13 @@ unsafe fn parse_frame_hdr(
         frame_id = Default::default();
     }
 
-    let frame_size_override = (if seqhdr.reduced_still_picture_header != 0 {
+    let frame_size_override = if seqhdr.reduced_still_picture_header != 0 {
         false
     } else if frame_type == Rav1dFrameType::Switch {
         true
     } else {
         gb.get_bit()
-    }) as c_int;
+    };
     debug.post(gb, "frame_size_override_flag");
     let frame_offset = if seqhdr.order_hint != 0 {
         gb.get_bits(seqhdr.order_hint_n_bits) as c_int
@@ -1908,7 +1908,7 @@ unsafe fn parse_frame_hdr(
             frame_id,
             gb,
         )?;
-        let use_ref = error_resilient_mode == 0 && frame_size_override != 0;
+        let use_ref = error_resilient_mode == 0 && frame_size_override;
         size = parse_frame_size(
             c,
             seqhdr,
