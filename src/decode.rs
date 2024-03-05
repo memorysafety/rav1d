@@ -1566,8 +1566,8 @@ unsafe fn decode_b_inner(
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.filter.0[0], filter[0]);
-                    case.set(&mut dir.filter.0[1], filter[1]);
+                    case.set(&mut dir.filter.0[0], filter[0].into());
+                    case.set(&mut dir.filter.0[1], filter[1].into());
                     case.set(&mut dir.intra.0, 0);
                 },
             );
