@@ -651,7 +651,7 @@ pub static dav1d_filter_2d: [[u8; Rav1dFilterMode::N_FILTERS]; Rav1dFilterMode::
     [0, 0, 0, FILTER_2D_BILINEAR as u8],
 ];
 
-pub static dav1d_filter_dir: [[Rav1dFilterMode; 2]; N_2D_FILTERS] = [
+pub const dav1d_filter_dir: [[Rav1dFilterMode; 2]; N_2D_FILTERS] = [
     [Rav1dFilterMode::Regular8Tap, Rav1dFilterMode::Regular8Tap],
     [Rav1dFilterMode::Smooth8Tap, Rav1dFilterMode::Regular8Tap],
     [Rav1dFilterMode::Sharp8Tap, Rav1dFilterMode::Regular8Tap],
