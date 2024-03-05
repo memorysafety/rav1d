@@ -52,7 +52,6 @@ use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
 use crate::include::dav1d::headers::RAV1D_TRC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
@@ -1314,36 +1313,50 @@ fn parse_restoration(
         && seqhdr.restoration != 0
         && allow_intrabc == 0
     {
-        let type_0 = gb.get_bits(2) as Rav1dRestorationType;
+        let type_0 = Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap();
         r#type = if seqhdr.monochrome == 0 {
             [
                 type_0,
-                gb.get_bits(2) as Rav1dRestorationType,
-                gb.get_bits(2) as Rav1dRestorationType,
+                Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap(),
+                Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap(),
             ]
         } else {
-            [type_0, RAV1D_RESTORATION_NONE, RAV1D_RESTORATION_NONE]
+            [
+                type_0,
+                Rav1dRestorationType::None,
+                Rav1dRestorationType::None,
+            ]
         };
 
-        unit_size = if r#type[0] != 0 || r#type[1] != 0 || r#type[2] != 0 {
-            // Log2 of the restoration unit size.
-            let mut unit_size_0 = 6 + seqhdr.sb128;
-            if gb.get_bit() {
-                unit_size_0 += 1;
-                if seqhdr.sb128 == 0 {
-                    unit_size_0 += gb.get_bit() as c_int;
+        unit_size = match r#type {
+            [Rav1dRestorationType::None, Rav1dRestorationType::None, Rav1dRestorationType::None] => {
+                [8, 0]
+            }
+            _ => {
+                // Log2 of the restoration unit size.
+                let mut unit_size_0 = 6 + seqhdr.sb128;
+                if gb.get_bit() {
+                    unit_size_0 += 1;
+                    if seqhdr.sb128 == 0 {
+                        unit_size_0 += gb.get_bit() as c_int;
+                    }
                 }
+
+                let unit_size_1 = if (r#type[1] != Rav1dRestorationType::None
+                    || r#type[2] != Rav1dRestorationType::None)
+                    && seqhdr.ss_hor == 1
+                    && seqhdr.ss_ver == 1
+                {
+                    unit_size_0 - gb.get_bit() as c_int
+                } else {
+                    unit_size_0
+                };
+
+                [unit_size_0, unit_size_1]
             }
-            let mut unit_size_1 = unit_size_0;
-            if (r#type[1] != 0 || r#type[2] != 0) && seqhdr.ss_hor == 1 && seqhdr.ss_ver == 1 {
-                unit_size_1 -= gb.get_bit() as c_int;
-            }
-            [unit_size_0, unit_size_1]
-        } else {
-            [8, 0]
         };
     } else {
-        r#type = [RAV1D_RESTORATION_NONE; 3];
+        r#type = [Rav1dRestorationType::None; 3];
 
         // Default initialization.
         unit_size = Default::default();

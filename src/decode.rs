@@ -19,10 +19,6 @@ use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_SWITCHABLE;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
@@ -3969,22 +3965,22 @@ unsafe fn read_restoration_info(
 ) {
     let lr_ref = ts.lr_ref[p];
 
-    if frame_type == RAV1D_RESTORATION_SWITCHABLE {
+    if frame_type == Rav1dRestorationType::Switchable {
         let filter =
             rav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2);
         lr.r#type = if filter != 0 {
             if filter == 2 {
-                RAV1D_RESTORATION_SGRPROJ
+                Rav1dRestorationType::SgrProj
             } else {
-                RAV1D_RESTORATION_WIENER
+                Rav1dRestorationType::Wiener
             }
         } else {
-            RAV1D_RESTORATION_NONE
+            Rav1dRestorationType::None
         };
     } else {
         let r#type = rav1d_msac_decode_bool_adapt(
             &mut ts.msac,
-            if frame_type == RAV1D_RESTORATION_WIENER {
+            if frame_type == Rav1dRestorationType::Wiener {
                 &mut ts.cdf.m.restore_wiener.0
             } else {
                 &mut ts.cdf.m.restore_sgrproj.0
@@ -3993,7 +3989,7 @@ unsafe fn read_restoration_info(
         lr.r#type = if r#type {
             frame_type
         } else {
-            RAV1D_RESTORATION_NONE
+            Rav1dRestorationType::None
         };
     }
 
@@ -4002,7 +3998,7 @@ unsafe fn read_restoration_info(
             - adjustment as c_int) as i8
     }
 
-    if lr.r#type == RAV1D_RESTORATION_WIENER {
+    if lr.r#type == Rav1dRestorationType::Wiener {
         lr.filter_v[0] = if p != 0 {
             0
         } else {
@@ -4033,7 +4029,7 @@ unsafe fn read_restoration_info(
                 ts.msac.rng,
             );
         }
-    } else if lr.r#type == RAV1D_RESTORATION_SGRPROJ {
+    } else if lr.r#type == Rav1dRestorationType::SgrProj {
         let idx = rav1d_msac_decode_bools(&mut ts.msac, 4) as u8;
         let sgr_params = &dav1d_sgr_params[idx.into()];
         lr.sgr_idx = idx;
@@ -4519,7 +4515,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         .r#type
         .iter()
         .enumerate()
-        .map(|(i, &r#type)| ((r#type != RAV1D_RESTORATION_NONE) as u8) << i)
+        .map(|(i, &r#type)| ((r#type != Rav1dRestorationType::None) as u8) << i)
         .sum::<u8>()
         .into();
     if frame_hdr.loopfilter.sharpness != f.lf.last_sharpness {

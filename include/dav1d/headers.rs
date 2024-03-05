@@ -184,16 +184,23 @@ impl TryFrom<Dav1dAdaptiveBoolean> for Rav1dAdaptiveBoolean {
 }
 
 pub type Dav1dRestorationType = u8;
-pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
-pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
-pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
-pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
+pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType =
+    Rav1dRestorationType::None as Dav1dRestorationType;
+pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType =
+    Rav1dRestorationType::Switchable as Dav1dRestorationType;
+pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType =
+    Rav1dRestorationType::Wiener as Dav1dRestorationType;
+pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType =
+    Rav1dRestorationType::SgrProj as Dav1dRestorationType;
 
-pub type Rav1dRestorationType = u8;
-pub const RAV1D_RESTORATION_SGRPROJ: Rav1dRestorationType = DAV1D_RESTORATION_SGRPROJ;
-pub const RAV1D_RESTORATION_WIENER: Rav1dRestorationType = DAV1D_RESTORATION_WIENER;
-pub const RAV1D_RESTORATION_SWITCHABLE: Rav1dRestorationType = DAV1D_RESTORATION_SWITCHABLE;
-pub const RAV1D_RESTORATION_NONE: Rav1dRestorationType = DAV1D_RESTORATION_NONE;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, Default)]
+pub enum Rav1dRestorationType {
+    #[default]
+    None = 0,
+    Switchable = 1,
+    Wiener = 2,
+    SgrProj = 3,
+}
 
 pub type Dav1dWarpedMotionType = c_uint;
 pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
@@ -2164,14 +2171,20 @@ pub struct Rav1dFrameHeader_restoration {
 impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
     fn from(value: Dav1dFrameHeader_restoration) -> Self {
         let Dav1dFrameHeader_restoration { r#type, unit_size } = value;
-        Self { r#type, unit_size }
+        Self {
+            r#type: r#type.map(|e| Rav1dRestorationType::from_repr(e as usize).unwrap()),
+            unit_size,
+        }
     }
 }
 
 impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
     fn from(value: Rav1dFrameHeader_restoration) -> Self {
         let Rav1dFrameHeader_restoration { r#type, unit_size } = value;
-        Self { r#type, unit_size }
+        Self {
+            r#type: r#type.map(|e| e as u8),
+            unit_size,
+        }
     }
 }
 
