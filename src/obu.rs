@@ -1182,7 +1182,7 @@ fn parse_delta(
 unsafe fn parse_loopfilter(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    all_lossless: c_int,
+    all_lossless: bool,
     allow_intrabc: c_int,
     primary_ref_frame: c_int,
     refidx: &[c_int; RAV1D_REFS_PER_FRAME],
@@ -1196,7 +1196,7 @@ unsafe fn parse_loopfilter(
     let mode_ref_delta_update;
     let mut mode_ref_deltas;
     let sharpness;
-    if all_lossless != 0 || allow_intrabc != 0 {
+    if all_lossless || allow_intrabc != 0 {
         level_y = [0; 2];
         level_v = 0;
         level_u = level_v;
@@ -1264,7 +1264,7 @@ unsafe fn parse_loopfilter(
 
 fn parse_cdef(
     seqhdr: &Rav1dSequenceHeader,
-    all_lossless: c_int,
+    all_lossless: bool,
     allow_intrabc: c_int,
     debug: &Debug,
     gb: &mut GetBits,
@@ -1273,7 +1273,7 @@ fn parse_cdef(
     let n_bits;
     let mut y_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
     let mut uv_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
-    if all_lossless == 0 && seqhdr.cdef != 0 && allow_intrabc == 0 {
+    if !all_lossless && seqhdr.cdef != 0 && allow_intrabc == 0 {
         damping = gb.get_bits(2) as c_int + 3;
         n_bits = gb.get_bits(2) as c_int;
         for i in 0..1 << n_bits {
@@ -1301,7 +1301,7 @@ fn parse_cdef(
 
 fn parse_restoration(
     seqhdr: &Rav1dSequenceHeader,
-    all_lossless: c_int,
+    all_lossless: bool,
     super_res_enabled: c_int,
     allow_intrabc: c_int,
     debug: &Debug,
@@ -1309,10 +1309,7 @@ fn parse_restoration(
 ) -> Rav1dFrameHeader_restoration {
     let r#type;
     let unit_size;
-    if (all_lossless == 0 || super_res_enabled != 0)
-        && seqhdr.restoration != 0
-        && allow_intrabc == 0
-    {
+    if (!all_lossless || super_res_enabled != 0) && seqhdr.restoration != 0 && allow_intrabc == 0 {
         let type_0 = Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap();
         r#type = if seqhdr.monochrome == 0 {
             [
@@ -1943,7 +1940,7 @@ unsafe fn parse_frame_hdr(
     let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;
     let quant = parse_quant(seqhdr, &debug, gb);
     let segmentation = parse_segmentation(c, primary_ref_frame, &refidx, &quant, &debug, gb)?;
-    let all_lossless = segmentation.lossless.iter().all(|&it| it != 0) as c_int;
+    let all_lossless = segmentation.lossless.iter().all(|&it| it != 0);
     let delta = parse_delta(&quant, allow_intrabc, &debug, gb);
     let loopfilter = parse_loopfilter(
         c,
@@ -1965,7 +1962,7 @@ unsafe fn parse_frame_hdr(
         gb,
     );
 
-    let txfm_mode = if all_lossless != 0 {
+    let txfm_mode = if all_lossless {
         Rav1dTxfmMode::Only4x4
     } else if gb.get_bit() {
         Rav1dTxfmMode::Switchable
