@@ -33,7 +33,8 @@ impl Backup2x8Flags {
 }
 
 unsafe fn backup2lines<BD: BitDepth>(
-    dst: &[*mut BD::Pixel; 3],
+    dst_buf: &mut [BD::Pixel],
+    dst_off: [usize; 3],
     src: &[*mut BD::Pixel; 3],
     stride: &[ptrdiff_t; 2],
     layout: Rav1dPixelLayout,
@@ -42,13 +43,13 @@ unsafe fn backup2lines<BD: BitDepth>(
     let len = 2 * y_stride.unsigned_abs();
     if y_stride < 0 {
         BD::pixel_copy(
-            slice::from_raw_parts_mut(dst[0].offset(y_stride), len),
+            &mut dst_buf[dst_off[0].wrapping_add_signed(y_stride)..][..len],
             slice::from_raw_parts(src[0].offset(7 * y_stride), len),
             len,
         );
     } else {
         BD::pixel_copy(
-            slice::from_raw_parts_mut(dst[0], len),
+            &mut dst_buf[dst_off[0]..][..len],
             slice::from_raw_parts(src[0].offset(6 * y_stride), len),
             len,
         );
@@ -65,12 +66,12 @@ unsafe fn backup2lines<BD: BitDepth>(
             };
 
             BD::pixel_copy(
-                slice::from_raw_parts_mut(dst[1].offset(uv_stride), len),
+                &mut dst_buf[dst_off[1].wrapping_add_signed(uv_stride)..][..len],
                 slice::from_raw_parts(src[1].offset(uv_off * uv_stride), len),
                 len,
             );
             BD::pixel_copy(
-                slice::from_raw_parts_mut(dst[2].offset(uv_stride), len),
+                &mut dst_buf[dst_off[2].wrapping_add_signed(uv_stride)..][..len],
                 slice::from_raw_parts(src[2].offset(uv_off * uv_stride), len),
                 len,
             );
@@ -82,12 +83,12 @@ unsafe fn backup2lines<BD: BitDepth>(
             };
 
             BD::pixel_copy(
-                slice::from_raw_parts_mut(dst[1], len),
+                &mut dst_buf[dst_off[1]..][..len],
                 slice::from_raw_parts(src[1].offset(uv_off * uv_stride), len),
                 len,
             );
             BD::pixel_copy(
-                slice::from_raw_parts_mut(dst[2], len),
+                &mut dst_buf[dst_off[2]..][..len],
                 slice::from_raw_parts(src[2].offset(uv_off * uv_stride), len),
                 len,
             );
@@ -157,7 +158,7 @@ fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
 pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    f: &mut Rav1dFrameData,
     p: &[*mut BD::Pixel; 3],
     lflvl_offset: i32,
     by_start: c_int,
@@ -194,6 +195,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let y_stride: ptrdiff_t = BD::pxstride(f.cur.stride[0]);
     let uv_stride: ptrdiff_t = BD::pxstride(f.cur.stride[1]);
 
+    let cdef_line_buf = BD::cast_pixel_slice_mut(&mut f.lf.cdef_line_buf);
+
     let mut bit = false;
     for by in (by_start..by_end).step_by(2) {
         let tf = tc.top_pre_cdef_toggle != 0;
@@ -206,15 +209,15 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
             && edges.contains(CdefEdgeFlags::HAVE_BOTTOM)
         {
             // backup pre-filter data for next iteration
-            let cdef_top_bak: [*mut BD::Pixel; 3] = [
-                (f.lf.cdef_line[!tf as usize][0] as *mut BD::Pixel)
-                    .offset(have_tt as isize * sby as isize * 4 * y_stride),
-                (f.lf.cdef_line[!tf as usize][1] as *mut BD::Pixel)
-                    .offset(have_tt as isize * sby as isize * 8 * uv_stride),
-                (f.lf.cdef_line[!tf as usize][2] as *mut BD::Pixel)
-                    .offset(have_tt as isize * sby as isize * 8 * uv_stride),
+            let cdef_top_bak = [
+                f.lf.cdef_line[!tf as usize][0]
+                    .wrapping_add_signed(have_tt as isize * sby as isize * 4 * y_stride),
+                f.lf.cdef_line[!tf as usize][1]
+                    .wrapping_add_signed(have_tt as isize * sby as isize * 8 * uv_stride),
+                f.lf.cdef_line[!tf as usize][2]
+                    .wrapping_add_signed(have_tt as isize * sby as isize * 8 * uv_stride),
             ];
-            backup2lines::<BD>(&cdef_top_bak, &ptrs, &f.cur.stride, layout);
+            backup2lines::<BD>(cdef_line_buf, cdef_top_bak, &ptrs, &f.cur.stride, layout);
         }
 
         let mut lr_bak =
@@ -327,9 +330,11 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                             bot = bptrs[0].offset(8 * y_stride as isize);
                             st_y = false;
                         } else if !sbrow_start && by + 2 >= by_end {
-                            top = f.lf.cdef_line[tf as usize][0]
-                                .cast::<BD::Pixel>()
-                                .offset((sby * 4) as isize * y_stride + (bx * 4) as isize);
+                            offset = (sby * 4) as isize * y_stride + (bx * 4) as isize;
+                            top = cdef_line_buf
+                                .as_mut_ptr()
+                                .add(f.lf.cdef_line[tf as usize][0])
+                                .offset(offset);
                             if resize {
                                 offset = (sby * 4 + 2) as isize * y_stride + (bx * 4) as isize;
                                 bot = f.lf.cdef_lpf_line[0].cast::<BD::Pixel>().offset(offset);
@@ -344,10 +349,12 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                         }
 
                         if st_y {
-                            offset = (sby * 4) as isize * y_stride;
-                            top = f.lf.cdef_line[tf as usize][0]
-                                .cast::<BD::Pixel>()
-                                .offset(have_tt as isize * offset + (bx * 4) as isize);
+                            offset = have_tt as isize * (sby * 4) as isize * y_stride
+                                + (bx * 4) as isize;
+                            top = cdef_line_buf
+                                .as_mut_ptr()
+                                .add(f.lf.cdef_line[tf as usize][0])
+                                .offset(offset);
                             bot = bptrs[0].offset(8 * y_stride as isize);
                         }
 
@@ -415,8 +422,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 } else if !sbrow_start && by + 2 >= by_end {
                                     let top_offset: ptrdiff_t = (sby * 8) as isize * uv_stride
                                         + (bx * 4 >> ss_hor) as isize;
-                                    top = f.lf.cdef_line[tf as usize][pl]
-                                        .cast::<BD::Pixel>()
+                                    top = cdef_line_buf
+                                        .as_mut_ptr()
+                                        .add(f.lf.cdef_line[tf as usize][pl])
                                         .offset(top_offset);
                                     if resize {
                                         offset = (sby * 4 + 2) as isize * uv_stride
@@ -437,12 +445,12 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 }
 
                                 if st_uv {
-                                    let offset_0 = (sby * 8) as isize * uv_stride;
-                                    top =
-                                        f.lf.cdef_line[tf as usize][pl].cast::<BD::Pixel>().offset(
-                                            have_tt as isize * offset_0
-                                                + (bx * 4 >> ss_hor) as isize,
-                                        );
+                                    let offset = have_tt as isize * (sby * 8) as isize * uv_stride
+                                        + (bx * 4 >> ss_hor) as isize;
+                                    top = cdef_line_buf
+                                        .as_mut_ptr()
+                                        .add(f.lf.cdef_line[tf as usize][pl])
+                                        .offset(offset);
                                     bot = bptrs[pl].offset((8 >> ss_ver) * uv_stride);
                                 }
 
