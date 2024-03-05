@@ -148,14 +148,40 @@ impl TryFrom<Dav1dFilterMode> for Rav1dFilterMode {
 }
 
 pub type Dav1dAdaptiveBoolean = c_uint;
-pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean = 2;
-pub const DAV1D_ON: Dav1dAdaptiveBoolean = 1;
-pub const DAV1D_OFF: Dav1dAdaptiveBoolean = 0;
+pub const DAV1D_OFF: Dav1dAdaptiveBoolean = Rav1dAdaptiveBoolean::Off as Dav1dAdaptiveBoolean;
+pub const DAV1D_ON: Dav1dAdaptiveBoolean = Rav1dAdaptiveBoolean::On as Dav1dAdaptiveBoolean;
+pub const DAV1D_ADAPTIVE: Dav1dAdaptiveBoolean =
+    Rav1dAdaptiveBoolean::Adaptive as Dav1dAdaptiveBoolean;
 
-pub(crate) type Rav1dAdaptiveBoolean = c_uint;
-pub(crate) const RAV1D_ADAPTIVE: Rav1dAdaptiveBoolean = DAV1D_ADAPTIVE;
-pub(crate) const _RAV1D_ON: Rav1dAdaptiveBoolean = DAV1D_ON;
-pub(crate) const _RAV1D_OFF: Rav1dAdaptiveBoolean = DAV1D_OFF;
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dAdaptiveBoolean {
+    Off = 0,
+    On = 1,
+    Adaptive = 2,
+}
+
+impl From<bool> for Rav1dAdaptiveBoolean {
+    fn from(value: bool) -> Self {
+        match value {
+            true => Self::On,
+            false => Self::Off,
+        }
+    }
+}
+
+impl From<Rav1dAdaptiveBoolean> for Dav1dAdaptiveBoolean {
+    fn from(value: Rav1dAdaptiveBoolean) -> Self {
+        value as Dav1dAdaptiveBoolean
+    }
+}
+
+impl TryFrom<Dav1dAdaptiveBoolean> for Rav1dAdaptiveBoolean {
+    type Error = ();
+
+    fn try_from(value: Dav1dAdaptiveBoolean) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
+}
 
 pub type Dav1dRestorationType = u8;
 pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
@@ -1046,8 +1072,8 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             order_hint,
             jnt_comp,
             ref_frame_mvs,
-            screen_content_tools,
-            force_integer_mv,
+            screen_content_tools: screen_content_tools.try_into().unwrap(),
+            force_integer_mv: force_integer_mv.try_into().unwrap(),
             order_hint_n_bits,
             super_res,
             cdef,
@@ -1161,8 +1187,8 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             order_hint,
             jnt_comp,
             ref_frame_mvs,
-            screen_content_tools,
-            force_integer_mv,
+            screen_content_tools: screen_content_tools.into(),
+            force_integer_mv: force_integer_mv.into(),
             order_hint_n_bits,
             super_res,
             cdef,
