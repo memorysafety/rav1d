@@ -119,7 +119,6 @@ pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode =
 pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode =
     Rav1dFilterMode::Regular8Tap as Dav1dFilterMode;
 
-#[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
 pub enum Rav1dFilterMode {
     Regular8Tap = 0,
@@ -144,7 +143,7 @@ impl TryFrom<Dav1dFilterMode> for Rav1dFilterMode {
     type Error = ();
 
     fn try_from(value: Dav1dFilterMode) -> Result<Self, Self::Error> {
-        Self::from_repr(value as u8).ok_or(())
+        Self::from_repr(value as usize).ok_or(())
     }
 }
 

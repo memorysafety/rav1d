@@ -1914,7 +1914,7 @@ unsafe fn parse_frame_hdr(
         subpel_filter_mode = if gb.get_bit() {
             Rav1dFilterMode::Switchable
         } else {
-            Rav1dFilterMode::from_repr(gb.get_bits(2) as u8).unwrap()
+            Rav1dFilterMode::from_repr(gb.get_bits(2) as usize).unwrap()
         };
         switchable_motion_mode = gb.get_bit() as c_int;
         use_ref_frame_mvs = (error_resilient_mode == 0
