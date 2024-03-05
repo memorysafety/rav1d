@@ -629,8 +629,7 @@ pub static dav1d_tx_type_class: [u8; N_TX_TYPES_PLUS_LL] = [
     TX_CLASS_2D as u8,
 ];
 
-pub static dav1d_filter_2d: [[u8; Rav1dFilterMode::N_FILTERS as usize];
-    Rav1dFilterMode::N_FILTERS as usize] = [
+pub static dav1d_filter_2d: [[u8; Rav1dFilterMode::N_FILTERS]; Rav1dFilterMode::N_FILTERS] = [
     [
         FILTER_2D_8TAP_REGULAR as u8,
         FILTER_2D_8TAP_REGULAR_SMOOTH as u8,

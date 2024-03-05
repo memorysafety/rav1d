@@ -130,7 +130,7 @@ pub enum Rav1dFilterMode {
 }
 
 impl Rav1dFilterMode {
-    pub const N_FILTERS: u8 = 4;
+    pub const N_FILTERS: usize = 4;
     pub const N_SWITCHABLE_FILTERS: u8 = 3;
 }
 
