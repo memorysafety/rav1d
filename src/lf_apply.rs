@@ -101,34 +101,33 @@ unsafe fn backup_lpf<BD: BitDepth>(
                 (dst_offset as isize + n_lines as isize * BD::pxstride(dst_stride)) as usize;
 
             if n_lines == 3 {
-                if dst_stride < 0 {
-                    let dst_tmp = dst.split_at_mut(dst_offset + BD::pxstride(-dst_stride) as usize);
-                    dst_tmp.0[dst_offset..][..dst_w as usize]
-                        .copy_from_slice(&dst_tmp.1[..dst_w as usize]);
+                let dst_abs_px_stride = BD::pxstride(dst_stride.unsigned_abs());
+                let (src_tmp, dst_tmp) = if dst_stride < 0 {
+                    let (dst_tmp, src_tmp) = dst[dst_offset..].split_at_mut(dst_abs_px_stride);
+                    (src_tmp, dst_tmp)
                 } else {
-                    let dst_tmp = dst.split_at_mut(dst_offset);
-                    dst_tmp.1[..dst_w as usize].copy_from_slice(
-                        &dst_tmp.0[dst_offset - BD::pxstride(dst_stride) as usize..]
-                            [..dst_w as usize],
-                    );
-                }
+                    dst[dst_offset - dst_abs_px_stride..].split_at_mut(dst_abs_px_stride)
+                };
+                BD::pixel_copy(dst_tmp, src_tmp, dst_w as usize);
                 dst_offset = (dst_offset as isize + BD::pxstride(dst_stride)) as usize;
             }
         }
     } else {
         while row + stripe_h <= row_h {
-            let n_lines_0 = 4 - (row + stripe_h + 1 == h) as c_int;
+            let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
             for i in 0..4 {
-                let dst_tmp = dst.split_at_mut(dst_offset);
-                BD::pixel_copy(
-                    dst_tmp.1,
-                    if i == n_lines_0 {
-                        &dst_tmp.0[dst_offset - BD::pxstride(dst_stride) as usize..]
-                    } else {
-                        &src[src_offset..]
-                    },
-                    src_w as usize,
-                );
+                let dst_abs_px_stride = BD::pxstride(dst_stride.unsigned_abs());
+                let (src_tmp, dst_tmp) = if i != n_lines {
+                    (&src[src_offset..], &mut dst[dst_offset..])
+                } else if dst_stride < 0 {
+                    let (dst_tmp, src_tmp) = dst[dst_offset..].split_at_mut(dst_abs_px_stride);
+                    (&*src_tmp, dst_tmp)
+                } else {
+                    let (src_tmp, dst_tmp) =
+                        dst[dst_offset - dst_abs_px_stride..].split_at_mut(dst_abs_px_stride);
+                    (&*src_tmp, dst_tmp)
+                };
+                BD::pixel_copy(dst_tmp, src_tmp, src_w as usize);
                 dst_offset = (dst_offset as isize + BD::pxstride(dst_stride)) as usize;
                 src_offset = (src_offset as isize + BD::pxstride(src_stride)) as usize;
             }
