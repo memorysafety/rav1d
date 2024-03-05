@@ -432,7 +432,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 hmask[2] = mask[x][2][1] as u32;
             }
             // hmask[3] = 0; already initialized above
-            (*dsp).lf.loop_filter_sb[0][0](
+            dsp.lf.loop_filter_sb[0][0](
                 dst.as_mut_ptr().add(dst_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
@@ -473,7 +473,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 mask[y as usize][2][0] as u32 | (mask[y as usize][2][1] as u32) << 16,
                 0,
             ];
-            (*dsp).lf.loop_filter_sb[0][1](
+            dsp.lf.loop_filter_sb[0][1](
                 dst.as_mut_ptr().add(dst_offset).cast(),
                 ls,
                 vmask.as_ptr(),
@@ -522,7 +522,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 hmask[1] = mask[x as usize][1][1] as u32;
             }
             // hmask[2] = 0; Already initialized to 0 above
-            (*dsp).lf.loop_filter_sb[1][0](
+            dsp.lf.loop_filter_sb[1][0](
                 u.as_mut_ptr().add(uv_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
@@ -532,7 +532,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 endy4 - starty4,
                 f.bitdepth_max,
             );
-            (*dsp).lf.loop_filter_sb[1][0](
+            dsp.lf.loop_filter_sb[1][0](
                 v.as_mut_ptr().add(uv_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
@@ -575,7 +575,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 mask[y as usize][1][0] as u32 | (mask[y as usize][1][1] as u32) << (16 >> ss_hor),
                 0,
             ];
-            (*dsp).lf.loop_filter_sb[1][1](
+            dsp.lf.loop_filter_sb[1][1](
                 u.as_mut_ptr().offset(off_l).cast(),
                 ls,
                 vmask.as_ptr(),
@@ -585,7 +585,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 w,
                 f.bitdepth_max,
             );
-            (*dsp).lf.loop_filter_sb[1][1](
+            dsp.lf.loop_filter_sb[1][1](
                 v.as_mut_ptr().offset(off_l).cast(),
                 ls,
                 vmask.as_ptr(),
