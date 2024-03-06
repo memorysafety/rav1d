@@ -41,7 +41,6 @@ use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_MAX_CDEF_STRENGTHS;
@@ -415,7 +414,7 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
         layout = Rav1dPixelLayout::I400;
         ss_ver = 1;
         ss_hor = ss_ver;
-        chr = RAV1D_CHR_UNKNOWN;
+        chr = Rav1dChromaSamplePosition::Unknown;
     } else if pri == RAV1D_COLOR_PRI_BT709 && trc == RAV1D_TRC_SRGB && mtrx == RAV1D_MC_IDENTITY {
         layout = Rav1dPixelLayout::I444;
         color_range = 1;
@@ -426,7 +425,7 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
         // Default initialization.
         ss_hor = Default::default();
         ss_ver = Default::default();
-        chr = Default::default();
+        chr = Rav1dChromaSamplePosition::Unknown;
     } else {
         color_range = gb.get_bit() as c_int;
         match profile {
@@ -470,9 +469,9 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
             _ => unreachable!(), // TODO(kkysen) Make `profile` an `enum` so this isn't needed.
         }
         chr = if ss_hor & ss_ver != 0 {
-            gb.get_bits(2) as Rav1dChromaSamplePosition
+            Rav1dChromaSamplePosition::from_repr(gb.get_bits(2) as usize).unwrap()
         } else {
-            RAV1D_CHR_UNKNOWN
+            Rav1dChromaSamplePosition::Unknown
         };
     }
     if c.strict_std_compliance && mtrx == RAV1D_MC_IDENTITY && layout != Rav1dPixelLayout::I444 {
