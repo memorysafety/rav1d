@@ -577,14 +577,37 @@ pub(crate) const _RAV1D_MC_BT709: Rav1dMatrixCoefficients = DAV1D_MC_BT709;
 pub(crate) const RAV1D_MC_IDENTITY: Rav1dMatrixCoefficients = DAV1D_MC_IDENTITY;
 
 pub type Dav1dChromaSamplePosition = c_uint;
-pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition = 2;
-pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition = 1;
-pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition = 0;
+pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition =
+    Rav1dChromaSamplePosition::Unknown as Dav1dChromaSamplePosition;
+pub const DAV1D_CHR_VERTICAL: Dav1dChromaSamplePosition =
+    Rav1dChromaSamplePosition::Vertical as Dav1dChromaSamplePosition;
+pub const DAV1D_CHR_COLOCATED: Dav1dChromaSamplePosition =
+    Rav1dChromaSamplePosition::Colocated as Dav1dChromaSamplePosition;
 
-pub(crate) type Rav1dChromaSamplePosition = c_uint;
-pub(crate) const _RAV1D_CHR_COLOCATED: Rav1dChromaSamplePosition = DAV1D_CHR_COLOCATED;
-pub(crate) const _RAV1D_CHR_VERTICAL: Rav1dChromaSamplePosition = DAV1D_CHR_VERTICAL;
-pub(crate) const RAV1D_CHR_UNKNOWN: Rav1dChromaSamplePosition = DAV1D_CHR_UNKNOWN;
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dChromaSamplePosition {
+    Unknown = 0,
+    /// Horizontally co-located with (0, 0) luma sample, vertical position
+    /// in the middle between two luma samples
+    Vertical = 1,
+    /// co-located with (0, 0) luma sample
+    Colocated = 2,
+    _Reserved = 3,
+}
+
+impl From<Rav1dChromaSamplePosition> for Dav1dChromaSamplePosition {
+    fn from(value: Rav1dChromaSamplePosition) -> Self {
+        value as Dav1dChromaSamplePosition
+    }
+}
+
+impl TryFrom<Dav1dChromaSamplePosition> for Rav1dChromaSamplePosition {
+    type Error = ();
+
+    fn try_from(value: Dav1dChromaSamplePosition) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
+}
 
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
@@ -1075,7 +1098,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             pri,
             trc,
             mtrx,
-            chr,
+            chr: chr.try_into().unwrap(),
             hbd,
             color_range,
             num_operating_points,
@@ -1190,7 +1213,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             pri,
             trc,
             mtrx,
-            chr,
+            chr: chr.into(),
             hbd,
             color_range,
             num_operating_points,
