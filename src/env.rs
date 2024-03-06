@@ -2,6 +2,7 @@ use crate::include::common::intops::apply_sign;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align8;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
@@ -662,11 +663,11 @@ pub(crate) fn get_gmv_2d(
     hdr: &Rav1dFrameHeader,
 ) -> mv {
     match gmv.r#type {
-        2 => {
+        Rav1dWarpedMotionType::RAV1D_WM_TYPE_ROT_ZOOM => {
             assert!(gmv.matrix[5] == gmv.matrix[2]);
             assert!(gmv.matrix[4] == -gmv.matrix[3]);
         }
-        1 => {
+        Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION => {
             let mut res = mv {
                 y: (gmv.matrix[0] >> 13) as i16,
                 x: (gmv.matrix[1] >> 13) as i16,
@@ -676,10 +677,10 @@ pub(crate) fn get_gmv_2d(
             }
             return res;
         }
-        0 => {
+        Rav1dWarpedMotionType::RAV1D_WM_TYPE_IDENTITY => {
             return mv::ZERO;
         }
-        3 | _ => {}
+        Rav1dWarpedMotionType::RAV1D_WM_TYPE_AFFINE => {}
     }
     let x = bx4 * 4 + bw4 * 2 - 1;
     let y = by4 * 4 + bh4 * 2 - 1;

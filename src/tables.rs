@@ -1,6 +1,6 @@
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
+use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align16;
 use crate::src::align::Align4;
 use crate::src::align::Align64;
@@ -721,7 +721,7 @@ pub const interintra_allowed_mask: c_uint = 0
 impl Default for Rav1dWarpedMotionParams {
     fn default() -> Self {
         Self {
-            r#type: RAV1D_WM_TYPE_IDENTITY,
+            r#type: Rav1dWarpedMotionType::RAV1D_WM_TYPE_IDENTITY,
             matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
             abcd: Default::default(),
         }

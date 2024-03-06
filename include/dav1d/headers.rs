@@ -203,16 +203,22 @@ pub enum Rav1dRestorationType {
 }
 
 pub type Dav1dWarpedMotionType = c_uint;
-pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
-pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
-pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
-pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
+pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType =
+    Rav1dWarpedMotionType::RAV1D_WM_TYPE_IDENTITY as Dav1dWarpedMotionType;
+pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType =
+    Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION as Dav1dWarpedMotionType;
+pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType =
+    Rav1dWarpedMotionType::RAV1D_WM_TYPE_ROT_ZOOM as Dav1dWarpedMotionType;
+pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType =
+    Rav1dWarpedMotionType::RAV1D_WM_TYPE_AFFINE as Dav1dWarpedMotionType;
 
-pub type Rav1dWarpedMotionType = c_uint;
-pub const RAV1D_WM_TYPE_AFFINE: Rav1dWarpedMotionType = DAV1D_WM_TYPE_AFFINE;
-pub const RAV1D_WM_TYPE_ROT_ZOOM: Rav1dWarpedMotionType = DAV1D_WM_TYPE_ROT_ZOOM;
-pub const RAV1D_WM_TYPE_TRANSLATION: Rav1dWarpedMotionType = DAV1D_WM_TYPE_TRANSLATION;
-pub const RAV1D_WM_TYPE_IDENTITY: Rav1dWarpedMotionType = DAV1D_WM_TYPE_IDENTITY;
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr)]
+pub enum Rav1dWarpedMotionType {
+    RAV1D_WM_TYPE_IDENTITY = 0,
+    RAV1D_WM_TYPE_TRANSLATION = 1,
+    RAV1D_WM_TYPE_ROT_ZOOM = 2,
+    RAV1D_WM_TYPE_AFFINE = 3,
+}
 
 #[derive(Clone)]
 #[repr(C)]
@@ -306,7 +312,7 @@ impl From<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
             abcd,
         } = value;
         Self {
-            r#type,
+            r#type: Rav1dWarpedMotionType::from_repr(r#type as usize).unwrap(),
             matrix,
             abcd: Abcd::new(abcd),
         }
@@ -321,7 +327,7 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
             abcd,
         } = value;
         Self {
-            r#type,
+            r#type: r#type as Dav1dWarpedMotionType,
             matrix,
             abcd: abcd.get(),
         }

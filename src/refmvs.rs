@@ -2,7 +2,7 @@ use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
@@ -710,12 +710,14 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             bh4,
             &*rf.frm_hdr,
         );
-        gmv[0] =
-            if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].r#type > RAV1D_WM_TYPE_TRANSLATION {
-                tgmv[0]
-            } else {
-                mv::INVALID
-            };
+
+        gmv[0] = if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].r#type
+            > Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION
+        {
+            tgmv[0]
+        } else {
+            mv::INVALID
+        };
     } else {
         tgmv[0] = mv::ZERO;
         gmv[0] = mv::INVALID;
@@ -729,12 +731,13 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             bh4,
             &*rf.frm_hdr,
         );
-        gmv[1] =
-            if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].r#type > RAV1D_WM_TYPE_TRANSLATION {
-                tgmv[1]
-            } else {
-                mv::INVALID
-            };
+        gmv[1] = if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].r#type
+            > Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION
+        {
+            tgmv[1]
+        } else {
+            mv::INVALID
+        };
     }
 
     // top
