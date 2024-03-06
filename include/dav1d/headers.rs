@@ -458,34 +458,63 @@ impl Rav1dFrameType {
 }
 
 pub type Dav1dColorPrimaries = c_uint;
-pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries = 255;
-pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries = 22;
-pub const DAV1D_COLOR_PRI_SMPTE432: Dav1dColorPrimaries = 12;
-pub const DAV1D_COLOR_PRI_SMPTE431: Dav1dColorPrimaries = 11;
-pub const DAV1D_COLOR_PRI_XYZ: Dav1dColorPrimaries = 10;
-pub const DAV1D_COLOR_PRI_BT2020: Dav1dColorPrimaries = 9;
-pub const DAV1D_COLOR_PRI_FILM: Dav1dColorPrimaries = 8;
-pub const DAV1D_COLOR_PRI_SMPTE240: Dav1dColorPrimaries = 7;
-pub const DAV1D_COLOR_PRI_BT601: Dav1dColorPrimaries = 6;
-pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries = 5;
-pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries = 4;
-pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries = 2;
-pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries = 1;
+pub const DAV1D_COLOR_PRI_BT709: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::Bt709 as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_UNKNOWN: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::Unknown as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_BT470M: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Bt470m as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_BT470BG: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Bt470bg as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_BT601: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Bt601 as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_SMPTE240: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Smpte240 as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_FILM: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Film as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_BT2020: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Bt2020 as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_XYZ: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Xyz as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_SMPTE431: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Smpte431 as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_SMPTE432: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Smpte432 as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_EBU3213: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Ebu3213 as Dav1dColorPrimaries;
+pub const DAV1D_COLOR_PRI_RESERVED: Dav1dColorPrimaries =
+    Rav1dColorPrimaries::_Reserved as Dav1dColorPrimaries;
 
-pub(crate) type Rav1dColorPrimaries = c_uint;
-pub(crate) const _RAV1D_COLOR_PRI_RESERVED: Rav1dColorPrimaries = DAV1D_COLOR_PRI_RESERVED;
-pub(crate) const _RAV1D_COLOR_PRI_EBU3213: Rav1dColorPrimaries = DAV1D_COLOR_PRI_EBU3213;
-pub(crate) const _RAV1D_COLOR_PRI_SMPTE432: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE432;
-pub(crate) const _RAV1D_COLOR_PRI_SMPTE431: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE431;
-pub(crate) const _RAV1D_COLOR_PRI_XYZ: Rav1dColorPrimaries = DAV1D_COLOR_PRI_XYZ;
-pub(crate) const _RAV1D_COLOR_PRI_BT2020: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT2020;
-pub(crate) const _RAV1D_COLOR_PRI_FILM: Rav1dColorPrimaries = DAV1D_COLOR_PRI_FILM;
-pub(crate) const _RAV1D_COLOR_PRI_SMPTE240: Rav1dColorPrimaries = DAV1D_COLOR_PRI_SMPTE240;
-pub(crate) const _RAV1D_COLOR_PRI_BT601: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT601;
-pub(crate) const _RAV1D_COLOR_PRI_BT470BG: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT470BG;
-pub(crate) const _RAV1D_COLOR_PRI_BT470M: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT470M;
-pub(crate) const RAV1D_COLOR_PRI_UNKNOWN: Rav1dColorPrimaries = DAV1D_COLOR_PRI_UNKNOWN;
-pub(crate) const RAV1D_COLOR_PRI_BT709: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT709;
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dColorPrimaries {
+    Bt709 = 1,
+    Unknown = 2,
+    _Bt470m = 4,
+    _Bt470bg = 5,
+    _Bt601 = 6,
+    _Smpte240 = 7,
+    _Film = 8,
+    _Bt2020 = 9,
+    _Xyz = 10,
+    _Smpte431 = 11,
+    _Smpte432 = 12,
+    _Ebu3213 = 22,
+    _Reserved = 255,
+}
+
+impl From<Rav1dColorPrimaries> for Dav1dColorPrimaries {
+    fn from(value: Rav1dColorPrimaries) -> Self {
+        value as Dav1dColorPrimaries
+    }
+}
+
+impl TryFrom<Dav1dColorPrimaries> for Rav1dColorPrimaries {
+    type Error = ();
+
+    fn try_from(value: Dav1dColorPrimaries) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
+}
 
 pub type Dav1dTransferCharacteristics = c_uint;
 pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
@@ -1086,7 +1115,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             max_width,
             max_height,
             layout: layout.try_into().unwrap(),
-            pri,
+            pri: pri.try_into().unwrap(),
             trc,
             mtrx: mtrx.try_into().unwrap(),
             chr: chr.try_into().unwrap(),
@@ -1201,7 +1230,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             max_width,
             max_height,
             layout: layout.into(),
-            pri,
+            pri: pri.into(),
             trc,
             mtrx: mtrx.into(),
             chr: chr.into(),
