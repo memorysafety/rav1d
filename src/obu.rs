@@ -49,8 +49,6 @@ use crate::include::dav1d::headers::RAV1D_MAX_CDEF_STRENGTHS;
 use crate::include::dav1d::headers::RAV1D_MAX_OPERATING_POINTS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_COLS;
 use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
-use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
-use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
 use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
@@ -392,11 +390,11 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
     if color_description_present != 0 {
         pri = gb.get_bits(8) as Rav1dColorPrimaries;
         trc = gb.get_bits(8) as Rav1dTransferCharacteristics;
-        mtrx = gb.get_bits(8) as Rav1dMatrixCoefficients;
+        mtrx = Rav1dMatrixCoefficients(gb.get_bits(8) as u8)
     } else {
         pri = RAV1D_COLOR_PRI_UNKNOWN;
         trc = RAV1D_TRC_UNKNOWN;
-        mtrx = RAV1D_MC_UNKNOWN;
+        mtrx = Rav1dMatrixCoefficients::UNKNOWN;
     }
     let color_range;
     let layout;
@@ -409,7 +407,10 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
         ss_ver = 1;
         ss_hor = ss_ver;
         chr = Rav1dChromaSamplePosition::Unknown;
-    } else if pri == RAV1D_COLOR_PRI_BT709 && trc == RAV1D_TRC_SRGB && mtrx == RAV1D_MC_IDENTITY {
+    } else if pri == RAV1D_COLOR_PRI_BT709
+        && trc == RAV1D_TRC_SRGB
+        && mtrx == Rav1dMatrixCoefficients::IDENTITY
+    {
         layout = Rav1dPixelLayout::I444;
         color_range = 1;
         if profile != Rav1dProfile::High && !(profile == Rav1dProfile::Professional && hbd == 2) {
@@ -467,7 +468,10 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
             Rav1dChromaSamplePosition::Unknown
         };
     }
-    if c.strict_std_compliance && mtrx == RAV1D_MC_IDENTITY && layout != Rav1dPixelLayout::I444 {
+    if c.strict_std_compliance
+        && mtrx == Rav1dMatrixCoefficients::IDENTITY
+        && layout != Rav1dPixelLayout::I444
+    {
         return Err(EINVAL);
     }
     let separate_uv_delta_q;
