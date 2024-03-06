@@ -2,10 +2,7 @@ use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
-use crate::include::dav1d::headers::Dav1dFilterMode;
-use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_REGULAR;
-use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SHARP;
-use crate::include::dav1d::headers::RAV1D_FILTER_8TAP_SMOOTH;
+use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
 use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
@@ -128,37 +125,14 @@ unsafe fn rav1d_filter_8tap_clip2<BD: BitDepth, T: Into<i32>>(
     bd.iclip_pixel(rav1d_filter_8tap_rnd2(src, x, f, stride, rnd, sh))
 }
 
-fn get_h_filter(mx: usize, w: usize, filter_type: Dav1dFilterMode) -> Option<&'static [i8; 8]> {
-    let mx = mx.checked_sub(1)?;
-    let i = if w > 4 {
-        filter_type & 3
+fn get_filter(m: usize, d: usize, filter_type: Rav1dFilterMode) -> Option<&'static [i8; 8]> {
+    let m = m.checked_sub(1)?;
+    let i = if d > 4 {
+        filter_type as u8
     } else {
-        3 + (filter_type & 1)
+        3 + (filter_type as u8 & 1)
     };
-    Some(&dav1d_mc_subpel_filters[i as usize][mx])
-}
-
-fn get_v_filter(my: usize, h: usize, filter_type: Dav1dFilterMode) -> Option<&'static [i8; 8]> {
-    let mx = my.checked_sub(1)?;
-    let i = if h > 4 {
-        filter_type >> 2
-    } else {
-        3 + ((filter_type >> 2) & 1)
-    };
-    Some(&dav1d_mc_subpel_filters[i as usize][mx])
-}
-
-fn get_filters(
-    mx: usize,
-    my: usize,
-    w: usize,
-    h: usize,
-    filter_type: Dav1dFilterMode,
-) -> (Option<&'static [i8; 8]>, Option<&'static [i8; 8]>) {
-    (
-        get_h_filter(mx, w, filter_type),
-        get_v_filter(my, h, filter_type),
-    )
+    Some(&dav1d_mc_subpel_filters[i as usize][m])
 }
 
 #[inline(never)]
@@ -171,13 +145,15 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
     h: usize,
     mx: usize,
     my: usize,
-    filter_type: Dav1dFilterMode,
+    (h_filter_type, v_filter_type): (Rav1dFilterMode, Rav1dFilterMode),
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     let intermediate_rnd = 32 + (1 << 6 - intermediate_bits >> 1);
 
-    let (fh, fv) = get_filters(mx, my, w, h, filter_type);
+    let fh = get_filter(mx, w, h_filter_type);
+    let fv = get_filter(my, h, v_filter_type);
+
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
     let mut dst = std::slice::from_raw_parts_mut(dst, dst_stride * h);
@@ -253,7 +229,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     mut my: usize,
     dx: usize,
     dy: usize,
-    filter_type: Dav1dFilterMode,
+    (h_filter_type, v_filter_type): (Rav1dFilterMode, Rav1dFilterMode),
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
@@ -271,7 +247,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         let mut ioff = 0;
 
         for x in 0..w {
-            let fh = get_h_filter(imx >> 6, w, filter_type);
+            let fh = get_filter(imx >> 6, w, h_filter_type);
             mid_ptr[x] = match fh {
                 Some(fh) => rav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
@@ -286,7 +262,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     }
     mid_ptr = &mut mid[128 * 3..];
     for _ in 0..h {
-        let fv = get_v_filter(my >> 6, h, filter_type);
+        let fv = get_filter(my >> 6, h, v_filter_type);
 
         for x in 0..w {
             dst[x] = match fv {
@@ -315,11 +291,12 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
     h: usize,
     mx: usize,
     my: usize,
-    filter_type: Dav1dFilterMode,
+    (h_filter_type, v_filter_type): (Rav1dFilterMode, Rav1dFilterMode),
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
-    let (fh, fv) = get_filters(mx, my, w, h, filter_type);
+    let fh = get_filter(mx, w, h_filter_type);
+    let fv = get_filter(my, h, v_filter_type);
     let src_stride = BD::pxstride(src_stride);
 
     if let Some(fh) = fh {
@@ -390,7 +367,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     mut my: usize,
     dx: usize,
     dy: usize,
-    filter_type: Dav1dFilterMode,
+    (h_filter_type, v_filter_type): (Rav1dFilterMode, Rav1dFilterMode),
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
@@ -404,7 +381,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
         let mut imx = mx;
         let mut ioff = 0;
         for x in 0..w {
-            let fh = get_h_filter(imx >> 6, w, filter_type);
+            let fh = get_filter(imx >> 6, w, h_filter_type);
             mid_ptr[x] = match fh {
                 Some(fh) => rav1d_filter_8tap_rnd(src, ioff, fh, 1, 6 - intermediate_bits) as i16,
                 None => ((*src.offset(ioff as isize)).as_::<i32>() as i16) << intermediate_bits,
@@ -420,7 +397,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
 
     mid_ptr = &mut mid[128 * 3..];
     for _ in 0..h {
-        let fv = get_v_filter(my >> 6, h, filter_type);
+        let fv = get_filter(my >> 6, h, v_filter_type);
         for x in 0..w {
             *tmp.offset(x as isize) = ((match fv {
                 Some(fv) => rav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6),
@@ -1393,7 +1370,7 @@ macro_rules! filter_fns {
                     h as usize,
                     mx as usize,
                     my as usize,
-                    $type_h | ($type_v << 2),
+                    ($type_h, $type_v),
                     BD::from_c(bitdepth_max),
                 );
             }
@@ -1423,7 +1400,7 @@ macro_rules! filter_fns {
                     my as usize,
                     dx as usize,
                     dy as usize,
-                    $type_h | ($type_v << 2),
+                    ($type_h, $type_v),
                     BD::from_c(bitdepth_max),
                 );
             }
@@ -1447,7 +1424,7 @@ macro_rules! filter_fns {
                     h as usize,
                     mx as usize,
                     my as usize,
-                    $type_h | ($type_v << 2),
+                    ($type_h, $type_v),
                     BD::from_c(bitdepth_max),
                 );
             }
@@ -1475,7 +1452,7 @@ macro_rules! filter_fns {
                     my as usize,
                     dx as usize,
                     dy as usize,
-                    $type_h | ($type_v << 2),
+                    ($type_h, $type_v),
                     BD::from_c(bitdepth_max),
                 );
             }
@@ -1485,40 +1462,48 @@ macro_rules! filter_fns {
 
 filter_fns!(
     regular,
-    RAV1D_FILTER_8TAP_REGULAR,
-    RAV1D_FILTER_8TAP_REGULAR
+    Rav1dFilterMode::Regular8Tap,
+    Rav1dFilterMode::Regular8Tap
 );
 filter_fns!(
     regular_sharp,
-    RAV1D_FILTER_8TAP_REGULAR,
-    RAV1D_FILTER_8TAP_SHARP
+    Rav1dFilterMode::Regular8Tap,
+    Rav1dFilterMode::Sharp8Tap
 );
 filter_fns!(
     regular_smooth,
-    RAV1D_FILTER_8TAP_REGULAR,
-    RAV1D_FILTER_8TAP_SMOOTH
+    Rav1dFilterMode::Regular8Tap,
+    Rav1dFilterMode::Smooth8Tap
 );
-filter_fns!(smooth, RAV1D_FILTER_8TAP_SMOOTH, RAV1D_FILTER_8TAP_SMOOTH);
+filter_fns!(
+    smooth,
+    Rav1dFilterMode::Smooth8Tap,
+    Rav1dFilterMode::Smooth8Tap
+);
 filter_fns!(
     smooth_regular,
-    RAV1D_FILTER_8TAP_SMOOTH,
-    RAV1D_FILTER_8TAP_REGULAR
+    Rav1dFilterMode::Smooth8Tap,
+    Rav1dFilterMode::Regular8Tap
 );
 filter_fns!(
     smooth_sharp,
-    RAV1D_FILTER_8TAP_SMOOTH,
-    RAV1D_FILTER_8TAP_SHARP
+    Rav1dFilterMode::Smooth8Tap,
+    Rav1dFilterMode::Sharp8Tap
 );
-filter_fns!(sharp, RAV1D_FILTER_8TAP_SHARP, RAV1D_FILTER_8TAP_SHARP);
+filter_fns!(
+    sharp,
+    Rav1dFilterMode::Sharp8Tap,
+    Rav1dFilterMode::Sharp8Tap
+);
 filter_fns!(
     sharp_regular,
-    RAV1D_FILTER_8TAP_SHARP,
-    RAV1D_FILTER_8TAP_REGULAR
+    Rav1dFilterMode::Sharp8Tap,
+    Rav1dFilterMode::Regular8Tap
 );
 filter_fns!(
     sharp_smooth,
-    RAV1D_FILTER_8TAP_SHARP,
-    RAV1D_FILTER_8TAP_SMOOTH
+    Rav1dFilterMode::Sharp8Tap,
+    Rav1dFilterMode::Smooth8Tap
 );
 
 // TODO(legare): Temporarily pub until init fns are deduplicated.
