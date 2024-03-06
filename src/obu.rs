@@ -568,10 +568,10 @@ unsafe fn parse_frame_size(
                 let height = ref_size.height;
                 let render_width = ref_size.render_width;
                 let render_height = ref_size.render_height;
-                let enabled = (seqhdr.super_res != 0 && gb.get_bit()) as c_int;
+                let enabled = seqhdr.super_res != 0 && gb.get_bit();
                 let width_scale_denominator;
                 let width0;
-                if enabled != 0 {
+                if enabled {
                     width_scale_denominator = 9 + gb.get_bits(3) as c_int;
                     let d = width_scale_denominator;
                     width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
@@ -604,10 +604,10 @@ unsafe fn parse_frame_size(
         width1 = seqhdr.max_width;
         height = seqhdr.max_height;
     }
-    let enabled = (seqhdr.super_res != 0 && gb.get_bit()) as c_int;
+    let enabled = seqhdr.super_res != 0 && gb.get_bit();
     let width_scale_denominator;
     let width0;
-    if enabled != 0 {
+    if enabled {
         width_scale_denominator = 9 + gb.get_bits(3) as c_int;
         let d = width_scale_denominator;
         width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
@@ -1302,14 +1302,14 @@ fn parse_cdef(
 fn parse_restoration(
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: bool,
-    super_res_enabled: c_int,
+    super_res_enabled: bool,
     allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_restoration {
     let r#type;
     let unit_size;
-    if (!all_lossless || super_res_enabled != 0) && seqhdr.restoration != 0 && !allow_intrabc {
+    if (!all_lossless || super_res_enabled) && seqhdr.restoration != 0 && !allow_intrabc {
         let type_0 = Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap();
         r#type = if seqhdr.monochrome == 0 {
             [
@@ -1878,7 +1878,7 @@ unsafe fn parse_frame_hdr(
             return Err(EINVAL);
         }
         size = parse_frame_size(c, seqhdr, None, frame_size_override, gb)?;
-        allow_intrabc = allow_screen_content_tools && size.super_res.enabled == 0 && gb.get_bit();
+        allow_intrabc = allow_screen_content_tools && !size.super_res.enabled && gb.get_bit();
         use_ref_frame_mvs = 0;
 
         // Default initialization.

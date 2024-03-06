@@ -3308,7 +3308,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         4 * ((t.bx >> ss_hor) as isize + (t.by >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if frame_hdr.frame_type.is_key_or_intra() {
-        if frame_hdr.size.super_res.enabled != 0 {
+        if frame_hdr.size.super_res.enabled {
             unreachable!();
         }
         res = mc::<BD>(

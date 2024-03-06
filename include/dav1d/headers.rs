@@ -1631,7 +1631,7 @@ pub struct Dav1dFrameHeader_super_res {
 #[repr(C)]
 pub struct Rav1dFrameHeader_super_res {
     pub width_scale_denominator: c_int,
-    pub enabled: c_int,
+    pub enabled: bool,
 }
 
 impl From<Dav1dFrameHeader_super_res> for Rav1dFrameHeader_super_res {
@@ -1642,7 +1642,7 @@ impl From<Dav1dFrameHeader_super_res> for Rav1dFrameHeader_super_res {
         } = value;
         Self {
             width_scale_denominator,
-            enabled,
+            enabled: enabled != 0,
         }
     }
 }
@@ -1655,7 +1655,7 @@ impl From<Rav1dFrameHeader_super_res> for Dav1dFrameHeader_super_res {
         } = value;
         Self {
             width_scale_denominator,
-            enabled,
+            enabled: enabled as c_int,
         }
     }
 }
