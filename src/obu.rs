@@ -48,8 +48,6 @@ use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
 use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
-use crate::include::dav1d::headers::RAV1D_TRC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_ROT_ZOOM;
@@ -393,11 +391,11 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
     let mtrx;
     if color_description_present != 0 {
         pri = Rav1dColorPrimaries::from_repr(gb.get_bits(8) as usize).unwrap();
-        trc = gb.get_bits(8) as Rav1dTransferCharacteristics;
+        trc = Rav1dTransferCharacteristics::from_repr(gb.get_bits(8) as usize).unwrap();
         mtrx = Rav1dMatrixCoefficients::from_repr(gb.get_bits(8) as usize).unwrap();
     } else {
         pri = Rav1dColorPrimaries::Unknown;
-        trc = RAV1D_TRC_UNKNOWN;
+        trc = Rav1dTransferCharacteristics::Unknown;
         mtrx = Rav1dMatrixCoefficients::Unknown;
     }
     let color_range;
@@ -412,7 +410,7 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
         ss_hor = ss_ver;
         chr = Rav1dChromaSamplePosition::Unknown;
     } else if pri == Rav1dColorPrimaries::Bt709
-        && trc == RAV1D_TRC_SRGB
+        && trc == Rav1dTransferCharacteristics::Srgb
         && mtrx == Rav1dMatrixCoefficients::Identity
     {
         layout = Rav1dPixelLayout::I444;
