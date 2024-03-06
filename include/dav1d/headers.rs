@@ -798,10 +798,31 @@ pub struct Dav1dSequenceHeader {
         [Dav1dSequenceHeaderOperatingParameterInfo; DAV1D_MAX_OPERATING_POINTS],
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum Rav1dProfile {
+    Main = 0,
+    High = 1,
+    Professional = 2,
+}
+
+impl From<Rav1dProfile> for c_int {
+    fn from(value: Rav1dProfile) -> Self {
+        value as c_int
+    }
+}
+
+impl TryFrom<c_int> for Rav1dProfile {
+    type Error = ();
+
+    fn try_from(value: c_int) -> Result<Self, Self::Error> {
+        Self::from_repr(value as usize).ok_or(())
+    }
+}
+
 #[derive(Clone)]
 #[repr(C)]
 pub struct Rav1dSequenceHeader {
-    pub profile: c_int,
+    pub profile: Rav1dProfile,
     pub max_width: c_int,
     pub max_height: c_int,
     pub layout: Rav1dPixelLayout,
@@ -1032,7 +1053,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             operating_parameter_info,
         } = value;
         Self {
-            profile,
+            profile: profile.try_into().unwrap(),
             max_width,
             max_height,
             layout: layout.try_into().unwrap(),
@@ -1147,7 +1168,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             operating_parameter_info,
         } = value;
         Self {
-            profile,
+            profile: profile.into(),
             max_width,
             max_height,
             layout: layout.into(),
