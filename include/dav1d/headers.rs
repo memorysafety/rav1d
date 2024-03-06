@@ -304,18 +304,20 @@ impl Rav1dWarpedMotionParams {
     }
 }
 
-impl From<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
-    fn from(value: Dav1dWarpedMotionParams) -> Self {
+impl TryFrom<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
+    type Error = ();
+
+    fn try_from(value: Dav1dWarpedMotionParams) -> Result<Self, Self::Error> {
         let Dav1dWarpedMotionParams {
             r#type,
             matrix,
             abcd,
         } = value;
-        Self {
-            r#type: Rav1dWarpedMotionType::from_repr(r#type as usize).unwrap(),
+        Ok(Self {
+            r#type: Rav1dWarpedMotionType::from_repr(r#type as usize).ok_or(())?,
             matrix,
             abcd: Abcd::new(abcd),
-        }
+        })
     }
 }
 
@@ -2424,7 +2426,7 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             },
             warp_motion,
             reduced_txtp_set,
-            gmv: gmv.map(|c| c.into()),
+            gmv: gmv.map(|c| c.try_into().unwrap()),
         }
     }
 }
