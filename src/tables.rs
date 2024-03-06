@@ -721,7 +721,7 @@ pub const interintra_allowed_mask: c_uint = 0
 impl Default for Rav1dWarpedMotionParams {
     fn default() -> Self {
         Self {
-            r#type: Rav1dWarpedMotionType::RAV1D_WM_TYPE_IDENTITY,
+            r#type: Rav1dWarpedMotionType::Identity,
             matrix: [0, 0, 1 << 16, 0, 0, 1 << 16],
             abcd: Default::default(),
         }

@@ -712,7 +712,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
         );
 
         gmv[0] = if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].r#type
-            > Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION
+            > Rav1dWarpedMotionType::Translation
         {
             tgmv[0]
         } else {
@@ -732,7 +732,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             &*rf.frm_hdr,
         );
         gmv[1] = if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].r#type
-            > Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION
+            > Rav1dWarpedMotionType::Translation
         {
             tgmv[1]
         } else {

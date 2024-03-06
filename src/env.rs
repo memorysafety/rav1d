@@ -663,11 +663,11 @@ pub(crate) fn get_gmv_2d(
     hdr: &Rav1dFrameHeader,
 ) -> mv {
     match gmv.r#type {
-        Rav1dWarpedMotionType::RAV1D_WM_TYPE_ROT_ZOOM => {
+        Rav1dWarpedMotionType::RotZoom => {
             assert!(gmv.matrix[5] == gmv.matrix[2]);
             assert!(gmv.matrix[4] == -gmv.matrix[3]);
         }
-        Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION => {
+        Rav1dWarpedMotionType::Translation => {
             let mut res = mv {
                 y: (gmv.matrix[0] >> 13) as i16,
                 x: (gmv.matrix[1] >> 13) as i16,
@@ -677,10 +677,10 @@ pub(crate) fn get_gmv_2d(
             }
             return res;
         }
-        Rav1dWarpedMotionType::RAV1D_WM_TYPE_IDENTITY => {
+        Rav1dWarpedMotionType::Identity => {
             return mv::ZERO;
         }
-        Rav1dWarpedMotionType::RAV1D_WM_TYPE_AFFINE => {}
+        Rav1dWarpedMotionType::Affine => {}
     }
     let x = bx4 * 4 + bw4 * 2 - 1;
     let y = by4 * 4 + bh4 * 2 - 1;

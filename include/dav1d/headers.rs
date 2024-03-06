@@ -204,20 +204,20 @@ pub enum Rav1dRestorationType {
 
 pub type Dav1dWarpedMotionType = c_uint;
 pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType =
-    Rav1dWarpedMotionType::RAV1D_WM_TYPE_IDENTITY as Dav1dWarpedMotionType;
+    Rav1dWarpedMotionType::Identity as Dav1dWarpedMotionType;
 pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType =
-    Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION as Dav1dWarpedMotionType;
+    Rav1dWarpedMotionType::Translation as Dav1dWarpedMotionType;
 pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType =
-    Rav1dWarpedMotionType::RAV1D_WM_TYPE_ROT_ZOOM as Dav1dWarpedMotionType;
+    Rav1dWarpedMotionType::RotZoom as Dav1dWarpedMotionType;
 pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType =
-    Rav1dWarpedMotionType::RAV1D_WM_TYPE_AFFINE as Dav1dWarpedMotionType;
+    Rav1dWarpedMotionType::Affine as Dav1dWarpedMotionType;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr)]
 pub enum Rav1dWarpedMotionType {
-    RAV1D_WM_TYPE_IDENTITY = 0,
-    RAV1D_WM_TYPE_TRANSLATION = 1,
-    RAV1D_WM_TYPE_ROT_ZOOM = 2,
-    RAV1D_WM_TYPE_AFFINE = 3,
+    Identity = 0,
+    Translation = 1,
+    RotZoom = 2,
+    Affine = 3,
 }
 
 #[derive(Clone)]

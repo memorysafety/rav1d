@@ -1479,15 +1479,15 @@ unsafe fn parse_gmv(
     if frame_type.is_inter_or_switch() {
         for (i, gmv) in gmv.iter_mut().enumerate() {
             gmv.r#type = if !gb.get_bit() {
-                Rav1dWarpedMotionType::RAV1D_WM_TYPE_IDENTITY
+                Rav1dWarpedMotionType::Identity
             } else if gb.get_bit() {
-                Rav1dWarpedMotionType::RAV1D_WM_TYPE_ROT_ZOOM
+                Rav1dWarpedMotionType::RotZoom
             } else if gb.get_bit() {
-                Rav1dWarpedMotionType::RAV1D_WM_TYPE_TRANSLATION
+                Rav1dWarpedMotionType::Translation
             } else {
-                Rav1dWarpedMotionType::RAV1D_WM_TYPE_AFFINE
+                Rav1dWarpedMotionType::Affine
             };
-            if gmv.r#type == Rav1dWarpedMotionType::RAV1D_WM_TYPE_IDENTITY {
+            if gmv.r#type == Rav1dWarpedMotionType::Identity {
                 continue;
             }
 
@@ -1509,7 +1509,7 @@ unsafe fn parse_gmv(
             let bits;
             let shift;
 
-            if gmv.r#type >= Rav1dWarpedMotionType::RAV1D_WM_TYPE_ROT_ZOOM {
+            if gmv.r#type >= Rav1dWarpedMotionType::RotZoom {
                 mat[2] = (1 << 16) + 2 * gb.get_bits_subexp(ref_mat[2] - (1 << 16) >> 1, 12);
                 mat[3] = 2 * gb.get_bits_subexp(ref_mat[3] >> 1, 12);
 
@@ -1520,7 +1520,7 @@ unsafe fn parse_gmv(
                 shift = 13 + !hp as c_int;
             }
 
-            if gmv.r#type == Rav1dWarpedMotionType::RAV1D_WM_TYPE_AFFINE {
+            if gmv.r#type == Rav1dWarpedMotionType::Affine {
                 mat[4] = 2 * gb.get_bits_subexp(ref_mat[4] >> 1, 12);
                 mat[5] = (1 << 16) + 2 * gb.get_bits_subexp(ref_mat[5] - (1 << 16) >> 1, 12);
             } else {
