@@ -11,6 +11,7 @@ use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
@@ -4496,18 +4497,44 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     }
     let y = sby * f.sb_step * 4;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let p: [*mut BD::Pixel; 3] = [
-        (f.lf.p[0] as *mut BD::Pixel).offset((y as isize * BD::pxstride(f.cur.stride[0])) as isize),
-        (f.lf.p[1] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-        (f.lf.p[2] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-    ];
+    let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+
+    let (mut p, p_offset) = {
+        let y_stride = BD::pxstride((*f).cur.stride[0]);
+        let y_width = (*f).cur.p.w + 127 & !127;
+        let y_height = (*f).cur.p.h + 127 & !127;
+        let y_span = (y_height - 1) as isize * y_stride;
+        let uv_stride = BD::pxstride((*f).cur.stride[1]);
+        let uv_width = y_width >> ss_hor;
+        let uv_height = y_height >> ss_ver;
+        let uv_span = (uv_height - 1) as isize * uv_stride;
+
+        let p: [&mut [BD::Pixel]; 3] = [
+            slice::from_raw_parts_mut(
+                (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(y_span, 0)),
+                y_span.unsigned_abs() + y_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+            slice::from_raw_parts_mut(
+                (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+            slice::from_raw_parts_mut(
+                (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+        ];
+        let p_offset: [usize; 2] = [
+            (cmp::max(0, -y_span) + y as isize * y_stride) as usize,
+            (cmp::max(0, -uv_span) + y as isize * uv_stride >> ss_ver) as usize,
+        ];
+        (p, p_offset)
+    };
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let mask_offset = (sby >> (seq_hdr.sb128 == 0) as c_int) * f.sb128w;
     rav1d_loopfilter_sbrow_cols::<BD>(
         f,
-        &p,
+        &mut p,
+        &p_offset,
         mask_offset as usize,
         sby,
         *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
@@ -4522,13 +4549,38 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
 ) {
     let y = sby * f.sb_step * 4;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let p: [*mut BD::Pixel; 3] = [
-        (f.lf.p[0] as *mut BD::Pixel).offset((y as isize * BD::pxstride(f.cur.stride[0])) as isize),
-        (f.lf.p[1] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-        (f.lf.p[2] as *mut BD::Pixel)
-            .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-    ];
+    let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+
+    let (mut p, p_offset) = {
+        let y_stride = BD::pxstride((*f).cur.stride[0]);
+        let y_width = (*f).cur.p.w + 127 & !127;
+        let y_height = (*f).cur.p.h + 127 & !127;
+        let y_span = (y_height - 1) as isize * y_stride;
+        let uv_stride = BD::pxstride((*f).cur.stride[1]);
+        let uv_width = y_width >> ss_hor;
+        let uv_height = y_height >> ss_ver;
+        let uv_span = (uv_height - 1) as isize * uv_stride;
+
+        let p: [&mut [BD::Pixel]; 3] = [
+            slice::from_raw_parts_mut(
+                (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(y_span, 0)),
+                y_span.unsigned_abs() + y_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+            slice::from_raw_parts_mut(
+                (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+            slice::from_raw_parts_mut(
+                (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
+            ),
+        ];
+        let p_offset: [usize; 2] = [
+            (cmp::max(0, -y_span) + y as isize * y_stride) as usize,
+            (cmp::max(0, -uv_span) + y as isize * uv_stride >> ss_ver) as usize,
+        ];
+        (p, p_offset)
+    };
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let sb128 = seq_hdr.sb128;
     let cdef = seq_hdr.cdef;
@@ -4537,10 +4589,10 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     if c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
         && (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0)
     {
-        rav1d_loopfilter_sbrow_rows::<BD>(f, &p, mask_offset as usize, sby);
+        rav1d_loopfilter_sbrow_rows::<BD>(f, &mut p, &p_offset, mask_offset as usize, sby);
     }
     if cdef != 0 || f.lf.restore_planes != 0 {
-        rav1d_copy_lpf::<BD>(c, &mut *f, p.as_ptr(), sby);
+        rav1d_copy_lpf::<BD>(c, f, &p, &p_offset, sby);
     }
 }
 
