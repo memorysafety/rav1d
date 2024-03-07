@@ -268,7 +268,7 @@ unsafe fn read_mv_component_diff(
     have_fp: bool,
 ) -> c_int {
     let ts = &mut *t.ts;
-    let have_hp = f.frame_hdr.as_ref().unwrap().hp != 0;
+    let have_hp = f.frame_hdr.as_ref().unwrap().hp;
     let sign = rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0);
     let cl = rav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10);
     let mut up;
@@ -2015,7 +2015,7 @@ unsafe fn decode_b_inner(
         }
 
         *b.pal_sz_mut() = [0, 0];
-        if frame_hdr.allow_screen_content_tools != 0 && cmp::max(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
+        if frame_hdr.allow_screen_content_tools && cmp::max(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
             if b.y_mode() == DC_PRED {
                 let pal_ctx = ((*t.a).pal_sz.0[bx4 as usize] > 0) as usize
@@ -2657,7 +2657,7 @@ unsafe fn decode_b_inner(
                         f,
                         &mut b.mv_mut()[idx],
                         &mut ts.cdf.mv,
-                        frame_hdr.force_integer_mv == 0,
+                        !frame_hdr.force_integer_mv,
                     );
                 }
                 _ => {}
@@ -2948,7 +2948,7 @@ unsafe fn decode_b_inner(
                     f,
                     &mut *b.mv_mut().as_mut_ptr().offset(0),
                     &mut ts.cdf.mv,
-                    frame_hdr.force_integer_mv == 0,
+                    !frame_hdr.force_integer_mv,
                 );
                 if debug_block_info!(f, t) {
                     println!(
@@ -3008,7 +3008,7 @@ unsafe fn decode_b_inner(
                 && b.interintra_type() == INTER_INTRA_NONE
                 && cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
-                && !(frame_hdr.force_integer_mv == 0
+                && !(!frame_hdr.force_integer_mv
                     && b.inter_mode() == GLOBALMV
                     && frame_hdr.gmv[b.r#ref()[0] as usize].r#type > RAV1D_WM_TYPE_TRANSLATION)
                 // has overlappable neighbours
@@ -3031,7 +3031,7 @@ unsafe fn decode_b_inner(
                     &mut mask,
                 );
                 let allow_warp = (f.svc[b.r#ref()[0] as usize][0].scale == 0
-                    && frame_hdr.force_integer_mv == 0
+                    && !frame_hdr.force_integer_mv
                     && frame_hdr.warp_motion != 0
                     && mask[0] | mask[1] != 0) as c_int;
 
@@ -4363,7 +4363,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         // TODO: Fallible allocation
         f.frame_thread.cf.resize(cf_sz as usize * 128 * 128 / 2, 0);
 
-        if frame_hdr.allow_screen_content_tools != 0 {
+        if frame_hdr.allow_screen_content_tools {
             // TODO: Fallible allocation
             f.frame_thread
                 .pal
@@ -5049,7 +5049,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 f.svc[i][0].scale = f.svc[i][1].scale;
             }
             f.gmv_warp_allowed[i] = (frame_hdr.gmv[i].r#type > RAV1D_WM_TYPE_TRANSLATION
-                && frame_hdr.force_integer_mv == 0
+                && !frame_hdr.force_integer_mv
                 && !rav1d_get_shear_params(&frame_hdr.gmv[i])
                 && f.svc[i][0].scale == 0) as u8;
         }

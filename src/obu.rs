@@ -41,7 +41,6 @@ use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::RAV1D_ADAPTIVE;
 use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_UNKNOWN;
@@ -326,8 +325,8 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
     let ref_frame_mvs;
     let order_hint_n_bits;
     if reduced_still_picture_header != 0 {
-        screen_content_tools = RAV1D_ADAPTIVE;
-        force_integer_mv = RAV1D_ADAPTIVE;
+        screen_content_tools = Rav1dAdaptiveBoolean::Adaptive;
+        force_integer_mv = Rav1dAdaptiveBoolean::Adaptive;
 
         // Default initialization.
         inter_intra = Default::default();
@@ -353,19 +352,19 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
             ref_frame_mvs = Default::default();
         }
         screen_content_tools = if gb.get_bit() {
-            RAV1D_ADAPTIVE
+            Rav1dAdaptiveBoolean::Adaptive
         } else {
-            gb.get_bit() as Rav1dAdaptiveBoolean
+            gb.get_bit().into()
         };
         debug.post(gb, "screentools");
-        force_integer_mv = if screen_content_tools as c_uint != 0 {
+        force_integer_mv = if screen_content_tools != Rav1dAdaptiveBoolean::Off {
             if gb.get_bit() {
-                RAV1D_ADAPTIVE
+                Rav1dAdaptiveBoolean::Adaptive
             } else {
-                gb.get_bit() as Rav1dAdaptiveBoolean
+                gb.get_bit().into()
             }
         } else {
-            2
+            Rav1dAdaptiveBoolean::Adaptive
         };
         if order_hint != 0 {
             order_hint_n_bits = gb.get_bits(3) as c_int + 1;
@@ -1464,7 +1463,7 @@ unsafe fn parse_gmv(
     frame_type: Rav1dFrameType,
     primary_ref_frame: c_int,
     refidx: &[c_int; RAV1D_REFS_PER_FRAME],
-    hp: c_int,
+    hp: bool,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<[Rav1dWarpedMotionParams; RAV1D_REFS_PER_FRAME]> {
@@ -1510,8 +1509,8 @@ unsafe fn parse_gmv(
                 bits = 12;
                 shift = 10;
             } else {
-                bits = 9 - (hp == 0) as c_int;
-                shift = 13 + (hp == 0) as c_int;
+                bits = 9 - !hp as c_int;
+                shift = 13 + !hp as c_int;
             }
 
             if gmv.r#type as c_uint == RAV1D_WM_TYPE_AFFINE as c_int as c_uint {
@@ -1772,24 +1771,23 @@ unsafe fn parse_frame_hdr(
         || gb.get_bit()) as c_int;
     debug.post(gb, "frametype_bits");
     let disable_cdf_update = gb.get_bit() as c_int;
-    let allow_screen_content_tools = (if seqhdr.screen_content_tools == RAV1D_ADAPTIVE {
-        gb.get_bit()
+    let allow_screen_content_tools = match seqhdr.screen_content_tools {
+        Rav1dAdaptiveBoolean::Adaptive => gb.get_bit(),
+        Rav1dAdaptiveBoolean::On => true,
+        Rav1dAdaptiveBoolean::Off => false,
+    };
+    let mut force_integer_mv = if allow_screen_content_tools {
+        match seqhdr.force_integer_mv {
+            Rav1dAdaptiveBoolean::Adaptive => gb.get_bit(),
+            Rav1dAdaptiveBoolean::On => true,
+            Rav1dAdaptiveBoolean::Off => false,
+        }
     } else {
-        seqhdr.screen_content_tools != 0
-    }) as c_int;
-    let mut force_integer_mv;
-    if allow_screen_content_tools != 0 {
-        force_integer_mv = (if seqhdr.force_integer_mv == RAV1D_ADAPTIVE {
-            gb.get_bit()
-        } else {
-            seqhdr.force_integer_mv != 0
-        }) as c_int;
-    } else {
-        force_integer_mv = 0;
-    }
+        false
+    };
 
     if frame_type.is_key_or_intra() {
-        force_integer_mv = 1;
+        force_integer_mv = true;
     }
 
     let frame_id;
@@ -1870,9 +1868,8 @@ unsafe fn parse_frame_hdr(
             return Err(EINVAL);
         }
         size = parse_frame_size(c, seqhdr, None, frame_size_override, gb)?;
-        allow_intrabc = (allow_screen_content_tools != 0
-            && size.super_res.enabled == 0
-            && gb.get_bit()) as c_int;
+        allow_intrabc =
+            (allow_screen_content_tools && size.super_res.enabled == 0 && gb.get_bit()) as c_int;
         use_ref_frame_mvs = 0;
 
         // Default initialization.
@@ -1910,7 +1907,7 @@ unsafe fn parse_frame_hdr(
             frame_size_override,
             gb,
         )?;
-        hp = (force_integer_mv == 0 && gb.get_bit()) as c_int;
+        hp = !force_integer_mv && gb.get_bit();
         subpel_filter_mode = if gb.get_bit() {
             Rav1dFilterMode::Switchable
         } else {
