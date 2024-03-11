@@ -18,7 +18,6 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::slice;
 
 pub type LrRestorePlanes = c_uint;
 pub const LR_RESTORE_V: LrRestorePlanes = 4;
@@ -47,12 +46,8 @@ unsafe fn lr_stripe<BD: BitDepth>(
     let sby = y + (if y != 0 { 8 << ss_ver } else { 0 }) >> 6 - ss_ver + seq_hdr.sb128;
     let have_tt = (c.tc.len() > 1) as c_int;
     let lpf_stride = BD::pxstride(stride);
-    let lpf_plane_sz = BD::pxstride(f.lf.lr_buf_plane_sz[(plane != 0) as usize] as isize);
-    let mut lpf_offset = cmp::max(lpf_stride - lpf_plane_sz, 0);
-    let lpf = &slice::from_raw_parts(
-        (f.lf.lr_lpf_line[plane as usize] as *const BD::Pixel).offset(-lpf_offset),
-        lpf_plane_sz.unsigned_abs(),
-    );
+    let lr_line_buf = BD::cast_pixel_slice(&f.lf.lr_line_buf);
+    let mut lpf_offset = f.lf.lr_lpf_line[plane as usize] as isize;
     lpf_offset += (have_tt * (sby * (4 << seq_hdr.sb128) - 4)) as isize * lpf_stride + x as isize;
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = cmp::min(64 - 8 * (y == 0) as c_int >> ss_ver, row_h - y);
@@ -102,7 +97,11 @@ unsafe fn lr_stripe<BD: BitDepth>(
             p.as_mut_ptr().add(p_offset).cast(),
             stride,
             left.as_ptr().cast(),
-            lpf.as_ptr().offset(lpf_offset).cast(),
+            // NOTE: The calculated pointer may point to before the beginning of
+            // `lr_line_buf`, so we must use `.wrapping_offset` here.
+            // `.wrapping_offset` is needed since `.offset` requires the pointer is in bounds,
+            // which `.wrapping_offset` does not, and delays that requirement to when the pointer is dereferenced
+            lr_line_buf.as_ptr().wrapping_offset(lpf_offset).cast(),
             unit_w,
             stripe_h,
             &mut params,
