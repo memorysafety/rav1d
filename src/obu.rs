@@ -32,6 +32,7 @@ use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dMatrixCoefficients;
 use crate::include::dav1d::headers::Rav1dObuType;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::include::dav1d::headers::Rav1dProfile;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::include::dav1d::headers::Rav1dSegmentationData;
 use crate::include::dav1d::headers::Rav1dSegmentationDataSet;
@@ -135,10 +136,7 @@ impl Debug {
 fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSequenceHeader> {
     let debug = Debug::new(false, "SEQHDR", gb);
 
-    let profile = gb.get_bits(3) as c_int;
-    if profile > 2 {
-        return Err(EINVAL);
-    }
+    let profile = Rav1dProfile::from_repr(gb.get_bits(3) as usize).ok_or(EINVAL)?;
     debug.post(gb, "post-profile");
 
     let still_picture = gb.get_bit() as c_int;
@@ -376,13 +374,13 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
 
     let hbd = {
         let mut hbd = gb.get_bit() as c_int;
-        if profile == 2 && hbd != 0 {
+        if profile == Rav1dProfile::Professional && hbd != 0 {
             hbd += gb.get_bit() as c_int;
         }
         hbd
     };
     let monochrome;
-    if profile != 1 {
+    if profile != Rav1dProfile::High {
         monochrome = gb.get_bit() as c_int;
     } else {
         // Default initialization.
@@ -415,7 +413,7 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
     } else if pri == RAV1D_COLOR_PRI_BT709 && trc == RAV1D_TRC_SRGB && mtrx == RAV1D_MC_IDENTITY {
         layout = Rav1dPixelLayout::I444;
         color_range = 1;
-        if profile != 1 && !(profile == 2 && hbd == 2) {
+        if profile != Rav1dProfile::High && !(profile == Rav1dProfile::Professional && hbd == 2) {
             return Err(EINVAL);
         }
 
@@ -426,19 +424,19 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
     } else {
         color_range = gb.get_bit() as c_int;
         match profile {
-            0 => {
+            Rav1dProfile::Main => {
                 layout = Rav1dPixelLayout::I420;
                 ss_ver = 1;
                 ss_hor = ss_ver;
             }
-            1 => {
+            Rav1dProfile::High => {
                 layout = Rav1dPixelLayout::I444;
 
                 // Default initialization.
                 ss_hor = Default::default();
                 ss_ver = Default::default();
             }
-            2 => {
+            Rav1dProfile::Professional => {
                 if hbd == 2 {
                     ss_hor = gb.get_bit() as c_int;
                     if ss_hor != 0 {
@@ -463,7 +461,6 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
                     Rav1dPixelLayout::I444
                 };
             }
-            _ => unreachable!(), // TODO(kkysen) Make `profile` an `enum` so this isn't needed.
         }
         chr = if ss_hor & ss_ver != 0 {
             gb.get_bits(2) as Rav1dChromaSamplePosition
