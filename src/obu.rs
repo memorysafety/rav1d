@@ -41,6 +41,7 @@ use crate::include::dav1d::headers::Rav1dSequenceHeaderOperatingPoint;
 use crate::include::dav1d::headers::Rav1dTransferCharacteristics;
 use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
+use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::include::dav1d::headers::RAV1D_CHR_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_BT709;
 use crate::include::dav1d::headers::RAV1D_COLOR_PRI_UNKNOWN;
@@ -54,10 +55,6 @@ use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
 use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
 use crate::include::dav1d::headers::RAV1D_TRC_UNKNOWN;
-use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
-use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
-use crate::include::dav1d::headers::RAV1D_WM_TYPE_ROT_ZOOM;
-use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
 use crate::src::c_arc::CArc;
 use crate::src::cdf::rav1d_cdf_thread_ref;
 use crate::src::cdf::rav1d_cdf_thread_unref;
@@ -1482,15 +1479,15 @@ unsafe fn parse_gmv(
     if frame_type.is_inter_or_switch() {
         for (i, gmv) in gmv.iter_mut().enumerate() {
             gmv.r#type = if !gb.get_bit() {
-                RAV1D_WM_TYPE_IDENTITY
+                Rav1dWarpedMotionType::Identity
             } else if gb.get_bit() {
-                RAV1D_WM_TYPE_ROT_ZOOM
+                Rav1dWarpedMotionType::RotZoom
             } else if gb.get_bit() {
-                RAV1D_WM_TYPE_TRANSLATION
+                Rav1dWarpedMotionType::Translation
             } else {
-                RAV1D_WM_TYPE_AFFINE
+                Rav1dWarpedMotionType::Affine
             };
-            if gmv.r#type == RAV1D_WM_TYPE_IDENTITY {
+            if gmv.r#type == Rav1dWarpedMotionType::Identity {
                 continue;
             }
 
@@ -1512,7 +1509,7 @@ unsafe fn parse_gmv(
             let bits;
             let shift;
 
-            if gmv.r#type >= RAV1D_WM_TYPE_ROT_ZOOM {
+            if gmv.r#type >= Rav1dWarpedMotionType::RotZoom {
                 mat[2] = (1 << 16) + 2 * gb.get_bits_subexp(ref_mat[2] - (1 << 16) >> 1, 12);
                 mat[3] = 2 * gb.get_bits_subexp(ref_mat[3] >> 1, 12);
 
@@ -1523,7 +1520,7 @@ unsafe fn parse_gmv(
                 shift = 13 + !hp as c_int;
             }
 
-            if gmv.r#type as c_uint == RAV1D_WM_TYPE_AFFINE as c_int as c_uint {
+            if gmv.r#type == Rav1dWarpedMotionType::Affine {
                 mat[4] = 2 * gb.get_bits_subexp(ref_mat[4] >> 1, 12);
                 mat[5] = (1 << 16) + 2 * gb.get_bits_subexp(ref_mat[5] - (1 << 16) >> 1, 12);
             } else {

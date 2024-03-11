@@ -10,7 +10,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
-use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
+use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
@@ -3377,7 +3377,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize] as c_int
                     != 0
                 || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int == MM_WARP as c_int
-                    && t.warpmv.r#type as c_uint > RAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
+                    && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
         {
             res = warp_affine::<BD>(
                 f,
@@ -3762,8 +3762,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             != 0
                         || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int
                             == MM_WARP as c_int
-                            && t.warpmv.r#type as c_uint
-                                > RAV1D_WM_TYPE_TRANSLATION as c_int as c_uint)
+                            && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
                     let mut pl = 0;
                     while pl < 2 {

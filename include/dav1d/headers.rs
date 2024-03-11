@@ -203,16 +203,22 @@ pub enum Rav1dRestorationType {
 }
 
 pub type Dav1dWarpedMotionType = c_uint;
-pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
-pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType = 2;
-pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType = 1;
-pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType = 0;
+pub const DAV1D_WM_TYPE_IDENTITY: Dav1dWarpedMotionType =
+    Rav1dWarpedMotionType::Identity as Dav1dWarpedMotionType;
+pub const DAV1D_WM_TYPE_TRANSLATION: Dav1dWarpedMotionType =
+    Rav1dWarpedMotionType::Translation as Dav1dWarpedMotionType;
+pub const DAV1D_WM_TYPE_ROT_ZOOM: Dav1dWarpedMotionType =
+    Rav1dWarpedMotionType::RotZoom as Dav1dWarpedMotionType;
+pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType =
+    Rav1dWarpedMotionType::Affine as Dav1dWarpedMotionType;
 
-pub type Rav1dWarpedMotionType = c_uint;
-pub const RAV1D_WM_TYPE_AFFINE: Rav1dWarpedMotionType = DAV1D_WM_TYPE_AFFINE;
-pub const RAV1D_WM_TYPE_ROT_ZOOM: Rav1dWarpedMotionType = DAV1D_WM_TYPE_ROT_ZOOM;
-pub const RAV1D_WM_TYPE_TRANSLATION: Rav1dWarpedMotionType = DAV1D_WM_TYPE_TRANSLATION;
-pub const RAV1D_WM_TYPE_IDENTITY: Rav1dWarpedMotionType = DAV1D_WM_TYPE_IDENTITY;
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr)]
+pub enum Rav1dWarpedMotionType {
+    Identity = 0,
+    Translation = 1,
+    RotZoom = 2,
+    Affine = 3,
+}
 
 #[derive(Clone)]
 #[repr(C)]
@@ -298,18 +304,20 @@ impl Rav1dWarpedMotionParams {
     }
 }
 
-impl From<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
-    fn from(value: Dav1dWarpedMotionParams) -> Self {
+impl TryFrom<Dav1dWarpedMotionParams> for Rav1dWarpedMotionParams {
+    type Error = ();
+
+    fn try_from(value: Dav1dWarpedMotionParams) -> Result<Self, Self::Error> {
         let Dav1dWarpedMotionParams {
             r#type,
             matrix,
             abcd,
         } = value;
-        Self {
-            r#type,
+        Ok(Self {
+            r#type: Rav1dWarpedMotionType::from_repr(r#type as usize).ok_or(())?,
             matrix,
             abcd: Abcd::new(abcd),
-        }
+        })
     }
 }
 
@@ -321,7 +329,7 @@ impl From<Rav1dWarpedMotionParams> for Dav1dWarpedMotionParams {
             abcd,
         } = value;
         Self {
-            r#type,
+            r#type: r#type as Dav1dWarpedMotionType,
             matrix,
             abcd: abcd.get(),
         }
@@ -2418,7 +2426,7 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             },
             warp_motion,
             reduced_txtp_set,
-            gmv: gmv.map(|c| c.into()),
+            gmv: gmv.map(|c| c.try_into().unwrap()),
         }
     }
 }
