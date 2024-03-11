@@ -468,8 +468,8 @@ pub struct Rav1dFrameContext_lf {
 
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: Vec<u8>,
-    pub p: [usize; 3], // Offsets into `f.cur.data.data`.
-    pub sr_p: [*mut DynPixel; 3],
+    pub p: [usize; 3],         // Offsets into `f.cur.data.data`.
+    pub sr_p: [usize; 3],      // Offsets into `f.sr_cur.p.data.data`.
     pub restore_planes: c_int, // enum LrRestorePlanes
 }
 

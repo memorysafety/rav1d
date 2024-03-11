@@ -4671,11 +4671,14 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
             .offset(y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver),
     ];
     let sr_p: [*mut BD::Pixel; 3] = [
-        (f.lf.sr_p[0] as *mut BD::Pixel)
+        f.sr_cur.p.data.data[f.lf.sr_p[0]]
+            .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[0])) as isize),
-        (f.lf.sr_p[1] as *mut BD::Pixel)
+        f.sr_cur.p.data.data[f.lf.sr_p[1]]
+            .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[1]) >> ss_ver) as isize),
-        (f.lf.sr_p[2] as *mut BD::Pixel)
+        f.sr_cur.p.data.data[f.lf.sr_p[2]]
+            .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[1]) >> ss_ver) as isize),
     ];
     let has_chroma =
@@ -4732,15 +4735,15 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     let h = (*f).sr_cur.p.p.h + 127 & !127;
     let mut sr_p: [&mut [BD::Pixel]; 3] = [
         slice::from_raw_parts_mut(
-            f.lf.sr_p[0] as *mut BD::Pixel,
+            f.sr_cur.p.data.data[f.lf.sr_p[0]].cast::<BD::Pixel>(),
             (h as isize * BD::pxstride(f.sr_cur.p.stride[0])) as usize,
         ),
         slice::from_raw_parts_mut(
-            f.lf.sr_p[1] as *mut BD::Pixel,
+            f.sr_cur.p.data.data[f.lf.sr_p[1]].cast::<BD::Pixel>(),
             (h as isize * BD::pxstride(f.sr_cur.p.stride[1])) as usize >> ss_ver,
         ),
         slice::from_raw_parts_mut(
-            f.lf.sr_p[2] as *mut BD::Pixel,
+            f.sr_cur.p.data.data[f.lf.sr_p[2]].cast::<BD::Pixel>(),
             (h as isize * BD::pxstride(f.sr_cur.p.stride[1])) as usize >> ss_ver,
         ),
     ];

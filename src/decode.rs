@@ -4609,7 +4609,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     // at, as long as the offsets are valid.
     let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400) as usize;
     f.lf.p = array::from_fn(|i| has_chroma * i);
-    f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data.data[has_chroma * i].cast());
+    f.lf.sr_p = array::from_fn(|i| has_chroma * i);
 
     Ok(())
 }
