@@ -52,7 +52,6 @@ use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_MC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
 use crate::include::dav1d::headers::RAV1D_TRC_SRGB;
 use crate::include::dav1d::headers::RAV1D_TRC_UNKNOWN;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
@@ -557,7 +556,7 @@ unsafe fn parse_frame_size(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     refidx: Option<&[c_int; RAV1D_REFS_PER_FRAME]>,
-    frame_size_override: c_int,
+    frame_size_override: bool,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameSize> {
     if let Some(refidx) = refidx {
@@ -569,10 +568,10 @@ unsafe fn parse_frame_size(
                 let height = ref_size.height;
                 let render_width = ref_size.render_width;
                 let render_height = ref_size.render_height;
-                let enabled = (seqhdr.super_res != 0 && gb.get_bit()) as c_int;
+                let enabled = seqhdr.super_res != 0 && gb.get_bit();
                 let width_scale_denominator;
                 let width0;
-                if enabled != 0 {
+                if enabled {
                     width_scale_denominator = 9 + gb.get_bits(3) as c_int;
                     let d = width_scale_denominator;
                     width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
@@ -598,17 +597,17 @@ unsafe fn parse_frame_size(
 
     let width1;
     let height;
-    if frame_size_override != 0 {
+    if frame_size_override {
         width1 = gb.get_bits(seqhdr.width_n_bits) as c_int + 1;
         height = gb.get_bits(seqhdr.height_n_bits) as c_int + 1;
     } else {
         width1 = seqhdr.max_width;
         height = seqhdr.max_height;
     }
-    let enabled = (seqhdr.super_res != 0 && gb.get_bit()) as c_int;
+    let enabled = seqhdr.super_res != 0 && gb.get_bit();
     let width_scale_denominator;
     let width0;
-    if enabled != 0 {
+    if enabled {
         width_scale_denominator = 9 + gb.get_bits(3) as c_int;
         let d = width_scale_denominator;
         width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
@@ -1141,7 +1140,7 @@ unsafe fn parse_segmentation(
 
 fn parse_delta(
     quant: &Rav1dFrameHeader_quant,
-    allow_intrabc: c_int,
+    allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_delta {
@@ -1159,7 +1158,7 @@ fn parse_delta(
         Rav1dFrameHeader_delta_q { present, res_log2 }
     };
     let lf = {
-        let present = (q.present != 0 && allow_intrabc == 0 && gb.get_bit()) as c_int;
+        let present = (q.present != 0 && !allow_intrabc && gb.get_bit()) as c_int;
         let res_log2 = if present != 0 {
             gb.get_bits(2) as c_int
         } else {
@@ -1183,8 +1182,8 @@ fn parse_delta(
 unsafe fn parse_loopfilter(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    all_lossless: c_int,
-    allow_intrabc: c_int,
+    all_lossless: bool,
+    allow_intrabc: bool,
     primary_ref_frame: c_int,
     refidx: &[c_int; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
@@ -1197,7 +1196,7 @@ unsafe fn parse_loopfilter(
     let mode_ref_delta_update;
     let mut mode_ref_deltas;
     let sharpness;
-    if all_lossless != 0 || allow_intrabc != 0 {
+    if all_lossless || allow_intrabc {
         level_y = [0; 2];
         level_v = 0;
         level_u = level_v;
@@ -1265,8 +1264,8 @@ unsafe fn parse_loopfilter(
 
 fn parse_cdef(
     seqhdr: &Rav1dSequenceHeader,
-    all_lossless: c_int,
-    allow_intrabc: c_int,
+    all_lossless: bool,
+    allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_cdef {
@@ -1274,7 +1273,7 @@ fn parse_cdef(
     let n_bits;
     let mut y_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
     let mut uv_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
-    if all_lossless == 0 && seqhdr.cdef != 0 && allow_intrabc == 0 {
+    if !all_lossless && seqhdr.cdef != 0 && !allow_intrabc {
         damping = gb.get_bits(2) as c_int + 3;
         n_bits = gb.get_bits(2) as c_int;
         for i in 0..1 << n_bits {
@@ -1302,48 +1301,59 @@ fn parse_cdef(
 
 fn parse_restoration(
     seqhdr: &Rav1dSequenceHeader,
-    all_lossless: c_int,
-    super_res_enabled: c_int,
-    allow_intrabc: c_int,
+    all_lossless: bool,
+    super_res_enabled: bool,
+    allow_intrabc: bool,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_restoration {
     let r#type;
     let unit_size;
-    if (all_lossless == 0 || super_res_enabled != 0)
-        && seqhdr.restoration != 0
-        && allow_intrabc == 0
-    {
-        let type_0 = gb.get_bits(2) as Rav1dRestorationType;
+    if (!all_lossless || super_res_enabled) && seqhdr.restoration != 0 && !allow_intrabc {
+        let type_0 = Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap();
         r#type = if seqhdr.monochrome == 0 {
             [
                 type_0,
-                gb.get_bits(2) as Rav1dRestorationType,
-                gb.get_bits(2) as Rav1dRestorationType,
+                Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap(),
+                Rav1dRestorationType::from_repr(gb.get_bits(2) as usize).unwrap(),
             ]
         } else {
-            [type_0, RAV1D_RESTORATION_NONE, RAV1D_RESTORATION_NONE]
+            [
+                type_0,
+                Rav1dRestorationType::None,
+                Rav1dRestorationType::None,
+            ]
         };
 
-        unit_size = if r#type[0] != 0 || r#type[1] != 0 || r#type[2] != 0 {
-            // Log2 of the restoration unit size.
-            let mut unit_size_0 = 6 + seqhdr.sb128;
-            if gb.get_bit() {
-                unit_size_0 += 1;
-                if seqhdr.sb128 == 0 {
-                    unit_size_0 += gb.get_bit() as c_int;
+        unit_size = match r#type {
+            [Rav1dRestorationType::None, Rav1dRestorationType::None, Rav1dRestorationType::None] => {
+                [8, 0]
+            }
+            _ => {
+                // Log2 of the restoration unit size.
+                let mut unit_size_0 = 6 + seqhdr.sb128;
+                if gb.get_bit() {
+                    unit_size_0 += 1;
+                    if seqhdr.sb128 == 0 {
+                        unit_size_0 += gb.get_bit() as c_int;
+                    }
                 }
+
+                let unit_size_1 = if (r#type[1] != Rav1dRestorationType::None
+                    || r#type[2] != Rav1dRestorationType::None)
+                    && seqhdr.ss_hor == 1
+                    && seqhdr.ss_ver == 1
+                {
+                    unit_size_0 - gb.get_bit() as c_int
+                } else {
+                    unit_size_0
+                };
+
+                [unit_size_0, unit_size_1]
             }
-            let mut unit_size_1 = unit_size_0;
-            if (r#type[1] != 0 || r#type[2] != 0) && seqhdr.ss_hor == 1 && seqhdr.ss_ver == 1 {
-                unit_size_1 -= gb.get_bit() as c_int;
-            }
-            [unit_size_0, unit_size_1]
-        } else {
-            [8, 0]
         };
     } else {
-        r#type = [RAV1D_RESTORATION_NONE; 3];
+        r#type = [Rav1dRestorationType::None; 3];
 
         // Default initialization.
         unit_size = Default::default();
@@ -1798,13 +1808,13 @@ unsafe fn parse_frame_hdr(
         frame_id = Default::default();
     }
 
-    let frame_size_override = (if seqhdr.reduced_still_picture_header != 0 {
+    let frame_size_override = if seqhdr.reduced_still_picture_header != 0 {
         false
     } else if frame_type == Rav1dFrameType::Switch {
         true
     } else {
         gb.get_bit()
-    }) as c_int;
+    };
     debug.post(gb, "frame_size_override_flag");
     let frame_offset = if seqhdr.order_hint != 0 {
         gb.get_bits(seqhdr.order_hint_n_bits) as c_int
@@ -1868,8 +1878,7 @@ unsafe fn parse_frame_hdr(
             return Err(EINVAL);
         }
         size = parse_frame_size(c, seqhdr, None, frame_size_override, gb)?;
-        allow_intrabc =
-            (allow_screen_content_tools && size.super_res.enabled == 0 && gb.get_bit()) as c_int;
+        allow_intrabc = allow_screen_content_tools && !size.super_res.enabled && gb.get_bit();
         use_ref_frame_mvs = 0;
 
         // Default initialization.
@@ -1879,7 +1888,7 @@ unsafe fn parse_frame_hdr(
         subpel_filter_mode = Rav1dFilterMode::Regular8Tap;
         switchable_motion_mode = Default::default();
     } else {
-        allow_intrabc = 0;
+        allow_intrabc = false;
         refresh_frame_flags = if frame_type == Rav1dFrameType::Switch {
             0xff
         } else {
@@ -1899,7 +1908,7 @@ unsafe fn parse_frame_hdr(
             frame_id,
             gb,
         )?;
-        let use_ref = error_resilient_mode == 0 && frame_size_override != 0;
+        let use_ref = error_resilient_mode == 0 && frame_size_override;
         size = parse_frame_size(
             c,
             seqhdr,
@@ -1930,7 +1939,7 @@ unsafe fn parse_frame_hdr(
     let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;
     let quant = parse_quant(seqhdr, &debug, gb);
     let segmentation = parse_segmentation(c, primary_ref_frame, &refidx, &quant, &debug, gb)?;
-    let all_lossless = segmentation.lossless.iter().all(|&it| it != 0) as c_int;
+    let all_lossless = segmentation.lossless.iter().all(|&it| it != 0);
     let delta = parse_delta(&quant, allow_intrabc, &debug, gb);
     let loopfilter = parse_loopfilter(
         c,
@@ -1952,7 +1961,7 @@ unsafe fn parse_frame_hdr(
         gb,
     );
 
-    let txfm_mode = if all_lossless != 0 {
+    let txfm_mode = if all_lossless {
         Rav1dTxfmMode::Only4x4
     } else if gb.get_bit() {
         Rav1dTxfmMode::Switchable

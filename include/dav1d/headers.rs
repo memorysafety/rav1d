@@ -184,16 +184,23 @@ impl TryFrom<Dav1dAdaptiveBoolean> for Rav1dAdaptiveBoolean {
 }
 
 pub type Dav1dRestorationType = u8;
-pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType = 3;
-pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = 2;
-pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType = 1;
-pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = 0;
+pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType =
+    Rav1dRestorationType::None as Dav1dRestorationType;
+pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType =
+    Rav1dRestorationType::Switchable as Dav1dRestorationType;
+pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType =
+    Rav1dRestorationType::Wiener as Dav1dRestorationType;
+pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType =
+    Rav1dRestorationType::SgrProj as Dav1dRestorationType;
 
-pub type Rav1dRestorationType = u8;
-pub const RAV1D_RESTORATION_SGRPROJ: Rav1dRestorationType = DAV1D_RESTORATION_SGRPROJ;
-pub const RAV1D_RESTORATION_WIENER: Rav1dRestorationType = DAV1D_RESTORATION_WIENER;
-pub const RAV1D_RESTORATION_SWITCHABLE: Rav1dRestorationType = DAV1D_RESTORATION_SWITCHABLE;
-pub const RAV1D_RESTORATION_NONE: Rav1dRestorationType = DAV1D_RESTORATION_NONE;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, Default)]
+pub enum Rav1dRestorationType {
+    #[default]
+    None = 0,
+    Switchable = 1,
+    Wiener = 2,
+    SgrProj = 3,
+}
 
 pub type Dav1dWarpedMotionType = c_uint;
 pub const DAV1D_WM_TYPE_AFFINE: Dav1dWarpedMotionType = 3;
@@ -1624,7 +1631,7 @@ pub struct Dav1dFrameHeader_super_res {
 #[repr(C)]
 pub struct Rav1dFrameHeader_super_res {
     pub width_scale_denominator: c_int,
-    pub enabled: c_int,
+    pub enabled: bool,
 }
 
 impl From<Dav1dFrameHeader_super_res> for Rav1dFrameHeader_super_res {
@@ -1635,7 +1642,7 @@ impl From<Dav1dFrameHeader_super_res> for Rav1dFrameHeader_super_res {
         } = value;
         Self {
             width_scale_denominator,
-            enabled,
+            enabled: enabled != 0,
         }
     }
 }
@@ -1648,7 +1655,7 @@ impl From<Rav1dFrameHeader_super_res> for Dav1dFrameHeader_super_res {
         } = value;
         Self {
             width_scale_denominator,
-            enabled,
+            enabled: enabled as c_int,
         }
     }
 }
@@ -2164,14 +2171,20 @@ pub struct Rav1dFrameHeader_restoration {
 impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
     fn from(value: Dav1dFrameHeader_restoration) -> Self {
         let Dav1dFrameHeader_restoration { r#type, unit_size } = value;
-        Self { r#type, unit_size }
+        Self {
+            r#type: r#type.map(|e| Rav1dRestorationType::from_repr(e as usize).unwrap()),
+            unit_size,
+        }
     }
 }
 
 impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
     fn from(value: Rav1dFrameHeader_restoration) -> Self {
         let Rav1dFrameHeader_restoration { r#type, unit_size } = value;
-        Self { r#type, unit_size }
+        Self {
+            r#type: r#type.map(|e| e as u8),
+            unit_size,
+        }
     }
 }
 
@@ -2268,12 +2281,12 @@ pub struct Rav1dFrameHeader {
     pub disable_cdf_update: c_int,
     pub allow_screen_content_tools: bool,
     pub force_integer_mv: bool,
-    pub frame_size_override: c_int,
+    pub frame_size_override: bool,
     pub primary_ref_frame: c_int,
     pub buffer_removal_time_present: c_int,
     pub operating_points: [Rav1dFrameHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
     pub refresh_frame_flags: c_int,
-    pub allow_intrabc: c_int,
+    pub allow_intrabc: bool,
     pub frame_ref_short_signaling: c_int,
     pub refidx: [c_int; RAV1D_REFS_PER_FRAME],
     pub hp: bool,
@@ -2285,7 +2298,7 @@ pub struct Rav1dFrameHeader {
     pub quant: Rav1dFrameHeader_quant,
     pub segmentation: Rav1dFrameHeader_segmentation,
     pub delta: Rav1dFrameHeader_delta,
-    pub all_lossless: c_int,
+    pub all_lossless: bool,
     pub loopfilter: Rav1dFrameHeader_loopfilter,
     pub cdef: Rav1dFrameHeader_cdef,
     pub restoration: Rav1dFrameHeader_restoration,
@@ -2375,12 +2388,12 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             disable_cdf_update,
             allow_screen_content_tools: allow_screen_content_tools != 0,
             force_integer_mv: force_integer_mv != 0,
-            frame_size_override,
+            frame_size_override: frame_size_override != 0,
             primary_ref_frame,
             buffer_removal_time_present,
             operating_points: operating_points.map(|c| c.into()),
             refresh_frame_flags,
-            allow_intrabc,
+            allow_intrabc: allow_intrabc != 0,
             frame_ref_short_signaling,
             refidx,
             hp: hp != 0,
@@ -2392,7 +2405,7 @@ impl From<Dav1dFrameHeader> for Rav1dFrameHeader {
             quant: quant.into(),
             segmentation: segmentation.into(),
             delta: delta.into(),
-            all_lossless,
+            all_lossless: all_lossless != 0,
             loopfilter: loopfilter.into(),
             cdef: cdef.into(),
             restoration: restoration.into(),
@@ -2488,7 +2501,7 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             disable_cdf_update,
             allow_screen_content_tools: allow_screen_content_tools.into(),
             force_integer_mv: force_integer_mv.into(),
-            frame_size_override,
+            frame_size_override: frame_size_override.into(),
             primary_ref_frame,
             buffer_removal_time_present,
             operating_points: operating_points.map(|rust| rust.into()),
@@ -2497,7 +2510,7 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             render_height,
             super_res: super_res.into(),
             have_render_size,
-            allow_intrabc,
+            allow_intrabc: allow_intrabc.into(),
             frame_ref_short_signaling,
             refidx,
             hp: hp.into(),
@@ -2509,7 +2522,7 @@ impl From<Rav1dFrameHeader> for Dav1dFrameHeader {
             quant: quant.into(),
             segmentation: segmentation.into(),
             delta: delta.into(),
-            all_lossless,
+            all_lossless: all_lossless.into(),
             loopfilter: loopfilter.into(),
             cdef: cdef.into(),
             restoration: restoration.into(),

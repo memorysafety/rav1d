@@ -1,8 +1,6 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
+use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::src::align::Align16;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
@@ -62,7 +60,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
     let mut params: LooprestorationParams = LooprestorationParams {
         filter: [[0; 8]; 2].into(),
     };
-    if lr.r#type as c_int == RAV1D_RESTORATION_WIENER as c_int {
+    if lr.r#type == Rav1dRestorationType::Wiener {
         let filter = &mut params.filter.0;
         filter[0][0] = lr.filter_h[0] as i16;
         filter[0][1] = lr.filter_h[1] as i16;
@@ -87,7 +85,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
 
         lr_fn = dsp.lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
     } else {
-        assert_eq!(lr.r#type, RAV1D_RESTORATION_SGRPROJ);
+        assert_eq!(lr.r#type, Rav1dRestorationType::SgrProj);
         let sgr_params = &dav1d_sgr_params[lr.sgr_idx as usize];
         params.sgr.s0 = sgr_params[0] as u32;
         params.sgr.s1 = sgr_params[1] as u32;
@@ -196,7 +194,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
     let sb_idx = (aligned_unit_pos >> 7) * f.sr_sb128w;
     let unit_idx = (aligned_unit_pos >> 6 & 1) << 1;
     lr[0] = f.lf.lr_mask[sb_idx as usize].lr[plane as usize][unit_idx as usize].get();
-    let mut restore = lr[0].r#type != RAV1D_RESTORATION_NONE;
+    let mut restore = lr[0].r#type != Rav1dRestorationType::None;
     let mut x = 0;
     let mut bit = false;
     while x + max_unit_size <= w {
@@ -205,7 +203,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
         lr[!bit as usize] = f.lf.lr_mask[(sb_idx + (next_x >> shift_hor)) as usize].lr
             [plane as usize][next_u_idx as usize]
             .get();
-        let restore_next = lr[!bit as usize].r#type != RAV1D_RESTORATION_NONE;
+        let restore_next = lr[!bit as usize].r#type != Rav1dRestorationType::None;
         if restore_next {
             backup4xU::<BD>(
                 &mut pre_lr_border[bit as usize],

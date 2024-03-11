@@ -19,10 +19,6 @@ use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_NONE;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_SGRPROJ;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_SWITCHABLE;
-use crate::include::dav1d::headers::RAV1D_RESTORATION_WIENER;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_AFFINE;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_IDENTITY;
 use crate::include::dav1d::headers::RAV1D_WM_TYPE_TRANSLATION;
@@ -1909,7 +1905,7 @@ unsafe fn decode_b_inner(
                 println!("Post-intra[{}]: r={}", b.intra, ts.msac.rng);
             }
         }
-    } else if frame_hdr.allow_intrabc != 0 {
+    } else if frame_hdr.allow_intrabc {
         b.intra = (!rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intrabc.0)) as u8;
         if debug_block_info!(f, t) {
             println!("Post-intrabcflag[{}]: r={}", b.intra, ts.msac.rng);
@@ -2268,7 +2264,7 @@ unsafe fn decode_b_inner(
                 }
             }
         }
-        if f.frame_hdr().frame_type.is_inter_or_switch() || f.frame_hdr().allow_intrabc != 0 {
+        if f.frame_hdr().frame_type.is_inter_or_switch() || f.frame_hdr().allow_intrabc {
             splat_intraref(c, t, bs, bw4 as usize, bh4 as usize);
         }
     } else if f.frame_hdr().frame_type.is_key_or_intra() {
@@ -3969,22 +3965,22 @@ unsafe fn read_restoration_info(
 ) {
     let lr_ref = ts.lr_ref[p];
 
-    if frame_type == RAV1D_RESTORATION_SWITCHABLE {
+    if frame_type == Rav1dRestorationType::Switchable {
         let filter =
             rav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2);
         lr.r#type = if filter != 0 {
             if filter == 2 {
-                RAV1D_RESTORATION_SGRPROJ
+                Rav1dRestorationType::SgrProj
             } else {
-                RAV1D_RESTORATION_WIENER
+                Rav1dRestorationType::Wiener
             }
         } else {
-            RAV1D_RESTORATION_NONE
+            Rav1dRestorationType::None
         };
     } else {
         let r#type = rav1d_msac_decode_bool_adapt(
             &mut ts.msac,
-            if frame_type == RAV1D_RESTORATION_WIENER {
+            if frame_type == Rav1dRestorationType::Wiener {
                 &mut ts.cdf.m.restore_wiener.0
             } else {
                 &mut ts.cdf.m.restore_sgrproj.0
@@ -3993,7 +3989,7 @@ unsafe fn read_restoration_info(
         lr.r#type = if r#type {
             frame_type
         } else {
-            RAV1D_RESTORATION_NONE
+            Rav1dRestorationType::None
         };
     }
 
@@ -4002,7 +3998,7 @@ unsafe fn read_restoration_info(
             - adjustment as c_int) as i8
     }
 
-    if lr.r#type == RAV1D_RESTORATION_WIENER {
+    if lr.r#type == Rav1dRestorationType::Wiener {
         lr.filter_v[0] = if p != 0 {
             0
         } else {
@@ -4033,7 +4029,7 @@ unsafe fn read_restoration_info(
                 ts.msac.rng,
             );
         }
-    } else if lr.r#type == RAV1D_RESTORATION_SGRPROJ {
+    } else if lr.r#type == Rav1dRestorationType::SgrProj {
         let idx = rav1d_msac_decode_bools(&mut ts.msac, 4) as u8;
         let sgr_params = &dav1d_sgr_params[idx.into()];
         lr.sgr_idx = idx;
@@ -4078,7 +4074,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     let col_sb_start = frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int;
     let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
 
-    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
         rav1d_refmvs_tile_sbrow_init(
             &mut t.rt,
             &f.rf,
@@ -4519,7 +4515,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         .r#type
         .iter()
         .enumerate()
-        .map(|(i, &r#type)| ((r#type != RAV1D_RESTORATION_NONE) as u8) << i)
+        .map(|(i, &r#type)| ((r#type != Rav1dRestorationType::None) as u8) << i)
         .sum::<u8>()
         .into();
     if frame_hdr.loopfilter.sharpness != f.lf.last_sharpness {
@@ -4550,7 +4546,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     f.lf.tx_lpf_right_edge.resize(re_sz as usize, 0);
 
     // init ref mvs
-    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
         let ret = rav1d_refmvs_init_frame(
             &mut f.rf,
             seq_hdr,
@@ -5137,7 +5133,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         .store(cols * rows + f.sbh << uses_2pass, Ordering::SeqCst);
 
     // ref_mvs
-    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc != 0 {
+    if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
         f.mvs_ref = rav1d_ref_create_using_pool(
             c.refmvs_pool,
             ::core::mem::size_of::<refmvs_temporal_block>()
@@ -5150,7 +5146,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             return Err(ENOMEM);
         }
         f.mvs = (*f.mvs_ref).data.cast::<refmvs_temporal_block>();
-        if frame_hdr.allow_intrabc == 0 {
+        if !frame_hdr.allow_intrabc {
             for i in 0..7 {
                 f.refpoc[i] = f.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset as c_uint;
             }
@@ -5264,7 +5260,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 rav1d_ref_inc(f.cur_segmap_ref);
             }
             rav1d_ref_dec(&mut c.refs[i].refmvs);
-            if frame_hdr.allow_intrabc == 0 {
+            if !frame_hdr.allow_intrabc {
                 c.refs[i].refmvs = f.mvs_ref;
                 if !f.mvs_ref.is_null() {
                     rav1d_ref_inc(f.mvs_ref);

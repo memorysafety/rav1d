@@ -43,7 +43,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     bitdepth_max: c_int,
 ) {
     let cdef_backup = (lr_backup == 0) as c_int;
-    let dst_w = if frame_hdr.size.super_res.enabled != 0 {
+    let dst_w = if frame_hdr.size.super_res.enabled {
         frame_hdr.size.width[1] + ss_hor >> ss_hor
     } else {
         src_w
