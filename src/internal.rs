@@ -467,8 +467,7 @@ pub struct Rav1dFrameContext_lf {
     pub lr_lpf_line: [*mut DynPixel; 3], /* plane */
 
     // in-loop filter per-frame state keeping
-    pub start_of_tile_row: *mut u8,
-    pub start_of_tile_row_sz: c_int,
+    pub start_of_tile_row: Vec<u8>,
     pub p: [*mut DynPixel; 3],
     pub sr_p: [*mut DynPixel; 3],
     pub restore_planes: c_int, // enum LrRestorePlanes

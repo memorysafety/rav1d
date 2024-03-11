@@ -4262,22 +4262,16 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     c: &Rav1dContext,
     f: &mut Rav1dFrameData,
 ) -> Rav1dResult {
-    if f.sbh > f.lf.start_of_tile_row_sz {
-        free(f.lf.start_of_tile_row as *mut c_void);
-        f.lf.start_of_tile_row = malloc(f.sbh as usize * ::core::mem::size_of::<u8>()) as *mut u8;
-        if f.lf.start_of_tile_row.is_null() {
-            f.lf.start_of_tile_row_sz = 0;
-            return Err(ENOMEM);
-        }
-        f.lf.start_of_tile_row_sz = f.sbh;
-    }
+    // TODO: Fallible allocation
+    f.lf.start_of_tile_row.resize(f.sbh as usize, 0);
+
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let mut sby = 0;
     for tile_row in 0..frame_hdr.tiling.rows {
-        *f.lf.start_of_tile_row.offset(sby as isize) = tile_row as u8;
+        f.lf.start_of_tile_row[sby as usize] = tile_row as u8;
         sby += 1;
         while sby < frame_hdr.tiling.row_start_sb[(tile_row + 1) as usize] as c_int {
-            *f.lf.start_of_tile_row.offset(sby as isize) = 0;
+            f.lf.start_of_tile_row[sby as usize] = 0;
             sby += 1;
         }
     }
