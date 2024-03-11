@@ -4510,15 +4510,21 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
 
         let p: [&mut [BD::Pixel]; 3] = [
             slice::from_raw_parts_mut(
-                (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(y_span, 0)),
+                f.cur.data.data[f.lf.p[0]]
+                    .cast::<BD::Pixel>()
+                    .offset(cmp::min(y_span, 0)),
                 y_span.unsigned_abs() + y_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
             slice::from_raw_parts_mut(
-                (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                f.cur.data.data[f.lf.p[1]]
+                    .cast::<BD::Pixel>()
+                    .offset(cmp::min(uv_span, 0)),
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
             slice::from_raw_parts_mut(
-                (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                f.cur.data.data[f.lf.p[2]]
+                    .cast::<BD::Pixel>()
+                    .offset(cmp::min(uv_span, 0)),
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
         ];
@@ -4562,15 +4568,21 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
 
         let p: [&mut [BD::Pixel]; 3] = [
             slice::from_raw_parts_mut(
-                (f.lf.p[0] as *mut BD::Pixel).offset(cmp::min(y_span, 0)),
+                f.cur.data.data[f.lf.p[0]]
+                    .cast::<BD::Pixel>()
+                    .offset(cmp::min(y_span, 0)),
                 y_span.unsigned_abs() + y_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
             slice::from_raw_parts_mut(
-                (f.lf.p[1] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                f.cur.data.data[f.lf.p[1]]
+                    .cast::<BD::Pixel>()
+                    .offset(cmp::min(uv_span, 0)),
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
             slice::from_raw_parts_mut(
-                (f.lf.p[2] as *mut BD::Pixel).offset(cmp::min(uv_span, 0)),
+                f.cur.data.data[f.lf.p[2]]
+                    .cast::<BD::Pixel>()
+                    .offset(cmp::min(uv_span, 0)),
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
         ];
@@ -4608,10 +4620,14 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     let y = sby * sbsz * 4;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let p: [*mut BD::Pixel; 3] = [
-        (f.lf.p[0] as *mut BD::Pixel).offset((y as isize * BD::pxstride(f.cur.stride[0])) as isize),
-        (f.lf.p[1] as *mut BD::Pixel)
+        f.cur.data.data[f.lf.p[0]]
+            .cast::<BD::Pixel>()
+            .offset((y as isize * BD::pxstride(f.cur.stride[0])) as isize),
+        f.cur.data.data[f.lf.p[1]]
+            .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-        (f.lf.p[2] as *mut BD::Pixel)
+        f.cur.data.data[f.lf.p[2]]
+            .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
     ];
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
@@ -4644,9 +4660,15 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     let y = sby * sbsz * 4;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let p: [*const BD::Pixel; 3] = [
-        (f.lf.p[0] as *mut BD::Pixel).offset(y as isize * BD::pxstride(f.cur.stride[0])),
-        (f.lf.p[1] as *mut BD::Pixel).offset(y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver),
-        (f.lf.p[2] as *mut BD::Pixel).offset(y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver),
+        f.cur.data.data[f.lf.p[0]]
+            .cast::<BD::Pixel>()
+            .offset(y as isize * BD::pxstride(f.cur.stride[0])),
+        f.cur.data.data[f.lf.p[1]]
+            .cast::<BD::Pixel>()
+            .offset(y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver),
+        f.cur.data.data[f.lf.p[2]]
+            .cast::<BD::Pixel>()
+            .offset(y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver),
     ];
     let sr_p: [*mut BD::Pixel; 3] = [
         (f.lf.sr_p[0] as *mut BD::Pixel)
