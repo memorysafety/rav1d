@@ -349,6 +349,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         addr_of_mut!(f.lf.lr_mask).write(Default::default());
         addr_of_mut!(f.lf.tx_lpf_right_edge).write(Default::default());
         addr_of_mut!(f.lf.cdef_line_buf).write(Default::default());
+        addr_of_mut!(f.lf.lr_line_buf).write(Default::default());
         f.lf.last_sharpness = -(1 as c_int);
         rav1d_refmvs_init(&mut f.rf);
         n = n.wrapping_add(1);
@@ -928,7 +929,7 @@ impl Drop for Rav1dContext {
                 free(f.lf.start_of_tile_row as *mut c_void);
                 rav1d_refmvs_clear(&mut f.rf);
                 let _ = mem::take(&mut f.lf.cdef_line_buf); // TODO: remove when context is owned
-                rav1d_free_aligned(f.lf.lr_line_buf as *mut c_void);
+                let _ = mem::take(&mut f.lf.lr_line_buf); // TODO: remove when context is owned
                 n_1 = n_1.wrapping_add(1);
             }
             rav1d_free_aligned(self.fc as *mut c_void);

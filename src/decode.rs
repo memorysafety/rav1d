@@ -4449,18 +4449,14 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     if y_stride * num_lines as isize != f.lf.lr_buf_plane_sz[0] as isize
         || uv_stride * num_lines as isize * 2 != f.lf.lr_buf_plane_sz[1] as isize
     {
-        rav1d_free_aligned(f.lf.lr_line_buf as *mut c_void);
         // lr simd may overread the input, so slightly over-allocate the lpf buffer
         let mut alloc_sz: usize = 128;
         alloc_sz += y_stride.unsigned_abs() * num_lines as usize;
         alloc_sz += uv_stride.unsigned_abs() * num_lines as usize * 2;
-        f.lf.lr_line_buf = rav1d_alloc_aligned(alloc_sz, 64) as *mut u8;
-        let mut ptr = f.lf.lr_line_buf;
-        if ptr.is_null() {
-            f.lf.lr_buf_plane_sz[1] = 0;
-            f.lf.lr_buf_plane_sz[0] = f.lf.lr_buf_plane_sz[1];
-            return Err(ENOMEM);
-        }
+        // TODO: Fallible allocation
+        // On allocation failure set `f.lf.lr_buf_plane_sz` to 0.
+        f.lf.lr_line_buf.resize(alloc_sz, 0);
+        let mut ptr = f.lf.lr_line_buf.as_mut_ptr();
 
         ptr = ptr.offset(64);
         if y_stride < 0 {
