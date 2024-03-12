@@ -4603,13 +4603,12 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
     }
 
-    // Init loopfilter pointers. Increasing NULL pointers is technically UB,
-    // so just point the chroma pointers in 4:0:0 to the luma plane here
-    // to avoid having additional in-loop branches in various places.
-    // We never dereference those pointers, so it doesn't really matter
-    // what they point at, as long as the pointers are valid.
+    // Init loopfilter offsets. Point the chroma offsets in 4:0:0 to the luma
+    // plane here to avoid having additional in-loop branches in various places.
+    // We never use those values, so it doesn't really matter what they point
+    // at, as long as the offsets are valid.
     let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400) as usize;
-    f.lf.p = array::from_fn(|i| f.cur.data.data[has_chroma * i].cast());
+    f.lf.p = array::from_fn(|i| has_chroma * i);
     f.lf.sr_p = array::from_fn(|i| f.sr_cur.p.data.data[has_chroma * i].cast());
 
     Ok(())
