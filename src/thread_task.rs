@@ -256,12 +256,13 @@ unsafe fn insert_tasks(
         }
         match current_block_34 {
             15904375183555213903 => {
-                if !((*first).type_0 == TaskType::TileReconstruction
-                    || (*first).type_0 == TaskType::TileEntropy)
-                {
+                if !matches!(
+                    (*first).type_0,
+                    TaskType::TileReconstruction | TaskType::TileEntropy
+                ) {
                     unreachable!();
                 }
-                if !((*first).type_0 as c_uint == (*t_ptr).type_0 as c_uint) {
+                if !((*first).type_0 == (*t_ptr).type_0) {
                     unreachable!();
                 }
                 if !((*t_ptr).sby == (*first).sby) {
@@ -871,9 +872,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         if t.type_0 == TaskType::InitCdf {
                             break 'next;
                         }
-                        if t.type_0 == TaskType::TileEntropy
-                            || t.type_0 == TaskType::TileReconstruction
-                        {
+                        if matches!(
+                            t.type_0,
+                            TaskType::TileEntropy | TaskType::TileReconstruction
+                        ) {
                             // if not bottom sbrow of tile, this task will be re-added
                             // after it's finished
                             if check_tile(t, f, (c.n_fc > 1 as c_uint) as c_int) == 0 {
