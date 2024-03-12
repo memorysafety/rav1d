@@ -534,7 +534,7 @@ unsafe fn ensure_progress<'l, 'ttd: 'l>(
 
 #[inline]
 unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int) -> c_int {
-    let tp = ((*t).type_0 == TaskType::TileEntropy) as c_int; // TODO make bool
+    let tp = (*t).type_0 == TaskType::TileEntropy;
     let tile_idx = t.offset_from(f.task_thread.tile_tasks[tp as usize]) as c_long as c_int;
     let ts: *mut Rav1dTileState = &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
     let p1 = (*ts).progress[tp as usize].load(Ordering::SeqCst);
@@ -543,7 +543,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
     }
     let mut error = (p1 == TILE_ERROR) as c_int;
     error |= f.task_thread.error.fetch_or(error, Ordering::SeqCst);
-    if error == 0 && frame_mt != 0 && tp == 0 {
+    if error == 0 && frame_mt != 0 && !tp {
         let p2 = (*ts).progress[1].load(Ordering::SeqCst);
         if p2 <= (*t).sby {
             return 1 as c_int;
@@ -564,7 +564,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
         let mut n = (*t).deps_skip;
         while n < 7 {
             let mut lowest: c_uint = 0;
-            if tp != 0 {
+            if tp {
                 lowest = p_b;
                 current_block_14 = 2370887241019905314;
             } else {
@@ -588,7 +588,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
             }
             match current_block_14 {
                 2370887241019905314 => {
-                    let p3 = f.refp[n as usize].progress.as_ref().unwrap()[(tp == 0) as usize]
+                    let p3 = f.refp[n as usize].progress.as_ref().unwrap()[(!tp) as usize]
                         .load(Ordering::SeqCst);
                     if p3 < lowest {
                         return 1 as c_int;
@@ -1097,7 +1097,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         continue 'outer;
                     }
                     TaskType::TileEntropy | TaskType::TileReconstruction => {
-                        let p_1 = (t.type_0 == TaskType::TileEntropy);
+                        let p_1 = t.type_0 == TaskType::TileEntropy;
                         // TODO(sjc): t is a reference to an array element, we
                         // need to replace this pointer arithmetic with proper
                         // indexing
