@@ -268,7 +268,7 @@ unsafe fn insert_tasks(
                 if !((*t_ptr).sby == (*first).sby) {
                     unreachable!();
                 }
-                let p = ((*first).type_0 == TaskType::TileEntropy) as c_int;
+                let p = (*first).type_0 == TaskType::TileEntropy;
                 let t_tile_idx =
                     first.offset_from(f.task_thread.tile_tasks[p as usize]) as c_long as c_int;
                 let p_tile_idx =
