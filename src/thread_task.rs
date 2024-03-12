@@ -1097,8 +1097,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         continue 'outer;
                     }
                     TaskType::TileEntropy | TaskType::TileReconstruction => {
-                        let p_1 = (t.type_0 == TaskType::TileEntropy) as c_int; // TODO make bool
-
+                        let p_1 = (t.type_0 == TaskType::TileEntropy);
                         // TODO(sjc): t is a reference to an array element, we
                         // need to replace this pointer arithmetic with proper
                         // indexing
