@@ -880,7 +880,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 break 'found (f, t, prev_t);
                             }
                         } else if t.recon_progress != 0 {
-                            let p = (t.type_0 == TaskType::EntropyProgress) as c_int; // TODO make bool
+                            let p = t.type_0 == TaskType::EntropyProgress;
                             let error = f.task_thread.error.load(Ordering::SeqCst);
                             if !(f.task_thread.done[p as usize].load(Ordering::SeqCst) == 0
                                 || error != 0)
@@ -890,7 +890,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                             let tile_row_base =
                                 frame_hdr.tiling.cols * f.frame_thread.next_tile_row[p as usize];
-                            if p != 0 {
+                            if p {
                                 let p1_0 = f.frame_thread_progress.entropy.load(Ordering::SeqCst);
                                 if p1_0 < t.sby {
                                     break 'next;
