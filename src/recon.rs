@@ -4536,7 +4536,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         &p_offset,
         mask_offset as usize,
         sby,
-        *(f.lf.start_of_tile_row).offset(sby as isize) as c_int,
+        f.lf.start_of_tile_row[sby as usize] as c_int,
     );
 }
 
