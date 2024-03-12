@@ -1299,7 +1299,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                     TaskType::EntropyProgress => {
                         // dummy to convert tile progress to frame
                     }
-                    _ => {
+                    TaskType::FgPrep | TaskType::FgApply => {
                         abort();
                     }
                 }
