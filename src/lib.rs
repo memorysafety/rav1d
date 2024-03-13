@@ -33,7 +33,6 @@ use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dFrameData;
-use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
@@ -70,6 +69,7 @@ use libc::pthread_attr_destroy;
 use libc::pthread_attr_init;
 use libc::pthread_attr_setstacksize;
 use libc::pthread_attr_t;
+use std::cell::UnsafeCell;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
@@ -337,6 +337,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     for n in 0..n_fc {
         let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(n as isize);
         f.index = n;
+        addr_of_mut!(f.task_thread.tasks).write(UnsafeCell::new(Default::default()));
         addr_of_mut!(f.frame_thread).write(Default::default());
         if n_tc > 1 {
             f.task_thread.lock = Mutex::new(());
@@ -800,12 +801,10 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         }
         let mut i_1: c_uint = 0 as c_int as c_uint;
         while i_1 < (*c).n_fc {
-            let ref mut fresh1 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_head;
-            *fresh1 = 0 as *mut Rav1dTask;
-            let ref mut fresh2 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_tail;
-            *fresh2 = 0 as *mut Rav1dTask;
-            let ref mut fresh3 = (*((*c).fc).offset(i_1 as isize)).task_thread.task_cur_prev;
-            *fresh3 = 0 as *mut Rav1dTask;
+            let tasks = &mut *(*((*c).fc).offset(i_1 as isize)).task_thread.tasks();
+            tasks.head = None;
+            tasks.tail = None;
+            tasks.cur_prev = None;
             *(*((*c).fc).offset(i_1 as isize))
                 .task_thread
                 .pending_tasks
@@ -910,11 +909,7 @@ impl Drop for Rav1dContext {
                 let _ = mem::take(&mut f.frame_thread); // TODO: remove when context is owned
                 mem::take(&mut f.frame_thread_progress.frame); // TODO: remove when context is owned
                 mem::take(&mut f.frame_thread_progress.copy_lpf); // TODO: remove when context is owned
-                freep(&mut f.task_thread.tasks as *mut *mut Rav1dTask as *mut c_void);
-                freep(
-                    &mut *(f.task_thread.tile_tasks).as_mut_ptr().offset(0) as *mut *mut Rav1dTask
-                        as *mut c_void,
-                );
+                mem::take(&mut f.task_thread.tasks); // TODO: remove when context is owned
                 rav1d_free_aligned(f.ts as *mut c_void);
                 rav1d_free_aligned(f.ipred_edge[0] as *mut c_void);
                 free(f.a as *mut c_void);
