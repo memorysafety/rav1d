@@ -812,8 +812,8 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         // We will need to set init_done before adding to the
                         // pending Q, so maybe return the tasks, set init_done,
                         // and add to pending Q only then.
-                        let p1 = (if !(f.in_cdf.progress).is_null() {
-                            (*f.in_cdf.progress).load(Ordering::SeqCst)
+                        let p1 = (if let Some(progress) = f.in_cdf.progress() {
+                            progress.load(Ordering::SeqCst)
                         } else {
                             1 as c_int as c_uint
                         }) as c_int;
@@ -982,8 +982,8 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             unreachable!();
                         }
                         let res = rav1d_decode_frame_init(c, f);
-                        let p1_3 = (if !(f.in_cdf.progress).is_null() {
-                            (*f.in_cdf.progress).load(Ordering::SeqCst)
+                        let p1_3 = (if let Some(progress) = f.in_cdf.progress() {
+                            progress.load(Ordering::SeqCst)
                         } else {
                             1 as c_int as c_uint
                         }) as c_int;
@@ -1013,7 +1013,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         }
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.refresh_context != 0 && !f.task_thread.update_set {
-                            (*f.out_cdf.progress).store(
+                            f.out_cdf.progress().unwrap().store(
                                 (if res_0.is_err() {
                                     TILE_ERROR
                                 } else {
@@ -1132,12 +1132,12 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 if error_0 == 0 {
                                     rav1d_cdf_thread_update(
                                         frame_hdr,
-                                        &mut *f.out_cdf.data.cdf,
+                                        &mut f.out_cdf.cdf_write(),
                                         &(*(f.ts).offset(frame_hdr.tiling.update as isize)).cdf,
                                     );
                                 }
-                                if c.n_fc > 1 as c_uint {
-                                    (*f.out_cdf.progress).store(
+                                if let Some(progress) = f.out_cdf.progress() {
+                                    progress.store(
                                         (if error_0 != 0 { TILE_ERROR } else { 1 as c_int })
                                             as c_uint,
                                         Ordering::SeqCst,

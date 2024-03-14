@@ -5,7 +5,6 @@ use crate::src::align::Align16;
 use crate::src::align::Align32;
 use crate::src::align::Align4;
 use crate::src::align::Align8;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::levels::BlockLevel;
@@ -16,20 +15,18 @@ use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::r#ref::rav1d_ref_create_using_pool;
-use crate::src::r#ref::rav1d_ref_dec;
-use crate::src::r#ref::rav1d_ref_inc;
-use crate::src::r#ref::Rav1dRef;
 use crate::src::tables::dav1d_partition_type_count;
-use libc::memcpy;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
-use std::ptr;
+use std::mem;
 use std::sync::atomic::AtomicU32;
+use std::sync::Arc;
+use std::sync::RwLock;
+use std::sync::RwLockWriteGuard;
 use strum::EnumCount;
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfContext {
     pub m: CdfModeContext,
@@ -39,6 +36,7 @@ pub struct CdfContext {
     pub dmv: CdfMvContext,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
@@ -133,18 +131,39 @@ pub struct CdfModeContext {
 }
 
 #[derive(Clone)]
-#[repr(C)]
-pub struct CdfThreadContext {
-    pub r#ref: *mut Rav1dRef,
-    pub data: CdfThreadContext_data,
-    pub progress: *mut AtomicU32,
+pub enum CdfThreadContext {
+    QCat(c_uint),
+    Cdf(Arc<CdfThreadContext_data>),
 }
 
-#[derive(Clone, Copy)]
+impl CdfThreadContext {
+    pub fn progress(&self) -> Option<&AtomicU32> {
+        match self {
+            Self::QCat(_) => None,
+            Self::Cdf(cdf) => cdf.progress.as_ref(),
+        }
+    }
+
+    pub fn cdf_write(&self) -> RwLockWriteGuard<CdfContext> {
+        match self {
+            Self::QCat(_) => panic!("Expected a Cdf"),
+            Self::Cdf(cdf) => cdf.cdf.try_write().ok().unwrap(),
+        }
+    }
+}
+
+impl Default for CdfThreadContext {
+    fn default() -> Self {
+        Self::QCat(0)
+    }
+}
+
 #[repr(C)]
-pub union CdfThreadContext_data {
-    pub cdf: *mut CdfContext,
-    pub qcat: c_uint,
+pub struct CdfThreadContext_data {
+    /// This context should not be contended but needs interior mutability. It
+    /// should always be accessible with `.try_*` methods.
+    cdf: RwLock<CdfContext>,
+    pub progress: Option<AtomicU32>,
 }
 
 const fn cdf0d<const P: usize, const N: usize>(probs: [u16; P]) -> [u16; N] {
@@ -5075,66 +5094,40 @@ unsafe fn get_qcat_idx(q: c_int) -> c_int {
     return 3 as c_int;
 }
 
-pub unsafe fn rav1d_cdf_thread_init_static(cdf: *mut CdfThreadContext, qidx: c_int) {
-    (*cdf).r#ref = 0 as *mut Rav1dRef;
-    (*cdf).data.qcat = get_qcat_idx(qidx) as c_uint;
+pub unsafe fn rav1d_cdf_thread_init_static(qidx: c_int) -> CdfThreadContext {
+    CdfThreadContext::QCat(get_qcat_idx(qidx) as c_uint)
 }
 
-pub unsafe fn rav1d_cdf_thread_copy(dst: *mut CdfContext, src: &CdfThreadContext) {
-    if !((*src).r#ref).is_null() {
-        memcpy(
-            dst as *mut c_void,
-            (*src).data.cdf as *const c_void,
-            ::core::mem::size_of::<CdfContext>(),
-        );
-    } else {
-        (*dst).m = av1_default_cdf.clone();
-        (*dst).kfym = default_kf_y_mode_cdf;
-        (*dst).coef = av1_default_coef_cdf[(*src).data.qcat as usize].clone();
-        (*dst).mv.joint = default_mv_joint_cdf;
-        (*dst).dmv.joint = default_mv_joint_cdf;
-        (*dst).dmv.comp[1] = default_mv_component_cdf.clone();
-        (*dst).dmv.comp[0] = (*dst).dmv.comp[1].clone();
-        (*dst).mv.comp[1] = (*dst).dmv.comp[0].clone();
-        (*dst).mv.comp[0] = (*dst).mv.comp[1].clone();
-    };
+pub fn rav1d_cdf_thread_copy(dst: &mut CdfContext, src: &CdfThreadContext) {
+    match src {
+        CdfThreadContext::Cdf(src) => {
+            *dst = src.cdf.try_read().unwrap().clone();
+        }
+        CdfThreadContext::QCat(i) => {
+            dst.m = av1_default_cdf.clone();
+            dst.kfym = default_kf_y_mode_cdf;
+            dst.coef = av1_default_coef_cdf[*i as usize].clone();
+            dst.mv.joint = default_mv_joint_cdf;
+            dst.dmv.joint = default_mv_joint_cdf;
+            dst.dmv.comp[1] = default_mv_component_cdf.clone();
+            dst.dmv.comp[0] = dst.dmv.comp[1].clone();
+            dst.mv.comp[1] = dst.dmv.comp[0].clone();
+            dst.mv.comp[0] = dst.mv.comp[1].clone();
+        }
+    }
 }
 
 pub unsafe fn rav1d_cdf_thread_alloc(
-    c: &Rav1dContext,
-    cdf: *mut CdfThreadContext,
+    _c: &Rav1dContext,
     have_frame_mt: c_int,
-) -> Rav1dResult {
-    (*cdf).r#ref = rav1d_ref_create_using_pool(
-        c.cdf_pool,
-        (::core::mem::size_of::<CdfContext>()).wrapping_add(::core::mem::size_of::<AtomicU32>()),
-    );
-    if ((*cdf).r#ref).is_null() {
-        return Err(ENOMEM);
-    }
-    (*cdf).data.cdf = (*(*cdf).r#ref).data as *mut CdfContext;
-    if have_frame_mt != 0 {
-        (*cdf).progress = &mut *((*cdf).data.cdf).offset(1) as *mut CdfContext as *mut AtomicU32;
-        (*cdf).progress.write(AtomicU32::new(0));
-    }
-    Ok(())
-}
-
-pub unsafe fn rav1d_cdf_thread_ref(dst: *mut CdfThreadContext, src: *mut CdfThreadContext) {
-    *dst = (*src).clone();
-    if !((*src).r#ref).is_null() {
-        rav1d_ref_inc((*src).r#ref);
-    }
-}
-
-pub unsafe fn rav1d_cdf_thread_unref(cdf: &mut CdfThreadContext) {
-    *cdf = CdfThreadContext {
-        r#ref: cdf.r#ref,
-        data: CdfThreadContext_data {
-            cdf: ptr::null_mut(),
-            // cdf is larger than qcat, so this zeroes it
-        },
-        progress: ptr::null_mut(),
+) -> Rav1dResult<CdfThreadContext> {
+    let progress = if have_frame_mt != 0 {
+        Some(AtomicU32::new(0))
+    } else {
+        None
     };
-    rav1d_ref_dec(&mut cdf.r#ref);
+    Ok(CdfThreadContext::Cdf(Arc::new(CdfThreadContext_data {
+        cdf: mem::zeroed(),
+        progress,
+    })))
 }

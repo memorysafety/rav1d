@@ -17,7 +17,6 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
 use crate::src::decode::rav1d_decode_frame_exit;
@@ -37,7 +36,6 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::log::Rav1dLog as _;
-use crate::src::mem::freep;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
@@ -779,7 +777,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         }
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
-        rav1d_cdf_thread_unref(&mut *((*c).cdf).as_mut_ptr().offset(i as isize));
+        let _ = mem::take(&mut (*c).cdf[i]);
         i += 1;
     }
     let _ = mem::take(&mut (*c).frame_hdr); // TODO(kkysen) Why wasn't [`rav1d_ref_dec`] called on it?
@@ -944,7 +942,6 @@ impl Drop for Rav1dContext {
             let _ = mem::take(&mut self.tiles);
             let mut n_4 = 0;
             while n_4 < 8 {
-                rav1d_cdf_thread_unref(&mut *(self.cdf).as_mut_ptr().offset(n_4 as isize));
                 if self.refs[n_4 as usize].p.p.frame_hdr.is_some() {
                     rav1d_thread_picture_unref(
                         &mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p,
