@@ -589,7 +589,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
             }
             match current_block_14 {
                 2370887241019905314 => {
-                    let p3 = f.refp[n as usize].progress.as_ref().unwrap()[(!tp) as usize]
+                    let p3 = f.refp[n as usize].progress.as_ref().unwrap()[!tp as usize]
                         .load(Ordering::SeqCst);
                     if p3 < lowest {
                         return 1 as c_int;
