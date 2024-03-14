@@ -25,19 +25,6 @@ use crate::src::internal::Rav1dTileState;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskThreadData_delayed_fg;
 use crate::src::internal::TaskType;
-use crate::src::internal::RAV1D_TASK_TYPE_CDEF;
-use crate::src::internal::RAV1D_TASK_TYPE_DEBLOCK_COLS;
-use crate::src::internal::RAV1D_TASK_TYPE_DEBLOCK_ROWS;
-use crate::src::internal::RAV1D_TASK_TYPE_ENTROPY_PROGRESS;
-use crate::src::internal::RAV1D_TASK_TYPE_FG_APPLY;
-use crate::src::internal::RAV1D_TASK_TYPE_FG_PREP;
-use crate::src::internal::RAV1D_TASK_TYPE_INIT;
-use crate::src::internal::RAV1D_TASK_TYPE_INIT_CDF;
-use crate::src::internal::RAV1D_TASK_TYPE_LOOP_RESTORATION;
-use crate::src::internal::RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
-use crate::src::internal::RAV1D_TASK_TYPE_SUPER_RESOLUTION;
-use crate::src::internal::RAV1D_TASK_TYPE_TILE_ENTROPY;
-use crate::src::internal::RAV1D_TASK_TYPE_TILE_RECONSTRUCTION;
 use crate::src::picture::Rav1dThreadPicture;
 use libc::memset;
 use libc::realloc;
@@ -232,8 +219,8 @@ unsafe fn insert_tasks(
     let mut current_block_34: u64;
     t_ptr = f.task_thread.task_head;
     while !t_ptr.is_null() {
-        if (*t_ptr).type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint {
-            if (*first).type_0 as c_uint > RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint {
+        if (*t_ptr).type_0 == TaskType::TileEntropy {
+            if (*first).type_0 > TaskType::TileEntropy {
                 current_block_34 = 11174649648027449784;
             } else if (*first).sby > (*t_ptr).sby {
                 current_block_34 = 11174649648027449784;
@@ -245,7 +232,7 @@ unsafe fn insert_tasks(
                 current_block_34 = 15904375183555213903;
             }
         } else {
-            if (*first).type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint {
+            if (*first).type_0 == TaskType::TileEntropy {
                 insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
                 return;
             }
@@ -269,21 +256,19 @@ unsafe fn insert_tasks(
         }
         match current_block_34 {
             15904375183555213903 => {
-                if !((*first).type_0 as c_uint
-                    == RAV1D_TASK_TYPE_TILE_RECONSTRUCTION as c_int as c_uint
-                    || (*first).type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint)
-                {
+                if !matches!(
+                    (*first).type_0,
+                    TaskType::TileReconstruction | TaskType::TileEntropy
+                ) {
                     unreachable!();
                 }
-                if !((*first).type_0 as c_uint == (*t_ptr).type_0 as c_uint) {
+                if !((*first).type_0 == (*t_ptr).type_0) {
                     unreachable!();
                 }
                 if !((*t_ptr).sby == (*first).sby) {
                     unreachable!();
                 }
-                let p = ((*first).type_0 as c_uint
-                    == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint)
-                    as c_int;
+                let p = (*first).type_0 == TaskType::TileEntropy;
                 let t_tile_idx =
                     first.offset_from(f.task_thread.tile_tasks[p as usize]) as c_long as c_int;
                 let p_tile_idx =
@@ -403,17 +388,17 @@ unsafe fn create_filter_sbrow(
     (*t).sby = 0 as c_int;
     (*t).recon_progress = 1 as c_int;
     (*t).deblock_progress = 0 as c_int;
-    (*t).type_0 = (if pass == 1 {
-        RAV1D_TASK_TYPE_ENTROPY_PROGRESS as c_int
+    (*t).type_0 = if pass == 1 {
+        TaskType::EntropyProgress
     } else if has_deblock != 0 {
-        RAV1D_TASK_TYPE_DEBLOCK_COLS as c_int
+        TaskType::DeblockCols
     } else if has_cdef != 0 || has_lr != 0 {
-        RAV1D_TASK_TYPE_DEBLOCK_ROWS as c_int
+        TaskType::DeblockRows
     } else if has_resize != 0 {
-        RAV1D_TASK_TYPE_SUPER_RESOLUTION as c_int
+        TaskType::SuperResolution
     } else {
-        RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS as c_int
-    }) as TaskType;
+        TaskType::ReconstructionProgress
+    };
     (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
     *res_t = t;
     return 0 as c_int;
@@ -463,11 +448,11 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
         (*t).recon_progress = 0 as c_int;
         (*t).deblock_progress = 0 as c_int;
         (*t).deps_skip = 0 as c_int;
-        (*t).type_0 = (if pass != 1 as c_int {
-            RAV1D_TASK_TYPE_TILE_RECONSTRUCTION as c_int
+        (*t).type_0 = if pass != 1 {
+            TaskType::TileReconstruction
         } else {
-            RAV1D_TASK_TYPE_TILE_ENTROPY as c_int
-        }) as TaskType;
+            TaskType::TileEntropy
+        };
         (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
         if !prev_t.is_null() {
             (*prev_t).next = t;
@@ -499,7 +484,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
 pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, f: &mut Rav1dFrameData) {
     f.task_thread.init_done.store(0, Ordering::SeqCst);
     let t: *mut Rav1dTask = &mut f.task_thread.init_task;
-    (*t).type_0 = RAV1D_TASK_TYPE_INIT;
+    (*t).type_0 = TaskType::Init;
     // TODO(SJC): add a frame context index so we don't have to rely on linear offsets
     (*t).frame_idx = (f as *mut Rav1dFrameData).offset_from(c.fc) as c_long as c_int as c_uint;
     (*t).sby = 0 as c_int;
@@ -517,7 +502,7 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
     let mut delayed_fg = ttd.delayed_fg.lock().unwrap();
     delayed_fg.in_0 = in_0;
     delayed_fg.out = out;
-    delayed_fg.type_0 = RAV1D_TASK_TYPE_FG_PREP;
+    delayed_fg.type_0 = TaskType::FgPrep;
     ttd.delayed_fg_progress[0].store(0, Ordering::SeqCst);
     ttd.delayed_fg_progress[1].store(0, Ordering::SeqCst);
     delayed_fg.exec = 1 as c_int;
@@ -550,7 +535,7 @@ unsafe fn ensure_progress<'l, 'ttd: 'l>(
 
 #[inline]
 unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int) -> c_int {
-    let tp = ((*t).type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint) as c_int;
+    let tp = (*t).type_0 == TaskType::TileEntropy;
     let tile_idx = t.offset_from(f.task_thread.tile_tasks[tp as usize]) as c_long as c_int;
     let ts: *mut Rav1dTileState = &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
     let p1 = (*ts).progress[tp as usize].load(Ordering::SeqCst);
@@ -559,7 +544,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
     }
     let mut error = (p1 == TILE_ERROR) as c_int;
     error |= f.task_thread.error.fetch_or(error, Ordering::SeqCst);
-    if error == 0 && frame_mt != 0 && tp == 0 {
+    if error == 0 && frame_mt != 0 && !tp {
         let p2 = (*ts).progress[1].load(Ordering::SeqCst);
         if p2 <= (*t).sby {
             return 1 as c_int;
@@ -580,7 +565,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
         let mut n = (*t).deps_skip;
         while n < 7 {
             let mut lowest: c_uint = 0;
-            if tp != 0 {
+            if tp {
                 lowest = p_b;
                 current_block_14 = 2370887241019905314;
             } else {
@@ -604,7 +589,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
             }
             match current_block_14 {
                 2370887241019905314 => {
-                    let p3 = f.refp[n as usize].progress.as_ref().unwrap()[(tp == 0) as usize]
+                    let p3 = f.refp[n as usize].progress.as_ref().unwrap()[!tp as usize]
                         .load(Ordering::SeqCst);
                     if p3 < lowest {
                         return 1 as c_int;
@@ -687,8 +672,8 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
     let mut row;
     let mut progmax;
     let mut done;
-    match delayed_fg.type_0 as c_uint {
-        RAV1D_TASK_TYPE_FG_PREP => {
+    match delayed_fg.type_0 {
+        TaskType::FgPrep => {
             delayed_fg.exec = 0 as c_int;
             if ttd.cond_signaled.load(Ordering::SeqCst) != 0 {
                 ttd.cond.notify_one();
@@ -717,10 +702,10 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                     abort();
                 }
             }
-            delayed_fg.type_0 = RAV1D_TASK_TYPE_FG_APPLY;
+            delayed_fg.type_0 = TaskType::FgApply;
             delayed_fg.exec = 1 as c_int;
         }
-        12 => {}
+        TaskType::FgApply => {}
         _ => {
             abort();
         }
@@ -842,10 +827,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                     let Some(t) = f.task_thread.task_head.as_mut() else {
                         continue 'init_tasks;
                     };
-                    if t.type_0 as c_uint == RAV1D_TASK_TYPE_INIT as c_int as c_uint {
+                    if t.type_0 == TaskType::Init {
                         break 'found (f, t, None);
                     }
-                    if t.type_0 as c_uint == RAV1D_TASK_TYPE_INIT_CDF as c_int as c_uint {
+                    if t.type_0 == TaskType::InitCdf {
                         // XXX This can be a simple else, if adding tasks of both
                         // passes at once (in dav1d_task_create_tile_sbrow).
                         // Adding the tasks to the pending Q can result in a
@@ -884,22 +869,20 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 };
                 while let Some(t) = next_t {
                     'next: {
-                        if t.type_0 as c_uint == RAV1D_TASK_TYPE_INIT_CDF as c_int as c_uint {
+                        if t.type_0 == TaskType::InitCdf {
                             break 'next;
                         }
-                        if t.type_0 as c_uint == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint
-                            || t.type_0 as c_uint
-                                == RAV1D_TASK_TYPE_TILE_RECONSTRUCTION as c_int as c_uint
-                        {
+                        if matches!(
+                            t.type_0,
+                            TaskType::TileEntropy | TaskType::TileReconstruction
+                        ) {
                             // if not bottom sbrow of tile, this task will be re-added
                             // after it's finished
                             if check_tile(t, f, (c.n_fc > 1 as c_uint) as c_int) == 0 {
                                 break 'found (f, t, prev_t);
                             }
                         } else if t.recon_progress != 0 {
-                            let p = (t.type_0 as c_uint
-                                == RAV1D_TASK_TYPE_ENTROPY_PROGRESS as c_int as c_uint)
-                                as c_int;
+                            let p = t.type_0 == TaskType::EntropyProgress;
                             let error = f.task_thread.error.load(Ordering::SeqCst);
                             if !(f.task_thread.done[p as usize].load(Ordering::SeqCst) == 0
                                 || error != 0)
@@ -909,7 +892,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                             let tile_row_base =
                                 frame_hdr.tiling.cols * f.frame_thread.next_tile_row[p as usize];
-                            if p != 0 {
+                            if p {
                                 let p1_0 = f.frame_thread_progress.entropy.load(Ordering::SeqCst);
                                 if p1_0 < t.sby {
                                     break 'next;
@@ -948,7 +931,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 insert_task(c, f, next_t, 0 as c_int);
                             }
                             break 'found (f, t, prev_t);
-                        } else if t.type_0 as c_uint == RAV1D_TASK_TYPE_CDEF as c_int as c_uint {
+                        } else if t.type_0 == TaskType::Cdef {
                             let p1_1 = f.frame_thread_progress.copy_lpf[(t.sby - 1 >> 5) as usize]
                                 .load(Ordering::SeqCst);
                             if p1_1 as c_uint & (1 as c_uint) << (t.sby - 1 & 31) != 0 {
@@ -995,9 +978,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 .as_deref_mut()
                 .map_or_else(ptr::null_mut, |p| p as *mut Rav1dTask);
         }
-        if t.type_0 as c_uint > RAV1D_TASK_TYPE_INIT_CDF as c_int as c_uint
-            && (f.task_thread.task_head).is_null()
-        {
+        if t.type_0 > TaskType::InitCdf && (f.task_thread.task_head).is_null() {
             ttd.cur.fetch_add(1, Ordering::Relaxed);
         }
         t.next = 0 as *mut Rav1dTask;
@@ -1014,10 +995,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
 
             // run it
             let mut sby = t.sby;
-            let mut task_type = t.type_0 as c_uint;
+            let mut task_type = t.type_0;
             'fallthrough: loop {
                 match task_type {
-                    RAV1D_TASK_TYPE_INIT => {
+                    TaskType::Init => {
                         if !(c.n_fc > 1 as c_uint) {
                             unreachable!();
                         }
@@ -1033,7 +1014,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             abort_frame(c, f, if res.is_err() { res } else { Err(EINVAL) });
                             reset_task_cur(c, ttd, t.frame_idx);
                         } else {
-                            t.type_0 = RAV1D_TASK_TYPE_INIT_CDF;
+                            t.type_0 = TaskType::InitCdf;
                             if p1_3 != 0 {
                                 continue 'found_unlocked;
                             }
@@ -1043,7 +1024,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         }
                         continue 'outer;
                     }
-                    RAV1D_TASK_TYPE_INIT_CDF => {
+                    TaskType::InitCdf => {
                         if !(c.n_fc > 1 as c_uint) {
                             unreachable!();
                         }
@@ -1117,10 +1098,8 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         }
                         continue 'outer;
                     }
-                    RAV1D_TASK_TYPE_TILE_ENTROPY | RAV1D_TASK_TYPE_TILE_RECONSTRUCTION => {
-                        let p_1 = (t.type_0 as c_uint
-                            == RAV1D_TASK_TYPE_TILE_ENTROPY as c_int as c_uint)
-                            as c_int;
+                    TaskType::TileEntropy | TaskType::TileReconstruction => {
+                        let p_1 = t.type_0 == TaskType::TileEntropy;
                         // TODO(sjc): t is a reference to an array element, we
                         // need to replace this pointer arithmetic with proper
                         // indexing
@@ -1135,10 +1114,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         tc.frame_thread.pass = if uses_2pass == 0 {
                             0 as c_int
                         } else {
-                            1 as c_int
-                                + (t.type_0 as c_uint
-                                    == RAV1D_TASK_TYPE_TILE_RECONSTRUCTION as c_int as c_uint)
-                                    as c_int
+                            1 as c_int + (t.type_0 == TaskType::TileReconstruction) as c_int
                         };
                         if error_0 == 0 {
                             error_0 = match rav1d_decode_tile_sbrow(c, &mut tc, f) {
@@ -1220,7 +1196,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         }
                         continue 'outer;
                     }
-                    RAV1D_TASK_TYPE_DEBLOCK_COLS => {
+                    TaskType::DeblockCols => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
                             (f.bd_fn().filter_sbrow_deblock_cols)(c, f, &mut tc, sby);
                         }
@@ -1228,7 +1204,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             ttd,
                             f,
                             t,
-                            RAV1D_TASK_TYPE_DEBLOCK_ROWS,
+                            TaskType::DeblockRows,
                             &f.frame_thread_progress.deblock,
                             &mut t.deblock_progress,
                             &mut task_thread_lock,
@@ -1236,10 +1212,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         {
                             continue 'outer;
                         }
-                        task_type = RAV1D_TASK_TYPE_DEBLOCK_ROWS;
+                        task_type = TaskType::DeblockRows;
                         continue 'fallthrough;
                     }
-                    RAV1D_TASK_TYPE_DEBLOCK_ROWS => {
+                    TaskType::DeblockRows => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0 {
                             (f.bd_fn().filter_sbrow_deblock_rows)(c, f, &mut tc, sby);
                         }
@@ -1268,7 +1244,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                     [(sby - 1 >> 5) as usize]
                                     .load(Ordering::SeqCst);
                                 if !prog_1 as c_uint & (1 as c_uint) << (sby - 1 & 31) != 0 {
-                                    t.type_0 = RAV1D_TASK_TYPE_CDEF;
+                                    t.type_0 = TaskType::Cdef;
                                     t.deblock_progress = 0 as c_int;
                                     t.recon_progress = t.deblock_progress;
                                     add_pending(f, t);
@@ -1281,10 +1257,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 }
                             }
                         }
-                        task_type = RAV1D_TASK_TYPE_CDEF;
+                        task_type = TaskType::Cdef;
                         continue 'fallthrough;
                     }
-                    RAV1D_TASK_TYPE_CDEF => {
+                    TaskType::Cdef => {
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
@@ -1295,35 +1271,35 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 ttd.cond.notify_one();
                             }
                         }
-                        task_type = RAV1D_TASK_TYPE_SUPER_RESOLUTION;
+                        task_type = TaskType::SuperResolution;
                         continue 'fallthrough;
                     }
-                    RAV1D_TASK_TYPE_SUPER_RESOLUTION => {
+                    TaskType::SuperResolution => {
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                             if f.task_thread.error.load(Ordering::SeqCst) == 0 {
                                 (f.bd_fn().filter_sbrow_resize)(c, f, &mut tc, sby);
                             }
                         }
-                        task_type = RAV1D_TASK_TYPE_LOOP_RESTORATION;
+                        task_type = TaskType::LoopRestoration;
                         continue 'fallthrough;
                     }
-                    RAV1D_TASK_TYPE_LOOP_RESTORATION => {
+                    TaskType::LoopRestoration => {
                         if f.task_thread.error.load(Ordering::SeqCst) == 0
                             && f.lf.restore_planes != 0
                         {
                             (f.bd_fn().filter_sbrow_lr)(c, f, &mut tc, sby);
                         }
-                        task_type = RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS;
+                        task_type = TaskType::ReconstructionProgress;
                         continue 'fallthrough;
                     }
-                    RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS => {
+                    TaskType::ReconstructionProgress => {
                         // dummy to cover for no post-filters
                     }
-                    RAV1D_TASK_TYPE_ENTROPY_PROGRESS => {
+                    TaskType::EntropyProgress => {
                         // dummy to convert tile progress to frame
                     }
-                    _ => {
+                    TaskType::FgPrep | TaskType::FgApply => {
                         abort();
                     }
                 }
@@ -1333,7 +1309,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
             let uses_2pass_0 = (c.n_fc > 1 as c_uint) as c_int;
             let sbh = f.sbh;
             let sbsz = f.sb_step * 4;
-            if t.type_0 as c_uint == RAV1D_TASK_TYPE_ENTROPY_PROGRESS as c_int as c_uint {
+            if t.type_0 == TaskType::EntropyProgress {
                 error_0 = f.task_thread.error.load(Ordering::SeqCst);
                 let y: c_uint = if sby + 1 == sbh {
                     u32::MAX

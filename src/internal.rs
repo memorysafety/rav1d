@@ -110,20 +110,22 @@ pub(crate) struct Rav1dTileGroup {
     pub hdr: Rav1dTileGroupHeader,
 }
 
-pub type TaskType = c_uint;
-pub const RAV1D_TASK_TYPE_FG_APPLY: TaskType = 12;
-pub const RAV1D_TASK_TYPE_FG_PREP: TaskType = 11;
-pub const RAV1D_TASK_TYPE_RECONSTRUCTION_PROGRESS: TaskType = 10;
-pub const RAV1D_TASK_TYPE_LOOP_RESTORATION: TaskType = 9;
-pub const RAV1D_TASK_TYPE_SUPER_RESOLUTION: TaskType = 8;
-pub const RAV1D_TASK_TYPE_CDEF: TaskType = 7;
-pub const RAV1D_TASK_TYPE_DEBLOCK_ROWS: TaskType = 6;
-pub const RAV1D_TASK_TYPE_DEBLOCK_COLS: TaskType = 5;
-pub const RAV1D_TASK_TYPE_TILE_RECONSTRUCTION: TaskType = 4;
-pub const RAV1D_TASK_TYPE_ENTROPY_PROGRESS: TaskType = 3;
-pub const RAV1D_TASK_TYPE_TILE_ENTROPY: TaskType = 2;
-pub const RAV1D_TASK_TYPE_INIT_CDF: TaskType = 1;
-pub const RAV1D_TASK_TYPE_INIT: TaskType = 0;
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum TaskType {
+    Init = 0,
+    InitCdf = 1,
+    TileEntropy = 2,
+    EntropyProgress = 3,
+    TileReconstruction = 4,
+    DeblockCols = 5,
+    DeblockRows = 6,
+    Cdef = 7,
+    SuperResolution = 8,
+    LoopRestoration = 9,
+    ReconstructionProgress = 10,
+    FgPrep = 11,
+    FgApply = 12,
+}
 
 #[repr(C)]
 pub(crate) struct Rav1dContext_frame_thread {
