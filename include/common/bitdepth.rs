@@ -375,8 +375,8 @@ impl BitDepth for BitDepth16 {
         self.bitdepth_max
     }
 
-    /// 4 for 10 bits/component.  
-    /// 2 for 12 bits/component.
+    /// - 4 for 10 bits/component.
+    /// - 2 for 12 bits/component.
     fn get_intermediate_bits(&self) -> u8 {
         14 - self.bitdepth()
     }
@@ -568,6 +568,26 @@ macro_rules! bd_fn {
     }};
 }
 
+/// Select and declare a [`BitDepth`]-dependent `extern "C" fn`.
+///
+/// Similar to [`bd_fn!`] except that it selects which [`BitDepth`] `fn`
+/// based on `$bpc:literal bpc` instead of `$BD:ty`.
+macro_rules! bpc_fn {
+    ($bpc:literal bpc, $name:ident, $asm:ident) => {{
+        use $crate::include::common::bitdepth::fn_identity;
+
+        bpc_fn!(fn_identity, $bpc bpc, $name, $asm)
+    }};
+
+    ($decl_fn:path, $bpc:literal bpc, $name:ident, $asm:ident) => {{
+        use paste::paste;
+
+        paste! {
+            $decl_fn!(fn [<dav1d_ $name _ $bpc bpc_ $asm>])
+        }
+    }};
+}
+
 #[cfg(feature = "asm")]
 macro_rules! fn_identity {
     (fn $name:ident) => {
@@ -577,6 +597,9 @@ macro_rules! fn_identity {
 
 #[cfg(feature = "asm")]
 pub(crate) use bd_fn;
+
+#[cfg(feature = "asm")]
+pub(crate) use bpc_fn;
 
 #[cfg(feature = "asm")]
 pub(crate) use fn_identity;
