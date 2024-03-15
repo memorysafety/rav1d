@@ -1,5 +1,9 @@
 name: build and test on aarch64 with QEMU
-on: [push, pull_request]
+on:
+  # * is a special character in YAML so we quote lines containing it
+  push:
+    branches:
+      - '**qemu**' # Run when pushing branches that have qemu in the name
 jobs:
   test-on-qemu-linux-aarch64:
     runs-on: ubuntu-latest

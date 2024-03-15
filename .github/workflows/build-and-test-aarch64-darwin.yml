@@ -1,0 +1,37 @@
+name: build and test on aarch64
+on: [push, pull_request]
+jobs:
+  test-on-macos-aarch64:
+    runs-on: macos-14
+    name: test on macos-14-aarch64
+    steps:
+      - name: install prerequisites
+        run: |
+          brew install meson
+      - name: git checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: cache rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: arm-darwin-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: cargo build for aarch64-apple-darwin
+        run:  cargo build --release
+      - run: .github/workflows/test.sh \
+          -r ./target/release/dav1d \
+          -s ./target/release/seek_stress
+      - name: upload build artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: meson-test-logs
+          path: |
+            ${{ github.workspace }}/build/meson-logs/testlog.txt
+
