@@ -111,7 +111,11 @@ dav1d = executable('dav1d',
     dav1d_rc_obj,
     rev_target, cli_config_h_target,
 
-    link_with : [libdav1d, dav1d_input_objs, dav1d_output_objs],
+    link_with : [
+        get_option('test_rust') ? librav1d : libdav1d,
+        dav1d_input_objs,
+        dav1d_output_objs
+        ],
     include_directories : [dav1d_inc_dirs],
     dependencies : [
         getopt_dependency,

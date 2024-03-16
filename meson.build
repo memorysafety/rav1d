@@ -472,7 +472,27 @@ endif
 # Generate config.h
 config_h_target = configure_file(output: 'config.h', configuration: cdata)
 
+# Use --out-dir instead of --target-dir to fully control where librav1d.a goes.
+# Using --target-dir would put it in a subdirectory. The --out-dir option is
+# currently unstable so we need to tell cargo to enable those.
+# FIXME: this will only work if the host matches the build target.
+cargo_command = [
+    'cargo', 'build', '--lib',
+    '-Z', 'unstable-options',
+    '--out-dir', meson.current_build_dir()
+]
+if get_option('buildtype') == 'release'
+    cargo_command += ['--release']
+endif
 
+librav1d = custom_target(
+    'librav1d',
+    output: 'librav1d.a',
+    input: ['lib.rs'],
+    command: cargo_command,
+    install: true,
+    install_dir: get_option('libdir')
+)
 
 #
 # Include subdir meson.build files
