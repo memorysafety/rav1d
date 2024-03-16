@@ -23,6 +23,8 @@ use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
 use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
+#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+use rav1d::src::cpu::CpuFlags;
 use rav1d::src::lib::dav1d_default_settings;
 use rav1d::src::lib::dav1d_version;
 use std::ffi::c_char;
@@ -32,6 +34,8 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::process::exit;
+
+use cfg_if::cfg_if;
 
 extern "C" {
     static mut optarg: *mut c_char;
@@ -89,14 +93,21 @@ pub const ARG_REALTIME: arg = 259;
 pub const ARG_FRAME_TIMES: arg = 258;
 pub const ARG_MUXER: arg = 257;
 pub const ARG_DEMUXER: arg = 256;
-pub const X86_CPU_MASK_AVX512ICL: CpuMask = 31;
-pub const X86_CPU_MASK_AVX2: CpuMask = 15;
-pub const X86_CPU_MASK_SSE41: CpuMask = 7;
-pub const X86_CPU_MASK_SSSE3: CpuMask = 3;
-pub const X86_CPU_MASK_SSE2: CpuMask = 1;
-pub type arg = c_uint;
+cfg_if! {
+    if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+        pub const X86_CPU_MASK_AVX512ICL: CpuMask = 31;
+        pub const X86_CPU_MASK_AVX2: CpuMask = 15;
+        pub const X86_CPU_MASK_SSE41: CpuMask = 7;
+        pub const X86_CPU_MASK_SSSE3: CpuMask = 3;
+        pub const X86_CPU_MASK_SSE2: CpuMask = 1;
+        pub type CpuMask = c_uint;
 
-pub type CpuMask = c_uint;
+        const ALLOWED_CPU_MASKS: &[u8; 50] = b", 'sse2', 'ssse3', 'sse41', 'avx2' or 'avx512icl'\0";
+    } else {
+        const ALLOWED_CPU_MASKS: &[u8; 11] = b" or 'neon'\0";
+    }
+}
+pub type arg = c_uint;
 
 static short_opts: [c_char; 11] =
     unsafe { *::core::mem::transmute::<&[u8; 11], &[c_char; 11]>(b"i:o:vql:s:\0") };
@@ -318,8 +329,8 @@ unsafe extern "C" fn usage(app: *const c_char, reason: *const c_char, args: ...)
     );
     fprintf(
         stderr,
-        b"Supported options:\n --input/-i $file:     input file\n --output/-o $file:    output file (%%n, %%w or %%h will be filled in for per-frame files)\n --demuxer $name:      force demuxer type ('ivf', 'section5' or 'annexb'; default: detect from content)\n --muxer $name:        force muxer type ('md5', 'yuv', 'yuv4mpeg2' or 'null'; default: detect from extension)\n                       use 'frame' as prefix to write per-frame files; if filename contains %%n, will default to writing per-frame files\n --quiet/-q:           disable status messages\n --frametimes $file:   dump frame times to file\n --limit/-l $num:      stop decoding after $num frames\n --skip/-s $num:       skip decoding of the first $num frames\n --realtime [$fract]:  limit framerate, optional argument to override input framerate\n --realtimecache $num: set the size of the cache in realtime mode (default: 0)\n --version/-v:         print version and exit\n --threads $num:       number of threads (default: 0)\n --framedelay $num:    maximum frame delay, capped at $threads (default: 0);\n                       set to 1 for low-latency decoding\n --filmgrain $num:     enable film grain application (default: 1, except if muxer is md5 or xxh3)\n --oppoint $num:       select an operating point of a scalable AV1 bitstream (0 - 31)\n --alllayers $num:     output all spatial layers of a scalable AV1 bitstream (default: 1)\n --sizelimit $num:     stop decoding if the frame size exceeds the specified limit\n --strict $num:        whether to abort decoding on standard compliance violations\n                       that don't affect bitstream decoding (default: 1)\n --verify $md5:        verify decoded md5. implies --muxer md5, no output\n --cpumask $mask:      restrict permitted CPU instruction sets (0, 'sse2', 'ssse3', 'sse41', 'avx2' or 'avx512icl'; default: -1)\n --negstride:          use negative picture strides\n                       this is mostly meant as a developer option\n --outputinvisible $num: whether to output invisible (alt-ref) frames (default: 0)\n --inloopfilters $str: which in-loop filters to enable (none, (no)deblock, (no)cdef, (no)restoration or all; default: all)\n --decodeframetype $str: which frame types to decode (reference, intra, key or all; default: all)\n\0"
-            as *const u8 as *const c_char,
+        b"Supported options:\n --input/-i $file:     input file\n --output/-o $file:    output file (%%n, %%w or %%h will be filled in for per-frame files)\n --demuxer $name:      force demuxer type ('ivf', 'section5' or 'annexb'; default: detect from content)\n --muxer $name:        force muxer type ('md5', 'yuv', 'yuv4mpeg2' or 'null'; default: detect from extension)\n                       use 'frame' as prefix to write per-frame files; if filename contains %%n, will default to writing per-frame files\n --quiet/-q:           disable status messages\n --frametimes $file:   dump frame times to file\n --limit/-l $num:      stop decoding after $num frames\n --skip/-s $num:       skip decoding of the first $num frames\n --realtime [$fract]:  limit framerate, optional argument to override input framerate\n --realtimecache $num: set the size of the cache in realtime mode (default: 0)\n --version/-v:         print version and exit\n --threads $num:       number of threads (default: 0)\n --framedelay $num:    maximum frame delay, capped at $threads (default: 0);\n                       set to 1 for low-latency decoding\n --filmgrain $num:     enable film grain application (default: 1, except if muxer is md5 or xxh3)\n --oppoint $num:       select an operating point of a scalable AV1 bitstream (0 - 31)\n --alllayers $num:     output all spatial layers of a scalable AV1 bitstream (default: 1)\n --sizelimit $num:     stop decoding if the frame size exceeds the specified limit\n --strict $num:        whether to abort decoding on standard compliance violations\n                       that don't affect bitstream decoding (default: 1)\n --verify $md5:        verify decoded md5. implies --muxer md5, no output\n --cpumask $mask:      restrict permitted CPU instruction sets (0, %s; default: -1)\n --negstride:          use negative picture strides\n                       this is mostly meant as a developer option\n --outputinvisible $num: whether to output invisible (alt-ref) frames (default: 0)\n --inloopfilters $str: which in-loop filters to enable (none, (no)deblock, (no)cdef, (no)restoration or all; default: all)\n --decodeframetype $str: which frame types to decode (reference, intra, key or all; default: all)\n\0"
+            as *const u8 as *const c_char, ALLOWED_CPU_MASKS.as_ptr()
     );
     exit(1 as c_int);
 }
@@ -412,44 +423,58 @@ unsafe fn parse_optional_fraction(
     return 1 as c_int;
 }
 
-static mut cpu_mask_tbl: [EnumParseTable; 6] = [
-    {
-        EnumParseTable {
-            str_0: b"sse2\0" as *const u8 as *const c_char,
-            val: X86_CPU_MASK_SSE2 as c_int,
-        }
-    },
-    {
-        EnumParseTable {
-            str_0: b"ssse3\0" as *const u8 as *const c_char,
-            val: X86_CPU_MASK_SSSE3 as c_int,
-        }
-    },
-    {
-        EnumParseTable {
-            str_0: b"sse41\0" as *const u8 as *const c_char,
-            val: X86_CPU_MASK_SSE41 as c_int,
-        }
-    },
-    {
-        EnumParseTable {
-            str_0: b"avx2\0" as *const u8 as *const c_char,
-            val: X86_CPU_MASK_AVX2 as c_int,
-        }
-    },
-    {
-        EnumParseTable {
-            str_0: b"avx512icl\0" as *const u8 as *const c_char,
-            val: X86_CPU_MASK_AVX512ICL as c_int,
-        }
-    },
-    {
-        EnumParseTable {
-            str_0: b"none\0" as *const u8 as *const c_char,
-            val: 0 as c_int,
-        }
-    },
-];
+// TODO: add other architectures supported by dav1d
+cfg_if! {
+    if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
+        static mut cpu_mask_tbl: [EnumParseTable; 1] = [
+            {
+                EnumParseTable {
+                    str_0: b"neon\0" as *const u8 as *const c_char,
+                    val: CpuFlags::NEON.bits() as c_int,
+                }
+            },
+        ];
+    } else if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
+        static mut cpu_mask_tbl: [EnumParseTable; 6] = [
+            {
+                EnumParseTable {
+                    str_0: b"sse2\0" as *const u8 as *const c_char,
+                    val: X86_CPU_MASK_SSE2 as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"ssse3\0" as *const u8 as *const c_char,
+                    val: X86_CPU_MASK_SSSE3 as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"sse41\0" as *const u8 as *const c_char,
+                    val: X86_CPU_MASK_SSE41 as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"avx2\0" as *const u8 as *const c_char,
+                    val: X86_CPU_MASK_AVX2 as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"avx512icl\0" as *const u8 as *const c_char,
+                    val: X86_CPU_MASK_AVX512ICL as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"none\0" as *const u8 as *const c_char,
+                    val: 0 as c_int,
+                }
+            },
+        ];
+    }
+}
 
 static mut inloop_filters_tbl: [EnumParseTable; 8] = [
     {
