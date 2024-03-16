@@ -3,14 +3,18 @@ on: [push, pull_request]
 jobs:
   test-on-qemu-linux-arm7:
     runs-on: ubuntu-latest
-    name: test on debian-bullseye-arm7
+    name: test on ubuntu-latest-arm7
     steps:
       - name: install prerequisites
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: g++-arm-linux-gnueabihf libc6-dev-armhf-cross binfmt-support qemu-user-static meson nasm
           version: 1.0 # version of cache to load
-      - run: |
+        # since binfmt-support might be cached from previous run, we need to
+        # re-run the post installation step from that package to register
+        # qemu-arm as an interpreter for the arm binaries we want to test
+      - name: register qemu-arm as interpreter
+        run: |
           sudo update-binfmts --import
           sudo update-binfmts --enable qemu-arm
           update-binfmts --display

@@ -7,21 +7,25 @@ on:
 jobs:
   test-on-qemu-linux-aarch64:
     runs-on: ubuntu-latest
-    name: test on debian-bullseye-aarch64
+    name: test on ubuntu-latest-aarch64
     steps:
       - name: install prerequisites
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: g++-aarch64-linux-gnu libc6-dev-arm64-cross
+          packages: g++-aarch64-linux-gnu libc6-dev-arm64-cross binfmt-support qemu-user-static meson nasm
           version: 1.0 # version of cache to load
+        # since binfmt-support might be cached from previous run, we need to
+        # re-run the post installation step from that package to register
+        # qemu-arm as an interpreter for the arm binaries we want to test
+      - name: register qemu-aarch64 as interpreter
+        run: |
+          sudo update-binfmts --import
+          sudo update-binfmts --enable qemu-aarch64
+          update-binfmts --display
       - name: git checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 1
-      - name: set up qemu
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: arm64
       - name: cache rust dependencies
         uses: actions/cache@v3
         with:
@@ -32,30 +36,16 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: aarch64-unknown-linux-gnu-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
-      # - name: cache dav1d object files
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: build/
-      #     key: aarch64-unknown-linux-gnu-c-object-files-${{ hashFiles('**/meson.build', '**/*.c', '**/*.h') }}
       - name: cargo build for aarch64-unknown-linux-gnu
         run: |
           rustup target add aarch64-unknown-linux-gnu
-          cargo build --release --target aarch64-unknown-linux-gnu
-      - name: docker pull
-        run: docker pull ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest
-      - name: build and run tests in docker
+          RUSTFLAGS="-C target-feature=+crt-static -C linker=aarch64-linux-gnu-gcc" \
+            cargo build --release --target aarch64-unknown-linux-gnu
+      - name: run tests
         run: |
-          docker run \
-            --rm \
-            -v ~/.cargo/git:/home/prossimo/.cargo/git \
-            -v ~/.cargo/registry:/home/prossimo/.cargo/registry \
-            -v $(pwd):/${{ github.workspace }} \
-            -w ${{ github.workspace }} \
-            --platform linux/arm64 \
-            ghcr.io/immunant/rav1d/debian-bullseye-aarch64:latest \
             .github/workflows/test.sh -t 2 \
-                -r target/aarch64-unknown-linux-gnu/release/dav1d \
-                -s target/aarch64-unknown-linux-gnu/release/seek_stress
+              -r target/aarch64-unknown-linux-gnu/release/dav1d \
+              -s target/aarch64-unknown-linux-gnu/release/seek_stress
       - name: upload build artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v3
