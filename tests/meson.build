@@ -135,7 +135,7 @@ if get_option('enable_tools')
             dav1d_input_objs.extract_objects('input/input.c', 'input/ivf.c'),
         ],
         include_directories: [dav1d_inc_dirs, include_directories('../tools')],
-        link_with: libdav1d,
+        link_with: get_option('test_rust') ? librav1d : libdav1d,
         dependencies: [
             thread_dependency,
             rt_dependency,
@@ -149,22 +149,9 @@ if get_option('test_rust')
     test_rust_path = get_option('test_rust_path')
     seek_stress_test_rust_path = get_option('seek_stress_test_rust_path')
 
-    # HACK: If we're trying to test the Rust build, override the `dav1d` and
-    # `seek_stress` executables to point to the versions produced by Cargo.
-    # This will test the Rust executables instead of the C versions.
-    if test_rust_path == ''
-        if get_option('debug')
-            profile = 'debug'
-        else
-            profile = 'release'
-        endif
-        test_rust_path = '../target/' + profile + '/dav1d'
-        test_rust_path = join_paths(meson.current_source_dir(), test_rust_path)
-        dav1d = find_program(test_rust_path, required: true)
-        seek_stress_test_rust_path = '../target/' + profile + '/seek_stress'
-        seek_stress_test_rust_path = join_paths(meson.current_source_dir(), seek_stress_test_rust_path)
-        seek_stress = find_program(seek_stress_test_rust_path, required: true)
-    else
+    # We're trying to test the Rust build, override the `dav1d` and
+    # `seek_stress` executables to point to the versions given during setup.
+    if test_rust_path != ''
         # Adjust relative paths so one can use binary paths relative to project
         # top dir rather than relative to the location of the test subdirectory.
         dav1d = files(join_paths('../', get_option('test_rust_path')))
