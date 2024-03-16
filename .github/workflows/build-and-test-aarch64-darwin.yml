@@ -24,6 +24,10 @@ jobs:
           key: arm-darwin-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
       - name: cargo build for aarch64-apple-darwin
         run:  cargo build --release
+        # not quite sure why we need this on the runner, not needed locally
+      - run: |
+            meson build --buildtype release
+            ninja -C build tools/dav1d
       - name: test without frame delay
         run: .github/workflows/test.sh \
             -r ./target/release/dav1d \
@@ -39,6 +43,9 @@ jobs:
             -r ./target/release/dav1d \
             -s ./target/release/seek_stress
             -f 2
+      - run: .github/workflows/test.sh \
+          -r ./target/release/dav1d \
+          -s ./target/release/seek_stress
       - name: upload build artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v3
