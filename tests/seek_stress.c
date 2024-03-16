@@ -159,12 +159,14 @@ static int main_end(Dav1dContext *c, DemuxerContext *const in) {
 }
 
 int main(const int argc, char *const *const argv) {
+    /* disabled so we can link this code against either librav1d or libdav1d.
     const char *version = dav1d_version();
     if (strcmp(version, DAV1D_VERSION)) {
         fprintf(stderr, "Version mismatch (library: %s, executable: %s)\n",
                 version, DAV1D_VERSION);
         return EXIT_FAILURE;
     }
+    */
 
     CLISettings cli_settings;
     Dav1dSettings lib_settings;
