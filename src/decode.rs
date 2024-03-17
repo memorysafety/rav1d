@@ -3575,7 +3575,7 @@ unsafe fn decode_sb(
                     None => {
                         let tip = intra_edge.tip(sb128, edge_index);
                         assert!(hsz == 1);
-                        decode_b(c, t, f, bl, BS_4x4, bp, EdgeFlags::EDGE_ALL_TR_AND_BL)?;
+                        decode_b(c, t, f, bl, BS_4x4, bp, EdgeFlags::ALL_TR_AND_BL)?;
                         let tl_filter = t.tl_4x4_filter;
                         t.bx += 1;
                         decode_b(c, t, f, bl, BS_4x4, bp, tip.split[0])?;
@@ -3613,7 +3613,7 @@ unsafe fn decode_sb(
             }
             PARTITION_T_TOP_SPLIT => {
                 let node = intra_edge.node(sb128, edge_index);
-                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::EDGE_ALL_TR_AND_BL)?;
+                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_TR_AND_BL)?;
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[0], bp, node.v[1])?;
                 t.bx -= hsz;
@@ -3627,13 +3627,13 @@ unsafe fn decode_sb(
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[1], bp, node.v[0])?;
                 t.bx += hsz;
-                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::EDGE_NONE)?;
+                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::NONE)?;
                 t.bx -= hsz;
                 t.by -= hsz;
             }
             PARTITION_T_LEFT_SPLIT => {
                 let node = intra_edge.node(sb128, edge_index);
-                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::EDGE_ALL_TR_AND_BL)?;
+                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_TR_AND_BL)?;
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[0], bp, node.h[1])?;
                 t.by -= hsz;
@@ -3647,7 +3647,7 @@ unsafe fn decode_sb(
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[1], bp, node.h[0])?;
                 t.by += hsz;
-                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::EDGE_NONE)?;
+                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::NONE)?;
                 t.by -= hsz;
                 t.bx -= hsz;
             }
