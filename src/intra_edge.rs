@@ -18,17 +18,22 @@ bitflags! {
 }
 
 impl EdgeFlags {
-    const LEFT_HAS_BOTTOM: Self = Self::union_all([
+    pub const LEFT_HAS_BOTTOM: Self = Self::union_all([
         Self::I444_LEFT_HAS_BOTTOM,
         Self::I422_LEFT_HAS_BOTTOM,
         Self::I420_LEFT_HAS_BOTTOM,
     ]);
 
-    const TOP_HAS_RIGHT: Self = Self::union_all([
+    pub const TOP_HAS_RIGHT: Self = Self::union_all([
         Self::I444_TOP_HAS_RIGHT,
         Self::I422_TOP_HAS_RIGHT,
         Self::I420_TOP_HAS_RIGHT,
     ]);
+
+    pub const EDGE_ALL_TR_AND_BL: Self =
+        Self::union_all([Self::LEFT_HAS_BOTTOM, Self::TOP_HAS_RIGHT]);
+
+    pub const EDGE_NONE: Self = Self::empty();
 
     pub const fn union_all<const N: usize>(flags: [Self; N]) -> Self {
         let mut i = 0;
@@ -99,19 +104,15 @@ pub struct EdgeNode {
 #[repr(C)]
 pub struct EdgeTip {
     pub node: EdgeNode,
-    pub split: [EdgeFlags; B],
+    pub split: [EdgeFlags; 3],
 }
 
 #[repr(C)]
 pub struct EdgeBranch {
     pub node: EdgeNode,
-    pub tts: [EdgeFlags; 3],
-    pub tbs: [EdgeFlags; 3],
-    pub tls: [EdgeFlags; 3],
-    pub trs: [EdgeFlags; 3],
-    pub h4: [EdgeFlags; 4],
-    pub v4: [EdgeFlags; 4],
-    pub split: [EdgeIndex; B],
+    pub h4: EdgeFlags,
+    pub v4: EdgeFlags,
+    pub split: [EdgeIndex; 4],
 }
 
 impl EdgeTip {
@@ -135,7 +136,6 @@ impl EdgeTip {
         let node = EdgeNode { o, h, v };
 
         let split = [
-            EdgeFlags::all(),
             edge_flags
                 .intersection(EdgeFlags::TOP_HAS_RIGHT)
                 .union(EdgeFlags::I422_LEFT_HAS_BOTTOM),
@@ -164,51 +164,20 @@ impl EdgeBranch {
         ];
         let node = EdgeNode { o, h, v };
 
-        let h4 = [
-            edge_flags.union(EdgeFlags::LEFT_HAS_BOTTOM),
-            EdgeFlags::LEFT_HAS_BOTTOM.union(
-                edge_flags
-                    .intersection(EdgeFlags::I420_TOP_HAS_RIGHT)
-                    .select(matches!(bl, BlockLevel::Bl16x16)),
-            ),
-            EdgeFlags::LEFT_HAS_BOTTOM,
-            edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
-        ];
+        let h4 = EdgeFlags::LEFT_HAS_BOTTOM.union(
+            edge_flags
+                .intersection(EdgeFlags::I420_TOP_HAS_RIGHT)
+                .select(matches!(bl, BlockLevel::Bl16x16)),
+        );
 
-        let v4 = [
-            edge_flags.union(EdgeFlags::TOP_HAS_RIGHT),
-            EdgeFlags::TOP_HAS_RIGHT.union(
-                edge_flags
-                    .intersection(EdgeFlags::union_all([
-                        EdgeFlags::I420_LEFT_HAS_BOTTOM,
-                        EdgeFlags::I422_LEFT_HAS_BOTTOM,
-                    ]))
-                    .select(matches!(bl, BlockLevel::Bl16x16)),
-            ),
-            EdgeFlags::TOP_HAS_RIGHT,
-            edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
-        ];
-
-        let tls = [
-            EdgeFlags::all(),
-            edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
-            edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
-        ];
-        let trs = [
-            edge_flags.union(EdgeFlags::TOP_HAS_RIGHT),
-            edge_flags.union(EdgeFlags::LEFT_HAS_BOTTOM),
-            EdgeFlags::empty(),
-        ];
-        let tts = [
-            EdgeFlags::all(),
-            edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
-            edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
-        ];
-        let tbs = [
-            edge_flags.union(EdgeFlags::LEFT_HAS_BOTTOM),
-            edge_flags.union(EdgeFlags::TOP_HAS_RIGHT),
-            EdgeFlags::empty(),
-        ];
+        let v4 = EdgeFlags::TOP_HAS_RIGHT.union(
+            edge_flags
+                .intersection(EdgeFlags::union_all([
+                    EdgeFlags::I420_LEFT_HAS_BOTTOM,
+                    EdgeFlags::I422_LEFT_HAS_BOTTOM,
+                ]))
+                .select(matches!(bl, BlockLevel::Bl16x16)),
+        );
 
         let split = [EdgeIndex::root(); 4];
 
@@ -216,10 +185,6 @@ impl EdgeBranch {
             node,
             h4,
             v4,
-            tls,
-            trs,
-            tts,
-            tbs,
             split,
         }
     }
