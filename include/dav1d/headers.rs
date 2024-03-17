@@ -611,8 +611,8 @@ impl TryFrom<Dav1dChromaSamplePosition> for Rav1dChromaSamplePosition {
 
 #[repr(C)]
 pub struct Rav1dContentLightLevel {
-    pub max_content_light_level: c_int,
-    pub max_frame_average_light_level: c_int,
+    pub max_content_light_level: u16,
+    pub max_frame_average_light_level: u16,
 }
 
 pub type Dav1dContentLightLevel = Rav1dContentLightLevel;
