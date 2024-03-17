@@ -1699,6 +1699,7 @@ unsafe fn rav1d_sgr_box35_row_h_neon<BD: BitDepth>(
     )
 }
 
+#[cfg(all(feature = "asm", target_arch = "aarch64"))]
 extern "C" {
     fn dav1d_sgr_box3_vert_neon(
         sumsq: *mut *mut i32,
