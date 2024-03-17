@@ -32,11 +32,11 @@ jobs:
           sudo update-binfmts --enable ${{ matrix.interpreter }}
           update-binfmts --display
       - name: git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: cache rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -57,7 +57,7 @@ jobs:
               -s target/${{ matrix.target }}/release/seek_stress
       - name: upload build artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: meson-test-logs
           path: |
