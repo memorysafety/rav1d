@@ -276,6 +276,10 @@ mod asm {
             let mut nasm = nasm_rs::Build::new();
             nasm.min_version(2, 14, 0);
             nasm.files(asm_file_paths);
+            #[cfg(debug_assertions)]
+            nasm.flag("-g");
+            #[cfg(debug_assertions)]
+            nasm.flag("-Fdwarf");
             nasm.flag(&format!("-I{}/", out_dir.to_str().unwrap()));
             nasm.flag("-Isrc/");
             let obj = nasm.compile_objects().unwrap_or_else(|e| {
