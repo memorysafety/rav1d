@@ -457,16 +457,15 @@ pub struct Rav1dFrameContext_lf {
     pub level: Vec<[u8; 4]>,
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
-    pub lr_buf_plane_sz: [c_int; 2], /* (stride*sbh*4) << sb128 if n_tc > 1, else stride*4 */
     pub lim_lut: Align16<Av1FilterLUT>,
     pub last_sharpness: c_int,
     pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub tx_lpf_right_edge: TxLpfRightEdge,
     pub cdef_line_buf: AlignedVec32<u8>, /* AlignedVec32<DynPixel> */
     pub lr_line_buf: AlignedVec64<u8>,
-    pub cdef_line: [[usize; 3]; 2],      /* [2 pre/post][3 plane] */
-    pub cdef_lpf_line: [usize; 3],       /* plane */
-    pub lr_lpf_line: [*mut DynPixel; 3], /* plane */
+    pub cdef_line: [[usize; 3]; 2], /* [2 pre/post][3 plane] */
+    pub cdef_lpf_line: [usize; 3],  /* plane */
+    pub lr_lpf_line: [usize; 3],    /* plane */
 
     // in-loop filter per-frame state keeping
     pub start_of_tile_row: Vec<u8>,
