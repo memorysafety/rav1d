@@ -28,6 +28,7 @@ use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
+use crate::src::levels::InterIntraType;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
@@ -43,7 +44,6 @@ use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::IDTX;
 use crate::src::levels::II_SMOOTH_PRED;
-use crate::src::levels::INTER_INTRA_BLEND;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_WARP;
 use crate::src::levels::RTX_16X32;
@@ -3439,7 +3439,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             }
         }
-        if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
+        if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != InterIntraType::None {
             let interintra_edge = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge);
             let tl_edge_array = &mut interintra_edge.0.edge;
             let tl_edge_offset = 32;
@@ -3510,22 +3510,25 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 0 as c_int,
                 BD::from_c(f.bitdepth_max),
             );
-            let ii_mask = if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type as c_int
-                == INTER_INTRA_BLEND as c_int
-            {
-                dav1d_ii_masks[bs as usize][0][b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .interintra_mode as usize]
-            } else {
-                dav1d_wedge_masks[bs as usize][0][0][b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .wedge_idx as usize]
+            let ii_mask = match b.c2rust_unnamed.c2rust_unnamed_0.interintra_type {
+                InterIntraType::Blend => {
+                    dav1d_ii_masks[bs as usize][0][b
+                        .c2rust_unnamed
+                        .c2rust_unnamed_0
+                        .c2rust_unnamed
+                        .c2rust_unnamed
+                        .interintra_mode
+                        as usize]
+                }
+                _ => {
+                    dav1d_wedge_masks[bs as usize][0][0][b
+                        .c2rust_unnamed
+                        .c2rust_unnamed_0
+                        .c2rust_unnamed
+                        .c2rust_unnamed
+                        .wedge_idx
+                        as usize]
+                }
             };
             ((*dsp).mc.blend)(
                 dst.cast(),
@@ -3839,25 +3842,26 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         pl += 1;
                     }
                 }
-                if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != 0 {
-                    let ii_mask = if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type as c_int
-                        == INTER_INTRA_BLEND as c_int
-                    {
-                        dav1d_ii_masks[bs as usize][chr_layout_idx as usize][b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .interintra_mode
-                            as usize]
-                    } else {
-                        dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][0][b
-                            .c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .wedge_idx
-                            as usize]
+                if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != InterIntraType::None {
+                    let ii_mask = match b.c2rust_unnamed.c2rust_unnamed_0.interintra_type {
+                        InterIntraType::Blend => {
+                            dav1d_ii_masks[bs as usize][chr_layout_idx as usize][b
+                                .c2rust_unnamed
+                                .c2rust_unnamed_0
+                                .c2rust_unnamed
+                                .c2rust_unnamed
+                                .interintra_mode
+                                as usize]
+                        }
+                        _ => {
+                            dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][0][b
+                                .c2rust_unnamed
+                                .c2rust_unnamed_0
+                                .c2rust_unnamed
+                                .c2rust_unnamed
+                                .wedge_idx
+                                as usize]
+                        }
                     };
                     let mut pl = 0;
                     while pl < 2 {
