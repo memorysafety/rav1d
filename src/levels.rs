@@ -211,9 +211,8 @@ pub const COMP_INTER_NONE: CompInterType = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InterIntraType {
-    None = 0,
-    Blend = 1,
-    Wedge = 2,
+    Blend,
+    Wedge,
 }
 
 /// Note that this is legitimately [`Copy`]
@@ -310,7 +309,7 @@ pub struct Av1Block_inter {
     pub r#ref: [i8; 2],
     pub max_ytx: u8,
     pub filter2d: u8,
-    pub interintra_type: InterIntraType,
+    pub interintra_type: Option<InterIntraType>,
     pub tx_split0: u8,
     pub tx_split1: u16,
 }
@@ -528,11 +527,11 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.max_ytx
     }
 
-    pub unsafe fn interintra_type(&self) -> InterIntraType {
+    pub unsafe fn interintra_type(&self) -> Option<InterIntraType> {
         self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
     }
 
-    pub unsafe fn interintra_type_mut(&mut self) -> &mut InterIntraType {
+    pub unsafe fn interintra_type_mut(&mut self) -> &mut Option<InterIntraType> {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
     }
 

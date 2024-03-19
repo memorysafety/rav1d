@@ -3439,7 +3439,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             }
         }
-        if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != InterIntraType::None {
+        if let Some(interintra_type) = b.c2rust_unnamed.c2rust_unnamed_0.interintra_type {
             let interintra_edge = BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge);
             let tl_edge_array = &mut interintra_edge.0.edge;
             let tl_edge_offset = 32;
@@ -3510,7 +3510,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 0 as c_int,
                 BD::from_c(f.bitdepth_max),
             );
-            let ii_mask = match b.c2rust_unnamed.c2rust_unnamed_0.interintra_type {
+            let ii_mask = match interintra_type {
                 InterIntraType::Blend => {
                     dav1d_ii_masks[bs as usize][0][b
                         .c2rust_unnamed
@@ -3520,7 +3520,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         .interintra_mode
                         as usize]
                 }
-                _ => {
+                InterIntraType::Wedge => {
                     dav1d_wedge_masks[bs as usize][0][0][b
                         .c2rust_unnamed
                         .c2rust_unnamed_0
@@ -3842,8 +3842,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         pl += 1;
                     }
                 }
-                if b.c2rust_unnamed.c2rust_unnamed_0.interintra_type != InterIntraType::None {
-                    let ii_mask = match b.c2rust_unnamed.c2rust_unnamed_0.interintra_type {
+                if let Some(interintra_type) = b.c2rust_unnamed.c2rust_unnamed_0.interintra_type {
+                    let ii_mask = match interintra_type {
                         InterIntraType::Blend => {
                             dav1d_ii_masks[bs as usize][chr_layout_idx as usize][b
                                 .c2rust_unnamed
@@ -3853,7 +3853,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 .interintra_mode
                                 as usize]
                         }
-                        _ => {
+                        InterIntraType::Wedge => {
                             dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][0][b
                                 .c2rust_unnamed
                                 .c2rust_unnamed_0

@@ -1161,10 +1161,7 @@ unsafe fn splat_oneref_mv(
         r#ref: refmvs_refpair {
             r#ref: [
                 b.r#ref()[0] + 1,
-                match b.interintra_type() {
-                    InterIntraType::None => -1,
-                    _ => 0,
-                },
+                b.interintra_type().map(|_| 0).unwrap_or(-1),
             ],
         },
         bs: bs as u8,
@@ -2975,11 +2972,11 @@ unsafe fn decode_b_inner(
                     &mut ts.msac,
                     &mut ts.cdf.m.interintra_wedge[wedge_ctx as usize],
                 ) {
-                    InterIntraType::Wedge
+                    Some(InterIntraType::Wedge)
                 } else {
-                    InterIntraType::Blend
+                    Some(InterIntraType::Blend)
                 };
-                if b.interintra_type() == InterIntraType::Wedge {
+                if b.interintra_type() == Some(InterIntraType::Wedge) {
                     *b.wedge_idx_mut() = rav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         &mut ts.cdf.m.wedge_idx[wedge_ctx as usize],
@@ -2987,7 +2984,7 @@ unsafe fn decode_b_inner(
                     ) as u8;
                 }
             } else {
-                *b.interintra_type_mut() = InterIntraType::None;
+                *b.interintra_type_mut() = None;
             }
             if debug_block_info!(f, t)
                 && seq_hdr.inter_intra != 0
@@ -3004,7 +3001,7 @@ unsafe fn decode_b_inner(
 
             // motion variation
             if frame_hdr.switchable_motion_mode != 0
-                && b.interintra_type() == InterIntraType::None
+                && b.interintra_type() == None
                 && cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
                 && !(!frame_hdr.force_integer_mv
