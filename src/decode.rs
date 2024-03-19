@@ -1969,7 +1969,7 @@ unsafe fn decode_b_inner(
             },
         );
         if b.pal_sz()[0] != 0 {
-            (bd_fn.copy_pal_block_y)(t, f, bx4, by4, bw4, bh4);
+            (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
         }
         if has_chroma {
             CaseSet::<32, false>::many(
@@ -1981,7 +1981,14 @@ unsafe fn decode_b_inner(
                 },
             );
             if b.pal_sz()[1] != 0 {
-                (bd_fn.copy_pal_block_uv)(t, f, bx4, by4, bw4, bh4);
+                (bd_fn.copy_pal_block_uv)(
+                    t,
+                    f,
+                    bx4 as usize,
+                    by4 as usize,
+                    bw4 as usize,
+                    bh4 as usize,
+                );
             }
         }
         let frame_hdr = f.frame_hdr();
@@ -4139,10 +4146,9 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
         if frame_hdr.allow_screen_content_tools {
             // TODO: Fallible allocation
-            f.frame_thread.pal.resize(
-                num_sb128 as usize * 16 * 16 * 8 * 3 << hbd,
-                Default::default(),
-            );
+            f.frame_thread
+                .pal
+                .resize(num_sb128 as usize * 16 * 16 << hbd);
 
             let pal_idx_sz = num_sb128 * size_mul[1] as c_int;
             // TODO: Fallible allocation

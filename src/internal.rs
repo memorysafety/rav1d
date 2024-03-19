@@ -79,6 +79,8 @@ use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::refmvs::RefMvsFrame;
+use crate::src::unstable_extensions::as_chunks;
+use crate::src::unstable_extensions::as_chunks_mut;
 use atomig::Atomic;
 use libc::ptrdiff_t;
 use std::cell::UnsafeCell;
@@ -442,6 +444,36 @@ impl CodedBlockInfo {
 
 #[derive(Default)]
 #[repr(C)]
+pub struct AlignedVec64Pal {
+    data: AlignedVec64<u8>,
+}
+
+impl AlignedVec64Pal {
+    pub fn resize(&mut self, n: usize) {
+        self.data.resize(n * 8 * 3, Default::default());
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn as_slice<BD: BitDepth>(&self) -> &[[[BD::Pixel; 8]; 3]] {
+        as_chunks::<3, [BD::Pixel; 8]>(
+            as_chunks::<8, BD::Pixel>(BD::cast_pixel_slice(&self.data)).0,
+        )
+        .0
+    }
+
+    pub fn as_slice_mut<BD: BitDepth>(&mut self) -> &mut [[[BD::Pixel; 8]; 3]] {
+        as_chunks_mut::<3, [BD::Pixel; 8]>(
+            as_chunks_mut::<8, BD::Pixel>(BD::cast_pixel_slice_mut(&mut self.data)).0,
+        )
+        .0
+    }
+}
+
+#[derive(Default)]
+#[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
     /// Indices: 0: reconstruction, 1: entropy.
     pub next_tile_row: [c_int; 2],
@@ -453,9 +485,9 @@ pub struct Rav1dFrameContext_frame_thread {
 
     /// Indexed using `(t.b.y >> 1) * (f.b4_stride >> 1) + (t.b.x >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
-    /// Allocated as a flat array. `pal_as_slice` and `pal_as_slice_mut` should be
+    /// Allocated as a flat array. `pal.as_slice` and `pal.as_slice_mut` should be
     /// used to access elements of type `[[BitDepth::Pixel; 8]; 3]`
-    pub pal: AlignedVec64<u8>,
+    pub pal: AlignedVec64Pal,
 
     /// Iterated over inside tile state.
     pub pal_idx: AlignedVec64<u8>,
@@ -465,23 +497,6 @@ pub struct Rav1dFrameContext_frame_thread {
 
     /// Start offsets per tile
     pub tile_start_off: Vec<u32>,
-}
-
-use crate::src::unstable_extensions::as_chunks;
-use crate::src::unstable_extensions::as_chunks_mut;
-
-impl Rav1dFrameContext_frame_thread {
-    pub fn pal_as_slice<BD: BitDepth>(&self) -> &[[[BD::Pixel; 8]; 3]] {
-        as_chunks::<3, [BD::Pixel; 8]>(as_chunks::<8, BD::Pixel>(BD::cast_pixel_slice(&self.pal)).0)
-            .0
-    }
-
-    pub fn pal_as_slice_mut<BD: BitDepth>(&mut self) -> &mut [[[BD::Pixel; 8]; 3]] {
-        as_chunks_mut::<3, [BD::Pixel; 8]>(
-            as_chunks_mut::<8, BD::Pixel>(BD::cast_pixel_slice_mut(&mut self.pal)).0,
-        )
-        .0
-    }
 }
 
 #[derive(Default)]
@@ -814,6 +829,7 @@ pub struct Cf;
 impl BitDepthDependentType for Cf {
     type T<BD: BitDepth> = Align64<[BD::Coef; 32 * 32]>;
 }
+
 pub struct AlPal;
 
 impl BitDepthDependentType for AlPal {
