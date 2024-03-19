@@ -18,21 +18,20 @@ bitflags! {
 }
 
 impl EdgeFlags {
-    pub const LEFT_HAS_BOTTOM: Self = Self::union_all([
+    pub const ALL_LEFT_HAS_BOTTOM: Self = Self::union_all([
         Self::I444_LEFT_HAS_BOTTOM,
         Self::I422_LEFT_HAS_BOTTOM,
         Self::I420_LEFT_HAS_BOTTOM,
     ]);
 
-    pub const TOP_HAS_RIGHT: Self = Self::union_all([
+    pub const ALL_TOP_HAS_RIGHT: Self = Self::union_all([
         Self::I444_TOP_HAS_RIGHT,
         Self::I422_TOP_HAS_RIGHT,
         Self::I420_TOP_HAS_RIGHT,
     ]);
 
-    pub const ALL_TR_AND_BL: Self = Self::union_all([Self::LEFT_HAS_BOTTOM, Self::TOP_HAS_RIGHT]);
-
-    pub const NONE: Self = Self::empty();
+    pub const ALL_TR_AND_BL: Self =
+        Self::union_all([Self::ALL_LEFT_HAS_BOTTOM, Self::ALL_TOP_HAS_RIGHT]);
 
     pub const fn union_all<const N: usize>(flags: [Self; N]) -> Self {
         let mut i = 0;
@@ -111,23 +110,23 @@ pub struct EdgeBranch {
     pub node: EdgeNode,
     pub h4: EdgeFlags,
     pub v4: EdgeFlags,
-    pub split: [EdgeIndex; 4],
+    pub split: [EdgeIndex; B],
 }
 
 impl EdgeTip {
     const fn new(edge_flags: EdgeFlags) -> Self {
         let o = edge_flags;
         let h = [
-            edge_flags.union(EdgeFlags::LEFT_HAS_BOTTOM),
+            edge_flags.union(EdgeFlags::ALL_LEFT_HAS_BOTTOM),
             edge_flags.intersection(EdgeFlags::union_all([
-                EdgeFlags::LEFT_HAS_BOTTOM,
+                EdgeFlags::ALL_LEFT_HAS_BOTTOM,
                 EdgeFlags::I420_TOP_HAS_RIGHT,
             ])),
         ];
         let v = [
-            edge_flags.union(EdgeFlags::TOP_HAS_RIGHT),
+            edge_flags.union(EdgeFlags::ALL_TOP_HAS_RIGHT),
             edge_flags.intersection(EdgeFlags::union_all([
-                EdgeFlags::TOP_HAS_RIGHT,
+                EdgeFlags::ALL_TOP_HAS_RIGHT,
                 EdgeFlags::I420_LEFT_HAS_BOTTOM,
                 EdgeFlags::I422_LEFT_HAS_BOTTOM,
             ])),
@@ -136,7 +135,7 @@ impl EdgeTip {
 
         let split = [
             edge_flags
-                .intersection(EdgeFlags::TOP_HAS_RIGHT)
+                .intersection(EdgeFlags::ALL_TOP_HAS_RIGHT)
                 .union(EdgeFlags::I422_LEFT_HAS_BOTTOM),
             edge_flags.union(EdgeFlags::I444_TOP_HAS_RIGHT),
             edge_flags.intersection(EdgeFlags::union_all([
@@ -154,31 +153,27 @@ impl EdgeBranch {
     const fn new(edge_flags: EdgeFlags, bl: BlockLevel) -> Self {
         let o = edge_flags;
         let h = [
-            edge_flags.union(EdgeFlags::LEFT_HAS_BOTTOM),
-            edge_flags.intersection(EdgeFlags::LEFT_HAS_BOTTOM),
+            edge_flags.union(EdgeFlags::ALL_LEFT_HAS_BOTTOM),
+            edge_flags.intersection(EdgeFlags::ALL_LEFT_HAS_BOTTOM),
         ];
         let v = [
-            edge_flags.union(EdgeFlags::TOP_HAS_RIGHT),
-            edge_flags.intersection(EdgeFlags::TOP_HAS_RIGHT),
+            edge_flags.union(EdgeFlags::ALL_TOP_HAS_RIGHT),
+            edge_flags.intersection(EdgeFlags::ALL_TOP_HAS_RIGHT),
         ];
         let node = EdgeNode { o, h, v };
 
-        let h4 = EdgeFlags::union_all([
-            EdgeFlags::LEFT_HAS_BOTTOM,
-            edge_flags
-                .intersection(EdgeFlags::I420_TOP_HAS_RIGHT)
-                .select(matches!(bl, BlockLevel::Bl16x16)),
-        ]);
+        let h4 = edge_flags
+            .intersection(EdgeFlags::I420_TOP_HAS_RIGHT)
+            .select(matches!(bl, BlockLevel::Bl16x16))
+            .union(EdgeFlags::ALL_LEFT_HAS_BOTTOM);
 
-        let v4 = EdgeFlags::union_all([
-            EdgeFlags::TOP_HAS_RIGHT,
-            edge_flags
-                .intersection(EdgeFlags::union_all([
-                    EdgeFlags::I420_LEFT_HAS_BOTTOM,
-                    EdgeFlags::I422_LEFT_HAS_BOTTOM,
-                ]))
-                .select(matches!(bl, BlockLevel::Bl16x16)),
-        ]);
+        let v4 = edge_flags
+            .intersection(EdgeFlags::union_all([
+                EdgeFlags::I420_LEFT_HAS_BOTTOM,
+                EdgeFlags::I422_LEFT_HAS_BOTTOM,
+            ]))
+            .select(matches!(bl, BlockLevel::Bl16x16))
+            .union(EdgeFlags::ALL_TOP_HAS_RIGHT);
 
         let split = [EdgeIndex::root(); 4];
 
@@ -235,8 +230,8 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
     ) -> (Self, EdgeIndices) {
         let mut branch = EdgeBranch::new(
             EdgeFlags::union_all([
-                EdgeFlags::TOP_HAS_RIGHT.select(top_has_right),
-                EdgeFlags::LEFT_HAS_BOTTOM.select(left_has_bottom),
+                EdgeFlags::ALL_TOP_HAS_RIGHT.select(top_has_right),
+                EdgeFlags::ALL_LEFT_HAS_BOTTOM.select(left_has_bottom),
             ]),
             bl,
         );
@@ -247,8 +242,8 @@ impl<const SB128: bool, const N_BRANCH: usize, const N_TIP: usize>
                 indices.tip = next;
                 branch.split[n as usize] = tip;
                 self.tip[tip.index as usize] = EdgeTip::new(EdgeFlags::union_all([
-                    EdgeFlags::TOP_HAS_RIGHT.select(!(n == 3 || (n == 1 && !top_has_right))),
-                    EdgeFlags::LEFT_HAS_BOTTOM.select(n == 0 || (n == 2 && left_has_bottom)),
+                    EdgeFlags::ALL_TOP_HAS_RIGHT.select(!(n == 3 || (n == 1 && !top_has_right))),
+                    EdgeFlags::ALL_LEFT_HAS_BOTTOM.select(n == 0 || (n == 2 && left_has_bottom)),
                 ]));
                 n += 1;
             }

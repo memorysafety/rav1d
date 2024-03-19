@@ -3627,7 +3627,7 @@ unsafe fn decode_sb(
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[1], bp, node.v[0])?;
                 t.bx += hsz;
-                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::NONE)?;
+                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::empty())?;
                 t.bx -= hsz;
                 t.by -= hsz;
             }
@@ -3647,18 +3647,18 @@ unsafe fn decode_sb(
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[1], bp, node.h[0])?;
                 t.by += hsz;
-                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::NONE)?;
+                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::empty())?;
                 t.by -= hsz;
                 t.bx -= hsz;
             }
             PARTITION_H4 => {
-                let node = intra_edge.node(sb128, edge_index);
                 let branch = intra_edge.branch(sb128, edge_index);
+                let node = &branch.node;
                 decode_b(c, t, f, bl, b[0], bp, node.h[0])?;
                 t.by += hsz >> 1;
                 decode_b(c, t, f, bl, b[0], bp, branch.h4)?;
                 t.by += hsz >> 1;
-                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::LEFT_HAS_BOTTOM)?;
+                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_LEFT_HAS_BOTTOM)?;
                 t.by += hsz >> 1;
                 if t.by < f.bh {
                     decode_b(c, t, f, bl, b[0], bp, node.h[1])?;
@@ -3666,13 +3666,13 @@ unsafe fn decode_sb(
                 t.by -= hsz * 3 >> 1;
             }
             PARTITION_V4 => {
-                let node = intra_edge.node(sb128, edge_index);
                 let branch = intra_edge.branch(sb128, edge_index);
+                let node = &branch.node;
                 decode_b(c, t, f, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz >> 1;
                 decode_b(c, t, f, bl, b[0], bp, branch.v4)?;
                 t.bx += hsz >> 1;
-                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::TOP_HAS_RIGHT)?;
+                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_TOP_HAS_RIGHT)?;
                 t.bx += hsz >> 1;
                 if t.bx < f.bw {
                     decode_b(c, t, f, bl, b[0], bp, node.v[1])?;
