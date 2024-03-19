@@ -1,6 +1,6 @@
 [binaries]
-c = 'aarch64-linux-android21-clang'
-cpp = 'aarch64-linux-android21-clang++'
+c = 'i686-linux-android19-clang'
+cpp = 'i686-linux-android19-clang++'
 ar = 'llvm-ar'
 strip = 'llvm-strip'
 pkgconfig = 'pkg-config'
@@ -10,6 +10,6 @@ needs_exe_wrapper = true
 
 [host_machine]
 system = 'android'
-cpu_family = 'aarch64'
-cpu = 'aarch64'
+cpu_family = 'x86'
+cpu = 'i686'
 endian = 'little'
