@@ -150,9 +150,9 @@ pub struct refmvs_block(pub refmvs_block_unaligned);
 
 #[repr(C)]
 pub(crate) struct refmvs_frame {
-    /// A pointer to a `struct refmvs_frame` may be passed to a function of type `load_tmvs_fn`.
-    /// However, the `frm_hdr` pointer is not accessed in such a function. Thus, it is
-    /// safe to have a pointer to `Rav1dFrameHeader` instead of `Dav1dFrameHeader` here
+    /// A pointer to a [`refmvs_frame`] may be passed to a [`load_tmvs_fn`] function.
+    /// However, the [`Self::frm_hdr`] pointer is not accessed in such a function (see [`load_tmvs_c`]).
+    /// Thus, it is safe to have a pointer to [`Rav1dFrameHeader`] instead of [`Dav1dFrameHeader`] here.
     pub frm_hdr: *const Rav1dFrameHeader,
     pub iw4: c_int,
     pub ih4: c_int,
