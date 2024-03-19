@@ -140,17 +140,23 @@ pub(crate) type backup_ipred_edge_fn = unsafe fn(&Rav1dFrameData, &mut Rav1dTask
 pub(crate) type read_coef_blocks_fn =
     unsafe fn(&mut Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> ();
 
-pub(crate) type copy_pal_block_fn =
-    unsafe fn(&mut Rav1dTaskContext, &mut Rav1dFrameData, c_int, c_int, c_int, c_int) -> ();
+pub(crate) type copy_pal_block_fn = unsafe fn(
+    t: &mut Rav1dTaskContext,
+    f: &mut Rav1dFrameData,
+    bx4: usize,
+    by4: usize,
+    bw4: usize,
+    bh4: usize,
+) -> ();
 
 pub(crate) type read_pal_plane_fn = unsafe fn(
-    &mut Rav1dTaskContext,
-    &mut Rav1dFrameData,
-    &mut Av1Block,
-    bool,
-    u8,
-    usize,
-    usize,
+    t: &mut Rav1dTaskContext,
+    f: &mut Rav1dFrameData,
+    b: &mut Av1Block,
+    pl: bool,
+    sz_ctx: u8,
+    bx4: usize,
+    by4: usize,
 ) -> ();
 
 pub(crate) type read_pal_uv_fn = unsafe fn(
@@ -2553,10 +2559,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let index = (((t.by as isize >> 1) + (t.bx as isize & 1)) * (f.b4_stride >> 1)
                         + ((t.bx >> 1) + (t.by & 1)) as isize)
                         as isize;
-                    f.frame_thread.pal_as_slice::<BD>()[index as usize][0].as_ptr()
+                    f.frame_thread.pal.as_slice::<BD>()[index as usize][0].as_ptr()
                 } else {
                     let interintra_edge_pal =
-                        BD::select(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
+                        BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
                     interintra_edge_pal.0.pal[0].as_ptr()
                 };
                 (*f.dsp).ipred.pal_pred.call::<BD>(
@@ -2932,7 +2938,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         let pal_idx = &f.frame_thread.pal_idx[*pal_idx_offset..][..len];
                         *pal_idx_offset += len;
                         (
-                            &f.frame_thread.pal_as_slice::<BD>()[index as usize],
+                            &f.frame_thread.pal.as_slice::<BD>()[index as usize],
                             pal_idx,
                         )
                     } else {
@@ -4817,24 +4823,23 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
     f: &mut Rav1dFrameData,
-    bx4: c_int,
-    by4: c_int,
-    bw4: c_int,
-    bh4: c_int,
+    bx4: usize,
+    by4: usize,
+    bw4: usize,
+    bh4: usize,
 ) {
     let pal = if t.frame_thread.pass != 0 {
         let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
             + ((t.bx >> 1) + (t.by & 1)) as isize;
-        &f.frame_thread.pal_as_slice::<BD>()[index as usize][0]
+        &f.frame_thread.pal.as_slice::<BD>()[index as usize][0]
     } else {
-        let interintra_edge_pal =
-            BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
+        let interintra_edge_pal = BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
         &interintra_edge_pal.0.pal[0]
     };
-    for al_pal in &mut BD::select_mut(&mut t.al_pal)[0][bx4 as usize..][..bw4 as usize] {
+    for al_pal in &mut BD::select_mut(&mut t.al_pal)[0][bx4..][..bw4] {
         al_pal[0] = *pal;
     }
-    for al_pal in &mut BD::select_mut(&mut t.al_pal)[1][by4 as usize..][..bh4 as usize] {
+    for al_pal in &mut BD::select_mut(&mut t.al_pal)[1][by4..][..bh4] {
         al_pal[0] = *pal;
     }
 }
@@ -4842,27 +4847,26 @@ pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
 pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
     f: &mut Rav1dFrameData,
-    bx4: c_int,
-    by4: c_int,
-    bw4: c_int,
-    bh4: c_int,
+    bx4: usize,
+    by4: usize,
+    bw4: usize,
+    bh4: usize,
 ) {
     let pal = if t.frame_thread.pass != 0 {
         let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
             + ((t.bx >> 1) + (t.by & 1)) as isize;
-        &f.frame_thread.pal_as_slice_mut::<BD>()[index as usize]
+        &f.frame_thread.pal.as_slice::<BD>()[index as usize]
     } else {
-        let interintra_edge_pal =
-            BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
+        let interintra_edge_pal = BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
         &interintra_edge_pal.0.pal
     };
     // see aomedia bug 2183 for why we use luma coordinates here
     for pl in 1..=2 {
         for x in 0..bw4 {
-            BD::select_mut(&mut t.al_pal)[0][(bx4 + x) as usize][pl] = pal[pl];
+            BD::select_mut(&mut t.al_pal)[0][bx4 + x][pl] = pal[pl];
         }
         for y in 0..bh4 {
-            BD::select_mut(&mut t.al_pal)[1][(by4 + y) as usize][pl] = pal[pl];
+            BD::select_mut(&mut t.al_pal)[1][by4 + y][pl] = pal[pl];
         }
     }
 }
@@ -4977,7 +4981,7 @@ pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
 
     // parse new entries
     let pal = if t.frame_thread.pass != 0 {
-        &mut f.frame_thread.pal_as_slice_mut::<BD>()[(((t.by >> 1) + (t.bx & 1)) as isize
+        &mut f.frame_thread.pal.as_slice_mut::<BD>()[(((t.by >> 1) + (t.bx & 1)) as isize
             * (f.b4_stride >> 1)
             + ((t.bx >> 1) + (t.by & 1)) as isize)
             as usize][pli]
@@ -5071,7 +5075,7 @@ pub(crate) unsafe fn rav1d_read_pal_uv<BD: BitDepth>(
     let ts = &mut *t.ts;
 
     let pal = if t.frame_thread.pass != 0 {
-        &mut f.frame_thread.pal_as_slice_mut::<BD>()[(((t.by >> 1) + (t.bx & 1)) as isize
+        &mut f.frame_thread.pal.as_slice_mut::<BD>()[(((t.by >> 1) + (t.bx & 1)) as isize
             * (f.b4_stride >> 1)
             + ((t.bx >> 1) + (t.by & 1)) as isize)
             as usize][2]
