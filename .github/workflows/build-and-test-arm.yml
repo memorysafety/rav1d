@@ -59,6 +59,6 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: meson-test-logs
+          name: meson-test-logs-${{ matrix.target }}
           path: |
              ${{ github.workspace }}/build/meson-logs/testlog.txt
