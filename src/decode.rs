@@ -3577,16 +3577,16 @@ unsafe fn decode_sb(
                     None => {
                         let tip = intra_edge.tip(sb128, edge_index);
                         assert!(hsz == 1);
-                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[0])?;
+                        decode_b(c, t, f, bl, BS_4x4, bp, EdgeFlags::ALL_TR_AND_BL)?;
                         let tl_filter = t.tl_4x4_filter;
                         t.bx += 1;
-                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[1])?;
+                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[0])?;
                         t.bx -= 1;
                         t.by += 1;
-                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[2])?;
+                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[1])?;
                         t.bx += 1;
                         t.tl_4x4_filter = tl_filter;
-                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[3])?;
+                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[2])?;
                         t.bx -= 1;
                         t.by -= 1;
                         if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {
@@ -3614,68 +3614,70 @@ unsafe fn decode_sb(
                 }
             }
             PARTITION_T_TOP_SPLIT => {
-                let branch = intra_edge.branch(sb128, edge_index);
-                decode_b(c, t, f, bl, b[0], bp, branch.tts[0])?;
+                let node = intra_edge.node(sb128, edge_index);
+                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_TR_AND_BL)?;
                 t.bx += hsz;
-                decode_b(c, t, f, bl, b[0], bp, branch.tts[1])?;
+                decode_b(c, t, f, bl, b[0], bp, node.v[1])?;
                 t.bx -= hsz;
                 t.by += hsz;
-                decode_b(c, t, f, bl, b[1], bp, branch.tts[2])?;
+                decode_b(c, t, f, bl, b[1], bp, node.h[1])?;
                 t.by -= hsz;
             }
             PARTITION_T_BOTTOM_SPLIT => {
-                let branch = intra_edge.branch(sb128, edge_index);
-                decode_b(c, t, f, bl, b[0], bp, branch.tbs[0])?;
+                let node = intra_edge.node(sb128, edge_index);
+                decode_b(c, t, f, bl, b[0], bp, node.h[0])?;
                 t.by += hsz;
-                decode_b(c, t, f, bl, b[1], bp, branch.tbs[1])?;
+                decode_b(c, t, f, bl, b[1], bp, node.v[0])?;
                 t.bx += hsz;
-                decode_b(c, t, f, bl, b[1], bp, branch.tbs[2])?;
+                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::empty())?;
                 t.bx -= hsz;
                 t.by -= hsz;
             }
             PARTITION_T_LEFT_SPLIT => {
-                let branch = intra_edge.branch(sb128, edge_index);
-                decode_b(c, t, f, bl, b[0], bp, branch.tls[0])?;
+                let node = intra_edge.node(sb128, edge_index);
+                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_TR_AND_BL)?;
                 t.by += hsz;
-                decode_b(c, t, f, bl, b[0], bp, branch.tls[1])?;
+                decode_b(c, t, f, bl, b[0], bp, node.h[1])?;
                 t.by -= hsz;
                 t.bx += hsz;
-                decode_b(c, t, f, bl, b[1], bp, branch.tls[2])?;
+                decode_b(c, t, f, bl, b[1], bp, node.v[1])?;
                 t.bx -= hsz;
             }
             PARTITION_T_RIGHT_SPLIT => {
-                let branch = intra_edge.branch(sb128, edge_index);
-                decode_b(c, t, f, bl, b[0], bp, branch.trs[0])?;
+                let node = intra_edge.node(sb128, edge_index);
+                decode_b(c, t, f, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz;
-                decode_b(c, t, f, bl, b[1], bp, branch.trs[1])?;
+                decode_b(c, t, f, bl, b[1], bp, node.h[0])?;
                 t.by += hsz;
-                decode_b(c, t, f, bl, b[1], bp, (*branch).trs[2])?;
+                decode_b(c, t, f, bl, b[1], bp, EdgeFlags::empty())?;
                 t.by -= hsz;
                 t.bx -= hsz;
             }
             PARTITION_H4 => {
                 let branch = intra_edge.branch(sb128, edge_index);
-                decode_b(c, t, f, bl, b[0], bp, branch.h4[0])?;
+                let node = &branch.node;
+                decode_b(c, t, f, bl, b[0], bp, node.h[0])?;
                 t.by += hsz >> 1;
-                decode_b(c, t, f, bl, b[0], bp, branch.h4[1])?;
+                decode_b(c, t, f, bl, b[0], bp, branch.h4)?;
                 t.by += hsz >> 1;
-                decode_b(c, t, f, bl, b[0], bp, branch.h4[2])?;
+                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_LEFT_HAS_BOTTOM)?;
                 t.by += hsz >> 1;
                 if t.by < f.bh {
-                    decode_b(c, t, f, bl, b[0], bp, branch.h4[3])?;
+                    decode_b(c, t, f, bl, b[0], bp, node.h[1])?;
                 }
                 t.by -= hsz * 3 >> 1;
             }
             PARTITION_V4 => {
                 let branch = intra_edge.branch(sb128, edge_index);
-                decode_b(c, t, f, bl, b[0], bp, branch.v4[0])?;
+                let node = &branch.node;
+                decode_b(c, t, f, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz >> 1;
-                decode_b(c, t, f, bl, b[0], bp, branch.v4[1])?;
+                decode_b(c, t, f, bl, b[0], bp, branch.v4)?;
                 t.bx += hsz >> 1;
-                decode_b(c, t, f, bl, b[0], bp, branch.v4[2])?;
+                decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_TOP_HAS_RIGHT)?;
                 t.bx += hsz >> 1;
                 if t.bx < f.bw {
-                    decode_b(c, t, f, bl, b[0], bp, branch.v4[3])?;
+                    decode_b(c, t, f, bl, b[0], bp, node.v[1])?;
                 }
                 t.bx -= hsz * 3 >> 1;
             }
