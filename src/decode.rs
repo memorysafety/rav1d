@@ -2968,15 +2968,16 @@ unsafe fn decode_b_inner(
                     N_INTER_INTRA_PRED_MODES as usize - 1,
                 ) as u8;
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;
-                *b.interintra_type_mut() = if rav1d_msac_decode_bool_adapt(
+                let ii_type = if rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.interintra_wedge[wedge_ctx as usize],
                 ) {
-                    Some(InterIntraType::Wedge)
+                    InterIntraType::Wedge
                 } else {
-                    Some(InterIntraType::Blend)
+                    InterIntraType::Blend
                 };
-                if b.interintra_type() == Some(InterIntraType::Wedge) {
+                *b.interintra_type_mut() = Some(ii_type);
+                if ii_type == InterIntraType::Wedge {
                     *b.wedge_idx_mut() = rav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         &mut ts.cdf.m.wedge_idx[wedge_ctx as usize],
