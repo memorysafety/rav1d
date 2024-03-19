@@ -534,9 +534,18 @@ macro_rules! assign_itx_fn {
                 = Some(bd_fn!(BD, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
+
+    ($c:ident, $BD:ty, $pfx:ident, $w:literal, $h:literal, $type:ident, $type_enum:ident, $ext:ident) => {{
+        use paste::paste;
+
+        paste! {
+            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
+                = Some(bd_fn!(BD, [< inv_txfm_add_ $type _ $w x $h >], $ext));
+        }
+    }};
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx_bpc_fn {
     ($c:ident, $pfx:ident, $w:literal, $h:literal, $type:ident, $type_enum:ident, $bpc:literal bpc, $ext:ident) => {{
         use paste::paste;
@@ -557,7 +566,7 @@ macro_rules! assign_itx_bpc_fn {
     }};
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx1_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx_bpc_fn!($c, $w, $h, dct_dct, DCT_DCT, $bpc bpc, $ext)
@@ -568,7 +577,18 @@ macro_rules! assign_itx1_bpc_fn {
     }};
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+macro_rules! assign_itx1_fn {
+    ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
+        assign_itx_fn!($c, BD, $w, $h, dct_dct, DCT_DCT, $ext)
+    }};
+
+    ($c:ident, $BD:ty, $pfx:ident, $w:literal, $h:literal, $ext:ident) => {{
+        assign_itx_fn!($c, BD, $pfx, $w, $h, dct_dct, DCT_DCT, $ext)
+    }};
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx2_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx1_bpc_fn!($c, $w, $h, $bpc bpc, $ext);
@@ -581,7 +601,21 @@ macro_rules! assign_itx2_bpc_fn {
     }};
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+macro_rules! assign_itx2_fn {
+    ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
+        assign_itx1_fn!($c, BD, $w, $h, $ext);
+        assign_itx_fn!($c, BD, $w, $h, identity_identity, IDTX, $ext)
+    }};
+
+    ($c:ident, $BD:ty, $pfx:ident, $w:literal, $h:literal, $ext:ident) => {{
+        assign_itx1_fn!($c, BD, $pfx, $w, $h, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, identity_identity, IDTX, $ext)
+    }};
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+#[rustfmt::skip]
 macro_rules! assign_itx12_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx2_bpc_fn!($c, $w, $h, $bpc bpc, $ext);
@@ -613,7 +647,39 @@ macro_rules! assign_itx12_bpc_fn {
     }};
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+#[rustfmt::skip]
+macro_rules! assign_itx12_fn {
+    ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
+        assign_itx2_fn!($c, BD, $w, $h, $ext);
+        assign_itx_fn!($c, BD, $w, $h, dct_flipadst, FLIPADST_DCT, $ext);
+        assign_itx_fn!($c, BD, $w, $h, dct_adst, ADST_DCT, $ext);
+        assign_itx_fn!($c, BD, $w, $h, dct_identity, H_DCT, $ext);
+        assign_itx_fn!($c, BD, $w, $h, adst_dct, DCT_ADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, adst_adst, ADST_ADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, adst_flipadst, FLIPADST_ADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, flipadst_dct, DCT_FLIPADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, flipadst_adst, ADST_FLIPADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, flipadst_flipadst, FLIPADST_FLIPADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, identity_dct, V_DCT, $ext);
+    }};
+
+    ($c:ident, $BD:ty, $pfx:ident, $w:literal, $h:literal, $ext:ident) => {{
+        assign_itx2_fn!($c, BD, $pfx, $w, $h, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, dct_flipadst, FLIPADST_DCT, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, dct_adst, ADST_DCT, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, dct_identity, H_DCT, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, adst_dct, DCT_ADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, adst_adst, ADST_ADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, adst_flipadst, FLIPADST_ADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_dct, DCT_FLIPADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_adst, ADST_FLIPADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_flipadst, FLIPADST_FLIPADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, identity_dct, V_DCT, $ext);
+    }};
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 macro_rules! assign_itx16_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx12_bpc_fn!($c, $w, $h, $bpc bpc, $ext);
@@ -629,6 +695,25 @@ macro_rules! assign_itx16_bpc_fn {
         assign_itx_bpc_fn!($c, $pfx, $w, $h, flipadst_identity, H_FLIPADST, $bpc bpc, $ext);
         assign_itx_bpc_fn!($c, $pfx, $w, $h, identity_adst, V_ADST, $bpc bpc, $ext);
         assign_itx_bpc_fn!($c, $pfx, $w, $h, identity_flipadst, V_FLIPADST, $bpc bpc, $ext);
+    }};
+}
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+macro_rules! assign_itx16_fn {
+    ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
+        assign_itx12_fn!($c, BD, $w, $h, $ext);
+        assign_itx_fn!($c, BD, $w, $h, adst_identity, H_ADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, flipadst_identity, H_FLIPADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, identity_adst, V_ADST, $ext);
+        assign_itx_fn!($c, BD, $w, $h, identity_flipadst, V_FLIPADST, $ext);
+    }};
+
+    ($c:ident, $BD:ty, $pfx:ident, $w:literal, $h:literal, $ext:ident) => {{
+        assign_itx12_fn!($c, BD, $pfx, $w, $h, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, adst_identity, H_ADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_identity, H_FLIPADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, identity_adst, V_ADST, $ext);
+        assign_itx_fn!($c, BD, $pfx, $w, $h, identity_flipadst, V_FLIPADST, $ext);
     }};
 }
 
@@ -814,7 +899,7 @@ unsafe fn itx_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 #[rustfmt::skip]
-unsafe fn itx_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, mut bpc: c_int) {
+unsafe fn itx_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -825,162 +910,26 @@ unsafe fn itx_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, mut bpc
         return;
     }
 
-    (*c).itxfm_add[TX_4X4 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][H_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_identity_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][H_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_identity_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][V_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_adst_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][V_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_flipadst_4x4, neon));
-    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(bd_fn!(BD, inv_txfm_add_wht_wht_4x4, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][H_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_identity_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][H_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_identity_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][V_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_adst_4x8, neon));
-    (*c).itxfm_add[RTX_4X8 as usize][V_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_flipadst_4x8, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][H_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_identity_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][H_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_identity_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][V_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_adst_4x16, neon));
-    (*c).itxfm_add[RTX_4X16 as usize][V_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_flipadst_4x16, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][H_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_identity_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][H_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_identity_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][V_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_adst_8x4, neon));
-    (*c).itxfm_add[RTX_8X4 as usize][V_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_flipadst_8x4, neon));
-    (*c).itxfm_add[TX_8X8 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][H_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_identity_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][H_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_identity_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][V_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_adst_8x8, neon));
-    (*c).itxfm_add[TX_8X8 as usize][V_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_flipadst_8x8, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][H_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_identity_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][H_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_identity_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][V_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_adst_8x16, neon));
-    (*c).itxfm_add[RTX_8X16 as usize][V_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_flipadst_8x16, neon));
-    (*c).itxfm_add[RTX_8X32 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_8x32, neon));
-    (*c).itxfm_add[RTX_8X32 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_8x32, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][H_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_identity_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][H_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_identity_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][V_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_adst_16x4, neon));
-    (*c).itxfm_add[RTX_16X4 as usize][V_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_flipadst_16x4, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][H_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_identity_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][H_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_identity_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][V_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_adst_16x8, neon));
-    (*c).itxfm_add[RTX_16X8 as usize][V_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_flipadst_16x8, neon));
-    (*c).itxfm_add[TX_16X16 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][ADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_adst_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_flipadst_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][H_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_identity_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][DCT_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_dct_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][ADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_adst_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_ADST as usize] = Some(bd_fn!(BD, inv_txfm_add_adst_flipadst_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][DCT_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_dct_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][ADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_adst_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][FLIPADST_FLIPADST as usize] = Some(bd_fn!(BD, inv_txfm_add_flipadst_flipadst_16x16, neon));
-    (*c).itxfm_add[TX_16X16 as usize][V_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_dct_16x16, neon));
-    (*c).itxfm_add[RTX_16X32 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_16x32, neon));
-    (*c).itxfm_add[RTX_16X32 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_16x32, neon));
-    (*c).itxfm_add[RTX_16X64 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_16x64, neon));
-    (*c).itxfm_add[RTX_32X8 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_32x8, neon));
-    (*c).itxfm_add[RTX_32X8 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_32x8, neon));
-    (*c).itxfm_add[RTX_32X16 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_32x16, neon));
-    (*c).itxfm_add[RTX_32X16 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_32x16, neon));
-    (*c).itxfm_add[TX_32X32 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_32x32, neon));
-    (*c).itxfm_add[TX_32X32 as usize][IDTX as usize] = Some(bd_fn!(BD, inv_txfm_add_identity_identity_32x32, neon));
-    (*c).itxfm_add[RTX_32X64 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_32x64, neon));
-    (*c).itxfm_add[RTX_64X16 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_64x16, neon));
-    (*c).itxfm_add[RTX_64X32 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_64x32, neon));
-    (*c).itxfm_add[TX_64X64 as usize][DCT_DCT as usize] = Some(bd_fn!(BD, inv_txfm_add_dct_dct_64x64, neon));
+    assign_itx_fn!  (c, BD, 4, 4, wht_wht, WHT_WHT, neon);
+    assign_itx16_fn!(c, BD,     4,  4, neon);
+    assign_itx16_fn!(c, BD, R,  4,  8, neon);
+    assign_itx16_fn!(c, BD, R,  4, 16, neon);
+    assign_itx16_fn!(c, BD, R,  8,  4, neon);
+    assign_itx16_fn!(c, BD,     8,  8, neon);
+    assign_itx16_fn!(c, BD, R,  8, 16, neon);
+    assign_itx16_fn!(c, BD, R, 16,  4, neon);
+    assign_itx16_fn!(c, BD, R, 16,  8, neon);
+    assign_itx12_fn!(c, BD,    16, 16, neon);
+    assign_itx2_fn! (c, BD, R,  8, 32, neon);
+    assign_itx2_fn! (c, BD, R, 16, 32, neon);
+    assign_itx2_fn! (c, BD, R, 32,  8, neon);
+    assign_itx2_fn! (c, BD, R, 32, 16, neon);
+    assign_itx2_fn! (c, BD,    32, 32, neon);
+    assign_itx1_fn! (c, BD, R, 16, 64, neon);
+    assign_itx1_fn! (c, BD, R, 32, 64, neon);
+    assign_itx1_fn! (c, BD, R, 64, 16, neon);
+    assign_itx1_fn! (c, BD, R, 64, 32, neon);
+    assign_itx1_fn! (c, BD,    64, 64, neon);
 }
 
 #[cold]
