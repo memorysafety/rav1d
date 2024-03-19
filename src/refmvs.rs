@@ -43,6 +43,14 @@ extern "C" {
         col_start8: c_int,
         row_start8: c_int,
     );
+    fn dav1d_load_tmvs_sse4(
+        rf: *const refmvs_frame,
+        tile_row_idx: c_int,
+        col_start8: c_int,
+        col_end8: c_int,
+        row_start8: c_int,
+        row_end8: c_int,
+    );
 }
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
@@ -142,6 +150,9 @@ pub struct refmvs_block(pub refmvs_block_unaligned);
 
 #[repr(C)]
 pub(crate) struct refmvs_frame {
+    /// A pointer to a [`refmvs_frame`] may be passed to a [`load_tmvs_fn`] function.
+    /// However, the [`Self::frm_hdr`] pointer is not accessed in such a function (see [`load_tmvs_c`]).
+    /// Thus, it is safe to have a pointer to [`Rav1dFrameHeader`] instead of [`Dav1dFrameHeader`] here.
     pub frm_hdr: *const Rav1dFrameHeader,
     pub iw4: c_int,
     pub ih4: c_int,
@@ -1645,8 +1656,14 @@ unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
 
     (*c).save_tmvs = Some(dav1d_save_tmvs_ssse3);
 
+    if !flags.contains(CpuFlags::SSE41) {
+        return;
+    }
+
     #[cfg(target_arch = "x86_64")]
     {
+        (*c).load_tmvs = Some(dav1d_load_tmvs_sse4);
+
         if !flags.contains(CpuFlags::AVX2) {
             return;
         }
