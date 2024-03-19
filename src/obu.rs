@@ -2342,12 +2342,12 @@ unsafe fn parse_obus(
             match ObuMetaType::from_repr(meta_type as usize) {
                 Some(ObuMetaType::HdrCll) => {
                     let debug = debug.named("CLLOBU");
-                    let max_content_light_level = gb.get_bits(16) as c_int;
+                    let max_content_light_level = gb.get_bits(16) as u16;
                     debug.log(
                         &gb,
                         format_args!("max-content-light-level: {max_content_light_level}"),
                     );
-                    let max_frame_average_light_level = gb.get_bits(16) as c_int;
+                    let max_frame_average_light_level = gb.get_bits(16) as u16;
                     debug.log(
                         &gb,
                         format_args!(
