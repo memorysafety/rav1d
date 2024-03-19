@@ -82,6 +82,7 @@ use crate::src::levels::BS_64x64;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
+use crate::src::levels::InterIntraType;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxfmSize;
@@ -96,9 +97,6 @@ use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_PRED;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::INTER_INTRA_BLEND;
-use crate::src::levels::INTER_INTRA_NONE;
-use crate::src::levels::INTER_INTRA_WEDGE;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_TRANSLATION;
 use crate::src::levels::MM_WARP;
@@ -1163,7 +1161,7 @@ unsafe fn splat_oneref_mv(
         r#ref: refmvs_refpair {
             r#ref: [
                 b.r#ref()[0] + 1,
-                if b.interintra_type() != 0 { 0 } else { -1 },
+                b.interintra_type().map(|_| 0).unwrap_or(-1),
             ],
         },
         bs: bs as u8,
@@ -2970,12 +2968,16 @@ unsafe fn decode_b_inner(
                     N_INTER_INTRA_PRED_MODES as usize - 1,
                 ) as u8;
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;
-                *b.interintra_type_mut() = INTER_INTRA_BLEND
-                    + rav1d_msac_decode_bool_adapt(
-                        &mut ts.msac,
-                        &mut ts.cdf.m.interintra_wedge[wedge_ctx as usize],
-                    ) as u8;
-                if b.interintra_type() == INTER_INTRA_WEDGE {
+                let ii_type = if rav1d_msac_decode_bool_adapt(
+                    &mut ts.msac,
+                    &mut ts.cdf.m.interintra_wedge[wedge_ctx as usize],
+                ) {
+                    InterIntraType::Wedge
+                } else {
+                    InterIntraType::Blend
+                };
+                *b.interintra_type_mut() = Some(ii_type);
+                if ii_type == InterIntraType::Wedge {
                     *b.wedge_idx_mut() = rav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         &mut ts.cdf.m.wedge_idx[wedge_ctx as usize],
@@ -2983,14 +2985,14 @@ unsafe fn decode_b_inner(
                     ) as u8;
                 }
             } else {
-                *b.interintra_type_mut() = INTER_INTRA_NONE;
+                *b.interintra_type_mut() = None;
             }
             if debug_block_info!(f, t)
                 && seq_hdr.inter_intra != 0
                 && interintra_allowed_mask & (1 << bs) != 0
             {
                 println!(
-                    "Post-interintra[t={},m={},w={}]: r={}",
+                    "Post-interintra[t={:?},m={},w={}]: r={}",
                     b.interintra_type(),
                     b.interintra_mode(),
                     b.wedge_idx(),
@@ -3000,7 +3002,7 @@ unsafe fn decode_b_inner(
 
             // motion variation
             if frame_hdr.switchable_motion_mode != 0
-                && b.interintra_type() == INTER_INTRA_NONE
+                && b.interintra_type() == None
                 && cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
                 && !(!frame_hdr.force_integer_mv

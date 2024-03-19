@@ -209,10 +209,11 @@ pub const COMP_INTER_AVG: CompInterType = 2;
 pub const COMP_INTER_WEIGHTED_AVG: CompInterType = 1;
 pub const COMP_INTER_NONE: CompInterType = 0;
 
-pub type InterIntraType = u8;
-pub const INTER_INTRA_WEDGE: InterIntraType = 2;
-pub const INTER_INTRA_BLEND: InterIntraType = 1;
-pub const INTER_INTRA_NONE: InterIntraType = 0;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InterIntraType {
+    Blend,
+    Wedge,
+}
 
 /// Note that this is legitimately [`Copy`]
 /// (unlike other transpiled types that are [`Copy`] due to being from C).
@@ -308,7 +309,7 @@ pub struct Av1Block_inter {
     pub r#ref: [i8; 2],
     pub max_ytx: u8,
     pub filter2d: u8,
-    pub interintra_type: u8,
+    pub interintra_type: Option<InterIntraType>,
     pub tx_split0: u8,
     pub tx_split1: u16,
 }
@@ -526,11 +527,11 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.max_ytx
     }
 
-    pub unsafe fn interintra_type(&self) -> u8 {
+    pub unsafe fn interintra_type(&self) -> Option<InterIntraType> {
         self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
     }
 
-    pub unsafe fn interintra_type_mut(&mut self) -> &mut u8 {
+    pub unsafe fn interintra_type_mut(&mut self) -> &mut Option<InterIntraType> {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
     }
 
