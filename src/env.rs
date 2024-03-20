@@ -322,8 +322,8 @@ pub fn get_jnt_comp_ctx(
     let d1 = get_poc_diff(order_hint_n_bits, poc as c_int, ref1poc as c_int).abs();
     let offset = (d0 == d1) as u8;
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        (al.comp_type[b4 as usize] >= Some(CompInterType::COMP_INTER_AVG)
-            || al.r#ref[0][b4 as usize] == 6) as u8
+        (al.comp_type[b4 as usize] >= Some(CompInterType::Avg) || al.r#ref[0][b4 as usize] == 6)
+            as u8
     });
 
     3 * offset + a_ctx + l_ctx
@@ -332,7 +332,7 @@ pub fn get_jnt_comp_ctx(
 #[inline]
 pub fn get_mask_comp_ctx(a: &BlockContext, l: &BlockContext, yb4: c_int, xb4: c_int) -> u8 {
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        if al.comp_type[b4 as usize] >= Some(CompInterType::COMP_INTER_SEG) {
+        if al.comp_type[b4 as usize] >= Some(CompInterType::Seg) {
             1
         } else if al.r#ref[0][b4 as usize] == 6 {
             3

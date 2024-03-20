@@ -204,10 +204,10 @@ pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CompInterType {
-    COMP_INTER_WEIGHTED_AVG = 1,
-    COMP_INTER_AVG = 2,
-    COMP_INTER_SEG = 3,
-    COMP_INTER_WEDGE = 4,
+    WeightedAvg = 1,
+    Avg = 2,
+    Seg = 3,
+    Wedge = 4,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

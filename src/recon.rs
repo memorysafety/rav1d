@@ -3437,7 +3437,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         }
 
         match comp_inter_type {
-            CompInterType::COMP_INTER_AVG => {
+            CompInterType::Avg => {
                 ((*dsp).mc.avg)(
                     dst.cast(),
                     f.cur.stride[0],
@@ -3448,7 +3448,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     f.bitdepth_max,
                 );
             }
-            CompInterType::COMP_INTER_WEIGHTED_AVG => {
+            CompInterType::WeightedAvg => {
                 jnt_weight = f.jnt_weights[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                     [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
                     as c_int;
@@ -3463,7 +3463,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     f.bitdepth_max,
                 );
             }
-            CompInterType::COMP_INTER_SEG => {
+            CompInterType::Seg => {
                 (*dsp).mc.w_mask[chr_layout_idx as usize](
                     dst.cast(),
                     f.cur.stride[0],
@@ -3496,7 +3496,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 );
                 mask = seg_mask;
             }
-            CompInterType::COMP_INTER_WEDGE => {
+            CompInterType::Wedge => {
                 mask = dav1d_wedge_masks[bs as usize][0][0][b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
@@ -3612,7 +3612,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 let uvdst: *mut BD::Pixel = (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
                     .offset(uvdstoff as isize);
                 match comp_inter_type {
-                    CompInterType::COMP_INTER_AVG => {
+                    CompInterType::Avg => {
                         ((*dsp).mc.avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
@@ -3623,7 +3623,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f.bitdepth_max,
                         );
                     }
-                    CompInterType::COMP_INTER_WEIGHTED_AVG => {
+                    CompInterType::WeightedAvg => {
                         ((*dsp).mc.w_avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
@@ -3635,7 +3635,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f.bitdepth_max,
                         );
                     }
-                    CompInterType::COMP_INTER_SEG | CompInterType::COMP_INTER_WEDGE => {
+                    CompInterType::Seg | CompInterType::Wedge => {
                         ((*dsp).mc.mask)(
                             uvdst.cast(),
                             f.cur.stride[1],

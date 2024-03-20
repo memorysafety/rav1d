@@ -2428,7 +2428,7 @@ unsafe fn decode_b_inner(
                 frame_hdr.skip_mode.refs[0] as i8,
                 frame_hdr.skip_mode.refs[1] as i8,
             ];
-            *b.comp_type_mut() = Some(CompInterType::COMP_INTER_AVG);
+            *b.comp_type_mut() = Some(CompInterType::Avg);
             *b.inter_mode_mut() = NEARESTMV_NEARESTMV;
             *b.drl_idx_mut() = NEAREST_DRL;
             has_subpel_filter = false;
@@ -2703,15 +2703,15 @@ unsafe fn decode_b_inner(
                         &mut ts.msac,
                         &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
                     ) {
-                        CompInterType::COMP_INTER_AVG
+                        CompInterType::Avg
                     } else {
-                        CompInterType::COMP_INTER_WEIGHTED_AVG
+                        CompInterType::WeightedAvg
                     };
                     *b.comp_type_mut() = Some(comp_type);
                     if debug_block_info!(f, t) {
                         println!(
                             "Post-jnt_comp[{},ctx={}[ac:{:?},ar:{},lc:{:?},lr:{}]]: r={}",
-                            comp_type == CompInterType::COMP_INTER_AVG,
+                            comp_type == CompInterType::Avg,
                             jnt_ctx,
                             (*t.a).comp_type[bx4 as usize],
                             (*t.a).r#ref[0][bx4 as usize],
@@ -2721,7 +2721,7 @@ unsafe fn decode_b_inner(
                         );
                     }
                 } else {
-                    *b.comp_type_mut() = Some(CompInterType::COMP_INTER_AVG);
+                    *b.comp_type_mut() = Some(CompInterType::Avg);
                 }
             } else {
                 if wedge_allowed_mask & (1 << bs) != 0 {
@@ -2730,12 +2730,12 @@ unsafe fn decode_b_inner(
                         &mut ts.msac,
                         &mut ts.cdf.m.wedge_comp[ctx],
                     ) {
-                        CompInterType::COMP_INTER_SEG
+                        CompInterType::Seg
                     } else {
-                        CompInterType::COMP_INTER_WEDGE
+                        CompInterType::Wedge
                     };
                     *b.comp_type_mut() = Some(comp_type);
-                    if comp_type == CompInterType::COMP_INTER_WEDGE {
+                    if comp_type == CompInterType::Wedge {
                         *b.wedge_idx_mut() = rav1d_msac_decode_symbol_adapt16(
                             &mut ts.msac,
                             &mut ts.cdf.m.wedge_idx[ctx],
@@ -2743,13 +2743,13 @@ unsafe fn decode_b_inner(
                         ) as u8;
                     }
                 } else {
-                    *b.comp_type_mut() = Some(CompInterType::COMP_INTER_SEG);
+                    *b.comp_type_mut() = Some(CompInterType::Seg);
                 }
                 *b.mask_sign_mut() = rav1d_msac_decode_bool_equi(&mut ts.msac) as u8;
                 if debug_block_info!(f, t) {
                     println!(
                         "Post-seg/wedge[{},wedge_idx={},sign={}]: r={}",
-                        b.comp_type() == Some(CompInterType::COMP_INTER_WEDGE),
+                        b.comp_type() == Some(CompInterType::Wedge),
                         b.wedge_idx(),
                         b.mask_sign(),
                         ts.msac.rng,
