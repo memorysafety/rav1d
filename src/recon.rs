@@ -98,7 +98,6 @@ use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
 use libc::intptr_t;
-use libc::memset;
 use libc::printf;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -715,11 +714,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 }) as c_uint;
                 let shift2: c_uint = 0 as c_int as c_uint;
                 let mask: c_uint = (4 * sh - 1) as c_uint;
-                memset(
-                    levels.as_mut_ptr() as *mut c_void,
-                    0 as c_int,
-                    (stride * (4 * sw as isize + 2)) as usize,
-                );
+                levels[..(stride * (4 * sw as isize + 2)) as usize].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
                 if TX_CLASS_2D as c_int == TX_CLASS_2D as c_int {
@@ -938,11 +933,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let shift: c_uint = ((*t_dim).lh as c_int + 2) as c_uint;
                 let shift2: c_uint = 0 as c_int as c_uint;
                 let mask: c_uint = (4 * sh - 1) as c_uint;
-                memset(
-                    levels.as_mut_ptr() as *mut c_void,
-                    0 as c_int,
-                    (stride * (4 * sh + 2) as isize) as usize,
-                );
+                levels[..(stride * (4 * sh + 2) as isize) as usize].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
                 if TX_CLASS_H as c_int == TX_CLASS_2D as c_int {
@@ -1161,11 +1152,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let shift: c_uint = ((*t_dim).lw as c_int + 2) as c_uint;
                 let shift2: c_uint = ((*t_dim).lh as c_int + 2) as c_uint;
                 let mask: c_uint = (4 * sw - 1) as c_uint;
-                memset(
-                    levels.as_mut_ptr() as *mut c_void,
-                    0 as c_int,
-                    (stride * (4 * sw + 2) as isize) as usize,
-                );
+                levels[..(stride * (4 * sw + 2) as isize) as usize].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
                 if TX_CLASS_V as c_int == TX_CLASS_2D as c_int {
