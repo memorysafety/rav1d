@@ -4794,7 +4794,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
     // We must take itut_t35 out of the context before the call so borrowck can
     // see we mutably borrow `c.itut_t35` disjointly from the task thread lock.
-    let itut_t35 = c.itut_t35.take();
+    let itut_t35 = mem::take(&mut c.itut_t35);
     let res = rav1d_thread_picture_alloc(c, f, bpc, itut_t35);
     if res.is_err() {
         on_error(f, c, out);
