@@ -80,8 +80,9 @@ unsafe fn lr_stripe<BD: BitDepth>(
 
         lr_fn = dsp.lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
     } else {
-        assert_eq!(lr.r#type, Rav1dRestorationType::SgrProj);
-        let sgr_params = &dav1d_sgr_params[lr.sgr_idx as usize];
+        assert!(lr.r#type >= Rav1dRestorationType::SgrProj);
+        let sgr_idx = lr.r#type as usize - Rav1dRestorationType::SgrProj as usize;
+        let sgr_params = &dav1d_sgr_params[sgr_idx];
         params.sgr.s0 = sgr_params[0] as u32;
         params.sgr.s1 = sgr_params[1] as u32;
         params.sgr.w0 = lr.sgr_weights[0] as i16;

@@ -193,13 +193,28 @@ pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType =
 pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType =
     Rav1dRestorationType::SgrProj as Dav1dRestorationType;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, FromRepr, Default)]
 pub enum Rav1dRestorationType {
     #[default]
     None = 0,
     Switchable = 1,
     Wiener = 2,
     SgrProj = 3,
+    SgrProj1,
+    SgrProj2,
+    SgrProj3,
+    SgrProj4,
+    SgrProj5,
+    SgrProj6,
+    SgrProj7,
+    SgrProj8,
+    SgrProj9,
+    SgrProj10,
+    SgrProj11,
+    SgrProj12,
+    SgrProj13,
+    SgrProj14,
+    SgrProj15,
 }
 
 pub type Dav1dWarpedMotionType = c_uint;

@@ -28,7 +28,6 @@ pub struct Av1RestorationUnit {
     pub r#type: Rav1dRestorationType,
     pub filter_h: [i8; 3],
     pub filter_v: [i8; 3],
-    pub sgr_idx: u8,
     pub sgr_weights: [i8; 2],
 }
 

@@ -4033,9 +4033,11 @@ unsafe fn read_restoration_info(
             );
         }
     } else if lr.r#type == Rav1dRestorationType::SgrProj {
-        let idx = rav1d_msac_decode_bools(&mut ts.msac, 4) as u8;
-        let sgr_params = &dav1d_sgr_params[idx.into()];
-        lr.sgr_idx = idx;
+        let sgr_idx = rav1d_msac_decode_bools(&mut ts.msac, 4) as usize;
+        let sgr_params = &dav1d_sgr_params[sgr_idx];
+        lr.r#type =
+            Rav1dRestorationType::from_repr(Rav1dRestorationType::SgrProj as usize + sgr_idx)
+                .unwrap();
         lr.sgr_weights[0] = if sgr_params[0] != 0 {
             msac_decode_lr_subexp(ts, lr_ref.sgr_weights[0], 4, 96)
         } else {
@@ -4052,7 +4054,7 @@ unsafe fn read_restoration_info(
         if debug_block_info {
             println!(
                 "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",
-                p, lr.sgr_idx, lr.sgr_weights[0], lr.sgr_weights[1], ts.msac.rng,
+                p, sgr_idx, lr.sgr_weights[0], lr.sgr_weights[1], ts.msac.rng,
             );
         }
     }
