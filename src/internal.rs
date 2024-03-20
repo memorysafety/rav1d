@@ -394,13 +394,6 @@ impl Rav1dFrameContext_bd_fn {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct CodedBlockInfo {
-    pub eob: [i16; 3], /* plane */
-    pub txtp: [u8; 3], /* plane */
-}
-
-#[derive(Default)]
-#[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
     /// Indices: 0: reconstruction, 1: entropy.
     pub next_tile_row: [c_int; 2],
@@ -408,7 +401,7 @@ pub struct Rav1dFrameContext_frame_thread {
     /// Indexed using `t.by * f.b4_stride + t.bx`.
     pub b: Vec<Av1Block>,
 
-    pub cbi: Vec<CodedBlockInfo>,
+    pub cbi: Vec<[i16; 3]>, /* bits 0-4: txtp, bits 5-15: eob */
 
     /// Indexed using `(t.by >> 1) * (f.b4_stride >> 1) + (t.bx >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
