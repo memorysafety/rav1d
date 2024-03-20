@@ -31,7 +31,7 @@ if fuzzing_engine == 'none' and not have_fseeko
 endif
 
 dav1d_fuzzer_sources =  files('dav1d_fuzzer.c')
-fuzzer_ldflags = []
+fuzzer_ldflags = get_option('test_rust') ? ['-lm'] : []
 fuzzer_link_lang = {}
 
 if get_option('fuzzer_ldflags') != ''
@@ -52,7 +52,7 @@ dav1d_fuzzer = executable('dav1d_fuzzer',
     dav1d_fuzzer_sources,
     include_directories: dav1d_inc_dirs,
     link_args: fuzzer_ldflags,
-    link_with : libdav1d,
+    link_with : get_option('test_rust') ? librav1d : libdav1d,
     build_by_default: true,
     dependencies : [thread_dependency],
     kwargs: fuzzer_link_lang
@@ -63,7 +63,7 @@ dav1d_fuzzer_mt = executable('dav1d_fuzzer_mt',
     include_directories: dav1d_inc_dirs,
     c_args: ['-DDAV1D_MT_FUZZING'],
     link_args: fuzzer_ldflags,
-    link_with : libdav1d,
+    link_with : get_option('test_rust') ? librav1d : libdav1d,
     build_by_default: true,
     dependencies : [thread_dependency],
     kwargs: fuzzer_link_lang
