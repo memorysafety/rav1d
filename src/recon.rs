@@ -27,6 +27,7 @@ use crate::src::ipred_prepare::sm_uv_flag;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
+use crate::src::levels::CompInterType;
 use crate::src::levels::Filter2d;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::IntraPredMode;
@@ -35,7 +36,6 @@ use crate::src::levels::TxClass;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::CFL_PRED;
-use crate::src::levels::COMP_INTER_NONE;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_2D_BILINEAR;
@@ -3364,7 +3364,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 pl += 1;
             }
         }
-    } else if b.c2rust_unnamed.c2rust_unnamed_0.comp_type as c_int == COMP_INTER_NONE as c_int {
+    } else if b.c2rust_unnamed.c2rust_unnamed_0.comp_type.is_none() {
         let mut is_sub8x8;
         let mut r: *const *mut refmvs_block;
         let refp: *const Rav1dThreadPicture = &*(f.refp)
@@ -4028,8 +4028,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
             i += 1;
         }
-        match b.c2rust_unnamed.c2rust_unnamed_0.comp_type as c_int {
-            2 => {
+
+        // TODO use if let in the surrounding if structure
+        let comp_inter_type = b.c2rust_unnamed.c2rust_unnamed_0.comp_type.unwrap();
+        match comp_inter_type {
+            CompInterType::COMP_INTER_AVG => {
                 ((*dsp).mc.avg)(
                     dst.cast(),
                     f.cur.stride[0],
@@ -4040,7 +4043,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     f.bitdepth_max,
                 );
             }
-            1 => {
+            CompInterType::COMP_INTER_WEIGHTED_AVG => {
                 jnt_weight = f.jnt_weights[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                     [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
                     as c_int;
@@ -4055,7 +4058,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     f.bitdepth_max,
                 );
             }
-            3 => {
+            CompInterType::COMP_INTER_SEG => {
                 (*dsp).mc.w_mask[chr_layout_idx as usize](
                     dst.cast(),
                     f.cur.stride[0],
@@ -4088,7 +4091,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 );
                 mask = seg_mask;
             }
-            4 => {
+            CompInterType::COMP_INTER_WEDGE => {
                 mask = dav1d_wedge_masks[bs as usize][0][0][b
                     .c2rust_unnamed
                     .c2rust_unnamed_0
@@ -4138,7 +4141,6 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         .as_ptr();
                 }
             }
-            _ => {}
         }
         if has_chroma != 0 {
             let mut pl = 0;
@@ -4201,10 +4203,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     }
                     i += 1;
                 }
+
+                // TODO use if let in the surrounding if structure
+                let comp_inter_type = b.c2rust_unnamed.c2rust_unnamed_0.comp_type.unwrap();
+
                 let uvdst: *mut BD::Pixel = (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
                     .offset(uvdstoff as isize);
-                match b.c2rust_unnamed.c2rust_unnamed_0.comp_type as c_int {
-                    2 => {
+                match comp_inter_type {
+                    CompInterType::COMP_INTER_AVG => {
                         ((*dsp).mc.avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
@@ -4215,7 +4221,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f.bitdepth_max,
                         );
                     }
-                    1 => {
+                    CompInterType::COMP_INTER_WEIGHTED_AVG => {
                         ((*dsp).mc.w_avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
@@ -4227,7 +4233,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f.bitdepth_max,
                         );
                     }
-                    4 | 3 => {
+                    CompInterType::COMP_INTER_SEG | CompInterType::COMP_INTER_WEDGE => {
                         ((*dsp).mc.mask)(
                             uvdst.cast(),
                             f.cur.stride[1],
@@ -4254,7 +4260,6 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f.bitdepth_max,
                         );
                     }
-                    _ => {}
                 }
                 pl += 1;
             }
