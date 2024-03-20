@@ -473,6 +473,8 @@ cfg_if! {
                 }
             },
         ];
+    } else {
+        static mut cpu_mask_tbl: [EnumParseTable; 0] = [];
     }
 }
 
