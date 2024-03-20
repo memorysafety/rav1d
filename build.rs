@@ -13,8 +13,6 @@ mod asm {
     enum Arch {
         X86(ArchX86),
         Arm(ArchArm),
-        #[allow(dead_code)]
-        Unknown,
     }
 
     #[derive(Clone, Copy, PartialEq, Eq)]
@@ -128,7 +126,6 @@ mod asm {
         let use_nasm = match arch {
             Arch::X86(..) => true,
             Arch::Arm(..) => false,
-            _ => unimplemented!("should not get here"),
         };
 
         let define_prefix = if use_nasm { "%" } else { " #" };
@@ -251,13 +248,11 @@ mod asm {
             Arch::X86(ArchX86::X86_32) => x86_all,
             Arch::X86(ArchX86::X86_64) => x86_64_all,
             Arch::Arm(..) => arm_all,
-            _ => unimplemented!("should not get here"),
         };
 
         let asm_file_dir = match arch {
             Arch::X86(..) => ["x86", "."],
             Arch::Arm(..) => ["arm", pointer_width],
-            _ => unimplemented!("should not get here"),
         };
         let asm_extension = if use_nasm { "asm" } else { "S" };
 

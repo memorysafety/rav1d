@@ -3,6 +3,10 @@
 #![allow(non_upper_case_globals)]
 #![feature(c_variadic)]
 #![cfg_attr(target_arch = "arm", feature(stdarch_arm_feature_detection))]
+#![cfg_attr(
+    any(target_arch = "riscv32", target_arch = "riscv64"),
+    feature(stdarch_riscv_feature_detection)
+)]
 #![allow(clippy::all)]
 
 #[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
