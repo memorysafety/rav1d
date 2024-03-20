@@ -889,6 +889,7 @@ pub union Rav1dTaskContext_scratch_levels_pal {
 pub struct InterIntraEdgePalBD<BD: BitDepth> {
     pub interintra: [BD::Pixel; 64 * 64],
     pub edge: [BD::Pixel; 257],
+    _align: [BD::Pixel; 7],       // Align pal to 8 times BD::Pixel
     pub pal: [[BD::Pixel; 8]; 3], /* [3 plane][8 palette_idx] */
 }
 
