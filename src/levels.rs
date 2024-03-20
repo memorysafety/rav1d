@@ -83,9 +83,9 @@ pub const DCT_DCT: TxfmType = 0;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum TxClass {
-    TX_CLASS_2D = 0,
-    TX_CLASS_H = 1,
-    TX_CLASS_V = 2,
+    TwoD,
+    H,
+    V,
 }
 
 pub type IntraPredMode = u8;
