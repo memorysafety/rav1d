@@ -13,6 +13,8 @@ mod asm {
     enum Arch {
         X86(ArchX86),
         Arm(ArchArm),
+        #[allow(dead_code)]
+        Unknown,
     }
 
     #[derive(Clone, Copy, PartialEq, Eq)]
@@ -68,18 +70,14 @@ mod asm {
         let pointer_width = env::var("CARGO_CFG_TARGET_POINTER_WIDTH").unwrap();
         let features = env::var("CARGO_CFG_TARGET_FEATURE").unwrap();
 
-        let arch = arch.parse::<Arch>().unwrap();
+        // Nothing to do on unknown architectures
+        let Ok(arch) = arch.parse::<Arch>() else {
+            return;
+        };
         let os = os.as_str();
         let vendor = vendor.as_str();
         let pointer_width = pointer_width.as_str();
         let features = features.split(',').collect::<HashSet<_>>();
-
-        let rustc_cfg = match arch {
-            Arch::X86(ArchX86::X86_32) => "nasm_x86",
-            Arch::X86(ArchX86::X86_64) => "nasm_x86_64",
-            Arch::Arm(..) => "asm_neon",
-        };
-        println!("cargo:rustc-cfg={rustc_cfg}");
 
         let mut defines = Vec::new();
         let mut define = |define: Define| {
@@ -130,6 +128,7 @@ mod asm {
         let use_nasm = match arch {
             Arch::X86(..) => true,
             Arch::Arm(..) => false,
+            _ => unimplemented!("should not get here"),
         };
 
         let define_prefix = if use_nasm { "%" } else { " #" };
@@ -252,11 +251,13 @@ mod asm {
             Arch::X86(ArchX86::X86_32) => x86_all,
             Arch::X86(ArchX86::X86_64) => x86_64_all,
             Arch::Arm(..) => arm_all,
+            _ => unimplemented!("should not get here"),
         };
 
         let asm_file_dir = match arch {
             Arch::X86(..) => ["x86", "."],
             Arch::Arm(..) => ["arm", pointer_width],
+            _ => unimplemented!("should not get here"),
         };
         let asm_extension = if use_nasm { "asm" } else { "S" };
 
