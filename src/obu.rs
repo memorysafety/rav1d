@@ -2529,7 +2529,7 @@ unsafe fn parse_obus(
                     c.content_light.clone(),
                     c.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    c.itut_t35.take(),
+                    mem::take(&mut c.itut_t35),
                     props.clone(),
                 );
                 c.event_flags |= c.refs[frame_hdr.existing_frame_idx as usize].p.flags.into();
@@ -2593,7 +2593,7 @@ unsafe fn parse_obus(
                     c.content_light.clone(),
                     c.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    c.itut_t35.take(),
+                    mem::take(&mut c.itut_t35),
                     props.clone(),
                 );
             }
