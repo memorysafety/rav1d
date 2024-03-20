@@ -2329,7 +2329,7 @@ static int decode_sb(Dav1dTaskContext *const t, const enum BlockLevel bl,
 
     if (!have_h_split && !have_v_split) {
         assert(bl < BL_8X8);
-        return decode_sb(t, bl + 1, ((const EdgeBranch *) node)->split[0]);
+        return decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 0));
     }
 
     uint16_t *pc;
@@ -2417,18 +2417,17 @@ static int decode_sb(Dav1dTaskContext *const t, const enum BlockLevel bl,
                 }
 #endif
             } else {
-                const EdgeBranch *const branch = (const EdgeBranch *) node;
-                if (decode_sb(t, bl + 1, branch->split[0]))
+                if (decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 0)))
                     return 1;
                 t->bx += hsz;
-                if (decode_sb(t, bl + 1, branch->split[1]))
+                if (decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 1)))
                     return 1;
                 t->bx -= hsz;
                 t->by += hsz;
-                if (decode_sb(t, bl + 1, branch->split[2]))
+                if (decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 2)))
                     return 1;
                 t->bx += hsz;
-                if (decode_sb(t, bl + 1, branch->split[3]))
+                if (decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 3)))
                     return 1;
                 t->bx -= hsz;
                 t->by -= hsz;
@@ -2538,11 +2537,10 @@ static int decode_sb(Dav1dTaskContext *const t, const enum BlockLevel bl,
 
         assert(bl < BL_8X8);
         if (is_split) {
-            const EdgeBranch *const branch = (const EdgeBranch *) node;
             bp = PARTITION_SPLIT;
-            if (decode_sb(t, bl + 1, branch->split[0])) return 1;
+            if (decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 0))) return 1;
             t->bx += hsz;
-            if (decode_sb(t, bl + 1, branch->split[1])) return 1;
+            if (decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 1))) return 1;
             t->bx -= hsz;
         } else {
             bp = PARTITION_H;
@@ -2569,11 +2567,10 @@ static int decode_sb(Dav1dTaskContext *const t, const enum BlockLevel bl,
 
         assert(bl < BL_8X8);
         if (is_split) {
-            const EdgeBranch *const branch = (const EdgeBranch *) node;
             bp = PARTITION_SPLIT;
-            if (decode_sb(t, bl + 1, branch->split[0])) return 1;
+            if (decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 0))) return 1;
             t->by += hsz;
-            if (decode_sb(t, bl + 1, branch->split[2])) return 1;
+            if (decode_sb(t, bl + 1, INTRA_EDGE_SPLIT(node, 2))) return 1;
             t->by -= hsz;
         } else {
             bp = PARTITION_V;
@@ -2812,7 +2809,7 @@ int dav1d_decode_tile_sbrow(Dav1dTaskContext *const t) {
         {
             if (atomic_load_explicit(c->flush, memory_order_acquire))
                 return 1;
-            if (decode_sb(t, root_bl, c->intra_edge.root[root_bl]))
+            if (decode_sb(t, root_bl, dav1d_intra_edge_tree[root_bl]))
                 return 1;
             if (t->bx & 16 || f->seq_hdr->sb128)
                 t->a++;
@@ -2901,7 +2898,7 @@ int dav1d_decode_tile_sbrow(Dav1dTaskContext *const t) {
                 read_restoration_info(t, lr, p, frame_type);
             }
         }
-        if (decode_sb(t, root_bl, c->intra_edge.root[root_bl]))
+        if (decode_sb(t, root_bl, dav1d_intra_edge_tree[root_bl]))
             return 1;
         if (t->bx & 16 || f->seq_hdr->sb128) {
             t->a++;
