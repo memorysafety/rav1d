@@ -22,6 +22,13 @@ jobs:
             linker: "cc"
             wrapper: "qemu-x86_64-static -cpu max" # enable AVX512
             packages: ""
+            # NOTE: This appears to work for Ubuntu 22.04 and other systems
+            # with a recent version of GNU ld (e.g. 2.38) whereas Ubuntu 20.04
+            # fails with the following linker error: unsupported ISA subset `z'
+          - target: "riscv64gc-unknown-linux-gnu"
+            linker: "riscv64-linux-gnu-gcc"
+            wrapper: "qemu-riscv64-static"
+            packages: "g++-riscv64-linux-gnu libc6-dev-riscv64-cross"
     runs-on: ubuntu-latest
     name: test on ${{ matrix.target }}
     steps:
