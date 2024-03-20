@@ -334,9 +334,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     } else {
         Box::new([])
     });
-    let mut n: c_uint = 0 as c_int as c_uint;
-    while n < (*c).n_fc {
+    for n in 0..n_fc {
         let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(n as isize);
+        f.index = n;
         addr_of_mut!(f.frame_thread).write(Default::default());
         if n_tc > 1 {
             f.task_thread.lock = Mutex::new(());
@@ -353,7 +353,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         addr_of_mut!(f.lf.start_of_tile_row).write(Default::default());
         f.lf.last_sharpness = -(1 as c_int);
         rav1d_refmvs_init(&mut f.rf);
-        n = n.wrapping_add(1);
     }
     (*c).tc = (0..n_tc)
         .map(|_| {
