@@ -23,7 +23,12 @@ use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_DEBLOCK;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_NONE;
 use rav1d::include::dav1d::dav1d::DAV1D_INLOOPFILTER_RESTORATION;
 use rav1d::src::cpu::dav1d_set_cpu_flags_mask;
-#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+#[cfg(any(
+    target_arch = "arm",
+    target_arch = "aarch64",
+    target_arch = "riscv32",
+    target_arch = "riscv64"
+))]
 use rav1d::src::cpu::CpuFlags;
 use rav1d::src::lib::dav1d_default_settings;
 use rav1d::src::lib::dav1d_version;
@@ -103,8 +108,12 @@ cfg_if! {
         pub type CpuMask = c_uint;
 
         const ALLOWED_CPU_MASKS: &[u8; 50] = b", 'sse2', 'ssse3', 'sse41', 'avx2' or 'avx512icl'\0";
-    } else {
+    } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
         const ALLOWED_CPU_MASKS: &[u8; 11] = b" or 'neon'\0";
+    } else if #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))] {
+        const ALLOWED_CPU_MASKS: &[u8; 10] = b" or 'rvv'\0";
+    } else {
+        const ALLOWED_CPU_MASKS: &[u8; 42] = b"not yet implemented for this architecture\0";
     }
 }
 pub type arg = c_uint;
@@ -470,6 +479,15 @@ cfg_if! {
                 EnumParseTable {
                     str_0: b"none\0" as *const u8 as *const c_char,
                     val: 0 as c_int,
+                }
+            },
+        ];
+    } else if #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))] {
+        static mut cpu_mask_tbl: [EnumParseTable; 1] = [
+            {
+                EnumParseTable {
+                    str_0: b"rvv\0" as *const u8 as *const c_char,
+                    val: CpuFlags::V.bits() as c_int,
                 }
             },
         ];

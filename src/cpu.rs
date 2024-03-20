@@ -8,7 +8,9 @@ use std::sync::atomic::Ordering;
     target_arch = "x86",
     target_arch = "x86_64",
     target_arch = "arm",
-    target_arch = "aarch64"
+    target_arch = "aarch64",
+    target_arch = "riscv32",
+    target_arch = "riscv64",
 )))]
 bitflags! {
     #[derive(Clone, Copy)]
@@ -42,6 +44,14 @@ bitflags! {
     }
 }
 
+#[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
+bitflags! {
+    #[derive(Clone, Copy)]
+    pub struct CpuFlags: c_uint {
+        const V = 1 << 0;
+    }
+}
+
 impl CpuFlags {
     pub const fn compile_time_detect() -> Self {
         let individual_flags = [
@@ -72,6 +82,8 @@ impl CpuFlags {
             CpuFlags::AVX512ICL,
             #[cfg(target_feature = "neon")]
             CpuFlags::NEON,
+            #[cfg(any(target_arch = "riscv64", target_arch = "riscv32"))]
+            CpuFlags::V,
         ];
 
         let mut combined_flags = Self::empty();
