@@ -1,5 +1,7 @@
 use crate::include::common::attributes::ctz;
+#[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
+#[cfg(feature = "bitdepth_8")]
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
