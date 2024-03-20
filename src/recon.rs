@@ -1771,7 +1771,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     case.set(&mut dir.lcoef.0, cf_ctx);
                 },
             );
-            let txtp_map = &mut (*t).txtp_map[(by4 * 32 + bx4) as usize..];
+            let txtp_map = &mut (*t).scratch.c2rust_unnamed_0.ac_txtp_map.txtp_map
+                [(by4 * 32 + bx4) as usize..];
             CaseSet::<16, false>::one((), txw as usize, 0, |case, ()| {
                 for txtp_map in txtp_map.chunks_mut(32).take(txh as usize) {
                     case.set(txtp_map, txtp);
@@ -1992,7 +1993,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             let mut cf_ctx: u8 = 0x40 as c_int as u8;
                             let mut txtp: TxfmType = DCT_DCT;
                             if b.intra == 0 {
-                                txtp = t.txtp_map
+                                txtp = t.scratch.c2rust_unnamed_0.ac_txtp_map.txtp_map
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
                                     as TxfmType;
                             }
@@ -2822,7 +2823,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     if !(init_x == 0 && init_y == 0) {
                         unreachable!();
                     }
-                    let ac = &mut t.scratch.c2rust_unnamed_0.ac;
+                    let ac = &mut t.scratch.c2rust_unnamed_0.ac_txtp_map.ac;
                     let y_src: *mut BD::Pixel = (f.cur.data.data[0] as *mut BD::Pixel)
                         .offset((4 * (t.bx & !ss_hor)) as isize)
                         .offset(
@@ -4394,7 +4395,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             } else {
                                 let mut cf_ctx: u8 = 0;
                                 cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
-                                txtp = t.txtp_map
+                                txtp = t.scratch.c2rust_unnamed_0.ac_txtp_map.txtp_map
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
                                     as TxfmType;
                                 eob = decode_coefs::<BD>(

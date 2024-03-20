@@ -719,9 +719,16 @@ impl BitDepthDependentType for InterIntraEdge {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
+pub union Rav1dTaskContext_scratch_ac_txtp_map {
+    pub ac: [i16; 1024],      // intra only
+    pub txtp_map: [u8; 1024], // inter only
+}
+
+#[derive(Clone, Copy)]
+#[repr(C)]
 pub struct Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub c2rust_unnamed: Rav1dTaskContext_scratch_levels_pal,
-    pub ac: [i16; 1024],
+    pub ac_txtp_map: Rav1dTaskContext_scratch_ac_txtp_map,
     pub pal_idx: [u8; 8192],
     pub pal: [[u16; 8]; 3], /* [3 plane][8 palette_idx] */
     pub interintra_edge: BitDepthUnion<InterIntraEdge>,
@@ -770,7 +777,6 @@ pub(crate) struct Rav1dTaskContext {
     // which would make copy/assign operations slightly faster?
     pub al_pal: [[[[u16; 8]; 3]; 32]; 2], /* [2 a/l][32 bx/y4][3 plane][8 palette_idx] */
     pub pal_sz_uv: [[u8; 32]; 2],         /* [2 a/l][32 bx4/by4] */
-    pub txtp_map: [u8; 1024],             // inter-only
     pub scratch: Rav1dTaskContext_scratch,
 
     pub warpmv: Rav1dWarpedMotionParams,
@@ -797,7 +803,6 @@ impl Rav1dTaskContext {
             cf: Default::default(),
             al_pal: Default::default(),
             pal_sz_uv: Default::default(),
-            txtp_map: [0u8; 1024],
             scratch: mem::zeroed(),
             warpmv: mem::zeroed(),
             lf_mask: ptr::null_mut(),
