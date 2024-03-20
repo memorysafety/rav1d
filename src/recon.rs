@@ -98,10 +98,8 @@ use crate::src::tables::TxfmInfo;
 use crate::src::wedge::dav1d_ii_masks;
 use crate::src::wedge::dav1d_wedge_masks;
 use libc::intptr_t;
-use libc::printf;
 use libc::ptrdiff_t;
 use std::cmp;
-use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_longlong;
 use std::ffi::c_uint;
@@ -468,10 +466,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = (debug_block_info!(f, &*t) && plane != 0 && false) as c_int;
     if dbg != 0 {
-        printf(
-            b"Start: r=%d\n\0" as *const u8 as *const c_char,
-            (*ts).msac.rng,
-        );
+        println!("Start: r={}", (*ts).msac.rng);
     }
     let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout) as c_int;
     let all_skip = rav1d_msac_decode_bool_adapt(
@@ -479,8 +474,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         &mut (*ts).cdf.coef.skip[(*t_dim).ctx as usize][sctx as usize],
     ) as c_int;
     if dbg != 0 {
-        printf(
-            b"Post-non-zero[%d][%d][%d]: r=%d\n\0" as *const u8 as *const c_char,
+        println!(
+            "Post-non-zero[{}][{}][{}]: r={}",
             (*t_dim).ctx as c_int,
             sctx,
             all_skip,
@@ -535,8 +530,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     as TxfmType;
             }
             if dbg != 0 {
-                printf(
-                    b"Post-txtp-intra[%d->%d][%d][%d->%d]: r=%d\n\0" as *const u8 as *const c_char,
+                println!(
+                    "Post-txtp-intra[{}->{}][{}][{}->{}]: r={}",
                     tx as c_uint,
                     (*t_dim).min as c_int,
                     y_mode_nofilt as c_uint,
@@ -571,8 +566,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     as TxfmType;
             }
             if dbg != 0 {
-                printf(
-                    b"Post-txtp-inter[%d->%d][%d->%d]: r=%d\n\0" as *const u8 as *const c_char,
+                println!(
+                    "Post-txtp-inter[{}->{}][{}->{}]: r={}",
                     tx as c_uint,
                     (*t_dim).min as c_int,
                     idx,
@@ -633,8 +628,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         _ => {}
     }
     if dbg != 0 {
-        printf(
-            b"Post-eob_bin_%d[%d][%d][%d]: r=%d\n\0" as *const u8 as *const c_char,
+        println!(
+            "Post-eob_bin_{}[{}][{}][{}]: r={}",
             (16 as c_int) << tx2dszctx,
             chroma,
             is_1d,
@@ -648,8 +643,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
             [eob_bin as usize];
         let eob_hi_bit = rav1d_msac_decode_bool_adapt(&mut (*ts).msac, eob_hi_bit_cdf) as c_int;
         if dbg != 0 {
-            printf(
-                b"Post-eob_hi_bit[%d][%d][%d][%d]: r=%d\n\0" as *const u8 as *const c_char,
+            println!(
+                "Post-eob_hi_bit[{}][{}][{}][{}]: r={}",
                 (*t_dim).ctx as c_int,
                 chroma,
                 eob_bin,
@@ -661,11 +656,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             | rav1d_msac_decode_bools(&mut (*ts).msac, (eob_bin - 2) as c_uint))
             as c_int;
         if dbg != 0 {
-            printf(
-                b"Post-eob[%d]: r=%d\n\0" as *const u8 as *const c_char,
-                eob,
-                (*ts).msac.rng,
-            );
+            println!("Post-eob[{}]: r={}", eob, (*ts).msac.rng);
         }
     } else {
         eob = eob_bin;
@@ -731,9 +722,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     rc = x << shift2 | y;
                 }
                 if dbg != 0 {
-                    printf(
-                        b"Post-lo_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                            as *const c_char,
+                    println!(
+                        "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
                         (*t_dim).ctx as c_int,
                         chroma,
                         ctx,
@@ -760,9 +750,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     ) as c_int;
                     level_tok = tok + ((3 as c_int) << 6);
                     if dbg != 0 {
-                        printf(
-                            b"Post-hi_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
                             cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                             chroma,
                             ctx,
@@ -813,9 +802,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         3 as c_int as usize,
                     ) as c_int;
                     if dbg != 0 {
-                        printf(
-                            b"Post-lo_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
                             (*t_dim).ctx as c_int,
                             chroma,
                             ctx,
@@ -844,9 +832,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             &mut *hi_cdf.offset(ctx as isize),
                         ) as c_int;
                         if dbg != 0 {
-                            printf(
-                                b"Post-hi_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                    as *const c_char,
+                            println!(
+                                "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
                                 cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                                 chroma,
                                 ctx,
@@ -889,8 +876,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     3 as c_int as usize,
                 );
                 if dbg != 0 {
-                    printf(
-                        b"Post-dc_lo_tok[%d][%d][%d][%d]: r=%d\n\0" as *const u8 as *const c_char,
+                    println!(
+                        "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
                         (*t_dim).ctx as c_int,
                         chroma,
                         ctx,
@@ -916,9 +903,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         &mut *hi_cdf.offset(ctx as isize),
                     );
                     if dbg != 0 {
-                        printf(
-                            b"Post-dc_hi_tok[%d][%d][0][%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
                             cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                             chroma,
                             dc_tok,
@@ -950,9 +936,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     rc = x << shift2 | y;
                 }
                 if dbg != 0 {
-                    printf(
-                        b"Post-lo_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                            as *const c_char,
+                    println!(
+                        "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
                         (*t_dim).ctx as c_int,
                         chroma,
                         ctx,
@@ -979,9 +964,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     ) as c_int;
                     level_tok = tok + ((3 as c_int) << 6);
                     if dbg != 0 {
-                        printf(
-                            b"Post-hi_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
                             cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                             chroma,
                             ctx,
@@ -1032,9 +1016,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         3 as c_int as usize,
                     ) as c_int;
                     if dbg != 0 {
-                        printf(
-                            b"Post-lo_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
                             (*t_dim).ctx as c_int,
                             chroma,
                             ctx,
@@ -1063,9 +1046,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             &mut *hi_cdf.offset(ctx as isize),
                         ) as c_int;
                         if dbg != 0 {
-                            printf(
-                                b"Post-hi_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                    as *const c_char,
+                            println!(
+                                "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
                                 cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                                 chroma,
                                 ctx,
@@ -1108,8 +1090,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     3 as c_int as usize,
                 );
                 if dbg != 0 {
-                    printf(
-                        b"Post-dc_lo_tok[%d][%d][%d][%d]: r=%d\n\0" as *const u8 as *const c_char,
+                    println!(
+                        "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
                         (*t_dim).ctx as c_int,
                         chroma,
                         ctx,
@@ -1135,9 +1117,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         &mut *hi_cdf.offset(ctx as isize),
                     );
                     if dbg != 0 {
-                        printf(
-                            b"Post-dc_hi_tok[%d][%d][0][%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
                             cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                             chroma,
                             dc_tok,
@@ -1169,9 +1150,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     rc = x << shift2 | y;
                 }
                 if dbg != 0 {
-                    printf(
-                        b"Post-lo_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                            as *const c_char,
+                    println!(
+                        "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
                         (*t_dim).ctx as c_int,
                         chroma,
                         ctx,
@@ -1198,9 +1178,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     ) as c_int;
                     level_tok = tok + ((3 as c_int) << 6);
                     if dbg != 0 {
-                        printf(
-                            b"Post-hi_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
                             cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                             chroma,
                             ctx,
@@ -1251,9 +1230,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         3 as c_int as usize,
                     ) as c_int;
                     if dbg != 0 {
-                        printf(
-                            b"Post-lo_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
                             (*t_dim).ctx as c_int,
                             chroma,
                             ctx,
@@ -1282,9 +1260,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             &mut *hi_cdf.offset(ctx as isize),
                         ) as c_int;
                         if dbg != 0 {
-                            printf(
-                                b"Post-hi_tok[%d][%d][%d][%d=%d=%d]: r=%d\n\0" as *const u8
-                                    as *const c_char,
+                            println!(
+                                "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
                                 cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                                 chroma,
                                 ctx,
@@ -1327,8 +1304,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     3 as c_int as usize,
                 );
                 if dbg != 0 {
-                    printf(
-                        b"Post-dc_lo_tok[%d][%d][%d][%d]: r=%d\n\0" as *const u8 as *const c_char,
+                    println!(
+                        "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
                         (*t_dim).ctx as c_int,
                         chroma,
                         ctx,
@@ -1354,9 +1331,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         &mut *hi_cdf.offset(ctx as isize),
                     );
                     if dbg != 0 {
-                        printf(
-                            b"Post-dc_hi_tok[%d][%d][0][%d]: r=%d\n\0" as *const u8
-                                as *const c_char,
+                        println!(
+                            "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
                             cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                             chroma,
                             dc_tok,
@@ -1379,8 +1355,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         ) as c_int;
         dc_tok = (1 + tok_br) as c_uint;
         if dbg != 0 {
-            printf(
-                b"Post-dc_lo_tok[%d][%d][%d][%d]: r=%d\n\0" as *const u8 as *const c_char,
+            println!(
+                "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
                 (*t_dim).ctx as c_int,
                 chroma,
                 0 as c_int,
@@ -1391,8 +1367,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         if tok_br == 2 {
             dc_tok = rav1d_msac_decode_hi_tok(&mut (*ts).msac, &mut *hi_cdf.offset(0));
             if dbg != 0 {
-                printf(
-                    b"Post-dc_hi_tok[%d][%d][0][%d]: r=%d\n\0" as *const u8 as *const c_char,
+                println!(
+                    "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
                     cmp::min((*t_dim).ctx as c_int, 3 as c_int),
                     chroma,
                     dc_tok,
@@ -1429,8 +1405,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         let dc_sign_cdf = &mut (*ts).cdf.coef.dc_sign[chroma as usize][dc_sign_ctx as usize];
         dc_sign = rav1d_msac_decode_bool_adapt(&mut (*ts).msac, dc_sign_cdf) as c_int;
         if dbg != 0 {
-            printf(
-                b"Post-dc_sign[%d][%d][%d]: r=%d\n\0" as *const u8 as *const c_char,
+            println!(
+                "Post-dc_sign[{}][{}][{}]: r={}",
                 chroma,
                 dc_sign_ctx,
                 dc_sign,
@@ -1444,8 +1420,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
             if dc_tok == 15 as c_uint {
                 dc_tok = (read_golomb(&mut (*ts).msac)).wrapping_add(15 as c_int as c_uint);
                 if dbg != 0 {
-                    printf(
-                        b"Post-dc_residual[%d->%d]: r=%d\n\0" as *const u8 as *const c_char,
+                    println!(
+                        "Post-dc_residual[{}->{}]: r={}",
                         dc_tok.wrapping_sub(15 as c_int as c_uint),
                         dc_tok,
                         (*ts).msac.rng,
@@ -1473,8 +1449,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
             if dc_tok == 15 as c_uint {
                 dc_tok = (read_golomb(&mut (*ts).msac)).wrapping_add(15 as c_int as c_uint);
                 if dbg != 0 {
-                    printf(
-                        b"Post-dc_residual[%d->%d]: r=%d\n\0" as *const u8 as *const c_char,
+                    println!(
+                        "Post-dc_residual[{}->{}]: r={}",
                         dc_tok.wrapping_sub(15 as c_int as c_uint),
                         dc_tok,
                         (*ts).msac.rng,
@@ -1505,12 +1481,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut (*ts).msac) as c_int;
                 if dbg != 0 {
-                    printf(
-                        b"Post-sign[%d=%d]: r=%d\n\0" as *const u8 as *const c_char,
-                        rc,
-                        sign,
-                        (*ts).msac.rng,
-                    );
+                    println!("Post-sign[{}={}]: r={}", rc, sign, (*ts).msac.rng);
                 }
                 let rc_tok: c_uint = (*cf.offset(rc as isize)).as_::<c_uint>();
                 let mut tok: c_uint;
@@ -1522,8 +1493,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 if rc_tok >= ((15 as c_int) << 11) as c_uint {
                     tok = (read_golomb(&mut (*ts).msac)).wrapping_add(15 as c_int as c_uint);
                     if dbg != 0 {
-                        printf(
-                            b"Post-residual[%d=%d->%d]: r=%d\n\0" as *const u8 as *const c_char,
+                        println!(
+                            "Post-residual[{}={}->{}]: r={}",
                             rc,
                             tok.wrapping_sub(15 as c_int as c_uint),
                             tok,
@@ -1555,12 +1526,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut (*ts).msac) as c_int;
                 if dbg != 0 {
-                    printf(
-                        b"Post-sign[%d=%d]: r=%d\n\0" as *const u8 as *const c_char,
-                        rc,
-                        sign,
-                        (*ts).msac.rng,
-                    );
+                    println!("Post-sign[{}={}]: r={}", rc, sign, (*ts).msac.rng);
                 }
                 let rc_tok: c_uint = (*cf.offset(rc as isize)).as_::<c_uint>();
                 let mut tok: c_uint;
@@ -1568,8 +1534,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 if rc_tok >= ((15 as c_int) << 11) as c_uint {
                     tok = (read_golomb(&mut (*ts).msac)).wrapping_add(15 as c_int as c_uint);
                     if dbg != 0 {
-                        printf(
-                            b"Post-residual[%d=%d->%d]: r=%d\n\0" as *const u8 as *const c_char,
+                        println!(
+                            "Post-residual[{}={}->{}]: r={}",
                             rc,
                             tok.wrapping_sub(15 as c_int as c_uint),
                             tok,
@@ -1739,8 +1705,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 &mut cf_ctx,
             );
             if debug_block_info!(f, &*t) {
-                printf(
-                    b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8 as *const c_char,
+                println!(
+                    "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
                     ytx as c_uint,
                     txtp as c_uint,
                     eob,
@@ -1926,9 +1892,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                         let cbi = &mut f.frame_thread.cbi[cbi_idx..][t.bx as usize];
                         cbi.eob[0] = eob as i16;
                         if debug_block_info!(f, t) {
-                            printf(
-                                b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8
-                                    as *const c_char,
+                            println!(
+                                "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
                                 b.c2rust_unnamed.c2rust_unnamed.tx as c_int,
                                 txtp as c_uint,
                                 eob,
@@ -2000,10 +1965,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             let cbi = &mut f.frame_thread.cbi[cbi_idx..][t.bx as usize];
                             cbi.eob[(1 + pl) as usize] = eob as i16;
                             if debug_block_info!(f, t) {
-                                printf(
-                                    b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d\n\0"
-                                        as *const u8
-                                        as *const c_char,
+                                println!(
+                                    "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
                                     pl,
                                     b.uvtx as c_int,
                                     txtp as c_uint,
@@ -2173,8 +2136,8 @@ unsafe fn mc<BD: BitDepth>(
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx as usize][0].step >> 10) + 1;
         let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx as usize][1].step >> 10) + 1;
         if debug_block_info!(&*f, &*t) {
-            printf(
-                b"Off %dx%d [%d,%d,%d], size %dx%d [%d,%d]\n\0" as *const u8 as *const c_char,
+            println!(
+                "Off {}x{} [{},{},{}], size {}x{} [{},{}]",
                 left,
                 top,
                 orig_pos_x,
@@ -2210,7 +2173,7 @@ unsafe fn mc<BD: BitDepth>(
                 .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                 as ptrdiff_t;
             if debug_block_info!(&*f, &*t) {
-                printf(b"Emu\n\0" as *const u8 as *const c_char);
+                println!("Emu");
             }
         } else {
             r#ref = ((*refp).p.data.data[pl as usize] as *mut BD::Pixel)
@@ -2734,9 +2697,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 &mut cf_ctx,
                             );
                             if debug_block_info!(f, t) {
-                                printf(
-                                    b"Post-y-cf-blk[tx=%d,txtp=%d,eob=%d]: r=%d\n\0" as *const u8
-                                        as *const c_char,
+                                println!(
+                                    "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
                                     b.c2rust_unnamed.c2rust_unnamed.tx as c_int,
                                     txtp as c_uint,
                                     eob,
@@ -3174,9 +3136,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         &mut cf_ctx,
                                     );
                                     if debug_block_info!(f, t) {
-                                        printf(
-                                            b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d [x=%d,cbx4=%d]\n\0"
-                                                as *const u8 as *const c_char,
+                                        println!(
+                                            "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={} [x={},cbx4={}]",
                                             pl,
                                             b.uvtx as c_int,
                                             txtp as c_uint,
@@ -4399,10 +4360,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     &mut cf_ctx,
                                 );
                                 if debug_block_info!(f, t) {
-                                    printf(
-                                        b"Post-uv-cf-blk[pl=%d,tx=%d,txtp=%d,eob=%d]: r=%d\n\0"
-                                            as *const u8
-                                            as *const c_char,
+                                    println!(
+                                        "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
                                         pl,
                                         b.uvtx as c_int,
                                         txtp as c_uint,
