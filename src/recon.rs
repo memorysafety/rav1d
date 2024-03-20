@@ -66,9 +66,6 @@ use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
-use crate::src::levels::TX_CLASS_2D;
-use crate::src::levels::TX_CLASS_H;
-use crate::src::levels::TX_CLASS_V;
 use crate::src::levels::WHT_WHT;
 use crate::src::lf_apply::rav1d_copy_lpf;
 use crate::src::lf_apply::rav1d_loopfilter_sbrow_cols;
@@ -427,16 +424,19 @@ fn get_lo_ctx(
     let level = |y, x| levels[y * stride + x] as usize;
 
     let mut mag = level(0, 1) + level(1, 0);
-    let offset = if tx_class == TX_CLASS_2D {
-        mag += level(1, 1);
-        *hi_mag = mag as c_uint;
-        mag += level(0, 2) + level(2, 0);
-        ctx_offsets.unwrap()[cmp::min(y, 4)][cmp::min(x, 4)] as usize
-    } else {
-        mag += level(0, 2);
-        *hi_mag = mag as c_uint;
-        mag += level(0, 3) + level(0, 4);
-        26 + if y > 1 { 10 } else { y * 5 }
+    let offset = match tx_class {
+        TxClass::TX_CLASS_2D => {
+            mag += level(1, 1);
+            *hi_mag = mag as c_uint;
+            mag += level(0, 2) + level(2, 0);
+            ctx_offsets.unwrap()[cmp::min(y, 4)][cmp::min(x, 4)] as usize
+        }
+        TxClass::TX_CLASS_H | TxClass::TX_CLASS_V => {
+            mag += level(0, 2);
+            *hi_mag = mag as c_uint;
+            mag += level(0, 3) + level(0, 4);
+            26 + if y > 1 { 10 } else { y * 5 }
+        }
     };
     offset + if mag > 512 { 4 } else { (mag + 64) >> 7 }
 }
@@ -580,8 +580,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let mut eob_bin = 0;
     let tx2dszctx = cmp::min((*t_dim).lw as c_int, TX_32X32 as c_int)
         + cmp::min((*t_dim).lh as c_int, TX_32X32 as c_int);
-    let tx_class: TxClass = dav1d_tx_type_class[*txtp as usize] as TxClass;
-    let is_1d = (tx_class as c_uint != TX_CLASS_2D as c_int as c_uint) as c_int;
+    let tx_class = dav1d_tx_type_class[*txtp as usize];
+    let is_1d = tx_class != TxClass::TX_CLASS_2D;
     match tx2dszctx {
         0 => {
             let eob_bin_cdf = &mut (*ts).cdf.coef.eob_bin_16[chroma as usize][is_1d as usize];
@@ -669,8 +669,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let hi_cdf: *mut [u16; 4] = ((*ts).cdf.coef.br_tok
         [cmp::min((*t_dim).ctx as c_int, 3 as c_int) as usize][chroma as usize])
         .as_mut_ptr();
-    let mut rc: c_uint = 0;
-    let mut dc_tok: c_uint = 0;
+    let mut rc;
+    let mut dc_tok;
     if eob != 0 {
         let lo_cdf: *mut [u16; 4] =
             ((*ts).cdf.coef.base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
@@ -688,8 +688,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         let mut level_tok = tok * 0x41 as c_int;
         let mut mag: c_uint = 0;
         let mut scan: &[u16] = &[];
-        match tx_class as c_uint {
-            0 => {
+        match tx_class {
+            TxClass::TX_CLASS_2D => {
                 let nonsquare_tx: c_uint =
                     (tx as c_uint >= RTX_4X8 as c_int as c_uint) as c_int as c_uint;
                 let lo_ctx_offsets = Some(
@@ -708,18 +708,22 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 levels[..(stride * (4 * sw as isize + 2)) as usize].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
-                if TX_CLASS_2D as c_int == TX_CLASS_2D as c_int {
-                    rc = scan[eob as usize] as c_uint;
-                    x = rc >> shift;
-                    y = rc & mask;
-                } else if TX_CLASS_2D as c_int == TX_CLASS_H as c_int {
-                    x = eob as c_uint & mask;
-                    y = (eob >> shift) as c_uint;
-                    rc = eob as c_uint;
-                } else {
-                    x = eob as c_uint & mask;
-                    y = (eob >> shift) as c_uint;
-                    rc = x << shift2 | y;
+                match tx_class {
+                    TxClass::TX_CLASS_2D => {
+                        rc = scan[eob as usize] as c_uint;
+                        x = rc >> shift;
+                        y = rc & mask;
+                    }
+                    TxClass::TX_CLASS_H => {
+                        x = eob as c_uint & mask;
+                        y = (eob >> shift) as c_uint;
+                        rc = eob as c_uint;
+                    }
+                    TxClass::TX_CLASS_V => {
+                        x = eob as c_uint & mask;
+                        y = (eob >> shift) as c_uint;
+                        rc = x << shift2 | y;
+                    }
                 }
                 if dbg {
                     println!(
@@ -734,7 +738,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     );
                 }
                 if eob_tok == 2 {
-                    ctx = (if if TX_CLASS_2D as c_int == TX_CLASS_2D as c_int {
+                    ctx = (if if tx_class == TxClass::TX_CLASS_2D {
                         (x | y > 1 as c_uint) as c_int
                     } else {
                         (y != 0 as c_int as c_uint) as c_int
@@ -767,18 +771,22 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
-                    if TX_CLASS_2D as c_int == TX_CLASS_2D as c_int {
-                        rc_i = scan[i as usize] as c_uint;
-                        x = rc_i >> shift;
-                        y = rc_i & mask;
-                    } else if TX_CLASS_2D as c_int == TX_CLASS_H as c_int {
-                        x = i as c_uint & mask;
-                        y = (i >> shift) as c_uint;
-                        rc_i = i as c_uint;
-                    } else {
-                        x = i as c_uint & mask;
-                        y = (i >> shift) as c_uint;
-                        rc_i = x << shift2 | y;
+                    match tx_class {
+                        TxClass::TX_CLASS_2D => {
+                            rc_i = scan[i as usize] as c_uint;
+                            x = rc_i >> shift;
+                            y = rc_i & mask;
+                        }
+                        TxClass::TX_CLASS_H => {
+                            x = i as c_uint & mask;
+                            y = (i >> shift) as c_uint;
+                            rc_i = i as c_uint;
+                        }
+                        TxClass::TX_CLASS_V => {
+                            x = i as c_uint & mask;
+                            y = (i >> shift) as c_uint;
+                            rc_i = x << shift2 | y;
+                        }
                     }
                     if !(x < 32 as c_uint && y < 32 as c_uint) {
                         unreachable!();
@@ -786,14 +794,14 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     let level = &mut levels[(x as isize * stride + y as isize) as usize..];
                     ctx = get_lo_ctx(
                         level,
-                        TX_CLASS_2D,
+                        TxClass::TX_CLASS_2D,
                         &mut mag,
                         lo_ctx_offsets,
                         x as usize,
                         y as usize,
                         stride as usize,
                     ) as c_uint;
-                    if TX_CLASS_2D as c_int == TX_CLASS_2D as c_int {
+                    if TxClass::TX_CLASS_2D as c_int == TxClass::TX_CLASS_2D as c_int {
                         y |= x;
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
@@ -816,7 +824,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     if tok == 3 {
                         mag &= 63 as c_int as c_uint;
                         ctx = ((if y
-                            > (TX_CLASS_2D as c_int == TX_CLASS_2D as c_int) as c_int as c_uint
+                            > (TxClass::TX_CLASS_2D as c_int == TxClass::TX_CLASS_2D as c_int)
+                                as c_int as c_uint
                         {
                             14 as c_int
                         } else {
@@ -857,12 +866,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     i -= 1;
                 }
-                ctx = if TX_CLASS_2D as c_int == TX_CLASS_2D as c_int {
+                ctx = if TxClass::TX_CLASS_2D as c_int == TxClass::TX_CLASS_2D as c_int {
                     0 as c_int as c_uint
                 } else {
                     get_lo_ctx(
                         levels,
-                        TX_CLASS_2D,
+                        TxClass::TX_CLASS_2D,
                         &mut mag,
                         lo_ctx_offsets,
                         0,
@@ -886,7 +895,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     );
                 }
                 if dc_tok == 3 as c_uint {
-                    if TX_CLASS_2D as c_int == TX_CLASS_2D as c_int {
+                    if TxClass::TX_CLASS_2D as c_int == TxClass::TX_CLASS_2D as c_int {
                         mag = (levels[(0 * stride + 1) as usize] as c_int
                             + levels[(1 * stride + 0) as usize] as c_int
                             + levels[(1 * stride + 1) as usize] as c_int)
@@ -913,7 +922,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                 }
             }
-            1 => {
+            TxClass::TX_CLASS_H => {
                 let lo_ctx_offsets = None;
                 let stride: ptrdiff_t = 16 as c_int as ptrdiff_t;
                 let shift: c_uint = ((*t_dim).lh as c_int + 2) as c_uint;
@@ -922,18 +931,22 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 levels[..(stride * (4 * sh + 2) as isize) as usize].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
-                if TX_CLASS_H as c_int == TX_CLASS_2D as c_int {
-                    rc = scan[eob as usize] as c_uint;
-                    x = rc >> shift;
-                    y = rc & mask;
-                } else if TX_CLASS_H as c_int == TX_CLASS_H as c_int {
-                    x = eob as c_uint & mask;
-                    y = (eob >> shift) as c_uint;
-                    rc = eob as c_uint;
-                } else {
-                    x = eob as c_uint & mask;
-                    y = (eob >> shift) as c_uint;
-                    rc = x << shift2 | y;
+                match tx_class {
+                    TxClass::TX_CLASS_2D => {
+                        rc = scan[eob as usize] as c_uint;
+                        x = rc >> shift;
+                        y = rc & mask;
+                    }
+                    TxClass::TX_CLASS_H => {
+                        x = eob as c_uint & mask;
+                        y = (eob >> shift) as c_uint;
+                        rc = eob as c_uint;
+                    }
+                    TxClass::TX_CLASS_V => {
+                        x = eob as c_uint & mask;
+                        y = (eob >> shift) as c_uint;
+                        rc = x << shift2 | y;
+                    }
                 }
                 if dbg {
                     println!(
@@ -948,7 +961,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     );
                 }
                 if eob_tok == 2 {
-                    ctx = (if if TX_CLASS_H as c_int == TX_CLASS_2D as c_int {
+                    ctx = (if if tx_class == TxClass::TX_CLASS_2D {
                         (x | y > 1 as c_uint) as c_int
                     } else {
                         (y != 0 as c_int as c_uint) as c_int
@@ -981,18 +994,22 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
-                    if TX_CLASS_H as c_int == TX_CLASS_2D as c_int {
-                        rc_i = scan[i as usize] as c_uint;
-                        x = rc_i >> shift;
-                        y = rc_i & mask;
-                    } else if TX_CLASS_H as c_int == TX_CLASS_H as c_int {
-                        x = i as c_uint & mask;
-                        y = (i >> shift) as c_uint;
-                        rc_i = i as c_uint;
-                    } else {
-                        x = i as c_uint & mask;
-                        y = (i >> shift) as c_uint;
-                        rc_i = x << shift2 | y;
+                    match tx_class {
+                        TxClass::TX_CLASS_2D => {
+                            rc_i = scan[i as usize] as c_uint;
+                            x = rc_i >> shift;
+                            y = rc_i & mask;
+                        }
+                        TxClass::TX_CLASS_H => {
+                            x = i as c_uint & mask;
+                            y = (i >> shift) as c_uint;
+                            rc_i = i as c_uint;
+                        }
+                        TxClass::TX_CLASS_V => {
+                            x = i as c_uint & mask;
+                            y = (i >> shift) as c_uint;
+                            rc_i = x << shift2 | y;
+                        }
                     }
                     if !(x < 32 as c_uint && y < 32 as c_uint) {
                         unreachable!();
@@ -1000,14 +1017,14 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     let level = &mut levels[(x as isize * stride as isize + y as isize) as usize..];
                     ctx = get_lo_ctx(
                         level,
-                        TX_CLASS_H,
+                        tx_class,
                         &mut mag,
                         lo_ctx_offsets,
                         x as usize,
                         y as usize,
                         stride as usize,
                     ) as c_uint;
-                    if TX_CLASS_H as c_int == TX_CLASS_2D as c_int {
+                    if tx_class == TxClass::TX_CLASS_2D {
                         y |= x;
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
@@ -1029,9 +1046,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63 as c_int as c_uint;
-                        ctx = ((if y
-                            > (TX_CLASS_H as c_int == TX_CLASS_2D as c_int) as c_int as c_uint
-                        {
+                        ctx = ((if y > (tx_class == TxClass::TX_CLASS_2D) as c_uint {
                             14 as c_int
                         } else {
                             7 as c_int
@@ -1071,12 +1086,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     i -= 1;
                 }
-                ctx = if TX_CLASS_H as c_int == TX_CLASS_2D as c_int {
+                ctx = if tx_class == TxClass::TX_CLASS_2D {
                     0 as c_int as c_uint
                 } else {
                     get_lo_ctx(
                         levels,
-                        TX_CLASS_H,
+                        tx_class,
                         &mut mag,
                         lo_ctx_offsets,
                         0,
@@ -1100,7 +1115,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     );
                 }
                 if dc_tok == 3 as c_uint {
-                    if TX_CLASS_H as c_int == TX_CLASS_2D as c_int {
+                    if tx_class == TxClass::TX_CLASS_2D {
                         mag = (levels[(0 * stride + 1) as usize] as c_int
                             + levels[(1 * stride + 0) as usize] as c_int
                             + levels[(1 * stride + 1) as usize] as c_int)
@@ -1127,7 +1142,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                 }
             }
-            2 => {
+            TxClass::TX_CLASS_V => {
                 let lo_ctx_offsets = None;
                 let stride: ptrdiff_t = 16 as c_int as ptrdiff_t;
                 let shift: c_uint = ((*t_dim).lw as c_int + 2) as c_uint;
@@ -1136,18 +1151,22 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 levels[..(stride * (4 * sw + 2) as isize) as usize].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
-                if TX_CLASS_V as c_int == TX_CLASS_2D as c_int {
-                    rc = scan[eob as usize] as c_uint;
-                    x = rc >> shift;
-                    y = rc & mask;
-                } else if TX_CLASS_V as c_int == TX_CLASS_H as c_int {
-                    x = eob as c_uint & mask;
-                    y = (eob >> shift) as c_uint;
-                    rc = eob as c_uint;
-                } else {
-                    x = eob as c_uint & mask;
-                    y = (eob >> shift) as c_uint;
-                    rc = x << shift2 | y;
+                match tx_class {
+                    TxClass::TX_CLASS_2D => {
+                        rc = scan[eob as usize] as c_uint;
+                        x = rc >> shift;
+                        y = rc & mask;
+                    }
+                    TxClass::TX_CLASS_H => {
+                        x = eob as c_uint & mask;
+                        y = (eob >> shift) as c_uint;
+                        rc = eob as c_uint;
+                    }
+                    TxClass::TX_CLASS_V => {
+                        x = eob as c_uint & mask;
+                        y = (eob >> shift) as c_uint;
+                        rc = x << shift2 | y;
+                    }
                 }
                 if dbg {
                     println!(
@@ -1162,7 +1181,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     );
                 }
                 if eob_tok == 2 {
-                    ctx = (if if TX_CLASS_V as c_int == TX_CLASS_2D as c_int {
+                    ctx = (if if tx_class == TxClass::TX_CLASS_2D {
                         (x | y > 1 as c_uint) as c_int
                     } else {
                         (y != 0 as c_int as c_uint) as c_int
@@ -1195,18 +1214,22 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
-                    if TX_CLASS_V as c_int == TX_CLASS_2D as c_int {
-                        rc_i = scan[i as usize] as c_uint;
-                        x = rc_i >> shift;
-                        y = rc_i & mask;
-                    } else if TX_CLASS_V as c_int == TX_CLASS_H as c_int {
-                        x = i as c_uint & mask;
-                        y = (i >> shift) as c_uint;
-                        rc_i = i as c_uint;
-                    } else {
-                        x = i as c_uint & mask;
-                        y = (i >> shift) as c_uint;
-                        rc_i = x << shift2 | y;
+                    match tx_class {
+                        TxClass::TX_CLASS_2D => {
+                            rc_i = scan[i as usize] as c_uint;
+                            x = rc_i >> shift;
+                            y = rc_i & mask;
+                        }
+                        TxClass::TX_CLASS_H => {
+                            x = i as c_uint & mask;
+                            y = (i >> shift) as c_uint;
+                            rc_i = i as c_uint;
+                        }
+                        TxClass::TX_CLASS_V => {
+                            x = i as c_uint & mask;
+                            y = (i >> shift) as c_uint;
+                            rc_i = x << shift2 | y;
+                        }
                     }
                     if !(x < 32 as c_uint && y < 32 as c_uint) {
                         unreachable!();
@@ -1214,14 +1237,14 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     let level = &mut levels[(x as isize * stride + y as isize) as usize..];
                     ctx = get_lo_ctx(
                         level,
-                        TX_CLASS_V,
+                        tx_class,
                         &mut mag,
                         lo_ctx_offsets,
                         x as usize,
                         y as usize,
                         stride as usize,
                     ) as c_uint;
-                    if TX_CLASS_V as c_int == TX_CLASS_2D as c_int {
+                    if tx_class == TxClass::TX_CLASS_2D {
                         y |= x;
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
@@ -1243,9 +1266,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     if tok == 3 {
                         mag &= 63 as c_int as c_uint;
-                        ctx = ((if y
-                            > (TX_CLASS_V as c_int == TX_CLASS_2D as c_int) as c_int as c_uint
-                        {
+                        ctx = ((if y > (tx_class == TxClass::TX_CLASS_2D) as c_int as c_uint {
                             14 as c_int
                         } else {
                             7 as c_int
@@ -1285,12 +1306,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     i -= 1;
                 }
-                ctx = if TX_CLASS_V as c_int == TX_CLASS_2D as c_int {
+                ctx = if tx_class == TxClass::TX_CLASS_2D {
                     0 as c_int as c_uint
                 } else {
                     get_lo_ctx(
                         levels,
-                        TX_CLASS_V,
+                        tx_class,
                         &mut mag,
                         lo_ctx_offsets,
                         0,
@@ -1314,7 +1335,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     );
                 }
                 if dc_tok == 3 as c_uint {
-                    if TX_CLASS_V as c_int == TX_CLASS_2D as c_int {
+                    if tx_class == TxClass::TX_CLASS_2D {
                         mag = (levels[(0 * stride + 1) as usize] as c_int
                             + levels[(1 * stride + 0) as usize] as c_int
                             + levels[(1 * stride + 1) as usize] as c_int)
@@ -1339,11 +1360,6 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             (*ts).msac.rng,
                         );
                     }
-                }
-            }
-            _ => {
-                if 0 == 0 {
-                    unreachable!();
                 }
             }
         }

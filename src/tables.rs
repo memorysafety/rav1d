@@ -30,6 +30,7 @@ use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockSize;
 use crate::src::levels::InterPredMode;
+use crate::src::levels::TxClass;
 use crate::src::levels::TxfmType;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
@@ -104,9 +105,6 @@ use crate::src::levels::TX_32X32;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
-use crate::src::levels::TX_CLASS_2D;
-use crate::src::levels::TX_CLASS_H;
-use crate::src::levels::TX_CLASS_V;
 use crate::src::levels::VERT_LEFT_PRED;
 use crate::src::levels::VERT_PRED;
 use crate::src::levels::VERT_RIGHT_PRED;
@@ -609,24 +607,24 @@ pub static dav1d_skip_ctx: [[u8; 5]; 5] = [
     [3, 5, 5, 5, 6],
 ];
 
-pub static dav1d_tx_type_class: [u8; N_TX_TYPES_PLUS_LL] = [
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_2D as u8,
-    TX_CLASS_V as u8,
-    TX_CLASS_H as u8,
-    TX_CLASS_V as u8,
-    TX_CLASS_H as u8,
-    TX_CLASS_V as u8,
-    TX_CLASS_H as u8,
-    TX_CLASS_2D as u8,
+pub static dav1d_tx_type_class: [TxClass; N_TX_TYPES_PLUS_LL] = [
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_2D,
+    TxClass::TX_CLASS_V,
+    TxClass::TX_CLASS_H,
+    TxClass::TX_CLASS_V,
+    TxClass::TX_CLASS_H,
+    TxClass::TX_CLASS_V,
+    TxClass::TX_CLASS_H,
+    TxClass::TX_CLASS_2D,
 ];
 
 pub static dav1d_filter_2d: [[u8; Rav1dFilterMode::N_FILTERS]; Rav1dFilterMode::N_FILTERS] = [
