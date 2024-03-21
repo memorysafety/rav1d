@@ -618,7 +618,7 @@ pub struct Rav1dTileState_tiling {
 
 #[repr(C)]
 pub struct Rav1dTileState_frame_thread {
-    pub pal_idx: *mut u8,
+    pub pal_idx: Option<usize>,
     pub cf: *mut DynCoef,
 }
 
