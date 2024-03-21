@@ -14,7 +14,6 @@ use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x8;
 use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::N_BS_SIZES;
-use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 use paste::paste;
 use std::cmp::Ordering;
 use strum::EnumCount;
@@ -465,12 +464,12 @@ static ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
 static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
     Align16(build_nondc_ii_masks(4, 4, 8));
 
-pub static dav1d_ii_masks: [[[&'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] = {
-    let mut masks = [[[&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
+pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; N_BS_SIZES] = {
+    let mut masks = [[[&[] as &'static [u8]; InterIntraPredMode::COUNT]; 3]; N_BS_SIZES];
 
     macro_rules! set {
         ($h:literal x $w:literal) => {{
-            let mut a = [&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES];
+            let mut a = [&[] as &'static [u8]; InterIntraPredMode::COUNT];
             paste! {
                 a[InterIntraPredMode::Dc as usize] = &ii_dc_mask.0;
                 a[InterIntraPredMode::Vert as usize] = &[<ii_nondc_mask _ $h x $w>].0[InterIntraPredMode::Vert as usize - 1];

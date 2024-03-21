@@ -111,7 +111,6 @@ use crate::src::levels::NEAR_DRL;
 use crate::src::levels::NEWMV;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
-use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
@@ -2974,7 +2973,7 @@ unsafe fn decode_b_inner(
                     InterIntraPredMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.interintra_mode[ii_sz_grp as usize],
-                        N_INTER_INTRA_PRED_MODES as usize - 1,
+                        InterIntraPredMode::COUNT as usize - 1,
                     ) as usize)
                     .expect("valid variant");
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;

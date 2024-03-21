@@ -114,7 +114,6 @@ pub const HOR_PRED: IntraPredMode = 2;
 pub const VERT_PRED: IntraPredMode = 1;
 pub const DC_PRED: IntraPredMode = 0;
 
-pub const N_INTER_INTRA_PRED_MODES: usize = 4;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
 pub enum InterIntraPredMode {
     Dc = 0,
