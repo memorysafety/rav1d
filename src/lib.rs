@@ -37,7 +37,6 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::log::Rav1dLog as _;
-use crate::src::mem::freep;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
@@ -62,13 +61,8 @@ use crate::src::refmvs::rav1d_refmvs_init;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
-use cfg_if::cfg_if;
 use libc::free;
 use libc::memset;
-use libc::pthread_attr_destroy;
-use libc::pthread_attr_init;
-use libc::pthread_attr_setstacksize;
-use libc::pthread_attr_t;
 use std::cell::UnsafeCell;
 use std::cmp;
 use std::ffi::c_char;
@@ -92,12 +86,6 @@ use std::sync::Mutex;
 use std::sync::Once;
 use std::thread;
 use to_method::To as _;
-
-#[cfg(target_os = "linux")]
-use libc::dlsym;
-
-#[cfg(target_os = "linux")]
-use libc::sysconf;
 
 #[cold]
 fn init_internal() {
@@ -160,31 +148,6 @@ pub unsafe extern "C" fn dav1d_default_settings(s: *mut Dav1dSettings) {
     s.write(Rav1dSettings::default().into());
 }
 
-#[cold]
-unsafe fn get_stack_size_internal(_thread_attr: *const pthread_attr_t) -> usize {
-    if 0 != 0 {
-        // TODO(perl): migrate the compile-time guard expression for this:
-        // #if defined(__linux__) && defined(HAVE_DLSYM) && defined(__GLIBC__)
-        cfg_if! {
-            if #[cfg(target_os = "linux")] {
-                let get_minstack: Option<unsafe extern "C" fn(*const pthread_attr_t) -> usize> =
-                    ::core::mem::transmute::<
-                        *mut c_void,
-                        Option<unsafe extern "C" fn(*const pthread_attr_t) -> usize>,
-                    >(dlsym(
-                        0 as *mut c_void,
-                        b"__pthread_get_minstack\0" as *const u8 as *const c_char,
-                    ));
-                if get_minstack.is_some() {
-                    return (get_minstack.expect("non-null function pointer")(_thread_attr))
-                        .wrapping_sub(sysconf(75) as usize);
-                }
-            }
-        }
-    }
-    return 0;
-}
-
 struct NumThreads {
     n_tc: usize,
     n_fc: usize,
@@ -225,15 +188,10 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1d
 
 #[cold]
 pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
-    unsafe fn error(
-        c: *mut Rav1dContext,
-        c_out: &mut *mut Rav1dContext,
-        thread_attr: *mut pthread_attr_t,
-    ) -> Rav1dResult {
+    unsafe fn error(c: *mut Rav1dContext, c_out: &mut *mut Rav1dContext) -> Rav1dResult {
         if !c.is_null() {
             close_internal(c_out, 0 as c_int);
         }
-        pthread_attr_destroy(thread_attr);
         return Err(ENOMEM);
     }
 
@@ -242,16 +200,10 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     validate_input!((s.operating_point >= 0 && s.operating_point <= 31, EINVAL))?;
-    let mut thread_attr: pthread_attr_t = std::mem::zeroed();
-    if pthread_attr_init(&mut thread_attr) != 0 {
-        return Err(ENOMEM);
-    }
-    let stack_size: usize = 1024 * 1024 * get_stack_size_internal(&mut thread_attr);
-    pthread_attr_setstacksize(&mut thread_attr, stack_size);
     *c_out = rav1d_alloc_aligned(::core::mem::size_of::<Rav1dContext>(), 64) as *mut Rav1dContext;
     let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
-        return error(c, c_out, &mut thread_attr);
+        return error(c, c_out);
     }
     memset(
         c as *mut c_void,
@@ -273,22 +225,22 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         || rav1d_mem_pool_init(&mut (*c).refmvs_pool).is_err()
         || rav1d_mem_pool_init(&mut (*c).cdf_pool).is_err()
     {
-        return error(c, c_out, &mut thread_attr);
+        return error(c, c_out);
     }
     if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
         && (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {
         if !((*c).allocator.cookie).is_null() {
-            return error(c, c_out, &mut thread_attr);
+            return error(c, c_out);
         }
         if rav1d_mem_pool_init(&mut (*c).picture_pool).is_err() {
-            return error(c, c_out, &mut thread_attr);
+            return error(c, c_out);
         }
         (*c).allocator.cookie = (*c).picture_pool as *mut c_void;
     } else if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
         || (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {
-        return error(c, c_out, &mut thread_attr);
+        return error(c, c_out);
     }
     if (::core::mem::size_of::<usize>() as c_ulong) < 8 as c_ulong
         && (s.frame_size_limit).wrapping_sub(1 as c_int as c_uint) >= (8192 * 8192) as c_uint
@@ -311,7 +263,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         32 as c_int as usize,
     ) as *mut Rav1dFrameData;
     if ((*c).fc).is_null() {
-        return error(c, c_out, &mut thread_attr);
+        return error(c, c_out);
     }
     memset(
         (*c).fc as *mut c_void,
@@ -364,7 +316,11 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
                 // TODO(SJC): can be removed when c is not a raw pointer
                 let context_borrow = &*c;
                 let thread_data_copy = Arc::clone(&thread_data);
-                let handle = thread::spawn(|| rav1d_worker_task(context_borrow, thread_data_copy));
+                let handle = thread::Builder::new()
+                    // Don't set stack size like `dav1d` does.
+                    // See <https://github.com/memorysafety/rav1d/issues/889>.
+                    .spawn(|| rav1d_worker_task(context_borrow, thread_data_copy))
+                    .unwrap();
                 Rav1dContextTaskThread {
                     task: Rav1dContextTaskType::Worker(handle),
                     thread_data,
@@ -380,7 +336,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         })
         .collect();
     rav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
-    pthread_attr_destroy(&mut thread_attr);
     Ok(())
 }
 
