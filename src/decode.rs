@@ -2063,9 +2063,8 @@ unsafe fn decode_b_inner(
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
                 let len = usize::try_from(bw4 * bh4 * 16).unwrap();
-                let pal_idx_offset = frame_thread.pal_idx.as_mut().unwrap();
-                let pal_idx = &mut f.frame_thread.pal_idx[*pal_idx_offset..];
-                *pal_idx_offset += len;
+                let pal_idx = &mut f.frame_thread.pal_idx[frame_thread.pal_idx..][..len];
+                frame_thread.pal_idx += len;
                 pal_idx
             } else {
                 &mut t.scratch.c2rust_unnamed_0.pal_idx
@@ -2091,9 +2090,8 @@ unsafe fn decode_b_inner(
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
                 let len = usize::try_from(cbw4 * cbh4 * 16).unwrap();
-                let pal_idx_offset = frame_thread.pal_idx.as_mut().unwrap();
-                let pal_idx = &mut f.frame_thread.pal_idx[*pal_idx_offset..];
-                *pal_idx_offset += len;
+                let pal_idx = &mut f.frame_thread.pal_idx[frame_thread.pal_idx..];
+                frame_thread.pal_idx += len;
                 pal_idx
             } else {
                 &mut t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..]
@@ -3905,10 +3903,10 @@ unsafe fn setup_tile(
 
     let size_mul = &ss_size_mul[f.cur.p.layout];
     for p in 0..2 {
-        ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_empty() {
-            Some(tile_start_off * size_mul[1] as usize / 4)
+        ts.frame_thread[p].pal_idx = if !f.frame_thread.pal_idx.is_empty() {
+            tile_start_off * size_mul[1] as usize / 4
         } else {
-            None
+            0
         };
         ts.frame_thread[p].cf = if !f.frame_thread.cf.is_empty() {
             f.frame_thread.cf
