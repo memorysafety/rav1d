@@ -27,6 +27,7 @@ use crate::src::align::*;
 use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -529,7 +530,7 @@ impl TxLpfRightEdge {
 /// loopfilter
 #[repr(C)]
 pub struct Rav1dFrameContext_lf {
-    pub level: Vec<[u8; 4]>,
+    pub level: DisjointMut<Vec<[u8; 4]>>,
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
     pub lim_lut: Align16<Av1FilterLUT>,
