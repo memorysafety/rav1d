@@ -28,6 +28,7 @@ use crate::src::align::*;
 use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -442,7 +443,7 @@ pub struct Rav1dFrameContext_frame_thread {
 
     /// Indexed using `(t.by >> 1) * (f.b4_stride >> 1) + (t.bx >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
-    pub pal: AlignedVec64<[[u16; 8]; 3]>,
+    pub pal: DisjointMut<AlignedVec64<[[u16; 8]; 3]>>,
 
     /// Iterated over inside tile state.
     pub pal_idx: AlignedVec64<u8>,

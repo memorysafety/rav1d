@@ -747,9 +747,14 @@ unsafe fn read_pal_plane(
     let used_cache = &used_cache[..i];
 
     // parse new entries
+    #[allow(unused_mut)]
+    let mut pal_guard;
     let pal = if t.frame_thread.pass != 0 {
-        &mut f.frame_thread.pal[(((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
-            + ((t.bx >> 1) + (t.by & 1)) as isize) as usize][pli]
+        pal_guard = f.frame_thread.pal.index_mut(
+            (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+                + ((t.bx >> 1) + (t.by & 1)) as isize) as usize,
+        );
+        &mut pal_guard[pli]
     } else {
         &mut t.scratch.c2rust_unnamed_0.pal[pli]
     };
@@ -829,9 +834,14 @@ unsafe fn read_pal_uv(
     // V pal coding
     let ts = &mut *t.ts;
 
+    #[allow(unused_mut)]
+    let mut pal_guard;
     let pal = if t.frame_thread.pass != 0 {
-        &mut f.frame_thread.pal[(((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
-            + ((t.bx >> 1) + (t.by & 1)) as isize) as usize][2]
+        pal_guard = f.frame_thread.pal.index_mut(
+            (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
+                + ((t.bx >> 1) + (t.by & 1)) as isize) as usize,
+        );
+        &mut pal_guard[2]
     } else {
         &mut t.scratch.c2rust_unnamed_0.pal[2]
     };
@@ -2200,10 +2210,12 @@ unsafe fn decode_b_inner(
             },
         );
         if b.pal_sz()[0] != 0 {
+            let pal_guard;
             let pal = if t.frame_thread.pass != 0 {
                 let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                     + ((t.bx >> 1) + (t.by & 1)) as isize;
-                &f.frame_thread.pal[index as usize][0]
+                pal_guard = f.frame_thread.pal.index(index as usize);
+                &pal_guard[0]
             } else {
                 &t.scratch.c2rust_unnamed_0.pal[0]
             };
@@ -2224,10 +2236,12 @@ unsafe fn decode_b_inner(
                 },
             );
             if b.pal_sz()[1] != 0 {
+                let pal_guard;
                 let pal = if t.frame_thread.pass != 0 {
                     let index = ((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                         + ((t.bx >> 1) + (t.by & 1)) as isize;
-                    &f.frame_thread.pal[index as usize]
+                    pal_guard = f.frame_thread.pal.index(index as usize);
+                    &pal_guard
                 } else {
                     &t.scratch.c2rust_unnamed_0.pal
                 };
