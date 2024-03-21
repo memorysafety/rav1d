@@ -70,6 +70,7 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::ScalableMotionParams;
+use crate::src::internal::TileStateDq;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
@@ -1866,11 +1867,11 @@ unsafe fn decode_b_inner(
         }
         if ts.last_qidx == frame_hdr.quant.yac {
             // assign frame-wide q values to this sb
-            ts.dq = f.dq.as_ptr();
+            ts.dq = TileStateDq::Frame;
         } else if ts.last_qidx != prev_qidx {
             // find sb-specific quant parameters
             init_quant_tables(seq_hdr, frame_hdr, ts.last_qidx, &mut ts.dqmem);
-            ts.dq = ts.dqmem.as_ptr();
+            ts.dq = TileStateDq::Local;
         }
         if ts.last_delta_lf == [0, 0, 0, 0] {
             // assign frame-wide lf values to this sb

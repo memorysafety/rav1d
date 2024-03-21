@@ -20,6 +20,7 @@ use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
+use crate::src::internal::TileStateDq;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::ipred_prepare::rav1d_prepare_intra_edges;
 use crate::src::ipred_prepare::sm_flag;
@@ -1378,7 +1379,11 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
         rc = 0 as c_int as c_uint;
     }
-    let dq_tbl: *const u16 = ((*((*ts).dq).offset(b.seg_id as isize))[plane as usize]).as_ptr();
+    let dq = match (*ts).dq {
+        TileStateDq::Frame => &f.dq,
+        TileStateDq::Local => &(*ts).dqmem,
+    };
+    let dq_tbl = &dq[b.seg_id as usize][plane as usize];
     let qm_tbl: *const u8 = if (*txtp as c_uint) < IDTX as c_int as c_uint {
         f.qm[tx as usize][plane as usize]
     } else {
@@ -1413,7 +1418,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 (*ts).msac.rng,
             );
         }
-        dc_dq = *dq_tbl.offset(0) as c_int;
+        dc_dq = dq_tbl[0] as c_int;
         dc_sign_level = (dc_sign - 1 & (2 as c_int) << 6) as c_uint;
         if !qm_tbl.is_null() {
             dc_dq = dc_dq * *qm_tbl.offset(0) as c_int + 16 >> 5;
@@ -1477,7 +1482,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     }
     match current_block {
         1669574575799829731 => {
-            let ac_dq: c_uint = *dq_tbl.offset(1) as c_uint;
+            let ac_dq: c_uint = dq_tbl[1] as c_uint;
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut (*ts).msac) as c_int;
                 if dbg {
@@ -1522,7 +1527,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             }
         }
         2404388531445638768 => {
-            let ac_dq: c_uint = *dq_tbl.offset(1) as c_uint;
+            let ac_dq: c_uint = dq_tbl[1] as c_uint;
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut (*ts).msac) as c_int;
                 if dbg {
