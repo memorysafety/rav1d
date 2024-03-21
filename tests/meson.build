@@ -146,15 +146,16 @@ if get_option('enable_tools')
 endif
 
 if get_option('test_rust')
+    # options to test with out-of-tree versions of dav1d and seek_stress
     test_rust_path = get_option('test_rust_path')
     seek_stress_test_rust_path = get_option('seek_stress_test_rust_path')
 
-    # We're trying to test the Rust build, override the `dav1d` and
-    # `seek_stress` executables to point to the versions given during setup.
+    # Adjust relative paths so one can use binary paths relative to project
+    # top dir rather than relative to the location of the test subdirectory.
     if test_rust_path != ''
-        # Adjust relative paths so one can use binary paths relative to project
-        # top dir rather than relative to the location of the test subdirectory.
         dav1d = files(join_paths('../', get_option('test_rust_path')))
+    endif
+    if seek_stress_test_rust_path != ''
         seek_stress = files(join_paths('../', get_option('seek_stress_test_rust_path')))
     endif
 endif
