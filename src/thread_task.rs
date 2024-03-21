@@ -500,46 +500,37 @@ unsafe fn check_tile(t_idx: Rav1dTaskIndex, f: &Rav1dFrameData, frame_mt: c_int)
         let p_b: c_uint = (((*t).sby + 1) << f.sb_shift + 2) as c_uint;
         let tile_sby = (*t).sby - ((*ts).tiling.row_start >> f.sb_shift);
         let lowest_px = &f.lowest_pixel_mem[(*ts).lowest_pixel + tile_sby as usize];
-        let mut current_block_14: u64;
-        let mut n = (*t).deps_skip;
-        while n < 7 {
-            let mut lowest: c_uint = 0;
-            if tp {
-                lowest = p_b;
-                current_block_14 = 2370887241019905314;
-            } else {
-                let y = if lowest_px[n as usize][0] == i32::MIN {
-                    i32::MIN
+        for n in t.deps_skip..7 {
+            'next: {
+                let lowest = if tp {
+                    p_b
                 } else {
-                    lowest_px[n as usize][0] + 8
-                };
-                let uv = if lowest_px[n as usize][1] == i32::MIN {
-                    i32::MIN
-                } else {
-                    lowest_px[n as usize][1] * ((1 as c_int) << ss_ver) + 8
-                };
-                let max = cmp::max(y, uv);
-                if max == i32::MIN {
-                    current_block_14 = 7651349459974463963;
-                } else {
-                    lowest = iclip(max, 1 as c_int, f.refp[n as usize].p.p.h) as c_uint;
-                    current_block_14 = 2370887241019905314;
-                }
-            }
-            match current_block_14 {
-                2370887241019905314 => {
-                    let p3 = f.refp[n as usize].progress.as_ref().unwrap()[!tp as usize]
-                        .load(Ordering::SeqCst);
-                    if p3 < lowest {
-                        return 1 as c_int;
+                    let y = if lowest_px[n as usize][0] == i32::MIN {
+                        i32::MIN
+                    } else {
+                        lowest_px[n as usize][0] + 8
+                    };
+                    let uv = if lowest_px[n as usize][1] == i32::MIN {
+                        i32::MIN
+                    } else {
+                        lowest_px[n as usize][1] * ((1 as c_int) << ss_ver) + 8
+                    };
+                    let max = cmp::max(y, uv);
+                    if max == i32::MIN {
+                        break 'next;
                     }
-                    f.task_thread
-                        .error
-                        .fetch_or((p3 == FRAME_ERROR) as c_int, Ordering::SeqCst);
+                    iclip(max, 1 as c_int, f.refp[n as usize].p.p.h) as c_uint
+                };
+                let p3 = f.refp[n as usize].progress.as_ref().unwrap()[!tp as usize]
+                    .load(Ordering::SeqCst);
+                if p3 < lowest {
+                    return 1;
                 }
-                _ => {}
+                f.task_thread
+                    .error
+                    .fetch_or((p3 == FRAME_ERROR) as c_int, Ordering::SeqCst);
             }
-            n += 1;
+            // next:
             tasks[t_idx].deps_skip += 1;
         }
     }
