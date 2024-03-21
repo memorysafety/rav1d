@@ -8,26 +8,23 @@ rav1d is currently experimental. Core functionality has been transpiled using [c
 
 Currently we use the original Meson test suite for testing the Rust port. To setup and run these tests, do the following:
 
-First, build the Rust project using Cargo. You'll need to do this step manually before running any tests because it is not built automatically when tests are run. Note that you need to build with the `--release` flag, as tests are run against the release binary.
+First, build the Rust project using Cargo. You'll need to do this step manually before running any tests because it is not built automatically when tests are run. Note that we build with the `--release` flag, adjust paths accordingly
+for debug or cross-target builds.
 
 ```txt
 cargo build --release
 ```
 
-Then create the `build` dir and run `meson setup` in it:
+Second, create the `build` dir with `meson`:
 
 ```txt
-mkdir build
-cd build
-meson setup ..
+meson setup build
 ```
 
-Then you can run `meson test` to run the tests. Currently only the `testdata-*` suites are setup to test against the Rust executable:
+Then you can run the tests with:
 
 ```txt
-meson test \
-  --suite testdata-8 \
-  --suite testdata-10 \
-  --suite testdata-12 \
-  --suite testdata-multi
+.github/workflows/test.sh -r target/release/dav1d
 ```
+
+You can learn more about how to build and test in the `.github/workflows` folder.
