@@ -543,38 +543,67 @@ pub(crate) const RAV1D_TRC_UNKNOWN: Rav1dTransferCharacteristics = DAV1D_TRC_UNK
 pub(crate) const _RAV1D_TRC_BT709: Rav1dTransferCharacteristics = DAV1D_TRC_BT709;
 
 pub type Dav1dMatrixCoefficients = c_uint;
+pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::IDENTITY.to_dav1d();
+pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT709.to_dav1d();
+pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::UNKNOWN.to_dav1d();
+pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::FCC.to_dav1d();
+pub const DAV1D_MC_BT470BG: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT470BG.to_dav1d();
+pub const DAV1D_MC_BT601: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::BT601.to_dav1d();
+pub const DAV1D_MC_SMPTE240: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::SMPTE240.to_dav1d();
+pub const DAV1D_MC_SMPTE_YCGCO: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficients::SMPTE_YCGCO.to_dav1d();
+pub const DAV1D_MC_BT2020_NCL: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficients::BT2020_CL.to_dav1d();
+pub const DAV1D_MC_BT2020_CL: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficients::BT2020_CL.to_dav1d();
+pub const DAV1D_MC_SMPTE2085: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficients::SMPTE2085.to_dav1d();
+pub const DAV1D_MC_CHROMAT_NCL: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficients::CHROMAT_NCL.to_dav1d();
+pub const DAV1D_MC_CHROMAT_CL: Dav1dMatrixCoefficients =
+    Rav1dMatrixCoefficients::CHROMAT_CL.to_dav1d();
+pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::ICTCP.to_dav1d();
+// dav1d defines this value as 255, but the specification defines it as 3
 pub const DAV1D_MC_RESERVED: Dav1dMatrixCoefficients = 255;
-pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = 14;
-pub const DAV1D_MC_CHROMAT_CL: Dav1dMatrixCoefficients = 13;
-pub const DAV1D_MC_CHROMAT_NCL: Dav1dMatrixCoefficients = 12;
-pub const DAV1D_MC_SMPTE2085: Dav1dMatrixCoefficients = 11;
-pub const DAV1D_MC_BT2020_CL: Dav1dMatrixCoefficients = 10;
-pub const DAV1D_MC_BT2020_NCL: Dav1dMatrixCoefficients = 9;
-pub const DAV1D_MC_SMPTE_YCGCO: Dav1dMatrixCoefficients = 8;
-pub const DAV1D_MC_SMPTE240: Dav1dMatrixCoefficients = 7;
-pub const DAV1D_MC_BT601: Dav1dMatrixCoefficients = 6;
-pub const DAV1D_MC_BT470BG: Dav1dMatrixCoefficients = 5;
-pub const DAV1D_MC_FCC: Dav1dMatrixCoefficients = 4;
-pub const DAV1D_MC_UNKNOWN: Dav1dMatrixCoefficients = 2;
-pub const DAV1D_MC_BT709: Dav1dMatrixCoefficients = 1;
-pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = 0;
 
-pub(crate) type Rav1dMatrixCoefficients = c_uint;
-pub(crate) const _RAV1D_MC_RESERVED: Rav1dMatrixCoefficients = DAV1D_MC_RESERVED;
-pub(crate) const _RAV1D_MC_ICTCP: Rav1dMatrixCoefficients = DAV1D_MC_ICTCP;
-pub(crate) const _RAV1D_MC_CHROMAT_CL: Rav1dMatrixCoefficients = DAV1D_MC_CHROMAT_CL;
-pub(crate) const _RAV1D_MC_CHROMAT_NCL: Rav1dMatrixCoefficients = DAV1D_MC_CHROMAT_NCL;
-pub(crate) const _RAV1D_MC_SMPTE2085: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE2085;
-pub(crate) const _RAV1D_MC_BT2020_CL: Rav1dMatrixCoefficients = DAV1D_MC_BT2020_CL;
-pub(crate) const _RAV1D_MC_BT2020_NCL: Rav1dMatrixCoefficients = DAV1D_MC_BT2020_NCL;
-pub(crate) const _RAV1D_MC_SMPTE_YCGCO: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE_YCGCO;
-pub(crate) const _RAV1D_MC_SMPTE240: Rav1dMatrixCoefficients = DAV1D_MC_SMPTE240;
-pub(crate) const _RAV1D_MC_BT601: Rav1dMatrixCoefficients = DAV1D_MC_BT601;
-pub(crate) const _RAV1D_MC_BT470BG: Rav1dMatrixCoefficients = DAV1D_MC_BT470BG;
-pub(crate) const _RAV1D_MC_FCC: Rav1dMatrixCoefficients = DAV1D_MC_FCC;
-pub(crate) const RAV1D_MC_UNKNOWN: Rav1dMatrixCoefficients = DAV1D_MC_UNKNOWN;
-pub(crate) const _RAV1D_MC_BT709: Rav1dMatrixCoefficients = DAV1D_MC_BT709;
-pub(crate) const RAV1D_MC_IDENTITY: Rav1dMatrixCoefficients = DAV1D_MC_IDENTITY;
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Rav1dMatrixCoefficients(pub u8);
+
+impl Rav1dMatrixCoefficients {
+    pub const IDENTITY: Self = Self(0);
+    pub const BT709: Self = Self(1);
+    pub const UNKNOWN: Self = Self(2);
+    pub const RESERVED: Self = Self(3);
+    pub const FCC: Self = Self(4);
+    pub const BT470BG: Self = Self(5);
+    pub const BT601: Self = Self(6);
+    pub const SMPTE240: Self = Self(7);
+    pub const SMPTE_YCGCO: Self = Self(8);
+    pub const BT2020_NCL: Self = Self(9);
+    pub const BT2020_CL: Self = Self(10);
+    pub const SMPTE2085: Self = Self(11);
+    pub const CHROMAT_NCL: Self = Self(12);
+    pub const CHROMAT_CL: Self = Self(13);
+    pub const ICTCP: Self = Self(14);
+
+    const fn to_dav1d(self) -> Dav1dMatrixCoefficients {
+        self.0 as Dav1dMatrixCoefficients
+    }
+}
+
+impl From<Rav1dMatrixCoefficients> for Dav1dMatrixCoefficients {
+    fn from(value: Rav1dMatrixCoefficients) -> Self {
+        value.to_dav1d()
+    }
+}
+
+impl TryFrom<Dav1dMatrixCoefficients> for Rav1dMatrixCoefficients {
+    type Error = ();
+
+    fn try_from(value: Dav1dMatrixCoefficients) -> Result<Self, Self::Error> {
+        u8::try_from(value).map(Self).map_err(|_| ())
+    }
+}
 
 pub type Dav1dChromaSamplePosition = c_uint;
 pub const DAV1D_CHR_UNKNOWN: Dav1dChromaSamplePosition =
@@ -1097,7 +1126,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             layout: layout.try_into().unwrap(),
             pri,
             trc,
-            mtrx,
+            mtrx: mtrx.try_into().unwrap(),
             chr: chr.try_into().unwrap(),
             hbd,
             color_range,
@@ -1212,7 +1241,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             layout: layout.into(),
             pri,
             trc,
-            mtrx,
+            mtrx: mtrx.into(),
             chr: chr.into(),
             hbd,
             color_range,

@@ -1,7 +1,7 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BPC;
+use crate::include::dav1d::headers::Rav1dMatrixCoefficients;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::include::dav1d::headers::RAV1D_MC_IDENTITY;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -187,7 +187,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let ss_y = (r#in.p.layout == Rav1dPixelLayout::I420) as usize;
     let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as usize;
     let cpw = out.p.w as usize + ss_x >> ss_x;
-    let is_id = seq_hdr.mtrx == RAV1D_MC_IDENTITY;
+    let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
     let luma_src = (r#in.data.data[0] as *mut BD::Pixel)
         .offset(((row * 32) as isize * BD::pxstride(r#in.stride[0])) as isize);
     let bitdepth_max = (1 << out.p.bpc) - 1;
