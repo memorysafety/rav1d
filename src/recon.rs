@@ -20,7 +20,7 @@ use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
-use crate::src::internal::TileStateDq;
+use crate::src::internal::TileStateRef;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::ipred_prepare::rav1d_prepare_intra_edges;
 use crate::src::ipred_prepare::sm_flag;
@@ -1393,8 +1393,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         rc = 0 as c_int as c_uint;
     }
     let dq = match (*ts).dq {
-        TileStateDq::Frame => &f.dq,
-        TileStateDq::Local => &(*ts).dqmem,
+        TileStateRef::Frame => &f.dq,
+        TileStateRef::Local => &(*ts).dqmem,
     };
     let dq_tbl = &dq[b.seg_id as usize][plane as usize];
     let qm_tbl: *const u8 = if (*txtp as c_uint) < IDTX as c_int as c_uint {
