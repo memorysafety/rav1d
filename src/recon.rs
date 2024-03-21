@@ -30,6 +30,7 @@ use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
 use crate::src::levels::CompInterType;
 use crate::src::levels::Filter2d;
+use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::RectTxfmSize;
@@ -44,7 +45,6 @@ use crate::src::levels::FILTER_PRED;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::IDTX;
-use crate::src::levels::II_SMOOTH_PRED;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_WARP;
 use crate::src::levels::RTX_16X32;
@@ -3717,8 +3717,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 .c2rust_unnamed_0
                 .c2rust_unnamed
                 .c2rust_unnamed
-                .interintra_mode as c_int
-                == II_SMOOTH_PRED as c_int
+                .interintra_mode
+                == InterIntraPredMode::Smooth
             {
                 SMOOTH_PRED as c_int
             } else {
@@ -4144,8 +4144,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             .c2rust_unnamed
                             .c2rust_unnamed
                             .interintra_mode
-                            as c_int
-                            == II_SMOOTH_PRED as c_int
+                            == InterIntraPredMode::Smooth
                         {
                             SMOOTH_PRED as c_int
                         } else {

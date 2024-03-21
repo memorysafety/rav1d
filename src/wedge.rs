@@ -12,10 +12,7 @@ use crate::src::levels::BS_32x8;
 use crate::src::levels::BS_8x16;
 use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x8;
-use crate::src::levels::II_DC_PRED;
-use crate::src::levels::II_HOR_PRED;
-use crate::src::levels::II_SMOOTH_PRED;
-use crate::src::levels::II_VERT_PRED;
+use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 use paste::paste;
@@ -421,7 +418,7 @@ pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
 
 static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
 
-const N_II_PRED_MODES: usize = N_INTER_INTRA_PRED_MODES - 1;
+const N_II_PRED_MODES: usize = InterIntraPredMode::COUNT - 1;
 
 const fn build_nondc_ii_masks<const N: usize>(
     w: usize,
@@ -438,11 +435,11 @@ const fn build_nondc_ii_masks<const N: usize>(
     const_for!(y in 0..h => {
         let off = y * w;
         const_for!(i in 0..w => {
-            masks[II_VERT_PRED as usize - 1][off + i] = ii_weights_1d[y * step];
+            masks[InterIntraPredMode::Vert as usize - 1][off + i] = ii_weights_1d[y * step];
         });
         const_for!(x in 0..w => {
-            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
-            masks[II_HOR_PRED as usize - 1][off + x] = ii_weights_1d[x * step];
+            masks[InterIntraPredMode::Smooth as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
+            masks[InterIntraPredMode::Hor as usize - 1][off + x] = ii_weights_1d[x * step];
         });
     });
 
@@ -475,10 +472,10 @@ pub static dav1d_ii_masks: [[[&'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS
         ($h:literal x $w:literal) => {{
             let mut a = [&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES];
             paste! {
-                a[II_DC_PRED as usize] = &ii_dc_mask.0;
-                a[II_VERT_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_VERT_PRED as usize - 1];
-                a[II_HOR_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_HOR_PRED as usize - 1];
-                a[II_SMOOTH_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_SMOOTH_PRED as usize - 1];
+                a[InterIntraPredMode::Dc as usize] = &ii_dc_mask.0;
+                a[InterIntraPredMode::Vert as usize] = &[<ii_nondc_mask _ $h x $w>].0[InterIntraPredMode::Vert as usize - 1];
+                a[InterIntraPredMode::Hor as usize] = &[<ii_nondc_mask _ $h x $w>].0[InterIntraPredMode::Hor as usize - 1];
+                a[InterIntraPredMode::Smooth as usize] = &[<ii_nondc_mask _ $h x $w>].0[InterIntraPredMode::Smooth as usize - 1];
             }
             a
         }};

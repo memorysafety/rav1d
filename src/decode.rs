@@ -86,6 +86,7 @@ use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
 use crate::src::levels::CompInterType;
+use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::MVJoint;
 use crate::src::levels::MotionMode;
@@ -2969,11 +2970,13 @@ unsafe fn decode_b_inner(
                     &mut ts.cdf.m.interintra[ii_sz_grp as usize],
                 )
             {
-                *b.interintra_mode_mut() = rav1d_msac_decode_symbol_adapt4(
-                    &mut ts.msac,
-                    &mut ts.cdf.m.interintra_mode[ii_sz_grp as usize],
-                    N_INTER_INTRA_PRED_MODES as usize - 1,
-                ) as u8;
+                *b.interintra_mode_mut() =
+                    InterIntraPredMode::from_repr(rav1d_msac_decode_symbol_adapt4(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.interintra_mode[ii_sz_grp as usize],
+                        N_INTER_INTRA_PRED_MODES as usize - 1,
+                    ) as usize)
+                    .expect("valid variant");
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;
                 let ii_type = if rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
@@ -2999,7 +3002,7 @@ unsafe fn decode_b_inner(
                 && interintra_allowed_mask & (1 << bs) != 0
             {
                 println!(
-                    "Post-interintra[t={:?},m={},w={}]: r={}",
+                    "Post-interintra[t={:?},m={:?},w={}]: r={}",
                     b.interintra_type(),
                     b.interintra_mode(),
                     b.wedge_idx(),
