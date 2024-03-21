@@ -424,6 +424,8 @@ const fn build_nondc_ii_masks<const N: usize>(
     h: usize,
     step: usize,
 ) -> [[u8; N]; N_II_PRED_MODES] {
+    use InterIntraPredMode::*;
+
     const ii_weights_1d: [u8; 32] = [
         60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
         2, 1, 1, 1, 1, 1,
@@ -434,11 +436,11 @@ const fn build_nondc_ii_masks<const N: usize>(
     const_for!(y in 0..h => {
         let off = y * w;
         const_for!(i in 0..w => {
-            masks[InterIntraPredMode::Vert as usize - 1][off + i] = ii_weights_1d[y * step];
+            masks[Vert as usize - 1][off + i] = ii_weights_1d[y * step];
         });
         const_for!(x in 0..w => {
-            masks[InterIntraPredMode::Smooth as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
-            masks[InterIntraPredMode::Hor as usize - 1][off + x] = ii_weights_1d[x * step];
+            masks[Smooth as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
+            masks[Hor as usize - 1][off + x] = ii_weights_1d[x * step];
         });
     });
 
@@ -465,16 +467,18 @@ static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
     Align16(build_nondc_ii_masks(4, 4, 8));
 
 pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; N_BS_SIZES] = {
+    use InterIntraPredMode::*;
+
     let mut masks = [[[&[] as &'static [u8]; InterIntraPredMode::COUNT]; 3]; N_BS_SIZES];
 
     macro_rules! set {
         ($h:literal x $w:literal) => {{
             let mut a = [&[] as &'static [u8]; InterIntraPredMode::COUNT];
             paste! {
-                a[InterIntraPredMode::Dc as usize] = &ii_dc_mask.0;
-                a[InterIntraPredMode::Vert as usize] = &[<ii_nondc_mask _ $h x $w>].0[InterIntraPredMode::Vert as usize - 1];
-                a[InterIntraPredMode::Hor as usize] = &[<ii_nondc_mask _ $h x $w>].0[InterIntraPredMode::Hor as usize - 1];
-                a[InterIntraPredMode::Smooth as usize] = &[<ii_nondc_mask _ $h x $w>].0[InterIntraPredMode::Smooth as usize - 1];
+                a[Dc as usize] = &ii_dc_mask.0;
+                a[Vert as usize] = &[<ii_nondc_mask _ $h x $w>].0[Vert as usize - 1];
+                a[Hor as usize] = &[<ii_nondc_mask _ $h x $w>].0[Hor as usize - 1];
+                a[Smooth as usize] = &[<ii_nondc_mask _ $h x $w>].0[Smooth as usize - 1];
             }
             a
         }};
