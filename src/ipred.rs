@@ -40,7 +40,11 @@ use std::slice;
 use strum::FromRepr;
 
 #[cfg(feature = "asm")]
-use crate::{include::common::bitdepth::bd_fn, src::cpu::rav1d_get_cpu_flags, src::cpu::CpuFlags};
+use crate::{
+    include::common::bitdepth::{bd_fn, bpc_fn},
+    src::cpu::rav1d_get_cpu_flags,
+    src::cpu::CpuFlags,
+};
 
 wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     dst: *mut DynPixel,
@@ -2125,17 +2129,17 @@ fn intra_pred_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
 
         if BD::BPC == BPC::BPC8 {
             c.intra_pred[DC_PRED as usize] =
-                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, avx512icl);
+                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc, avx512icl);
             c.intra_pred[DC_128_PRED as usize] =
-                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, avx512icl);
+                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_128, avx512icl);
             c.intra_pred[TOP_DC_PRED as usize] =
-                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, avx512icl);
+                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_top, avx512icl);
             c.intra_pred[LEFT_DC_PRED as usize] =
-                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, avx512icl);
+                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_left, avx512icl);
             c.intra_pred[HOR_PRED as usize] =
-                bd_fn!(angular_ipred::decl_fn, BD, ipred_h, avx512icl);
+                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_h, avx512icl);
             c.intra_pred[VERT_PRED as usize] =
-                bd_fn!(angular_ipred::decl_fn, BD, ipred_v, avx512icl);
+                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_v, avx512icl);
         }
 
         c.intra_pred[PAETH_PRED as usize] =
