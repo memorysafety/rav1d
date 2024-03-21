@@ -70,7 +70,7 @@ use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::ScalableMotionParams;
-use crate::src::internal::TileStateDq;
+use crate::src::internal::TileStateRef;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
@@ -1867,19 +1867,19 @@ unsafe fn decode_b_inner(
         }
         if ts.last_qidx == frame_hdr.quant.yac {
             // assign frame-wide q values to this sb
-            ts.dq = TileStateDq::Frame;
+            ts.dq = TileStateRef::Frame;
         } else if ts.last_qidx != prev_qidx {
             // find sb-specific quant parameters
             init_quant_tables(seq_hdr, frame_hdr, ts.last_qidx, &mut ts.dqmem);
-            ts.dq = TileStateDq::Local;
+            ts.dq = TileStateRef::Local;
         }
         if ts.last_delta_lf == [0, 0, 0, 0] {
             // assign frame-wide lf values to this sb
-            ts.lflvl = f.lf.lvl.as_ptr();
+            ts.lflvl = TileStateRef::Frame;
         } else if ts.last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
             rav1d_calc_lf_values(&mut ts.lflvlmem, frame_hdr, &ts.last_delta_lf);
-            ts.lflvl = ts.lflvlmem.as_ptr();
+            ts.lflvl = TileStateRef::Local;
         }
     }
 
@@ -2154,11 +2154,15 @@ unsafe fn decode_b_inner(
         }
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {
+            let lflvl = match ts.lflvl {
+                TileStateRef::Frame => &f.lf.lvl,
+                TileStateRef::Local => &ts.lflvlmem,
+            };
             rav1d_create_lf_mask_intra(
                 &mut *t.lf_mask,
                 &mut f.lf.level,
                 f.b4_stride,
-                &*ts.lflvl.offset(b.seg_id as isize),
+                &lflvl[b.seg_id as usize],
                 t.bx,
                 t.by,
                 f.w4,
@@ -3152,6 +3156,10 @@ unsafe fn decode_b_inner(
                 ytx = TX_4X4 as RectTxfmSize;
                 uvtx = TX_4X4 as RectTxfmSize;
             }
+            let lflvl = match ts.lflvl {
+                TileStateRef::Frame => &f.lf.lvl,
+                TileStateRef::Local => &ts.lflvlmem,
+            };
             rav1d_create_lf_mask_inter(
                 &mut *t.lf_mask,
                 &mut f.lf.level,
@@ -3161,7 +3169,7 @@ unsafe fn decode_b_inner(
                 // even though the whole array is not passed.
                 // Dereferencing this in Rust is UB, so instead
                 // we pass the indices as args, which are then applied at the use sites.
-                &*ts.lflvl.offset(b.seg_id as isize),
+                &lflvl[b.seg_id as usize],
                 (b.r#ref()[0] + 1) as usize,
                 is_globalmv == 0,
                 t.bx,

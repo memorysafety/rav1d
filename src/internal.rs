@@ -644,17 +644,17 @@ pub struct Rav1dTileState {
     pub lowest_pixel: *mut [[c_int; 2]; 7],
 
     pub dqmem: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
-    pub dq: TileStateDq,
+    pub dq: TileStateRef,
     pub last_qidx: c_int,
     pub last_delta_lf: [i8; 4],
     pub lflvlmem: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
-    pub lflvl: *const [[[u8; 2]; 8]; 4],
+    pub lflvl: TileStateRef,
 
     pub lr_ref: [Av1RestorationUnit; 3],
 }
 
 #[derive(Clone, Copy)]
-pub enum TileStateDq {
+pub enum TileStateRef {
     Frame,
     Local,
 }
