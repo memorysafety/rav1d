@@ -689,7 +689,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         }
     }
     let lflvl = &f.lf.mask[lflvl_offset..];
-    let mut level_ptr = &f.lf.level[(f.b4_stride * sby as isize * sbsz as isize) as usize..];
+    let level_ptr_guard =
+        f.lf.level
+            .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
+    let mut level_ptr = &*level_ptr_guard;
     let mut offset = p_offset[0];
     have_left = false;
     for x in 0..f.sb128w {
@@ -713,7 +716,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     if frame_hdr.loopfilter.level_u == 0 && frame_hdr.loopfilter.level_v == 0 {
         return;
     }
-    let mut level_ptr = &f.lf.level[(f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    let level_ptr_guard =
+        f.lf.level
+            .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
+    let mut level_ptr = &*level_ptr_guard;
     let [_, pu, pv] = p;
     let mut uv_off = p_offset[1];
     have_left = false;
@@ -759,7 +765,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     let endy4: c_uint = (starty4 + cmp::min(f.h4 - sby * sbsz, sbsz)) as c_uint;
     let uv_endy4: c_uint = endy4.wrapping_add(ss_ver as c_uint) >> ss_ver;
 
-    let mut level_ptr = &f.lf.level[(f.b4_stride * sby as isize * sbsz as isize) as usize..];
+    let level_ptr_guard =
+        f.lf.level
+            .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
+    let mut level_ptr = &*level_ptr_guard;
     for x in 0..f.sb128w {
         filter_plane_rows_y::<BD>(
             f,
@@ -783,7 +792,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
     }
 
     let mut uv_off: usize = 0;
-    let mut level_ptr = &f.lf.level[(f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..];
+    let level_ptr_guard =
+        f.lf.level
+            .index((f.b4_stride * (sby * sbsz >> ss_ver) as isize) as usize..);
+    let mut level_ptr = &*level_ptr_guard;
     let [_, pu, pv] = p;
     for x in 0..f.sb128w {
         filter_plane_rows_uv::<BD>(
