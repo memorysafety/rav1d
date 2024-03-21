@@ -480,20 +480,21 @@ unsafe fn check_tile(t_idx: Rav1dTaskIndex, f: &Rav1dFrameData, frame_mt: c_int)
     let ts: *mut Rav1dTileState = &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
     let p1 = (*ts).progress[tp as usize].load(Ordering::SeqCst);
     if p1 < t.sby {
-        return 1 as c_int;
+        return 1;
     }
     let mut error = (p1 == TILE_ERROR) as c_int;
     error |= f.task_thread.error.fetch_or(error, Ordering::SeqCst);
     if error == 0 && frame_mt != 0 && !tp {
         let p2 = (*ts).progress[1].load(Ordering::SeqCst);
         if p2 <= (*t).sby {
-            return 1 as c_int;
+            return 1;
         }
         error = (p2 == TILE_ERROR) as c_int;
         error |= f.task_thread.error.fetch_or(error, Ordering::SeqCst);
     }
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if error == 0 && frame_mt != 0 && !frame_hdr.frame_type.is_key_or_intra() {
+        // check reference state
         let p: *const Rav1dThreadPicture = &f.sr_cur;
         let ss_ver =
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
@@ -503,8 +504,12 @@ unsafe fn check_tile(t_idx: Rav1dTaskIndex, f: &Rav1dFrameData, frame_mt: c_int)
         for n in t.deps_skip..7 {
             'next: {
                 let lowest = if tp {
+                    // if temporal mv refs are disabled, we only need this
+                    // for the primary ref; if segmentation is disabled, we
+                    // don't even need that
                     p_b
                 } else {
+                    // +8 is postfilter-induced delay
                     let y = if lowest_px[n as usize][0] == i32::MIN {
                         i32::MIN
                     } else {
@@ -534,7 +539,7 @@ unsafe fn check_tile(t_idx: Rav1dTaskIndex, f: &Rav1dFrameData, frame_mt: c_int)
             tasks[t_idx].deps_skip += 1;
         }
     }
-    return 0 as c_int;
+    return 0;
 }
 
 #[inline]
