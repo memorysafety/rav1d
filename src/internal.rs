@@ -477,7 +477,7 @@ impl Pal {
 #[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
     /// Indices: 0: reconstruction, 1: entropy.
-    pub next_tile_row: [c_int; 2],
+    pub next_tile_row: [AtomicI32; 2],
 
     /// Indexed using `t.b.y * f.b4_stride + t.b.x`.
     pub b: Vec<Av1Block>,

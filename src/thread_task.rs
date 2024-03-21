@@ -342,7 +342,7 @@ unsafe fn create_filter_sbrow(
             .resize_with(prog_sz, || AtomicU32::new(0));
         f.frame_thread_progress.deblock.store(0, Ordering::SeqCst);
     }
-    f.frame_thread.next_tile_row[(pass & 1) as usize] = 0 as c_int;
+    f.frame_thread.next_tile_row[(pass & 1) as usize].store(0, Ordering::Relaxed);
     let t = &mut tasks[task_idx];
     t.sby = 0 as c_int;
     t.recon_progress = 1 as c_int;
@@ -844,8 +844,8 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 unreachable!();
                             }
                             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                            let tile_row_base =
-                                frame_hdr.tiling.cols * f.frame_thread.next_tile_row[p as usize];
+                            let tile_row_base = frame_hdr.tiling.cols
+                                * f.frame_thread.next_tile_row[p as usize].load(Ordering::Relaxed);
                             if p {
                                 let p1_0 = f.frame_thread_progress.entropy.load(Ordering::SeqCst);
                                 if p1_0 < t.sby {
@@ -877,10 +877,13 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 let next_t = &mut tasks[next_t_idx];
                                 *next_t = t;
                                 next_t.sby += 1;
-                                let ntr = f.frame_thread.next_tile_row[p as usize] + 1;
+                                let ntr = f.frame_thread.next_tile_row[p as usize]
+                                    .load(Ordering::Relaxed)
+                                    + 1;
                                 let start = frame_hdr.tiling.row_start_sb[ntr as usize] as c_int;
                                 if next_t.sby == start {
-                                    f.frame_thread.next_tile_row[p as usize] = ntr;
+                                    f.frame_thread.next_tile_row[p as usize]
+                                        .store(ntr, Ordering::Relaxed);
                                 }
                                 next_t.recon_progress = next_t.sby + 1;
                                 insert_task(c, f, next_t_idx, 0 as c_int);
