@@ -53,9 +53,19 @@ pub const TILE_ERROR: i32 = i32::MAX - 1;
 /// this special case.
 #[inline]
 unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint) -> c_int {
+    unsafe fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: u32) -> c_int {
+        let mut i: c_uint = ttd.cur.load(Ordering::Relaxed);
+        while i < c.n_fc {
+            (*(*(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize))
+                .task_thread
+                .tasks())
+            .cur_prev = None;
+            i = i + 1;
+        }
+        return 1;
+    }
     let min_frame_idx: c_uint;
     let cur_frame_idx: c_uint;
-    let current_block: u64;
     let first = ttd.first.load(Ordering::SeqCst);
     let mut reset_frame_idx: c_uint = ttd.reset_task_cur.swap(u32::MAX, Ordering::SeqCst);
     if reset_frame_idx < first {
@@ -76,55 +86,39 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
             }
             ttd.cur
                 .store(reset_frame_idx.wrapping_sub(first), Ordering::Relaxed);
-            current_block = 12921688021154394536;
-        } else {
-            current_block = 5399440093318478209;
+            return curr_found(c, ttd, first);
         }
     } else {
         if frame_idx == u32::MAX {
             return 0 as c_int;
         }
-        current_block = 5399440093318478209;
     }
-    match current_block {
-        5399440093318478209 => {
-            if frame_idx < first {
-                frame_idx = frame_idx.wrapping_add(c.n_fc);
-            }
-            min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
-            cur_frame_idx = first.wrapping_add(ttd.cur.load(Ordering::Relaxed));
-            if ttd.cur.load(Ordering::Relaxed) < c.n_fc && cur_frame_idx < min_frame_idx {
-                return 0 as c_int;
-            }
-            ttd.cur
-                .store(min_frame_idx.wrapping_sub(first), Ordering::Relaxed);
-            while ttd.cur.load(Ordering::Relaxed) < c.n_fc {
-                if (*(*(c.fc).offset(
-                    first
-                        .wrapping_add(ttd.cur.load(Ordering::Relaxed))
-                        .wrapping_rem(c.n_fc) as isize,
-                ))
-                .task_thread
-                .tasks())
-                .head
-                .is_some()
-                {
-                    break;
-                }
-                ttd.cur.fetch_add(1, Ordering::Relaxed);
-            }
+    if frame_idx < first {
+        frame_idx = frame_idx.wrapping_add(c.n_fc);
+    }
+    min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
+    cur_frame_idx = first.wrapping_add(ttd.cur.load(Ordering::Relaxed));
+    if ttd.cur.load(Ordering::Relaxed) < c.n_fc && cur_frame_idx < min_frame_idx {
+        return 0 as c_int;
+    }
+    ttd.cur
+        .store(min_frame_idx.wrapping_sub(first), Ordering::Relaxed);
+    while ttd.cur.load(Ordering::Relaxed) < c.n_fc {
+        if (*(*(c.fc).offset(
+            first
+                .wrapping_add(ttd.cur.load(Ordering::Relaxed))
+                .wrapping_rem(c.n_fc) as isize,
+        ))
+        .task_thread
+        .tasks())
+        .head
+        .is_some()
+        {
+            break;
         }
-        _ => {}
+        ttd.cur.fetch_add(1, Ordering::Relaxed);
     }
-    let mut i: c_uint = ttd.cur.load(Ordering::Relaxed);
-    while i < c.n_fc {
-        (*(*(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize))
-            .task_thread
-            .tasks())
-        .cur_prev = None;
-        i = i.wrapping_add(1);
-    }
-    return 1 as c_int;
+    return curr_found(c, ttd, first);
 }
 
 #[inline]
