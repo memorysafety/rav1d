@@ -201,7 +201,6 @@ use crate::src::thread_task::TILE_ERROR;
 use crate::src::warpmv::rav1d_find_affine_int;
 use crate::src::warpmv::rav1d_get_shear_params;
 use crate::src::warpmv::rav1d_set_affine_mv2d;
-use libc::free;
 use libc::malloc;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
@@ -4325,18 +4324,11 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
 
         let lowest_pixel_mem_sz = frame_hdr.tiling.cols * f.sbh;
-        if lowest_pixel_mem_sz != f.tile_thread.lowest_pixel_mem_sz {
-            free(f.tile_thread.lowest_pixel_mem as *mut c_void);
-            f.tile_thread.lowest_pixel_mem =
-                malloc(lowest_pixel_mem_sz as usize * ::core::mem::size_of::<[[c_int; 2]; 7]>())
-                    as *mut [[c_int; 2]; 7];
-            if f.tile_thread.lowest_pixel_mem.is_null() {
-                f.tile_thread.lowest_pixel_mem_sz = 0;
-                return Err(ENOMEM);
-            }
-            f.tile_thread.lowest_pixel_mem_sz = lowest_pixel_mem_sz;
-        }
-        let mut lowest_pixel_ptr = f.tile_thread.lowest_pixel_mem;
+        // TODO: Fallible allocation
+        f.lowest_pixel_mem
+            .resize(lowest_pixel_mem_sz as usize, Default::default());
+
+        let mut lowest_pixel_ptr = f.lowest_pixel_mem.as_mut_ptr();
         for tile_row in 0..frame_hdr.tiling.rows {
             let tile_row_base = tile_row * frame_hdr.tiling.cols;
             let tile_row_sb_h = frame_hdr.tiling.row_start_sb[(tile_row + 1) as usize] as c_int

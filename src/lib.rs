@@ -902,10 +902,7 @@ impl Drop for Rav1dContext {
             while !(self.fc).is_null() && n_1 < self.n_fc {
                 let f: &mut Rav1dFrameData = &mut *(self.fc).offset(n_1 as isize);
                 if self.n_fc > 1 as c_uint {
-                    freep(
-                        &mut f.tile_thread.lowest_pixel_mem as *mut *mut [[c_int; 2]; 7]
-                            as *mut c_void,
-                    );
+                    let _ = mem::take(&mut f.lowest_pixel_mem); // TODO: remove when context is owned
                 }
                 if self.tc.len() > 1 {
                     let _ = mem::take(&mut f.task_thread.pending_tasks); // TODO: remove when context is owned

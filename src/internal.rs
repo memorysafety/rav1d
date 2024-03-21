@@ -517,13 +517,6 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub pending_tasks: Mutex<Rav1dFrameContext_task_thread_pending_tasks>,
 }
 
-// threading (refer to tc[] for per-thread things)
-#[repr(C)]
-pub struct FrameTileThreadData {
-    pub lowest_pixel_mem: *mut [[c_int; 2]; 7],
-    pub lowest_pixel_mem_sz: c_int,
-}
-
 pub(crate) struct Rav1dFrameContext_frame_thread_progress {
     pub entropy: AtomicI32,
     pub deblock: AtomicI32, // in sby units
@@ -592,7 +585,7 @@ pub(crate) struct Rav1dFrameData {
     pub frame_thread_progress: Rav1dFrameContext_frame_thread_progress,
     pub lf: Rav1dFrameContext_lf,
     pub task_thread: Rav1dFrameContext_task_thread,
-    pub tile_thread: FrameTileThreadData,
+    pub lowest_pixel_mem: Vec<[[c_int; 2]; 7]>,
 }
 
 impl Rav1dFrameData {
