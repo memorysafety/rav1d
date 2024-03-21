@@ -81,10 +81,12 @@ pub const DCT_ADST: TxfmType = 2;
 pub const ADST_DCT: TxfmType = 1;
 pub const DCT_DCT: TxfmType = 0;
 
-pub type TxClass = c_uint;
-pub const TX_CLASS_V: TxClass = 2;
-pub const TX_CLASS_H: TxClass = 1;
-pub const TX_CLASS_2D: TxClass = 0;
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum TxClass {
+    TwoD,
+    H,
+    V,
+}
 
 pub type IntraPredMode = u8;
 pub const FILTER_PRED: IntraPredMode = 13;
