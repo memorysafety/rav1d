@@ -9,10 +9,10 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::levels::BlockLevel;
+use crate::src::levels::MVJoint;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_MV_JOINTS;
 use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
@@ -5007,7 +5007,7 @@ pub(crate) fn rav1d_cdf_thread_update(
     if hdr.frame_type.is_key_or_intra() {
         update_bit_0d!(m.intrabc);
 
-        update_cdf_1d!(N_MV_JOINTS - 1, dmv.joint.0);
+        update_cdf_1d!(MVJoint::COUNT - 1, dmv.joint.0);
         for k in 0..2 {
             update_cdf_1d!(10, dmv.comp[k].classes.0);
             update_bit_0d!(dmv.comp[k].class0);
@@ -5048,7 +5048,7 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_cdf_2d!(N_BS_SIZES, 2, m.motion_mode);
     update_bit_1d!(N_BS_SIZES, m.obmc);
 
-    update_cdf_1d!(N_MV_JOINTS - 1, mv.joint.0);
+    update_cdf_1d!(MVJoint::COUNT - 1, mv.joint.0);
     for k in 0..2 {
         update_cdf_1d!(10, mv.comp[k].classes.0);
         update_bit_0d!(mv.comp[k].class0);

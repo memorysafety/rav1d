@@ -171,12 +171,13 @@ pub const FILTER_2D_8TAP_REGULAR_SHARP: Filter2d = 2;
 pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
 pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
 
-pub type MVJoint = c_uint;
-pub const N_MV_JOINTS: usize = 4;
-pub const MV_JOINT_HV: MVJoint = 3;
-pub const MV_JOINT_V: MVJoint = 2;
-pub const MV_JOINT_H: MVJoint = 1;
-pub const _MV_JOINT_ZERO: MVJoint = 0;
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
+pub enum MVJoint {
+    Zero = 0,
+    H = 1,
+    V = 2,
+    HV = 3,
+}
 
 pub type InterPredMode = u8;
 pub const _N_INTER_PRED_MODES: usize = 4;

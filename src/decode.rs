@@ -84,6 +84,7 @@ use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
 use crate::src::levels::InterIntraType;
+use crate::src::levels::MVJoint;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxfmSize;
@@ -101,9 +102,6 @@ use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::MM_OBMC;
 use crate::src::levels::MM_TRANSLATION;
 use crate::src::levels::MM_WARP;
-use crate::src::levels::MV_JOINT_H;
-use crate::src::levels::MV_JOINT_HV;
-use crate::src::levels::MV_JOINT_V;
 use crate::src::levels::NEARER_DRL;
 use crate::src::levels::NEARESTMV;
 use crate::src::levels::NEARESTMV_NEARESTMV;
@@ -116,7 +114,6 @@ use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_MV_JOINTS;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::PARTITION_H;
@@ -216,6 +213,7 @@ use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::Ordering;
+use strum::EnumCount;
 
 fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
@@ -315,22 +313,24 @@ unsafe fn read_mv_residual(
     have_fp: bool,
 ) {
     let ts = &mut *t.ts;
-    match rav1d_msac_decode_symbol_adapt4(
+    match MVJoint::from_repr(rav1d_msac_decode_symbol_adapt4(
         &mut ts.msac,
         &mut ts.cdf.mv.joint.0,
-        N_MV_JOINTS as usize - 1,
-    ) {
-        MV_JOINT_HV => {
+        MVJoint::COUNT - 1,
+    ) as usize)
+    .expect("valid variant")
+    {
+        MVJoint::HV => {
             ref_mv.y += read_mv_component_diff(t, f, &mut mv_cdf.comp[0], have_fp) as i16;
             ref_mv.x += read_mv_component_diff(t, f, &mut mv_cdf.comp[1], have_fp) as i16;
         }
-        MV_JOINT_H => {
+        MVJoint::H => {
             ref_mv.x += read_mv_component_diff(t, f, &mut mv_cdf.comp[1], have_fp) as i16;
         }
-        MV_JOINT_V => {
+        MVJoint::V => {
             ref_mv.y += read_mv_component_diff(t, f, &mut mv_cdf.comp[0], have_fp) as i16;
         }
-        _ => {}
+        MVJoint::Zero => {}
     };
 }
 
