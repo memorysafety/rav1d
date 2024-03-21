@@ -634,7 +634,7 @@ pub struct Rav1dTileState {
 
     // in fullpel units, [0] = Y, [1] = UV, used for progress requirements
     // each entry is one tile-sbrow; middle index is refidx
-    pub lowest_pixel: *mut [[c_int; 2]; 7],
+    pub lowest_pixel: usize,
 
     pub dqmem: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
     pub dq: *const [[u16; 2]; 3],

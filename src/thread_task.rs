@@ -558,8 +558,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
         let p_b: c_uint = (((*t).sby + 1) << f.sb_shift + 2) as c_uint;
         let tile_sby = (*t).sby - ((*ts).tiling.row_start >> f.sb_shift);
-        let lowest_px: *const [c_int; 2] =
-            (*((*ts).lowest_pixel).offset(tile_sby as isize)).as_mut_ptr() as *const [c_int; 2];
+        let lowest_px = &f.lowest_pixel_mem[(*ts).lowest_pixel + tile_sby as usize];
         let mut current_block_14: u64;
         let mut n = (*t).deps_skip;
         while n < 7 {
@@ -568,15 +567,15 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
                 lowest = p_b;
                 current_block_14 = 2370887241019905314;
             } else {
-                let y = if (*lowest_px.offset(n as isize))[0] == i32::MIN {
+                let y = if lowest_px[n as usize][0] == i32::MIN {
                     i32::MIN
                 } else {
-                    (*lowest_px.offset(n as isize))[0] + 8
+                    lowest_px[n as usize][0] + 8
                 };
-                let uv = if (*lowest_px.offset(n as isize))[1] == i32::MIN {
+                let uv = if lowest_px[n as usize][1] == i32::MIN {
                     i32::MIN
                 } else {
-                    (*lowest_px.offset(n as isize))[1] * ((1 as c_int) << ss_ver) + 8
+                    lowest_px[n as usize][1] * ((1 as c_int) << ss_ver) + 8
                 };
                 let max = cmp::max(y, uv);
                 if max == i32::MIN {

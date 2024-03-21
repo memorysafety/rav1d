@@ -1312,13 +1312,13 @@ fn affine_lowest_px_luma(
 #[inline(never)]
 unsafe fn affine_lowest_px_chroma(
     t: &Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    layout: Rav1dPixelLayout,
     dst: &mut c_int,
     b_dim: &[u8; 4],
     wmp: &Rav1dWarpedMotionParams,
 ) {
-    assert!(f.cur.p.layout != Rav1dPixelLayout::I400);
-    if f.cur.p.layout == Rav1dPixelLayout::I444 {
+    assert!(layout != Rav1dPixelLayout::I400);
+    if layout == Rav1dPixelLayout::I444 {
         affine_lowest_px_luma(t, dst, b_dim, wmp);
     } else {
         affine_lowest_px(
@@ -1326,7 +1326,7 @@ unsafe fn affine_lowest_px_chroma(
             dst,
             b_dim,
             wmp,
-            (f.cur.p.layout & Rav1dPixelLayout::I420) as c_int,
+            (layout & Rav1dPixelLayout::I420) as c_int,
             1,
         );
     };
@@ -1334,7 +1334,8 @@ unsafe fn affine_lowest_px_chroma(
 
 unsafe fn obmc_lowest_px(
     t: &mut Rav1dTaskContext,
-    f: &Rav1dFrameData,
+    layout: Rav1dPixelLayout,
+    svc: &[[ScalableMotionParams; 2]; 7],
     dst: &mut [[c_int; 2]; 7],
     is_chroma: bool,
     b_dim: &[u8; 4],
@@ -1345,8 +1346,8 @@ unsafe fn obmc_lowest_px(
 ) {
     assert!(t.bx & 1 == 0 && t.by & 1 == 0);
     let r = &t.rt.r[(t.by as usize & 31) + 5 - 1..];
-    let ss_ver = (is_chroma && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (is_chroma && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let ss_ver = (is_chroma && layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (is_chroma && layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     if t.by > (*t.ts).tiling.row_start
@@ -1365,7 +1366,7 @@ unsafe fn obmc_lowest_px(
                     oh4 * 3 + 3 >> 2,
                     a_r.0.mv.mv[0].y,
                     ss_ver,
-                    &f.svc[a_r.0.r#ref.r#ref[0] as usize - 1][1],
+                    &svc[a_r.0.r#ref.r#ref[0] as usize - 1][1],
                 );
                 i += 1;
             }
@@ -1386,7 +1387,7 @@ unsafe fn obmc_lowest_px(
                     oh4,
                     l_r.0.mv.mv[0].y,
                     ss_ver,
-                    &f.svc[l_r.0.r#ref.r#ref[0] as usize - 1][1],
+                    &svc[l_r.0.r#ref.r#ref[0] as usize - 1][1],
                 );
                 i += 1;
             }
@@ -3227,7 +3228,7 @@ unsafe fn decode_b_inner(
     }
 
     // update contexts
-    let frame_hdr = f.frame_hdr();
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if frame_hdr.segmentation.enabled != 0 && frame_hdr.segmentation.update_map != 0 {
         // Need checked casts here because we're using `from_raw_parts_mut` and an overflow would be UB.
         let [by, bx, bh4, bw4] = [t.by, t.bx, bh4, bw4].map(|it| usize::try_from(it).unwrap());
@@ -3263,7 +3264,7 @@ unsafe fn decode_b_inner(
 
     if t.frame_thread.pass == 1 && b.intra == 0 && frame_hdr.frame_type.is_inter_or_switch() {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
-        let lowest_px = &mut *ts.lowest_pixel.offset(sby as isize);
+        let lowest_px = &mut f.lowest_pixel_mem[ts.lowest_pixel + sby as usize];
         // keep track of motion vectors for each reference
         if b.comp_type() == COMP_INTER_NONE {
             // y
@@ -3292,7 +3293,18 @@ unsafe fn decode_b_inner(
                     &f.svc[b.r#ref()[0] as usize][1],
                 );
                 if b.motion_mode() == MM_OBMC as u8 {
-                    obmc_lowest_px(t, f, lowest_px, false, b_dim, bx4, by4, w4, h4);
+                    obmc_lowest_px(
+                        t,
+                        f.cur.p.layout,
+                        &f.svc,
+                        lowest_px,
+                        false,
+                        b_dim,
+                        bx4,
+                        by4,
+                        w4,
+                        h4,
+                    );
                 }
             }
 
@@ -3372,7 +3384,7 @@ unsafe fn decode_b_inner(
                 {
                     affine_lowest_px_chroma(
                         t,
-                        f,
+                        f.cur.p.layout,
                         &mut lowest_px[b.r#ref()[0] as usize][1],
                         b_dim,
                         if b.motion_mode() == MM_WARP as u8 {
@@ -3391,7 +3403,18 @@ unsafe fn decode_b_inner(
                         &f.svc[b.r#ref()[0] as usize][1],
                     );
                     if b.motion_mode() == MM_OBMC as u8 {
-                        obmc_lowest_px(t, f, lowest_px, true, b_dim, bx4, by4, w4, h4);
+                        obmc_lowest_px(
+                            t,
+                            f.cur.p.layout,
+                            &f.svc,
+                            lowest_px,
+                            true,
+                            b_dim,
+                            bx4,
+                            by4,
+                            w4,
+                            h4,
+                        );
                     }
                 }
             }
@@ -3447,7 +3470,7 @@ unsafe fn decode_b_inner(
                     {
                         affine_lowest_px_chroma(
                             t,
-                            f,
+                            f.cur.p.layout,
                             &mut lowest_px[r#ref][1],
                             b_dim,
                             &frame_hdr.gmv[r#ref],
@@ -4087,7 +4110,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 
     if frame_hdr.frame_type.is_inter_or_switch() && c.n_fc > 1 {
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
-        *ts.lowest_pixel.offset(sby as isize) = [[i32::MIN; 2]; 7];
+        f.lowest_pixel_mem[ts.lowest_pixel + sby as usize] = [[i32::MIN; 2]; 7];
     }
 
     reset_context(
@@ -4328,14 +4351,15 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         f.lowest_pixel_mem
             .resize(lowest_pixel_mem_sz as usize, Default::default());
 
-        let mut lowest_pixel_ptr = f.lowest_pixel_mem.as_mut_ptr();
+        let mut lowest_pixel_offset = 0;
         for tile_row in 0..frame_hdr.tiling.rows {
             let tile_row_base = tile_row * frame_hdr.tiling.cols;
             let tile_row_sb_h = frame_hdr.tiling.row_start_sb[(tile_row + 1) as usize] as c_int
                 - frame_hdr.tiling.row_start_sb[tile_row as usize] as c_int;
             for tile_col in 0..frame_hdr.tiling.cols {
-                (*f.ts.offset((tile_row_base + tile_col) as isize)).lowest_pixel = lowest_pixel_ptr;
-                lowest_pixel_ptr = lowest_pixel_ptr.offset(tile_row_sb_h as isize);
+                (*f.ts.offset((tile_row_base + tile_col) as isize)).lowest_pixel =
+                    lowest_pixel_offset;
+                lowest_pixel_offset += tile_row_sb_h as usize;
             }
         }
 
