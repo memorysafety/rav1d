@@ -27,6 +27,7 @@ use crate::src::ipred_prepare::sm_uv_flag;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
+use crate::src::levels::CompInterType;
 use crate::src::levels::Filter2d;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::IntraPredMode;
@@ -35,7 +36,6 @@ use crate::src::levels::TxClass;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
 use crate::src::levels::CFL_PRED;
-use crate::src::levels::COMP_INTER_NONE;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_2D_BILINEAR;
@@ -3313,7 +3313,309 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 pl += 1;
             }
         }
-    } else if b.c2rust_unnamed.c2rust_unnamed_0.comp_type as c_int == COMP_INTER_NONE as c_int {
+    } else if let Some(comp_inter_type) = b.c2rust_unnamed.c2rust_unnamed_0.comp_type {
+        let filter_2d: Filter2d = b.c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
+        let tmp: *mut [i16; 16384] = (t
+            .scratch
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .compinter)
+            .as_mut_ptr();
+        let mut jnt_weight = 0;
+        let seg_mask: *mut u8 = (t
+            .scratch
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .c2rust_unnamed
+            .seg_mask)
+            .as_mut_ptr();
+        let mut mask: *const u8 = 0 as *const u8;
+        let mut i = 0;
+        while i < 2 {
+            let refp: *const Rav1dThreadPicture = &*(f.refp).as_ptr().offset(
+                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                    .as_ptr()
+                    .offset(i as isize) as isize,
+            ) as *const Rav1dThreadPicture;
+            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV_GLOBALMV as c_int
+                && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
+                    as c_int
+                    != 0
+            {
+                res = warp_affine::<BD>(
+                    f,
+                    t,
+                    0 as *mut BD::Pixel,
+                    (*tmp.offset(i as isize)).as_mut_ptr(),
+                    (bw4 * 4) as ptrdiff_t,
+                    b_dim,
+                    0 as c_int,
+                    refp,
+                    &frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize],
+                );
+                if res != 0 {
+                    return res;
+                }
+            } else {
+                res = mc::<BD>(
+                    f,
+                    t,
+                    0 as *mut BD::Pixel,
+                    (*tmp.offset(i as isize)).as_mut_ptr(),
+                    0 as c_int as ptrdiff_t,
+                    bw4,
+                    bh4,
+                    t.bx,
+                    t.by,
+                    0 as c_int,
+                    b.c2rust_unnamed
+                        .c2rust_unnamed_0
+                        .c2rust_unnamed
+                        .c2rust_unnamed
+                        .mv[i as usize],
+                    refp,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as c_int,
+                    filter_2d,
+                );
+                if res != 0 {
+                    return res;
+                }
+            }
+            i += 1;
+        }
+
+        match comp_inter_type {
+            CompInterType::Avg => {
+                ((*dsp).mc.avg)(
+                    dst.cast(),
+                    f.cur.stride[0],
+                    (*tmp.offset(0)).as_mut_ptr(),
+                    (*tmp.offset(1)).as_mut_ptr(),
+                    bw4 * 4,
+                    bh4 * 4,
+                    f.bitdepth_max,
+                );
+            }
+            CompInterType::WeightedAvg => {
+                jnt_weight = f.jnt_weights[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
+                    [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
+                    as c_int;
+                ((*dsp).mc.w_avg)(
+                    dst.cast(),
+                    f.cur.stride[0],
+                    (*tmp.offset(0)).as_mut_ptr(),
+                    (*tmp.offset(1)).as_mut_ptr(),
+                    bw4 * 4,
+                    bh4 * 4,
+                    jnt_weight,
+                    f.bitdepth_max,
+                );
+            }
+            CompInterType::Seg => {
+                (*dsp).mc.w_mask[chr_layout_idx as usize](
+                    dst.cast(),
+                    f.cur.stride[0],
+                    (*tmp.offset(
+                        b.c2rust_unnamed
+                            .c2rust_unnamed_0
+                            .c2rust_unnamed
+                            .c2rust_unnamed
+                            .mask_sign as isize,
+                    ))
+                    .as_mut_ptr(),
+                    (*tmp.offset(
+                        (b.c2rust_unnamed
+                            .c2rust_unnamed_0
+                            .c2rust_unnamed
+                            .c2rust_unnamed
+                            .mask_sign
+                            == 0) as c_int as isize,
+                    ))
+                    .as_mut_ptr(),
+                    bw4 * 4,
+                    bh4 * 4,
+                    seg_mask,
+                    b.c2rust_unnamed
+                        .c2rust_unnamed_0
+                        .c2rust_unnamed
+                        .c2rust_unnamed
+                        .mask_sign as c_int,
+                    f.bitdepth_max,
+                );
+                mask = seg_mask;
+            }
+            CompInterType::Wedge => {
+                mask = dav1d_wedge_masks[bs as usize][0][0][b
+                    .c2rust_unnamed
+                    .c2rust_unnamed_0
+                    .c2rust_unnamed
+                    .c2rust_unnamed
+                    .wedge_idx
+                    as usize]
+                    .as_ptr();
+                ((*dsp).mc.mask)(
+                    dst.cast(),
+                    f.cur.stride[0],
+                    (*tmp.offset(
+                        b.c2rust_unnamed
+                            .c2rust_unnamed_0
+                            .c2rust_unnamed
+                            .c2rust_unnamed
+                            .mask_sign as isize,
+                    ))
+                    .as_mut_ptr(),
+                    (*tmp.offset(
+                        (b.c2rust_unnamed
+                            .c2rust_unnamed_0
+                            .c2rust_unnamed
+                            .c2rust_unnamed
+                            .mask_sign
+                            == 0) as c_int as isize,
+                    ))
+                    .as_mut_ptr(),
+                    bw4 * 4,
+                    bh4 * 4,
+                    mask,
+                    f.bitdepth_max,
+                );
+                if has_chroma != 0 {
+                    mask = dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][b
+                        .c2rust_unnamed
+                        .c2rust_unnamed_0
+                        .c2rust_unnamed
+                        .c2rust_unnamed
+                        .mask_sign
+                        as usize][b
+                        .c2rust_unnamed
+                        .c2rust_unnamed_0
+                        .c2rust_unnamed
+                        .c2rust_unnamed
+                        .wedge_idx as usize]
+                        .as_ptr();
+                }
+            }
+        }
+        if has_chroma != 0 {
+            let mut pl = 0;
+            while pl < 2 {
+                let mut i = 0;
+                while i < 2 {
+                    let refp: *const Rav1dThreadPicture = &*(f.refp).as_ptr().offset(
+                        *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
+                            .as_ptr()
+                            .offset(i as isize) as isize,
+                    )
+                        as *const Rav1dThreadPicture;
+                    if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int
+                        == GLOBALMV_GLOBALMV as c_int
+                        && cmp::min(cbw4, cbh4) > 1
+                        && f.gmv_warp_allowed
+                            [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
+                            as c_int
+                            != 0
+                    {
+                        res = warp_affine::<BD>(
+                            f,
+                            t,
+                            0 as *mut BD::Pixel,
+                            (*tmp.offset(i as isize)).as_mut_ptr(),
+                            (bw4 * 4 >> ss_hor) as ptrdiff_t,
+                            b_dim,
+                            1 + pl,
+                            refp,
+                            &frame_hdr.gmv
+                                [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize],
+                        );
+                        if res != 0 {
+                            return res;
+                        }
+                    } else {
+                        res = mc::<BD>(
+                            f,
+                            t,
+                            0 as *mut BD::Pixel,
+                            (*tmp.offset(i as isize)).as_mut_ptr(),
+                            0 as c_int as ptrdiff_t,
+                            bw4,
+                            bh4,
+                            t.bx,
+                            t.by,
+                            1 + pl,
+                            b.c2rust_unnamed
+                                .c2rust_unnamed_0
+                                .c2rust_unnamed
+                                .c2rust_unnamed
+                                .mv[i as usize],
+                            refp,
+                            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as c_int,
+                            filter_2d,
+                        );
+                        if res != 0 {
+                            return res;
+                        }
+                    }
+                    i += 1;
+                }
+
+                let uvdst: *mut BD::Pixel = (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
+                    .offset(uvdstoff as isize);
+                match comp_inter_type {
+                    CompInterType::Avg => {
+                        ((*dsp).mc.avg)(
+                            uvdst.cast(),
+                            f.cur.stride[1],
+                            (*tmp.offset(0)).as_mut_ptr(),
+                            (*tmp.offset(1)).as_mut_ptr(),
+                            bw4 * 4 >> ss_hor,
+                            bh4 * 4 >> ss_ver,
+                            f.bitdepth_max,
+                        );
+                    }
+                    CompInterType::WeightedAvg => {
+                        ((*dsp).mc.w_avg)(
+                            uvdst.cast(),
+                            f.cur.stride[1],
+                            (*tmp.offset(0)).as_mut_ptr(),
+                            (*tmp.offset(1)).as_mut_ptr(),
+                            bw4 * 4 >> ss_hor,
+                            bh4 * 4 >> ss_ver,
+                            jnt_weight,
+                            f.bitdepth_max,
+                        );
+                    }
+                    CompInterType::Seg | CompInterType::Wedge => {
+                        ((*dsp).mc.mask)(
+                            uvdst.cast(),
+                            f.cur.stride[1],
+                            (*tmp.offset(
+                                b.c2rust_unnamed
+                                    .c2rust_unnamed_0
+                                    .c2rust_unnamed
+                                    .c2rust_unnamed
+                                    .mask_sign as isize,
+                            ))
+                            .as_mut_ptr(),
+                            (*tmp.offset(
+                                (b.c2rust_unnamed
+                                    .c2rust_unnamed_0
+                                    .c2rust_unnamed
+                                    .c2rust_unnamed
+                                    .mask_sign
+                                    == 0) as c_int as isize,
+                            ))
+                            .as_mut_ptr(),
+                            bw4 * 4 >> ss_hor,
+                            bh4 * 4 >> ss_ver,
+                            mask,
+                            f.bitdepth_max,
+                        );
+                    }
+                }
+                pl += 1;
+            }
+        }
+    } else {
         let mut is_sub8x8;
         let mut r: *const *mut refmvs_block;
         let refp: *const Rav1dThreadPicture = &*(f.refp)
@@ -3906,309 +4208,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
         t.tl_4x4_filter = filter_2d;
-    } else {
-        let filter_2d: Filter2d = b.c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
-        let tmp: *mut [i16; 16384] = (t
-            .scratch
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .compinter)
-            .as_mut_ptr();
-        let mut jnt_weight = 0;
-        let seg_mask: *mut u8 = (t
-            .scratch
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .seg_mask)
-            .as_mut_ptr();
-        let mut mask: *const u8 = 0 as *const u8;
-        let mut i = 0;
-        while i < 2 {
-            let refp: *const Rav1dThreadPicture = &*(f.refp).as_ptr().offset(
-                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                    .as_ptr()
-                    .offset(i as isize) as isize,
-            ) as *const Rav1dThreadPicture;
-            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV_GLOBALMV as c_int
-                && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
-                    as c_int
-                    != 0
-            {
-                res = warp_affine::<BD>(
-                    f,
-                    t,
-                    0 as *mut BD::Pixel,
-                    (*tmp.offset(i as isize)).as_mut_ptr(),
-                    (bw4 * 4) as ptrdiff_t,
-                    b_dim,
-                    0 as c_int,
-                    refp,
-                    &frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize],
-                );
-                if res != 0 {
-                    return res;
-                }
-            } else {
-                res = mc::<BD>(
-                    f,
-                    t,
-                    0 as *mut BD::Pixel,
-                    (*tmp.offset(i as isize)).as_mut_ptr(),
-                    0 as c_int as ptrdiff_t,
-                    bw4,
-                    bh4,
-                    t.bx,
-                    t.by,
-                    0 as c_int,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mv[i as usize],
-                    refp,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as c_int,
-                    filter_2d,
-                );
-                if res != 0 {
-                    return res;
-                }
-            }
-            i += 1;
-        }
-        match b.c2rust_unnamed.c2rust_unnamed_0.comp_type as c_int {
-            2 => {
-                ((*dsp).mc.avg)(
-                    dst.cast(),
-                    f.cur.stride[0],
-                    (*tmp.offset(0)).as_mut_ptr(),
-                    (*tmp.offset(1)).as_mut_ptr(),
-                    bw4 * 4,
-                    bh4 * 4,
-                    f.bitdepth_max,
-                );
-            }
-            1 => {
-                jnt_weight = f.jnt_weights[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
-                    [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
-                    as c_int;
-                ((*dsp).mc.w_avg)(
-                    dst.cast(),
-                    f.cur.stride[0],
-                    (*tmp.offset(0)).as_mut_ptr(),
-                    (*tmp.offset(1)).as_mut_ptr(),
-                    bw4 * 4,
-                    bh4 * 4,
-                    jnt_weight,
-                    f.bitdepth_max,
-                );
-            }
-            3 => {
-                (*dsp).mc.w_mask[chr_layout_idx as usize](
-                    dst.cast(),
-                    f.cur.stride[0],
-                    (*tmp.offset(
-                        b.c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mask_sign as isize,
-                    ))
-                    .as_mut_ptr(),
-                    (*tmp.offset(
-                        (b.c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mask_sign
-                            == 0) as c_int as isize,
-                    ))
-                    .as_mut_ptr(),
-                    bw4 * 4,
-                    bh4 * 4,
-                    seg_mask,
-                    b.c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mask_sign as c_int,
-                    f.bitdepth_max,
-                );
-                mask = seg_mask;
-            }
-            4 => {
-                mask = dav1d_wedge_masks[bs as usize][0][0][b
-                    .c2rust_unnamed
-                    .c2rust_unnamed_0
-                    .c2rust_unnamed
-                    .c2rust_unnamed
-                    .wedge_idx
-                    as usize]
-                    .as_ptr();
-                ((*dsp).mc.mask)(
-                    dst.cast(),
-                    f.cur.stride[0],
-                    (*tmp.offset(
-                        b.c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mask_sign as isize,
-                    ))
-                    .as_mut_ptr(),
-                    (*tmp.offset(
-                        (b.c2rust_unnamed
-                            .c2rust_unnamed_0
-                            .c2rust_unnamed
-                            .c2rust_unnamed
-                            .mask_sign
-                            == 0) as c_int as isize,
-                    ))
-                    .as_mut_ptr(),
-                    bw4 * 4,
-                    bh4 * 4,
-                    mask,
-                    f.bitdepth_max,
-                );
-                if has_chroma != 0 {
-                    mask = dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .mask_sign
-                        as usize][b
-                        .c2rust_unnamed
-                        .c2rust_unnamed_0
-                        .c2rust_unnamed
-                        .c2rust_unnamed
-                        .wedge_idx as usize]
-                        .as_ptr();
-                }
-            }
-            _ => {}
-        }
-        if has_chroma != 0 {
-            let mut pl = 0;
-            while pl < 2 {
-                let mut i = 0;
-                while i < 2 {
-                    let refp: *const Rav1dThreadPicture = &*(f.refp).as_ptr().offset(
-                        *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                            .as_ptr()
-                            .offset(i as isize) as isize,
-                    )
-                        as *const Rav1dThreadPicture;
-                    if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int
-                        == GLOBALMV_GLOBALMV as c_int
-                        && cmp::min(cbw4, cbh4) > 1
-                        && f.gmv_warp_allowed
-                            [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
-                            as c_int
-                            != 0
-                    {
-                        res = warp_affine::<BD>(
-                            f,
-                            t,
-                            0 as *mut BD::Pixel,
-                            (*tmp.offset(i as isize)).as_mut_ptr(),
-                            (bw4 * 4 >> ss_hor) as ptrdiff_t,
-                            b_dim,
-                            1 + pl,
-                            refp,
-                            &frame_hdr.gmv
-                                [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize],
-                        );
-                        if res != 0 {
-                            return res;
-                        }
-                    } else {
-                        res = mc::<BD>(
-                            f,
-                            t,
-                            0 as *mut BD::Pixel,
-                            (*tmp.offset(i as isize)).as_mut_ptr(),
-                            0 as c_int as ptrdiff_t,
-                            bw4,
-                            bh4,
-                            t.bx,
-                            t.by,
-                            1 + pl,
-                            b.c2rust_unnamed
-                                .c2rust_unnamed_0
-                                .c2rust_unnamed
-                                .c2rust_unnamed
-                                .mv[i as usize],
-                            refp,
-                            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as c_int,
-                            filter_2d,
-                        );
-                        if res != 0 {
-                            return res;
-                        }
-                    }
-                    i += 1;
-                }
-                let uvdst: *mut BD::Pixel = (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
-                    .offset(uvdstoff as isize);
-                match b.c2rust_unnamed.c2rust_unnamed_0.comp_type as c_int {
-                    2 => {
-                        ((*dsp).mc.avg)(
-                            uvdst.cast(),
-                            f.cur.stride[1],
-                            (*tmp.offset(0)).as_mut_ptr(),
-                            (*tmp.offset(1)).as_mut_ptr(),
-                            bw4 * 4 >> ss_hor,
-                            bh4 * 4 >> ss_ver,
-                            f.bitdepth_max,
-                        );
-                    }
-                    1 => {
-                        ((*dsp).mc.w_avg)(
-                            uvdst.cast(),
-                            f.cur.stride[1],
-                            (*tmp.offset(0)).as_mut_ptr(),
-                            (*tmp.offset(1)).as_mut_ptr(),
-                            bw4 * 4 >> ss_hor,
-                            bh4 * 4 >> ss_ver,
-                            jnt_weight,
-                            f.bitdepth_max,
-                        );
-                    }
-                    4 | 3 => {
-                        ((*dsp).mc.mask)(
-                            uvdst.cast(),
-                            f.cur.stride[1],
-                            (*tmp.offset(
-                                b.c2rust_unnamed
-                                    .c2rust_unnamed_0
-                                    .c2rust_unnamed
-                                    .c2rust_unnamed
-                                    .mask_sign as isize,
-                            ))
-                            .as_mut_ptr(),
-                            (*tmp.offset(
-                                (b.c2rust_unnamed
-                                    .c2rust_unnamed_0
-                                    .c2rust_unnamed
-                                    .c2rust_unnamed
-                                    .mask_sign
-                                    == 0) as c_int as isize,
-                            ))
-                            .as_mut_ptr(),
-                            bw4 * 4 >> ss_hor,
-                            bh4 * 4 >> ss_ver,
-                            mask,
-                            f.bitdepth_max,
-                        );
-                    }
-                    _ => {}
-                }
-                pl += 1;
-            }
-        }
     }
+
     if debug_block_info!(f, t) && 0 != 0 {
         hex_dump::<BD>(
             dst,

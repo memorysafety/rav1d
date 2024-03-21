@@ -202,12 +202,13 @@ pub const NEARESTMV_NEWMV: CompInterPredMode = 2;
 pub const NEARMV_NEARMV: CompInterPredMode = 1;
 pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
 
-pub type CompInterType = u8;
-pub const COMP_INTER_WEDGE: CompInterType = 4;
-pub const COMP_INTER_SEG: CompInterType = 3;
-pub const COMP_INTER_AVG: CompInterType = 2;
-pub const COMP_INTER_WEIGHTED_AVG: CompInterType = 1;
-pub const COMP_INTER_NONE: CompInterType = 0;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum CompInterType {
+    WeightedAvg = 1,
+    Avg = 2,
+    Seg = 3,
+    Wedge = 4,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InterIntraType {
@@ -302,7 +303,7 @@ pub union Av1Block_inter_nd {
 #[repr(C)]
 pub struct Av1Block_inter {
     pub c2rust_unnamed: Av1Block_inter_nd,
-    pub comp_type: u8,
+    pub comp_type: Option<CompInterType>,
     pub inter_mode: u8,
     pub motion_mode: u8,
     pub drl_idx: u8,
@@ -351,11 +352,11 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed.cfl_alpha
     }
 
-    pub unsafe fn comp_type(&self) -> u8 {
+    pub unsafe fn comp_type(&self) -> Option<CompInterType> {
         self.c2rust_unnamed.c2rust_unnamed_0.comp_type
     }
 
-    pub unsafe fn comp_type_mut(&mut self) -> &mut u8 {
+    pub unsafe fn comp_type_mut(&mut self) -> &mut Option<CompInterType> {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.comp_type
     }
 

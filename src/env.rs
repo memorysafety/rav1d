@@ -6,11 +6,9 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align8;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
+use crate::src::levels::CompInterType;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
-use crate::src::levels::COMP_INTER_AVG;
-use crate::src::levels::COMP_INTER_NONE;
-use crate::src::levels::COMP_INTER_SEG;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::H_ADST;
 use crate::src::levels::H_FLIPADST;
@@ -44,7 +42,7 @@ pub struct BlockContext {
     pub skip: Align8<[u8; 32]>,
     pub skip_mode: Align8<[u8; 32]>,
     pub intra: Align8<[u8; 32]>,
-    pub comp_type: Align8<[u8; 32]>,
+    pub comp_type: Align8<[Option<CompInterType>; 32]>,
     pub r#ref: Align8<[[i8; 32]; 2]>,
     pub filter: Align8<[[u8; 32]; 2]>,
     pub tx_intra: Align8<[i8; 32]>,
@@ -195,28 +193,28 @@ pub fn get_comp_ctx(
 ) -> u8 {
     if have_top {
         if have_left {
-            if a.comp_type[xb4 as usize] != 0 {
-                if l.comp_type[yb4 as usize] != 0 {
+            if a.comp_type[xb4 as usize].is_some() {
+                if l.comp_type[yb4 as usize].is_some() {
                     4
                 } else {
                     // 4U means intra (-1) or bwd (>= 4)
                     2 + (l.r#ref[0][yb4 as usize] as c_uint >= 4) as u8
                 }
-            } else if l.comp_type[yb4 as usize] != 0 {
+            } else if l.comp_type[yb4 as usize].is_some() {
                 // 4U means intra (-1) or bwd (>= 4)
                 2 + (a.r#ref[0][xb4 as usize] as c_uint >= 4) as u8
             } else {
                 ((l.r#ref[0][yb4 as usize] >= 4) ^ (a.r#ref[0][xb4 as usize] >= 4)) as u8
             }
         } else {
-            if a.comp_type[xb4 as usize] != 0 {
+            if a.comp_type[xb4 as usize].is_some() {
                 3
             } else {
                 (a.r#ref[0][xb4 as usize] >= 4) as u8
             }
         }
     } else if have_left {
-        if l.comp_type[yb4 as usize] != 0 {
+        if l.comp_type[yb4 as usize].is_some() {
             3
         } else {
             (l.r#ref[0][yb4 as usize] >= 4) as u8
@@ -250,14 +248,14 @@ pub fn get_comp_dir_ctx(
             let edge = if a_intra { l } else { a };
             let off = if a_intra { yb4 } else { xb4 };
 
-            if edge.comp_type[off as usize] == COMP_INTER_NONE {
+            if edge.comp_type[off as usize].is_none() {
                 return 2;
             }
             return 1 + 2 * has_uni_comp(edge, off) as u8;
         }
 
-        let a_comp = a.comp_type[xb4 as usize] != COMP_INTER_NONE;
-        let l_comp = l.comp_type[yb4 as usize] != COMP_INTER_NONE;
+        let a_comp = a.comp_type[xb4 as usize].is_some();
+        let l_comp = l.comp_type[yb4 as usize].is_some();
         let a_ref0 = a.r#ref[0][xb4 as usize];
         let l_ref0 = l.r#ref[0][yb4 as usize];
 
@@ -290,7 +288,7 @@ pub fn get_comp_dir_ctx(
         if edge.intra[off as usize] != 0 {
             return 2;
         }
-        if edge.comp_type[off as usize] == COMP_INTER_NONE {
+        if edge.comp_type[off as usize].is_none() {
             return 2;
         }
         return 4 * has_uni_comp(edge, off) as u8;
@@ -324,7 +322,8 @@ pub fn get_jnt_comp_ctx(
     let d1 = get_poc_diff(order_hint_n_bits, poc as c_int, ref1poc as c_int).abs();
     let offset = (d0 == d1) as u8;
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        (al.comp_type[b4 as usize] >= COMP_INTER_AVG || al.r#ref[0][b4 as usize] == 6) as u8
+        (al.comp_type[b4 as usize] >= Some(CompInterType::Avg) || al.r#ref[0][b4 as usize] == 6)
+            as u8
     });
 
     3 * offset + a_ctx + l_ctx
@@ -333,7 +332,7 @@ pub fn get_jnt_comp_ctx(
 #[inline]
 pub fn get_mask_comp_ctx(a: &BlockContext, l: &BlockContext, yb4: c_int, xb4: c_int) -> u8 {
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        if al.comp_type[b4 as usize] >= COMP_INTER_SEG {
+        if al.comp_type[b4 as usize] >= Some(CompInterType::Seg) {
             1
         } else if al.r#ref[0][b4 as usize] == 6 {
             3
@@ -367,14 +366,14 @@ pub fn av1_get_ref_ctx(
 
     if have_top && a.intra[xb4 as usize] == 0 {
         cnt[(a.r#ref[0][xb4 as usize] >= 4) as usize] += 1;
-        if a.comp_type[xb4 as usize] != 0 {
+        if a.comp_type[xb4 as usize].is_some() {
             cnt[(a.r#ref[1][xb4 as usize] >= 4) as usize] += 1;
         }
     }
 
     if have_left && l.intra[yb4 as usize] == 0 {
         cnt[(l.r#ref[0][yb4 as usize] >= 4) as usize] += 1;
-        if l.comp_type[yb4 as usize] != 0 {
+        if l.comp_type[yb4 as usize].is_some() {
             cnt[(l.r#ref[1][yb4 as usize] >= 4) as usize] += 1;
         }
     }
@@ -397,7 +396,7 @@ pub fn av1_get_fwd_ref_ctx(
         if a.r#ref[0][xb4 as usize] < 4 {
             cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] != 0 && a.r#ref[1][xb4 as usize] < 4 {
+        if a.comp_type[xb4 as usize].is_some() && a.r#ref[1][xb4 as usize] < 4 {
             cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
@@ -406,7 +405,7 @@ pub fn av1_get_fwd_ref_ctx(
         if l.r#ref[0][yb4 as usize] < 4 {
             cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] != 0 && l.r#ref[1][yb4 as usize] < 4 {
+        if l.comp_type[yb4 as usize].is_some() && l.r#ref[1][yb4 as usize] < 4 {
             cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
@@ -432,7 +431,7 @@ pub fn av1_get_fwd_ref_1_ctx(
         if a.r#ref[0][xb4 as usize] < 2 {
             cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] != 0 && a.r#ref[1][xb4 as usize] < 2 {
+        if a.comp_type[xb4 as usize].is_some() && a.r#ref[1][xb4 as usize] < 2 {
             cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
         }
     }
@@ -441,7 +440,7 @@ pub fn av1_get_fwd_ref_1_ctx(
         if l.r#ref[0][yb4 as usize] < 2 {
             cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] != 0 && l.r#ref[1][yb4 as usize] < 2 {
+        if l.comp_type[yb4 as usize].is_some() && l.r#ref[1][yb4 as usize] < 2 {
             cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
         }
     }
@@ -464,7 +463,7 @@ pub fn av1_get_fwd_ref_2_ctx(
         if (a.r#ref[0][xb4 as usize] ^ 2) < 2 {
             cnt[(a.r#ref[0][xb4 as usize] - 2) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] != 0 && (a.r#ref[1][xb4 as usize] ^ 2) < 2 {
+        if a.comp_type[xb4 as usize].is_some() && (a.r#ref[1][xb4 as usize] ^ 2) < 2 {
             cnt[(a.r#ref[1][xb4 as usize] - 2) as usize] += 1;
         }
     }
@@ -473,7 +472,7 @@ pub fn av1_get_fwd_ref_2_ctx(
         if (l.r#ref[0][yb4 as usize] ^ 2) < 2 {
             cnt[(l.r#ref[0][yb4 as usize] - 2) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] != 0 && (l.r#ref[1][yb4 as usize] ^ 2) < 2 {
+        if l.comp_type[yb4 as usize].is_some() && (l.r#ref[1][yb4 as usize] ^ 2) < 2 {
             cnt[(l.r#ref[1][yb4 as usize] - 2) as usize] += 1;
         }
     }
@@ -496,7 +495,7 @@ pub fn av1_get_bwd_ref_ctx(
         if a.r#ref[0][xb4 as usize] >= 4 {
             cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] != 0 && a.r#ref[1][xb4 as usize] >= 4 {
+        if a.comp_type[xb4 as usize].is_some() && a.r#ref[1][xb4 as usize] >= 4 {
             cnt[(a.r#ref[1][xb4 as usize] - 4) as usize] += 1;
         }
     }
@@ -505,7 +504,7 @@ pub fn av1_get_bwd_ref_ctx(
         if l.r#ref[0][yb4 as usize] >= 4 {
             cnt[(l.r#ref[0][yb4 as usize] - 4) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] != 0 && l.r#ref[1][yb4 as usize] >= 4 {
+        if l.comp_type[yb4 as usize].is_some() && l.r#ref[1][yb4 as usize] >= 4 {
             cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
         }
     }
@@ -530,7 +529,7 @@ pub fn av1_get_bwd_ref_1_ctx(
         if a.r#ref[0][xb4 as usize] >= 4 {
             cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize] != 0 && a.r#ref[1][xb4 as usize] >= 4 {
+        if a.comp_type[xb4 as usize].is_some() && a.r#ref[1][xb4 as usize] >= 4 {
             cnt[(a.r#ref[1][xb4 as usize] - 4) as usize] += 1;
         }
     }
@@ -539,7 +538,7 @@ pub fn av1_get_bwd_ref_1_ctx(
         if l.r#ref[0][yb4 as usize] >= 4 {
             cnt[(l.r#ref[0][yb4 as usize] - 4) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize] != 0 && l.r#ref[1][yb4 as usize] >= 4 {
+        if l.comp_type[yb4 as usize].is_some() && l.r#ref[1][yb4 as usize] >= 4 {
             cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
         }
     }
@@ -562,7 +561,7 @@ pub fn av1_get_uni_p1_ctx(
         if let Some(cnt) = cnt.get_mut((a.r#ref[0][xb4 as usize] - 1) as usize) {
             *cnt += 1;
         }
-        if a.comp_type[xb4 as usize] != 0 {
+        if a.comp_type[xb4 as usize].is_some() {
             if let Some(cnt) = cnt.get_mut((a.r#ref[1][xb4 as usize] - 1) as usize) {
                 *cnt += 1;
             }
@@ -573,7 +572,7 @@ pub fn av1_get_uni_p1_ctx(
         if let Some(cnt) = cnt.get_mut((l.r#ref[0][yb4 as usize] - 1) as usize) {
             *cnt += 1;
         }
-        if l.comp_type[yb4 as usize] != 0 {
+        if l.comp_type[yb4 as usize].is_some() {
             if let Some(cnt) = cnt.get_mut((l.r#ref[1][yb4 as usize] - 1) as usize) {
                 *cnt += 1;
             }

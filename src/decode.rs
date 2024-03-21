@@ -83,16 +83,12 @@ use crate::src::levels::BS_64x64;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
+use crate::src::levels::CompInterType;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::CFL_PRED;
-use crate::src::levels::COMP_INTER_AVG;
-use crate::src::levels::COMP_INTER_NONE;
-use crate::src::levels::COMP_INTER_SEG;
-use crate::src::levels::COMP_INTER_WEDGE;
-use crate::src::levels::COMP_INTER_WEIGHTED_AVG;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_PRED;
@@ -1513,7 +1509,7 @@ unsafe fn decode_b_inner(
             }
         } else {
             if f.frame_hdr().frame_type.is_inter_or_switch() /* not intrabc */
-                && b.comp_type() == COMP_INTER_NONE
+                && b.comp_type().is_none()
                 && b.motion_mode() as MotionMode == MM_WARP
             {
                 if b.matrix()[0] == i16::MIN {
@@ -2204,7 +2200,7 @@ unsafe fn decode_b_inner(
                     if has_chroma { b.pal_sz()[1] } else { 0 },
                 );
                 if f.frame_hdr().frame_type.is_inter_or_switch() {
-                    case.set(&mut dir.comp_type.0, COMP_INTER_NONE);
+                    case.set(&mut dir.comp_type.0, None);
                     case.set(&mut dir.r#ref[0], -1);
                     case.set(&mut dir.r#ref[1], -1);
                     case.set(&mut dir.filter.0[0], Rav1dFilterMode::N_SWITCHABLE_FILTERS);
@@ -2427,7 +2423,7 @@ unsafe fn decode_b_inner(
                 frame_hdr.skip_mode.refs[0] as i8,
                 frame_hdr.skip_mode.refs[1] as i8,
             ];
-            *b.comp_type_mut() = COMP_INTER_AVG;
+            *b.comp_type_mut() = Some(CompInterType::Avg);
             *b.inter_mode_mut() = NEARESTMV_NEARESTMV;
             *b.drl_idx_mut() = NEAREST_DRL;
             has_subpel_filter = false;
@@ -2698,15 +2694,19 @@ unsafe fn decode_b_inner(
                         by4,
                         bx4,
                     );
-                    *b.comp_type_mut() = COMP_INTER_WEIGHTED_AVG
-                        + rav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
-                        ) as u8;
+                    let comp_type = if rav1d_msac_decode_bool_adapt(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
+                    ) {
+                        CompInterType::Avg
+                    } else {
+                        CompInterType::WeightedAvg
+                    };
+                    *b.comp_type_mut() = Some(comp_type);
                     if debug_block_info!(f, t) {
                         println!(
-                            "Post-jnt_comp[{},ctx={}[ac:{},ar:{},lc:{},lr:{}]]: r={}",
-                            b.comp_type() == COMP_INTER_AVG,
+                            "Post-jnt_comp[{},ctx={}[ac:{:?},ar:{},lc:{:?},lr:{}]]: r={}",
+                            comp_type == CompInterType::Avg,
                             jnt_ctx,
                             (*t.a).comp_type[bx4 as usize],
                             (*t.a).r#ref[0][bx4 as usize],
@@ -2716,15 +2716,21 @@ unsafe fn decode_b_inner(
                         );
                     }
                 } else {
-                    *b.comp_type_mut() = COMP_INTER_AVG;
+                    *b.comp_type_mut() = Some(CompInterType::Avg);
                 }
             } else {
                 if wedge_allowed_mask & (1 << bs) != 0 {
                     let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
-                    *b.comp_type_mut() = COMP_INTER_WEDGE
-                        - rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.wedge_comp[ctx])
-                            as u8;
-                    if b.comp_type() == COMP_INTER_WEDGE {
+                    let comp_type = if rav1d_msac_decode_bool_adapt(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.wedge_comp[ctx],
+                    ) {
+                        CompInterType::Seg
+                    } else {
+                        CompInterType::Wedge
+                    };
+                    *b.comp_type_mut() = Some(comp_type);
+                    if comp_type == CompInterType::Wedge {
                         *b.wedge_idx_mut() = rav1d_msac_decode_symbol_adapt16(
                             &mut ts.msac,
                             &mut ts.cdf.m.wedge_idx[ctx],
@@ -2732,13 +2738,13 @@ unsafe fn decode_b_inner(
                         ) as u8;
                     }
                 } else {
-                    *b.comp_type_mut() = COMP_INTER_SEG;
+                    *b.comp_type_mut() = Some(CompInterType::Seg);
                 }
                 *b.mask_sign_mut() = rav1d_msac_decode_bool_equi(&mut ts.msac) as u8;
                 if debug_block_info!(f, t) {
                     println!(
                         "Post-seg/wedge[{},wedge_idx={},sign={}]: r={}",
-                        b.comp_type() == COMP_INTER_WEDGE,
+                        b.comp_type() == Some(CompInterType::Wedge),
                         b.wedge_idx(),
                         b.mask_sign(),
                         ts.msac.rng,
@@ -2746,7 +2752,7 @@ unsafe fn decode_b_inner(
                 }
             }
         } else {
-            *b.comp_type_mut() = COMP_INTER_NONE;
+            *b.comp_type_mut() = None;
 
             // ref
             if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
@@ -3087,7 +3093,7 @@ unsafe fn decode_b_inner(
         // subpel filter
         let filter = if frame_hdr.subpel_filter_mode == Rav1dFilterMode::Switchable {
             if has_subpel_filter {
-                let comp = b.comp_type() != COMP_INTER_NONE;
+                let comp = b.comp_type().is_some();
                 let ctx1 = get_filter_ctx(&*t.a, &t.l, comp, false, b.r#ref()[0], by4, bx4);
                 let filter0 = rav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
@@ -3266,7 +3272,7 @@ unsafe fn decode_b_inner(
         let sby = t.by - ts.tiling.row_start >> f.sb_shift;
         let lowest_px = &mut f.lowest_pixel_mem[ts.lowest_pixel + sby as usize];
         // keep track of motion vectors for each reference
-        if b.comp_type() == COMP_INTER_NONE {
+        if b.comp_type().is_none() {
             // y
             if cmp::min(bw4, bh4) > 1
                 && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
@@ -3843,7 +3849,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
         for r#ref in &mut ctx.r#ref.0 {
             r#ref.fill(-1);
         }
-        ctx.comp_type.0.fill(0);
+        ctx.comp_type.0.fill(None);
         ctx.mode.0.fill(NEARESTMV);
     }
     ctx.lcoef.0.fill(0x40);
