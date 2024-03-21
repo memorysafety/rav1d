@@ -14,6 +14,7 @@ use crate::src::looprestoration::LR_HAVE_LEFT;
 use crate::src::looprestoration::LR_HAVE_RIGHT;
 use crate::src::looprestoration::LR_HAVE_TOP;
 use crate::src::tables::dav1d_sgr_params;
+use assert_matches::assert_matches;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -80,9 +81,8 @@ unsafe fn lr_stripe<BD: BitDepth>(
 
         lr_fn = dsp.lr.wiener[((filter[0][0] | filter[1][0]) == 0) as usize];
     } else {
-        assert!(lr.r#type >= Rav1dRestorationType::SgrProj);
-        let sgr_idx = lr.r#type as usize - Rav1dRestorationType::SgrProj as usize;
-        let sgr_params = &dav1d_sgr_params[sgr_idx];
+        let sgr_idx = assert_matches!(lr.r#type, Rav1dRestorationType::SgrProj(idx) => idx);
+        let sgr_params = &dav1d_sgr_params[sgr_idx as usize];
         params.sgr.s0 = sgr_params[0] as u32;
         params.sgr.s1 = sgr_params[1] as u32;
         params.sgr.w0 = lr.sgr_weights[0] as i16;
