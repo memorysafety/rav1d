@@ -28,6 +28,7 @@ use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x4;
 use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockLevel;
+use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
 use crate::src::levels::InterPredMode;
 use crate::src::levels::TxClass;
@@ -77,9 +78,7 @@ use crate::src::levels::N_2D_FILTERS;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_RECT_TX_SIZES;
-use crate::src::levels::N_SUB8X8_PARTITIONS;
 use crate::src::levels::N_TX_TYPES_PLUS_LL;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::levels::PAETH_PRED;
@@ -126,7 +125,7 @@ pub struct TxfmInfo {
     pub ctx: u8,
 }
 
-pub static dav1d_al_part_ctx: [[[u8; N_PARTITIONS]; BlockLevel::COUNT]; 2] = [
+pub static dav1d_al_part_ctx: [[[u8; BlockPartition::COUNT]; BlockLevel::COUNT]; 2] = [
     [
         [0x00, 0x00, 0x10, 0xff, 0x00, 0x10, 0x10, 0x10, 0xff, 0xff],
         [0x10, 0x10, 0x18, 0xff, 0x10, 0x18, 0x18, 0x18, 0x10, 0x1c],
@@ -143,7 +142,7 @@ pub static dav1d_al_part_ctx: [[[u8; N_PARTITIONS]; BlockLevel::COUNT]; 2] = [
     ],
 ];
 
-pub static dav1d_block_sizes: [[[BlockSize; 2]; N_PARTITIONS]; BlockLevel::COUNT] = [
+pub static dav1d_block_sizes: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLevel::COUNT] = [
     [
         [BS_128x128 as u8, 0],
         [BS_128x64 as u8, 0],
@@ -521,11 +520,11 @@ pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; N_COMP_INTER_PRED_M
 };
 
 pub static dav1d_partition_type_count: [u8; BlockLevel::COUNT] = [
-    N_PARTITIONS as u8 - 3,
-    N_PARTITIONS as u8 - 1,
-    N_PARTITIONS as u8 - 1,
-    N_PARTITIONS as u8 - 1,
-    N_SUB8X8_PARTITIONS as u8 - 1,
+    BlockPartition::COUNT as u8 - 3,
+    BlockPartition::COUNT as u8 - 1,
+    BlockPartition::COUNT as u8 - 1,
+    BlockPartition::COUNT as u8 - 1,
+    BlockPartition::N_SUB8X8_PARTITIONS as u8 - 1,
 ];
 
 pub static dav1d_tx_types_per_set: [u8; 40] = [

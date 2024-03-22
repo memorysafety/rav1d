@@ -6,6 +6,7 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align8;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
+use crate::src::levels::BlockPartition;
 use crate::src::levels::CompInterType;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::TxfmType;
@@ -13,14 +14,6 @@ use crate::src::levels::DCT_DCT;
 use crate::src::levels::H_ADST;
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::IDTX;
-use crate::src::levels::PARTITION_H;
-use crate::src::levels::PARTITION_H4;
-use crate::src::levels::PARTITION_SPLIT;
-use crate::src::levels::PARTITION_T_LEFT_SPLIT;
-use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
-use crate::src::levels::PARTITION_T_TOP_SPLIT;
-use crate::src::levels::PARTITION_V;
-use crate::src::levels::PARTITION_V4;
 use crate::src::levels::TX_16X16;
 use crate::src::levels::TX_32X32;
 use crate::src::levels::V_ADST;
@@ -108,31 +101,33 @@ pub fn get_partition_ctx(
 
 #[inline]
 pub fn gather_left_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
-    let mut out = r#in[(PARTITION_H - 1) as usize] as i32 - r#in[PARTITION_H as usize] as i32;
-    // Exploit the fact that cdfs for PARTITION_SPLIT, PARTITION_T_TOP_SPLIT,
-    // PARTITION_T_BOTTOM_SPLIT and PARTITION_T_LEFT_SPLIT are neighbors.
-    out +=
-        r#in[(PARTITION_SPLIT - 1) as usize] as i32 - r#in[PARTITION_T_LEFT_SPLIT as usize] as i32;
+    let mut out =
+        r#in[BlockPartition::H as usize - 1] as i32 - r#in[BlockPartition::H as usize] as i32;
+    // Exploit the fact that cdfs for BlockPartition::Split, BlockPartition::TopSplit,
+    // BlockPartition::BottomSplit and BlockPartition::LeftSplit are neighbors.
+    out += r#in[BlockPartition::Split as usize - 1] as i32
+        - r#in[BlockPartition::LeftSplit as usize] as i32;
     if bl != BlockLevel::Bl128x128 {
-        out += r#in[(PARTITION_H4 - 1) as usize] as i32 - r#in[PARTITION_H4 as usize] as i32;
+        out +=
+            r#in[BlockPartition::H4 as usize - 1] as i32 - r#in[BlockPartition::H4 as usize] as i32;
     }
     out as u32
 }
 
 #[inline]
 pub fn gather_top_partition_prob(r#in: &[u16; 16], bl: BlockLevel) -> u32 {
-    // Exploit the fact that cdfs for PARTITION_V, PARTITION_SPLIT and
-    // PARTITION_T_TOP_SPLIT are neighbors.
-    let mut out =
-        r#in[(PARTITION_V - 1) as usize] as i32 - r#in[PARTITION_T_TOP_SPLIT as usize] as i32;
-    // Exploit the facts that cdfs for PARTITION_T_LEFT_SPLIT and
-    // PARTITION_T_RIGHT_SPLIT are neighbors, the probability for
-    // PARTITION_V4 is always zero, and the probability for
-    // PARTITION_T_RIGHT_SPLIT is zero in 128x128 blocks.
-    out += r#in[(PARTITION_T_LEFT_SPLIT - 1) as usize] as i32;
+    // Exploit the fact that cdfs for BlockPartition::V, BlockPartition::Split and
+    // BlockPartition::TopSplit are neighbors.
+    let mut out = r#in[BlockPartition::V as usize - 1] as i32
+        - r#in[BlockPartition::TopSplit as usize] as i32;
+    // Exploit the facts that cdfs for BlockPartition::LeftSplit and
+    // BlockPartition::RightSplit are neighbors, the probability for
+    // BlockPartition::V4 is always zero, and the probability for
+    // BlockPartition::RightSplit is zero in 128x128 blocks.
+    out += r#in[BlockPartition::LeftSplit as usize - 1] as i32;
     if bl != BlockLevel::Bl128x128 {
-        out += r#in[(PARTITION_V4 - 1) as usize] as i32
-            - r#in[PARTITION_T_RIGHT_SPLIT as usize] as i32;
+        out += r#in[BlockPartition::V4 as usize - 1] as i32
+            - r#in[BlockPartition::RightSplit as usize] as i32;
     }
     out as u32
 }

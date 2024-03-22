@@ -9,11 +9,11 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::levels::BlockLevel;
+use crate::src::levels::BlockPartition;
 use crate::src::levels::MVJoint;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
-use crate::src::levels::N_PARTITIONS;
 use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::r#ref::rav1d_ref_create_using_pool;
@@ -82,7 +82,7 @@ pub struct CdfModeContext {
     pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
     pub uv_mode: Align32<[[[u16; N_UV_INTRA_PRED_MODES + 2]; N_INTRA_PRED_MODES]; 2]>,
     pub wedge_idx: Align32<[[u16; 16]; 9]>,
-    pub partition: Align32<[[[u16; N_PARTITIONS + 6]; 4]; BlockLevel::COUNT]>,
+    pub partition: Align32<[[[u16; BlockPartition::COUNT + 6]; 4]; BlockLevel::COUNT]>,
     pub cfl_alpha: Align32<[[u16; 16]; 6]>,
     pub txtp_inter1: Align32<[[u16; 16]; 2]>,
     pub txtp_inter2: Align32<[u16; 16]>,
