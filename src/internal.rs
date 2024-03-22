@@ -39,6 +39,8 @@ use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
+use crate::src::levels::TxfmType;
+use crate::src::levels::WHT_WHT;
 use crate::src::lf_mask::Av1Filter;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::lf_mask::Av1Restoration;
@@ -392,11 +394,24 @@ impl Rav1dFrameContext_bd_fn {
     }
 }
 
-#[derive(Default)]
-#[repr(C)]
-pub struct CodedBlockInfo {
-    pub eob: [i16; 3], /* plane */
-    pub txtp: [u8; 3], /* plane */
+#[derive(Clone, Copy, Default)]
+pub struct CodedBlockInfo(i16);
+
+impl CodedBlockInfo {
+    const TXTP_BITS: u8 = (TxfmType::BITS - WHT_WHT.leading_zeros()) as u8;
+
+    pub const fn eob(&self) -> i16 {
+        self.0 >> Self::TXTP_BITS
+    }
+
+    pub const fn txtp(&self) -> TxfmType {
+        (self.0 & ((1 << Self::TXTP_BITS) - 1)) as TxfmType
+    }
+
+    pub const fn new(eob: i16, txtp: TxfmType) -> Self {
+        debug_assert!(eob << Self::TXTP_BITS >> Self::TXTP_BITS == eob);
+        Self((eob << Self::TXTP_BITS) | (txtp as i16))
+    }
 }
 
 #[derive(Default)]
@@ -408,7 +423,7 @@ pub struct Rav1dFrameContext_frame_thread {
     /// Indexed using `t.by * f.b4_stride + t.bx`.
     pub b: Vec<Av1Block>,
 
-    pub cbi: Vec<CodedBlockInfo>,
+    pub cbi: Vec<[CodedBlockInfo; 3]>,
 
     /// Indexed using `(t.by >> 1) * (f.b4_stride >> 1) + (t.bx >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
