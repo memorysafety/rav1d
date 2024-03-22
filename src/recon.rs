@@ -3235,28 +3235,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             .c2rust_unnamed
             .c2rust_unnamed
             .c2rust_unnamed
-<<<<<<< HEAD
             .seg_mask;
         for i in 0..2 {
             let refp = &f.refp[b.r#ref()[i] as usize];
-            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == GLOBALMV_GLOBALMV
+            if b.inter_mode() == CompInterPredMode::GlobalGlobal
                 && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
-=======
-            .seg_mask)
-            .as_mut_ptr();
-        let mut mask: *const u8 = 0 as *const u8;
-        let mut i = 0;
-        while i < 2 {
-            let refp: *const Rav1dThreadPicture = &*(f.refp).as_ptr().offset(
-                *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                    .as_ptr()
-                    .offset(i as isize) as isize,
-            ) as *const Rav1dThreadPicture;
-            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == CompInterPredMode::GLOBALMV_GLOBALMV
-                && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
-                    as c_int
-                    != 0
->>>>>>> 8ecd7c33 (`enum InterPredMode` and `enum CompInterPredMode`: make real enums)
             {
                 warp_affine::<BD>(
                     f,
@@ -3349,27 +3332,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             }
         }
-<<<<<<< HEAD
         if has_chroma {
             for pl in 0..2 {
                 for i in 0..2 {
                     let refp = &f.refp[b.r#ref()[i] as usize];
-                    if b.inter_mode() == GLOBALMV_GLOBALMV
-=======
-        if has_chroma != 0 {
-            let mut pl = 0;
-            while pl < 2 {
-                let mut i = 0;
-                while i < 2 {
-                    let refp: *const Rav1dThreadPicture = &*(f.refp).as_ptr().offset(
-                        *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
-                            .as_ptr()
-                            .offset(i as isize) as isize,
-                    )
-                        as *const Rav1dThreadPicture;
-                    if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                        == CompInterPredMode::GLOBALMV_GLOBALMV
->>>>>>> 8ecd7c33 (`enum InterPredMode` and `enum CompInterPredMode`: make real enums)
+                    if b.inter_mode() == CompInterPredMode::GlobalGlobal
                         && cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
                     {
@@ -3451,15 +3418,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         let refp = &f.refp[b.r#ref()[0] as usize];
         let filter_2d = b.filter2d();
         if cmp::min(bw4, bh4) > 1
-<<<<<<< HEAD
-            && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
+            && (b.inter_mode() == InterPredMode::Global.into()
+                && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                 || b.motion_mode() == MotionMode::Warp
-=======
-            && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == InterPredMode::GLOBALMV.into()
-                && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize] as c_int
-                    != 0
-                || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Warp
->>>>>>> 8ecd7c33 (`enum InterPredMode` and `enum CompInterPredMode`: make real enums)
                     && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
         {
             warp_affine::<BD>(
@@ -3721,18 +3682,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             } else {
                 if cmp::min(cbw4, cbh4) > 1
-<<<<<<< HEAD
-                    && (b.inter_mode() == GLOBALMV
+                    && (b.inter_mode() == InterPredMode::Global.into()
                         && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                         || b.motion_mode() == MotionMode::Warp
-=======
-                    && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                        == InterPredMode::GLOBALMV.into()
-                        && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
-                            as c_int
-                            != 0
-                        || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Warp
->>>>>>> 8ecd7c33 (`enum InterPredMode` and `enum CompInterPredMode`: make real enums)
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
                     for pl in 0..2 {

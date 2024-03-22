@@ -10,8 +10,8 @@ use crate::src::internal::Rav1dContext;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
+use crate::src::levels::CompInterPredMode;
 use crate::src::levels::MVJoint;
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
@@ -89,7 +89,7 @@ pub struct CdfModeContext {
     pub cfl_sign: Align16<[u16; 8]>,
     pub angle_delta: Align16<[[u16; 8]; 8]>,
     pub filter_intra: Align16<[u16; 8]>,
-    pub comp_inter_mode: Align16<[[u16; N_COMP_INTER_PRED_MODES]; 8]>,
+    pub comp_inter_mode: Align16<[[u16; CompInterPredMode::COUNT]; 8]>,
     pub seg_id: Align16<[[u16; RAV1D_MAX_SEGMENTS as usize]; 3]>,
     pub pal_sz: Align16<[[[u16; 8]; 7]; 2]>,
     pub color_map: Align16<[[[[u16; 8]; 5]; 7]; 2]>,
@@ -5048,7 +5048,7 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_bit_1d!(2, m.globalmv_mode);
     update_bit_1d!(6, m.refmv_mode);
     update_bit_1d!(3, m.drl_bit);
-    update_cdf_2d!(8, N_COMP_INTER_PRED_MODES - 1, m.comp_inter_mode);
+    update_cdf_2d!(8, CompInterPredMode::COUNT - 1, m.comp_inter_mode);
     update_bit_1d!(4, m.intra);
     update_bit_1d!(5, m.comp);
     update_bit_1d!(5, m.comp_dir);

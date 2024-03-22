@@ -189,14 +189,6 @@ pub enum MVJoint {
     HV = 3,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum InterPredMode {
-    NEARESTMV = 0,
-    NEARMV = 1,
-    GLOBALMV = 2,
-    NEWMV = 3,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DrlProximity {
     Nearest,
@@ -205,26 +197,33 @@ pub enum DrlProximity {
     Nearish,
 }
 
-pub const N_COMP_INTER_PRED_MODES: usize = 8;
-#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InterPredMode {
+    Nearest = 0,
+    Near = 1,
+    Global = 2,
+    New = 3,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
 pub enum CompInterPredMode {
-    NEARESTMV_NEARESTMV = 0,
-    NEARMV_NEARMV = 1,
-    NEARESTMV_NEWMV = 2,
-    NEWMV_NEARESTMV = 3,
-    NEARMV_NEWMV = 4,
-    NEWMV_NEARMV = 5,
-    GLOBALMV_GLOBALMV = 6,
-    NEWMV_NEWMV = 7,
+    NearestNearest = 0,
+    NearNear = 1,
+    NearestNew = 2,
+    NewNearest = 3,
+    NearNew = 4,
+    NewNear = 5,
+    GlobalGlobal = 6,
+    NewNew = 7,
 }
 
 impl From<InterPredMode> for CompInterPredMode {
     fn from(value: InterPredMode) -> Self {
         match value {
-            InterPredMode::NEARESTMV => CompInterPredMode::NEARESTMV_NEARESTMV,
-            InterPredMode::NEARMV => CompInterPredMode::NEARMV_NEARMV,
-            InterPredMode::GLOBALMV => CompInterPredMode::NEARESTMV_NEWMV,
-            InterPredMode::NEWMV => CompInterPredMode::NEWMV_NEARESTMV,
+            InterPredMode::Nearest => CompInterPredMode::NearestNearest,
+            InterPredMode::Near => CompInterPredMode::NearNear,
+            InterPredMode::Global => CompInterPredMode::NearestNew,
+            InterPredMode::New => CompInterPredMode::NewNearest,
         }
     }
 }
