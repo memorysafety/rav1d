@@ -215,10 +215,10 @@ unsafe fn insert_tasks(
                     return;
                 }
                 // same sby
-                if tasks[first].type_0 as c_uint > tasks[t].type_0 as c_uint {
+                if tasks[first].type_0 > tasks[t].type_0 {
                     break 'next;
                 }
-                if (tasks[first].type_0 as c_uint) < tasks[t].type_0 as c_uint {
+                if (tasks[first].type_0) < tasks[t].type_0 {
                     insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                     return;
                 }
@@ -226,24 +226,16 @@ unsafe fn insert_tasks(
             }
 
             // sort by tile-id
-            if !matches!(
-                tasks[first].type_0,
-                TaskType::TileReconstruction | TaskType::TileEntropy
-            ) {
-                unreachable!();
-            }
-            if !(tasks[first].type_0 == tasks[t].type_0) {
-                unreachable!();
-            }
-            if !(tasks[t].sby == tasks[first].sby) {
-                unreachable!();
-            }
+            assert!(
+                tasks[first].type_0 == TaskType::TileReconstruction
+                    || tasks[first].type_0 == TaskType::TileEntropy
+            );
+            assert!(tasks[first].type_0 == tasks[t].type_0);
+            assert!(tasks[t].sby == tasks[first].sby);
             let p = tasks[first].type_0 == TaskType::TileEntropy;
             let t_tile_idx = first - tasks.tile_tasks[p as usize].unwrap();
             let p_tile_idx = t - tasks.tile_tasks[p as usize].unwrap();
-            if !(t_tile_idx != p_tile_idx) {
-                unreachable!();
-            }
+            assert!(t_tile_idx != p_tile_idx);
             if !(t_tile_idx > p_tile_idx) {
                 insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                 return;
