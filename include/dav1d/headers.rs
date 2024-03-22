@@ -1,6 +1,10 @@
 use crate::src::enum_map::EnumKey;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::fmt;
+use std::fmt::Debug;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::ops::BitAnd;
 use std::ops::Deref;
 use std::sync::atomic::AtomicU64;
@@ -184,22 +188,73 @@ impl TryFrom<Dav1dAdaptiveBoolean> for Rav1dAdaptiveBoolean {
 }
 
 pub type Dav1dRestorationType = u8;
-pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType =
-    Rav1dRestorationType::None as Dav1dRestorationType;
+pub const DAV1D_RESTORATION_NONE: Dav1dRestorationType = Rav1dRestorationType::None.to_repr();
 pub const DAV1D_RESTORATION_SWITCHABLE: Dav1dRestorationType =
-    Rav1dRestorationType::Switchable as Dav1dRestorationType;
-pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType =
-    Rav1dRestorationType::Wiener as Dav1dRestorationType;
+    Rav1dRestorationType::Switchable.to_repr();
+pub const DAV1D_RESTORATION_WIENER: Dav1dRestorationType = Rav1dRestorationType::Wiener.to_repr();
 pub const DAV1D_RESTORATION_SGRPROJ: Dav1dRestorationType =
-    Rav1dRestorationType::SgrProj as Dav1dRestorationType;
+    Rav1dRestorationType::SgrProj(SgrIdx::I0).to_repr();
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum SgrIdx {
+    I0 = 0,
+    I1 = 1,
+    I2 = 2,
+    I3 = 3,
+    I4 = 4,
+    I5 = 5,
+    I6 = 6,
+    I7 = 7,
+    I8 = 8,
+    I9 = 9,
+    I10 = 10,
+    I11 = 11,
+    I12 = 12,
+    I13 = 13,
+    I14 = 14,
+    I15 = 15,
+}
+
+impl Display for SgrIdx {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", *self as u8)
+    }
+}
+
+impl Debug for SgrIdx {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Rav1dRestorationType {
     #[default]
-    None = 0,
-    Switchable = 1,
-    Wiener = 2,
-    SgrProj = 3,
+    None,
+    Switchable,
+    Wiener,
+    SgrProj(SgrIdx),
+}
+
+impl Rav1dRestorationType {
+    pub const fn to_repr(&self) -> Dav1dRestorationType {
+        match *self {
+            Self::None => 0,
+            Self::Switchable => 1,
+            Self::Wiener => 2,
+            Self::SgrProj(idx) => 3 + idx as Dav1dRestorationType,
+        }
+    }
+
+    pub const fn from_repr(repr: usize) -> Option<Self> {
+        Some(match repr {
+            0 => Self::None,
+            1 => Self::Switchable,
+            2 => Self::Wiener,
+            3 => Self::SgrProj(SgrIdx::I0),
+            _ => return None,
+        })
+    }
 }
 
 pub type Dav1dWarpedMotionType = c_uint;
@@ -2263,7 +2318,7 @@ impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
     fn from(value: Rav1dFrameHeader_restoration) -> Self {
         let Rav1dFrameHeader_restoration { r#type, unit_size } = value;
         Self {
-            r#type: r#type.map(|e| e as u8),
+            r#type: r#type.map(|e| e.to_repr()),
             unit_size,
         }
     }

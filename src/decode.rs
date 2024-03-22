@@ -18,6 +18,7 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dTxfmMode;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
+use crate::include::dav1d::headers::SgrIdx;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::src::align::Align16;
@@ -4005,7 +4006,7 @@ unsafe fn read_restoration_info(
             rav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.restore_switchable.0, 2);
         lr.r#type = if filter != 0 {
             if filter == 2 {
-                Rav1dRestorationType::SgrProj
+                Rav1dRestorationType::SgrProj(SgrIdx::I0)
             } else {
                 Rav1dRestorationType::Wiener
             }
@@ -4033,60 +4034,65 @@ unsafe fn read_restoration_info(
             - adjustment as c_int) as i8
     }
 
-    if lr.r#type == Rav1dRestorationType::Wiener {
-        lr.filter_v[0] = if p != 0 {
-            0
-        } else {
-            msac_decode_lr_subexp(ts, lr_ref.filter_v[0], 1, 5)
-        };
-        lr.filter_v[1] = msac_decode_lr_subexp(ts, lr_ref.filter_v[1], 2, 23);
-        lr.filter_v[2] = msac_decode_lr_subexp(ts, lr_ref.filter_v[2], 3, 17);
+    match lr.r#type {
+        Rav1dRestorationType::Wiener => {
+            lr.filter_v[0] = if p != 0 {
+                0
+            } else {
+                msac_decode_lr_subexp(ts, lr_ref.filter_v[0], 1, 5)
+            };
+            lr.filter_v[1] = msac_decode_lr_subexp(ts, lr_ref.filter_v[1], 2, 23);
+            lr.filter_v[2] = msac_decode_lr_subexp(ts, lr_ref.filter_v[2], 3, 17);
 
-        lr.filter_h[0] = if p != 0 {
-            0
-        } else {
-            msac_decode_lr_subexp(ts, lr_ref.filter_h[0], 1, 5)
-        };
-        lr.filter_h[1] = msac_decode_lr_subexp(ts, lr_ref.filter_h[1], 2, 23);
-        lr.filter_h[2] = msac_decode_lr_subexp(ts, lr_ref.filter_h[2], 3, 17);
-        lr.sgr_weights = lr_ref.sgr_weights;
-        ts.lr_ref[p] = *lr;
-        if debug_block_info {
-            println!(
-                "Post-lr_wiener[pl={},v[{},{},{}],h[{},{},{}]]: r={}",
-                p,
-                lr.filter_v[0],
-                lr.filter_v[1],
-                lr.filter_v[2],
-                lr.filter_h[0],
-                lr.filter_h[1],
-                lr.filter_h[2],
-                ts.msac.rng,
-            );
+            lr.filter_h[0] = if p != 0 {
+                0
+            } else {
+                msac_decode_lr_subexp(ts, lr_ref.filter_h[0], 1, 5)
+            };
+            lr.filter_h[1] = msac_decode_lr_subexp(ts, lr_ref.filter_h[1], 2, 23);
+            lr.filter_h[2] = msac_decode_lr_subexp(ts, lr_ref.filter_h[2], 3, 17);
+            lr.sgr_weights = lr_ref.sgr_weights;
+            ts.lr_ref[p] = *lr;
+            if debug_block_info {
+                println!(
+                    "Post-lr_wiener[pl={},v[{},{},{}],h[{},{},{}]]: r={}",
+                    p,
+                    lr.filter_v[0],
+                    lr.filter_v[1],
+                    lr.filter_v[2],
+                    lr.filter_h[0],
+                    lr.filter_h[1],
+                    lr.filter_h[2],
+                    ts.msac.rng,
+                );
+            }
         }
-    } else if lr.r#type == Rav1dRestorationType::SgrProj {
-        let idx = rav1d_msac_decode_bools(&mut ts.msac, 4) as u8;
-        let sgr_params = &dav1d_sgr_params[idx.into()];
-        lr.sgr_idx = idx;
-        lr.sgr_weights[0] = if sgr_params[0] != 0 {
-            msac_decode_lr_subexp(ts, lr_ref.sgr_weights[0], 4, 96)
-        } else {
-            0
-        };
-        lr.sgr_weights[1] = if sgr_params[1] != 0 {
-            msac_decode_lr_subexp(ts, lr_ref.sgr_weights[1], 4, 32)
-        } else {
-            95
-        };
-        lr.filter_v = lr_ref.filter_v;
-        lr.filter_h = lr_ref.filter_h;
-        ts.lr_ref[p] = *lr;
-        if debug_block_info {
-            println!(
-                "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",
-                p, lr.sgr_idx, lr.sgr_weights[0], lr.sgr_weights[1], ts.msac.rng,
-            );
+        Rav1dRestorationType::SgrProj(_) => {
+            let sgr_idx =
+                SgrIdx::from_repr(rav1d_msac_decode_bools(&mut ts.msac, 4) as usize).unwrap();
+            let sgr_params = &dav1d_sgr_params[sgr_idx as usize];
+            lr.r#type = Rav1dRestorationType::SgrProj(sgr_idx);
+            lr.sgr_weights[0] = if sgr_params[0] != 0 {
+                msac_decode_lr_subexp(ts, lr_ref.sgr_weights[0], 4, 96)
+            } else {
+                0
+            };
+            lr.sgr_weights[1] = if sgr_params[1] != 0 {
+                msac_decode_lr_subexp(ts, lr_ref.sgr_weights[1], 4, 32)
+            } else {
+                95
+            };
+            lr.filter_v = lr_ref.filter_v;
+            lr.filter_h = lr_ref.filter_h;
+            ts.lr_ref[p] = *lr;
+            if debug_block_info {
+                println!(
+                    "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",
+                    p, sgr_idx, lr.sgr_weights[0], lr.sgr_weights[1], ts.msac.rng,
+                );
+            }
         }
+        _ => {}
     }
 }
 
