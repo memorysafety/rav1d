@@ -1749,10 +1749,13 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 }
             });
             if (*t).frame_thread.pass == 1 {
-                f.frame_thread.cbi[cbi_idx][0] = CodedBlockInfo::new(eob as i16, txtp);
+                f.frame_thread.cbi[cbi_idx][0].store(
+                    CodedBlockInfo::new(eob as i16, txtp),
+                    atomig::Ordering::Relaxed,
+                );
             }
         } else {
-            let cbi = f.frame_thread.cbi[cbi_idx][0];
+            let cbi = f.frame_thread.cbi[cbi_idx][0].load(atomig::Ordering::Relaxed);
             eob = cbi.eob().into();
             txtp = cbi.txtp();
         }
@@ -1914,8 +1917,10 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 (*ts).msac.rng,
                             );
                         }
-                        f.frame_thread.cbi[cbi_idx..][t.bx as usize][0] =
-                            CodedBlockInfo::new(eob as i16, txtp);
+                        f.frame_thread.cbi[cbi_idx..][t.bx as usize][0].store(
+                            CodedBlockInfo::new(eob as i16, txtp),
+                            atomig::Ordering::Relaxed,
+                        );
                         (*ts).frame_thread[1].cf = ((*ts).frame_thread[1].cf as *mut BD::Coef)
                             .offset(
                                 (cmp::min((*t_dim).w as c_int, 8 as c_int)
@@ -1987,8 +1992,10 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     (*ts).msac.rng,
                                 );
                             }
-                            f.frame_thread.cbi[cbi_idx..][t.bx as usize][(1 + pl) as usize] =
-                                CodedBlockInfo::new(eob as i16, txtp);
+                            f.frame_thread.cbi[cbi_idx..][t.bx as usize][(1 + pl) as usize].store(
+                                CodedBlockInfo::new(eob as i16, txtp),
+                                atomig::Ordering::Relaxed,
+                            );
                             (*ts).frame_thread[1].cf =
                                 ((*ts).frame_thread[1].cf as *mut BD::Coef).offset(
                                     ((*uv_t_dim).w as c_int * (*uv_t_dim).h as c_int * 16) as isize,
@@ -2690,7 +2697,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         * 16) as isize,
                                 ) as *mut DynCoef;
                             let cbi = f.frame_thread.cbi
-                                [(t.by as isize * f.b4_stride + t.bx as isize) as usize][0];
+                                [(t.by as isize * f.b4_stride + t.bx as isize) as usize][0]
+                                .load(atomig::Ordering::Relaxed);
                             eob = cbi.eob().into();
                             txtp = cbi.txtp();
                         } else {
@@ -3130,7 +3138,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         as *mut DynCoef;
                                     let cbi = f.frame_thread.cbi
                                         [(t.by as isize * f.b4_stride + t.bx as isize) as usize]
-                                        [(pl + 1) as usize];
+                                        [(pl + 1) as usize]
+                                        .load(atomig::Ordering::Relaxed);
                                     eob = cbi.eob().into();
                                     txtp = cbi.txtp();
                                 } else {
@@ -4347,7 +4356,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     ) as *mut DynCoef;
                                 let cbi = f.frame_thread.cbi
                                     [(t.by as isize * f.b4_stride + t.bx as isize) as usize]
-                                    [(1 + pl) as usize];
+                                    [(1 + pl) as usize]
+                                    .load(atomig::Ordering::Relaxed);
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {
