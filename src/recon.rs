@@ -3342,7 +3342,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     .as_ptr()
                     .offset(i as isize) as isize,
             ) as *const Rav1dThreadPicture;
-            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == CompInterPredMode::GLOBALMV_GLOBALMV
+            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == CompInterPredMode::GlobalGlobal
                 && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
                     as c_int
                     != 0
@@ -3512,7 +3512,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     )
                         as *const Rav1dThreadPicture;
                     if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                        == CompInterPredMode::GLOBALMV_GLOBALMV
+                        == CompInterPredMode::GlobalGlobal
                         && cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed
                             [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
@@ -3628,7 +3628,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             as *const Rav1dThreadPicture;
         let filter_2d: Filter2d = b.c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
         if cmp::min(bw4, bh4) > 1
-            && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == InterPredMode::GLOBALMV.into()
+            && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == InterPredMode::Global.into()
                 && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize] as c_int
                     != 0
                 || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Warp
@@ -4015,7 +4015,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             } else {
                 if cmp::min(cbw4, cbh4) > 1
                     && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
-                        == InterPredMode::GLOBALMV.into()
+                        == InterPredMode::Global.into()
                         && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                             as c_int
                             != 0
