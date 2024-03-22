@@ -456,64 +456,39 @@ pub(crate) unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased<BD: BitDepth>(
     eob: c_int,
     bitdepth_max: c_int,
 ) {
-    inv_txfm_add_wht_wht_4x4_rust::<BD>(
-        dst.cast(),
-        stride,
-        coeff.cast(),
-        eob,
-        BD::from_c(bitdepth_max),
-    );
+    // Safety: Casting back to the original type from the `fn` ptr call.
+    let coeff = unsafe { &mut *coeff.cast() };
+    inv_txfm_add_wht_wht_4x4_rust::<BD>(dst.cast(), stride, coeff, eob, BD::from_c(bitdepth_max));
 }
 
 unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    coeff: *mut BD::Coef,
+    coeff: &mut [BD::Coef; 4 * 4],
     _eob: c_int,
     bd: BD,
 ) {
     use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
-
-    let mut tmp: [i32; 16] = [0; 16];
-    let mut c: *mut i32 = tmp.as_mut_ptr();
-    let mut y = 0;
-    while y < 4 {
-        let mut x = 0;
-        while x < 4 {
-            *c.offset(x as isize) = (*coeff.offset((y + x * 4) as isize)).as_::<i32>() >> 2;
-            x += 1;
+    let mut tmp: [i32; 4 * 4] = [0; 4 * 4];
+    let mut c = tmp.as_mut_ptr();
+    for y in 0..4 {
+        for x in 0..4 {
+            *c.offset(x as isize) = coeff[(y + x * 4) as usize].as_::<i32>() >> 2;
         }
-        dav1d_inv_wht4_1d_c(c, 1 as c_int as ptrdiff_t);
-        y += 1;
+        dav1d_inv_wht4_1d_c(c, 1);
         c = c.offset(4);
     }
-    memset(
-        coeff as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<BD::Coef>()
-            .wrapping_mul(4)
-            .wrapping_mul(4),
-    );
-    let mut x_0 = 0;
-    while x_0 < 4 {
-        dav1d_inv_wht4_1d_c(
-            &mut *tmp.as_mut_ptr().offset(x_0 as isize),
-            4 as c_int as ptrdiff_t,
-        );
-        x_0 += 1;
+    coeff.fill(0.as_());
+
+    for x in 0..4 {
+        dav1d_inv_wht4_1d_c(&mut *tmp.as_mut_ptr().offset(x as isize), 4);
     }
     c = tmp.as_mut_ptr();
-    let mut y_0 = 0;
-    while y_0 < 4 {
-        let mut x_1 = 0;
-        while x_1 < 4 {
-            let fresh1 = c;
+    for y in 0..4 {
+        for x in 0..4 {
+            *dst.offset(x as isize) = bd.iclip_pixel((*dst.offset(x as isize)).as_::<i32>() + *c);
             c = c.offset(1);
-            *dst.offset(x_1 as isize) =
-                bd.iclip_pixel((*dst.offset(x_1 as isize)).as_::<c_int>() + *fresh1);
-            x_1 += 1;
         }
-        y_0 += 1;
         dst = dst.offset(BD::pxstride(stride as usize) as isize);
     }
 }
