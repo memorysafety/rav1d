@@ -1746,10 +1746,13 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 }
             });
             if (*t).frame_thread.pass == 1 {
-                f.frame_thread.cbi[cbi_idx][0] = CodedBlockInfo::new(eob as i16, txtp);
+                f.frame_thread.cbi[cbi_idx][0].store(
+                    CodedBlockInfo::new(eob as i16, txtp),
+                    atomig::Ordering::Relaxed,
+                );
             }
         } else {
-            let cbi = f.frame_thread.cbi[cbi_idx][0];
+            let cbi = f.frame_thread.cbi[cbi_idx][0].load(atomig::Ordering::Relaxed);
             eob = cbi.eob().into();
             txtp = cbi.txtp();
         }
@@ -1912,9 +1915,11 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 ts.msac.rng,
                             );
                         }
-                        f.frame_thread.cbi[cbi_idx..][t.b.x as usize][0] =
-                            CodedBlockInfo::new(eob as i16, txtp);
-                        ts.frame_thread[1].cf += cmp::min((*t_dim).w, 8) as usize
+                        f.frame_thread.cbi[cbi_idx..][t.b.x as usize][0].store(
+                            CodedBlockInfo::new(eob as i16, txtp),
+                            atomig::Ordering::Relaxed,
+                        );
+                        (*ts).frame_thread[1].cf += cmp::min((*t_dim).w, 8) as usize
                             * cmp::min((*t_dim).h, 8) as usize
                             * 16;
                         CaseSet::<16, true>::many(
@@ -1978,8 +1983,10 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     pl, b.uvtx as c_int, txtp as c_uint, eob, ts.msac.rng,
                                 );
                             }
-                            f.frame_thread.cbi[cbi_idx..][t.b.x as usize][(1 + pl) as usize] =
-                                CodedBlockInfo::new(eob as i16, txtp);
+                            f.frame_thread.cbi[cbi_idx..][t.b.x as usize][(1 + pl) as usize].store(
+                                CodedBlockInfo::new(eob as i16, txtp),
+                                atomig::Ordering::Relaxed,
+                            );
                             ts.frame_thread[1].cf +=
                                 (*uv_t_dim).w as usize * (*uv_t_dim).h as usize * 16;
                             CaseSet::<16, true>::many(
@@ -2609,7 +2616,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 * cmp::min((*t_dim).h, 8) as usize
                                 * 16;
                             let cbi = f.frame_thread.cbi
-                                [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize][0];
+                                [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize][0]
+                                .load(atomig::Ordering::Relaxed);
                             eob = cbi.eob().into();
                             txtp = cbi.txtp();
                         } else {
@@ -3041,7 +3049,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         (*uv_t_dim).w as usize * (*uv_t_dim).h as usize * 16;
                                     let cbi = f.frame_thread.cbi
                                         [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
-                                        [(pl + 1) as usize];
+                                        [(pl + 1) as usize]
+                                        .load(atomig::Ordering::Relaxed);
                                     eob = cbi.eob().into();
                                     txtp = cbi.txtp();
                                 } else {
@@ -3944,7 +3953,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     uvtx.w as usize * uvtx.h as usize * 16;
                                 let cbi = f.frame_thread.cbi
                                     [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
-                                    [(1 + pl) as usize];
+                                    [(1 + pl) as usize]
+                                    .load(atomig::Ordering::Relaxed);
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {
