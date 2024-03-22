@@ -98,9 +98,6 @@ use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_PRED;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::MM_OBMC;
-use crate::src::levels::MM_TRANSLATION;
-use crate::src::levels::MM_WARP;
 use crate::src::levels::NEARER_DRL;
 use crate::src::levels::NEARESTMV;
 use crate::src::levels::NEARESTMV_NEARESTMV;
@@ -1502,7 +1499,7 @@ unsafe fn decode_b_inner(
         } else {
             if f.frame_hdr().frame_type.is_inter_or_switch() /* not intrabc */
                 && b.comp_type().is_none()
-                && b.motion_mode() as MotionMode == MM_WARP
+                && b.motion_mode() == MotionMode::Warp
             {
                 if b.matrix()[0] == i16::MIN {
                     t.warpmv.r#type = Rav1dWarpedMotionType::Identity;
@@ -3031,17 +3028,18 @@ unsafe fn decode_b_inner(
                     && frame_hdr.warp_motion != 0
                     && mask[0] | mask[1] != 0) as c_int;
 
-                *b.motion_mode_mut() = if allow_warp != 0 {
+                *b.motion_mode_mut() = MotionMode::from_repr(if allow_warp != 0 {
                     rav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.motion_mode[bs as usize],
                         2,
-                    ) as u8
+                    ) as usize
                 } else {
                     rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.obmc[bs as usize])
-                        as u8
-                };
-                if b.motion_mode() == MM_WARP as u8 {
+                        as usize
+                })
+                .expect("valid variant");
+                if b.motion_mode() == MotionMode::Warp {
                     has_subpel_filter = false;
                     t.warpmv = derive_warpmv(t, bw4, bh4, &mask, b.mv()[0], t.warpmv.clone());
                     if debug_block_info!(f, t) {
@@ -3076,7 +3074,7 @@ unsafe fn decode_b_inner(
 
                 if debug_block_info!(f, t) {
                     println!(
-                        "Post-motionmode[{}]: r={} [mask: 0x{:x}/0x{:x}]",
+                        "Post-motionmode[{:?}]: r={} [mask: 0x{:x}/0x{:x}]",
                         b.motion_mode(),
                         ts.msac.rng,
                         mask[0],
@@ -3084,7 +3082,7 @@ unsafe fn decode_b_inner(
                     );
                 }
             } else {
-                *b.motion_mode_mut() = MM_TRANSLATION as u8;
+                *b.motion_mode_mut() = MotionMode::Translation;
             }
         }
 
@@ -3278,14 +3276,14 @@ unsafe fn decode_b_inner(
             // y
             if cmp::min(bw4, bh4) > 1
                 && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
-                    || b.motion_mode() == MM_WARP as u8
+                    || b.motion_mode() == MotionMode::Warp
                         && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
             {
                 affine_lowest_px_luma(
                     t,
                     &mut lowest_px[b.r#ref()[0] as usize][0],
                     b_dim,
-                    if b.motion_mode() == MM_WARP as u8 {
+                    if b.motion_mode() == MotionMode::Warp {
                         &t.warpmv
                     } else {
                         &frame_hdr.gmv[b.r#ref()[0] as usize]
@@ -3300,7 +3298,7 @@ unsafe fn decode_b_inner(
                     0,
                     &f.svc[b.r#ref()[0] as usize][1],
                 );
-                if b.motion_mode() == MM_OBMC as u8 {
+                if b.motion_mode() == MotionMode::Obmc {
                     obmc_lowest_px(
                         t,
                         f.cur.p.layout,
@@ -3387,7 +3385,7 @@ unsafe fn decode_b_inner(
                 } else if cmp::min(cbw4, cbh4) > 1
                     && (b.inter_mode() == GLOBALMV
                         && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
-                        || b.motion_mode() == MM_WARP as u8
+                        || b.motion_mode() == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
                     affine_lowest_px_chroma(
@@ -3395,7 +3393,7 @@ unsafe fn decode_b_inner(
                         f.cur.p.layout,
                         &mut lowest_px[b.r#ref()[0] as usize][1],
                         b_dim,
-                        if b.motion_mode() == MM_WARP as u8 {
+                        if b.motion_mode() == MotionMode::Warp {
                             &t.warpmv
                         } else {
                             &frame_hdr.gmv[b.r#ref()[0] as usize]
@@ -3410,7 +3408,7 @@ unsafe fn decode_b_inner(
                         ss_ver,
                         &f.svc[b.r#ref()[0] as usize][1],
                     );
-                    if b.motion_mode() == MM_OBMC as u8 {
+                    if b.motion_mode() == MotionMode::Obmc {
                         obmc_lowest_px(
                             t,
                             f.cur.p.layout,
