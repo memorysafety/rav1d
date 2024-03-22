@@ -170,7 +170,16 @@ impl<'a> GetBits<'a> {
         self.get_bits_subexp_u((r#ref + (1 << n)) as c_uint, 2 << n) as c_int - (1 << n)
     }
 
+    // Discard bits from the buffer until we're next byte-aligned.
+    #[inline]
     pub fn bytealign(&mut self) {
+        // `bits_left` is never more than 7, because it is only incremented
+        // by `refill()`, called by `get_bits` and that never reads more
+        // than 7 bits more than it needs.
+        //
+        // If this wasn't true, we would need to work out how many bits to
+        // discard `(bits_left % 8)`, subtract that from `bits_left` and then
+        // shift `state` right by that amount.
         assert!(self.bits_left <= 7);
         self.bits_left = 0;
         self.state = 0;
