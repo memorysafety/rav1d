@@ -114,12 +114,13 @@ pub const HOR_PRED: IntraPredMode = 2;
 pub const VERT_PRED: IntraPredMode = 1;
 pub const DC_PRED: IntraPredMode = 0;
 
-pub type InterIntraPredMode = c_uint;
-pub const N_INTER_INTRA_PRED_MODES: usize = 4;
-pub const II_SMOOTH_PRED: InterIntraPredMode = 3;
-pub const II_HOR_PRED: InterIntraPredMode = 2;
-pub const II_VERT_PRED: InterIntraPredMode = 1;
-pub const II_DC_PRED: InterIntraPredMode = 0;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
+pub enum InterIntraPredMode {
+    Dc = 0,
+    Vert = 1,
+    Hor = 2,
+    Smooth = 3,
+}
 
 pub type BlockPartition = u8;
 pub const N_SUB8X8_PARTITIONS: usize = 4;
@@ -285,7 +286,7 @@ pub struct Av1Block_inter_1d {
     pub mv: [mv; 2],
     pub wedge_idx: u8,
     pub mask_sign: u8,
-    pub interintra_mode: u8,
+    pub interintra_mode: InterIntraPredMode,
 }
 
 #[derive(Clone, Copy)]
@@ -539,7 +540,7 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
     }
 
-    pub unsafe fn interintra_mode(&self) -> u8 {
+    pub unsafe fn interintra_mode(&self) -> InterIntraPredMode {
         self.c2rust_unnamed
             .c2rust_unnamed_0
             .c2rust_unnamed
@@ -547,7 +548,7 @@ impl Av1Block {
             .interintra_mode
     }
 
-    pub unsafe fn interintra_mode_mut(&mut self) -> &mut u8 {
+    pub unsafe fn interintra_mode_mut(&mut self) -> &mut InterIntraPredMode {
         &mut self
             .c2rust_unnamed
             .c2rust_unnamed_0

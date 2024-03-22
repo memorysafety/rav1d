@@ -12,12 +12,8 @@ use crate::src::levels::BS_32x8;
 use crate::src::levels::BS_8x16;
 use crate::src::levels::BS_8x32;
 use crate::src::levels::BS_8x8;
-use crate::src::levels::II_DC_PRED;
-use crate::src::levels::II_HOR_PRED;
-use crate::src::levels::II_SMOOTH_PRED;
-use crate::src::levels::II_VERT_PRED;
+use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::N_BS_SIZES;
-use crate::src::levels::N_INTER_INTRA_PRED_MODES;
 use paste::paste;
 use std::cmp::Ordering;
 use strum::EnumCount;
@@ -421,13 +417,15 @@ pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
 
 static ii_dc_mask: Align64<[u8; 32 * 32]> = Align64([32; 32 * 32]);
 
-const N_II_PRED_MODES: usize = N_INTER_INTRA_PRED_MODES - 1;
+const N_II_PRED_MODES: usize = InterIntraPredMode::COUNT - 1;
 
 const fn build_nondc_ii_masks<const N: usize>(
     w: usize,
     h: usize,
     step: usize,
 ) -> [[u8; N]; N_II_PRED_MODES] {
+    use InterIntraPredMode::*;
+
     const ii_weights_1d: [u8; 32] = [
         60, 52, 45, 39, 34, 30, 26, 22, 19, 17, 15, 13, 11, 10, 8, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 2,
         2, 1, 1, 1, 1, 1,
@@ -438,11 +436,11 @@ const fn build_nondc_ii_masks<const N: usize>(
     const_for!(y in 0..h => {
         let off = y * w;
         const_for!(i in 0..w => {
-            masks[II_VERT_PRED as usize - 1][off + i] = ii_weights_1d[y * step];
+            masks[Vert as usize - 1][off + i] = ii_weights_1d[y * step];
         });
         const_for!(x in 0..w => {
-            masks[II_SMOOTH_PRED as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
-            masks[II_HOR_PRED as usize - 1][off + x] = ii_weights_1d[x * step];
+            masks[Smooth as usize - 1][off + x] = ii_weights_1d[const_min!(x, y) * step];
+            masks[Hor as usize - 1][off + x] = ii_weights_1d[x * step];
         });
     });
 
@@ -468,17 +466,19 @@ static ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
 static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
     Align16(build_nondc_ii_masks(4, 4, 8));
 
-pub static dav1d_ii_masks: [[[&'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES] = {
-    let mut masks = [[[&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES]; 3]; N_BS_SIZES];
+pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; N_BS_SIZES] = {
+    use InterIntraPredMode::*;
+
+    let mut masks = [[[&[] as &'static [u8]; InterIntraPredMode::COUNT]; 3]; N_BS_SIZES];
 
     macro_rules! set {
         ($h:literal x $w:literal) => {{
-            let mut a = [&[] as &'static [u8]; N_INTER_INTRA_PRED_MODES];
+            let mut a = [&[] as &'static [u8]; InterIntraPredMode::COUNT];
             paste! {
-                a[II_DC_PRED as usize] = &ii_dc_mask.0;
-                a[II_VERT_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_VERT_PRED as usize - 1];
-                a[II_HOR_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_HOR_PRED as usize - 1];
-                a[II_SMOOTH_PRED as usize] = &[<ii_nondc_mask _ $h x $w>].0[II_SMOOTH_PRED as usize - 1];
+                a[Dc as usize] = &ii_dc_mask.0;
+                a[Vert as usize] = &[<ii_nondc_mask _ $h x $w>].0[Vert as usize - 1];
+                a[Hor as usize] = &[<ii_nondc_mask _ $h x $w>].0[Hor as usize - 1];
+                a[Smooth as usize] = &[<ii_nondc_mask _ $h x $w>].0[Smooth as usize - 1];
             }
             a
         }};
