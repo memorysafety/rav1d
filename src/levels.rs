@@ -122,19 +122,24 @@ pub enum InterIntraPredMode {
     Smooth = 3,
 }
 
-pub type BlockPartition = u8;
-pub const N_SUB8X8_PARTITIONS: usize = 4;
-pub const N_PARTITIONS: usize = 10;
-pub const PARTITION_V4: BlockPartition = 9;
-pub const PARTITION_H4: BlockPartition = 8;
-pub const PARTITION_T_RIGHT_SPLIT: BlockPartition = 7;
-pub const PARTITION_T_LEFT_SPLIT: BlockPartition = 6;
-pub const PARTITION_T_BOTTOM_SPLIT: BlockPartition = 5;
-pub const PARTITION_T_TOP_SPLIT: BlockPartition = 4;
-pub const PARTITION_SPLIT: BlockPartition = 3;
-pub const PARTITION_V: BlockPartition = 2;
-pub const PARTITION_H: BlockPartition = 1;
-pub const PARTITION_NONE: BlockPartition = 0;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, FromRepr, EnumCount)]
+pub enum BlockPartition {
+    #[default]
+    None = 0,
+    H = 1,
+    V = 2,
+    Split = 3,
+    TopSplit = 4,
+    BottomSplit = 5,
+    LeftSplit = 6,
+    RightSplit = 7,
+    H4 = 8,
+    V4 = 9,
+}
+
+impl BlockPartition {
+    pub const N_SUB8X8_PARTITIONS: usize = 4;
+}
 
 pub type BlockSize = u8;
 pub const N_BS_SIZES: usize = 22;
@@ -338,7 +343,7 @@ impl Default for Av1Block_intra_inter {
 pub struct Av1Block {
     pub bl: BlockLevel,
     pub bs: u8,
-    pub bp: u8,
+    pub bp: BlockPartition,
     pub intra: u8,
     pub seg_id: u8,
     pub skip_mode: u8,

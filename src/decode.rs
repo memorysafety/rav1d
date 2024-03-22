@@ -114,16 +114,6 @@ use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
-use crate::src::levels::PARTITION_H;
-use crate::src::levels::PARTITION_H4;
-use crate::src::levels::PARTITION_NONE;
-use crate::src::levels::PARTITION_SPLIT;
-use crate::src::levels::PARTITION_T_BOTTOM_SPLIT;
-use crate::src::levels::PARTITION_T_LEFT_SPLIT;
-use crate::src::levels::PARTITION_T_RIGHT_SPLIT;
-use crate::src::levels::PARTITION_T_TOP_SPLIT;
-use crate::src::levels::PARTITION_V;
-use crate::src::levels::PARTITION_V4;
 use crate::src::levels::TX_4X4;
 use crate::src::levels::TX_64X64;
 use crate::src::levels::TX_8X8;
@@ -1594,7 +1584,7 @@ unsafe fn decode_b_inner(
     let ch4 = h4 + ss_ver >> ss_ver;
 
     b.bl = bl;
-    b.bp = bp as u8;
+    b.bp = bp;
     b.bs = bs as u8;
 
     let mut seg = None;
@@ -3563,51 +3553,59 @@ unsafe fn decode_sb(
 
     if have_h_split && have_v_split {
         if let Some(pc) = pc {
-            bp = rav1d_msac_decode_symbol_adapt16(
+            bp = BlockPartition::from_repr(rav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 pc,
                 dav1d_partition_type_count[bl as usize].into(),
-            ) as BlockPartition;
+            ) as usize)
+            .expect("valid variant");
             if f.cur.p.layout == Rav1dPixelLayout::I422
-                && (bp == PARTITION_V
-                    || bp == PARTITION_V4
-                    || bp == PARTITION_T_LEFT_SPLIT
-                    || bp == PARTITION_T_RIGHT_SPLIT)
+                && matches!(
+                    bp,
+                    BlockPartition::V
+                        | BlockPartition::V4
+                        | BlockPartition::LeftSplit
+                        | BlockPartition::RightSplit
+                )
             {
                 return Err(());
             }
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
+                    "poc={},y={},x={},bl={:?},ctx={},bp={:?}: r={}",
                     frame_hdr.frame_offset, t.by, t.bx, bl, ctx, bp, ts.msac.rng,
                 );
             }
         } else {
             let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
-            bp = if b.bl == bl { b.bp } else { PARTITION_SPLIT };
+            bp = if b.bl == bl {
+                b.bp
+            } else {
+                BlockPartition::Split
+            };
         }
         let b = &dav1d_block_sizes[bl as usize][bp as usize];
 
         match bp {
-            PARTITION_NONE => {
+            BlockPartition::None => {
                 let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.o)?;
             }
-            PARTITION_H => {
+            BlockPartition::H => {
                 let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.h[0])?;
                 t.by += hsz;
                 decode_b(c, t, f, bl, b[0], bp, node.h[1])?;
                 t.by -= hsz;
             }
-            PARTITION_V => {
+            BlockPartition::V => {
                 let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz;
                 decode_b(c, t, f, bl, b[0], bp, node.v[1])?;
                 t.bx -= hsz;
             }
-            PARTITION_SPLIT => {
+            BlockPartition::Split => {
                 match bl.decrease() {
                     None => {
                         let tip = intra_edge.tip(sb128, edge_index);
@@ -3648,7 +3646,7 @@ unsafe fn decode_sb(
                     }
                 }
             }
-            PARTITION_T_TOP_SPLIT => {
+            BlockPartition::TopSplit => {
                 let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_TR_AND_BL)?;
                 t.bx += hsz;
@@ -3658,7 +3656,7 @@ unsafe fn decode_sb(
                 decode_b(c, t, f, bl, b[1], bp, node.h[1])?;
                 t.by -= hsz;
             }
-            PARTITION_T_BOTTOM_SPLIT => {
+            BlockPartition::BottomSplit => {
                 let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.h[0])?;
                 t.by += hsz;
@@ -3668,7 +3666,7 @@ unsafe fn decode_sb(
                 t.bx -= hsz;
                 t.by -= hsz;
             }
-            PARTITION_T_LEFT_SPLIT => {
+            BlockPartition::LeftSplit => {
                 let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, EdgeFlags::ALL_TR_AND_BL)?;
                 t.by += hsz;
@@ -3678,7 +3676,7 @@ unsafe fn decode_sb(
                 decode_b(c, t, f, bl, b[1], bp, node.v[1])?;
                 t.bx -= hsz;
             }
-            PARTITION_T_RIGHT_SPLIT => {
+            BlockPartition::RightSplit => {
                 let node = intra_edge.node(sb128, edge_index);
                 decode_b(c, t, f, bl, b[0], bp, node.v[0])?;
                 t.bx += hsz;
@@ -3688,7 +3686,7 @@ unsafe fn decode_sb(
                 t.by -= hsz;
                 t.bx -= hsz;
             }
-            PARTITION_H4 => {
+            BlockPartition::H4 => {
                 let branch = intra_edge.branch(sb128, edge_index);
                 let node = &branch.node;
                 decode_b(c, t, f, bl, b[0], bp, node.h[0])?;
@@ -3702,7 +3700,7 @@ unsafe fn decode_sb(
                 }
                 t.by -= hsz * 3 >> 1;
             }
-            PARTITION_V4 => {
+            BlockPartition::V4 => {
                 let branch = intra_edge.branch(sb128, edge_index);
                 let node = &branch.node;
                 decode_b(c, t, f, bl, b[0], bp, node.v[0])?;
@@ -3716,7 +3714,6 @@ unsafe fn decode_sb(
                 }
                 t.bx -= hsz * 3 >> 1;
             }
-            _ => unreachable!(),
         }
     } else if have_h_split {
         let is_split;
@@ -3724,16 +3721,16 @@ unsafe fn decode_sb(
             is_split = rav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl));
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
+                    "poc={},y={},x={},bl={:?},ctx={},bp={:?}: r={}",
                     frame_hdr.frame_offset,
                     t.by,
                     t.bx,
                     bl,
                     ctx,
                     if is_split {
-                        PARTITION_SPLIT
+                        BlockPartition::Split
                     } else {
-                        PARTITION_H
+                        BlockPartition::H
                     },
                     ts.msac.rng,
                 );
@@ -3749,14 +3746,14 @@ unsafe fn decode_sb(
 
         if is_split {
             let branch = intra_edge.branch(sb128, edge_index);
-            bp = PARTITION_SPLIT;
+            bp = BlockPartition::Split;
             decode_sb(c, t, f, next_bl, branch.split[0])?;
             t.bx += hsz;
             decode_sb(c, t, f, next_bl, branch.split[1])?;
             t.bx -= hsz;
         } else {
             let node = intra_edge.node(sb128, edge_index);
-            bp = PARTITION_H;
+            bp = BlockPartition::H;
             decode_b(
                 c,
                 t,
@@ -3777,16 +3774,16 @@ unsafe fn decode_sb(
             }
             if debug_block_info!(f, t) {
                 println!(
-                    "poc={},y={},x={},bl={:?},ctx={},bp={}: r={}",
+                    "poc={},y={},x={},bl={:?},ctx={},bp={:?}: r={}",
                     frame_hdr.frame_offset,
                     t.by,
                     t.bx,
                     bl,
                     ctx,
                     if is_split {
-                        PARTITION_SPLIT
+                        BlockPartition::Split
                     } else {
-                        PARTITION_V
+                        BlockPartition::V
                     },
                     ts.msac.rng,
                 );
@@ -3802,14 +3799,14 @@ unsafe fn decode_sb(
 
         if is_split {
             let branch = intra_edge.branch(sb128, edge_index);
-            bp = PARTITION_SPLIT;
+            bp = BlockPartition::Split;
             decode_sb(c, t, f, next_bl, branch.split[0])?;
             t.by += hsz;
             decode_sb(c, t, f, next_bl, branch.split[2])?;
             t.by -= hsz;
         } else {
             let node = intra_edge.node(sb128, edge_index);
-            bp = PARTITION_V;
+            bp = BlockPartition::V;
             decode_b(
                 c,
                 t,
@@ -3822,7 +3819,7 @@ unsafe fn decode_sb(
         }
     }
 
-    if t.frame_thread.pass != 2 && (bp != PARTITION_SPLIT || bl == BlockLevel::Bl8x8) {
+    if t.frame_thread.pass != 2 && (bp != BlockPartition::Split || bl == BlockLevel::Bl8x8) {
         CaseSet::<16, false>::many(
             [(&mut *t.a, 0), (&mut t.l, 1)],
             [hsz as usize; 2],
