@@ -2309,18 +2309,23 @@ unsafe fn decode_b_inner(
             *b.drl_idx_mut() = DrlProximity::Nearest;
             if b.inter_mode() == NEWMV_NEWMV {
                 if n_mvs > 1 {
-                    // NEARER, NEAR or NEARISH
+                    // NEARER or NEAR
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
-                    b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
+                    if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
-                    ));
-                    if b.drl_idx() == DrlProximity::Nearer && n_mvs > 2 {
-                        let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                        b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                        ));
+                    ) {
+                        *b.drl_idx_mut() = DrlProximity::Nearer;
+
+                        if n_mvs > 2 {
+                            let drl_ctx_v2 = get_drl_context(&mvstack, 1);
+                            if rav1d_msac_decode_bool_adapt(
+                                &mut ts.msac,
+                                &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                            ) {
+                                *b.drl_idx_mut() = DrlProximity::Near;
+                            }
+                        }
                     }
                     if debug_block_info!(f, t.b) {
                         println!(
@@ -2336,16 +2341,21 @@ unsafe fn decode_b_inner(
                 if n_mvs > 2 {
                     // NEAR or NEARISH
                     let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                    b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
+                    if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                    ));
-                    if b.drl_idx() == DrlProximity::Near && n_mvs > 3 {
-                        let drl_ctx_v3 = get_drl_context(&mvstack, 2);
-                        b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
-                        ));
+                    ) {
+                        *b.drl_idx_mut() = DrlProximity::Near;
+
+                        if n_mvs > 3 {
+                            let drl_ctx_v3 = get_drl_context(&mvstack, 2);
+                            if rav1d_msac_decode_bool_adapt(
+                                &mut ts.msac,
+                                &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
+                            ) {
+                                *b.drl_idx_mut() = DrlProximity::Nearish;
+                            }
+                        }
                     }
                     if debug_block_info!(f, t.b) {
                         println!(
@@ -2607,17 +2617,22 @@ unsafe fn decode_b_inner(
                         if n_mvs > 2 {
                             // NEARER, NEAR or NEARISH
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                            b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
+                            if rav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                            ));
-                            if b.drl_idx() == DrlProximity::Near && n_mvs > 3 {
-                                // NEAR or NEARISH
-                                let drl_ctx_v3 = get_drl_context(&mvstack, 2);
-                                b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
-                                    &mut ts.msac,
-                                    &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
-                                ));
+                            ) {
+                                *b.drl_idx_mut() = DrlProximity::Near;
+
+                                if n_mvs > 3 {
+                                    // NEAR or NEARISH
+                                    let drl_ctx_v3 = get_drl_context(&mvstack, 2);
+                                    if rav1d_msac_decode_bool_adapt(
+                                        &mut ts.msac,
+                                        &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
+                                    ) {
+                                        *b.drl_idx_mut() = DrlProximity::Nearish;
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -2648,17 +2663,22 @@ unsafe fn decode_b_inner(
                 if n_mvs > 1 {
                     // NEARER, NEAR or NEARISH
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
-                    b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
+                    if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
-                    ));
-                    if b.drl_idx() == DrlProximity::Nearer && n_mvs > 2 {
-                        // NEAR or NEARISH
-                        let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                        b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                        ));
+                    ) {
+                        *b.drl_idx_mut() = DrlProximity::Nearer;
+
+                        if n_mvs > 2 {
+                            // NEAR or NEARISH
+                            let drl_ctx_v2 = get_drl_context(&mvstack, 1);
+                            if rav1d_msac_decode_bool_adapt(
+                                &mut ts.msac,
+                                &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                            ) {
+                                *b.drl_idx_mut() = DrlProximity::Near;
+                            }
+                        }
                     }
                 }
                 if n_mvs > 1 {
