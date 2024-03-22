@@ -204,19 +204,6 @@ pub enum DrlProximity {
     Nearish = 3,
 }
 
-impl DrlProximity {
-    pub fn increment_if(&mut self, increment: bool) {
-        if increment {
-            *self = match *self {
-                Self::Nearest => Self::Nearer,
-                Self::Nearer => Self::Near,
-                Self::Near => Self::Nearish,
-                Self::Nearish => Self::Nearish,
-            }
-        }
-    }
-}
-
 pub type CompInterPredMode = u8;
 pub const N_COMP_INTER_PRED_MODES: usize = 8;
 pub const NEWMV_NEWMV: CompInterPredMode = 7;
