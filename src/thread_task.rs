@@ -73,9 +73,19 @@ unsafe fn rav1d_set_thread_name(name: *const c_char) {
 /// this special case.
 #[inline]
 unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint) -> c_int {
+    unsafe fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: u32) -> c_int {
+        let mut i: c_uint = ttd.cur.load(Ordering::Relaxed);
+        while i < c.n_fc {
+            (*(*(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize))
+                .task_thread
+                .tasks())
+            .cur_prev = None;
+            i = i + 1;
+        }
+        return 1;
+    }
     let min_frame_idx: c_uint;
     let cur_frame_idx: c_uint;
-    let current_block: u64;
     let first = ttd.first.load(Ordering::SeqCst);
     let mut reset_frame_idx: c_uint = ttd.reset_task_cur.swap(u32::MAX, Ordering::SeqCst);
     if reset_frame_idx < first {
@@ -96,55 +106,39 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
             }
             ttd.cur
                 .store(reset_frame_idx.wrapping_sub(first), Ordering::Relaxed);
-            current_block = 12921688021154394536;
-        } else {
-            current_block = 5399440093318478209;
+            return curr_found(c, ttd, first);
         }
     } else {
         if frame_idx == u32::MAX {
             return 0 as c_int;
         }
-        current_block = 5399440093318478209;
     }
-    match current_block {
-        5399440093318478209 => {
-            if frame_idx < first {
-                frame_idx = frame_idx.wrapping_add(c.n_fc);
-            }
-            min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
-            cur_frame_idx = first.wrapping_add(ttd.cur.load(Ordering::Relaxed));
-            if ttd.cur.load(Ordering::Relaxed) < c.n_fc && cur_frame_idx < min_frame_idx {
-                return 0 as c_int;
-            }
-            ttd.cur
-                .store(min_frame_idx.wrapping_sub(first), Ordering::Relaxed);
-            while ttd.cur.load(Ordering::Relaxed) < c.n_fc {
-                if (*(*(c.fc).offset(
-                    first
-                        .wrapping_add(ttd.cur.load(Ordering::Relaxed))
-                        .wrapping_rem(c.n_fc) as isize,
-                ))
-                .task_thread
-                .tasks())
-                .head
-                .is_some()
-                {
-                    break;
-                }
-                ttd.cur.fetch_add(1, Ordering::Relaxed);
-            }
+    if frame_idx < first {
+        frame_idx = frame_idx.wrapping_add(c.n_fc);
+    }
+    min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
+    cur_frame_idx = first.wrapping_add(ttd.cur.load(Ordering::Relaxed));
+    if ttd.cur.load(Ordering::Relaxed) < c.n_fc && cur_frame_idx < min_frame_idx {
+        return 0 as c_int;
+    }
+    ttd.cur
+        .store(min_frame_idx.wrapping_sub(first), Ordering::Relaxed);
+    while ttd.cur.load(Ordering::Relaxed) < c.n_fc {
+        if (*(*(c.fc).offset(
+            first
+                .wrapping_add(ttd.cur.load(Ordering::Relaxed))
+                .wrapping_rem(c.n_fc) as isize,
+        ))
+        .task_thread
+        .tasks())
+        .head
+        .is_some()
+        {
+            break;
         }
-        _ => {}
+        ttd.cur.fetch_add(1, Ordering::Relaxed);
     }
-    let mut i: c_uint = ttd.cur.load(Ordering::Relaxed);
-    while i < c.n_fc {
-        (*(*(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize))
-            .task_thread
-            .tasks())
-        .cur_prev = None;
-        i = i.wrapping_add(1);
-    }
-    return 1 as c_int;
+    return curr_found(c, ttd, first);
 }
 
 #[inline]
@@ -208,73 +202,66 @@ unsafe fn insert_tasks(
     last: Rav1dTaskIndex,
     cond_signal: c_int,
 ) {
+    // insert task back into task queue
     let tasks = &*f.task_thread.tasks();
     let mut prev_t = None;
-    let mut current_block_34: u64;
     let mut maybe_t = tasks.head;
     while let Some(t) = maybe_t {
-        if tasks[t].type_0 == TaskType::TileEntropy {
-            if tasks[first].type_0 > TaskType::TileEntropy {
-                current_block_34 = 11174649648027449784;
-            } else if tasks[first].sby > tasks[t].sby {
-                current_block_34 = 11174649648027449784;
-            } else {
+        'next: {
+            // entropy coding precedes other steps
+            if tasks[t].type_0 == TaskType::TileEntropy {
+                if tasks[first].type_0 > TaskType::TileEntropy {
+                    break 'next;
+                }
+                // both are entropy
+                if tasks[first].sby > tasks[t].sby {
+                    break 'next;
+                }
                 if tasks[first].sby < tasks[t].sby {
                     insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                     return;
                 }
-                current_block_34 = 15904375183555213903;
+                // same sby
+            } else {
+                if tasks[first].type_0 == TaskType::TileEntropy {
+                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
+                    return;
+                }
+                if tasks[first].sby > tasks[t].sby {
+                    break 'next;
+                }
+                if tasks[first].sby < tasks[t].sby {
+                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
+                    return;
+                }
+                // same sby
+                if tasks[first].type_0 > tasks[t].type_0 {
+                    break 'next;
+                }
+                if (tasks[first].type_0) < tasks[t].type_0 {
+                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
+                    return;
+                }
+                // same task type
             }
-        } else {
-            if tasks[first].type_0 == TaskType::TileEntropy {
+
+            // sort by tile-id
+            assert!(
+                tasks[first].type_0 == TaskType::TileReconstruction
+                    || tasks[first].type_0 == TaskType::TileEntropy
+            );
+            assert!(tasks[first].type_0 == tasks[t].type_0);
+            assert!(tasks[t].sby == tasks[first].sby);
+            let p = tasks[first].type_0 == TaskType::TileEntropy;
+            let t_tile_idx = first - tasks.tile_tasks[p as usize].unwrap();
+            let p_tile_idx = t - tasks.tile_tasks[p as usize].unwrap();
+            assert!(t_tile_idx != p_tile_idx);
+            if !(t_tile_idx > p_tile_idx) {
                 insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                 return;
             }
-            if tasks[first].sby > tasks[t].sby {
-                current_block_34 = 11174649648027449784;
-            } else {
-                if tasks[first].sby < tasks[t].sby {
-                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                    return;
-                }
-                if tasks[first].type_0 as c_uint > tasks[t].type_0 as c_uint {
-                    current_block_34 = 11174649648027449784;
-                } else {
-                    if (tasks[first].type_0 as c_uint) < tasks[t].type_0 as c_uint {
-                        insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                        return;
-                    }
-                    current_block_34 = 15904375183555213903;
-                }
-            }
         }
-        match current_block_34 {
-            15904375183555213903 => {
-                if !matches!(
-                    tasks[first].type_0,
-                    TaskType::TileReconstruction | TaskType::TileEntropy
-                ) {
-                    unreachable!();
-                }
-                if !(tasks[first].type_0 == tasks[t].type_0) {
-                    unreachable!();
-                }
-                if !(tasks[t].sby == tasks[first].sby) {
-                    unreachable!();
-                }
-                let p = tasks[first].type_0 == TaskType::TileEntropy;
-                let t_tile_idx = first - tasks.tile_tasks[p as usize].unwrap();
-                let p_tile_idx = t - tasks.tile_tasks[p as usize].unwrap();
-                if !(t_tile_idx != p_tile_idx) {
-                    unreachable!();
-                }
-                if !(t_tile_idx > p_tile_idx) {
-                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                    return;
-                }
-            }
-            _ => {}
-        }
+        // next:
         prev_t = Some(t);
         maybe_t = tasks[t].next;
     }
@@ -513,20 +500,21 @@ unsafe fn check_tile(t_idx: Rav1dTaskIndex, f: &Rav1dFrameData, frame_mt: c_int)
     let ts: *mut Rav1dTileState = &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
     let p1 = (*ts).progress[tp as usize].load(Ordering::SeqCst);
     if p1 < t.sby {
-        return 1 as c_int;
+        return 1;
     }
     let mut error = (p1 == TILE_ERROR) as c_int;
     error |= f.task_thread.error.fetch_or(error, Ordering::SeqCst);
     if error == 0 && frame_mt != 0 && !tp {
         let p2 = (*ts).progress[1].load(Ordering::SeqCst);
         if p2 <= (*t).sby {
-            return 1 as c_int;
+            return 1;
         }
         error = (p2 == TILE_ERROR) as c_int;
         error |= f.task_thread.error.fetch_or(error, Ordering::SeqCst);
     }
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if error == 0 && frame_mt != 0 && !frame_hdr.frame_type.is_key_or_intra() {
+        // check reference state
         let p: *const Rav1dThreadPicture = &f.sr_cur;
         let ss_ver =
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
@@ -534,50 +522,45 @@ unsafe fn check_tile(t_idx: Rav1dTaskIndex, f: &Rav1dFrameData, frame_mt: c_int)
         let tile_sby = (*t).sby - ((*ts).tiling.row_start >> f.sb_shift);
         let lowest_px: *const [c_int; 2] =
             (*((*ts).lowest_pixel).offset(tile_sby as isize)).as_mut_ptr() as *const [c_int; 2];
-        let mut current_block_14: u64;
-        let mut n = (*t).deps_skip;
-        while n < 7 {
-            let mut lowest: c_uint = 0;
-            if tp {
-                lowest = p_b;
-                current_block_14 = 2370887241019905314;
-            } else {
-                let y = if (*lowest_px.offset(n as isize))[0] == i32::MIN {
-                    i32::MIN
+        for n in t.deps_skip..7 {
+            'next: {
+                let lowest = if tp {
+                    // if temporal mv refs are disabled, we only need this
+                    // for the primary ref; if segmentation is disabled, we
+                    // don't even need that
+                    p_b
                 } else {
-                    (*lowest_px.offset(n as isize))[0] + 8
-                };
-                let uv = if (*lowest_px.offset(n as isize))[1] == i32::MIN {
-                    i32::MIN
-                } else {
-                    (*lowest_px.offset(n as isize))[1] * ((1 as c_int) << ss_ver) + 8
-                };
-                let max = cmp::max(y, uv);
-                if max == i32::MIN {
-                    current_block_14 = 7651349459974463963;
-                } else {
-                    lowest = iclip(max, 1 as c_int, f.refp[n as usize].p.p.h) as c_uint;
-                    current_block_14 = 2370887241019905314;
-                }
-            }
-            match current_block_14 {
-                2370887241019905314 => {
-                    let p3 = f.refp[n as usize].progress.as_ref().unwrap()[!tp as usize]
-                        .load(Ordering::SeqCst);
-                    if p3 < lowest {
-                        return 1 as c_int;
+                    // +8 is postfilter-induced delay
+                    let y = if (*lowest_px.offset(n as isize))[0] == i32::MIN {
+                        i32::MIN
+                    } else {
+                        (*lowest_px.offset(n as isize))[0] + 8
+                    };
+                    let uv = if (*lowest_px.offset(n as isize))[1] == i32::MIN {
+                        i32::MIN
+                    } else {
+                        (*lowest_px.offset(n as isize))[1] * (1 << ss_ver) + 8
+                    };
+                    let max = cmp::max(y, uv);
+                    if max == i32::MIN {
+                        break 'next;
                     }
-                    f.task_thread
-                        .error
-                        .fetch_or((p3 == FRAME_ERROR) as c_int, Ordering::SeqCst);
+                    iclip(max, 1 as c_int, f.refp[n as usize].p.p.h) as c_uint
+                };
+                let p3 = f.refp[n as usize].progress.as_ref().unwrap()[!tp as usize]
+                    .load(Ordering::SeqCst);
+                if p3 < lowest {
+                    return 1;
                 }
-                _ => {}
+                f.task_thread
+                    .error
+                    .fetch_or((p3 == FRAME_ERROR) as c_int, Ordering::SeqCst);
             }
-            n += 1;
+            // next:
             tasks[t_idx].deps_skip += 1;
         }
     }
-    return 0 as c_int;
+    return 0;
 }
 
 #[inline]
