@@ -2151,7 +2151,7 @@ unsafe fn decode_b_inner(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             rav1d_create_lf_mask_intra(
-                &mut *t.lf_mask,
+                &mut f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
                 &lflvl[b.seg_id as usize],
@@ -3170,7 +3170,7 @@ unsafe fn decode_b_inner(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             rav1d_create_lf_mask_inter(
-                &mut *t.lf_mask,
+                &mut f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
                 // In C, the inner dimensions (`ref`, `is_gmv`) are offset,
@@ -3269,8 +3269,8 @@ unsafe fn decode_b_inner(
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
-        for noskip_mask in
-            &mut (*t.lf_mask).noskip_mask[by4 as usize >> 1..][..(bh4 as usize + 1) / 2]
+        for noskip_mask in &mut f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
+            [..(bh4 as usize + 1) / 2]
         {
             noskip_mask[bx_idx as usize] |= mask as u16;
             if bw4 == 32 {
@@ -4188,13 +4188,13 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     t.pal_sz_uv[1] = Default::default();
     let sb128y = t.by >> 5;
     t.a = f.a.offset((col_sb128_start + tile_row * f.sb128w) as isize);
-    t.lf_mask = f.lf.mask[(sb128y * f.sb128w + col_sb128_start) as usize..].as_mut_ptr();
+    t.lf_mask = Some((sb128y * f.sb128w + col_sb128_start) as usize);
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.bx = bx;
         if c.flush.load(Ordering::Acquire) != 0 {
             return Err(());
         }
-        let cdef_idx = &mut (*t.lf_mask).cdef_idx;
+        let cdef_idx = &mut f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
         if root_bl == BlockLevel::Bl128x128 {
             *cdef_idx = [-1; 4];
             t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
@@ -4269,7 +4269,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
         if t.bx & 16 != 0 || f.seq_hdr().sb128 != 0 {
             t.a = (t.a).offset(1);
-            t.lf_mask = (t.lf_mask).offset(1);
+            t.lf_mask = t.lf_mask.map(|i| i + 1);
         }
     }
 
