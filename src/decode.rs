@@ -80,6 +80,7 @@ use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
 use crate::src::levels::CompInterType;
+use crate::src::levels::DrlProximity;
 use crate::src::levels::Filter2d;
 use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
@@ -92,13 +93,9 @@ use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
-use crate::src::levels::NEARER_DRL;
 use crate::src::levels::NEARESTMV;
 use crate::src::levels::NEARESTMV_NEARESTMV;
-use crate::src::levels::NEAREST_DRL;
-use crate::src::levels::NEARISH_DRL;
 use crate::src::levels::NEARMV;
-use crate::src::levels::NEAR_DRL;
 use crate::src::levels::NEWMV;
 use crate::src::levels::NEWMV_NEWMV;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
@@ -2168,7 +2165,7 @@ unsafe fn decode_b_inner(
             ];
             *b.comp_type_mut() = Some(CompInterType::Avg);
             *b.inter_mode_mut() = NEARESTMV_NEARESTMV;
-            *b.drl_idx_mut() = NEAREST_DRL;
+            *b.drl_idx_mut() = DrlProximity::Nearest;
             has_subpel_filter = false;
 
             let mut mvstack = [Default::default(); 8];
@@ -2309,25 +2306,25 @@ unsafe fn decode_b_inner(
             }
 
             let im = &dav1d_comp_inter_pred_modes[b.inter_mode() as usize];
-            *b.drl_idx_mut() = NEAREST_DRL;
+            *b.drl_idx_mut() = DrlProximity::Nearest;
             if b.inter_mode() == NEWMV_NEWMV {
                 if n_mvs > 1 {
                     // NEARER, NEAR or NEARISH
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
-                    *b.drl_idx_mut() += rav1d_msac_decode_bool_adapt(
+                    b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
-                    ) as u8;
-                    if b.drl_idx() == NEARER_DRL && n_mvs > 2 {
+                    ));
+                    if b.drl_idx() == DrlProximity::Nearer && n_mvs > 2 {
                         let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                        *b.drl_idx_mut() += rav1d_msac_decode_bool_adapt(
+                        b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                        ) as u8;
+                        ));
                     }
                     if debug_block_info!(f, t.b) {
                         println!(
-                            "Post-drlidx[{},n_mvs={}]: r={}",
+                            "Post-drlidx[{:?},n_mvs={}]: r={}",
                             b.drl_idx(),
                             n_mvs,
                             ts.msac.rng,
@@ -2335,24 +2332,24 @@ unsafe fn decode_b_inner(
                     }
                 }
             } else if im[0] == NEARMV || im[1] == NEARMV {
-                *b.drl_idx_mut() = NEARER_DRL;
+                *b.drl_idx_mut() = DrlProximity::Nearer;
                 if n_mvs > 2 {
                     // NEAR or NEARISH
                     let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                    *b.drl_idx_mut() += rav1d_msac_decode_bool_adapt(
+                    b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                    ) as u8;
-                    if b.drl_idx() == NEAR_DRL && n_mvs > 3 {
+                    ));
+                    if b.drl_idx() == DrlProximity::Near && n_mvs > 3 {
                         let drl_ctx_v3 = get_drl_context(&mvstack, 2);
-                        *b.drl_idx_mut() += rav1d_msac_decode_bool_adapt(
+                        b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
-                        ) as u8;
+                        ));
                     }
                     if debug_block_info!(f, t.b) {
                         println!(
-                            "Post-drlidx[{},n_mvs={}]: r={}",
+                            "Post-drlidx[{:?},n_mvs={}]: r={}",
                             b.drl_idx(),
                             n_mvs,
                             ts.msac.rng,
@@ -2360,7 +2357,6 @@ unsafe fn decode_b_inner(
                     }
                 }
             }
-            assert!(b.drl_idx() >= NEAREST_DRL && b.drl_idx() <= NEARISH_DRL);
 
             has_subpel_filter = cmp::min(bw4, bh4) == 1 || b.inter_mode() != GLOBALMV_GLOBALMV;
             let mut assign_comp_mv = |idx: usize| match im[idx] {
@@ -2607,39 +2603,36 @@ unsafe fn decode_b_inner(
                     ) {
                         // NEAREST, NEARER, NEAR or NEARISH
                         *b.inter_mode_mut() = NEARMV;
-                        *b.drl_idx_mut() = NEARER_DRL;
+                        *b.drl_idx_mut() = DrlProximity::Nearer;
                         if n_mvs > 2 {
                             // NEARER, NEAR or NEARISH
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                            *b.drl_idx_mut() = b.drl_idx()
-                                + rav1d_msac_decode_bool_adapt(
-                                    &mut ts.msac,
-                                    &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                                ) as u8;
-                            if b.drl_idx() == NEAR_DRL && n_mvs > 3 {
+                            b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
+                                &mut ts.msac,
+                                &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                            ));
+                            if b.drl_idx() == DrlProximity::Near && n_mvs > 3 {
                                 // NEAR or NEARISH
                                 let drl_ctx_v3 = get_drl_context(&mvstack, 2);
-                                *b.drl_idx_mut() = b.drl_idx()
-                                    + rav1d_msac_decode_bool_adapt(
-                                        &mut ts.msac,
-                                        &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
-                                    ) as u8;
+                                b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
+                                    &mut ts.msac,
+                                    &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
+                                ));
                             }
                         }
                     } else {
                         *b.inter_mode_mut() = NEARESTMV as u8;
-                        *b.drl_idx_mut() = NEAREST_DRL;
+                        *b.drl_idx_mut() = DrlProximity::Nearest;
                     }
-                    assert!(b.drl_idx() >= NEAREST_DRL && b.drl_idx() <= NEARISH_DRL);
                     b.mv_mut()[0] = mvstack[b.drl_idx() as usize].mv.mv[0];
-                    if b.drl_idx() < NEAR_DRL {
+                    if b.drl_idx() < DrlProximity::Near {
                         fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                     }
                 }
 
                 if debug_block_info!(f, t.b) {
                     println!(
-                        "Post-intermode[{},drl={},mv=y:{},x:{},n_mvs={}]: r={}",
+                        "Post-intermode[{},drl={:?},mv=y:{},x:{},n_mvs={}]: r={}",
                         b.inter_mode(),
                         b.drl_idx(),
                         b.mv()[0].y,
@@ -2651,36 +2644,33 @@ unsafe fn decode_b_inner(
             } else {
                 has_subpel_filter = true;
                 *b.inter_mode_mut() = NEWMV;
-                *b.drl_idx_mut() = NEAREST_DRL;
+                *b.drl_idx_mut() = DrlProximity::Nearest;
                 if n_mvs > 1 {
                     // NEARER, NEAR or NEARISH
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
-                    *b.drl_idx_mut() = b.drl_idx()
-                        + rav1d_msac_decode_bool_adapt(
-                            &mut ts.msac,
-                            &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
-                        ) as u8;
-                    if b.drl_idx() == NEARER_DRL && n_mvs > 2 {
+                    b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
+                    ));
+                    if b.drl_idx() == DrlProximity::Nearer && n_mvs > 2 {
                         // NEAR or NEARISH
                         let drl_ctx_v2 = get_drl_context(&mvstack, 1);
-                        *b.drl_idx_mut() = b.drl_idx()
-                            + rav1d_msac_decode_bool_adapt(
-                                &mut ts.msac,
-                                &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
-                            ) as u8;
+                        b.drl_idx_mut().increment_if(rav1d_msac_decode_bool_adapt(
+                            &mut ts.msac,
+                            &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
+                        ));
                     }
                 }
-                assert!(b.drl_idx() >= NEAREST_DRL && b.drl_idx() <= NEARISH_DRL);
                 if n_mvs > 1 {
                     b.mv_mut()[0] = mvstack[b.drl_idx() as usize].mv.mv[0];
                 } else {
-                    assert!(b.drl_idx() == 0);
+                    assert_eq!(b.drl_idx(), DrlProximity::Nearest);
                     b.mv_mut()[0] = mvstack[0].mv.mv[0];
                     fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                 }
                 if debug_block_info!(f, t.b) {
                     println!(
-                        "Post-intermode[{},drl={}]: r={}",
+                        "Post-intermode[{},drl={:?}]: r={}",
                         b.inter_mode(),
                         b.drl_idx(),
                         ts.msac.rng,
