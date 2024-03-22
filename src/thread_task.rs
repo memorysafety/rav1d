@@ -10,7 +10,6 @@ use crate::src::decode::rav1d_decode_frame_exit;
 use crate::src::decode::rav1d_decode_frame_init;
 use crate::src::decode::rav1d_decode_frame_init_cdf;
 use crate::src::decode::rav1d_decode_tile_sbrow;
-use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
@@ -18,25 +17,20 @@ use crate::src::fg_apply::rav1d_apply_grain_row;
 use crate::src::fg_apply::rav1d_prep_grain;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
-use crate::src::internal::Rav1dTask;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
+use crate::src::internal::Rav1dTaskIndex;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskThreadData_delayed_fg;
 use crate::src::internal::TaskType;
 use crate::src::picture::Rav1dThreadPicture;
-use libc::memset;
-use libc::realloc;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
-use std::ffi::c_long;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 use std::mem;
 use std::process::abort;
-use std::ptr;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
@@ -91,7 +85,7 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
         reset_frame_idx = u32::MAX;
     }
     if ttd.cur.load(Ordering::Relaxed) == 0
-        && ((*(c.fc).offset(first as isize)).task_thread.task_cur_prev).is_null()
+        && ((*(*(c.fc).offset(first as isize)).task_thread.tasks()).cur_prev).is_none()
     {
         return 0 as c_int;
     }
@@ -125,14 +119,15 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
             ttd.cur
                 .store(min_frame_idx.wrapping_sub(first), Ordering::Relaxed);
             while ttd.cur.load(Ordering::Relaxed) < c.n_fc {
-                if !((*(c.fc).offset(
+                if (*(*(c.fc).offset(
                     first
                         .wrapping_add(ttd.cur.load(Ordering::Relaxed))
                         .wrapping_rem(c.n_fc) as isize,
                 ))
                 .task_thread
-                .task_head)
-                    .is_null()
+                .tasks())
+                .head
+                .is_some()
                 {
                     break;
                 }
@@ -143,10 +138,10 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
     }
     let mut i: c_uint = ttd.cur.load(Ordering::Relaxed);
     while i < c.n_fc {
-        let ref mut fresh0 = (*(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize))
+        (*(*(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize))
             .task_thread
-            .task_cur_prev;
-        *fresh0 = 0 as *mut Rav1dTask;
+            .tasks())
+        .cur_prev = None;
         i = i.wrapping_add(1);
     }
     return 1 as c_int;
@@ -178,30 +173,29 @@ unsafe fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_fr
 
 unsafe fn insert_tasks_between(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
-    first: *mut Rav1dTask,
-    last: *mut Rav1dTask,
-    a: *mut Rav1dTask,
-    b: *mut Rav1dTask,
+    f: &Rav1dFrameData,
+    first: Rav1dTaskIndex,
+    last: Rav1dTaskIndex,
+    a: Option<Rav1dTaskIndex>,
+    b: Option<Rav1dTaskIndex>,
     cond_signal: c_int,
 ) {
     let ttd: &TaskThreadData = &*f.task_thread.ttd;
     if c.flush.load(Ordering::SeqCst) != 0 {
         return;
     }
-    if !(a.is_null() || (*a).next == b) {
-        unreachable!();
-    }
-    if a.is_null() {
-        f.task_thread.task_head = first;
+    let tasks = &mut *f.task_thread.tasks();
+    if let Some(a) = a {
+        assert_eq!(tasks[a].next, b);
+        tasks[a].next = Some(first);
     } else {
-        (*a).next = first;
+        tasks.head = Some(first);
     }
-    if b.is_null() {
-        f.task_thread.task_tail = last;
+    if b.is_none() {
+        tasks.tail = Some(last);
     }
-    (*last).next = b;
-    reset_task_cur(c, ttd, (*first).frame_idx);
+    tasks[last].next = b;
+    reset_task_cur(c, ttd, tasks[first].frame_idx);
     if cond_signal != 0 && ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
         ttd.cond.notify_one();
     }
@@ -209,45 +203,45 @@ unsafe fn insert_tasks_between(
 
 unsafe fn insert_tasks(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
-    first: *mut Rav1dTask,
-    last: *mut Rav1dTask,
+    f: &Rav1dFrameData,
+    first: Rav1dTaskIndex,
+    last: Rav1dTaskIndex,
     cond_signal: c_int,
 ) {
-    let mut t_ptr: *mut Rav1dTask;
-    let mut prev_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
+    let tasks = &*f.task_thread.tasks();
+    let mut prev_t = None;
     let mut current_block_34: u64;
-    t_ptr = f.task_thread.task_head;
-    while !t_ptr.is_null() {
-        if (*t_ptr).type_0 == TaskType::TileEntropy {
-            if (*first).type_0 > TaskType::TileEntropy {
+    let mut maybe_t = tasks.head;
+    while let Some(t) = maybe_t {
+        if tasks[t].type_0 == TaskType::TileEntropy {
+            if tasks[first].type_0 > TaskType::TileEntropy {
                 current_block_34 = 11174649648027449784;
-            } else if (*first).sby > (*t_ptr).sby {
+            } else if tasks[first].sby > tasks[t].sby {
                 current_block_34 = 11174649648027449784;
             } else {
-                if (*first).sby < (*t_ptr).sby {
-                    insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
+                if tasks[first].sby < tasks[t].sby {
+                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                     return;
                 }
                 current_block_34 = 15904375183555213903;
             }
         } else {
-            if (*first).type_0 == TaskType::TileEntropy {
-                insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
+            if tasks[first].type_0 == TaskType::TileEntropy {
+                insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                 return;
             }
-            if (*first).sby > (*t_ptr).sby {
+            if tasks[first].sby > tasks[t].sby {
                 current_block_34 = 11174649648027449784;
             } else {
-                if (*first).sby < (*t_ptr).sby {
-                    insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
+                if tasks[first].sby < tasks[t].sby {
+                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                     return;
                 }
-                if (*first).type_0 as c_uint > (*t_ptr).type_0 as c_uint {
+                if tasks[first].type_0 as c_uint > tasks[t].type_0 as c_uint {
                     current_block_34 = 11174649648027449784;
                 } else {
-                    if ((*first).type_0 as c_uint) < (*t_ptr).type_0 as c_uint {
-                        insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
+                    if (tasks[first].type_0 as c_uint) < tasks[t].type_0 as c_uint {
+                        insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                         return;
                     }
                     current_block_34 = 15904375183555213903;
@@ -257,75 +251,70 @@ unsafe fn insert_tasks(
         match current_block_34 {
             15904375183555213903 => {
                 if !matches!(
-                    (*first).type_0,
+                    tasks[first].type_0,
                     TaskType::TileReconstruction | TaskType::TileEntropy
                 ) {
                     unreachable!();
                 }
-                if !((*first).type_0 == (*t_ptr).type_0) {
+                if !(tasks[first].type_0 == tasks[t].type_0) {
                     unreachable!();
                 }
-                if !((*t_ptr).sby == (*first).sby) {
+                if !(tasks[t].sby == tasks[first].sby) {
                     unreachable!();
                 }
-                let p = (*first).type_0 == TaskType::TileEntropy;
-                let t_tile_idx =
-                    first.offset_from(f.task_thread.tile_tasks[p as usize]) as c_long as c_int;
-                let p_tile_idx =
-                    t_ptr.offset_from(f.task_thread.tile_tasks[p as usize]) as c_long as c_int;
+                let p = tasks[first].type_0 == TaskType::TileEntropy;
+                let t_tile_idx = first - tasks.tile_tasks[p as usize].unwrap();
+                let p_tile_idx = t - tasks.tile_tasks[p as usize].unwrap();
                 if !(t_tile_idx != p_tile_idx) {
                     unreachable!();
                 }
                 if !(t_tile_idx > p_tile_idx) {
-                    insert_tasks_between(c, f, first, last, prev_t, t_ptr, cond_signal);
+                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                     return;
                 }
             }
             _ => {}
         }
-        prev_t = t_ptr;
-        t_ptr = (*t_ptr).next;
+        prev_t = Some(t);
+        maybe_t = tasks[t].next;
     }
-    insert_tasks_between(c, f, first, last, prev_t, 0 as *mut Rav1dTask, cond_signal);
+    insert_tasks_between(c, f, first, last, prev_t, None, cond_signal);
 }
 
 #[inline]
-unsafe fn insert_task(
-    c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
-    t: *mut Rav1dTask,
-    cond_signal: c_int,
-) {
+unsafe fn insert_task(c: &Rav1dContext, f: &Rav1dFrameData, t: Rav1dTaskIndex, cond_signal: c_int) {
     insert_tasks(c, f, t, t, cond_signal);
 }
 
 #[inline]
-unsafe fn add_pending(f: &Rav1dFrameData, t: *mut Rav1dTask) {
+unsafe fn add_pending(f: &Rav1dFrameData, t: Rav1dTaskIndex) {
+    let tasks = &mut *f.task_thread.tasks();
     let mut pending_tasks = f.task_thread.pending_tasks.lock().unwrap();
-    (*t).next = 0 as *mut Rav1dTask;
-    if pending_tasks.head.is_null() {
-        pending_tasks.head = t;
+    tasks[t].next = None;
+    if pending_tasks.head.is_none() {
+        pending_tasks.head = Some(t);
     } else {
-        (*pending_tasks.tail).next = t;
+        tasks[pending_tasks.tail.unwrap()].next = Some(t);
     }
-    pending_tasks.tail = t;
+    pending_tasks.tail = Some(t);
     f.task_thread.pending_tasks_merge.store(1, Ordering::SeqCst);
 }
 
 #[inline]
-unsafe fn merge_pending_frame(c: &Rav1dContext, f: &mut Rav1dFrameData) -> c_int {
+unsafe fn merge_pending_frame(c: &Rav1dContext, f: &Rav1dFrameData) -> c_int {
+    let tasks = &*f.task_thread.tasks();
     let merge = f.task_thread.pending_tasks_merge.load(Ordering::SeqCst);
     if merge != 0 {
-        let mut t = {
+        let mut next_t = {
             let mut pending_tasks = f.task_thread.pending_tasks.lock().unwrap();
             let old_head = mem::take(&mut *pending_tasks).head;
             f.task_thread.pending_tasks_merge.store(0, Ordering::SeqCst);
             old_head
         };
-        while !t.is_null() {
-            let tmp: *mut Rav1dTask = (*t).next;
+        while let Some(t) = next_t {
+            let tmp = tasks[t].next;
             insert_task(c, f, t, 0 as c_int);
-            t = tmp;
+            next_t = tmp;
         }
     }
     return merge;
@@ -346,8 +335,7 @@ unsafe fn create_filter_sbrow(
     c: &Rav1dContext,
     f: &mut Rav1dFrameData,
     pass: c_int,
-    res_t: *mut *mut Rav1dTask,
-) -> c_int {
+) -> Rav1dResult<Rav1dTaskIndex> {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let has_deblock =
         (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0) as c_int;
@@ -355,20 +343,11 @@ unsafe fn create_filter_sbrow(
     let has_cdef = seq_hdr.cdef;
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let has_lr = f.lf.restore_planes;
-    let mut tasks: *mut Rav1dTask = f.task_thread.tasks;
+    let tasks = &mut *f.task_thread.tasks();
     let uses_2pass = (c.n_fc > 1 as c_uint) as c_int;
-    let num_tasks = f.sbh * (1 + uses_2pass);
-    if num_tasks > f.task_thread.num_tasks {
-        let size: usize = (::core::mem::size_of::<Rav1dTask>()).wrapping_mul(num_tasks as usize);
-        tasks = realloc(f.task_thread.tasks as *mut c_void, size) as *mut Rav1dTask;
-        if tasks.is_null() {
-            return -(1 as c_int);
-        }
-        memset(tasks as *mut c_void, 0 as c_int, size);
-        f.task_thread.tasks = tasks;
-        f.task_thread.num_tasks = num_tasks;
-    }
-    tasks = tasks.offset((f.sbh * (pass & 1)) as isize);
+    let num_tasks = (f.sbh * (1 + uses_2pass)) as usize;
+    tasks.grow_tasks(num_tasks);
+    let task_idx = Rav1dTaskIndex::Task((f.sbh * (pass & 1)) as usize);
     if pass & 1 != 0 {
         f.frame_thread_progress.entropy = AtomicI32::new(0);
     } else {
@@ -384,11 +363,11 @@ unsafe fn create_filter_sbrow(
         f.frame_thread_progress.deblock.store(0, Ordering::SeqCst);
     }
     f.frame_thread.next_tile_row[(pass & 1) as usize] = 0 as c_int;
-    let t: *mut Rav1dTask = &mut *tasks.offset(0) as *mut Rav1dTask;
-    (*t).sby = 0 as c_int;
-    (*t).recon_progress = 1 as c_int;
-    (*t).deblock_progress = 0 as c_int;
-    (*t).type_0 = if pass == 1 {
+    let t = &mut tasks[task_idx];
+    t.sby = 0 as c_int;
+    t.recon_progress = 1 as c_int;
+    t.deblock_progress = 0 as c_int;
+    t.type_0 = if pass == 1 {
         TaskType::EntropyProgress
     } else if has_deblock != 0 {
         TaskType::DeblockCols
@@ -399,9 +378,8 @@ unsafe fn create_filter_sbrow(
     } else {
         TaskType::ReconstructionProgress
     };
-    (*t).frame_idx = f.index as c_uint;
-    *res_t = t;
-    return 0 as c_int;
+    t.frame_idx = f.index as c_uint;
+    Ok(task_idx)
 }
 
 pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
@@ -410,70 +388,60 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     pass: c_int,
     _cond_signal: c_int,
 ) -> Rav1dResult {
-    let mut tasks: *mut Rav1dTask = f.task_thread.tile_tasks[0];
+    let tasks = &mut *f.task_thread.tasks();
     let uses_2pass = (c.n_fc > 1 as c_uint) as c_int;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let num_tasks = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
     if pass < 2 {
         let alloc_num_tasks = num_tasks * (1 + uses_2pass);
-        if alloc_num_tasks > f.task_thread.num_tile_tasks {
-            let size: usize =
-                (::core::mem::size_of::<Rav1dTask>()).wrapping_mul(alloc_num_tasks as usize);
-            tasks = realloc(f.task_thread.tile_tasks[0] as *mut c_void, size) as *mut Rav1dTask;
-            if tasks.is_null() {
-                return Err(EGeneric);
-            }
-            memset(tasks as *mut c_void, 0 as c_int, size);
-            f.task_thread.tile_tasks[0] = tasks;
-            f.task_thread.num_tile_tasks = alloc_num_tasks;
-        }
-        f.task_thread.tile_tasks[1] = tasks.offset(num_tasks as isize);
+        tasks.grow_tile_tasks(alloc_num_tasks as usize);
+        tasks.tile_tasks[1] = Some(Rav1dTaskIndex::TileTask(num_tasks as usize));
     }
-    tasks = tasks.offset((num_tasks * (pass & 1)) as isize);
-    let mut pf_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
-    if create_filter_sbrow(c, f, pass, &mut pf_t) != 0 {
-        return Err(EGeneric);
-    }
-    let mut prev_t: *mut Rav1dTask = 0 as *mut Rav1dTask;
+    let tile_tasks = tasks.tile_tasks[0].map(|t| t + (num_tasks * (pass & 1)) as usize);
+    let mut pf_t = Some(create_filter_sbrow(c, f, pass)?);
+    let mut prev_t = None;
     let mut tile_idx = 0;
     while tile_idx < num_tasks {
         let ts: *mut Rav1dTileState = &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
-        let t: *mut Rav1dTask = &mut *tasks.offset(tile_idx as isize) as *mut Rav1dTask;
-        (*t).sby = (*ts).tiling.row_start >> f.sb_shift;
-        if !pf_t.is_null() && (*t).sby != 0 {
-            (*prev_t).next = pf_t;
+        let t_idx = tile_tasks.unwrap() + (tile_idx as usize);
+        let t = &mut tasks[t_idx];
+        t.sby = (*ts).tiling.row_start >> f.sb_shift;
+        if pf_t.is_some() && t.sby != 0 {
+            tasks[prev_t.unwrap()].next = pf_t;
             prev_t = pf_t;
-            pf_t = 0 as *mut Rav1dTask;
+            pf_t = None;
         }
-        (*t).recon_progress = 0 as c_int;
-        (*t).deblock_progress = 0 as c_int;
-        (*t).deps_skip = 0 as c_int;
-        (*t).type_0 = if pass != 1 {
+        // re-borrow to avoid conflict with tasks[prev_t] above
+        let t = &mut tasks[t_idx];
+        t.recon_progress = 0 as c_int;
+        t.deblock_progress = 0 as c_int;
+        t.deps_skip = 0 as c_int;
+        t.type_0 = if pass != 1 {
             TaskType::TileReconstruction
         } else {
             TaskType::TileEntropy
         };
-        (*t).frame_idx = f.index as c_uint;
-        if !prev_t.is_null() {
-            (*prev_t).next = t;
+        t.frame_idx = f.index as c_uint;
+        if let Some(prev_t) = prev_t {
+            tasks[prev_t].next = Some(t_idx);
         }
-        prev_t = t;
+        prev_t = Some(t_idx);
         tile_idx += 1;
     }
-    if !pf_t.is_null() {
-        (*prev_t).next = pf_t;
+    if pf_t.is_some() {
+        tasks[prev_t.unwrap()].next = pf_t;
         prev_t = pf_t;
     }
-    (*prev_t).next = 0 as *mut Rav1dTask;
+    tasks[prev_t.unwrap()].next = None;
     f.task_thread.done[(pass & 1) as usize].store(0, Ordering::SeqCst);
     let mut pending_tasks = f.task_thread.pending_tasks.lock().unwrap();
-    if !(pending_tasks.head.is_null() || pass == 2) {
+    if !(pending_tasks.head.is_none() || pass == 2) {
         unreachable!();
     }
-    if pending_tasks.head.is_null() {
-        pending_tasks.head = tasks.offset(0);
+    if pending_tasks.head.is_none() {
+        pending_tasks.head = tile_tasks;
     } else {
-        (*pending_tasks.tail).next = tasks.offset(0);
+        tasks[pending_tasks.tail.unwrap()].next = tile_tasks;
     }
     pending_tasks.tail = prev_t;
     f.task_thread.pending_tasks_merge.store(1, Ordering::SeqCst);
@@ -483,13 +451,15 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
 
 pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, f: &mut Rav1dFrameData) {
     f.task_thread.init_done.store(0, Ordering::SeqCst);
-    let t: *mut Rav1dTask = &mut f.task_thread.init_task;
-    (*t).type_0 = TaskType::Init;
-    (*t).frame_idx = f.index as c_uint;
-    (*t).sby = 0 as c_int;
-    (*t).deblock_progress = 0 as c_int;
-    (*t).recon_progress = (*t).deblock_progress;
-    insert_task(c, f, t, 1 as c_int);
+    let tasks = f.task_thread.tasks();
+    let t_idx = Rav1dTaskIndex::Init;
+    let t = &mut (*tasks)[t_idx];
+    t.type_0 = TaskType::Init;
+    t.frame_idx = f.index as c_uint;
+    t.sby = 0 as c_int;
+    t.deblock_progress = 0 as c_int;
+    t.recon_progress = t.deblock_progress;
+    insert_task(c, f, t_idx, 1 as c_int);
 }
 
 pub(crate) unsafe fn rav1d_task_delayed_fg(
@@ -513,19 +483,19 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
 unsafe fn ensure_progress<'l, 'ttd: 'l>(
     ttd: &'ttd TaskThreadData,
     f: &Rav1dFrameData,
-    t: *mut Rav1dTask,
+    t_idx: Rav1dTaskIndex,
     type_0: TaskType,
     state: &AtomicI32,
-    target: *mut c_int,
     task_thread_lock: &'l mut Option<MutexGuard<'ttd, TaskThreadData_delayed_fg>>,
 ) -> c_int {
     let p1 = state.load(Ordering::SeqCst);
-    if p1 < (*t).sby {
-        (*t).type_0 = type_0;
-        (*t).deblock_progress = 0 as c_int;
-        (*t).recon_progress = (*t).deblock_progress;
-        *target = (*t).sby;
-        add_pending(f, t);
+    let tasks = &mut *f.task_thread.tasks();
+    let t = &mut tasks[t_idx];
+    if p1 < t.sby {
+        t.type_0 = type_0;
+        t.recon_progress = 0 as c_int;
+        t.deblock_progress = t.sby;
+        add_pending(f, t_idx);
         *task_thread_lock = Some(ttd.delayed_fg.lock().unwrap());
         return 1 as c_int;
     }
@@ -533,12 +503,16 @@ unsafe fn ensure_progress<'l, 'ttd: 'l>(
 }
 
 #[inline]
-unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int) -> c_int {
-    let tp = (*t).type_0 == TaskType::TileEntropy;
-    let tile_idx = t.offset_from(f.task_thread.tile_tasks[tp as usize]) as c_long as c_int;
+unsafe fn check_tile(t_idx: Rav1dTaskIndex, f: &Rav1dFrameData, frame_mt: c_int) -> c_int {
+    let tasks = &mut *f.task_thread.tasks();
+    let t = &tasks[t_idx];
+    let tp = t.type_0 == TaskType::TileEntropy;
+    let tile_idx = (t_idx - tasks.tile_tasks[tp as usize].unwrap())
+        .raw_index()
+        .expect("t_idx was not a valid tile task");
     let ts: *mut Rav1dTileState = &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
     let p1 = (*ts).progress[tp as usize].load(Ordering::SeqCst);
-    if p1 < (*t).sby {
+    if p1 < t.sby {
         return 1 as c_int;
     }
     let mut error = (p1 == TILE_ERROR) as c_int;
@@ -553,7 +527,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
     }
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if error == 0 && frame_mt != 0 && !frame_hdr.frame_type.is_key_or_intra() {
-        let p: *const Rav1dThreadPicture = &mut f.sr_cur;
+        let p: *const Rav1dThreadPicture = &f.sr_cur;
         let ss_ver =
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
         let p_b: c_uint = (((*t).sby + 1) << f.sb_shift + 2) as c_uint;
@@ -599,7 +573,7 @@ unsafe fn check_tile(t: *mut Rav1dTask, f: &mut Rav1dFrameData, frame_mt: c_int)
                 _ => {}
             }
             n += 1;
-            (*t).deps_skip += 1;
+            tasks[t_idx].deps_skip += 1;
         }
     }
     return 0 as c_int;
@@ -812,21 +786,23 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
             continue 'outer;
         }
 
-        let (f, t, mut prev_t) = 'found: {
+        let (f, t_idx, prev_t) = 'found: {
             if c.n_fc > 1 as c_uint {
                 // run init tasks second
                 'init_tasks: for i in 0..c.n_fc {
                     let first = ttd.first.load(Ordering::SeqCst);
                     let f =
                         &mut *(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize);
+                    let tasks = &*f.task_thread.tasks();
                     if f.task_thread.init_done.load(Ordering::SeqCst) != 0 {
                         continue 'init_tasks;
                     }
-                    let Some(t) = f.task_thread.task_head.as_mut() else {
+                    let Some(t_idx) = tasks.head else {
                         continue 'init_tasks;
                     };
+                    let t = &tasks[t_idx];
                     if t.type_0 == TaskType::Init {
-                        break 'found (f, t, None);
+                        break 'found (f, t_idx, None);
                     }
                     if t.type_0 == TaskType::InitCdf {
                         // XXX This can be a simple else, if adding tasks of both
@@ -845,7 +821,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             f.task_thread
                                 .error
                                 .fetch_or((p1 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                            break 'found (f, t, None);
+                            break 'found (f, t_idx, None);
                         }
                     }
                 }
@@ -858,14 +834,16 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         .wrapping_add(ttd.cur.load(Ordering::Relaxed))
                         .wrapping_rem(c.n_fc) as isize,
                 );
+                let tasks = &mut *f.task_thread.tasks();
                 merge_pending_frame(c, f);
-                let mut prev_t = f.task_thread.task_cur_prev.as_mut();
-                let mut next_t = if let Some(prev_t) = prev_t.as_deref_mut() {
-                    prev_t.next.as_mut()
+                let mut prev_t = tasks.cur_prev;
+                let mut next_t = if let Some(prev_t) = prev_t {
+                    tasks[prev_t].next
                 } else {
-                    f.task_thread.task_head.as_mut()
+                    tasks.head
                 };
-                while let Some(t) = next_t {
+                while let Some(t_idx) = next_t {
+                    let t = &tasks[t_idx];
                     'next: {
                         if t.type_0 == TaskType::InitCdf {
                             break 'next;
@@ -876,8 +854,8 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         ) {
                             // if not bottom sbrow of tile, this task will be re-added
                             // after it's finished
-                            if check_tile(t, f, (c.n_fc > 1 as c_uint) as c_int) == 0 {
-                                break 'found (f, t, prev_t);
+                            if check_tile(t_idx, f, (c.n_fc > 1 as c_uint) as c_int) == 0 {
+                                break 'found (f, t_idx, prev_t);
                             }
                         } else if t.recon_progress != 0 {
                             let p = t.type_0 == TaskType::EntropyProgress;
@@ -913,27 +891,28 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             }
                             if (t.sby + 1) < f.sbh {
                                 // add sby+1 to list to replace this one
-                                // TODO(sjc): t is a reference to an array
-                                // element, we need to replace this pointer
-                                // arithmetic with proper indexing
-                                let next_t: *mut Rav1dTask =
-                                    &mut *(t as *mut Rav1dTask).offset(1) as *mut Rav1dTask;
-                                *next_t = t.clone();
-                                (*next_t).sby += 1;
+                                let next_t_idx = t_idx + 1;
+                                // Rav1dTask is currently 40 bytes, so this
+                                // clone to avoid borrow check issues is cheap
+                                // enough.
+                                let t = t.clone();
+                                let next_t = &mut tasks[next_t_idx];
+                                *next_t = t;
+                                next_t.sby += 1;
                                 let ntr = f.frame_thread.next_tile_row[p as usize] + 1;
                                 let start = frame_hdr.tiling.row_start_sb[ntr as usize] as c_int;
-                                if (*next_t).sby == start {
+                                if next_t.sby == start {
                                     f.frame_thread.next_tile_row[p as usize] = ntr;
                                 }
-                                (*next_t).recon_progress = (*next_t).sby + 1;
-                                insert_task(c, f, next_t, 0 as c_int);
+                                next_t.recon_progress = next_t.sby + 1;
+                                insert_task(c, f, next_t_idx, 0 as c_int);
                             }
-                            break 'found (f, t, prev_t);
+                            break 'found (f, t_idx, prev_t);
                         } else if t.type_0 == TaskType::Cdef {
                             let p1_1 = f.frame_thread_progress.copy_lpf[(t.sby - 1 >> 5) as usize]
                                 .load(Ordering::SeqCst);
                             if p1_1 as c_uint & (1 as c_uint) << (t.sby - 1 & 31) != 0 {
-                                break 'found (f, t, prev_t);
+                                break 'found (f, t_idx, prev_t);
                             }
                         } else {
                             if t.deblock_progress == 0 {
@@ -944,14 +923,14 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 f.task_thread
                                     .error
                                     .fetch_or((p1_2 == TILE_ERROR) as c_int, Ordering::SeqCst);
-                                break 'found (f, t, prev_t);
+                                break 'found (f, t_idx, prev_t);
                             }
                         }
                     }
                     // next:
-                    next_t = t.next.as_mut();
-                    prev_t = Some(t);
-                    f.task_thread.task_cur_prev = prev_t.as_deref_mut().unwrap() as *mut Rav1dTask;
+                    next_t = t.next;
+                    prev_t = Some(t_idx);
+                    tasks.cur_prev = prev_t;
                 }
                 ttd.cur.fetch_add(1, Ordering::Relaxed);
             }
@@ -966,20 +945,22 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
         };
         // found:
         // remove t from list
-        if let Some(prev_t) = prev_t.as_deref_mut() {
-            prev_t.next = t.next;
+        let tasks = &mut *f.task_thread.tasks();
+        let next_t = tasks[t_idx].next;
+        if let Some(prev_t) = prev_t {
+            tasks[prev_t].next = next_t;
         } else {
-            f.task_thread.task_head = t.next;
+            tasks.head = next_t;
         }
-        if t.next.is_null() {
-            f.task_thread.task_tail = prev_t
-                .as_deref_mut()
-                .map_or_else(ptr::null_mut, |p| p as *mut Rav1dTask);
+        if next_t.is_none() {
+            tasks.tail = prev_t;
         }
-        if t.type_0 > TaskType::InitCdf && (f.task_thread.task_head).is_null() {
+        if tasks[t_idx].type_0 > TaskType::InitCdf && tasks.head.is_none() {
             ttd.cur.fetch_add(1, Ordering::Relaxed);
         }
-        t.next = 0 as *mut Rav1dTask;
+        tasks[t_idx].next = None;
+        let tile_tasks = tasks.tile_tasks;
+        let t = &mut tasks[t_idx];
         // we don't need to check cond_signaled here, since we found a task
         // after the last signal so we want to re-signal the next waiting thread
         // and again won't need to signal after that
@@ -1016,7 +997,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             if p1_3 != 0 {
                                 continue 'found_unlocked;
                             }
-                            add_pending(f, t);
+                            add_pending(f, t_idx);
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.delayed_fg.lock().unwrap());
                         }
@@ -1098,12 +1079,9 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                     }
                     TaskType::TileEntropy | TaskType::TileReconstruction => {
                         let p_1 = t.type_0 == TaskType::TileEntropy;
-                        // TODO(sjc): t is a reference to an array element, we
-                        // need to replace this pointer arithmetic with proper
-                        // indexing
-                        let tile_idx = (t as *const Rav1dTask)
-                            .offset_from(f.task_thread.tile_tasks[p_1 as usize])
-                            as c_long as c_int;
+                        let tile_idx = (t_idx - tile_tasks[p_1 as usize].unwrap())
+                            .raw_index()
+                            .unwrap();
                         let ts_0: *mut Rav1dTileState =
                             &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
                         tc.ts = ts_0;
@@ -1127,7 +1105,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         if (sby + 1) << f.sb_shift < (*ts_0).tiling.row_end {
                             t.sby += 1;
                             t.deps_skip = 0 as c_int;
-                            if check_tile(t, f, uses_2pass) == 0 {
+                            if check_tile(t_idx, f, uses_2pass) == 0 {
                                 (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
                                 reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
                                 if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
@@ -1136,7 +1114,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 continue 'found_unlocked;
                             }
                             (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
-                            add_pending(f, t);
+                            add_pending(f, t_idx);
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.delayed_fg.lock().unwrap());
                         } else {
@@ -1149,7 +1127,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             if frame_hdr.refresh_context != 0
                                 && tc.frame_thread.pass <= 1
                                 && f.task_thread.update_set
-                                && frame_hdr.tiling.update == tile_idx
+                                && frame_hdr.tiling.update as usize == tile_idx
                             {
                                 if error_0 == 0 {
                                     rav1d_cdf_thread_update(
@@ -1201,10 +1179,9 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         if ensure_progress(
                             ttd,
                             f,
-                            t,
+                            t_idx,
                             TaskType::DeblockRows,
                             &f.frame_thread_progress.deblock,
-                            &mut t.deblock_progress,
                             &mut task_thread_lock,
                         ) != 0
                         {
@@ -1245,7 +1222,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                     t.type_0 = TaskType::Cdef;
                                     t.deblock_progress = 0 as c_int;
                                     t.recon_progress = t.deblock_progress;
-                                    add_pending(f, t);
+                                    add_pending(f, t_idx);
                                     assert!(
                                         task_thread_lock.is_none(),
                                         "thread lock should not be held"
