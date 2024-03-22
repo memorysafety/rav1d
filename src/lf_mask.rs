@@ -27,21 +27,27 @@ pub struct Av1FilterLUT {
 #[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Av1RestorationUnit {
+    /// SGR: type = DAV1D_RESTORATION_SGRPROJ + sgr_idx
     pub r#type: Rav1dRestorationType,
     pub filter_h: [i8; 3],
     pub filter_v: [i8; 3],
     pub sgr_weights: [i8; 2],
 }
 
+/// each struct describes one 128x128 area (1 or 4 SBs), pre-superres-scaling
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Filter {
-    pub filter_y: [[[[u16; 2]; 3]; 32]; 2],
-    pub filter_uv: [[[[u16; 2]; 2]; 32]; 2],
+    // each bit is 1 col
+    pub filter_y: [[[[u16; 2]; 3]; 32]; 2],  // 0=col, 1=row
+    pub filter_uv: [[[[u16; 2]; 2]; 32]; 2], // 0=col, 1=row
+    /// -1 means "unset"
     pub cdef_idx: [i8; 4],
+    /// for 8x8 blocks, but stored on a 4x8 basis
     pub noskip_mask: [[u16; 2]; 16],
 }
 
+/// each struct describes one 128x128 area (1 or 4 SBs), post-superres-scaling
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Restoration {
