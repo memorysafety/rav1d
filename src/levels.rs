@@ -268,10 +268,12 @@ impl Neg for mv {
     }
 }
 
-pub type MotionMode = c_uint;
-pub const MM_WARP: MotionMode = 2;
-pub const MM_OBMC: MotionMode = 1;
-pub const MM_TRANSLATION: MotionMode = 0;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
+pub enum MotionMode {
+    Translation = 0,
+    Obmc = 1,
+    Warp = 2,
+}
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
@@ -314,7 +316,7 @@ pub struct Av1Block_inter {
     pub c2rust_unnamed: Av1Block_inter_nd,
     pub comp_type: Option<CompInterType>,
     pub inter_mode: u8,
-    pub motion_mode: u8,
+    pub motion_mode: MotionMode,
     pub drl_idx: u8,
     pub r#ref: [i8; 2],
     pub max_ytx: u8,
@@ -562,11 +564,11 @@ impl Av1Block {
             .interintra_mode
     }
 
-    pub unsafe fn motion_mode(&self) -> u8 {
+    pub unsafe fn motion_mode(&self) -> MotionMode {
         self.c2rust_unnamed.c2rust_unnamed_0.motion_mode
     }
 
-    pub unsafe fn motion_mode_mut(&mut self) -> &mut u8 {
+    pub unsafe fn motion_mode_mut(&mut self) -> &mut MotionMode {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.motion_mode
     }
 

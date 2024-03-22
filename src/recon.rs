@@ -34,6 +34,7 @@ use crate::src::levels::Filter2d;
 use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::IntraPredMode;
+use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxClass;
 use crate::src::levels::TxfmSize;
@@ -46,8 +47,6 @@ use crate::src::levels::FILTER_PRED;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::IDTX;
-use crate::src::levels::MM_OBMC;
-use crate::src::levels::MM_WARP;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
 use crate::src::levels::RTX_16X64;
@@ -3643,7 +3642,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV as c_int
                 && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize] as c_int
                     != 0
-                || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int == MM_WARP as c_int
+                || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Warp
                     && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
         {
             res = warp_affine::<BD>(
@@ -3655,7 +3654,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 b_dim,
                 0 as c_int,
                 refp,
-                if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int == MM_WARP as c_int {
+                if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Warp {
                     &t.warpmv
                 } else {
                     &frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
@@ -3688,7 +3687,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             if res != 0 {
                 return res;
             }
-            if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int == MM_OBMC as c_int {
+            if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Obmc {
                 res = obmc::<BD>(
                     f,
                     t,
@@ -4030,8 +4029,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                             as c_int
                             != 0
-                        || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int
-                            == MM_WARP as c_int
+                        || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
                     let mut pl = 0;
@@ -4046,9 +4044,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             b_dim,
                             1 + pl,
                             refp,
-                            if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int
-                                == MM_WARP as c_int
-                            {
+                            if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Warp {
                                 &t.warpmv
                             } else {
                                 &frame_hdr.gmv[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
@@ -4086,9 +4082,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         if res != 0 {
                             return res;
                         }
-                        if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode as c_int
-                            == MM_OBMC as c_int
-                        {
+                        if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Obmc {
                             res = obmc::<BD>(
                                 f,
                                 t,
