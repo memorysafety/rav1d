@@ -965,7 +965,8 @@ pub(crate) struct Rav1dTaskContext {
     pub scratch: Rav1dTaskContext_scratch,
 
     pub warpmv: Rav1dWarpedMotionParams,
-    pub lf_mask: *mut Av1Filter,
+    /// Index into the relevant `Rav1dFrameContext::lf.mask` array.
+    pub lf_mask: Option<usize>,
     pub top_pre_cdef_toggle: c_int,
     pub cur_sb_cdef_idx_ptr: *mut i8,
     // for chroma sub8x8, we need to know the filter for all 4 subblocks in
@@ -989,7 +990,7 @@ impl Rav1dTaskContext {
             pal_sz_uv: Default::default(),
             scratch: mem::zeroed(),
             warpmv: mem::zeroed(),
-            lf_mask: ptr::null_mut(),
+            lf_mask: None,
             top_pre_cdef_toggle: 0,
             cur_sb_cdef_idx_ptr: ptr::null_mut(),
             tl_4x4_filter: mem::zeroed(),
