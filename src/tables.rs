@@ -112,62 +112,62 @@ pub static dav1d_al_part_ctx: [[[u8; BlockPartition::COUNT]; BlockLevel::COUNT];
 pub static dav1d_block_sizes: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLevel::COUNT] = {
     use BlockSize::*;
 
-    const DEFAULT: BlockSize = BlockSize::BS_128x128;
+    const DEFAULT: BlockSize = BlockSize::Bs128x128;
 
     [
         [
-            [BS_128x128, DEFAULT],
-            [BS_128x64, DEFAULT],
-            [BS_64x128, DEFAULT],
+            [Bs128x128, DEFAULT],
+            [Bs128x64, DEFAULT],
+            [Bs64x128, DEFAULT],
             [DEFAULT; 2],
-            [BS_64x64, BS_128x64],
-            [BS_128x64, BS_64x64],
-            [BS_64x64, BS_64x128],
-            [BS_64x128, BS_64x64],
+            [Bs64x64, Bs128x64],
+            [Bs128x64, Bs64x64],
+            [Bs64x64, Bs64x128],
+            [Bs64x128, Bs64x64],
             [DEFAULT; 2],
             [DEFAULT; 2],
         ],
         [
-            [BS_64x64, DEFAULT],
-            [BS_64x32, DEFAULT],
-            [BS_32x64, DEFAULT],
+            [Bs64x64, DEFAULT],
+            [Bs64x32, DEFAULT],
+            [Bs32x64, DEFAULT],
             [DEFAULT; 2],
-            [BS_32x32, BS_64x32],
-            [BS_64x32, BS_32x32],
-            [BS_32x32, BS_32x64],
-            [BS_32x64, BS_32x32],
-            [BS_64x16, DEFAULT],
-            [BS_16x64, DEFAULT],
+            [Bs32x32, Bs64x32],
+            [Bs64x32, Bs32x32],
+            [Bs32x32, Bs32x64],
+            [Bs32x64, Bs32x32],
+            [Bs64x16, DEFAULT],
+            [Bs16x64, DEFAULT],
         ],
         [
-            [BS_32x32, DEFAULT],
-            [BS_32x16, DEFAULT],
-            [BS_16x32, DEFAULT],
+            [Bs32x32, DEFAULT],
+            [Bs32x16, DEFAULT],
+            [Bs16x32, DEFAULT],
             [DEFAULT; 2],
-            [BS_16x16, BS_32x16],
-            [BS_32x16, BS_16x16],
-            [BS_16x16, BS_16x32],
-            [BS_16x32, BS_16x16],
-            [BS_32x8, DEFAULT],
-            [BS_8x32, DEFAULT],
+            [Bs16x16, Bs32x16],
+            [Bs32x16, Bs16x16],
+            [Bs16x16, Bs16x32],
+            [Bs16x32, Bs16x16],
+            [Bs32x8, DEFAULT],
+            [Bs8x32, DEFAULT],
         ],
         [
-            [BS_16x16, DEFAULT],
-            [BS_16x8, DEFAULT],
-            [BS_8x16, DEFAULT],
+            [Bs16x16, DEFAULT],
+            [Bs16x8, DEFAULT],
+            [Bs8x16, DEFAULT],
             [DEFAULT; 2],
-            [BS_8x8, BS_16x8],
-            [BS_16x8, BS_8x8],
-            [BS_8x8, BS_8x16],
-            [BS_8x16, BS_8x8],
-            [BS_16x4, DEFAULT],
-            [BS_4x16, DEFAULT],
+            [Bs8x8, Bs16x8],
+            [Bs16x8, Bs8x8],
+            [Bs8x8, Bs8x16],
+            [Bs8x16, Bs8x8],
+            [Bs16x4, DEFAULT],
+            [Bs4x16, DEFAULT],
         ],
         [
-            [BS_8x8, DEFAULT],
-            [BS_8x4, DEFAULT],
-            [BS_4x8, DEFAULT],
-            [BS_4x4, DEFAULT],
+            [Bs8x8, DEFAULT],
+            [Bs8x4, DEFAULT],
+            [Bs4x8, DEFAULT],
+            [Bs4x4, DEFAULT],
             [DEFAULT; 2],
             [DEFAULT; 2],
             [DEFAULT; 2],
@@ -641,42 +641,42 @@ pub static dav1d_wedge_ctx_lut: [u8; BlockSize::COUNT] = [
 ];
 
 pub const cfl_allowed_mask: c_uint = 0
-    | 1 << BlockSize::BS_32x32 as u8
-    | 1 << BlockSize::BS_32x16 as u8
-    | 1 << BlockSize::BS_32x8 as u8
-    | 1 << BlockSize::BS_16x32 as u8
-    | 1 << BlockSize::BS_16x16 as u8
-    | 1 << BlockSize::BS_16x8 as u8
-    | 1 << BlockSize::BS_16x4 as u8
-    | 1 << BlockSize::BS_8x32 as u8
-    | 1 << BlockSize::BS_8x16 as u8
-    | 1 << BlockSize::BS_8x8 as u8
-    | 1 << BlockSize::BS_8x4 as u8
-    | 1 << BlockSize::BS_4x16 as u8
-    | 1 << BlockSize::BS_4x8 as u8
-    | 1 << BlockSize::BS_4x4 as u8
+    | 1 << BlockSize::Bs32x32 as u8
+    | 1 << BlockSize::Bs32x16 as u8
+    | 1 << BlockSize::Bs32x8 as u8
+    | 1 << BlockSize::Bs16x32 as u8
+    | 1 << BlockSize::Bs16x16 as u8
+    | 1 << BlockSize::Bs16x8 as u8
+    | 1 << BlockSize::Bs16x4 as u8
+    | 1 << BlockSize::Bs8x32 as u8
+    | 1 << BlockSize::Bs8x16 as u8
+    | 1 << BlockSize::Bs8x8 as u8
+    | 1 << BlockSize::Bs8x4 as u8
+    | 1 << BlockSize::Bs4x16 as u8
+    | 1 << BlockSize::Bs4x8 as u8
+    | 1 << BlockSize::Bs4x4 as u8
     | 0;
 
 pub const wedge_allowed_mask: c_uint = 0
-    | 1 << BlockSize::BS_32x32 as u8
-    | 1 << BlockSize::BS_32x16 as u8
-    | 1 << BlockSize::BS_32x8 as u8
-    | 1 << BlockSize::BS_16x32 as u8
-    | 1 << BlockSize::BS_16x16 as u8
-    | 1 << BlockSize::BS_16x8 as u8
-    | 1 << BlockSize::BS_8x32 as u8
-    | 1 << BlockSize::BS_8x16 as u8
-    | 1 << BlockSize::BS_8x8 as u8
+    | 1 << BlockSize::Bs32x32 as u8
+    | 1 << BlockSize::Bs32x16 as u8
+    | 1 << BlockSize::Bs32x8 as u8
+    | 1 << BlockSize::Bs16x32 as u8
+    | 1 << BlockSize::Bs16x16 as u8
+    | 1 << BlockSize::Bs16x8 as u8
+    | 1 << BlockSize::Bs8x32 as u8
+    | 1 << BlockSize::Bs8x16 as u8
+    | 1 << BlockSize::Bs8x8 as u8
     | 0;
 
 pub const interintra_allowed_mask: c_uint = 0
-    | 1 << BlockSize::BS_32x32 as u8
-    | 1 << BlockSize::BS_32x16 as u8
-    | 1 << BlockSize::BS_16x32 as u8
-    | 1 << BlockSize::BS_16x16 as u8
-    | 1 << BlockSize::BS_16x8 as u8
-    | 1 << BlockSize::BS_8x16 as u8
-    | 1 << BlockSize::BS_8x8 as u8
+    | 1 << BlockSize::Bs32x32 as u8
+    | 1 << BlockSize::Bs32x16 as u8
+    | 1 << BlockSize::Bs16x32 as u8
+    | 1 << BlockSize::Bs16x16 as u8
+    | 1 << BlockSize::Bs16x8 as u8
+    | 1 << BlockSize::Bs8x16 as u8
+    | 1 << BlockSize::Bs8x8 as u8
     | 0;
 
 impl Default for Rav1dWarpedMotionParams {

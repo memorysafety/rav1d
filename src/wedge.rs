@@ -390,7 +390,7 @@ pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; BlockSize::COUNT] 
                 { ($w / 2) * ($h / 2) },
             > = WedgeMasks::fill2d_16x2($w, $h, &master, wedge_codebook_16.get($w, $h), $signs);
             paste! {
-                masks[[<BS_ $w x $h>] as usize] = wedge_masks.slice();
+                masks[[<Bs $w x $h>] as usize] = wedge_masks.slice();
             }
         }};
     }
@@ -481,13 +481,13 @@ pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; Blo
         }
     }
 
-    masks[BS_8x8 as usize] = set!([8 x 8, 4 x 8, 4 x 4]);
-    masks[BS_8x16 as usize] = set!([8 x 16, 4 x 16, 4 x 8]);
-    masks[BS_16x8 as usize] = set!([16 x 16, 8 x 8, 8 x 8]);
-    masks[BS_16x16 as usize] = set!([16 x 16, 8 x 16, 8 x 8]);
-    masks[BS_16x32 as usize] = set!([16 x 32, 8 x 32, 8 x 16]);
-    masks[BS_32x16 as usize] = set!([32 x 32, 16 x 16, 16 x 16]);
-    masks[BS_32x32 as usize] = set!([32 x 32, 16 x 32, 16 x 16]);
+    masks[Bs8x8 as usize] = set!([8 x 8, 4 x 8, 4 x 4]);
+    masks[Bs8x16 as usize] = set!([8 x 16, 4 x 16, 4 x 8]);
+    masks[Bs16x8 as usize] = set!([16 x 16, 8 x 8, 8 x 8]);
+    masks[Bs16x16 as usize] = set!([16 x 16, 8 x 16, 8 x 8]);
+    masks[Bs16x32 as usize] = set!([16 x 32, 8 x 32, 8 x 16]);
+    masks[Bs32x16 as usize] = set!([32 x 32, 16 x 16, 16 x 16]);
+    masks[Bs32x32 as usize] = set!([32 x 32, 16 x 32, 16 x 16]);
 
     masks
 };

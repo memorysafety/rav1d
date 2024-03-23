@@ -1778,9 +1778,9 @@ unsafe fn decode_b_inner(
         let have_delta_q = frame_hdr.delta.q.present != 0
             && (bs
                 != (if seq_hdr.sb128 != 0 {
-                    BlockSize::BS_128x128
+                    BlockSize::Bs128x128
                 } else {
-                    BlockSize::BS_64x64
+                    BlockSize::Bs64x64
                 })
                 || b.skip == 0);
 
@@ -3605,16 +3605,16 @@ unsafe fn decode_sb(
                     None => {
                         let tip = intra_edge.tip(sb128, edge_index);
                         assert!(hsz == 1);
-                        decode_b(c, t, f, bl, BlockSize::BS_4x4, bp, EdgeFlags::ALL_TR_AND_BL)?;
+                        decode_b(c, t, f, bl, BlockSize::Bs4x4, bp, EdgeFlags::ALL_TR_AND_BL)?;
                         let tl_filter = t.tl_4x4_filter;
                         t.bx += 1;
-                        decode_b(c, t, f, bl, BlockSize::BS_4x4, bp, tip.split[0])?;
+                        decode_b(c, t, f, bl, BlockSize::Bs4x4, bp, tip.split[0])?;
                         t.bx -= 1;
                         t.by += 1;
-                        decode_b(c, t, f, bl, BlockSize::BS_4x4, bp, tip.split[1])?;
+                        decode_b(c, t, f, bl, BlockSize::Bs4x4, bp, tip.split[1])?;
                         t.bx += 1;
                         t.tl_4x4_filter = tl_filter;
-                        decode_b(c, t, f, bl, BlockSize::BS_4x4, bp, tip.split[2])?;
+                        decode_b(c, t, f, bl, BlockSize::Bs4x4, bp, tip.split[2])?;
                         t.bx -= 1;
                         t.by -= 1;
                         if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {
