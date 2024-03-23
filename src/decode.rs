@@ -79,9 +79,6 @@ use crate::src::ipred::rav1d_intra_pred_dsp_init;
 use crate::src::itx::rav1d_itx_dsp_init;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
-use crate::src::levels::BS_128x128;
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_64x64;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
@@ -1143,7 +1140,7 @@ unsafe fn splat_oneref_mv(
                 b.interintra_type().map(|_| 0).unwrap_or(-1),
             ],
         },
-        bs: bs as u8,
+        bs,
         mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     }));
     c.refmvs_dsp.splat_mv(
@@ -1169,7 +1166,7 @@ unsafe fn splat_intrabc_mv(
             mv: [b.mv()[0], mv::ZERO],
         },
         r#ref: refmvs_refpair { r#ref: [0, -1] },
-        bs: bs as u8,
+        bs,
         mf: 0,
     }));
     c.refmvs_dsp.splat_mv(
@@ -1197,7 +1194,7 @@ unsafe fn splat_tworef_mv(
         r#ref: refmvs_refpair {
             r#ref: [b.r#ref()[0] + 1, b.r#ref()[1] + 1],
         },
-        bs: bs as u8,
+        bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     }));
     c.refmvs_dsp.splat_mv(
@@ -1222,7 +1219,7 @@ unsafe fn splat_intraref(
             mv: [mv::INVALID, mv::ZERO],
         },
         r#ref: refmvs_refpair { r#ref: [0, -1] },
-        bs: bs as u8,
+        bs,
         mf: 0,
     }));
     c.refmvs_dsp.splat_mv(
@@ -1476,13 +1473,13 @@ unsafe fn decode_b_inner(
                 for x in 0..bw4 {
                     let block = &mut *r.offset(x as isize);
                     block.0.r#ref.r#ref[0] = 0;
-                    block.0.bs = bs as u8;
+                    block.0.bs = bs;
                 }
                 let rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 - 1 {
                     let block = &mut *rr[y as usize].offset((t.bx + bw4 - 1) as isize);
                     block.0.r#ref.r#ref[0] = 0;
-                    block.0.bs = bs as u8;
+                    block.0.bs = bs;
                 }
             }
 
@@ -1551,14 +1548,14 @@ unsafe fn decode_b_inner(
                 for r in r {
                     r.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
                     r.0.mv.mv[0] = b.mv()[0];
-                    r.0.bs = bs as u8;
+                    r.0.bs = bs;
                 }
                 let rr = &t.rt.r[((t.by & 31) + 5) as usize..];
                 for y in 0..bh4 as usize - 1 {
                     let r = &mut *rr[y].offset((t.bx + bw4 - 1) as isize);
                     r.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
                     r.0.mv.mv[0] = b.mv()[0];
-                    r.0.bs = bs as u8;
+                    r.0.bs = bs;
                 }
             }
 
@@ -1781,9 +1778,9 @@ unsafe fn decode_b_inner(
         let have_delta_q = frame_hdr.delta.q.present != 0
             && (bs
                 != (if seq_hdr.sb128 != 0 {
-                    BS_128x128
+                    BlockSize::BS_128x128
                 } else {
-                    BS_64x64
+                    BlockSize::BS_64x64
                 })
                 || b.skip == 0);
 
@@ -1921,7 +1918,7 @@ unsafe fn decode_b_inner(
             let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
                 cbw4 == 1 && cbh4 == 1
             } else {
-                (cfl_allowed_mask & (1 << bs)) != 0
+                (cfl_allowed_mask & (1 << bs as u8)) != 0
             };
             let uvmode_cdf = &mut ts.cdf.m.uv_mode[cfl_allowed as usize][b.y_mode() as usize];
             *b.uv_mode_mut() = rav1d_msac_decode_symbol_adapt16(
@@ -2712,7 +2709,7 @@ unsafe fn decode_b_inner(
                     *b.comp_type_mut() = Some(CompInterType::Avg);
                 }
             } else {
-                if wedge_allowed_mask & (1 << bs) != 0 {
+                if wedge_allowed_mask & (1 << bs as u8) != 0 {
                     let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
                     let comp_type = if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
@@ -2950,7 +2947,7 @@ unsafe fn decode_b_inner(
             // interintra flags
             let ii_sz_grp = dav1d_ymode_size_context[bs as usize] as c_int;
             if seq_hdr.inter_intra != 0
-                && interintra_allowed_mask & (1 << bs) != 0
+                && interintra_allowed_mask & (1 << bs as u8) != 0
                 && rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.interintra[ii_sz_grp as usize],
@@ -2985,7 +2982,7 @@ unsafe fn decode_b_inner(
             }
             if debug_block_info!(f, t)
                 && seq_hdr.inter_intra != 0
-                && interintra_allowed_mask & (1 << bs) != 0
+                && interintra_allowed_mask & (1 << bs as u8) != 0
             {
                 println!(
                     "Post-interintra[t={:?},m={:?},w={}]: r={}",
@@ -3608,16 +3605,16 @@ unsafe fn decode_sb(
                     None => {
                         let tip = intra_edge.tip(sb128, edge_index);
                         assert!(hsz == 1);
-                        decode_b(c, t, f, bl, BS_4x4, bp, EdgeFlags::ALL_TR_AND_BL)?;
+                        decode_b(c, t, f, bl, BlockSize::BS_4x4, bp, EdgeFlags::ALL_TR_AND_BL)?;
                         let tl_filter = t.tl_4x4_filter;
                         t.bx += 1;
-                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[0])?;
+                        decode_b(c, t, f, bl, BlockSize::BS_4x4, bp, tip.split[0])?;
                         t.bx -= 1;
                         t.by += 1;
-                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[1])?;
+                        decode_b(c, t, f, bl, BlockSize::BS_4x4, bp, tip.split[1])?;
                         t.bx += 1;
                         t.tl_4x4_filter = tl_filter;
-                        decode_b(c, t, f, bl, BS_4x4, bp, tip.split[2])?;
+                        decode_b(c, t, f, bl, BlockSize::BS_4x4, bp, tip.split[2])?;
                         t.bx -= 1;
                         t.by -= 1;
                         if cfg!(target_arch = "x86_64") && t.frame_thread.pass != 0 {

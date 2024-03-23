@@ -10,8 +10,8 @@ use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
+use crate::src::levels::BlockSize;
 use crate::src::levels::MVJoint;
-use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_TX_SIZES;
@@ -97,7 +97,7 @@ pub struct CdfModeContext {
     pub color_map: Align16<[[[[u16; 8]; 5]; 7]; 2]>,
     pub filter: Align8<[[[u16; 4]; 8]; 2]>,
     pub txsz: Align8<[[[u16; 4]; 3]; 4]>,
-    pub motion_mode: Align8<[[u16; 4]; N_BS_SIZES]>,
+    pub motion_mode: Align8<[[u16; 4]; BlockSize::COUNT]>,
     pub delta_q: Align8<[u16; 4]>,
     pub delta_lf: Align8<[[u16; 4]; 5]>,
     pub interintra_mode: Align8<[[u16; 4]; 4]>,
@@ -107,7 +107,7 @@ pub struct CdfModeContext {
     pub interintra: Align4<[[u16; 2]; 7]>,
     pub interintra_wedge: Align4<[[u16; 2]; 7]>,
     pub txtp_inter3: Align4<[[u16; 2]; 4]>,
-    pub use_filter_intra: Align4<[[u16; 2]; N_BS_SIZES]>,
+    pub use_filter_intra: Align4<[[u16; 2]; BlockSize::COUNT]>,
     pub newmv_mode: Align4<[[u16; 2]; 6]>,
     pub globalmv_mode: Align4<[[u16; 2]; 2]>,
     pub refmv_mode: Align4<[[u16; 2]; 6]>,
@@ -126,7 +126,7 @@ pub struct CdfModeContext {
     pub skip: Align4<[[u16; 2]; 3]>,
     pub skip_mode: Align4<[[u16; 2]; 3]>,
     pub seg_pred: Align4<[[u16; 2]; 3]>,
-    pub obmc: Align4<[[u16; 2]; N_BS_SIZES]>,
+    pub obmc: Align4<[[u16; 2]; BlockSize::COUNT]>,
     pub pal_y: Align4<[[[u16; 2]; 3]; 7]>,
     pub pal_uv: Align4<[[u16; 2]; 2]>,
     pub intrabc: Align4<[u16; 2]>,
@@ -4951,7 +4951,7 @@ pub(crate) fn rav1d_cdf_thread_update(
         }
     }
 
-    update_bit_1d!(N_BS_SIZES, m.use_filter_intra);
+    update_bit_1d!(BlockSize::COUNT, m.use_filter_intra);
     update_cdf_1d!(4, m.filter_intra.0);
     for k in 0..2 {
         update_cdf_2d!(
@@ -5045,8 +5045,8 @@ pub(crate) fn rav1d_cdf_thread_update(
     update_bit_1d!(4, m.interintra);
     update_bit_1d!(7, m.interintra_wedge);
     update_cdf_2d!(4, 3, m.interintra_mode);
-    update_cdf_2d!(N_BS_SIZES, 2, m.motion_mode);
-    update_bit_1d!(N_BS_SIZES, m.obmc);
+    update_cdf_2d!(BlockSize::COUNT, 2, m.motion_mode);
+    update_bit_1d!(BlockSize::COUNT, m.obmc);
 
     update_cdf_1d!(MVJoint::COUNT - 1, mv.joint.0);
     for k in 0..2 {

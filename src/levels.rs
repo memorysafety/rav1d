@@ -140,30 +140,32 @@ impl BlockPartition {
     pub const N_SUB8X8_PARTITIONS: usize = 4;
 }
 
-pub type BlockSize = u8;
-pub const N_BS_SIZES: usize = 22;
-pub const BS_4x4: BlockSize = 21;
-pub const BS_4x8: BlockSize = 20;
-pub const BS_4x16: BlockSize = 19;
-pub const BS_8x4: BlockSize = 18;
-pub const BS_8x8: BlockSize = 17;
-pub const BS_8x16: BlockSize = 16;
-pub const BS_8x32: BlockSize = 15;
-pub const BS_16x4: BlockSize = 14;
-pub const BS_16x8: BlockSize = 13;
-pub const BS_16x16: BlockSize = 12;
-pub const BS_16x32: BlockSize = 11;
-pub const BS_16x64: BlockSize = 10;
-pub const BS_32x8: BlockSize = 9;
-pub const BS_32x16: BlockSize = 8;
-pub const BS_32x32: BlockSize = 7;
-pub const BS_32x64: BlockSize = 6;
-pub const BS_64x16: BlockSize = 5;
-pub const BS_64x32: BlockSize = 4;
-pub const BS_64x64: BlockSize = 3;
-pub const BS_64x128: BlockSize = 2;
-pub const BS_128x64: BlockSize = 1;
-pub const BS_128x128: BlockSize = 0;
+#[repr(u8)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
+pub enum BlockSize {
+    BS_128x128 = 0,
+    BS_128x64 = 1,
+    BS_64x128 = 2,
+    BS_64x64 = 3,
+    BS_64x32 = 4,
+    BS_64x16 = 5,
+    BS_32x64 = 6,
+    BS_32x32 = 7,
+    BS_32x16 = 8,
+    BS_32x8 = 9,
+    BS_16x64 = 10,
+    BS_16x32 = 11,
+    BS_16x16 = 12,
+    BS_16x8 = 13,
+    BS_16x4 = 14,
+    BS_8x32 = 15,
+    BS_8x16 = 16,
+    BS_8x8 = 17,
+    BS_8x4 = 18,
+    BS_4x16 = 19,
+    BS_4x8 = 20,
+    BS_4x4 = 21,
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, EnumCount)]
 pub enum Filter2d {

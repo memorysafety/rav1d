@@ -5,28 +5,6 @@ use crate::src::align::Align16;
 use crate::src::align::Align4;
 use crate::src::align::Align64;
 use crate::src::align::Align8;
-use crate::src::levels::BS_128x128;
-use crate::src::levels::BS_128x64;
-use crate::src::levels::BS_16x16;
-use crate::src::levels::BS_16x32;
-use crate::src::levels::BS_16x4;
-use crate::src::levels::BS_16x64;
-use crate::src::levels::BS_16x8;
-use crate::src::levels::BS_32x16;
-use crate::src::levels::BS_32x32;
-use crate::src::levels::BS_32x64;
-use crate::src::levels::BS_32x8;
-use crate::src::levels::BS_4x16;
-use crate::src::levels::BS_4x4;
-use crate::src::levels::BS_4x8;
-use crate::src::levels::BS_64x128;
-use crate::src::levels::BS_64x16;
-use crate::src::levels::BS_64x32;
-use crate::src::levels::BS_64x64;
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_8x4;
-use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
@@ -65,7 +43,6 @@ use crate::src::levels::NEWMV;
 use crate::src::levels::NEWMV_NEARESTMV;
 use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
-use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_RECT_TX_SIZES;
@@ -132,70 +109,76 @@ pub static dav1d_al_part_ctx: [[[u8; BlockPartition::COUNT]; BlockLevel::COUNT];
     ],
 ];
 
-pub static dav1d_block_sizes: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLevel::COUNT] = [
-    [
-        [BS_128x128 as u8, 0],
-        [BS_128x64 as u8, 0],
-        [BS_64x128 as u8, 0],
-        [0; 2],
-        [BS_64x64 as u8, BS_128x64 as u8],
-        [BS_128x64 as u8, BS_64x64 as u8],
-        [BS_64x64 as u8, BS_64x128 as u8],
-        [BS_64x128 as u8, BS_64x64 as u8],
-        [0; 2],
-        [0; 2],
-    ],
-    [
-        [BS_64x64 as u8, 0],
-        [BS_64x32 as u8, 0],
-        [BS_32x64 as u8, 0],
-        [0; 2],
-        [BS_32x32 as u8, BS_64x32 as u8],
-        [BS_64x32 as u8, BS_32x32 as u8],
-        [BS_32x32 as u8, BS_32x64 as u8],
-        [BS_32x64 as u8, BS_32x32 as u8],
-        [BS_64x16 as u8, 0],
-        [BS_16x64 as u8, 0],
-    ],
-    [
-        [BS_32x32 as u8, 0],
-        [BS_32x16 as u8, 0],
-        [BS_16x32 as u8, 0],
-        [0; 2],
-        [BS_16x16 as u8, BS_32x16 as u8],
-        [BS_32x16 as u8, BS_16x16 as u8],
-        [BS_16x16 as u8, BS_16x32 as u8],
-        [BS_16x32 as u8, BS_16x16 as u8],
-        [BS_32x8 as u8, 0],
-        [BS_8x32 as u8, 0],
-    ],
-    [
-        [BS_16x16 as u8, 0],
-        [BS_16x8 as u8, 0],
-        [BS_8x16 as u8, 0],
-        [0; 2],
-        [BS_8x8 as u8, BS_16x8 as u8],
-        [BS_16x8 as u8, BS_8x8 as u8],
-        [BS_8x8 as u8, BS_8x16 as u8],
-        [BS_8x16 as u8, BS_8x8 as u8],
-        [BS_16x4 as u8, 0],
-        [BS_4x16 as u8, 0],
-    ],
-    [
-        [BS_8x8 as u8, 0],
-        [BS_8x4 as u8, 0],
-        [BS_4x8 as u8, 0],
-        [BS_4x4 as u8, 0],
-        [0; 2],
-        [0; 2],
-        [0; 2],
-        [0; 2],
-        [0; 2],
-        [0; 2],
-    ],
-];
+pub static dav1d_block_sizes: [[[BlockSize; 2]; BlockPartition::COUNT]; BlockLevel::COUNT] = {
+    use BlockSize::*;
 
-pub static dav1d_block_dimensions: [[u8; 4]; N_BS_SIZES] = [
+    const DEFAULT: BlockSize = BlockSize::BS_128x128;
+
+    [
+        [
+            [BS_128x128, DEFAULT],
+            [BS_128x64, DEFAULT],
+            [BS_64x128, DEFAULT],
+            [DEFAULT; 2],
+            [BS_64x64, BS_128x64],
+            [BS_128x64, BS_64x64],
+            [BS_64x64, BS_64x128],
+            [BS_64x128, BS_64x64],
+            [DEFAULT; 2],
+            [DEFAULT; 2],
+        ],
+        [
+            [BS_64x64, DEFAULT],
+            [BS_64x32, DEFAULT],
+            [BS_32x64, DEFAULT],
+            [DEFAULT; 2],
+            [BS_32x32, BS_64x32],
+            [BS_64x32, BS_32x32],
+            [BS_32x32, BS_32x64],
+            [BS_32x64, BS_32x32],
+            [BS_64x16, DEFAULT],
+            [BS_16x64, DEFAULT],
+        ],
+        [
+            [BS_32x32, DEFAULT],
+            [BS_32x16, DEFAULT],
+            [BS_16x32, DEFAULT],
+            [DEFAULT; 2],
+            [BS_16x16, BS_32x16],
+            [BS_32x16, BS_16x16],
+            [BS_16x16, BS_16x32],
+            [BS_16x32, BS_16x16],
+            [BS_32x8, DEFAULT],
+            [BS_8x32, DEFAULT],
+        ],
+        [
+            [BS_16x16, DEFAULT],
+            [BS_16x8, DEFAULT],
+            [BS_8x16, DEFAULT],
+            [DEFAULT; 2],
+            [BS_8x8, BS_16x8],
+            [BS_16x8, BS_8x8],
+            [BS_8x8, BS_8x16],
+            [BS_8x16, BS_8x8],
+            [BS_16x4, DEFAULT],
+            [BS_4x16, DEFAULT],
+        ],
+        [
+            [BS_8x8, DEFAULT],
+            [BS_8x4, DEFAULT],
+            [BS_4x8, DEFAULT],
+            [BS_4x4, DEFAULT],
+            [DEFAULT; 2],
+            [DEFAULT; 2],
+            [DEFAULT; 2],
+            [DEFAULT; 2],
+            [DEFAULT; 2],
+            [DEFAULT; 2],
+        ],
+    ]
+};
+
+pub static dav1d_block_dimensions: [[u8; 4]; BlockSize::COUNT] = [
     [32, 32, 5, 5],
     [32, 16, 5, 4],
     [16, 32, 4, 5],
@@ -413,7 +396,7 @@ pub static dav1d_txfm_dimensions: [TxfmInfo; N_RECT_TX_SIZES] = [
     },
 ];
 
-pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; N_BS_SIZES] = [
+pub static dav1d_max_txfm_size_for_bs: [[u8; 4]; BlockSize::COUNT] = [
     [
         TX_64X64 as u8,
         TX_32X32 as u8,
@@ -560,7 +543,7 @@ pub static dav1d_tx_types_per_set: [u8; 40] = [
     FLIPADST_ADST as u8,
 ];
 
-pub static dav1d_ymode_size_context: [u8; N_BS_SIZES] = [
+pub static dav1d_ymode_size_context: [u8; BlockSize::COUNT] = [
     3, 3, 3, 3, 3, 2, 3, 3, 2, 1, 2, 2, 2, 1, 0, 1, 1, 1, 0, 0, 0, 0,
 ];
 
@@ -653,47 +636,47 @@ pub static dav1d_filter_mode_to_y_mode: [u8; 5] = [
 pub static dav1d_intra_mode_context: [u8; N_INTRA_PRED_MODES] =
     [0, 1, 2, 3, 4, 4, 4, 4, 3, 0, 1, 2, 0];
 
-pub static dav1d_wedge_ctx_lut: [u8; N_BS_SIZES] = [
+pub static dav1d_wedge_ctx_lut: [u8; BlockSize::COUNT] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 
 pub const cfl_allowed_mask: c_uint = 0
-    | 1 << BS_32x32
-    | 1 << BS_32x16
-    | 1 << BS_32x8
-    | 1 << BS_16x32
-    | 1 << BS_16x16
-    | 1 << BS_16x8
-    | 1 << BS_16x4
-    | 1 << BS_8x32
-    | 1 << BS_8x16
-    | 1 << BS_8x8
-    | 1 << BS_8x4
-    | 1 << BS_4x16
-    | 1 << BS_4x8
-    | 1 << BS_4x4
+    | 1 << BlockSize::BS_32x32 as u8
+    | 1 << BlockSize::BS_32x16 as u8
+    | 1 << BlockSize::BS_32x8 as u8
+    | 1 << BlockSize::BS_16x32 as u8
+    | 1 << BlockSize::BS_16x16 as u8
+    | 1 << BlockSize::BS_16x8 as u8
+    | 1 << BlockSize::BS_16x4 as u8
+    | 1 << BlockSize::BS_8x32 as u8
+    | 1 << BlockSize::BS_8x16 as u8
+    | 1 << BlockSize::BS_8x8 as u8
+    | 1 << BlockSize::BS_8x4 as u8
+    | 1 << BlockSize::BS_4x16 as u8
+    | 1 << BlockSize::BS_4x8 as u8
+    | 1 << BlockSize::BS_4x4 as u8
     | 0;
 
 pub const wedge_allowed_mask: c_uint = 0
-    | 1 << BS_32x32
-    | 1 << BS_32x16
-    | 1 << BS_32x8
-    | 1 << BS_16x32
-    | 1 << BS_16x16
-    | 1 << BS_16x8
-    | 1 << BS_8x32
-    | 1 << BS_8x16
-    | 1 << BS_8x8
+    | 1 << BlockSize::BS_32x32 as u8
+    | 1 << BlockSize::BS_32x16 as u8
+    | 1 << BlockSize::BS_32x8 as u8
+    | 1 << BlockSize::BS_16x32 as u8
+    | 1 << BlockSize::BS_16x16 as u8
+    | 1 << BlockSize::BS_16x8 as u8
+    | 1 << BlockSize::BS_8x32 as u8
+    | 1 << BlockSize::BS_8x16 as u8
+    | 1 << BlockSize::BS_8x8 as u8
     | 0;
 
 pub const interintra_allowed_mask: c_uint = 0
-    | 1 << BS_32x32
-    | 1 << BS_32x16
-    | 1 << BS_16x32
-    | 1 << BS_16x16
-    | 1 << BS_16x8
-    | 1 << BS_8x16
-    | 1 << BS_8x8
+    | 1 << BlockSize::BS_32x32 as u8
+    | 1 << BlockSize::BS_32x16 as u8
+    | 1 << BlockSize::BS_16x32 as u8
+    | 1 << BlockSize::BS_16x16 as u8
+    | 1 << BlockSize::BS_16x8 as u8
+    | 1 << BlockSize::BS_8x16 as u8
+    | 1 << BlockSize::BS_8x8 as u8
     | 0;
 
 impl Default for Rav1dWarpedMotionParams {
