@@ -1011,6 +1011,7 @@ pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
 pub unsafe extern "C" fn dav1d_data_create(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
     || -> Rav1dResult<*mut u8> {
         let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
+        validate_input!((sz <= usize::MAX / 2, EINVAL))?;
         let data = Rav1dData::create(sz)?;
         let data = data.to::<Dav1dData>();
         let ptr = data
