@@ -2,6 +2,7 @@ use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::ops::Index;
 
 #[repr(C)]
 pub struct GetBits<'a> {
@@ -194,6 +195,10 @@ impl<'a> GetBits<'a> {
         self.index
     }
 
+    pub const fn is_byte_aligned(&self) -> bool {
+        self.bits_left == 0
+    }
+
     pub const fn has_pending_bits(&self) -> bool {
         self.state != 0 || self.bits_left != 0
     }
@@ -203,5 +208,25 @@ impl<'a> GetBits<'a> {
         let i = self.index;
         self.index += n;
         &self.data[i..][..n]
+    }
+
+    pub fn set_remaining_len(&mut self, len: usize) -> Option<()> {
+        self.data = self.data.get(..self.index + len)?;
+        Some(())
+    }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
+
+    pub fn remaining_len(&self) -> usize {
+        self.data.len() - self.index
+    }
+}
+
+impl<'a> Index<usize> for GetBits<'a> {
+    type Output = u8;
+    fn index(&self, index: usize) -> &Self::Output {
+        self.data.index(self.index + index)
     }
 }

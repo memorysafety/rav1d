@@ -538,7 +538,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     let mut res = Err(ENOENT);
 
     while !data.is_empty() {
-        let mut gb = GetBits::new(data);
+        let gb = &mut GetBits::new(data);
 
         gb.get_bit(); // obu_forbidden_bit
         let r#type = Rav1dObuType::from_repr(gb.get_bits(4) as usize);
@@ -559,7 +559,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
         };
 
         if r#type == Some(Rav1dObuType::SeqHdr) {
-            res = Ok(parse_seq_hdr(&mut gb, false)?);
+            res = Ok(parse_seq_hdr(gb, false)?);
             if gb.byte_pos() > obu_end {
                 return Err(EINVAL);
             }
@@ -2098,40 +2098,13 @@ fn parse_tile_hdr(tiling: &Rav1dFrameHeader_tiling, gb: &mut GetBits) -> Rav1dTi
     }
 }
 
-/// Check that we haven't read more than `obu_len`` bytes
-/// from the buffer since `init_bit_pos`.
-fn check_for_overrun(
-    c: &mut Rav1dContext,
-    gb: &mut GetBits,
-    init_bit_pos: usize,
-    obu_len: usize,
-) -> c_int {
-    // Make sure we haven't actually read past the end of the `gb` buffer
-    if gb.has_error() != 0 {
-        writeln!(c.logger, "Overrun in OBU bit buffer");
-        return 1;
-    }
-
-    let pos = gb.pos();
-
-    // We assume that `init_bit_pos` was the bit position of the buffer
-    // at some point in the past, so cannot be smaller than `pos`.
-    assert!(init_bit_pos <= pos);
-
-    if pos - init_bit_pos > 8 * obu_len {
-        writeln!(c.logger, "Overrun in OBU bit buffer into next OBU");
-        return 1;
-    }
-
-    0
-}
-
 unsafe fn parse_obus(
     c: &mut Rav1dContext,
     r#in: &CArc<[u8]>,
     props: &Rav1dDataProps,
-) -> Rav1dResult<usize> {
-    unsafe fn skip(c: &mut Rav1dContext, len: usize, init_byte_pos: usize) -> usize {
+    gb: &mut GetBits,
+) -> Rav1dResult<()> {
+    unsafe fn skip(c: &mut Rav1dContext) {
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
             if c.frame_hdr.as_ref().unwrap().refresh_frame_flags & (1 << i) != 0 {
@@ -2143,11 +2116,7 @@ unsafe fn parse_obus(
 
         let _ = mem::take(&mut c.frame_hdr);
         c.n_tiles = 0;
-
-        len + init_byte_pos
     }
-
-    let mut gb = GetBits::new(r#in);
 
     // obu header
     gb.get_bit(); // obu_forbidden_bit
@@ -2166,28 +2135,19 @@ unsafe fn parse_obus(
     }
 
     // obu length field
-    let len = if has_length_field {
-        gb.get_uleb128() as usize
-    } else {
-        r#in.len() - 1 - has_extension as usize
-    };
+    if has_length_field {
+        let len = gb.get_uleb128() as usize;
+        gb.set_remaining_len(len).ok_or(EINVAL)?;
+    }
     if gb.has_error() != 0 {
         return Err(EINVAL);
     }
 
-    let init_bit_pos = gb.pos();
-    let init_byte_pos = init_bit_pos >> 3;
-
     // We must have read a whole number of bytes at this point
     // (1 byte for the header and whole bytes at a time
     // when reading the leb128 length field).
-    assert!(init_bit_pos & 7 == 0);
 
-    // Make sure that there are enough bits left in the buffer
-    // for the rest of the OBU.
-    if len > r#in.len() - init_byte_pos {
-        return Err(EINVAL);
-    }
+    assert!(gb.is_byte_aligned());
 
     // skip obu not belonging to the selected temporal/spatial layer
     if !matches!(r#type, Some(Rav1dObuType::SeqHdr | Rav1dObuType::Td))
@@ -2197,7 +2157,7 @@ unsafe fn parse_obus(
         let in_temporal_layer = (c.operating_point_idc >> temporal_id & 1) as c_int;
         let in_spatial_layer = (c.operating_point_idc >> spatial_id + 8 & 1) as c_int;
         if in_temporal_layer == 0 || in_spatial_layer == 0 {
-            return Ok(len + init_byte_pos);
+            return Ok(());
         }
     }
 
@@ -2206,27 +2166,17 @@ unsafe fn parse_obus(
         r#in: &CArc<[u8]>,
         props: &Rav1dDataProps,
         gb: &mut GetBits,
-        init_bit_pos: usize,
-        init_byte_pos: usize,
-        len: usize,
     ) -> Rav1dResult {
         let hdr = parse_tile_hdr(&c.frame_hdr.as_ref().ok_or(EINVAL)?.tiling, gb);
         // Align to the next byte boundary and check for overrun.
         gb.bytealign();
-        if check_for_overrun(c, gb, init_bit_pos, len) != 0 {
+        if gb.has_error() != 0 {
             return Err(EINVAL);
         }
 
-        // The current bit position is a multiple of 8
-        // (because we just aligned it) and less than `8 * pkt_bytelen`
-        // because otherwise the overrun check would have fired.
-        let pkt_bytelen = init_byte_pos + len;
-        let bit_pos = gb.pos();
-        assert!(bit_pos & 7 == 0);
-        assert!(pkt_bytelen >= bit_pos >> 3);
         let mut data = r#in.clone();
-        data.slice_in_place(..pkt_bytelen);
-        data.slice_in_place(bit_pos >> 3..);
+        data.slice_in_place(gb.byte_pos()..);
+        data.slice_in_place(..gb.remaining_len());
         // Ensure tile groups are in order and sane; see 6.10.1.
         if hdr.start > hdr.end || hdr.start != c.n_tiles {
             c.tiles.clear();
@@ -2252,10 +2202,10 @@ unsafe fn parse_obus(
 
     match r#type {
         Some(Rav1dObuType::SeqHdr) => {
-            let seq_hdr = parse_seq_hdr(&mut gb, c.strict_std_compliance).inspect_err(|_| {
+            let seq_hdr = parse_seq_hdr(gb, c.strict_std_compliance).inspect_err(|_| {
                 writeln!(c.logger, "Error parsing sequence header");
             })?;
-            if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+            if gb.has_error() != 0 {
                 return Err(EINVAL);
             }
 
@@ -2321,7 +2271,7 @@ unsafe fn parse_obus(
                 c.seq_hdr.as_ref().ok_or(EINVAL)?,
                 temporal_id,
                 spatial_id,
-                &mut gb,
+                gb,
             )
             .inspect_err(|_| writeln!(c.logger, "Error parsing frame header"))?;
 
@@ -2331,7 +2281,7 @@ unsafe fn parse_obus(
                 // This is actually a frame header OBU,
                 // so read the trailing bit and check for overrun.
                 gb.get_bit();
-                if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                if gb.has_error() != 0 {
                     return Err(EINVAL);
                 }
             }
@@ -2362,18 +2312,17 @@ unsafe fn parse_obus(
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
                 gb.bytealign();
-                parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
+                parse_tile_grp(c, r#in, props, gb)?;
             }
         }
         Some(Rav1dObuType::TileGrp) => {
-            parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
+            parse_tile_grp(c, r#in, props, gb)?;
         }
         Some(Rav1dObuType::Metadata) => {
             let debug = Debug::new(false, "OBU", &gb);
 
             // obu metadata type field
             let meta_type = gb.get_uleb128();
-            let meta_type_len = ((gb.pos() - init_bit_pos) >> 3) as c_int;
             if gb.has_error() != 0 {
                 return Err(EINVAL);
             }
@@ -2397,7 +2346,7 @@ unsafe fn parse_obus(
                     // Skip the trailing bit, align to the next byte boundary and check for overrun.
                     gb.get_bit();
                     gb.bytealign();
-                    if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                    if gb.has_error() != 0 {
                         return Err(EINVAL);
                     }
 
@@ -2425,7 +2374,7 @@ unsafe fn parse_obus(
                     // Skip the trailing bit, align to the next byte boundary and check for overrun.
                     gb.get_bit();
                     gb.bytealign();
-                    if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
+                    if gb.has_error() != 0 {
                         return Err(EINVAL);
                     }
 
@@ -2437,15 +2386,12 @@ unsafe fn parse_obus(
                     })); // TODO(kkysen) fallible allocation
                 }
                 Some(ObuMetaType::ItutT32) => {
-                    let mut payload_size = len as c_int;
+                    let mut payload_size = gb.remaining_len();
                     // Don't take into account all the trailing bits for `payload_size`.
-                    while payload_size > 0 && r#in[init_byte_pos + payload_size as usize - 1] == 0 {
+                    while payload_size > 0 && gb[payload_size as usize - 1] == 0 {
                         payload_size -= 1; // trailing_zero_bit x 8
                     }
                     payload_size -= 1; // trailing_one_bit + trailing_zero_bit x 7
-
-                    // Don't take into account meta_type bytes
-                    payload_size -= meta_type_len;
 
                     let mut country_code_extension_byte = 0;
                     let country_code = gb.get_bits(8) as c_int;
@@ -2483,6 +2429,7 @@ unsafe fn parse_obus(
         Some(Rav1dObuType::Padding) => {} // Ignore OBUs we don't care about.
         None => {
             // Print a warning, but don't fail for unknown types.
+            let len = gb.len();
             writeln!(c.logger, "Unknown OBU type {raw_type} of size {len}");
         }
     }
@@ -2500,12 +2447,12 @@ unsafe fn parse_obus(
             {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Reference {
-                        return Ok(skip(c, len, init_byte_pos));
+                        return Ok(skip(c));
                     }
                 }
                 Rav1dFrameType::Intra => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Intra {
-                        return Ok(skip(c, len, init_byte_pos));
+                        return Ok(skip(c));
                     }
                 }
                 _ => {}
@@ -2627,7 +2574,7 @@ unsafe fn parse_obus(
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
-                        return Ok(skip(c, len, init_byte_pos));
+                        return Ok(skip(c));
                     }
                 }
                 Rav1dFrameType::Intra => {
@@ -2635,7 +2582,7 @@ unsafe fn parse_obus(
                         || c.decode_frame_type == Rav1dDecodeFrameType::Reference
                             && frame_hdr.refresh_frame_flags == 0
                     {
-                        return Ok(skip(c, len, init_byte_pos));
+                        return Ok(skip(c));
                     }
                 }
                 _ => {}
@@ -2650,7 +2597,7 @@ unsafe fn parse_obus(
         }
     }
 
-    Ok(len + init_byte_pos)
+    Ok(())
 }
 
 pub(crate) unsafe fn rav1d_parse_obus(
@@ -2658,8 +2605,20 @@ pub(crate) unsafe fn rav1d_parse_obus(
     r#in: &CArc<[u8]>,
     props: &Rav1dDataProps,
 ) -> Rav1dResult<usize> {
-    parse_obus(c, r#in, props).inspect_err(|_| {
-        *c.cached_error_props.get_mut().unwrap() = props.clone();
-        writeln!(c.logger, "Error parsing OBU data");
-    })
+    let gb = &mut GetBits::new(r#in);
+
+    parse_obus(c, r#in, props, gb)
+        .inspect_err(|_| {
+            *c.cached_error_props.get_mut().unwrap() = props.clone();
+            writeln!(
+                c.logger,
+                "{}",
+                if gb.has_error() != 0 {
+                    "Overrun in OBU bit buffer"
+                } else {
+                    "Error parsing OBU data"
+                }
+            );
+        })
+        .map(|_| gb.len())
 }
