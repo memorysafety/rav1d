@@ -624,7 +624,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         let bx4: c_int = if x & is_sb64 != 0 { 16 } else { 0 };
         let cbx4 = bx4 >> ss_hor;
         x >>= is_sb64;
-        let y_hmask: &mut [[u16; 2]; 3] = &mut lflvl[x as usize].filter_y[0][bx4 as usize];
+        let y_hmask: &mut [[u16; 2]; 3] =
+            &mut lflvl[x as usize].filter_y.nd_index_mut([0, bx4 as usize]);
         for y in starty4..endy4 {
             let mask: u32 = 1 << y;
             let sidx = (mask >= 0x10000) as usize;
@@ -658,7 +659,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     if start_of_tile_row != 0 {
         let mut a = &f.a[(f.sb128w * (start_of_tile_row - 1)) as usize..];
         for x in 0..f.sb128w {
-            let y_vmask: &mut [[u16; 2]; 3] = &mut lflvl[x as usize].filter_y[1][starty4 as usize];
+            let y_vmask: &mut [[u16; 2]; 3] = &mut lflvl[x as usize]
+                .filter_y
+                .nd_index_mut([1, starty4 as usize]);
             let w = cmp::min(32, f.w4 - (x << 5)) as u32;
             for i in 0..w {
                 let mask: u32 = 1 << i;
@@ -701,7 +704,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             have_left,
             level_ptr,
             f.b4_stride,
-            &lflvl[x as usize].filter_y[0],
+            &lflvl[x as usize].filter_y.index(0),
             p[0],
             offset,
             f.cur.stride[0],
@@ -775,7 +778,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             have_top,
             level_ptr,
             f.b4_stride,
-            &lflvl[x as usize].filter_y[1],
+            &lflvl[x as usize].filter_y.index(1),
             p[0],
             p_offset[0] + 128 * x as usize,
             f.cur.stride[0],
