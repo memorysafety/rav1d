@@ -640,44 +640,50 @@ pub static dav1d_wedge_ctx_lut: [u8; BlockSize::COUNT] = [
     0, 0, 0, 0, 0, 0, 0, 6, 5, 8, 0, 4, 3, 2, 0, 7, 1, 0, 0, 0, 0, 0,
 ];
 
-pub const cfl_allowed_mask: c_uint = 0
-    | 1 << BlockSize::Bs32x32 as u8
-    | 1 << BlockSize::Bs32x16 as u8
-    | 1 << BlockSize::Bs32x8 as u8
-    | 1 << BlockSize::Bs16x32 as u8
-    | 1 << BlockSize::Bs16x16 as u8
-    | 1 << BlockSize::Bs16x8 as u8
-    | 1 << BlockSize::Bs16x4 as u8
-    | 1 << BlockSize::Bs8x32 as u8
-    | 1 << BlockSize::Bs8x16 as u8
-    | 1 << BlockSize::Bs8x8 as u8
-    | 1 << BlockSize::Bs8x4 as u8
-    | 1 << BlockSize::Bs4x16 as u8
-    | 1 << BlockSize::Bs4x8 as u8
-    | 1 << BlockSize::Bs4x4 as u8
-    | 0;
+pub const cfl_allowed_mask: c_uint = {
+    use BlockSize::*;
 
-pub const wedge_allowed_mask: c_uint = 0
-    | 1 << BlockSize::Bs32x32 as u8
-    | 1 << BlockSize::Bs32x16 as u8
-    | 1 << BlockSize::Bs32x8 as u8
-    | 1 << BlockSize::Bs16x32 as u8
-    | 1 << BlockSize::Bs16x16 as u8
-    | 1 << BlockSize::Bs16x8 as u8
-    | 1 << BlockSize::Bs8x32 as u8
-    | 1 << BlockSize::Bs8x16 as u8
-    | 1 << BlockSize::Bs8x8 as u8
-    | 0;
+    1 << Bs32x32 as u8
+        | 1 << Bs32x16 as u8
+        | 1 << Bs32x8 as u8
+        | 1 << Bs16x32 as u8
+        | 1 << Bs16x16 as u8
+        | 1 << Bs16x8 as u8
+        | 1 << Bs16x4 as u8
+        | 1 << Bs8x32 as u8
+        | 1 << Bs8x16 as u8
+        | 1 << Bs8x8 as u8
+        | 1 << Bs8x4 as u8
+        | 1 << Bs4x16 as u8
+        | 1 << Bs4x8 as u8
+        | 1 << Bs4x4 as u8
+};
 
-pub const interintra_allowed_mask: c_uint = 0
-    | 1 << BlockSize::Bs32x32 as u8
-    | 1 << BlockSize::Bs32x16 as u8
-    | 1 << BlockSize::Bs16x32 as u8
-    | 1 << BlockSize::Bs16x16 as u8
-    | 1 << BlockSize::Bs16x8 as u8
-    | 1 << BlockSize::Bs8x16 as u8
-    | 1 << BlockSize::Bs8x8 as u8
-    | 0;
+pub const wedge_allowed_mask: c_uint = {
+    use BlockSize::*;
+
+    1 << Bs32x32 as u8
+        | 1 << Bs32x16 as u8
+        | 1 << Bs32x8 as u8
+        | 1 << Bs16x32 as u8
+        | 1 << Bs16x16 as u8
+        | 1 << Bs16x8 as u8
+        | 1 << Bs8x32 as u8
+        | 1 << Bs8x16 as u8
+        | 1 << Bs8x8 as u8
+};
+
+pub const interintra_allowed_mask: c_uint = {
+    use BlockSize::*;
+
+    1 << Bs32x32 as u8
+        | 1 << Bs32x16 as u8
+        | 1 << Bs16x32 as u8
+        | 1 << Bs16x16 as u8
+        | 1 << Bs16x8 as u8
+        | 1 << Bs8x16 as u8
+        | 1 << Bs8x8 as u8
+};
 
 impl Default for Rav1dWarpedMotionParams {
     fn default() -> Self {
