@@ -1062,7 +1062,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             .unwrap();
                         let ts_0: *mut Rav1dTileState =
                             &mut *(f.ts).offset(tile_idx as isize) as *mut Rav1dTileState;
-                        tc.ts = ts_0;
+                        tc.ts = tile_idx;
                         tc.by = sby << f.sb_shift;
                         let uses_2pass = (c.n_fc > 1 as c_uint) as c_int;
                         tc.frame_thread.pass = if uses_2pass == 0 {
