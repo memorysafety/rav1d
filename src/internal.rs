@@ -3,7 +3,6 @@ use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::BitDepthDependentType;
 use crate::include::common::bitdepth::BitDepthUnion;
-use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -376,7 +375,7 @@ impl Rav1dFrameContext_bd_fn {
 
     pub unsafe fn recon_b_intra(
         &self,
-        f: &Rav1dFrameData,
+        f: &mut Rav1dFrameData,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         flags: EdgeFlags,
@@ -747,7 +746,7 @@ pub struct Rav1dTileState_tiling {
 #[repr(C)]
 pub struct Rav1dTileState_frame_thread {
     pub pal_idx: usize, // Offset into `f.frame_thread.pal_idx`
-    pub cf: *mut DynCoef,
+    pub cf: usize,      // Offset into `f.frame_thread.cf`
 }
 
 #[repr(C)]
