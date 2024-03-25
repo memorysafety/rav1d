@@ -30,6 +30,7 @@ use crate::src::levels::BS_8x8;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
+use crate::src::levels::Filter2d;
 use crate::src::levels::InterPredMode;
 use crate::src::levels::TxClass;
 use crate::src::levels::TxfmType;
@@ -42,16 +43,6 @@ use crate::src::levels::DCT_FLIPADST;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::DIAG_DOWN_LEFT_PRED;
 use crate::src::levels::DIAG_DOWN_RIGHT_PRED;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
-use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FLIPADST_ADST;
 use crate::src::levels::FLIPADST_DCT;
 use crate::src::levels::FLIPADST_FLIPADST;
@@ -74,7 +65,6 @@ use crate::src::levels::NEWMV;
 use crate::src::levels::NEWMV_NEARESTMV;
 use crate::src::levels::NEWMV_NEARMV;
 use crate::src::levels::NEWMV_NEWMV;
-use crate::src::levels::N_2D_FILTERS;
 use crate::src::levels::N_BS_SIZES;
 use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
@@ -626,29 +616,20 @@ pub static dav1d_tx_type_class: [TxClass; N_TX_TYPES_PLUS_LL] = [
     TxClass::TwoD,
 ];
 
-pub static dav1d_filter_2d: [[u8; Rav1dFilterMode::N_FILTERS]; Rav1dFilterMode::N_FILTERS] = [
-    [
-        FILTER_2D_8TAP_REGULAR as u8,
-        FILTER_2D_8TAP_REGULAR_SMOOTH as u8,
-        FILTER_2D_8TAP_REGULAR_SHARP as u8,
-        0,
-    ],
-    [
-        FILTER_2D_8TAP_SMOOTH_REGULAR as u8,
-        FILTER_2D_8TAP_SMOOTH as u8,
-        FILTER_2D_8TAP_SMOOTH_SHARP as u8,
-        0,
-    ],
-    [
-        FILTER_2D_8TAP_SHARP_REGULAR as u8,
-        FILTER_2D_8TAP_SHARP_SMOOTH as u8,
-        FILTER_2D_8TAP_SHARP as u8,
-        0,
-    ],
-    [0, 0, 0, FILTER_2D_BILINEAR as u8],
-];
+pub const dav1d_filter_2d: [[Filter2d; Rav1dFilterMode::N_FILTERS]; Rav1dFilterMode::N_FILTERS] = {
+    use Filter2d::*;
 
-pub const dav1d_filter_dir: [[Rav1dFilterMode; 2]; N_2D_FILTERS] = [
+    const DEFAULT: Filter2d = Filter2d::Regular8Tap;
+
+    [
+        [Regular8Tap, RegularSmooth8Tap, RegularSharp8Tap, DEFAULT],
+        [SmoothRegular8Tap, Smooth8Tap, SmoothSharp8Tap, DEFAULT],
+        [SharpRegular8Tap, SharpSmooth8Tap, Sharp8Tap, DEFAULT],
+        [DEFAULT, DEFAULT, DEFAULT, Bilinear],
+    ]
+};
+
+pub const dav1d_filter_dir: [[Rav1dFilterMode; 2]; Filter2d::COUNT] = [
     [Rav1dFilterMode::Regular8Tap, Rav1dFilterMode::Regular8Tap],
     [Rav1dFilterMode::Smooth8Tap, Rav1dFilterMode::Regular8Tap],
     [Rav1dFilterMode::Sharp8Tap, Rav1dFilterMode::Regular8Tap],

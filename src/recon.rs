@@ -42,7 +42,6 @@ use crate::src::levels::TxfmType;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::DC_PRED;
-use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_PRED;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
@@ -3294,7 +3293,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 .mv[0],
             &f.sr_cur,
             0 as c_int,
-            FILTER_2D_BILINEAR,
+            Filter2d::Bilinear,
         );
         if res != 0 {
             return res;
@@ -3320,7 +3319,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         .mv[0],
                     &f.sr_cur,
                     0 as c_int,
-                    FILTER_2D_BILINEAR,
+                    Filter2d::Bilinear,
                 );
                 if res != 0 {
                     return res;
@@ -3329,7 +3328,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
     } else if let Some(comp_inter_type) = b.c2rust_unnamed.c2rust_unnamed_0.comp_type {
-        let filter_2d: Filter2d = b.c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
+        let filter_2d: Filter2d = b.c2rust_unnamed.c2rust_unnamed_0.filter2d;
         let tmp: *mut [i16; 16384] = (t
             .scratch
             .c2rust_unnamed
@@ -3874,15 +3873,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 .r#ref
                                 .r#ref[0] as c_int
                                 - 1,
-                            (if t.frame_thread.pass != 2 as c_int {
-                                t.tl_4x4_filter as c_uint
+                            if t.frame_thread.pass != 2 {
+                                t.tl_4x4_filter
                             } else {
                                 f.frame_thread.b[((t.by - 1) as isize * f.b4_stride + t.bx as isize
                                     - 1) as usize]
                                     .c2rust_unnamed
                                     .c2rust_unnamed_0
-                                    .filter2d as c_uint
-                            }) as Filter2d,
+                                    .filter2d
+                            },
                         );
                         if res != 0 {
                             return res;
@@ -3921,15 +3920,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             ),
                             (*(*r.offset(0)).offset((t.bx - 1) as isize)).0.r#ref.r#ref[0] as c_int
                                 - 1,
-                            (if t.frame_thread.pass != 2 as c_int {
-                                left_filter_2d as c_uint
+                            if t.frame_thread.pass != 2 as c_int {
+                                left_filter_2d
                             } else {
                                 f.frame_thread.b
                                     [(t.by as isize * f.b4_stride + t.bx as isize - 1) as usize]
                                     .c2rust_unnamed
                                     .c2rust_unnamed_0
-                                    .filter2d as c_uint
-                            }) as Filter2d,
+                                    .filter2d
+                            },
                         );
                         if res != 0 {
                             return res;
@@ -3976,15 +3975,15 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 .r#ref
                                 .r#ref[0] as c_int
                                 - 1,
-                            (if t.frame_thread.pass != 2 as c_int {
-                                top_filter_2d as c_uint
+                            if t.frame_thread.pass != 2 as c_int {
+                                top_filter_2d
                             } else {
                                 f.frame_thread.b
                                     [((t.by - 1) as isize * f.b4_stride + t.bx as isize) as usize]
                                     .c2rust_unnamed
                                     .c2rust_unnamed_0
-                                    .filter2d as c_uint
-                            }) as Filter2d,
+                                    .filter2d
+                            },
                         );
                         if res != 0 {
                             return res;

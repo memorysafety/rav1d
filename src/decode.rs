@@ -86,6 +86,7 @@ use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
 use crate::src::levels::CompInterType;
+use crate::src::levels::Filter2d;
 use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
 use crate::src::levels::MVJoint;
@@ -94,7 +95,6 @@ use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TxfmSize;
 use crate::src::levels::CFL_PRED;
 use crate::src::levels::DC_PRED;
-use crate::src::levels::FILTER_2D_BILINEAR;
 use crate::src::levels::FILTER_PRED;
 use crate::src::levels::GLOBALMV;
 use crate::src::levels::GLOBALMV_GLOBALMV;
@@ -2355,7 +2355,7 @@ unsafe fn decode_b_inner(
         // reconstruction
         if t.frame_thread.pass == 1 {
             bd_fn.read_coef_blocks(f, t, bs, b);
-            *b.filter2d_mut() = FILTER_2D_BILINEAR as u8;
+            *b.filter2d_mut() = Filter2d::Bilinear;
         } else {
             bd_fn.recon_b_inter(f, t, bs, b)?;
         }

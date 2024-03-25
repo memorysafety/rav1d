@@ -3,16 +3,7 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFilterMode;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_REGULAR_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SHARP;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_SHARP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_REGULAR;
-use crate::src::levels::FILTER_2D_8TAP_SMOOTH_SHARP;
-use crate::src::levels::FILTER_2D_BILINEAR;
+use crate::src::levels::Filter2d;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
@@ -2237,6 +2228,8 @@ extern "C" {
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
 unsafe fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
+    use Filter2d::*;
+
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
@@ -2244,16 +2237,16 @@ unsafe fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
     }
 
     if BD::BPC == BPC::BPC8 {
-        (*c).mct[FILTER_2D_BILINEAR as usize] = dav1d_prep_bilin_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = dav1d_prep_8tap_regular_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = dav1d_prep_8tap_regular_smooth_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = dav1d_prep_8tap_regular_sharp_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = dav1d_prep_8tap_smooth_regular_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = dav1d_prep_8tap_smooth_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = dav1d_prep_8tap_smooth_sharp_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = dav1d_prep_8tap_sharp_regular_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = dav1d_prep_8tap_sharp_smooth_8bpc_sse2;
-        (*c).mct[FILTER_2D_8TAP_SHARP as usize] = dav1d_prep_8tap_sharp_8bpc_sse2;
+        (*c).mct[Bilinear as usize] = dav1d_prep_bilin_8bpc_sse2;
+        (*c).mct[Regular8Tap as usize] = dav1d_prep_8tap_regular_8bpc_sse2;
+        (*c).mct[RegularSmooth8Tap as usize] = dav1d_prep_8tap_regular_smooth_8bpc_sse2;
+        (*c).mct[RegularSharp8Tap as usize] = dav1d_prep_8tap_regular_sharp_8bpc_sse2;
+        (*c).mct[SmoothRegular8Tap as usize] = dav1d_prep_8tap_smooth_regular_8bpc_sse2;
+        (*c).mct[Smooth8Tap as usize] = dav1d_prep_8tap_smooth_8bpc_sse2;
+        (*c).mct[SmoothSharp8Tap as usize] = dav1d_prep_8tap_smooth_sharp_8bpc_sse2;
+        (*c).mct[SharpRegular8Tap as usize] = dav1d_prep_8tap_sharp_regular_8bpc_sse2;
+        (*c).mct[SharpSmooth8Tap as usize] = dav1d_prep_8tap_sharp_smooth_8bpc_sse2;
+        (*c).mct[Sharp8Tap as usize] = dav1d_prep_8tap_sharp_8bpc_sse2;
 
         (*c).warp8x8 = dav1d_warp_affine_8x8_8bpc_sse2;
         (*c).warp8x8t = dav1d_warp_affine_8x8t_8bpc_sse2;
@@ -2263,61 +2256,51 @@ unsafe fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
         return;
     }
 
-    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, put_8tap_regular, ssse3);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = bd_fn!(BD, put_8tap_regular_smooth, ssse3);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = bd_fn!(BD, put_8tap_regular_sharp, ssse3);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = bd_fn!(BD, put_8tap_smooth_regular, ssse3);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, put_8tap_smooth, ssse3);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = bd_fn!(BD, put_8tap_smooth_sharp, ssse3);
-    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = bd_fn!(BD, put_8tap_sharp_regular, ssse3);
-    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = bd_fn!(BD, put_8tap_sharp_smooth, ssse3);
-    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, put_8tap_sharp, ssse3);
-    (*c).mc[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, put_bilin, ssse3);
+    (*c).mc[Regular8Tap as usize] = bd_fn!(BD, put_8tap_regular, ssse3);
+    (*c).mc[RegularSmooth8Tap as usize] = bd_fn!(BD, put_8tap_regular_smooth, ssse3);
+    (*c).mc[RegularSharp8Tap as usize] = bd_fn!(BD, put_8tap_regular_sharp, ssse3);
+    (*c).mc[SmoothRegular8Tap as usize] = bd_fn!(BD, put_8tap_smooth_regular, ssse3);
+    (*c).mc[Smooth8Tap as usize] = bd_fn!(BD, put_8tap_smooth, ssse3);
+    (*c).mc[SmoothSharp8Tap as usize] = bd_fn!(BD, put_8tap_smooth_sharp, ssse3);
+    (*c).mc[SharpRegular8Tap as usize] = bd_fn!(BD, put_8tap_sharp_regular, ssse3);
+    (*c).mc[SharpSmooth8Tap as usize] = bd_fn!(BD, put_8tap_sharp_smooth, ssse3);
+    (*c).mc[Sharp8Tap as usize] = bd_fn!(BD, put_8tap_sharp, ssse3);
+    (*c).mc[Bilinear as usize] = bd_fn!(BD, put_bilin, ssse3);
 
-    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, prep_8tap_regular, ssse3);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = bd_fn!(BD, prep_8tap_regular_smooth, ssse3);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = bd_fn!(BD, prep_8tap_regular_sharp, ssse3);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = bd_fn!(BD, prep_8tap_smooth_regular, ssse3);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, prep_8tap_smooth, ssse3);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = bd_fn!(BD, prep_8tap_smooth_sharp, ssse3);
-    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = bd_fn!(BD, prep_8tap_sharp_regular, ssse3);
-    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = bd_fn!(BD, prep_8tap_sharp_smooth, ssse3);
-    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, prep_8tap_sharp, ssse3);
-    (*c).mct[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, prep_bilin, ssse3);
+    (*c).mct[Regular8Tap as usize] = bd_fn!(BD, prep_8tap_regular, ssse3);
+    (*c).mct[RegularSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_regular_smooth, ssse3);
+    (*c).mct[RegularSharp8Tap as usize] = bd_fn!(BD, prep_8tap_regular_sharp, ssse3);
+    (*c).mct[SmoothRegular8Tap as usize] = bd_fn!(BD, prep_8tap_smooth_regular, ssse3);
+    (*c).mct[Smooth8Tap as usize] = bd_fn!(BD, prep_8tap_smooth, ssse3);
+    (*c).mct[SmoothSharp8Tap as usize] = bd_fn!(BD, prep_8tap_smooth_sharp, ssse3);
+    (*c).mct[SharpRegular8Tap as usize] = bd_fn!(BD, prep_8tap_sharp_regular, ssse3);
+    (*c).mct[SharpSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_sharp_smooth, ssse3);
+    (*c).mct[Sharp8Tap as usize] = bd_fn!(BD, prep_8tap_sharp, ssse3);
+    (*c).mct[Bilinear as usize] = bd_fn!(BD, prep_bilin, ssse3);
 
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, put_8tap_scaled_regular, ssse3);
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        bd_fn!(BD, put_8tap_scaled_regular_smooth, ssse3);
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        bd_fn!(BD, put_8tap_scaled_regular_sharp, ssse3);
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        bd_fn!(BD, put_8tap_scaled_smooth_regular, ssse3);
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, put_8tap_scaled_smooth, ssse3);
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        bd_fn!(BD, put_8tap_scaled_smooth_sharp, ssse3);
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        bd_fn!(BD, put_8tap_scaled_sharp_regular, ssse3);
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        bd_fn!(BD, put_8tap_scaled_sharp_smooth, ssse3);
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, put_8tap_scaled_sharp, ssse3);
-    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, put_bilin_scaled, ssse3);
+    (*c).mc_scaled[Regular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular, ssse3);
+    (*c).mc_scaled[RegularSmooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular_smooth, ssse3);
+    (*c).mc_scaled[RegularSharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular_sharp, ssse3);
+    (*c).mc_scaled[SmoothRegular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth_regular, ssse3);
+    (*c).mc_scaled[Smooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth, ssse3);
+    (*c).mc_scaled[SmoothSharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth_sharp, ssse3);
+    (*c).mc_scaled[SharpRegular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp_regular, ssse3);
+    (*c).mc_scaled[SharpSmooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp_smooth, ssse3);
+    (*c).mc_scaled[Sharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp, ssse3);
+    (*c).mc_scaled[Bilinear as usize] = bd_fn!(BD, put_bilin_scaled, ssse3);
 
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, prep_8tap_scaled_regular, ssse3);
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
+    (*c).mct_scaled[Regular8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_regular, ssse3);
+    (*c).mct_scaled[RegularSmooth8Tap as usize] =
         bd_fn!(BD, prep_8tap_scaled_regular_smooth, ssse3);
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        bd_fn!(BD, prep_8tap_scaled_regular_sharp, ssse3);
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
+    (*c).mct_scaled[RegularSharp8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_regular_sharp, ssse3);
+    (*c).mct_scaled[SmoothRegular8Tap as usize] =
         bd_fn!(BD, prep_8tap_scaled_smooth_regular, ssse3);
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, prep_8tap_scaled_smooth, ssse3);
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        bd_fn!(BD, prep_8tap_scaled_smooth_sharp, ssse3);
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        bd_fn!(BD, prep_8tap_scaled_sharp_regular, ssse3);
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        bd_fn!(BD, prep_8tap_scaled_sharp_smooth, ssse3);
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, prep_8tap_scaled_sharp, ssse3);
-    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, prep_bilin_scaled, ssse3);
+    (*c).mct_scaled[Smooth8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_smooth, ssse3);
+    (*c).mct_scaled[SmoothSharp8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_smooth_sharp, ssse3);
+    (*c).mct_scaled[SharpRegular8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_sharp_regular, ssse3);
+    (*c).mct_scaled[SharpSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_sharp_smooth, ssse3);
+    (*c).mct_scaled[Sharp8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_sharp, ssse3);
+    (*c).mct_scaled[Bilinear as usize] = bd_fn!(BD, prep_bilin_scaled, ssse3);
 
     (*c).avg = bd_fn!(BD, avg, ssse3);
     (*c).w_avg = bd_fn!(BD, w_avg, ssse3);
@@ -2350,64 +2333,55 @@ unsafe fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
             return;
         }
 
-        (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, put_8tap_regular, avx2);
-        (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = bd_fn!(BD, put_8tap_regular_smooth, avx2);
-        (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = bd_fn!(BD, put_8tap_regular_sharp, avx2);
-        (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = bd_fn!(BD, put_8tap_smooth_regular, avx2);
-        (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, put_8tap_smooth, avx2);
-        (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = bd_fn!(BD, put_8tap_smooth_sharp, avx2);
-        (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = bd_fn!(BD, put_8tap_sharp_regular, avx2);
-        (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = bd_fn!(BD, put_8tap_sharp_smooth, avx2);
-        (*c).mc[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, put_8tap_sharp, avx2);
-        (*c).mc[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, put_bilin, avx2);
+        (*c).mc[Regular8Tap as usize] = bd_fn!(BD, put_8tap_regular, avx2);
+        (*c).mc[RegularSmooth8Tap as usize] = bd_fn!(BD, put_8tap_regular_smooth, avx2);
+        (*c).mc[RegularSharp8Tap as usize] = bd_fn!(BD, put_8tap_regular_sharp, avx2);
+        (*c).mc[SmoothRegular8Tap as usize] = bd_fn!(BD, put_8tap_smooth_regular, avx2);
+        (*c).mc[Smooth8Tap as usize] = bd_fn!(BD, put_8tap_smooth, avx2);
+        (*c).mc[SmoothSharp8Tap as usize] = bd_fn!(BD, put_8tap_smooth_sharp, avx2);
+        (*c).mc[SharpRegular8Tap as usize] = bd_fn!(BD, put_8tap_sharp_regular, avx2);
+        (*c).mc[SharpSmooth8Tap as usize] = bd_fn!(BD, put_8tap_sharp_smooth, avx2);
+        (*c).mc[Sharp8Tap as usize] = bd_fn!(BD, put_8tap_sharp, avx2);
+        (*c).mc[Bilinear as usize] = bd_fn!(BD, put_bilin, avx2);
 
-        (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, prep_8tap_regular, avx2);
-        (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-            bd_fn!(BD, prep_8tap_regular_smooth, avx2);
-        (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = bd_fn!(BD, prep_8tap_regular_sharp, avx2);
-        (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-            bd_fn!(BD, prep_8tap_smooth_regular, avx2);
-        (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, prep_8tap_smooth, avx2);
-        (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = bd_fn!(BD, prep_8tap_smooth_sharp, avx2);
-        (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = bd_fn!(BD, prep_8tap_sharp_regular, avx2);
-        (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = bd_fn!(BD, prep_8tap_sharp_smooth, avx2);
-        (*c).mct[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, prep_8tap_sharp, avx2);
-        (*c).mct[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, prep_bilin, avx2);
+        (*c).mct[Regular8Tap as usize] = bd_fn!(BD, prep_8tap_regular, avx2);
+        (*c).mct[RegularSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_regular_smooth, avx2);
+        (*c).mct[RegularSharp8Tap as usize] = bd_fn!(BD, prep_8tap_regular_sharp, avx2);
+        (*c).mct[SmoothRegular8Tap as usize] = bd_fn!(BD, prep_8tap_smooth_regular, avx2);
+        (*c).mct[Smooth8Tap as usize] = bd_fn!(BD, prep_8tap_smooth, avx2);
+        (*c).mct[SmoothSharp8Tap as usize] = bd_fn!(BD, prep_8tap_smooth_sharp, avx2);
+        (*c).mct[SharpRegular8Tap as usize] = bd_fn!(BD, prep_8tap_sharp_regular, avx2);
+        (*c).mct[SharpSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_sharp_smooth, avx2);
+        (*c).mct[Sharp8Tap as usize] = bd_fn!(BD, prep_8tap_sharp, avx2);
+        (*c).mct[Bilinear as usize] = bd_fn!(BD, prep_bilin, avx2);
 
-        (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, put_8tap_scaled_regular, avx2);
-        (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
+        (*c).mc_scaled[Regular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular, avx2);
+        (*c).mc_scaled[RegularSmooth8Tap as usize] =
             bd_fn!(BD, put_8tap_scaled_regular_smooth, avx2);
-        (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-            bd_fn!(BD, put_8tap_scaled_regular_sharp, avx2);
-        (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
+        (*c).mc_scaled[RegularSharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular_sharp, avx2);
+        (*c).mc_scaled[SmoothRegular8Tap as usize] =
             bd_fn!(BD, put_8tap_scaled_smooth_regular, avx2);
-        (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, put_8tap_scaled_smooth, avx2);
-        (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-            bd_fn!(BD, put_8tap_scaled_smooth_sharp, avx2);
-        (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-            bd_fn!(BD, put_8tap_scaled_sharp_regular, avx2);
-        (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-            bd_fn!(BD, put_8tap_scaled_sharp_smooth, avx2);
-        (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, put_8tap_scaled_sharp, avx2);
-        (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, put_bilin_scaled, avx2);
+        (*c).mc_scaled[Smooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth, avx2);
+        (*c).mc_scaled[SmoothSharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth_sharp, avx2);
+        (*c).mc_scaled[SharpRegular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp_regular, avx2);
+        (*c).mc_scaled[SharpSmooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp_smooth, avx2);
+        (*c).mc_scaled[Sharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp, avx2);
+        (*c).mc_scaled[Bilinear as usize] = bd_fn!(BD, put_bilin_scaled, avx2);
 
-        (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] =
-            bd_fn!(BD, prep_8tap_scaled_regular, avx2);
-        (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
+        (*c).mct_scaled[Regular8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_regular, avx2);
+        (*c).mct_scaled[RegularSmooth8Tap as usize] =
             bd_fn!(BD, prep_8tap_scaled_regular_smooth, avx2);
-        (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
+        (*c).mct_scaled[RegularSharp8Tap as usize] =
             bd_fn!(BD, prep_8tap_scaled_regular_sharp, avx2);
-        (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
+        (*c).mct_scaled[SmoothRegular8Tap as usize] =
             bd_fn!(BD, prep_8tap_scaled_smooth_regular, avx2);
-        (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, prep_8tap_scaled_smooth, avx2);
-        (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-            bd_fn!(BD, prep_8tap_scaled_smooth_sharp, avx2);
-        (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
+        (*c).mct_scaled[Smooth8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_smooth, avx2);
+        (*c).mct_scaled[SmoothSharp8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_smooth_sharp, avx2);
+        (*c).mct_scaled[SharpRegular8Tap as usize] =
             bd_fn!(BD, prep_8tap_scaled_sharp_regular, avx2);
-        (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-            bd_fn!(BD, prep_8tap_scaled_sharp_smooth, avx2);
-        (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, prep_8tap_scaled_sharp, avx2);
-        (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, prep_bilin_scaled, avx2);
+        (*c).mct_scaled[SharpSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_sharp_smooth, avx2);
+        (*c).mct_scaled[Sharp8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_sharp, avx2);
+        (*c).mct_scaled[Bilinear as usize] = bd_fn!(BD, prep_bilin_scaled, avx2);
 
         (*c).avg = bd_fn!(BD, avg, avx2);
         (*c).w_avg = bd_fn!(BD, w_avg, avx2);
@@ -2429,39 +2403,27 @@ unsafe fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
             return;
         }
 
-        (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, put_8tap_regular, avx512icl);
-        (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-            bd_fn!(BD, put_8tap_regular_smooth, avx512icl);
-        (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-            bd_fn!(BD, put_8tap_regular_sharp, avx512icl);
-        (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-            bd_fn!(BD, put_8tap_smooth_regular, avx512icl);
-        (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, put_8tap_smooth, avx512icl);
-        (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-            bd_fn!(BD, put_8tap_smooth_sharp, avx512icl);
-        (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-            bd_fn!(BD, put_8tap_sharp_regular, avx512icl);
-        (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-            bd_fn!(BD, put_8tap_sharp_smooth, avx512icl);
-        (*c).mc[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, put_8tap_sharp, avx512icl);
-        (*c).mc[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, put_bilin, avx512icl);
+        (*c).mc[Regular8Tap as usize] = bd_fn!(BD, put_8tap_regular, avx512icl);
+        (*c).mc[RegularSmooth8Tap as usize] = bd_fn!(BD, put_8tap_regular_smooth, avx512icl);
+        (*c).mc[RegularSharp8Tap as usize] = bd_fn!(BD, put_8tap_regular_sharp, avx512icl);
+        (*c).mc[SmoothRegular8Tap as usize] = bd_fn!(BD, put_8tap_smooth_regular, avx512icl);
+        (*c).mc[Smooth8Tap as usize] = bd_fn!(BD, put_8tap_smooth, avx512icl);
+        (*c).mc[SmoothSharp8Tap as usize] = bd_fn!(BD, put_8tap_smooth_sharp, avx512icl);
+        (*c).mc[SharpRegular8Tap as usize] = bd_fn!(BD, put_8tap_sharp_regular, avx512icl);
+        (*c).mc[SharpSmooth8Tap as usize] = bd_fn!(BD, put_8tap_sharp_smooth, avx512icl);
+        (*c).mc[Sharp8Tap as usize] = bd_fn!(BD, put_8tap_sharp, avx512icl);
+        (*c).mc[Bilinear as usize] = bd_fn!(BD, put_bilin, avx512icl);
 
-        (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BD, prep_8tap_regular, avx512icl);
-        (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-            bd_fn!(BD, prep_8tap_regular_smooth, avx512icl);
-        (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-            bd_fn!(BD, prep_8tap_regular_sharp, avx512icl);
-        (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-            bd_fn!(BD, prep_8tap_smooth_regular, avx512icl);
-        (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BD, prep_8tap_smooth, avx512icl);
-        (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-            bd_fn!(BD, prep_8tap_smooth_sharp, avx512icl);
-        (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-            bd_fn!(BD, prep_8tap_sharp_regular, avx512icl);
-        (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-            bd_fn!(BD, prep_8tap_sharp_smooth, avx512icl);
-        (*c).mct[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BD, prep_8tap_sharp, avx512icl);
-        (*c).mct[FILTER_2D_BILINEAR as usize] = bd_fn!(BD, prep_bilin, avx512icl);
+        (*c).mct[Regular8Tap as usize] = bd_fn!(BD, prep_8tap_regular, avx512icl);
+        (*c).mct[RegularSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_regular_smooth, avx512icl);
+        (*c).mct[RegularSharp8Tap as usize] = bd_fn!(BD, prep_8tap_regular_sharp, avx512icl);
+        (*c).mct[SmoothRegular8Tap as usize] = bd_fn!(BD, prep_8tap_smooth_regular, avx512icl);
+        (*c).mct[Smooth8Tap as usize] = bd_fn!(BD, prep_8tap_smooth, avx512icl);
+        (*c).mct[SmoothSharp8Tap as usize] = bd_fn!(BD, prep_8tap_smooth_sharp, avx512icl);
+        (*c).mct[SharpRegular8Tap as usize] = bd_fn!(BD, prep_8tap_sharp_regular, avx512icl);
+        (*c).mct[SharpSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_sharp_smooth, avx512icl);
+        (*c).mct[Sharp8Tap as usize] = bd_fn!(BD, prep_8tap_sharp, avx512icl);
+        (*c).mct[Bilinear as usize] = bd_fn!(BD, prep_bilin, avx512icl);
 
         (*c).avg = bd_fn!(BD, avg, avx512icl);
         (*c).w_avg = bd_fn!(BD, w_avg, avx512icl);
@@ -2483,33 +2445,35 @@ unsafe fn mc_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
 unsafe fn mc_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
+    use Filter2d::*;
+
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
         return;
     }
 
-    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BP, put_8tap_regular, neon);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = bd_fn!(BP, put_8tap_regular_smooth, neon);
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = bd_fn!(BP, put_8tap_regular_sharp, neon);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = bd_fn!(BP, put_8tap_smooth_regular, neon);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BP, put_8tap_smooth, neon);
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = bd_fn!(BP, put_8tap_smooth_sharp, neon);
-    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = bd_fn!(BP, put_8tap_sharp_regular, neon);
-    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = bd_fn!(BP, put_8tap_sharp_smooth, neon);
-    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BP, put_8tap_sharp, neon);
-    (*c).mc[FILTER_2D_BILINEAR as usize] = bd_fn!(BP, put_bilin, neon);
+    (*c).mc[Regular8Tap as usize] = bd_fn!(BP, put_8tap_regular, neon);
+    (*c).mc[RegularSmooth8Tap as usize] = bd_fn!(BP, put_8tap_regular_smooth, neon);
+    (*c).mc[RegularSharp8Tap as usize] = bd_fn!(BP, put_8tap_regular_sharp, neon);
+    (*c).mc[SmoothRegular8Tap as usize] = bd_fn!(BP, put_8tap_smooth_regular, neon);
+    (*c).mc[Smooth8Tap as usize] = bd_fn!(BP, put_8tap_smooth, neon);
+    (*c).mc[SmoothSharp8Tap as usize] = bd_fn!(BP, put_8tap_smooth_sharp, neon);
+    (*c).mc[SharpRegular8Tap as usize] = bd_fn!(BP, put_8tap_sharp_regular, neon);
+    (*c).mc[SharpSmooth8Tap as usize] = bd_fn!(BP, put_8tap_sharp_smooth, neon);
+    (*c).mc[Sharp8Tap as usize] = bd_fn!(BP, put_8tap_sharp, neon);
+    (*c).mc[Bilinear as usize] = bd_fn!(BP, put_bilin, neon);
 
-    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = bd_fn!(BP, prep_8tap_regular, neon);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = bd_fn!(BP, prep_8tap_regular_smooth, neon);
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = bd_fn!(BP, prep_8tap_regular_sharp, neon);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = bd_fn!(BP, prep_8tap_smooth_regular, neon);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = bd_fn!(BP, prep_8tap_smooth, neon);
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = bd_fn!(BP, prep_8tap_smooth_sharp, neon);
-    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = bd_fn!(BP, prep_8tap_sharp_regular, neon);
-    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = bd_fn!(BP, prep_8tap_sharp_smooth, neon);
-    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = bd_fn!(BP, prep_8tap_sharp, neon);
-    (*c).mct[FILTER_2D_BILINEAR as usize] = bd_fn!(BP, prep_bilin, neon);
+    (*c).mct[Regular8Tap as usize] = bd_fn!(BP, prep_8tap_regular, neon);
+    (*c).mct[RegularSmooth8Tap as usize] = bd_fn!(BP, prep_8tap_regular_smooth, neon);
+    (*c).mct[RegularSharp8Tap as usize] = bd_fn!(BP, prep_8tap_regular_sharp, neon);
+    (*c).mct[SmoothRegular8Tap as usize] = bd_fn!(BP, prep_8tap_smooth_regular, neon);
+    (*c).mct[Smooth8Tap as usize] = bd_fn!(BP, prep_8tap_smooth, neon);
+    (*c).mct[SmoothSharp8Tap as usize] = bd_fn!(BP, prep_8tap_smooth_sharp, neon);
+    (*c).mct[SharpRegular8Tap as usize] = bd_fn!(BP, prep_8tap_sharp_regular, neon);
+    (*c).mct[SharpSmooth8Tap as usize] = bd_fn!(BP, prep_8tap_sharp_smooth, neon);
+    (*c).mct[Sharp8Tap as usize] = bd_fn!(BP, prep_8tap_sharp, neon);
+    (*c).mct[Bilinear as usize] = bd_fn!(BP, prep_bilin, neon);
 
     (*c).avg = bd_fn!(BP, avg, neon);
     (*c).w_avg = bd_fn!(BP, w_avg, neon);
@@ -2529,61 +2493,51 @@ unsafe fn mc_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
 
 #[cold]
 pub unsafe fn rav1d_mc_dsp_init<BD: BitDepth>(c: *mut Rav1dMCDSPContext) {
-    (*c).mc[FILTER_2D_8TAP_REGULAR as usize] = put_8tap_regular_c_erased::<BD>;
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = put_8tap_regular_smooth_c_erased::<BD>;
-    (*c).mc[FILTER_2D_8TAP_REGULAR_SHARP as usize] = put_8tap_regular_sharp_c_erased::<BD>;
-    (*c).mc[FILTER_2D_8TAP_SHARP_REGULAR as usize] = put_8tap_sharp_regular_c_erased::<BD>;
-    (*c).mc[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = put_8tap_sharp_smooth_c_erased::<BD>;
-    (*c).mc[FILTER_2D_8TAP_SHARP as usize] = put_8tap_sharp_c_erased::<BD>;
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = put_8tap_smooth_regular_c_erased::<BD>;
-    (*c).mc[FILTER_2D_8TAP_SMOOTH as usize] = put_8tap_smooth_c_erased::<BD>;
-    (*c).mc[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = put_8tap_smooth_sharp_c_erased::<BD>;
-    (*c).mc[FILTER_2D_BILINEAR as usize] = put_bilin_c_erased::<BD>;
+    use Filter2d::*;
 
-    (*c).mct[FILTER_2D_8TAP_REGULAR as usize] = prep_8tap_regular_c_erased::<BD>;
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] = prep_8tap_regular_smooth_c_erased::<BD>;
-    (*c).mct[FILTER_2D_8TAP_REGULAR_SHARP as usize] = prep_8tap_regular_sharp_c_erased::<BD>;
-    (*c).mct[FILTER_2D_8TAP_SHARP_REGULAR as usize] = prep_8tap_sharp_regular_c_erased::<BD>;
-    (*c).mct[FILTER_2D_8TAP_SHARP_SMOOTH as usize] = prep_8tap_sharp_smooth_c_erased::<BD>;
-    (*c).mct[FILTER_2D_8TAP_SHARP as usize] = prep_8tap_sharp_c_erased::<BD>;
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] = prep_8tap_smooth_regular_c_erased::<BD>;
-    (*c).mct[FILTER_2D_8TAP_SMOOTH as usize] = prep_8tap_smooth_c_erased::<BD>;
-    (*c).mct[FILTER_2D_8TAP_SMOOTH_SHARP as usize] = prep_8tap_smooth_sharp_c_erased::<BD>;
-    (*c).mct[FILTER_2D_BILINEAR as usize] = prep_bilin_c_erased::<BD>;
+    (*c).mc[Regular8Tap as usize] = put_8tap_regular_c_erased::<BD>;
+    (*c).mc[RegularSmooth8Tap as usize] = put_8tap_regular_smooth_c_erased::<BD>;
+    (*c).mc[RegularSharp8Tap as usize] = put_8tap_regular_sharp_c_erased::<BD>;
+    (*c).mc[SharpRegular8Tap as usize] = put_8tap_sharp_regular_c_erased::<BD>;
+    (*c).mc[SharpSmooth8Tap as usize] = put_8tap_sharp_smooth_c_erased::<BD>;
+    (*c).mc[Sharp8Tap as usize] = put_8tap_sharp_c_erased::<BD>;
+    (*c).mc[SmoothRegular8Tap as usize] = put_8tap_smooth_regular_c_erased::<BD>;
+    (*c).mc[Smooth8Tap as usize] = put_8tap_smooth_c_erased::<BD>;
+    (*c).mc[SmoothSharp8Tap as usize] = put_8tap_smooth_sharp_c_erased::<BD>;
+    (*c).mc[Bilinear as usize] = put_bilin_c_erased::<BD>;
 
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR as usize] = put_8tap_regular_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        put_8tap_regular_smooth_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        put_8tap_regular_sharp_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        put_8tap_sharp_regular_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        put_8tap_sharp_smooth_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_8TAP_SHARP as usize] = put_8tap_sharp_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        put_8tap_smooth_regular_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH as usize] = put_8tap_smooth_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        put_8tap_smooth_sharp_scaled_c_erased::<BD>;
-    (*c).mc_scaled[FILTER_2D_BILINEAR as usize] = put_bilin_scaled_c_erased::<BD>;
+    (*c).mct[Regular8Tap as usize] = prep_8tap_regular_c_erased::<BD>;
+    (*c).mct[RegularSmooth8Tap as usize] = prep_8tap_regular_smooth_c_erased::<BD>;
+    (*c).mct[RegularSharp8Tap as usize] = prep_8tap_regular_sharp_c_erased::<BD>;
+    (*c).mct[SharpRegular8Tap as usize] = prep_8tap_sharp_regular_c_erased::<BD>;
+    (*c).mct[SharpSmooth8Tap as usize] = prep_8tap_sharp_smooth_c_erased::<BD>;
+    (*c).mct[Sharp8Tap as usize] = prep_8tap_sharp_c_erased::<BD>;
+    (*c).mct[SmoothRegular8Tap as usize] = prep_8tap_smooth_regular_c_erased::<BD>;
+    (*c).mct[Smooth8Tap as usize] = prep_8tap_smooth_c_erased::<BD>;
+    (*c).mct[SmoothSharp8Tap as usize] = prep_8tap_smooth_sharp_c_erased::<BD>;
+    (*c).mct[Bilinear as usize] = prep_bilin_c_erased::<BD>;
 
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR as usize] = prep_8tap_regular_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SMOOTH as usize] =
-        prep_8tap_regular_smooth_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_8TAP_REGULAR_SHARP as usize] =
-        prep_8tap_regular_sharp_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_REGULAR as usize] =
-        prep_8tap_sharp_regular_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP_SMOOTH as usize] =
-        prep_8tap_sharp_smooth_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_8TAP_SHARP as usize] = prep_8tap_sharp_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_REGULAR as usize] =
-        prep_8tap_smooth_regular_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH as usize] = prep_8tap_smooth_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_8TAP_SMOOTH_SHARP as usize] =
-        prep_8tap_smooth_sharp_scaled_c_erased::<BD>;
-    (*c).mct_scaled[FILTER_2D_BILINEAR as usize] = prep_bilin_scaled_c_erased::<BD>;
+    (*c).mc_scaled[Regular8Tap as usize] = put_8tap_regular_scaled_c_erased::<BD>;
+    (*c).mc_scaled[RegularSmooth8Tap as usize] = put_8tap_regular_smooth_scaled_c_erased::<BD>;
+    (*c).mc_scaled[RegularSharp8Tap as usize] = put_8tap_regular_sharp_scaled_c_erased::<BD>;
+    (*c).mc_scaled[SharpRegular8Tap as usize] = put_8tap_sharp_regular_scaled_c_erased::<BD>;
+    (*c).mc_scaled[SharpSmooth8Tap as usize] = put_8tap_sharp_smooth_scaled_c_erased::<BD>;
+    (*c).mc_scaled[Sharp8Tap as usize] = put_8tap_sharp_scaled_c_erased::<BD>;
+    (*c).mc_scaled[SmoothRegular8Tap as usize] = put_8tap_smooth_regular_scaled_c_erased::<BD>;
+    (*c).mc_scaled[Smooth8Tap as usize] = put_8tap_smooth_scaled_c_erased::<BD>;
+    (*c).mc_scaled[SmoothSharp8Tap as usize] = put_8tap_smooth_sharp_scaled_c_erased::<BD>;
+    (*c).mc_scaled[Bilinear as usize] = put_bilin_scaled_c_erased::<BD>;
+
+    (*c).mct_scaled[Regular8Tap as usize] = prep_8tap_regular_scaled_c_erased::<BD>;
+    (*c).mct_scaled[RegularSmooth8Tap as usize] = prep_8tap_regular_smooth_scaled_c_erased::<BD>;
+    (*c).mct_scaled[RegularSharp8Tap as usize] = prep_8tap_regular_sharp_scaled_c_erased::<BD>;
+    (*c).mct_scaled[SharpRegular8Tap as usize] = prep_8tap_sharp_regular_scaled_c_erased::<BD>;
+    (*c).mct_scaled[SharpSmooth8Tap as usize] = prep_8tap_sharp_smooth_scaled_c_erased::<BD>;
+    (*c).mct_scaled[Sharp8Tap as usize] = prep_8tap_sharp_scaled_c_erased::<BD>;
+    (*c).mct_scaled[SmoothRegular8Tap as usize] = prep_8tap_smooth_regular_scaled_c_erased::<BD>;
+    (*c).mct_scaled[Smooth8Tap as usize] = prep_8tap_smooth_scaled_c_erased::<BD>;
+    (*c).mct_scaled[SmoothSharp8Tap as usize] = prep_8tap_smooth_sharp_scaled_c_erased::<BD>;
+    (*c).mct_scaled[Bilinear as usize] = prep_bilin_scaled_c_erased::<BD>;
 
     (*c).avg = avg_c_erased::<BD>;
     (*c).w_avg = w_avg_c_erased::<BD>;

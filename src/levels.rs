@@ -1,4 +1,3 @@
-use std::ffi::c_uint;
 use std::ops::Neg;
 use strum::EnumCount;
 use strum::FromRepr;
@@ -166,18 +165,19 @@ pub const BS_64x128: BlockSize = 2;
 pub const BS_128x64: BlockSize = 1;
 pub const BS_128x128: BlockSize = 0;
 
-pub type Filter2d = c_uint;
-pub const N_2D_FILTERS: usize = 10; // TODO(kkysen) symbolicate in struct Rav1dMCDSPContext once deduplicated
-pub const FILTER_2D_BILINEAR: Filter2d = 9;
-pub const FILTER_2D_8TAP_SMOOTH_SHARP: Filter2d = 8;
-pub const FILTER_2D_8TAP_SMOOTH: Filter2d = 7;
-pub const FILTER_2D_8TAP_SMOOTH_REGULAR: Filter2d = 6;
-pub const FILTER_2D_8TAP_SHARP: Filter2d = 5;
-pub const FILTER_2D_8TAP_SHARP_SMOOTH: Filter2d = 4;
-pub const FILTER_2D_8TAP_SHARP_REGULAR: Filter2d = 3;
-pub const FILTER_2D_8TAP_REGULAR_SHARP: Filter2d = 2;
-pub const FILTER_2D_8TAP_REGULAR_SMOOTH: Filter2d = 1;
-pub const FILTER_2D_8TAP_REGULAR: Filter2d = 0;
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount)]
+pub enum Filter2d {
+    Regular8Tap = 0,
+    RegularSmooth8Tap = 1,
+    RegularSharp8Tap = 2,
+    SharpRegular8Tap = 3,
+    SharpSmooth8Tap = 4,
+    Sharp8Tap = 5,
+    SmoothRegular8Tap = 6,
+    Smooth8Tap = 7,
+    SmoothSharp8Tap = 8,
+    Bilinear = 9,
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
 pub enum MVJoint {
@@ -320,7 +320,7 @@ pub struct Av1Block_inter {
     pub drl_idx: u8,
     pub r#ref: [i8; 2],
     pub max_ytx: u8,
-    pub filter2d: u8,
+    pub filter2d: Filter2d,
     pub interintra_type: Option<InterIntraType>,
     pub tx_split0: u8,
     pub tx_split1: u16,
@@ -515,11 +515,11 @@ impl Av1Block {
             .mv2d
     }
 
-    pub unsafe fn filter2d(&self) -> u8 {
+    pub unsafe fn filter2d(&self) -> Filter2d {
         self.c2rust_unnamed.c2rust_unnamed_0.filter2d
     }
 
-    pub unsafe fn filter2d_mut(&mut self) -> &mut u8 {
+    pub unsafe fn filter2d_mut(&mut self) -> &mut Filter2d {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.filter2d
     }
 
