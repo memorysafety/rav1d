@@ -558,44 +558,85 @@ pub(crate) const RAV1D_COLOR_PRI_UNKNOWN: Rav1dColorPrimaries = DAV1D_COLOR_PRI_
 pub(crate) const RAV1D_COLOR_PRI_BT709: Rav1dColorPrimaries = DAV1D_COLOR_PRI_BT709;
 
 pub type Dav1dTransferCharacteristics = c_uint;
+pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::BT709.to_dav1d();
+pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::UNKNOWN.to_dav1d();
+pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::BT470M.to_dav1d();
+pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::BT470BG.to_dav1d();
+pub const DAV1D_TRC_BT601: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::BT601.to_dav1d();
+pub const DAV1D_TRC_SMPTE240: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::SMPTE240.to_dav1d();
+pub const DAV1D_TRC_LINEAR: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::LINEAR.to_dav1d();
+pub const DAV1D_TRC_LOG100: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::LOG100.to_dav1d();
+pub const DAV1D_TRC_LOG100_SQRT10: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::LOG100_SQRT10.to_dav1d();
+pub const DAV1D_TRC_IEC61966: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::IEC61966.to_dav1d();
+pub const DAV1D_TRC_BT1361: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::BT1361.to_dav1d();
+pub const DAV1D_TRC_SRGB: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::SRGB.to_dav1d();
+pub const DAV1D_TRC_BT2020_10BIT: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::BT2020_10BIT.to_dav1d();
+pub const DAV1D_TRC_BT2020_12BIT: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::BT2020_12BIT.to_dav1d();
+pub const DAV1D_TRC_SMPTE2084: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::SMPTE2084.to_dav1d();
+pub const DAV1D_TRC_SMPTE428: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::SMPTE428.to_dav1d();
+pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics =
+    Rav1dTransferCharacteristics::HLG.to_dav1d();
+// this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_TRC_RESERVED: Dav1dTransferCharacteristics = 255;
-pub const DAV1D_TRC_HLG: Dav1dTransferCharacteristics = 18;
-pub const DAV1D_TRC_SMPTE428: Dav1dTransferCharacteristics = 17;
-pub const DAV1D_TRC_SMPTE2084: Dav1dTransferCharacteristics = 16;
-pub const DAV1D_TRC_BT2020_12BIT: Dav1dTransferCharacteristics = 15;
-pub const DAV1D_TRC_BT2020_10BIT: Dav1dTransferCharacteristics = 14;
-pub const DAV1D_TRC_SRGB: Dav1dTransferCharacteristics = 13;
-pub const DAV1D_TRC_BT1361: Dav1dTransferCharacteristics = 12;
-pub const DAV1D_TRC_IEC61966: Dav1dTransferCharacteristics = 11;
-pub const DAV1D_TRC_LOG100_SQRT10: Dav1dTransferCharacteristics = 10;
-pub const DAV1D_TRC_LOG100: Dav1dTransferCharacteristics = 9;
-pub const DAV1D_TRC_LINEAR: Dav1dTransferCharacteristics = 8;
-pub const DAV1D_TRC_SMPTE240: Dav1dTransferCharacteristics = 7;
-pub const DAV1D_TRC_BT601: Dav1dTransferCharacteristics = 6;
-pub const DAV1D_TRC_BT470BG: Dav1dTransferCharacteristics = 5;
-pub const DAV1D_TRC_BT470M: Dav1dTransferCharacteristics = 4;
-pub const DAV1D_TRC_UNKNOWN: Dav1dTransferCharacteristics = 2;
-pub const DAV1D_TRC_BT709: Dav1dTransferCharacteristics = 1;
 
-pub(crate) type Rav1dTransferCharacteristics = c_uint;
-pub(crate) const _RAV1D_TRC_RESERVED: Rav1dTransferCharacteristics = DAV1D_TRC_RESERVED;
-pub(crate) const _RAV1D_TRC_HLG: Rav1dTransferCharacteristics = DAV1D_TRC_HLG;
-pub(crate) const _RAV1D_TRC_SMPTE428: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE428;
-pub(crate) const _RAV1D_TRC_SMPTE2084: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE2084;
-pub(crate) const _RAV1D_TRC_BT2020_12BIT: Rav1dTransferCharacteristics = DAV1D_TRC_BT2020_12BIT;
-pub(crate) const _RAV1D_TRC_BT2020_10BIT: Rav1dTransferCharacteristics = DAV1D_TRC_BT2020_10BIT;
-pub(crate) const RAV1D_TRC_SRGB: Rav1dTransferCharacteristics = DAV1D_TRC_SRGB;
-pub(crate) const _RAV1D_TRC_BT1361: Rav1dTransferCharacteristics = DAV1D_TRC_BT1361;
-pub(crate) const _RAV1D_TRC_IEC61966: Rav1dTransferCharacteristics = DAV1D_TRC_IEC61966;
-pub(crate) const _RAV1D_TRC_LOG100_SQRT10: Rav1dTransferCharacteristics = DAV1D_TRC_LOG100_SQRT10;
-pub(crate) const _RAV1D_TRC_LOG100: Rav1dTransferCharacteristics = DAV1D_TRC_LOG100;
-pub(crate) const _RAV1D_TRC_LINEAR: Rav1dTransferCharacteristics = DAV1D_TRC_LINEAR;
-pub(crate) const _RAV1D_TRC_SMPTE240: Rav1dTransferCharacteristics = DAV1D_TRC_SMPTE240;
-pub(crate) const _RAV1D_TRC_BT601: Rav1dTransferCharacteristics = DAV1D_TRC_BT601;
-pub(crate) const _RAV1D_TRC_BT470BG: Rav1dTransferCharacteristics = DAV1D_TRC_BT470BG;
-pub(crate) const _RAV1D_TRC_BT470M: Rav1dTransferCharacteristics = DAV1D_TRC_BT470M;
-pub(crate) const RAV1D_TRC_UNKNOWN: Rav1dTransferCharacteristics = DAV1D_TRC_UNKNOWN;
-pub(crate) const _RAV1D_TRC_BT709: Rav1dTransferCharacteristics = DAV1D_TRC_BT709;
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct Rav1dTransferCharacteristics(pub u8);
+
+impl Rav1dTransferCharacteristics {
+    pub const _RESERVED_0: Self = Self(0);
+    pub const BT709: Self = Self(1);
+    pub const UNKNOWN: Self = Self(2);
+    pub const _RESERVED_3: Self = Self(3);
+    pub const BT470M: Self = Self(4);
+    pub const BT470BG: Self = Self(5);
+    pub const BT601: Self = Self(6);
+    pub const SMPTE240: Self = Self(7);
+    pub const LINEAR: Self = Self(8);
+    pub const LOG100: Self = Self(9);
+    pub const LOG100_SQRT10: Self = Self(10);
+    pub const IEC61966: Self = Self(11);
+    pub const BT1361: Self = Self(12);
+    pub const SRGB: Self = Self(13);
+    pub const BT2020_10BIT: Self = Self(14);
+    pub const BT2020_12BIT: Self = Self(15);
+    pub const SMPTE2084: Self = Self(16);
+    pub const SMPTE428: Self = Self(17);
+    pub const HLG: Self = Self(18);
+
+    const fn to_dav1d(self) -> Dav1dTransferCharacteristics {
+        self.0 as Dav1dTransferCharacteristics
+    }
+}
+
+impl From<Rav1dTransferCharacteristics> for Dav1dTransferCharacteristics {
+    fn from(value: Rav1dTransferCharacteristics) -> Self {
+        value.to_dav1d()
+    }
+}
+
+impl TryFrom<Dav1dTransferCharacteristics> for Rav1dTransferCharacteristics {
+    type Error = ();
+
+    fn try_from(value: Dav1dTransferCharacteristics) -> Result<Self, Self::Error> {
+        u8::try_from(value).map(Self).map_err(|_| ())
+    }
+}
 
 pub type Dav1dMatrixCoefficients = c_uint;
 pub const DAV1D_MC_IDENTITY: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::IDENTITY.to_dav1d();
@@ -618,7 +659,7 @@ pub const DAV1D_MC_CHROMAT_NCL: Dav1dMatrixCoefficients =
 pub const DAV1D_MC_CHROMAT_CL: Dav1dMatrixCoefficients =
     Rav1dMatrixCoefficients::CHROMAT_CL.to_dav1d();
 pub const DAV1D_MC_ICTCP: Dav1dMatrixCoefficients = Rav1dMatrixCoefficients::ICTCP.to_dav1d();
-// dav1d defines this value as 255, but the specification defines it as 3
+// this symbol is defined by dav1d, but not part of the spec
 pub const DAV1D_MC_RESERVED: Dav1dMatrixCoefficients = 255;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -628,7 +669,7 @@ impl Rav1dMatrixCoefficients {
     pub const IDENTITY: Self = Self(0);
     pub const BT709: Self = Self(1);
     pub const UNKNOWN: Self = Self(2);
-    pub const RESERVED: Self = Self(3);
+    pub const _RESERVED_3: Self = Self(3);
     pub const FCC: Self = Self(4);
     pub const BT470BG: Self = Self(5);
     pub const BT601: Self = Self(6);
@@ -1180,7 +1221,7 @@ impl From<Dav1dSequenceHeader> for Rav1dSequenceHeader {
             max_height,
             layout: layout.try_into().unwrap(),
             pri,
-            trc,
+            trc: trc.try_into().unwrap(),
             mtrx: mtrx.try_into().unwrap(),
             chr: chr.try_into().unwrap(),
             hbd,
@@ -1295,7 +1336,7 @@ impl From<Rav1dSequenceHeader> for Dav1dSequenceHeader {
             max_height,
             layout: layout.into(),
             pri,
-            trc,
+            trc: trc.into(),
             mtrx: mtrx.into(),
             chr: chr.into(),
             hbd,
