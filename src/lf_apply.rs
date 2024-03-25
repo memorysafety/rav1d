@@ -593,7 +593,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     sby: c_int,
     start_of_tile_row: c_int,
 ) {
-    let lflvl = &mut f.lf.mask[lflvl_offset..];
+    let lflvl = &f.lf.mask[lflvl_offset..];
     let mut have_left; // Don't filter outside the frame
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
@@ -638,7 +638,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             y_hmask[cmp::min(idx, lpf_y[(y - starty4) as usize] as usize)][sidx] |= smask;
         }
         if f.cur.p.layout != Rav1dPixelLayout::I400 {
-            let uv_hmask: &mut [[u16; 2]; 2] = &mut lflvl[x as usize].filter_uv[0][cbx4 as usize];
+            let uv_hmask: &mut [[u16; 2]; 2] =
+                &mut lflvl[x as usize].filter_uv.nd_index_mut([0, cbx4 as usize]);
             for y in starty4 >> ss_ver..uv_endy4 {
                 let uv_mask: u32 = 1 << y;
                 let sidx = (uv_mask >= vmax) as usize;
@@ -676,8 +677,9 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             }
             if f.cur.p.layout != Rav1dPixelLayout::I400 {
                 let cw: c_uint = w.wrapping_add(ss_hor as c_uint) >> ss_hor;
-                let uv_vmask: &mut [[u16; 2]; 2] =
-                    &mut lflvl[x as usize].filter_uv[1][(starty4 >> ss_ver) as usize];
+                let uv_vmask: &mut [[u16; 2]; 2] = &mut lflvl[x as usize]
+                    .filter_uv
+                    .nd_index_mut([1, (starty4 >> ss_ver) as usize]);
                 for i in 0..cw {
                     let uv_mask: u32 = 1 << i;
                     let sidx = (uv_mask >= hmax) as usize;
@@ -691,7 +693,6 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             a = &a[1..];
         }
     }
-    let lflvl = &f.lf.mask[lflvl_offset..];
     let level_ptr_guard =
         f.lf.level
             .index((f.b4_stride * sby as isize * sbsz as isize) as usize..);
@@ -732,7 +733,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             have_left,
             level_ptr,
             f.b4_stride,
-            &lflvl[x as usize].filter_uv[0],
+            &lflvl[x as usize].filter_uv.index(0),
             pu,
             pv,
             uv_off,
@@ -806,7 +807,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
             have_top,
             level_ptr,
             f.b4_stride,
-            &lflvl[x as usize].filter_uv[1],
+            &lflvl[x as usize].filter_uv.index(1),
             pu,
             pv,
             p_offset[1] + uv_off,

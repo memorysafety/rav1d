@@ -40,7 +40,7 @@ pub struct Av1RestorationUnit {
 pub struct Av1Filter {
     // each bit is 1 col
     pub filter_y: DisjointMut<[[[[u16; 2]; 3]; 32]; 2]>, // 0=col, 1=row
-    pub filter_uv: [[[[u16; 2]; 2]; 32]; 2],             // 0=col, 1=row
+    pub filter_uv: DisjointMut<[[[[u16; 2]; 2]; 32]; 2]>, // 0=col, 1=row
     /// -1 means "unset"
     pub cdef_idx: [i8; 4],
     /// for 8x8 blocks, but stored on a 4x8 basis
@@ -304,7 +304,7 @@ fn mask_edges_intra(
 }
 
 fn mask_edges_chroma(
-    masks: &mut [[[[u16; 2]; 2]; 32]; 2],
+    masks: &DisjointMut<[[[[u16; 2]; 2]; 32]; 2]>,
     cby4: usize,
     cbx4: usize,
     cw4: usize,
@@ -333,7 +333,10 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cby4 + y);
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
-        masks[0][cbx4][cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([0, cbx4]) };
+        mask_slice[cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
 
     // top block edge
@@ -341,7 +344,10 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cbx4 + x);
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
-        masks[1][cby4][cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([1, cby4]) };
+        mask_slice[cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
 
     if !skip_inter {
@@ -351,11 +357,14 @@ fn mask_edges_chroma(
         let inner = (((t as u64) << ch4) - (t as u64)) as u32;
         let inner = [(inner & ((1 << vmask) - 1)) as u16, (inner >> vmask) as u16];
         for x in (hstep..cw4).step_by(hstep) {
+            // SAFETY: No other mutable references to this sub-slice exist on
+            // other threads.
+            let mask_slice = unsafe { masks.nd_index_mut([0, cbx4 + x]) };
             if inner[0] != 0 {
-                masks[0][cbx4 + x][twl4c as usize][0] |= inner[0];
+                mask_slice[twl4c as usize][0] |= inner[0];
             }
             if inner[1] != 0 {
-                masks[0][cbx4 + x][twl4c as usize][1] |= inner[1];
+                mask_slice[twl4c as usize][1] |= inner[1];
             }
         }
 
@@ -367,11 +376,14 @@ fn mask_edges_chroma(
         let inner = (((t as u64) << cw4) - (t as u64)) as u32;
         let inner = [(inner & ((1 << hmask) - 1)) as u16, (inner >> hmask) as u16];
         for y in (vstep..ch4).step_by(vstep) {
+            // SAFETY: No other mutable references to this sub-slice exist on
+            // other threads.
+            let mask_slice = unsafe { masks.nd_index_mut([1, cby4 + y]) };
             if inner[0] != 0 {
-                masks[1][cby4 + y][thl4c as usize][0] |= inner[0];
+                mask_slice[thl4c as usize][0] |= inner[0];
             }
             if inner[1] != 0 {
-                masks[1][cby4 + y][thl4c as usize][1] |= inner[1];
+                mask_slice[thl4c as usize][1] |= inner[1];
             }
         }
     }
@@ -387,7 +399,7 @@ fn mask_edges_chroma(
 }
 
 pub(crate) unsafe fn rav1d_create_lf_mask_intra(
-    lflvl: &mut Av1Filter,
+    lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
@@ -478,7 +490,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     }
 
     mask_edges_chroma(
-        &mut lflvl.filter_uv,
+        &lflvl.filter_uv,
         cby4,
         cbx4,
         cbw4,
@@ -493,7 +505,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
 }
 
 pub(crate) unsafe fn rav1d_create_lf_mask_inter(
-    lflvl: &mut Av1Filter,
+    lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
@@ -544,7 +556,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
         }
 
         mask_edges_inter(
-            &mut lflvl.filter_y,
+            &lflvl.filter_y,
             by4,
             bx4,
             bw4,
@@ -600,7 +612,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     }
 
     mask_edges_chroma(
-        &mut lflvl.filter_uv,
+        &lflvl.filter_uv,
         cby4,
         cbx4,
         cbw4,
