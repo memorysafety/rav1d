@@ -92,8 +92,10 @@ use std::ffi::c_uint;
 use std::mem;
 use std::ops::Add;
 use std::ops::AddAssign;
+use std::ops::Deref;
 use std::ops::Index;
 use std::ops::IndexMut;
+use std::ops::Range;
 use std::ops::Sub;
 use std::ptr;
 use std::sync::atomic::AtomicBool;
@@ -505,27 +507,49 @@ pub struct Rav1dFrameContext_frame_thread {
 #[derive(Default)]
 pub(crate) struct TxLpfRightEdge {
     /// `.len() = h * 2`
-    inner: Vec<u8>,
+    inner: DisjointMut<Vec<u8>>,
 }
 
 impl TxLpfRightEdge {
     #[allow(dead_code)]
-    pub const fn new() -> Self {
-        Self { inner: Vec::new() }
+    pub fn new() -> Self {
+        Self {
+            inner: DisjointMut::default(),
+        }
     }
 
     pub fn resize(&mut self, right_edge_size: usize, value: u8) {
         self.inner.resize(right_edge_size * 32 * 2, value)
     }
 
-    pub fn get(&self) -> (&[u8], &[u8]) {
+    pub fn get<'a>(
+        &'a self,
+        index_y: Range<usize>,
+        index_uv: Range<usize>,
+    ) -> (
+        impl 'a + Deref<Target = [u8]>,
+        impl 'a + Deref<Target = [u8]>,
+    ) {
         let mid = self.inner.len() / 2;
-        self.inner.split_at(mid)
+        assert!(index_y.end <= mid);
+        let (uv_start, uv_end) = (index_uv.start + mid, index_uv.end + mid);
+        (
+            self.inner.index(index_y),
+            self.inner.index(uv_start..uv_end),
+        )
     }
 
-    pub fn get_mut(&mut self) -> (&mut [u8], &mut [u8]) {
+    pub fn copy_from_slice_y(&self, index: Range<usize>, src: &[u8]) {
+        #[allow(unused_mut)]
+        let mut slice_mut = unsafe { self.inner.index_mut(index) };
+        slice_mut.copy_from_slice(src);
+    }
+
+    pub fn copy_from_slice_uv(&self, index: Range<usize>, src: &[u8]) {
         let mid = self.inner.len() / 2;
-        self.inner.split_at_mut(mid)
+        #[allow(unused_mut)]
+        let mut slice_mut = unsafe { self.inner.index_mut(index.start + mid..index.end + mid) };
+        slice_mut.copy_from_slice(src);
     }
 }
 

@@ -610,9 +610,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
     let hmax = (1 as c_uint) << hmask;
     let endy4 = starty4 + cmp::min(f.h4 - sby * sbsz, sbsz) as u32;
     let uv_endy4 = (endy4 + ss_ver as u32) >> ss_ver;
-    let (lpf_y, lpf_uv) = f.lf.tx_lpf_right_edge.get();
-    let mut lpf_y = &lpf_y[(sby << sbl2) as usize..];
-    let mut lpf_uv = &lpf_uv[(sby << sbl2 - ss_ver) as usize..];
+    let mut lpf_y_idx = (sby << sbl2) as usize;
+    let mut lpf_uv_idx = (sby << sbl2 - ss_ver) as usize;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
     // fix lpf strength at tile col boundaries
@@ -627,6 +626,10 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         x >>= is_sb64;
         let y_hmask: &mut [[u16; 2]; 3] =
             &mut lflvl[x as usize].filter_y.nd_index_mut([0, bx4 as usize]);
+        let (lpf_y, lpf_uv) = f.lf.tx_lpf_right_edge.get(
+            lpf_y_idx..lpf_y_idx + (endy4 - starty4) as usize,
+            lpf_uv_idx..lpf_uv_idx + (uv_endy4 - (starty4 >> ss_ver)) as usize,
+        );
         for y in starty4..endy4 {
             let mask: u32 = 1 << y;
             let sidx = (mask >= 0x10000) as usize;
@@ -652,8 +655,8 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                     [sidx] |= smask;
             }
         }
-        lpf_y = &lpf_y[halign..];
-        lpf_uv = &lpf_uv[(halign >> ss_ver)..];
+        lpf_y_idx += halign;
+        lpf_uv_idx += halign >> ss_ver;
         tile_col += 1;
     }
 
