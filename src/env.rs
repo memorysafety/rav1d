@@ -20,7 +20,6 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_FLIPADST;
 use crate::src::refmvs::refmvs_candidate;
 use crate::src::tables::TxfmInfo;
-use libc::ptrdiff_t;
 use std::cmp;
 use std::cmp::Ordering;
 use std::ffi::c_int;
@@ -601,15 +600,14 @@ pub unsafe fn get_cur_frame_segid(
     // and it comes from [`Dav1dFrameContext::cur_segmap`],
     // which is set to [`Dav1dFrameContext::cur_segmap_ref`] and [`Dav1dFrameContext::prev_segmap_ref`],
     // which are [`Dav1dRef`]s, which have no size and are refcounted.
-    mut cur_seg_map: *const u8,
-    stride: ptrdiff_t,
+    cur_seg_map: *const u8,
+    stride: usize,
 ) -> (u8, u8) {
-    let negative_adjustment = have_left as usize + have_top as usize * stride.unsigned_abs();
-    cur_seg_map = cur_seg_map
-        .add((bx as isize + by as isize * stride - negative_adjustment as isize) as usize);
+    let negative_adjustment = have_left as usize + have_top as usize * stride;
+    let cur_seg_map = cur_seg_map.add(bx as usize + by as usize * stride - negative_adjustment);
     match (have_left, have_top) {
         (true, true) => {
-            let l = *cur_seg_map.add(stride.unsigned_abs());
+            let l = *cur_seg_map.add(stride);
             let a = *cur_seg_map.add(1);
             let al = *cur_seg_map.add(0);
             let seg_ctx = if l == a && al == l {

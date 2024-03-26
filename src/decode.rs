@@ -1630,8 +1630,14 @@ unsafe fn decode_b_inner(
                     b.seg_id = 0;
                 }
             } else {
-                let (pred_seg_id, seg_ctx) =
-                    get_cur_frame_segid(t.by, t.bx, have_top, have_left, f.cur_segmap, f.b4_stride);
+                let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
+                    t.by,
+                    t.bx,
+                    have_top,
+                    have_left,
+                    f.cur_segmap,
+                    f.b4_stride as usize,
+                );
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_id[seg_ctx as usize],
@@ -1714,8 +1720,14 @@ unsafe fn decode_b_inner(
                 b.seg_id = 0;
             }
         } else {
-            let (pred_seg_id, seg_ctx) =
-                get_cur_frame_segid(t.by, t.bx, have_top, have_left, f.cur_segmap, f.b4_stride);
+            let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
+                t.by,
+                t.bx,
+                have_top,
+                have_left,
+                f.cur_segmap,
+                f.b4_stride as usize,
+            );
             if b.skip != 0 {
                 b.seg_id = pred_seg_id as u8;
             } else {
