@@ -4,6 +4,7 @@ use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::headers::DRav1d;
+use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Rav1dColorPrimaries;
@@ -2425,11 +2426,26 @@ unsafe fn parse_obus(
                         let country_code_extension_byte = country_code_extension_byte as u8;
                         let payload = (0..payload_size).map(|_| gb.get_bits(8) as u8).collect(); // TODO(kkysen) fallible allocation
 
-                        c.itut_t35 = Some(Arc::new(DRav1d::from_rav1d(Rav1dITUTT35 {
+                        let mut itut_t35 = DRav1d::<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>> {
+                            rav1d: Vec::new(),
+                            dav1d: Vec::new(),
+                        };
+                        if c.itut_t35.is_some() {
+                            for x in (**c.itut_t35.as_ref().unwrap()).rav1d.iter() {
+                                itut_t35.dav1d.push(Dav1dITUTT35::from(x.clone()));
+                                itut_t35.rav1d.push(x.clone());
+                            }
+                        }
+
+                        let e = Rav1dITUTT35 {
                             country_code,
                             country_code_extension_byte,
                             payload,
-                        }))); // TODO(kkysen) fallible allocation
+                        };
+
+                        itut_t35.dav1d.push(Dav1dITUTT35::from(e.clone()));
+                        itut_t35.rav1d.push(e);
+                        c.itut_t35 = Some(Arc::new(itut_t35));
                     }
                 }
                 Some(ObuMetaType::Scalability | ObuMetaType::Timecode) => {} // Ignore metadata OBUs we don't care about.
