@@ -24,6 +24,7 @@ use std::cmp;
 use std::cmp::Ordering;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::slice;
 
 #[repr(C)]
 pub struct BlockContext {
@@ -604,12 +605,18 @@ pub unsafe fn get_cur_frame_segid(
     stride: usize,
 ) -> (u8, u8) {
     let negative_adjustment = have_left as usize + have_top as usize * stride;
-    let cur_seg_map = cur_seg_map.add(bx as usize + by as usize * stride - negative_adjustment);
+    let offset = bx as usize + by as usize * stride - negative_adjustment;
+    let len = match (have_left, have_top) {
+        (true, true) => stride + 1,
+        (true, false) | (false, true) => 1,
+        (false, false) => 0,
+    };
+    let cur_seg_map = &slice::from_raw_parts(cur_seg_map, offset + len)[offset..];
     match (have_left, have_top) {
         (true, true) => {
-            let l = *cur_seg_map.add(stride);
-            let a = *cur_seg_map.add(1);
-            let al = *cur_seg_map.add(0);
+            let l = cur_seg_map[stride];
+            let a = cur_seg_map[1];
+            let al = cur_seg_map[0];
             let seg_ctx = if l == a && al == l {
                 2
             } else if l == a || al == l || a == al {
@@ -620,7 +627,7 @@ pub unsafe fn get_cur_frame_segid(
             let seg_id = if a == al { a } else { l };
             (seg_id, seg_ctx)
         }
-        (true, false) | (false, true) => (*cur_seg_map.add(0), 0),
+        (true, false) | (false, true) => (cur_seg_map[0], 0),
         (false, false) => (0, 0),
     }
 }
