@@ -1,5 +1,9 @@
 name: build and test on armv7 and aarch64 with QEMU
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
 jobs:
   test-on-ubuntu-latest-with-qemu:
     strategy:
