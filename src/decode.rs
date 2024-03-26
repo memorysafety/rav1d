@@ -1517,24 +1517,27 @@ unsafe fn decode_b_inner(
             ((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)
         } else {
             0
-        } as isize;
-        if *(t.cur_sb_cdef_idx_ptr).offset(idx) == -1 {
+        } as usize;
+        let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
+        let cur_idx = t.cur_sb_cdef_idx + idx;
+        if cdef_idx[cur_idx].load(Ordering::Relaxed) == -1 {
             let v = rav1d_msac_decode_bools(&mut ts.msac, frame_hdr.cdef.n_bits as c_uint) as i8;
-            *(t.cur_sb_cdef_idx_ptr).offset(idx) = v;
+            cdef_idx[cur_idx].store(v, Ordering::Relaxed);
             if bw4 > 16 {
-                *(t.cur_sb_cdef_idx_ptr).offset(idx + 1) = v;
+                cdef_idx[cur_idx + 1].store(v, Ordering::Relaxed)
             }
             if bh4 > 16 {
-                *(t.cur_sb_cdef_idx_ptr).offset(idx + 2) = v;
+                cdef_idx[cur_idx + 2].store(v, Ordering::Relaxed)
             }
             if bw4 == 32 && bh4 == 32 {
-                *(t.cur_sb_cdef_idx_ptr).offset(idx + 3) = v;
+                cdef_idx[cur_idx + 3].store(v, Ordering::Relaxed)
             }
 
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-cdef_idx[{}]: r={}",
-                    *t.cur_sb_cdef_idx_ptr, ts.msac.rng
+                    cdef_idx[t.cur_sb_cdef_idx].load(Ordering::Relaxed),
+                    ts.msac.rng
                 );
             }
         }
@@ -3957,14 +3960,16 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         if c.flush.load(Ordering::Acquire) != 0 {
             return Err(());
         }
-        let cdef_idx = &mut f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
+        let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
         if root_bl == BlockLevel::Bl128x128 {
-            *cdef_idx = [-1; 4];
-            t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
+            for cdef_idx in cdef_idx {
+                cdef_idx.store(-1, Ordering::Relaxed);
+            }
+            t.cur_sb_cdef_idx = 0;
         } else {
-            let cdef_idx = &mut cdef_idx[(((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)) as usize..];
-            cdef_idx[0] = -1;
-            t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
+            t.cur_sb_cdef_idx = (((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)) as usize;
+            let cdef_idx = &cdef_idx[t.cur_sb_cdef_idx..];
+            cdef_idx[0].store(-1, Ordering::Relaxed);
         }
         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
         // Restoration filter
