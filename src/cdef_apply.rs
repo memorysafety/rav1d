@@ -231,8 +231,8 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
         for sbx in 0..sb64w {
             let sb128x = sbx >> 1;
             let sb64_idx = ((by & sbsz) >> 3) + (sbx & 1);
-            let cdef_idx =
-                f.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx[sb64_idx as usize] as c_int;
+            let cdef_idx = f.lf.mask[(lflvl_offset + sb128x) as usize].cdef_idx[sb64_idx as usize]
+                .load(atomig::Ordering::Relaxed) as c_int;
             if cdef_idx == -1
                 || frame_hdr.cdef.y_strength[cdef_idx as usize] == 0
                     && frame_hdr.cdef.uv_strength[cdef_idx as usize] == 0

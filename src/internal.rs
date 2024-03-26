@@ -914,7 +914,7 @@ pub(crate) struct Rav1dTaskContext {
     /// Index into the relevant `Rav1dFrameContext::lf.mask` array.
     pub lf_mask: Option<usize>,
     pub top_pre_cdef_toggle: c_int,
-    pub cur_sb_cdef_idx_ptr: *mut i8,
+    pub cur_sb_cdef_idx: Option<usize>, // index into `Rav1dFrameContext::lf.mask.cdef_idx`
     // for chroma sub8x8, we need to know the filter for all 4 subblocks in
     // a 4x4 area, but the top/left one can go out of cache already, so this
     // keeps it accessible
@@ -939,7 +939,7 @@ impl Rav1dTaskContext {
             warpmv: mem::zeroed(),
             lf_mask: None,
             top_pre_cdef_toggle: 0,
-            cur_sb_cdef_idx_ptr: ptr::null_mut(),
+            cur_sb_cdef_idx: None,
             tl_4x4_filter: mem::zeroed(),
             frame_thread: Rav1dTaskContext_frame_thread { pass: 0 },
             task_thread,
