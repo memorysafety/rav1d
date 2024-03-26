@@ -1049,7 +1049,7 @@ pub(crate) struct Rav1dTaskContext {
     pub ts: usize, // Index into `f.ts`
     pub b: Bxy,
     pub l: BlockContext,
-    pub a: *mut BlockContext,
+    pub a: usize, // Offset into `f.a`
     pub rt: refmvs_tile,
     pub cf: BitDepthUnion<Cf>,
     pub al_pal: BitDepthUnion<AlPal>,
@@ -1075,7 +1075,7 @@ impl Rav1dTaskContext {
             ts: 0,
             b: Default::default(),
             l: mem::zeroed(),
-            a: ptr::null_mut(),
+            a: 0,
             rt: mem::zeroed(),
             cf: Default::default(),
             al_pal: Default::default(),
