@@ -45,7 +45,7 @@ pub struct Av1Filter {
     /// -1 means "unset"
     pub cdef_idx: [AtomicI8; 4],
     /// for 8x8 blocks, but stored on a 4x8 basis
-    pub noskip_mask: [[u16; 2]; 16],
+    pub noskip_mask: DisjointMut<[[u16; 2]; 16]>,
 }
 
 /// each struct describes one 128x128 area (1 or 4 SBs), post-superres-scaling

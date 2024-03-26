@@ -1911,7 +1911,7 @@ unsafe fn decode_b_inner(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             rav1d_create_lf_mask_intra(
-                &mut f.lf.mask[t.lf_mask.unwrap()],
+                &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
                 &lflvl[b.seg_id as usize],
@@ -2928,7 +2928,7 @@ unsafe fn decode_b_inner(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             rav1d_create_lf_mask_inter(
-                &mut f.lf.mask[t.lf_mask.unwrap()],
+                &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
                 // In C, the inner dimensions (`ref`, `is_gmv`) are offset,
@@ -3026,13 +3026,14 @@ unsafe fn decode_b_inner(
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
-        for noskip_mask in &mut f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
-            [..(bh4 as usize + 1) / 2]
-        {
-            noskip_mask[bx_idx as usize] |= mask as u16;
+        let start = by4 as usize >> 1;
+        let end = start + (bh4 as usize + 1) / 2;
+        let noskip_mask = &f.lf.mask[t.lf_mask.unwrap()].noskip_mask;
+        for i in start..end {
+            *noskip_mask.nd_index_mut([i, bx_idx as usize]) |= mask as u16;
             if bw4 == 32 {
                 // this should be mask >> 16, but it's 0xffffffff anyway
-                noskip_mask[1] |= mask as u16;
+                *noskip_mask.nd_index_mut([i, 1]) |= mask as u16;
             }
         }
     }
