@@ -2152,7 +2152,7 @@ unsafe fn decode_b_inner(
             };
             rav1d_create_lf_mask_intra(
                 &mut *t.lf_mask,
-                &mut f.lf.level,
+                &f.lf.level,
                 f.b4_stride,
                 &lflvl[b.seg_id as usize],
                 t.bx,
@@ -3171,7 +3171,7 @@ unsafe fn decode_b_inner(
             };
             rav1d_create_lf_mask_inter(
                 &mut *t.lf_mask,
-                &mut f.lf.level,
+                &f.lf.level,
                 f.b4_stride,
                 // In C, the inner dimensions (`ref`, `is_gmv`) are offset,
                 // but then cast back to a pointer to the full array,
