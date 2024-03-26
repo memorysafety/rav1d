@@ -604,11 +604,13 @@ pub unsafe fn get_cur_frame_segid(
     mut cur_seg_map: *const u8,
     stride: ptrdiff_t,
 ) -> (u8, u8) {
-    cur_seg_map = cur_seg_map.offset(bx as isize + by as isize * stride);
+    let negative_adjustment = have_left as usize + have_top as usize * stride.unsigned_abs();
+    cur_seg_map = cur_seg_map
+        .add((bx as isize + by as isize * stride - negative_adjustment as isize) as usize);
     if have_left && have_top {
-        let l = *cur_seg_map.offset(-1);
-        let a = *cur_seg_map.offset(-stride as isize);
-        let al = *cur_seg_map.offset(-(stride + 1) as isize);
+        let l = *cur_seg_map.add(stride.unsigned_abs());
+        let a = *cur_seg_map.add(1);
+        let al = *cur_seg_map.add(0);
         let seg_ctx = if l == a && al == l {
             2
         } else if l == a || al == l || a == al {
@@ -621,9 +623,9 @@ pub unsafe fn get_cur_frame_segid(
     } else {
         let seg_ctx = 0;
         let seg_id = if have_left {
-            *cur_seg_map.offset(-1)
+            *cur_seg_map.add(0)
         } else if have_top {
-            *cur_seg_map.offset(-stride as isize)
+            *cur_seg_map.add(0)
         } else {
             0
         };
