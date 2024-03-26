@@ -26,7 +26,6 @@ use crate::src::internal::TaskThreadData_delayed_fg;
 use crate::src::internal::TaskType;
 use crate::src::picture::Rav1dThreadPicture;
 use std::cmp;
-use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::mem;
@@ -37,27 +36,8 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::MutexGuard;
 
-#[cfg(target_os = "linux")]
-use libc::prctl;
-
-#[cfg(target_os = "macos")]
-use libc::pthread_setname_np;
-
 pub const FRAME_ERROR: u32 = u32::MAX - 1;
 pub const TILE_ERROR: i32 = i32::MAX - 1;
-
-#[inline]
-unsafe fn rav1d_set_thread_name(name: *const c_char) {
-    cfg_if::cfg_if! {
-        if #[cfg(target_os = "linux")] {
-            prctl(15 as c_int, name);
-        } else if #[cfg(target_os = "macos")] {
-            pthread_setname_np(name);
-        } else {
-            unimplemented!();
-        }
-    }
-}
 
 /// This function resets the cur pointer to the first frame theoretically
 /// executable after a task completed (ie. each time we update some progress or
@@ -753,8 +733,6 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
     // immutable borrow of tc across the call to park
     let ttd_clone = Arc::clone(&tc.task_thread.ttd);
     let ttd = &*ttd_clone;
-
-    rav1d_set_thread_name(b"dav1d-worker\0" as *const u8 as *const c_char);
 
     unsafe fn park<'ttd>(
         c: &Rav1dContext,

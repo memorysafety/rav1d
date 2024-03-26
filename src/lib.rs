@@ -308,7 +308,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         rav1d_refmvs_init(&mut f.rf);
     }
     (*c).tc = (0..n_tc)
-        .map(|_| {
+        .map(|n| {
             let thread_data = Arc::new(Rav1dTaskContext_task_thread::new(Arc::clone(
                 &(*c).task_thread,
             )));
@@ -319,6 +319,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
                 let handle = thread::Builder::new()
                     // Don't set stack size like `dav1d` does.
                     // See <https://github.com/memorysafety/rav1d/issues/889>.
+                    .name(format!("rav1d-worker-{n}"))
                     .spawn(|| rav1d_worker_task(context_borrow, thread_data_copy))
                     .unwrap();
                 Rav1dContextTaskThread {
