@@ -240,8 +240,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                 last_skip = true;
             } else {
                 // Create a complete 32-bit mask for the sb row ahead of time.
-                let noskip_row =
-                    f.lf.mask[(lflvl_offset + sb128x) as usize].noskip_mask[by_idx as usize];
+                let noskip_row = f.lf.mask[(lflvl_offset + sb128x) as usize]
+                    .noskip_mask
+                    .index(by_idx as usize);
                 let noskip_mask = (noskip_row[1] as u32) << 16 | noskip_row[0] as u32;
 
                 let y_lvl = frame_hdr.cdef.y_strength[cdef_idx as usize];
