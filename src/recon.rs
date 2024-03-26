@@ -2516,18 +2516,15 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 let dst: *mut BD::Pixel = (f.cur.data.data[0] as *mut BD::Pixel).offset(
                     (4 * (t.by as isize * BD::pxstride(f.cur.stride[0]) + t.bx as isize)) as isize,
                 );
-                let pal_idx: *const u8;
-                if t.frame_thread.pass != 0 {
+                let pal_idx = if t.frame_thread.pass != 0 {
                     let p = t.frame_thread.pass & 1;
-                    if ((*ts).frame_thread[p as usize].pal_idx).is_null() {
-                        unreachable!();
-                    }
-                    pal_idx = (*ts).frame_thread[p as usize].pal_idx;
-                    (*ts).frame_thread[p as usize].pal_idx =
-                        ((*ts).frame_thread[p as usize].pal_idx).offset((bw4 * bh4 * 16) as isize);
+                    let frame_thread = &mut (*ts).frame_thread[p as usize];
+                    let pal_idx = &f.frame_thread.pal_idx[frame_thread.pal_idx..];
+                    frame_thread.pal_idx += (bw4 * bh4 * 16) as usize;
+                    pal_idx
                 } else {
-                    pal_idx = (t.scratch.c2rust_unnamed_0.pal_idx).as_mut_ptr();
-                }
+                    &t.scratch.c2rust_unnamed_0.pal_idx
+                };
                 let pal: *const u16 = if t.frame_thread.pass != 0 {
                     let index = (((t.by as isize >> 1) + (t.bx as isize & 1)) * (f.b4_stride >> 1)
                         + ((t.bx >> 1) + (t.by & 1)) as isize)
@@ -2540,7 +2537,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     dst,
                     f.cur.stride[0],
                     pal,
-                    pal_idx,
+                    pal_idx.as_ptr(),
                     bw4 * 4,
                     bh4 * 4,
                 );
@@ -2899,41 +2896,34 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let uv_dstoff: ptrdiff_t = 4
                         * ((t.bx >> ss_hor) as isize
                             + (t.by >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
-                    let pal: *const [u16; 8];
-                    let pal_idx: *const u8;
-                    if t.frame_thread.pass != 0 {
+                    let (pal, pal_idx) = if t.frame_thread.pass != 0 {
                         let p = t.frame_thread.pass & 1;
-                        if ((*ts).frame_thread[p as usize].pal_idx).is_null() {
-                            unreachable!();
-                        }
                         let index = (((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
                             + ((t.bx as isize >> 1) as isize + (t.by as isize & 1)) as isize)
                             as isize;
-                        pal = &f.frame_thread.pal[index as usize][0] as *const [u16; 8];
-                        pal_idx = (*ts).frame_thread[p as usize].pal_idx;
-                        (*ts).frame_thread[p as usize].pal_idx = ((*ts).frame_thread[p as usize]
-                            .pal_idx)
-                            .offset((cbw4 * cbh4 * 16) as isize);
+                        let pal_idx_offset = &mut (*ts).frame_thread[p as usize].pal_idx;
+                        let pal_idx = &f.frame_thread.pal_idx[*pal_idx_offset..];
+                        *pal_idx_offset += (cbw4 * cbh4 * 16) as usize;
+                        (&f.frame_thread.pal[index as usize], pal_idx)
                     } else {
-                        pal = (t.scratch.c2rust_unnamed_0.pal).as_mut_ptr() as *const [u16; 8];
-                        pal_idx = &mut *(t.scratch.c2rust_unnamed_0.pal_idx)
-                            .as_mut_ptr()
-                            .offset((bw4 * bh4 * 16) as isize)
-                            as *mut u8;
-                    }
+                        (
+                            &t.scratch.c2rust_unnamed_0.pal,
+                            &t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..],
+                        )
+                    };
                     (*f.dsp).ipred.pal_pred.call::<BD>(
                         (f.cur.data.data[1] as *mut BD::Pixel).offset(uv_dstoff as isize),
                         f.cur.stride[1],
-                        (*pal.offset(1)).as_ptr(),
-                        pal_idx,
+                        pal[1].as_ptr(),
+                        pal_idx.as_ptr(),
                         cbw4 * 4,
                         cbh4 * 4,
                     );
                     (*f.dsp).ipred.pal_pred.call::<BD>(
                         (f.cur.data.data[2] as *mut BD::Pixel).offset(uv_dstoff as isize),
                         f.cur.stride[1],
-                        (*pal.offset(2)).as_ptr(),
-                        pal_idx,
+                        pal[2].as_ptr(),
+                        pal_idx.as_ptr(),
                         cbw4 * 4,
                         cbh4 * 4,
                     );
