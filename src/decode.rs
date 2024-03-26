@@ -3989,14 +3989,13 @@ unsafe fn setup_tile(
             &f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
         };
 
-        let lr = lr_ref.get();
+        let lr = lr_ref.try_write().unwrap();
         let lr = Av1RestorationUnit {
             filter_v: [3, -7, 15],
             filter_h: [3, -7, 15],
             sgr_weights: [-32, 31],
-            ..lr
+            ..*lr
         };
-        lr_ref.set(lr);
         ts.lr_ref[p] = lr;
     }
 
@@ -4250,9 +4249,17 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                     let px_x = x << unit_size_log2 + ss_hor;
                     let sb_idx = (t.by >> 5) * f.sr_sb128w + (px_x >> 7);
                     let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
-                    let lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize].get_mut();
+                    let mut lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
+                        .try_write()
+                        .unwrap();
 
-                    read_restoration_info(&mut *t.ts, lr, p, frame_type, debug_block_info!(f, t));
+                    read_restoration_info(
+                        &mut *t.ts,
+                        &mut lr,
+                        p,
+                        frame_type,
+                        debug_block_info!(f, t),
+                    );
                 }
             } else {
                 let x = 4 * t.bx >> ss_hor;
@@ -4267,9 +4274,11 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 }
                 let sb_idx = (t.by >> 5) * f.sr_sb128w + (t.bx >> 5);
                 let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
-                let lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize].get_mut();
+                let mut lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
+                    .try_write()
+                    .unwrap();
 
-                read_restoration_info(&mut *t.ts, lr, p, frame_type, debug_block_info!(f, t));
+                read_restoration_info(&mut *t.ts, &mut lr, p, frame_type, debug_block_info!(f, t));
             }
         }
         decode_sb(c, t, f, root_bl, EdgeIndex::root())?;

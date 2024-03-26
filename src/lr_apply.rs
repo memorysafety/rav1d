@@ -193,16 +193,19 @@ unsafe fn lr_sbrow<BD: BitDepth>(
     aligned_unit_pos <<= ss_ver;
     let sb_idx = (aligned_unit_pos >> 7) * f.sr_sb128w;
     let unit_idx = (aligned_unit_pos >> 6 & 1) << 1;
-    lr[0] = f.lf.lr_mask[sb_idx as usize].lr[plane as usize][unit_idx as usize].get();
+    lr[0] = *f.lf.lr_mask[sb_idx as usize].lr[plane as usize][unit_idx as usize]
+        .try_read()
+        .unwrap();
     let mut restore = lr[0].r#type != Rav1dRestorationType::None;
     let mut x = 0;
     let mut bit = false;
     while x + max_unit_size <= w {
         let next_x = x + unit_size;
         let next_u_idx = unit_idx + (next_x >> shift_hor - 1 & 1);
-        lr[!bit as usize] = f.lf.lr_mask[(sb_idx + (next_x >> shift_hor)) as usize].lr
+        lr[!bit as usize] = *f.lf.lr_mask[(sb_idx + (next_x >> shift_hor)) as usize].lr
             [plane as usize][next_u_idx as usize]
-            .get();
+            .try_read()
+            .unwrap();
         let restore_next = lr[!bit as usize].r#type != Rav1dRestorationType::None;
         if restore_next {
             backup4xU::<BD>(
