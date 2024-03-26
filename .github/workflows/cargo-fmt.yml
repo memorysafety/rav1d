@@ -1,5 +1,9 @@
 name: check formatting
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
 jobs:
   cargo-fmt:
     runs-on: ubuntu-latest

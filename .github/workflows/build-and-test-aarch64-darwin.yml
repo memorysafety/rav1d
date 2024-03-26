@@ -1,5 +1,9 @@
 name: build and test on aarch64
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
 jobs:
   test-on-macos-aarch64:
     runs-on: macos-14

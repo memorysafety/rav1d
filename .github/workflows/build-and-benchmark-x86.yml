@@ -1,5 +1,9 @@
 name: build and benchmark on x86-64
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
 jobs:
     benchmark-on-self-hosted-x86-64:
         runs-on: [self-hosted, linux, X64]
