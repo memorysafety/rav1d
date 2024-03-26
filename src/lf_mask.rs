@@ -15,6 +15,7 @@ use libc::ptrdiff_t;
 use std::cell::Cell;
 use std::cmp;
 use std::ffi::c_int;
+use std::sync::atomic::AtomicI8;
 
 #[repr(C)]
 pub struct Av1FilterLUT {
@@ -26,21 +27,27 @@ pub struct Av1FilterLUT {
 #[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Av1RestorationUnit {
+    /// SGR: type = DAV1D_RESTORATION_SGRPROJ + sgr_idx
     pub r#type: Rav1dRestorationType,
     pub filter_h: [i8; 3],
     pub filter_v: [i8; 3],
     pub sgr_weights: [i8; 2],
 }
 
+/// each struct describes one 128x128 area (1 or 4 SBs), pre-superres-scaling
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Filter {
-    pub filter_y: [[[[u16; 2]; 3]; 32]; 2],
-    pub filter_uv: [[[[u16; 2]; 2]; 32]; 2],
-    pub cdef_idx: [i8; 4],
-    pub noskip_mask: [[u16; 2]; 16],
+    // each bit is 1 col
+    pub filter_y: DisjointMut<[[[[u16; 2]; 3]; 32]; 2]>, // 0=col, 1=row
+    pub filter_uv: DisjointMut<[[[[u16; 2]; 2]; 32]; 2]>, // 0=col, 1=row
+    /// -1 means "unset"
+    pub cdef_idx: [AtomicI8; 4],
+    /// for 8x8 blocks, but stored on a 4x8 basis
+    pub noskip_mask: DisjointMut<[[u16; 2]; 16]>,
 }
 
+/// each struct describes one 128x128 area (1 or 4 SBs), post-superres-scaling
 #[derive(Default)]
 #[repr(C)]
 pub struct Av1Restoration {
@@ -118,7 +125,7 @@ fn decomp_tx(
 
 #[inline]
 fn mask_edges_inter(
-    masks: &mut [[[[u16; 2]; 3]; 32]; 2],
+    masks: &DisjointMut<[[[[u16; 2]; 3]; 32]; 2]>,
     by4: usize,
     bx4: usize,
     w4: usize,
@@ -145,7 +152,10 @@ fn mask_edges_inter(
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4][cmp::min(txa[0][0][y][0], l[y]) as usize][sidx] |= smask as u16;
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([0, bx4]) };
+        mask_slice[cmp::min(txa[0][0][y][0], l[y]) as usize][sidx] |= smask as u16;
     }
 
     // top block edge
@@ -153,7 +163,10 @@ fn mask_edges_inter(
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4][cmp::min(txa[1][0][0][x], a[x]) as usize][sidx] |= smask as u16;
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([1, by4]) };
+        mask_slice[cmp::min(txa[1][0][0][x], a[x]) as usize][sidx] |= smask as u16;
     }
     if !skip {
         // inner (tx) left|right edges
@@ -166,7 +179,10 @@ fn mask_edges_inter(
             let mut x = step;
             while x < w4 {
                 let rtx = txa[0][0][y][x];
-                masks[0][bx4 + x][cmp::min(rtx, ltx) as usize][sidx] |= smask as u16;
+                // SAFETY: No other mutable references to this sub-slice exist on other
+                // threads.
+                let mask_slice = unsafe { masks.nd_index_mut([0, bx4 + x]) };
+                mask_slice[cmp::min(rtx, ltx) as usize][sidx] |= smask as u16;
                 ltx = rtx;
                 let step = txa[0][1][y][x] as usize;
                 x += step;
@@ -185,7 +201,10 @@ fn mask_edges_inter(
             let mut y = step;
             while y < h4 {
                 let btx = txa[1][0][y][x];
-                masks[1][by4 + y][cmp::min(ttx, btx) as usize][sidx] |= smask as u16;
+                // SAFETY: No other mutable references to this sub-slice exist on other
+                // threads.
+                let mask_slice = unsafe { masks.nd_index_mut([1, by4 + y]) };
+                mask_slice[cmp::min(ttx, btx) as usize][sidx] |= smask as u16;
                 ttx = btx;
                 let step = txa[1][1][y][x] as usize;
                 y += step;
@@ -201,7 +220,7 @@ fn mask_edges_inter(
 
 #[inline]
 fn mask_edges_intra(
-    masks: &mut [[[[u16; 2]; 3]; 32]; 2],
+    masks: &DisjointMut<[[[[u16; 2]; 3]; 32]; 2]>,
     by4: usize,
     bx4: usize,
     w4: usize,
@@ -221,7 +240,10 @@ fn mask_edges_intra(
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4][cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([0, bx4]) };
+        mask_slice[cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
 
     // top block edge
@@ -229,7 +251,10 @@ fn mask_edges_intra(
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4][cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([1, by4]) };
+        mask_slice[cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
 
     // inner (tx) left|right edges
@@ -238,11 +263,14 @@ fn mask_edges_intra(
     let inner = (((t as u64) << h4) - (t as u64)) as u32;
     let inner = [inner as u16, (inner >> 16) as u16];
     for x in (hstep..w4).step_by(hstep) {
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([0, bx4 + x]) };
         if inner[0] != 0 {
-            masks[0][bx4 + x][twl4c as usize][0] |= inner[0];
+            mask_slice[twl4c as usize][0] |= inner[0];
         }
         if inner[1] != 0 {
-            masks[0][bx4 + x][twl4c as usize][1] |= inner[1];
+            mask_slice[twl4c as usize][1] |= inner[1];
         }
     }
 
@@ -254,11 +282,14 @@ fn mask_edges_intra(
     let inner = (((t as u64) << w4) - (t as u64)) as u32;
     let inner = [inner as u16, (inner >> 16) as u16];
     for y in (vstep..h4).step_by(vstep) {
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([1, by4 + y]) };
         if inner[0] != 0 {
-            masks[1][by4 + y][thl4c as usize][0] |= inner[0];
+            mask_slice[thl4c as usize][0] |= inner[0];
         }
         if inner[1] != 0 {
-            masks[1][by4 + y][thl4c as usize][1] |= inner[1];
+            mask_slice[thl4c as usize][1] |= inner[1];
         }
     }
 
@@ -273,7 +304,7 @@ fn mask_edges_intra(
 }
 
 fn mask_edges_chroma(
-    masks: &mut [[[[u16; 2]; 2]; 32]; 2],
+    masks: &DisjointMut<[[[[u16; 2]; 2]; 32]; 2]>,
     cby4: usize,
     cbx4: usize,
     cw4: usize,
@@ -302,7 +333,10 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cby4 + y);
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
-        masks[0][cbx4][cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([0, cbx4]) };
+        mask_slice[cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
     }
 
     // top block edge
@@ -310,7 +344,10 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cbx4 + x);
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
-        masks[1][cby4][cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
+        // SAFETY: No other mutable references to this sub-slice exist on other
+        // threads.
+        let mask_slice = unsafe { masks.nd_index_mut([1, cby4]) };
+        mask_slice[cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
     }
 
     if !skip_inter {
@@ -320,11 +357,14 @@ fn mask_edges_chroma(
         let inner = (((t as u64) << ch4) - (t as u64)) as u32;
         let inner = [(inner & ((1 << vmask) - 1)) as u16, (inner >> vmask) as u16];
         for x in (hstep..cw4).step_by(hstep) {
+            // SAFETY: No other mutable references to this sub-slice exist on
+            // other threads.
+            let mask_slice = unsafe { masks.nd_index_mut([0, cbx4 + x]) };
             if inner[0] != 0 {
-                masks[0][cbx4 + x][twl4c as usize][0] |= inner[0];
+                mask_slice[twl4c as usize][0] |= inner[0];
             }
             if inner[1] != 0 {
-                masks[0][cbx4 + x][twl4c as usize][1] |= inner[1];
+                mask_slice[twl4c as usize][1] |= inner[1];
             }
         }
 
@@ -336,11 +376,14 @@ fn mask_edges_chroma(
         let inner = (((t as u64) << cw4) - (t as u64)) as u32;
         let inner = [(inner & ((1 << hmask) - 1)) as u16, (inner >> hmask) as u16];
         for y in (vstep..ch4).step_by(vstep) {
+            // SAFETY: No other mutable references to this sub-slice exist on
+            // other threads.
+            let mask_slice = unsafe { masks.nd_index_mut([1, cby4 + y]) };
             if inner[0] != 0 {
-                masks[1][cby4 + y][thl4c as usize][0] |= inner[0];
+                mask_slice[thl4c as usize][0] |= inner[0];
             }
             if inner[1] != 0 {
-                masks[1][cby4 + y][thl4c as usize][1] |= inner[1];
+                mask_slice[thl4c as usize][1] |= inner[1];
             }
         }
     }
@@ -356,7 +399,7 @@ fn mask_edges_chroma(
 }
 
 pub(crate) unsafe fn rav1d_create_lf_mask_intra(
-    lflvl: &mut Av1Filter,
+    lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
@@ -402,7 +445,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
             level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
         }
 
-        mask_edges_intra(&mut lflvl.filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
+        mask_edges_intra(&lflvl.filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
     }
 
     let (auv, luv) = match aluv {
@@ -448,7 +491,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     }
 
     mask_edges_chroma(
-        &mut lflvl.filter_uv,
+        &lflvl.filter_uv,
         cby4,
         cbx4,
         cbw4,
@@ -463,7 +506,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
 }
 
 pub(crate) unsafe fn rav1d_create_lf_mask_inter(
-    lflvl: &mut Av1Filter,
+    lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
@@ -515,7 +558,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
         }
 
         mask_edges_inter(
-            &mut lflvl.filter_y,
+            &lflvl.filter_y,
             by4,
             bx4,
             bw4,
@@ -571,7 +614,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     }
 
     mask_edges_chroma(
-        &mut lflvl.filter_uv,
+        &lflvl.filter_uv,
         cby4,
         cbx4,
         cbw4,
