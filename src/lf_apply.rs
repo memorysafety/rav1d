@@ -140,7 +140,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     src: &[&mut [BD::Pixel]; 3],
     src_offset: &[usize; 2],
     sby: c_int,
@@ -168,9 +168,10 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     // TODO Also check block level restore type to reduce copying.
     let restore_planes = f.lf.restore_planes;
 
-    let cdef_line_buf = BD::cast_pixel_slice_mut(&mut f.lf.cdef_line_buf);
-    let lr_line_buf = BD::cast_pixel_slice_mut(&mut f.lf.lr_line_buf);
-
+    let mut cdef_line_buf_lock = f.lf.cdef_line_buf.write().unwrap();
+    let cdef_line_buf = BD::cast_pixel_slice_mut(&mut cdef_line_buf_lock);
+    let mut lr_line_buf_lock = f.lf.lr_line_buf.write().unwrap();
+    let lr_line_buf = BD::cast_pixel_slice_mut(&mut lr_line_buf_lock);
     if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_Y as c_int != 0 {
         let h = f.cur.p.h;
         let w = f.bw << 2;

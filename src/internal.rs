@@ -103,6 +103,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
+use std::sync::RwLock;
 use std::thread::JoinHandle;
 
 #[repr(C)]
@@ -538,8 +539,8 @@ pub struct Rav1dFrameContext_lf {
     pub last_sharpness: c_int,
     pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub tx_lpf_right_edge: TxLpfRightEdge,
-    pub cdef_line_buf: AlignedVec32<u8>, /* AlignedVec32<DynPixel> */
-    pub lr_line_buf: AlignedVec64<u8>,
+    pub cdef_line_buf: RwLock<AlignedVec32<u8>>, /* AlignedVec32<DynPixel> */
+    pub lr_line_buf: RwLock<AlignedVec64<u8>>,
     pub cdef_line: [[usize; 3]; 2], /* [2 pre/post][3 plane] */
     pub cdef_lpf_line: [usize; 3],  /* plane */
     pub lr_lpf_line: [usize; 3],    /* plane */

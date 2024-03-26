@@ -47,7 +47,8 @@ unsafe fn lr_stripe<BD: BitDepth>(
     let sby = y + (if y != 0 { 8 << ss_ver } else { 0 }) >> 6 - ss_ver + seq_hdr.sb128;
     let have_tt = (c.tc.len() > 1) as c_int;
     let lpf_stride = BD::pxstride(stride);
-    let lr_line_buf = BD::cast_pixel_slice(&f.lf.lr_line_buf);
+    let lr_line_buf_lock = f.lf.lr_line_buf.read().unwrap();
+    let lr_line_buf = BD::cast_pixel_slice(&lr_line_buf_lock);
     let mut lpf_offset = f.lf.lr_lpf_line[plane as usize] as isize;
     lpf_offset += (have_tt * (sby * (4 << seq_hdr.sb128) - 4)) as isize * lpf_stride + x as isize;
     // The first stripe of the frame is shorter by 8 luma pixel rows.
