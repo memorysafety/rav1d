@@ -16,6 +16,7 @@ use libc::ptrdiff_t;
 use std::cell::Cell;
 use std::cmp;
 use std::ffi::c_int;
+use std::sync::atomic::AtomicI8;
 use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering;
 
@@ -44,7 +45,7 @@ pub struct Av1Filter {
     pub filter_y: [[[[AtomicU16; 2]; 3]; 32]; 2], // 0=col, 1=row
     pub filter_uv: [[[[AtomicU16; 2]; 2]; 32]; 2], // 0=col, 1=row
     /// -1 means "unset"
-    pub cdef_idx: [i8; 4],
+    pub cdef_idx: [AtomicI8; 4],
     /// for 8x8 blocks, but stored on a 4x8 basis
     pub noskip_mask: [[u16; 2]; 16],
 }
