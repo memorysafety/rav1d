@@ -74,6 +74,7 @@ use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
+use atomig::Atom;
 use atomig::Atomic;
 use libc::ptrdiff_t;
 use std::cell::UnsafeCell;
@@ -410,7 +411,7 @@ impl Rav1dFrameContext_bd_fn {
     }
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Atom)]
 pub struct CodedBlockInfo(i16);
 
 impl CodedBlockInfo {
@@ -439,7 +440,7 @@ pub struct Rav1dFrameContext_frame_thread {
     /// Indexed using `t.by * f.b4_stride + t.bx`.
     pub b: Vec<Av1Block>,
 
-    pub cbi: Vec<[CodedBlockInfo; 3]>,
+    pub cbi: Vec<[Atomic<CodedBlockInfo>; 3]>,
 
     /// Indexed using `(t.by >> 1) * (f.b4_stride >> 1) + (t.bx >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
