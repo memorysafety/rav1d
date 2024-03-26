@@ -141,7 +141,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     src: &[&mut [BD::Pixel]; 3],
     src_offset: &[usize; 2],
     sby: c_int,
@@ -171,9 +171,8 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     // TODO Also check block level restore type to reduce copying.
     let restore_planes = f.lf.restore_planes;
 
-    let cdef_line_buf = BD::cast_pixel_slice_mut(&mut f.lf.cdef_line_buf);
-    let lr_line_buf = BD::cast_pixel_slice_mut(&mut f.lf.lr_line_buf);
-
+    let mut lr_line_buf_lock = f.lf.lr_line_buf.write().unwrap();
+    let lr_line_buf = BD::cast_pixel_slice_mut(&mut lr_line_buf_lock);
     if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_Y as c_int != 0 {
         let h = f.cur.p.h;
         let w = f.bw << 2;
@@ -210,8 +209,9 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             let cdef_line_start = (f.lf.cdef_lpf_line[0] as isize + cmp::min(y_span, 0)) as usize;
             backup_lpf::<BD>(
                 c,
-                &mut cdef_line_buf
-                    [cdef_line_start..cdef_line_start + cdef_plane_y_sz.unsigned_abs()],
+                &mut f.lf.cdef_line_buf.mut_slice_as(
+                    cdef_line_start..cdef_line_start + cdef_plane_y_sz.unsigned_abs(),
+                ),
                 (cdef_off_y - cmp::min(y_span, 0)) as usize,
                 src_stride[0],
                 src[0],
@@ -276,8 +276,9 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     (f.lf.cdef_lpf_line[1] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
-                    &mut cdef_line_buf
-                        [cdef_line_start..cdef_line_start + cdef_plane_uv_sz.unsigned_abs()],
+                    &mut f.lf.cdef_line_buf.mut_slice_as(
+                        cdef_line_start..cdef_line_start + cdef_plane_uv_sz.unsigned_abs(),
+                    ),
                     (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
                     src_stride[1],
                     src[1],
@@ -331,8 +332,9 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
                     (f.lf.cdef_lpf_line[2] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
-                    &mut cdef_line_buf
-                        [cdef_line_start..cdef_line_start + cdef_plane_uv_sz.unsigned_abs()],
+                    &mut f.lf.cdef_line_buf.mut_slice_as(
+                        cdef_line_start..cdef_line_start + cdef_plane_uv_sz.unsigned_abs(),
+                    ),
                     (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
                     src_stride[1],
                     src[2],
