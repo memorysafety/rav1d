@@ -899,7 +899,7 @@ pub(crate) struct Rav1dTaskContext {
     pub bx: c_int,
     pub by: c_int,
     pub l: BlockContext,
-    pub a: *mut BlockContext,
+    pub a: usize, // Offset into `f.a`
     pub rt: refmvs_tile,
     pub cf: BitDepthUnion<Cf>,
     // FIXME types can be changed to pixel (and dynamically allocated)
@@ -927,7 +927,7 @@ impl Rav1dTaskContext {
             bx: 0,
             by: 0,
             l: mem::zeroed(),
-            a: ptr::null_mut(),
+            a: 0,
             rt: mem::zeroed(),
             cf: Default::default(),
             al_pal: Default::default(),
