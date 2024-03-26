@@ -73,6 +73,7 @@ use std::ptr;
 use std::ptr::addr_of_mut;
 use std::ptr::NonNull;
 use std::slice;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
@@ -288,6 +289,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         f.index = n;
         addr_of_mut!(f.tiles).write(Default::default());
         addr_of_mut!(f.task_thread.tasks).write(UnsafeCell::new(Default::default()));
+        addr_of_mut!(f.task_thread.retval).write(Mutex::new(Ok(())));
+        addr_of_mut!(f.task_thread.update_set).write(AtomicBool::new(false));
         addr_of_mut!(f.frame_thread).write(Default::default());
         addr_of_mut!(f.frame_thread_progress).write(Default::default());
         if n_tc > 1 {
@@ -473,9 +476,8 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             c.frame_thread.next = 0 as c_int as c_uint;
         }
         drop(task_thread_lock);
-        let error = f.task_thread.retval;
+        let error = mem::replace(&mut *f.task_thread.retval.try_lock().unwrap(), Ok(()));
         if error.is_err() {
-            f.task_thread.retval = Ok(());
             *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
             rav1d_thread_picture_unref(out_delayed);
             return error;
@@ -735,7 +737,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             }
             let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(next as isize);
             rav1d_decode_frame_exit(&*c, f, Err(EGeneric));
-            f.task_thread.retval = Ok(());
+            *f.task_thread.retval.try_lock().unwrap() = Ok(());
             let out_delayed = &mut (*c).frame_thread.out_delayed[next as usize];
             if out_delayed.p.frame_hdr.is_some() {
                 rav1d_thread_picture_unref(out_delayed);

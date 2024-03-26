@@ -4439,7 +4439,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
     // parse individual tiles per tile group
     let mut tile_row = 0;
     let mut tile_col = 0;
-    f.task_thread.update_set = false;
+    f.task_thread.update_set.store(false, Ordering::Relaxed);
     for tile in &f.tiles {
         let start = tile.hdr.start.try_into().unwrap();
         let end: usize = tile.hdr.end.try_into().unwrap();
@@ -4488,7 +4488,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
                 tile_row += 1;
             }
             if j == tiling.update as usize && frame_hdr.refresh_context != 0 {
-                f.task_thread.update_set = true;
+                f.task_thread.update_set.store(true, Ordering::Relaxed);
             }
             data = rest_data;
         }
@@ -4612,7 +4612,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
     let _ = mem::take(&mut f.seq_hdr);
     let _ = mem::take(&mut f.frame_hdr);
     f.tiles.clear();
-    f.task_thread.retval = retval;
+    *f.task_thread.retval.try_lock().unwrap() = retval;
 }
 
 pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dResult {
@@ -4640,11 +4640,14 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, f: &mut Rav1dFrameData
                 }
             }
             drop(task_thread_lock);
-            res = f.task_thread.retval;
+            res = *f.task_thread.retval.try_lock().unwrap();
         } else {
             res = rav1d_decode_frame_main(c, f);
             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-            if res.is_ok() && frame_hdr.refresh_context != 0 && f.task_thread.update_set {
+            if res.is_ok()
+                && frame_hdr.refresh_context != 0
+                && f.task_thread.update_set.load(Ordering::Relaxed)
+            {
                 rav1d_cdf_thread_update(
                     frame_hdr,
                     &mut f.out_cdf.cdf_write(),
@@ -4698,19 +4701,20 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
             }
         }
-        let error = f.task_thread.retval;
-        if error.is_err() {
-            f.task_thread.retval = Ok(());
-            c.cached_error = error;
-            *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-            rav1d_thread_picture_unref(out_delayed);
-        } else if !out_delayed.p.data.data[0].is_null() {
-            let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
-            if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
-                rav1d_thread_picture_ref(&mut c.out, out_delayed);
-                c.event_flags |= out_delayed.flags.into();
+        {
+            let mut error = f.task_thread.retval.try_lock().unwrap();
+            if error.is_err() {
+                c.cached_error = mem::replace(&mut error, Ok(()));
+                *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
+                rav1d_thread_picture_unref(out_delayed);
+            } else if !out_delayed.p.data.data[0].is_null() {
+                let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
+                if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
+                    rav1d_thread_picture_ref(&mut c.out, out_delayed);
+                    c.event_flags |= out_delayed.flags.into();
+                }
+                rav1d_thread_picture_unref(out_delayed);
             }
-            rav1d_thread_picture_unref(out_delayed);
         }
         (f, out_delayed as *mut _, Some(task_thread_lock))
     } else {

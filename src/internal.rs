@@ -701,8 +701,8 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub tasks: UnsafeCell<Rav1dTasks>,
     pub init_done: AtomicI32,
     pub done: [AtomicI32; 2],
-    pub retval: Rav1dResult,
-    pub update_set: bool, // whether we need to update CDF reference
+    pub retval: Mutex<Rav1dResult>,
+    pub update_set: AtomicBool, // whether we need to update CDF reference
     pub error: AtomicI32,
     pub task_counter: AtomicI32,
     // async task insertion

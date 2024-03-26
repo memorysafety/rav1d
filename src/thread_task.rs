@@ -976,7 +976,9 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             res_0 = rav1d_decode_frame_init_cdf(c, f);
                         }
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                        if frame_hdr.refresh_context != 0 && !f.task_thread.update_set {
+                        if frame_hdr.refresh_context != 0
+                            && !f.task_thread.update_set.load(Ordering::Relaxed)
+                        {
                             f.out_cdf.progress().unwrap().store(
                                 (if res_0.is_err() {
                                     TILE_ERROR
@@ -1090,7 +1092,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                             if frame_hdr.refresh_context != 0
                                 && tc.frame_thread.pass <= 1
-                                && f.task_thread.update_set
+                                && f.task_thread.update_set.load(Ordering::Relaxed)
                                 && frame_hdr.tiling.update as usize == tile_idx
                             {
                                 if error_0 == 0 {
