@@ -4141,7 +4141,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             0
         };
         t.a =
-            f.a.offset((off_2pass + col_sb128_start + tile_row * f.sb128w) as isize);
+            f.a.as_mut_ptr()
+                .offset((off_2pass + col_sb128_start + tile_row * f.sb128w) as isize);
         for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
             t.bx = bx;
             if c.flush.load(Ordering::Acquire) != 0 {
@@ -4173,7 +4174,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     }
     t.pal_sz_uv[1] = Default::default();
     let sb128y = t.by >> 5;
-    t.a = f.a.offset((col_sb128_start + tile_row * f.sb128w) as isize);
+    t.a =
+        f.a.as_mut_ptr()
+            .offset((col_sb128_start + tile_row * f.sb128w) as isize);
     t.lf_mask = f.lf.mask[(sb128y * f.sb128w + col_sb128_start) as usize..].as_mut_ptr();
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.bx = bx;
@@ -4329,15 +4332,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     }
 
     let a_sz = f.sb128w * frame_hdr.tiling.rows * (1 + (c.n_fc > 1 && c.tc.len() > 1) as c_int);
-    if a_sz != f.a_sz {
-        freep(&mut f.a as *mut *mut BlockContext as *mut c_void);
-        f.a = malloc(::core::mem::size_of::<BlockContext>() * a_sz as usize) as *mut BlockContext;
-        if f.a.is_null() {
-            f.a_sz = 0;
-            return Err(ENOMEM);
-        }
-        f.a_sz = a_sz;
-    }
+    // TODO: Fallible allocation
+    f.a.resize_with(a_sz as usize, Default::default);
 
     let num_sb128 = f.sb128w * f.sb128h;
     let size_mul = &ss_size_mul[f.cur.p.layout];
@@ -4717,7 +4713,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
     }
 
     if c.tc.len() > 1 {
-        for (n, ctx) in slice::from_raw_parts_mut(f.a, sb128w * rows * (1 + uses_2pass as usize))
+        for (n, ctx) in f.a[..sb128w * rows * (1 + uses_2pass as usize)]
             .iter_mut()
             .enumerate()
         {
@@ -4746,9 +4742,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
 
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
-    for ctx in
-        slice::from_raw_parts_mut(f.a, (f.sb128w * frame_hdr.tiling.rows).try_into().unwrap())
-    {
+    for ctx in &mut f.a[..(f.sb128w * frame_hdr.tiling.rows) as usize] {
         reset_context(ctx, frame_hdr.frame_type.is_key_or_intra(), 0);
     }
 

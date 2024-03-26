@@ -26,6 +26,7 @@ use std::cmp::Ordering;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
+#[derive(Default)]
 #[repr(C)]
 pub struct BlockContext {
     pub mode: Align8<[u8; 32]>,
