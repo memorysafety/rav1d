@@ -43,6 +43,10 @@ extern "C" {
         col_start8: c_int,
         row_start8: c_int,
     );
+}
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+extern "C" {
     fn dav1d_load_tmvs_sse4(
         rf: *const refmvs_frame,
         tile_row_idx: c_int,

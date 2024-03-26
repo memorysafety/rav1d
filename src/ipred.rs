@@ -40,11 +40,10 @@ use std::slice;
 use strum::FromRepr;
 
 #[cfg(feature = "asm")]
-use crate::{
-    include::common::bitdepth::{bd_fn, bpc_fn},
-    src::cpu::rav1d_get_cpu_flags,
-    src::cpu::CpuFlags,
-};
+use crate::{include::common::bitdepth::bd_fn, src::cpu::rav1d_get_cpu_flags, src::cpu::CpuFlags};
+
+#[cfg(all(feature = "asm", target_arch = "x86_64"))]
+use crate::include::common::bitdepth::bpc_fn;
 
 wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     dst: *mut DynPixel,
