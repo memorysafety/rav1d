@@ -584,11 +584,9 @@ unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
 }
 
 pub(crate) unsafe fn rav1d_send_data(c: &mut Rav1dContext, in_0: &mut Rav1dData) -> Rav1dResult {
-    validate_input!((
-        in_0.data.as_ref().map_or(true, |data| !data.is_empty()),
-        EINVAL
-    ))?;
     if in_0.data.is_some() {
+        let sz = in_0.data.as_ref().unwrap().len();
+        validate_input!((sz > 0 && sz <= usize::MAX / 2, EINVAL))?;
         c.drain = 0 as c_int;
     }
     if c.in_0.data.is_some() {
@@ -969,6 +967,7 @@ pub unsafe extern "C" fn dav1d_picture_unref(p: *mut Dav1dPicture) {
 pub unsafe extern "C" fn dav1d_data_create(buf: *mut Dav1dData, sz: usize) -> *mut u8 {
     || -> Rav1dResult<*mut u8> {
         let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
+        validate_input!((sz <= usize::MAX / 2, EINVAL))?;
         let data = Rav1dData::create(sz)?;
         let data = data.to::<Dav1dData>();
         let ptr = data
@@ -992,6 +991,7 @@ pub unsafe extern "C" fn dav1d_data_wrap(
     || -> Rav1dResult {
         let buf = validate_input!(NonNull::new(buf).ok_or(EINVAL))?;
         let ptr = validate_input!(NonNull::new(ptr.cast_mut()).ok_or(EINVAL))?;
+        validate_input!((sz <= usize::MAX / 2, EINVAL))?;
         let data = slice::from_raw_parts(ptr.as_ptr(), sz).into();
         let data = Rav1dData::wrap(data, free_callback, user_data)?;
         buf.as_ptr().write(data.into());
