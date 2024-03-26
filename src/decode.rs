@@ -2269,6 +2269,7 @@ unsafe fn decode_b_inner(
             intra_edge_flags,
             t.by,
             t.bx,
+            f.frame_hdr(),
         );
 
         if mvstack[0].mv.mv[0] != mv::ZERO {
@@ -2441,6 +2442,7 @@ unsafe fn decode_b_inner(
                 intra_edge_flags,
                 t.by,
                 t.bx,
+                f.frame_hdr(),
             );
 
             *b.mv_mut() = mvstack[0].mv.mv;
@@ -2544,6 +2546,7 @@ unsafe fn decode_b_inner(
                 intra_edge_flags,
                 t.by,
                 t.bx,
+                f.frame_hdr(),
             );
 
             *b.inter_mode_mut() = rav1d_msac_decode_symbol_adapt8(
@@ -2819,6 +2822,7 @@ unsafe fn decode_b_inner(
                 intra_edge_flags,
                 t.by,
                 t.bx,
+                f.frame_hdr(),
             );
 
             // mode parsing and mv derivation from ref_mvs
