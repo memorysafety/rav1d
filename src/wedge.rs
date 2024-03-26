@@ -3,17 +3,8 @@ use crate::src::align::Align32;
 use crate::src::align::Align64;
 use crate::src::const_fn::const_for;
 use crate::src::const_fn::const_min;
-use crate::src::levels::BS_16x16;
-use crate::src::levels::BS_16x32;
-use crate::src::levels::BS_16x8;
-use crate::src::levels::BS_32x16;
-use crate::src::levels::BS_32x32;
-use crate::src::levels::BS_32x8;
-use crate::src::levels::BS_8x16;
-use crate::src::levels::BS_8x32;
-use crate::src::levels::BS_8x8;
+use crate::src::levels::BlockSize;
 use crate::src::levels::InterIntraPredMode;
-use crate::src::levels::N_BS_SIZES;
 use paste::paste;
 use std::cmp::Ordering;
 use strum::EnumCount;
@@ -383,11 +374,13 @@ const fn build_master() -> [[[u8; 64]; 64]; WedgeDirectionType::COUNT] {
     master
 }
 
-pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
+pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; BlockSize::COUNT] = {
+    use BlockSize::*;
+
     const master: [[[u8; 64]; 64]; WedgeDirectionType::COUNT] = build_master();
     const wedge_codebook_16: WedgeCodeBook = WedgeCodeBook::build();
 
-    let mut masks = [[[[&[] as &'static [u8]; 16]; 2]; 3]; N_BS_SIZES];
+    let mut masks = [[[[&[] as &'static [u8]; 16]; 2]; 3]; BlockSize::COUNT];
 
     macro_rules! fill {
         ($w:literal x $h:literal, $signs:expr) => {{
@@ -397,7 +390,7 @@ pub static dav1d_wedge_masks: [[[[&'static [u8]; 16]; 2]; 3]; N_BS_SIZES] = {
                 { ($w / 2) * ($h / 2) },
             > = WedgeMasks::fill2d_16x2($w, $h, &master, wedge_codebook_16.get($w, $h), $signs);
             paste! {
-                masks[[<BS_ $w x $h>] as usize] = wedge_masks.slice();
+                masks[[<Bs $w x $h>] as usize] = wedge_masks.slice();
             }
         }};
     }
@@ -466,10 +459,11 @@ static ii_nondc_mask_4x8: Align32<[[u8; 4 * 8]; N_II_PRED_MODES]> =
 static ii_nondc_mask_4x4: Align16<[[u8; 4 * 4]; N_II_PRED_MODES]> =
     Align16(build_nondc_ii_masks(4, 4, 8));
 
-pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; N_BS_SIZES] = {
+pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; BlockSize::COUNT] = {
+    use BlockSize::*;
     use InterIntraPredMode::*;
 
-    let mut masks = [[[&[] as &'static [u8]; InterIntraPredMode::COUNT]; 3]; N_BS_SIZES];
+    let mut masks = [[[&[] as &'static [u8]; InterIntraPredMode::COUNT]; 3]; BlockSize::COUNT];
 
     macro_rules! set {
         ($h:literal x $w:literal) => {{
@@ -487,13 +481,13 @@ pub static dav1d_ii_masks: [[[&'static [u8]; InterIntraPredMode::COUNT]; 3]; N_B
         }
     }
 
-    masks[BS_8x8 as usize] = set!([8 x 8, 4 x 8, 4 x 4]);
-    masks[BS_8x16 as usize] = set!([8 x 16, 4 x 16, 4 x 8]);
-    masks[BS_16x8 as usize] = set!([16 x 16, 8 x 8, 8 x 8]);
-    masks[BS_16x16 as usize] = set!([16 x 16, 8 x 16, 8 x 8]);
-    masks[BS_16x32 as usize] = set!([16 x 32, 8 x 32, 8 x 16]);
-    masks[BS_32x16 as usize] = set!([32 x 32, 16 x 16, 16 x 16]);
-    masks[BS_32x32 as usize] = set!([32 x 32, 16 x 32, 16 x 16]);
+    masks[Bs8x8 as usize] = set!([8 x 8, 4 x 8, 4 x 4]);
+    masks[Bs8x16 as usize] = set!([8 x 16, 4 x 16, 4 x 8]);
+    masks[Bs16x8 as usize] = set!([16 x 16, 8 x 8, 8 x 8]);
+    masks[Bs16x16 as usize] = set!([16 x 16, 8 x 16, 8 x 8]);
+    masks[Bs16x32 as usize] = set!([16 x 32, 8 x 32, 8 x 16]);
+    masks[Bs32x16 as usize] = set!([32 x 32, 16 x 16, 16 x 16]);
+    masks[Bs32x32 as usize] = set!([32 x 32, 16 x 32, 16 x 16]);
 
     masks
 };

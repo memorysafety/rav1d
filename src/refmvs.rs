@@ -132,7 +132,7 @@ pub struct refmvs_mvpair {
 pub struct refmvs_block_unaligned {
     pub mv: refmvs_mvpair,
     pub r#ref: refmvs_refpair,
-    pub bs: u8,
+    pub bs: BlockSize,
     pub mf: u8,
 }
 
@@ -356,7 +356,7 @@ unsafe fn scan_row(
     have_refmv_match: &mut c_int,
 ) -> c_int {
     let mut cand_b = &*b;
-    let first_cand_bs = cand_b.0.bs as BlockSize;
+    let first_cand_bs = cand_b.0.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as c_int;
     let mut len = cmp::max(step, cmp::min(bw4, cand_bw4));
@@ -425,7 +425,7 @@ unsafe fn scan_col(
     have_refmv_match: &mut c_int,
 ) -> c_int {
     let mut cand_b = &*(*b.offset(0)).offset(bx4 as isize);
-    let first_cand_bs = cand_b.0.bs as BlockSize;
+    let first_cand_bs = cand_b.0.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as c_int;
     let mut len = cmp::max(step, cmp::min(bh4, cand_bh4));
