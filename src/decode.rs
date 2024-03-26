@@ -2047,16 +2047,17 @@ unsafe fn decode_b_inner(
         }
 
         if b.pal_sz()[0] != 0 {
-            let pal_idx = if t.frame_thread.pass != 0 {
+            let pal_idx;
+            if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
+                assert!(!frame_thread.pal_idx.is_null());
                 let len = usize::try_from(bw4 * bh4 * 16).unwrap();
-                let pal_idx = &mut f.frame_thread.pal_idx[frame_thread.pal_idx..][..len];
-                frame_thread.pal_idx += len;
-                pal_idx
+                pal_idx = std::slice::from_raw_parts_mut(frame_thread.pal_idx, len);
+                frame_thread.pal_idx = frame_thread.pal_idx.offset(len as isize);
             } else {
-                &mut t.scratch.c2rust_unnamed_0.pal_idx
-            };
+                pal_idx = &mut t.scratch.c2rust_unnamed_0.pal_idx;
+            }
             read_pal_indices(
                 &mut *t.ts,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
@@ -2074,16 +2075,17 @@ unsafe fn decode_b_inner(
         }
 
         if has_chroma && b.pal_sz()[1] != 0 {
-            let pal_idx = if t.frame_thread.pass != 0 {
+            let pal_idx;
+            if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
+                assert!(!(frame_thread.pal_idx).is_null());
                 let len = usize::try_from(cbw4 * cbh4 * 16).unwrap();
-                let pal_idx = &mut f.frame_thread.pal_idx[frame_thread.pal_idx..];
-                frame_thread.pal_idx += len;
-                pal_idx
+                pal_idx = std::slice::from_raw_parts_mut(frame_thread.pal_idx, len);
+                frame_thread.pal_idx = frame_thread.pal_idx.offset(len as isize);
             } else {
-                &mut t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..]
-            };
+                pal_idx = &mut t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..];
+            }
             read_pal_indices(
                 &mut *t.ts,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
@@ -3901,10 +3903,10 @@ unsafe fn setup_tile(
 
     let size_mul = &ss_size_mul[f.cur.p.layout];
     for p in 0..2 {
-        ts.frame_thread[p].pal_idx = if !f.frame_thread.pal_idx.is_empty() {
-            tile_start_off * size_mul[1] as usize / 4
+        ts.frame_thread[p].pal_idx = if !(f.frame_thread.pal_idx).is_empty() {
+            f.frame_thread.pal_idx[tile_start_off * size_mul[1] as usize / 4..].as_ptr() as *mut u8
         } else {
-            0
+            ptr::null_mut()
         };
         ts.frame_thread[p].cf = if !f.frame_thread.cf.is_empty() {
             f.frame_thread.cf
