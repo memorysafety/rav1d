@@ -319,6 +319,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
                 let handle = thread::Builder::new()
                     // Don't set stack size like `dav1d` does.
                     // See <https://github.com/memorysafety/rav1d/issues/889>.
+                    .name("rav1d-worker".into())
                     .spawn(|| rav1d_worker_task(context_borrow, thread_data_copy))
                     .unwrap();
                 Rav1dContextTaskThread {
