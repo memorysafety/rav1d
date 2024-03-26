@@ -607,29 +607,23 @@ pub unsafe fn get_cur_frame_segid(
     let negative_adjustment = have_left as usize + have_top as usize * stride.unsigned_abs();
     cur_seg_map = cur_seg_map
         .add((bx as isize + by as isize * stride - negative_adjustment as isize) as usize);
-    if have_left && have_top {
-        let l = *cur_seg_map.add(stride.unsigned_abs());
-        let a = *cur_seg_map.add(1);
-        let al = *cur_seg_map.add(0);
-        let seg_ctx = if l == a && al == l {
-            2
-        } else if l == a || al == l || a == al {
-            1
-        } else {
-            0
-        };
-        let seg_id = if a == al { a } else { l };
-        (seg_id, seg_ctx)
-    } else {
-        let seg_ctx = 0;
-        let seg_id = if have_left {
-            *cur_seg_map.add(0)
-        } else if have_top {
-            *cur_seg_map.add(0)
-        } else {
-            0
-        };
-        (seg_id, seg_ctx)
+    match (have_left, have_top) {
+        (true, true) => {
+            let l = *cur_seg_map.add(stride.unsigned_abs());
+            let a = *cur_seg_map.add(1);
+            let al = *cur_seg_map.add(0);
+            let seg_ctx = if l == a && al == l {
+                2
+            } else if l == a || al == l || a == al {
+                1
+            } else {
+                0
+            };
+            let seg_id = if a == al { a } else { l };
+            (seg_id, seg_ctx)
+        }
+        (true, false) | (false, true) => (*cur_seg_map.add(0), 0),
+        (false, false) => (0, 0),
     }
 }
 
