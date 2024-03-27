@@ -165,7 +165,7 @@ fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
 pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     c: &Rav1dContext,
     tc: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     p: &[*mut BD::Pixel; 3],
     lflvl_offset: i32,
     by_start: c_int,

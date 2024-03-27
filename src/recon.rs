@@ -134,22 +134,22 @@ macro_rules! debug_block_info {
 pub(crate) use debug_block_info;
 
 pub(crate) type recon_b_intra_fn =
-    unsafe fn(&mut Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, EdgeFlags, &Av1Block) -> ();
+    unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, EdgeFlags, &Av1Block) -> ();
 
 pub(crate) type recon_b_inter_fn =
-    unsafe fn(&mut Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> Result<(), ()>;
+    unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> Result<(), ()>;
 
 pub(crate) type filter_sbrow_fn =
-    unsafe fn(&Rav1dContext, &mut Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
+    unsafe fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
 
 pub(crate) type backup_ipred_edge_fn = unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
 
 pub(crate) type read_coef_blocks_fn =
-    unsafe fn(&mut Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> ();
+    unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> ();
 
 pub(crate) type copy_pal_block_fn = unsafe fn(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     bx4: usize,
     by4: usize,
     bw4: usize,
@@ -158,7 +158,7 @@ pub(crate) type copy_pal_block_fn = unsafe fn(
 
 pub(crate) type read_pal_plane_fn = unsafe fn(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     b: &mut Av1Block,
     pl: bool,
     sz_ctx: u8,
@@ -168,7 +168,7 @@ pub(crate) type read_pal_plane_fn = unsafe fn(
 
 pub(crate) type read_pal_uv_fn = unsafe fn(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     b: &mut Av1Block,
     sz_ctx: u8,
     bx4: usize,
@@ -478,7 +478,7 @@ fn get_lo_ctx(
 }
 
 unsafe fn decode_coefs<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: *mut Rav1dTaskContext,
     a: &mut [u8],
     l: &mut [u8],
@@ -1625,7 +1625,7 @@ enum CfSelect {
 }
 
 impl CfSelect {
-    fn set<BD: BitDepth>(
+    unsafe fn set<BD: BitDepth>(
         self,
         f: &Rav1dFrameData,
         task_cf: &mut BitDepthUnion<Cf>,
@@ -1653,7 +1653,7 @@ impl CfSelect {
 }
 
 unsafe fn read_coef_tree<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: *mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
@@ -1863,7 +1863,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
@@ -2461,7 +2461,7 @@ unsafe fn warp_affine<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     bs: BlockSize,
     intra_edge_flags: EdgeFlags,
@@ -3241,7 +3241,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
@@ -3679,11 +3679,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             if t.frame_thread.pass != 2 {
                                 t.tl_4x4_filter
                             } else {
-                                f.frame_thread.b[(t.b.y as usize - 1) as usize
-                                    * f.b4_stride as usize
-                                    + t.b.x as usize
-                                    - 1]
-                                .filter2d()
+                                f.frame_thread
+                                    .b
+                                    .index(
+                                        (t.b.y as usize - 1) as usize * f.b4_stride as usize
+                                            + t.b.x as usize
+                                            - 1,
+                                    )
+                                    .filter2d()
                             },
                         )?;
                     }
@@ -3715,8 +3718,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             if t.frame_thread.pass != 2 {
                                 left_filter_2d
                             } else {
-                                f.frame_thread.b
-                                    [t.b.y as usize * f.b4_stride as usize + t.b.x as usize - 1]
+                                f.frame_thread
+                                    .b
+                                    .index(
+                                        (t.b.y as isize * f.b4_stride + t.b.x as isize - 1)
+                                            as usize,
+                                    )
                                     .filter2d()
                             },
                         )?;
@@ -3748,8 +3755,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             if t.frame_thread.pass != 2 {
                                 top_filter_2d
                             } else {
-                                f.frame_thread.b
-                                    [(t.b.y as usize - 1) * f.b4_stride as usize + t.b.x as usize]
+                                f.frame_thread
+                                    .b
+                                    .index(
+                                        (t.b.y as usize - 1) * f.b4_stride as usize
+                                            + t.b.x as usize,
+                                    )
                                     .filter2d()
                             },
                         )?;
@@ -4136,7 +4147,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4200,7 +4211,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4261,7 +4272,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     tc: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4304,7 +4315,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4372,7 +4383,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4408,7 +4419,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4481,7 +4492,7 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     bx4: usize,
     by4: usize,
     bw4: usize,
@@ -4507,7 +4518,7 @@ pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     bx4: usize,
     by4: usize,
     bw4: usize,
@@ -4536,7 +4547,7 @@ pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     b: &mut Av1Block,
     pl: bool,
     sz_ctx: u8,
@@ -4727,7 +4738,7 @@ pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_read_pal_uv<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     b: &mut Av1Block,
     sz_ctx: u8,
     bx4: usize,

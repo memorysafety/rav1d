@@ -585,14 +585,14 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     p: &mut [&mut [BD::Pixel]; 3],
     p_offset: &[usize; 2],
     lflvl_offset: usize,
     sby: c_int,
     start_of_tile_row: c_int,
 ) {
-    let lflvl = &mut f.lf.mask[lflvl_offset..];
+    let lflvl = &f.lf.mask[lflvl_offset..];
     let mut have_left; // Don't filter outside the frame
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let is_sb64 = (seq_hdr.sb128 == 0) as c_int;
@@ -751,7 +751,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     p: &mut [&mut [BD::Pixel]; 3],
     p_offset: &[usize; 2],
     lflvl_offset: usize,

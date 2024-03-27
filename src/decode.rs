@@ -755,7 +755,7 @@ unsafe fn read_pal_indices(
 
 unsafe fn read_vartx_tree(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     b: &mut Av1Block,
     bs: BlockSize,
     bx4: c_int,
@@ -1108,40 +1108,11 @@ unsafe fn obmc_lowest_px(
 unsafe fn decode_b(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     bl: BlockLevel,
     bs: BlockSize,
     bp: BlockPartition,
     intra_edge_flags: EdgeFlags,
-) -> Result<(), ()> {
-    // Pull out the current block from Rav1dFrameData so that we can operate on
-    // it without borrow check errors.
-    let (mut b_mem, b_idx) = if t.frame_thread.pass != 0 {
-        let b_idx = (t.b.y as isize * f.b4_stride + t.b.x as isize) as usize;
-        (mem::take(&mut f.frame_thread.b[b_idx]), Some(b_idx))
-    } else {
-        (Default::default(), None)
-    };
-    let b = &mut b_mem;
-    let res = decode_b_inner(c, t, f, bl, bs, bp, intra_edge_flags, b);
-    if let Some(i) = b_idx {
-        let _old_b = mem::replace(&mut f.frame_thread.b[i], b_mem);
-        // TODO(SJC): We should be able to compare Av1Blocks, but there are C
-        // unions in them.
-        // assert_eq!(old_b, Default::default());
-    }
-    res
-}
-
-unsafe fn decode_b_inner(
-    c: &Rav1dContext,
-    t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
-    bl: BlockLevel,
-    bs: BlockSize,
-    bp: BlockPartition,
-    intra_edge_flags: EdgeFlags,
-    b: &mut Av1Block,
 ) -> Result<(), ()> {
     use std::fmt;
 
@@ -1154,6 +1125,18 @@ unsafe fn decode_b_inner(
             write!(f, "{}{:x}", sign, self.0.abs())
         }
     }
+
+    let mut b_guard;
+    let mut b_mem = Av1Block::default();
+    let b = if t.frame_thread.pass != 0 {
+        b_guard = f
+            .frame_thread
+            .b
+            .index_mut((t.b.y as isize * f.b4_stride + t.b.x as isize) as usize);
+        &mut *b_guard
+    } else {
+        &mut b_mem
+    };
 
     let ts = &mut *f.ts.offset(t.ts as isize);
     let bd_fn = f.bd_fn();
@@ -1887,7 +1870,7 @@ unsafe fn decode_b_inner(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             rav1d_create_lf_mask_intra(
-                &mut f.lf.mask[t.lf_mask.unwrap()],
+                &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
                 &lflvl[b.seg_id as usize],
@@ -2905,7 +2888,7 @@ unsafe fn decode_b_inner(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             rav1d_create_lf_mask_inter(
-                &mut f.lf.mask[t.lf_mask.unwrap()],
+                &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
                 // In C, the inner dimensions (`ref`, `is_gmv`) are offset,
@@ -2997,7 +2980,7 @@ unsafe fn decode_b_inner(
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
-        for noskip_mask in &mut f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
+        for noskip_mask in &f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
             [..(bh4 as usize + 1) / 2]
         {
             noskip_mask[bx_idx as usize].fetch_or(mask as u16, Ordering::Relaxed);
@@ -3245,7 +3228,7 @@ unsafe fn decode_b_inner(
 unsafe fn decode_sb(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     bl: BlockLevel,
     edge_index: EdgeIndex,
 ) -> Result<(), ()> {
@@ -3318,7 +3301,10 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &f.frame_thread.b[(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize];
+            let b = f
+                .frame_thread
+                .b
+                .index((t.b.y as isize * f.b4_stride + t.b.x as isize) as usize);
             bp = if b.bl == bl {
                 b.bp
             } else {
@@ -3479,7 +3465,10 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &f.frame_thread.b[(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize];
+            let b = &f
+                .frame_thread
+                .b
+                .index((t.b.y as isize * f.b4_stride + t.b.x as isize) as usize);
             is_split = b.bl != bl;
         }
 
@@ -3532,7 +3521,10 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &f.frame_thread.b[(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize];
+            let b = &f
+                .frame_thread
+                .b
+                .index((t.b.y as isize * f.b4_stride + t.b.x as isize) as usize);
             is_split = b.bl != bl;
         }
 

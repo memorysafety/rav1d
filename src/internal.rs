@@ -402,7 +402,7 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
     pub filter_sbrow_deblock_cols: filter_sbrow_fn,
     pub filter_sbrow_deblock_rows: filter_sbrow_fn,
     pub filter_sbrow_cdef:
-        unsafe fn(&Rav1dContext, &mut Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> (),
+        unsafe fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> (),
     pub filter_sbrow_resize: filter_sbrow_fn,
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
@@ -444,7 +444,7 @@ impl Rav1dFrameContext_bd_fn {
 
     pub unsafe fn recon_b_intra(
         &self,
-        f: &mut Rav1dFrameData,
+        f: &Rav1dFrameData,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         flags: EdgeFlags,
@@ -455,7 +455,7 @@ impl Rav1dFrameContext_bd_fn {
 
     pub unsafe fn recon_b_inter(
         &self,
-        f: &mut Rav1dFrameData,
+        f: &Rav1dFrameData,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         block: &Av1Block,
@@ -465,7 +465,7 @@ impl Rav1dFrameContext_bd_fn {
 
     pub unsafe fn read_coef_blocks(
         &self,
-        f: &mut Rav1dFrameData,
+        f: &Rav1dFrameData,
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         block: &Av1Block,
@@ -548,7 +548,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub next_tile_row: [AtomicI32; 2],
 
     /// Indexed using `t.b.y * f.b4_stride + t.b.x`.
-    pub b: Vec<Av1Block>,
+    pub b: DisjointMut<Vec<Av1Block>>,
 
     pub cbi: Vec<[Atomic<CodedBlockInfo>; 3]>,
 
