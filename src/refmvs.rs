@@ -1430,6 +1430,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.ih8 = frm_hdr.size.height + 7 >> 3;
     rf.iw4 = rf.iw8 << 1;
     rf.ih4 = rf.ih8 << 1;
+
     let r_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 2) as ptrdiff_t;
     let n_tile_rows = if n_tile_threads > 1 {
         frm_hdr.tiling.rows
@@ -1454,6 +1455,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         }
         rf.r_stride = r_stride;
     }
+
     let rp_stride = r_stride >> 1;
     if rp_stride != rf.rp_stride || n_tile_rows != rf.n_tile_rows {
         if !rf.rp_proj.is_null() {
@@ -1487,11 +1489,13 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             31,
         ) as i8;
     }
+
+    // temporal MV setup
     rf.n_mfmvs = 0;
     if frm_hdr.use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
         let mut total = 2;
         if !rp_ref[0].is_null() && ref_ref_poc[0][6] != ref_poc[3] {
-            rf.mfmv_ref[rf.n_mfmvs as usize] = 0;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 0; // last
             rf.n_mfmvs += 1;
             total = 3;
         }
@@ -1502,7 +1506,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 frm_hdr.frame_offset,
             ) > 0
         {
-            rf.mfmv_ref[rf.n_mfmvs as usize] = 4;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 4; // bwd
             rf.n_mfmvs += 1;
         }
         if !rp_ref[5].is_null()
@@ -1512,7 +1516,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 frm_hdr.frame_offset,
             ) > 0
         {
-            rf.mfmv_ref[rf.n_mfmvs as usize] = 5;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 5; // altref2
             rf.n_mfmvs += 1;
         }
         if rf.n_mfmvs < total
@@ -1523,13 +1527,14 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 frm_hdr.frame_offset,
             ) > 0
         {
-            rf.mfmv_ref[rf.n_mfmvs as usize] = 6;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 6; // altref
             rf.n_mfmvs += 1;
         }
         if rf.n_mfmvs < total && !rp_ref[1].is_null() {
-            rf.mfmv_ref[rf.n_mfmvs as usize] = 1;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 1; // last2
             rf.n_mfmvs += 1;
         }
+
         for n in 0..rf.n_mfmvs as usize {
             let rpoc = ref_poc[rf.mfmv_ref[n] as usize];
             let diff1 = get_poc_diff(
@@ -1552,6 +1557,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         }
     }
     rf.use_ref_frame_mvs = (rf.n_mfmvs > 0) as c_int;
+
     Ok(())
 }
 
