@@ -2545,7 +2545,7 @@ unsafe fn parse_obus(
                 }
 
                 let f = &mut *c.fc.offset(next as isize);
-                while !f.tiles.is_empty() {
+                while !f.task_thread.finished.load(Ordering::SeqCst) {
                     task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
                 }
                 let out_delayed = &mut c.frame_thread.out_delayed[next as usize];

@@ -291,6 +291,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         addr_of_mut!(f.task_thread.tasks).write(UnsafeCell::new(Default::default()));
         addr_of_mut!(f.task_thread.retval).write(Mutex::new(Ok(())));
         addr_of_mut!(f.task_thread.update_set).write(AtomicBool::new(false));
+        addr_of_mut!(f.task_thread.finished).write(AtomicBool::new(true));
         addr_of_mut!(f.frame_thread).write(Default::default());
         addr_of_mut!(f.frame_thread_progress).write(Default::default());
         if n_tc > 1 {
@@ -444,7 +445,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let next: c_uint = c.frame_thread.next;
         let f: &mut Rav1dFrameData = &mut *(c.fc).offset(next as isize);
         let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
-        while !f.tiles.is_empty() {
+        while !f.task_thread.finished.load(Ordering::SeqCst) {
             task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];

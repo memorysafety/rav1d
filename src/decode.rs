@@ -4612,6 +4612,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
     let _ = mem::take(&mut f.seq_hdr);
     let _ = mem::take(&mut f.frame_hdr);
     f.tiles.clear();
+    f.task_thread.finished.store(true, Ordering::SeqCst);
     *f.task_thread.retval.try_lock().unwrap() = retval;
 }
 
@@ -4677,7 +4678,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
 
         let f = &mut *c.fc.offset(next as isize);
-        while !f.tiles.is_empty() {
+        while !f.task_thread.finished.load(Ordering::SeqCst) {
             task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
@@ -4749,6 +4750,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         *c.cached_error_props.lock().unwrap() = c.in_0.m.clone();
 
         f.tiles.clear();
+        f.task_thread.finished.store(true, Ordering::SeqCst);
     }
 
     // TODO(kkysen) Rather than lazy initializing this,
@@ -4859,6 +4861,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // FIXME qsort so tiles are in order (for frame threading)
     f.tiles.clear();
     mem::swap(&mut f.tiles, &mut c.tiles);
+    f.task_thread
+        .finished
+        .store(f.tiles.is_empty(), Ordering::SeqCst);
 
     // allocate frame
 
