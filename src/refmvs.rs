@@ -216,14 +216,14 @@ pub(crate) type load_tmvs_fn = Option<
 
 pub type save_tmvs_fn = Option<
     unsafe extern "C" fn(
-        *mut refmvs_temporal_block,
-        ptrdiff_t,
-        *const *const refmvs_block,
-        *const u8,
-        c_int,
-        c_int,
-        c_int,
-        c_int,
+        rp: *mut refmvs_temporal_block,
+        stride: ptrdiff_t,
+        rr: *const *const refmvs_block,
+        ref_sign: *const u8,
+        col_end8: c_int,
+        row_end8: c_int,
+        col_start8: c_int,
+        row_start8: c_int,
     ) -> (),
 >;
 
