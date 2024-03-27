@@ -1414,174 +1414,150 @@ unsafe extern "C" fn save_tmvs_c(
 }
 
 pub(crate) unsafe fn rav1d_refmvs_init_frame(
-    rf: *mut refmvs_frame,
-    seq_hdr: *const Rav1dSequenceHeader,
-    frm_hdr: *const Rav1dFrameHeader,
-    ref_poc: *const c_uint,
+    rf: &mut refmvs_frame,
+    seq_hdr: &Rav1dSequenceHeader,
+    frm_hdr: &Rav1dFrameHeader,
+    ref_poc: &[c_uint; 7],
     rp: *mut refmvs_temporal_block,
-    ref_ref_poc: *const [c_uint; 7],
-    rp_ref: *const *mut refmvs_temporal_block,
-    n_tile_threads: c_int,
-    n_frame_threads: c_int,
+    ref_ref_poc: &[[c_uint; 7]; 7],
+    rp_ref: &[*mut refmvs_temporal_block; 7],
+    n_tile_threads: usize,
+    n_frame_threads: usize,
 ) -> Rav1dResult {
-    (*rf).sbsz = (16 as c_int) << (*seq_hdr).sb128;
-    (*rf).frm_hdr = ptr::null();
-    (*rf).iw8 = (*frm_hdr).size.width[0] + 7 >> 3;
-    (*rf).ih8 = (*frm_hdr).size.height + 7 >> 3;
-    (*rf).iw4 = (*rf).iw8 << 1;
-    (*rf).ih4 = (*rf).ih8 << 1;
-    let r_stride: ptrdiff_t =
-        (((*frm_hdr).size.width[0] + 127 & !(127 as c_int)) >> 2) as ptrdiff_t;
+    rf.sbsz = 16 << seq_hdr.sb128;
+    rf.frm_hdr = ptr::null();
+    rf.iw8 = frm_hdr.size.width[0] + 7 >> 3;
+    rf.ih8 = frm_hdr.size.height + 7 >> 3;
+    rf.iw4 = rf.iw8 << 1;
+    rf.ih4 = rf.ih8 << 1;
+
+    let r_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 2) as ptrdiff_t;
     let n_tile_rows = if n_tile_threads > 1 {
-        (*frm_hdr).tiling.rows
+        frm_hdr.tiling.rows
     } else {
-        1 as c_int
+        1
     };
-    if r_stride != (*rf).r_stride || n_tile_rows != (*rf).n_tile_rows {
-        if !((*rf).r).is_null() {
-            rav1d_freep_aligned(&mut (*rf).r as *mut *mut refmvs_block as *mut c_void);
+    if r_stride != rf.r_stride || n_tile_rows != rf.n_tile_rows {
+        if !rf.r.is_null() {
+            rav1d_freep_aligned(&mut rf.r as *mut *mut refmvs_block as *mut c_void);
         }
-        let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as c_int;
-        (*rf).r = rav1d_alloc_aligned(
-            (::core::mem::size_of::<refmvs_block>())
-                .wrapping_mul(35 as usize)
-                .wrapping_mul(r_stride as usize)
-                .wrapping_mul(n_tile_rows as usize)
-                .wrapping_mul((1 + uses_2pass) as usize),
-            64 as c_int as usize,
+        let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
+        rf.r = rav1d_alloc_aligned(
+            ::core::mem::size_of::<refmvs_block>()
+                * 35
+                * r_stride as usize
+                * n_tile_rows as usize
+                * (1 + uses_2pass),
+            64,
         ) as *mut refmvs_block;
-        if ((*rf).r).is_null() {
+        if rf.r.is_null() {
             return Err(ENOMEM);
         }
-        (*rf).r_stride = r_stride;
+        rf.r_stride = r_stride;
     }
-    let rp_stride: ptrdiff_t = r_stride >> 1;
-    if rp_stride != (*rf).rp_stride || n_tile_rows != (*rf).n_tile_rows {
-        if !((*rf).rp_proj).is_null() {
-            rav1d_freep_aligned(
-                &mut (*rf).rp_proj as *mut *mut refmvs_temporal_block as *mut c_void,
-            );
+
+    let rp_stride = r_stride >> 1;
+    if rp_stride != rf.rp_stride || n_tile_rows != rf.n_tile_rows {
+        if !rf.rp_proj.is_null() {
+            rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
         }
-        (*rf).rp_proj = rav1d_alloc_aligned(
-            (::core::mem::size_of::<refmvs_temporal_block>())
-                .wrapping_mul(16 as usize)
-                .wrapping_mul(rp_stride as usize)
-                .wrapping_mul(n_tile_rows as usize),
-            64 as usize,
+        rf.rp_proj = rav1d_alloc_aligned(
+            ::core::mem::size_of::<refmvs_temporal_block>()
+                * 16
+                * rp_stride as usize
+                * n_tile_rows as usize,
+            64,
         ) as *mut refmvs_temporal_block;
-        if ((*rf).rp_proj).is_null() {
+        if rf.rp_proj.is_null() {
             return Err(ENOMEM);
         }
-        (*rf).rp_stride = rp_stride;
+        rf.rp_stride = rp_stride;
     }
-    (*rf).n_tile_rows = n_tile_rows;
-    (*rf).n_tile_threads = n_tile_threads;
-    (*rf).n_frame_threads = n_frame_threads;
-    (*rf).rp = rp;
-    (*rf).rp_ref = rp_ref;
-    let poc: c_uint = (*frm_hdr).frame_offset as c_uint;
-    let mut i = 0;
-    while i < 7 {
-        let poc_diff = get_poc_diff(
-            (*seq_hdr).order_hint_n_bits,
-            *ref_poc.offset(i as isize) as c_int,
-            poc as c_int,
-        );
-        (*rf).sign_bias[i as usize] = (poc_diff > 0) as c_int as u8;
-        (*rf).mfmv_sign[i as usize] = (poc_diff < 0) as c_int as u8;
-        (*rf).pocdiff[i as usize] = iclip(
-            get_poc_diff(
-                (*seq_hdr).order_hint_n_bits,
-                poc as c_int,
-                *ref_poc.offset(i as isize) as c_int,
-            ),
-            -(31 as c_int),
-            31 as c_int,
+    rf.n_tile_rows = n_tile_rows;
+    rf.n_tile_threads = n_tile_threads as c_int;
+    rf.n_frame_threads = n_frame_threads as c_int;
+    rf.rp = rp;
+    rf.rp_ref = rp_ref.as_ptr();
+    let poc = frm_hdr.frame_offset as c_uint;
+    for i in 0..7 {
+        let poc_diff = get_poc_diff(seq_hdr.order_hint_n_bits, ref_poc[i] as c_int, poc as c_int);
+        rf.sign_bias[i] = (poc_diff > 0) as u8;
+        rf.mfmv_sign[i] = (poc_diff < 0) as u8;
+        rf.pocdiff[i] = iclip(
+            get_poc_diff(seq_hdr.order_hint_n_bits, poc as c_int, ref_poc[i] as c_int),
+            -31,
+            31,
         ) as i8;
-        i += 1;
     }
-    (*rf).n_mfmvs = 0 as c_int;
-    if (*frm_hdr).use_ref_frame_mvs != 0 && (*seq_hdr).order_hint_n_bits != 0 {
+
+    // temporal MV setup
+    rf.n_mfmvs = 0;
+    if frm_hdr.use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
         let mut total = 2;
-        if !(*rp_ref.offset(0)).is_null() && (*ref_ref_poc.offset(0))[6] != *ref_poc.offset(3) {
-            let fresh12 = (*rf).n_mfmvs;
-            (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh12 as usize] = 0 as c_int as u8;
-            total = 3 as c_int;
+        if !rp_ref[0].is_null() && ref_ref_poc[0][6] != ref_poc[3] {
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 0; // last
+            rf.n_mfmvs += 1;
+            total = 3;
         }
-        if !(*rp_ref.offset(4)).is_null()
+        if !rp_ref[4].is_null()
             && get_poc_diff(
-                (*seq_hdr).order_hint_n_bits,
-                *ref_poc.offset(4) as c_int,
-                (*frm_hdr).frame_offset,
+                seq_hdr.order_hint_n_bits,
+                ref_poc[4] as c_int,
+                frm_hdr.frame_offset,
             ) > 0
         {
-            let fresh13 = (*rf).n_mfmvs;
-            (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh13 as usize] = 4 as c_int as u8;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 4; // bwd
+            rf.n_mfmvs += 1;
         }
-        if !(*rp_ref.offset(5)).is_null()
+        if !rp_ref[5].is_null()
             && get_poc_diff(
-                (*seq_hdr).order_hint_n_bits,
-                *ref_poc.offset(5) as c_int,
-                (*frm_hdr).frame_offset,
+                seq_hdr.order_hint_n_bits,
+                ref_poc[5] as c_int,
+                frm_hdr.frame_offset,
             ) > 0
         {
-            let fresh14 = (*rf).n_mfmvs;
-            (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh14 as usize] = 5 as c_int as u8;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 5; // altref2
+            rf.n_mfmvs += 1;
         }
-        if (*rf).n_mfmvs < total
-            && !(*rp_ref.offset(6)).is_null()
+        if rf.n_mfmvs < total
+            && !rp_ref[6].is_null()
             && get_poc_diff(
-                (*seq_hdr).order_hint_n_bits,
-                *ref_poc.offset(6) as c_int,
-                (*frm_hdr).frame_offset,
+                seq_hdr.order_hint_n_bits,
+                ref_poc[6] as c_int,
+                frm_hdr.frame_offset,
             ) > 0
         {
-            let fresh15 = (*rf).n_mfmvs;
-            (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh15 as usize] = 6 as c_int as u8;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 6; // altref
+            rf.n_mfmvs += 1;
         }
-        if (*rf).n_mfmvs < total && !(*rp_ref.offset(1)).is_null() {
-            let fresh16 = (*rf).n_mfmvs;
-            (*rf).n_mfmvs = (*rf).n_mfmvs + 1;
-            (*rf).mfmv_ref[fresh16 as usize] = 1 as c_int as u8;
+        if rf.n_mfmvs < total && !rp_ref[1].is_null() {
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 1; // last2
+            rf.n_mfmvs += 1;
         }
-        let mut n = 0;
-        while n < (*rf).n_mfmvs {
-            let rpoc: c_uint = *ref_poc.offset((*rf).mfmv_ref[n as usize] as isize);
+
+        for n in 0..rf.n_mfmvs as usize {
+            let rpoc = ref_poc[rf.mfmv_ref[n] as usize];
             let diff1 = get_poc_diff(
-                (*seq_hdr).order_hint_n_bits,
+                seq_hdr.order_hint_n_bits,
                 rpoc as c_int,
-                (*frm_hdr).frame_offset,
+                frm_hdr.frame_offset,
             );
             if diff1.abs() > 31 {
-                (*rf).mfmv_ref2cur[n as usize] = i32::MIN;
+                rf.mfmv_ref2cur[n] = i32::MIN;
             } else {
-                (*rf).mfmv_ref2cur[n as usize] = if ((*rf).mfmv_ref[n as usize] as c_int) < 4 {
-                    -diff1
-                } else {
-                    diff1
-                };
-                let mut m = 0;
-                while m < 7 {
-                    let rrpoc: c_uint =
-                        (*ref_ref_poc.offset((*rf).mfmv_ref[n as usize] as isize))[m as usize];
+                rf.mfmv_ref2cur[n] = if rf.mfmv_ref[n] < 4 { -diff1 } else { diff1 };
+                for m in 0..7 {
+                    let rrpoc = ref_ref_poc[rf.mfmv_ref[n] as usize][m];
                     let diff2 =
-                        get_poc_diff((*seq_hdr).order_hint_n_bits, rpoc as c_int, rrpoc as c_int);
-                    (*rf).mfmv_ref2ref[n as usize][m as usize] = if diff2 as c_uint > 31 as c_uint {
-                        0 as c_int
-                    } else {
-                        diff2
-                    };
-                    m += 1;
+                        get_poc_diff(seq_hdr.order_hint_n_bits, rpoc as c_int, rrpoc as c_int);
+                    // unsigned comparison also catches the < 0 case
+                    rf.mfmv_ref2ref[n][m] = if diff2 as c_uint > 31 { 0 } else { diff2 };
                 }
             }
-            n += 1;
         }
     }
-    (*rf).use_ref_frame_mvs = ((*rf).n_mfmvs > 0) as c_int;
+    rf.use_ref_frame_mvs = (rf.n_mfmvs > 0) as c_int;
+
     Ok(())
 }
 

@@ -4578,20 +4578,17 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
     // init ref mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
-        let ret = rav1d_refmvs_init_frame(
+        rav1d_refmvs_init_frame(
             &mut f.rf,
             seq_hdr,
             frame_hdr,
-            f.refpoc.as_ptr(),
+            &f.refpoc,
             f.mvs,
-            f.refrefpoc.as_ptr(),
-            f.ref_mvs.as_ptr(),
-            c.tc.len() as c_int,
-            c.n_fc as c_int,
-        );
-        if ret.is_err() {
-            return Err(ENOMEM);
-        }
+            &f.refrefpoc,
+            &f.ref_mvs,
+            c.tc.len(),
+            c.n_fc as usize,
+        )?;
     }
 
     // setup dequant tables
