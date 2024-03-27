@@ -2264,7 +2264,7 @@ unsafe fn decode_b_inner(
         let mut n_mvs = 0;
         let mut ctx = 0;
         rav1d_refmvs_find(
-            &mut t.rt,
+            &t.rt,
             &mut mvstack,
             &mut n_mvs,
             &mut ctx,
@@ -2437,7 +2437,7 @@ unsafe fn decode_b_inner(
             let mut n_mvs = 0;
             let mut ctx = 0;
             rav1d_refmvs_find(
-                &mut t.rt,
+                &t.rt,
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
@@ -2541,7 +2541,7 @@ unsafe fn decode_b_inner(
             let mut n_mvs = 0;
             let mut ctx = 0;
             rav1d_refmvs_find(
-                &mut t.rt,
+                &t.rt,
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
@@ -2815,7 +2815,7 @@ unsafe fn decode_b_inner(
             let mut n_mvs = 0;
             let mut ctx = 0;
             rav1d_refmvs_find(
-                &mut t.rt,
+                &t.rt,
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,

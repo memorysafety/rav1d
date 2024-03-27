@@ -833,12 +833,13 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     // temporal
     let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs;
     if rf.use_ref_frame_mvs != 0 {
-        let stride: ptrdiff_t = rf.rp_stride;
+        let stride = rf.rp_stride;
         let by8 = by4 >> 1;
         let bx8 = bx4 >> 1;
-        let rbi: *const refmvs_temporal_block = &mut *(rt.rp_proj)
+        let rbi = rt
+            .rp_proj
             .offset((by8 & 15) as isize * stride + bx8 as isize)
-            as *mut refmvs_temporal_block;
+            .cast_const();
         let mut rb = rbi;
         let step_h = if bw4 >= 16 { 2 } else { 1 };
         let step_v = if bh4 >= 16 { 2 } else { 1 };
@@ -916,24 +917,23 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     // "secondary" (non-direct neighbour) top & left edges
     // what is different about secondary is that everything is now in 8x8 resolution
     for n in 2..=3 {
-        if n as c_uint > n_rows && n as c_uint <= max_rows {
+        if n > n_rows && n <= max_rows {
             n_rows = n_rows.wrapping_add(scan_row(
                 mvstack,
                 cnt,
                 r#ref,
                 &gmv,
-                &mut *(rt.r[(((by4 & 31) - 2 * n + 1 | 1) + 5) as usize]).offset(bx4 as isize | 1),
+                &mut *(rt.r[(((by4 & 31) - 2 * n as c_int + 1 | 1) + 5) as usize])
+                    .offset(bx4 as isize | 1),
                 bw4,
                 w4,
-                (1 as c_uint)
-                    .wrapping_add(max_rows)
-                    .wrapping_sub(n as c_uint) as c_int,
+                (1 + max_rows - n) as _,
                 if bw4 >= 16 { 4 } else { 2 },
                 &mut have_dummy_newmv_match,
                 &mut have_row_mvs,
             ) as c_uint);
         }
-        if n as c_uint > n_cols && n as c_uint <= max_cols {
+        if n > n_cols && n <= max_cols {
             n_cols = n_cols.wrapping_add(scan_col(
                 mvstack,
                 cnt,
@@ -942,10 +942,8 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                 &rt.r[(by4 as usize & 31 | 1) + 5],
                 bh4,
                 h4,
-                bx4 - n * 2 + 1 | 1,
-                (1 as c_uint)
-                    .wrapping_add(max_cols)
-                    .wrapping_sub(n as c_uint) as c_int,
+                bx4 - n as c_int * 2 + 1 | 1,
+                (1 + max_cols - n) as _,
                 if bh4 >= 16 { 4 } else { 2 },
                 &mut have_dummy_newmv_match,
                 &mut have_col_mvs,
