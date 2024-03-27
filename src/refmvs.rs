@@ -1147,7 +1147,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     if !(row_start8 >= 0) {
         unreachable!();
     }
-    if !((row_end8 - row_start8) as c_uint <= 16 as c_uint) {
+    if !((row_end8 - row_start8) as c_uint <= 16) {
         unreachable!();
     }
     row_end8 = cmp::min(row_end8, rf.ih8);
