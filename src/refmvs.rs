@@ -20,6 +20,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::ptr;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
@@ -156,8 +157,8 @@ pub struct refmvs_block(pub refmvs_block_unaligned);
 pub(crate) struct refmvs_frame {
     /// A pointer to a [`refmvs_frame`] may be passed to a [`load_tmvs_fn`] function.
     /// However, the [`Self::frm_hdr`] pointer is not accessed in such a function (see [`load_tmvs_c`]).
-    /// Thus, it is safe to have a pointer to [`Rav1dFrameHeader`] instead of [`Dav1dFrameHeader`] here.
-    pub frm_hdr: *const Rav1dFrameHeader,
+    /// But we need to keep the layout the same, so we store a `*const ()` null ptr.
+    pub frm_hdr: *const (),
     pub iw4: c_int,
     pub ih4: c_int,
     pub iw8: c_int,
@@ -502,13 +503,14 @@ fn mv_projection(mv: mv, num: c_int, den: c_int) -> mv {
     };
 }
 
-unsafe fn add_temporal_candidate(
+fn add_temporal_candidate(
     rf: &refmvs_frame,
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     rb: &refmvs_temporal_block,
     r#ref: refmvs_refpair,
     globalmv: Option<(&mut c_int, &[mv; 2])>,
+    frame_hdr: &Rav1dFrameHeader,
 ) {
     if rb.mv.is_invalid() {
         return;
@@ -519,7 +521,7 @@ unsafe fn add_temporal_candidate(
         rf.pocdiff[r#ref.r#ref[0] as usize - 1] as c_int,
         rb.r#ref as c_int,
     );
-    fix_mv_precision(&*rf.frm_hdr, &mut mv);
+    fix_mv_precision(frame_hdr, &mut mv);
 
     let last = *cnt;
     if r#ref.r#ref[1] == -1 {
@@ -550,7 +552,7 @@ unsafe fn add_temporal_candidate(
                 ),
             ],
         };
-        fix_mv_precision(&*rf.frm_hdr, &mut mvp.mv[1]);
+        fix_mv_precision(frame_hdr, &mut mvp.mv[1]);
 
         for cand in &mut mvstack[..last] {
             if cand.mv == mvp {
@@ -702,6 +704,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     edge_flags: EdgeFlags,
     by4: c_int,
     bx4: c_int,
+    frame_hdr: &Rav1dFrameHeader,
 ) {
     let rf = &*rt.rf;
     let b_dim = &dav1d_block_dimensions[bs as usize];
@@ -718,15 +721,15 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     );
     if r#ref.r#ref[0] > 0 {
         tgmv[0] = get_gmv_2d(
-            &(*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1],
+            &frame_hdr.gmv[r#ref.r#ref[0] as usize - 1],
             bx4,
             by4,
             bw4,
             bh4,
-            &*rf.frm_hdr,
+            frame_hdr,
         );
 
-        gmv[0] = if (*rf.frm_hdr).gmv[r#ref.r#ref[0] as usize - 1].r#type
+        gmv[0] = if frame_hdr.gmv[r#ref.r#ref[0] as usize - 1].r#type
             > Rav1dWarpedMotionType::Translation
         {
             tgmv[0]
@@ -739,14 +742,14 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     }
     if r#ref.r#ref[1] > 0 {
         tgmv[1] = get_gmv_2d(
-            &(*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1],
+            &frame_hdr.gmv[r#ref.r#ref[1] as usize - 1],
             bx4,
             by4,
             bw4,
             bh4,
-            &*rf.frm_hdr,
+            frame_hdr,
         );
-        gmv[1] = if (*rf.frm_hdr).gmv[r#ref.r#ref[1] as usize - 1].r#type
+        gmv[1] = if frame_hdr.gmv[r#ref.r#ref[1] as usize - 1].r#type
             > Rav1dWarpedMotionType::Translation
         {
             tgmv[1]
@@ -828,7 +831,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     }
 
     // temporal
-    let mut globalmv_ctx = (*rf.frm_hdr).use_ref_frame_mvs;
+    let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs;
     if rf.use_ref_frame_mvs != 0 {
         let stride: ptrdiff_t = rf.rp_stride;
         let by8 = by4 >> 1;
@@ -854,6 +857,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                     } else {
                         None
                     },
+                    frame_hdr,
                 );
             }
             rb = rb.offset(stride * step_v as isize);
@@ -864,7 +868,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             rb = &*rbi.offset(bh8 as isize * stride) as *const refmvs_temporal_block;
             let has_bottom = (by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8)) as c_int;
             if has_bottom != 0 && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
-                add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None);
+                add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None, frame_hdr);
             }
             if bx8 + bw8 < cmp::min(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
                 if has_bottom != 0 {
@@ -875,6 +879,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                         &*rb.offset(bw8 as isize),
                         r#ref,
                         None,
+                        frame_hdr,
                     );
                 }
                 if (by8 + bh8 - 1) < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8) {
@@ -885,6 +890,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                         &*rb.offset(bw8 as isize - stride),
                         r#ref,
                         None,
+                        frame_hdr,
                     );
                 }
             }
@@ -1419,7 +1425,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     n_frame_threads: c_int,
 ) -> Rav1dResult {
     (*rf).sbsz = (16 as c_int) << (*seq_hdr).sb128;
-    (*rf).frm_hdr = frm_hdr;
+    (*rf).frm_hdr = ptr::null();
     (*rf).iw8 = (*frm_hdr).size.width[0] + 7 >> 3;
     (*rf).ih8 = (*frm_hdr).size.height + 7 >> 3;
     (*rf).iw4 = (*rf).iw8 << 1;

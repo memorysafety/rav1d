@@ -1449,6 +1449,8 @@ unsafe fn decode_b_inner(
         && (bw4 > ss_hor || t.bx & 1 != 0)
         && (bh4 > ss_ver || t.by & 1 != 0);
 
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+
     if t.frame_thread.pass == 2 {
         if b.intra != 0 {
             bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b);
@@ -1468,7 +1470,7 @@ unsafe fn decode_b_inner(
                     case.set(&mut dir.intra.0, 1);
                 },
             );
-            if f.frame_hdr().frame_type.is_inter_or_switch() {
+            if frame_hdr.frame_type.is_inter_or_switch() {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 {
                     let block = &mut *r.offset(x as isize);
@@ -1494,7 +1496,7 @@ unsafe fn decode_b_inner(
                 );
             }
         } else {
-            if f.frame_hdr().frame_type.is_inter_or_switch() /* not intrabc */
+            if frame_hdr.frame_type.is_inter_or_switch() /* not intrabc */
                 && b.comp_type().is_none()
                 && b.motion_mode() == MotionMode::Warp
             {
@@ -2109,7 +2111,8 @@ unsafe fn decode_b_inner(
             }
         }
 
-        let t_dim = if f.frame_hdr().segmentation.lossless[b.seg_id as usize] != 0 {
+        let frame_hdr = f.frame_hdr();
+        let t_dim = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
             b.uvtx = TX_4X4 as u8;
             *b.tx_mut() = b.uvtx;
             &dav1d_txfm_dimensions[TX_4X4 as usize]
@@ -2117,7 +2120,7 @@ unsafe fn decode_b_inner(
             *b.tx_mut() = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
             let mut t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
-            if f.frame_hdr().txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TX_4X4 as u8 {
+            if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&*t.a, &t.l, &*t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
                 let depth = rav1d_msac_decode_symbol_adapt4(
@@ -2251,10 +2254,11 @@ unsafe fn decode_b_inner(
                 }
             }
         }
-        if f.frame_hdr().frame_type.is_inter_or_switch() || f.frame_hdr().allow_intrabc {
+        let frame_hdr = f.frame_hdr();
+        if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
             splat_intraref(c, t, bs, bw4 as usize, bh4 as usize);
         }
-    } else if f.frame_hdr().frame_type.is_key_or_intra() {
+    } else if frame_hdr.frame_type.is_key_or_intra() {
         // intra block copy
         let mut mvstack = [Default::default(); 8];
         let mut n_mvs = 0;
@@ -2269,6 +2273,7 @@ unsafe fn decode_b_inner(
             intra_edge_flags,
             t.by,
             t.bx,
+            frame_hdr,
         );
 
         if mvstack[0].mv.mv[0] != mv::ZERO {
@@ -2441,6 +2446,7 @@ unsafe fn decode_b_inner(
                 intra_edge_flags,
                 t.by,
                 t.bx,
+                frame_hdr,
             );
 
             *b.mv_mut() = mvstack[0].mv.mv;
@@ -2544,6 +2550,7 @@ unsafe fn decode_b_inner(
                 intra_edge_flags,
                 t.by,
                 t.bx,
+                frame_hdr,
             );
 
             *b.inter_mode_mut() = rav1d_msac_decode_symbol_adapt8(
@@ -2819,6 +2826,7 @@ unsafe fn decode_b_inner(
                 intra_edge_flags,
                 t.by,
                 t.bx,
+                frame_hdr,
             );
 
             // mode parsing and mv derivation from ref_mvs
