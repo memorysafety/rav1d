@@ -1441,13 +1441,13 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         if !rf.r.is_null() {
             rav1d_freep_aligned(&mut rf.r as *mut *mut refmvs_block as *mut c_void);
         }
-        let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as c_int;
+        let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
         rf.r = rav1d_alloc_aligned(
             ::core::mem::size_of::<refmvs_block>()
                 * 35
                 * r_stride as usize
                 * n_tile_rows as usize
-                * (1 + uses_2pass) as usize,
+                * (1 + uses_2pass),
             64,
         ) as *mut refmvs_block;
         if rf.r.is_null() {
