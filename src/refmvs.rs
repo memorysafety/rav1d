@@ -1183,8 +1183,8 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
         tile_row_idx = 0;
     }
     rt.rp_proj = rf.rp_proj.offset(16 * rf.rp_stride * tile_row_idx as isize);
-    let uses_2pass = (rf.n_tile_threads > 1 && rf.n_frame_threads > 1) as c_int;
-    let pass_off = if uses_2pass != 0 && pass == 2 {
+    let uses_2pass = rf.n_tile_threads > 1 && rf.n_frame_threads > 1;
+    let pass_off = if uses_2pass && pass == 2 {
         35 * rf.r_stride * rf.n_tile_rows as isize
     } else {
         0
