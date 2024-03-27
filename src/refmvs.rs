@@ -1420,7 +1420,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     ref_poc: &[c_uint; 7],
     rp: *mut refmvs_temporal_block,
     ref_ref_poc: &[[c_uint; 7]; 7],
-    rp_ref: *const *mut refmvs_temporal_block,
+    rp_ref: &[*mut refmvs_temporal_block; 7],
     n_tile_threads: c_int,
     n_frame_threads: c_int,
 ) -> Rav1dResult {
@@ -1475,7 +1475,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.n_tile_threads = n_tile_threads;
     rf.n_frame_threads = n_frame_threads;
     rf.rp = rp;
-    rf.rp_ref = rp_ref;
+    rf.rp_ref = rp_ref.as_ptr();
     let poc: c_uint = frm_hdr.frame_offset as c_uint;
     let mut i = 0;
     while i < 7 {
@@ -1500,13 +1500,13 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.n_mfmvs = 0 as c_int;
     if frm_hdr.use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
         let mut total = 2;
-        if !(*rp_ref.offset(0)).is_null() && ref_ref_poc[0][6] != ref_poc[3] {
+        if !rp_ref[0].is_null() && ref_ref_poc[0][6] != ref_poc[3] {
             let fresh12 = rf.n_mfmvs;
             rf.n_mfmvs = rf.n_mfmvs + 1;
             rf.mfmv_ref[fresh12 as usize] = 0 as c_int as u8;
             total = 3 as c_int;
         }
-        if !(*rp_ref.offset(4)).is_null()
+        if !rp_ref[4].is_null()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[4] as c_int,
@@ -1517,7 +1517,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             rf.n_mfmvs = rf.n_mfmvs + 1;
             rf.mfmv_ref[fresh13 as usize] = 4 as c_int as u8;
         }
-        if !(*rp_ref.offset(5)).is_null()
+        if !rp_ref[5].is_null()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[5] as c_int,
@@ -1529,7 +1529,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             rf.mfmv_ref[fresh14 as usize] = 5 as c_int as u8;
         }
         if rf.n_mfmvs < total
-            && !(*rp_ref.offset(6)).is_null()
+            && !rp_ref[6].is_null()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[6] as c_int,
@@ -1540,7 +1540,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             rf.n_mfmvs = rf.n_mfmvs + 1;
             rf.mfmv_ref[fresh15 as usize] = 6 as c_int as u8;
         }
-        if rf.n_mfmvs < total && !(*rp_ref.offset(1)).is_null() {
+        if rf.n_mfmvs < total && !rp_ref[1].is_null() {
             let fresh16 = rf.n_mfmvs;
             rf.n_mfmvs = rf.n_mfmvs + 1;
             rf.mfmv_ref[fresh16 as usize] = 1 as c_int as u8;
