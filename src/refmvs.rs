@@ -203,8 +203,16 @@ pub struct refmvs_candidate {
     pub weight: c_int,
 }
 
-pub(crate) type load_tmvs_fn =
-    Option<unsafe extern "C" fn(*const refmvs_frame, c_int, c_int, c_int, c_int, c_int) -> ()>;
+pub(crate) type load_tmvs_fn = Option<
+    unsafe extern "C" fn(
+        rf: *const refmvs_frame,
+        tile_row_idx: c_int,
+        col_start8: c_int,
+        col_end8: c_int,
+        row_start8: c_int,
+        row_end8: c_int,
+    ) -> (),
+>;
 
 pub type save_tmvs_fn = Option<
     unsafe extern "C" fn(
