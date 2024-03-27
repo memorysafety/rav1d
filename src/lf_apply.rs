@@ -657,8 +657,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 
     // fix lpf strength at tile row boundaries
     if start_of_tile_row != 0 {
-        let mut a: &[BlockContext] = slice::from_raw_parts(f.a, f.a_sz as usize);
-        a = &a[(f.sb128w * (start_of_tile_row - 1)) as usize..];
+        let mut a = &f.a[(f.sb128w * (start_of_tile_row - 1)) as usize..];
         for x in 0..f.sb128w {
             let y_vmask: &mut [[u16; 2]; 3] = &mut lflvl[x as usize].filter_y[1][starty4 as usize];
             let w = cmp::min(32, f.w4 - (x << 5)) as u32;

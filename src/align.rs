@@ -28,6 +28,12 @@ impl<T: ArrayDefault + Copy, const N: usize> ArrayDefault for [T; N] {
     }
 }
 
+impl<T> ArrayDefault for Option<T> {
+    fn default() -> Self {
+        None
+    }
+}
+
 macro_rules! impl_ArrayDefault {
     ($T:ty) => {
         impl ArrayDefault for $T {

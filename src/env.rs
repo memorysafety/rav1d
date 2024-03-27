@@ -26,6 +26,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::slice;
 
+#[derive(Default)]
 #[repr(C)]
 pub struct BlockContext {
     pub mode: Align8<[u8; 32]>,

@@ -866,7 +866,7 @@ impl Drop for Rav1dContext {
                 mem::take(&mut f.task_thread.tasks); // TODO: remove when context is owned
                 rav1d_free_aligned(f.ts as *mut c_void);
                 rav1d_free_aligned(f.ipred_edge[0] as *mut c_void);
-                free(f.a as *mut c_void);
+                let _ = mem::take(&mut f.a); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.tiles);
                 let _ = mem::take(&mut f.lf.mask); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.lf.lr_mask); // TODO: remove when context is owned
