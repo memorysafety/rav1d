@@ -119,7 +119,6 @@ use crate::src::log::Rav1dLog as _;
 use crate::src::loopfilter::rav1d_loop_filter_dsp_init;
 use crate::src::looprestoration::rav1d_loop_restoration_dsp_init;
 use crate::src::mc::rav1d_mc_dsp_init;
-use crate::src::mem::freep;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
@@ -177,7 +176,6 @@ use crate::src::thread_task::TILE_ERROR;
 use crate::src::warpmv::rav1d_find_affine_int;
 use crate::src::warpmv::rav1d_get_shear_params;
 use crate::src::warpmv::rav1d_set_affine_mv2d;
-use libc::malloc;
 use libc::ptrdiff_t;
 use std::array;
 use std::cmp;
@@ -4184,8 +4182,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     }
 
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
+        let rf = f.rf.as_dav1d();
         (c.refmvs_dsp.load_tmvs)(
-            &f.rf,
+            &rf,
             ts.tiling.row,
             ts.tiling.col_start >> 1,
             ts.tiling.col_end >> 1,
@@ -4783,7 +4782,8 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             t.by = sby << 4 + seq_hdr.sb128;
             let by_end = t.by + f.sb_step >> 1;
             if frame_hdr.use_ref_frame_mvs != 0 {
-                (c.refmvs_dsp.load_tmvs)(&f.rf, tile_row as c_int, 0, f.bw >> 1, t.by >> 1, by_end);
+                let rf = f.rf.as_dav1d();
+                (c.refmvs_dsp.load_tmvs)(&rf, tile_row as c_int, 0, f.bw >> 1, t.by >> 1, by_end);
             }
             for col in 0..cols {
                 t.ts = tile_row * cols + col;

@@ -53,15 +53,6 @@ pub unsafe fn rav1d_freep_aligned(ptr: *mut c_void) {
     }
 }
 
-#[inline]
-pub unsafe fn freep(ptr: *mut c_void) {
-    let mem: *mut *mut c_void = ptr as *mut *mut c_void;
-    if !(*mem).is_null() {
-        free(*mem);
-        *mem = 0 as *mut c_void;
-    }
-}
-
 #[cold]
 unsafe fn mem_pool_destroy(pool: *mut Rav1dMemPool) {
     pthread_mutex_destroy(&mut (*pool).lock);

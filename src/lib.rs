@@ -60,7 +60,6 @@ use crate::src::refmvs::rav1d_refmvs_init;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
-use libc::free;
 use libc::memset;
 use std::cell::UnsafeCell;
 use std::cmp;

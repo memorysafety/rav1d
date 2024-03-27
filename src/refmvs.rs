@@ -20,6 +20,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 
@@ -159,11 +160,16 @@ pub struct refmvs_block_unaligned {
 pub struct refmvs_block(pub refmvs_block_unaligned);
 
 #[repr(C)]
-pub(crate) struct refmvs_frame {
+pub(crate) struct refmvs_frame<'a> {
+    /// This lifetime is for the pointers in this [`refmvs_frame`],
+    /// which are borrowed from the parent [`RefMvsFrame`].
+    /// Since this is a transient type for asm calls, a lifetime is fine,
+    /// and since this is a ZST, the layout stays the same.
+    _lifetime: PhantomData<&'a ()>,
     /// A pointer to a [`refmvs_frame`] may be passed to a [`load_tmvs_fn`] function.
     /// However, the [`Self::frm_hdr`] pointer is not accessed in such a function (see [`load_tmvs_c`]).
     /// But we need to keep the layout the same, so we store a `*const ()` null ptr.
-    pub frm_hdr: *const (),
+    _frm_hdr: *const (),
     pub iw4: c_int,
     pub ih4: c_int,
     pub iw8: c_int,
@@ -186,6 +192,86 @@ pub(crate) struct refmvs_frame {
     pub n_tile_rows: c_int,
     pub n_tile_threads: c_int,
     pub n_frame_threads: c_int,
+}
+
+pub(crate) struct RefMvsFrame {
+    pub iw4: c_int,
+    pub ih4: c_int,
+    pub iw8: c_int,
+    pub ih8: c_int,
+    pub sbsz: c_int,
+    pub use_ref_frame_mvs: c_int,
+    pub sign_bias: [u8; 7],
+    pub mfmv_sign: [u8; 7],
+    pub pocdiff: [i8; 7],
+    pub mfmv_ref: [u8; 3],
+    pub mfmv_ref2cur: [c_int; 3],
+    pub mfmv_ref2ref: [[c_int; 7]; 3],
+    pub n_mfmvs: c_int,
+    pub rp: *mut refmvs_temporal_block,
+    pub rp_ref: *const *mut refmvs_temporal_block,
+    pub rp_proj: *mut refmvs_temporal_block,
+    pub rp_stride: ptrdiff_t,
+    pub r: *mut refmvs_block,
+    pub r_stride: ptrdiff_t,
+    pub n_tile_rows: c_int,
+    pub n_tile_threads: c_int,
+    pub n_frame_threads: c_int,
+}
+
+impl RefMvsFrame {
+    pub fn as_dav1d<'a>(&'a self) -> refmvs_frame<'a> {
+        let Self {
+            iw4,
+            ih4,
+            iw8,
+            ih8,
+            sbsz,
+            use_ref_frame_mvs,
+            sign_bias,
+            mfmv_sign,
+            pocdiff,
+            mfmv_ref,
+            mfmv_ref2cur,
+            mfmv_ref2ref,
+            n_mfmvs,
+            rp,
+            rp_ref,
+            rp_proj,
+            rp_stride,
+            r,
+            r_stride,
+            n_tile_rows,
+            n_tile_threads,
+            n_frame_threads,
+        } = *self;
+        refmvs_frame {
+            _lifetime: PhantomData,
+            _frm_hdr: ptr::null(), // never used
+            iw4,
+            ih4,
+            iw8,
+            ih8,
+            sbsz,
+            use_ref_frame_mvs,
+            sign_bias,
+            mfmv_sign,
+            pocdiff,
+            mfmv_ref,
+            mfmv_ref2cur,
+            mfmv_ref2ref,
+            n_mfmvs,
+            rp,
+            rp_ref,
+            rp_proj,
+            rp_stride,
+            r,
+            r_stride,
+            n_tile_rows,
+            n_tile_threads,
+            n_frame_threads,
+        }
+    }
 }
 
 #[repr(C)]
@@ -510,7 +596,7 @@ fn mv_projection(mv: mv, num: c_int, den: c_int) -> mv {
 }
 
 fn add_temporal_candidate(
-    rf: &refmvs_frame,
+    rf: &RefMvsFrame,
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     rb: &refmvs_temporal_block,
@@ -702,7 +788,7 @@ fn add_single_extended_candidate(
 /// their respective position in the current frame.
 pub(crate) unsafe fn rav1d_refmvs_find(
     rt: &refmvs_tile,
-    rf: &refmvs_frame,
+    rf: &RefMvsFrame,
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
     ctx: &mut c_int,
@@ -1142,7 +1228,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
 pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     dsp: &Rav1dRefmvsDSPContext,
     rt: &refmvs_tile,
-    rf: &refmvs_frame,
+    rf: &RefMvsFrame,
     col_start8: c_int,
     col_end8: c_int,
     row_start8: c_int,
@@ -1165,7 +1251,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
 }
 
 pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
-    rf: &refmvs_frame,
+    rf: &RefMvsFrame,
     tile_col_start4: c_int,
     tile_col_end4: c_int,
     tile_row_start4: c_int,
@@ -1408,7 +1494,7 @@ unsafe extern "C" fn save_tmvs_c(
 }
 
 pub(crate) unsafe fn rav1d_refmvs_init_frame(
-    rf: &mut refmvs_frame,
+    rf: &mut RefMvsFrame,
     seq_hdr: &Rav1dSequenceHeader,
     frm_hdr: &Rav1dFrameHeader,
     ref_poc: &[c_uint; 7],
@@ -1419,7 +1505,6 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     n_frame_threads: usize,
 ) -> Rav1dResult {
     rf.sbsz = 16 << seq_hdr.sb128;
-    rf.frm_hdr = ptr::null();
     rf.iw8 = frm_hdr.size.width[0] + 7 >> 3;
     rf.ih8 = frm_hdr.size.height + 7 >> 3;
     rf.iw4 = rf.iw8 << 1;
@@ -1555,14 +1640,14 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     Ok(())
 }
 
-pub(crate) fn rav1d_refmvs_init(rf: &mut refmvs_frame) {
+pub(crate) fn rav1d_refmvs_init(rf: &mut RefMvsFrame) {
     rf.r = 0 as *mut refmvs_block;
     rf.r_stride = 0;
     rf.rp_proj = 0 as *mut refmvs_temporal_block;
     rf.rp_stride = 0;
 }
 
-pub(crate) unsafe fn rav1d_refmvs_clear(rf: &mut refmvs_frame) {
+pub(crate) unsafe fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
     if !rf.r.is_null() {
         rav1d_freep_aligned(&mut rf.r as *mut *mut refmvs_block as *mut c_void);
     }
