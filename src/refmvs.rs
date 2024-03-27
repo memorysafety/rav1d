@@ -1136,7 +1136,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
 // cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
 // into buffers for use in future frame's temporal MV prediction
 pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
-    dsp: *const Rav1dRefmvsDSPContext,
+    dsp: &Rav1dRefmvsDSPContext,
     rt: *const refmvs_tile,
     col_start8: c_int,
     mut col_end8: c_int,
@@ -1156,7 +1156,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     let ref_sign: *const u8 = ((*rf).mfmv_sign).as_ptr();
     let rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
 
-    (*dsp).save_tmvs.expect("non-null function pointer")(
+    dsp.save_tmvs.expect("non-null function pointer")(
         rp,
         stride,
         (*rt).r.as_ptr().offset(6) as *const *const refmvs_block,
