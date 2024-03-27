@@ -1,7 +1,6 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
-use crate::src::env::BlockContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
@@ -661,6 +660,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
         for x in 0..f.sb128w {
             let y_vmask: &mut [[u16; 2]; 3] = &mut lflvl[x as usize].filter_y[1][starty4 as usize];
             let w = cmp::min(32, f.w4 - (x << 5)) as u32;
+            let a_0 = a[0].try_read().unwrap();
             for i in 0..w {
                 let mask: u32 = 1 << i;
                 let sidx = (mask >= 0x10000) as usize;
@@ -670,7 +670,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                 y_vmask[2][sidx] &= !smask;
                 y_vmask[1][sidx] &= !smask;
                 y_vmask[0][sidx] &= !smask;
-                y_vmask[cmp::min(idx, a[0].tx_lpf_y[i as usize] as usize)][sidx] |= smask;
+                y_vmask[cmp::min(idx, a_0.tx_lpf_y[i as usize] as usize)][sidx] |= smask;
             }
             if f.cur.p.layout != Rav1dPixelLayout::I400 {
                 let cw: c_uint = w.wrapping_add(ss_hor as c_uint) >> ss_hor;
@@ -683,7 +683,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                     let idx = (uv_vmask[1][sidx] & smask != 0) as usize;
                     uv_vmask[1][sidx] &= !smask;
                     uv_vmask[0][sidx] &= !smask;
-                    uv_vmask[cmp::min(idx, a[0].tx_lpf_uv[i as usize] as usize)][sidx] |= smask;
+                    uv_vmask[cmp::min(idx, a_0.tx_lpf_uv[i as usize] as usize)][sidx] |= smask;
                 }
             }
             a = &a[1..];
