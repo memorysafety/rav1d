@@ -189,13 +189,6 @@ pub enum MVJoint {
     HV = 3,
 }
 
-pub type InterPredMode = u8;
-pub const _N_INTER_PRED_MODES: usize = 4;
-pub const NEWMV: InterPredMode = 3;
-pub const GLOBALMV: InterPredMode = 2;
-pub const NEARMV: InterPredMode = 1;
-pub const NEARESTMV: InterPredMode = 0;
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DrlProximity {
     Nearest,
@@ -204,16 +197,36 @@ pub enum DrlProximity {
     Nearish,
 }
 
-pub type CompInterPredMode = u8;
-pub const N_COMP_INTER_PRED_MODES: usize = 8;
-pub const NEWMV_NEWMV: CompInterPredMode = 7;
-pub const GLOBALMV_GLOBALMV: CompInterPredMode = 6;
-pub const NEWMV_NEARMV: CompInterPredMode = 5;
-pub const NEARMV_NEWMV: CompInterPredMode = 4;
-pub const NEWMV_NEARESTMV: CompInterPredMode = 3;
-pub const NEARESTMV_NEWMV: CompInterPredMode = 2;
-pub const NEARMV_NEARMV: CompInterPredMode = 1;
-pub const NEARESTMV_NEARESTMV: CompInterPredMode = 0;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InterPredMode {
+    Nearest = 0,
+    Near = 1,
+    Global = 2,
+    New = 3,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
+pub enum CompInterPredMode {
+    NearestNearest = 0,
+    NearNear = 1,
+    NearestNew = 2,
+    NewNearest = 3,
+    NearNew = 4,
+    NewNear = 5,
+    GlobalGlobal = 6,
+    NewNew = 7,
+}
+
+impl From<InterPredMode> for CompInterPredMode {
+    fn from(value: InterPredMode) -> Self {
+        match value {
+            InterPredMode::Nearest => CompInterPredMode::NearestNearest,
+            InterPredMode::Near => CompInterPredMode::NearNear,
+            InterPredMode::Global => CompInterPredMode::NearestNew,
+            InterPredMode::New => CompInterPredMode::NewNearest,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CompInterType {
@@ -319,7 +332,7 @@ pub union Av1Block_inter_nd {
 pub struct Av1Block_inter {
     pub c2rust_unnamed: Av1Block_inter_nd,
     pub comp_type: Option<CompInterType>,
-    pub inter_mode: u8,
+    pub inter_mode: CompInterPredMode,
     pub motion_mode: MotionMode,
     pub drl_idx: DrlProximity,
     pub r#ref: [i8; 2],
@@ -383,11 +396,11 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.drl_idx
     }
 
-    pub unsafe fn inter_mode(&self) -> u8 {
+    pub unsafe fn inter_mode(&self) -> CompInterPredMode {
         self.c2rust_unnamed.c2rust_unnamed_0.inter_mode
     }
 
-    pub unsafe fn inter_mode_mut(&mut self) -> &mut u8 {
+    pub unsafe fn inter_mode_mut(&mut self) -> &mut CompInterPredMode {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.inter_mode
     }
 

@@ -29,10 +29,12 @@ use crate::src::ipred_prepare::sm_uv_flag;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
+use crate::src::levels::CompInterPredMode;
 use crate::src::levels::CompInterType;
 use crate::src::levels::Filter2d;
 use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
+use crate::src::levels::InterPredMode;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
@@ -43,8 +45,6 @@ use crate::src::levels::CFL_PRED;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
-use crate::src::levels::GLOBALMV;
-use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::IDTX;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
@@ -3342,7 +3342,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     .as_ptr()
                     .offset(i as isize) as isize,
             ) as *const Rav1dThreadPicture;
-            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV_GLOBALMV as c_int
+            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == CompInterPredMode::GlobalGlobal
                 && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
                     as c_int
                     != 0
@@ -3511,8 +3511,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             .offset(i as isize) as isize,
                     )
                         as *const Rav1dThreadPicture;
-                    if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int
-                        == GLOBALMV_GLOBALMV as c_int
+                    if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
+                        == CompInterPredMode::GlobalGlobal
                         && cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed
                             [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
@@ -3628,7 +3628,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             as *const Rav1dThreadPicture;
         let filter_2d: Filter2d = b.c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
         if cmp::min(bw4, bh4) > 1
-            && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV as c_int
+            && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == InterPredMode::Global.into()
                 && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize] as c_int
                     != 0
                 || b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Warp
@@ -4014,7 +4014,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             } else {
                 if cmp::min(cbw4, cbh4) > 1
-                    && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV as c_int
+                    && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode
+                        == InterPredMode::Global.into()
                         && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                             as c_int
                             != 0

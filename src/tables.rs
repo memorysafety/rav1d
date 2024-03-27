@@ -8,6 +8,7 @@ use crate::src::align::Align8;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
+use crate::src::levels::CompInterPredMode;
 use crate::src::levels::Filter2d;
 use crate::src::levels::InterPredMode;
 use crate::src::levels::TxClass;
@@ -24,8 +25,6 @@ use crate::src::levels::DIAG_DOWN_RIGHT_PRED;
 use crate::src::levels::FLIPADST_ADST;
 use crate::src::levels::FLIPADST_DCT;
 use crate::src::levels::FLIPADST_FLIPADST;
-use crate::src::levels::GLOBALMV;
-use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::HOR_DOWN_PRED;
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::HOR_UP_PRED;
@@ -33,17 +32,6 @@ use crate::src::levels::H_ADST;
 use crate::src::levels::H_DCT;
 use crate::src::levels::H_FLIPADST;
 use crate::src::levels::IDTX;
-use crate::src::levels::NEARESTMV;
-use crate::src::levels::NEARESTMV_NEARESTMV;
-use crate::src::levels::NEARESTMV_NEWMV;
-use crate::src::levels::NEARMV;
-use crate::src::levels::NEARMV_NEARMV;
-use crate::src::levels::NEARMV_NEWMV;
-use crate::src::levels::NEWMV;
-use crate::src::levels::NEWMV_NEARESTMV;
-use crate::src::levels::NEWMV_NEARMV;
-use crate::src::levels::NEWMV_NEWMV;
-use crate::src::levels::N_COMP_INTER_PRED_MODES;
 use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_RECT_TX_SIZES;
 use crate::src::levels::N_TX_TYPES_PLUS_LL;
@@ -479,16 +467,20 @@ pub static dav1d_txtp_from_uvmode: [TxfmType; N_UV_INTRA_PRED_MODES] = {
     tbl
 };
 
-pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; N_COMP_INTER_PRED_MODES] = {
-    let mut tbl = [[0; 2]; 8];
-    tbl[NEARESTMV_NEARESTMV as usize] = [NEARESTMV, NEARESTMV];
-    tbl[NEARMV_NEARMV as usize] = [NEARMV, NEARMV];
-    tbl[NEWMV_NEWMV as usize] = [NEWMV, NEWMV];
-    tbl[GLOBALMV_GLOBALMV as usize] = [GLOBALMV, GLOBALMV];
-    tbl[NEWMV_NEARESTMV as usize] = [NEWMV, NEARESTMV];
-    tbl[NEWMV_NEARMV as usize] = [NEWMV, NEARMV];
-    tbl[NEARESTMV_NEWMV as usize] = [NEARESTMV, NEWMV];
-    tbl[NEARMV_NEWMV as usize] = [NEARMV, NEWMV];
+pub static dav1d_comp_inter_pred_modes: [[InterPredMode; 2]; CompInterPredMode::COUNT] = {
+    use CompInterPredMode::*;
+    use InterPredMode::*;
+
+    let mut tbl = [[InterPredMode::Nearest; 2]; 8];
+    tbl[NearestNearest as usize] = [Nearest, Nearest];
+    tbl[NearNear as usize] = [Near, Near];
+    tbl[NewNew as usize] = [New, New];
+    tbl[GlobalGlobal as usize] = [Global, Global];
+    tbl[NewNearest as usize] = [New, Nearest];
+    tbl[NewNear as usize] = [New, Near];
+    tbl[NearestNew as usize] = [Nearest, New];
+    tbl[NearNew as usize] = [Near, New];
+
     tbl
 };
 
