@@ -1137,13 +1137,13 @@ pub(crate) unsafe fn rav1d_refmvs_find(
 // into buffers for use in future frame's temporal MV prediction
 pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     dsp: &Rav1dRefmvsDSPContext,
-    rt: *const refmvs_tile,
+    rt: &refmvs_tile,
     col_start8: c_int,
     mut col_end8: c_int,
     row_start8: c_int,
     mut row_end8: c_int,
 ) {
-    let rf: *const refmvs_frame = (*rt).rf;
+    let rf: *const refmvs_frame = rt.rf;
     if !(row_start8 >= 0) {
         unreachable!();
     }
@@ -1159,7 +1159,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     dsp.save_tmvs.expect("non-null function pointer")(
         rp,
         stride,
-        (*rt).r.as_ptr().offset(6) as *const *const refmvs_block,
+        rt.r.as_ptr().offset(6) as *const *const refmvs_block,
         ref_sign,
         col_end8,
         row_end8,
