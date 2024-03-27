@@ -1,7 +1,6 @@
 use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign64;
@@ -182,7 +181,6 @@ use crate::src::warpmv::rav1d_get_shear_params;
 use crate::src::warpmv::rav1d_set_affine_mv2d;
 use libc::malloc;
 use libc::ptrdiff_t;
-use libc::uintptr_t;
 use std::array;
 use std::cmp;
 use std::ffi::c_int;
@@ -3643,9 +3641,11 @@ unsafe fn decode_sb(
                             // In 8-bit mode with 2-pass decoding the coefficient buffer
                             // can end up misaligned due to skips here.
                             // Work around the issue by explicitly realigning the buffer.
+                            //
+                            // In 8-bit mode coef is 2 bytes wide, so we align to 32
+                            // elements to get 64 byte alignment.
                             let p = (t.frame_thread.pass & 1) as usize;
-                            ts.frame_thread[p].cf =
-                                (((ts.frame_thread[p].cf as uintptr_t) + 63) & !63) as *mut DynCoef;
+                            ts.frame_thread[p].cf = (ts.frame_thread[p].cf + 31) & !31;
                         }
                     }
                     Some(next_bl) => {
@@ -3928,12 +3928,10 @@ unsafe fn setup_tile(
             0
         };
         ts.frame_thread[p].cf = if !f.frame_thread.cf.is_empty() {
-            f.frame_thread.cf
-                [(tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int) as usize..]
-                .as_ptr()
-                .cast::<DynCoef>() as *mut _
+            let bpc = BPC::from_bitdepth_max(f.bitdepth_max);
+            bpc.coef_stride(tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int)
         } else {
-            ptr::null_mut()
+            0
         };
     }
 

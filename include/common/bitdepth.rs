@@ -12,7 +12,8 @@ use std::ops::Div;
 use std::ops::Mul;
 use std::ops::Rem;
 use std::ops::Shr;
-use std::slice;
+use zerocopy::AsBytes;
+use zerocopy::FromBytes;
 
 pub trait FromPrimitive<T> {
     fn from_prim(t: T) -> Self;
@@ -104,12 +105,26 @@ impl BPC {
         }
     }
 
+    /// Converts a value in bytes to a value in pixel units.
+    ///
     /// `T` is generally meant to be `usize` or `isize`.
     pub fn pxstride<T>(&self, n: T) -> T
     where
         T: Copy + Eq + From<u8> + Div<Output = T> + Rem<Output = T>,
     {
         let scale = (self.bitdepth() / 8).into();
+        debug_assert!(n % scale == 0.into());
+        n / scale
+    }
+
+    /// Converts a value in bytes to a value in coef units.
+    ///
+    /// `T` is generally meant to be `usize` or `isize`.
+    pub fn coef_stride<T>(&self, n: T) -> T
+    where
+        T: Copy + Eq + From<u8> + Div<Output = T> + Rem<Output = T>,
+    {
+        let scale = (self.bitdepth() / 4).into();
         debug_assert!(n % scale == 0.into());
         n / scale
     }
@@ -134,7 +149,9 @@ pub trait BitDepth: Clone + Copy {
         + FromPrimitive<c_uint>
         + ToPrimitive<i16>
         + ToPrimitive<c_int>
-        + ToPrimitive<c_uint>;
+        + ToPrimitive<c_uint>
+        + FromBytes
+        + AsBytes;
 
     type Coef: Copy
         + FromPrimitive<c_int>
@@ -142,6 +159,8 @@ pub trait BitDepth: Clone + Copy {
         + ToPrimitive<c_int>
         + ToPrimitive<c_uint>
         + Add<Output = Self::Coef>
+        + FromBytes
+        + AsBytes
         + Display;
 
     type Entry: Copy
@@ -209,31 +228,19 @@ pub trait BitDepth: Clone + Copy {
     fn get_intermediate_bits(&self) -> u8;
 
     fn cast_pixel_slice(bytes: &[u8]) -> &[Self::Pixel] {
-        let size = mem::size_of::<Self::Pixel>();
-
-        // Check that the number of elements is a multiple of the new element
-        // size and that the alignment is correct for the new element type.
-        debug_assert!(bytes.len() % size == 0);
-        assert!(bytes.as_ptr() as usize % mem::align_of::<Self::Pixel>() == 0);
-
-        let len = bytes.len() / size;
-
-        // SAFETY: We've checked that alignment and the number of elements is correct.
-        unsafe { slice::from_raw_parts(bytes.as_ptr().cast(), len) }
+        Self::Pixel::slice_from(bytes).unwrap()
     }
 
     fn cast_pixel_slice_mut(bytes: &mut [u8]) -> &mut [Self::Pixel] {
-        let size = mem::size_of::<Self::Pixel>();
+        Self::Pixel::mut_slice_from(bytes).unwrap()
+    }
 
-        // Check that the number of elements is a multiple of the new element
-        // size and that the alignment is correct for the new element type.
-        debug_assert!(bytes.len() % size == 0);
-        assert!(bytes.as_ptr() as usize % mem::align_of::<Self::Pixel>() == 0);
+    fn cast_coef_slice(bytes: &[u8]) -> &[Self::Coef] {
+        Self::Coef::slice_from(bytes).unwrap()
+    }
 
-        let len = bytes.len() / size;
-
-        // SAFETY: We've checked that alignment and the number of elements is correct.
-        unsafe { slice::from_raw_parts_mut(bytes.as_mut_ptr().cast(), len) }
+    fn cast_coef_slice_mut(bytes: &mut [u8]) -> &mut [Self::Coef] {
+        Self::Coef::mut_slice_from(bytes).unwrap()
     }
 
     const PREP_BIAS: i16;
