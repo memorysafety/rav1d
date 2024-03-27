@@ -189,9 +189,7 @@ pub struct refmvs_tile_range {
     pub end: c_int,
 }
 
-#[repr(C)]
 pub(crate) struct refmvs_tile {
-    pub rf: *const refmvs_frame,
     pub r: [*mut refmvs_block; 37],
     pub rp_proj: *mut refmvs_temporal_block,
     pub tile_col: refmvs_tile_range,
@@ -696,6 +694,7 @@ fn add_single_extended_candidate(
 /// their respective position in the current frame.
 pub(crate) unsafe fn rav1d_refmvs_find(
     rt: &refmvs_tile,
+    rf: &refmvs_frame,
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
     ctx: &mut c_int,
@@ -706,7 +705,6 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     bx4: c_int,
     frame_hdr: &Rav1dFrameHeader,
 ) {
-    let rf = &*rt.rf;
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bw4 = b_dim[0] as c_int;
     let w4 = cmp::min(cmp::min(bw4, 16), rt.tile_col.end - bx4);
@@ -1136,12 +1134,12 @@ pub(crate) unsafe fn rav1d_refmvs_find(
 pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     dsp: &Rav1dRefmvsDSPContext,
     rt: &refmvs_tile,
+    rf: &refmvs_frame,
     col_start8: c_int,
     col_end8: c_int,
     row_start8: c_int,
     row_end8: c_int,
 ) {
-    let rf = &*rt.rf;
     assert!(row_start8 >= 0);
     assert!((row_end8 - row_start8) as c_uint <= 16);
     let row_end8 = cmp::min(row_end8, rf.ih8);
@@ -1205,7 +1203,6 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     }
 
     refmvs_tile {
-        rf,
         r: rs,
         rp_proj,
         tile_col: refmvs_tile_range {

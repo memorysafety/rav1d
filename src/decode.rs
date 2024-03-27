@@ -2265,6 +2265,7 @@ unsafe fn decode_b_inner(
         let mut ctx = 0;
         rav1d_refmvs_find(
             &t.rt,
+            &f.rf,
             &mut mvstack,
             &mut n_mvs,
             &mut ctx,
@@ -2438,6 +2439,7 @@ unsafe fn decode_b_inner(
             let mut ctx = 0;
             rav1d_refmvs_find(
                 &t.rt,
+                &f.rf,
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
@@ -2542,6 +2544,7 @@ unsafe fn decode_b_inner(
             let mut ctx = 0;
             rav1d_refmvs_find(
                 &t.rt,
+                &f.rf,
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
@@ -2816,6 +2819,7 @@ unsafe fn decode_b_inner(
             let mut ctx = 0;
             rav1d_refmvs_find(
                 &t.rt,
+                &f.rf,
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
@@ -4282,6 +4286,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         rav1d_refmvs_save_tmvs(
             &c.refmvs_dsp,
             &t.rt,
+            &f.rf,
             ts.tiling.col_start >> 1,
             ts.tiling.col_end >> 1,
             t.by >> 1,
@@ -4802,7 +4807,15 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
                 rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| EINVAL)?;
             }
             if f.frame_hdr().frame_type.is_inter_or_switch() {
-                rav1d_refmvs_save_tmvs(&c.refmvs_dsp, &t.rt, 0, f.bw >> 1, t.by >> 1, by_end);
+                rav1d_refmvs_save_tmvs(
+                    &c.refmvs_dsp,
+                    &t.rt,
+                    &f.rf,
+                    0,
+                    f.bw >> 1,
+                    t.by >> 1,
+                    by_end,
+                );
             }
 
             // loopfilter + cdef + restoration
