@@ -4793,14 +4793,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             t.by = sby << 4 + seq_hdr.sb128;
             let by_end = t.by + f.sb_step >> 1;
             if frame_hdr.use_ref_frame_mvs != 0 {
-                (c.refmvs_dsp.load_tmvs)(
-                    &mut f.rf,
-                    tile_row as c_int,
-                    0,
-                    f.bw >> 1,
-                    t.by >> 1,
-                    by_end,
-                );
+                (c.refmvs_dsp.load_tmvs)(&f.rf, tile_row as c_int, 0, f.bw >> 1, t.by >> 1, by_end);
             }
             for tile in &mut ts[..] {
                 t.ts = tile;
