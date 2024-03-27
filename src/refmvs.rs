@@ -33,6 +33,7 @@ extern "C" {
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
+        _rr_len: usize,
     );
     fn dav1d_save_tmvs_ssse3(
         rp: *mut refmvs_temporal_block,
@@ -66,6 +67,7 @@ extern "C" {
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
+        _rr_len: usize,
     );
     fn dav1d_splat_mv_avx2(
         rr: *mut *mut refmvs_block,
@@ -73,6 +75,7 @@ extern "C" {
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
+        _rr_len: usize,
     );
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
@@ -104,6 +107,7 @@ extern "C" {
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
+        _rr_len: usize,
     );
 }
 
@@ -203,21 +207,25 @@ pub struct refmvs_candidate {
     pub weight: c_int,
 }
 
-pub(crate) type load_tmvs_fn =
-    Option<unsafe extern "C" fn(*const refmvs_frame, c_int, c_int, c_int, c_int, c_int) -> ()>;
+pub(crate) type load_tmvs_fn = unsafe extern "C" fn(
+    rf: *const refmvs_frame,
+    tile_row_idx: c_int,
+    col_start8: c_int,
+    col_end8: c_int,
+    row_start8: c_int,
+    row_end8: c_int,
+) -> ();
 
-pub type save_tmvs_fn = Option<
-    unsafe extern "C" fn(
-        *mut refmvs_temporal_block,
-        ptrdiff_t,
-        *const *const refmvs_block,
-        *const u8,
-        c_int,
-        c_int,
-        c_int,
-        c_int,
-    ) -> (),
->;
+pub type save_tmvs_fn = unsafe extern "C" fn(
+    rp: *mut refmvs_temporal_block,
+    stride: ptrdiff_t,
+    rr: *const *const refmvs_block,
+    ref_sign: *const u8,
+    col_end8: c_int,
+    row_end8: c_int,
+    col_start8: c_int,
+    row_start8: c_int,
+) -> ();
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 extern "C" {
@@ -233,9 +241,15 @@ extern "C" {
     );
 }
 
-pub type splat_mv_fn = Option<
-    unsafe extern "C" fn(*mut *mut refmvs_block, usize, &refmvs_block, usize, usize, usize) -> (),
->;
+pub type splat_mv_fn = unsafe extern "C" fn(
+    rr: *mut *mut refmvs_block,
+    rmv: *const refmvs_block,
+    bx4: c_int,
+    bw4: c_int,
+    bh4: c_int,
+    // Extra args, unused by asm.F
+    rr_len: usize,
+) -> ();
 
 #[repr(C)]
 pub(crate) struct Rav1dRefmvsDSPContext {
@@ -253,14 +267,7 @@ impl Rav1dRefmvsDSPContext {
         bw4: usize,
         bh4: usize,
     ) {
-        self.splat_mv.expect("non-null function pointer")(
-            rr.as_mut_ptr(),
-            rr.len(),
-            rmv,
-            bx4,
-            bw4,
-            bh4,
-        );
+        (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4 as _, bw4 as _, bh4 as _, rr.len());
     }
 }
 
@@ -1148,7 +1155,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     let ref_sign = &rf.mfmv_sign;
     let rp = rf.rp.offset(row_start8 as isize * stride);
 
-    dsp.save_tmvs.expect("non-null function pointer")(
+    (dsp.save_tmvs)(
         rp,
         stride,
         rt.r.as_ptr().offset(6) as *const *const refmvs_block,
@@ -1567,46 +1574,17 @@ pub(crate) unsafe fn rav1d_refmvs_clear(rf: *mut refmvs_frame) {
     }
 }
 
-#[cfg(feature = "asm")]
-mod ffi {
-    use super::*;
-
-    macro_rules! wrap_splat_mv {
-        ($fn_name:ident) => {
-            pub(super) unsafe extern "C" fn $fn_name(
-                rr: *mut *mut refmvs_block,
-                _rr_len: usize,
-                rmv: &refmvs_block,
-                bx4: usize,
-                bw4: usize,
-                bh4: usize,
-            ) {
-                super::$fn_name(rr, rmv, bx4 as c_int, bw4 as c_int, bh4 as c_int)
-            }
-        };
-    }
-
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    wrap_splat_mv!(dav1d_splat_mv_sse2);
-
-    #[cfg(target_arch = "x86_64")]
-    wrap_splat_mv!(dav1d_splat_mv_avx2);
-
-    #[cfg(target_arch = "x86_64")]
-    wrap_splat_mv!(dav1d_splat_mv_avx512icl);
-
-    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-    wrap_splat_mv!(dav1d_splat_mv_neon);
-}
-
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
+    rmv: *const refmvs_block,
+    bx4: c_int,
+    bw4: c_int,
+    bh4: c_int,
     rr_len: usize,
-    rmv: &refmvs_block,
-    bx4: usize,
-    bw4: usize,
-    bh4: usize,
 ) {
+    let rmv = &*rmv;
+    let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
+
     // Safety: `rr` and `rr_len` are the raw parts of a slice in [`Dav1dRefmvsDSPContext::splat_mv`].
     let rr = unsafe { std::slice::from_raw_parts_mut(rr, rr_len) };
 
@@ -1624,13 +1602,13 @@ unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
         return;
     }
 
-    (*c).splat_mv = Some(ffi::dav1d_splat_mv_sse2);
+    (*c).splat_mv = dav1d_splat_mv_sse2;
 
     if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
-    (*c).save_tmvs = Some(dav1d_save_tmvs_ssse3);
+    (*c).save_tmvs = dav1d_save_tmvs_ssse3;
 
     if !flags.contains(CpuFlags::SSE41) {
         return;
@@ -1638,21 +1616,21 @@ unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
 
     #[cfg(target_arch = "x86_64")]
     {
-        (*c).load_tmvs = Some(dav1d_load_tmvs_sse4);
+        (*c).load_tmvs = dav1d_load_tmvs_sse4;
 
         if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
-        (*c).save_tmvs = Some(dav1d_save_tmvs_avx2);
-        (*c).splat_mv = Some(ffi::dav1d_splat_mv_avx2);
+        (*c).save_tmvs = dav1d_save_tmvs_avx2;
+        (*c).splat_mv = dav1d_splat_mv_avx2;
 
         if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
-        (*c).save_tmvs = Some(dav1d_save_tmvs_avx512icl);
-        (*c).splat_mv = Some(ffi::dav1d_splat_mv_avx512icl);
+        (*c).save_tmvs = dav1d_save_tmvs_avx512icl;
+        (*c).splat_mv = dav1d_splat_mv_avx512icl;
     }
 }
 
@@ -1661,16 +1639,16 @@ unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
 unsafe fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
     let flags = rav1d_get_cpu_flags();
     if flags.contains(CpuFlags::NEON) {
-        (*c).save_tmvs = Some(dav1d_save_tmvs_neon);
-        (*c).splat_mv = Some(ffi::dav1d_splat_mv_neon);
+        (*c).save_tmvs = dav1d_save_tmvs_neon;
+        (*c).splat_mv = dav1d_splat_mv_neon;
     }
 }
 
 #[cold]
 pub(crate) unsafe fn rav1d_refmvs_dsp_init(c: *mut Rav1dRefmvsDSPContext) {
-    (*c).load_tmvs = Some(load_tmvs_c);
-    (*c).save_tmvs = Some(save_tmvs_c);
-    (*c).splat_mv = Some(splat_mv_rust);
+    (*c).load_tmvs = load_tmvs_c;
+    (*c).save_tmvs = save_tmvs_c;
+    (*c).splat_mv = splat_mv_rust;
     cfg_if! {
         if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))] {
             refmvs_dsp_init_x86(c);
