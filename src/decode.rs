@@ -4128,8 +4128,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
 
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
-        rav1d_refmvs_tile_sbrow_init(
-            &mut t.rt,
+        t.rt = rav1d_refmvs_tile_sbrow_init(
             &f.rf,
             ts.tiling.col_start,
             ts.tiling.col_end,
