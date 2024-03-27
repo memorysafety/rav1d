@@ -441,7 +441,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub next_tile_row: [AtomicI32; 2],
 
     /// Indexed using `t.by * f.b4_stride + t.bx`.
-    pub b: Vec<Av1Block>,
+    pub b: Vec<Mutex<Av1Block>>,
 
     pub cbi: Vec<[Atomic<CodedBlockInfo>; 3]>,
 

@@ -3887,6 +3887,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             } else {
                                 f.frame_thread.b[((t.by - 1) as isize * f.b4_stride + t.bx as isize
                                     - 1) as usize]
+                                    .try_lock()
+                                    .unwrap()
                                     .c2rust_unnamed
                                     .c2rust_unnamed_0
                                     .filter2d
@@ -3934,6 +3936,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             } else {
                                 f.frame_thread.b
                                     [(t.by as isize * f.b4_stride + t.bx as isize - 1) as usize]
+                                    .try_lock()
+                                    .unwrap()
                                     .c2rust_unnamed
                                     .c2rust_unnamed_0
                                     .filter2d
@@ -3989,6 +3993,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             } else {
                                 f.frame_thread.b
                                     [((t.by - 1) as isize * f.b4_stride + t.bx as isize) as usize]
+                                    .try_lock()
+                                    .unwrap()
                                     .c2rust_unnamed
                                     .c2rust_unnamed_0
                                     .filter2d

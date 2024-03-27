@@ -1392,7 +1392,7 @@ unsafe fn obmc_lowest_px(
 unsafe fn decode_b(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     bl: BlockLevel,
     bs: BlockSize,
     bp: BlockPartition,
@@ -1400,21 +1400,26 @@ unsafe fn decode_b(
 ) -> Result<(), ()> {
     // Pull out the current block from Rav1dFrameData so that we can operate on
     // it without borrow check errors.
-    let (mut b_mem, b_idx) = if t.frame_thread.pass != 0 {
-        let b_idx = (t.by as isize * f.b4_stride + t.bx as isize) as usize;
-        (mem::take(&mut f.frame_thread.b[b_idx]), Some(b_idx))
+    let mut b_mem = Av1Block::default();
+    let mut b = if t.frame_thread.pass != 0 {
+        Some(
+            f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize]
+                .try_lock()
+                .unwrap(),
+        )
     } else {
-        (Default::default(), None)
+        None
     };
-    let b = &mut b_mem;
-    let res = decode_b_inner(c, t, f, bl, bs, bp, intra_edge_flags, b);
-    if let Some(i) = b_idx {
-        let _old_b = mem::replace(&mut f.frame_thread.b[i], b_mem);
-        // TODO(SJC): We should be able to compare Av1Blocks, but there are C
-        // unions in them.
-        // assert_eq!(old_b, Default::default());
-    }
-    res
+    decode_b_inner(
+        c,
+        t,
+        f,
+        bl,
+        bs,
+        bp,
+        intra_edge_flags,
+        b.as_deref_mut().unwrap_or(&mut b_mem),
+    )
 }
 
 unsafe fn decode_b_inner(
@@ -3518,7 +3523,7 @@ unsafe fn decode_b_inner(
 unsafe fn decode_sb(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     bl: BlockLevel,
     edge_index: EdgeIndex,
 ) -> Result<(), ()> {
@@ -3591,7 +3596,9 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
+            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize]
+                .try_lock()
+                .unwrap();
             bp = if b.bl == bl {
                 b.bp
             } else {
@@ -3750,7 +3757,9 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
+            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize]
+                .try_lock()
+                .unwrap();
             is_split = b.bl != bl;
         }
 
@@ -3803,7 +3812,9 @@ unsafe fn decode_sb(
                 );
             }
         } else {
-            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize];
+            let b = &f.frame_thread.b[(t.by as isize * f.b4_stride + t.bx as isize) as usize]
+                .try_lock()
+                .unwrap();
             is_split = b.bl != bl;
         }
 
