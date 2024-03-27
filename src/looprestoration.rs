@@ -15,7 +15,7 @@ use std::ffi::c_uint;
 use std::ops::Add;
 use to_method::To;
 
-#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use std::ffi::c_void;
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]

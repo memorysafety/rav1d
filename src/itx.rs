@@ -55,7 +55,8 @@ use cfg_if::cfg_if;
 
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::bd_fn;
-#[cfg(feature = "asm")]
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
 pub type itx_1d_fn = Option<unsafe extern "C" fn(*mut i32, ptrdiff_t, c_int, c_int) -> ()>;
