@@ -1437,7 +1437,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         1
     };
     if r_stride != rf.r_stride || n_tile_rows != rf.n_tile_rows {
-        if !(rf.r).is_null() {
+        if !rf.r.is_null() {
             rav1d_freep_aligned(&mut rf.r as *mut *mut refmvs_block as *mut c_void);
         }
         let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as c_int;
@@ -1449,14 +1449,14 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 .wrapping_mul((1 + uses_2pass) as usize),
             64,
         ) as *mut refmvs_block;
-        if (rf.r).is_null() {
+        if rf.r.is_null() {
             return Err(ENOMEM);
         }
         rf.r_stride = r_stride;
     }
     let rp_stride = r_stride >> 1;
     if rp_stride != rf.rp_stride || n_tile_rows != rf.n_tile_rows {
-        if !(rf.rp_proj).is_null() {
+        if !rf.rp_proj.is_null() {
             rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
         }
         rf.rp_proj = rav1d_alloc_aligned(
@@ -1466,7 +1466,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 .wrapping_mul(n_tile_rows as usize),
             64,
         ) as *mut refmvs_temporal_block;
-        if (rf.rp_proj).is_null() {
+        if rf.rp_proj.is_null() {
             return Err(ENOMEM);
         }
         rf.rp_stride = rp_stride;
