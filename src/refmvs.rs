@@ -1195,10 +1195,8 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
         as *mut refmvs_block;
     let sbsz = rf.sbsz;
     let off = sbsz * sby & 16;
-    let mut i = 0;
-    while i < sbsz {
+    for i in 0..sbsz {
         rt.r[(off + 5 + i) as usize] = r;
-        i += 1;
         r = r.offset(rf.r_stride as isize);
     }
     rt.r[(off + 0) as usize] = r;
