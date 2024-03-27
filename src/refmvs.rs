@@ -1562,12 +1562,12 @@ pub(crate) fn rav1d_refmvs_init(rf: &mut refmvs_frame) {
     rf.rp_stride = 0;
 }
 
-pub(crate) unsafe fn rav1d_refmvs_clear(rf: *mut refmvs_frame) {
-    if !((*rf).r).is_null() {
-        rav1d_freep_aligned(&mut (*rf).r as *mut *mut refmvs_block as *mut c_void);
+pub(crate) unsafe fn rav1d_refmvs_clear(rf: &mut refmvs_frame) {
+    if !rf.r.is_null() {
+        rav1d_freep_aligned(&mut rf.r as *mut *mut refmvs_block as *mut c_void);
     }
-    if !((*rf).rp_proj).is_null() {
-        rav1d_freep_aligned(&mut (*rf).rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
+    if !rf.rp_proj.is_null() {
+        rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
     }
 }
 
