@@ -1209,15 +1209,9 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     rt.r[(off + 3) as usize] = 0 as *mut refmvs_block;
     rt.r[(off + 4) as usize] = r;
     if sby & 1 != 0 {
-        let tmp: *mut c_void = rt.r[(off + 0) as usize] as *mut c_void;
-        rt.r[(off + 0) as usize] = rt.r[(off + sbsz + 0) as usize];
-        rt.r[(off + sbsz + 0) as usize] = tmp as *mut refmvs_block;
-        let tmp_0: *mut c_void = rt.r[(off + 2) as usize] as *mut c_void;
-        rt.r[(off + 2) as usize] = rt.r[(off + sbsz + 2) as usize];
-        rt.r[(off + sbsz + 2) as usize] = tmp_0 as *mut refmvs_block;
-        let tmp_1: *mut c_void = rt.r[(off + 4) as usize] as *mut c_void;
-        rt.r[(off + 4) as usize] = rt.r[(off + sbsz + 4) as usize];
-        rt.r[(off + sbsz + 4) as usize] = tmp_1 as *mut refmvs_block;
+        rt.r.swap((off + 0) as usize, (off + sbsz + 0) as usize);
+        rt.r.swap((off + 2) as usize, (off + sbsz + 2) as usize);
+        rt.r.swap((off + 4) as usize, (off + sbsz + 4) as usize);
     }
     rt.rf = rf;
     rt.tile_row.start = tile_row_start4;
