@@ -242,7 +242,14 @@ extern "C" {
 }
 
 pub type splat_mv_fn = Option<
-    unsafe extern "C" fn(*mut *mut refmvs_block, usize, &refmvs_block, usize, usize, usize) -> (),
+    unsafe extern "C" fn(
+        rr: *mut *mut refmvs_block,
+        rr_len: usize,
+        rmv: &refmvs_block,
+        bx4: usize,
+        bw4: usize,
+        bh4: usize,
+    ) -> (),
 >;
 
 #[repr(C)]
