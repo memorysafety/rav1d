@@ -1170,7 +1170,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
 
 pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     rt: &mut refmvs_tile,
-    rf: *const refmvs_frame,
+    rf: &refmvs_frame,
     tile_col_start4: c_int,
     tile_col_end4: c_int,
     tile_row_start4: c_int,
@@ -1179,33 +1179,33 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     mut tile_row_idx: c_int,
     pass: c_int,
 ) {
-    if (*rf).n_tile_threads == 1 {
+    if rf.n_tile_threads == 1 {
         tile_row_idx = 0 as c_int;
     }
-    rt.rp_proj = &mut *((*rf).rp_proj).offset(16 * (*rf).rp_stride * tile_row_idx as isize)
+    rt.rp_proj = &mut *(rf.rp_proj).offset(16 * rf.rp_stride * tile_row_idx as isize)
         as *mut refmvs_temporal_block;
-    let uses_2pass = ((*rf).n_tile_threads > 1 && (*rf).n_frame_threads > 1) as c_int;
+    let uses_2pass = (rf.n_tile_threads > 1 && rf.n_frame_threads > 1) as c_int;
     let pass_off: ptrdiff_t = if uses_2pass != 0 && pass == 2 {
-        35 * (*rf).r_stride * (*rf).n_tile_rows as isize
+        35 * rf.r_stride * rf.n_tile_rows as isize
     } else {
         0
     };
-    let mut r: *mut refmvs_block = &mut *((*rf).r)
-        .offset(35 * (*rf).r_stride * tile_row_idx as isize + pass_off)
+    let mut r: *mut refmvs_block = &mut *(rf.r)
+        .offset(35 * rf.r_stride * tile_row_idx as isize + pass_off)
         as *mut refmvs_block;
-    let sbsz = (*rf).sbsz;
+    let sbsz = rf.sbsz;
     let off = sbsz * sby & 16;
     let mut i = 0;
     while i < sbsz {
         rt.r[(off + 5 + i) as usize] = r;
         i += 1;
-        r = r.offset((*rf).r_stride as isize);
+        r = r.offset(rf.r_stride as isize);
     }
     rt.r[(off + 0) as usize] = r;
-    r = r.offset((*rf).r_stride as isize);
+    r = r.offset(rf.r_stride as isize);
     rt.r[(off + 1) as usize] = 0 as *mut refmvs_block;
     rt.r[(off + 2) as usize] = r;
-    r = r.offset((*rf).r_stride as isize);
+    r = r.offset(rf.r_stride as isize);
     rt.r[(off + 3) as usize] = 0 as *mut refmvs_block;
     rt.r[(off + 4) as usize] = r;
     if sby & 1 != 0 {
@@ -1221,9 +1221,9 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     }
     rt.rf = rf;
     rt.tile_row.start = tile_row_start4;
-    rt.tile_row.end = cmp::min(tile_row_end4, (*rf).ih4);
+    rt.tile_row.end = cmp::min(tile_row_end4, rf.ih4);
     rt.tile_col.start = tile_col_start4;
-    rt.tile_col.end = cmp::min(tile_col_end4, (*rf).iw4);
+    rt.tile_col.end = cmp::min(tile_col_end4, rf.iw4);
 }
 
 unsafe extern "C" fn load_tmvs_c(
