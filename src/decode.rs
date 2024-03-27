@@ -4578,7 +4578,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
     // init ref mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
-        let ret = rav1d_refmvs_init_frame(
+        rav1d_refmvs_init_frame(
             &mut f.rf,
             seq_hdr,
             frame_hdr,
@@ -4588,10 +4588,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             &f.ref_mvs,
             c.tc.len() as c_int,
             c.n_fc as c_int,
-        );
-        if ret.is_err() {
-            return Err(ENOMEM);
-        }
+        )?;
     }
 
     // setup dequant tables
