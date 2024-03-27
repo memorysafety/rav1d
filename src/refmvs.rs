@@ -189,7 +189,6 @@ pub struct refmvs_tile_range {
     pub end: c_int,
 }
 
-#[repr(C)]
 pub(crate) struct refmvs_tile {
     pub rf: *const refmvs_frame,
     pub r: [*mut refmvs_block; 37],
