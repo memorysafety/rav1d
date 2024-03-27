@@ -1416,7 +1416,7 @@ unsafe extern "C" fn save_tmvs_c(
 pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf: &mut refmvs_frame,
     seq_hdr: &Rav1dSequenceHeader,
-    frm_hdr: *const Rav1dFrameHeader,
+    frm_hdr: &Rav1dFrameHeader,
     ref_poc: *const c_uint,
     rp: *mut refmvs_temporal_block,
     ref_ref_poc: *const [c_uint; 7],
@@ -1426,14 +1426,13 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
 ) -> Rav1dResult {
     rf.sbsz = (16 as c_int) << seq_hdr.sb128;
     rf.frm_hdr = ptr::null();
-    rf.iw8 = (*frm_hdr).size.width[0] + 7 >> 3;
-    rf.ih8 = (*frm_hdr).size.height + 7 >> 3;
+    rf.iw8 = frm_hdr.size.width[0] + 7 >> 3;
+    rf.ih8 = frm_hdr.size.height + 7 >> 3;
     rf.iw4 = rf.iw8 << 1;
     rf.ih4 = rf.ih8 << 1;
-    let r_stride: ptrdiff_t =
-        (((*frm_hdr).size.width[0] + 127 & !(127 as c_int)) >> 2) as ptrdiff_t;
+    let r_stride: ptrdiff_t = ((frm_hdr.size.width[0] + 127 & !(127 as c_int)) >> 2) as ptrdiff_t;
     let n_tile_rows = if n_tile_threads > 1 {
-        (*frm_hdr).tiling.rows
+        frm_hdr.tiling.rows
     } else {
         1 as c_int
     };
@@ -1477,7 +1476,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.n_frame_threads = n_frame_threads;
     rf.rp = rp;
     rf.rp_ref = rp_ref;
-    let poc: c_uint = (*frm_hdr).frame_offset as c_uint;
+    let poc: c_uint = frm_hdr.frame_offset as c_uint;
     let mut i = 0;
     while i < 7 {
         let poc_diff = get_poc_diff(
@@ -1499,7 +1498,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         i += 1;
     }
     rf.n_mfmvs = 0 as c_int;
-    if (*frm_hdr).use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
+    if frm_hdr.use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
         let mut total = 2;
         if !(*rp_ref.offset(0)).is_null() && (*ref_ref_poc.offset(0))[6] != *ref_poc.offset(3) {
             let fresh12 = rf.n_mfmvs;
@@ -1511,7 +1510,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 *ref_poc.offset(4) as c_int,
-                (*frm_hdr).frame_offset,
+                frm_hdr.frame_offset,
             ) > 0
         {
             let fresh13 = rf.n_mfmvs;
@@ -1522,7 +1521,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 *ref_poc.offset(5) as c_int,
-                (*frm_hdr).frame_offset,
+                frm_hdr.frame_offset,
             ) > 0
         {
             let fresh14 = rf.n_mfmvs;
@@ -1534,7 +1533,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 *ref_poc.offset(6) as c_int,
-                (*frm_hdr).frame_offset,
+                frm_hdr.frame_offset,
             ) > 0
         {
             let fresh15 = rf.n_mfmvs;
@@ -1552,7 +1551,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             let diff1 = get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 rpoc as c_int,
-                (*frm_hdr).frame_offset,
+                frm_hdr.frame_offset,
             );
             if diff1.abs() > 31 {
                 rf.mfmv_ref2cur[n as usize] = i32::MIN;
