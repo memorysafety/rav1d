@@ -1493,9 +1493,8 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     if frm_hdr.use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
         let mut total = 2;
         if !rp_ref[0].is_null() && ref_ref_poc[0][6] != ref_poc[3] {
-            let fresh12 = rf.n_mfmvs;
-            rf.n_mfmvs = rf.n_mfmvs + 1;
-            rf.mfmv_ref[fresh12 as usize] = 0;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 0;
+            rf.n_mfmvs += 1;
             total = 3;
         }
         if !rp_ref[4].is_null()
@@ -1505,9 +1504,8 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 frm_hdr.frame_offset,
             ) > 0
         {
-            let fresh13 = rf.n_mfmvs;
-            rf.n_mfmvs = rf.n_mfmvs + 1;
-            rf.mfmv_ref[fresh13 as usize] = 4;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 4;
+            rf.n_mfmvs += 1;
         }
         if !rp_ref[5].is_null()
             && get_poc_diff(
@@ -1516,9 +1514,8 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 frm_hdr.frame_offset,
             ) > 0
         {
-            let fresh14 = rf.n_mfmvs;
-            rf.n_mfmvs = rf.n_mfmvs + 1;
-            rf.mfmv_ref[fresh14 as usize] = 5;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 5;
+            rf.n_mfmvs += 1;
         }
         if rf.n_mfmvs < total
             && !rp_ref[6].is_null()
@@ -1528,14 +1525,12 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 frm_hdr.frame_offset,
             ) > 0
         {
-            let fresh15 = rf.n_mfmvs;
-            rf.n_mfmvs = rf.n_mfmvs + 1;
-            rf.mfmv_ref[fresh15 as usize] = 6;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 6;
+            rf.n_mfmvs += 1;
         }
         if rf.n_mfmvs < total && !rp_ref[1].is_null() {
-            let fresh16 = rf.n_mfmvs;
-            rf.n_mfmvs = rf.n_mfmvs + 1;
-            rf.mfmv_ref[fresh16 as usize] = 1;
+            rf.mfmv_ref[rf.n_mfmvs as usize] = 1;
+            rf.n_mfmvs += 1;
         }
         let mut n = 0;
         while n < rf.n_mfmvs as usize {
