@@ -1180,18 +1180,17 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     pass: c_int,
 ) {
     if rf.n_tile_threads == 1 {
-        tile_row_idx = 0 as c_int;
+        tile_row_idx = 0;
     }
-    rt.rp_proj = &mut *(rf.rp_proj).offset(16 * rf.rp_stride * tile_row_idx as isize)
-        as *mut refmvs_temporal_block;
+    rt.rp_proj = rf.rp_proj.offset(16 * rf.rp_stride * tile_row_idx as isize);
     let uses_2pass = (rf.n_tile_threads > 1 && rf.n_frame_threads > 1) as c_int;
     let pass_off = if uses_2pass != 0 && pass == 2 {
         35 * rf.r_stride * rf.n_tile_rows as isize
     } else {
         0
     };
-    let mut r = &mut *(rf.r).offset(35 * rf.r_stride * tile_row_idx as isize + pass_off)
-        as *mut refmvs_block;
+    let mut r =
+        rf.r.offset(35 * rf.r_stride * tile_row_idx as isize + pass_off);
     let sbsz = rf.sbsz;
     let off = sbsz * sby & 16;
     for i in 0..sbsz {
