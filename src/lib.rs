@@ -17,6 +17,7 @@ use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::src::cdf::CdfThreadContext;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
 use crate::src::decode::rav1d_decode_frame_exit;
@@ -31,6 +32,7 @@ use crate::src::fg_apply;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
+use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
@@ -89,6 +91,7 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::Once;
+use std::sync::RwLock;
 use std::thread;
 use to_method::To as _;
 
@@ -306,9 +309,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     (*c).n_fc = n_fc as c_uint;
     (*c).fc = rav1d_alloc_aligned(
-        ::core::mem::size_of::<Rav1dFrameData>().wrapping_mul((*c).n_fc as usize),
+        ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
         32 as c_int as usize,
-    ) as *mut Rav1dFrameData;
+    ) as *mut Rav1dFrameContext;
     if ((*c).fc).is_null() {
         return error(c, c_out, &mut thread_attr);
     }
@@ -334,19 +337,24 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         Box::new([])
     });
     for n in 0..n_fc {
-        let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(n as isize);
+        let fc = &mut *((*c).fc).offset(n as isize);
+        addr_of_mut!(fc.data).write(RwLock::new(Rav1dFrameData::zeroed()));
+        let f = fc.data.get_mut().unwrap();
         f.index = n;
-        addr_of_mut!(f.task_thread.tasks).write(UnsafeCell::new(Default::default()));
-        addr_of_mut!(f.task_thread.retval).write(Mutex::new(Ok(())));
-        addr_of_mut!(f.task_thread.update_set).write(AtomicBool::new(false));
-        addr_of_mut!(f.task_thread.finished).write(AtomicBool::new(true));
+        addr_of_mut!(fc.in_cdf).write(RwLock::new(Default::default()));
+        addr_of_mut!(fc.task_thread.tasks).write(UnsafeCell::new(Default::default()));
+        addr_of_mut!(fc.task_thread.retval).write(Mutex::new(Ok(())));
+        addr_of_mut!(fc.task_thread.finished).write(AtomicBool::new(true));
+        addr_of_mut!(fc.task_thread.update_set).write(AtomicBool::new(false));
+        addr_of_mut!(fc.frame_thread_progress).write(RwLock::new(Default::default()));
         addr_of_mut!(f.frame_thread).write(Default::default());
         if n_tc > 1 {
-            f.task_thread.lock = Mutex::new(());
-            f.task_thread.cond = Condvar::new();
-            f.task_thread.pending_tasks = Default::default();
+            fc.task_thread.lock = Mutex::new(());
+            fc.task_thread.cond = Condvar::new();
+            fc.task_thread.pending_tasks = Default::default();
         }
-        (&mut f.task_thread.ttd as *mut Arc<TaskThreadData>).write(Arc::clone(&(*c).task_thread));
+        addr_of_mut!(fc.task_thread.ttd).write(Arc::clone(&(*c).task_thread));
+        addr_of_mut!(f.out_cdf).write(Default::default());
         addr_of_mut!(f.lf.level).write(Default::default());
         addr_of_mut!(f.lf.mask).write(Default::default());
         addr_of_mut!(f.lf.lr_mask).write(Default::default());
@@ -535,13 +543,13 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
     let mut drained = 0;
     loop {
         let next: c_uint = c.frame_thread.next;
-        let f: &mut Rav1dFrameData = &mut *(c.fc).offset(next as isize);
+        let fc = &(*(c.fc).offset(next as isize));
         let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
-        while !f.task_thread.finished.load(Ordering::SeqCst) {
-            task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
+        while !fc.task_thread.finished.load(Ordering::SeqCst) {
+            task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
-        if !out_delayed.p.data.data[0].is_null() || f.task_thread.error.load(Ordering::SeqCst) != 0
+        if !out_delayed.p.data.data[0].is_null() || fc.task_thread.error.load(Ordering::SeqCst) != 0
         {
             let first: c_uint = c.task_thread.first.load(Ordering::SeqCst);
             if first.wrapping_add(1 as c_uint) < c.n_fc {
@@ -569,7 +577,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             c.frame_thread.next = 0 as c_int as c_uint;
         }
         drop(task_thread_lock);
-        let mut error = f.task_thread.retval.try_lock().unwrap();
+        let mut error = fc.task_thread.retval.try_lock().unwrap();
         if error.is_err() {
             let error = mem::replace(&mut *error, Ok(()));
             *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
@@ -781,7 +789,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         }
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
-        let _ = mem::take(&mut (*c).cdf[i]);
+        (*c).cdf[i] = CdfThreadContext::default();
         i += 1;
     }
     let _ = mem::take(&mut (*c).frame_hdr); // TODO(kkysen) Why wasn't [`rav1d_ref_dec`] called on it?
@@ -831,9 +839,9 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             if next == (*c).n_fc {
                 next = 0 as c_int as c_uint;
             }
-            let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(next as isize);
-            rav1d_decode_frame_exit(&*c, f, Err(EGeneric));
-            *f.task_thread.retval.try_lock().unwrap() = Ok(());
+            let fc = &(*((*c).fc).offset(next as isize));
+            rav1d_decode_frame_exit(&*c, fc, Err(EGeneric));
+            *fc.task_thread.retval.try_lock().unwrap() = Ok(());
             let out_delayed = &mut (*c).frame_thread.out_delayed[next as usize];
             if out_delayed.p.frame_hdr.is_some() {
                 rav1d_thread_picture_unref(out_delayed);
@@ -901,20 +909,24 @@ impl Drop for Rav1dContext {
             }
             let mut n_1: c_uint = 0 as c_int as c_uint;
             while !(self.fc).is_null() && n_1 < self.n_fc {
-                let f: &mut Rav1dFrameData = &mut *(self.fc).offset(n_1 as isize);
+                let fc = &mut (*(self.fc).offset(n_1 as isize));
+                let f = fc.data.get_mut().unwrap();
                 if self.n_fc > 1 as c_uint {
                     let _ = mem::take(&mut f.lowest_pixel_mem); // TODO: remove when context is owned
                 }
                 if self.tc.len() > 1 {
-                    let _ = mem::take(&mut f.task_thread.pending_tasks); // TODO: remove when context is owned
+                    let _ = mem::take(&mut fc.task_thread.pending_tasks); // TODO: remove when context is owned
                 }
+                mem::take(fc.in_cdf.get_mut().unwrap()); // TODO: remove when context is owned
+                let frame_thread_progress = fc.frame_thread_progress.get_mut().unwrap();
+                mem::take(&mut frame_thread_progress.frame); // TODO: remove when context is owned
+                mem::take(&mut frame_thread_progress.copy_lpf); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.frame_thread); // TODO: remove when context is owned
-                mem::take(&mut f.frame_thread_progress.frame); // TODO: remove when context is owned
-                mem::take(&mut f.frame_thread_progress.copy_lpf); // TODO: remove when context is owned
-                mem::take(&mut f.task_thread.tasks); // TODO: remove when context is owned
+                mem::take(&mut fc.task_thread.tasks); // TODO: remove when context is owned
                 rav1d_free_aligned(f.ts as *mut c_void);
                 rav1d_free_aligned(f.ipred_edge[0] as *mut c_void);
                 free(f.a as *mut c_void);
+                let _ = mem::take(&mut f.out_cdf); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.tiles);
                 let _ = mem::take(&mut f.lf.mask); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.lf.lr_mask); // TODO: remove when context is owned
