@@ -1136,31 +1136,27 @@ pub(crate) unsafe fn rav1d_refmvs_find(
 // cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
 // into buffers for use in future frame's temporal MV prediction
 pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
-    dsp: *const Rav1dRefmvsDSPContext,
-    rt: *const refmvs_tile,
+    dsp: &Rav1dRefmvsDSPContext,
+    rt: &refmvs_tile,
     col_start8: c_int,
-    mut col_end8: c_int,
+    col_end8: c_int,
     row_start8: c_int,
-    mut row_end8: c_int,
+    row_end8: c_int,
 ) {
-    let rf: *const refmvs_frame = (*rt).rf;
-    if !(row_start8 >= 0) {
-        unreachable!();
-    }
-    if !((row_end8 - row_start8) as c_uint <= 16 as c_uint) {
-        unreachable!();
-    }
-    row_end8 = cmp::min(row_end8, (*rf).ih8);
-    col_end8 = cmp::min(col_end8, (*rf).iw8);
-    let stride: ptrdiff_t = (*rf).rp_stride;
-    let ref_sign: *const u8 = ((*rf).mfmv_sign).as_ptr();
-    let rp: *mut refmvs_temporal_block = (*rf).rp.offset(row_start8 as isize * stride);
+    let rf = &*rt.rf;
+    assert!(row_start8 >= 0);
+    assert!((row_end8 - row_start8) as c_uint <= 16);
+    let row_end8 = cmp::min(row_end8, rf.ih8);
+    let col_end8 = cmp::min(col_end8, rf.iw8);
+    let stride = rf.rp_stride;
+    let ref_sign = &rf.mfmv_sign;
+    let rp = rf.rp.offset(row_start8 as isize * stride);
 
-    (*dsp).save_tmvs.expect("non-null function pointer")(
+    dsp.save_tmvs.expect("non-null function pointer")(
         rp,
         stride,
-        (*rt).r.as_ptr().offset(6) as *const *const refmvs_block,
-        ref_sign,
+        rt.r.as_ptr().offset(6) as *const *const refmvs_block,
+        ref_sign.as_ptr(),
         col_end8,
         row_end8,
         col_start8,
