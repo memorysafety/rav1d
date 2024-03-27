@@ -3040,7 +3040,7 @@ unsafe fn decode_b_inner(
 
     if t.frame_thread.pass == 1 && b.intra == 0 && frame_hdr.frame_type.is_inter_or_switch() {
         let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
-        let lowest_px = &mut f.lowest_pixel_mem[ts.lowest_pixel + sby as usize];
+        let mut lowest_px = f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize);
         // keep track of motion vectors for each reference
         if b.comp_type().is_none() {
             // y
@@ -3074,7 +3074,7 @@ unsafe fn decode_b_inner(
                         &*f.ts.offset(t.ts as isize),
                         f.cur.p.layout,
                         &f.svc,
-                        lowest_px,
+                        &mut lowest_px,
                         false,
                         b_dim,
                         bx4,
@@ -3189,7 +3189,7 @@ unsafe fn decode_b_inner(
                             &*f.ts.offset(t.ts as isize),
                             f.cur.p.layout,
                             &f.svc,
-                            lowest_px,
+                            &mut lowest_px,
                             true,
                             b_dim,
                             bx4,
@@ -3902,7 +3902,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 
     if frame_hdr.frame_type.is_inter_or_switch() && c.n_fc > 1 {
         let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
-        f.lowest_pixel_mem[ts.lowest_pixel + sby as usize] = [[i32::MIN; 2]; 7];
+        *f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize) = [[i32::MIN; 2]; 7];
     }
 
     reset_context(

@@ -785,7 +785,7 @@ pub(crate) struct Rav1dFrameData {
     pub frame_thread_progress: Rav1dFrameContext_frame_thread_progress,
     pub lf: Rav1dFrameContext_lf,
     pub task_thread: Rav1dFrameContext_task_thread,
-    pub lowest_pixel_mem: Vec<[[c_int; 2]; 7]>,
+    pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
 }
 
 impl Rav1dFrameData {
