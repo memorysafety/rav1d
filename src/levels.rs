@@ -196,12 +196,12 @@ pub const GLOBALMV: InterPredMode = 2;
 pub const NEARMV: InterPredMode = 1;
 pub const NEARESTMV: InterPredMode = 0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DrlProximity {
-    Nearest = 0,
-    Nearer = 1,
-    Near = 2,
-    Nearish = 3,
+    Nearest,
+    Nearer,
+    Near,
+    Nearish,
 }
 
 pub type CompInterPredMode = u8;
