@@ -1139,15 +1139,15 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     dsp: &Rav1dRefmvsDSPContext,
     rt: &refmvs_tile,
     col_start8: c_int,
-    mut col_end8: c_int,
+    col_end8: c_int,
     row_start8: c_int,
-    mut row_end8: c_int,
+    row_end8: c_int,
 ) {
     let rf = &*rt.rf;
     assert!(row_start8 >= 0);
     assert!((row_end8 - row_start8) as c_uint <= 16);
-    row_end8 = cmp::min(row_end8, rf.ih8);
-    col_end8 = cmp::min(col_end8, rf.iw8);
+    let row_end8 = cmp::min(row_end8, rf.ih8);
+    let col_end8 = cmp::min(col_end8, rf.iw8);
     let stride = rf.rp_stride;
     let ref_sign = (rf.mfmv_sign).as_ptr();
     let rp = rf.rp.offset(row_start8 as isize * stride);
