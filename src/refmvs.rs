@@ -1442,11 +1442,11 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         }
         let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as c_int;
         rf.r = rav1d_alloc_aligned(
-            (::core::mem::size_of::<refmvs_block>())
-                .wrapping_mul(35)
-                .wrapping_mul(r_stride as usize)
-                .wrapping_mul(n_tile_rows as usize)
-                .wrapping_mul((1 + uses_2pass) as usize),
+            ::core::mem::size_of::<refmvs_block>()
+                * 35
+                * r_stride as usize
+                * n_tile_rows as usize
+                * (1 + uses_2pass) as usize,
             64,
         ) as *mut refmvs_block;
         if rf.r.is_null() {
@@ -1460,10 +1460,10 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
         }
         rf.rp_proj = rav1d_alloc_aligned(
-            (::core::mem::size_of::<refmvs_temporal_block>())
-                .wrapping_mul(16)
-                .wrapping_mul(rp_stride as usize)
-                .wrapping_mul(n_tile_rows as usize),
+            ::core::mem::size_of::<refmvs_temporal_block>()
+                * 16
+                * rp_stride as usize
+                * n_tile_rows as usize,
             64,
         ) as *mut refmvs_temporal_block;
         if rf.rp_proj.is_null() {
