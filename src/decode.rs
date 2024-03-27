@@ -2309,7 +2309,7 @@ unsafe fn decode_b_inner(
             *b.drl_idx_mut() = DrlProximity::Nearest;
             if b.inter_mode() == NEWMV_NEWMV {
                 if n_mvs > 1 {
-                    // NEARER or NEAR
+                    // `Nearer` or `Near`
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
@@ -2339,7 +2339,7 @@ unsafe fn decode_b_inner(
             } else if im[0] == NEARMV || im[1] == NEARMV {
                 *b.drl_idx_mut() = DrlProximity::Nearer;
                 if n_mvs > 2 {
-                    // NEAR or NEARISH
+                    // `Near` or `Nearish`
                     let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
@@ -2611,11 +2611,11 @@ unsafe fn decode_b_inner(
                         &mut ts.msac,
                         &mut ts.cdf.m.refmv_mode[(ctx >> 4 & 15) as usize],
                     ) {
-                        // NEAREST, NEARER, NEAR or NEARISH
+                        // `Nearer`, `Near` or `Nearish`
                         *b.inter_mode_mut() = NEARMV;
                         *b.drl_idx_mut() = DrlProximity::Nearer;
                         if n_mvs > 2 {
-                            // NEARER, NEAR or NEARISH
+                            // `Nearer`, `Near` or `Nearish`
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                             if rav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
@@ -2624,7 +2624,7 @@ unsafe fn decode_b_inner(
                                 *b.drl_idx_mut() = DrlProximity::Near;
 
                                 if n_mvs > 3 {
-                                    // NEAR or NEARISH
+                                    // `Near` or `Nearish`
                                     let drl_ctx_v3 = get_drl_context(&mvstack, 2);
                                     if rav1d_msac_decode_bool_adapt(
                                         &mut ts.msac,
@@ -2661,7 +2661,7 @@ unsafe fn decode_b_inner(
                 *b.inter_mode_mut() = NEWMV;
                 *b.drl_idx_mut() = DrlProximity::Nearest;
                 if n_mvs > 1 {
-                    // NEARER, NEAR or NEARISH
+                    // `Nearer`, `Near` or `Nearish`
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
@@ -2670,7 +2670,7 @@ unsafe fn decode_b_inner(
                         *b.drl_idx_mut() = DrlProximity::Nearer;
 
                         if n_mvs > 2 {
-                            // NEAR or NEARISH
+                            // `Near` or `Nearish`
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
                             if rav1d_msac_decode_bool_adapt(
                                 &mut ts.msac,
