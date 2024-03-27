@@ -129,15 +129,15 @@ pub(crate) type recon_b_intra_fn =
     unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, EdgeFlags, &Av1Block) -> ();
 
 pub(crate) type recon_b_inter_fn =
-    unsafe fn(&mut Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> c_int;
+    unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> c_int;
 
 pub(crate) type filter_sbrow_fn =
-    unsafe fn(&Rav1dContext, &mut Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
+    unsafe fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
 
 pub(crate) type backup_ipred_edge_fn = unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
 
 pub(crate) type read_coef_blocks_fn =
-    unsafe fn(&mut Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> ();
+    unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> ();
 
 #[inline]
 fn read_golomb(msac: &mut MsacContext) -> c_uint {
@@ -1585,7 +1585,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
 }
 
 unsafe fn read_coef_tree<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: *mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
@@ -1796,7 +1796,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
@@ -3246,7 +3246,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     bs: BlockSize,
     b: &Av1Block,
@@ -4455,7 +4455,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4519,7 +4519,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4580,7 +4580,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     tc: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4623,7 +4623,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     _c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4691,7 +4691,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
@@ -4727,7 +4727,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {

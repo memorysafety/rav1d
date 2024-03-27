@@ -640,7 +640,7 @@ fn findoddzero(buf: &[u8]) -> bool {
 
 unsafe fn read_pal_plane(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     b: &mut Av1Block,
     pl: bool,
     sz_ctx: u8,
@@ -823,7 +823,7 @@ unsafe fn read_pal_plane(
 
 unsafe fn read_pal_uv(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     b: &mut Av1Block,
     sz_ctx: u8,
     bx4: usize,
@@ -1005,7 +1005,7 @@ unsafe fn read_pal_indices(
 
 unsafe fn read_vartx_tree(
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     b: &mut Av1Block,
     bs: BlockSize,
     bx4: c_int,
@@ -1420,7 +1420,7 @@ unsafe fn decode_b(
 unsafe fn decode_b_inner(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     bl: BlockLevel,
     bs: BlockSize,
     bp: BlockPartition,

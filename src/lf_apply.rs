@@ -588,7 +588,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     p: &mut [&mut [BD::Pixel]; 3],
     p_offset: &[usize; 2],
     lflvl_offset: usize,
@@ -756,7 +756,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
 }
 
 pub(crate) unsafe fn rav1d_loopfilter_sbrow_rows<BD: BitDepth>(
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     p: &mut [&mut [BD::Pixel]; 3],
     p_offset: &[usize; 2],
     lflvl_offset: usize,
