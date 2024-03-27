@@ -1560,11 +1560,11 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_refmvs_init(rf: *mut refmvs_frame) {
-    (*rf).r = 0 as *mut refmvs_block;
-    (*rf).r_stride = 0 as c_int as ptrdiff_t;
-    (*rf).rp_proj = 0 as *mut refmvs_temporal_block;
-    (*rf).rp_stride = 0 as c_int as ptrdiff_t;
+pub(crate) fn rav1d_refmvs_init(rf: &mut refmvs_frame) {
+    rf.r = 0 as *mut refmvs_block;
+    rf.r_stride = 0;
+    rf.rp_proj = 0 as *mut refmvs_temporal_block;
+    rf.rp_stride = 0;
 }
 
 pub(crate) unsafe fn rav1d_refmvs_clear(rf: *mut refmvs_frame) {
