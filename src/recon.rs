@@ -2519,8 +2519,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 let pal_idx = if t.frame_thread.pass != 0 {
                     let p = t.frame_thread.pass & 1;
                     let frame_thread = &mut (*ts).frame_thread[p as usize];
-                    let pal_idx = &f.frame_thread.pal_idx[frame_thread.pal_idx..];
-                    frame_thread.pal_idx += (bw4 * bh4 * 16) as usize;
+                    let len = (bw4 * bh4 * 16) as usize;
+                    let pal_idx = &f.frame_thread.pal_idx[frame_thread.pal_idx..][..len];
+                    frame_thread.pal_idx += len;
                     pal_idx
                 } else {
                     &t.scratch.c2rust_unnamed_0.pal_idx
@@ -2902,8 +2903,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             + ((t.bx as isize >> 1) as isize + (t.by as isize & 1)) as isize)
                             as isize;
                         let pal_idx_offset = &mut (*ts).frame_thread[p as usize].pal_idx;
-                        let pal_idx = &f.frame_thread.pal_idx[*pal_idx_offset..];
-                        *pal_idx_offset += (cbw4 * cbh4 * 16) as usize;
+                        let len = (cbw4 * cbh4 * 16) as usize;
+                        let pal_idx = &f.frame_thread.pal_idx[*pal_idx_offset..][..len];
+                        *pal_idx_offset += len;
                         (&f.frame_thread.pal[index as usize], pal_idx)
                     } else {
                         (

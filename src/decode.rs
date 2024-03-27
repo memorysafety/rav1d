@@ -2089,7 +2089,7 @@ unsafe fn decode_b_inner(
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
                 let len = usize::try_from(cbw4 * cbh4 * 16).unwrap();
-                let pal_idx = &mut f.frame_thread.pal_idx[frame_thread.pal_idx..];
+                let pal_idx = &mut f.frame_thread.pal_idx[frame_thread.pal_idx..][..len];
                 frame_thread.pal_idx += len;
                 pal_idx
             } else {
