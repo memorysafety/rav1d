@@ -39,7 +39,7 @@ extern "C" {
         rp: *mut refmvs_temporal_block,
         stride: ptrdiff_t,
         rr: *const *const refmvs_block,
-        ref_sign: *const u8,
+        ref_sign: *const [u8; 7],
         col_end8: c_int,
         row_end8: c_int,
         col_start8: c_int,
@@ -81,7 +81,7 @@ extern "C" {
         rp: *mut refmvs_temporal_block,
         stride: ptrdiff_t,
         rr: *const *const refmvs_block,
-        ref_sign: *const u8,
+        ref_sign: *const [u8; 7],
         col_end8: c_int,
         row_end8: c_int,
         col_start8: c_int,
@@ -91,7 +91,7 @@ extern "C" {
         rp: *mut refmvs_temporal_block,
         stride: ptrdiff_t,
         rr: *const *const refmvs_block,
-        ref_sign: *const u8,
+        ref_sign: *const [u8; 7],
         col_end8: c_int,
         row_end8: c_int,
         col_start8: c_int,
@@ -220,7 +220,7 @@ pub type save_tmvs_fn = unsafe extern "C" fn(
     rp: *mut refmvs_temporal_block,
     stride: ptrdiff_t,
     rr: *const *const refmvs_block,
-    ref_sign: *const u8,
+    ref_sign: *const [u8; 7],
     col_end8: c_int,
     row_end8: c_int,
     col_start8: c_int,
@@ -233,7 +233,7 @@ extern "C" {
         rp: *mut refmvs_temporal_block,
         stride: ptrdiff_t,
         rr: *const *const refmvs_block,
-        ref_sign: *const u8,
+        ref_sign: *const [u8; 7],
         col_end8: c_int,
         row_end8: c_int,
         col_start8: c_int,
@@ -1159,7 +1159,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
         rp,
         stride,
         rt.r.as_ptr().offset(6) as *const *const refmvs_block,
-        ref_sign.as_ptr(),
+        ref_sign,
         col_end8,
         row_end8,
         col_start8,
@@ -1345,12 +1345,13 @@ unsafe extern "C" fn save_tmvs_c(
     mut rp: *mut refmvs_temporal_block,
     stride: ptrdiff_t,
     rr: *const *const refmvs_block,
-    ref_sign: *const u8,
+    ref_sign: *const [u8; 7],
     col_end8: c_int,
     row_end8: c_int,
     col_start8: c_int,
     row_start8: c_int,
 ) {
+    let ref_sign = &*ref_sign;
     let mut y = row_start8;
     while y < row_end8 {
         let b: *const refmvs_block = *rr.offset(((y & 15) * 2) as isize);
@@ -1360,8 +1361,7 @@ unsafe extern "C" fn save_tmvs_c(
                 &*b.offset((x * 2 + 1) as isize) as *const refmvs_block;
             let bw8 = dav1d_block_dimensions[(*cand_b).0.bs as usize][0] as c_int + 1 >> 1;
             if (*cand_b).0.r#ref.r#ref[1] as c_int > 0
-                && *ref_sign.offset(((*cand_b).0.r#ref.r#ref[1] as c_int - 1) as isize) as c_int
-                    != 0
+                && ref_sign[((*cand_b).0.r#ref.r#ref[1] as c_int - 1) as usize] as c_int != 0
                 && (*cand_b).0.mv.mv[1].y.abs() | (*cand_b).0.mv.mv[1].x.abs() < 4096
             {
                 let mut n = 0;
@@ -1377,8 +1377,7 @@ unsafe extern "C" fn save_tmvs_c(
                     x += 1;
                 }
             } else if (*cand_b).0.r#ref.r#ref[0] as c_int > 0
-                && *ref_sign.offset(((*cand_b).0.r#ref.r#ref[0] as c_int - 1) as isize) as c_int
-                    != 0
+                && ref_sign[((*cand_b).0.r#ref.r#ref[0] as c_int - 1) as usize] as c_int != 0
                 && (*cand_b).0.mv.mv[0].y.abs() | (*cand_b).0.mv.mv[0].x.abs() < 4096
             {
                 let mut n_0 = 0;
