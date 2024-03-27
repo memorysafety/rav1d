@@ -4582,7 +4582,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             &mut f.rf,
             seq_hdr,
             frame_hdr,
-            f.refpoc.as_ptr(),
+            &f.refpoc,
             f.mvs,
             f.refrefpoc.as_ptr(),
             f.ref_mvs.as_ptr(),
