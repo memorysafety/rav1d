@@ -1430,7 +1430,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.ih8 = frm_hdr.size.height + 7 >> 3;
     rf.iw4 = rf.iw8 << 1;
     rf.ih4 = rf.ih8 << 1;
-    let r_stride: ptrdiff_t = ((frm_hdr.size.width[0] + 127 & !(127 as c_int)) >> 2) as ptrdiff_t;
+    let r_stride = ((frm_hdr.size.width[0] + 127 & !(127 as c_int)) >> 2) as ptrdiff_t;
     let n_tile_rows = if n_tile_threads > 1 {
         frm_hdr.tiling.rows
     } else {
@@ -1454,7 +1454,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         }
         rf.r_stride = r_stride;
     }
-    let rp_stride: ptrdiff_t = r_stride >> 1;
+    let rp_stride = r_stride >> 1;
     if rp_stride != rf.rp_stride || n_tile_rows != rf.n_tile_rows {
         if !(rf.rp_proj).is_null() {
             rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
@@ -1476,7 +1476,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.n_frame_threads = n_frame_threads;
     rf.rp = rp;
     rf.rp_ref = rp_ref.as_ptr();
-    let poc: c_uint = frm_hdr.frame_offset as c_uint;
+    let poc = frm_hdr.frame_offset as c_uint;
     let mut i = 0;
     while i < 7 {
         let poc_diff = get_poc_diff(
@@ -1547,7 +1547,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         }
         let mut n = 0;
         while n < rf.n_mfmvs {
-            let rpoc: c_uint = ref_poc[rf.mfmv_ref[n as usize] as usize];
+            let rpoc = ref_poc[rf.mfmv_ref[n as usize] as usize];
             let diff1 = get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 rpoc as c_int,
@@ -1563,7 +1563,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 };
                 let mut m = 0;
                 while m < 7 {
-                    let rrpoc: c_uint = ref_ref_poc[rf.mfmv_ref[n as usize] as usize][m as usize];
+                    let rrpoc = ref_ref_poc[rf.mfmv_ref[n as usize] as usize][m as usize];
                     let diff2 =
                         get_poc_diff(seq_hdr.order_hint_n_bits, rpoc as c_int, rrpoc as c_int);
                     rf.mfmv_ref2ref[n as usize][m as usize] = if diff2 as c_uint > 31 as c_uint {
