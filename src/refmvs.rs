@@ -1144,12 +1144,8 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     mut row_end8: c_int,
 ) {
     let rf = &*rt.rf;
-    if !(row_start8 >= 0) {
-        unreachable!();
-    }
-    if !((row_end8 - row_start8) as c_uint <= 16) {
-        unreachable!();
-    }
+    assert!(row_start8 >= 0);
+    assert!((row_end8 - row_start8) as c_uint <= 16);
     row_end8 = cmp::min(row_end8, rf.ih8);
     col_end8 = cmp::min(col_end8, rf.iw8);
     let stride = rf.rp_stride;
