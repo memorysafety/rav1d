@@ -33,6 +33,7 @@ extern "C" {
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
+        _rr_len: usize,
     );
     fn dav1d_save_tmvs_ssse3(
         rp: *mut refmvs_temporal_block,
@@ -66,6 +67,7 @@ extern "C" {
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
+        _rr_len: usize,
     );
     fn dav1d_splat_mv_avx2(
         rr: *mut *mut refmvs_block,
@@ -73,6 +75,7 @@ extern "C" {
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
+        _rr_len: usize,
     );
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
@@ -104,6 +107,7 @@ extern "C" {
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
+        _rr_len: usize,
     );
 }
 
@@ -244,11 +248,12 @@ extern "C" {
 pub type splat_mv_fn = Option<
     unsafe extern "C" fn(
         rr: *mut *mut refmvs_block,
+        rmv: *const refmvs_block,
+        bx4: c_int,
+        bw4: c_int,
+        bh4: c_int,
+        // Extra args, unused by asm.F
         rr_len: usize,
-        rmv: &refmvs_block,
-        bx4: usize,
-        bw4: usize,
-        bh4: usize,
     ) -> (),
 >;
 
@@ -270,11 +275,11 @@ impl Rav1dRefmvsDSPContext {
     ) {
         self.splat_mv.expect("non-null function pointer")(
             rr.as_mut_ptr(),
-            rr.len(),
             rmv,
-            bx4,
-            bw4,
-            bh4,
+            bx4 as _,
+            bw4 as _,
+            bh4 as _,
+            rr.len(),
         );
     }
 }
@@ -1582,46 +1587,17 @@ pub(crate) unsafe fn rav1d_refmvs_clear(rf: *mut refmvs_frame) {
     }
 }
 
-#[cfg(feature = "asm")]
-mod ffi {
-    use super::*;
-
-    macro_rules! wrap_splat_mv {
-        ($fn_name:ident) => {
-            pub(super) unsafe extern "C" fn $fn_name(
-                rr: *mut *mut refmvs_block,
-                _rr_len: usize,
-                rmv: &refmvs_block,
-                bx4: usize,
-                bw4: usize,
-                bh4: usize,
-            ) {
-                super::$fn_name(rr, rmv, bx4 as c_int, bw4 as c_int, bh4 as c_int)
-            }
-        };
-    }
-
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    wrap_splat_mv!(dav1d_splat_mv_sse2);
-
-    #[cfg(target_arch = "x86_64")]
-    wrap_splat_mv!(dav1d_splat_mv_avx2);
-
-    #[cfg(target_arch = "x86_64")]
-    wrap_splat_mv!(dav1d_splat_mv_avx512icl);
-
-    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-    wrap_splat_mv!(dav1d_splat_mv_neon);
-}
-
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
+    rmv: *const refmvs_block,
+    bx4: c_int,
+    bw4: c_int,
+    bh4: c_int,
     rr_len: usize,
-    rmv: &refmvs_block,
-    bx4: usize,
-    bw4: usize,
-    bh4: usize,
 ) {
+    let rmv = &*rmv;
+    let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
+
     // Safety: `rr` and `rr_len` are the raw parts of a slice in [`Dav1dRefmvsDSPContext::splat_mv`].
     let rr = unsafe { std::slice::from_raw_parts_mut(rr, rr_len) };
 
@@ -1639,7 +1615,7 @@ unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
         return;
     }
 
-    (*c).splat_mv = Some(ffi::dav1d_splat_mv_sse2);
+    (*c).splat_mv = Some(dav1d_splat_mv_sse2);
 
     if !flags.contains(CpuFlags::SSSE3) {
         return;
@@ -1660,14 +1636,14 @@ unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
         }
 
         (*c).save_tmvs = Some(dav1d_save_tmvs_avx2);
-        (*c).splat_mv = Some(ffi::dav1d_splat_mv_avx2);
+        (*c).splat_mv = Some(dav1d_splat_mv_avx2);
 
         if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
         (*c).save_tmvs = Some(dav1d_save_tmvs_avx512icl);
-        (*c).splat_mv = Some(ffi::dav1d_splat_mv_avx512icl);
+        (*c).splat_mv = Some(dav1d_splat_mv_avx512icl);
     }
 }
 
@@ -1677,7 +1653,7 @@ unsafe fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
     let flags = rav1d_get_cpu_flags();
     if flags.contains(CpuFlags::NEON) {
         (*c).save_tmvs = Some(dav1d_save_tmvs_neon);
-        (*c).splat_mv = Some(ffi::dav1d_splat_mv_neon);
+        (*c).splat_mv = Some(dav1d_splat_mv_neon);
     }
 }
 
