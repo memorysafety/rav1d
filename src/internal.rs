@@ -92,6 +92,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::mem;
+use std::mem::MaybeUninit;
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Deref;
@@ -99,6 +100,7 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::ops::Range;
 use std::ops::Sub;
+use std::ptr::addr_of_mut;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
@@ -108,6 +110,7 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::sync::RwLock;
+use std::sync::RwLockReadGuard;
 use std::thread::JoinHandle;
 
 #[repr(C)]
@@ -183,7 +186,7 @@ pub(crate) struct Rav1dTileGroup {
     pub hdr: Rav1dTileGroupHeader,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TaskType {
     Init = 0,
     InitCdf = 1,
@@ -310,7 +313,7 @@ impl Rav1dContextTaskThread {
 
 #[repr(C)]
 pub struct Rav1dContext {
-    pub(crate) fc: *mut Rav1dFrameData,
+    pub(crate) fc: *mut Rav1dFrameContext,
     pub(crate) n_fc: c_uint,
 
     /// Worker thread join handles and communication, or main thread task
@@ -796,6 +799,29 @@ pub(crate) struct Rav1dFrameContext_frame_thread_progress {
     pub copy_lpf: RwLock<Vec<AtomicU32>>,
 }
 
+pub(crate) struct Rav1dFrameContext {
+    pub data: RwLock<Rav1dFrameData>,
+    pub in_cdf: RwLock<CdfThreadContext>,
+    pub task_thread: Rav1dFrameContext_task_thread,
+    pub frame_thread_progress: Rav1dFrameContext_frame_thread_progress,
+}
+
+impl Rav1dFrameContext {
+    pub fn in_cdf<'a>(&'a self) -> RwLockReadGuard<'a, CdfThreadContext> {
+        self.in_cdf.try_read().unwrap()
+    }
+
+    pub fn frame_hdr(&self) -> Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>> {
+        self.data
+            .try_read()
+            .unwrap()
+            .frame_hdr
+            .as_ref()
+            .unwrap()
+            .clone()
+    }
+}
+
 #[repr(C)]
 pub(crate) struct Rav1dFrameData {
     /// Index in [`Rav1dContext::fc`]
@@ -815,7 +841,6 @@ pub(crate) struct Rav1dFrameData {
     pub refpoc: [c_uint; 7],
     pub refrefpoc: [[c_uint; 7]; 7],
     pub gmv_warp_allowed: [u8; 7],
-    pub in_cdf: CdfThreadContext,
     pub out_cdf: CdfThreadContext,
     pub tiles: Vec<Rav1dTileGroup>,
 
@@ -849,13 +874,22 @@ pub(crate) struct Rav1dFrameData {
     pub bitdepth_max: c_int,
 
     pub frame_thread: Rav1dFrameContext_frame_thread,
-    pub frame_thread_progress: Rav1dFrameContext_frame_thread_progress,
     pub lf: Rav1dFrameContext_lf,
-    pub task_thread: Rav1dFrameContext_task_thread,
     pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
 }
 
 impl Rav1dFrameData {
+    pub unsafe fn zeroed() -> Self {
+        let mut data: MaybeUninit<Rav1dFrameData> = MaybeUninit::zeroed();
+        addr_of_mut!((*data.as_mut_ptr()).out_cdf).write(Default::default());
+        addr_of_mut!((*data.as_mut_ptr()).tiles).write(vec![]);
+        addr_of_mut!((*data.as_mut_ptr()).a).write(vec![]);
+        addr_of_mut!((*data.as_mut_ptr()).lowest_pixel_mem).write(Default::default());
+        addr_of_mut!((*data.as_mut_ptr()).frame_thread).write(Default::default());
+        addr_of_mut!((*data.as_mut_ptr()).lf).write(Default::default());
+        data.assume_init()
+    }
+
     pub fn bd_fn(&self) -> &'static Rav1dFrameContext_bd_fn {
         let bpc = BPC::from_bitdepth_max(self.bitdepth_max);
         Rav1dFrameContext_bd_fn::get(bpc)

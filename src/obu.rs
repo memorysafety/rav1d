@@ -2542,12 +2542,13 @@ unsafe fn parse_obus(
                     c.frame_thread.next = 0;
                 }
 
-                let f = &mut *c.fc.offset(next as isize);
-                while !f.task_thread.finished.load(Ordering::SeqCst) {
-                    task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
+                let fc = &(*c.fc.offset(next as isize));
+                while !fc.task_thread.finished.load(Ordering::SeqCst) {
+                    task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
                 }
                 let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
-                if out_delayed.p.data.is_some() || f.task_thread.error.load(Ordering::SeqCst) != 0 {
+                if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0
+                {
                     let first = c.task_thread.first.load(Ordering::SeqCst);
                     if first + 1 < c.n_fc {
                         c.task_thread.first.fetch_add(1, Ordering::SeqCst);
@@ -2566,7 +2567,7 @@ unsafe fn parse_obus(
                         c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
                     }
                 }
-                let mut error = f.task_thread.retval.try_lock().unwrap();
+                let mut error = fc.task_thread.retval.try_lock().unwrap();
                 if error.is_err() {
                     c.cached_error = mem::replace(&mut *error, Ok(()));
                     *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
