@@ -1149,14 +1149,14 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     let row_end8 = cmp::min(row_end8, rf.ih8);
     let col_end8 = cmp::min(col_end8, rf.iw8);
     let stride = rf.rp_stride;
-    let ref_sign = (rf.mfmv_sign).as_ptr();
+    let ref_sign = &rf.mfmv_sign;
     let rp = rf.rp.offset(row_start8 as isize * stride);
 
     dsp.save_tmvs.expect("non-null function pointer")(
         rp,
         stride,
         rt.r.as_ptr().offset(6) as *const *const refmvs_block,
-        ref_sign,
+        ref_sign.as_ptr(),
         col_end8,
         row_end8,
         col_start8,
