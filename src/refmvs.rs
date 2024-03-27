@@ -1477,8 +1477,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.rp = rp;
     rf.rp_ref = rp_ref.as_ptr();
     let poc = frm_hdr.frame_offset as c_uint;
-    let mut i = 0;
-    while i < 7 {
+    for i in 0..7 {
         let poc_diff = get_poc_diff(seq_hdr.order_hint_n_bits, ref_poc[i] as c_int, poc as c_int);
         rf.sign_bias[i] = (poc_diff > 0) as u8;
         rf.mfmv_sign[i] = (poc_diff < 0) as u8;
@@ -1487,7 +1486,6 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             -31,
             31,
         ) as i8;
-        i += 1;
     }
     rf.n_mfmvs = 0;
     if frm_hdr.use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
@@ -1532,8 +1530,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             rf.mfmv_ref[rf.n_mfmvs as usize] = 1;
             rf.n_mfmvs += 1;
         }
-        let mut n = 0;
-        while n < rf.n_mfmvs as usize {
+        for n in 0..rf.n_mfmvs as usize {
             let rpoc = ref_poc[rf.mfmv_ref[n] as usize];
             let diff1 = get_poc_diff(
                 seq_hdr.order_hint_n_bits,
@@ -1544,17 +1541,14 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
                 rf.mfmv_ref2cur[n] = i32::MIN;
             } else {
                 rf.mfmv_ref2cur[n] = if rf.mfmv_ref[n] < 4 { -diff1 } else { diff1 };
-                let mut m = 0;
-                while m < 7 {
+                for m in 0..7 {
                     let rrpoc = ref_ref_poc[rf.mfmv_ref[n] as usize][m];
                     let diff2 =
                         get_poc_diff(seq_hdr.order_hint_n_bits, rpoc as c_int, rrpoc as c_int);
                     // unsigned comparison also catches the < 0 case
                     rf.mfmv_ref2ref[n][m] = if diff2 as c_uint > 31 { 0 } else { diff2 };
-                    m += 1;
                 }
             }
-            n += 1;
         }
     }
     rf.use_ref_frame_mvs = (rf.n_mfmvs > 0) as c_int;
