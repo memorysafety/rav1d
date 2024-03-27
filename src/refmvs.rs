@@ -1479,19 +1479,11 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     let poc = frm_hdr.frame_offset as c_uint;
     let mut i = 0;
     while i < 7 {
-        let poc_diff = get_poc_diff(
-            seq_hdr.order_hint_n_bits,
-            ref_poc[i as usize] as c_int,
-            poc as c_int,
-        );
-        rf.sign_bias[i as usize] = (poc_diff > 0) as u8;
-        rf.mfmv_sign[i as usize] = (poc_diff < 0) as u8;
-        rf.pocdiff[i as usize] = iclip(
-            get_poc_diff(
-                seq_hdr.order_hint_n_bits,
-                poc as c_int,
-                ref_poc[i as usize] as c_int,
-            ),
+        let poc_diff = get_poc_diff(seq_hdr.order_hint_n_bits, ref_poc[i] as c_int, poc as c_int);
+        rf.sign_bias[i] = (poc_diff > 0) as u8;
+        rf.mfmv_sign[i] = (poc_diff < 0) as u8;
+        rf.pocdiff[i] = iclip(
+            get_poc_diff(seq_hdr.order_hint_n_bits, poc as c_int, ref_poc[i] as c_int),
             -31,
             31,
         ) as i8;
@@ -1546,29 +1538,24 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
             rf.mfmv_ref[fresh16 as usize] = 1;
         }
         let mut n = 0;
-        while n < rf.n_mfmvs {
-            let rpoc = ref_poc[rf.mfmv_ref[n as usize] as usize];
+        while n < rf.n_mfmvs as usize {
+            let rpoc = ref_poc[rf.mfmv_ref[n] as usize];
             let diff1 = get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 rpoc as c_int,
                 frm_hdr.frame_offset,
             );
             if diff1.abs() > 31 {
-                rf.mfmv_ref2cur[n as usize] = i32::MIN;
+                rf.mfmv_ref2cur[n] = i32::MIN;
             } else {
-                rf.mfmv_ref2cur[n as usize] = if rf.mfmv_ref[n as usize] < 4 {
-                    -diff1
-                } else {
-                    diff1
-                };
+                rf.mfmv_ref2cur[n] = if rf.mfmv_ref[n] < 4 { -diff1 } else { diff1 };
                 let mut m = 0;
                 while m < 7 {
-                    let rrpoc = ref_ref_poc[rf.mfmv_ref[n as usize] as usize][m as usize];
+                    let rrpoc = ref_ref_poc[rf.mfmv_ref[n] as usize][m];
                     let diff2 =
                         get_poc_diff(seq_hdr.order_hint_n_bits, rpoc as c_int, rrpoc as c_int);
                     // unsigned comparison also catches the < 0 case
-                    rf.mfmv_ref2ref[n as usize][m as usize] =
-                        if diff2 as c_uint > 31 { 0 } else { diff2 };
+                    rf.mfmv_ref2ref[n][m] = if diff2 as c_uint > 31 { 0 } else { diff2 };
                     m += 1;
                 }
             }
