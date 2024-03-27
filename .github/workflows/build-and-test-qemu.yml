@@ -1,4 +1,4 @@
-name: build and test on armv7 and aarch64 with QEMU
+name: build and test on armv7, aarch64, and riscv64 with QEMU
 on:
   push:
     branches:
@@ -18,6 +18,13 @@ jobs:
             linker: "aarch64-linux-gnu-gcc"
             interpreter: "qemu-aarch64"
             packages: "g++-aarch64-linux-gnu libc6-dev-arm64-cross"
+            # NOTE: This appears to work for Ubuntu 22.04 and other systems
+            # with a recent version of GNU ld (e.g. 2.38) whereas Ubuntu 20.04
+            # fails with the following linker error: unsupported ISA subset `z'
+          - target: "riscv64gc-unknown-linux-gnu"
+            linker: "riscv64-linux-gnu-gcc"
+            interpreter: "qemu-riscv64"
+            packages: "g++-riscv64-linux-gnu libc6-dev-riscv64-cross"
     runs-on: ubuntu-latest
     name: test on ${{ matrix.target }}
     steps:

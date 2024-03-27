@@ -37,8 +37,12 @@
 
 #if ARCH_AARCH64 || ARCH_ARM
 #include "src/arm/cpu.h"
+#elif ARCH_LOONGARCH
+#include "src/loongarch/cpu.h"
 #elif ARCH_PPC64LE
 #include "src/ppc/cpu.h"
+#elif ARCH_RISCV
+#include "src/riscv/cpu.h"
 #elif ARCH_X86
 #include "src/x86/cpu.h"
 #endif
