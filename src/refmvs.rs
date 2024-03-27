@@ -1421,8 +1421,8 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rp: *mut refmvs_temporal_block,
     ref_ref_poc: &[[c_uint; 7]; 7],
     rp_ref: &[*mut refmvs_temporal_block; 7],
-    n_tile_threads: c_int,
-    n_frame_threads: c_int,
+    n_tile_threads: usize,
+    n_frame_threads: usize,
 ) -> Rav1dResult {
     rf.sbsz = 16 << seq_hdr.sb128;
     rf.frm_hdr = ptr::null();
@@ -1474,8 +1474,8 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
         rf.rp_stride = rp_stride;
     }
     rf.n_tile_rows = n_tile_rows;
-    rf.n_tile_threads = n_tile_threads;
-    rf.n_frame_threads = n_frame_threads;
+    rf.n_tile_threads = n_tile_threads as c_int;
+    rf.n_frame_threads = n_frame_threads as c_int;
     rf.rp = rp;
     rf.rp_ref = rp_ref.as_ptr();
     let poc = frm_hdr.frame_offset as c_uint;
