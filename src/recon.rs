@@ -1990,7 +1990,7 @@ unsafe fn mc<BD: BitDepth>(
     pl: c_int,
     mv: mv,
     refp: &Rav1dThreadPicture,
-    refidx: c_int,
+    refidx: usize,
     filter_2d: Filter2d,
 ) -> Result<(), ()> {
     assert!(dst8.is_null() ^ dst16.is_null());
@@ -2073,28 +2073,28 @@ unsafe fn mc<BD: BitDepth>(
         let orig_pos_x = (bx * h_mul << 4) + mvx * (1 << (ss_hor == 0) as c_int);
         let pos_y;
         let pos_x;
-        let tmp: i64 = orig_pos_x as i64 * f.svc[refidx as usize][0].scale as i64
-            + ((f.svc[refidx as usize][0].scale - 0x4000) * 8) as i64;
+        let tmp: i64 = orig_pos_x as i64 * f.svc[refidx][0].scale as i64
+            + ((f.svc[refidx][0].scale - 0x4000) * 8) as i64;
         pos_x = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
-        let tmp: i64 = orig_pos_y as i64 * f.svc[refidx as usize][1].scale as i64
-            + ((f.svc[refidx as usize][1].scale - 0x4000) * 8) as i64;
+        let tmp: i64 = orig_pos_y as i64 * f.svc[refidx][1].scale as i64
+            + ((f.svc[refidx][1].scale - 0x4000) * 8) as i64;
         pos_y = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
         let left = pos_x >> 10;
         let top = pos_y >> 10;
-        let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx as usize][0].step >> 10) + 1;
-        let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx as usize][1].step >> 10) + 1;
+        let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx][0].step >> 10) + 1;
+        let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx][1].step >> 10) + 1;
         if debug_block_info!(f, t) {
             println!(
                 "Off {}x{} [{},{},{}], size {}x{} [{},{}]",
                 left,
                 top,
                 orig_pos_x,
-                f.svc[refidx as usize][0].scale,
+                f.svc[refidx][0].scale,
                 refidx,
                 right - left,
                 bottom - top,
-                f.svc[refidx as usize][0].step,
-                f.svc[refidx as usize][1].step,
+                f.svc[refidx][0].step,
+                f.svc[refidx][1].step,
             );
         }
         let w = refp.p.p.w + ss_hor >> ss_hor;
@@ -2133,8 +2133,8 @@ unsafe fn mc<BD: BitDepth>(
                 bh4 * v_mul,
                 pos_x & 0x3ff,
                 pos_y & 0x3ff,
-                f.svc[refidx as usize][0].step,
-                f.svc[refidx as usize][1].step,
+                f.svc[refidx][0].step,
+                f.svc[refidx][1].step,
                 f.bitdepth_max,
             );
         } else {
@@ -2146,8 +2146,8 @@ unsafe fn mc<BD: BitDepth>(
                 bh4 * v_mul,
                 pos_x & 0x3ff,
                 pos_y & 0x3ff,
-                f.svc[refidx as usize][0].step,
-                f.svc[refidx as usize][1].step,
+                f.svc[refidx][0].step,
+                f.svc[refidx][1].step,
                 f.bitdepth_max,
             );
         }
@@ -2203,7 +2203,7 @@ unsafe fn obmc<BD: BitDepth>(
                     &*(f.refp)
                         .as_ptr()
                         .offset((*(a_r.0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
-                    a_r.0.r#ref.r#ref[0] as c_int - 1,
+                    a_r.0.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[(*t.a).filter[1][(bx4 + x + 1) as usize] as usize]
                         [(*t.a).filter[0][(bx4 + x + 1) as usize] as usize],
                 )?;
@@ -2244,7 +2244,7 @@ unsafe fn obmc<BD: BitDepth>(
                     &*(f.refp)
                         .as_ptr()
                         .offset((*(l_r.0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
-                    l_r.0.r#ref.r#ref[0] as c_int - 1,
+                    l_r.0.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[t.l.filter[1][(by4 + y + 1) as usize] as usize]
                         [t.l.filter[0][(by4 + y + 1) as usize] as usize],
                 )?;
@@ -3171,7 +3171,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 .c2rust_unnamed
                 .mv[0],
             &f.sr_cur,
-            0 as c_int,
+            0,
             Filter2d::Bilinear,
         )?;
         if has_chroma != 0 {
@@ -3194,7 +3194,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         .c2rust_unnamed
                         .mv[0],
                     &f.sr_cur,
-                    0 as c_int,
+                    0,
                     Filter2d::Bilinear,
                 )?;
                 pl += 1;
@@ -3259,7 +3259,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         .c2rust_unnamed
                         .mv[i as usize],
                     refp,
-                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as c_int,
+                    b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize,
                     filter_2d,
                 )?;
             }
@@ -3425,7 +3425,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 .c2rust_unnamed
                                 .mv[i as usize],
                             refp,
-                            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as c_int,
+                            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize,
                             filter_2d,
                         )?;
                     }
@@ -3536,7 +3536,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     .c2rust_unnamed
                     .mv[0],
                 refp,
-                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as c_int,
+                b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize,
                 filter_2d,
             )?;
             if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Obmc {
@@ -3717,7 +3717,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             (*(*r.offset(-(1 as c_int) as isize)).offset((t.bx - 1) as isize))
                                 .0
                                 .r#ref
-                                .r#ref[0] as c_int
+                                .r#ref[0] as usize
                                 - 1,
                             if t.frame_thread.pass != 2 {
                                 t.tl_4x4_filter
@@ -3761,7 +3761,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     .offset(0) as c_int
                                     - 1) as isize,
                             ),
-                            (*(*r.offset(0)).offset((t.bx - 1) as isize)).0.r#ref.r#ref[0] as c_int
+                            (*(*r.offset(0)).offset((t.bx - 1) as isize)).0.r#ref.r#ref[0] as usize
                                 - 1,
                             if t.frame_thread.pass != 2 as c_int {
                                 left_filter_2d
@@ -3813,7 +3813,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             (*(*r.offset(-(1 as c_int) as isize)).offset(t.bx as isize))
                                 .0
                                 .r#ref
-                                .r#ref[0] as c_int
+                                .r#ref[0] as usize
                                 - 1,
                             if t.frame_thread.pass != 2 as c_int {
                                 top_filter_2d
@@ -3851,7 +3851,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             .c2rust_unnamed
                             .mv[0],
                         refp,
-                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as c_int,
+                        b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize,
                         filter_2d,
                     )?;
                     pl += 1;
@@ -3906,7 +3906,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 .c2rust_unnamed
                                 .mv[0],
                             refp,
-                            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as c_int,
+                            b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize,
                             filter_2d,
                         )?;
                         if b.c2rust_unnamed.c2rust_unnamed_0.motion_mode == MotionMode::Obmc {
