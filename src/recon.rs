@@ -2225,10 +2225,10 @@ unsafe fn obmc<BD: BitDepth>(
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2], 4) {
-            let a_r = &*r[0].offset((t.b.x + x + 1) as isize);
-            let a_b_dim = &dav1d_block_dimensions[a_r.0.bs as usize];
+            let a_r = (*r[0].offset((t.b.x + x + 1) as isize)).0;
+            let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
             let step4 = clip(a_b_dim[0], 2, 16);
-            if a_r.0.r#ref.r#ref[0] > 0 {
+            if a_r.r#ref.r#ref[0] > 0 {
                 let ow4 = cmp::min(step4, b_dim[0]);
                 let oh4 = cmp::min(b_dim[1], 16) >> 1;
                 mc::<BD>(
@@ -2243,9 +2243,9 @@ unsafe fn obmc<BD: BitDepth>(
                     t.b.x + x,
                     t.b.y,
                     pl,
-                    a_r.0.mv.mv[0],
-                    &f.refp[a_r.0.r#ref.r#ref[0] as usize - 1],
-                    a_r.0.r#ref.r#ref[0] as usize - 1,
+                    a_r.mv.mv[0],
+                    &f.refp[a_r.r#ref.r#ref[0] as usize - 1],
+                    a_r.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[(*t.a).filter[1][(bx4 + x + 1) as usize] as usize]
                         [(*t.a).filter[0][(bx4 + x + 1) as usize] as usize],
                 )?;
@@ -2265,10 +2265,10 @@ unsafe fn obmc<BD: BitDepth>(
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3], 4) {
-            let l_r = &*r[y as usize + 1 + 1].offset((t.b.x - 1) as isize);
-            let l_b_dim = &dav1d_block_dimensions[l_r.0.bs as usize];
+            let l_r = (*r[y as usize + 1 + 1].offset((t.b.x - 1) as isize)).0;
+            let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
             let step4 = clip(l_b_dim[1], 2, 16);
-            if l_r.0.r#ref.r#ref[0] > 0 {
+            if l_r.r#ref.r#ref[0] > 0 {
                 let ow4 = cmp::min(b_dim[0], 16) >> 1;
                 let oh4 = cmp::min(step4, b_dim[1]);
                 mc::<BD>(
@@ -2283,9 +2283,9 @@ unsafe fn obmc<BD: BitDepth>(
                     t.b.x,
                     t.b.y + y,
                     pl,
-                    l_r.0.mv.mv[0],
-                    &f.refp[l_r.0.r#ref.r#ref[0] as usize - 1],
-                    l_r.0.r#ref.r#ref[0] as usize - 1,
+                    l_r.mv.mv[0],
+                    &f.refp[l_r.r#ref.r#ref[0] as usize - 1],
+                    l_r.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[t.l.filter[1][(by4 + y + 1) as usize] as usize]
                         [t.l.filter[0][(by4 + y + 1) as usize] as usize],
                 )?;
@@ -3570,6 +3570,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 let mut v_off = 0isize;
                 if bw4 == 1 && bh4 == ss_ver {
                     for pl in 0..2 {
+                        let r = (*r[0].offset((t.b.x - 1) as isize)).0;
                         mc::<BD>(
                             f,
                             &mut t.scratch.c2rust_unnamed.emu_edge,
@@ -3583,10 +3584,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.x - 1,
                             t.b.y - 1,
                             1 + pl,
-                            (*r[0].offset((t.b.x - 1) as isize)).0.mv.mv[0],
-                            &f.refp[(*r[0].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] as usize
-                                - 1],
-                            (*r[0].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] as usize - 1,
+                            r.mv.mv[0],
+                            &f.refp[r.r#ref.r#ref[0] as usize - 1],
+                            r.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 t.tl_4x4_filter
                             } else {
@@ -3605,6 +3605,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     let left_filter_2d = dav1d_filter_2d[t.l.filter[1][by4 as usize] as usize]
                         [t.l.filter[0][by4 as usize] as usize];
                     for pl in 0..2 {
+                        let r = (*r[1].offset((t.b.x - 1) as isize)).0;
                         mc::<BD>(
                             f,
                             &mut t.scratch.c2rust_unnamed.emu_edge,
@@ -3619,10 +3620,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.x - 1,
                             t.b.y,
                             1 + pl,
-                            (*r[1].offset((t.b.x - 1) as isize)).0.mv.mv[0],
-                            &f.refp[(*r[1].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] as usize
-                                - 1],
-                            (*r[1].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] as usize - 1,
+                            r.mv.mv[0],
+                            &f.refp[r.r#ref.r#ref[0] as usize - 1],
+                            r.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 left_filter_2d
                             } else {
@@ -3638,6 +3638,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     let top_filter_2d = dav1d_filter_2d[(*t.a).filter[1][bx4 as usize] as usize]
                         [(*t.a).filter[0][bx4 as usize] as usize];
                     for pl in 0..2 {
+                        let r = (*r[0].offset(t.b.x as isize)).0;
                         mc::<BD>(
                             f,
                             &mut t.scratch.c2rust_unnamed.emu_edge,
@@ -3652,9 +3653,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.x,
                             t.b.y - 1,
                             1 + pl,
-                            (*r[0].offset(t.b.x as isize)).0.mv.mv[0],
-                            &f.refp[(*r[0].offset(t.b.x as isize)).0.r#ref.r#ref[0] as usize - 1],
-                            (*r[0].offset(t.b.x as isize)).0.r#ref.r#ref[0] as usize - 1,
+                            r.mv.mv[0],
+                            &f.refp[r.r#ref.r#ref[0] as usize - 1],
+                            r.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 top_filter_2d
                             } else {
