@@ -3479,12 +3479,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 tl_edge_offset,
                 BD::from_c(f.bitdepth_max),
             );
-            let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
-            let tmp = interintra_edge.0.interintra.as_mut_ptr();
+            let tl_edge = &tl_edge_array[tl_edge_offset..];
+            let tmp = &mut interintra_edge.0.interintra;
             dsp.ipred.intra_pred[m as usize].call(
-                tmp,
+                tmp.as_mut_ptr(),
                 4 * bw4 as isize * ::core::mem::size_of::<BD::Pixel>() as isize,
-                tl_edge,
+                tl_edge.as_ptr(),
                 bw4 * 4,
                 bh4 * 4,
                 0,
@@ -3503,7 +3503,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             (dsp.mc.blend)(
                 dst.cast(),
                 f.cur.stride[0],
-                tmp.cast(),
+                tmp.as_mut_ptr().cast(),
                 bw4 * 4,
                 bh4 * 4,
                 ii_mask.as_ptr(),
@@ -3804,12 +3804,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             tl_edge_offset,
                             BD::from_c(f.bitdepth_max),
                         );
-                        let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
+                        let tl_edge = &tl_edge_array[tl_edge_offset..];
                         let tmp = &mut interintra_edge.0.interintra;
                         dsp.ipred.intra_pred[m as usize].call(
                             tmp.as_mut_ptr(),
                             cbw4 as isize * 4 * ::core::mem::size_of::<BD::Pixel>() as isize,
-                            tl_edge,
+                            tl_edge.as_ptr(),
                             cbw4 * 4,
                             cbh4 * 4,
                             0,
