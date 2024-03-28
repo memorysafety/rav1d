@@ -488,9 +488,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
         return -(1 as c_int);
     }
     if lossless != 0 {
-        if !((*t_dim).max as c_int == TX_4X4 as c_int) {
-            unreachable!();
-        }
+        assert!((*t_dim).max as c_int == TX_4X4 as c_int);
         *txtp = WHT_WHT;
     } else if (*t_dim).max as c_int + intra >= TX_64X64 as c_int {
         *txtp = DCT_DCT;
@@ -661,9 +659,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     } else {
         eob = eob_bin;
     }
-    if !(eob >= 0) {
-        unreachable!();
-    }
+    assert!(eob >= 0);
     let eob_cdf: *mut [u16; 4] =
         ((*ts).cdf.coef.eob_base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
     let hi_cdf: *mut [u16; 4] = ((*ts).cdf.coef.br_tok
@@ -788,9 +784,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             rc_i = x << shift2 | y;
                         }
                     }
-                    if !(x < 32 as c_uint && y < 32 as c_uint) {
-                        unreachable!();
-                    }
+                    assert!(x < 32 && y < 32);
                     let level = &mut levels[(x as isize * stride + y as isize) as usize..];
                     ctx = get_lo_ctx(
                         level,
@@ -1008,9 +1002,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             rc_i = x << shift2 | y;
                         }
                     }
-                    if !(x < 32 as c_uint && y < 32 as c_uint) {
-                        unreachable!();
-                    }
+                    assert!(x < 32 && y < 32);
                     let level = &mut levels[(x as isize * stride as isize + y as isize) as usize..];
                     ctx = get_lo_ctx(
                         level,
@@ -1228,9 +1220,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             rc_i = x << shift2 | y;
                         }
                     }
-                    if !(x < 32 as c_uint && y < 32 as c_uint) {
-                        unreachable!();
-                    }
+                    assert!(x < 32 && y < 32);
                     let level = &mut levels[(x as isize * stride + y as isize) as usize..];
                     ctx = get_lo_ctx(
                         level,
@@ -1449,9 +1439,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     ((dc_dq as c_uint).wrapping_mul(dc_tok) & 0xffffff as c_int as c_uint) as c_int;
             } else {
                 dc_dq = (dc_dq as c_uint).wrapping_mul(dc_tok) as c_int as c_int;
-                if !(dc_dq <= 0xffffff as c_int) {
-                    unreachable!();
-                }
+                assert!(dc_dq <= 0xffffff);
             }
             cul_level = dc_tok;
             dc_dq >>= dq_shift;
@@ -1479,9 +1467,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 dc_dq = cmp::min(dc_dq as c_uint, (cf_max + dc_sign) as c_uint) as c_int;
             } else {
                 dc_dq = ((dc_dq as c_uint).wrapping_mul(dc_tok) >> dq_shift) as c_int;
-                if !(dc_dq <= cf_max) {
-                    unreachable!();
-                }
+                assert!(dc_dq <= cf_max);
             }
             cul_level = dc_tok;
             *cf.offset(0) = (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>();
@@ -1523,9 +1509,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 } else {
                     tok = rc_tok >> 11;
                     dq = dq.wrapping_mul(tok);
-                    if !(dq <= 0xffffff as c_int as c_uint) {
-                        unreachable!();
-                    }
+                    assert!(dq <= 0xffffff);
                 }
                 cul_level = cul_level.wrapping_add(tok);
                 dq >>= dq_shift;
@@ -1566,9 +1550,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 } else {
                     tok = rc_tok >> 11;
                     dq = (ac_dq.wrapping_mul(tok) >> dq_shift) as c_int;
-                    if !(dq <= cf_max) {
-                        unreachable!();
-                    }
+                    assert!(dq <= cf_max);
                 }
                 cul_level = cul_level.wrapping_add(tok);
                 *cf.offset(rc as isize) = (if sign != 0 { -dq } else { dq }).as_::<BD::Coef>();
@@ -1692,9 +1674,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         let mut cbi_idx = 0;
         if (*t).frame_thread.pass != 0 {
             let p = (*t).frame_thread.pass & 1;
-            if ((*ts).frame_thread[p as usize].cf).is_null() {
-                unreachable!();
-            }
+            assert!(!(*ts).frame_thread[p as usize].cf.is_null());
             cf = (*ts).frame_thread[p as usize].cf as *mut BD::Coef;
             (*ts).frame_thread[p as usize].cf = ((*ts).frame_thread[p as usize].cf as *mut BD::Coef)
                 .offset(
@@ -1757,9 +1737,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             txtp = cbi.txtp();
         }
         if (*t).frame_thread.pass & 1 == 0 {
-            if dst.is_null() {
-                unreachable!();
-            }
+            assert!(!dst.is_null());
             if eob >= 0 {
                 if debug_block_info!(f, &*t) && 0 != 0 {
                     coef_dump(
@@ -1839,12 +1817,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     let h4 = cmp::min(bh4, f.bh - t.by);
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
-    if !(t.frame_thread.pass == 1) {
-        unreachable!();
-    }
-    if b.skip != 0 {
-        unreachable!();
-    }
+    assert!(t.frame_thread.pass == 1);
+    assert!(b.skip == 0);
     let uv_t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(b.uvtx as isize) as *const TxfmInfo;
     let t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions.as_ptr().offset(
@@ -2039,9 +2013,7 @@ unsafe fn mc<BD: BitDepth>(
     refidx: c_int,
     filter_2d: Filter2d,
 ) -> Result<(), ()> {
-    if !dst8.is_null() as c_int ^ !dst16.is_null() as c_int == 0 {
-        unreachable!();
-    }
+    assert!(dst8.is_null() ^ dst16.is_null());
     let ss_ver =
         (pl != 0 && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor =
@@ -2122,9 +2094,7 @@ unsafe fn mc<BD: BitDepth>(
             );
         }
     } else {
-        if !(!ptr::eq(refp, &f.sr_cur)) {
-            unreachable!();
-        }
+        assert!(!ptr::eq(refp, &f.sr_cur));
         let orig_pos_y = (by * v_mul << 4) + mvy * ((1 as c_int) << (ss_ver == 0) as c_int);
         let orig_pos_x = (bx * h_mul << 4) + mvx * ((1 as c_int) << (ss_hor == 0) as c_int);
         let pos_y;
@@ -2234,9 +2204,7 @@ unsafe fn obmc<BD: BitDepth>(
     w4: c_int,
     h4: c_int,
 ) -> Result<(), ()> {
-    if !(t.bx & 1 == 0 && t.by & 1 == 0) {
-        unreachable!();
-    }
+    assert!(t.bx & 1 == 0 && t.by & 1 == 0);
     let r: *mut *mut refmvs_block = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize);
     let lap = BD::select_mut(&mut t.scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
     let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
@@ -2342,9 +2310,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     refp: *const Rav1dThreadPicture,
     wmp: *const Rav1dWarpedMotionParams,
 ) -> Result<(), ()> {
-    if !dst8.is_null() as c_int ^ !dst16.is_null() as c_int == 0 {
-        unreachable!();
-    }
+    assert!(dst8.is_null() ^ dst16.is_null());
     let dsp: *const Rav1dDSPContext = f.dsp;
     let ss_ver =
         (pl != 0 && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
@@ -2352,9 +2318,7 @@ unsafe fn warp_affine<BD: BitDepth>(
         (pl != 0 && f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if !(b_dim[0] as c_int * h_mul & 7 == 0 && b_dim[1] as c_int * v_mul & 7 == 0) {
-        unreachable!();
-    }
+    assert!(b_dim[0] as c_int * h_mul & 7 == 0 && b_dim[1] as c_int * v_mul & 7 == 0);
     let mat: *const i32 = ((*wmp).matrix).as_ptr();
     let width = (*refp).p.p.w + ss_hor >> ss_hor;
     let height = (*refp).p.p.h + ss_ver >> ss_ver;
@@ -2750,9 +2714,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
             if !(has_chroma == 0) {
                 let stride: ptrdiff_t = f.cur.stride[1];
                 if b.c2rust_unnamed.c2rust_unnamed.uv_mode as c_int == CFL_PRED as c_int {
-                    if !(init_x == 0 && init_y == 0) {
-                        unreachable!();
-                    }
+                    assert!(init_x == 0 && init_y == 0);
                     let ac = &mut t.scratch.c2rust_unnamed_0.ac_txtp_map.ac;
                     let y_src: *mut BD::Pixel = (f.cur.data.data[0] as *mut BD::Pixel)
                         .offset((4 * (t.bx & !ss_hor)) as isize)
@@ -3232,9 +3194,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         4 * ((t.bx >> ss_hor) as isize + (t.by >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if frame_hdr.frame_type.is_key_or_intra() {
-        if frame_hdr.size.super_res.enabled {
-            unreachable!();
-        }
+        assert!(!frame_hdr.size.super_res.enabled);
         mc::<BD>(
             f,
             t,
@@ -3739,9 +3699,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             is_sub8x8 = (bw4 == ss_hor || bh4 == ss_ver) as c_int;
             r = 0 as *const *mut refmvs_block;
             if is_sub8x8 != 0 {
-                if !(ss_hor == 1) {
-                    unreachable!();
-                }
+                assert!(ss_hor == 1);
                 r = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize)
                     as *mut *mut refmvs_block;
                 if bw4 == 1 {
@@ -3765,9 +3723,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             }
             if is_sub8x8 != 0 {
-                if !(ss_hor == 1) {
-                    unreachable!();
-                }
+                assert!(ss_hor == 1);
                 let mut h_off: ptrdiff_t = 0 as c_int as ptrdiff_t;
                 let mut v_off: ptrdiff_t = 0 as c_int as ptrdiff_t;
                 if bw4 == 1 && bh4 == ss_ver {
