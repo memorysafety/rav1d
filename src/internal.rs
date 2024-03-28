@@ -889,7 +889,7 @@ impl Rav1dTaskContext_task_thread {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub(crate) struct Bxy {
     pub x: c_int,
     pub y: c_int,

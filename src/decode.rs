@@ -792,7 +792,7 @@ unsafe fn read_pal_plane(
         pal[..used_cache.len()].copy_from_slice(&used_cache);
     }
 
-    if debug_block_info!(f, t) {
+    if debug_block_info!(f, t.b) {
         print!(
             "Post-pal[pl={},sz={},cache_size={},used_cache={}]: r={}, cache=",
             pli,
@@ -848,7 +848,7 @@ unsafe fn read_pal_uv(
     } else {
         pal.fill_with(|| rav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as c_uint) as u16);
     }
-    if debug_block_info!(f, t) {
+    if debug_block_info!(f, t.b) {
         print!("Post-pal[pl=2]: r={} ", ts.msac.rng);
         for (n, pal) in pal.iter().enumerate() {
             print!("{}{:02x}", if n != 0 { ' ' } else { '[' }, pal);
@@ -1059,7 +1059,7 @@ unsafe fn read_vartx_tree(
             t.b.y += h as c_int;
         }
         t.b.y -= bh4 as c_int;
-        if debug_block_info!(f, t) {
+        if debug_block_info!(f, t.b) {
             let ts = &*f.ts.offset(t.ts as isize);
             println!(
                 "Post-vartxtree[{}/{}]: r={}",
@@ -1506,7 +1506,7 @@ unsafe fn decode_b_inner(
                     t.warpmv.matrix[5] = b.matrix()[3] as i32 + 0x10000;
                     rav1d_set_affine_mv2d(bw4, bh4, *b.mv2d(), &mut t.warpmv, t.b.x, t.b.y);
                     rav1d_get_shear_params(&mut t.warpmv);
-                    if debug_block_info!(f, t) {
+                    if debug_block_info!(f, t.b) {
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
                             alpha={}, beta={}, gamma={}, deta={}, mv=y:{},x:{}",
@@ -1657,7 +1657,7 @@ unsafe fn decode_b_inner(
                 }
             }
 
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!("Post-segid[preskip;{}]: r={}", b.seg_id, ts.msac.rng);
             }
 
@@ -1678,7 +1678,7 @@ unsafe fn decode_b_inner(
         b.skip_mode =
             rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.skip_mode.0[smctx as usize])
                 as u8;
-        if debug_block_info!(f, t) {
+        if debug_block_info!(f, t.b) {
             println!("Post-skipmode[{}]: r={}", b.skip_mode, ts.msac.rng);
         }
     } else {
@@ -1692,7 +1692,7 @@ unsafe fn decode_b_inner(
         let sctx = (*t.a).skip[bx4 as usize] + t.l.skip[by4 as usize];
         b.skip =
             rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.skip[sctx as usize]) as u8;
-        if debug_block_info!(f, t) {
+        if debug_block_info!(f, t.b) {
             println!("Post-skip[{}]: r={}", b.skip, ts.msac.rng);
         }
     }
@@ -1760,7 +1760,7 @@ unsafe fn decode_b_inner(
 
         seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
 
-        if debug_block_info!(f, t) {
+        if debug_block_info!(f, t.b) {
             println!("Post-segid[postskip;{}]: r={}", b.seg_id, ts.msac.rng);
         }
     }
@@ -1786,7 +1786,7 @@ unsafe fn decode_b_inner(
                 *(t.cur_sb_cdef_idx_ptr).offset(idx + 3) = v;
             }
 
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "Post-cdef_idx[{}]: r={}",
                     *t.cur_sb_cdef_idx_ptr, ts.msac.rng
@@ -1825,7 +1825,7 @@ unsafe fn decode_b_inner(
                 delta_q *= 1 << frame_hdr.delta.q.res_log2;
             }
             ts.last_qidx = iclip(ts.last_qidx + delta_q, 1, 255);
-            if have_delta_q && debug_block_info!(f, t) {
+            if have_delta_q && debug_block_info!(f, t.b) {
                 println!(
                     "Post-delta_q[{}->{}]: r={}",
                     delta_q, ts.last_qidx, ts.msac.rng
@@ -1864,7 +1864,7 @@ unsafe fn decode_b_inner(
                     }
                     ts.last_delta_lf[i] =
                         iclip(ts.last_delta_lf[i] as c_int + delta_lf, -63, 63) as i8;
-                    if have_delta_q && debug_block_info!(f, t) {
+                    if have_delta_q && debug_block_info!(f, t.b) {
                         println!("Post-delta_lf[{}:{}]: r={}", i, delta_lf, ts.msac.rng);
                     }
                 }
@@ -1898,13 +1898,13 @@ unsafe fn decode_b_inner(
             b.intra =
                 (!rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intra[ictx.into()]))
                     as u8;
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!("Post-intra[{}]: r={}", b.intra, ts.msac.rng);
             }
         }
     } else if frame_hdr.allow_intrabc {
         b.intra = (!rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.intrabc.0)) as u8;
-        if debug_block_info!(f, t) {
+        if debug_block_info!(f, t.b) {
             println!("Post-intrabcflag[{}]: r={}", b.intra, ts.msac.rng);
         }
     } else {
@@ -1925,7 +1925,7 @@ unsafe fn decode_b_inner(
             ymode_cdf,
             (N_INTRA_PRED_MODES - 1) as usize,
         ) as u8;
-        if debug_block_info!(f, t) {
+        if debug_block_info!(f, t.b) {
             println!("Post-ymode[{}]: r={}", b.y_mode(), ts.msac.rng);
         }
 
@@ -1950,7 +1950,7 @@ unsafe fn decode_b_inner(
                 uvmode_cdf,
                 (N_UV_INTRA_PRED_MODES as usize) - 1 - (!cfl_allowed as usize),
             ) as u8;
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!("Post-uvmode[{}]: r={}", b.uv_mode(), ts.msac.rng);
             }
 
@@ -1989,7 +1989,7 @@ unsafe fn decode_b_inner(
                 } else {
                     b.cfl_alpha_mut()[1] = 0;
                 }
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!(
                         "Post-uvalphas[{}/{}]: r={}",
                         b.cfl_alpha()[0],
@@ -2017,7 +2017,7 @@ unsafe fn decode_b_inner(
                     &mut ts.msac,
                     &mut ts.cdf.m.pal_y[sz_ctx as usize][pal_ctx],
                 );
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts.msac.rng);
                 }
                 if use_y_pal {
@@ -2031,7 +2031,7 @@ unsafe fn decode_b_inner(
                     &mut ts.msac,
                     &mut ts.cdf.m.pal_uv[pal_ctx as usize],
                 );
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!("Post-uv_pal[{}]: r={}", use_uv_pal, ts.msac.rng);
                 }
                 if use_uv_pal {
@@ -2057,7 +2057,7 @@ unsafe fn decode_b_inner(
                     rav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.filter_intra.0, 4)
                         as i8;
             }
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "Post-filterintramode[{}/{}]: r={}",
                     b.y_mode(),
@@ -2089,7 +2089,7 @@ unsafe fn decode_b_inner(
                 bw4,
                 bh4,
             );
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!("Post-y-pal-indices: r={}", ts.msac.rng);
             }
         }
@@ -2116,7 +2116,7 @@ unsafe fn decode_b_inner(
                 cbw4,
                 cbh4,
             );
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!("Post-uv-pal-indices: r={}", ts.msac.rng);
             }
         }
@@ -2144,7 +2144,7 @@ unsafe fn decode_b_inner(
                     t_dim = &dav1d_txfm_dimensions[b.tx() as usize];
                 }
             }
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!("Post-tx[{}]: r={}", b.tx(), ts.msac.rng);
             }
             t_dim
@@ -2361,7 +2361,7 @@ unsafe fn decode_b_inner(
         b.mv_mut()[0].x = ((src_left - t.b.x * 4) * 8) as i16;
         b.mv_mut()[0].y = ((src_top - t.b.y * 4) * 8) as i16;
 
-        if debug_block_info!(f, t) {
+        if debug_block_info!(f, t.b) {
             println!(
                 "Post-dmv[{}/{},ref={}/{}|{}/{}]: r={}",
                 b.mv()[0].y,
@@ -2426,7 +2426,7 @@ unsafe fn decode_b_inner(
             let ctx = get_comp_ctx(&*t.a, &t.l, by4, bx4, have_top, have_left);
             let is_comp =
                 rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp[ctx as usize]);
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!("Post-compflag[{}]: r={}", is_comp, ts.msac.rng);
             }
             is_comp
@@ -2464,7 +2464,7 @@ unsafe fn decode_b_inner(
             *b.mv_mut() = mvstack[0].mv.mv;
             fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
             fix_mv_precision(frame_hdr, &mut b.mv_mut()[1]);
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "Post-skipmodeblock[mv=1:y={},x={},2:y={},x={},refs={}+{}",
                     b.mv()[0].y,
@@ -2540,7 +2540,7 @@ unsafe fn decode_b_inner(
                     }
                 }
             }
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "Post-refs[{}/{}]: r={}",
                     b.r#ref()[0],
@@ -2571,7 +2571,7 @@ unsafe fn decode_b_inner(
                 &mut ts.cdf.m.comp_inter_mode[ctx as usize],
                 N_COMP_INTER_PRED_MODES as usize - 1,
             ) as u8;
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
                     b.inter_mode(),
@@ -2598,7 +2598,7 @@ unsafe fn decode_b_inner(
                             &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                         ) as u8;
                     }
-                    if debug_block_info!(f, t) {
+                    if debug_block_info!(f, t.b) {
                         println!(
                             "Post-drlidx[{},n_mvs={}]: r={}",
                             b.drl_idx(),
@@ -2623,7 +2623,7 @@ unsafe fn decode_b_inner(
                             &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
                         ) as u8;
                     }
-                    if debug_block_info!(f, t) {
+                    if debug_block_info!(f, t.b) {
                         println!(
                             "Post-drlidx[{},n_mvs={}]: r={}",
                             b.drl_idx(),
@@ -2667,7 +2667,7 @@ unsafe fn decode_b_inner(
             };
             assign_comp_mv(0);
             assign_comp_mv(1);
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "Post-residual_mv[1:y={},x={},2:y={},x={}]: r={}",
                     b.mv()[0].y,
@@ -2686,7 +2686,7 @@ unsafe fn decode_b_inner(
                     &mut ts.msac,
                     &mut ts.cdf.m.mask_comp[mask_ctx as usize],
                 );
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!(
                         "Post-segwedge_vs_jntavg[{},ctx={}]: r={}",
                         is_segwedge, mask_ctx, ts.msac.rng,
@@ -2723,7 +2723,7 @@ unsafe fn decode_b_inner(
                         CompInterType::WeightedAvg
                     };
                     *b.comp_type_mut() = Some(comp_type);
-                    if debug_block_info!(f, t) {
+                    if debug_block_info!(f, t.b) {
                         println!(
                             "Post-jnt_comp[{},ctx={}[ac:{:?},ar:{},lc:{:?},lr:{}]]: r={}",
                             comp_type == CompInterType::Avg,
@@ -2761,7 +2761,7 @@ unsafe fn decode_b_inner(
                     *b.comp_type_mut() = Some(CompInterType::Seg);
                 }
                 *b.mask_sign_mut() = rav1d_msac_decode_bool_equi(&mut ts.msac) as u8;
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!(
                         "Post-seg/wedge[{},wedge_idx={},sign={}]: r={}",
                         b.comp_type() == Some(CompInterType::Wedge),
@@ -2818,7 +2818,7 @@ unsafe fn decode_b_inner(
                         ) as i8;
                     }
                 }
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!("Post-ref[{}]: r={}", b.r#ref()[0], ts.msac.rng);
                 }
             }
@@ -2910,7 +2910,7 @@ unsafe fn decode_b_inner(
                     }
                 }
 
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!(
                         "Post-intermode[{},drl={},mv=y:{},x:{},n_mvs={}]: r={}",
                         b.inter_mode(),
@@ -2951,7 +2951,7 @@ unsafe fn decode_b_inner(
                     b.mv_mut()[0] = mvstack[0].mv.mv[0];
                     fix_mv_precision(frame_hdr, &mut b.mv_mut()[0]);
                 }
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!(
                         "Post-intermode[{},drl={}]: r={}",
                         b.inter_mode(),
@@ -2966,7 +2966,7 @@ unsafe fn decode_b_inner(
                     &mut ts.cdf.mv,
                     !frame_hdr.force_integer_mv,
                 );
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!(
                         "Post-residualmv[mv=y:{},x:{}]: r={}",
                         b.mv()[0].y,
@@ -3012,7 +3012,7 @@ unsafe fn decode_b_inner(
             } else {
                 *b.interintra_type_mut() = None;
             }
-            if debug_block_info!(f, t)
+            if debug_block_info!(f, t.b)
                 && seq_hdr.inter_intra != 0
                 && interintra_allowed_mask & (1 << bs as u8) != 0
             {
@@ -3072,7 +3072,7 @@ unsafe fn decode_b_inner(
                 if b.motion_mode() == MotionMode::Warp {
                     has_subpel_filter = false;
                     t.warpmv = derive_warpmv(t, bw4, bh4, &mask, b.mv()[0], t.warpmv.clone());
-                    if debug_block_info!(f, t) {
+                    if debug_block_info!(f, t.b) {
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
                             alpha={}, beta={}, gamma={}, deta={}, mv=y:{},x:{}",
@@ -3102,7 +3102,7 @@ unsafe fn decode_b_inner(
                     }
                 }
 
-                if debug_block_info!(f, t) {
+                if debug_block_info!(f, t.b) {
                     println!(
                         "Post-motionmode[{:?}]: r={} [mask: 0x{:x}/0x{:x}]",
                         b.motion_mode(),
@@ -3128,7 +3128,7 @@ unsafe fn decode_b_inner(
                 ) as Dav1dFilterMode;
                 if seq_hdr.dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&*t.a, &t.l, comp, true, b.r#ref()[0], by4, bx4);
-                    if debug_block_info!(f, t) {
+                    if debug_block_info!(f, t.b) {
                         println!(
                             "Post-subpel_filter1[{},ctx={}]: r={}",
                             filter0, ctx1, ts.msac.rng,
@@ -3139,7 +3139,7 @@ unsafe fn decode_b_inner(
                         &mut ts.cdf.m.filter.0[1][ctx2 as usize],
                         Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize - 1,
                     ) as Dav1dFilterMode;
-                    if debug_block_info!(f, t) {
+                    if debug_block_info!(f, t.b) {
                         println!(
                             "Post-subpel_filter2[{},ctx={}]: r={}",
                             filter1, ctx2, ts.msac.rng,
@@ -3147,7 +3147,7 @@ unsafe fn decode_b_inner(
                     }
                     [filter0, filter1]
                 } else {
-                    if debug_block_info!(f, t) {
+                    if debug_block_info!(f, t.b) {
                         println!(
                             "Post-subpel_filter[{},ctx={}]: r={}",
                             filter0, ctx1, ts.msac.rng
@@ -3604,7 +3604,7 @@ unsafe fn decode_sb(
             {
                 return Err(());
             }
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "poc={},y={},x={},bl={:?},ctx={},bp={:?}: r={}",
                     frame_hdr.frame_offset, t.b.y, t.b.x, bl, ctx, bp, ts.msac.rng,
@@ -3755,7 +3755,7 @@ unsafe fn decode_sb(
         let is_split;
         if let Some(pc) = pc {
             is_split = rav1d_msac_decode_bool(&mut ts.msac, gather_top_partition_prob(pc, bl));
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "poc={},y={},x={},bl={:?},ctx={},bp={:?}: r={}",
                     frame_hdr.frame_offset,
@@ -3808,7 +3808,7 @@ unsafe fn decode_sb(
             if f.cur.p.layout == Rav1dPixelLayout::I422 && !is_split {
                 return Err(());
             }
-            if debug_block_info!(f, t) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "poc={},y={},x={},bl={:?},ctx={},bp={:?}: r={}",
                     frame_hdr.frame_offset,
@@ -4273,7 +4273,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                     let unit_idx = ((t.b.y & 16) >> 3) + ((px_x & 64) >> 6);
                     let lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize].get_mut();
 
-                    read_restoration_info(ts, lr, p, frame_type, debug_block_info!(f, t));
+                    read_restoration_info(ts, lr, p, frame_type, debug_block_info!(f, t.b));
                 }
             } else {
                 let x = 4 * t.b.x >> ss_hor;
@@ -4290,7 +4290,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 let unit_idx = ((t.b.y & 16) >> 3) + ((t.b.x & 16) >> 4);
                 let lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize].get_mut();
 
-                read_restoration_info(ts, lr, p, frame_type, debug_block_info!(f, t));
+                read_restoration_info(ts, lr, p, frame_type, debug_block_info!(f, t.b));
             }
         }
         decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
