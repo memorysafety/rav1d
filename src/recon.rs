@@ -2268,7 +2268,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     dstride: ptrdiff_t,
     b_dim: &[u8; 4],
     pl: c_int,
-    refp: *const Rav1dThreadPicture,
+    refp: &Rav1dThreadPicture,
     wmp: *const Rav1dWarpedMotionParams,
 ) -> Result<(), ()> {
     assert!(dst8.is_null() ^ dst16.is_null());
@@ -2281,8 +2281,8 @@ unsafe fn warp_affine<BD: BitDepth>(
     let v_mul = 4 >> ss_ver;
     assert!(b_dim[0] as c_int * h_mul & 7 == 0 && b_dim[1] as c_int * v_mul & 7 == 0);
     let mat: *const i32 = ((*wmp).matrix).as_ptr();
-    let width = (*refp).p.p.w + ss_hor >> ss_hor;
-    let height = (*refp).p.p.h + ss_ver >> ss_ver;
+    let width = refp.p.p.w + ss_hor >> ss_hor;
+    let height = refp.p.p.h + ss_ver >> ss_ver;
     let mut y = 0;
     while y < b_dim[1] as c_int * v_mul {
         let src_y = t.by * 4 + ((y + 4) << ss_ver);
@@ -2304,7 +2304,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                 - (*wmp).delta() as c_int * 4
                 & !(0x3f as c_int);
             let ref_ptr: *const BD::Pixel;
-            let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as c_int as usize];
+            let mut ref_stride: ptrdiff_t = refp.p.stride[(pl != 0) as c_int as usize];
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf =
                     BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
@@ -2319,7 +2319,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     (32 as c_int as c_ulong)
                         .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                         as ptrdiff_t,
-                    (*refp).p.data.data[pl as usize].cast(),
+                    refp.p.data.data[pl as usize].cast(),
                     ref_stride,
                 );
                 ref_ptr = &mut *emu_edge_buf.offset((32 * 3 + 3) as isize) as *mut BD::Pixel;
@@ -2327,7 +2327,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                     as ptrdiff_t;
             } else {
-                ref_ptr = ((*refp).p.data.data[pl as usize] as *mut BD::Pixel)
+                ref_ptr = (refp.p.data.data[pl as usize] as *mut BD::Pixel)
                     .offset((BD::pxstride(ref_stride) * dy as isize) as isize)
                     .offset(dx as isize);
             }
