@@ -1784,13 +1784,17 @@ unsafe fn decode_b_inner(
         }
 
         if b.pal_sz()[0] != 0 {
+            let mut pal_idx_guard;
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
                 let len = usize::try_from(bw4 * bh4 * 16).unwrap();
-                let pal_idx = &mut f.frame_thread.pal_idx[frame_thread.pal_idx..][..len];
+                pal_idx_guard = f
+                    .frame_thread
+                    .pal_idx
+                    .index_mut(frame_thread.pal_idx..frame_thread.pal_idx + len);
                 frame_thread.pal_idx += len;
-                pal_idx
+                &mut *pal_idx_guard
             } else {
                 &mut t.scratch.c2rust_unnamed_0.pal_idx
             };
@@ -1811,13 +1815,17 @@ unsafe fn decode_b_inner(
         }
 
         if has_chroma && b.pal_sz()[1] != 0 {
+            let mut pal_idx_guard;
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
                 let len = usize::try_from(cbw4 * cbh4 * 16).unwrap();
-                let pal_idx = &mut f.frame_thread.pal_idx[frame_thread.pal_idx..][..len];
+                pal_idx_guard = f
+                    .frame_thread
+                    .pal_idx
+                    .index_mut(frame_thread.pal_idx..frame_thread.pal_idx + len);
                 frame_thread.pal_idx += len;
-                pal_idx
+                &mut *pal_idx_guard
             } else {
                 &mut t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..]
             };

@@ -2445,13 +2445,17 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     (4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0]) + t.b.x as isize))
                         as isize,
                 );
+                let pal_idx_guard;
                 let pal_idx = if t.frame_thread.pass != 0 {
                     let p = t.frame_thread.pass & 1;
                     let frame_thread = &mut ts.frame_thread[p as usize];
                     let len = (bw4 * bh4 * 16) as usize;
-                    let pal_idx = &f.frame_thread.pal_idx[frame_thread.pal_idx..][..len];
+                    pal_idx_guard = f
+                        .frame_thread
+                        .pal_idx
+                        .index(frame_thread.pal_idx..frame_thread.pal_idx + len);
                     frame_thread.pal_idx += len;
-                    pal_idx
+                    &*pal_idx_guard
                 } else {
                     &t.scratch.c2rust_unnamed_0.pal_idx
                 };
@@ -2828,6 +2832,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let uv_dstoff: ptrdiff_t = 4
                         * ((t.b.x >> ss_hor) as isize
                             + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
+                    let pal_idx_guard;
                     let pal_guard;
                     let (pal, pal_idx) = if t.frame_thread.pass != 0 {
                         let p = t.frame_thread.pass & 1;
@@ -2836,10 +2841,13 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             as isize;
                         let pal_idx_offset = &mut ts.frame_thread[p as usize].pal_idx;
                         let len = (cbw4 * cbh4 * 16) as usize;
-                        let pal_idx = &f.frame_thread.pal_idx[*pal_idx_offset..][..len];
+                        pal_idx_guard = f
+                            .frame_thread
+                            .pal_idx
+                            .index(*pal_idx_offset..*pal_idx_offset + len);
                         *pal_idx_offset += len;
                         pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
-                        (&*pal_guard, pal_idx)
+                        (&*pal_guard, &*pal_idx_guard)
                     } else {
                         let interintra_edge_pal =
                             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);

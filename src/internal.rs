@@ -559,7 +559,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub pal: Pal,
 
     /// Iterated over inside tile state.
-    pub pal_idx: AlignedVec64<u8>,
+    pub pal_idx: DisjointMut<AlignedVec64<u8>>,
 
     /// [`AlignedVec64`]`<`[`DynCoef`]`>`
     pub cf: AlignedVec64<u8>,
