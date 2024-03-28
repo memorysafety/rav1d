@@ -2281,19 +2281,19 @@ unsafe fn warp_affine<BD: BitDepth>(
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     assert!(b_dim[0] as c_int * h_mul & 7 == 0 && b_dim[1] as c_int * v_mul & 7 == 0);
-    let mat: *const i32 = (wmp.matrix).as_ptr();
+    let mat = &wmp.matrix;
     let width = refp.p.p.w + ss_hor >> ss_hor;
     let height = refp.p.p.h + ss_ver >> ss_ver;
     let mut y = 0;
     while y < b_dim[1] as c_int * v_mul {
         let src_y = t.by * 4 + ((y + 4) << ss_ver);
-        let mat3_y: i64 = *mat.offset(3) as i64 * src_y as i64 + *mat.offset(0) as i64;
-        let mat5_y: i64 = *mat.offset(5) as i64 * src_y as i64 + *mat.offset(1) as i64;
+        let mat3_y: i64 = mat[3] as i64 * src_y as i64 + mat[0] as i64;
+        let mat5_y: i64 = mat[5] as i64 * src_y as i64 + mat[1] as i64;
         let mut x = 0;
         while x < b_dim[0] as c_int * h_mul {
             let src_x = t.bx * 4 + ((x + 4) << ss_hor);
-            let mvx: i64 = *mat.offset(2) as i64 * src_x as i64 + mat3_y >> ss_hor;
-            let mvy: i64 = *mat.offset(4) as i64 * src_x as i64 + mat5_y >> ss_ver;
+            let mvx: i64 = mat[2] as i64 * src_x as i64 + mat3_y >> ss_hor;
+            let mvy: i64 = mat[4] as i64 * src_x as i64 + mat5_y >> ss_ver;
             let dx = (mvx >> 16) as c_int - 4;
             let mx = (mvx as c_int & 0xffff as c_int)
                 - wmp.alpha() as c_int * 4
