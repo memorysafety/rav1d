@@ -1569,7 +1569,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     b: &Av1Block,
     ytx: RectTxfmSize,
     depth: c_int,
-    tx_split: *const u16,
+    tx_split: [u16; 2],
     x_off: c_int,
     y_off: c_int,
     mut dst: *mut BD::Pixel,
@@ -1581,8 +1581,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     let txw = (*t_dim).w as c_int;
     let txh = (*t_dim).h as c_int;
     if depth < 2
-        && *tx_split.offset(depth as isize) as c_int != 0
-        && *tx_split.offset(depth as isize) as c_int & (1 as c_int) << y_off * 4 + x_off != 0
+        && tx_split[depth as usize] as c_int != 0
+        && tx_split[depth as usize] as c_int & (1 as c_int) << y_off * 4 + x_off != 0
     {
         let sub: RectTxfmSize = (*t_dim).sub as RectTxfmSize;
         let sub_t_dim: *const TxfmInfo =
@@ -1852,7 +1852,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             b,
                             b.c2rust_unnamed.c2rust_unnamed_0.max_ytx as RectTxfmSize,
                             0 as c_int,
-                            tx_split.as_ptr(),
+                            tx_split,
                             x_off,
                             y_off,
                             0 as *mut BD::Pixel,
@@ -3890,7 +3890,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         b,
                         b.max_ytx() as RectTxfmSize,
                         0,
-                        tx_split.as_ptr(),
+                        tx_split,
                         x_off,
                         y_off,
                         &mut *dst.offset((x * 4) as isize),
