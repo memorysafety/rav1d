@@ -99,7 +99,6 @@ use std::ffi::c_int;
 use std::ffi::c_longlong;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
-use std::ffi::c_void;
 use std::ops::BitOr;
 use std::ptr;
 use std::slice;
@@ -2019,10 +2018,7 @@ unsafe fn mc<BD: BitDepth>(
     refidx: c_int,
     filter_2d: Filter2d,
 ) -> Result<(), ()> {
-    if (dst8 != 0 as *mut c_void as *mut BD::Pixel) as c_int
-        ^ (dst16 != 0 as *mut c_void as *mut i16) as c_int
-        == 0
-    {
+    if !dst8.is_null() as c_int ^ !dst16.is_null() as c_int == 0 {
         unreachable!();
     }
     let ss_ver =
@@ -2326,10 +2322,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     refp: *const Rav1dThreadPicture,
     wmp: *const Rav1dWarpedMotionParams,
 ) -> Result<(), ()> {
-    if (dst8 != 0 as *mut c_void as *mut BD::Pixel) as c_int
-        ^ (dst16 != 0 as *mut c_void as *mut i16) as c_int
-        == 0
-    {
+    if !dst8.is_null() as c_int ^ !dst16.is_null() as c_int == 0 {
         unreachable!();
     }
     let dsp: *const Rav1dDSPContext = f.dsp;
