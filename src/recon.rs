@@ -3142,7 +3142,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     bs: BlockSize,
     b: &Av1Block,
 ) -> Result<(), ()> {
-    let ts: *mut Rav1dTileState = t.ts;
+    let ts = &mut *t.ts;
     let dsp: *const Rav1dDSPContext = f.dsp;
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
@@ -3610,8 +3610,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 None
             };
             let data_stride = BD::pxstride(f.cur.stride[0]);
-            let data_width = 4 * (*ts).tiling.col_end;
-            let data_height = 4 * (*ts).tiling.row_end;
+            let data_width = 4 * ts.tiling.col_end;
+            let data_height = 4 * ts.tiling.row_end;
             let data_diff = (data_height - 1) as isize * data_stride;
             let dst_slice = slice::from_raw_parts(
                 (f.cur.data.data[0] as *const BD::Pixel).offset(cmp::min(data_diff, 0)),
@@ -3619,11 +3619,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             );
             m = rav1d_prepare_intra_edges(
                 t.b.x,
-                t.b.x > (*ts).tiling.col_start,
+                t.b.x > ts.tiling.col_start,
                 t.b.y,
-                t.b.y > (*ts).tiling.row_start,
-                (*ts).tiling.col_end,
-                (*ts).tiling.row_end,
+                t.b.y > ts.tiling.row_start,
+                ts.tiling.col_end,
+                ts.tiling.row_end,
                 EdgeFlags::empty(),
                 dst_slice,
                 f.cur.stride[0],
@@ -4019,8 +4019,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             None
                         };
                         let data_stride = BD::pxstride(f.cur.stride[1]);
-                        let data_width = 4 * (*ts).tiling.col_end >> ss_hor;
-                        let data_height = 4 * (*ts).tiling.row_end >> ss_ver;
+                        let data_width = 4 * ts.tiling.col_end >> ss_hor;
+                        let data_height = 4 * ts.tiling.row_end >> ss_ver;
                         let data_diff = (data_height - 1) as isize * data_stride;
                         let dstuv_slice = slice::from_raw_parts(
                             (f.cur.data.data[1 + pl as usize] as *const BD::Pixel)
@@ -4029,11 +4029,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                         m = rav1d_prepare_intra_edges(
                             t.b.x >> ss_hor,
-                            t.b.x >> ss_hor > (*ts).tiling.col_start >> ss_hor,
+                            t.b.x >> ss_hor > ts.tiling.col_start >> ss_hor,
                             t.b.y >> ss_ver,
-                            t.b.y >> ss_ver > (*ts).tiling.row_start >> ss_ver,
-                            (*ts).tiling.col_end >> ss_hor,
-                            (*ts).tiling.row_end >> ss_ver,
+                            t.b.y >> ss_ver > ts.tiling.row_start >> ss_ver,
+                            ts.tiling.col_end >> ss_hor,
+                            ts.tiling.row_end >> ss_ver,
                             EdgeFlags::empty(),
                             dstuv_slice,
                             f.cur.stride[1],
@@ -4200,11 +4200,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             let mut txtp: TxfmType;
                             if t.frame_thread.pass != 0 {
                                 let p = t.frame_thread.pass & 1;
-                                cf = (*ts).frame_thread[p as usize].cf as *mut BD::Coef;
-                                (*ts).frame_thread[p as usize].cf =
-                                    ((*ts).frame_thread[p as usize].cf as *mut BD::Coef).offset(
-                                        ((*uvtx).w as c_int * (*uvtx).h as c_int * 16) as isize,
-                                    ) as *mut DynCoef;
+                                cf = ts.frame_thread[p as usize].cf as *mut BD::Coef;
+                                ts.frame_thread[p as usize].cf = (ts.frame_thread[p as usize].cf
+                                    as *mut BD::Coef)
+                                    .offset(((*uvtx).w as c_int * (*uvtx).h as c_int * 16) as isize)
+                                    as *mut DynCoef;
                                 let cbi = f.frame_thread.cbi
                                     [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
                                     [(1 + pl) as usize];
@@ -4233,11 +4233,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 if debug_block_info!(f, t.b) {
                                     println!(
                                         "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
-                                        pl,
-                                        b.uvtx as c_int,
-                                        txtp as c_uint,
-                                        eob,
-                                        (*ts).msac.rng,
+                                        pl, b.uvtx as c_int, txtp as c_uint, eob, ts.msac.rng,
                                     );
                                 }
                                 CaseSet::<16, true>::many(
