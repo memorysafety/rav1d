@@ -2200,9 +2200,7 @@ unsafe fn obmc<BD: BitDepth>(
                     t.by,
                     pl,
                     a_r.0.mv.mv[0],
-                    &*(f.refp)
-                        .as_ptr()
-                        .offset((*(a_r.0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
+                    &*(f.refp).as_ptr().offset(a_r.0.r#ref.r#ref[0] as isize - 1),
                     a_r.0.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[(*t.a).filter[1][(bx4 + x + 1) as usize] as usize]
                         [(*t.a).filter[0][(bx4 + x + 1) as usize] as usize],
@@ -2224,7 +2222,7 @@ unsafe fn obmc<BD: BitDepth>(
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3], 4) {
             let l_r = &*(*r.offset((y + 1) as isize)).offset((t.bx - 1) as isize);
-            let l_b_dim = &dav1d_block_dimensions[(*l_r).0.bs as usize];
+            let l_b_dim = &dav1d_block_dimensions[l_r.0.bs as usize];
             let step4 = clip(l_b_dim[1], 2, 16);
             if l_r.0.r#ref.r#ref[0] > 0 {
                 let ow4 = cmp::min(b_dim[0], 16) >> 1;
@@ -2241,9 +2239,7 @@ unsafe fn obmc<BD: BitDepth>(
                     t.by + y,
                     pl,
                     l_r.0.mv.mv[0],
-                    &*(f.refp)
-                        .as_ptr()
-                        .offset((*(l_r.0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
+                    &*(f.refp).as_ptr().offset(l_r.0.r#ref.r#ref[0] as isize - 1),
                     l_r.0.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[t.l.filter[1][(by4 + y + 1) as usize] as usize]
                         [t.l.filter[0][(by4 + y + 1) as usize] as usize],
