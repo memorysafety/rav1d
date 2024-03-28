@@ -391,10 +391,7 @@ impl Rav1dFrameContext_bd_fn {
         block_size: BlockSize,
         block: &Av1Block,
     ) -> Result<(), ()> {
-        match (self.recon_b_inter)(f, context, block_size, block) {
-            0 => Ok(()),
-            _ => Err(()),
-        }
+        (self.recon_b_inter)(f, context, block_size, block)
     }
 
     pub unsafe fn read_coef_blocks(
