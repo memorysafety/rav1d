@@ -321,7 +321,7 @@ pub struct Av1Block_inter {
     pub motion_mode: MotionMode,
     pub drl_idx: u8,
     pub r#ref: [i8; 2],
-    pub max_ytx: u8,
+    pub max_ytx: RectTxfmSize,
     pub filter2d: Filter2d,
     pub interintra_type: Option<InterIntraType>,
     pub tx_split0: u8,
@@ -352,7 +352,7 @@ pub struct Av1Block {
     pub seg_id: u8,
     pub skip_mode: u8,
     pub skip: u8,
-    pub uvtx: u8,
+    pub uvtx: RectTxfmSize,
     pub c2rust_unnamed: Av1Block_intra_inter,
 }
 

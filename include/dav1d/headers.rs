@@ -7,6 +7,7 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::ops::BitAnd;
 use std::ops::Deref;
+use std::ops::Sub;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use strum::EnumCount;
@@ -404,6 +405,14 @@ pub enum Rav1dPixelLayout {
 impl Rav1dPixelLayout {
     pub const fn into_rav1d(self) -> Dav1dPixelLayout {
         self as Dav1dPixelLayout
+    }
+}
+
+impl Sub for Rav1dPixelLayout {
+    type Output = Rav1dPixelLayout;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::from_repr((self as u8 - rhs as u8) as usize).unwrap()
     }
 }
 
