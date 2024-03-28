@@ -3130,9 +3130,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     let bh4 = b_dim[1] as c_int;
     let w4 = cmp::min(bw4, f.bw - t.b.x);
     let h4 = cmp::min(bh4, f.bh - t.b.y);
-    let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400
+    let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
-        && (bh4 > ss_ver || t.b.y & 1 != 0)) as c_int;
+        && (bh4 > ss_ver || t.b.y & 1 != 0);
     let chr_layout_idx = if f.cur.p.layout == Rav1dPixelLayout::I400 {
         Rav1dPixelLayout::I400
     } else {
@@ -3164,7 +3164,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             0,
             Filter2d::Bilinear,
         )?;
-        if has_chroma != 0 {
+        if has_chroma {
             let mut pl = 1;
             while pl < 3 {
                 mc::<BD>(
@@ -3298,14 +3298,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     mask,
                     f.bitdepth_max,
                 );
-                if has_chroma != 0 {
+                if has_chroma {
                     mask = dav1d_wedge_masks[bs as usize][chr_layout_idx as usize]
                         [b.mask_sign() as usize][b.wedge_idx() as usize]
                         .as_ptr();
                 }
             }
         }
-        if has_chroma != 0 {
+        if has_chroma {
             let mut pl = 0;
             while pl < 2 {
                 let mut i = 0;
@@ -3518,7 +3518,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 ii_mask.as_ptr(),
             );
         }
-        if !(has_chroma == 0) {
+        if has_chroma {
             let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
             r = 0 as *const *mut refmvs_block;
             if is_sub8x8 {
@@ -3860,7 +3860,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             b_dim[1] as usize * 4,
             "y-pred",
         );
-        if has_chroma != 0 {
+        if has_chroma {
             hex_dump::<BD>(
                 &mut *(*(f.cur.data.data).as_ptr().offset(1) as *mut BD::Pixel)
                     .offset(uvdstoff as isize),
@@ -3890,7 +3890,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 case.set(&mut dir.lcoef.0, 0x40);
             },
         );
-        if has_chroma != 0 {
+        if has_chroma {
             CaseSet::<32, false>::many(
                 [&mut t.l, &mut *t.a],
                 [cbh4 as usize, cbw4 as usize],
@@ -3945,7 +3945,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
             dst = dst.offset(-BD::pxstride(f.cur.stride[0]) * 4 * y as isize);
             t.b.y -= y;
-            if has_chroma != 0 {
+            if has_chroma {
                 let mut pl = 0;
                 while pl < 2 {
                     let mut uvdst = (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
