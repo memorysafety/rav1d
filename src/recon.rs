@@ -3862,16 +3862,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         );
         if has_chroma {
             hex_dump::<BD>(
-                &mut *(*(f.cur.data.data).as_ptr().offset(1) as *mut BD::Pixel)
-                    .offset(uvdstoff as isize),
+                &mut *(f.cur.data.data[1] as *mut BD::Pixel).offset(uvdstoff as isize),
                 f.cur.stride[1] as usize,
                 cbw4 as usize * 4,
                 cbh4 as usize * 4,
                 "u-pred",
             );
             hex_dump::<BD>(
-                &mut *(*(f.cur.data.data).as_ptr().offset(2) as *mut BD::Pixel)
-                    .offset(uvdstoff as isize),
+                &mut *(f.cur.data.data[2] as *mut BD::Pixel).offset(uvdstoff as isize),
                 f.cur.stride[1] as usize,
                 cbw4 as usize * 4,
                 cbh4 as usize * 4,
