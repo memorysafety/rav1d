@@ -444,11 +444,11 @@ impl CodedBlockInfo {
 
 #[derive(Default)]
 #[repr(C)]
-pub struct AlignedVec64Pal {
+pub struct Pal {
     data: AlignedVec64<u8>,
 }
 
-impl AlignedVec64Pal {
+impl Pal {
     pub fn resize(&mut self, n: usize) {
         self.data.resize(n * 8 * 3, Default::default());
     }
@@ -487,7 +487,7 @@ pub struct Rav1dFrameContext_frame_thread {
     /// Inner indices are `[3 plane][8 idx]`.
     /// Allocated as a flat array. `pal.as_slice` and `pal.as_slice_mut` should be
     /// used to access elements of type `[[BitDepth::Pixel; 8]; 3]`
-    pub pal: AlignedVec64Pal,
+    pub pal: Pal,
 
     /// Iterated over inside tile state.
     pub pal_idx: AlignedVec64<u8>,
