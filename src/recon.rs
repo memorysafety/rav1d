@@ -2285,13 +2285,13 @@ unsafe fn warp_affine<BD: BitDepth>(
     let mut y = 0;
     while y < b_dim[1] as c_int * v_mul {
         let src_y = t.by * 4 + ((y + 4) << ss_ver);
-        let mat3_y: i64 = mat[3] as i64 * src_y as i64 + mat[0] as i64;
-        let mat5_y: i64 = mat[5] as i64 * src_y as i64 + mat[1] as i64;
+        let mat3_y = mat[3] as i64 * src_y as i64 + mat[0] as i64;
+        let mat5_y = mat[5] as i64 * src_y as i64 + mat[1] as i64;
         let mut x = 0;
         while x < b_dim[0] as c_int * h_mul {
             let src_x = t.bx * 4 + ((x + 4) << ss_hor);
-            let mvx: i64 = mat[2] as i64 * src_x as i64 + mat3_y >> ss_hor;
-            let mvy: i64 = mat[4] as i64 * src_x as i64 + mat5_y >> ss_ver;
+            let mvx = mat[2] as i64 * src_x as i64 + mat3_y >> ss_hor;
+            let mvy = mat[4] as i64 * src_x as i64 + mat5_y >> ss_ver;
             let dx = (mvx >> 16) as c_int - 4;
             let mx = (mvx as c_int & 0xffff) - wmp.alpha() as c_int * 4 - wmp.beta() as c_int * 7
                 & !0x3f;
@@ -2299,7 +2299,7 @@ unsafe fn warp_affine<BD: BitDepth>(
             let my = (mvy as c_int & 0xffff) - wmp.gamma() as c_int * 4 - wmp.delta() as c_int * 4
                 & !0x3f;
             let ref_ptr: *const BD::Pixel;
-            let mut ref_stride: ptrdiff_t = refp.p.stride[(pl != 0) as usize];
+            let mut ref_stride = refp.p.stride[(pl != 0) as usize];
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf =
                     BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
