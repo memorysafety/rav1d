@@ -2209,7 +2209,7 @@ unsafe fn obmc<BD: BitDepth>(
                     t.b.y,
                     pl,
                     a_r.0.mv.mv[0],
-                    &*(f.refp).as_ptr().offset(a_r.0.r#ref.r#ref[0] as isize - 1),
+                    &f.refp[a_r.0.r#ref.r#ref[0] as usize - 1],
                     a_r.0.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[(*t.a).filter[1][(bx4 + x + 1) as usize] as usize]
                         [(*t.a).filter[0][(bx4 + x + 1) as usize] as usize],
@@ -2249,7 +2249,7 @@ unsafe fn obmc<BD: BitDepth>(
                     t.b.y + y,
                     pl,
                     l_r.0.mv.mv[0],
-                    &*(f.refp).as_ptr().offset(l_r.0.r#ref.r#ref[0] as isize - 1),
+                    &f.refp[l_r.0.r#ref.r#ref[0] as usize - 1],
                     l_r.0.r#ref.r#ref[0] as usize - 1,
                     dav1d_filter_2d[t.l.filter[1][(by4 + y + 1) as usize] as usize]
                         [t.l.filter[0][(by4 + y + 1) as usize] as usize],
@@ -3206,7 +3206,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         let mut mask = 0 as *const u8;
         let mut i = 0;
         while i < 2 {
-            let refp = &*(f.refp).as_ptr().offset(b.r#ref()[i] as isize);
+            let refp = &f.refp[b.r#ref()[i] as usize];
             if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == GLOBALMV_GLOBALMV
                 && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
             {
@@ -3307,7 +3307,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             while pl < 2 {
                 let mut i = 0;
                 while i < 2 {
-                    let refp = &*(f.refp).as_ptr().offset(b.r#ref()[i] as isize);
+                    let refp = &f.refp[b.r#ref()[i] as usize];
                     if b.inter_mode() == GLOBALMV_GLOBALMV
                         && cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
@@ -3390,7 +3390,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         }
     } else {
         let mut r;
-        let refp = &*(f.refp).as_ptr().offset(b.r#ref()[0] as isize);
+        let refp = &f.refp[b.r#ref()[0] as usize];
         let filter_2d = b.filter2d();
         if cmp::min(bw4, bh4) > 1
             && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
@@ -3553,13 +3553,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.y - 1,
                             1 + pl,
                             (*(*r.offset(-1)).offset((t.b.x - 1) as isize)).0.mv.mv[0],
-                            &*(f.refp).as_ptr().offset(
-                                (*(*r.offset(-1)).offset((t.b.x - 1) as isize))
-                                    .0
-                                    .r#ref
-                                    .r#ref[0] as isize
-                                    - 1,
-                            ),
+                            &f.refp[(*(*r.offset(-1)).offset((t.b.x - 1) as isize))
+                                .0
+                                .r#ref
+                                .r#ref[0] as usize
+                                - 1],
                             (*(*r.offset(-1)).offset((t.b.x - 1) as isize))
                                 .0
                                 .r#ref
@@ -3600,11 +3598,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.y,
                             1 + pl,
                             (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.mv.mv[0],
-                            &*(f.refp).as_ptr().offset(
-                                (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0]
-                                    as isize
-                                    - 1,
-                            ),
+                            &f.refp[(*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0]
+                                as usize
+                                - 1],
                             (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0]
                                 as usize
                                 - 1,
@@ -3640,10 +3636,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.y - 1,
                             1 + pl,
                             (*(*r.offset(-1)).offset(t.b.x as isize)).0.mv.mv[0],
-                            &*(f.refp).as_ptr().offset(
-                                (*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0] as isize
-                                    - 1,
-                            ),
+                            &f.refp[(*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0]
+                                as usize
+                                - 1],
                             (*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 top_filter_2d
