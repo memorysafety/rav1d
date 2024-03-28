@@ -5,7 +5,7 @@ use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
 use crate::include::common::dump::hex_dump;
 use crate::include::common::intops::apply_sign64;
-use crate::include::common::intops::iclip;
+use crate::include::common::intops::clip;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
@@ -2220,13 +2220,10 @@ unsafe fn obmc<BD: BitDepth>(
     if !(t.bx & 1 == 0 && t.by & 1 == 0) {
         unreachable!();
     }
-    let r: *mut *mut refmvs_block =
-        &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize) as *mut *mut refmvs_block;
+    let r: *mut *mut refmvs_block = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize);
     let lap = BD::select_mut(&mut t.scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
-    let ss_ver =
-        (pl != 0 && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor =
-        (pl != 0 && f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     let ts = &*f.ts.offset((*t).ts as isize);
@@ -2236,25 +2233,21 @@ unsafe fn obmc<BD: BitDepth>(
     {
         let mut i = 0;
         let mut x = 0;
-        while x < w4 && i < cmp::min(b_dim[2] as c_int, 4 as c_int) {
-            let a_r: *const refmvs_block = &mut *(*r.offset(-(1 as c_int) as isize))
-                .offset((t.bx + x + 1) as isize)
-                as *mut refmvs_block;
+        while x < w4 && i < cmp::min(b_dim[2], 4) {
+            let a_r: *const refmvs_block = &mut *(*r.offset(-1)).offset((t.bx + x + 1) as isize);
             let a_b_dim: *const u8 = (dav1d_block_dimensions[(*a_r).0.bs as usize]).as_ptr();
-            let step4 = iclip(*a_b_dim.offset(0) as c_int, 2 as c_int, 16 as c_int);
-            if (*a_r).0.r#ref.r#ref[0] as c_int > 0 {
-                let ow4 = cmp::min(step4, b_dim[0] as c_int);
-                let oh4 = cmp::min(b_dim[1] as c_int, 16 as c_int) >> 1;
+            let step4 = clip(*a_b_dim.offset(0), 2, 16);
+            if (*a_r).0.r#ref.r#ref[0] > 0 {
+                let ow4 = cmp::min(step4, b_dim[0]);
+                let oh4 = cmp::min(b_dim[1], 16) >> 1;
                 res = mc::<BD>(
                     f,
                     t,
                     lap,
                     0 as *mut i16,
-                    ((ow4 * h_mul) as c_ulong)
-                        .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
-                        as ptrdiff_t,
-                    ow4,
-                    oh4 * 3 + 3 >> 2,
+                    ow4 as isize * h_mul as isize * ::core::mem::size_of::<BD::Pixel>() as isize,
+                    ow4 as c_int,
+                    oh4 as c_int * 3 + 3 >> 2,
                     t.bx + x,
                     t.by,
                     pl,
@@ -2264,8 +2257,7 @@ unsafe fn obmc<BD: BitDepth>(
                         .offset((*((*a_r).0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
                     (*a_r).0.r#ref.r#ref[0] as c_int - 1,
                     dav1d_filter_2d[(*t.a).filter[1][(bx4 + x + 1) as usize] as usize]
-                        [(*t.a).filter[0][(bx4 + x + 1) as usize] as usize]
-                        as Filter2d,
+                        [(*t.a).filter[0][(bx4 + x + 1) as usize] as usize],
                 );
                 if res != 0 {
                     return res;
@@ -2274,36 +2266,33 @@ unsafe fn obmc<BD: BitDepth>(
                     dst.offset((x * h_mul) as isize).cast(),
                     dst_stride,
                     lap.cast(),
-                    h_mul * ow4,
-                    v_mul * oh4,
+                    h_mul * ow4 as c_int,
+                    v_mul * oh4 as c_int,
                 );
                 i += 1;
             }
-            x += step4;
+            x += step4 as c_int;
         }
     }
     if t.bx > ts.tiling.col_start {
         let mut i = 0;
         let mut y = 0;
-        while y < h4 && i < cmp::min(b_dim[3] as c_int, 4 as c_int) {
-            let l_r: *const refmvs_block = &mut *(*r.offset((y + 1) as isize))
-                .offset((t.bx - 1) as isize)
-                as *mut refmvs_block;
+        while y < h4 && i < cmp::min(b_dim[3], 4) {
+            let l_r: *const refmvs_block =
+                &mut *(*r.offset((y + 1) as isize)).offset((t.bx - 1) as isize);
             let l_b_dim: *const u8 = (dav1d_block_dimensions[(*l_r).0.bs as usize]).as_ptr();
-            let step4 = iclip(*l_b_dim.offset(1) as c_int, 2 as c_int, 16 as c_int);
-            if (*l_r).0.r#ref.r#ref[0] as c_int > 0 {
-                let ow4 = cmp::min(b_dim[0] as c_int, 16 as c_int) >> 1;
-                let oh4 = cmp::min(step4, b_dim[1] as c_int);
+            let step4 = clip(*l_b_dim.offset(1), 2, 16);
+            if (*l_r).0.r#ref.r#ref[0] > 0 {
+                let ow4 = cmp::min(b_dim[0], 16) >> 1;
+                let oh4 = cmp::min(step4, b_dim[1]);
                 res = mc::<BD>(
                     f,
                     t,
                     lap,
                     0 as *mut i16,
-                    ((h_mul * ow4) as c_ulong)
-                        .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
-                        as ptrdiff_t,
-                    ow4,
-                    oh4,
+                    h_mul as isize * ow4 as isize * ::core::mem::size_of::<BD::Pixel>() as isize,
+                    ow4 as c_int,
+                    oh4 as c_int,
                     t.bx,
                     t.by + y,
                     pl,
@@ -2313,8 +2302,7 @@ unsafe fn obmc<BD: BitDepth>(
                         .offset((*((*l_r).0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
                     (*l_r).0.r#ref.r#ref[0] as c_int - 1,
                     dav1d_filter_2d[t.l.filter[1][(by4 + y + 1) as usize] as usize]
-                        [t.l.filter[0][(by4 + y + 1) as usize] as usize]
-                        as Filter2d,
+                        [t.l.filter[0][(by4 + y + 1) as usize] as usize],
                 );
                 if res != 0 {
                     return res;
@@ -2324,15 +2312,15 @@ unsafe fn obmc<BD: BitDepth>(
                         .cast(),
                     dst_stride,
                     lap.cast(),
-                    h_mul * ow4,
-                    v_mul * oh4,
+                    h_mul * ow4 as c_int,
+                    v_mul * oh4 as c_int,
                 );
                 i += 1;
             }
-            y += step4;
+            y += step4 as c_int;
         }
     }
-    return 0 as c_int;
+    return 0;
 }
 
 unsafe fn warp_affine<BD: BitDepth>(
