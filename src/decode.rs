@@ -229,7 +229,7 @@ unsafe fn read_mv_component_diff(
     mv_comp: &mut CdfMvComponent,
     have_fp: bool,
 ) -> c_int {
-    let ts = &mut *t.ts;
+    let ts = &mut *f.ts.offset(t.ts as isize);
     let have_hp = f.frame_hdr.as_ref().unwrap().hp;
     let sign = rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut mv_comp.sign.0);
     let cl = rav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut mv_comp.classes.0, 10);
@@ -290,7 +290,7 @@ unsafe fn read_mv_residual(
     mv_cdf: &mut CdfMvContext,
     have_fp: bool,
 ) {
-    let ts = &mut *t.ts;
+    let ts = &mut *f.ts.offset(t.ts as isize);
     match MVJoint::from_repr(rav1d_msac_decode_symbol_adapt4(
         &mut ts.msac,
         &mut ts.cdf.mv.joint.0,
@@ -327,6 +327,7 @@ unsafe fn read_tx_tree(
     let txw = t_dim.lw;
     let txh = t_dim.lh;
     let is_split;
+    let ts = &mut *f.ts.offset(t.ts as isize);
 
     if depth < 2 && from > TX_4X4 {
         let cat = 2 * (TX_64X64 as c_int - t_dim.max as c_int) - depth;
@@ -334,8 +335,8 @@ unsafe fn read_tx_tree(
         let l = (t.l.tx.0[by4 as usize] < txh) as c_int;
 
         is_split = rav1d_msac_decode_bool_adapt(
-            &mut (*t.ts).msac,
-            &mut (*t.ts).cdf.m.txpart[cat as usize][(a + l) as usize],
+            &mut ts.msac,
+            &mut ts.cdf.m.txpart[cat as usize][(a + l) as usize],
         );
         if is_split {
             masks[depth as usize] |= 1 << (y_off * 4 + x_off);
@@ -406,6 +407,7 @@ fn neg_deinterleave(diff: c_int, r#ref: c_int, max: c_int) -> c_int {
 }
 
 unsafe fn find_matching_ref(
+    f: &Rav1dFrameData,
     t: &Rav1dTaskContext,
     intra_edge_flags: EdgeFlags,
     bw4: c_int,
@@ -419,10 +421,11 @@ unsafe fn find_matching_ref(
 ) {
     let r = &t.rt.r[((t.by & 31) + 5 - 1) as usize..];
     let mut count = 0;
+    let ts = &*f.ts.offset(t.ts as isize);
     let mut have_topleft = have_top && have_left;
     let mut have_topright = cmp::max(bw4, bh4) < 32
         && have_top
-        && t.bx + bw4 < (*t.ts).tiling.col_end
+        && t.bx + bw4 < ts.tiling.col_end
         && intra_edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT);
 
     let bs = |rp: &refmvs_block| dav1d_block_dimensions[rp.0.bs as usize];
@@ -645,7 +648,7 @@ unsafe fn read_pal_plane(
     let pli = pl as usize;
     let not_pl = !pl as u16;
 
-    let ts = &mut *t.ts;
+    let ts = &mut *f.ts.offset(t.ts as isize);
 
     let pal_sz = rav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
@@ -822,7 +825,7 @@ unsafe fn read_pal_uv(
     read_pal_plane(t, f, b, true, sz_ctx, bx4, by4);
 
     // V pal coding
-    let ts = &mut *t.ts;
+    let ts = &mut *f.ts.offset(t.ts as isize);
 
     let pal = if t.frame_thread.pass != 0 {
         &mut f.frame_thread.pal[(((t.by >> 1) + (t.bx & 1)) as isize * (f.b4_stride >> 1)
@@ -1058,12 +1061,11 @@ unsafe fn read_vartx_tree(
             t.by += h as c_int;
         }
         t.by -= bh4 as c_int;
-        if debug_block_info!(f, &*t) {
+        if debug_block_info!(f, t) {
+            let ts = &*f.ts.offset(t.ts as isize);
             println!(
                 "Post-vartxtree[{}/{}]: r={}",
-                tx_split[0],
-                tx_split[1],
-                (*t.ts).msac.rng
+                tx_split[0], tx_split[1], ts.msac.rng
             );
         }
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
@@ -1312,6 +1314,7 @@ unsafe fn affine_lowest_px_chroma(
 
 unsafe fn obmc_lowest_px(
     t: &mut Rav1dTaskContext,
+    ts: &Rav1dTileState,
     layout: Rav1dPixelLayout,
     svc: &[[ScalableMotionParams; 2]; 7],
     dst: &mut [[c_int; 2]; 7],
@@ -1328,7 +1331,7 @@ unsafe fn obmc_lowest_px(
     let ss_hor = (is_chroma && layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if t.by > (*t.ts).tiling.row_start
+    if t.by > ts.tiling.row_start
         && (!is_chroma || b_dim[0] as c_int * h_mul + b_dim[1] as c_int * v_mul >= 16)
     {
         let mut i = 0;
@@ -1351,7 +1354,7 @@ unsafe fn obmc_lowest_px(
             x += cmp::max(a_b_dim[0] as c_int, 2);
         }
     }
-    if t.bx > (*t.ts).tiling.col_start {
+    if t.bx > ts.tiling.col_start {
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3] as c_int, 4) {
@@ -1424,7 +1427,7 @@ unsafe fn decode_b_inner(
         }
     }
 
-    let ts = &mut *t.ts;
+    let ts = &mut *f.ts.offset(t.ts as isize);
     let bd_fn = f.bd_fn();
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bx4 = t.bx & 31;
@@ -2064,7 +2067,7 @@ unsafe fn decode_b_inner(
                 &mut t.scratch.c2rust_unnamed_0.pal_idx
             };
             read_pal_indices(
-                &mut *t.ts,
+                ts,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
                 pal_idx,
                 b,
@@ -2091,7 +2094,7 @@ unsafe fn decode_b_inner(
                 &mut t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..]
             };
             read_pal_indices(
-                &mut *t.ts,
+                ts,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
                 pal_idx,
                 b,
@@ -3026,6 +3029,7 @@ unsafe fn decode_b_inner(
                 // finding matching-ref blocks in top/left edges
                 let mut mask = [0, 0];
                 find_matching_ref(
+                    f,
                     t,
                     intra_edge_flags,
                     bw4,
@@ -3315,6 +3319,7 @@ unsafe fn decode_b_inner(
                 if b.motion_mode() == MotionMode::Obmc {
                     obmc_lowest_px(
                         t,
+                        &*f.ts.offset(t.ts as isize),
                         f.cur.p.layout,
                         &f.svc,
                         lowest_px,
@@ -3425,6 +3430,7 @@ unsafe fn decode_b_inner(
                     if b.motion_mode() == MotionMode::Obmc {
                         obmc_lowest_px(
                             t,
+                            &*f.ts.offset(t.ts as isize),
                             f.cur.p.layout,
                             &f.svc,
                             lowest_px,
@@ -3520,7 +3526,7 @@ unsafe fn decode_sb(
     bl: BlockLevel,
     edge_index: EdgeIndex,
 ) -> Result<(), ()> {
-    let ts = &mut *t.ts;
+    let ts = &mut *f.ts.offset(t.ts as isize);
     let hsz = 16 >> bl as u8;
     let have_h_split = f.bw > t.bx + hsz;
     let have_v_split = f.bh > t.by + hsz;
@@ -4118,7 +4124,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     } else {
         BlockLevel::Bl64x64
     };
-    let ts = &mut *t.ts;
+    let ts = &mut *f.ts.offset(t.ts as isize);
     let sb_step = f.sb_step;
     let tile_row = ts.tiling.row;
     let tile_col = ts.tiling.col;
@@ -4250,7 +4256,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                     let unit_idx = ((t.by & 16) >> 3) + ((px_x & 64) >> 6);
                     let lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize].get_mut();
 
-                    read_restoration_info(&mut *t.ts, lr, p, frame_type, debug_block_info!(f, t));
+                    read_restoration_info(ts, lr, p, frame_type, debug_block_info!(f, t));
                 }
             } else {
                 let x = 4 * t.bx >> ss_hor;
@@ -4267,7 +4273,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 let unit_idx = ((t.by & 16) >> 3) + ((t.bx & 16) >> 4);
                 let lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize].get_mut();
 
-                read_restoration_info(&mut *t.ts, lr, p, frame_type, debug_block_info!(f, t));
+                read_restoration_info(ts, lr, p, frame_type, debug_block_info!(f, t));
             }
         }
         decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
@@ -4765,12 +4771,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
     let [rows, cols] = [rows, cols].map(|it| it.try_into().unwrap());
     // Need to clone this because `(f.bd_fn().filter_sbrow)(f, sby);` takes a `&mut` to `f` within the loop.
     let row_start_sb = frame_hdr.tiling.row_start_sb.clone();
-    for (tile_row, (sbh_start_end, ts)) in iter::zip(
-        row_start_sb[..rows + 1].windows(2),
-        slice::from_raw_parts_mut(f.ts, rows * cols).chunks_exact_mut(cols),
-    )
-    .enumerate()
-    {
+    for (tile_row, sbh_start_end) in row_start_sb[..rows + 1].windows(2).take(rows).enumerate() {
         // Needed until #[feature(array_windows)] stabilizes; it should hopefully optimize out.
         let [sbh_start, sbh_end] = <[u16; 2]>::try_from(sbh_start_end).unwrap();
 
@@ -4784,8 +4785,8 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             if frame_hdr.use_ref_frame_mvs != 0 {
                 (c.refmvs_dsp.load_tmvs)(&f.rf, tile_row as c_int, 0, f.bw >> 1, t.by >> 1, by_end);
             }
-            for tile in &mut ts[..] {
-                t.ts = tile;
+            for col in 0..cols {
+                t.ts = tile_row * cols + col;
                 rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| EINVAL)?;
             }
             if f.frame_hdr().frame_type.is_inter_or_switch() {
