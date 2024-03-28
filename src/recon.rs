@@ -2262,7 +2262,7 @@ unsafe fn obmc<BD: BitDepth>(
 
 unsafe fn warp_affine<BD: BitDepth>(
     f: &Rav1dFrameData,
-    t: *mut Rav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     mut dst8: *mut BD::Pixel,
     mut dst16: *mut i16,
     dstride: ptrdiff_t,
@@ -2285,12 +2285,12 @@ unsafe fn warp_affine<BD: BitDepth>(
     let height = (*refp).p.p.h + ss_ver >> ss_ver;
     let mut y = 0;
     while y < b_dim[1] as c_int * v_mul {
-        let src_y = (*t).by * 4 + ((y + 4) << ss_ver);
+        let src_y = t.by * 4 + ((y + 4) << ss_ver);
         let mat3_y: i64 = *mat.offset(3) as i64 * src_y as i64 + *mat.offset(0) as i64;
         let mat5_y: i64 = *mat.offset(5) as i64 * src_y as i64 + *mat.offset(1) as i64;
         let mut x = 0;
         while x < b_dim[0] as c_int * h_mul {
-            let src_x = (*t).bx * 4 + ((x + 4) << ss_hor);
+            let src_x = t.bx * 4 + ((x + 4) << ss_hor);
             let mvx: i64 = *mat.offset(2) as i64 * src_x as i64 + mat3_y >> ss_hor;
             let mvy: i64 = *mat.offset(4) as i64 * src_x as i64 + mat5_y >> ss_ver;
             let dx = (mvx >> 16) as c_int - 4;
@@ -2307,7 +2307,7 @@ unsafe fn warp_affine<BD: BitDepth>(
             let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as c_int as usize];
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf =
-                    BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
+                    BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
                 ((*f.dsp).mc.emu_edge)(
                     15 as c_int as intptr_t,
                     15 as c_int as intptr_t,
