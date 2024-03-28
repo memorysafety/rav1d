@@ -3196,14 +3196,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             .c2rust_unnamed
             .compinter;
         let mut jnt_weight = 0;
-        let seg_mask = (t
+        let seg_mask = &mut t
             .scratch
             .c2rust_unnamed
             .c2rust_unnamed
             .c2rust_unnamed
-            .seg_mask)
-            .as_mut_ptr();
-        let mut mask = 0 as *const u8;
+            .seg_mask;
         let mut i = 0;
         while i < 2 {
             let refp = &f.refp[b.r#ref()[i] as usize];
@@ -3244,6 +3242,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             i += 1;
         }
 
+        let mut mask = &[][..];
         match comp_inter_type {
             CompInterType::Avg => {
                 (dsp.mc.avg)(
@@ -3277,14 +3276,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     tmp[(b.mask_sign() == 0) as usize].as_mut_ptr(),
                     bw4 * 4,
                     bh4 * 4,
-                    seg_mask,
+                    seg_mask.as_mut_ptr(),
                     b.mask_sign() as c_int,
                     f.bitdepth_max,
                 );
-                mask = seg_mask;
+                mask = &seg_mask[..];
             }
             CompInterType::Wedge => {
-                mask = dav1d_wedge_masks[bs as usize][0][0][b.wedge_idx() as usize].as_ptr();
+                mask = dav1d_wedge_masks[bs as usize][0][0][b.wedge_idx() as usize];
                 (dsp.mc.mask)(
                     dst.cast(),
                     f.cur.stride[0],
@@ -3292,13 +3291,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     tmp[(b.mask_sign() == 0) as usize].as_mut_ptr(),
                     bw4 * 4,
                     bh4 * 4,
-                    mask,
+                    mask.as_ptr(),
                     f.bitdepth_max,
                 );
                 if has_chroma {
                     mask = dav1d_wedge_masks[bs as usize][chr_layout_idx as usize]
-                        [b.mask_sign() as usize][b.wedge_idx() as usize]
-                        .as_ptr();
+                        [b.mask_sign() as usize][b.wedge_idx() as usize];
                 }
             }
         }
@@ -3380,7 +3378,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             tmp[(b.mask_sign() == 0) as usize].as_mut_ptr(),
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
-                            mask,
+                            mask.as_ptr(),
                             f.bitdepth_max,
                         );
                     }
