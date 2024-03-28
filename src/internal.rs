@@ -69,10 +69,10 @@ use crate::src::recon::rav1d_recon_b_intra;
 use crate::src::recon::read_coef_blocks_fn;
 use crate::src::recon::recon_b_inter_fn;
 use crate::src::recon::recon_b_intra_fn;
-use crate::src::refmvs::refmvs_frame;
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
+use crate::src::refmvs::RefMvsFrame;
 use atomig::Atomic;
 use libc::ptrdiff_t;
 use std::cell::UnsafeCell;
@@ -705,7 +705,7 @@ pub(crate) struct Rav1dFrameData {
     pub qm: [[*const u8; 3]; 19],                         /* [3 plane][19] */
     pub a: *mut BlockContext,
     pub a_sz: c_int, /* w*tile_rows */
-    pub rf: refmvs_frame,
+    pub rf: RefMvsFrame,
     pub jnt_weights: [[u8; 7]; 7],
     pub bitdepth_max: c_int,
 
