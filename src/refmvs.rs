@@ -20,6 +20,7 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
+use std::mem;
 use std::ptr;
 
 #[cfg(feature = "asm")]
@@ -38,8 +39,8 @@ extern "C" {
     fn dav1d_save_tmvs_ssse3(
         rp: *mut refmvs_temporal_block,
         stride: ptrdiff_t,
-        rr: *const *const refmvs_block,
-        ref_sign: *const u8,
+        rr: *const [*const refmvs_block; 31],
+        ref_sign: *const [u8; 7],
         col_end8: c_int,
         row_end8: c_int,
         col_start8: c_int,
@@ -80,8 +81,8 @@ extern "C" {
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
         stride: ptrdiff_t,
-        rr: *const *const refmvs_block,
-        ref_sign: *const u8,
+        rr: *const [*const refmvs_block; 31],
+        ref_sign: *const [u8; 7],
         col_end8: c_int,
         row_end8: c_int,
         col_start8: c_int,
@@ -90,8 +91,8 @@ extern "C" {
     fn dav1d_save_tmvs_avx512icl(
         rp: *mut refmvs_temporal_block,
         stride: ptrdiff_t,
-        rr: *const *const refmvs_block,
-        ref_sign: *const u8,
+        rr: *const [*const refmvs_block; 31],
+        ref_sign: *const [u8; 7],
         col_end8: c_int,
         row_end8: c_int,
         col_start8: c_int,
@@ -219,8 +220,8 @@ pub(crate) type load_tmvs_fn = unsafe extern "C" fn(
 pub type save_tmvs_fn = unsafe extern "C" fn(
     rp: *mut refmvs_temporal_block,
     stride: ptrdiff_t,
-    rr: *const *const refmvs_block,
-    ref_sign: *const u8,
+    rr: *const [*const refmvs_block; 31],
+    ref_sign: *const [u8; 7],
     col_end8: c_int,
     row_end8: c_int,
     col_start8: c_int,
@@ -232,8 +233,8 @@ extern "C" {
     fn dav1d_save_tmvs_neon(
         rp: *mut refmvs_temporal_block,
         stride: ptrdiff_t,
-        rr: *const *const refmvs_block,
-        ref_sign: *const u8,
+        rr: *const [*const refmvs_block; 31],
+        ref_sign: *const [u8; 7],
         col_end8: c_int,
         row_end8: c_int,
         col_start8: c_int,
@@ -1154,16 +1155,12 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     let stride = rf.rp_stride;
     let ref_sign = &rf.mfmv_sign;
     let rp = rf.rp.offset(row_start8 as isize * stride);
+    let rr = <&[_; 31]>::try_from(&rt.r[6..]).unwrap();
+    // SAFETY: `*mut` and `*const` are pretty much interchangeable.
+    let rr = unsafe { mem::transmute::<&[*mut _; 31], &[*const _; 31]>(rr) };
 
     (dsp.save_tmvs)(
-        rp,
-        stride,
-        rt.r.as_ptr().offset(6) as *const *const refmvs_block,
-        ref_sign.as_ptr(),
-        col_end8,
-        row_end8,
-        col_start8,
-        row_start8,
+        rp, stride, rr, ref_sign, col_end8, row_end8, col_start8, row_start8,
     );
 }
 
@@ -1344,24 +1341,25 @@ unsafe extern "C" fn load_tmvs_c(
 unsafe extern "C" fn save_tmvs_c(
     mut rp: *mut refmvs_temporal_block,
     stride: ptrdiff_t,
-    rr: *const *const refmvs_block,
-    ref_sign: *const u8,
+    rr: *const [*const refmvs_block; 31],
+    ref_sign: *const [u8; 7],
     col_end8: c_int,
     row_end8: c_int,
     col_start8: c_int,
     row_start8: c_int,
 ) {
+    let rr = &*rr;
+    let ref_sign = &*ref_sign;
     let mut y = row_start8;
     while y < row_end8 {
-        let b: *const refmvs_block = *rr.offset(((y & 15) * 2) as isize);
+        let b: *const refmvs_block = rr[((y & 15) * 2) as usize];
         let mut x = col_start8;
         while x < col_end8 {
             let cand_b: *const refmvs_block =
                 &*b.offset((x * 2 + 1) as isize) as *const refmvs_block;
             let bw8 = dav1d_block_dimensions[(*cand_b).0.bs as usize][0] as c_int + 1 >> 1;
             if (*cand_b).0.r#ref.r#ref[1] as c_int > 0
-                && *ref_sign.offset(((*cand_b).0.r#ref.r#ref[1] as c_int - 1) as isize) as c_int
-                    != 0
+                && ref_sign[((*cand_b).0.r#ref.r#ref[1] as c_int - 1) as usize] as c_int != 0
                 && (*cand_b).0.mv.mv[1].y.abs() | (*cand_b).0.mv.mv[1].x.abs() < 4096
             {
                 let mut n = 0;
@@ -1377,8 +1375,7 @@ unsafe extern "C" fn save_tmvs_c(
                     x += 1;
                 }
             } else if (*cand_b).0.r#ref.r#ref[0] as c_int > 0
-                && *ref_sign.offset(((*cand_b).0.r#ref.r#ref[0] as c_int - 1) as isize) as c_int
-                    != 0
+                && ref_sign[((*cand_b).0.r#ref.r#ref[0] as c_int - 1) as usize] as c_int != 0
                 && (*cand_b).0.mv.mv[0].y.abs() | (*cand_b).0.mv.mv[0].x.abs() < 4096
             {
                 let mut n_0 = 0;
