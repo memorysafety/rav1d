@@ -845,8 +845,8 @@ impl BitDepthDependentType for InterIntraEdge {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub union Rav1dTaskContext_scratch_ac_txtp_map {
-    pub ac: [i16; 1024],      // intra only
-    pub txtp_map: [u8; 1024], // inter only
+    pub ac: [i16; 1024],            // intra only
+    pub txtp_map: [TxfmType; 1024], // inter only
 }
 
 #[derive(Clone, Copy)]
