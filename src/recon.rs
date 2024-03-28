@@ -81,7 +81,6 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::MsacContext;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::refmvs::refmvs_block;
 use crate::src::scan::dav1d_scans;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_filter_2d;
@@ -3387,7 +3386,6 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
     } else {
-        let mut r;
         let refp = &f.refp[b.r#ref()[0] as usize];
         let filter_2d = b.filter2d();
         if cmp::min(bw4, bh4) > 1
@@ -3511,27 +3509,24 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         }
         if has_chroma {
             let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
-            r = 0 as *const *mut refmvs_block;
-            if is_sub8x8 {
+            let r = if is_sub8x8 {
                 assert!(ss_hor == 1);
-                r = t.rt.r.as_ptr().offset(((t.b.y & 31) + 5) as isize);
+                let r = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
                 if bw4 == 1 {
-                    is_sub8x8 &=
-                        (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
+                    is_sub8x8 &= (*r[1].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
                 }
                 if bh4 == ss_ver {
-                    is_sub8x8 &= (*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0;
+                    is_sub8x8 &= (*r[0].offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0;
                 }
                 if bw4 == 1 && bh4 == ss_ver {
-                    is_sub8x8 &= (*(*r.offset(-1)).offset((t.b.x - 1) as isize))
-                        .0
-                        .r#ref
-                        .r#ref[0]
-                        > 0;
+                    is_sub8x8 &= (*r[0].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
                 }
-            }
+                r
+            } else {
+                &[] // Never actually used.
+            };
+
             if is_sub8x8 {
-                assert!(ss_hor == 1);
                 let mut h_off = 0isize;
                 let mut v_off = 0isize;
                 if bw4 == 1 && bh4 == ss_ver {
@@ -3550,17 +3545,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.x - 1,
                             t.b.y - 1,
                             1 + pl,
-                            (*(*r.offset(-1)).offset((t.b.x - 1) as isize)).0.mv.mv[0],
-                            &f.refp[(*(*r.offset(-1)).offset((t.b.x - 1) as isize))
-                                .0
-                                .r#ref
-                                .r#ref[0] as usize
+                            (*r[0].offset((t.b.x - 1) as isize)).0.mv.mv[0],
+                            &f.refp[(*r[0].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] as usize
                                 - 1],
-                            (*(*r.offset(-1)).offset((t.b.x - 1) as isize))
-                                .0
-                                .r#ref
-                                .r#ref[0] as usize
-                                - 1,
+                            (*r[0].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 t.tl_4x4_filter
                             } else {
@@ -3595,13 +3583,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.x - 1,
                             t.b.y,
                             1 + pl,
-                            (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.mv.mv[0],
-                            &f.refp[(*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0]
-                                as usize
+                            (*r[1].offset((t.b.x - 1) as isize)).0.mv.mv[0],
+                            &f.refp[(*r[1].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] as usize
                                 - 1],
-                            (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0]
-                                as usize
-                                - 1,
+                            (*r[1].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 left_filter_2d
                             } else {
@@ -3633,11 +3618,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             t.b.x,
                             t.b.y - 1,
                             1 + pl,
-                            (*(*r.offset(-1)).offset(t.b.x as isize)).0.mv.mv[0],
-                            &f.refp[(*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0]
-                                as usize
-                                - 1],
-                            (*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0] as usize - 1,
+                            (*r[0].offset(t.b.x as isize)).0.mv.mv[0],
+                            &f.refp[(*r[0].offset(t.b.x as isize)).0.r#ref.r#ref[0] as usize - 1],
+                            (*r[0].offset(t.b.x as isize)).0.r#ref.r#ref[0] as usize - 1,
                             if t.frame_thread.pass != 2 {
                                 top_filter_2d
                             } else {
