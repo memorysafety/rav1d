@@ -2563,7 +2563,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 } else {
                     let interintra_edge_pal =
                         BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-                    interintra_edge_pal.0.pal[0].as_ptr()
+                    interintra_edge_pal.pal[0].as_ptr()
                 };
                 (*f.dsp).ipred.pal_pred.call::<BD>(
                     dst,
@@ -2638,7 +2638,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         };
                         let interintra_edge_pal =
                             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-                        let edge_array = &mut interintra_edge_pal.0.edge;
+                        let edge_array = &mut interintra_edge_pal.edge;
                         let edge_offset = 128;
                         let data_stride = BD::pxstride(f.cur.stride[0]);
                         let data_width = 4 * (*ts).tiling.col_end;
@@ -2862,7 +2862,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             let ystart = (*ts).tiling.row_start >> ss_ver;
                             let interintra_edge_pal =
                                 BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-                            let edge_array = &mut interintra_edge_pal.0.edge;
+                            let edge_array = &mut interintra_edge_pal.edge;
                             let edge_offset = 128;
                             let data_stride = BD::pxstride(f.cur.stride[1]);
                             let data_width = 4 * (*ts).tiling.col_end >> ss_hor;
@@ -2945,7 +2945,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         let interintra_edge_pal =
                             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
                         (
-                            &interintra_edge_pal.0.pal,
+                            &interintra_edge_pal.pal,
                             &t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..],
                         )
                     };
@@ -3068,7 +3068,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 let interintra_edge_pal = BD::select_mut(
                                     &mut t.scratch.c2rust_unnamed_0.interintra_edge_pal,
                                 );
-                                let edge_array = &mut interintra_edge_pal.0.edge;
+                                let edge_array = &mut interintra_edge_pal.edge;
                                 let edge_offset = 128;
                                 let data_stride = BD::pxstride(f.cur.stride[1]);
                                 let data_width = 4 * (*ts).tiling.col_end >> ss_hor;
@@ -3736,7 +3736,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         if let Some(interintra_type) = b.c2rust_unnamed.c2rust_unnamed_0.interintra_type {
             let interintra_edge_pal =
                 BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-            let tl_edge_array = &mut interintra_edge_pal.0.edge;
+            let tl_edge_array = &mut interintra_edge_pal.edge;
             let tl_edge_offset = 32;
             let mut m: IntraPredMode = (if b
                 .c2rust_unnamed
@@ -3792,7 +3792,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 BD::from_c(f.bitdepth_max),
             );
             let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
-            let tmp = interintra_edge_pal.0.interintra.as_mut_ptr();
+            let tmp = interintra_edge_pal.interintra.as_mut_ptr();
             (*dsp).ipred.intra_pred[m as usize].call(
                 tmp,
                 ((4 * bw4) as c_ulong).wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
@@ -4157,7 +4157,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     while pl < 2 {
                         let interintra_edge_pal =
                             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-                        let tl_edge_array = &mut interintra_edge_pal.0.edge;
+                        let tl_edge_array = &mut interintra_edge_pal.edge;
                         let tl_edge_offset = 32;
                         let mut m: IntraPredMode = (if b
                             .c2rust_unnamed
@@ -4218,7 +4218,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             BD::from_c(f.bitdepth_max),
                         );
                         let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
-                        let tmp = interintra_edge_pal.0.interintra.as_mut_ptr();
+                        let tmp = interintra_edge_pal.interintra.as_mut_ptr();
                         (*dsp).ipred.intra_pred[m as usize].call(
                             tmp,
                             ((cbw4 * 4) as c_ulong)
@@ -4834,7 +4834,7 @@ pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
         &f.frame_thread.pal.as_slice::<BD>()[index as usize][0]
     } else {
         let interintra_edge_pal = BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-        &interintra_edge_pal.0.pal[0]
+        &interintra_edge_pal.pal[0]
     };
     for al_pal in &mut BD::select_mut(&mut t.al_pal)[0][bx4..][..bw4] {
         al_pal[0] = *pal;
@@ -4858,7 +4858,7 @@ pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
         &f.frame_thread.pal.as_slice::<BD>()[index as usize]
     } else {
         let interintra_edge_pal = BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-        &interintra_edge_pal.0.pal
+        &interintra_edge_pal.pal
     };
     // see aomedia bug 2183 for why we use luma coordinates here
     for pl in 1..=2 {
@@ -4988,7 +4988,7 @@ pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
     } else {
         let interintra_edge_pal =
             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-        &mut interintra_edge_pal.0.pal[pli]
+        &mut interintra_edge_pal.pal[pli]
     };
     let pal = &mut pal[..pal_sz];
     if i < pal.len() {
@@ -5082,7 +5082,7 @@ pub(crate) unsafe fn rav1d_read_pal_uv<BD: BitDepth>(
     } else {
         let interintra_edge_pal =
             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
-        &mut interintra_edge_pal.0.pal[2]
+        &mut interintra_edge_pal.pal[2]
     };
     let pal = &mut pal[..b.pal_sz()[1] as usize];
     if rav1d_msac_decode_bool_equi(&mut ts.msac) {
