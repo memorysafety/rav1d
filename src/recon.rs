@@ -2210,7 +2210,7 @@ unsafe fn obmc<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
     dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
-    b_dim: *const u8,
+    b_dim: &[u8; 4],
     pl: c_int,
     bx4: c_int,
     by4: c_int,
@@ -2232,19 +2232,19 @@ unsafe fn obmc<BD: BitDepth>(
     let ts = &*f.ts.offset((*t).ts as isize);
     let mut res;
     if t.by > ts.tiling.row_start
-        && (pl == 0 || *b_dim.offset(0) as c_int * h_mul + *b_dim.offset(1) as c_int * v_mul >= 16)
+        && (pl == 0 || b_dim[0] as c_int * h_mul + b_dim[1] as c_int * v_mul >= 16)
     {
         let mut i = 0;
         let mut x = 0;
-        while x < w4 && i < cmp::min(*b_dim.offset(2) as c_int, 4 as c_int) {
+        while x < w4 && i < cmp::min(b_dim[2] as c_int, 4 as c_int) {
             let a_r: *const refmvs_block = &mut *(*r.offset(-(1 as c_int) as isize))
                 .offset((t.bx + x + 1) as isize)
                 as *mut refmvs_block;
             let a_b_dim: *const u8 = (dav1d_block_dimensions[(*a_r).0.bs as usize]).as_ptr();
             let step4 = iclip(*a_b_dim.offset(0) as c_int, 2 as c_int, 16 as c_int);
             if (*a_r).0.r#ref.r#ref[0] as c_int > 0 {
-                let ow4 = cmp::min(step4, *b_dim.offset(0) as c_int);
-                let oh4 = cmp::min(*b_dim.offset(1) as c_int, 16 as c_int) >> 1;
+                let ow4 = cmp::min(step4, b_dim[0] as c_int);
+                let oh4 = cmp::min(b_dim[1] as c_int, 16 as c_int) >> 1;
                 res = mc::<BD>(
                     f,
                     t,
@@ -2285,15 +2285,15 @@ unsafe fn obmc<BD: BitDepth>(
     if t.bx > ts.tiling.col_start {
         let mut i = 0;
         let mut y = 0;
-        while y < h4 && i < cmp::min(*b_dim.offset(3) as c_int, 4 as c_int) {
+        while y < h4 && i < cmp::min(b_dim[3] as c_int, 4 as c_int) {
             let l_r: *const refmvs_block = &mut *(*r.offset((y + 1) as isize))
                 .offset((t.bx - 1) as isize)
                 as *mut refmvs_block;
             let l_b_dim: *const u8 = (dav1d_block_dimensions[(*l_r).0.bs as usize]).as_ptr();
             let step4 = iclip(*l_b_dim.offset(1) as c_int, 2 as c_int, 16 as c_int);
             if (*l_r).0.r#ref.r#ref[0] as c_int > 0 {
-                let ow4 = cmp::min(*b_dim.offset(0) as c_int, 16 as c_int) >> 1;
-                let oh4 = cmp::min(step4, *b_dim.offset(1) as c_int);
+                let ow4 = cmp::min(b_dim[0] as c_int, 16 as c_int) >> 1;
+                let oh4 = cmp::min(step4, b_dim[1] as c_int);
                 res = mc::<BD>(
                     f,
                     t,
@@ -2341,7 +2341,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     mut dst8: *mut BD::Pixel,
     mut dst16: *mut i16,
     dstride: ptrdiff_t,
-    b_dim: *const u8,
+    b_dim: &[u8; 4],
     pl: c_int,
     refp: *const Rav1dThreadPicture,
     wmp: *const Rav1dWarpedMotionParams,
@@ -2359,19 +2359,19 @@ unsafe fn warp_affine<BD: BitDepth>(
         (pl != 0 && f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if !(*b_dim.offset(0) as c_int * h_mul & 7 == 0 && *b_dim.offset(1) as c_int * v_mul & 7 == 0) {
+    if !(b_dim[0] as c_int * h_mul & 7 == 0 && b_dim[1] as c_int * v_mul & 7 == 0) {
         unreachable!();
     }
     let mat: *const i32 = ((*wmp).matrix).as_ptr();
     let width = (*refp).p.p.w + ss_hor >> ss_hor;
     let height = (*refp).p.p.h + ss_ver >> ss_ver;
     let mut y = 0;
-    while y < *b_dim.offset(1) as c_int * v_mul {
+    while y < b_dim[1] as c_int * v_mul {
         let src_y = (*t).by * 4 + ((y + 4) << ss_ver);
         let mat3_y: i64 = *mat.offset(3) as i64 * src_y as i64 + *mat.offset(0) as i64;
         let mat5_y: i64 = *mat.offset(5) as i64 * src_y as i64 + *mat.offset(1) as i64;
         let mut x = 0;
-        while x < *b_dim.offset(0) as c_int * h_mul {
+        while x < b_dim[0] as c_int * h_mul {
             let src_x = (*t).bx * 4 + ((x + 4) << ss_hor);
             let mvx: i64 = *mat.offset(2) as i64 * src_x as i64 + mat3_y >> ss_hor;
             let mvy: i64 = *mat.offset(4) as i64 * src_x as i64 + mat5_y >> ss_ver;
@@ -3212,9 +3212,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    let bw4 = *b_dim.offset(0) as c_int;
-    let bh4 = *b_dim.offset(1) as c_int;
+    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let bw4 = b_dim[0] as c_int;
+    let bh4 = b_dim[1] as c_int;
     let w4 = cmp::min(bw4, f.bw - t.bx);
     let h4 = cmp::min(bh4, f.bh - t.by);
     let has_chroma = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
@@ -4184,8 +4184,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         hex_dump::<BD>(
             dst,
             f.cur.stride[0] as usize,
-            *b_dim.offset(0) as usize * 4,
-            *b_dim.offset(1) as usize * 4,
+            b_dim[0] as usize * 4,
+            b_dim[1] as usize * 4,
             "y-pred",
         );
         if has_chroma != 0 {
