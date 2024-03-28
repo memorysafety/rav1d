@@ -2169,7 +2169,7 @@ unsafe fn obmc<BD: BitDepth>(
     h4: c_int,
 ) -> Result<(), ()> {
     assert!(t.bx & 1 == 0 && t.by & 1 == 0);
-    let r: *mut *mut refmvs_block = &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize);
+    let r = t.rt.r.as_ptr().offset(((t.by & 31) + 5) as isize);
     let lap = BD::select_mut(&mut t.scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
     let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
