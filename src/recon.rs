@@ -1736,7 +1736,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 };
                 if debug_block_info!(f, (*t).b) && 0 != 0 {
                     coef_dump(
-                        cf.as_ptr(),
+                        cf,
                         cmp::min((*t_dim).h as usize, 8) * 4,
                         cmp::min((*t_dim).w as usize, 8) * 4,
                         3,
@@ -2622,7 +2622,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         if eob >= 0 {
                             if debug_block_info!(f, t.b) && 0 != 0 {
                                 coef_dump(
-                                    cf.as_ptr(),
+                                    cf,
                                     cmp::min((*t_dim).h as usize, 8) * 4,
                                     cmp::min((*t_dim).w as usize, 8) * 4,
                                     3,
@@ -3057,7 +3057,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 if eob >= 0 {
                                     if debug_block_info!(f, t.b) && 0 != 0 {
                                         coef_dump(
-                                            cf.as_ptr(),
+                                            cf,
                                             (*uv_t_dim).h as usize * 4,
                                             (*uv_t_dim).w as usize * 4,
                                             3,
@@ -3951,7 +3951,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             if eob >= 0 {
                                 if debug_block_info!(f, t.b) && 0 != 0 {
                                     coef_dump(
-                                        cf.as_ptr(),
+                                        cf,
                                         uvtx.h as usize * 4,
                                         uvtx.w as usize * 4,
                                         3,

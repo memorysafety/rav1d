@@ -40,16 +40,9 @@ pub unsafe fn hex_dump<BD: BitDepth>(
 }
 
 #[inline]
-pub unsafe fn coef_dump<Coef: Display>(
-    buf: *const Coef,
-    w: usize,
-    h: usize,
-    len: usize,
-    what: &str,
-) {
-    let buf = std::slice::from_raw_parts(buf, w * h);
+pub fn coef_dump<Coef: Display>(buf: &[Coef], w: usize, h: usize, len: usize, what: &str) {
     println!("{}", what);
-    for buf in buf.chunks_exact(w).take(h) {
+    for buf in buf[..w * h].chunks_exact(w).take(h) {
         for x in buf {
             print!(" {:0len$}", x, len = len);
         }
