@@ -2002,8 +2002,8 @@ unsafe fn mc<BD: BitDepth>(
     let mvy = mv.y as c_int;
     let mx = mvx & 15 >> (ss_hor == 0) as c_int;
     let my = mvy & 15 >> (ss_ver == 0) as c_int;
-    let mut ref_stride: ptrdiff_t = refp.p.stride[(pl != 0) as usize];
-    let r#ref: *const BD::Pixel;
+    let mut ref_stride = refp.p.stride[(pl != 0) as usize];
+    let r#ref;
     if refp.p.p.w == f.cur.p.w && refp.p.p.h == f.cur.p.h {
         let dx = bx * h_mul + (mvx >> 3 + ss_hor);
         let dy = by * v_mul + (mvy >> 3 + ss_ver);
@@ -2073,10 +2073,10 @@ unsafe fn mc<BD: BitDepth>(
         let orig_pos_x = (bx * h_mul << 4) + mvx * (1 << (ss_hor == 0) as c_int);
         let pos_y;
         let pos_x;
-        let tmp: i64 = orig_pos_x as i64 * f.svc[refidx][0].scale as i64
+        let tmp = orig_pos_x as i64 * f.svc[refidx][0].scale as i64
             + ((f.svc[refidx][0].scale - 0x4000) * 8) as i64;
         pos_x = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
-        let tmp: i64 = orig_pos_y as i64 * f.svc[refidx][1].scale as i64
+        let tmp = orig_pos_y as i64 * f.svc[refidx][1].scale as i64
             + ((f.svc[refidx][1].scale - 0x4000) * 8) as i64;
         pos_y = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
         let left = pos_x >> 10;
