@@ -3903,8 +3903,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         }
         return Ok(());
     }
-    let uvtx = dav1d_txfm_dimensions.as_ptr().offset(b.uvtx as isize);
-    let ytx = dav1d_txfm_dimensions.as_ptr().offset(b.max_ytx() as isize);
+    let uvtx = &dav1d_txfm_dimensions[b.uvtx as usize];
+    let ytx = &dav1d_txfm_dimensions[b.max_ytx() as usize];
     let tx_split = [b.tx_split0() as u16, b.tx_split1()];
     let mut init_y = 0;
     while init_y < bh4 {
@@ -3933,14 +3933,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         y_off,
                         &mut *dst.offset((x * 4) as isize),
                     );
-                    t.b.x += (*ytx).w as c_int;
-                    x += (*ytx).w as c_int;
+                    t.b.x += ytx.w as c_int;
+                    x += ytx.w as c_int;
                     x_off += 1;
                 }
-                dst = dst.offset(BD::pxstride(f.cur.stride[0]) * 4 * (*ytx).h as isize);
+                dst = dst.offset(BD::pxstride(f.cur.stride[0]) * 4 * ytx.h as isize);
                 t.b.x -= x;
-                t.b.y += (*ytx).h as c_int;
-                y += (*ytx).h as c_int;
+                t.b.y += ytx.h as c_int;
+                y += ytx.h as c_int;
                 y_off += 1;
             }
             dst = dst.offset(-BD::pxstride(f.cur.stride[0]) * 4 * y as isize);
@@ -3966,7 +3966,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 let cf_buf = BD::cast_coef_slice_mut(&mut f.frame_thread.cf);
                                 cf = &mut cf_buf[ts.frame_thread[p as usize].cf..];
                                 ts.frame_thread[p as usize].cf +=
-                                    (*uvtx).w as usize * (*uvtx).h as usize * 16;
+                                    uvtx.w as usize * uvtx.h as usize * 16;
                                 let cbi = f.frame_thread.cbi
                                     [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
                                     [(1 + pl) as usize];
@@ -4001,9 +4001,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 CaseSet::<16, true>::many(
                                     [&mut t.l, &mut *t.a],
                                     [
-                                        cmp::min((*uvtx).h as i32, f.bh - t.b.y + ss_ver >> ss_ver)
+                                        cmp::min(uvtx.h as i32, f.bh - t.b.y + ss_ver >> ss_ver)
                                             as usize,
-                                        cmp::min((*uvtx).w as i32, f.bw - t.b.x + ss_hor >> ss_hor)
+                                        cmp::min(uvtx.w as i32, f.bw - t.b.x + ss_hor >> ss_hor)
                                             as usize,
                                     ],
                                     [(cby4 + y) as usize, (cbx4 + x) as usize],
@@ -4016,8 +4016,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 if debug_block_info!(f, t.b) && 0 != 0 {
                                     coef_dump(
                                         cf.as_ptr(),
-                                        (*uvtx).h as usize * 4,
-                                        (*uvtx).w as usize * 4,
+                                        uvtx.h as usize * 4,
+                                        uvtx.w as usize * 4,
                                         3,
                                         "dq",
                                     );
@@ -4034,20 +4034,19 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     hex_dump::<BD>(
                                         &mut *uvdst.offset((4 * x) as isize),
                                         f.cur.stride[1] as usize,
-                                        (*uvtx).w as usize * 4,
-                                        (*uvtx).h as usize * 4,
+                                        uvtx.w as usize * 4,
+                                        uvtx.h as usize * 4,
                                         "recon",
                                     );
                                 }
                             }
-                            t.b.x += ((*uvtx).w as c_int) << ss_hor;
-                            x += (*uvtx).w as c_int;
+                            t.b.x += (uvtx.w as c_int) << ss_hor;
+                            x += uvtx.w as c_int;
                         }
-                        uvdst =
-                            uvdst.offset(BD::pxstride(f.cur.stride[1]) * 4 * (*uvtx).h as isize);
+                        uvdst = uvdst.offset(BD::pxstride(f.cur.stride[1]) * 4 * uvtx.h as isize);
                         t.b.x -= x << ss_hor;
-                        t.b.y += ((*uvtx).h as c_int) << ss_ver;
-                        y += (*uvtx).h as c_int;
+                        t.b.y += (uvtx.h as c_int) << ss_ver;
+                        y += uvtx.h as c_int;
                     }
                     t.b.y -= y << ss_ver;
                     pl += 1;
