@@ -2235,8 +2235,8 @@ unsafe fn obmc<BD: BitDepth>(
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2], 4) {
             let a_r: *const refmvs_block = &mut *(*r.offset(-1)).offset((t.bx + x + 1) as isize);
-            let a_b_dim: *const u8 = (dav1d_block_dimensions[(*a_r).0.bs as usize]).as_ptr();
-            let step4 = clip(*a_b_dim.offset(0), 2, 16);
+            let a_b_dim = &dav1d_block_dimensions[(*a_r).0.bs as usize];
+            let step4 = clip(a_b_dim[0], 2, 16);
             if (*a_r).0.r#ref.r#ref[0] > 0 {
                 let ow4 = cmp::min(step4, b_dim[0]);
                 let oh4 = cmp::min(b_dim[1], 16) >> 1;
@@ -2280,8 +2280,8 @@ unsafe fn obmc<BD: BitDepth>(
         while y < h4 && i < cmp::min(b_dim[3], 4) {
             let l_r: *const refmvs_block =
                 &mut *(*r.offset((y + 1) as isize)).offset((t.bx - 1) as isize);
-            let l_b_dim: *const u8 = (dav1d_block_dimensions[(*l_r).0.bs as usize]).as_ptr();
-            let step4 = clip(*l_b_dim.offset(1), 2, 16);
+            let l_b_dim = &dav1d_block_dimensions[(*l_r).0.bs as usize];
+            let step4 = clip(l_b_dim[1], 2, 16);
             if (*l_r).0.r#ref.r#ref[0] > 0 {
                 let ow4 = cmp::min(b_dim[0], 16) >> 1;
                 let oh4 = cmp::min(step4, b_dim[1]);
