@@ -3913,7 +3913,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         t,
                         bs,
                         b,
-                        b.max_ytx() as RectTxfmSize,
+                        b.max_ytx(),
                         0,
                         tx_split,
                         x_off,
