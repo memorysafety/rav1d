@@ -2004,7 +2004,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
 
 unsafe fn mc<BD: BitDepth>(
     f: &Rav1dFrameData,
-    t: *mut Rav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     dst8: *mut BD::Pixel,
     dst16: *mut i16,
     dst_stride: ptrdiff_t,
@@ -2053,8 +2053,7 @@ unsafe fn mc<BD: BitDepth>(
             || dx + bw4 * h_mul + (mx != 0) as c_int * 4 > w
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
         {
-            let emu_edge_buf =
-                BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
+            let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
             ((*f.dsp).mc.emu_edge)(
                 (bw4 * h_mul + (mx != 0) as c_int * 7) as intptr_t,
                 (bh4 * v_mul + (my != 0) as c_int * 7) as intptr_t,
@@ -2128,7 +2127,7 @@ unsafe fn mc<BD: BitDepth>(
         let top = pos_y >> 10;
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx as usize][0].step >> 10) + 1;
         let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx as usize][1].step >> 10) + 1;
-        if debug_block_info!(&*f, &*t) {
+        if debug_block_info!(f, t) {
             println!(
                 "Off {}x{} [{},{},{}], size {}x{} [{},{}]",
                 left,
@@ -2145,8 +2144,7 @@ unsafe fn mc<BD: BitDepth>(
         let w = (*refp).p.p.w + ss_hor >> ss_hor;
         let h = (*refp).p.p.h + ss_ver >> ss_ver;
         if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
-            let emu_edge_buf =
-                BD::select_mut(&mut (*t).scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
+            let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
             ((*f.dsp).mc.emu_edge)(
                 (right - left + 7) as intptr_t,
                 (bottom - top + 7) as intptr_t,
@@ -2165,7 +2163,7 @@ unsafe fn mc<BD: BitDepth>(
             ref_stride = (320 as c_int as c_ulong)
                 .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                 as ptrdiff_t;
-            if debug_block_info!(&*f, &*t) {
+            if debug_block_info!(f, t) {
                 println!("Emu");
             }
         } else {
