@@ -3394,7 +3394,6 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
         }
     } else {
-        let mut is_sub8x8;
         let mut r;
         let refp = &*(f.refp)
             .as_ptr()
@@ -3520,28 +3519,27 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             );
         }
         if !(has_chroma == 0) {
-            is_sub8x8 = (bw4 == ss_hor || bh4 == ss_ver) as c_int;
+            let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
             r = 0 as *const *mut refmvs_block;
-            if is_sub8x8 != 0 {
+            if is_sub8x8 {
                 assert!(ss_hor == 1);
                 r = t.rt.r.as_ptr().offset(((t.b.y & 31) + 5) as isize);
                 if bw4 == 1 {
-                    is_sub8x8 &= ((*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0]
-                        > 0) as c_int;
+                    is_sub8x8 &=
+                        (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
                 }
                 if bh4 == ss_ver {
-                    is_sub8x8 &=
-                        ((*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0) as c_int;
+                    is_sub8x8 &= (*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0;
                 }
                 if bw4 == 1 && bh4 == ss_ver {
-                    is_sub8x8 &= ((*(*r.offset(-1)).offset((t.b.x - 1) as isize))
+                    is_sub8x8 &= (*(*r.offset(-1)).offset((t.b.x - 1) as isize))
                         .0
                         .r#ref
                         .r#ref[0]
-                        > 0) as c_int;
+                        > 0;
                 }
             }
-            if is_sub8x8 != 0 {
+            if is_sub8x8 {
                 assert!(ss_hor == 1);
                 let mut h_off = 0isize;
                 let mut v_off = 0isize;
