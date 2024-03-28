@@ -25,8 +25,6 @@ use crate::src::cdef::rav1d_cdef_dsp_init;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
 use crate::src::cdf::rav1d_cdf_thread_init_static;
-use crate::src::cdf::rav1d_cdf_thread_ref;
-use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
@@ -4657,7 +4655,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
     if frame_hdr.refresh_context != 0 {
-        rav1d_cdf_thread_copy(f.out_cdf.data.cdf, &f.in_cdf);
+        rav1d_cdf_thread_copy(&mut f.out_cdf.cdf_write(), &f.in_cdf);
     }
 
     let uses_2pass = c.n_fc > 1;
@@ -4830,16 +4828,16 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
     }
     rav1d_picture_unref_internal(&mut f.cur);
     rav1d_thread_picture_unref(&mut f.sr_cur);
-    rav1d_cdf_thread_unref(&mut f.in_cdf);
+    let _ = mem::take(&mut f.in_cdf);
     if let Some(frame_hdr) = &f.frame_hdr {
         if frame_hdr.refresh_context != 0 {
-            if !f.out_cdf.progress.is_null() {
-                (*f.out_cdf.progress).store(
+            if let Some(progress) = f.out_cdf.progress() {
+                progress.store(
                     if retval.is_ok() { 1 } else { TILE_ERROR as u32 },
                     Ordering::SeqCst,
                 );
             }
-            rav1d_cdf_thread_unref(&mut f.out_cdf);
+            let _ = mem::take(&mut f.out_cdf);
         }
     }
 
@@ -4884,7 +4882,7 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, f: &mut Rav1dFrameData
             if res.is_ok() && frame_hdr.refresh_context != 0 && f.task_thread.update_set {
                 rav1d_cdf_thread_update(
                     frame_hdr,
-                    &mut *f.out_cdf.data.cdf,
+                    &mut f.out_cdf.cdf_write(),
                     &(*f.ts.offset(frame_hdr.tiling.update as isize)).cdf,
                 );
             }
@@ -4963,9 +4961,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
     unsafe fn on_error(f: &mut Rav1dFrameData, c: &Rav1dContext, out: *mut Rav1dThreadPicture) {
         f.task_thread.error = AtomicI32::new(1);
-        rav1d_cdf_thread_unref(&mut f.in_cdf);
+        let _ = mem::take(&mut f.in_cdf);
         if f.frame_hdr.as_ref().unwrap().refresh_context != 0 {
-            rav1d_cdf_thread_unref(&mut f.out_cdf);
+            let _ = mem::take(&mut f.out_cdf);
         }
         for i in 0..7 {
             if f.refp[i].p.frame_hdr.is_some() {
@@ -5076,17 +5074,17 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
     // setup entropy
     if frame_hdr.primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
-        rav1d_cdf_thread_init_static(&mut f.in_cdf, frame_hdr.quant.yac);
+        f.in_cdf = rav1d_cdf_thread_init_static(frame_hdr.quant.yac);
     } else {
         let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
-        rav1d_cdf_thread_ref(&mut f.in_cdf, &mut c.cdf[pri_ref]);
+        f.in_cdf = c.cdf[pri_ref].clone();
     }
     if frame_hdr.refresh_context != 0 {
-        let res = rav1d_cdf_thread_alloc(c, &mut f.out_cdf, (c.n_fc > 1) as c_int);
+        let res = rav1d_cdf_thread_alloc(c, (c.n_fc > 1) as c_int);
         if res.is_err() {
             on_error(f, c, out);
-            return res;
         }
+        f.out_cdf = res?;
     }
 
     // FIXME qsort so tiles are in order (for frame threading)
@@ -5270,11 +5268,10 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
             rav1d_thread_picture_ref(&mut c.refs[i].p, &mut f.sr_cur);
 
-            rav1d_cdf_thread_unref(&mut c.cdf[i]);
             if frame_hdr.refresh_context != 0 {
-                rav1d_cdf_thread_ref(&mut c.cdf[i], &mut f.out_cdf);
+                c.cdf[i] = f.out_cdf.clone();
             } else {
-                rav1d_cdf_thread_ref(&mut c.cdf[i], &mut f.in_cdf);
+                c.cdf[i] = f.in_cdf.clone();
             }
 
             rav1d_ref_dec(&mut c.refs[i].segmap);
@@ -5302,7 +5299,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                     if c.refs[i].p.p.frame_hdr.is_some() {
                         rav1d_thread_picture_unref(&mut c.refs[i].p);
                     }
-                    rav1d_cdf_thread_unref(&mut c.cdf[i]);
+                    let _ = mem::take(&mut c.cdf[i]);
                     rav1d_ref_dec(&mut c.refs[i].segmap);
                     rav1d_ref_dec(&mut c.refs[i].refmvs);
                 }

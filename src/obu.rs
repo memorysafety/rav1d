@@ -50,8 +50,6 @@ use crate::include::dav1d::headers::RAV1D_MAX_TILE_ROWS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::headers::RAV1D_REFS_PER_FRAME;
 use crate::src::c_arc::CArc;
-use crate::src::cdf::rav1d_cdf_thread_ref;
-use crate::src::cdf::rav1d_cdf_thread_unref;
 use crate::src::decode::rav1d_submit_frame;
 use crate::src::env::get_poc_diff;
 use crate::src::error::Rav1dError::EINVAL;
@@ -2249,7 +2247,7 @@ unsafe fn parse_obus(
                         }
                         rav1d_ref_dec(&mut c.refs[i as usize].segmap);
                         rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
-                        rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
+                        let _ = mem::take(&mut c.cdf[i]);
                     }
                     c.frame_flags
                         .fetch_or(PictureFlags::NEW_SEQUENCE, Ordering::Relaxed);
@@ -2578,8 +2576,7 @@ unsafe fn parse_obus(
                     }
                     rav1d_thread_picture_ref(&mut c.refs[i as usize].p, &mut c.refs[r as usize].p);
 
-                    rav1d_cdf_thread_unref(&mut c.cdf[i as usize]);
-                    rav1d_cdf_thread_ref(&mut c.cdf[i as usize], &mut c.cdf[r as usize]);
+                    c.cdf[i as usize] = c.cdf[r as usize].clone();
 
                     rav1d_ref_dec(&mut c.refs[i as usize].segmap);
                     c.refs[i as usize].segmap = c.refs[r as usize].segmap;
