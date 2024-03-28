@@ -431,12 +431,12 @@ pub struct Rav1dFrameContext_frame_thread {
     /// Indices: 0: reconstruction, 1: entropy.
     pub next_tile_row: [c_int; 2],
 
-    /// Indexed using `t.by * f.b4_stride + t.bx`.
+    /// Indexed using `t.b.y * f.b4_stride + t.b.x`.
     pub b: Vec<Av1Block>,
 
     pub cbi: Vec<[CodedBlockInfo; 3]>,
 
-    /// Indexed using `(t.by >> 1) * (f.b4_stride >> 1) + (t.bx >> 1)`.
+    /// Indexed using `(t.b.y >> 1) * (f.b4_stride >> 1) + (t.b.x >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
     pub pal: AlignedVec64<[[u16; 8]; 3]>,
 
@@ -889,11 +889,16 @@ impl Rav1dTaskContext_task_thread {
     }
 }
 
+#[derive(Default)]
+pub(crate) struct Bxy {
+    pub x: c_int,
+    pub y: c_int,
+}
+
 #[repr(C)]
 pub(crate) struct Rav1dTaskContext {
     pub ts: usize, // Index into `f.ts`
-    pub bx: c_int,
-    pub by: c_int,
+    pub b: Bxy,
     pub l: BlockContext,
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
@@ -920,8 +925,7 @@ impl Rav1dTaskContext {
     pub(crate) unsafe fn new(task_thread: Arc<Rav1dTaskContext_task_thread>) -> Self {
         Self {
             ts: 0,
-            bx: 0,
-            by: 0,
+            b: Default::default(),
             l: mem::zeroed(),
             a: ptr::null_mut(),
             rt: mem::zeroed(),
