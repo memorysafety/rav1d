@@ -2207,7 +2207,7 @@ unsafe fn mc<BD: BitDepth>(
 
 unsafe fn obmc<BD: BitDepth>(
     f: &Rav1dFrameData,
-    t: *mut Rav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
     b_dim: *const u8,
@@ -2217,14 +2217,12 @@ unsafe fn obmc<BD: BitDepth>(
     w4: c_int,
     h4: c_int,
 ) -> c_int {
-    if !((*t).bx & 1 == 0 && (*t).by & 1 == 0) {
+    if !(t.bx & 1 == 0 && t.by & 1 == 0) {
         unreachable!();
     }
-    let r: *mut *mut refmvs_block = &mut *((*t).rt.r)
-        .as_mut_ptr()
-        .offset((((*t).by & 31) + 5) as isize)
-        as *mut *mut refmvs_block;
-    let lap = BD::select_mut(&mut (*t).scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
+    let r: *mut *mut refmvs_block =
+        &mut *(t.rt.r).as_mut_ptr().offset(((t.by & 31) + 5) as isize) as *mut *mut refmvs_block;
+    let lap = BD::select_mut(&mut t.scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
     let ss_ver =
         (pl != 0 && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor =
@@ -2233,14 +2231,14 @@ unsafe fn obmc<BD: BitDepth>(
     let v_mul = 4 >> ss_ver;
     let ts = &*f.ts.offset((*t).ts as isize);
     let mut res;
-    if (*t).by > ts.tiling.row_start
+    if t.by > ts.tiling.row_start
         && (pl == 0 || *b_dim.offset(0) as c_int * h_mul + *b_dim.offset(1) as c_int * v_mul >= 16)
     {
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < cmp::min(*b_dim.offset(2) as c_int, 4 as c_int) {
             let a_r: *const refmvs_block = &mut *(*r.offset(-(1 as c_int) as isize))
-                .offset(((*t).bx + x + 1) as isize)
+                .offset((t.bx + x + 1) as isize)
                 as *mut refmvs_block;
             let a_b_dim: *const u8 = (dav1d_block_dimensions[(*a_r).0.bs as usize]).as_ptr();
             let step4 = iclip(*a_b_dim.offset(0) as c_int, 2 as c_int, 16 as c_int);
@@ -2257,16 +2255,16 @@ unsafe fn obmc<BD: BitDepth>(
                         as ptrdiff_t,
                     ow4,
                     oh4 * 3 + 3 >> 2,
-                    (*t).bx + x,
-                    (*t).by,
+                    t.bx + x,
+                    t.by,
                     pl,
                     (*a_r).0.mv.mv[0],
                     &*(f.refp)
                         .as_ptr()
                         .offset((*((*a_r).0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
                     (*a_r).0.r#ref.r#ref[0] as c_int - 1,
-                    dav1d_filter_2d[(*(*t).a).filter[1][(bx4 + x + 1) as usize] as usize]
-                        [(*(*t).a).filter[0][(bx4 + x + 1) as usize] as usize]
+                    dav1d_filter_2d[(*t.a).filter[1][(bx4 + x + 1) as usize] as usize]
+                        [(*t.a).filter[0][(bx4 + x + 1) as usize] as usize]
                         as Filter2d,
                 );
                 if res != 0 {
@@ -2284,12 +2282,12 @@ unsafe fn obmc<BD: BitDepth>(
             x += step4;
         }
     }
-    if (*t).bx > ts.tiling.col_start {
+    if t.bx > ts.tiling.col_start {
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(*b_dim.offset(3) as c_int, 4 as c_int) {
             let l_r: *const refmvs_block = &mut *(*r.offset((y + 1) as isize))
-                .offset(((*t).bx - 1) as isize)
+                .offset((t.bx - 1) as isize)
                 as *mut refmvs_block;
             let l_b_dim: *const u8 = (dav1d_block_dimensions[(*l_r).0.bs as usize]).as_ptr();
             let step4 = iclip(*l_b_dim.offset(1) as c_int, 2 as c_int, 16 as c_int);
@@ -2306,16 +2304,16 @@ unsafe fn obmc<BD: BitDepth>(
                         as ptrdiff_t,
                     ow4,
                     oh4,
-                    (*t).bx,
-                    (*t).by + y,
+                    t.bx,
+                    t.by + y,
                     pl,
                     (*l_r).0.mv.mv[0],
                     &*(f.refp)
                         .as_ptr()
                         .offset((*((*l_r).0.r#ref.r#ref).as_ptr().offset(0) as c_int - 1) as isize),
                     (*l_r).0.r#ref.r#ref[0] as c_int - 1,
-                    dav1d_filter_2d[(*t).l.filter[1][(by4 + y + 1) as usize] as usize]
-                        [(*t).l.filter[0][(by4 + y + 1) as usize] as usize]
+                    dav1d_filter_2d[t.l.filter[1][(by4 + y + 1) as usize] as usize]
+                        [t.l.filter[0][(by4 + y + 1) as usize] as usize]
                         as Filter2d,
                 );
                 if res != 0 {
