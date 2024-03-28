@@ -3136,7 +3136,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         Rav1dPixelLayout::I400
     } else {
         Rav1dPixelLayout::I444 - f.cur.p.layout
-    };
+    } as usize;
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let mut dst = (f.cur.data.data[0] as *mut BD::Pixel)
@@ -3268,7 +3268,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 );
             }
             CompInterType::Seg => {
-                dsp.mc.w_mask[chr_layout_idx as usize](
+                dsp.mc.w_mask[chr_layout_idx](
                     dst.cast(),
                     f.cur.stride[0],
                     tmp[b.mask_sign() as usize].as_mut_ptr(),
@@ -3294,8 +3294,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     f.bitdepth_max,
                 );
                 if has_chroma {
-                    mask = dav1d_wedge_masks[bs as usize][chr_layout_idx as usize]
-                        [b.mask_sign() as usize][b.wedge_idx() as usize];
+                    mask = dav1d_wedge_masks[bs as usize][chr_layout_idx][b.mask_sign() as usize]
+                        [b.wedge_idx() as usize];
                 }
             }
         }
@@ -3727,11 +3727,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 if let Some(interintra_type) = b.interintra_type() {
                     let ii_mask = match interintra_type {
                         InterIntraType::Blend => {
-                            dav1d_ii_masks[bs as usize][chr_layout_idx as usize]
+                            dav1d_ii_masks[bs as usize][chr_layout_idx]
                                 [b.interintra_mode() as usize]
                         }
                         InterIntraType::Wedge => {
-                            dav1d_wedge_masks[bs as usize][chr_layout_idx as usize][0]
+                            dav1d_wedge_masks[bs as usize][chr_layout_idx][0]
                                 [b.wedge_idx() as usize]
                         }
                     };
