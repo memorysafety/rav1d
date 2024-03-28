@@ -3119,7 +3119,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     b: &Av1Block,
 ) -> Result<(), ()> {
     let ts = &mut *f.ts.offset(t.ts as isize);
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp = &*f.dsp;
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
@@ -3266,7 +3266,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
 
         match comp_inter_type {
             CompInterType::Avg => {
-                ((*dsp).mc.avg)(
+                (dsp.mc.avg)(
                     dst.cast(),
                     f.cur.stride[0],
                     (*tmp.offset(0)).as_mut_ptr(),
@@ -3280,7 +3280,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 jnt_weight = f.jnt_weights[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[0] as usize]
                     [b.c2rust_unnamed.c2rust_unnamed_0.r#ref[1] as usize]
                     as c_int;
-                ((*dsp).mc.w_avg)(
+                (dsp.mc.w_avg)(
                     dst.cast(),
                     f.cur.stride[0],
                     (*tmp.offset(0)).as_mut_ptr(),
@@ -3292,7 +3292,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 );
             }
             CompInterType::Seg => {
-                (*dsp).mc.w_mask[chr_layout_idx as usize](
+                dsp.mc.w_mask[chr_layout_idx as usize](
                     dst.cast(),
                     f.cur.stride[0],
                     (*tmp.offset(
@@ -3333,7 +3333,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     .wedge_idx
                     as usize]
                     .as_ptr();
-                ((*dsp).mc.mask)(
+                (dsp.mc.mask)(
                     dst.cast(),
                     f.cur.stride[0],
                     (*tmp.offset(
@@ -3436,7 +3436,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     .offset(uvdstoff as isize);
                 match comp_inter_type {
                     CompInterType::Avg => {
-                        ((*dsp).mc.avg)(
+                        (dsp.mc.avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
                             (*tmp.offset(0)).as_mut_ptr(),
@@ -3447,7 +3447,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                     }
                     CompInterType::WeightedAvg => {
-                        ((*dsp).mc.w_avg)(
+                        (dsp.mc.w_avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
                             (*tmp.offset(0)).as_mut_ptr(),
@@ -3459,7 +3459,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                     }
                     CompInterType::Seg | CompInterType::Wedge => {
-                        ((*dsp).mc.mask)(
+                        (dsp.mc.mask)(
                             uvdst.cast(),
                             f.cur.stride[1],
                             (*tmp.offset(
@@ -3615,7 +3615,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             );
             let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
             let tmp = interintra_edge.0.interintra.as_mut_ptr();
-            (*dsp).ipred.intra_pred[m as usize].call(
+            dsp.ipred.intra_pred[m as usize].call(
                 tmp,
                 ((4 * bw4) as c_ulong).wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                     as ptrdiff_t,
@@ -3647,7 +3647,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         as usize]
                 }
             };
-            ((*dsp).mc.blend)(
+            (dsp.mc.blend)(
                 dst.cast(),
                 f.cur.stride[0],
                 tmp.cast(),
@@ -4025,7 +4025,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                         let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
                         let tmp = interintra_edge.0.interintra.as_mut_ptr();
-                        (*dsp).ipred.intra_pred[m as usize].call(
+                        dsp.ipred.intra_pred[m as usize].call(
                             tmp,
                             ((cbw4 * 4) as c_ulong)
                                 .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
@@ -4038,7 +4038,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             0 as c_int,
                             BD::from_c(f.bitdepth_max),
                         );
-                        ((*dsp).mc.blend)(
+                        (dsp.mc.blend)(
                             uvdst.cast(),
                             f.cur.stride[1],
                             tmp.cast(),
@@ -4235,7 +4235,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                         "dq",
                                     );
                                 }
-                                ((*dsp).itx.itxfm_add[b.uvtx as usize][txtp as usize])
+                                (dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize])
                                     .expect("non-null function pointer")(
                                     uvdst.offset((4 * x) as isize).cast(),
                                     f.cur.stride[1],
