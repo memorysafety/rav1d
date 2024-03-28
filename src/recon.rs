@@ -96,7 +96,6 @@ use libc::intptr_t;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
-use std::ffi::c_longlong;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ops::BitOr;
@@ -1995,17 +1994,15 @@ unsafe fn mc<BD: BitDepth>(
     filter_2d: Filter2d,
 ) -> Result<(), ()> {
     assert!(dst8.is_null() ^ dst16.is_null());
-    let ss_ver =
-        (pl != 0 && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor =
-        (pl != 0 && f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     let mvx = mv.x as c_int;
     let mvy = mv.y as c_int;
     let mx = mvx & 15 >> (ss_hor == 0) as c_int;
     let my = mvy & 15 >> (ss_ver == 0) as c_int;
-    let mut ref_stride: ptrdiff_t = refp.p.stride[(pl != 0) as c_int as usize];
+    let mut ref_stride: ptrdiff_t = refp.p.stride[(pl != 0) as usize];
     let r#ref: *const BD::Pixel;
     if refp.p.p.w == f.cur.p.w && refp.p.p.h == f.cur.p.h {
         let dx = bx * h_mul + (mvx >> 3 + ss_hor);
@@ -2033,18 +2030,14 @@ unsafe fn mc<BD: BitDepth>(
                 (dx - (mx != 0) as c_int * 3) as intptr_t,
                 (dy - (my != 0) as c_int * 3) as intptr_t,
                 emu_edge_buf.cast(),
-                (192 as c_int as c_ulong)
-                    .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
-                    as ptrdiff_t,
+                192 * ::core::mem::size_of::<BD::Pixel>() as isize,
                 refp.p.data.data[pl as usize].cast(),
                 ref_stride,
             );
             r#ref = &mut *emu_edge_buf
                 .offset((192 * (my != 0) as c_int * 3 + (mx != 0) as c_int * 3) as isize)
                 as *mut BD::Pixel;
-            ref_stride = (192 as c_int as c_ulong)
-                .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
-                as ptrdiff_t;
+            ref_stride = 192 * ::core::mem::size_of::<BD::Pixel>() as isize;
         } else {
             r#ref = (refp.p.data.data[pl as usize] as *mut BD::Pixel)
                 .offset(BD::pxstride(ref_stride) * dy as isize)
@@ -2076,22 +2069,16 @@ unsafe fn mc<BD: BitDepth>(
         }
     } else {
         assert!(!ptr::eq(refp, &f.sr_cur));
-        let orig_pos_y = (by * v_mul << 4) + mvy * ((1 as c_int) << (ss_ver == 0) as c_int);
-        let orig_pos_x = (bx * h_mul << 4) + mvx * ((1 as c_int) << (ss_hor == 0) as c_int);
+        let orig_pos_y = (by * v_mul << 4) + mvy * (1 << (ss_ver == 0) as c_int);
+        let orig_pos_x = (bx * h_mul << 4) + mvx * (1 << (ss_hor == 0) as c_int);
         let pos_y;
         let pos_x;
         let tmp: i64 = orig_pos_x as i64 * f.svc[refidx as usize][0].scale as i64
-            + ((f.svc[refidx as usize][0].scale - 0x4000 as c_int) * 8) as i64;
-        pos_x = apply_sign64(
-            ((tmp as c_longlong).abs() + 128 as c_longlong >> 8) as c_int,
-            tmp,
-        ) + 32;
+            + ((f.svc[refidx as usize][0].scale - 0x4000) * 8) as i64;
+        pos_x = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
         let tmp: i64 = orig_pos_y as i64 * f.svc[refidx as usize][1].scale as i64
-            + ((f.svc[refidx as usize][1].scale - 0x4000 as c_int) * 8) as i64;
-        pos_y = apply_sign64(
-            ((tmp as c_longlong).abs() + 128 as c_longlong >> 8) as c_int,
-            tmp,
-        ) + 32;
+            + ((f.svc[refidx as usize][1].scale - 0x4000) * 8) as i64;
+        pos_y = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
         let left = pos_x >> 10;
         let top = pos_y >> 10;
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx as usize][0].step >> 10) + 1;
@@ -2122,16 +2109,12 @@ unsafe fn mc<BD: BitDepth>(
                 (left - 3) as intptr_t,
                 (top - 3) as intptr_t,
                 emu_edge_buf.cast(),
-                (320 as c_int as c_ulong)
-                    .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
-                    as ptrdiff_t,
+                320 * ::core::mem::size_of::<BD::Pixel>() as isize,
                 refp.p.data.data[pl as usize].cast(),
                 ref_stride,
             );
             r#ref = &mut *emu_edge_buf.offset((320 * 3 + 3) as isize) as *mut BD::Pixel;
-            ref_stride = (320 as c_int as c_ulong)
-                .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
-                as ptrdiff_t;
+            ref_stride = 320 * ::core::mem::size_of::<BD::Pixel>() as isize;
             if debug_block_info!(f, t) {
                 println!("Emu");
             }
@@ -2148,8 +2131,8 @@ unsafe fn mc<BD: BitDepth>(
                 ref_stride,
                 bw4 * h_mul,
                 bh4 * v_mul,
-                pos_x & 0x3ff as c_int,
-                pos_y & 0x3ff as c_int,
+                pos_x & 0x3ff,
+                pos_y & 0x3ff,
                 f.svc[refidx as usize][0].step,
                 f.svc[refidx as usize][1].step,
                 f.bitdepth_max,
@@ -2161,8 +2144,8 @@ unsafe fn mc<BD: BitDepth>(
                 ref_stride,
                 bw4 * h_mul,
                 bh4 * v_mul,
-                pos_x & 0x3ff as c_int,
-                pos_y & 0x3ff as c_int,
+                pos_x & 0x3ff,
+                pos_y & 0x3ff,
                 f.svc[refidx as usize][0].step,
                 f.svc[refidx as usize][1].step,
                 f.bitdepth_max,
