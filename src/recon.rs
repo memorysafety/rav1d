@@ -2169,7 +2169,7 @@ unsafe fn obmc<BD: BitDepth>(
     h4: c_int,
 ) -> Result<(), ()> {
     assert!(t.bx & 1 == 0 && t.by & 1 == 0);
-    let r = t.rt.r.as_ptr().offset(((t.by & 31) + 5) as isize);
+    let r = t.rt.r.as_ptr().add((t.by as usize & 31) + 5 - 1);
     let lap = BD::select_mut(&mut t.scratch.c2rust_unnamed.c2rust_unnamed.lap).as_mut_ptr();
     let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
@@ -2182,7 +2182,7 @@ unsafe fn obmc<BD: BitDepth>(
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2], 4) {
-            let a_r = &*(*r.offset(-1)).offset((t.bx + x + 1) as isize);
+            let a_r = &*(*r.add(0)).offset((t.bx + x + 1) as isize);
             let a_b_dim = &dav1d_block_dimensions[a_r.0.bs as usize];
             let step4 = clip(a_b_dim[0], 2, 16);
             if a_r.0.r#ref.r#ref[0] > 0 {
@@ -2221,7 +2221,7 @@ unsafe fn obmc<BD: BitDepth>(
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3], 4) {
-            let l_r = &*(*r.offset((y + 1) as isize)).offset((t.bx - 1) as isize);
+            let l_r = &*(*r.add(y as usize + 1 + 1)).offset((t.bx - 1) as isize);
             let l_b_dim = &dav1d_block_dimensions[l_r.0.bs as usize];
             let step4 = clip(l_b_dim[1], 2, 16);
             if l_r.0.r#ref.r#ref[0] > 0 {
