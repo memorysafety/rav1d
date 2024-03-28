@@ -2273,7 +2273,7 @@ unsafe fn warp_affine<BD: BitDepth>(
 ) -> Result<(), ()> {
     let wmp = &*wmp;
     assert!(dst8.is_null() ^ dst16.is_null());
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp = &*f.dsp;
     let ss_ver =
         (pl != 0 && f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
     let ss_hor =
@@ -2333,7 +2333,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     .offset(dx as isize);
             }
             if !dst16.is_null() {
-                ((*dsp).mc.warp8x8t)(
+                (dsp.mc.warp8x8t)(
                     &mut *dst16.offset(x as isize),
                     dstride,
                     ref_ptr.cast(),
@@ -2344,7 +2344,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     f.bitdepth_max,
                 );
             } else {
-                ((*dsp).mc.warp8x8)(
+                (dsp.mc.warp8x8)(
                     dst8.offset(x as isize).cast(),
                     dstride,
                     ref_ptr.cast(),
