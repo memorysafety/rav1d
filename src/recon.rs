@@ -103,6 +103,7 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::ops::BitOr;
+use std::ptr;
 use std::slice;
 
 // TODO: add feature and compile-time guard around this code
@@ -2035,7 +2036,7 @@ unsafe fn mc<BD: BitDepth>(
     by: c_int,
     pl: c_int,
     mv: mv,
-    refp: *const Rav1dThreadPicture,
+    refp: &Rav1dThreadPicture,
     refidx: c_int,
     filter_2d: Filter2d,
 ) -> Result<(), ()> {
@@ -2055,14 +2056,14 @@ unsafe fn mc<BD: BitDepth>(
     let mvy = mv.y as c_int;
     let mx = mvx & 15 >> (ss_hor == 0) as c_int;
     let my = mvy & 15 >> (ss_ver == 0) as c_int;
-    let mut ref_stride: ptrdiff_t = (*refp).p.stride[(pl != 0) as c_int as usize];
+    let mut ref_stride: ptrdiff_t = refp.p.stride[(pl != 0) as c_int as usize];
     let r#ref: *const BD::Pixel;
-    if (*refp).p.p.w == f.cur.p.w && (*refp).p.p.h == f.cur.p.h {
+    if refp.p.p.w == f.cur.p.w && refp.p.p.h == f.cur.p.h {
         let dx = bx * h_mul + (mvx >> 3 + ss_hor);
         let dy = by * v_mul + (mvy >> 3 + ss_ver);
         let w;
         let h;
-        if (*refp).p.data.data[0] != f.cur.data.data[0] {
+        if refp.p.data.data[0] != f.cur.data.data[0] {
             w = f.cur.p.w + ss_hor >> ss_hor;
             h = f.cur.p.h + ss_ver >> ss_ver;
         } else {
@@ -2086,7 +2087,7 @@ unsafe fn mc<BD: BitDepth>(
                 (192 as c_int as c_ulong)
                     .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                     as ptrdiff_t,
-                (*refp).p.data.data[pl as usize].cast(),
+                refp.p.data.data[pl as usize].cast(),
                 ref_stride,
             );
             r#ref = &mut *emu_edge_buf
@@ -2096,7 +2097,7 @@ unsafe fn mc<BD: BitDepth>(
                 .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                 as ptrdiff_t;
         } else {
-            r#ref = ((*refp).p.data.data[pl as usize] as *mut BD::Pixel)
+            r#ref = (refp.p.data.data[pl as usize] as *mut BD::Pixel)
                 .offset(BD::pxstride(ref_stride) * dy as isize)
                 .offset(dx as isize);
         }
@@ -2125,7 +2126,7 @@ unsafe fn mc<BD: BitDepth>(
             );
         }
     } else {
-        if !(refp != &f.sr_cur as *const Rav1dThreadPicture) {
+        if !(!ptr::eq(refp, &f.sr_cur)) {
             unreachable!();
         }
         let orig_pos_y = (by * v_mul << 4) + mvy * ((1 as c_int) << (ss_ver == 0) as c_int);
@@ -2162,8 +2163,8 @@ unsafe fn mc<BD: BitDepth>(
                 f.svc[refidx as usize][1].step,
             );
         }
-        let w = (*refp).p.p.w + ss_hor >> ss_hor;
-        let h = (*refp).p.p.h + ss_ver >> ss_ver;
+        let w = refp.p.p.w + ss_hor >> ss_hor;
+        let h = refp.p.p.h + ss_ver >> ss_ver;
         if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
             let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
             ((*f.dsp).mc.emu_edge)(
@@ -2177,7 +2178,7 @@ unsafe fn mc<BD: BitDepth>(
                 (320 as c_int as c_ulong)
                     .wrapping_mul(::core::mem::size_of::<BD::Pixel>() as c_ulong)
                     as ptrdiff_t,
-                (*refp).p.data.data[pl as usize].cast(),
+                refp.p.data.data[pl as usize].cast(),
                 ref_stride,
             );
             r#ref = &mut *emu_edge_buf.offset((320 * 3 + 3) as isize) as *mut BD::Pixel;
@@ -2188,7 +2189,7 @@ unsafe fn mc<BD: BitDepth>(
                 println!("Emu");
             }
         } else {
-            r#ref = ((*refp).p.data.data[pl as usize] as *mut BD::Pixel)
+            r#ref = (refp.p.data.data[pl as usize] as *mut BD::Pixel)
                 .offset(BD::pxstride(ref_stride) * top as isize)
                 .offset(left as isize);
         }
@@ -3307,11 +3308,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         let mut mask: *const u8 = 0 as *const u8;
         let mut i = 0;
         while i < 2 {
-            let refp: *const Rav1dThreadPicture = &*(f.refp).as_ptr().offset(
+            let refp = &*(f.refp).as_ptr().offset(
                 *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
                     .as_ptr()
                     .offset(i as isize) as isize,
-            ) as *const Rav1dThreadPicture;
+            );
             if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV_GLOBALMV as c_int
                 && f.gmv_warp_allowed[b.c2rust_unnamed.c2rust_unnamed_0.r#ref[i as usize] as usize]
                     as c_int
@@ -3469,12 +3470,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             while pl < 2 {
                 let mut i = 0;
                 while i < 2 {
-                    let refp: *const Rav1dThreadPicture = &*(f.refp).as_ptr().offset(
+                    let refp = &*(f.refp).as_ptr().offset(
                         *(b.c2rust_unnamed.c2rust_unnamed_0.r#ref)
                             .as_ptr()
                             .offset(i as isize) as isize,
-                    )
-                        as *const Rav1dThreadPicture;
+                    );
                     if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int
                         == GLOBALMV_GLOBALMV as c_int
                         && cmp::min(cbw4, cbh4) > 1
@@ -3580,10 +3580,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     } else {
         let mut is_sub8x8;
         let mut r: *const *mut refmvs_block;
-        let refp: *const Rav1dThreadPicture = &*(f.refp)
+        let refp = &*(f.refp)
             .as_ptr()
-            .offset(*(b.c2rust_unnamed.c2rust_unnamed_0.r#ref).as_ptr().offset(0) as isize)
-            as *const Rav1dThreadPicture;
+            .offset(*(b.c2rust_unnamed.c2rust_unnamed_0.r#ref).as_ptr().offset(0) as isize);
         let filter_2d: Filter2d = b.c2rust_unnamed.c2rust_unnamed_0.filter2d as Filter2d;
         if cmp::min(bw4, bh4) > 1
             && (b.c2rust_unnamed.c2rust_unnamed_0.inter_mode as c_int == GLOBALMV as c_int
