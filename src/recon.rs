@@ -3189,13 +3189,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         }
     } else if let Some(comp_inter_type) = b.c2rust_unnamed.c2rust_unnamed_0.comp_type {
         let filter_2d = b.c2rust_unnamed.c2rust_unnamed_0.filter2d;
-        let tmp = (t
+        let tmp = &mut t
             .scratch
             .c2rust_unnamed
             .c2rust_unnamed
             .c2rust_unnamed
-            .compinter)
-            .as_mut_ptr();
+            .compinter;
         let mut jnt_weight = 0;
         let seg_mask = (t
             .scratch
@@ -3219,7 +3218,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     &mut t.scratch.c2rust_unnamed.emu_edge,
                     t.b,
                     0 as *mut BD::Pixel,
-                    (*tmp.offset(i as isize)).as_mut_ptr(),
+                    tmp[i].as_mut_ptr(),
                     (bw4 * 4) as ptrdiff_t,
                     b_dim,
                     0,
@@ -3232,7 +3231,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     &mut t.scratch.c2rust_unnamed.emu_edge,
                     t.b,
                     0 as *mut BD::Pixel,
-                    (*tmp.offset(i as isize)).as_mut_ptr(),
+                    tmp[i].as_mut_ptr(),
                     0,
                     bw4,
                     bh4,
@@ -3253,8 +3252,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 (dsp.mc.avg)(
                     dst.cast(),
                     f.cur.stride[0],
-                    (*tmp.offset(0)).as_mut_ptr(),
-                    (*tmp.offset(1)).as_mut_ptr(),
+                    tmp[0].as_mut_ptr(),
+                    tmp[1].as_mut_ptr(),
                     bw4 * 4,
                     bh4 * 4,
                     f.bitdepth_max,
@@ -3265,8 +3264,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 (dsp.mc.w_avg)(
                     dst.cast(),
                     f.cur.stride[0],
-                    (*tmp.offset(0)).as_mut_ptr(),
-                    (*tmp.offset(1)).as_mut_ptr(),
+                    tmp[0].as_mut_ptr(),
+                    tmp[1].as_mut_ptr(),
                     bw4 * 4,
                     bh4 * 4,
                     jnt_weight,
@@ -3277,8 +3276,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 dsp.mc.w_mask[chr_layout_idx as usize](
                     dst.cast(),
                     f.cur.stride[0],
-                    (*tmp.offset(b.mask_sign() as isize)).as_mut_ptr(),
-                    (*tmp.offset((b.mask_sign() == 0) as isize)).as_mut_ptr(),
+                    tmp[b.mask_sign() as usize].as_mut_ptr(),
+                    tmp[(b.mask_sign() == 0) as usize].as_mut_ptr(),
                     bw4 * 4,
                     bh4 * 4,
                     seg_mask,
@@ -3292,8 +3291,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 (dsp.mc.mask)(
                     dst.cast(),
                     f.cur.stride[0],
-                    (*tmp.offset(b.mask_sign() as isize)).as_mut_ptr(),
-                    (*tmp.offset((b.mask_sign() == 0) as isize)).as_mut_ptr(),
+                    tmp[b.mask_sign() as usize].as_mut_ptr(),
+                    tmp[(b.mask_sign() == 0) as usize].as_mut_ptr(),
                     bw4 * 4,
                     bh4 * 4,
                     mask,
@@ -3323,7 +3322,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut t.scratch.c2rust_unnamed.emu_edge,
                             t.b,
                             0 as *mut BD::Pixel,
-                            (*tmp.offset(i as isize)).as_mut_ptr(),
+                            tmp[i].as_mut_ptr(),
                             (bw4 * 4 >> ss_hor) as ptrdiff_t,
                             b_dim,
                             1 + pl,
@@ -3336,7 +3335,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut t.scratch.c2rust_unnamed.emu_edge,
                             t.b,
                             0 as *mut BD::Pixel,
-                            (*tmp.offset(i as isize)).as_mut_ptr(),
+                            tmp[i].as_mut_ptr(),
                             0,
                             bw4,
                             bh4,
@@ -3359,8 +3358,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         (dsp.mc.avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
-                            (*tmp.offset(0)).as_mut_ptr(),
-                            (*tmp.offset(1)).as_mut_ptr(),
+                            tmp[0].as_mut_ptr(),
+                            tmp[1].as_mut_ptr(),
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             f.bitdepth_max,
@@ -3370,8 +3369,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         (dsp.mc.w_avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
-                            (*tmp.offset(0)).as_mut_ptr(),
-                            (*tmp.offset(1)).as_mut_ptr(),
+                            tmp[0].as_mut_ptr(),
+                            tmp[1].as_mut_ptr(),
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             jnt_weight,
@@ -3382,8 +3381,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         (dsp.mc.mask)(
                             uvdst.cast(),
                             f.cur.stride[1],
-                            (*tmp.offset(b.mask_sign() as isize)).as_mut_ptr(),
-                            (*tmp.offset((b.mask_sign() == 0) as isize)).as_mut_ptr(),
+                            tmp[b.mask_sign() as usize].as_mut_ptr(),
+                            tmp[(b.mask_sign() == 0) as usize].as_mut_ptr(),
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             mask,
@@ -3827,9 +3826,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             BD::from_c(f.bitdepth_max),
                         );
                         let tl_edge = tl_edge_array[tl_edge_offset..].as_ptr();
-                        let tmp = interintra_edge.0.interintra.as_mut_ptr();
+                        let tmp = &mut interintra_edge.0.interintra;
                         dsp.ipred.intra_pred[m as usize].call(
-                            tmp,
+                            tmp.as_mut_ptr(),
                             cbw4 as isize * 4 * ::core::mem::size_of::<BD::Pixel>() as isize,
                             tl_edge,
                             cbw4 * 4,
@@ -3842,7 +3841,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         (dsp.mc.blend)(
                             uvdst.cast(),
                             f.cur.stride[1],
-                            tmp.cast(),
+                            tmp.as_mut_ptr().cast(),
                             cbw4 * 4,
                             cbh4 * 4,
                             ii_mask.as_ptr(),
