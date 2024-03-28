@@ -1987,7 +1987,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
 
 unsafe fn mc<BD: BitDepth>(
     f: &Rav1dFrameData,
-    t: &mut Rav1dTaskContext,
+    emu_edge: &mut BitDepthUnion<EmuEdge>,
+    b: Bxy,
     dst8: *mut BD::Pixel,
     dst16: *mut i16,
     dst_stride: ptrdiff_t,
@@ -2029,7 +2030,7 @@ unsafe fn mc<BD: BitDepth>(
             || dx + bw4 * h_mul + (mx != 0) as c_int * 4 > w
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
         {
-            let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge);
+            let emu_edge_buf = BD::select_mut(emu_edge);
             ((*f.dsp).mc.emu_edge)(
                 (bw4 * h_mul + (mx != 0) as c_int * 7) as intptr_t,
                 (bh4 * v_mul + (my != 0) as c_int * 7) as intptr_t,
@@ -2091,7 +2092,7 @@ unsafe fn mc<BD: BitDepth>(
         let top = pos_y >> 10;
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx][0].step >> 10) + 1;
         let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx][1].step >> 10) + 1;
-        if debug_block_info!(f, t.b) {
+        if debug_block_info!(f, b) {
             println!(
                 "Off {}x{} [{},{},{}], size {}x{} [{},{}]",
                 left,
@@ -2108,7 +2109,7 @@ unsafe fn mc<BD: BitDepth>(
         let w = refp.p.p.w + ss_hor >> ss_hor;
         let h = refp.p.p.h + ss_ver >> ss_ver;
         if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
-            let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge);
+            let emu_edge_buf = BD::select_mut(emu_edge);
             ((*f.dsp).mc.emu_edge)(
                 (right - left + 7) as intptr_t,
                 (bottom - top + 7) as intptr_t,
@@ -2123,7 +2124,7 @@ unsafe fn mc<BD: BitDepth>(
             );
             r#ref = emu_edge_buf.as_mut_ptr().add((320 * 3 + 3) as usize);
             ref_stride = 320 * ::core::mem::size_of::<BD::Pixel>() as isize;
-            if debug_block_info!(f, t.b) {
+            if debug_block_info!(f, b) {
                 println!("Emu");
             }
         } else {
@@ -2198,7 +2199,8 @@ unsafe fn obmc<BD: BitDepth>(
                 let oh4 = cmp::min(b_dim[1], 16) >> 1;
                 mc::<BD>(
                     f,
-                    t,
+                    &mut t.scratch.c2rust_unnamed.emu_edge,
+                    t.b,
                     lap,
                     0 as *mut i16,
                     ow4 as isize * h_mul as isize * ::core::mem::size_of::<BD::Pixel>() as isize,
@@ -2237,7 +2239,8 @@ unsafe fn obmc<BD: BitDepth>(
                 let oh4 = cmp::min(step4, b_dim[1]);
                 mc::<BD>(
                     f,
-                    t,
+                    &mut t.scratch.c2rust_unnamed.emu_edge,
+                    t.b,
                     lap,
                     0 as *mut i16,
                     h_mul as isize * ow4 as isize * ::core::mem::size_of::<BD::Pixel>() as isize,
@@ -3147,7 +3150,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         assert!(!frame_hdr.size.super_res.enabled);
         mc::<BD>(
             f,
-            t,
+            &mut t.scratch.c2rust_unnamed.emu_edge,
+            t.b,
             dst,
             0 as *mut i16,
             f.cur.stride[0],
@@ -3170,7 +3174,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             while pl < 3 {
                 mc::<BD>(
                     f,
-                    t,
+                    &mut t.scratch.c2rust_unnamed.emu_edge,
+                    t.b,
                     (f.cur.data.data[pl as usize] as *mut BD::Pixel).offset(uvdstoff as isize),
                     0 as *mut i16,
                     f.cur.stride[1],
@@ -3236,7 +3241,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             } else {
                 mc::<BD>(
                     f,
-                    t,
+                    &mut t.scratch.c2rust_unnamed.emu_edge,
+                    t.b,
                     0 as *mut BD::Pixel,
                     (*tmp.offset(i as isize)).as_mut_ptr(),
                     0 as c_int as ptrdiff_t,
@@ -3403,7 +3409,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     } else {
                         mc::<BD>(
                             f,
-                            t,
+                            &mut t.scratch.c2rust_unnamed.emu_edge,
+                            t.b,
                             0 as *mut BD::Pixel,
                             (*tmp.offset(i as isize)).as_mut_ptr(),
                             0 as c_int as ptrdiff_t,
@@ -3515,7 +3522,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         } else {
             mc::<BD>(
                 f,
-                t,
+                &mut t.scratch.c2rust_unnamed.emu_edge,
+                t.b,
                 dst,
                 0 as *mut i16,
                 f.cur.stride[0],
@@ -3685,7 +3693,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     while pl < 2 {
                         mc::<BD>(
                             f,
-                            t,
+                            &mut t.scratch.c2rust_unnamed.emu_edge,
+                            t.b,
                             (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
                                 .offset(uvdstoff as isize),
                             0 as *mut i16,
@@ -3739,7 +3748,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     while pl < 2 {
                         mc::<BD>(
                             f,
-                            t,
+                            &mut t.scratch.c2rust_unnamed.emu_edge,
+                            t.b,
                             (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
                                 .offset(uvdstoff as isize)
                                 .offset(v_off as isize),
@@ -3783,7 +3793,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     while pl < 2 {
                         mc::<BD>(
                             f,
-                            t,
+                            &mut t.scratch.c2rust_unnamed.emu_edge,
+                            t.b,
                             (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
                                 .offset(uvdstoff as isize)
                                 .offset(h_off as isize),
@@ -3830,7 +3841,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 while pl < 2 {
                     mc::<BD>(
                         f,
-                        t,
+                        &mut t.scratch.c2rust_unnamed.emu_edge,
+                        t.b,
                         (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
                             .offset(uvdstoff as isize)
                             .offset(h_off as isize)
@@ -3888,7 +3900,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     while pl < 2 {
                         mc::<BD>(
                             f,
-                            t,
+                            &mut t.scratch.c2rust_unnamed.emu_edge,
+                            t.b,
                             (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
                                 .offset(uvdstoff as isize),
                             0 as *mut i16,
