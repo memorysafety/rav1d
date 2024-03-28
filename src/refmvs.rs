@@ -138,7 +138,7 @@ pub struct refmvs_mvpair {
 }
 
 /// For why this unaligned, see the aligned [`refmvs_block`] below.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[repr(C, packed)]
 pub struct refmvs_block_unaligned {
     pub mv: refmvs_mvpair,
@@ -155,7 +155,7 @@ pub struct refmvs_block_unaligned {
 /// into an inner packed [`refmvs_block_unaligned`]
 /// and an outer aligned [`refmvs_block`]
 /// that is just a wrapper over the real [`refmvs_block_unaligned`].
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[repr(C, align(4))]
 pub struct refmvs_block(pub refmvs_block_unaligned);
 
