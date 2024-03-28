@@ -3964,8 +3964,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 let mut cf_ctx = 0;
                                 cf = BD::select_mut(&mut (*t).cf).0.as_mut_ptr();
                                 txtp = t.scratch.c2rust_unnamed_0.ac_txtp_map.txtp_map
-                                    [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
-                                    as TxfmType;
+                                    [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize];
                                 eob = decode_coefs::<BD>(
                                     f,
                                     t,
