@@ -352,7 +352,7 @@ pub struct Av1Block {
     pub seg_id: u8,
     pub skip_mode: u8,
     pub skip: u8,
-    pub uvtx: u8,
+    pub uvtx: RectTxfmSize,
     pub c2rust_unnamed: Av1Block_intra_inter,
 }
 

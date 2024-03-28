@@ -3944,7 +3944,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     t,
                                     &mut (*t.a).ccoef.0[pl as usize][(cbx4 + x) as usize..],
                                     &mut t.l.ccoef.0[pl as usize][(cby4 + y) as usize..],
-                                    b.uvtx as RectTxfmSize,
+                                    b.uvtx,
                                     bs,
                                     b,
                                     0,
