@@ -2292,12 +2292,11 @@ unsafe fn warp_affine<BD: BitDepth>(
             let src_x = t.bx * 4 + ((x + 4) << ss_hor);
             let mvx = mat[2] as i64 * src_x as i64 + mat3_y >> ss_hor;
             let mvy = mat[4] as i64 * src_x as i64 + mat5_y >> ss_ver;
-            let dx = (mvx >> 16) as c_int - 4;
-            let mx = (mvx as c_int & 0xffff) - wmp.alpha() as c_int * 4 - wmp.beta() as c_int * 7
-                & !0x3f;
-            let dy = (mvy >> 16) as c_int - 4;
-            let my = (mvy as c_int & 0xffff) - wmp.gamma() as c_int * 4 - wmp.delta() as c_int * 4
-                & !0x3f;
+            let dx = (mvx >> 16) as i32 - 4;
+            let mx = (mvx as i32 & 0xffff) - wmp.alpha() as i32 * 4 - wmp.beta() as i32 * 7 & !0x3f;
+            let dy = (mvy >> 16) as i32 - 4;
+            let my =
+                (mvy as i32 & 0xffff) - wmp.gamma() as i32 * 4 - wmp.delta() as i32 * 4 & !0x3f;
             let ref_ptr: *const BD::Pixel;
             let mut ref_stride = refp.p.stride[(pl != 0) as usize];
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
