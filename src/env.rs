@@ -4,6 +4,7 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align8;
+use crate::src::internal::Bxy;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
@@ -593,8 +594,7 @@ pub fn get_drl_context(ref_mv_stack: &[refmvs_candidate; 8], ref_idx: usize) -> 
 
 #[inline]
 pub unsafe fn get_cur_frame_segid(
-    by: c_int,
-    bx: c_int,
+    b: Bxy,
     have_top: bool,
     have_left: bool,
     // It's very difficult to make this safe (a slice),
@@ -606,7 +606,7 @@ pub unsafe fn get_cur_frame_segid(
     stride: usize,
 ) -> (u8, u8) {
     let negative_adjustment = have_left as usize + have_top as usize * stride;
-    let offset = bx as usize + by as usize * stride - negative_adjustment;
+    let offset = b.x as usize + b.y as usize * stride - negative_adjustment;
     let len = match (have_left, have_top) {
         (true, true) => stride + 1,
         (true, false) | (false, true) => 1,
