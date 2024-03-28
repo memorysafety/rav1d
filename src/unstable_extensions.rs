@@ -8,6 +8,7 @@
 
 use std::mem;
 use std::slice::from_raw_parts;
+use std::slice::from_raw_parts_mut;
 
 /// From `1.75.0`.
 pub const fn flatten<const N: usize, T>(this: &[[T; N]]) -> &[T] {
@@ -51,5 +52,31 @@ pub const fn as_chunks<const N: usize, T>(this: &[T]) -> (&[[T; N]], &[T]) {
     // SAFETY: We already panicked for zero, and ensured by construction
     // that the length of the subslice is a multiple of N.
     let array_slice = unsafe { as_chunks_unchecked(multiple_of_n) };
+    (array_slice, remainder)
+}
+
+#[inline]
+#[must_use]
+pub unsafe fn as_chunks_unchecked_mut<const N: usize, T>(this: &mut [T]) -> &mut [[T; N]] {
+    // SAFETY: Caller must guarantee that `N` is nonzero and exactly divides the slice length
+    let new_len = /* unsafe */ {
+        assert!(N != 0 && this.len() % N == 0);
+        this.len() / N
+    };
+    // SAFETY: We cast a slice of `new_len * N` elements into
+    // a slice of `new_len` many `N` elements chunks.
+    unsafe { from_raw_parts_mut(this.as_mut_ptr().cast(), new_len) }
+}
+
+#[inline]
+#[track_caller]
+#[must_use]
+pub fn as_chunks_mut<const N: usize, T>(this: &mut [T]) -> (&mut [[T; N]], &mut [T]) {
+    assert!(N != 0, "chunk size must be non-zero");
+    let len = this.len() / N;
+    let (multiple_of_n, remainder) = this.split_at_mut(len * N);
+    // SAFETY: We already panicked for zero, and ensured by construction
+    // that the length of the subslice is a multiple of N.
+    let array_slice = unsafe { as_chunks_unchecked_mut(multiple_of_n) };
     (array_slice, remainder)
 }
