@@ -1446,8 +1446,7 @@ unsafe fn decode_b_inner(
     let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.bx & 1 != 0)
         && (bh4 > ss_ver || t.by & 1 != 0);
-
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    let frame_type = f.frame_hdr.as_ref().unwrap().frame_type;
 
     if t.frame_thread.pass == 2 {
         if b.intra != 0 {
@@ -1468,7 +1467,7 @@ unsafe fn decode_b_inner(
                     case.set(&mut dir.intra.0, 1);
                 },
             );
-            if frame_hdr.frame_type.is_inter_or_switch() {
+            if frame_type.is_inter_or_switch() {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 for x in 0..bw4 {
                     let block = &mut *r.offset(x as isize);
@@ -1494,7 +1493,7 @@ unsafe fn decode_b_inner(
                 );
             }
         } else {
-            if frame_hdr.frame_type.is_inter_or_switch() /* not intrabc */
+            if frame_type.is_inter_or_switch() /* not intrabc */
                 && b.comp_type().is_none()
                 && b.motion_mode() == MotionMode::Warp
             {
@@ -1542,7 +1541,7 @@ unsafe fn decode_b_inner(
                 },
             );
 
-            if f.frame_hdr().frame_type.is_inter_or_switch() {
+            if frame_type.is_inter_or_switch() {
                 let r = t.rt.r[((t.by & 31) + 5 + bh4 - 1) as usize].offset(t.bx as isize);
                 let r = std::slice::from_raw_parts_mut(r, bw4 as usize);
                 for r in r {
