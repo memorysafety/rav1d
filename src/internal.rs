@@ -896,7 +896,7 @@ pub struct InterIntraEdgePalBD<BD: BitDepth> {
 pub struct InterIntraEdgePal;
 
 impl BitDepthDependentType for InterIntraEdgePal {
-    type T<BD: BitDepth> = Align64<InterIntraEdgePalBD<BD>>;
+    type T<BD: BitDepth> = InterIntraEdgePalBD<BD>;
 }
 
 #[derive(Clone, Copy)]
