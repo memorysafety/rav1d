@@ -2021,7 +2021,7 @@ unsafe fn mc<BD: BitDepth>(
             || dx + bw4 * h_mul + (mx != 0) as c_int * 4 > w
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
         {
-            let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
+            let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge);
             ((*f.dsp).mc.emu_edge)(
                 (bw4 * h_mul + (mx != 0) as c_int * 7) as intptr_t,
                 (bh4 * v_mul + (my != 0) as c_int * 7) as intptr_t,
@@ -2029,14 +2029,14 @@ unsafe fn mc<BD: BitDepth>(
                 h as intptr_t,
                 (dx - (mx != 0) as c_int * 3) as intptr_t,
                 (dy - (my != 0) as c_int * 3) as intptr_t,
-                emu_edge_buf.cast(),
+                emu_edge_buf.as_mut_ptr().cast(),
                 192 * ::core::mem::size_of::<BD::Pixel>() as isize,
                 refp.p.data.data[pl as usize].cast(),
                 ref_stride,
             );
-            r#ref = &mut *emu_edge_buf
-                .offset((192 * (my != 0) as c_int * 3 + (mx != 0) as c_int * 3) as isize)
-                as *mut BD::Pixel;
+            r#ref = emu_edge_buf
+                .as_mut_ptr()
+                .add((192 * (my != 0) as c_int * 3 + (mx != 0) as c_int * 3) as usize);
             ref_stride = 192 * ::core::mem::size_of::<BD::Pixel>() as isize;
         } else {
             r#ref = (refp.p.data.data[pl as usize] as *mut BD::Pixel)
@@ -2100,7 +2100,7 @@ unsafe fn mc<BD: BitDepth>(
         let w = refp.p.p.w + ss_hor >> ss_hor;
         let h = refp.p.p.h + ss_ver >> ss_ver;
         if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
-            let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
+            let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge);
             ((*f.dsp).mc.emu_edge)(
                 (right - left + 7) as intptr_t,
                 (bottom - top + 7) as intptr_t,
@@ -2108,12 +2108,12 @@ unsafe fn mc<BD: BitDepth>(
                 h as intptr_t,
                 (left - 3) as intptr_t,
                 (top - 3) as intptr_t,
-                emu_edge_buf.cast(),
+                emu_edge_buf.as_mut_ptr().cast(),
                 320 * ::core::mem::size_of::<BD::Pixel>() as isize,
                 refp.p.data.data[pl as usize].cast(),
                 ref_stride,
             );
-            r#ref = &mut *emu_edge_buf.offset((320 * 3 + 3) as isize) as *mut BD::Pixel;
+            r#ref = emu_edge_buf.as_mut_ptr().add((320 * 3 + 3) as usize);
             ref_stride = 320 * ::core::mem::size_of::<BD::Pixel>() as isize;
             if debug_block_info!(f, t) {
                 println!("Emu");
