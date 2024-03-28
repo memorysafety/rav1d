@@ -3134,11 +3134,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     let has_chroma = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0)) as c_int;
-    let chr_layout_idx = (if f.cur.p.layout as c_uint == Rav1dPixelLayout::I400 as c_int as c_uint {
-        0 as c_int as c_uint
+    let chr_layout_idx = if f.cur.p.layout == Rav1dPixelLayout::I400 {
+        Rav1dPixelLayout::I400
     } else {
-        (Rav1dPixelLayout::I444 as c_int as c_uint).wrapping_sub(f.cur.p.layout as c_uint)
-    }) as c_int;
+        Rav1dPixelLayout::I444 - f.cur.p.layout
+    };
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let mut dst: *mut BD::Pixel = (f.cur.data.data[0] as *mut BD::Pixel)
