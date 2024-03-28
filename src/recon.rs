@@ -2295,11 +2295,10 @@ unsafe fn warp_affine<BD: BitDepth>(
             let dy = (mvy >> 16) as i32 - 4;
             let my =
                 (mvy as i32 & 0xffff) - wmp.gamma() as i32 * 4 - wmp.delta() as i32 * 4 & !0x3f;
-            let ref_ptr: *const BD::Pixel;
+            let ref_ptr;
             let mut ref_stride = refp.p.stride[(pl != 0) as usize];
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
-                let emu_edge_buf =
-                    BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge).as_mut_ptr();
+                let emu_edge_buf = BD::select_mut(&mut t.scratch.c2rust_unnamed.emu_edge);
                 ((*f.dsp).mc.emu_edge)(
                     15,
                     15,
@@ -2307,15 +2306,15 @@ unsafe fn warp_affine<BD: BitDepth>(
                     height as intptr_t,
                     (dx - 3) as intptr_t,
                     (dy - 3) as intptr_t,
-                    emu_edge_buf.cast(),
+                    emu_edge_buf.as_mut_ptr().cast(),
                     32 * ::core::mem::size_of::<BD::Pixel>() as isize,
                     refp.p.data.data[pl as usize].cast(),
                     ref_stride,
                 );
-                ref_ptr = &mut *emu_edge_buf.offset(32 * 3 + 3) as *mut BD::Pixel;
+                ref_ptr = emu_edge_buf.as_ptr().add(32 * 3 + 3);
                 ref_stride = 32 * ::core::mem::size_of::<BD::Pixel>() as isize;
             } else {
-                ref_ptr = (refp.p.data.data[pl as usize] as *mut BD::Pixel)
+                ref_ptr = (refp.p.data.data[pl as usize] as *const BD::Pixel)
                     .offset((BD::pxstride(ref_stride) * dy as isize) as isize)
                     .offset(dx as isize);
             }
