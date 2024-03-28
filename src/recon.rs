@@ -2271,6 +2271,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     refp: &Rav1dThreadPicture,
     wmp: *const Rav1dWarpedMotionParams,
 ) -> Result<(), ()> {
+    let wmp = &*wmp;
     assert!(dst8.is_null() ^ dst16.is_null());
     let dsp: *const Rav1dDSPContext = f.dsp;
     let ss_ver =
@@ -2280,7 +2281,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     assert!(b_dim[0] as c_int * h_mul & 7 == 0 && b_dim[1] as c_int * v_mul & 7 == 0);
-    let mat: *const i32 = ((*wmp).matrix).as_ptr();
+    let mat: *const i32 = (wmp.matrix).as_ptr();
     let width = refp.p.p.w + ss_hor >> ss_hor;
     let height = refp.p.p.h + ss_ver >> ss_ver;
     let mut y = 0;
@@ -2295,13 +2296,13 @@ unsafe fn warp_affine<BD: BitDepth>(
             let mvy: i64 = *mat.offset(4) as i64 * src_x as i64 + mat5_y >> ss_ver;
             let dx = (mvx >> 16) as c_int - 4;
             let mx = (mvx as c_int & 0xffff as c_int)
-                - (*wmp).alpha() as c_int * 4
-                - (*wmp).beta() as c_int * 7
+                - wmp.alpha() as c_int * 4
+                - wmp.beta() as c_int * 7
                 & !(0x3f as c_int);
             let dy = (mvy >> 16) as c_int - 4;
             let my = (mvy as c_int & 0xffff as c_int)
-                - (*wmp).gamma() as c_int * 4
-                - (*wmp).delta() as c_int * 4
+                - wmp.gamma() as c_int * 4
+                - wmp.delta() as c_int * 4
                 & !(0x3f as c_int);
             let ref_ptr: *const BD::Pixel;
             let mut ref_stride: ptrdiff_t = refp.p.stride[(pl != 0) as c_int as usize];
@@ -2337,7 +2338,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     dstride,
                     ref_ptr.cast(),
                     ref_stride,
-                    (*wmp).abcd.get().as_ptr(),
+                    wmp.abcd.get().as_ptr(),
                     mx,
                     my,
                     f.bitdepth_max,
@@ -2348,7 +2349,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     dstride,
                     ref_ptr.cast(),
                     ref_stride,
-                    (*wmp).abcd.get().as_ptr(),
+                    wmp.abcd.get().as_ptr(),
                     mx,
                     my,
                     f.bitdepth_max,
