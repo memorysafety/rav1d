@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::src::align::Align16;
 use crate::src::ctx::CaseSet;
+use crate::src::internal::Bxy;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
 use crate::src::levels::TX_4X4;
@@ -359,8 +360,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     level_cache: &mut [[u8; 4]],
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
-    bx: c_int,
-    by: c_int,
+    b: Bxy,
     iw: c_int,
     ih: c_int,
     bs: BlockSize,
@@ -372,7 +372,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     aluv: Option<(&mut [u8], &mut [u8])>,
 ) {
     let b4_stride = b4_stride as usize;
-    let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
+    let [bx, by, iw, ih] = [b.x, b.y, iw, ih].map(|it| it as usize);
 
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let b_dim = b_dim.map(|it| it as usize);
@@ -448,8 +448,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     filter_level: &[[[u8; 2]; 8]; 4],
     r#ref: usize,
     is_gmv: bool,
-    bx: c_int,
-    by: c_int,
+    b: Bxy,
     iw: c_int,
     ih: c_int,
     skip: bool,
@@ -464,7 +463,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
 ) {
     let b4_stride = b4_stride as usize;
     let is_gmv = is_gmv as usize;
-    let [bx, by, iw, ih] = [bx, by, iw, ih].map(|it| it as usize);
+    let [bx, by, iw, ih] = [b.x, b.y, iw, ih].map(|it| it as usize);
 
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let b_dim = b_dim.map(|it| it as usize);

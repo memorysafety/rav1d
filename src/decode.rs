@@ -61,6 +61,7 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
+use crate::src::internal::Bxy;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dFrameData;
@@ -1076,8 +1077,7 @@ unsafe fn read_vartx_tree(
 #[inline]
 unsafe fn get_prev_frame_segid(
     frame_hdr: &Rav1dFrameHeader,
-    by: c_int,
-    bx: c_int,
+    b: Bxy,
     w4: c_int,
     h4: c_int,
     // It's very difficult to make this safe (a slice),
@@ -1097,7 +1097,7 @@ unsafe fn get_prev_frame_segid(
 
     let mut prev_seg_id = 8;
     let ref_seg_map = std::slice::from_raw_parts(
-        ref_seg_map.offset(by as isize * stride as isize + bx as isize),
+        ref_seg_map.offset(b.y as isize * stride as isize + b.x as isize),
         h4 * stride,
     );
 
@@ -1587,15 +1587,8 @@ unsafe fn decode_b_inner(
     if frame_hdr.segmentation.enabled != 0 {
         if frame_hdr.segmentation.update_map == 0 {
             if !(f.prev_segmap).is_null() {
-                let seg_id = get_prev_frame_segid(
-                    frame_hdr,
-                    t.b.y,
-                    t.b.x,
-                    w4,
-                    h4,
-                    f.prev_segmap,
-                    f.b4_stride,
-                );
+                let seg_id =
+                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= RAV1D_MAX_SEGMENTS.into() {
                     return Err(());
                 }
@@ -1615,15 +1608,8 @@ unsafe fn decode_b_inner(
             } {
                 // temporal predicted seg_id
                 if !(f.prev_segmap).is_null() {
-                    let seg_id = get_prev_frame_segid(
-                        frame_hdr,
-                        t.b.y,
-                        t.b.x,
-                        w4,
-                        h4,
-                        f.prev_segmap,
-                        f.b4_stride,
-                    );
+                    let seg_id =
+                        get_prev_frame_segid(frame_hdr, t.b, w4, h4, f.prev_segmap, f.b4_stride);
                     if seg_id >= RAV1D_MAX_SEGMENTS.into() {
                         return Err(());
                     }
@@ -1633,8 +1619,7 @@ unsafe fn decode_b_inner(
                 }
             } else {
                 let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
-                    t.b.y,
-                    t.b.x,
+                    t.b,
                     have_top,
                     have_left,
                     f.cur_segmap,
@@ -1712,15 +1697,8 @@ unsafe fn decode_b_inner(
         } {
             // temporal predicted seg_id
             if !(f.prev_segmap).is_null() {
-                let seg_id = get_prev_frame_segid(
-                    frame_hdr,
-                    t.b.y,
-                    t.b.x,
-                    w4,
-                    h4,
-                    f.prev_segmap,
-                    f.b4_stride,
-                );
+                let seg_id =
+                    get_prev_frame_segid(frame_hdr, t.b, w4, h4, f.prev_segmap, f.b4_stride);
                 if seg_id >= RAV1D_MAX_SEGMENTS.into() {
                     return Err(());
                 }
@@ -1729,14 +1707,8 @@ unsafe fn decode_b_inner(
                 b.seg_id = 0;
             }
         } else {
-            let (pred_seg_id, seg_ctx) = get_cur_frame_segid(
-                t.b.y,
-                t.b.x,
-                have_top,
-                have_left,
-                f.cur_segmap,
-                f.b4_stride as usize,
-            );
+            let (pred_seg_id, seg_ctx) =
+                get_cur_frame_segid(t.b, have_top, have_left, f.cur_segmap, f.b4_stride as usize);
             if b.skip != 0 {
                 b.seg_id = pred_seg_id as u8;
             } else {
@@ -2167,8 +2139,7 @@ unsafe fn decode_b_inner(
                 &mut f.lf.level,
                 f.b4_stride,
                 &lflvl[b.seg_id as usize],
-                t.b.x,
-                t.b.y,
+                t.b,
                 f.w4,
                 f.h4,
                 bs,
@@ -3199,8 +3170,7 @@ unsafe fn decode_b_inner(
                 &lflvl[b.seg_id as usize],
                 (b.r#ref()[0] + 1) as usize,
                 is_globalmv == 0,
-                t.b.x,
-                t.b.y,
+                t.b,
                 f.w4,
                 f.h4,
                 b.skip != 0,

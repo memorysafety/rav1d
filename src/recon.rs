@@ -15,6 +15,7 @@ use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
+use crate::src::internal::Bxy;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::EmuEdge;
 use crate::src::internal::Rav1dContext;
@@ -2270,8 +2271,7 @@ unsafe fn obmc<BD: BitDepth>(
 unsafe fn warp_affine<BD: BitDepth>(
     f: &Rav1dFrameData,
     emu_edge: &mut BitDepthUnion<EmuEdge>,
-    by: c_int,
-    bx: c_int,
+    b: Bxy,
     mut dst8: *mut BD::Pixel,
     mut dst16: *mut i16,
     dstride: ptrdiff_t,
@@ -2291,11 +2291,11 @@ unsafe fn warp_affine<BD: BitDepth>(
     let width = refp.p.p.w + ss_hor >> ss_hor;
     let height = refp.p.p.h + ss_ver >> ss_ver;
     for y in (0..b_dim[1] as c_int * v_mul).step_by(8) {
-        let src_y = by * 4 + ((y + 4) << ss_ver);
+        let src_y = b.y * 4 + ((y + 4) << ss_ver);
         let mat3_y = mat[3] as i64 * src_y as i64 + mat[0] as i64;
         let mat5_y = mat[5] as i64 * src_y as i64 + mat[1] as i64;
         for x in (0..b_dim[0] as c_int * h_mul).step_by(8) {
-            let src_x = bx * 4 + ((x + 4) << ss_hor);
+            let src_x = b.x * 4 + ((x + 4) << ss_hor);
             let mvx = mat[2] as i64 * src_x as i64 + mat3_y >> ss_hor;
             let mvy = mat[4] as i64 * src_x as i64 + mat5_y >> ss_ver;
             let dx = (mvx >> 16) as i32 - 4;
@@ -3224,8 +3224,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 warp_affine::<BD>(
                     f,
                     &mut t.scratch.c2rust_unnamed.emu_edge,
-                    t.b.y,
-                    t.b.x,
+                    t.b,
                     0 as *mut BD::Pixel,
                     (*tmp.offset(i as isize)).as_mut_ptr(),
                     (bw4 * 4) as ptrdiff_t,
@@ -3391,8 +3390,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         warp_affine::<BD>(
                             f,
                             &mut t.scratch.c2rust_unnamed.emu_edge,
-                            t.b.y,
-                            t.b.x,
+                            t.b,
                             0 as *mut BD::Pixel,
                             (*tmp.offset(i as isize)).as_mut_ptr(),
                             (bw4 * 4 >> ss_hor) as ptrdiff_t,
@@ -3501,8 +3499,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             warp_affine::<BD>(
                 f,
                 &mut t.scratch.c2rust_unnamed.emu_edge,
-                t.b.y,
-                t.b.x,
+                t.b,
                 dst,
                 0 as *mut i16,
                 f.cur.stride[0],
@@ -3870,8 +3867,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         warp_affine::<BD>(
                             f,
                             &mut t.scratch.c2rust_unnamed.emu_edge,
-                            t.b.y,
-                            t.b.x,
+                            t.b,
                             (f.cur.data.data[(1 + pl) as usize] as *mut BD::Pixel)
                                 .offset(uvdstoff as isize),
                             0 as *mut i16,
