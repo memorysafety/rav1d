@@ -1,4 +1,6 @@
 use crate::include::common::intops::clip;
+use crate::src::align::Align16;
+use crate::src::align::Align8;
 use crate::src::align::ArrayDefault;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -153,6 +155,8 @@ pub trait BitDepth: Clone + Copy {
         + FromBytes
         + AsBytes;
 
+    type AlignPixelX8: Copy;
+
     type Coef: Copy
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
@@ -275,6 +279,8 @@ impl BitDepth for BitDepth8 {
 
     type Pixel = u8;
 
+    type AlignPixelX8 = Align8<[Self::Pixel; 0]>;
+
     type Coef = i16;
 
     type Entry = i8;
@@ -350,6 +356,8 @@ impl BitDepth for BitDepth16 {
     const BPC: BPC = BPC::BPC16;
 
     type Pixel = u16;
+
+    type AlignPixelX8 = Align16<[Self::Pixel; 0]>;
 
     type Coef = i32;
 

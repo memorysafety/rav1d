@@ -54,8 +54,11 @@ use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::r#ref::Rav1dRef;
 use crate::src::recon::backup_ipred_edge_fn;
+use crate::src::recon::copy_pal_block_fn;
 use crate::src::recon::filter_sbrow_fn;
 use crate::src::recon::rav1d_backup_ipred_edge;
+use crate::src::recon::rav1d_copy_pal_block_uv;
+use crate::src::recon::rav1d_copy_pal_block_y;
 use crate::src::recon::rav1d_filter_sbrow;
 use crate::src::recon::rav1d_filter_sbrow_cdef;
 use crate::src::recon::rav1d_filter_sbrow_deblock_cols;
@@ -63,15 +66,21 @@ use crate::src::recon::rav1d_filter_sbrow_deblock_rows;
 use crate::src::recon::rav1d_filter_sbrow_lr;
 use crate::src::recon::rav1d_filter_sbrow_resize;
 use crate::src::recon::rav1d_read_coef_blocks;
+use crate::src::recon::rav1d_read_pal_plane;
+use crate::src::recon::rav1d_read_pal_uv;
 use crate::src::recon::rav1d_recon_b_inter;
 use crate::src::recon::rav1d_recon_b_intra;
 use crate::src::recon::read_coef_blocks_fn;
+use crate::src::recon::read_pal_plane_fn;
+use crate::src::recon::read_pal_uv_fn;
 use crate::src::recon::recon_b_inter_fn;
 use crate::src::recon::recon_b_intra_fn;
 use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::refmvs::RefMvsFrame;
+use crate::src::unstable_extensions::as_chunks;
+use crate::src::unstable_extensions::as_chunks_mut;
 use atomig::Atomic;
 use libc::ptrdiff_t;
 use std::cell::UnsafeCell;
@@ -346,6 +355,10 @@ pub(crate) struct Rav1dFrameContext_bd_fn {
     pub filter_sbrow_lr: filter_sbrow_fn,
     pub backup_ipred_edge: backup_ipred_edge_fn,
     pub read_coef_blocks: read_coef_blocks_fn,
+    pub copy_pal_block_y: copy_pal_block_fn,
+    pub copy_pal_block_uv: copy_pal_block_fn,
+    pub read_pal_plane: read_pal_plane_fn,
+    pub read_pal_uv: read_pal_uv_fn,
 }
 
 impl Rav1dFrameContext_bd_fn {
@@ -361,6 +374,10 @@ impl Rav1dFrameContext_bd_fn {
             filter_sbrow_lr: rav1d_filter_sbrow_lr::<BD>,
             backup_ipred_edge: rav1d_backup_ipred_edge::<BD>,
             read_coef_blocks: rav1d_read_coef_blocks::<BD>,
+            copy_pal_block_y: rav1d_copy_pal_block_y::<BD>,
+            copy_pal_block_uv: rav1d_copy_pal_block_uv::<BD>,
+            read_pal_plane: rav1d_read_pal_plane::<BD>,
+            read_pal_uv: rav1d_read_pal_uv::<BD>,
         }
     }
 
@@ -427,6 +444,36 @@ impl CodedBlockInfo {
 
 #[derive(Default)]
 #[repr(C)]
+pub struct Pal {
+    data: AlignedVec64<u8>,
+}
+
+impl Pal {
+    pub fn resize(&mut self, n: usize) {
+        self.data.resize(n * 8 * 3, Default::default());
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    pub fn as_slice<BD: BitDepth>(&self) -> &[[[BD::Pixel; 8]; 3]] {
+        as_chunks::<3, [BD::Pixel; 8]>(
+            as_chunks::<8, BD::Pixel>(BD::cast_pixel_slice(&self.data)).0,
+        )
+        .0
+    }
+
+    pub fn as_slice_mut<BD: BitDepth>(&mut self) -> &mut [[[BD::Pixel; 8]; 3]] {
+        as_chunks_mut::<3, [BD::Pixel; 8]>(
+            as_chunks_mut::<8, BD::Pixel>(BD::cast_pixel_slice_mut(&mut self.data)).0,
+        )
+        .0
+    }
+}
+
+#[derive(Default)]
+#[repr(C)]
 pub struct Rav1dFrameContext_frame_thread {
     /// Indices: 0: reconstruction, 1: entropy.
     pub next_tile_row: [c_int; 2],
@@ -438,7 +485,9 @@ pub struct Rav1dFrameContext_frame_thread {
 
     /// Indexed using `(t.b.y >> 1) * (f.b4_stride >> 1) + (t.b.x >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
-    pub pal: AlignedVec64<[[u16; 8]; 3]>,
+    /// Allocated as a flat array. `pal.as_slice` and `pal.as_slice_mut` should be
+    /// used to access elements of type `[[BitDepth::Pixel; 8]; 3]`
+    pub pal: Pal,
 
     /// Iterated over inside tile state.
     pub pal_idx: AlignedVec64<u8>,
@@ -781,6 +830,12 @@ impl BitDepthDependentType for Cf {
     type T<BD: BitDepth> = Align64<[BD::Coef; 32 * 32]>;
 }
 
+pub struct AlPal;
+
+impl BitDepthDependentType for AlPal {
+    type T<BD: BitDepth> = [[[[BD::Pixel; 8]; 3]; 32]; 2]; /* [2 a/l][32 bx/y4][3 plane][8 palette_idx] */
+}
+
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Rav1dTaskContext_scratch_compinter_seg_mask {
@@ -831,15 +886,17 @@ pub union Rav1dTaskContext_scratch_levels_pal {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct InterIntraEdgeBD<BD: BitDepth> {
+pub struct InterIntraEdgePalBD<BD: BitDepth> {
     pub interintra: [BD::Pixel; 64 * 64],
     pub edge: [BD::Pixel; 257],
+    _align: [BD::AlignPixelX8; 0],
+    pub pal: [[BD::Pixel; 8]; 3], /* [3 plane][8 palette_idx] */
 }
 
-pub struct InterIntraEdge;
+pub struct InterIntraEdgePal;
 
-impl BitDepthDependentType for InterIntraEdge {
-    type T<BD: BitDepth> = Align64<InterIntraEdgeBD<BD>>;
+impl BitDepthDependentType for InterIntraEdgePal {
+    type T<BD: BitDepth> = InterIntraEdgePalBD<BD>;
 }
 
 #[derive(Clone, Copy)]
@@ -855,8 +912,7 @@ pub struct Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub c2rust_unnamed: Rav1dTaskContext_scratch_levels_pal,
     pub ac_txtp_map: Rav1dTaskContext_scratch_ac_txtp_map,
     pub pal_idx: [u8; 8192],
-    pub pal: [[u16; 8]; 3], /* [3 plane][8 palette_idx] */
-    pub interintra_edge: BitDepthUnion<InterIntraEdge>,
+    pub interintra_edge_pal: BitDepthUnion<InterIntraEdgePal>,
 }
 
 #[repr(C, align(64))]
@@ -903,10 +959,8 @@ pub(crate) struct Rav1dTaskContext {
     pub a: *mut BlockContext,
     pub rt: refmvs_tile,
     pub cf: BitDepthUnion<Cf>,
-    // FIXME types can be changed to pixel (and dynamically allocated)
-    // which would make copy/assign operations slightly faster?
-    pub al_pal: [[[[u16; 8]; 3]; 32]; 2], /* [2 a/l][32 bx/y4][3 plane][8 palette_idx] */
-    pub pal_sz_uv: [[u8; 32]; 2],         /* [2 a/l][32 bx4/by4] */
+    pub al_pal: BitDepthUnion<AlPal>,
+    pub pal_sz_uv: [[u8; 32]; 2], /* [2 a/l][32 bx4/by4] */
     pub scratch: Rav1dTaskContext_scratch,
 
     pub warpmv: Rav1dWarpedMotionParams,
