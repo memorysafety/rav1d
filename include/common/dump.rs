@@ -42,9 +42,9 @@ pub unsafe fn hex_dump<BD: BitDepth>(
 #[inline]
 pub fn coef_dump<Coef: Display>(buf: &[Coef], w: usize, h: usize, len: usize, what: &str) {
     println!("{}", what);
-    for buf in buf[..w * h].chunks_exact(w).take(h) {
-        for x in buf {
-            print!(" {:0len$}", x, len = len);
+    for row in buf[..w * h].chunks_exact(w).take(h) {
+        for coef in row {
+            print!(" {:0len$}", coef, len = len);
         }
         println!();
     }

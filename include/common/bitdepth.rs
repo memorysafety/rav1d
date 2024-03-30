@@ -239,6 +239,14 @@ pub trait BitDepth: Clone + Copy {
         Self::Coef::mut_slice_from(bytes).unwrap()
     }
 
+    fn cast_coef(bytes: &[u8]) -> Self::Coef {
+        *Self::Coef::ref_from(bytes).unwrap()
+    }
+
+    fn cast_coef_mut(bytes: &mut [u8]) -> &mut Self::Coef {
+        Self::Coef::mut_from(bytes).unwrap()
+    }
+
     const PREP_BIAS: i16;
 
     unsafe fn select<T>(bd: &BitDepthUnion<T>) -> &T::T<Self>

@@ -18,6 +18,7 @@ use crate::src::cdef_apply::rav1d_cdef_brow;
 use crate::src::ctx::CaseSet;
 use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::Bxy;
+use crate::src::internal::Cf;
 use crate::src::internal::CodedBlockInfo;
 use crate::src::internal::EmuEdge;
 use crate::src::internal::Rav1dContext;
@@ -499,13 +500,6 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
-    let cf = match cf {
-        CfSelect::Frame(offset) => {
-            let cf_buf = BD::cast_coef_slice_mut(&mut f.frame_thread.cf);
-            &mut cf_buf[offset..]
-        }
-        CfSelect::Task => &mut BD::select_mut(&mut (*t).cf).0,
-    };
     let dbg = debug_block_info!(f, (*t).b) && plane != 0 && false;
     if dbg {
         println!("Start: r={}", ts.msac.rng);
@@ -795,7 +789,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         );
                     }
                 }
-                cf[rc as usize] = (tok << 11).as_::<BD::Coef>();
+                cf.set::<BD>(f, &mut (*t).cf, rc as usize, (tok << 11).as_::<BD::Coef>());
                 levels[(x as isize * stride + y as isize) as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
@@ -877,7 +871,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             );
                         }
                         level[0] = (tok + ((3 as c_int) << 6)) as u8;
-                        cf[rc_i as usize] = ((tok << 11) as c_uint | rc).as_::<BD::Coef>();
+                        cf.set::<BD>(
+                            f,
+                            &mut (*t).cf,
+                            rc_i as usize,
+                            ((tok << 11) as c_uint | rc).as_::<BD::Coef>(),
+                        );
                         rc = rc_i;
                     } else {
                         tok *= 0x17ff41 as c_int;
@@ -886,7 +885,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         if tok != 0 {
                             rc = rc_i;
                         }
-                        cf[rc_i as usize] = tok.as_::<BD::Coef>();
+                        cf.set::<BD>(f, &mut (*t).cf, rc_i as usize, tok.as_::<BD::Coef>());
                     }
                     i -= 1;
                 }
@@ -1009,7 +1008,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         );
                     }
                 }
-                cf[rc as usize] = (tok << 11).as_::<BD::Coef>();
+                cf.set::<BD>(f, &mut (*t).cf, rc as usize, (tok << 11).as_::<BD::Coef>());
                 levels[(x as isize * stride + y as isize) as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
@@ -1091,7 +1090,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             );
                         }
                         level[0] = (tok + ((3 as c_int) << 6)) as u8;
-                        cf[rc_i as usize] = ((tok << 11) as c_uint | rc).as_::<BD::Coef>();
+                        cf.set::<BD>(
+                            f,
+                            &mut (*t).cf,
+                            rc_i as usize,
+                            ((tok << 11) as c_uint | rc).as_::<BD::Coef>(),
+                        );
                         rc = rc_i;
                     } else {
                         tok *= 0x17ff41 as c_int;
@@ -1100,7 +1104,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         if tok != 0 {
                             rc = rc_i;
                         }
-                        cf[rc_i as usize] = tok.as_::<BD::Coef>();
+                        cf.set::<BD>(f, &mut (*t).cf, rc_i as usize, tok.as_::<BD::Coef>());
                     }
                     i -= 1;
                 }
@@ -1223,7 +1227,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         );
                     }
                 }
-                cf[rc as usize] = (tok << 11).as_::<BD::Coef>();
+                cf.set::<BD>(f, &mut (*t).cf, rc as usize, (tok << 11).as_::<BD::Coef>());
                 levels[(x as isize * stride + y as isize) as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
@@ -1305,7 +1309,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             );
                         }
                         level[0] = (tok + ((3 as c_int) << 6)) as u8;
-                        cf[rc_i as usize] = ((tok << 11) as c_uint | rc).as_::<BD::Coef>();
+                        cf.set::<BD>(
+                            f,
+                            &mut (*t).cf,
+                            rc_i as usize,
+                            ((tok << 11) as c_uint | rc).as_::<BD::Coef>(),
+                        );
                         rc = rc_i;
                     } else {
                         tok *= 0x17ff41 as c_int;
@@ -1314,7 +1323,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         if tok != 0 {
                             rc = rc_i;
                         }
-                        cf[rc_i as usize] = tok.as_::<BD::Coef>();
+                        cf.set::<BD>(f, &mut (*t).cf, rc_i as usize, tok.as_::<BD::Coef>());
                     }
                     i -= 1;
                 }
@@ -1464,7 +1473,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
             cul_level = dc_tok;
             dc_dq >>= dq_shift;
             dc_dq = cmp::min(dc_dq as c_uint, (cf_max + dc_sign) as c_uint) as c_int;
-            cf[0] = (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>();
+            cf.set::<BD>(
+                f,
+                &mut (*t).cf,
+                0,
+                (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
+            );
             if rc != 0 {
                 current_block = 1669574575799829731;
             } else {
@@ -1490,7 +1504,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 assert!(dc_dq <= cf_max);
             }
             cul_level = dc_tok;
-            cf[0] = (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>();
+            cf.set::<BD>(
+                f,
+                &mut (*t).cf,
+                0,
+                (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
+            );
             if rc != 0 {
                 current_block = 2404388531445638768;
             } else {
@@ -1506,7 +1525,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!("Post-sign[{}={}]: r={}", rc, sign, ts.msac.rng);
                 }
-                let rc_tok: c_uint = cf[rc as usize].as_::<c_uint>();
+                let rc_tok: c_uint = cf.get::<BD>(f, &*t, rc as usize).as_::<c_uint>();
                 let mut tok: c_uint;
                 let mut dq: c_uint = ac_dq
                     // TODO: Remove `unwrap` once state machine control flow is cleaned up.
@@ -1535,7 +1554,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 cul_level = cul_level.wrapping_add(tok);
                 dq >>= dq_shift;
                 dq_sat = cmp::min(dq, (cf_max + sign) as c_uint) as c_int;
-                cf[rc as usize] = (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>();
+                cf.set::<BD>(
+                    f,
+                    &mut (*t).cf,
+                    rc as usize,
+                    (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
+                );
                 rc = rc_tok & 0x3ff as c_int as c_uint;
                 if !(rc != 0) {
                     break;
@@ -1549,7 +1573,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!("Post-sign[{}={}]: r={}", rc, sign, ts.msac.rng);
                 }
-                let rc_tok: c_uint = cf[rc as usize].as_::<c_uint>();
+                let rc_tok: c_uint = cf.get::<BD>(f, &*t, rc as usize).as_::<c_uint>();
                 let mut tok: c_uint;
                 let mut dq;
                 if rc_tok >= ((15 as c_int) << 11) as c_uint {
@@ -1573,7 +1597,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     assert!(dq <= cf_max);
                 }
                 cul_level = cul_level.wrapping_add(tok);
-                cf[rc as usize] = (if sign != 0 { -dq } else { dq }).as_::<BD::Coef>();
+                cf.set::<BD>(
+                    f,
+                    &mut (*t).cf,
+                    rc as usize,
+                    (if sign != 0 { -dq } else { dq }).as_::<BD::Coef>(),
+                );
                 rc = rc_tok & 0x3ff as c_int as c_uint;
                 if !(rc != 0) {
                     break;
@@ -1593,6 +1622,34 @@ enum CfSelect {
 
     // Use `t.cf`.
     Task,
+}
+
+impl CfSelect {
+    fn set<BD: BitDepth>(
+        self,
+        f: &Rav1dFrameData,
+        task_cf: &mut BitDepthUnion<Cf>,
+        index: usize,
+        value: BD::Coef,
+    ) {
+        match self {
+            CfSelect::Frame(offset) => {
+                let mut cf = unsafe { f.frame_thread.cf.mut_element_as(offset + index) };
+                *cf = value;
+            }
+            CfSelect::Task => {
+                let cf = &mut unsafe { BD::select_mut(task_cf) }.0[index];
+                *cf = value;
+            }
+        };
+    }
+
+    fn get<BD: BitDepth>(self, f: &Rav1dFrameData, t: &Rav1dTaskContext, index: usize) -> BD::Coef {
+        match self {
+            CfSelect::Frame(offset) => *f.frame_thread.cf.element_as(offset + index),
+            CfSelect::Task => unsafe { BD::select(&t.cf).0[index] },
+        }
+    }
 }
 
 unsafe fn read_coef_tree<BD: BitDepth>(
@@ -1762,10 +1819,15 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         if (*t).frame_thread.pass & 1 == 0 {
             assert!(!dst.is_null());
             if eob >= 0 {
+                let mut cf_guard;
                 let cf = match cf {
                     CfSelect::Frame(offset) => {
-                        let cf_buf = BD::cast_coef_slice_mut(&mut f.frame_thread.cf);
-                        &mut cf_buf[offset..]
+                        let len = cmp::min((*t_dim).h as usize, 8)
+                            * 4
+                            * cmp::min((*t_dim).w as usize, 8)
+                            * 4;
+                        cf_guard = f.frame_thread.cf.mut_slice_as(offset..offset + len);
+                        &mut *cf_guard
                     }
                     CfSelect::Task => &mut BD::select_mut(&mut (*t).cf).0,
                 };
@@ -2613,16 +2675,22 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         }
                     }
                     if b.skip == 0 {
+                        let mut cf_guard;
                         let cf;
                         let eob;
                         let mut txtp: TxfmType = DCT_DCT;
                         if t.frame_thread.pass != 0 {
                             let p = t.frame_thread.pass & 1;
-                            let cf_buf = BD::cast_coef_slice_mut(&mut f.frame_thread.cf);
-                            cf = &mut cf_buf[ts.frame_thread[p as usize].cf..];
-                            ts.frame_thread[p as usize].cf += cmp::min((*t_dim).w, 8) as usize
-                                * cmp::min((*t_dim).h, 8) as usize
-                                * 16;
+                            let len = cmp::min((*t_dim).h as usize, 8)
+                                * 4
+                                * cmp::min((*t_dim).w as usize, 8)
+                                * 4;
+                            cf_guard = f.frame_thread.cf.mut_slice_as(
+                                ts.frame_thread[p as usize].cf
+                                    ..ts.frame_thread[p as usize].cf + len,
+                            );
+                            cf = &mut *cf_guard;
+                            ts.frame_thread[p as usize].cf += len;
                             let cbi = f.frame_thread.cbi
                                 [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize][0]
                                 .load(atomig::Ordering::Relaxed);
@@ -3051,13 +3119,18 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             if b.skip == 0 {
                                 let mut txtp: TxfmType = DCT_DCT;
                                 let eob;
+                                let mut cf_guard;
                                 let cf;
                                 if t.frame_thread.pass != 0 {
                                     let p = t.frame_thread.pass & 1;
-                                    let cf_buf = BD::cast_coef_slice_mut(&mut f.frame_thread.cf);
-                                    cf = &mut cf_buf[ts.frame_thread[p as usize].cf..];
-                                    ts.frame_thread[p as usize].cf +=
-                                        (*uv_t_dim).w as usize * (*uv_t_dim).h as usize * 16;
+                                    let len =
+                                        (*uv_t_dim).w as usize * 4 * (*uv_t_dim).h as usize * 4;
+                                    cf_guard = f.frame_thread.cf.mut_slice_as(
+                                        ts.frame_thread[p as usize].cf
+                                            ..ts.frame_thread[p as usize].cf + len,
+                                    );
+                                    cf = &mut *cf_guard;
+                                    ts.frame_thread[p as usize].cf += len;
                                     let cbi = f.frame_thread.cbi
                                         [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
                                         [(pl + 1) as usize]
@@ -3959,15 +4032,19 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         x = init_x >> ss_hor;
                         t.b.x += init_x;
                         while x < cmp::min(cw4, init_x + 16 >> ss_hor) {
+                            let mut cf_guard;
                             let cf;
                             let eob;
                             let mut txtp;
                             if t.frame_thread.pass != 0 {
                                 let p = t.frame_thread.pass & 1;
-                                let cf_buf = BD::cast_coef_slice_mut(&mut f.frame_thread.cf);
-                                cf = &mut cf_buf[ts.frame_thread[p as usize].cf..];
-                                ts.frame_thread[p as usize].cf +=
-                                    uvtx.w as usize * uvtx.h as usize * 16;
+                                let len = uvtx.h as usize * 4 * uvtx.w as usize * 4;
+                                cf_guard = f.frame_thread.cf.mut_slice_as(
+                                    ts.frame_thread[p as usize].cf
+                                        ..ts.frame_thread[p as usize].cf + len,
+                                );
+                                cf = &mut *cf_guard;
+                                ts.frame_thread[p as usize].cf += len;
                                 let cbi = f.frame_thread.cbi
                                     [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
                                     [(1 + pl) as usize]

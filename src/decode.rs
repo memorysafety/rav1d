@@ -4131,7 +4131,10 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
         let cf_sz = (num_sb128 * size_mul[0] as c_int) << hbd;
         // TODO: Fallible allocation
-        f.frame_thread.cf.resize(cf_sz as usize * 128 * 128 / 2, 0);
+        f.frame_thread
+            .cf
+            .get_mut()
+            .resize(cf_sz as usize * 128 * 128 / 2, 0);
 
         if frame_hdr.allow_screen_content_tools {
             // TODO: Fallible allocation
@@ -4547,8 +4550,9 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
     if !f.sr_cur.p.data.data[0].is_null() {
         f.task_thread.error = AtomicI32::new(0);
     }
-    if c.n_fc > 1 && retval.is_err() && !f.frame_thread.cf.is_empty() {
-        f.frame_thread.cf.fill_with(Default::default)
+    let cf = f.frame_thread.cf.get_mut();
+    if c.n_fc > 1 && retval.is_err() && !cf.is_empty() {
+        cf.fill_with(Default::default);
     }
     // TODO(kkysen) use array::zip when stable
     for i in 0..7 {

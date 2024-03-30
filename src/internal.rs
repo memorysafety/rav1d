@@ -562,7 +562,7 @@ pub struct Rav1dFrameContext_frame_thread {
     pub pal_idx: DisjointMut<AlignedVec64<u8>>,
 
     /// [`AlignedVec64`]`<`[`DynCoef`]`>`
-    pub cf: AlignedVec64<u8>,
+    pub cf: DisjointMut<AlignedVec64<u8>>,
 
     /// Start offsets per tile
     pub tile_start_off: Vec<u32>,
