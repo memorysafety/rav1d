@@ -462,16 +462,18 @@ unsafe fn find_matching_ref(
         }
     }
     if have_left {
-        let mut r2 = &r[1..];
-        let r2_ref = &*r2[0].offset((t.b.x - 1) as isize);
-        if matches(r2_ref) {
+        let get_r2 = |i: usize| &*r[i].offset((t.b.x - 1) as isize);
+
+        let mut i = 1;
+        let r2 = get_r2(1);
+        if matches(r2) {
             masks[1] |= 1;
             count += 1;
             if count >= 8 {
                 return;
             }
         }
-        let mut lh4 = bs(r2_ref)[1] as c_int;
+        let mut lh4 = bs(r2)[1] as c_int;
         if lh4 >= bh4 {
             if t.b.y & lh4 - 1 != 0 {
                 have_topleft = false;
@@ -480,16 +482,16 @@ unsafe fn find_matching_ref(
             let mut mask = 1 << lh4;
             let mut y = lh4;
             while y < h4 {
-                r2 = &r2[lh4 as usize..];
-                let r2_ref = &*r2[0].offset((t.b.x - 1) as isize);
-                if matches(r2_ref) {
+                i += lh4 as usize;
+                let r2 = get_r2(i);
+                if matches(r2) {
                     masks[1] |= mask;
                     count += 1;
                     if count >= 8 {
                         return;
                     }
                 }
-                lh4 = bs(r2_ref)[1] as c_int;
+                lh4 = bs(r2)[1] as c_int;
                 mask <<= lh4;
                 y += lh4;
             }
