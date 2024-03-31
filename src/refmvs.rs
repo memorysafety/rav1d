@@ -1274,26 +1274,26 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
         rf.r.offset(35 * rf.r_stride * tile_row_idx as isize + pass_off);
     let sbsz = rf.sbsz;
     let off = sbsz * sby & 16;
-    let mut rs = [ptr::null_mut(); 37];
+    let mut rr = [ptr::null_mut(); 37];
     for i in 0..sbsz {
-        rs[(off + 5 + i) as usize] = r;
+        rr[(off + 5 + i) as usize] = r;
         r = r.offset(rf.r_stride as isize);
     }
-    rs[(off + 0) as usize] = r;
+    rr[(off + 0) as usize] = r;
     r = r.offset(rf.r_stride as isize);
-    rs[(off + 1) as usize] = 0 as *mut refmvs_block;
-    rs[(off + 2) as usize] = r;
+    rr[(off + 1) as usize] = 0 as *mut refmvs_block;
+    rr[(off + 2) as usize] = r;
     r = r.offset(rf.r_stride as isize);
-    rs[(off + 3) as usize] = 0 as *mut refmvs_block;
-    rs[(off + 4) as usize] = r;
+    rr[(off + 3) as usize] = 0 as *mut refmvs_block;
+    rr[(off + 4) as usize] = r;
     if sby & 1 != 0 {
         for i in [0, 2, 4] {
-            rs.swap((off + i) as usize, (off + sbsz + i) as usize);
+            rr.swap((off + i) as usize, (off + sbsz + i) as usize);
         }
     }
 
     refmvs_tile {
-        r: rs,
+        r: rr,
         rp_proj,
         tile_col: refmvs_tile_range {
             start: tile_col_start4,
