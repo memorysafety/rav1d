@@ -196,11 +196,13 @@ pub const GLOBALMV: InterPredMode = 2;
 pub const NEARMV: InterPredMode = 1;
 pub const NEARESTMV: InterPredMode = 0;
 
-pub type DRL_PROXIMITY = u8;
-pub const NEARISH_DRL: DRL_PROXIMITY = 3;
-pub const NEAR_DRL: DRL_PROXIMITY = 2;
-pub const NEARER_DRL: DRL_PROXIMITY = 1;
-pub const NEAREST_DRL: DRL_PROXIMITY = 0;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum DrlProximity {
+    Nearest,
+    Nearer,
+    Near,
+    Nearish,
+}
 
 pub type CompInterPredMode = u8;
 pub const N_COMP_INTER_PRED_MODES: usize = 8;
@@ -319,7 +321,7 @@ pub struct Av1Block_inter {
     pub comp_type: Option<CompInterType>,
     pub inter_mode: u8,
     pub motion_mode: MotionMode,
-    pub drl_idx: u8,
+    pub drl_idx: DrlProximity,
     pub r#ref: [i8; 2],
     pub max_ytx: RectTxfmSize,
     pub filter2d: Filter2d,
@@ -373,11 +375,11 @@ impl Av1Block {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.comp_type
     }
 
-    pub unsafe fn drl_idx(&self) -> u8 {
+    pub unsafe fn drl_idx(&self) -> DrlProximity {
         self.c2rust_unnamed.c2rust_unnamed_0.drl_idx
     }
 
-    pub unsafe fn drl_idx_mut(&mut self) -> &mut u8 {
+    pub unsafe fn drl_idx_mut(&mut self) -> &mut DrlProximity {
         &mut self.c2rust_unnamed.c2rust_unnamed_0.drl_idx
     }
 
