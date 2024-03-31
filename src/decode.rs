@@ -914,13 +914,7 @@ unsafe fn splat_oneref_mv(
         bs,
         mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     }));
-    c.refmvs_dsp.splat_mv(
-        &mut t.rt.r[((t.b.y & 31) + 5) as usize..],
-        &tmpl.0,
-        t.b.x as usize,
-        bw4,
-        bh4,
-    );
+    c.refmvs_dsp.splat_mv(&mut t.rt.r, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -940,13 +934,7 @@ unsafe fn splat_intrabc_mv(
         bs,
         mf: 0,
     }));
-    c.refmvs_dsp.splat_mv(
-        &mut t.rt.r[((t.b.y & 31) + 5) as usize..],
-        &tmpl.0,
-        t.b.x as usize,
-        bw4,
-        bh4,
-    );
+    c.refmvs_dsp.splat_mv(&mut t.rt.r, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -968,13 +956,7 @@ unsafe fn splat_tworef_mv(
         bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     }));
-    c.refmvs_dsp.splat_mv(
-        &mut t.rt.r[((t.b.y & 31) + 5) as usize..],
-        &tmpl.0,
-        t.b.x as usize,
-        bw4,
-        bh4,
-    );
+    c.refmvs_dsp.splat_mv(&mut t.rt.r, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -993,13 +975,7 @@ unsafe fn splat_intraref(
         bs,
         mf: 0,
     }));
-    c.refmvs_dsp.splat_mv(
-        &mut t.rt.r[((t.b.y & 31) + 5) as usize..],
-        &tmpl.0,
-        t.b.x as usize,
-        bw4,
-        bh4,
-    );
+    c.refmvs_dsp.splat_mv(&mut t.rt.r, &tmpl, t.b, bw4, bh4);
 }
 
 fn mc_lowest_px(
