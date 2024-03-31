@@ -414,7 +414,7 @@ unsafe fn find_matching_ref(
     r#ref: i8,
     masks: &mut [u64; 2],
 ) {
-    let r = &t.rt.r[((t.b.y & 31) + 5 - 1) as usize..];
+    let r = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
     let mut count = 0;
     let ts = &*f.ts.offset(t.ts as isize);
     let mut have_topleft = have_top && have_left;
@@ -427,13 +427,13 @@ unsafe fn find_matching_ref(
     let matches = |rp: &refmvs_block| rp.0.r#ref.r#ref[0] == r#ref + 1 && rp.0.r#ref.r#ref[1] == -1;
 
     if have_top {
-        let mut r2 = r[0].offset(t.b.x as isize) as *const _;
-        let r2_ref = &*r2;
-        if matches(r2_ref) {
+        let mut i = r[0] + t.b.x as usize;
+        let r2 = &f.rf.r[i];
+        if matches(r2) {
             masks[0] |= 1;
             count = 1;
         }
-        let mut aw4 = bs(r2_ref)[0] as c_int;
+        let mut aw4 = bs(r2)[0] as c_int;
         if aw4 >= bw4 {
             let off = t.b.x & aw4 - 1;
             if off != 0 {
@@ -446,26 +446,26 @@ unsafe fn find_matching_ref(
             let mut mask = 1 << aw4;
             let mut x = aw4;
             while x < w4 {
-                r2 = r2.offset(aw4 as isize);
-                let r2_ref = &*r2;
-                if matches(r2_ref) {
+                i += aw4 as usize;
+                let r2 = &f.rf.r[i];
+                if matches(r2) {
                     masks[0] |= mask;
                     count += 1;
                     if count >= 8 {
                         return;
                     }
                 }
-                aw4 = bs(r2_ref)[0] as c_int;
+                aw4 = bs(r2)[0] as c_int;
                 mask <<= aw4;
                 x += aw4;
             }
         }
     }
     if have_left {
-        let get_r2 = |i: usize| &*r[i].offset((t.b.x - 1) as isize);
+        let get_r2 = |i| &f.rf.r[r[i] + t.b.x as usize - 1];
 
         let mut i = 1;
-        let r2 = get_r2(1);
+        let r2 = get_r2(i);
         if matches(r2) {
             masks[1] |= 1;
             count += 1;
@@ -497,19 +497,20 @@ unsafe fn find_matching_ref(
             }
         }
     }
-    if have_topleft && matches(&*r[0].offset((t.b.x - 1) as isize)) {
+    if have_topleft && matches(&f.rf.r[r[0] + t.b.x as usize - 1]) {
         masks[1] |= 1 << 32;
         count += 1;
         if count >= 8 {
             return;
         }
     }
-    if have_topright && matches(&*r[0].offset((t.b.x + bw4) as isize)) {
+    if have_topright && matches(&f.rf.r[r[0] + t.b.x as usize + bw4 as usize]) {
         masks[0] |= 1 << 32;
     }
 }
 
 unsafe fn derive_warpmv(
+    r: &[refmvs_block],
     t: &Rav1dTaskContext,
     bw4: c_int,
     bh4: c_int,
@@ -519,15 +520,13 @@ unsafe fn derive_warpmv(
 ) -> Rav1dWarpedMotionParams {
     let mut pts = [[[0; 2 /* x, y */]; 2 /* in, out */]; 8];
     let mut np = 0;
-    let r = |i: isize| {
+    let rp = |i: i32, j: i32| {
         // Need to use a closure here vs. a slice because `i` can be negative
         // (and not just by a constant -1).
         // See `-off` below.
         let offset = (t.b.y & 31) + 5;
-        t.rt.r[(offset as isize + i) as usize]
+        &r[t.rt.r[(offset as isize + i as isize) as usize] + j as usize]
     };
-
-    let rp = |i: i32, j: i32| &*r(i as isize).offset(j as isize);
 
     let bs = |rp: &refmvs_block| dav1d_block_dimensions[(*rp).0.bs as usize];
 
@@ -894,7 +893,8 @@ unsafe fn get_prev_frame_segid(
 #[inline]
 unsafe fn splat_oneref_mv(
     c: &Rav1dContext,
-    t: &mut Rav1dTaskContext,
+    t: &Rav1dTaskContext,
+    r: &mut [refmvs_block],
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -914,13 +914,14 @@ unsafe fn splat_oneref_mv(
         bs,
         mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     }));
-    c.refmvs_dsp.splat_mv(&mut t.rt.r, &tmpl, t.b, bw4, bh4);
+    c.refmvs_dsp.splat_mv(r, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
 unsafe fn splat_intrabc_mv(
     c: &Rav1dContext,
-    t: &mut Rav1dTaskContext,
+    t: &Rav1dTaskContext,
+    r: &mut [refmvs_block],
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -934,13 +935,14 @@ unsafe fn splat_intrabc_mv(
         bs,
         mf: 0,
     }));
-    c.refmvs_dsp.splat_mv(&mut t.rt.r, &tmpl, t.b, bw4, bh4);
+    c.refmvs_dsp.splat_mv(r, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
 unsafe fn splat_tworef_mv(
     c: &Rav1dContext,
-    t: &mut Rav1dTaskContext,
+    t: &Rav1dTaskContext,
+    r: &mut [refmvs_block],
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -956,13 +958,14 @@ unsafe fn splat_tworef_mv(
         bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     }));
-    c.refmvs_dsp.splat_mv(&mut t.rt.r, &tmpl, t.b, bw4, bh4);
+    c.refmvs_dsp.splat_mv(r, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
 unsafe fn splat_intraref(
     c: &Rav1dContext,
-    t: &mut Rav1dTaskContext,
+    t: &Rav1dTaskContext,
+    r: &mut [refmvs_block],
     bs: BlockSize,
     bw4: usize,
     bh4: usize,
@@ -975,7 +978,7 @@ unsafe fn splat_intraref(
         bs,
         mf: 0,
     }));
-    c.refmvs_dsp.splat_mv(&mut t.rt.r, &tmpl, t.b, bw4, bh4);
+    c.refmvs_dsp.splat_mv(r, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 fn mc_lowest_px(
@@ -1062,6 +1065,7 @@ unsafe fn affine_lowest_px_chroma(
 }
 
 unsafe fn obmc_lowest_px(
+    r: &[refmvs_block],
     t: &mut Rav1dTaskContext,
     ts: &Rav1dTileState,
     layout: Rav1dPixelLayout,
@@ -1075,7 +1079,7 @@ unsafe fn obmc_lowest_px(
     h4: c_int,
 ) {
     assert!(t.b.x & 1 == 0 && t.b.y & 1 == 0);
-    let r = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
+    let ri = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
     let ss_ver = (is_chroma && layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (is_chroma && layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
@@ -1086,7 +1090,7 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2] as c_int, 4) {
-            let a_r = &*r[0].offset((t.b.x + x + 1) as isize);
+            let a_r = &r[ri[0] + t.b.x as usize + x as usize + 1];
             let a_b_dim = &dav1d_block_dimensions[a_r.0.bs as usize];
             if a_r.0.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = cmp::min(b_dim[1] as c_int, 16) >> 1;
@@ -1107,7 +1111,7 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3] as c_int, 4) {
-            let l_r = &*r[y as usize + 1 + 1].offset((t.b.x - 1) as isize);
+            let l_r = &r[ri[y as usize + 1 + 1] + t.b.x as usize - 1];
             let l_b_dim = &dav1d_block_dimensions[l_r.0.bs as usize];
             if l_r.0.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = iclip(l_b_dim[1] as c_int, 2, b_dim[1] as c_int);
@@ -1218,15 +1222,16 @@ unsafe fn decode_b_inner(
                 },
             );
             if frame_type.is_inter_or_switch() {
-                let r = t.rt.r[((t.b.y & 31) + 5 + bh4 - 1) as usize].offset(t.b.x as isize);
-                for x in 0..bw4 {
-                    let block = &mut *r.offset(x as isize);
+                let r = &mut f.rf.r
+                    [t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize..]
+                    [..bw4 as usize];
+                for block in r {
                     block.0.r#ref.r#ref[0] = 0;
                     block.0.bs = bs;
                 }
-                let rr = &t.rt.r[((t.b.y & 31) + 5) as usize..];
-                for y in 0..bh4 - 1 {
-                    let block = &mut *rr[y as usize].offset((t.b.x + bw4 - 1) as isize);
+                let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
+                for r in rr {
+                    let block = &mut f.rf.r[r + t.b.x as usize + bw4 as usize - 1];
                     block.0.r#ref.r#ref[0] = 0;
                     block.0.bs = bs;
                 }
@@ -1292,19 +1297,20 @@ unsafe fn decode_b_inner(
             );
 
             if frame_type.is_inter_or_switch() {
-                let r = t.rt.r[((t.b.y & 31) + 5 + bh4 - 1) as usize].offset(t.b.x as isize);
-                let r = std::slice::from_raw_parts_mut(r, bw4 as usize);
-                for r in r {
-                    r.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
-                    r.0.mv.mv[0] = b.mv()[0];
-                    r.0.bs = bs;
+                let r = &mut f.rf.r
+                    [t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize..]
+                    [..bw4 as usize];
+                for block in r {
+                    block.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
+                    block.0.mv.mv[0] = b.mv()[0];
+                    block.0.bs = bs;
                 }
-                let rr = &t.rt.r[((t.b.y & 31) + 5) as usize..];
-                for y in 0..bh4 as usize - 1 {
-                    let r = &mut *rr[y].offset((t.b.x + bw4 - 1) as isize);
-                    r.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
-                    r.0.mv.mv[0] = b.mv()[0];
-                    r.0.bs = bs;
+                let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
+                for r in rr {
+                    let block = &mut f.rf.r[r + t.b.x as usize + bw4 as usize - 1];
+                    block.0.r#ref.r#ref[0] = b.r#ref()[0] + 1;
+                    block.0.mv.mv[0] = b.mv()[0];
+                    block.0.bs = bs;
                 }
             }
 
@@ -1971,7 +1977,7 @@ unsafe fn decode_b_inner(
         }
         let frame_hdr = f.frame_hdr();
         if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
-            splat_intraref(c, t, bs, bw4 as usize, bh4 as usize);
+            splat_intraref(c, t, &mut f.rf.r, bs, bw4 as usize, bh4 as usize);
         }
     } else if frame_hdr.frame_type.is_key_or_intra() {
         // intra block copy
@@ -2088,7 +2094,7 @@ unsafe fn decode_b_inner(
             bd_fn.recon_b_inter(f, t, bs, b)?;
         }
 
-        splat_intrabc_mv(c, t, bs, b, bw4 as usize, bh4 as usize);
+        splat_intrabc_mv(c, t, &mut f.rf.r, bs, b, bw4 as usize, bh4 as usize);
 
         CaseSet::<32, false>::many(
             [(&mut t.l, 1), (&mut *t.a, 0)],
@@ -2789,7 +2795,8 @@ unsafe fn decode_b_inner(
                 .expect("valid variant");
                 if b.motion_mode() == MotionMode::Warp {
                     has_subpel_filter = false;
-                    t.warpmv = derive_warpmv(t, bw4, bh4, &mask, b.mv()[0], t.warpmv.clone());
+                    t.warpmv =
+                        derive_warpmv(&f.rf.r, t, bw4, bh4, &mask, b.mv()[0], t.warpmv.clone());
                     if debug_block_info!(f, t.b) {
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
@@ -2941,9 +2948,9 @@ unsafe fn decode_b_inner(
 
         // context updates
         if is_comp {
-            splat_tworef_mv(c, t, bs, b, bw4 as usize, bh4 as usize);
+            splat_tworef_mv(c, t, &mut f.rf.r, bs, b, bw4 as usize, bh4 as usize);
         } else {
-            splat_oneref_mv(c, t, bs, b, bw4 as usize, bh4 as usize);
+            splat_oneref_mv(c, t, &mut f.rf.r, bs, b, bw4 as usize, bh4 as usize);
         }
 
         CaseSet::<32, false>::many(
@@ -3047,6 +3054,7 @@ unsafe fn decode_b_inner(
                 );
                 if b.motion_mode() == MotionMode::Obmc {
                     obmc_lowest_px(
+                        &f.rf.r,
                         t,
                         &*f.ts.offset(t.ts as isize),
                         f.cur.p.layout,
@@ -3070,24 +3078,26 @@ unsafe fn decode_b_inner(
                     assert!(ss_hor == 1);
                     let r =
                         <[_; 2]>::try_from(&t.rt.r[(t.b.y as usize & 31) + 5 - 1..][..2]).unwrap();
+
                     if bw4 == 1 {
-                        is_sub8x8 &= (*r[1].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= f.rf.r[r[1] + t.b.x as usize - 1].0.r#ref.r#ref[0] > 0;
                     }
                     if bh4 == ss_ver {
-                        is_sub8x8 &= (*r[0].offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= f.rf.r[r[0] + t.b.x as usize].0.r#ref.r#ref[0] > 0;
                     }
                     if bw4 == 1 && bh4 == ss_ver {
-                        is_sub8x8 &= (*r[0].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= f.rf.r[r[0] + t.b.x as usize - 1].0.r#ref.r#ref[0] > 0;
                     }
+
                     r
                 } else {
-                    [ptr::null_mut(); 2] // Never actually used.
+                    Default::default() // Never actually used.
                 };
 
                 // chroma prediction
                 if is_sub8x8 {
                     if bw4 == 1 && bh4 == ss_ver {
-                        let rr = (*r[0].offset((t.b.x - 1) as isize)).0;
+                        let rr = f.rf.r[r[0] + t.b.x as usize - 1].0;
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
@@ -3098,7 +3108,7 @@ unsafe fn decode_b_inner(
                         );
                     }
                     if bw4 == 1 {
-                        let rr = (*r[1].offset((t.b.x - 1) as isize)).0;
+                        let rr = f.rf.r[r[1] + t.b.x as usize - 1].0;
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y,
@@ -3109,7 +3119,7 @@ unsafe fn decode_b_inner(
                         );
                     }
                     if bh4 == ss_ver {
-                        let rr = (*r[0].offset(t.b.x as isize)).0;
+                        let rr = f.rf.r[r[0] + t.b.x as usize].0;
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
@@ -3155,6 +3165,7 @@ unsafe fn decode_b_inner(
                     );
                     if b.motion_mode() == MotionMode::Obmc {
                         obmc_lowest_px(
+                            &f.rf.r,
                             t,
                             &*f.ts.offset(t.ts as isize),
                             f.cur.p.layout,
