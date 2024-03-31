@@ -3110,38 +3110,36 @@ unsafe fn decode_b_inner(
                 // chroma prediction
                 if is_sub8x8 {
                     if bw4 == 1 && bh4 == ss_ver {
-                        let rr =
-                            &mut *(*r.add(0)).offset((t.b.x - 1) as isize) as *const refmvs_block;
+                        let rr = &*(*r.add(0)).offset((t.b.x - 1) as isize);
                         mc_lowest_px(
-                            &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
+                            &mut lowest_px[rr.0.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
                             bh4,
-                            (*rr).0.mv.mv[0].y,
+                            rr.0.mv.mv[0].y,
                             ss_ver,
-                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
+                            &f.svc[rr.0.r#ref.r#ref[0] as usize - 1][1],
                         );
                     }
                     if bw4 == 1 {
-                        let rr =
-                            &mut *(*r.add(1)).offset((t.b.x - 1) as isize) as *const refmvs_block;
+                        let rr = &*(*r.add(1)).offset((t.b.x - 1) as isize);
                         mc_lowest_px(
-                            &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
+                            &mut lowest_px[rr.0.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y,
                             bh4,
-                            (*rr).0.mv.mv[0].y,
+                            rr.0.mv.mv[0].y,
                             ss_ver,
-                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
+                            &f.svc[rr.0.r#ref.r#ref[0] as usize - 1][1],
                         );
                     }
                     if bh4 == ss_ver {
-                        let rr = &mut *(*r.add(0)).offset(t.b.x as isize) as *const refmvs_block;
+                        let rr = &*(*r.add(0)).offset(t.b.x as isize);
                         mc_lowest_px(
-                            &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
+                            &mut lowest_px[rr.0.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
                             bh4,
-                            (*rr).0.mv.mv[0].y,
+                            rr.0.mv.mv[0].y,
                             ss_ver,
-                            &f.svc[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
+                            &f.svc[rr.0.r#ref.r#ref[0] as usize - 1][1],
                         );
                     }
                     mc_lowest_px(
