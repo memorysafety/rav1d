@@ -285,8 +285,12 @@ pub struct refmvs_tile_range {
 }
 
 pub(crate) struct refmvs_tile {
-    /// Indices into [`RefMvsFrame::r`].
+    /// Unique indices into [`RefMvsFrame::r`].
     /// Out of bounds indices correspond to null pointers.
+    ///
+    /// # Safety
+    ///
+    /// These indices, when in bounds, are unique.
     pub r: [usize; 37],
 
     pub rp_proj: *mut refmvs_temporal_block,
@@ -301,8 +305,6 @@ impl refmvs_tile {
     }
 
     pub fn r_ptrs_mut(&self, r: &mut [refmvs_block]) -> [*mut refmvs_block; 37] {
-        // TODO(kkysen) Is it UB to use `.get_mut`, as it creates a temporary `&mut`?
-        // Or is it okay, since there's never 2 `&mut`s at once?
         self.r
             .map(|i| r.get_mut(i).map_or_else(ptr::null_mut, |r| r as *mut _))
     }
@@ -1323,6 +1325,7 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     let off = sbsz * sby & 16;
     let invalid_r = usize::MAX;
     let mut rr = [invalid_r; 37];
+    // SAFETY: All of the valid `r`s that are set are unique, as we add `rf.r_stride` every time.
     for i in 0..sbsz {
         rr[(off + 5 + i) as usize] = r;
         r += rf.r_stride;
@@ -1336,6 +1339,7 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     rr[(off + 4) as usize] = r;
     if sby & 1 != 0 {
         for i in [0, 2, 4] {
+            // SAFETY: Swapping doesn't affect uniqueness.
             rr.swap((off + i) as usize, (off + sbsz + i) as usize);
         }
     }
