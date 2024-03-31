@@ -3113,7 +3113,6 @@ unsafe fn decode_b_inner(
 
                 // chroma prediction
                 if is_sub8x8 {
-                    assert!(ss_hor == 1);
                     if bw4 == 1 && bh4 == ss_ver {
                         let rr = &mut *(*r.offset(-1)).offset((t.b.x - 1) as isize)
                             as *const refmvs_block;
