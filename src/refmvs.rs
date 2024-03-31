@@ -856,10 +856,9 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     let mut have_row_mvs = 0;
     let mut max_rows = 0;
     let mut n_rows = !0;
-    let mut b_top = std::ptr::null();
-    if by4 > rt.tile_row.start {
+    let b_top = if by4 > rt.tile_row.start {
         max_rows = cmp::min(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as c_int) as c_uint;
-        b_top = rt.r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize - 1);
+        let b_top = rt.r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize - 1);
         n_rows = scan_row(
             mvstack,
             cnt,
@@ -873,15 +872,17 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             &mut have_newmv,
             &mut have_row_mvs,
         ) as c_uint;
-    }
+        b_top
+    } else {
+        ptr::null()
+    };
 
     // left
     let mut max_cols = 0;
     let mut n_cols = !0;
-    let mut b_left = std::ptr::null();
-    if bx4 > rt.tile_col.start {
+    let b_left = if bx4 > rt.tile_col.start {
         max_cols = cmp::min(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as c_int) as c_uint;
-        b_left = &rt.r[(by4 as usize & 31) + 5];
+        let b_left = &rt.r[(by4 as usize & 31) + 5];
         n_cols = scan_col(
             mvstack,
             cnt,
@@ -896,7 +897,10 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             &mut have_newmv,
             &mut have_col_mvs,
         ) as c_uint;
-    }
+        b_left
+    } else {
+        ptr::null()
+    };
 
     // top/right
     if n_rows != !0
