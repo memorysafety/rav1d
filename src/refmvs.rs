@@ -859,13 +859,13 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     let mut b_top = std::ptr::null();
     if by4 > rt.tile_row.start {
         max_rows = cmp::min(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as c_int) as c_uint;
-        b_top = &mut *rt.r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize);
+        b_top = rt.r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize - 1);
         n_rows = scan_row(
             mvstack,
             cnt,
             r#ref,
             &gmv,
-            b_top,
+            b_top.add(1),
             bw4,
             w4,
             max_rows as c_int,
@@ -908,7 +908,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            &*b_top.offset(bw4 as isize),
+            &*b_top.add(bw4 as usize + 1),
             r#ref,
             &gmv,
             &mut have_newmv,
@@ -998,7 +998,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            &*b_top.offset(-1),
+            &*b_top.add(0),
             r#ref,
             &gmv,
             &mut have_dummy_newmv_match,
@@ -1073,7 +1073,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
-                    let cand_b = &*b_top.offset(x as isize);
+                    let cand_b = &*b_top.add(x as usize + 1);
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1181,7 +1181,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
         if n_rows != !0 {
             let mut x = 0;
             while x < sz4 && *cnt < 2 {
-                let cand_b = &*b_top.offset(x as isize);
+                let cand_b = &*b_top.add(x as usize + 1);
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
                 x += dav1d_block_dimensions[cand_b.0.bs as usize][0] as c_int;
             }
