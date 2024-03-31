@@ -3093,28 +3093,25 @@ unsafe fn decode_b_inner(
                 let mut r = 0 as *const *mut refmvs_block;
                 if is_sub8x8 {
                     assert!(ss_hor == 1);
-                    r = t.rt.r.as_mut_ptr().add(((t.b.y & 31) + 5) as usize);
+                    r = t.rt.r.as_mut_ptr().add((t.b.y as usize & 31) + 5 - 1);
                     if bw4 == 1 {
                         is_sub8x8 &=
-                            (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
+                            (*(*r.add(1)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
                     }
                     if bh4 == ss_ver {
-                        is_sub8x8 &= (*(*r.offset(-1)).offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= (*(*r.add(0)).offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0;
                     }
                     if bw4 == 1 && bh4 == ss_ver {
-                        is_sub8x8 &= (*(*r.offset(-1)).offset((t.b.x - 1) as isize))
-                            .0
-                            .r#ref
-                            .r#ref[0]
-                            > 0;
+                        is_sub8x8 &=
+                            (*(*r.add(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
                     }
                 }
 
                 // chroma prediction
                 if is_sub8x8 {
                     if bw4 == 1 && bh4 == ss_ver {
-                        let rr = &mut *(*r.offset(-1)).offset((t.b.x - 1) as isize)
-                            as *const refmvs_block;
+                        let rr =
+                            &mut *(*r.add(0)).offset((t.b.x - 1) as isize) as *const refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
@@ -3125,8 +3122,8 @@ unsafe fn decode_b_inner(
                         );
                     }
                     if bw4 == 1 {
-                        let rr = &mut *(*r.offset(0)).offset((t.b.x - 1) as isize)
-                            as *const refmvs_block;
+                        let rr =
+                            &mut *(*r.add(1)).offset((t.b.x - 1) as isize) as *const refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y,
@@ -3137,8 +3134,7 @@ unsafe fn decode_b_inner(
                         );
                     }
                     if bh4 == ss_ver {
-                        let rr =
-                            &mut *(*r.offset(-1)).offset(t.b.x as isize) as *const refmvs_block;
+                        let rr = &mut *(*r.add(0)).offset(t.b.x as isize) as *const refmvs_block;
                         mc_lowest_px(
                             &mut lowest_px[(*rr).0.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
