@@ -861,11 +861,14 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     let mut have_newmv = 0;
     let mut have_col_mvs = 0;
     let mut have_row_mvs = 0;
-    let mut max_rows = 0;
-    let mut n_rows = !0;
-    let b_top = if by4 > rt.tile_row.start {
+    let max_rows;
+    let n_rows;
+    let b_top;
+    if by4 > rt.tile_row.start {
         max_rows = cmp::min(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as c_int) as c_uint;
-        let b_top = rt.r[(by4 as usize & 31) + 5 - 1].offset(bx4 as isize - 1);
+        b_top = rt.r[(by4 as usize & 31) + 5 - 1]
+            .offset(bx4 as isize - 1)
+            .cast_const();
         n_rows = scan_row(
             mvstack,
             cnt,
@@ -879,17 +882,19 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             &mut have_newmv,
             &mut have_row_mvs,
         ) as c_uint;
-        b_top
     } else {
-        ptr::null()
-    };
+        max_rows = 0;
+        n_rows = !0;
+        b_top = ptr::null();
+    }
 
     // left
-    let mut max_cols = 0;
-    let mut n_cols = !0;
-    let b_left = if bx4 > rt.tile_col.start {
+    let max_cols;
+    let n_cols;
+    let b_left;
+    if bx4 > rt.tile_col.start {
         max_cols = cmp::min(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as c_int) as c_uint;
-        let b_left = &rt.r[(by4 as usize & 31) + 5];
+        b_left = rt.r[(by4 as usize & 31) + 5..].as_ptr();
         n_cols = scan_col(
             mvstack,
             cnt,
@@ -904,10 +909,11 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             &mut have_newmv,
             &mut have_col_mvs,
         ) as c_uint;
-        b_left
     } else {
-        ptr::null()
-    };
+        max_cols = 0;
+        n_cols = !0;
+        b_left = ptr::null();
+    }
 
     // top/right
     if n_rows != !0
@@ -1019,6 +1025,8 @@ pub(crate) unsafe fn rav1d_refmvs_find(
 
     // "secondary" (non-direct neighbour) top & left edges
     // what is different about secondary is that everything is now in 8x8 resolution
+    let mut n_rows = n_rows;
+    let mut n_cols = n_cols;
     for n in 2..=3 {
         if n > n_rows && n <= max_rows {
             n_rows = n_rows.wrapping_add(scan_row(
