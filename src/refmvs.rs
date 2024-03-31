@@ -217,7 +217,7 @@ pub(crate) struct RefMvsFrame {
     pub rp_proj: *mut refmvs_temporal_block,
     pub rp_stride: ptrdiff_t,
     pub r: AlignedVec64<refmvs_block>,
-    pub r_stride: ptrdiff_t,
+    pub r_stride: usize,
     pub n_tile_rows: c_int,
     pub n_tile_threads: c_int,
     pub n_frame_threads: c_int,
@@ -270,7 +270,7 @@ impl RefMvsFrame {
             rp_proj,
             rp_stride,
             r: r.as_mut_ptr(),
-            r_stride,
+            r_stride: r_stride as isize,
             n_tile_rows,
             n_tile_threads,
             n_frame_threads,
@@ -1314,24 +1314,24 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     let rp_proj = rf.rp_proj.offset(16 * rf.rp_stride * tile_row_idx as isize);
     let uses_2pass = rf.n_tile_threads > 1 && rf.n_frame_threads > 1;
     let pass_off = if uses_2pass && pass == 2 {
-        35 * rf.r_stride * rf.n_tile_rows as isize
+        35 * rf.r_stride * rf.n_tile_rows as usize
     } else {
         0
     };
-    let mut r = (35 * rf.r_stride * tile_row_idx as isize + pass_off) as usize;
+    let mut r = 35 * rf.r_stride as usize * tile_row_idx as usize + pass_off;
     let sbsz = rf.sbsz;
     let off = sbsz * sby & 16;
     let invalid_r = usize::MAX;
     let mut rr = [invalid_r; 37];
     for i in 0..sbsz {
         rr[(off + 5 + i) as usize] = r;
-        r = (r as isize + rf.r_stride) as usize;
+        r += rf.r_stride;
     }
     rr[(off + 0) as usize] = r;
-    r = (r as isize + rf.r_stride) as usize;
+    r += rf.r_stride;
     rr[(off + 1) as usize] = invalid_r;
     rr[(off + 2) as usize] = r;
-    r = (r as isize + rf.r_stride) as usize;
+    r += rf.r_stride;
     rr[(off + 3) as usize] = invalid_r;
     rr[(off + 4) as usize] = r;
     if sby & 1 != 0 {
@@ -1558,7 +1558,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.iw4 = rf.iw8 << 1;
     rf.ih4 = rf.ih8 << 1;
 
-    let r_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 2) as ptrdiff_t;
+    let r_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 2) as usize;
     let n_tile_rows = if n_tile_threads > 1 {
         frm_hdr.tiling.rows
     } else {
@@ -1567,12 +1567,12 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
     // TODO fallible allocation
     rf.r.resize(
-        35 * r_stride as usize * n_tile_rows as usize * (1 + uses_2pass),
+        35 * r_stride * n_tile_rows as usize * (1 + uses_2pass),
         FromZeroes::new_zeroed(),
     );
     rf.r_stride = r_stride;
 
-    let rp_stride = r_stride >> 1;
+    let rp_stride = r_stride as isize >> 1;
     if rp_stride != rf.rp_stride || n_tile_rows != rf.n_tile_rows {
         if !rf.rp_proj.is_null() {
             rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
