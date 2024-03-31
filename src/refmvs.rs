@@ -217,7 +217,7 @@ pub(crate) struct RefMvsFrame {
     pub rp_proj: *mut refmvs_temporal_block,
     pub rp_stride: ptrdiff_t,
     pub r: AlignedVec64<refmvs_block>,
-    pub r_stride: usize,
+    pub r_stride: u32,
     pub n_tile_rows: c_int,
     pub n_tile_threads: c_int,
     pub n_frame_threads: c_int,
@@ -1315,12 +1315,13 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     }
     let rp_proj = rf.rp_proj.offset(16 * rf.rp_stride * tile_row_idx as isize);
     let uses_2pass = rf.n_tile_threads > 1 && rf.n_frame_threads > 1;
+    let r_stride = rf.r_stride as usize;
     let pass_off = if uses_2pass && pass == 2 {
-        35 * rf.r_stride * rf.n_tile_rows as usize
+        35 * r_stride * rf.n_tile_rows as usize
     } else {
         0
     };
-    let mut r = 35 * rf.r_stride as usize * tile_row_idx as usize + pass_off;
+    let mut r = 35 * r_stride * tile_row_idx as usize + pass_off;
     let sbsz = rf.sbsz;
     let off = sbsz * sby & 16;
     let invalid_r = usize::MAX;
@@ -1328,13 +1329,13 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     // SAFETY: All of the valid `r`s that are set are unique, as we add `rf.r_stride` every time.
     for i in 0..sbsz {
         rr[(off + 5 + i) as usize] = r;
-        r += rf.r_stride;
+        r += r_stride;
     }
     rr[(off + 0) as usize] = r;
-    r += rf.r_stride;
+    r += r_stride;
     rr[(off + 1) as usize] = invalid_r;
     rr[(off + 2) as usize] = r;
-    r += rf.r_stride;
+    r += r_stride;
     rr[(off + 3) as usize] = invalid_r;
     rr[(off + 4) as usize] = r;
     if sby & 1 != 0 {
@@ -1562,7 +1563,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rf.iw4 = rf.iw8 << 1;
     rf.ih4 = rf.ih8 << 1;
 
-    let r_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 2) as usize;
+    let r_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 2) as u32;
     let n_tile_rows = if n_tile_threads > 1 {
         frm_hdr.tiling.rows
     } else {
@@ -1571,7 +1572,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
     // TODO fallible allocation
     rf.r.resize(
-        35 * r_stride * n_tile_rows as usize * (1 + uses_2pass),
+        35 * r_stride as usize * n_tile_rows as usize * (1 + uses_2pass),
         FromZeroes::new_zeroed(),
     );
     rf.r_stride = r_stride;
