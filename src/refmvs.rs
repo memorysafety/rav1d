@@ -469,7 +469,7 @@ fn add_spatial_candidate(
     }
 }
 
-unsafe fn scan_row(
+fn scan_row(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     r#ref: refmvs_refpair,
@@ -502,7 +502,7 @@ unsafe fn scan_row(
             mvstack,
             cnt,
             len * weight,
-            &*cand_b,
+            cand_b,
             r#ref,
             gmv,
             have_newmv_match,
@@ -520,7 +520,7 @@ unsafe fn scan_row(
             mvstack,
             cnt,
             len * 2,
-            &*cand_b,
+            cand_b,
             r#ref,
             gmv,
             have_newmv_match,
@@ -537,7 +537,7 @@ unsafe fn scan_row(
     }
 }
 
-unsafe fn scan_col(
+fn scan_col(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     r#ref: refmvs_refpair,
@@ -572,7 +572,7 @@ unsafe fn scan_col(
             mvstack,
             cnt,
             len * weight,
-            &*cand_b,
+            cand_b,
             r#ref,
             gmv,
             have_newmv_match,
@@ -590,7 +590,7 @@ unsafe fn scan_col(
             mvstack,
             cnt,
             len * 2,
-            &*cand_b,
+            cand_b,
             r#ref,
             gmv,
             have_newmv_match,
