@@ -4,6 +4,7 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align16;
+use crate::src::align::AlignedVec64;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
@@ -25,6 +26,7 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
+use zerocopy::FromZeroes;
 
 #[cfg(feature = "asm")]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
@@ -121,7 +123,7 @@ pub struct refmvs_temporal_block {
     pub r#ref: i8,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, FromZeroes)]
 #[repr(C)]
 pub struct refmvs_refpair {
     pub r#ref: [i8; 2],
@@ -133,14 +135,14 @@ impl From<[i8; 2]> for refmvs_refpair {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq, FromZeroes)]
 #[repr(C)]
 pub struct refmvs_mvpair {
     pub mv: [mv; 2],
 }
 
 /// For why this unaligned, see the aligned [`refmvs_block`] below.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, FromZeroes)]
 #[repr(C, packed)]
 pub struct refmvs_block_unaligned {
     pub mv: refmvs_mvpair,
@@ -157,7 +159,7 @@ pub struct refmvs_block_unaligned {
 /// into an inner packed [`refmvs_block_unaligned`]
 /// and an outer aligned [`refmvs_block`]
 /// that is just a wrapper over the real [`refmvs_block_unaligned`].
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, FromZeroes)]
 #[repr(C, align(4))]
 pub struct refmvs_block(pub refmvs_block_unaligned);
 
@@ -214,7 +216,7 @@ pub(crate) struct RefMvsFrame {
     pub rp_ref: *const *mut refmvs_temporal_block,
     pub rp_proj: *mut refmvs_temporal_block,
     pub rp_stride: ptrdiff_t,
-    pub r: *mut refmvs_block,
+    pub r: AlignedVec64<refmvs_block>,
     pub r_stride: ptrdiff_t,
     pub n_tile_rows: c_int,
     pub n_tile_threads: c_int,
@@ -222,7 +224,7 @@ pub(crate) struct RefMvsFrame {
 }
 
 impl RefMvsFrame {
-    pub fn as_dav1d<'a>(&'a self) -> refmvs_frame<'a> {
+    pub fn as_dav1d<'a>(&'a mut self) -> refmvs_frame<'a> {
         let Self {
             iw4,
             ih4,
@@ -241,7 +243,7 @@ impl RefMvsFrame {
             rp_ref,
             rp_proj,
             rp_stride,
-            r,
+            ref mut r,
             r_stride,
             n_tile_rows,
             n_tile_threads,
@@ -267,7 +269,7 @@ impl RefMvsFrame {
             rp_ref,
             rp_proj,
             rp_stride,
-            r,
+            r: r.as_mut_ptr(),
             r_stride,
             n_tile_rows,
             n_tile_threads,
@@ -283,10 +285,27 @@ pub struct refmvs_tile_range {
 }
 
 pub(crate) struct refmvs_tile {
-    pub r: [*mut refmvs_block; 37],
+    /// Indices into [`RefMvsFrame::r`].
+    /// Out of bounds indices correspond to null pointers.
+    pub r: [usize; 37],
+
     pub rp_proj: *mut refmvs_temporal_block,
     pub tile_col: refmvs_tile_range,
     pub tile_row: refmvs_tile_range,
+}
+
+impl refmvs_tile {
+    pub fn r_ptrs(&self, r: &[refmvs_block]) -> [*const refmvs_block; 37] {
+        self.r
+            .map(|i| r.get(i).map_or_else(ptr::null, |r| r as *const _))
+    }
+
+    pub fn r_ptrs_mut(&self, r: &mut [refmvs_block]) -> [*mut refmvs_block; 37] {
+        // TODO(kkysen) Is it UB to use `.get_mut`, as it creates a temporary `&mut`?
+        // Or is it okay, since there's never 2 `&mut`s at once?
+        self.r
+            .map(|i| r.get_mut(i).map_or_else(ptr::null_mut, |r| r as *mut _))
+    }
 }
 
 #[derive(Copy, Clone, Default)]
@@ -350,13 +369,15 @@ pub(crate) struct Rav1dRefmvsDSPContext {
 impl Rav1dRefmvsDSPContext {
     pub unsafe fn splat_mv(
         &self,
-        rr: &mut [*mut refmvs_block; 37],
+        r: &mut [refmvs_block],
+        rt: &refmvs_tile,
         rmv: &Align16<refmvs_block>,
         b4: Bxy,
         bw4: usize,
         bh4: usize,
     ) {
-        let rr = &mut rr[(b4.y as usize & 31) + 5..];
+        let mut r = rt.r_ptrs_mut(r);
+        let rr = &mut r[(b4.y as usize & 31) + 5..];
         let rmv = &rmv.0;
         let bx4 = b4.x as _;
         let bw4 = bw4 as _;
@@ -451,7 +472,7 @@ unsafe fn scan_row(
     cnt: &mut usize,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
-    b: *const refmvs_block,
+    b: &[refmvs_block],
     bw4: c_int,
     w4: c_int,
     max_rows: c_int,
@@ -459,7 +480,7 @@ unsafe fn scan_row(
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) -> c_int {
-    let mut cand_b = &*b;
+    let mut cand_b = &b[0];
     let first_cand_bs = cand_b.0.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as c_int;
@@ -507,7 +528,7 @@ unsafe fn scan_row(
         if x >= w4 {
             return 1;
         }
-        cand_b = &*b.offset(x as isize);
+        cand_b = &b[x as usize];
         cand_bw4 = dav1d_block_dimensions[cand_b.0.bs as usize][0] as c_int;
         assert!(cand_bw4 < bw4);
         len = cmp::max(step, cand_bw4);
@@ -519,7 +540,8 @@ unsafe fn scan_col(
     cnt: &mut usize,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
-    b: *const *mut refmvs_block,
+    r: &[refmvs_block],
+    b: &[usize],
     bh4: c_int,
     h4: c_int,
     bx4: c_int,
@@ -528,7 +550,7 @@ unsafe fn scan_col(
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) -> c_int {
-    let mut cand_b = &*(*b.offset(0)).offset(bx4 as isize);
+    let mut cand_b = &r[b[0] + bx4 as usize];
     let first_cand_bs = cand_b.0.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as c_int;
@@ -576,7 +598,7 @@ unsafe fn scan_col(
         if y >= h4 {
             return 1;
         }
-        cand_b = &*(*b.offset(y as isize)).offset(bx4 as isize);
+        cand_b = &r[b[y as usize] + bx4 as usize];
         cand_bh4 = dav1d_block_dimensions[cand_b.0.bs as usize][1] as c_int;
         assert!(cand_bh4 < bh4);
         len = cmp::max(step, cand_bh4);
@@ -864,17 +886,22 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     let max_rows;
     let n_rows;
     let b_top;
+    let b_top_offset;
     if by4 > rt.tile_row.start {
         max_rows = cmp::min(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as c_int) as c_uint;
-        b_top = rt.r[(by4 as usize & 31) + 5 - 1]
-            .offset(bx4 as isize - 1)
-            .cast_const();
+        let i = rt.r[(by4 as usize & 31) + 5 - 1] + bx4 as usize;
+        // We can't offset below 0.
+        b_top_offset = match i {
+            0 => 0,
+            _ => 1,
+        };
+        b_top = &rf.r[i - b_top_offset..];
         n_rows = scan_row(
             mvstack,
             cnt,
             r#ref,
             &gmv,
-            b_top.add(1),
+            &b_top[b_top_offset..],
             bw4,
             w4,
             max_rows as c_int,
@@ -885,7 +912,8 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     } else {
         max_rows = 0;
         n_rows = !0;
-        b_top = ptr::null();
+        b_top = Default::default(); // Never actually used
+        b_top_offset = 0;
     }
 
     // left
@@ -894,12 +922,13 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     let b_left;
     if bx4 > rt.tile_col.start {
         max_cols = cmp::min(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as c_int) as c_uint;
-        b_left = rt.r[(by4 as usize & 31) + 5..].as_ptr();
+        b_left = &rt.r[(by4 as usize & 31) + 5..];
         n_cols = scan_col(
             mvstack,
             cnt,
             r#ref,
             &gmv,
+            &rf.r,
             b_left,
             bh4,
             h4,
@@ -912,7 +941,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     } else {
         max_cols = 0;
         n_cols = !0;
-        b_left = ptr::null();
+        b_left = Default::default(); // Never actually used
     }
 
     // top/right
@@ -925,7 +954,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            &*b_top.add(bw4 as usize + 1),
+            &b_top[bw4 as usize + b_top_offset],
             r#ref,
             &gmv,
             &mut have_newmv,
@@ -1015,7 +1044,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            &*b_top.add(0),
+            &b_top[b_top_offset - 1],
             r#ref,
             &gmv,
             &mut have_dummy_newmv_match,
@@ -1034,8 +1063,8 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                 cnt,
                 r#ref,
                 &gmv,
-                &mut *(rt.r[(((by4 & 31) - 2 * n as c_int + 1 | 1) + 5) as usize])
-                    .offset(bx4 as isize | 1),
+                &rf.r[rt.r[(((by4 & 31) - 2 * n as c_int + 1 | 1) + 5) as usize]
+                    + (bx4 as usize | 1)..],
                 bw4,
                 w4,
                 (1 + max_rows - n) as _,
@@ -1050,7 +1079,8 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                 cnt,
                 r#ref,
                 &gmv,
-                &rt.r[(by4 as usize & 31 | 1) + 5],
+                &rf.r,
+                &rt.r[(by4 as usize & 31 | 1) + 5..],
                 bh4,
                 h4,
                 bx4 - n as c_int * 2 + 1 | 1,
@@ -1092,7 +1122,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
-                    let cand_b = &*b_top.add(x as usize + 1);
+                    let cand_b = &b_top[x as usize + b_top_offset];
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1110,7 +1140,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 {
-                    let cand_b = &*(*b_left.offset(y as isize)).offset(bx4 as isize - 1);
+                    let cand_b = &rf.r[b_left[y as usize] + bx4 as usize - 1];
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1200,7 +1230,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
         if n_rows != !0 {
             let mut x = 0;
             while x < sz4 && *cnt < 2 {
-                let cand_b = &*b_top.add(x as usize + 1);
+                let cand_b = &b_top[x as usize + b_top_offset];
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
                 x += dav1d_block_dimensions[cand_b.0.bs as usize][0] as c_int;
             }
@@ -1210,7 +1240,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
         if n_cols != !0 {
             let mut y = 0;
             while y < sz4 && *cnt < 2 {
-                let cand_b = &*(*b_left.offset(y as isize)).offset(bx4 as isize - 1);
+                let cand_b = &rf.r[b_left[y as usize] + bx4 as usize - 1];
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
                 y += dav1d_block_dimensions[cand_b.0.bs as usize][1] as c_int;
             }
@@ -1260,9 +1290,8 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     let stride = rf.rp_stride;
     let ref_sign = &rf.mfmv_sign;
     let rp = rf.rp.offset(row_start8 as isize * stride);
-    let rr = <&[_; 31]>::try_from(&rt.r[6..]).unwrap();
-    // SAFETY: `*mut` and `*const` are pretty much interchangeable.
-    let rr = unsafe { mem::transmute::<&[*mut _; 31], &[*const _; 31]>(rr) };
+    let r = rt.r_ptrs(&rf.r);
+    let rr = <&[_; 31]>::try_from(&r[6..]).unwrap();
 
     (dsp.save_tmvs)(
         rp, stride, rr, ref_sign, col_end8, row_end8, col_start8, row_start8,
@@ -1289,21 +1318,21 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     } else {
         0
     };
-    let mut r =
-        rf.r.offset(35 * rf.r_stride * tile_row_idx as isize + pass_off);
+    let mut r = (35 * rf.r_stride * tile_row_idx as isize + pass_off) as usize;
     let sbsz = rf.sbsz;
     let off = sbsz * sby & 16;
-    let mut rr = [ptr::null_mut(); 37];
+    let invalid_r = usize::MAX;
+    let mut rr = [invalid_r; 37];
     for i in 0..sbsz {
         rr[(off + 5 + i) as usize] = r;
-        r = r.offset(rf.r_stride as isize);
+        r = (r as isize + rf.r_stride) as usize;
     }
     rr[(off + 0) as usize] = r;
-    r = r.offset(rf.r_stride as isize);
-    rr[(off + 1) as usize] = 0 as *mut refmvs_block;
+    r = (r as isize + rf.r_stride) as usize;
+    rr[(off + 1) as usize] = invalid_r;
     rr[(off + 2) as usize] = r;
-    r = r.offset(rf.r_stride as isize);
-    rr[(off + 3) as usize] = 0 as *mut refmvs_block;
+    r = (r as isize + rf.r_stride) as usize;
+    rr[(off + 3) as usize] = invalid_r;
     rr[(off + 4) as usize] = r;
     if sby & 1 != 0 {
         for i in [0, 2, 4] {
@@ -1535,24 +1564,13 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     } else {
         1
     };
-    if r_stride != rf.r_stride || n_tile_rows != rf.n_tile_rows {
-        if !rf.r.is_null() {
-            rav1d_freep_aligned(&mut rf.r as *mut *mut refmvs_block as *mut c_void);
-        }
-        let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
-        rf.r = rav1d_alloc_aligned(
-            ::core::mem::size_of::<refmvs_block>()
-                * 35
-                * r_stride as usize
-                * n_tile_rows as usize
-                * (1 + uses_2pass),
-            64,
-        ) as *mut refmvs_block;
-        if rf.r.is_null() {
-            return Err(ENOMEM);
-        }
-        rf.r_stride = r_stride;
-    }
+    let uses_2pass = (n_tile_threads > 1 && n_frame_threads > 1) as usize;
+    // TODO fallible allocation
+    rf.r.resize(
+        35 * r_stride as usize * n_tile_rows as usize * (1 + uses_2pass),
+        FromZeroes::new_zeroed(),
+    );
+    rf.r_stride = r_stride;
 
     let rp_stride = r_stride >> 1;
     if rp_stride != rf.rp_stride || n_tile_rows != rf.n_tile_rows {
@@ -1660,16 +1678,14 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
 }
 
 pub(crate) fn rav1d_refmvs_init(rf: &mut RefMvsFrame) {
-    rf.r = 0 as *mut refmvs_block;
+    rf.r = Default::default();
     rf.r_stride = 0;
     rf.rp_proj = 0 as *mut refmvs_temporal_block;
     rf.rp_stride = 0;
 }
 
 pub(crate) unsafe fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
-    if !rf.r.is_null() {
-        rav1d_freep_aligned(&mut rf.r as *mut *mut refmvs_block as *mut c_void);
-    }
+    let _ = mem::take(&mut rf.r);
     if !rf.rp_proj.is_null() {
         rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
     }
