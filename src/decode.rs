@@ -3090,27 +3090,28 @@ unsafe fn decode_b_inner(
             if has_chroma {
                 // sub8x8 derivation
                 let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
-                let mut r = 0 as *const *mut refmvs_block;
-                if is_sub8x8 {
+                let r = if is_sub8x8 {
                     assert!(ss_hor == 1);
-                    r = t.rt.r.as_mut_ptr().add((t.b.y as usize & 31) + 5 - 1);
+                    let r =
+                        <[_; 2]>::try_from(&t.rt.r[(t.b.y as usize & 31) + 5 - 1..][..2]).unwrap();
                     if bw4 == 1 {
-                        is_sub8x8 &=
-                            (*(*r.add(1)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= (*r[1].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
                     }
                     if bh4 == ss_ver {
-                        is_sub8x8 &= (*(*r.add(0)).offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= (*r[0].offset(t.b.x as isize)).0.r#ref.r#ref[0] > 0;
                     }
                     if bw4 == 1 && bh4 == ss_ver {
-                        is_sub8x8 &=
-                            (*(*r.add(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= (*r[0].offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
                     }
-                }
+                    r
+                } else {
+                    [ptr::null_mut(); 2] // Never actually used.
+                };
 
                 // chroma prediction
                 if is_sub8x8 {
                     if bw4 == 1 && bh4 == ss_ver {
-                        let rr = (*(*r.add(0)).offset((t.b.x - 1) as isize)).0;
+                        let rr = (*r[0].offset((t.b.x - 1) as isize)).0;
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
@@ -3121,7 +3122,7 @@ unsafe fn decode_b_inner(
                         );
                     }
                     if bw4 == 1 {
-                        let rr = (*(*r.add(1)).offset((t.b.x - 1) as isize)).0;
+                        let rr = (*r[1].offset((t.b.x - 1) as isize)).0;
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y,
@@ -3132,7 +3133,7 @@ unsafe fn decode_b_inner(
                         );
                     }
                     if bh4 == ss_ver {
-                        let rr = (*(*r.add(0)).offset(t.b.x as isize)).0;
+                        let rr = (*r[0].offset(t.b.x as isize)).0;
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
