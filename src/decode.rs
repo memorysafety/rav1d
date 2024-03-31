@@ -3093,8 +3093,7 @@ unsafe fn decode_b_inner(
                 let mut r = 0 as *const *mut refmvs_block;
                 if is_sub8x8 {
                     assert!(ss_hor == 1);
-                    r = &mut *(t.rt.r).as_mut_ptr().offset(((t.b.y & 31) + 5) as isize)
-                        as *mut *mut refmvs_block;
+                    r = t.rt.r.as_mut_ptr().add(((t.b.y & 31) + 5) as usize);
                     if bw4 == 1 {
                         is_sub8x8 &=
                             (*(*r.offset(0)).offset((t.b.x - 1) as isize)).0.r#ref.r#ref[0] > 0;
