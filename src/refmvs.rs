@@ -3,11 +3,13 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
+use crate::src::align::Align16;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
+use crate::src::internal::Bxy;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
@@ -348,13 +350,18 @@ pub(crate) struct Rav1dRefmvsDSPContext {
 impl Rav1dRefmvsDSPContext {
     pub unsafe fn splat_mv(
         &self,
-        rr: &mut [*mut refmvs_block],
-        rmv: &refmvs_block,
-        bx4: usize,
+        rr: &mut [*mut refmvs_block; 37],
+        rmv: &Align16<refmvs_block>,
+        b4: Bxy,
         bw4: usize,
         bh4: usize,
     ) {
-        (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4 as _, bw4 as _, bh4 as _, rr.len());
+        let rr = &mut rr[(b4.y as usize & 31) + 5..];
+        let rmv = &rmv.0;
+        let bx4 = b4.x as _;
+        let bw4 = bw4 as _;
+        let bh4 = bh4 as _;
+        (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4, bw4, bh4, rr.len());
     }
 }
 
