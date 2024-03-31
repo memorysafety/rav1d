@@ -104,6 +104,13 @@ use std::ops::BitOr;
 use std::ptr;
 use std::slice;
 
+impl Bxy {
+    pub fn debug_block_info(&self) -> bool {
+        let Self { x, y } = *self;
+        (0..4).contains(&y) && (8..12).contains(&x)
+    }
+}
+
 // TODO: add feature and compile-time guard around this code
 /// Determine if we should print debug information for the current block.
 ///
@@ -119,12 +126,7 @@ macro_rules! debug_block_info {
         use crate::src::internal::Bxy;
 
         let tb: Bxy = $tb;
-        false
-            && $f.frame_hdr.as_ref().unwrap().frame_offset == 2
-            && tb.y >= 0
-            && tb.y < 4
-            && tb.x >= 8
-            && tb.x < 12
+        false && $f.frame_hdr.as_ref().unwrap().frame_offset == 2 && tb.debug_block_info()
     }};
 }
 pub(crate) use debug_block_info;
