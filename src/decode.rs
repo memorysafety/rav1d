@@ -4330,8 +4330,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             f.mvs,
             &f.refrefpoc,
             &f.ref_mvs,
-            c.tc.len(),
-            c.n_fc as usize,
+            c.tc.len() as u32,
+            c.n_fc,
         )?;
     }
 
