@@ -1389,12 +1389,8 @@ unsafe extern "C" fn load_tmvs_c(
     if rf.n_tile_threads == 1 {
         tile_row_idx = 0 as c_int;
     }
-    if !(row_start8 >= 0) {
-        unreachable!();
-    }
-    if !((row_end8 - row_start8) as c_uint <= 16 as c_uint) {
-        unreachable!();
-    }
+    assert!(row_start8 >= 0);
+    assert!((row_end8 - row_start8) as c_uint <= 16);
     row_end8 = cmp::min(row_end8, rf.ih8);
     let col_start8i = cmp::max(col_start8 - 8, 0 as c_int);
     let col_end8i = cmp::min(col_end8 + 8, rf.iw8);
