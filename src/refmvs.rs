@@ -816,7 +816,7 @@ fn add_single_extended_candidate(
 /// enabled) or at the start of each interleaved sbrow (when tile column
 /// threading is disabled), we call load_tmvs(), which will project the MVs to
 /// their respective position in the current frame.
-pub(crate) unsafe fn rav1d_refmvs_find(
+pub(crate) fn rav1d_refmvs_find(
     rt: &refmvs_tile,
     rf: &RefMvsFrame,
     mvstack: &mut [refmvs_candidate; 8],
@@ -1281,7 +1281,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     );
 }
 
-pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
+pub(crate) fn rav1d_refmvs_tile_sbrow_init(
     rf: &RefMvsFrame,
     tile_col_start4: c_int,
     tile_col_end4: c_int,
@@ -1528,7 +1528,7 @@ unsafe extern "C" fn save_tmvs_c(
     }
 }
 
-pub(crate) unsafe fn rav1d_refmvs_init_frame(
+pub(crate) fn rav1d_refmvs_init_frame(
     rf: &mut RefMvsFrame,
     seq_hdr: &Rav1dSequenceHeader,
     frm_hdr: &Rav1dFrameHeader,
@@ -1662,7 +1662,7 @@ pub(crate) fn rav1d_refmvs_init(rf: &mut RefMvsFrame) {
     rf.rp_stride = 0;
 }
 
-pub(crate) unsafe fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
+pub(crate) fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
     let _ = mem::take(&mut rf.r);
     let _ = mem::take(&mut rf.rp_proj);
 }
