@@ -1398,19 +1398,14 @@ unsafe extern "C" fn load_tmvs_c(
     let mut rp_proj = rf
         .rp_proj
         .offset(16 * stride * tile_row_idx as isize + (row_start8 & 15) as isize * stride);
-    let mut y = row_start8;
-    while y < row_end8 {
-        let mut x = col_start8;
-        while x < col_end8 {
+    for _ in row_start8..row_end8 {
+        for x in col_start8..col_end8 {
             (*rp_proj.offset(x as isize)).mv = mv::INVALID;
-            x += 1;
         }
         rp_proj = rp_proj.offset(stride as isize);
-        y += 1;
     }
     rp_proj = rf.rp_proj.offset(16 * stride * tile_row_idx as isize);
-    let mut n = 0;
-    while n < rf.n_mfmvs {
+    for n in 0..rf.n_mfmvs {
         let ref2cur = rf.mfmv_ref2cur[n as usize];
         if !(ref2cur == i32::MIN) {
             let r#ref = rf.mfmv_ref[n as usize] as c_int;
@@ -1418,8 +1413,7 @@ unsafe extern "C" fn load_tmvs_c(
             let mut r = (*rf.rp_ref.offset(r#ref as isize))
                 .offset(row_start8 as isize * stride)
                 .cast_const();
-            let mut y = row_start8;
-            while y < row_end8 {
+            for y in row_start8..row_end8 {
                 let y_sb_align = y & !7;
                 let y_proj_start = cmp::max(y_sb_align, row_start8);
                 let y_proj_end = cmp::min(y_sb_align + 8, row_end8);
@@ -1481,10 +1475,8 @@ unsafe extern "C" fn load_tmvs_c(
                     x += 1;
                 }
                 r = r.offset(stride as isize);
-                y += 1;
             }
         }
-        n += 1;
     }
 }
 
