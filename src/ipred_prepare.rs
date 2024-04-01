@@ -28,6 +28,7 @@ use std::ffi::c_int;
 
 #[inline]
 pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
+    let b = b.locked.try_read().unwrap();
     if b.intra[idx] == 0 {
         return 0;
     }
@@ -41,7 +42,7 @@ pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
 
 #[inline]
 pub fn sm_uv_flag(b: &BlockContext, idx: usize) -> c_int {
-    let m = b.uvmode[idx];
+    let m = b.uvmode.try_read().unwrap()[idx];
     if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
     } else {

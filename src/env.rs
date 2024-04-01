@@ -26,13 +26,69 @@ use std::cmp;
 use std::cmp::Ordering;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::sync::RwLock;
 
 #[derive(Default)]
-#[repr(C)]
 pub struct BlockContext {
+    pub lcoef: RwLock<Align8<[u8; 32]>>,
+    pub ccoef: RwLock<Align8<[[u8; 32]; 2]>>,
+    pub partition: RwLock<Align8<[u8; 16]>>,
+    pub uvmode: RwLock<Align8<[u8; 32]>>,
+    pub tx_lpf: RwLock<BlockContextTxLpf>,
+    pub locked: RwLock<BlockContextLocked>,
+}
+
+impl BlockContext {
+    #[track_caller]
+    pub fn tx(&self, index: usize) -> u8 {
+        self.locked.try_read().unwrap().tx.0[index]
+    }
+
+    #[track_caller]
+    pub fn pal_sz(&self, index: usize) -> u8 {
+        self.locked.try_read().unwrap().pal_sz.0[index]
+    }
+
+    #[track_caller]
+    pub fn seg_pred(&self, index: usize) -> u8 {
+        self.locked.try_read().unwrap().seg_pred.0[index]
+    }
+
+    #[track_caller]
+    pub fn skip_mode(&self, index: usize) -> u8 {
+        self.locked.try_read().unwrap().skip_mode.0[index]
+    }
+
+    #[track_caller]
+    pub fn skip(&self, index: usize) -> u8 {
+        self.locked.try_read().unwrap().skip.0[index]
+    }
+
+    #[track_caller]
+    pub fn mode(&self, index: usize) -> u8 {
+        self.locked.try_read().unwrap().mode.0[index]
+    }
+
+    #[track_caller]
+    pub fn intra(&self, index: usize) -> u8 {
+        self.locked.try_read().unwrap().intra.0[index]
+    }
+
+    #[track_caller]
+    pub fn filter(&self, i: usize, j: usize) -> u8 {
+        self.locked.try_read().unwrap().filter.0[i][j]
+    }
+}
+
+#[derive(Default)]
+pub struct BlockContextTxLpf {
+    pub y: Align8<[u8; 32]>,
+    pub uv: Align8<[u8; 32]>,
+}
+
+#[derive(Default)]
+pub struct BlockContextLocked {
     pub mode: Align8<[u8; 32]>,
-    pub lcoef: Align8<[u8; 32]>,
-    pub ccoef: Align8<[[u8; 32]; 2]>,
     pub seg_pred: Align8<[u8; 32]>,
     pub skip: Align8<[u8; 32]>,
     pub skip_mode: Align8<[u8; 32]>,
@@ -42,10 +98,6 @@ pub struct BlockContext {
     pub filter: Align8<[[u8; 32]; 2]>,
     pub tx_intra: Align8<[i8; 32]>,
     pub tx: Align8<[u8; 32]>,
-    pub tx_lpf_y: Align8<[u8; 32]>,
-    pub tx_lpf_uv: Align8<[u8; 32]>,
-    pub partition: Align8<[u8; 16]>,
-    pub uvmode: Align8<[u8; 32]>,
     pub pal_sz: Align8<[u8; 32]>,
 }
 
@@ -58,6 +110,8 @@ pub fn get_intra_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     if have_left {
         if have_top {
             let ctx = l.intra[yb4 as usize] + a.intra[xb4 as usize];
@@ -82,6 +136,8 @@ pub fn get_tx_ctx(
     yb4: c_int,
     xb4: c_int,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     (l.tx_intra[yb4 as usize] as i32 >= max_tx.lh as i32) as u8
         + (a.tx_intra[xb4 as usize] as i32 >= max_tx.lw as i32) as u8
 }
@@ -94,11 +150,13 @@ pub fn get_partition_ctx(
     yb8: c_int,
     xb8: c_int,
 ) -> u8 {
+    let a_partition = a.partition.try_read().unwrap();
+    let l_partition = l.partition.try_read().unwrap();
     // the right-most ("index zero") bit of the partition represents the 8x8 block level,
     // but the BlockLevel enum represents the variants numerically in the opposite order
     // (128x128 = 0, 8x8 = 4). The shift reverses the ordering.
     let has_bl = |x| (x >> (4 - bl as u8)) & 1;
-    has_bl(a.partition[xb8 as usize]) + 2 * has_bl(l.partition[yb8 as usize])
+    has_bl(a_partition[xb8 as usize]) + 2 * has_bl(l_partition[yb8 as usize])
 }
 
 #[inline]
@@ -159,6 +217,8 @@ pub fn get_filter_ctx(
     yb4: c_int,
     xb4: c_int,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let [a_filter, l_filter] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
         if al.r#ref[0][b4 as usize] == r#ref || al.r#ref[1][b4 as usize] == r#ref {
             al.filter[dir as usize][b4 as usize]
@@ -188,6 +248,8 @@ pub fn get_comp_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     if have_top {
         if have_left {
             if a.comp_type[xb4 as usize].is_some() {
@@ -230,7 +292,10 @@ pub fn get_comp_dir_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let has_uni_comp = |edge: &BlockContext, off| {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
+
+    let has_uni_comp = |edge: &BlockContextLocked, off| {
         (edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)
     };
 
@@ -242,7 +307,7 @@ pub fn get_comp_dir_ctx(
             return 2;
         }
         if a_intra || l_intra {
-            let edge = if a_intra { l } else { a };
+            let edge = if a_intra { &l } else { &a };
             let off = if a_intra { yb4 } else { xb4 };
 
             if edge.comp_type[off as usize].is_none() {
@@ -259,7 +324,7 @@ pub fn get_comp_dir_ctx(
         if !a_comp && !l_comp {
             return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
         } else if !a_comp || !l_comp {
-            let edge = if a_comp { a } else { l };
+            let edge = if a_comp { &a } else { &l };
             let off = if a_comp { xb4 } else { yb4 };
 
             if !has_uni_comp(edge, off) {
@@ -267,8 +332,8 @@ pub fn get_comp_dir_ctx(
             }
             return 3 + ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
         } else {
-            let a_uni = has_uni_comp(a, xb4);
-            let l_uni = has_uni_comp(l, yb4);
+            let a_uni = has_uni_comp(&a, xb4);
+            let l_uni = has_uni_comp(&l, yb4);
 
             if !a_uni && !l_uni {
                 return 0;
@@ -288,7 +353,7 @@ pub fn get_comp_dir_ctx(
         if edge.comp_type[off as usize].is_none() {
             return 2;
         }
-        return 4 * has_uni_comp(edge, off) as u8;
+        return 4 * has_uni_comp(&edge, off) as u8;
     } else {
         return 2;
     };
@@ -315,6 +380,9 @@ pub fn get_jnt_comp_ctx(
     yb4: c_int,
     xb4: c_int,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
+
     let d0 = get_poc_diff(order_hint_n_bits, ref0poc as c_int, poc as c_int).abs();
     let d1 = get_poc_diff(order_hint_n_bits, poc as c_int, ref1poc as c_int).abs();
     let offset = (d0 == d1) as u8;
@@ -328,6 +396,8 @@ pub fn get_jnt_comp_ctx(
 
 #[inline]
 pub fn get_mask_comp_ctx(a: &BlockContext, l: &BlockContext, yb4: c_int, xb4: c_int) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
         if al.comp_type[b4 as usize] >= Some(CompInterType::Seg) {
             1
@@ -359,6 +429,8 @@ pub fn av1_get_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 2];
 
     if have_top && a.intra[xb4 as usize] == 0 {
@@ -387,6 +459,8 @@ pub fn av1_get_fwd_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 4];
 
     if have_top && a.intra[xb4 as usize] == 0 {
@@ -422,6 +496,8 @@ pub fn av1_get_fwd_ref_1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 2];
 
     if have_top && a.intra[xb4 as usize] == 0 {
@@ -454,6 +530,8 @@ pub fn av1_get_fwd_ref_2_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 2];
 
     if have_top && a.intra[xb4 as usize] == 0 {
@@ -486,6 +564,8 @@ pub fn av1_get_bwd_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 3];
 
     if have_top && a.intra[xb4 as usize] == 0 {
@@ -520,6 +600,8 @@ pub fn av1_get_bwd_ref_1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 3];
 
     if have_top && a.intra[xb4 as usize] == 0 {
@@ -552,6 +634,8 @@ pub fn av1_get_uni_p1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
+    let a = a.locked.try_read().unwrap();
+    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 3];
 
     if have_top && a.intra[xb4 as usize] == 0 {

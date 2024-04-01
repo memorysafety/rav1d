@@ -315,8 +315,8 @@ unsafe fn read_tx_tree(
 
     if depth < 2 && from > TX_4X4 {
         let cat = 2 * (TX_64X64 as c_int - t_dim.max as c_int) - depth;
-        let a = (f.a[t.a].tx.0[bx4 as usize] < txw) as c_int;
-        let l = (t.l.tx.0[by4 as usize] < txh) as c_int;
+        let a = (f.a[t.a].tx(bx4 as usize) < txw) as c_int;
+        let l = (t.l.tx(by4 as usize) < txh) as c_int;
 
         is_split = rav1d_msac_decode_bool_adapt(
             &mut ts.msac,
@@ -352,11 +352,14 @@ unsafe fn read_tx_tree(
         t.b.y -= txsh;
     } else {
         CaseSet::<16, false>::many(
-            [(&mut t.l, txh), (&mut f.a[t.a], txw)],
+            [(&t.l, txh), (&f.a[t.a], txw)],
             [t_dim.h as usize, t_dim.w as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, val)| {
-                case.set(&mut dir.tx.0, if is_split { TX_4X4 } else { val });
+                case.set(
+                    &mut dir.locked.try_write().unwrap().tx.0,
+                    if is_split { TX_4X4 } else { val },
+                );
             },
         );
     };
@@ -778,22 +781,25 @@ unsafe fn read_vartx_tree(
         *b.max_ytx_mut() = b.uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
-                [&mut t.l, &mut f.a[t.a]],
+                [&t.l, &f.a[t.a]],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.tx.0, TX_4X4);
+                    case.set(&mut dir.locked.try_write().unwrap().tx.0, TX_4X4);
                 },
             );
         }
     } else if txfm_mode != Rav1dTxfmMode::Switchable || b.skip != 0 {
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
-                [(&mut t.l, 1), (&mut f.a[t.a], 0)],
+                [(&t.l, 1), (&f.a[t.a], 0)],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, (dir, dir_index)| {
-                    case.set(&mut dir.tx.0, b_dim[2 + dir_index]);
+                    case.set(
+                        &mut dir.locked.try_write().unwrap().tx.0,
+                        b_dim[2 + dir_index],
+                    );
                 },
             );
         }
@@ -1171,10 +1177,11 @@ unsafe fn decode_b(
                 y_mode
             };
             CaseSet::<32, false>::many(
-                [&mut t.l, &mut f.a[t.a]],
+                [&t.l, &f.a[t.a]],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
+                    let mut dir = dir.locked.try_write().unwrap();
                     case.set(&mut dir.mode.0, y_mode_nofilt);
                     case.set(&mut dir.intra.0, 1);
                 },
@@ -1196,11 +1203,11 @@ unsafe fn decode_b(
 
             if has_chroma {
                 CaseSet::<32, false>::many(
-                    [&mut t.l, &mut f.a[t.a]],
+                    [&t.l, &f.a[t.a]],
                     [cbh4 as usize, cbw4 as usize],
                     [cby4 as usize, cbx4 as usize],
                     |case, dir| {
-                        case.set(&mut dir.uvmode.0, b.uv_mode());
+                        case.set(&mut dir.uvmode.try_write().unwrap().0, b.uv_mode());
                     },
                 );
             }
@@ -1243,10 +1250,11 @@ unsafe fn decode_b(
 
             let filter = &dav1d_filter_dir[b.filter2d() as usize];
             CaseSet::<32, false>::many(
-                [&mut t.l, &mut f.a[t.a]],
+                [&t.l, &f.a[t.a]],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
+                    let mut dir = dir.locked.try_write().unwrap();
                     case.set(&mut dir.filter.0[0], filter[0].into());
                     case.set(&mut dir.filter.0[1], filter[1].into());
                     case.set(&mut dir.intra.0, 0);
@@ -1272,11 +1280,11 @@ unsafe fn decode_b(
 
             if has_chroma {
                 CaseSet::<32, false>::many(
-                    [&mut t.l, &mut f.a[t.a]],
+                    [&t.l, &f.a[t.a]],
                     [cbh4 as usize, cbw4 as usize],
                     [cby4 as usize, cbx4 as usize],
                     |case, dir| {
-                        case.set(&mut dir.uvmode.0, DC_PRED);
+                        case.set(&mut dir.uvmode.try_write().unwrap().0, DC_PRED);
                     },
                 );
             }
@@ -1312,7 +1320,7 @@ unsafe fn decode_b(
             seg = Some(&frame_hdr.segmentation.seg_data.d[b.seg_id as usize]);
         } else if frame_hdr.segmentation.seg_data.preskip != 0 {
             if frame_hdr.segmentation.temporal != 0 && {
-                let index = f.a[t.a].seg_pred.0[bx4 as usize] + t.l.seg_pred.0[by4 as usize];
+                let index = f.a[t.a].seg_pred(bx4 as usize) + t.l.seg_pred(by4 as usize);
                 seg_pred = rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_pred.0[index as usize],
@@ -1378,7 +1386,7 @@ unsafe fn decode_b(
         && frame_hdr.skip_mode.enabled != 0
         && cmp::min(bw4, bh4) > 1
     {
-        let smctx = f.a[t.a].skip_mode.0[bx4 as usize] + t.l.skip_mode.0[by4 as usize];
+        let smctx = f.a[t.a].skip_mode(bx4 as usize) + t.l.skip_mode(by4 as usize);
         b.skip_mode =
             rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.skip_mode.0[smctx as usize])
                 as u8;
@@ -1393,7 +1401,7 @@ unsafe fn decode_b(
     if b.skip_mode != 0 || seg.map(|seg| seg.skip != 0).unwrap_or(false) {
         b.skip = 1;
     } else {
-        let sctx = f.a[t.a].skip[bx4 as usize] + t.l.skip[by4 as usize];
+        let sctx = f.a[t.a].skip(bx4 as usize) + t.l.skip(by4 as usize);
         b.skip =
             rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.skip[sctx as usize]) as u8;
         if debug_block_info!(f, t.b) {
@@ -1407,7 +1415,7 @@ unsafe fn decode_b(
         && frame_hdr.segmentation.seg_data.preskip == 0
     {
         if b.skip == 0 && frame_hdr.segmentation.temporal != 0 && {
-            let index = (f.a[t.a]).seg_pred.0[bx4 as usize] + t.l.seg_pred.0[by4 as usize];
+            let index = f.a[t.a].seg_pred(bx4 as usize) + t.l.seg_pred(by4 as usize);
             seg_pred = rav1d_msac_decode_bool_adapt(
                 &mut ts.msac,
                 &mut ts.cdf.m.seg_pred.0[index as usize],
@@ -1616,8 +1624,8 @@ unsafe fn decode_b(
             &mut ts.cdf.m.y_mode[dav1d_ymode_size_context[bs as usize] as usize]
         } else {
             &mut ts.cdf.kfym
-                [dav1d_intra_mode_context[(f.a[t.a]).mode.0[bx4 as usize] as usize] as usize]
-                [dav1d_intra_mode_context[t.l.mode.0[by4 as usize] as usize] as usize]
+                [dav1d_intra_mode_context[f.a[t.a].mode(bx4 as usize) as usize] as usize]
+                [dav1d_intra_mode_context[t.l.mode(by4 as usize) as usize] as usize]
         };
         *b.y_mode_mut() = rav1d_msac_decode_symbol_adapt16(
             &mut ts.msac,
@@ -1710,8 +1718,8 @@ unsafe fn decode_b(
         if frame_hdr.allow_screen_content_tools && cmp::max(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
             if b.y_mode() == DC_PRED {
-                let pal_ctx = ((f.a[t.a]).pal_sz.0[bx4 as usize] > 0) as usize
-                    + (t.l.pal_sz.0[by4 as usize] > 0) as usize;
+                let pal_ctx = (f.a[t.a].pal_sz(bx4 as usize) > 0) as usize
+                    + (t.l.pal_sz(by4 as usize) > 0) as usize;
                 let use_y_pal = rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.pal_y[sz_ctx as usize][pal_ctx],
@@ -1869,7 +1877,12 @@ unsafe fn decode_b(
                 TileStateRef::Frame => &f.lf.lvl,
                 TileStateRef::Local => &ts.lflvlmem,
             };
-            let a = &mut f.a[t.a];
+            let a = &f.a[t.a];
+            let mut a_tx_lpf = a.tx_lpf.try_write().unwrap();
+            let mut l_tx_lpf = t.l.tx_lpf.try_write().unwrap();
+            // Dereference lock guards so we can borrow fields disjointly.
+            let a_tx_lpf = &mut *a_tx_lpf;
+            let l_tx_lpf = &mut *l_tx_lpf;
             rav1d_create_lf_mask_intra(
                 &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
@@ -1882,12 +1895,12 @@ unsafe fn decode_b(
                 b.tx() as RectTxfmSize,
                 b.uvtx as RectTxfmSize,
                 f.cur.p.layout,
-                &mut a.tx_lpf_y.0[bx4 as usize..],
-                &mut t.l.tx_lpf_y.0[by4 as usize..],
+                &mut a_tx_lpf.y.0[bx4 as usize..],
+                &mut l_tx_lpf.y.0[by4 as usize..],
                 if has_chroma {
                     Some((
-                        &mut a.tx_lpf_uv.0[cbx4 as usize..],
-                        &mut t.l.tx_lpf_uv.0[cby4 as usize..],
+                        &mut a_tx_lpf.uv.0[cbx4 as usize..],
+                        &mut l_tx_lpf.uv.0[cby4 as usize..],
                     ))
                 } else {
                     None
@@ -1903,10 +1916,11 @@ unsafe fn decode_b(
         };
         let is_inter_or_switch = f.frame_hdr().frame_type.is_inter_or_switch();
         CaseSet::<32, false>::many(
-            [(&mut t.l, t_dim.lh, 1), (&mut f.a[t.a], t_dim.lw, 0)],
+            [(&t.l, t_dim.lh, 1), (&f.a[t.a], t_dim.lw, 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, lw_lh, dir_index)| {
+                let mut dir = dir.locked.try_write().unwrap();
                 case.set(&mut dir.tx_intra.0, lw_lh as i8);
                 case.set(&mut dir.tx.0, lw_lh);
                 case.set(&mut dir.mode.0, y_mode_nofilt);
@@ -1934,11 +1948,11 @@ unsafe fn decode_b(
         }
         if has_chroma {
             CaseSet::<32, false>::many(
-                [&mut t.l, &mut f.a[t.a]],
+                [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.uvmode.0, b.uv_mode());
+                    case.set(&mut dir.uvmode.try_write().unwrap().0, b.uv_mode());
                 },
             );
             if b.pal_sz()[1] != 0 {
@@ -2074,10 +2088,11 @@ unsafe fn decode_b(
         splat_intrabc_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
 
         CaseSet::<32, false>::many(
-            [(&mut t.l, 1), (&mut f.a[t.a], 0)],
+            [(&t.l, 1), (&f.a[t.a], 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, dir_index)| {
+                let mut dir = dir.locked.try_write().unwrap();
                 case.set(&mut dir.tx_intra.0, b_dim[2 + dir_index] as i8);
                 case.set(&mut dir.mode.0, DC_PRED);
                 case.set(&mut dir.pal_sz.0, 0);
@@ -2091,11 +2106,11 @@ unsafe fn decode_b(
         );
         if has_chroma {
             CaseSet::<32, false>::many(
-                [&mut t.l, &mut f.a[t.a]],
+                [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.uvmode.0, DC_PRED);
+                    case.set(&mut dir.uvmode.try_write().unwrap().0, DC_PRED);
                 },
             );
         }
@@ -2425,14 +2440,16 @@ unsafe fn decode_b(
                     };
                     *b.comp_type_mut() = Some(comp_type);
                     if debug_block_info!(f, t.b) {
+                        let a = f.a[t.a].locked.try_read().unwrap();
+                        let l = t.l.locked.try_read().unwrap();
                         println!(
                             "Post-jnt_comp[{},ctx={}[ac:{:?},ar:{},lc:{:?},lr:{}]]: r={}",
                             comp_type == CompInterType::Avg,
                             jnt_ctx,
-                            (f.a[t.a]).comp_type[bx4 as usize],
-                            (f.a[t.a]).r#ref[0][bx4 as usize],
-                            t.l.comp_type[by4 as usize],
-                            t.l.r#ref[0][by4 as usize],
+                            a.comp_type[bx4 as usize],
+                            a.r#ref[0][bx4 as usize],
+                            l.comp_type[by4 as usize],
+                            l.r#ref[0][by4 as usize],
                             ts.msac.rng,
                         );
                     }
@@ -2739,8 +2756,8 @@ unsafe fn decode_b(
                     && b.inter_mode() == GLOBALMV
                     && frame_hdr.gmv[b.r#ref()[0] as usize].r#type > Rav1dWarpedMotionType::Translation)
                 // has overlappable neighbours
-                && (have_left && findoddzero(&t.l.intra.0[by4 as usize..][..h4 as usize])
-                    || have_top && findoddzero(&(f.a[t.a]).intra.0[bx4 as usize..][..w4 as usize]))
+                && (have_left && findoddzero(&t.l.locked.try_read().unwrap().intra.0[by4 as usize..][..h4 as usize])
+                    || have_top && findoddzero(&f.a[t.a].locked.try_read().unwrap().intra.0[bx4 as usize..][..w4 as usize]))
             {
                 // reaching here means the block allows obmc - check warp by
                 // finding matching-ref blocks in top/left edges
@@ -2893,7 +2910,12 @@ unsafe fn decode_b(
                 TileStateRef::Frame => &f.lf.lvl,
                 TileStateRef::Local => &ts.lflvlmem,
             };
-            let a = &mut f.a[t.a];
+            let a = &f.a[t.a];
+            let mut a_tx_lpf = a.tx_lpf.try_write().unwrap();
+            let mut l_tx_lpf = t.l.tx_lpf.try_write().unwrap();
+            // Dereference lock guards so we can borrow fields disjointly.
+            let a_tx_lpf = &mut *a_tx_lpf;
+            let l_tx_lpf = &mut *l_tx_lpf;
             rav1d_create_lf_mask_inter(
                 &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
@@ -2915,12 +2937,12 @@ unsafe fn decode_b(
                 &tx_split,
                 uvtx,
                 f.cur.p.layout,
-                &mut a.tx_lpf_y.0[bx4 as usize..],
-                &mut t.l.tx_lpf_y.0[by4 as usize..],
+                &mut a_tx_lpf.y.0[bx4 as usize..],
+                &mut l_tx_lpf.y.0[by4 as usize..],
                 if has_chroma {
                     Some((
-                        &mut a.tx_lpf_uv.0[cbx4 as usize..],
-                        &mut t.l.tx_lpf_uv.0[cby4 as usize..],
+                        &mut a_tx_lpf.uv.0[cbx4 as usize..],
+                        &mut l_tx_lpf.uv.0[cby4 as usize..],
                     ))
                 } else {
                     None
@@ -2936,10 +2958,11 @@ unsafe fn decode_b(
         }
 
         CaseSet::<32, false>::many(
-            [(&mut t.l, 1), (&mut f.a[t.a], 0)],
+            [(&t.l, 1), (&f.a[t.a], 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, (dir, dir_index)| {
+                let mut dir = dir.locked.try_write().unwrap();
                 case.set(&mut dir.seg_pred.0, seg_pred.into());
                 case.set(&mut dir.skip_mode.0, b.skip_mode);
                 case.set(&mut dir.intra.0, 0);
@@ -2959,11 +2982,11 @@ unsafe fn decode_b(
 
         if has_chroma {
             CaseSet::<32, false>::many(
-                [&mut t.l, &mut f.a[t.a]],
+                [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.uvmode.0, DC_PRED);
+                    case.set(&mut dir.uvmode.try_write().unwrap().0, DC_PRED);
                 },
             );
         }
@@ -3563,12 +3586,12 @@ unsafe fn decode_sb(
 
     if t.frame_thread.pass != 2 && (bp != BlockPartition::Split || bl == BlockLevel::Bl8x8) {
         CaseSet::<16, false>::many(
-            [(&mut f.a[t.a], 0), (&mut t.l, 1)],
+            [(&f.a[t.a], 0), (&t.l, 1)],
             [hsz as usize; 2],
             [bx8 as usize, by8 as usize],
             |case, (dir, dir_index)| {
                 case.set(
-                    &mut dir.partition.0,
+                    &mut dir.partition.try_write().unwrap().0,
                     dav1d_al_part_ctx[dir_index][bl as usize][bp as usize],
                 );
             },
@@ -3578,40 +3601,42 @@ unsafe fn decode_sb(
     Ok(())
 }
 
-fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
-    ctx.intra.0.fill(keyframe.into());
-    ctx.uvmode.0.fill(DC_PRED);
+fn reset_context(ctx: &BlockContext, keyframe: bool, pass: c_int) {
+    let mut locked = ctx.locked.try_write().unwrap();
+    locked.intra.0.fill(keyframe.into());
+    ctx.uvmode.try_write().unwrap().0.fill(DC_PRED);
     if keyframe {
-        ctx.mode.0.fill(DC_PRED);
+        locked.mode.0.fill(DC_PRED);
     }
 
     if pass == 2 {
         return;
     }
 
-    ctx.partition.0.fill(0);
-    ctx.skip.0.fill(0);
-    ctx.skip_mode.0.fill(0);
-    ctx.tx_lpf_y.0.fill(2);
-    ctx.tx_lpf_uv.0.fill(1);
-    ctx.tx_intra.0.fill(-1);
-    ctx.tx.0.fill(TX_64X64);
+    ctx.partition.try_write().unwrap().0.fill(0);
+    locked.skip.0.fill(0);
+    locked.skip_mode.0.fill(0);
+    let mut tx_lpf = ctx.tx_lpf.try_write().unwrap();
+    tx_lpf.y.0.fill(2);
+    tx_lpf.uv.0.fill(1);
+    locked.tx_intra.0.fill(-1);
+    locked.tx.0.fill(TX_64X64);
     if !keyframe {
-        for r#ref in &mut ctx.r#ref.0 {
+        for r#ref in &mut locked.r#ref.0 {
             r#ref.fill(-1);
         }
-        ctx.comp_type.0.fill(None);
-        ctx.mode.0.fill(NEARESTMV);
+        locked.comp_type.0.fill(None);
+        locked.mode.0.fill(NEARESTMV);
     }
-    ctx.lcoef.0.fill(0x40);
-    for ccoef in &mut ctx.ccoef.0 {
+    ctx.lcoef.try_write().unwrap().0.fill(0x40);
+    for ccoef in &mut ctx.ccoef.try_write().unwrap().0 {
         ccoef.fill(0x40);
     }
-    for filter in &mut ctx.filter.0 {
+    for filter in &mut locked.filter.0 {
         filter.fill(Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8);
     }
-    ctx.seg_pred.0.fill(0);
-    ctx.pal_sz.0.fill(0);
+    locked.seg_pred.0.fill(0);
+    locked.pal_sz.0.fill(0);
 }
 
 impl DefaultValue for [u8; 2] {
@@ -4032,16 +4057,17 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     // up the initial value in neighbour tiles when running the loopfilter
     let mut align_h = f.bh + 31 & !31;
     let start_y = (align_h * tile_col + t.b.y) as usize;
+    let l_tx_lpf = t.l.tx_lpf.try_read().unwrap();
     f.lf.tx_lpf_right_edge.copy_from_slice_y(
         start_y..start_y + sb_step as usize,
-        &t.l.tx_lpf_y.0[(t.b.y & 16) as usize..][..sb_step as usize],
+        &l_tx_lpf.y.0[(t.b.y & 16) as usize..][..sb_step as usize],
     );
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     align_h >>= ss_ver;
     let start_uv = (align_h * tile_col + (t.b.y >> ss_ver)) as usize;
     f.lf.tx_lpf_right_edge.copy_from_slice_uv(
         start_uv..start_uv + (sb_step >> ss_ver) as usize,
-        &t.l.tx_lpf_uv.0[((t.b.y & 16) >> ss_ver) as usize..][..(sb_step >> ss_ver) as usize],
+        &l_tx_lpf.uv.0[((t.b.y & 16) >> ss_ver) as usize..][..(sb_step >> ss_ver) as usize],
     );
 
     Ok(())

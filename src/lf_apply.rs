@@ -672,7 +672,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                 y_vmask[2][sidx].fetch_and(!smask, Ordering::Relaxed);
                 y_vmask[1][sidx].fetch_and(!smask, Ordering::Relaxed);
                 y_vmask[0][sidx].fetch_and(!smask, Ordering::Relaxed);
-                y_vmask[cmp::min(idx, a[0].tx_lpf_y[i as usize] as usize)][sidx]
+                y_vmask[cmp::min(idx, a[0].tx_lpf.try_read().unwrap().y[i as usize] as usize)][sidx]
                     .fetch_or(smask, Ordering::Relaxed);
             }
             if f.cur.p.layout != Rav1dPixelLayout::I400 {
@@ -686,7 +686,7 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                     let idx = (uv_vmask[1][sidx].load(Ordering::Relaxed) & smask != 0) as usize;
                     uv_vmask[1][sidx].fetch_and(!smask, Ordering::Relaxed);
                     uv_vmask[0][sidx].fetch_and(!smask, Ordering::Relaxed);
-                    uv_vmask[cmp::min(idx, a[0].tx_lpf_uv[i as usize] as usize)][sidx]
+                    uv_vmask[cmp::min(idx, a[0].tx_lpf.try_read().unwrap().uv[i as usize] as usize)][sidx]
                         .fetch_or(smask, Ordering::Relaxed);
                 }
             }
