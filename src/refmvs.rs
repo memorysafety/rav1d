@@ -1009,30 +1009,17 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             rb = &*rbi.add(bh8 as usize * stride) as *const refmvs_temporal_block;
             let has_bottom = by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8);
             if has_bottom && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
-                add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None, frame_hdr);
+                let rb = &*rb.offset(-1);
+                add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
             }
             if bx8 + bw8 < cmp::min(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
                 if has_bottom {
-                    add_temporal_candidate(
-                        rf,
-                        mvstack,
-                        cnt,
-                        &*rb.add(bw8 as usize),
-                        r#ref,
-                        None,
-                        frame_hdr,
-                    );
+                    let rb = &*rb.add(bw8 as usize);
+                    add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
                 }
                 if (by8 + bh8 - 1) < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8) {
-                    add_temporal_candidate(
-                        rf,
-                        mvstack,
-                        cnt,
-                        &*rb.offset(bw8 as isize - stride as isize),
-                        r#ref,
-                        None,
-                        frame_hdr,
-                    );
+                    let rb = &*rb.offset(bw8 as isize - stride as isize);
+                    add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
                 }
             }
         }
