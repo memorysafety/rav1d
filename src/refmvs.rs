@@ -1394,8 +1394,8 @@ unsafe extern "C" fn load_tmvs_c(
     row_end8 = cmp::min(row_end8, rf.ih8);
     let col_start8i = cmp::max(col_start8 - 8, 0);
     let col_end8i = cmp::min(col_end8 + 8, rf.iw8);
-    let stride: ptrdiff_t = rf.rp_stride;
-    let mut rp_proj: *mut refmvs_temporal_block = rf
+    let stride = rf.rp_stride;
+    let mut rp_proj = rf
         .rp_proj
         .offset(16 * stride * tile_row_idx as isize + (row_start8 & 15) as isize * stride);
     let mut y = row_start8;
@@ -1415,8 +1415,9 @@ unsafe extern "C" fn load_tmvs_c(
         if !(ref2cur == i32::MIN) {
             let r#ref = rf.mfmv_ref[n as usize] as c_int;
             let ref_sign = r#ref - 4;
-            let mut r: *const refmvs_temporal_block =
-                &mut *(*rf.rp_ref.offset(r#ref as isize)).offset(row_start8 as isize * stride);
+            let mut r = (*rf.rp_ref.offset(r#ref as isize))
+                .offset(row_start8 as isize * stride)
+                .cast_const();
             let mut y_0 = row_start8;
             while y_0 < row_end8 {
                 let y_sb_align = y_0 & !7;
@@ -1424,13 +1425,13 @@ unsafe extern "C" fn load_tmvs_c(
                 let y_proj_end = cmp::min(y_sb_align + 8, row_end8);
                 let mut x_0 = col_start8i;
                 while x_0 < col_end8i {
-                    let mut rb: *const refmvs_temporal_block = &*r.offset(x_0 as isize);
+                    let mut rb = r.offset(x_0 as isize);
                     let b_ref = (*rb).r#ref as c_int;
                     if !(b_ref == 0) {
                         let ref2ref = rf.mfmv_ref2ref[n as usize][(b_ref - 1) as usize];
                         if !(ref2ref == 0) {
-                            let b_mv: mv = (*rb).mv;
-                            let offset: mv = mv_projection(b_mv, ref2cur, ref2ref);
+                            let b_mv = (*rb).mv;
+                            let offset = mv_projection(b_mv, ref2cur, ref2ref);
                             let mut pos_x = x_0
                                 + apply_sign(
                                     (offset.x as c_int).abs() >> 6,
@@ -1442,7 +1443,7 @@ unsafe extern "C" fn load_tmvs_c(
                                     offset.y as c_int ^ ref_sign,
                                 );
                             if pos_y >= y_proj_start && pos_y < y_proj_end {
-                                let pos: ptrdiff_t = (pos_y & 15) as isize * stride;
+                                let pos = (pos_y & 15) as isize * stride;
                                 loop {
                                     let x_sb_align = x_0 & !(7 as c_int);
                                     if pos_x >= cmp::max(x_sb_align - 8, col_start8)
