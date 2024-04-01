@@ -1007,12 +1007,12 @@ pub(crate) unsafe fn rav1d_refmvs_find(
             let bh8 = bh4 >> 1;
             let bw8 = bw4 >> 1;
             rb = &*rbi.offset(bh8 as isize * stride) as *const refmvs_temporal_block;
-            let has_bottom = (by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8)) as c_int;
-            if has_bottom != 0 && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
+            let has_bottom = by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8);
+            if has_bottom && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
                 add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None, frame_hdr);
             }
             if bx8 + bw8 < cmp::min(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
-                if has_bottom != 0 {
+                if has_bottom {
                     add_temporal_candidate(
                         rf,
                         mvstack,
