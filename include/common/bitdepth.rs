@@ -239,7 +239,7 @@ pub trait BitDepth: Clone + Copy {
         Self::Pixel::mut_slice_from(bytes).unwrap()
     }
 
-    fn cast_coef_slice(bytes: &[u8]) -> &[Self::Coef] {
+    fn _cast_coef_slice(bytes: &[u8]) -> &[Self::Coef] {
         Self::Coef::slice_from(bytes).unwrap()
     }
 
@@ -261,7 +261,7 @@ pub trait BitDepth: Clone + Copy {
         T::T<BitDepth8>: Copy,
         T::T<BitDepth16>: Copy;
 
-    unsafe fn select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
+    unsafe fn _select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
     where
         T: BitDepthDependentType,
         T::T<BitDepth8>: Copy,
@@ -337,7 +337,7 @@ impl BitDepth for BitDepth8 {
         &mut bd.bpc8
     }
 
-    unsafe fn select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
+    unsafe fn _select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
     where
         T: BitDepthDependentType,
         T::T<BitDepth8>: Copy,
@@ -418,7 +418,7 @@ impl BitDepth for BitDepth16 {
         &mut bd.bpc16
     }
 
-    unsafe fn select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
+    unsafe fn _select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
     where
         T: BitDepthDependentType,
         T::T<BitDepth8>: Copy,
