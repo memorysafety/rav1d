@@ -973,25 +973,25 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     // temporal
     let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs;
     if rf.use_ref_frame_mvs != 0 {
-        let stride = rf.rp_stride as isize;
+        let stride = rf.rp_stride as usize;
         let by8 = by4 >> 1;
         let bx8 = bx4 >> 1;
         let rbi = rt
             .rp_proj
-            .offset((by8 & 15) as isize * stride + bx8 as isize)
+            .add((by8 as usize & 15) * stride + bx8 as usize)
             .cast_const();
         let mut rb = rbi;
         let step_h = if bw4 >= 16 { 2 } else { 1 };
         let step_v = if bh4 >= 16 { 2 } else { 1 };
-        let w8 = cmp::min(w4 + 1 >> 1, 8);
-        let h8 = cmp::min(h4 + 1 >> 1, 8);
+        let w8 = cmp::min(w4 + 1 >> 1, 8) as usize;
+        let h8 = cmp::min(h4 + 1 >> 1, 8) as usize;
         for y in (0..h8).step_by(step_v) {
             for x in (0..w8).step_by(step_h) {
                 add_temporal_candidate(
                     rf,
                     mvstack,
                     cnt,
-                    &*rb.offset(x as isize),
+                    &*rb.add(x),
                     r#ref,
                     if x | y == 0 {
                         Some((&mut globalmv_ctx, &tgmv))
@@ -1001,12 +1001,12 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                     frame_hdr,
                 );
             }
-            rb = rb.offset(stride * step_v as isize);
+            rb = rb.add(stride * step_v);
         }
         if cmp::min(bw4, bh4) >= 2 && cmp::max(bw4, bh4) < 16 {
             let bh8 = bh4 >> 1;
             let bw8 = bw4 >> 1;
-            rb = &*rbi.offset(bh8 as isize * stride) as *const refmvs_temporal_block;
+            rb = &*rbi.add(bh8 as usize * stride) as *const refmvs_temporal_block;
             let has_bottom = by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8);
             if has_bottom && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
                 add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None, frame_hdr);
@@ -1017,7 +1017,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                         rf,
                         mvstack,
                         cnt,
-                        &*rb.offset(bw8 as isize),
+                        &*rb.add(bw8 as usize),
                         r#ref,
                         None,
                         frame_hdr,
@@ -1028,7 +1028,7 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                         rf,
                         mvstack,
                         cnt,
-                        &*rb.offset(bw8 as isize - stride),
+                        &*rb.offset(bw8 as isize - stride as isize),
                         r#ref,
                         None,
                         frame_hdr,
