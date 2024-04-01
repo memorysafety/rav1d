@@ -2,7 +2,7 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![feature(c_variadic)]
-#![cfg_attr(target_arch = "arm", feature(stdsimd))]
+#![cfg_attr(target_arch = "arm", feature(stdarch_arm_feature_detection))]
 #![allow(clippy::all)]
 
 #[cfg(not(any(feature = "bitdepth_8", feature = "bitdepth_16")))]
