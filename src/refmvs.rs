@@ -1677,20 +1677,20 @@ unsafe extern "C" fn splat_mv_rust(
 
 #[inline(always)]
 #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
-unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
+fn refmvs_dsp_init_x86(c: &mut Rav1dRefmvsDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
         return;
     }
 
-    (*c).splat_mv = dav1d_splat_mv_sse2;
+    c.splat_mv = dav1d_splat_mv_sse2;
 
     if !flags.contains(CpuFlags::SSSE3) {
         return;
     }
 
-    (*c).save_tmvs = dav1d_save_tmvs_ssse3;
+    c.save_tmvs = dav1d_save_tmvs_ssse3;
 
     if !flags.contains(CpuFlags::SSE41) {
         return;
@@ -1698,39 +1698,39 @@ unsafe fn refmvs_dsp_init_x86(c: *mut Rav1dRefmvsDSPContext) {
 
     #[cfg(target_arch = "x86_64")]
     {
-        (*c).load_tmvs = dav1d_load_tmvs_sse4;
+        c.load_tmvs = dav1d_load_tmvs_sse4;
 
         if !flags.contains(CpuFlags::AVX2) {
             return;
         }
 
-        (*c).save_tmvs = dav1d_save_tmvs_avx2;
-        (*c).splat_mv = dav1d_splat_mv_avx2;
+        c.save_tmvs = dav1d_save_tmvs_avx2;
+        c.splat_mv = dav1d_splat_mv_avx2;
 
         if !flags.contains(CpuFlags::AVX512ICL) {
             return;
         }
 
-        (*c).save_tmvs = dav1d_save_tmvs_avx512icl;
-        (*c).splat_mv = dav1d_splat_mv_avx512icl;
+        c.save_tmvs = dav1d_save_tmvs_avx512icl;
+        c.splat_mv = dav1d_splat_mv_avx512icl;
     }
 }
 
 #[inline(always)]
 #[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), feature = "asm"))]
-unsafe fn refmvs_dsp_init_arm(c: *mut Rav1dRefmvsDSPContext) {
+fn refmvs_dsp_init_arm(c: &mut Rav1dRefmvsDSPContext) {
     let flags = rav1d_get_cpu_flags();
     if flags.contains(CpuFlags::NEON) {
-        (*c).save_tmvs = dav1d_save_tmvs_neon;
-        (*c).splat_mv = dav1d_splat_mv_neon;
+        c.save_tmvs = dav1d_save_tmvs_neon;
+        c.splat_mv = dav1d_splat_mv_neon;
     }
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_refmvs_dsp_init(c: *mut Rav1dRefmvsDSPContext) {
-    (*c).load_tmvs = load_tmvs_c;
-    (*c).save_tmvs = save_tmvs_c;
-    (*c).splat_mv = splat_mv_rust;
+pub(crate) fn rav1d_refmvs_dsp_init(c: &mut Rav1dRefmvsDSPContext) {
+    c.load_tmvs = load_tmvs_c;
+    c.save_tmvs = save_tmvs_c;
+    c.splat_mv = splat_mv_rust;
     cfg_if! {
         if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))] {
             refmvs_dsp_init_x86(c);
