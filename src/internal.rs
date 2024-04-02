@@ -29,8 +29,10 @@ use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
 use crate::src::cpu::rav1d_get_cpu_flags;
 use crate::src::cpu::CpuFlags;
+use crate::src::disjoint_mut::DisjointImmutGuard;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutArcSlice;
+use crate::src::disjoint_mut::DisjointMutGuard;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -82,8 +84,6 @@ use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::refmvs::RefMvsFrame;
-use crate::src::unstable_extensions::as_chunks;
-use crate::src::unstable_extensions::as_chunks_mut;
 use atomig::Atom;
 use atomig::Atomic;
 use libc::ptrdiff_t;
@@ -497,8 +497,10 @@ impl CodedBlockInfo {
 #[derive(Default)]
 #[repr(C)]
 pub struct Pal {
-    data: AlignedVec64<u8>,
+    data: DisjointMut<AlignedVec64<u8>>,
 }
+
+type PalArray<BD> = [[<BD as BitDepth>::Pixel; 8]; 3];
 
 impl Pal {
     pub fn resize(&mut self, n: usize) {
@@ -509,18 +511,33 @@ impl Pal {
         self.data.is_empty()
     }
 
-    pub fn as_slice<BD: BitDepth>(&self) -> &[[[BD::Pixel; 8]; 3]] {
-        as_chunks::<3, [BD::Pixel; 8]>(
-            as_chunks::<8, BD::Pixel>(BD::cast_pixel_slice(&self.data)).0,
-        )
-        .0
+    pub fn index<'a: 'b, 'b, BD: BitDepth>(
+        &'a self,
+        index: usize,
+    ) -> DisjointImmutGuard<'b, AlignedVec64<u8>, PalArray<BD>> {
+        self.data.index_as(index)
     }
 
-    pub fn as_slice_mut<BD: BitDepth>(&mut self) -> &mut [[[BD::Pixel; 8]; 3]] {
-        as_chunks_mut::<3, [BD::Pixel; 8]>(
-            as_chunks_mut::<8, BD::Pixel>(BD::cast_pixel_slice_mut(&mut self.data)).0,
-        )
-        .0
+    /// Mutably borrow a pal array.
+    ///
+    /// This mutable borrow is unchecked and callers must ensure that no other
+    /// borrows of a pal overlaps with the mutably borrowed region for the
+    /// lifetime of that mutable borrow.
+    ///
+    /// # Safety
+    ///
+    /// Caller must ensure that no elements of the resulting borrowed element is
+    /// concurrently borrowed (immutably or mutably) at all during the lifetime
+    /// of the returned mutable borrow.
+    pub unsafe fn index_mut<'a: 'b, 'b, BD: BitDepth>(
+        &'a self,
+        index: usize,
+    ) -> DisjointMutGuard<'b, AlignedVec64<u8>, PalArray<BD>> {
+        // SAFETY: The preconditions of our `index_mut` safety imply that the
+        // indexed region we are mutably borrowing is not concurrently borrowed
+        // and will not be borrowed during the lifetime of the returned
+        // reference.
+        unsafe { self.data.index_mut_as(index) }
     }
 }
 
