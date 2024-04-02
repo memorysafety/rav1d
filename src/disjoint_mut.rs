@@ -6,6 +6,8 @@
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::mem;
+use std::mem::ManuallyDrop;
 use std::ops::Bound;
 use std::ops::Deref;
 use std::ops::DerefMut;
@@ -18,6 +20,9 @@ use std::ops::RangeInclusive;
 use std::ops::RangeTo;
 use std::ops::RangeToInclusive;
 use std::ptr;
+
+use zerocopy::AsBytes;
+use zerocopy::FromBytes;
 
 use crate::src::align::AlignedByteChunk;
 use crate::src::align::AlignedVec;
@@ -54,6 +59,21 @@ pub struct DisjointMutGuard<'a, T: AsMutPtr, V: ?Sized> {
     range: (Bound<usize>, Bound<usize>),
 }
 
+impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
+    pub fn cast<V: AsBytes + FromBytes>(self) -> DisjointMutGuard<'a, T, V> {
+        let mut old_guard = ManuallyDrop::new(self);
+        let bytes = mem::take(&mut old_guard.slice);
+        DisjointMutGuard {
+            slice: V::mut_from(bytes).unwrap(),
+            phantom: old_guard.phantom,
+            #[cfg(debug_assertions)]
+            parent: old_guard.parent,
+            #[cfg(debug_assertions)]
+            range: old_guard.range,
+        }
+    }
+}
+
 impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointMutGuard<'a, T, V> {
     type Target = V;
 
@@ -78,6 +98,21 @@ pub struct DisjointImmutGuard<'a, T: AsMutPtr, V: ?Sized> {
     parent: &'a DisjointMut<T>,
     #[cfg(debug_assertions)]
     range: (Bound<usize>, Bound<usize>),
+}
+
+impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
+    pub fn cast<V: AsBytes + FromBytes>(self) -> DisjointImmutGuard<'a, T, V> {
+        let mut old_guard = ManuallyDrop::new(self);
+        let bytes = mem::take(&mut old_guard.slice);
+        DisjointImmutGuard {
+            slice: V::ref_from(bytes).unwrap(),
+            phantom: old_guard.phantom,
+            #[cfg(debug_assertions)]
+            parent: old_guard.parent,
+            #[cfg(debug_assertions)]
+            range: old_guard.range,
+        }
+    }
 }
 
 impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointImmutGuard<'a, T, V> {

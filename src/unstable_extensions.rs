@@ -71,7 +71,7 @@ pub unsafe fn as_chunks_unchecked_mut<const N: usize, T>(this: &mut [T]) -> &mut
 #[inline]
 #[track_caller]
 #[must_use]
-pub fn as_chunks_mut<const N: usize, T>(this: &mut [T]) -> (&mut [[T; N]], &mut [T]) {
+pub fn as_chunks_mut<'a, const N: usize, T>(this: &'a mut [T]) -> (&'a mut [[T; N]], &'a mut [T]) {
     assert!(N != 0, "chunk size must be non-zero");
     let len = this.len() / N;
     let (multiple_of_n, remainder) = this.split_at_mut(len * N);

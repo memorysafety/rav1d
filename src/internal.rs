@@ -27,7 +27,9 @@ use crate::src::align::*;
 use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
+use crate::src::disjoint_mut::DisjointImmutGuard;
 use crate::src::disjoint_mut::DisjointMut;
+use crate::src::disjoint_mut::DisjointMutGuard;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -450,7 +452,7 @@ impl CodedBlockInfo {
 #[derive(Default)]
 #[repr(C)]
 pub struct Pal {
-    data: AlignedVec64<u8>,
+    data: DisjointMut<AlignedVec64<u8>>,
 }
 
 impl Pal {
@@ -462,18 +464,28 @@ impl Pal {
         self.data.is_empty()
     }
 
-    pub fn as_slice<BD: BitDepth>(&self) -> &[[[BD::Pixel; 8]; 3]] {
-        as_chunks::<3, [BD::Pixel; 8]>(
-            as_chunks::<8, BD::Pixel>(BD::cast_pixel_slice(&self.data)).0,
-        )
-        .0
+    pub fn index<'a: 'b, 'b, BD: BitDepth>(
+        &'a self,
+        index: usize,
+    ) -> DisjointImmutGuard<'b, AlignedVec64<u8>, [[BD::Pixel; 8]; 3]> {
+        let guard: DisjointImmutGuard<'a, AlignedVec64<u8>, [u8]> = self.data.index(
+            index * 8 * 3 * mem::size_of::<BD::Pixel>()
+                ..(index + 1) * 8 * 3 * mem::size_of::<BD::Pixel>(),
+        );
+        guard.cast()
     }
 
-    pub fn as_slice_mut<BD: BitDepth>(&mut self) -> &mut [[[BD::Pixel; 8]; 3]] {
-        as_chunks_mut::<3, [BD::Pixel; 8]>(
-            as_chunks_mut::<8, BD::Pixel>(BD::cast_pixel_slice_mut(&mut self.data)).0,
-        )
-        .0
+    pub fn index_mut<'a: 'b, 'b, BD: BitDepth>(
+        &'a self,
+        index: usize,
+    ) -> DisjointMutGuard<'b, AlignedVec64<u8>, [[BD::Pixel; 8]; 3]> {
+        let guard: DisjointMutGuard<'a, AlignedVec64<u8>, [u8]> = unsafe {
+            self.data.index_mut(
+                index * 8 * 3 * mem::size_of::<BD::Pixel>()
+                    ..(index + 1) * 8 * 3 * mem::size_of::<BD::Pixel>(),
+            )
+        };
+        guard.cast()
     }
 }
 

@@ -2453,12 +2453,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 } else {
                     &t.scratch.c2rust_unnamed_0.pal_idx
                 };
+                let pal_guard;
                 let pal: *const BD::Pixel = if t.frame_thread.pass != 0 {
                     let index = (((t.b.y as isize >> 1) + (t.b.x as isize & 1))
                         * (f.b4_stride >> 1)
                         + ((t.b.x >> 1) + (t.b.y & 1)) as isize)
                         as isize;
-                    f.frame_thread.pal.as_slice::<BD>()[index as usize][0].as_ptr()
+                    pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
+                    pal_guard[0].as_ptr()
                 } else {
                     let interintra_edge_pal =
                         BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
@@ -2824,6 +2826,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let uv_dstoff: ptrdiff_t = 4
                         * ((t.b.x >> ss_hor) as isize
                             + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
+                    let pal_guard;
                     let (pal, pal_idx) = if t.frame_thread.pass != 0 {
                         let p = t.frame_thread.pass & 1;
                         let index = (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
@@ -2833,10 +2836,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         let len = (cbw4 * cbh4 * 16) as usize;
                         let pal_idx = &f.frame_thread.pal_idx[*pal_idx_offset..][..len];
                         *pal_idx_offset += len;
-                        (
-                            &f.frame_thread.pal.as_slice::<BD>()[index as usize],
-                            pal_idx,
-                        )
+                        pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
+                        (&*pal_guard, pal_idx)
                     } else {
                         let interintra_edge_pal =
                             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
@@ -4393,10 +4394,12 @@ pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
     bw4: usize,
     bh4: usize,
 ) {
+    let pal_guard;
     let pal = if t.frame_thread.pass != 0 {
         let index = ((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
             + ((t.b.x >> 1) + (t.b.y & 1)) as isize;
-        &f.frame_thread.pal.as_slice::<BD>()[index as usize][0]
+        pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
+        &pal_guard[0]
     } else {
         let interintra_edge_pal = BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
         &interintra_edge_pal.pal[0]
@@ -4417,10 +4420,12 @@ pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
     bw4: usize,
     bh4: usize,
 ) {
+    let pal_guard;
     let pal = if t.frame_thread.pass != 0 {
         let index = ((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
             + ((t.b.x >> 1) + (t.b.y & 1)) as isize;
-        &f.frame_thread.pal.as_slice_mut::<BD>()[index as usize]
+        pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
+        &pal_guard
     } else {
         let interintra_edge_pal = BD::select(&t.scratch.c2rust_unnamed_0.interintra_edge_pal);
         &interintra_edge_pal.pal
@@ -4545,11 +4550,12 @@ pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
     let used_cache = &used_cache[..i];
 
     // parse new entries
+    let mut pal_guard;
     let pal = if t.frame_thread.pass != 0 {
-        &mut f.frame_thread.pal.as_slice_mut::<BD>()[(((t.b.y >> 1) + (t.b.x & 1)) as isize
-            * (f.b4_stride >> 1)
-            + ((t.b.x >> 1) + (t.b.y & 1)) as isize)
-            as usize][pli]
+        let pal_start = (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
+            + ((t.b.x >> 1) + (t.b.y & 1)) as isize) as usize;
+        pal_guard = f.frame_thread.pal.index_mut::<BD>(pal_start);
+        &mut pal_guard[pli]
     } else {
         let interintra_edge_pal =
             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
@@ -4639,11 +4645,13 @@ pub(crate) unsafe fn rav1d_read_pal_uv<BD: BitDepth>(
     // V pal coding
     let ts = &mut *f.ts.offset(t.ts as isize);
 
+    let mut pal_guard;
     let pal = if t.frame_thread.pass != 0 {
-        &mut f.frame_thread.pal.as_slice_mut::<BD>()[(((t.b.y >> 1) + (t.b.x & 1)) as isize
-            * (f.b4_stride >> 1)
-            + ((t.b.x >> 1) + (t.b.y & 1)) as isize)
-            as usize][2]
+        pal_guard = f.frame_thread.pal.index_mut::<BD>(
+            (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
+                + ((t.b.x >> 1) + (t.b.y & 1)) as isize) as usize,
+        );
+        &mut pal_guard[2]
     } else {
         let interintra_edge_pal =
             BD::select_mut(&mut t.scratch.c2rust_unnamed_0.interintra_edge_pal);
