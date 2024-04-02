@@ -31,10 +31,12 @@ use crate::src::ipred_prepare::sm_uv_flag;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockSize;
+use crate::src::levels::CompInterPredMode;
 use crate::src::levels::CompInterType;
 use crate::src::levels::Filter2d;
 use crate::src::levels::InterIntraPredMode;
 use crate::src::levels::InterIntraType;
+use crate::src::levels::InterPredMode;
 use crate::src::levels::IntraPredMode;
 use crate::src::levels::MotionMode;
 use crate::src::levels::RectTxfmSize;
@@ -45,8 +47,6 @@ use crate::src::levels::CFL_PRED;
 use crate::src::levels::DCT_DCT;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
-use crate::src::levels::GLOBALMV;
-use crate::src::levels::GLOBALMV_GLOBALMV;
 use crate::src::levels::IDTX;
 use crate::src::levels::RTX_16X32;
 use crate::src::levels::RTX_16X4;
@@ -3238,7 +3238,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             .seg_mask;
         for i in 0..2 {
             let refp = &f.refp[b.r#ref()[i] as usize];
-            if b.c2rust_unnamed.c2rust_unnamed_0.inter_mode == GLOBALMV_GLOBALMV
+            if b.inter_mode() == CompInterPredMode::GlobalGlobal
                 && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
             {
                 warp_affine::<BD>(
@@ -3336,7 +3336,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             for pl in 0..2 {
                 for i in 0..2 {
                     let refp = &f.refp[b.r#ref()[i] as usize];
-                    if b.inter_mode() == GLOBALMV_GLOBALMV
+                    if b.inter_mode() == CompInterPredMode::GlobalGlobal
                         && cmp::min(cbw4, cbh4) > 1
                         && f.gmv_warp_allowed[b.r#ref()[i] as usize] != 0
                     {
@@ -3418,7 +3418,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         let refp = &f.refp[b.r#ref()[0] as usize];
         let filter_2d = b.filter2d();
         if cmp::min(bw4, bh4) > 1
-            && (b.inter_mode() == GLOBALMV && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
+            && (b.inter_mode() == InterPredMode::Global.into()
+                && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                 || b.motion_mode() == MotionMode::Warp
                     && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
         {
@@ -3681,7 +3682,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             } else {
                 if cmp::min(cbw4, cbh4) > 1
-                    && (b.inter_mode() == GLOBALMV
+                    && (b.inter_mode() == InterPredMode::Global.into()
                         && f.gmv_warp_allowed[b.r#ref()[0] as usize] != 0
                         || b.motion_mode() == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
