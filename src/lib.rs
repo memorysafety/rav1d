@@ -279,6 +279,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         delayed_fg: Mutex::new(mem::zeroed()),
     };
     (&mut (*c).task_thread as *mut Arc<TaskThreadData>).write(Arc::new(ttd));
+    addr_of_mut!((*c).tiles).write(Default::default());
     ptr::addr_of_mut!((*c).frame_thread.out_delayed).write(if (*c).n_fc > 1 {
         (0..(*c).n_fc).map(|_| Default::default()).collect()
     } else {
@@ -287,6 +288,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     for n in 0..n_fc {
         let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(n as isize);
         f.index = n;
+        addr_of_mut!(f.tiles).write(Default::default());
         addr_of_mut!(f.task_thread.tasks).write(UnsafeCell::new(Default::default()));
         addr_of_mut!(f.frame_thread).write(Default::default());
         if n_tc > 1 {
