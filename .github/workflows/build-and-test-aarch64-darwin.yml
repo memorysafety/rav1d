@@ -6,6 +6,12 @@ on:
   pull_request:
 jobs:
   test-on-macos-aarch64:
+    strategy:
+      matrix:
+        build: [
+          {name: "release", cargo_flags: "--release",  timeout_multiplier: 1},
+          {name: "debug", cargo_flags: "", timeout_multiplier: 3},
+        ]
     runs-on: macos-14
     name: test on macos-14-aarch64
     steps:
@@ -13,11 +19,11 @@ jobs:
         run: |
           brew install meson
       - name: git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: cache rust dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -26,35 +32,39 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: arm-darwin-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
-      - name: cargo build for aarch64-apple-darwin
-        run:  cargo build --release
+      - name: cargo ${{ matrix.build.name }} build for aarch64-apple-darwin
+        run:  cargo build ${{ matrix.build.cargo_flags }}
         # not quite sure why we need this on the runner, not needed locally
       - run: |
-            meson build --buildtype release
+            meson build --buildtype ${{ matrix.build.name }}
             ninja -C build tools/dav1d
-      - name: test without frame delay
+      - name: test ${{ matrix.build.name }} build without frame delay
         run: .github/workflows/test.sh \
-            -r ./target/release/dav1d \
-            -s ./target/release/seek_stress
-        # tests run quickly so also cover the frame delay cases
-      - name: test with frame delay of 1
+            -r ./target/${{ matrix.build.name }}/dav1d \
+            -s ./target/${{ matrix.build.name }}/seek_stress
+        # release tests run quickly so also cover the frame delay cases
+      - name: test release build with frame delay of 1
+        if: ${{ matrix.build.name == 'release' }}
         run: .github/workflows/test.sh \
             -r ./target/release/dav1d \
             -s ./target/release/seek_stress
             -f 1
-      - name: test with frame delay of 2
+      - name: test release build with frame delay of 2
+        if: ${{ matrix.build.name == 'release' }}
         run: .github/workflows/test.sh \
             -r ./target/release/dav1d \
             -s ./target/release/seek_stress
             -f 2
-      - run: .github/workflows/test.sh \
-          -r ./target/release/dav1d \
-          -s ./target/release/seek_stress
+      - name: copy log files
+        if: ${{ !cancelled() }}
+        run: |
+          cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
+              ${{ github.workspace }}/build/meson-logs/testlog-aarch64-apple-darwin-${{ matrix.build.name }}.txt
       - name: upload build artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: meson-test-logs
           path: |
-            ${{ github.workspace }}/build/meson-logs/testlog.txt
+            ${{ github.workspace }}/build/meson-logs/testlog-*.txt
 
