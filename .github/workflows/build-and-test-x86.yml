@@ -32,11 +32,11 @@ jobs:
           packages: meson nasm gcc-multilib
           version: 1.0 # version of cache to load
       - name: git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: cache rust toolchain
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.rustup/toolchains
@@ -44,7 +44,7 @@ jobs:
             ~/.rustup/settings.toml
           key: ${{ runner.os }}-${{ matrix.target }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
       - name: cache rust crates
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -72,7 +72,7 @@ jobs:
              ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.name }}.txt
       - name: upload build artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: meson-test-logs
           path: |
@@ -85,11 +85,11 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE: 1
         run: brew install meson nasm
       - name: git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: cache rust toolchain
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.rustup/toolchains
@@ -97,7 +97,7 @@ jobs:
             ~/.rustup/settings.toml
           key: ${{ runner.os }}-rust-toolchain-${{ hashFiles('rust-toolchain', 'rust-toolchain.toml') }}
       - name: cache rust crates
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -121,7 +121,7 @@ jobs:
               ${{ github.workspace }}/build/meson-logs/testlog-x86_64-apple-darwin.txt
       - name: upload build artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: meson-test-logs
           path: |
