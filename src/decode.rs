@@ -3629,8 +3629,8 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
         locked.mode.0.fill(NEARESTMV);
     }
     ctx.lcoef.get_mut().0.fill(0x40);
-    for ccoef in &mut ctx.ccoef.try_write().unwrap().0 {
-        ccoef.fill(0x40);
+    for ccoef in &mut ctx.ccoef {
+        ccoef.get_mut().0.fill(0x40);
     }
     for filter in &mut locked.filter.0 {
         filter.fill(Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8);

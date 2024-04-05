@@ -32,7 +32,7 @@ use std::sync::RwLock;
 #[derive(Default)]
 pub struct BlockContext {
     pub lcoef: DisjointMut<Align8<[u8; 32]>>,
-    pub ccoef: RwLock<Align8<[[u8; 32]; 2]>>,
+    pub ccoef: [DisjointMut<Align8<[u8; 32]>>; 2],
     pub partition: RwLock<Align8<[u8; 16]>>,
     pub uvmode: RwLock<Align8<[u8; 32]>>,
     pub tx_lpf: RwLock<BlockContextTxLpf>,
