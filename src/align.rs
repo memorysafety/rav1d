@@ -13,7 +13,6 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 use std::ops::Index;
 use std::ops::IndexMut;
-use std::ptr;
 use std::slice;
 
 use crate::src::disjoint_mut::AsMutPtr;
@@ -232,13 +231,11 @@ pub type AlignedVec64<T> = AlignedVec<T, Align64<[u8; 64]>>;
 unsafe impl<T: Copy, C: AlignedByteChunk> AsMutPtr for AlignedVec<T, C> {
     type Target = T;
 
-    unsafe fn as_mut_slice(ptr: *mut Self) -> *mut [Self::Target] {
-        let len = unsafe { (*ptr).len() };
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
         // SAFETY: .as_mut_ptr() does not materialize a mutable reference to the
         // underlying slice so we can still allow immutable references into this
         // slice.
-        let data = unsafe { (*ptr).as_mut_ptr() };
-        ptr::slice_from_raw_parts_mut(data, len)
+        unsafe { (*ptr).as_mut_ptr() }
     }
 
     fn len(&self) -> usize {

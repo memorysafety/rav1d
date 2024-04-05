@@ -111,7 +111,17 @@ pub unsafe trait AsMutPtr: Sized {
     ///
     /// This method may dereference `ptr` as an immutable reference, so this
     /// pointer must be safely dereferenceable.
-    unsafe fn as_mut_slice(ptr: *mut Self) -> *mut [Self::Target];
+    unsafe fn as_mut_slice(ptr: *mut Self) -> *mut [Self::Target] {
+        // SAFETY: The safety precondition of this method requires that we can
+        // immutably dereference `ptr`.
+        let len = unsafe { (*ptr).len() };
+        // SAFETY: Mutably dereferencing and calling `.as_mut_ptr()` does not
+        // materialize a mutable reference to the underlying slice according to
+        // its documentated behavior, so we can still allow concurrent immutable
+        // references into that underlying slice.
+        let data = unsafe { Self::as_mut_ptr(ptr) };
+        ptr::slice_from_raw_parts_mut(data, len)
+    }
 
     /// Convert a mutable pointer to a collection to a mutable pointer to the
     /// first element of the collection.
@@ -123,11 +133,7 @@ pub unsafe trait AsMutPtr: Sized {
     ///
     /// The returned pointer is only safe to dereference within the bounds of
     /// the underlying collection.
-    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
-        // SAFETY: This method has the same safety requirements as
-        // `as_mut_slice`, so we can safely call it.
-        unsafe { AsMutPtr::as_mut_slice(ptr) as *mut Self::Target }
-    }
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target;
 
     fn len(&self) -> usize;
 }
@@ -547,16 +553,12 @@ impl<V> DisjointMut<Vec<V>> {
 unsafe impl<V> AsMutPtr for Vec<V> {
     type Target = V;
 
-    unsafe fn as_mut_slice(ptr: *mut Self) -> *mut [Self::Target] {
-        // SAFETY: The safety precondition of this method requires that we can
-        // immutably dereference `ptr`.
-        let len = unsafe { (*ptr).len() };
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
         // SAFETY: Mutably dereferencing and calling `.as_mut_ptr()` does not
         // materialize a mutable reference to the underlying slice according to
         // its documentated behavior, so we can still allow concurrent immutable
         // references into that underlying slice.
-        let data = unsafe { (*ptr).as_mut_ptr() };
-        ptr::slice_from_raw_parts_mut(data, len)
+        unsafe { (*ptr).as_mut_ptr() }
     }
 
     fn len(&self) -> usize {
@@ -567,8 +569,8 @@ unsafe impl<V> AsMutPtr for Vec<V> {
 unsafe impl<V, const N: usize> AsMutPtr for [V; N] {
     type Target = V;
 
-    unsafe fn as_mut_slice(ptr: *mut Self) -> *mut [V] {
-        ptr::slice_from_raw_parts_mut(ptr as *mut V, N)
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut V {
+        ptr as *mut V
     }
 
     fn len(&self) -> usize {
