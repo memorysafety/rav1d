@@ -42,7 +42,7 @@ pub struct Av1RestorationUnit {
 pub struct Av1Filter {
     // each bit is 1 col
     pub filter_y: [[[[AtomicU16; 2]; 3]; 32]; 2], // 0=col, 1=row
-    pub filter_uv: [[[[u16; 2]; 2]; 32]; 2],      // 0=col, 1=row
+    pub filter_uv: [[[[AtomicU16; 2]; 2]; 32]; 2], // 0=col, 1=row
     /// -1 means "unset"
     pub cdef_idx: [i8; 4],
     /// for 8x8 blocks, but stored on a 4x8 basis
@@ -292,7 +292,7 @@ fn mask_edges_intra(
 }
 
 fn mask_edges_chroma(
-    masks: &mut [[[[u16; 2]; 2]; 32]; 2],
+    masks: &[[[[AtomicU16; 2]; 2]; 32]; 2],
     cby4: usize,
     cbx4: usize,
     cw4: usize,
@@ -321,7 +321,8 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cby4 + y);
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
-        masks[0][cbx4][cmp::min(twl4c, l[y]) as usize][sidx] |= smask as u16;
+        masks[0][cbx4][cmp::min(twl4c, l[y]) as usize][sidx]
+            .fetch_or(smask as u16, Ordering::Relaxed);
     }
 
     // top block edge
@@ -329,7 +330,8 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cbx4 + x);
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
-        masks[1][cby4][cmp::min(thl4c, a[x]) as usize][sidx] |= smask as u16;
+        masks[1][cby4][cmp::min(thl4c, a[x]) as usize][sidx]
+            .fetch_or(smask as u16, Ordering::Relaxed);
     }
 
     if !skip_inter {
@@ -340,10 +342,10 @@ fn mask_edges_chroma(
         let inner = [(inner & ((1 << vmask) - 1)) as u16, (inner >> vmask) as u16];
         for x in (hstep..cw4).step_by(hstep) {
             if inner[0] != 0 {
-                masks[0][cbx4 + x][twl4c as usize][0] |= inner[0];
+                masks[0][cbx4 + x][twl4c as usize][0].fetch_or(inner[0], Ordering::Relaxed);
             }
             if inner[1] != 0 {
-                masks[0][cbx4 + x][twl4c as usize][1] |= inner[1];
+                masks[0][cbx4 + x][twl4c as usize][1].fetch_or(inner[1], Ordering::Relaxed);
             }
         }
 
@@ -356,10 +358,10 @@ fn mask_edges_chroma(
         let inner = [(inner & ((1 << hmask) - 1)) as u16, (inner >> hmask) as u16];
         for y in (vstep..ch4).step_by(vstep) {
             if inner[0] != 0 {
-                masks[1][cby4 + y][thl4c as usize][0] |= inner[0];
+                masks[1][cby4 + y][thl4c as usize][0].fetch_or(inner[0], Ordering::Relaxed);
             }
             if inner[1] != 0 {
-                masks[1][cby4 + y][thl4c as usize][1] |= inner[1];
+                masks[1][cby4 + y][thl4c as usize][1].fetch_or(inner[1], Ordering::Relaxed);
             }
         }
     }
@@ -466,7 +468,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     }
 
     mask_edges_chroma(
-        &mut lflvl.filter_uv,
+        &lflvl.filter_uv,
         cby4,
         cbx4,
         cbw4,
@@ -588,7 +590,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     }
 
     mask_edges_chroma(
-        &mut lflvl.filter_uv,
+        &lflvl.filter_uv,
         cby4,
         cbx4,
         cbw4,
