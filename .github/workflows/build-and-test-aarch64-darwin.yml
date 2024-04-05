@@ -34,26 +34,25 @@ jobs:
           key: arm-darwin-cargo-and-target-${{ hashFiles('**/Cargo.lock') }}
       - name: cargo ${{ matrix.build.name }} build for aarch64-apple-darwin
         run:  cargo build ${{ matrix.build.cargo_flags }}
-        # not quite sure why we need this on the runner, not needed locally
-      - run: |
-            meson build --buildtype ${{ matrix.build.name }}
-            ninja -C build tools/dav1d
       - name: test ${{ matrix.build.name }} build without frame delay
-        run: .github/workflows/test.sh \
+        run: |
+          .github/workflows/test.sh \
             -r ./target/${{ matrix.build.name }}/dav1d \
             -s ./target/${{ matrix.build.name }}/seek_stress
         # release tests run quickly so also cover the frame delay cases
       - name: test release build with frame delay of 1
         if: ${{ matrix.build.name == 'release' }}
-        run: .github/workflows/test.sh \
+        run: |
+          .github/workflows/test.sh \
             -r ./target/release/dav1d \
-            -s ./target/release/seek_stress
+            -s ./target/release/seek_stress \
             -f 1
       - name: test release build with frame delay of 2
         if: ${{ matrix.build.name == 'release' }}
-        run: .github/workflows/test.sh \
+        run: |
+          .github/workflows/test.sh \
             -r ./target/release/dav1d \
-            -s ./target/release/seek_stress
+            -s ./target/release/seek_stress \
             -f 2
       - name: copy log files
         if: ${{ !cancelled() }}
