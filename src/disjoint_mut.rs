@@ -473,10 +473,15 @@ mod debug {
         }
 
         fn remove_range(&self, range: (Bound<usize>, Bound<usize>), mutable: bool) {
-            let mut ranges = if mutable {
-                self.ranges.mutable.lock().unwrap()
+            let ranges = if mutable {
+                self.ranges.mutable.lock()
             } else {
-                self.ranges.immutable.lock().unwrap()
+                self.ranges.immutable.lock()
+            };
+            let Ok(mut ranges) = ranges else {
+                // Another thread has panicked holding a range lock. We can't
+                // remove anything.
+                return;
             };
             let idx = ranges
                 .iter()
@@ -584,6 +589,30 @@ impl<V: Copy, C: AlignedByteChunk> DisjointMut<AlignedVec<V, C>> {
     }
 }
 
+#[test]
+fn test_overlapping_immut() {
+    let mut v: DisjointMut<Vec<u8>> = Default::default();
+    v.resize(10, 0u8);
+
+    let guard1 = unsafe { v.index(0..5) };
+    let guard2 = unsafe { v.index(2..) };
+
+    assert_eq!(guard1[2], guard2[0]);
+}
+
+#[test]
+#[cfg_attr(debug_assertions, should_panic)]
+fn test_overlapping_mut() {
+    let mut v: DisjointMut<Vec<u8>> = Default::default();
+    v.resize(10, 0u8);
+
+    let guard1 = unsafe { v.index(0..5) };
+    let mut guard2 = unsafe { v.index_mut(2..) };
+
+    guard2[0] = 42;
+    assert_eq!(guard1[2], 42);
+}
+
 #[cfg(debug_assertions)]
 #[test]
 fn test_pointer_write_debug() {
@@ -616,7 +645,7 @@ fn test_pointer_write_release() {
     let mut v: DisjointMut<Vec<[u8; 4]>> = Default::default();
     v.resize(10, [0u8; 4]);
 
-    let borrow = v.index(0..);
+    let borrow = unsafe { v.index(0..) };
     let ptr = v.as_mut_ptr().wrapping_offset(3) as *mut u8;
     unsafe {
         ptr.wrapping_offset(2).write(42);
@@ -629,8 +658,8 @@ fn test_pointer_write_release() {
     // assert_eq!(borrow[3][2], 0);
 
     // We are fine to re-borrow at this point now that the write is done.
-    assert_eq!(v.index(4)[0], 0);
-    assert_eq!(v.index(3)[2], 42);
+    assert_eq!(unsafe { v.index(4)[0] }, 0);
+    assert_eq!(unsafe { v.index(3)[2] }, 42);
 }
 
 #[test]
