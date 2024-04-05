@@ -71,10 +71,11 @@ jobs:
           cp ${{ github.workspace }}/build/meson-logs/testlog.txt \
              ${{ github.workspace }}/build/meson-logs/testlog-${{ matrix.target }}-${{ matrix.build.name }}.txt
       - name: upload build artifacts
-        if: ${{ !cancelled() }}
+        # don't upload artifacts for tests w/framedelay to keep names unique
+        if: ${{ !cancelled() && matrix.framedelay == '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: meson-test-logs
+          name: meson-test-logs-${{ matrix.target }}-${{ matrix.build.name }}
           path: |
              ${{ github.workspace }}/build/meson-logs/testlog-*.txt
   test-on-macos-latest:
@@ -123,6 +124,6 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: meson-test-logs
+          name: meson-test-logs-x86_64-apple-darwin
           path: |
               ${{ github.workspace }}/build/meson-logs/testlog-*.txt
