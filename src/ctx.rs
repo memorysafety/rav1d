@@ -37,6 +37,8 @@
 //! * is far simpler than the `case_set*` implementation, consisting of a `match` and array writes
 //!
 //! [`BlockContext`]: crate::src::env::BlockContext
+use crate::src::disjoint_mut::AsMutPtr;
+use crate::src::disjoint_mut::DisjointMut;
 use std::iter::zip;
 
 /// Perform a `memset` optimized for lengths that are small powers of 2.
@@ -82,6 +84,16 @@ impl<const UP_TO: usize, const WITH_DEFAULT: bool> CaseSetter<UP_TO, WITH_DEFAUL
     #[inline]
     pub fn set<T: Clone + Copy>(&self, buf: &mut [T], val: T) {
         small_memset::<T, UP_TO, WITH_DEFAULT>(&mut buf[self.offset..][..self.len], val);
+    }
+
+    #[inline]
+    pub unsafe fn set_disjoint<T, V>(&self, buf: &DisjointMut<T>, val: V)
+    where
+        T: AsMutPtr<Target = V>,
+        V: Clone + Copy,
+    {
+        let mut buf = unsafe { buf.index_mut(self.offset..self.offset + self.len) };
+        small_memset::<V, UP_TO, WITH_DEFAULT>(&mut *buf, val);
     }
 }
 

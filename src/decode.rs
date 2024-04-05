@@ -3601,7 +3601,7 @@ unsafe fn decode_sb(
     Ok(())
 }
 
-fn reset_context(ctx: &BlockContext, keyframe: bool, pass: c_int) {
+fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
     let mut locked = ctx.locked.try_write().unwrap();
     locked.intra.0.fill(keyframe.into());
     ctx.uvmode.try_write().unwrap().0.fill(DC_PRED);
@@ -3628,7 +3628,7 @@ fn reset_context(ctx: &BlockContext, keyframe: bool, pass: c_int) {
         locked.comp_type.0.fill(None);
         locked.mode.0.fill(NEARESTMV);
     }
-    ctx.lcoef.try_write().unwrap().0.fill(0x40);
+    ctx.lcoef.get_mut().0.fill(0x40);
     for ccoef in &mut ctx.ccoef.try_write().unwrap().0 {
         ccoef.fill(0x40);
     }

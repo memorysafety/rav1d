@@ -1771,16 +1771,21 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             cf = CfSelect::Task;
         }
         if (*t).frame_thread.pass != 2 as c_int {
-            let mut a_lcoef = f.a[(*t).a].lcoef.try_write().unwrap();
-            let mut l_lcoef = (*t).l.lcoef.try_write().unwrap();
+            // TODO: Are these lengths correct? They're based on the length read
+            // by `get_skip_ctx`, but that may not be correct.
+            let a_start = bx4 as usize;
+            let a_len = 1 << (*t_dim).lw;
+            let l_start = by4 as usize;
+            let l_len = 1 << (*t_dim).lh;
+
             eob = decode_coefs::<BD>(
                 f,
                 (*t).ts,
                 debug_block_info!(f, (*t).b),
                 &mut (*t).scratch,
                 &mut (*t).cf,
-                &mut a_lcoef.0[bx4 as usize..],
-                &mut l_lcoef.0[by4 as usize..],
+                &mut f.a[(*t).a].lcoef.index_mut(a_start..a_start + a_len),
+                &mut (*t).l.lcoef.index_mut(l_start..l_start + l_len),
                 ytx,
                 bs,
                 b,
@@ -1797,14 +1802,14 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 );
             }
             CaseSet::<16, true>::many(
-                [&mut l_lcoef.0, &mut a_lcoef.0],
+                [&(*t).l.lcoef, &f.a[(*t).a].lcoef],
                 [
                     cmp::min(txh, f.bh - (*t).b.y) as usize,
                     cmp::min(txw, f.bw - (*t).b.x) as usize,
                 ],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
-                    case.set(dir, cf_ctx);
+                    case.set_disjoint(dir, cf_ctx);
                 },
             );
             let txtp_map = &mut (*t).scratch.c2rust_unnamed_0.ac_txtp_map.txtp_map
@@ -1897,7 +1902,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, dir| {
-                case.set(&mut dir.lcoef.try_write().unwrap().0, 0x40);
+                case.set_disjoint(&dir.lcoef, 0x40);
             },
         );
         if has_chroma != 0 {
@@ -1967,16 +1972,18 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                     } else {
                         let mut cf_ctx: u8 = 0x40 as c_int as u8;
                         let mut txtp: TxfmType = DCT_DCT;
-                        let mut a_lcoef = f.a[t.a].lcoef.try_write().unwrap();
-                        let mut l_lcoef = t.l.lcoef.try_write().unwrap();
+                        let a_start = (bx4 + x) as usize;
+                        let a_len = cmp::min((*t_dim).w as i32, f.bw - t.b.x) as usize;
+                        let l_start = (by4 + y) as usize;
+                        let l_len = cmp::min((*t_dim).h as i32, f.bh - t.b.y) as usize;
                         let eob = decode_coefs::<BD>(
                             f,
                             t.ts,
                             debug_block_info!(f, t.b),
                             &mut t.scratch,
                             &mut t.cf,
-                            &mut a_lcoef.0[(bx4 + x) as usize..],
-                            &mut l_lcoef.0[(by4 + y) as usize..],
+                            &mut f.a[t.a].lcoef.index_mut(a_start..a_start + a_len),
+                            &mut t.l.lcoef.index_mut(l_start..l_start + l_len),
                             b.c2rust_unnamed.c2rust_unnamed.tx as RectTxfmSize,
                             bs,
                             b,
@@ -2003,14 +2010,14 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             * cmp::min((*t_dim).h, 8) as usize
                             * 16;
                         CaseSet::<16, true>::many(
-                            [&mut l_lcoef.0, &mut a_lcoef.0],
+                            [&t.l.lcoef, &f.a[t.a].lcoef],
                             [
                                 cmp::min((*t_dim).h as i32, f.bh - t.b.y) as usize,
                                 cmp::min((*t_dim).w as i32, f.bw - t.b.x) as usize,
                             ],
                             [(by4 + y) as usize, (bx4 + x) as usize],
                             |case, dir| {
-                                case.set(dir, cf_ctx);
+                                case.set_disjoint(dir, cf_ctx);
                             },
                         );
                     }
@@ -2718,16 +2725,17 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             txtp = cbi.txtp();
                         } else {
                             let mut cf_ctx: u8 = 0;
-                            let mut a_lcoef = f.a[t.a].lcoef.try_write().unwrap();
-                            let mut l_lcoef = t.l.lcoef.try_write().unwrap();
+                            let a_start = (bx4 + x) as usize;
+                            let l_start = (by4 + y) as usize;
                             eob = decode_coefs::<BD>(
                                 f,
                                 t.ts,
                                 debug_block_info!(f, t.b),
                                 &mut t.scratch,
                                 &mut t.cf,
-                                &mut a_lcoef.0[(bx4 + x) as usize..],
-                                &mut l_lcoef.0[(by4 + y) as usize..],
+                                // TODO: What's the length here? It's at most 16 based on how these slices are used.
+                                &mut f.a[t.a].lcoef.index_mut(a_start..),
+                                &mut t.l.lcoef.index_mut(l_start..),
                                 b.c2rust_unnamed.c2rust_unnamed.tx as RectTxfmSize,
                                 bs,
                                 b,
@@ -2748,14 +2756,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 );
                             }
                             CaseSet::<16, true>::many(
-                                [&mut l_lcoef.0, &mut a_lcoef.0],
+                                [&t.l.lcoef, &f.a[t.a].lcoef],
                                 [
                                     cmp::min((*t_dim).h as i32, f.bh - t.b.y) as usize,
                                     cmp::min((*t_dim).w as i32, f.bw - t.b.x) as usize,
                                 ],
                                 [(by4 + y) as usize, (bx4 + x) as usize],
                                 |case, dir| {
-                                    case.set(dir, cf_ctx);
+                                    case.set_disjoint(dir, cf_ctx);
                                 },
                             );
                         }
@@ -2794,7 +2802,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             [(*t_dim).h as usize, (*t_dim).w as usize],
                             [(by4 + y) as usize, (bx4 + x) as usize],
                             |case, dir| {
-                                case.set(&mut dir.lcoef.try_write().unwrap().0, 0x40);
+                                case.set_disjoint(&dir.lcoef, 0x40);
                             },
                         );
                     }
@@ -4008,7 +4016,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
             |case, dir| {
-                case.set(&mut dir.lcoef.try_write().unwrap().0, 0x40);
+                case.set_disjoint(&dir.lcoef, 0x40);
             },
         );
         if has_chroma {

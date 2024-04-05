@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align8;
 use crate::src::disjoint_mut::DisjointMutSlice;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Bxy;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
@@ -30,7 +31,7 @@ use std::sync::RwLock;
 
 #[derive(Default)]
 pub struct BlockContext {
-    pub lcoef: RwLock<Align8<[u8; 32]>>,
+    pub lcoef: DisjointMut<Align8<[u8; 32]>>,
     pub ccoef: RwLock<Align8<[[u8; 32]; 2]>>,
     pub partition: RwLock<Align8<[u8; 16]>>,
     pub uvmode: RwLock<Align8<[u8; 32]>>,

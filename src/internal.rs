@@ -1074,7 +1074,7 @@ impl Rav1dTaskContext {
         Self {
             ts: 0,
             b: Default::default(),
-            l: mem::zeroed(),
+            l: Default::default(),
             a: 0,
             rt: mem::zeroed(),
             cf: Default::default(),
