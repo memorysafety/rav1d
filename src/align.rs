@@ -15,6 +15,8 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::slice;
 
+use crate::src::disjoint_mut::AsMutPtr;
+
 /// [`Default`] isn't `impl`emented for all arrays `[T; N]`
 /// because they were implemented before `const` generics
 /// and thus only for low values of `N`.
@@ -190,6 +192,18 @@ impl<T: Copy, C: AlignedByteChunk> AlignedVec<T, C> {
     }
 }
 
+impl<T: Copy, C: AlignedByteChunk> AsRef<[T]> for AlignedVec<T, C> {
+    fn as_ref(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+impl<T: Copy, C: AlignedByteChunk> AsMut<[T]> for AlignedVec<T, C> {
+    fn as_mut(&mut self) -> &mut [T] {
+        self.as_mut_slice()
+    }
+}
+
 impl<T: Copy, C: AlignedByteChunk> Deref for AlignedVec<T, C> {
     type Target = [T];
 
@@ -213,3 +227,18 @@ impl<T: Copy, C: AlignedByteChunk> Default for AlignedVec<T, C> {
 
 pub type AlignedVec32<T> = AlignedVec<T, Align32<[u8; 32]>>;
 pub type AlignedVec64<T> = AlignedVec<T, Align64<[u8; 64]>>;
+
+unsafe impl<T: Copy, C: AlignedByteChunk> AsMutPtr for AlignedVec<T, C> {
+    type Target = T;
+
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
+        // SAFETY: .as_mut_ptr() does not materialize a mutable reference to the
+        // underlying slice so we can still allow immutable references into this
+        // slice.
+        unsafe { (*ptr).as_mut_ptr() }
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+}
