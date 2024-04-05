@@ -47,7 +47,7 @@ pub struct Av1Filter {
     /// -1 means "unset"
     pub cdef_idx: [AtomicI8; 4],
     /// for 8x8 blocks, but stored on a 4x8 basis
-    pub noskip_mask: [[u16; 2]; 16],
+    pub noskip_mask: [[AtomicU16; 2]; 16],
 }
 
 /// each struct describes one 128x128 area (1 or 4 SBs), post-superres-scaling
@@ -378,7 +378,7 @@ fn mask_edges_chroma(
 }
 
 pub(crate) unsafe fn rav1d_create_lf_mask_intra(
-    lflvl: &mut Av1Filter,
+    lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
@@ -484,7 +484,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
 }
 
 pub(crate) unsafe fn rav1d_create_lf_mask_inter(
-    lflvl: &mut Av1Filter,
+    lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],

@@ -3029,10 +3029,10 @@ unsafe fn decode_b_inner(
         for noskip_mask in &mut f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
             [..(bh4 as usize + 1) / 2]
         {
-            noskip_mask[bx_idx as usize] |= mask as u16;
+            noskip_mask[bx_idx as usize].fetch_or(mask as u16, Ordering::Relaxed);
             if bw4 == 32 {
                 // this should be mask >> 16, but it's 0xffffffff anyway
-                noskip_mask[1] |= mask as u16;
+                noskip_mask[1].fetch_or(mask as u16, Ordering::Relaxed);
             }
         }
     }
