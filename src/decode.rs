@@ -1517,24 +1517,27 @@ unsafe fn decode_b_inner(
             ((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)
         } else {
             0
-        } as isize;
-        if *(t.cur_sb_cdef_idx_ptr).offset(idx) == -1 {
+        } as usize;
+        let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
+        let cur_idx = t.cur_sb_cdef_idx + idx;
+        if cdef_idx[cur_idx].load(Ordering::Relaxed) == -1 {
             let v = rav1d_msac_decode_bools(&mut ts.msac, frame_hdr.cdef.n_bits as c_uint) as i8;
-            *(t.cur_sb_cdef_idx_ptr).offset(idx) = v;
+            cdef_idx[cur_idx].store(v, Ordering::Relaxed);
             if bw4 > 16 {
-                *(t.cur_sb_cdef_idx_ptr).offset(idx + 1) = v;
+                cdef_idx[cur_idx + 1].store(v, Ordering::Relaxed)
             }
             if bh4 > 16 {
-                *(t.cur_sb_cdef_idx_ptr).offset(idx + 2) = v;
+                cdef_idx[cur_idx + 2].store(v, Ordering::Relaxed)
             }
             if bw4 == 32 && bh4 == 32 {
-                *(t.cur_sb_cdef_idx_ptr).offset(idx + 3) = v;
+                cdef_idx[cur_idx + 3].store(v, Ordering::Relaxed)
             }
 
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-cdef_idx[{}]: r={}",
-                    *t.cur_sb_cdef_idx_ptr, ts.msac.rng
+                    cdef_idx[t.cur_sb_cdef_idx].load(Ordering::Relaxed),
+                    ts.msac.rng
                 );
             }
         }
@@ -1908,7 +1911,7 @@ unsafe fn decode_b_inner(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             rav1d_create_lf_mask_intra(
-                &mut *t.lf_mask,
+                &mut f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
                 &lflvl[b.seg_id as usize],
@@ -2925,7 +2928,7 @@ unsafe fn decode_b_inner(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             rav1d_create_lf_mask_inter(
-                &mut *t.lf_mask,
+                &mut f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
                 f.b4_stride,
                 // In C, the inner dimensions (`ref`, `is_gmv`) are offset,
@@ -3023,13 +3026,13 @@ unsafe fn decode_b_inner(
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
-        for noskip_mask in
-            &mut (*t.lf_mask).noskip_mask[by4 as usize >> 1..][..(bh4 as usize + 1) / 2]
+        for noskip_mask in &mut f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
+            [..(bh4 as usize + 1) / 2]
         {
-            noskip_mask[bx_idx as usize] |= mask as u16;
+            noskip_mask[bx_idx as usize].fetch_or(mask as u16, Ordering::Relaxed);
             if bw4 == 32 {
                 // this should be mask >> 16, but it's 0xffffffff anyway
-                noskip_mask[1] |= mask as u16;
+                noskip_mask[1].fetch_or(mask as u16, Ordering::Relaxed);
             }
         }
     }
@@ -3951,20 +3954,22 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     t.a =
         f.a.as_mut_ptr()
             .offset((col_sb128_start + tile_row * f.sb128w) as isize);
-    t.lf_mask = f.lf.mask[(sb128y * f.sb128w + col_sb128_start) as usize..].as_mut_ptr();
+    t.lf_mask = Some((sb128y * f.sb128w + col_sb128_start) as usize);
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.b.x = bx;
         if c.flush.load(Ordering::Acquire) != 0 {
             return Err(());
         }
-        let cdef_idx = &mut (*t.lf_mask).cdef_idx;
+        let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
         if root_bl == BlockLevel::Bl128x128 {
-            *cdef_idx = [-1; 4];
-            t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
+            for cdef_idx in cdef_idx {
+                cdef_idx.store(-1, Ordering::Relaxed);
+            }
+            t.cur_sb_cdef_idx = 0;
         } else {
-            let cdef_idx = &mut cdef_idx[(((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)) as usize..];
-            cdef_idx[0] = -1;
-            t.cur_sb_cdef_idx_ptr = cdef_idx.as_mut_ptr();
+            t.cur_sb_cdef_idx = (((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)) as usize;
+            let cdef_idx = &cdef_idx[t.cur_sb_cdef_idx..];
+            cdef_idx[0].store(-1, Ordering::Relaxed);
         }
         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
         // Restoration filter
@@ -4032,7 +4037,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
         if t.b.x & 16 != 0 || f.seq_hdr().sb128 != 0 {
             t.a = (t.a).offset(1);
-            t.lf_mask = (t.lf_mask).offset(1);
+            t.lf_mask = t.lf_mask.map(|i| i + 1);
         }
     }
 
