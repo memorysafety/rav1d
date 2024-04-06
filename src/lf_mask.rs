@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::src::align::Align16;
 use crate::src::ctx::CaseSet;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Bxy;
 use crate::src::levels::BlockSize;
 use crate::src::levels::RectTxfmSize;
@@ -357,7 +358,7 @@ fn mask_edges_chroma(
 
 pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     lflvl: &mut Av1Filter,
-    level_cache: &mut [[u8; 4]],
+    level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
     b: Bxy,
@@ -382,13 +383,23 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     let by4 = by & 31;
 
     if bw4 != 0 && bh4 != 0 {
-        let offset = by * b4_stride + bx;
-        for y in 0..bh4 {
-            let offset = offset + y * b4_stride;
-            for level_cache in &mut level_cache[offset..][..bw4] {
-                level_cache[0] = filter_level[0][0][0];
-                level_cache[1] = filter_level[1][0][0];
+        let mut level_cache_ptr = level_cache
+            .as_mut_ptr()
+            .offset((by * b4_stride + bx) as isize);
+        for _y in 0..bh4 {
+            for x in 0..bw4 as isize {
+                let cur = level_cache_ptr.offset(x);
+                let offset = cur.offset_from(level_cache.as_mut_ptr());
+                assert!(offset >= 0 && offset as usize <= level_cache.len());
+                // SAFETY: This element is not concurrently accessed by any
+                // other threads and the assert above ensures that it is in
+                // bounds.
+                unsafe {
+                    (*cur)[0] = filter_level[0][0][0];
+                    (*cur)[1] = filter_level[1][0][0];
+                }
             }
+            level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
         }
 
         mask_edges_intra(&mut lflvl.filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
@@ -417,13 +428,23 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
 
-    let offset = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
-    for y in 0..cbh4 {
-        let offset = offset + y * b4_stride;
-        for level_cache in &mut level_cache[offset..][..cbw4] {
-            level_cache[2] = filter_level[2][0][0];
-            level_cache[3] = filter_level[3][0][0];
+    let mut level_cache_ptr = level_cache
+        .as_mut_ptr()
+        .offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
+    for _y in 0..cbh4 {
+        for x in 0..cbw4 as isize {
+            let cur = level_cache_ptr.offset(x);
+            let offset = cur.offset_from(level_cache.as_mut_ptr());
+            assert!(offset >= 0 && offset as usize <= level_cache.len());
+            // SAFETY: This element is not concurrently accessed by any
+            // other threads and the assert above ensures that it is in
+            // bounds.
+            unsafe {
+                (*cur)[2] = filter_level[2][0][0];
+                (*cur)[3] = filter_level[3][0][0];
+            }
         }
+        level_cache_ptr = level_cache_ptr.offset(b4_stride as isize)
     }
 
     mask_edges_chroma(
@@ -443,7 +464,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
 
 pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     lflvl: &mut Av1Filter,
-    level_cache: &mut [[u8; 4]],
+    level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
     filter_level: &[[[u8; 2]; 8]; 4],
     r#ref: usize,
@@ -473,13 +494,23 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     let by4 = by & 31;
 
     if bw4 != 0 && bh4 != 0 {
-        let offset = by * b4_stride + bx;
-        for y in 0..bh4 {
-            let offset = offset + y * b4_stride;
-            for level_cache in &mut level_cache[offset..][..bw4] {
-                level_cache[0] = filter_level[0][r#ref][is_gmv];
-                level_cache[1] = filter_level[1][r#ref][is_gmv];
+        let mut level_cache_ptr = level_cache
+            .as_mut_ptr()
+            .offset((by * b4_stride + bx) as isize);
+        for _y in 0..bh4 {
+            for x in 0..bw4 as isize {
+                let cur = level_cache_ptr.offset(x);
+                let offset = cur.offset_from(level_cache.as_mut_ptr());
+                assert!(offset >= 0 && offset as usize <= level_cache.len());
+                // SAFETY: This element is not concurrently accessed by any
+                // other threads and the assert above ensures that it is in
+                // bounds.
+                unsafe {
+                    (*cur)[0] = filter_level[0][r#ref][is_gmv];
+                    (*cur)[1] = filter_level[1][r#ref][is_gmv];
+                }
             }
+            level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
         }
 
         mask_edges_inter(
@@ -519,13 +550,23 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
 
-    let offset = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
-    for y in 0..cbh4 {
-        let offset = offset + y * b4_stride;
-        for level_cache in &mut level_cache[offset..][..cbw4] {
-            level_cache[2] = filter_level[2][r#ref][is_gmv];
-            level_cache[3] = filter_level[3][r#ref][is_gmv];
+    let mut level_cache_ptr = level_cache
+        .as_mut_ptr()
+        .offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
+    for _y in 0..cbh4 {
+        for x in 0..cbw4 as isize {
+            let cur = level_cache_ptr.offset(x);
+            let offset = cur.offset_from(level_cache.as_mut_ptr());
+            assert!(offset >= 0 && offset as usize <= level_cache.len());
+            // SAFETY: This element is not concurrently accessed by any
+            // other threads and the assert above ensures that it is in
+            // bounds.
+            unsafe {
+                (*cur)[2] = filter_level[2][r#ref][is_gmv];
+                (*cur)[3] = filter_level[3][r#ref][is_gmv];
+            }
         }
+        level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
     }
 
     mask_edges_chroma(
