@@ -423,12 +423,13 @@ unsafe fn find_matching_ref(
         && t.b.x + bw4 < ts.tiling.col_end
         && intra_edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT);
 
-    let bs = |rp: &refmvs_block| dav1d_block_dimensions[rp.0.bs as usize];
-    let matches = |rp: &refmvs_block| rp.0.r#ref.r#ref[0] == r#ref + 1 && rp.0.r#ref.r#ref[1] == -1;
+    let bs = |rp: refmvs_block_unaligned| dav1d_block_dimensions[rp.bs as usize];
+    let matches =
+        |rp: refmvs_block_unaligned| rp.r#ref.r#ref[0] == r#ref + 1 && rp.r#ref.r#ref[1] == -1;
 
     if have_top {
         let mut i = r[0] + t.b.x as usize;
-        let r2 = &f.rf.r[i];
+        let r2 = f.rf.r[i].0;
         if matches(r2) {
             masks[0] |= 1;
             count = 1;
@@ -447,7 +448,7 @@ unsafe fn find_matching_ref(
             let mut x = aw4;
             while x < w4 {
                 i += aw4 as usize;
-                let r2 = &f.rf.r[i];
+                let r2 = f.rf.r[i].0;
                 if matches(r2) {
                     masks[0] |= mask;
                     count += 1;
@@ -462,7 +463,7 @@ unsafe fn find_matching_ref(
         }
     }
     if have_left {
-        let get_r2 = |i| &f.rf.r[r[i] + t.b.x as usize - 1];
+        let get_r2 = |i: usize| f.rf.r[r[i] + t.b.x as usize - 1].0;
 
         let mut i = 1;
         let r2 = get_r2(i);
@@ -497,14 +498,14 @@ unsafe fn find_matching_ref(
             }
         }
     }
-    if have_topleft && matches(&f.rf.r[r[0] + t.b.x as usize - 1]) {
+    if have_topleft && matches(f.rf.r[r[0] + t.b.x as usize - 1].0) {
         masks[1] |= 1 << 32;
         count += 1;
         if count >= 8 {
             return;
         }
     }
-    if have_topright && matches(&f.rf.r[r[0] + t.b.x as usize + bw4 as usize]) {
+    if have_topright && matches(f.rf.r[r[0] + t.b.x as usize + bw4 as usize].0) {
         masks[0] |= 1 << 32;
     }
 }
@@ -525,18 +526,19 @@ unsafe fn derive_warpmv(
         // (and not just by a constant -1).
         // See `-off` below.
         let offset = (t.b.y & 31) + 5;
-        &r[t.rt.r[(offset as isize + i as isize) as usize] + j as usize]
+        r[t.rt.r[(offset as isize + i as isize) as usize] + j as usize].0
     };
 
-    let bs = |rp: &refmvs_block| dav1d_block_dimensions[(*rp).0.bs as usize];
+    let bs = |rp: refmvs_block_unaligned| dav1d_block_dimensions[rp.bs as usize];
 
-    let mut add_sample = |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: &refmvs_block| {
-        pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
-        pts[np][0][1] = 16 * (2 * dy + sy * bs(rp)[1] as i32) - 8;
-        pts[np][1][0] = pts[np][0][0] + (*rp).0.mv.mv[0].x as i32;
-        pts[np][1][1] = pts[np][0][1] + (*rp).0.mv.mv[0].y as i32;
-        np + 1
-    };
+    let mut add_sample =
+        |np: usize, dx: i32, dy: i32, sx: i32, sy: i32, rp: refmvs_block_unaligned| {
+            pts[np][0][0] = 16 * (2 * dx + sx * bs(rp)[0] as i32) - 8;
+            pts[np][0][1] = 16 * (2 * dy + sy * bs(rp)[1] as i32) - 8;
+            pts[np][1][0] = pts[np][0][0] + rp.mv.mv[0].x as i32;
+            pts[np][1][1] = pts[np][0][1] + rp.mv.mv[0].y as i32;
+            np + 1
+        };
 
     // use masks[] to find the projectable motion vectors in the edges
     if masks[0] as u32 == 1 && masks[1] >> 32 == 0 {
@@ -1090,17 +1092,17 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2] as c_int, 4) {
-            let a_r = &r[ri[0] + t.b.x as usize + x as usize + 1];
-            let a_b_dim = &dav1d_block_dimensions[a_r.0.bs as usize];
-            if a_r.0.r#ref.r#ref[0] as c_int > 0 {
+            let a_r = r[ri[0] + t.b.x as usize + x as usize + 1].0;
+            let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
+            if a_r.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = cmp::min(b_dim[1] as c_int, 16) >> 1;
                 mc_lowest_px(
-                    &mut dst[a_r.0.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
+                    &mut dst[a_r.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.b.y,
                     oh4 * 3 + 3 >> 2,
-                    a_r.0.mv.mv[0].y,
+                    a_r.mv.mv[0].y,
                     ss_ver,
-                    &svc[a_r.0.r#ref.r#ref[0] as usize - 1][1],
+                    &svc[a_r.r#ref.r#ref[0] as usize - 1][1],
                 );
                 i += 1;
             }
@@ -1111,17 +1113,17 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3] as c_int, 4) {
-            let l_r = &r[ri[y as usize + 1 + 1] + t.b.x as usize - 1];
-            let l_b_dim = &dav1d_block_dimensions[l_r.0.bs as usize];
-            if l_r.0.r#ref.r#ref[0] as c_int > 0 {
+            let l_r = r[ri[y as usize + 1 + 1] + t.b.x as usize - 1].0;
+            let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
+            if l_r.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = iclip(l_b_dim[1] as c_int, 2, b_dim[1] as c_int);
                 mc_lowest_px(
-                    &mut dst[l_r.0.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
+                    &mut dst[l_r.r#ref.r#ref[0] as usize - 1][is_chroma as usize],
                     t.b.y + y,
                     oh4,
-                    l_r.0.mv.mv[0].y,
+                    l_r.mv.mv[0].y,
                     ss_ver,
-                    &svc[l_r.0.r#ref.r#ref[0] as usize - 1][1],
+                    &svc[l_r.r#ref.r#ref[0] as usize - 1][1],
                 );
                 i += 1;
             }
