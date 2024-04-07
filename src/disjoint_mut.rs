@@ -5,6 +5,8 @@
 // TODO(SJC): Remove when we use the whole module.
 #![allow(unused)]
 
+use crate::src::align::AlignedByteChunk;
+use crate::src::align::AlignedVec;
 use std::cell::UnsafeCell;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -20,9 +22,6 @@ use std::ops::RangeInclusive;
 use std::ops::RangeTo;
 use std::ops::RangeToInclusive;
 use std::ptr;
-
-use crate::src::align::AlignedByteChunk;
-use crate::src::align::AlignedVec;
 
 /// Wraps an indexable collection to allow unchecked concurrent mutable borrows.
 ///
@@ -51,7 +50,7 @@ pub struct DisjointMutGuard<'a, T: AsMutPtr, V: ?Sized> {
     phantom: PhantomData<&'a DisjointMut<T>>,
 
     #[cfg(debug_assertions)]
-    parent: &'a DisjointMut<T>,
+    parent: Option<&'a DisjointMut<T>>,
     #[cfg(debug_assertions)]
     range: (Bound<usize>, Bound<usize>),
 }
@@ -70,6 +69,19 @@ impl<'a, T: AsMutPtr, V: ?Sized> DerefMut for DisjointMutGuard<'a, T, V> {
     }
 }
 
+impl<T: AsMutPtr, V> Default for DisjointMutGuard<'static, T, [V]> {
+    fn default() -> Self {
+        Self {
+            slice: &mut [],
+            phantom: PhantomData,
+            #[cfg(debug_assertions)]
+            parent: None,
+            #[cfg(debug_assertions)]
+            range: (0..0).to_bounds(),
+        }
+    }
+}
+
 #[cfg_attr(not(debug_assertions), repr(transparent))]
 pub struct DisjointImmutGuard<'a, T: AsMutPtr, V: ?Sized> {
     slice: &'a V,
@@ -77,7 +89,7 @@ pub struct DisjointImmutGuard<'a, T: AsMutPtr, V: ?Sized> {
     phantom: PhantomData<&'a DisjointMut<T>>,
 
     #[cfg(debug_assertions)]
-    parent: &'a DisjointMut<T>,
+    parent: Option<&'a DisjointMut<T>>,
     #[cfg(debug_assertions)]
     range: (Bound<usize>, Bound<usize>),
 }
@@ -87,6 +99,19 @@ impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointImmutGuard<'a, T, V> {
 
     fn deref(&self) -> &Self::Target {
         self.slice
+    }
+}
+
+impl<T: AsMutPtr, V> Default for DisjointImmutGuard<'static, T, [V]> {
+    fn default() -> Self {
+        Self {
+            slice: &[],
+            phantom: PhantomData,
+            #[cfg(debug_assertions)]
+            parent: None,
+            #[cfg(debug_assertions)]
+            range: (0..0).to_bounds(),
+        }
     }
 }
 
@@ -499,7 +524,7 @@ mod debug {
         ) -> Self {
             parent.add_mut_range(&range);
             Self {
-                parent,
+                parent: Some(parent),
                 slice,
                 range,
                 phantom: PhantomData,
@@ -509,7 +534,9 @@ mod debug {
 
     impl<'a, T: AsMutPtr, V: ?Sized> Drop for DisjointMutGuard<'a, T, V> {
         fn drop(&mut self) {
-            self.parent.remove_range(self.range, true);
+            if let Some(parent) = self.parent {
+                parent.remove_range(self.range, true);
+            }
         }
     }
 
@@ -521,7 +548,7 @@ mod debug {
         ) -> Self {
             parent.add_immut_range(&range);
             Self {
-                parent,
+                parent: Some(parent),
                 slice,
                 range,
                 phantom: PhantomData,
@@ -531,7 +558,9 @@ mod debug {
 
     impl<'a, T: AsMutPtr, V: ?Sized> Drop for DisjointImmutGuard<'a, T, V> {
         fn drop(&mut self) {
-            self.parent.remove_range(self.range, false);
+            if let Some(parent) = self.parent {
+                parent.remove_range(self.range, false);
+            }
         }
     }
 }
