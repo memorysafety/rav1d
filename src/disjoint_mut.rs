@@ -175,7 +175,10 @@ impl<T: AsMutPtr> DisjointMut<T> {
     ///
     /// Caller must ensure that no elements of the resulting borrowed slice or
     /// element are concurrently borrowed (immutably or mutably) at all during
-    /// the lifetime of the returned mutable borrow.
+    /// the lifetime of the returned mutable borrow. We require that the
+    /// referenced data must be plain data and not contain any pointers or
+    /// references to avoid other potential memory safety issues due to racy
+    /// access.
     pub unsafe fn index_mut<'a, I>(
         &'a self,
         index: I,
@@ -204,10 +207,19 @@ impl<T: AsMutPtr> DisjointMut<T> {
     ///
     /// # Safety
     ///
-    /// Caller must ensure that no elements of the resulting borrowed slice or
-    /// element are concurrently mutably borrowed at all during the lifetime of
-    /// the returned borrow.
-    pub unsafe fn index<'a, I>(
+    /// This method is not marked as unsafe but its safety requires correct
+    /// usage alongside [`index_mut`]. It cannot result in a race
+    /// condition without creating an overlapping mutable range via
+    /// [`index_mut`]. As an internal helper, we ensure that all calls are
+    /// safe and document this when mutating rather than marking each immutable
+    /// reference with virtually identical safety justifications.
+    ///
+    /// Caller must take care that no elements of the resulting borrowed slice
+    /// or element are concurrently mutably borrowed at all by [`index_mut`]
+    /// during the lifetime of the returned borrow.
+    ///
+    /// [`index_mut`]: DisjointMut::index_mut
+    pub fn index<'a, I>(
         &'a self,
         index: I,
     ) -> DisjointImmutGuard<'a, T, <[<T as AsMutPtr>::Target] as Index<I>>::Output>
