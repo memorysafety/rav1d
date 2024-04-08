@@ -1878,11 +1878,9 @@ unsafe fn decode_b(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             let a = &f.a[t.a];
-            let mut a_tx_lpf = a.tx_lpf.try_write().unwrap();
-            let mut l_tx_lpf = t.l.tx_lpf.try_write().unwrap();
-            // Dereference lock guards so we can borrow fields disjointly.
-            let a_tx_lpf = &mut *a_tx_lpf;
-            let l_tx_lpf = &mut *l_tx_lpf;
+            let mut a_uv_guard;
+            let mut l_uv_guard;
+            let bw4 = cmp::min(f.w4 as usize - t.b.x as usize, b_dim[0] as usize); // TODO: Use existing `bw4`?
             rav1d_create_lf_mask_intra(
                 &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
@@ -1895,13 +1893,14 @@ unsafe fn decode_b(
                 b.tx() as RectTxfmSize,
                 b.uvtx as RectTxfmSize,
                 f.cur.p.layout,
-                &mut a_tx_lpf.y.0[bx4 as usize..],
-                &mut l_tx_lpf.y.0[by4 as usize..],
+                &mut a.tx_lpf_y.index_mut(bx4 as usize..bx4 as usize + bw4),
+                &mut t.l.tx_lpf_y.index_mut(by4 as usize..),
                 if has_chroma {
-                    Some((
-                        &mut a_tx_lpf.uv.0[cbx4 as usize..],
-                        &mut l_tx_lpf.uv.0[cby4 as usize..],
-                    ))
+                    a_uv_guard = a
+                        .tx_lpf_uv
+                        .index_mut(cbx4 as usize..cbx4 as usize + cbw4 as usize);
+                    l_uv_guard = t.l.tx_lpf_uv.index_mut(cby4 as usize..);
+                    Some((&mut a_uv_guard, &mut l_uv_guard))
                 } else {
                     None
                 },
@@ -2911,11 +2910,8 @@ unsafe fn decode_b(
                 TileStateRef::Local => &ts.lflvlmem,
             };
             let a = &f.a[t.a];
-            let mut a_tx_lpf = a.tx_lpf.try_write().unwrap();
-            let mut l_tx_lpf = t.l.tx_lpf.try_write().unwrap();
-            // Dereference lock guards so we can borrow fields disjointly.
-            let a_tx_lpf = &mut *a_tx_lpf;
-            let l_tx_lpf = &mut *l_tx_lpf;
+            let mut a_uv_guard;
+            let mut l_uv_guard;
             rav1d_create_lf_mask_inter(
                 &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
@@ -2937,13 +2933,14 @@ unsafe fn decode_b(
                 &tx_split,
                 uvtx,
                 f.cur.p.layout,
-                &mut a_tx_lpf.y.0[bx4 as usize..],
-                &mut l_tx_lpf.y.0[by4 as usize..],
+                &mut a.tx_lpf_y.index_mut(bx4 as usize..(bx4 + bw4) as usize),
+                &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize),
                 if has_chroma {
-                    Some((
-                        &mut a_tx_lpf.uv.0[cbx4 as usize..],
-                        &mut l_tx_lpf.uv.0[cby4 as usize..],
-                    ))
+                    a_uv_guard = a.tx_lpf_uv.index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
+                    l_uv_guard =
+                        t.l.tx_lpf_uv
+                            .index_mut(cby4 as usize..(cby4 + cbh4) as usize);
+                    Some((&mut *a_uv_guard, &mut *l_uv_guard))
                 } else {
                     None
                 },
@@ -3616,9 +3613,8 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
     ctx.partition.try_write().unwrap().0.fill(0);
     locked.skip.0.fill(0);
     locked.skip_mode.0.fill(0);
-    let mut tx_lpf = ctx.tx_lpf.try_write().unwrap();
-    tx_lpf.y.0.fill(2);
-    tx_lpf.uv.0.fill(1);
+    ctx.tx_lpf_y.get_mut().0.fill(2);
+    ctx.tx_lpf_uv.get_mut().0.fill(1);
     locked.tx_intra.0.fill(-1);
     locked.tx.0.fill(TX_64X64);
     if !keyframe {
@@ -4057,17 +4053,20 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     // up the initial value in neighbour tiles when running the loopfilter
     let mut align_h = f.bh + 31 & !31;
     let start_y = (align_h * tile_col + t.b.y) as usize;
-    let l_tx_lpf = t.l.tx_lpf.try_read().unwrap();
+    let len_y = sb_step as usize;
+    let start_lpf_y = (t.b.y & 16) as usize;
     f.lf.tx_lpf_right_edge.copy_from_slice_y(
-        start_y..start_y + sb_step as usize,
-        &l_tx_lpf.y.0[(t.b.y & 16) as usize..][..sb_step as usize],
+        start_y..start_y + len_y,
+        &t.l.tx_lpf_y.index_mut(start_lpf_y..start_lpf_y + len_y),
     );
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     align_h >>= ss_ver;
     let start_uv = (align_h * tile_col + (t.b.y >> ss_ver)) as usize;
+    let len_uv = (sb_step >> ss_ver) as usize;
+    let lpf_uv_start = ((t.b.y & 16) >> ss_ver) as usize;
     f.lf.tx_lpf_right_edge.copy_from_slice_uv(
-        start_uv..start_uv + (sb_step >> ss_ver) as usize,
-        &l_tx_lpf.uv.0[((t.b.y & 16) >> ss_ver) as usize..][..(sb_step >> ss_ver) as usize],
+        start_uv..start_uv + len_uv,
+        &t.l.tx_lpf_uv.index_mut(lpf_uv_start..lpf_uv_start + len_uv),
     );
 
     Ok(())

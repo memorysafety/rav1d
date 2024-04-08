@@ -35,7 +35,8 @@ pub struct BlockContext {
     pub ccoef: [DisjointMut<Align8<[u8; 32]>>; 2],
     pub partition: RwLock<Align8<[u8; 16]>>,
     pub uvmode: RwLock<Align8<[u8; 32]>>,
-    pub tx_lpf: RwLock<BlockContextTxLpf>,
+    pub tx_lpf_y: DisjointMut<Align8<[u8; 32]>>,
+    pub tx_lpf_uv: DisjointMut<Align8<[u8; 32]>>,
     pub locked: RwLock<BlockContextLocked>,
 }
 
@@ -79,12 +80,6 @@ impl BlockContext {
     pub fn filter(&self, i: usize, j: usize) -> u8 {
         self.locked.try_read().unwrap().filter.0[i][j]
     }
-}
-
-#[derive(Default)]
-pub struct BlockContextTxLpf {
-    pub y: Align8<[u8; 32]>,
-    pub uv: Align8<[u8; 32]>,
 }
 
 #[derive(Default)]
