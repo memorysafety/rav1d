@@ -1200,7 +1200,7 @@ unsafe fn decode_b(
                     [cbh4 as usize, cbw4 as usize],
                     [cby4 as usize, cbx4 as usize],
                     |case, dir| {
-                        case.set(&mut dir.uvmode.try_write().unwrap().0, b.uv_mode());
+                        case.set_disjoint(&dir.uvmode, b.uv_mode());
                     },
                 );
             }
@@ -1276,7 +1276,7 @@ unsafe fn decode_b(
                     [cbh4 as usize, cbw4 as usize],
                     [cby4 as usize, cbx4 as usize],
                     |case, dir| {
-                        case.set(&mut dir.uvmode.try_write().unwrap().0, DC_PRED);
+                        case.set_disjoint(&dir.uvmode, DC_PRED);
                     },
                 );
             }
@@ -1943,7 +1943,7 @@ unsafe fn decode_b(
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.uvmode.try_write().unwrap().0, b.uv_mode());
+                    case.set_disjoint(&dir.uvmode, b.uv_mode());
                 },
             );
             if b.pal_sz()[1] != 0 {
@@ -2100,7 +2100,7 @@ unsafe fn decode_b(
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.uvmode.try_write().unwrap().0, DC_PRED);
+                    case.set_disjoint(&dir.uvmode, DC_PRED);
                 },
             );
         }
@@ -2973,7 +2973,7 @@ unsafe fn decode_b(
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
-                    case.set(&mut dir.uvmode.try_write().unwrap().0, DC_PRED);
+                    case.set_disjoint(&dir.uvmode, DC_PRED);
                 },
             );
         }
@@ -3590,7 +3590,7 @@ unsafe fn decode_sb(
 
 fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
     ctx.intra.get_mut().0.fill(keyframe.into());
-    ctx.uvmode.try_write().unwrap().0.fill(DC_PRED);
+    ctx.uvmode.get_mut().0.fill(DC_PRED);
     if keyframe {
         ctx.mode.get_mut().0.fill(DC_PRED);
     }

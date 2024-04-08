@@ -34,7 +34,7 @@ pub struct BlockContext {
     pub lcoef: DisjointMut<Align8<[u8; 32]>>,
     pub ccoef: [DisjointMut<Align8<[u8; 32]>>; 2],
     pub partition: RwLock<Align8<[u8; 16]>>,
-    pub uvmode: RwLock<Align8<[u8; 32]>>,
+    pub uvmode: DisjointMut<Align8<[u8; 32]>>,
     pub tx_lpf_y: DisjointMut<Align8<[u8; 32]>>,
     pub tx_lpf_uv: DisjointMut<Align8<[u8; 32]>>,
     pub mode: DisjointMut<Align8<[u8; 32]>>,

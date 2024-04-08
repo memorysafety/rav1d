@@ -41,7 +41,7 @@ pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
 
 #[inline]
 pub fn sm_uv_flag(b: &BlockContext, idx: usize) -> c_int {
-    let m = b.uvmode.try_read().unwrap()[idx];
+    let m = *b.uvmode.index(idx);
     if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
     } else {
