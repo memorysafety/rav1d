@@ -86,6 +86,10 @@ impl<const UP_TO: usize, const WITH_DEFAULT: bool> CaseSetter<UP_TO, WITH_DEFAUL
         small_memset::<T, UP_TO, WITH_DEFAULT>(&mut buf[self.offset..][..self.len], val);
     }
 
+    /// # Safety
+    ///
+    /// Caller must ensure that no elements of the written range are concurrently
+    /// borrowed (immutably or mutably) at all during the call to `set_disjoint`.
     #[inline]
     pub unsafe fn set_disjoint<T, V>(&self, buf: &DisjointMut<T>, val: V)
     where
