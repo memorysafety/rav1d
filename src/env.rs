@@ -27,13 +27,12 @@ use std::cmp;
 use std::cmp::Ordering;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::sync::RwLock;
 
 #[derive(Default)]
 pub struct BlockContext {
     pub lcoef: DisjointMut<Align8<[u8; 32]>>,
     pub ccoef: [DisjointMut<Align8<[u8; 32]>>; 2],
-    pub partition: RwLock<Align8<[u8; 16]>>,
+    pub partition: DisjointMut<Align8<[u8; 16]>>,
     pub uvmode: DisjointMut<Align8<[u8; 32]>>,
     pub tx_lpf_y: DisjointMut<Align8<[u8; 32]>>,
     pub tx_lpf_uv: DisjointMut<Align8<[u8; 32]>>,
@@ -95,13 +94,11 @@ pub fn get_partition_ctx(
     yb8: c_int,
     xb8: c_int,
 ) -> u8 {
-    let a_partition = a.partition.try_read().unwrap();
-    let l_partition = l.partition.try_read().unwrap();
     // the right-most ("index zero") bit of the partition represents the 8x8 block level,
     // but the BlockLevel enum represents the variants numerically in the opposite order
     // (128x128 = 0, 8x8 = 4). The shift reverses the ordering.
     let has_bl = |x| (x >> (4 - bl as u8)) & 1;
-    has_bl(a_partition[xb8 as usize]) + 2 * has_bl(l_partition[yb8 as usize])
+    has_bl(*a.partition.index(xb8 as usize)) + 2 * has_bl(*l.partition.index(yb8 as usize))
 }
 
 #[inline]

@@ -3577,8 +3577,8 @@ unsafe fn decode_sb(
             [hsz as usize; 2],
             [bx8 as usize, by8 as usize],
             |case, (dir, dir_index)| {
-                case.set(
-                    &mut dir.partition.try_write().unwrap().0,
+                case.set_disjoint(
+                    &dir.partition,
                     dav1d_al_part_ctx[dir_index][bl as usize][bp as usize],
                 );
             },
@@ -3599,7 +3599,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
         return;
     }
 
-    ctx.partition.try_write().unwrap().0.fill(0);
+    ctx.partition.get_mut().0.fill(0);
     ctx.skip.get_mut().0.fill(0);
     ctx.skip_mode.get_mut().0.fill(0);
     ctx.tx_lpf_y.get_mut().0.fill(2);
