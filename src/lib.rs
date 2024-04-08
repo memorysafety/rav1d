@@ -291,6 +291,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         addr_of_mut!(f.tiles).write(Default::default());
         addr_of_mut!(f.task_thread.tasks).write(UnsafeCell::new(Default::default()));
         addr_of_mut!(f.frame_thread).write(Default::default());
+        addr_of_mut!(f.frame_thread_progress).write(Default::default());
         if n_tc > 1 {
             f.task_thread.lock = Mutex::new(());
             f.task_thread.cond = Condvar::new();

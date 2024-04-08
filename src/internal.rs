@@ -692,6 +692,7 @@ impl Rav1dFrameContext_task_thread {
     }
 }
 
+#[derive(Default)]
 pub(crate) struct Rav1dFrameContext_frame_thread_progress {
     pub entropy: AtomicI32,
     pub deblock: AtomicI32, // in sby units
