@@ -104,8 +104,8 @@ macro_rules! def_align {
         unsafe impl<V, const N: usize> AsMutPtr for $name<[V; N]> {
             type Target = V;
 
-            unsafe fn as_mut_slice(ptr: *mut Self) -> *mut [V] {
-                ptr::slice_from_raw_parts_mut((*ptr).0.as_mut_ptr() as *mut V, N)
+            unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut V {
+                (*ptr).0.as_mut_ptr()
             }
 
             fn len(&self) -> usize {
