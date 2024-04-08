@@ -37,64 +37,17 @@ pub struct BlockContext {
     pub uvmode: RwLock<Align8<[u8; 32]>>,
     pub tx_lpf_y: DisjointMut<Align8<[u8; 32]>>,
     pub tx_lpf_uv: DisjointMut<Align8<[u8; 32]>>,
-    pub locked: RwLock<BlockContextLocked>,
-}
-
-impl BlockContext {
-    #[track_caller]
-    pub fn tx(&self, index: usize) -> u8 {
-        self.locked.try_read().unwrap().tx.0[index]
-    }
-
-    #[track_caller]
-    pub fn pal_sz(&self, index: usize) -> u8 {
-        self.locked.try_read().unwrap().pal_sz.0[index]
-    }
-
-    #[track_caller]
-    pub fn seg_pred(&self, index: usize) -> u8 {
-        self.locked.try_read().unwrap().seg_pred.0[index]
-    }
-
-    #[track_caller]
-    pub fn skip_mode(&self, index: usize) -> u8 {
-        self.locked.try_read().unwrap().skip_mode.0[index]
-    }
-
-    #[track_caller]
-    pub fn skip(&self, index: usize) -> u8 {
-        self.locked.try_read().unwrap().skip.0[index]
-    }
-
-    #[track_caller]
-    pub fn mode(&self, index: usize) -> u8 {
-        self.locked.try_read().unwrap().mode.0[index]
-    }
-
-    #[track_caller]
-    pub fn intra(&self, index: usize) -> u8 {
-        self.locked.try_read().unwrap().intra.0[index]
-    }
-
-    #[track_caller]
-    pub fn filter(&self, i: usize, j: usize) -> u8 {
-        self.locked.try_read().unwrap().filter.0[i][j]
-    }
-}
-
-#[derive(Default)]
-pub struct BlockContextLocked {
-    pub mode: Align8<[u8; 32]>,
-    pub seg_pred: Align8<[u8; 32]>,
-    pub skip: Align8<[u8; 32]>,
-    pub skip_mode: Align8<[u8; 32]>,
-    pub intra: Align8<[u8; 32]>,
-    pub comp_type: Align8<[Option<CompInterType>; 32]>,
-    pub r#ref: Align8<[[i8; 32]; 2]>,
-    pub filter: Align8<[[u8; 32]; 2]>,
-    pub tx_intra: Align8<[i8; 32]>,
-    pub tx: Align8<[u8; 32]>,
-    pub pal_sz: Align8<[u8; 32]>,
+    pub mode: DisjointMut<Align8<[u8; 32]>>,
+    pub seg_pred: DisjointMut<Align8<[u8; 32]>>,
+    pub skip: DisjointMut<Align8<[u8; 32]>>,
+    pub skip_mode: DisjointMut<Align8<[u8; 32]>>,
+    pub intra: DisjointMut<Align8<[u8; 32]>>,
+    pub comp_type: DisjointMut<Align8<[Option<CompInterType>; 32]>>,
+    pub r#ref: [DisjointMut<Align8<[i8; 32]>>; 2],
+    pub filter: [DisjointMut<Align8<[u8; 32]>>; 2],
+    pub tx_intra: DisjointMut<Align8<[i8; 32]>>,
+    pub tx: DisjointMut<Align8<[u8; 32]>>,
+    pub pal_sz: DisjointMut<Align8<[u8; 32]>>,
 }
 
 #[inline]
@@ -106,18 +59,16 @@ pub fn get_intra_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     if have_left {
         if have_top {
-            let ctx = l.intra[yb4 as usize] + a.intra[xb4 as usize];
+            let ctx = *l.intra.index(yb4 as usize) + *a.intra.index(xb4 as usize);
             ctx + (ctx == 2) as u8
         } else {
-            l.intra[yb4 as usize] * 2
+            *l.intra.index(yb4 as usize) * 2
         }
     } else {
         if have_top {
-            a.intra[xb4 as usize] * 2
+            *a.intra.index(xb4 as usize) * 2
         } else {
             0
         }
@@ -132,10 +83,8 @@ pub fn get_tx_ctx(
     yb4: c_int,
     xb4: c_int,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
-    (l.tx_intra[yb4 as usize] as i32 >= max_tx.lh as i32) as u8
-        + (a.tx_intra[xb4 as usize] as i32 >= max_tx.lw as i32) as u8
+    (*l.tx_intra.index(yb4 as usize) as i32 >= max_tx.lh as i32) as u8
+        + (*a.tx_intra.index(xb4 as usize) as i32 >= max_tx.lw as i32) as u8
 }
 
 #[inline]
@@ -213,11 +162,9 @@ pub fn get_filter_ctx(
     yb4: c_int,
     xb4: c_int,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let [a_filter, l_filter] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        if al.r#ref[0][b4 as usize] == r#ref || al.r#ref[1][b4 as usize] == r#ref {
-            al.filter[dir as usize][b4 as usize]
+        if *al.r#ref[0].index(b4 as usize) == r#ref || *al.r#ref[1].index(b4 as usize) == r#ref {
+            *al.filter[dir as usize].index(b4 as usize)
         } else {
             Rav1dFilterMode::N_SWITCHABLE_FILTERS
         }
@@ -244,35 +191,34 @@ pub fn get_comp_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     if have_top {
         if have_left {
-            if a.comp_type[xb4 as usize].is_some() {
-                if l.comp_type[yb4 as usize].is_some() {
+            if a.comp_type.index(xb4 as usize).is_some() {
+                if l.comp_type.index(yb4 as usize).is_some() {
                     4
                 } else {
                     // 4U means intra (-1) or bwd (>= 4)
-                    2 + (l.r#ref[0][yb4 as usize] as c_uint >= 4) as u8
+                    2 + (*l.r#ref[0].index(yb4 as usize) as c_uint >= 4) as u8
                 }
-            } else if l.comp_type[yb4 as usize].is_some() {
+            } else if l.comp_type.index(yb4 as usize).is_some() {
                 // 4U means intra (-1) or bwd (>= 4)
-                2 + (a.r#ref[0][xb4 as usize] as c_uint >= 4) as u8
+                2 + (*a.r#ref[0].index(xb4 as usize) as c_uint >= 4) as u8
             } else {
-                ((l.r#ref[0][yb4 as usize] >= 4) ^ (a.r#ref[0][xb4 as usize] >= 4)) as u8
+                ((*l.r#ref[0].index(yb4 as usize) >= 4) ^ (*a.r#ref[0].index(xb4 as usize) >= 4))
+                    as u8
             }
         } else {
-            if a.comp_type[xb4 as usize].is_some() {
+            if a.comp_type.index(xb4 as usize).is_some() {
                 3
             } else {
-                (a.r#ref[0][xb4 as usize] >= 4) as u8
+                (*a.r#ref[0].index(xb4 as usize) >= 4) as u8
             }
         }
     } else if have_left {
-        if l.comp_type[yb4 as usize].is_some() {
+        if l.comp_type.index(yb4 as usize).is_some() {
             3
         } else {
-            (l.r#ref[0][yb4 as usize] >= 4) as u8
+            (*l.r#ref[0].index(yb4 as usize) >= 4) as u8
         }
     } else {
         1
@@ -288,16 +234,13 @@ pub fn get_comp_dir_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
-
-    let has_uni_comp = |edge: &BlockContextLocked, off| {
-        (edge.r#ref[0][off as usize] < 4) == (edge.r#ref[1][off as usize] < 4)
+    let has_uni_comp = |edge: &BlockContext, off| {
+        (*edge.r#ref[0].index(off as usize) < 4) == (*edge.r#ref[1].index(off as usize) < 4)
     };
 
     if have_top && have_left {
-        let a_intra = a.intra[xb4 as usize] != 0;
-        let l_intra = l.intra[yb4 as usize] != 0;
+        let a_intra = *a.intra.index(xb4 as usize) != 0;
+        let l_intra = *l.intra.index(yb4 as usize) != 0;
 
         if a_intra && l_intra {
             return 2;
@@ -306,16 +249,16 @@ pub fn get_comp_dir_ctx(
             let edge = if a_intra { &l } else { &a };
             let off = if a_intra { yb4 } else { xb4 };
 
-            if edge.comp_type[off as usize].is_none() {
+            if edge.comp_type.index(off as usize).is_none() {
                 return 2;
             }
             return 1 + 2 * has_uni_comp(edge, off) as u8;
         }
 
-        let a_comp = a.comp_type[xb4 as usize].is_some();
-        let l_comp = l.comp_type[yb4 as usize].is_some();
-        let a_ref0 = a.r#ref[0][xb4 as usize];
-        let l_ref0 = l.r#ref[0][yb4 as usize];
+        let a_comp = a.comp_type.index(xb4 as usize).is_some();
+        let l_comp = l.comp_type.index(yb4 as usize).is_some();
+        let a_ref0 = *a.r#ref[0].index(xb4 as usize);
+        let l_ref0 = *l.r#ref[0].index(yb4 as usize);
 
         if !a_comp && !l_comp {
             return 1 + 2 * ((a_ref0 >= 4) == (l_ref0 >= 4)) as u8;
@@ -343,10 +286,10 @@ pub fn get_comp_dir_ctx(
         let edge = if have_left { l } else { a };
         let off = if have_left { yb4 } else { xb4 };
 
-        if edge.intra[off as usize] != 0 {
+        if *edge.intra.index(off as usize) != 0 {
             return 2;
         }
-        if edge.comp_type[off as usize].is_none() {
+        if edge.comp_type.index(off as usize).is_none() {
             return 2;
         }
         return 4 * has_uni_comp(&edge, off) as u8;
@@ -376,15 +319,12 @@ pub fn get_jnt_comp_ctx(
     yb4: c_int,
     xb4: c_int,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
-
     let d0 = get_poc_diff(order_hint_n_bits, ref0poc as c_int, poc as c_int).abs();
     let d1 = get_poc_diff(order_hint_n_bits, poc as c_int, ref1poc as c_int).abs();
     let offset = (d0 == d1) as u8;
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        (al.comp_type[b4 as usize] >= Some(CompInterType::Avg) || al.r#ref[0][b4 as usize] == 6)
-            as u8
+        (*al.comp_type.index(b4 as usize) >= Some(CompInterType::Avg)
+            || *al.r#ref[0].index(b4 as usize) == 6) as u8
     });
 
     3 * offset + a_ctx + l_ctx
@@ -392,12 +332,10 @@ pub fn get_jnt_comp_ctx(
 
 #[inline]
 pub fn get_mask_comp_ctx(a: &BlockContext, l: &BlockContext, yb4: c_int, xb4: c_int) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let [a_ctx, l_ctx] = [(a, xb4), (l, yb4)].map(|(al, b4)| {
-        if al.comp_type[b4 as usize] >= Some(CompInterType::Seg) {
+        if *al.comp_type.index(b4 as usize) >= Some(CompInterType::Seg) {
             1
-        } else if al.r#ref[0][b4 as usize] == 6 {
+        } else if *al.r#ref[0].index(b4 as usize) == 6 {
             3
         } else {
             0
@@ -425,21 +363,19 @@ pub fn av1_get_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 2];
 
-    if have_top && a.intra[xb4 as usize] == 0 {
-        cnt[(a.r#ref[0][xb4 as usize] >= 4) as usize] += 1;
-        if a.comp_type[xb4 as usize].is_some() {
-            cnt[(a.r#ref[1][xb4 as usize] >= 4) as usize] += 1;
+    if have_top && *a.intra.index(xb4 as usize) == 0 {
+        cnt[(*a.r#ref[0].index(xb4 as usize) >= 4) as usize] += 1;
+        if a.comp_type.index(xb4 as usize).is_some() {
+            cnt[(*a.r#ref[1].index(xb4 as usize) >= 4) as usize] += 1;
         }
     }
 
-    if have_left && l.intra[yb4 as usize] == 0 {
-        cnt[(l.r#ref[0][yb4 as usize] >= 4) as usize] += 1;
-        if l.comp_type[yb4 as usize].is_some() {
-            cnt[(l.r#ref[1][yb4 as usize] >= 4) as usize] += 1;
+    if have_left && *l.intra.index(yb4 as usize) == 0 {
+        cnt[(*l.r#ref[0].index(yb4 as usize) >= 4) as usize] += 1;
+        if l.comp_type.index(yb4 as usize).is_some() {
+            cnt[(*l.r#ref[1].index(yb4 as usize) >= 4) as usize] += 1;
         }
     }
 
@@ -455,25 +391,27 @@ pub fn av1_get_fwd_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 4];
 
-    if have_top && a.intra[xb4 as usize] == 0 {
-        if a.r#ref[0][xb4 as usize] < 4 {
-            cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
+    if have_top && *a.intra.index(xb4 as usize) == 0 {
+        let ref0 = *a.r#ref[0].index(xb4 as usize);
+        if ref0 < 4 {
+            cnt[ref0 as usize] += 1;
         }
-        if a.comp_type[xb4 as usize].is_some() && a.r#ref[1][xb4 as usize] < 4 {
-            cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
+        let ref1 = *a.r#ref[1].index(xb4 as usize);
+        if a.comp_type.index(xb4 as usize).is_some() && ref1 < 4 {
+            cnt[ref1 as usize] += 1;
         }
     }
 
-    if have_left && l.intra[yb4 as usize] == 0 {
-        if l.r#ref[0][yb4 as usize] < 4 {
-            cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
+    if have_left && *l.intra.index(yb4 as usize) == 0 {
+        let ref0 = *l.r#ref[0].index(yb4 as usize);
+        if ref0 < 4 {
+            cnt[ref0 as usize] += 1;
         }
-        if l.comp_type[yb4 as usize].is_some() && l.r#ref[1][yb4 as usize] < 4 {
-            cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
+        let ref1 = *l.r#ref[1].index(yb4 as usize);
+        if l.comp_type.index(yb4 as usize).is_some() && ref1 < 4 {
+            cnt[ref1 as usize] += 1;
         }
     }
 
@@ -492,25 +430,27 @@ pub fn av1_get_fwd_ref_1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 2];
 
-    if have_top && a.intra[xb4 as usize] == 0 {
-        if a.r#ref[0][xb4 as usize] < 2 {
-            cnt[a.r#ref[0][xb4 as usize] as usize] += 1;
+    if have_top && *a.intra.index(xb4 as usize) == 0 {
+        let ref0 = *a.r#ref[0].index(xb4 as usize);
+        if ref0 < 2 {
+            cnt[ref0 as usize] += 1;
         }
-        if a.comp_type[xb4 as usize].is_some() && a.r#ref[1][xb4 as usize] < 2 {
-            cnt[a.r#ref[1][xb4 as usize] as usize] += 1;
+        let ref1 = *a.r#ref[1].index(xb4 as usize);
+        if a.comp_type.index(xb4 as usize).is_some() && ref1 < 2 {
+            cnt[ref1 as usize] += 1;
         }
     }
 
-    if have_left && l.intra[yb4 as usize] == 0 {
-        if l.r#ref[0][yb4 as usize] < 2 {
-            cnt[l.r#ref[0][yb4 as usize] as usize] += 1;
+    if have_left && *l.intra.index(yb4 as usize) == 0 {
+        let ref0 = *l.r#ref[0].index(yb4 as usize);
+        if ref0 < 2 {
+            cnt[ref0 as usize] += 1;
         }
-        if l.comp_type[yb4 as usize].is_some() && l.r#ref[1][yb4 as usize] < 2 {
-            cnt[l.r#ref[1][yb4 as usize] as usize] += 1;
+        let ref1 = *l.r#ref[1].index(yb4 as usize);
+        if l.comp_type.index(yb4 as usize).is_some() && ref1 < 2 {
+            cnt[ref1 as usize] += 1;
         }
     }
 
@@ -526,25 +466,27 @@ pub fn av1_get_fwd_ref_2_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 2];
 
-    if have_top && a.intra[xb4 as usize] == 0 {
-        if (a.r#ref[0][xb4 as usize] ^ 2) < 2 {
-            cnt[(a.r#ref[0][xb4 as usize] - 2) as usize] += 1;
+    if have_top && *a.intra.index(xb4 as usize) == 0 {
+        let ref0 = *a.r#ref[0].index(xb4 as usize);
+        if (ref0 ^ 2) < 2 {
+            cnt[(ref0 - 2) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize].is_some() && (a.r#ref[1][xb4 as usize] ^ 2) < 2 {
-            cnt[(a.r#ref[1][xb4 as usize] - 2) as usize] += 1;
+        let ref1 = *a.r#ref[1].index(xb4 as usize);
+        if a.comp_type.index(xb4 as usize).is_some() && (ref1 ^ 2) < 2 {
+            cnt[(ref1 - 2) as usize] += 1;
         }
     }
 
-    if have_left && l.intra[yb4 as usize] == 0 {
-        if (l.r#ref[0][yb4 as usize] ^ 2) < 2 {
-            cnt[(l.r#ref[0][yb4 as usize] - 2) as usize] += 1;
+    if have_left && *l.intra.index(yb4 as usize) == 0 {
+        let ref0 = *l.r#ref[0].index(yb4 as usize);
+        if (ref0 ^ 2) < 2 {
+            cnt[(ref0 - 2) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize].is_some() && (l.r#ref[1][yb4 as usize] ^ 2) < 2 {
-            cnt[(l.r#ref[1][yb4 as usize] - 2) as usize] += 1;
+        let ref1 = *l.r#ref[1].index(yb4 as usize);
+        if l.comp_type.index(yb4 as usize).is_some() && (ref1 ^ 2) < 2 {
+            cnt[(ref1 - 2) as usize] += 1;
         }
     }
 
@@ -560,25 +502,27 @@ pub fn av1_get_bwd_ref_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 3];
 
-    if have_top && a.intra[xb4 as usize] == 0 {
-        if a.r#ref[0][xb4 as usize] >= 4 {
-            cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
+    if have_top && *a.intra.index(xb4 as usize) == 0 {
+        let ref0 = *a.r#ref[0].index(xb4 as usize);
+        if ref0 >= 4 {
+            cnt[(ref0 - 4) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize].is_some() && a.r#ref[1][xb4 as usize] >= 4 {
-            cnt[(a.r#ref[1][xb4 as usize] - 4) as usize] += 1;
+        let ref1 = *a.r#ref[1].index(xb4 as usize);
+        if a.comp_type.index(xb4 as usize).is_some() && ref1 >= 4 {
+            cnt[(ref1 - 4) as usize] += 1;
         }
     }
 
-    if have_left && l.intra[yb4 as usize] == 0 {
-        if l.r#ref[0][yb4 as usize] >= 4 {
-            cnt[(l.r#ref[0][yb4 as usize] - 4) as usize] += 1;
+    if have_left && *l.intra.index(yb4 as usize) == 0 {
+        let ref0 = *l.r#ref[0].index(yb4 as usize);
+        if ref0 >= 4 {
+            cnt[(ref0 - 4) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize].is_some() && l.r#ref[1][yb4 as usize] >= 4 {
-            cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
+        let ref1 = *l.r#ref[1].index(yb4 as usize);
+        if l.comp_type.index(yb4 as usize).is_some() && ref1 >= 4 {
+            cnt[(ref1 - 4) as usize] += 1;
         }
     }
 
@@ -596,25 +540,27 @@ pub fn av1_get_bwd_ref_1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 3];
 
-    if have_top && a.intra[xb4 as usize] == 0 {
-        if a.r#ref[0][xb4 as usize] >= 4 {
-            cnt[(a.r#ref[0][xb4 as usize] - 4) as usize] += 1;
+    if have_top && *a.intra.index(xb4 as usize) == 0 {
+        let ref0 = *a.r#ref[0].index(xb4 as usize);
+        if ref0 >= 4 {
+            cnt[(ref0 - 4) as usize] += 1;
         }
-        if a.comp_type[xb4 as usize].is_some() && a.r#ref[1][xb4 as usize] >= 4 {
-            cnt[(a.r#ref[1][xb4 as usize] - 4) as usize] += 1;
+        let ref1 = *a.r#ref[1].index(xb4 as usize);
+        if a.comp_type.index(xb4 as usize).is_some() && ref1 >= 4 {
+            cnt[(ref1 - 4) as usize] += 1;
         }
     }
 
-    if have_left && l.intra[yb4 as usize] == 0 {
-        if l.r#ref[0][yb4 as usize] >= 4 {
-            cnt[(l.r#ref[0][yb4 as usize] - 4) as usize] += 1;
+    if have_left && *l.intra.index(yb4 as usize) == 0 {
+        let ref0 = *l.r#ref[0].index(yb4 as usize);
+        if ref0 >= 4 {
+            cnt[(ref0 - 4) as usize] += 1;
         }
-        if l.comp_type[yb4 as usize].is_some() && l.r#ref[1][yb4 as usize] >= 4 {
-            cnt[(l.r#ref[1][yb4 as usize] - 4) as usize] += 1;
+        let ref1 = *l.r#ref[1].index(yb4 as usize);
+        if l.comp_type.index(yb4 as usize).is_some() && ref1 >= 4 {
+            cnt[(ref1 - 4) as usize] += 1;
         }
     }
 
@@ -630,27 +576,25 @@ pub fn av1_get_uni_p1_ctx(
     have_top: bool,
     have_left: bool,
 ) -> u8 {
-    let a = a.locked.try_read().unwrap();
-    let l = l.locked.try_read().unwrap();
     let mut cnt = [0; 3];
 
-    if have_top && a.intra[xb4 as usize] == 0 {
-        if let Some(cnt) = cnt.get_mut((a.r#ref[0][xb4 as usize] - 1) as usize) {
+    if have_top && *a.intra.index(xb4 as usize) == 0 {
+        if let Some(cnt) = cnt.get_mut((*a.r#ref[0].index(xb4 as usize) - 1) as usize) {
             *cnt += 1;
         }
-        if a.comp_type[xb4 as usize].is_some() {
-            if let Some(cnt) = cnt.get_mut((a.r#ref[1][xb4 as usize] - 1) as usize) {
+        if a.comp_type.index(xb4 as usize).is_some() {
+            if let Some(cnt) = cnt.get_mut((*a.r#ref[1].index(xb4 as usize) - 1) as usize) {
                 *cnt += 1;
             }
         }
     }
 
-    if have_left && l.intra[yb4 as usize] == 0 {
-        if let Some(cnt) = cnt.get_mut((l.r#ref[0][yb4 as usize] - 1) as usize) {
+    if have_left && *l.intra.index(yb4 as usize) == 0 {
+        if let Some(cnt) = cnt.get_mut((*l.r#ref[0].index(yb4 as usize) - 1) as usize) {
             *cnt += 1;
         }
-        if l.comp_type[yb4 as usize].is_some() {
-            if let Some(cnt) = cnt.get_mut((l.r#ref[1][yb4 as usize] - 1) as usize) {
+        if l.comp_type.index(yb4 as usize).is_some() {
+            if let Some(cnt) = cnt.get_mut((*l.r#ref[1].index(yb4 as usize) - 1) as usize) {
                 *cnt += 1;
             }
         }

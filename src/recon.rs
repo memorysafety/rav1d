@@ -2354,8 +2354,8 @@ unsafe fn obmc<BD: BitDepth>(
                     a_r.mv.mv[0],
                     &f.refp[a_r.r#ref.r#ref[0] as usize - 1],
                     a_r.r#ref.r#ref[0] as usize - 1,
-                    dav1d_filter_2d[f.a[t.a].filter(1, (bx4 + x + 1) as usize) as usize]
-                        [f.a[t.a].filter(0, (bx4 + x + 1) as usize) as usize],
+                    dav1d_filter_2d[*f.a[t.a].filter[1].index((bx4 + x + 1) as usize) as usize]
+                        [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
                 (f.dsp.mc.blend_h)(
                     dst.offset((x * h_mul) as isize).cast(),
@@ -2394,8 +2394,8 @@ unsafe fn obmc<BD: BitDepth>(
                     l_r.mv.mv[0],
                     &f.refp[l_r.r#ref.r#ref[0] as usize - 1],
                     l_r.r#ref.r#ref[0] as usize - 1,
-                    dav1d_filter_2d[t.l.filter(1, (by4 + y + 1) as usize) as usize]
-                        [t.l.filter(0, (by4 + y + 1) as usize) as usize],
+                    dav1d_filter_2d[*t.l.filter[1].index((by4 + y + 1) as usize) as usize]
+                        [*t.l.filter[0].index((by4 + y + 1) as usize) as usize],
                 )?;
                 (f.dsp.mc.blend_v)(
                     dst.offset((y * v_mul) as isize * BD::pxstride(dst_stride))
@@ -3748,8 +3748,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     h_off = 2;
                 }
                 if bw4 == 1 {
-                    let left_filter_2d = dav1d_filter_2d[t.l.filter(1, by4 as usize) as usize]
-                        [t.l.filter(0, by4 as usize) as usize];
+                    let left_filter_2d = dav1d_filter_2d
+                        [*t.l.filter[1].index(by4 as usize) as usize]
+                        [*t.l.filter[0].index(by4 as usize) as usize];
                     for pl in 0..2 {
                         let r = *f.rf.r.index(r[1] + t.b.x as usize - 1);
                         mc::<BD>(
@@ -3785,8 +3786,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     h_off = 2;
                 }
                 if bh4 == ss_ver {
-                    let top_filter_2d = dav1d_filter_2d[f.a[t.a].filter(1, bx4 as usize) as usize]
-                        [f.a[t.a].filter(0, bx4 as usize) as usize];
+                    let top_filter_2d = dav1d_filter_2d
+                        [*f.a[t.a].filter[1].index(bx4 as usize) as usize]
+                        [*f.a[t.a].filter[0].index(bx4 as usize) as usize];
                     for pl in 0..2 {
                         let r = *f.rf.r.index(r[0] + t.b.x as usize);
                         mc::<BD>(
@@ -4632,7 +4634,7 @@ pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
     let mut l_cache = if pl {
         t.pal_sz_uv[1][by4]
     } else {
-        t.l.pal_sz(by4)
+        *t.l.pal_sz.index(by4)
     };
     let mut n_cache = 0;
     // don't reuse above palette outside SB64 boundaries
@@ -4640,7 +4642,7 @@ pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
         if pl {
             t.pal_sz_uv[0][bx4]
         } else {
-            f.a[t.a].pal_sz(bx4)
+            *f.a[t.a].pal_sz.index(bx4)
         }
     } else {
         0
