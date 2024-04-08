@@ -30,13 +30,9 @@ use std::ffi::c_uint;
 
 #[derive(Default)]
 pub struct BlockContext {
+    pub mode: DisjointMut<Align8<[u8; 32]>>,
     pub lcoef: DisjointMut<Align8<[u8; 32]>>,
     pub ccoef: [DisjointMut<Align8<[u8; 32]>>; 2],
-    pub partition: DisjointMut<Align8<[u8; 16]>>,
-    pub uvmode: DisjointMut<Align8<[u8; 32]>>,
-    pub tx_lpf_y: DisjointMut<Align8<[u8; 32]>>,
-    pub tx_lpf_uv: DisjointMut<Align8<[u8; 32]>>,
-    pub mode: DisjointMut<Align8<[u8; 32]>>,
     pub seg_pred: DisjointMut<Align8<[u8; 32]>>,
     pub skip: DisjointMut<Align8<[u8; 32]>>,
     pub skip_mode: DisjointMut<Align8<[u8; 32]>>,
@@ -46,6 +42,10 @@ pub struct BlockContext {
     pub filter: [DisjointMut<Align8<[u8; 32]>>; 2],
     pub tx_intra: DisjointMut<Align8<[i8; 32]>>,
     pub tx: DisjointMut<Align8<[u8; 32]>>,
+    pub tx_lpf_y: DisjointMut<Align8<[u8; 32]>>,
+    pub tx_lpf_uv: DisjointMut<Align8<[u8; 32]>>,
+    pub partition: DisjointMut<Align8<[u8; 16]>>,
+    pub uvmode: DisjointMut<Align8<[u8; 32]>>,
     pub pal_sz: DisjointMut<Align8<[u8; 32]>>,
 }
 

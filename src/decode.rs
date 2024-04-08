@@ -1870,10 +1870,8 @@ unsafe fn decode_b(
                 TileStateRef::Frame => &f.lf.lvl,
                 TileStateRef::Local => &ts.lflvlmem,
             };
-            let a = &f.a[t.a];
             let mut a_uv_guard;
             let mut l_uv_guard;
-            let bw4 = cmp::min(f.w4 as usize - t.b.x as usize, b_dim[0] as usize); // TODO: Use existing `bw4`?
             rav1d_create_lf_mask_intra(
                 &f.lf.mask[t.lf_mask.unwrap()],
                 &f.lf.level,
@@ -1886,13 +1884,17 @@ unsafe fn decode_b(
                 b.tx() as RectTxfmSize,
                 b.uvtx as RectTxfmSize,
                 f.cur.p.layout,
-                &mut a.tx_lpf_y.index_mut(bx4 as usize..bx4 as usize + bw4),
-                &mut t.l.tx_lpf_y.index_mut(by4 as usize..),
+                &mut f.a[t.a]
+                    .tx_lpf_y
+                    .index_mut(bx4 as usize..(bx4 + bw4) as usize),
+                &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize),
                 if has_chroma {
-                    a_uv_guard = a
+                    a_uv_guard = f.a[t.a]
                         .tx_lpf_uv
-                        .index_mut(cbx4 as usize..cbx4 as usize + cbw4 as usize);
-                    l_uv_guard = t.l.tx_lpf_uv.index_mut(cby4 as usize..);
+                        .index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
+                    l_uv_guard =
+                        t.l.tx_lpf_uv
+                            .index_mut(cby4 as usize..(cby4 + cbh4) as usize);
                     Some((&mut a_uv_guard, &mut l_uv_guard))
                 } else {
                     None
@@ -2900,7 +2902,6 @@ unsafe fn decode_b(
                 TileStateRef::Frame => &f.lf.lvl,
                 TileStateRef::Local => &ts.lflvlmem,
             };
-            let a = &f.a[t.a];
             let mut a_uv_guard;
             let mut l_uv_guard;
             rav1d_create_lf_mask_inter(
@@ -2924,10 +2925,14 @@ unsafe fn decode_b(
                 &tx_split,
                 uvtx,
                 f.cur.p.layout,
-                &mut a.tx_lpf_y.index_mut(bx4 as usize..(bx4 + bw4) as usize),
+                &mut f.a[t.a]
+                    .tx_lpf_y
+                    .index_mut(bx4 as usize..(bx4 + bw4) as usize),
                 &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize),
                 if has_chroma {
-                    a_uv_guard = a.tx_lpf_uv.index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
+                    a_uv_guard = f.a[t.a]
+                        .tx_lpf_uv
+                        .index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
                     l_uv_guard =
                         t.l.tx_lpf_uv
                             .index_mut(cby4 as usize..(cby4 + cbh4) as usize);
@@ -4049,7 +4054,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     let start_lpf_y = (t.b.y & 16) as usize;
     f.lf.tx_lpf_right_edge.copy_from_slice_y(
         start_y..start_y + len_y,
-        &t.l.tx_lpf_y.index_mut(start_lpf_y..start_lpf_y + len_y),
+        &t.l.tx_lpf_y.index(start_lpf_y..start_lpf_y + len_y),
     );
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     align_h >>= ss_ver;
@@ -4058,7 +4063,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     let lpf_uv_start = ((t.b.y & 16) >> ss_ver) as usize;
     f.lf.tx_lpf_right_edge.copy_from_slice_uv(
         start_uv..start_uv + len_uv,
-        &t.l.tx_lpf_uv.index_mut(lpf_uv_start..lpf_uv_start + len_uv),
+        &t.l.tx_lpf_uv.index(lpf_uv_start..lpf_uv_start + len_uv),
     );
 
     Ok(())

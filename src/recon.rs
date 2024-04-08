@@ -1776,21 +1776,16 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             cf = CfSelect::Task;
         }
         if (*t).frame_thread.pass != 2 as c_int {
-            // TODO: Are these lengths correct? They're based on the length read
-            // by `get_skip_ctx`, but that may not be correct.
-            let a_start = bx4 as usize;
-            let a_len = 1 << (*t_dim).lw;
-            let l_start = by4 as usize;
-            let l_len = 1 << (*t_dim).lh;
-
             eob = decode_coefs::<BD>(
                 f,
                 (*t).ts,
                 debug_block_info!(f, (*t).b),
                 &mut (*t).scratch,
                 &mut (*t).cf,
-                &mut f.a[(*t).a].lcoef.index_mut(a_start..a_start + a_len),
-                &mut (*t).l.lcoef.index_mut(l_start..l_start + l_len),
+                &mut f.a[(*t).a]
+                    .lcoef
+                    .index_mut(bx4 as usize..(bx4 + txw) as usize),
+                &mut (*t).l.lcoef.index_mut(by4 as usize..(by4 + txh) as usize),
                 ytx,
                 bs,
                 b,
@@ -1977,10 +1972,6 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                     } else {
                         let mut cf_ctx: u8 = 0x40 as c_int as u8;
                         let mut txtp: TxfmType = DCT_DCT;
-
-                        // TODO: Are the lengths here correct? They're based
-                        // on how much data `get_skip_ctx` will read, but
-                        // it's not clear if that's correct in all cases.
                         let a_start = (bx4 + x) as usize;
                         let a_len = (*t_dim).w as usize;
                         let l_start = (by4 + y) as usize;
@@ -2059,9 +2050,6 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
                                     as TxfmType;
                             }
-                            // TODO: Are the lengths here correct? They're based
-                            // on how much data `get_skip_ctx` will read, but
-                            // it's not clear if that's correct in all cases.
                             let a_start = (cbx4 + x) as usize;
                             let a_len = (*uv_t_dim).w as usize;
                             let a_ccoef = &f.a[t.a].ccoef[pl];
@@ -2741,17 +2729,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             txtp = cbi.txtp();
                         } else {
                             let mut cf_ctx: u8 = 0;
-                            let a_start = (bx4 + x) as usize;
-                            let l_start = (by4 + y) as usize;
                             eob = decode_coefs::<BD>(
                                 f,
                                 t.ts,
                                 debug_block_info!(f, t.b),
                                 &mut t.scratch,
                                 &mut t.cf,
-                                // TODO: What's the length here? It's at most 16 based on how these slices are used.
-                                &mut f.a[t.a].lcoef.index_mut(a_start..),
-                                &mut t.l.lcoef.index_mut(l_start..),
+                                &mut f.a[t.a].lcoef.index_mut((bx4 + x) as usize..),
+                                &mut t.l.lcoef.index_mut((by4 + y) as usize..),
                                 b.c2rust_unnamed.c2rust_unnamed.tx as RectTxfmSize,
                                 bs,
                                 b,
@@ -2772,14 +2757,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 );
                             }
                             CaseSet::<16, true>::many(
-                                [&t.l.lcoef, &f.a[t.a].lcoef],
+                                [&t.l, &f.a[t.a]],
                                 [
                                     cmp::min((*t_dim).h as i32, f.bh - t.b.y) as usize,
                                     cmp::min((*t_dim).w as i32, f.bw - t.b.x) as usize,
                                 ],
                                 [(by4 + y) as usize, (bx4 + x) as usize],
                                 |case, dir| {
-                                    case.set_disjoint(dir, cf_ctx);
+                                    case.set_disjoint(&dir.lcoef, cf_ctx);
                                 },
                             );
                         }
