@@ -39,7 +39,7 @@ jobs:
           .github/workflows/test.sh \
             -r ./target/${{ matrix.build.name }}/dav1d \
             -s ./target/${{ matrix.build.name }}/seek_stress \
-            -t ${{ matrix.timeout_multiplier }}
+            -t ${{ matrix.build.timeout_multiplier }}
         # release tests run quickly so also cover the frame delay cases
       - name: test release build with frame delay of 1
         if: ${{ matrix.build.name == 'release' }}
