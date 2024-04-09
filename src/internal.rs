@@ -108,6 +108,9 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use std::thread::JoinHandle;
+use zerocopy::AsBytes;
+use zerocopy::FromBytes;
+use zerocopy::FromZeroes;
 
 #[repr(C)]
 pub(crate) struct Rav1dDSPContext {
@@ -930,90 +933,161 @@ impl BitDepthDependentType for AlPal {
     type T<BD: BitDepth> = [[[[BD::Pixel; 8]; 3]; 32]; 2]; /* [2 a/l][32 bx/y4][3 plane][8 palette_idx] */
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub struct Rav1dTaskContext_scratch_compinter_seg_mask {
+#[derive(FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(64))]
+pub struct ScratchCompinter {
     pub compinter: [[i16; 16384]; 2],
     pub seg_mask: [u8; 16384],
 }
 
-pub struct Lap;
+// Larger of the two between `ScratchCompinter` and `[BD::Pixel; 128 * 32]`.
+const SCRATCH_COMPINTER_SIZE: usize = mem::size_of::<ScratchCompinter>();
 
-impl BitDepthDependentType for Lap {
-    type T<BD: BitDepth> = [BD::Pixel; 128 * 32];
+#[derive(FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(64))]
+pub struct ScratchLapInter([u8; SCRATCH_COMPINTER_SIZE]);
+
+impl ScratchLapInter {
+    pub fn lap_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; 128 * 32] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
+
+    pub fn inter_mut(&mut self) -> &mut ScratchCompinter {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub union Rav1dTaskContext_scratch_lap {
-    pub lap: BitDepthUnion<Lap>,
-    pub c2rust_unnamed: Rav1dTaskContext_scratch_compinter_seg_mask,
-}
-
+const EMU_EDGE_LEN: usize = 320 * (256 + 7);
 // stride=192 for non-SVC, or 320 for SVC
-pub struct EmuEdge;
+#[derive(FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(32))]
+pub struct ScratchEmuEdge([u8; EMU_EDGE_LEN * 2]);
 
-impl BitDepthDependentType for EmuEdge {
-    type T<BD: BitDepth> = [BD::Pixel; 320 * (256 + 7)];
+impl ScratchEmuEdge {
+    pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; EMU_EDGE_LEN] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
-#[derive(Clone, Copy)]
+#[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
-pub struct Rav1dTaskContext_scratch_lap_emu_edge {
-    pub c2rust_unnamed: Rav1dTaskContext_scratch_lap,
-    pub emu_edge: BitDepthUnion<EmuEdge>,
+pub struct ScratchInter {
+    pub lap_inter: ScratchLapInter,
+    pub emu_edge: ScratchEmuEdge,
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub struct Rav1dTaskContext_scratch_pal {
+#[derive(FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(64))]
+pub struct ScratchPal {
     pub pal_order: [[u8; 8]; 64],
     pub pal_ctx: [u8; 64],
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub union Rav1dTaskContext_scratch_levels_pal {
-    pub levels: [u8; 1088],
-    pub c2rust_unnamed: Rav1dTaskContext_scratch_pal,
+#[derive(FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(64))]
+pub struct ScratchLevelsPal([u8; 1088]);
+
+impl ScratchLevelsPal {
+    pub fn levels_mut(&mut self) -> &mut [u8; 1088] {
+        &mut self.0
+    }
+
+    pub fn pal_mut(&mut self) -> &mut ScratchPal {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub struct InterIntraEdgePalBD<BD: BitDepth> {
-    pub interintra: [BD::Pixel; 64 * 64],
-    pub edge: [BD::Pixel; 257],
-    _align: [BD::AlignPixelX8; 0],
-    pub pal: [[BD::Pixel; 8]; 3], /* [3 plane][8 palette_idx] */
+#[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(64))]
+pub struct ScratchInterintraBuf([u8; 64 * 64 * 2]);
+
+impl ScratchInterintraBuf {
+    pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; 64 * 64] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
-pub struct InterIntraEdgePal;
+#[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(32))]
+pub struct ScratchEdgeBuf([u8; 257 * 2 + 30]); // 257 Pixel elements + 30 padding bytes
 
-impl BitDepthDependentType for InterIntraEdgePal {
-    type T<BD: BitDepth> = InterIntraEdgePalBD<BD>;
+impl ScratchEdgeBuf {
+    pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; 257] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-pub union Rav1dTaskContext_scratch_ac_txtp_map {
-    pub ac: [i16; 1024],            // intra only
-    pub txtp_map: [TxfmType; 1024], // inter only
+#[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(16))] // Over-aligned for 8bpc (needs to be `align(8)` for 8bpc, `align(16)` for 16bpc).
+pub struct ScratchPalBuf([u8; 8 * 3 * 2]); /* [3 plane][8 palette_idx] */
+
+impl ScratchPalBuf {
+    pub fn buf<BD: BitDepth>(&self) -> &[[BD::Pixel; 8]; 3] {
+        FromBytes::ref_from_prefix(&self.0).unwrap()
+    }
+
+    pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [[BD::Pixel; 8]; 3] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
-pub struct Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
-    pub c2rust_unnamed: Rav1dTaskContext_scratch_levels_pal,
-    pub ac_txtp_map: Rav1dTaskContext_scratch_ac_txtp_map,
+pub struct ScratchInterintraEdgePal {
+    pub interintra: ScratchInterintraBuf,
+    pub edge: ScratchEdgeBuf,
+    pub pal: ScratchPalBuf,
+
+    /// For `AsBytes`, so there's no implicit padding.
+    _padding: [u8; 48],
+}
+
+#[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(32))]
+pub struct ScratchAcTxtpMap([u8; 1024 * 2]);
+
+impl ScratchAcTxtpMap {
+    pub fn ac_mut(&mut self) -> &mut [i16; 1024] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
+
+    pub fn txtp_map(&self) -> &[TxfmType; 1024] {
+        FromBytes::ref_from_prefix(&self.0).unwrap()
+    }
+
+    pub fn txtp_map_mut(&mut self) -> &mut [TxfmType; 1024] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
+}
+
+#[derive(FromZeroes, FromBytes, AsBytes)]
+#[repr(C)]
+pub struct ScratchInterIntra {
+    pub levels_pal: ScratchLevelsPal,
+    pub ac_txtp_map: ScratchAcTxtpMap,
     pub pal_idx_y: [u8; 32 * 64],
     pub pal_idx_uv: [u8; 64 * 64], // also used as pre-pack scratch buffer
-    pub interintra_edge_pal: BitDepthUnion<InterIntraEdgePal>,
+    pub interintra_edge_pal: ScratchInterintraEdgePal,
 }
 
-#[repr(C, align(64))]
-pub union Rav1dTaskContext_scratch {
-    pub c2rust_unnamed: Rav1dTaskContext_scratch_lap_emu_edge,
-    pub c2rust_unnamed_0: Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge,
+// Larger of the two between `ScratchInter` and `ScratchInterIntra`.
+const SCRATCH_SIZE: usize = mem::size_of::<ScratchInter>();
+#[derive(FromZeroes)]
+#[repr(C)]
+pub struct TaskContextScratch([u8; SCRATCH_SIZE]);
+
+impl TaskContextScratch {
+    pub fn inter_mut(&mut self) -> &mut ScratchInter {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
+
+    pub fn inter_intra(&self) -> &ScratchInterIntra {
+        FromBytes::ref_from_prefix(&self.0).unwrap()
+    }
+
+    pub fn inter_intra_mut(&mut self) -> &mut ScratchInterIntra {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
 #[repr(C)]
@@ -1056,7 +1130,7 @@ pub(crate) struct Rav1dTaskContext {
     pub cf: BitDepthUnion<Cf>,
     pub al_pal: BitDepthUnion<AlPal>,
     pub pal_sz_uv: [[u8; 32]; 2], /* [2 a/l][32 bx4/by4] */
-    pub scratch: Rav1dTaskContext_scratch,
+    pub scratch: TaskContextScratch,
 
     pub warpmv: Rav1dWarpedMotionParams,
     /// Index into the relevant `Rav1dFrameContext::lf.mask` array.
@@ -1082,7 +1156,7 @@ impl Rav1dTaskContext {
             cf: Default::default(),
             al_pal: Default::default(),
             pal_sz_uv: Default::default(),
-            scratch: unsafe { mem::zeroed() },
+            scratch: FromZeroes::new_zeroed(),
             warpmv: Default::default(),
             lf_mask: None,
             top_pre_cdef_toggle: 0,
