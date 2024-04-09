@@ -3177,7 +3177,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     txtp = cbi.txtp();
                                 } else {
                                     let mut cf_ctx: u8 = 0;
+                                    let a_start = (cbx4 + x) as usize;
                                     let a_ccoef = &f.a[t.a].ccoef[pl];
+                                    let l_start = (cby4 + y) as usize;
                                     let l_ccoef = &t.l.ccoef[pl];
                                     eob = decode_coefs::<BD>(
                                         f,
@@ -3185,8 +3187,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         debug_block_info!(f, t.b),
                                         &mut t.scratch,
                                         &mut t.cf,
-                                        &mut a_ccoef.index_mut((cbx4 + x) as usize..),
-                                        &mut l_ccoef.index_mut((cby4 + y) as usize..),
+                                        &mut a_ccoef
+                                            .index_mut(a_start..a_start + (*uv_t_dim).w as usize),
+                                        &mut l_ccoef
+                                            .index_mut(l_start..l_start + (*uv_t_dim).h as usize),
                                         b.uvtx as RectTxfmSize,
                                         bs,
                                         b,
@@ -4113,15 +4117,17 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 txtp = t.scratch.c2rust_unnamed_0.ac_txtp_map.txtp_map
                                     [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize];
                                 let a_ccoef = &f.a[t.a].ccoef[pl];
+                                let a_start = (cbx4 + x) as usize;
                                 let l_ccoef = &t.l.ccoef[pl];
+                                let l_start = (cby4 + y) as usize;
                                 eob = decode_coefs::<BD>(
                                     f,
                                     t.ts,
                                     debug_block_info!(f, t.b),
                                     &mut t.scratch,
                                     &mut t.cf,
-                                    &mut a_ccoef.index_mut((cbx4 + x) as usize..),
-                                    &mut l_ccoef.index_mut((cby4 + y) as usize..),
+                                    &mut a_ccoef.index_mut(a_start..a_start + uvtx.w as usize),
+                                    &mut l_ccoef.index_mut(l_start..l_start + uvtx.h as usize),
                                     b.uvtx,
                                     bs,
                                     b,
