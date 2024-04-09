@@ -2729,14 +2729,18 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             txtp = cbi.txtp();
                         } else {
                             let mut cf_ctx: u8 = 0;
+                            let a_start = (bx4 + x) as usize;
+                            let l_start = (by4 + y) as usize;
                             eob = decode_coefs::<BD>(
                                 f,
                                 t.ts,
                                 debug_block_info!(f, t.b),
                                 &mut t.scratch,
                                 &mut t.cf,
-                                &mut f.a[t.a].lcoef.index_mut((bx4 + x) as usize..),
-                                &mut t.l.lcoef.index_mut((by4 + y) as usize..),
+                                &mut f.a[t.a]
+                                    .lcoef
+                                    .index_mut(a_start..a_start + (*t_dim).w as usize),
+                                &mut t.l.lcoef.index_mut(l_start..l_start + (*t_dim).h as usize),
                                 b.c2rust_unnamed.c2rust_unnamed.tx as RectTxfmSize,
                                 bs,
                                 b,
