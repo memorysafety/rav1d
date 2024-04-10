@@ -1499,8 +1499,8 @@ unsafe extern "C" fn save_tmvs_c(
                 && ref_sign[((*cand_b).0.r#ref.r#ref[0] as c_int - 1) as usize] as c_int != 0
                 && (*cand_b).0.mv.mv[0].y.abs() | (*cand_b).0.mv.mv[0].x.abs() < 4096
             {
-                let mut n_0 = 0;
-                while n_0 < bw8 {
+                let mut n = 0;
+                while n < bw8 {
                     *rp.offset(x as isize) = {
                         let init = refmvs_temporal_block {
                             mv: (*cand_b).0.mv.mv[0],
@@ -1508,17 +1508,17 @@ unsafe extern "C" fn save_tmvs_c(
                         };
                         init
                     };
-                    n_0 += 1;
+                    n += 1;
                     x += 1;
                 }
             } else {
-                let mut n_1 = 0;
-                while n_1 < bw8 {
+                let mut n = 0;
+                while n < bw8 {
                     *rp.offset(x as isize) = refmvs_temporal_block {
                         mv: mv { x: 0, y: 0 },
                         r#ref: 0,
                     };
-                    n_1 += 1;
+                    n += 1;
                     x += 1;
                 }
             }
