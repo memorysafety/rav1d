@@ -1476,35 +1476,34 @@ unsafe extern "C" fn save_tmvs_c(
         let b: *const refmvs_block = rr[((y & 15) * 2) as usize];
         let mut x = col_start8;
         while x < col_end8 {
-            let cand_b: *const refmvs_block =
-                &*b.offset((x * 2 + 1) as isize) as *const refmvs_block;
-            let bw8 = dav1d_block_dimensions[(*cand_b).0.bs as usize][0] as c_int + 1 >> 1;
-            if (*cand_b).0.r#ref.r#ref[1] as c_int > 0
-                && ref_sign[((*cand_b).0.r#ref.r#ref[1] as c_int - 1) as usize] as c_int != 0
-                && (*cand_b).0.mv.mv[1].y.abs() | (*cand_b).0.mv.mv[1].x.abs() < 4096
+            let cand_b = (*b.offset((x * 2 + 1) as isize)).0;
+            let bw8 = dav1d_block_dimensions[cand_b.bs as usize][0] as c_int + 1 >> 1;
+            if cand_b.r#ref.r#ref[1] as c_int > 0
+                && ref_sign[(cand_b.r#ref.r#ref[1] as c_int - 1) as usize] as c_int != 0
+                && cand_b.mv.mv[1].y.abs() | cand_b.mv.mv[1].x.abs() < 4096
             {
                 let mut n = 0;
                 while n < bw8 {
                     *rp.offset(x as isize) = {
                         let init = refmvs_temporal_block {
-                            mv: (*cand_b).0.mv.mv[1],
-                            r#ref: (*cand_b).0.r#ref.r#ref[1],
+                            mv: cand_b.mv.mv[1],
+                            r#ref: cand_b.r#ref.r#ref[1],
                         };
                         init
                     };
                     n += 1;
                     x += 1;
                 }
-            } else if (*cand_b).0.r#ref.r#ref[0] as c_int > 0
-                && ref_sign[((*cand_b).0.r#ref.r#ref[0] as c_int - 1) as usize] as c_int != 0
-                && (*cand_b).0.mv.mv[0].y.abs() | (*cand_b).0.mv.mv[0].x.abs() < 4096
+            } else if cand_b.r#ref.r#ref[0] as c_int > 0
+                && ref_sign[(cand_b.r#ref.r#ref[0] as c_int - 1) as usize] as c_int != 0
+                && cand_b.mv.mv[0].y.abs() | cand_b.mv.mv[0].x.abs() < 4096
             {
                 let mut n = 0;
                 while n < bw8 {
                     *rp.offset(x as isize) = {
                         let init = refmvs_temporal_block {
-                            mv: (*cand_b).0.mv.mv[0],
-                            r#ref: (*cand_b).0.r#ref.r#ref[0],
+                            mv: cand_b.mv.mv[0],
+                            r#ref: cand_b.r#ref.r#ref[0],
                         };
                         init
                     };
