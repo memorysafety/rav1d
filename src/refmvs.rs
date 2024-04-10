@@ -1471,8 +1471,7 @@ unsafe extern "C" fn save_tmvs_c(
 ) {
     let rr = &*rr;
     let ref_sign = &*ref_sign;
-    let mut y = row_start8;
-    while y < row_end8 {
+    for y in row_start8..row_end8 {
         let b: *const refmvs_block = rr[((y & 15) * 2) as usize];
         let mut x = col_start8;
         while x < col_end8 {
@@ -1482,8 +1481,7 @@ unsafe extern "C" fn save_tmvs_c(
                 && ref_sign[cand_b.r#ref.r#ref[1] as usize - 1] != 0
                 && cand_b.mv.mv[1].y.abs() | cand_b.mv.mv[1].x.abs() < 4096
             {
-                let mut n = 0;
-                while n < bw8 {
+                for _ in 0..bw8 {
                     *rp.offset(x as isize) = {
                         let init = refmvs_temporal_block {
                             mv: cand_b.mv.mv[1],
@@ -1491,15 +1489,13 @@ unsafe extern "C" fn save_tmvs_c(
                         };
                         init
                     };
-                    n += 1;
                     x += 1;
                 }
             } else if cand_b.r#ref.r#ref[0] > 0
                 && ref_sign[cand_b.r#ref.r#ref[0] as usize - 1] != 0
                 && cand_b.mv.mv[0].y.abs() | cand_b.mv.mv[0].x.abs() < 4096
             {
-                let mut n = 0;
-                while n < bw8 {
+                for _ in 0..bw8 {
                     *rp.offset(x as isize) = {
                         let init = refmvs_temporal_block {
                             mv: cand_b.mv.mv[0],
@@ -1507,23 +1503,19 @@ unsafe extern "C" fn save_tmvs_c(
                         };
                         init
                     };
-                    n += 1;
                     x += 1;
                 }
             } else {
-                let mut n = 0;
-                while n < bw8 {
+                for _ in 0..bw8 {
                     *rp.offset(x as isize) = refmvs_temporal_block {
                         mv: mv { x: 0, y: 0 },
                         r#ref: 0,
                     };
-                    n += 1;
                     x += 1;
                 }
             }
         }
         rp = rp.offset(stride as isize);
-        y += 1;
     }
 }
 
