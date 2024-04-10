@@ -32,7 +32,7 @@ use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 extern "C" {
     fn dav1d_splat_mv_sse2(
         rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
+        rmv: *const Align16<refmvs_block>,
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
@@ -66,7 +66,7 @@ extern "C" {
 extern "C" {
     fn dav1d_splat_mv_avx512icl(
         rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
+        rmv: *const Align16<refmvs_block>,
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
@@ -74,7 +74,7 @@ extern "C" {
     );
     fn dav1d_splat_mv_avx2(
         rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
+        rmv: *const Align16<refmvs_block>,
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
@@ -106,7 +106,7 @@ extern "C" {
 extern "C" {
     fn dav1d_splat_mv_neon(
         rr: *mut *mut refmvs_block,
-        rmv: *const refmvs_block,
+        rmv: *const Align16<refmvs_block>,
         bx4: c_int,
         bw4: c_int,
         bh4: c_int,
@@ -344,7 +344,7 @@ extern "C" {
 
 pub type splat_mv_fn = unsafe extern "C" fn(
     rr: *mut *mut refmvs_block,
-    rmv: *const refmvs_block,
+    rmv: *const Align16<refmvs_block>,
     bx4: c_int,
     bw4: c_int,
     bh4: c_int,
@@ -371,7 +371,6 @@ impl Rav1dRefmvsDSPContext {
     ) {
         let mut r = rt.r_ptrs_mut(r);
         let rr = &mut r[(b4.y as usize & 31) + 5..];
-        let rmv = &rmv.0;
         let bx4 = b4.x as _;
         let bw4 = bw4 as _;
         let bh4 = bh4 as _;
@@ -1630,20 +1629,21 @@ pub(crate) fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
 
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
-    rmv: *const refmvs_block,
+    rmv: *const Align16<refmvs_block>,
     bx4: c_int,
     bw4: c_int,
     bh4: c_int,
     rr_len: usize,
 ) {
     let rmv = &*rmv;
+    let rmv = rmv.0;
     let [bx4, bw4, bh4] = [bx4, bw4, bh4].map(|it| it as usize);
 
     // Safety: `rr` and `rr_len` are the raw parts of a slice in [`Dav1dRefmvsDSPContext::splat_mv`].
     let rr = unsafe { std::slice::from_raw_parts_mut(rr, rr_len) };
 
     for r in &mut rr[..bh4] {
-        std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill_with(|| rmv.clone())
+        std::slice::from_raw_parts_mut(*r, bx4 + bw4)[bx4..].fill_with(|| rmv)
     }
 }
 
