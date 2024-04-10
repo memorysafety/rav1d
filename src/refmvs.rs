@@ -139,27 +139,18 @@ pub struct refmvs_mvpair {
     pub mv: [mv; 2],
 }
 
-/// For why this unaligned, see the aligned [`refmvs_block`] below.
 #[derive(Clone, Copy, FromZeroes)]
-#[repr(C, packed)]
-pub struct refmvs_block_unaligned {
+#[repr(C, align(4))]
+pub struct refmvs_block {
     pub mv: refmvs_mvpair,
     pub r#ref: refmvs_refpair,
     pub bs: BlockSize,
     pub mf: u8,
 }
 
-/// In C, `struct refmvs_block` is both aligned and packed,
-/// but this (aligned types within a packed type) is not yet allowed in Rust
-/// (see [rust-lang/rust#59154](https://github.com/rust-lang/rust/issues/59154)),
-/// as different C compilers treat this differently.
-/// To get around this limitation, we split `struct refmvs_block`
-/// into an inner packed [`refmvs_block_unaligned`]
-/// and an outer aligned [`refmvs_block`]
-/// that is just a wrapper over the real [`refmvs_block_unaligned`].
-#[derive(Clone, Copy, FromZeroes)]
-#[repr(C, align(4))]
-pub struct refmvs_block(pub refmvs_block_unaligned);
+// In C, this is packed and is 12 bytes.
+// In Rust, being packed and aligned is tricky
+const _: () = assert!(mem::size_of::<refmvs_block>() == 12);
 
 #[repr(C)]
 pub(crate) struct refmvs_frame<'a> {
@@ -392,7 +383,7 @@ fn add_spatial_candidate(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     weight: c_int,
-    b: refmvs_block_unaligned,
+    b: refmvs_block,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
     have_newmv_match: &mut c_int,
@@ -482,7 +473,7 @@ fn scan_row(
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) -> c_int {
-    let mut cand_b = b[0].0;
+    let mut cand_b = b[0];
     let first_cand_bs = cand_b.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as c_int;
@@ -530,7 +521,7 @@ fn scan_row(
         if x >= w4 {
             return 1;
         }
-        cand_b = b[x as usize].0;
+        cand_b = b[x as usize];
         cand_bw4 = dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
         assert!(cand_bw4 < bw4);
         len = cmp::max(step, cand_bw4);
@@ -552,7 +543,7 @@ fn scan_col(
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) -> c_int {
-    let mut cand_b = r[b[0] + bx4 as usize].0;
+    let mut cand_b = r[b[0] + bx4 as usize];
     let first_cand_bs = cand_b.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as c_int;
@@ -600,7 +591,7 @@ fn scan_col(
         if y >= h4 {
             return 1;
         }
-        cand_b = r[b[y as usize] + bx4 as usize].0;
+        cand_b = r[b[y as usize] + bx4 as usize];
         cand_bh4 = dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
         assert!(cand_bh4 < bh4);
         len = cmp::max(step, cand_bh4);
@@ -695,7 +686,7 @@ fn add_temporal_candidate(
 fn add_compound_extended_candidate(
     same: &mut [refmvs_candidate],
     same_count: &mut [usize; 4],
-    cand_b: refmvs_block_unaligned,
+    cand_b: refmvs_block,
     sign0: u8,
     sign1: u8,
     r#ref: refmvs_refpair,
@@ -764,7 +755,7 @@ fn add_compound_extended_candidate(
 fn add_single_extended_candidate(
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
-    cand_b: refmvs_block_unaligned,
+    cand_b: refmvs_block,
     sign: u8,
     sign_bias: &[u8; 7],
 ) {
@@ -956,7 +947,7 @@ pub(crate) fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            b_top[bw4 as usize + b_top_offset].0,
+            b_top[bw4 as usize + b_top_offset],
             r#ref,
             &gmv,
             &mut have_newmv,
@@ -1028,7 +1019,7 @@ pub(crate) fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            b_top[b_top_offset - 1].0,
+            b_top[b_top_offset - 1],
             r#ref,
             &gmv,
             &mut have_dummy_newmv_match,
@@ -1106,7 +1097,7 @@ pub(crate) fn rav1d_refmvs_find(
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
-                    let cand_b = b_top[x as usize + b_top_offset].0;
+                    let cand_b = b_top[x as usize + b_top_offset];
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1124,7 +1115,7 @@ pub(crate) fn rav1d_refmvs_find(
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 {
-                    let cand_b = rf.r[b_left[y as usize] + bx4 as usize - 1].0;
+                    let cand_b = rf.r[b_left[y as usize] + bx4 as usize - 1];
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1214,7 +1205,7 @@ pub(crate) fn rav1d_refmvs_find(
         if n_rows != !0 {
             let mut x = 0;
             while x < sz4 && *cnt < 2 {
-                let cand_b = b_top[x as usize + b_top_offset].0;
+                let cand_b = b_top[x as usize + b_top_offset];
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
                 x += dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
             }
@@ -1224,7 +1215,7 @@ pub(crate) fn rav1d_refmvs_find(
         if n_cols != !0 {
             let mut y = 0;
             while y < sz4 && *cnt < 2 {
-                let cand_b = rf.r[b_left[y as usize] + bx4 as usize - 1].0;
+                let cand_b = rf.r[b_left[y as usize] + bx4 as usize - 1];
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
                 y += dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
             }
@@ -1478,7 +1469,7 @@ unsafe extern "C" fn save_tmvs_c(
         let b = rr[(y & 15) * 2];
         let mut x = col_start8;
         while x < col_end8 {
-            let cand_b = (*b.add(x * 2 + 1)).0;
+            let cand_b = *b.add(x * 2 + 1);
             let bw8 = dav1d_block_dimensions[cand_b.bs as usize][0] + 1 >> 1;
             let block = |i: usize| {
                 let mv = cand_b.mv.mv[i];

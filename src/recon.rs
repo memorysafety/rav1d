@@ -2227,7 +2227,7 @@ unsafe fn obmc<BD: BitDepth>(
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2], 4) {
-            let a_r = f.rf.r[r[0] + t.b.x as usize + x as usize + 1].0;
+            let a_r = f.rf.r[r[0] + t.b.x as usize + x as usize + 1];
             let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
             let step4 = clip(a_b_dim[0], 2, 16);
             if a_r.r#ref.r#ref[0] > 0 {
@@ -2267,7 +2267,7 @@ unsafe fn obmc<BD: BitDepth>(
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3], 4) {
-            let l_r = f.rf.r[r[y as usize + 1 + 1] + t.b.x as usize - 1].0;
+            let l_r = f.rf.r[r[y as usize + 1 + 1] + t.b.x as usize - 1];
             let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
             let step4 = clip(l_b_dim[1], 2, 16);
             if l_r.r#ref.r#ref[0] > 0 {
@@ -3554,13 +3554,13 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 assert!(ss_hor == 1);
                 let r = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
                 if bw4 == 1 {
-                    is_sub8x8 &= f.rf.r[r[1] + t.b.x as usize - 1].0.r#ref.r#ref[0] > 0;
+                    is_sub8x8 &= f.rf.r[r[1] + t.b.x as usize - 1].r#ref.r#ref[0] > 0;
                 }
                 if bh4 == ss_ver {
-                    is_sub8x8 &= f.rf.r[r[0] + t.b.x as usize].0.r#ref.r#ref[0] > 0;
+                    is_sub8x8 &= f.rf.r[r[0] + t.b.x as usize].r#ref.r#ref[0] > 0;
                 }
                 if bw4 == 1 && bh4 == ss_ver {
-                    is_sub8x8 &= f.rf.r[r[0] + t.b.x as usize - 1].0.r#ref.r#ref[0] > 0;
+                    is_sub8x8 &= f.rf.r[r[0] + t.b.x as usize - 1].r#ref.r#ref[0] > 0;
                 }
                 r
             } else {
@@ -3572,7 +3572,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 let mut v_off = 0isize;
                 if bw4 == 1 && bh4 == ss_ver {
                     for pl in 0..2 {
-                        let r = f.rf.r[r[0] + t.b.x as usize - 1].0;
+                        let r = f.rf.r[r[0] + t.b.x as usize - 1];
                         mc::<BD>(
                             f,
                             &mut t.scratch.c2rust_unnamed.emu_edge,
@@ -3607,7 +3607,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     let left_filter_2d = dav1d_filter_2d[t.l.filter[1][by4 as usize] as usize]
                         [t.l.filter[0][by4 as usize] as usize];
                     for pl in 0..2 {
-                        let r = f.rf.r[r[1] + t.b.x as usize - 1].0;
+                        let r = f.rf.r[r[1] + t.b.x as usize - 1];
                         mc::<BD>(
                             f,
                             &mut t.scratch.c2rust_unnamed.emu_edge,
@@ -3640,7 +3640,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     let top_filter_2d = dav1d_filter_2d[(*t.a).filter[1][bx4 as usize] as usize]
                         [(*t.a).filter[0][bx4 as usize] as usize];
                     for pl in 0..2 {
-                        let r = f.rf.r[r[0] + t.b.x as usize].0;
+                        let r = f.rf.r[r[0] + t.b.x as usize];
                         mc::<BD>(
                             f,
                             &mut t.scratch.c2rust_unnamed.emu_edge,
