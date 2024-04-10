@@ -1490,7 +1490,6 @@ unsafe extern "C" fn save_tmvs_c(
                         init
                     };
                 }
-                x += bw8 as c_int;
             } else if cand_b.r#ref.r#ref[0] > 0
                 && ref_sign[cand_b.r#ref.r#ref[0] as usize - 1] != 0
                 && cand_b.mv.mv[0].y.abs() | cand_b.mv.mv[0].x.abs() < 4096
@@ -1504,7 +1503,6 @@ unsafe extern "C" fn save_tmvs_c(
                         init
                     };
                 }
-                x += bw8 as c_int;
             } else {
                 for _ in 0..bw8 {
                     *rp.offset(x as isize) = refmvs_temporal_block {
@@ -1512,8 +1510,8 @@ unsafe extern "C" fn save_tmvs_c(
                         r#ref: 0,
                     };
                 }
-                x += bw8 as c_int;
             }
+            x += bw8 as c_int;
         }
         rp = rp.offset(stride as isize);
     }
