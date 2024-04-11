@@ -1475,7 +1475,7 @@ unsafe extern "C" fn save_tmvs_c(
     let [col_end8, row_end8, col_start8, row_start8] =
         [col_end8, row_end8, col_start8, row_start8].map(|it| it as usize);
     for y in row_start8..row_end8 {
-        let b: *const refmvs_block = rr[(y & 15) * 2];
+        let b = rr[(y & 15) * 2];
         let mut x = col_start8;
         while x < col_end8 {
             let cand_b = (*b.add(x * 2 + 1)).0;
