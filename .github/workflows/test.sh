@@ -44,6 +44,7 @@ test_args=(
 )
 
 export RUST_BACKTRACE=1
+export RUST_LIB_BACKTRACE=${RUST_LIB_BACKTRACE:-0}
 
 if [[ -z $seek_stress_test_rust_path ]]; then
     : # stress test binary not provided; don't include seek stress tests
