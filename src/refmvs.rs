@@ -1477,36 +1477,31 @@ unsafe extern "C" fn save_tmvs_c(
         while x < col_end8 {
             let cand_b = (*b.offset((x * 2 + 1) as isize)).0;
             let bw8 = dav1d_block_dimensions[cand_b.bs as usize][0] + 1 >> 1;
-            if cand_b.r#ref.r#ref[1] > 0
+            let block = if cand_b.r#ref.r#ref[1] > 0
                 && ref_sign[cand_b.r#ref.r#ref[1] as usize - 1] != 0
                 && cand_b.mv.mv[1].y.abs() | cand_b.mv.mv[1].x.abs() < 4096
             {
-                for _ in 0..bw8 {
-                    *rp.offset(x as isize) = refmvs_temporal_block {
-                        mv: cand_b.mv.mv[1],
-                        r#ref: cand_b.r#ref.r#ref[1],
-                    };
-                    x += 1;
+                refmvs_temporal_block {
+                    mv: cand_b.mv.mv[1],
+                    r#ref: cand_b.r#ref.r#ref[1],
                 }
             } else if cand_b.r#ref.r#ref[0] > 0
                 && ref_sign[cand_b.r#ref.r#ref[0] as usize - 1] != 0
                 && cand_b.mv.mv[0].y.abs() | cand_b.mv.mv[0].x.abs() < 4096
             {
-                for _ in 0..bw8 {
-                    *rp.offset(x as isize) = refmvs_temporal_block {
-                        mv: cand_b.mv.mv[0],
-                        r#ref: cand_b.r#ref.r#ref[0],
-                    };
-                    x += 1;
+                refmvs_temporal_block {
+                    mv: cand_b.mv.mv[0],
+                    r#ref: cand_b.r#ref.r#ref[0],
                 }
             } else {
-                for _ in 0..bw8 {
-                    *rp.offset(x as isize) = refmvs_temporal_block {
-                        mv: mv { x: 0, y: 0 },
-                        r#ref: 0,
-                    };
-                    x += 1;
+                refmvs_temporal_block {
+                    mv: mv { x: 0, y: 0 },
+                    r#ref: 0,
                 }
+            };
+            for _ in 0..bw8 {
+                *rp.offset(x as isize) = block;
+                x += 1;
             }
         }
         rp = rp.offset(stride as isize);
