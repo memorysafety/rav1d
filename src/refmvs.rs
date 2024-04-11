@@ -1499,7 +1499,7 @@ unsafe extern "C" fn save_tmvs_c(
             } else {
                 refmvs_temporal_block {
                     mv: mv { x: 0, y: 0 },
-                    r#ref: 0,
+                    r#ref: 0, // "invalid"
                 }
             };
             slice::from_raw_parts_mut(rp.add(x), bw8 as usize).fill(block);
