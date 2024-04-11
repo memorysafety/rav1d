@@ -126,6 +126,7 @@ impl Debug {
     }
 }
 
+#[inline(never)]
 fn parse_seq_hdr(
     gb: &mut GetBits,
     strict_std_compliance: bool,

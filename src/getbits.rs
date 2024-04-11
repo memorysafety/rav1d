@@ -190,12 +190,10 @@ impl<'a> GetBits<'a> {
         self.index * u8::BITS as usize - self.bits_left as usize
     }
 
-    #[inline]
     pub const fn byte_pos(&self) -> usize {
         self.index
     }
 
-    #[inline]
     pub const fn has_pending_bits(&self) -> bool {
         self.state != 0 || self.bits_left != 0
     }
