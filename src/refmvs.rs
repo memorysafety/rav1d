@@ -1482,12 +1482,9 @@ unsafe extern "C" fn save_tmvs_c(
                 && cand_b.mv.mv[1].y.abs() | cand_b.mv.mv[1].x.abs() < 4096
             {
                 for _ in 0..bw8 {
-                    *rp.offset(x as isize) = {
-                        let init = refmvs_temporal_block {
-                            mv: cand_b.mv.mv[1],
-                            r#ref: cand_b.r#ref.r#ref[1],
-                        };
-                        init
+                    *rp.offset(x as isize) = refmvs_temporal_block {
+                        mv: cand_b.mv.mv[1],
+                        r#ref: cand_b.r#ref.r#ref[1],
                     };
                     x += 1;
                 }
@@ -1496,12 +1493,9 @@ unsafe extern "C" fn save_tmvs_c(
                 && cand_b.mv.mv[0].y.abs() | cand_b.mv.mv[0].x.abs() < 4096
             {
                 for _ in 0..bw8 {
-                    *rp.offset(x as isize) = {
-                        let init = refmvs_temporal_block {
-                            mv: cand_b.mv.mv[0],
-                            r#ref: cand_b.r#ref.r#ref[0],
-                        };
-                        init
+                    *rp.offset(x as isize) = refmvs_temporal_block {
+                        mv: cand_b.mv.mv[0],
+                        r#ref: cand_b.r#ref.r#ref[0],
                     };
                     x += 1;
                 }
