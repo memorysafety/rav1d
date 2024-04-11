@@ -16,7 +16,7 @@ impl<'a, T> FFISafe<'a, T> {
         ptr::from_ref(this).cast()
     }
 
-    pub fn new_mut(this: &'a mut T) -> *mut Self {
+    pub fn _new_mut(this: &'a mut T) -> *mut Self {
         ptr::from_mut(this).cast()
     }
 
@@ -31,7 +31,7 @@ impl<'a, T> FFISafe<'a, T> {
     /// # Safety
     ///
     /// `this` must have been returned from [`Self::new_mut`].
-    pub unsafe fn get_mut(this: *mut Self) -> &'a mut T {
+    pub unsafe fn _get_mut(this: *mut Self) -> &'a mut T {
         // SAFETY: `this` originally was a `&'a mut T` in `Self::new_mut`.
         unsafe { &mut *this.cast() }
     }

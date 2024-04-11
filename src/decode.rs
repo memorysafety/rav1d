@@ -20,6 +20,7 @@ use crate::include::dav1d::headers::SgrIdx;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::src::align::Align16;
+use crate::src::align::AlignedVec64;
 use crate::src::cdef::rav1d_cdef_dsp_init;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
@@ -29,6 +30,7 @@ use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
 use crate::src::ctx::CaseSet;
 use crate::src::dequant_tables::dav1d_dq_tbl;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
@@ -149,6 +151,7 @@ use crate::src::refmvs::refmvs_block;
 use crate::src::refmvs::refmvs_mvpair;
 use crate::src::refmvs::refmvs_refpair;
 use crate::src::refmvs::refmvs_temporal_block;
+use crate::src::refmvs::RefMvsFrame;
 use crate::src::tables::cfl_allowed_mask;
 use crate::src::tables::dav1d_al_part_ctx;
 use crate::src::tables::dav1d_block_dimensions;
@@ -427,7 +430,7 @@ unsafe fn find_matching_ref(
 
     if have_top {
         let mut i = r[0] + t.b.x as usize;
-        let r2 = f.rf.r[i];
+        let r2 = *f.rf.r.index(i);
         if matches(r2) {
             masks[0] |= 1;
             count = 1;
@@ -446,7 +449,7 @@ unsafe fn find_matching_ref(
             let mut x = aw4;
             while x < w4 {
                 i += aw4 as usize;
-                let r2 = f.rf.r[i];
+                let r2 = *f.rf.r.index(i);
                 if matches(r2) {
                     masks[0] |= mask;
                     count += 1;
@@ -461,7 +464,7 @@ unsafe fn find_matching_ref(
         }
     }
     if have_left {
-        let get_r2 = |i: usize| f.rf.r[r[i] + t.b.x as usize - 1];
+        let get_r2 = |i: usize| *f.rf.r.index(r[i] + t.b.x as usize - 1);
 
         let mut i = 1;
         let r2 = get_r2(i);
@@ -496,20 +499,20 @@ unsafe fn find_matching_ref(
             }
         }
     }
-    if have_topleft && matches(f.rf.r[r[0] + t.b.x as usize - 1]) {
+    if have_topleft && matches(*f.rf.r.index(r[0] + t.b.x as usize - 1)) {
         masks[1] |= 1 << 32;
         count += 1;
         if count >= 8 {
             return;
         }
     }
-    if have_topright && matches(f.rf.r[r[0] + t.b.x as usize + bw4 as usize]) {
+    if have_topright && matches(*f.rf.r.index(r[0] + t.b.x as usize + bw4 as usize)) {
         masks[0] |= 1 << 32;
     }
 }
 
 unsafe fn derive_warpmv(
-    r: &[refmvs_block],
+    r: &DisjointMut<AlignedVec64<refmvs_block>>,
     t: &Rav1dTaskContext,
     bw4: c_int,
     bh4: c_int,
@@ -524,7 +527,7 @@ unsafe fn derive_warpmv(
         // (and not just by a constant -1).
         // See `-off` below.
         let offset = (t.b.y & 31) + 5;
-        r[t.rt.r[(offset as isize + i as isize) as usize] + j as usize]
+        *r.index(t.rt.r[(offset as isize + i as isize) as usize] + j as usize)
     };
 
     let bs = |rp: refmvs_block| dav1d_block_dimensions[rp.bs as usize];
@@ -893,7 +896,7 @@ unsafe fn get_prev_frame_segid(
 unsafe fn splat_oneref_mv(
     c: &Rav1dContext,
     t: &Rav1dTaskContext,
-    r: &mut [refmvs_block],
+    rf: &RefMvsFrame,
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -913,14 +916,14 @@ unsafe fn splat_oneref_mv(
         bs,
         mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     });
-    c.refmvs_dsp.splat_mv(r, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.refmvs_dsp.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
 unsafe fn splat_intrabc_mv(
     c: &Rav1dContext,
     t: &Rav1dTaskContext,
-    r: &mut [refmvs_block],
+    rf: &RefMvsFrame,
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -934,14 +937,14 @@ unsafe fn splat_intrabc_mv(
         bs,
         mf: 0,
     });
-    c.refmvs_dsp.splat_mv(r, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.refmvs_dsp.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
 unsafe fn splat_tworef_mv(
     c: &Rav1dContext,
     t: &Rav1dTaskContext,
-    r: &mut [refmvs_block],
+    rf: &RefMvsFrame,
     bs: BlockSize,
     b: &Av1Block,
     bw4: usize,
@@ -957,14 +960,14 @@ unsafe fn splat_tworef_mv(
         bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     });
-    c.refmvs_dsp.splat_mv(r, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.refmvs_dsp.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
 unsafe fn splat_intraref(
     c: &Rav1dContext,
     t: &Rav1dTaskContext,
-    r: &mut [refmvs_block],
+    rf: &RefMvsFrame,
     bs: BlockSize,
     bw4: usize,
     bh4: usize,
@@ -977,7 +980,7 @@ unsafe fn splat_intraref(
         bs,
         mf: 0,
     });
-    c.refmvs_dsp.splat_mv(r, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.refmvs_dsp.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 fn mc_lowest_px(
@@ -1064,7 +1067,7 @@ unsafe fn affine_lowest_px_chroma(
 }
 
 unsafe fn obmc_lowest_px(
-    r: &[refmvs_block],
+    r: &DisjointMut<AlignedVec64<refmvs_block>>,
     t: &mut Rav1dTaskContext,
     ts: &Rav1dTileState,
     layout: Rav1dPixelLayout,
@@ -1089,7 +1092,7 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2] as c_int, 4) {
-            let a_r = r[ri[0] + t.b.x as usize + x as usize + 1];
+            let a_r = *r.index(ri[0] + t.b.x as usize + x as usize + 1);
             let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
             if a_r.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = cmp::min(b_dim[1] as c_int, 16) >> 1;
@@ -1110,7 +1113,7 @@ unsafe fn obmc_lowest_px(
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3] as c_int, 4) {
-            let l_r = r[ri[y as usize + 1 + 1] + t.b.x as usize - 1];
+            let l_r = *r.index(ri[y as usize + 1 + 1] + t.b.x as usize - 1);
             let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
             if l_r.r#ref.r#ref[0] as c_int > 0 {
                 let oh4 = iclip(l_b_dim[1] as c_int, 2, b_dim[1] as c_int);
@@ -1221,16 +1224,15 @@ unsafe fn decode_b_inner(
                 },
             );
             if frame_type.is_inter_or_switch() {
-                let r = &mut f.rf.r
-                    [t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize..]
-                    [..bw4 as usize];
+                let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
+                let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
                 for block in r {
                     block.r#ref.r#ref[0] = 0;
                     block.bs = bs;
                 }
                 let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
                 for r in rr {
-                    let block = &mut f.rf.r[r + t.b.x as usize + bw4 as usize - 1];
+                    let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
                     block.r#ref.r#ref[0] = 0;
                     block.bs = bs;
                 }
@@ -1296,9 +1298,8 @@ unsafe fn decode_b_inner(
             );
 
             if frame_type.is_inter_or_switch() {
-                let r = &mut f.rf.r
-                    [t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize..]
-                    [..bw4 as usize];
+                let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
+                let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
                 for block in r {
                     block.r#ref.r#ref[0] = b.r#ref()[0] + 1;
                     block.mv.mv[0] = b.mv()[0];
@@ -1306,7 +1307,7 @@ unsafe fn decode_b_inner(
                 }
                 let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
                 for r in rr {
-                    let block = &mut f.rf.r[r + t.b.x as usize + bw4 as usize - 1];
+                    let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
                     block.r#ref.r#ref[0] = b.r#ref()[0] + 1;
                     block.mv.mv[0] = b.mv()[0];
                     block.bs = bs;
@@ -1976,7 +1977,7 @@ unsafe fn decode_b_inner(
         }
         let frame_hdr = f.frame_hdr();
         if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
-            splat_intraref(c, t, &mut f.rf.r, bs, bw4 as usize, bh4 as usize);
+            splat_intraref(c, t, &f.rf, bs, bw4 as usize, bh4 as usize);
         }
     } else if frame_hdr.frame_type.is_key_or_intra() {
         // intra block copy
@@ -2093,7 +2094,7 @@ unsafe fn decode_b_inner(
             bd_fn.recon_b_inter(f, t, bs, b)?;
         }
 
-        splat_intrabc_mv(c, t, &mut f.rf.r, bs, b, bw4 as usize, bh4 as usize);
+        splat_intrabc_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
 
         CaseSet::<32, false>::many(
             [(&mut t.l, 1), (&mut *t.a, 0)],
@@ -2947,9 +2948,9 @@ unsafe fn decode_b_inner(
 
         // context updates
         if is_comp {
-            splat_tworef_mv(c, t, &mut f.rf.r, bs, b, bw4 as usize, bh4 as usize);
+            splat_tworef_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
         } else {
-            splat_oneref_mv(c, t, &mut f.rf.r, bs, b, bw4 as usize, bh4 as usize);
+            splat_oneref_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
         }
 
         CaseSet::<32, false>::many(
@@ -3079,13 +3080,13 @@ unsafe fn decode_b_inner(
                         <[_; 2]>::try_from(&t.rt.r[(t.b.y as usize & 31) + 5 - 1..][..2]).unwrap();
 
                     if bw4 == 1 {
-                        is_sub8x8 &= f.rf.r[r[1] + t.b.x as usize - 1].r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= f.rf.r.index(r[1] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
                     }
                     if bh4 == ss_ver {
-                        is_sub8x8 &= f.rf.r[r[0] + t.b.x as usize].r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= f.rf.r.index(r[0] + t.b.x as usize).r#ref.r#ref[0] > 0;
                     }
                     if bw4 == 1 && bh4 == ss_ver {
-                        is_sub8x8 &= f.rf.r[r[0] + t.b.x as usize - 1].r#ref.r#ref[0] > 0;
+                        is_sub8x8 &= f.rf.r.index(r[0] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
                     }
 
                     r
@@ -3096,7 +3097,7 @@ unsafe fn decode_b_inner(
                 // chroma prediction
                 if is_sub8x8 {
                     if bw4 == 1 && bh4 == ss_ver {
-                        let rr = f.rf.r[r[0] + t.b.x as usize - 1];
+                        let rr = *f.rf.r.index(r[0] + t.b.x as usize - 1);
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
@@ -3107,7 +3108,7 @@ unsafe fn decode_b_inner(
                         );
                     }
                     if bw4 == 1 {
-                        let rr = f.rf.r[r[1] + t.b.x as usize - 1];
+                        let rr = *f.rf.r.index(r[1] + t.b.x as usize - 1);
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y,
@@ -3118,7 +3119,7 @@ unsafe fn decode_b_inner(
                         );
                     }
                     if bh4 == ss_ver {
-                        let rr = f.rf.r[r[0] + t.b.x as usize];
+                        let rr = *f.rf.r.index(r[0] + t.b.x as usize);
                         mc_lowest_px(
                             &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
                             t.b.y - 1,
