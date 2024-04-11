@@ -43,6 +43,7 @@ pub mod src {
     pub(crate) mod enum_map;
     mod env;
     pub(crate) mod error;
+    mod ffi_safe;
     mod fg_apply;
     mod filmgrain;
     mod getbits;
