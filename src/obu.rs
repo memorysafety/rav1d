@@ -4,6 +4,7 @@ use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::headers::DRav1d;
+use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dAdaptiveBoolean;
 use crate::include::dav1d::headers::Rav1dChromaSamplePosition;
 use crate::include::dav1d::headers::Rav1dColorPrimaries;
@@ -53,6 +54,7 @@ use crate::src::c_arc::CArc;
 use crate::src::decode::rav1d_submit_frame;
 use crate::src::env::get_poc_diff;
 use crate::src::error::Rav1dError::EINVAL;
+use crate::src::error::Rav1dError::ENOENT;
 use crate::src::error::Rav1dError::ERANGE;
 use crate::src::error::Rav1dResult;
 use crate::src::getbits::GetBits;
@@ -124,7 +126,11 @@ impl Debug {
     }
 }
 
-fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSequenceHeader> {
+#[inline(never)]
+fn parse_seq_hdr(
+    gb: &mut GetBits,
+    strict_std_compliance: bool,
+) -> Rav1dResult<Rav1dSequenceHeader> {
     let debug = Debug::new(false, "SEQHDR", gb);
 
     let profile = Rav1dProfile::from_repr(gb.get_bits(3) as usize).ok_or(EINVAL)?;
@@ -176,7 +182,7 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
         if timing_info_present != 0 {
             num_units_in_tick = gb.get_bits(32) as c_int;
             time_scale = gb.get_bits(32) as c_int;
-            if c.strict_std_compliance && (num_units_in_tick == 0 || time_scale == 0) {
+            if strict_std_compliance && (num_units_in_tick == 0 || time_scale == 0) {
                 return Err(EINVAL);
             }
             equal_picture_interval = gb.get_bit() as c_int;
@@ -195,7 +201,7 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
             if decoder_model_info_present != 0 {
                 encoder_decoder_buffer_delay_length = gb.get_bits(5) as c_int + 1;
                 num_units_in_decoding_tick = gb.get_bits(32) as c_int;
-                if c.strict_std_compliance && num_units_in_decoding_tick == 0 {
+                if strict_std_compliance && num_units_in_decoding_tick == 0 {
                     return Err(EINVAL);
                 }
                 buffer_removal_delay_length = gb.get_bits(5) as c_int + 1;
@@ -256,19 +262,6 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
         }
         debug.post(gb, "operating-points");
     }
-
-    let op_idx = if c.operating_point < num_operating_points {
-        c.operating_point
-    } else {
-        0
-    };
-    c.operating_point_idc = operating_points[op_idx as usize].idc as c_uint;
-    let spatial_mask = c.operating_point_idc >> 8;
-    c.max_spatial_id = if spatial_mask != 0 {
-        ulog2(spatial_mask) != 0
-    } else {
-        false
-    };
 
     let width_n_bits = gb.get_bits(4) as c_int + 1;
     let height_n_bits = gb.get_bits(4) as c_int + 1;
@@ -462,7 +455,7 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
             Rav1dChromaSamplePosition::Unknown
         };
     }
-    if c.strict_std_compliance
+    if strict_std_compliance
         && mtrx == Rav1dMatrixCoefficients::IDENTITY
         && layout != Rav1dPixelLayout::I444
     {
@@ -541,6 +534,51 @@ fn parse_seq_hdr(c: &mut Rav1dContext, gb: &mut GetBits) -> Rav1dResult<Rav1dSeq
         film_grain_present,
         operating_parameter_info,
     })
+}
+
+pub(crate) unsafe fn rav1d_parse_sequence_header(
+    mut data: &[u8],
+) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
+    let mut res = Err(ENOENT);
+
+    while !data.is_empty() {
+        let mut gb = GetBits::new(data);
+
+        gb.get_bit(); // obu_forbidden_bit
+        let r#type = Rav1dObuType::from_repr(gb.get_bits(4) as usize);
+        let has_extension = gb.get_bit();
+        let has_length_field = gb.get_bit();
+        gb.get_bits(1 + has_extension as i32 * 8); // reserved
+
+        // obu length field
+        let obu_end = if has_length_field {
+            let len = gb.get_uleb128() as usize;
+            let len = gb.byte_pos() + len;
+            if len > data.len() {
+                return Err(EINVAL);
+            }
+            len
+        } else {
+            data.len()
+        };
+
+        if r#type == Some(Rav1dObuType::SeqHdr) {
+            res = Ok(parse_seq_hdr(&mut gb, false)?);
+            if gb.byte_pos() > obu_end {
+                return Err(EINVAL);
+            }
+            gb.bytealign();
+        }
+
+        if gb.has_error() != 0 {
+            return Err(EINVAL);
+        }
+        assert!(!gb.has_pending_bits());
+
+        data = &data[obu_end..]
+    }
+
+    res.map(DRav1d::from_rav1d)
 }
 
 unsafe fn parse_frame_size(
@@ -2096,7 +2134,6 @@ unsafe fn parse_obus(
     c: &mut Rav1dContext,
     r#in: &CArc<[u8]>,
     props: &Rav1dDataProps,
-    global: bool,
 ) -> Rav1dResult<usize> {
     unsafe fn skip(c: &mut Rav1dContext, len: usize, init_byte_pos: usize) -> usize {
         // update refs with only the headers in case we skip the frame
@@ -2219,12 +2256,26 @@ unsafe fn parse_obus(
 
     match r#type {
         Some(Rav1dObuType::SeqHdr) => {
-            let seq_hdr = parse_seq_hdr(c, &mut gb).inspect_err(|_| {
+            let seq_hdr = parse_seq_hdr(&mut gb, c.strict_std_compliance).inspect_err(|_| {
                 writeln!(c.logger, "Error parsing sequence header");
             })?;
             if check_for_overrun(c, &mut gb, init_bit_pos, len) != 0 {
                 return Err(EINVAL);
             }
+
+            let op_idx = if c.operating_point < seq_hdr.num_operating_points {
+                c.operating_point
+            } else {
+                0
+            };
+            c.operating_point_idc = seq_hdr.operating_points[op_idx as usize].idc as c_uint;
+            let spatial_mask = c.operating_point_idc >> 8;
+            c.max_spatial_id = if spatial_mask != 0 {
+                ulog2(spatial_mask) != 0
+            } else {
+                false
+            };
+
             // If we have read a sequence header which is different from the old one,
             // this is a new video sequence and can't use any previous state.
             // Free that state.
@@ -2264,8 +2315,6 @@ unsafe fn parse_obus(
             c.seq_hdr = Some(Arc::new(DRav1d::from_rav1d(seq_hdr))); // TODO(kkysen) fallible allocation
         }
         Some(Rav1dObuType::RedundantFrameHdr) if c.frame_hdr.is_some() => {}
-        Some(Rav1dObuType::RedundantFrameHdr | Rav1dObuType::Frame | Rav1dObuType::FrameHdr)
-            if global => {}
         Some(Rav1dObuType::RedundantFrameHdr | Rav1dObuType::Frame | Rav1dObuType::FrameHdr) => {
             c.frame_hdr = None;
             // TODO(kkysen) C originally re-used this allocation,
@@ -2317,15 +2366,11 @@ unsafe fn parse_obus(
                 // There's no trailing bit at the end to skip,
                 // but we do need to align to the next byte.
                 gb.bytealign();
-                if !global {
-                    parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
-                }
+                parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
             }
         }
         Some(Rav1dObuType::TileGrp) => {
-            if !global {
-                parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
-            }
+            parse_tile_grp(c, r#in, props, &mut gb, init_bit_pos, init_byte_pos, len)?;
         }
         Some(Rav1dObuType::Metadata) => {
             let debug = Debug::new(false, "OBU", &gb);
@@ -2624,9 +2669,8 @@ pub(crate) unsafe fn rav1d_parse_obus(
     c: &mut Rav1dContext,
     r#in: &CArc<[u8]>,
     props: &Rav1dDataProps,
-    global: bool,
 ) -> Rav1dResult<usize> {
-    parse_obus(c, r#in, props, global).inspect_err(|_| {
+    parse_obus(c, r#in, props).inspect_err(|_| {
         *c.cached_error_props.get_mut().unwrap() = props.clone();
         writeln!(c.logger, "Error parsing OBU data");
     })

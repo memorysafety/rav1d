@@ -11,10 +11,8 @@ use crate::include::dav1d::dav1d::Dav1dSettings;
 use crate::include::dav1d::dav1d::Rav1dDecodeFrameType;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::dav1d::Rav1dSettings;
-use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
-use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::cpu::rav1d_init_cpu;
@@ -24,7 +22,6 @@ use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dError::EAGAIN;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOENT;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::fg_apply;
@@ -42,6 +39,7 @@ use crate::src::mem::rav1d_freep_aligned;
 use crate::src::mem::rav1d_mem_pool_end;
 use crate::src::mem::rav1d_mem_pool_init;
 use crate::src::obu::rav1d_parse_obus;
+use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
@@ -355,57 +353,6 @@ pub unsafe extern "C" fn dav1d_open(
     .into()
 }
 
-unsafe extern "C" fn dummy_free(data: *const u8, user_data: *mut c_void) {
-    if !(!data.is_null() && user_data.is_null()) {
-        unreachable!();
-    }
-}
-
-pub(crate) unsafe fn rav1d_parse_sequence_header(
-    ptr: *const u8,
-    sz: usize,
-) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
-    let s = Rav1dSettings {
-        n_threads: 1,
-        logger: None,
-        ..Default::default()
-    };
-    let mut c: *mut Rav1dContext = 0 as *mut Rav1dContext;
-    rav1d_open(&mut c, &s)?;
-    || -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
-        let Rav1dData {
-            mut data,
-            m: mut props,
-        } = match NonNull::new(ptr.cast_mut()) {
-            None => Default::default(),
-            Some(ptr) => Rav1dData::wrap(
-                slice::from_raw_parts(ptr.as_ptr(), sz).into(),
-                Some(dummy_free),
-                ptr::null_mut(),
-            )?,
-        };
-        if let Some(data) = &mut data {
-            while !data.is_empty() {
-                let len = rav1d_parse_obus(&mut *c, data, &mut props, true)?;
-                data.slice_in_place(len..);
-            }
-        }
-
-        if (*c).seq_hdr.is_none() {
-            return Err(ENOENT);
-        }
-
-        (*c).seq_hdr
-            .take()
-            .and_then(Arc::into_inner)
-            .map(Ok)
-            .unwrap()
-    }()
-    .inspect_err(|_| {
-        rav1d_close(&mut c);
-    })
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_parse_sequence_header(
     out: *mut Dav1dSequenceHeader,
@@ -414,7 +361,9 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
 ) -> Dav1dResult {
     (|| {
         validate_input!((!out.is_null(), EINVAL))?;
-        let seq_hdr = rav1d_parse_sequence_header(ptr, sz)?;
+        validate_input!((!ptr.is_null(), EINVAL))?;
+        validate_input!((sz > 0, EINVAL))?;
+        let seq_hdr = rav1d_parse_sequence_header(slice::from_raw_parts(ptr, sz))?;
         out.write(seq_hdr.dav1d);
         Ok(())
     })()
@@ -564,7 +513,7 @@ unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
     } = mem::take(&mut c.in_0);
     let Some(mut r#in) = r#in else { return Ok(()) };
     while !r#in.is_empty() {
-        let len = rav1d_parse_obus(c, &r#in, &props, false);
+        let len = rav1d_parse_obus(c, &r#in, &props);
         if let Ok(len) = len {
             r#in.slice_in_place(len..);
         }
