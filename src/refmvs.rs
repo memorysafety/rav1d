@@ -22,6 +22,7 @@ use std::ffi::c_uint;
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
+use std::slice;
 use zerocopy::FromZeroes;
 
 #[cfg(feature = "asm")]
@@ -1471,11 +1472,13 @@ unsafe extern "C" fn save_tmvs_c(
 ) {
     let rr = &*rr;
     let ref_sign = &*ref_sign;
+    let [col_end8, row_end8, col_start8, row_start8] =
+        [col_end8, row_end8, col_start8, row_start8].map(|it| it as usize);
     for y in row_start8..row_end8 {
-        let b: *const refmvs_block = rr[((y & 15) * 2) as usize];
+        let b: *const refmvs_block = rr[(y & 15) * 2];
         let mut x = col_start8;
         while x < col_end8 {
-            let cand_b = (*b.offset((x * 2 + 1) as isize)).0;
+            let cand_b = (*b.add(x * 2 + 1)).0;
             let bw8 = dav1d_block_dimensions[cand_b.bs as usize][0] + 1 >> 1;
             let block = if cand_b.r#ref.r#ref[1] > 0
                 && ref_sign[cand_b.r#ref.r#ref[1] as usize - 1] != 0
@@ -1499,10 +1502,8 @@ unsafe extern "C" fn save_tmvs_c(
                     r#ref: 0,
                 }
             };
-            for _ in 0..bw8 {
-                *rp.offset(x as isize) = block;
-                x += 1;
-            }
+            slice::from_raw_parts_mut(rp.add(x), bw8 as usize).fill(block);
+            x += bw8 as usize;
         }
         rp = rp.offset(stride as isize);
     }
