@@ -1480,28 +1480,17 @@ unsafe extern "C" fn save_tmvs_c(
         while x < col_end8 {
             let cand_b = (*b.add(x * 2 + 1)).0;
             let bw8 = dav1d_block_dimensions[cand_b.bs as usize][0] + 1 >> 1;
-            let block = if cand_b.r#ref.r#ref[1] > 0
-                && ref_sign[cand_b.r#ref.r#ref[1] as usize - 1] != 0
-                && cand_b.mv.mv[1].y.abs() | cand_b.mv.mv[1].x.abs() < 4096
-            {
-                refmvs_temporal_block {
-                    mv: cand_b.mv.mv[1],
-                    r#ref: cand_b.r#ref.r#ref[1],
-                }
-            } else if cand_b.r#ref.r#ref[0] > 0
-                && ref_sign[cand_b.r#ref.r#ref[0] as usize - 1] != 0
-                && cand_b.mv.mv[0].y.abs() | cand_b.mv.mv[0].x.abs() < 4096
-            {
-                refmvs_temporal_block {
-                    mv: cand_b.mv.mv[0],
-                    r#ref: cand_b.r#ref.r#ref[0],
-                }
-            } else {
-                refmvs_temporal_block {
-                    mv: mv { x: 0, y: 0 },
-                    r#ref: 0, // "invalid"
+            let block = |i: usize| {
+                let mv = cand_b.mv.mv[i];
+                let r#ref = cand_b.r#ref.r#ref[i];
+                if r#ref > 0 && ref_sign[r#ref as usize - 1] != 0 && mv.y.abs() | mv.x.abs() < 4096
+                {
+                    Some(refmvs_temporal_block { mv, r#ref })
+                } else {
+                    None
                 }
             };
+            let block = block(1).or_else(|| block(0)).unwrap_or_default();
             slice::from_raw_parts_mut(rp.add(x), bw8 as usize).fill(block);
             x += bw8 as usize;
         }
