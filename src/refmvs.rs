@@ -22,6 +22,7 @@ use std::ffi::c_uint;
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
+use std::slice;
 use zerocopy::FromZeroes;
 
 #[cfg(feature = "asm")]
@@ -1471,60 +1472,29 @@ unsafe extern "C" fn save_tmvs_c(
 ) {
     let rr = &*rr;
     let ref_sign = &*ref_sign;
-    let mut y = row_start8;
-    while y < row_end8 {
-        let b: *const refmvs_block = rr[((y & 15) * 2) as usize];
+    let [col_end8, row_end8, col_start8, row_start8] =
+        [col_end8, row_end8, col_start8, row_start8].map(|it| it as usize);
+    for y in row_start8..row_end8 {
+        let b = rr[(y & 15) * 2];
         let mut x = col_start8;
         while x < col_end8 {
-            let cand_b: *const refmvs_block =
-                &*b.offset((x * 2 + 1) as isize) as *const refmvs_block;
-            let bw8 = dav1d_block_dimensions[(*cand_b).0.bs as usize][0] as c_int + 1 >> 1;
-            if (*cand_b).0.r#ref.r#ref[1] as c_int > 0
-                && ref_sign[((*cand_b).0.r#ref.r#ref[1] as c_int - 1) as usize] as c_int != 0
-                && (*cand_b).0.mv.mv[1].y.abs() | (*cand_b).0.mv.mv[1].x.abs() < 4096
-            {
-                let mut n = 0;
-                while n < bw8 {
-                    *rp.offset(x as isize) = {
-                        let init = refmvs_temporal_block {
-                            mv: (*cand_b).0.mv.mv[1],
-                            r#ref: (*cand_b).0.r#ref.r#ref[1],
-                        };
-                        init
-                    };
-                    n += 1;
-                    x += 1;
+            let cand_b = (*b.add(x * 2 + 1)).0;
+            let bw8 = dav1d_block_dimensions[cand_b.bs as usize][0] + 1 >> 1;
+            let block = |i: usize| {
+                let mv = cand_b.mv.mv[i];
+                let r#ref = cand_b.r#ref.r#ref[i];
+                if r#ref > 0 && ref_sign[r#ref as usize - 1] != 0 && mv.y.abs() | mv.x.abs() < 4096
+                {
+                    Some(refmvs_temporal_block { mv, r#ref })
+                } else {
+                    None
                 }
-            } else if (*cand_b).0.r#ref.r#ref[0] as c_int > 0
-                && ref_sign[((*cand_b).0.r#ref.r#ref[0] as c_int - 1) as usize] as c_int != 0
-                && (*cand_b).0.mv.mv[0].y.abs() | (*cand_b).0.mv.mv[0].x.abs() < 4096
-            {
-                let mut n_0 = 0;
-                while n_0 < bw8 {
-                    *rp.offset(x as isize) = {
-                        let init = refmvs_temporal_block {
-                            mv: (*cand_b).0.mv.mv[0],
-                            r#ref: (*cand_b).0.r#ref.r#ref[0],
-                        };
-                        init
-                    };
-                    n_0 += 1;
-                    x += 1;
-                }
-            } else {
-                let mut n_1 = 0;
-                while n_1 < bw8 {
-                    *rp.offset(x as isize) = refmvs_temporal_block {
-                        mv: mv { x: 0, y: 0 },
-                        r#ref: 0,
-                    };
-                    n_1 += 1;
-                    x += 1;
-                }
-            }
+            };
+            let block = block(1).or_else(|| block(0)).unwrap_or_default();
+            slice::from_raw_parts_mut(rp.add(x), bw8 as usize).fill(block);
+            x += bw8 as usize;
         }
         rp = rp.offset(stride as isize);
-        y += 1;
     }
 }
 
