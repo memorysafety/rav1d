@@ -68,7 +68,6 @@ use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::r#ref::rav1d_ref_dec;
-use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::thread_task::FRAME_ERROR;
 use std::array;
 use std::cmp;
@@ -2296,7 +2295,7 @@ unsafe fn parse_obus(
                         if c.refs[i as usize].p.p.frame_hdr.is_some() {
                             rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
                         }
-                        rav1d_ref_dec(&mut c.refs[i as usize].segmap);
+                        let _ = mem::take(&mut c.refs[i as usize].segmap);
                         rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
                         let _ = mem::take(&mut c.cdf[i]);
                     }
@@ -2622,11 +2621,7 @@ unsafe fn parse_obus(
 
                     c.cdf[i as usize] = c.cdf[r as usize].clone();
 
-                    rav1d_ref_dec(&mut c.refs[i as usize].segmap);
-                    c.refs[i as usize].segmap = c.refs[r as usize].segmap;
-                    if !c.refs[r as usize].segmap.is_null() {
-                        rav1d_ref_inc(c.refs[r as usize].segmap);
-                    }
+                    c.refs[i as usize].segmap = c.refs[r as usize].segmap.clone();
                     rav1d_ref_dec(&mut c.refs[i as usize].refmvs);
                 }
             }

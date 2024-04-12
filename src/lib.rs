@@ -684,7 +684,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         if (*c).refs[i as usize].p.p.frame_hdr.is_some() {
             rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
         }
-        rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
+        let _ = mem::take(&mut (*c).refs[i as usize].segmap);
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
         let _ = mem::take(&mut (*c).cdf[i]);
         i += 1;
@@ -857,7 +857,7 @@ impl Drop for Rav1dContext {
                     );
                 }
                 rav1d_ref_dec(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).refmvs);
-                rav1d_ref_dec(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).segmap);
+                let _ = mem::take(&mut self.refs[n_4 as usize].segmap);
                 n_4 += 1;
             }
             let _ = mem::take(&mut self.seq_hdr);

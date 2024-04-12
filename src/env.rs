@@ -4,6 +4,7 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align8;
+use crate::src::disjoint_mut::DisjointMutSlice;
 use crate::src::internal::Bxy;
 use crate::src::levels::mv;
 use crate::src::levels::BlockLevel;
@@ -25,7 +26,6 @@ use std::cmp;
 use std::cmp::Ordering;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::slice;
 
 #[derive(Default)]
 #[repr(C)]
@@ -593,31 +593,20 @@ pub fn get_drl_context(ref_mv_stack: &[refmvs_candidate; 8], ref_idx: usize) -> 
 }
 
 #[inline]
-pub unsafe fn get_cur_frame_segid(
+pub fn get_cur_frame_segid(
     b: Bxy,
     have_top: bool,
     have_left: bool,
-    // It's very difficult to make this safe (a slice),
-    // as it is negatively indexed
-    // and it comes from [`Dav1dFrameContext::cur_segmap`],
-    // which is set to [`Dav1dFrameContext::cur_segmap_ref`] and [`Dav1dFrameContext::prev_segmap_ref`],
-    // which are [`Dav1dRef`]s, which have no size and are refcounted.
-    cur_seg_map: *const u8,
+    cur_seg_map: &DisjointMutSlice<u8>,
     stride: usize,
 ) -> (u8, u8) {
     let negative_adjustment = have_left as usize + have_top as usize * stride;
     let offset = b.x as usize + b.y as usize * stride - negative_adjustment;
-    let len = match (have_left, have_top) {
-        (true, true) => stride + 1,
-        (true, false) | (false, true) => 1,
-        (false, false) => 0,
-    };
-    let cur_seg_map = &slice::from_raw_parts(cur_seg_map, offset + len)[offset..];
     match (have_left, have_top) {
         (true, true) => {
-            let l = cur_seg_map[stride];
-            let a = cur_seg_map[1];
-            let al = cur_seg_map[0];
+            let l = *cur_seg_map.index(offset + stride);
+            let a = *cur_seg_map.index(offset + 1);
+            let al = *cur_seg_map.index(offset);
             let seg_ctx = if l == a && al == l {
                 2
             } else if l == a || al == l || a == al {
@@ -628,7 +617,7 @@ pub unsafe fn get_cur_frame_segid(
             let seg_id = if a == al { a } else { l };
             (seg_id, seg_ctx)
         }
-        (true, false) | (false, true) => (cur_seg_map[0], 0),
+        (true, false) | (false, true) => (*cur_seg_map.index(offset), 0),
         (false, false) => (0, 0),
     }
 }
