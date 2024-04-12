@@ -43,6 +43,15 @@ test_args=(
     --suite testdata-multi
 )
 
+# We want `RUST_BACKTRACE=1` in order to print a backtrace on panicking,
+# as that's very useful and doesn't slow tests down.
+# But that also causes `Backtrace::capture()`` to actually capture a backtrace,
+# and since we do that in every `DisjointMut::{index,index_mut}` call,
+# it makes the tests extremely slow.
+# Setting `RUST_LIB_BACKTRACE=0` overrides this and makes the tests fast (enough) again.
+# And it can always be overridden again on the command line.
+#
+# See more in the docs for `Backtrace::capture`.
 export RUST_BACKTRACE=1
 export RUST_LIB_BACKTRACE=${RUST_LIB_BACKTRACE:-0}
 
