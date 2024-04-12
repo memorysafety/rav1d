@@ -391,29 +391,29 @@ fn add_spatial_candidate(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
     weight: c_int,
-    b: &refmvs_block,
+    b: refmvs_block_unaligned,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) {
-    if b.0.mv.mv[0].is_invalid() {
+    if b.mv.mv[0].is_invalid() {
         // intra block, no intrabc
         return;
     }
 
-    let mf_odd = b.0.mf & 1 != 0;
+    let mf_odd = b.mf & 1 != 0;
     if r#ref.r#ref[1] == -1 {
         for n in 0..2 {
-            if b.0.r#ref.r#ref[n] == r#ref.r#ref[0] {
+            if b.r#ref.r#ref[n] == r#ref.r#ref[0] {
                 let cand_mv = if mf_odd && gmv[0] != mv::INVALID {
                     gmv[0]
                 } else {
-                    b.0.mv.mv[n]
+                    b.mv.mv[n]
                 };
 
                 *have_refmv_match = 1;
-                *have_newmv_match |= b.0.mf as c_int >> 1;
+                *have_newmv_match |= b.mf as c_int >> 1;
 
                 let last = *cnt;
                 for cand in &mut mvstack[..last] {
@@ -432,24 +432,24 @@ fn add_spatial_candidate(
                 return;
             }
         }
-    } else if b.0.r#ref == r#ref {
+    } else if b.r#ref == r#ref {
         let cand_mv = refmvs_mvpair {
             mv: [
                 if mf_odd && gmv[0] != mv::INVALID {
                     gmv[0]
                 } else {
-                    b.0.mv.mv[0]
+                    b.mv.mv[0]
                 },
                 if mf_odd && gmv[1] != mv::INVALID {
                     gmv[1]
                 } else {
-                    b.0.mv.mv[1]
+                    b.mv.mv[1]
                 },
             ],
         };
 
         *have_refmv_match = 1;
-        *have_newmv_match |= b.0.mf as c_int >> 1;
+        *have_newmv_match |= b.mf as c_int >> 1;
 
         let last = *cnt;
         for cand in &mut mvstack[..last] {
@@ -481,8 +481,8 @@ fn scan_row(
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) -> c_int {
-    let mut cand_b = &b[0];
-    let first_cand_bs = cand_b.0.bs;
+    let mut cand_b = b[0].0;
+    let first_cand_bs = cand_b.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as c_int;
     let mut len = cmp::max(step, cmp::min(bw4, cand_bw4));
@@ -529,8 +529,8 @@ fn scan_row(
         if x >= w4 {
             return 1;
         }
-        cand_b = &b[x as usize];
-        cand_bw4 = dav1d_block_dimensions[cand_b.0.bs as usize][0] as c_int;
+        cand_b = b[x as usize].0;
+        cand_bw4 = dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
         assert!(cand_bw4 < bw4);
         len = cmp::max(step, cand_bw4);
     }
@@ -551,8 +551,8 @@ fn scan_col(
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) -> c_int {
-    let mut cand_b = &r[b[0] + bx4 as usize];
-    let first_cand_bs = cand_b.0.bs;
+    let mut cand_b = r[b[0] + bx4 as usize].0;
+    let first_cand_bs = cand_b.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as c_int;
     let mut len = cmp::max(step, cmp::min(bh4, cand_bh4));
@@ -599,8 +599,8 @@ fn scan_col(
         if y >= h4 {
             return 1;
         }
-        cand_b = &r[b[y as usize] + bx4 as usize];
-        cand_bh4 = dav1d_block_dimensions[cand_b.0.bs as usize][1] as c_int;
+        cand_b = r[b[y as usize] + bx4 as usize].0;
+        cand_bh4 = dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
         assert!(cand_bh4 < bh4);
         len = cmp::max(step, cand_bh4);
     }
@@ -694,7 +694,7 @@ fn add_temporal_candidate(
 fn add_compound_extended_candidate(
     same: &mut [refmvs_candidate],
     same_count: &mut [usize; 4],
-    cand_b: &refmvs_block,
+    cand_b: refmvs_block_unaligned,
     sign0: u8,
     sign1: u8,
     r#ref: refmvs_refpair,
@@ -704,14 +704,14 @@ fn add_compound_extended_candidate(
     let (same_count, diff_count) = same_count.split_at_mut(2);
 
     for n in 0..2 {
-        let cand_ref = cand_b.0.r#ref.r#ref[n];
+        let cand_ref = cand_b.r#ref.r#ref[n];
 
         if cand_ref <= 0 {
             break;
         }
 
         let sign_bias = sign_bias[cand_ref as usize - 1];
-        let mut cand_mv = cand_b.0.mv.mv[n];
+        let mut cand_mv = cand_b.mv.mv[n];
         if cand_ref == r#ref.r#ref[0] {
             if same_count[0] < 2 {
                 same[same_count[0]].mv.mv[0] = cand_mv;
@@ -763,12 +763,12 @@ fn add_compound_extended_candidate(
 fn add_single_extended_candidate(
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
-    cand_b: &refmvs_block,
+    cand_b: refmvs_block_unaligned,
     sign: u8,
     sign_bias: &[u8; 7],
 ) {
     for n in 0..2 {
-        let cand_ref = cand_b.0.r#ref.r#ref[n];
+        let cand_ref = cand_b.r#ref.r#ref[n];
 
         if cand_ref <= 0 {
             // we need to continue even if cand_ref == ref.ref[0], since
@@ -779,7 +779,7 @@ fn add_single_extended_candidate(
             break;
         }
 
-        let mut cand_mv = cand_b.0.mv.mv[n];
+        let mut cand_mv = cand_b.mv.mv[n];
         if (sign ^ sign_bias[cand_ref as usize - 1]) != 0 {
             cand_mv = -cand_mv;
         }
@@ -955,7 +955,7 @@ pub(crate) fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            &b_top[bw4 as usize + b_top_offset],
+            b_top[bw4 as usize + b_top_offset].0,
             r#ref,
             &gmv,
             &mut have_newmv,
@@ -1027,7 +1027,7 @@ pub(crate) fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            &b_top[b_top_offset - 1],
+            b_top[b_top_offset - 1].0,
             r#ref,
             &gmv,
             &mut have_dummy_newmv_match,
@@ -1105,7 +1105,7 @@ pub(crate) fn rav1d_refmvs_find(
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
-                    let cand_b = &b_top[x as usize + b_top_offset];
+                    let cand_b = b_top[x as usize + b_top_offset].0;
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1115,7 +1115,7 @@ pub(crate) fn rav1d_refmvs_find(
                         r#ref,
                         &rf.sign_bias,
                     );
-                    x += dav1d_block_dimensions[cand_b.0.bs as usize][0] as c_int;
+                    x += dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
                 }
             }
 
@@ -1123,7 +1123,7 @@ pub(crate) fn rav1d_refmvs_find(
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 {
-                    let cand_b = &rf.r[b_left[y as usize] + bx4 as usize - 1];
+                    let cand_b = rf.r[b_left[y as usize] + bx4 as usize - 1].0;
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1133,7 +1133,7 @@ pub(crate) fn rav1d_refmvs_find(
                         r#ref,
                         &rf.sign_bias,
                     );
-                    y += dav1d_block_dimensions[cand_b.0.bs as usize][1] as c_int;
+                    y += dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
                 }
             }
 
@@ -1213,9 +1213,9 @@ pub(crate) fn rav1d_refmvs_find(
         if n_rows != !0 {
             let mut x = 0;
             while x < sz4 && *cnt < 2 {
-                let cand_b = &b_top[x as usize + b_top_offset];
+                let cand_b = b_top[x as usize + b_top_offset].0;
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
-                x += dav1d_block_dimensions[cand_b.0.bs as usize][0] as c_int;
+                x += dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
             }
         }
 
@@ -1223,9 +1223,9 @@ pub(crate) fn rav1d_refmvs_find(
         if n_cols != !0 {
             let mut y = 0;
             while y < sz4 && *cnt < 2 {
-                let cand_b = &rf.r[b_left[y as usize] + bx4 as usize - 1];
+                let cand_b = rf.r[b_left[y as usize] + bx4 as usize - 1].0;
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
-                y += dav1d_block_dimensions[cand_b.0.bs as usize][1] as c_int;
+                y += dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
             }
         }
     }
