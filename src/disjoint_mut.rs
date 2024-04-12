@@ -6,7 +6,10 @@
 #![allow(unused)]
 
 use std::cell::UnsafeCell;
+use std::fmt;
 use std::fmt::Debug;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::marker::PhantomData;
 use std::ops::Bound;
 use std::ops::Deref;
@@ -41,7 +44,7 @@ pub struct DisjointMut<T: AsMutPtr> {
     inner: UnsafeCell<T>,
 
     #[cfg(debug_assertions)]
-    ranges: debug::DisjointMutDebugRanges,
+    bounds: debug::DisjointMutAllBounds,
 }
 
 #[cfg_attr(not(debug_assertions), repr(transparent))]
@@ -53,7 +56,7 @@ pub struct DisjointMutGuard<'a, T: AsMutPtr, V: ?Sized> {
     #[cfg(debug_assertions)]
     parent: &'a DisjointMut<T>,
     #[cfg(debug_assertions)]
-    range: (Bound<usize>, Bound<usize>),
+    bounds: Bounds,
 }
 
 impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointMutGuard<'a, T, V> {
@@ -79,7 +82,7 @@ pub struct DisjointImmutGuard<'a, T: AsMutPtr, V: ?Sized> {
     #[cfg(debug_assertions)]
     parent: &'a DisjointMut<T>,
     #[cfg(debug_assertions)]
-    range: (Bound<usize>, Bound<usize>),
+    bounds: Bounds,
 }
 
 impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointImmutGuard<'a, T, V> {
@@ -184,19 +187,20 @@ impl<T: AsMutPtr> DisjointMut<T> {
         index: I,
     ) -> DisjointMutGuard<'a, T, <[<T as AsMutPtr>::Target] as Index<I>>::Output>
     where
+        I: Into<Bounds> + Clone,
         [<T as AsMutPtr>::Target]: IndexMut<I>,
         I: DisjointMutIndex<
             [<T as AsMutPtr>::Target],
             Output = <[<T as AsMutPtr>::Target] as Index<I>>::Output,
         >,
     {
-        let range = index.to_bounds();
+        let bounds = index.clone().into();
         // SAFETY: The safety preconditions of `index` and `index_mut` imply
         // that the indexed region we are mutably borrowing is not concurrently
         // borrowed and will not be borrowed during the lifetime of the returned
         // reference.
         let slice = unsafe { &mut *index.get_mut(self.as_mut_slice()) };
-        DisjointMutGuard::new(self, slice, range)
+        DisjointMutGuard::new(self, slice, bounds)
     }
 
     /// Immutably borrow a slice or element.
@@ -224,25 +228,26 @@ impl<T: AsMutPtr> DisjointMut<T> {
         index: I,
     ) -> DisjointImmutGuard<'a, T, <[<T as AsMutPtr>::Target] as Index<I>>::Output>
     where
+        I: Into<Bounds> + Clone,
         [<T as AsMutPtr>::Target]: Index<I>,
         I: DisjointMutIndex<
             [<T as AsMutPtr>::Target],
             Output = <[<T as AsMutPtr>::Target] as Index<I>>::Output,
         >,
     {
-        let range = index.to_bounds();
+        let bounds = index.clone().into();
         // SAFETY: The safety preconditions of `index` and `index_mut` imply
         // that the indexed region we are immutably borrowing is not
         // concurrently mutably borrowed and will not be mutably borrowed during
         // the lifetime of the returned reference.
         let slice = unsafe { &*index.get_mut(self.as_mut_slice()).cast_const() };
-        DisjointImmutGuard::new(self, slice, range)
+        DisjointImmutGuard::new(self, slice, bounds)
     }
 }
 
 /// This trait is a stable implementation of [`std::slice::SliceIndex`] to allow
 /// for indexing into mutable slice raw pointers.
-pub trait DisjointMutIndex<T: ?Sized>: BoundsExt {
+pub trait DisjointMutIndex<T: ?Sized> {
     type Output: ?Sized;
 
     /// Returns a mutable pointer to the output at this indexed location. The
@@ -261,20 +266,91 @@ pub trait DisjointMutIndex<T: ?Sized>: BoundsExt {
     unsafe fn get_mut(self, slice: *mut T) -> *mut Self::Output;
 }
 
-pub trait BoundsExt: Debug {
-    fn to_bounds(&self) -> (Bound<usize>, Bound<usize>);
-    fn overlaps<R: RangeBounds<usize>>(&self, other: &R) -> bool;
+#[derive(Clone, Default, PartialEq, Eq, Hash)]
+pub struct Bounds {
+    /// A [`Range::end`]` == `[`usize::MAX`] is considered unbounded,
+    /// as lengths need to be less than [`isize::MAX`] already.
+    range: Range<usize>,
 }
 
-impl BoundsExt for usize {
-    fn to_bounds(&self) -> (Bound<usize>, Bound<usize>) {
-        (Bound::Included(*self), Bound::Excluded(*self + 1))
-    }
-
-    fn overlaps<R: RangeBounds<usize>>(&self, other: &R) -> bool {
-        other.contains(self)
+impl Display for Bounds {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        let Range { start, mut end } = self.range;
+        write!(f, "{start}..")?;
+        if end != usize::MAX {
+            write!(f, "{end}")?;
+        }
+        Ok(())
     }
 }
+
+impl Debug for Bounds {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+impl Bounds {
+    fn overlaps(&self, other: &Bounds) -> bool {
+        let a = &self.range;
+        let b = &other.range;
+        a.start < b.end && b.start < a.end
+    }
+}
+
+impl From<usize> for Bounds {
+    fn from(index: usize) -> Self {
+        Self {
+            range: index..index + 1,
+        }
+    }
+}
+
+impl From<Range<usize>> for Bounds {
+    fn from(range: Range<usize>) -> Self {
+        Self { range }
+    }
+}
+
+impl From<RangeFrom<usize>> for Bounds {
+    fn from(range: RangeFrom<usize>) -> Self {
+        Self {
+            range: range.start..usize::MAX,
+        }
+    }
+}
+
+impl From<RangeInclusive<usize>> for Bounds {
+    fn from(range: RangeInclusive<usize>) -> Self {
+        Self {
+            range: *range.start()..*range.end() + 1,
+        }
+    }
+}
+
+impl From<RangeTo<usize>> for Bounds {
+    fn from(range: RangeTo<usize>) -> Self {
+        Self {
+            range: 0..range.end,
+        }
+    }
+}
+
+impl From<RangeToInclusive<usize>> for Bounds {
+    fn from(range: RangeToInclusive<usize>) -> Self {
+        Self {
+            range: 0..range.end + 1,
+        }
+    }
+}
+
+trait SliceBounds: Into<Bounds> + Clone + Debug {}
+
+impl SliceBounds for Range<usize> {}
+impl SliceBounds for RangeFrom<usize> {}
+impl SliceBounds for RangeInclusive<usize> {}
+impl SliceBounds for RangeTo<usize> {}
+impl SliceBounds for RangeToInclusive<usize> {}
 
 impl<T> DisjointMutIndex<[T]> for usize {
     type Output = <[T] as Index<usize>>::Output;
@@ -294,87 +370,36 @@ impl<T> DisjointMutIndex<[T]> for usize {
     }
 }
 
-macro_rules! impl_disjoint_mut_index {
-    ($range_type:ty) => {
-        impl BoundsExt for $range_type {
-            fn to_bounds(&self) -> (Bound<usize>, Bound<usize>) {
-                (self.start_bound().cloned(), self.end_bound().cloned())
-            }
+impl<T, I> DisjointMutIndex<[T]> for I
+where
+    I: SliceBounds,
+{
+    type Output = <[T] as Index<Range<usize>>>::Output;
 
-            fn overlaps<R: RangeBounds<usize>>(&self, other: &R) -> bool {
-                match (other.start_bound(), self.end_bound()) {
-                    (Bound::Included(i), Bound::Included(j)) => {
-                        if i > j {
-                            return false;
-                        }
-                    }
-                    (Bound::Included(i), Bound::Excluded(j))
-                    | (Bound::Excluded(i), Bound::Excluded(j))
-                    | (Bound::Excluded(i), Bound::Included(j)) => {
-                        if i >= j {
-                            return false;
-                        }
-                    }
-                    (Bound::Unbounded, _) => {}
-                    (_, Bound::Unbounded) => {}
-                }
-                match (other.end_bound(), self.start_bound()) {
-                    (Bound::Included(i), Bound::Included(j)) => i >= j,
-                    (Bound::Included(i), Bound::Excluded(j))
-                    | (Bound::Excluded(i), Bound::Included(j)) => i > j,
-                    (Bound::Excluded(i), Bound::Excluded(j)) => i - 1 > *j,
-                    (Bound::Unbounded, _) | (_, Bound::Unbounded) => true,
-                }
-            }
+    unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
+        // SAFETY: The safety precondition for this trait method
+        // requires that we can immutably dereference `slice`.
+        let len = unsafe { (*slice).len() };
+        let Range { start, end } = self.clone().into().range;
+        let end = if end == usize::MAX { len } else { end };
+        if start <= end && start < len && end <= len {
+            // SAFETY: We have checked that `start` is less than the
+            // allocation length therefore cannot overflow. `slice` is a
+            // valid pointer into an allocation of sufficient length.
+            let data = unsafe { (slice as *mut T).add(start) };
+            ptr::slice_from_raw_parts_mut(data, end - start)
+        } else {
+            panic!("{:?} was not a valid index", &self);
         }
-        impl<T> DisjointMutIndex<[T]> for $range_type {
-            type Output = <[T] as Index<$range_type>>::Output;
-
-            unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
-                // SAFETY: The safety precondition for this trait method
-                // requires that we can immutably dereference `slice`.
-                let len = unsafe { (*slice).len() };
-                let start = match self.start_bound() {
-                    Bound::Included(i) => *i,
-                    Bound::Excluded(i) => i + 1,
-                    Bound::Unbounded => 0,
-                };
-                let end = match self.end_bound() {
-                    Bound::Included(i) => i + 1,
-                    Bound::Excluded(i) => *i,
-                    Bound::Unbounded => len,
-                };
-                if start <= end && start < len && end <= len {
-                    // SAFETY: We have checked that `start` is less than the
-                    // allocation length therefore cannot overflow. `slice` is a
-                    // valid pointer into an allocation of sufficient length.
-                    let data = unsafe { (slice as *mut T).add(start) };
-                    ptr::slice_from_raw_parts_mut(data, end - start)
-                } else {
-                    panic!("{:?} was not a valid index", &self);
-                }
-            }
-        }
-    };
+    }
 }
-
-impl_disjoint_mut_index!(Range<usize>);
-impl_disjoint_mut_index!(RangeFrom<usize>);
-impl_disjoint_mut_index!(RangeInclusive<usize>);
-impl_disjoint_mut_index!(RangeTo<usize>);
-impl_disjoint_mut_index!(RangeToInclusive<usize>);
-impl_disjoint_mut_index!((Bound<usize>, Bound<usize>));
 
 #[cfg(not(debug_assertions))]
 mod release {
     use super::*;
 
     impl<'a, T: AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
-        pub fn new(
-            _parent: &'a DisjointMut<T>,
-            slice: &'a mut V,
-            _range: (Bound<usize>, Bound<usize>),
-        ) -> Self {
+        pub fn new(_parent: &'a DisjointMut<T>, slice: &'a mut V, _bounds: Bounds) -> Self {
             Self {
                 slice,
                 phantom: PhantomData,
@@ -383,11 +408,7 @@ mod release {
     }
 
     impl<'a, T: AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
-        pub fn new(
-            _parent: &'a DisjointMut<T>,
-            slice: &'a V,
-            _range: (Bound<usize>, Bound<usize>),
-        ) -> Self {
+        pub fn new(_parent: &'a DisjointMut<T>, slice: &'a V, _bounds: Bounds) -> Self {
             Self {
                 slice,
                 phantom: PhantomData,
@@ -407,9 +428,8 @@ mod debug {
     use std::thread::ThreadId;
 
     #[derive(Debug)]
-    struct DisjointMutRange {
-        start: Bound<usize>,
-        end: Bound<usize>,
+    struct DisjointMutBounds {
+        bounds: Bounds,
 
         #[allow(unused)]
         backtrace: Backtrace,
@@ -417,27 +437,10 @@ mod debug {
         thread: ThreadId,
     }
 
-    impl RangeBounds<usize> for DisjointMutRange {
-        fn start_bound(&self) -> Bound<&usize> {
-            self.start.as_ref()
-        }
-
-        fn end_bound(&self) -> Bound<&usize> {
-            self.end.as_ref()
-        }
-    }
-
-    impl PartialEq<(Bound<usize>, Bound<usize>)> for DisjointMutRange {
-        fn eq(&self, (start, end): &(Bound<usize>, Bound<usize>)) -> bool {
-            &self.start == start && &self.end == end
-        }
-    }
-
-    impl DisjointMutRange {
-        fn new((start, end): (Bound<usize>, Bound<usize>)) -> Self {
+    impl DisjointMutBounds {
+        fn new(bounds: Bounds) -> Self {
             Self {
-                start,
-                end,
+                bounds,
                 backtrace: Backtrace::capture(),
                 thread: thread::current().id(),
             }
@@ -445,75 +448,71 @@ mod debug {
     }
 
     #[derive(Default)]
-    pub struct DisjointMutDebugRanges {
-        mutable: Mutex<Vec<DisjointMutRange>>,
+    pub struct DisjointMutAllBounds {
+        mutable: Mutex<Vec<DisjointMutBounds>>,
 
-        immutable: Mutex<Vec<DisjointMutRange>>,
+        immutable: Mutex<Vec<DisjointMutBounds>>,
     }
 
     impl<T: AsMutPtr> DisjointMut<T> {
-        fn add_mut_range<R: BoundsExt>(&self, range: &R) {
-            for r in self.ranges.immutable.lock().unwrap().iter() {
-                if range.overlaps(r) {
+        fn add_mut_bounds(&self, bounds: Bounds) {
+            for b in self.bounds.immutable.lock().unwrap().iter() {
+                if bounds.overlaps(&b.bounds) {
                     let thread = thread::current().id();
-                    panic!("{range:?} on thread {thread:?} overlaps with an existing immutable range: {r:#?}");
+                    panic!("{bounds} on thread {thread:?} overlaps with an existing immutable range: {b:?}");
                 }
             }
-            let mut ranges = self.ranges.mutable.lock().unwrap();
-            for r in ranges.iter() {
-                if range.overlaps(r) {
+            let mut mut_bounds = self.bounds.mutable.lock().unwrap();
+            for b in mut_bounds.iter() {
+                if bounds.overlaps(&b.bounds) {
                     let thread = thread::current().id();
-                    panic!("{range:?} on thread {thread:?} overlaps with an existing mutable range: {r:#?}");
+                    panic!("{bounds} on thread {thread:?} overlaps with an existing mutable range: {b:?}");
                 }
             }
-            ranges.push(DisjointMutRange::new(range.to_bounds()));
+            mut_bounds.push(DisjointMutBounds::new(bounds));
         }
 
-        fn add_immut_range<R: BoundsExt>(&self, range: &R) {
-            let ranges = self.ranges.mutable.lock().unwrap();
-            for r in ranges.iter() {
-                if range.overlaps(r) {
+        fn add_immut_bounds(&self, bounds: Bounds) {
+            let mut_bounds = self.bounds.mutable.lock().unwrap();
+            for b in mut_bounds.iter() {
+                if bounds.overlaps(&b.bounds) {
                     let thread = thread::current().id();
-                    panic!("{range:?} on thread {thread:?} overlaps with an existing mutable range: {r:#?}");
+                    panic!("{bounds} on thread {thread:?} overlaps with an existing mutable range: {b:?}");
                 }
             }
-            self.ranges
+            self.bounds
                 .immutable
                 .lock()
                 .unwrap()
-                .push(DisjointMutRange::new(range.to_bounds()));
+                .push(DisjointMutBounds::new(bounds));
         }
 
-        fn remove_range(&self, range: (Bound<usize>, Bound<usize>), mutable: bool) {
-            let ranges = if mutable {
-                self.ranges.mutable.lock()
+        fn remove_bound(&self, bounds: &Bounds, mutable: bool) {
+            let all_bounds = if mutable {
+                self.bounds.mutable.lock()
             } else {
-                self.ranges.immutable.lock()
+                self.bounds.immutable.lock()
             };
-            let Ok(mut ranges) = ranges else {
+            let Ok(mut all_bounds) = all_bounds else {
                 // Another thread has panicked holding a range lock. We can't
                 // remove anything.
                 return;
             };
-            let idx = ranges
+            let idx = all_bounds
                 .iter()
-                .position(|r| r == &range)
+                .position(|r| r.bounds == *bounds)
                 .expect("Expected range {range:?} to be in the active ranges");
-            ranges.remove(idx);
+            all_bounds.remove(idx);
         }
     }
 
     impl<'a, T: AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
-        pub fn new(
-            parent: &'a DisjointMut<T>,
-            slice: &'a mut V,
-            range: (Bound<usize>, Bound<usize>),
-        ) -> Self {
-            parent.add_mut_range(&range);
+        pub fn new(parent: &'a DisjointMut<T>, slice: &'a mut V, bounds: Bounds) -> Self {
+            parent.add_mut_bounds(bounds.clone());
             Self {
                 parent,
                 slice,
-                range,
+                bounds,
                 phantom: PhantomData,
             }
         }
@@ -521,21 +520,17 @@ mod debug {
 
     impl<'a, T: AsMutPtr, V: ?Sized> Drop for DisjointMutGuard<'a, T, V> {
         fn drop(&mut self) {
-            self.parent.remove_range(self.range, true);
+            self.parent.remove_bound(&self.bounds, true);
         }
     }
 
     impl<'a, T: AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
-        pub fn new(
-            parent: &'a DisjointMut<T>,
-            slice: &'a V,
-            range: (Bound<usize>, Bound<usize>),
-        ) -> Self {
-            parent.add_immut_range(&range);
+        pub fn new(parent: &'a DisjointMut<T>, slice: &'a V, bounds: Bounds) -> Self {
+            parent.add_immut_bounds(bounds.clone());
             Self {
                 parent,
                 slice,
-                range,
+                bounds,
                 phantom: PhantomData,
             }
         }
@@ -543,7 +538,7 @@ mod debug {
 
     impl<'a, T: AsMutPtr, V: ?Sized> Drop for DisjointImmutGuard<'a, T, V> {
         fn drop(&mut self) {
-            self.parent.remove_range(self.range, false);
+            self.parent.remove_bound(&self.bounds, false);
         }
     }
 }
@@ -676,43 +671,49 @@ fn test_pointer_write_release() {
 
 #[test]
 fn test_range_overlap() {
+    fn overlaps(a: impl Into<Bounds>, b: impl Into<Bounds>) -> bool {
+        let a = a.into();
+        let b = b.into();
+        a.overlaps(&b)
+    }
+
     // Range overlap.
-    assert!((5..7).overlaps(&(4..10)));
-    assert!((4..10).overlaps(&(5..7)));
+    assert!(overlaps(5..7, 4..10));
+    assert!(overlaps(4..10, 5..7));
 
     // RangeFrom overlap.
-    assert!((5..).overlaps(&(4..10)));
-    assert!((4..10).overlaps(&(5..)));
+    assert!(overlaps(5.., 4..10));
+    assert!(overlaps(4..10, 5..));
 
     // RangeTo overlap.
-    assert!((..7).overlaps(&(4..10)));
-    assert!((4..10).overlaps(&(..7)));
+    assert!(overlaps(..7, 4..10));
+    assert!(overlaps(4..10, ..7));
 
     // RangeInclusive overlap.
-    assert!((5..=7).overlaps(&(7..10)));
-    assert!((7..10).overlaps(&(5..=7)));
+    assert!(overlaps(5..=7, 7..10));
+    assert!(overlaps(7..10, 5..=7));
 
     // RangeToInclusive overlap.
-    assert!((..=7).overlaps(&(7..10)));
-    assert!((7..10).overlaps(&(..=7)));
+    assert!(overlaps(..=7, 7..10));
+    assert!(overlaps(7..10, ..=7));
 
     // Range no overlap.
-    assert!(!(5..7).overlaps(&(10..20)));
-    assert!(!(10..20).overlaps(&(5..7)));
+    assert!(!overlaps(5..7, 10..20));
+    assert!(!overlaps(10..20, 5..7));
 
     // RangeFrom no overlap.
-    assert!(!(15..).overlaps(&(4..10)));
-    assert!(!(4..10).overlaps(&(15..)));
+    assert!(!overlaps(15.., 4..10));
+    assert!(!overlaps(4..10, 15..));
 
     // RangeTo no overlap.
-    assert!(!(..7).overlaps(&(10..20)));
-    assert!(!(10..20).overlaps(&(..7)));
+    assert!(!overlaps(..7, 10..20));
+    assert!(!overlaps(10..20, ..7));
 
     // RangeInclusive no overlap.
-    assert!(!(5..=7).overlaps(&(8..10)));
-    assert!(!(8..10).overlaps(&(5..=7)));
+    assert!(!overlaps(5..=7, 8..10));
+    assert!(!overlaps(8..10, 5..=7));
 
     // RangeToInclusive no overlap.
-    assert!(!(..=7).overlaps(&(8..10)));
-    assert!(!(8..10).overlaps(&(..=7)));
+    assert!(!overlaps(..=7, 8..10));
+    assert!(!overlaps(8..10, ..=7));
 }
