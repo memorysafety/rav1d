@@ -8,21 +8,17 @@ use crate::src::align::AlignedVec64;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Bxy;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
-use crate::src::mem::rav1d_alloc_aligned;
-use crate::src::mem::rav1d_freep_aligned;
 use crate::src::tables::dav1d_block_dimensions;
 use cfg_if::cfg_if;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
@@ -117,6 +113,7 @@ extern "C" {
     );
 }
 
+#[derive(Clone, Copy, Default)]
 #[repr(C, packed)]
 pub struct refmvs_temporal_block {
     pub mv: mv,
@@ -214,13 +211,13 @@ pub(crate) struct RefMvsFrame {
     pub n_mfmvs: c_int,
     pub rp: *mut refmvs_temporal_block,
     pub rp_ref: *const *mut refmvs_temporal_block,
-    pub rp_proj: *mut refmvs_temporal_block,
-    pub rp_stride: ptrdiff_t,
+    pub rp_proj: AlignedVec64<refmvs_temporal_block>,
+    pub rp_stride: u32,
     pub r: AlignedVec64<refmvs_block>,
     pub r_stride: u32,
-    pub n_tile_rows: c_int,
-    pub n_tile_threads: c_int,
-    pub n_frame_threads: c_int,
+    pub n_tile_rows: u32,
+    pub n_tile_threads: u32,
+    pub n_frame_threads: u32,
 }
 
 impl RefMvsFrame {
@@ -241,7 +238,7 @@ impl RefMvsFrame {
             n_mfmvs,
             rp,
             rp_ref,
-            rp_proj,
+            ref mut rp_proj,
             rp_stride,
             ref mut r,
             r_stride,
@@ -267,13 +264,13 @@ impl RefMvsFrame {
             n_mfmvs,
             rp,
             rp_ref,
-            rp_proj,
-            rp_stride,
+            rp_proj: rp_proj.as_mut_ptr(),
+            rp_stride: rp_stride as _,
             r: r.as_mut_ptr(),
-            r_stride: r_stride as isize,
-            n_tile_rows,
-            n_tile_threads,
-            n_frame_threads,
+            r_stride: r_stride as _,
+            n_tile_rows: n_tile_rows as _,
+            n_tile_threads: n_tile_threads as _,
+            n_frame_threads: n_frame_threads as _,
         }
     }
 }
@@ -293,7 +290,9 @@ pub(crate) struct refmvs_tile {
     /// These indices, when in bounds, are unique.
     pub r: [usize; 37],
 
-    pub rp_proj: *mut refmvs_temporal_block,
+    /// Index into [`RefMvsFrame::rp_proj`].
+    pub rp_proj: usize,
+
     pub tile_col: refmvs_tile_range,
     pub tile_row: refmvs_tile_range,
 }
@@ -817,7 +816,7 @@ fn add_single_extended_candidate(
 /// enabled) or at the start of each interleaved sbrow (when tile column
 /// threading is disabled), we call load_tmvs(), which will project the MVs to
 /// their respective position in the current frame.
-pub(crate) unsafe fn rav1d_refmvs_find(
+pub(crate) fn rav1d_refmvs_find(
     rt: &refmvs_tile,
     rf: &RefMvsFrame,
     mvstack: &mut [refmvs_candidate; 8],
@@ -973,25 +972,21 @@ pub(crate) unsafe fn rav1d_refmvs_find(
     // temporal
     let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs;
     if rf.use_ref_frame_mvs != 0 {
-        let stride = rf.rp_stride;
+        let stride = rf.rp_stride as usize;
         let by8 = by4 >> 1;
         let bx8 = bx4 >> 1;
-        let rbi = rt
-            .rp_proj
-            .offset((by8 & 15) as isize * stride + bx8 as isize)
-            .cast_const();
-        let mut rb = rbi;
+        let rbi = &rf.rp_proj[rt.rp_proj + (by8 as usize & 15) * stride + bx8 as usize..];
         let step_h = if bw4 >= 16 { 2 } else { 1 };
         let step_v = if bh4 >= 16 { 2 } else { 1 };
-        let w8 = cmp::min(w4 + 1 >> 1, 8);
-        let h8 = cmp::min(h4 + 1 >> 1, 8);
+        let w8 = cmp::min(w4 + 1 >> 1, 8) as usize;
+        let h8 = cmp::min(h4 + 1 >> 1, 8) as usize;
         for y in (0..h8).step_by(step_v) {
             for x in (0..w8).step_by(step_h) {
                 add_temporal_candidate(
                     rf,
                     mvstack,
                     cnt,
-                    &*rb.offset(x as isize),
+                    &rbi[y * stride + x],
                     r#ref,
                     if x | y == 0 {
                         Some((&mut globalmv_ctx, &tgmv))
@@ -1001,38 +996,24 @@ pub(crate) unsafe fn rav1d_refmvs_find(
                     frame_hdr,
                 );
             }
-            rb = rb.offset(stride * step_v as isize);
         }
         if cmp::min(bw4, bh4) >= 2 && cmp::max(bw4, bh4) < 16 {
             let bh8 = bh4 >> 1;
             let bw8 = bw4 >> 1;
-            rb = &*rbi.offset(bh8 as isize * stride) as *const refmvs_temporal_block;
-            let has_bottom = (by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8)) as c_int;
-            if has_bottom != 0 && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
-                add_temporal_candidate(rf, mvstack, cnt, &*rb.offset(-1), r#ref, None, frame_hdr);
+            let offset = bh8 as usize * stride;
+            let has_bottom = by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8);
+            if has_bottom && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
+                let rb = &rbi[offset - 1];
+                add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
             }
             if bx8 + bw8 < cmp::min(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
-                if has_bottom != 0 {
-                    add_temporal_candidate(
-                        rf,
-                        mvstack,
-                        cnt,
-                        &*rb.offset(bw8 as isize),
-                        r#ref,
-                        None,
-                        frame_hdr,
-                    );
+                if has_bottom {
+                    let rb = &rbi[offset + bw8 as usize];
+                    add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
                 }
                 if (by8 + bh8 - 1) < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8) {
-                    add_temporal_candidate(
-                        rf,
-                        mvstack,
-                        cnt,
-                        &*rb.offset(bw8 as isize - stride),
-                        r#ref,
-                        None,
-                        frame_hdr,
-                    );
+                    let rb = &rbi[offset + bw8 as usize - stride];
+                    add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
                 }
             }
         }
@@ -1289,7 +1270,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     assert!((row_end8 - row_start8) as c_uint <= 16);
     let row_end8 = cmp::min(row_end8, rf.ih8);
     let col_end8 = cmp::min(col_end8, rf.iw8);
-    let stride = rf.rp_stride;
+    let stride = rf.rp_stride as isize;
     let ref_sign = &rf.mfmv_sign;
     let rp = rf.rp.offset(row_start8 as isize * stride);
     let r = rt.r_ptrs(&rf.r);
@@ -1300,7 +1281,7 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     );
 }
 
-pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
+pub(crate) fn rav1d_refmvs_tile_sbrow_init(
     rf: &RefMvsFrame,
     tile_col_start4: c_int,
     tile_col_end4: c_int,
@@ -1313,9 +1294,10 @@ pub(crate) unsafe fn rav1d_refmvs_tile_sbrow_init(
     if rf.n_tile_threads == 1 {
         tile_row_idx = 0;
     }
-    let rp_proj = rf.rp_proj.offset(16 * rf.rp_stride * tile_row_idx as isize);
-    let uses_2pass = rf.n_tile_threads > 1 && rf.n_frame_threads > 1;
+    let rp_stride = rf.rp_stride as usize;
     let r_stride = rf.r_stride as usize;
+    let rp_proj = 16 * rp_stride * tile_row_idx as usize;
+    let uses_2pass = rf.n_tile_threads > 1 && rf.n_frame_threads > 1;
     let pass_off = if uses_2pass && pass == 2 {
         35 * r_stride * rf.n_tile_rows as usize
     } else {
@@ -1546,7 +1528,7 @@ unsafe extern "C" fn save_tmvs_c(
     }
 }
 
-pub(crate) unsafe fn rav1d_refmvs_init_frame(
+pub(crate) fn rav1d_refmvs_init_frame(
     rf: &mut RefMvsFrame,
     seq_hdr: &Rav1dSequenceHeader,
     frm_hdr: &Rav1dFrameHeader,
@@ -1554,8 +1536,8 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     rp: *mut refmvs_temporal_block,
     ref_ref_poc: &[[c_uint; 7]; 7],
     rp_ref: &[*mut refmvs_temporal_block; 7],
-    n_tile_threads: usize,
-    n_frame_threads: usize,
+    n_tile_threads: u32,
+    n_frame_threads: u32,
 ) -> Rav1dResult {
     rf.sbsz = 16 << seq_hdr.sb128;
     rf.iw8 = frm_hdr.size.width[0] + 7 >> 3;
@@ -1565,7 +1547,7 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
 
     let r_stride = ((frm_hdr.size.width[0] + 127 & !127) >> 2) as u32;
     let n_tile_rows = if n_tile_threads > 1 {
-        frm_hdr.tiling.rows
+        frm_hdr.tiling.rows as u32
     } else {
         1
     };
@@ -1577,26 +1559,17 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
     );
     rf.r_stride = r_stride;
 
-    let rp_stride = r_stride as isize >> 1;
-    if rp_stride != rf.rp_stride || n_tile_rows != rf.n_tile_rows {
-        if !rf.rp_proj.is_null() {
-            rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
-        }
-        rf.rp_proj = rav1d_alloc_aligned(
-            ::core::mem::size_of::<refmvs_temporal_block>()
-                * 16
-                * rp_stride as usize
-                * n_tile_rows as usize,
-            64,
-        ) as *mut refmvs_temporal_block;
-        if rf.rp_proj.is_null() {
-            return Err(ENOMEM);
-        }
-        rf.rp_stride = rp_stride;
-    }
+    let rp_stride = r_stride >> 1;
+    // TODO fallible allocation
+    rf.rp_proj.resize(
+        16 * rp_stride as usize * n_tile_rows as usize,
+        Default::default(),
+    );
+    rf.rp_stride = rp_stride;
+
     rf.n_tile_rows = n_tile_rows;
-    rf.n_tile_threads = n_tile_threads as c_int;
-    rf.n_frame_threads = n_frame_threads as c_int;
+    rf.n_tile_threads = n_tile_threads;
+    rf.n_frame_threads = n_frame_threads;
     rf.rp = rp;
     rf.rp_ref = rp_ref.as_ptr();
     let poc = frm_hdr.frame_offset as c_uint;
@@ -1685,15 +1658,13 @@ pub(crate) unsafe fn rav1d_refmvs_init_frame(
 pub(crate) fn rav1d_refmvs_init(rf: &mut RefMvsFrame) {
     rf.r = Default::default();
     rf.r_stride = 0;
-    rf.rp_proj = 0 as *mut refmvs_temporal_block;
+    rf.rp_proj = Default::default();
     rf.rp_stride = 0;
 }
 
-pub(crate) unsafe fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
+pub(crate) fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
     let _ = mem::take(&mut rf.r);
-    if !rf.rp_proj.is_null() {
-        rav1d_freep_aligned(&mut rf.rp_proj as *mut *mut refmvs_temporal_block as *mut c_void);
-    }
+    let _ = mem::take(&mut rf.rp_proj);
 }
 
 unsafe extern "C" fn splat_mv_rust(
