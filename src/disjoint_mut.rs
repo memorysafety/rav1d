@@ -5,6 +5,8 @@
 // TODO(SJC): Remove when we use the whole module.
 #![allow(unused)]
 
+use crate::src::align::AlignedByteChunk;
+use crate::src::align::AlignedVec;
 use std::cell::UnsafeCell;
 use std::fmt;
 use std::fmt::Debug;
@@ -24,9 +26,7 @@ use std::ops::RangeTo;
 use std::ops::RangeToInclusive;
 use std::ptr;
 use std::ptr::addr_of_mut;
-
-use crate::src::align::AlignedByteChunk;
-use crate::src::align::AlignedVec;
+use std::sync::Arc;
 
 /// Wraps an indexable collection to allow unchecked concurrent mutable borrows.
 ///
@@ -785,4 +785,59 @@ fn test_range_overlap() {
     // RangeToInclusive no overlap.
     assert!(!overlaps(..=7, 8..10));
     assert!(!overlaps(8..10, ..=7));
+}
+
+#[cfg(debug_assertions)]
+pub type DisjointMutSlice<T> = DisjointMut<Box<[T]>>;
+
+#[cfg(not(debug_assertions))]
+pub type DisjointMutSlice<T> = DisjointMut<[T]>;
+
+/// A wrapper around an [`Arc`] of a [`DisjointMut`] slice.
+/// An `Arc<[_]>` can be created, but adding a [`DisjointMut`] in between complicates it.
+/// When `#[cfg(not(debug_assertions))]`, [`DisjointMut`] is `#[repr(transparent)]`
+/// around an [`UnsafeCell`], which is also `#[repr(transparent)]`,
+/// so we can just [`std::mem::transmute`] things.
+/// But when `#[cfg(debug_assertions)]`, [`DisjointMut`] has other fields,
+/// so we can't do this, so we add a [`Box`] around the slice.
+/// Adding this extra allocation and indirection is not ideal,
+/// which is why it's useful to avoid it in release builds.
+/// In debug builds, the overhead is fine.
+/// And because `Box` implements `Deref`,
+/// we can treat them the same for the most part.
+#[derive(Clone)]
+pub struct DisjointMutArcSlice<T> {
+    pub inner: Arc<DisjointMutSlice<T>>,
+}
+
+impl<T> FromIterator<T> for DisjointMutArcSlice<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        #[cfg(debug_assertions)]
+        let inner = {
+            let box_slice = iter.into_iter().collect::<Box<[_]>>();
+            Arc::new(DisjointMut::new(box_slice))
+        };
+        #[cfg(not(debug_assertions))]
+        let inner = {
+            use std::mem;
+
+            let arc_slice = iter.into_iter().collect::<Arc<[_]>>();
+
+            // Do our best to check that `DisjointMut` is in fact `#[repr(transparent)]`.
+            type A = Vec<u8>; // Some concrete sized type.
+            const _: () = assert!(mem::size_of::<DisjointMut<A>>() == mem::size_of::<A>());
+            const _: () = assert!(mem::align_of::<DisjointMut<A>>() == mem::align_of::<A>());
+
+            // SAFETY: When `#[cfg(not(debug_assertions))]`, `DisjointMut` is `#[repr(transparent)]`,
+            // containing only an `UnsafeCell`, which is also `#[repr(transparent)]`.
+            unsafe { mem::transmute::<Arc<[_]>, Arc<DisjointMut<[_]>>>(arc_slice) }
+        };
+        Self { inner }
+    }
+}
+
+impl<T> Default for DisjointMutArcSlice<T> {
+    fn default() -> Self {
+        [].into_iter().collect()
+    }
 }
