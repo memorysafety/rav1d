@@ -212,7 +212,7 @@ pub(crate) struct RefMvsFrame {
     pub n_mfmvs: c_int,
     pub rp: *mut refmvs_temporal_block,
     pub rp_ref: *const *mut refmvs_temporal_block,
-    pub rp_proj: AlignedVec64<refmvs_temporal_block>,
+    pub rp_proj: DisjointMut<AlignedVec64<refmvs_temporal_block>>,
     pub rp_stride: u32,
     pub r: DisjointMut<AlignedVec64<refmvs_block>>,
     pub r_stride: u32,
@@ -640,7 +640,7 @@ fn add_temporal_candidate(
     rf: &RefMvsFrame,
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
-    rb: &refmvs_temporal_block,
+    rb: refmvs_temporal_block,
     r#ref: refmvs_refpair,
     globalmv: Option<(&mut c_int, &[mv; 2])>,
     frame_hdr: &Rav1dFrameHeader,
@@ -987,7 +987,7 @@ pub(crate) fn rav1d_refmvs_find(
         let stride = rf.rp_stride as usize;
         let by8 = by4 >> 1;
         let bx8 = bx4 >> 1;
-        let rbi = &rf.rp_proj[rt.rp_proj + (by8 as usize & 15) * stride + bx8 as usize..];
+        let rbi = rt.rp_proj + (by8 as usize & 15) * stride + bx8 as usize;
         let step_h = if bw4 >= 16 { 2 } else { 1 };
         let step_v = if bh4 >= 16 { 2 } else { 1 };
         let w8 = cmp::min(w4 + 1 >> 1, 8) as usize;
@@ -998,7 +998,7 @@ pub(crate) fn rav1d_refmvs_find(
                     rf,
                     mvstack,
                     cnt,
-                    &rbi[y * stride + x],
+                    *rf.rp_proj.index(rbi + y * stride + x),
                     r#ref,
                     if x | y == 0 {
                         Some((&mut globalmv_ctx, &tgmv))
@@ -1012,19 +1012,19 @@ pub(crate) fn rav1d_refmvs_find(
         if cmp::min(bw4, bh4) >= 2 && cmp::max(bw4, bh4) < 16 {
             let bh8 = bh4 >> 1;
             let bw8 = bw4 >> 1;
-            let offset = bh8 as usize * stride;
+            let rbi = rbi + bh8 as usize * stride;
             let has_bottom = by8 + bh8 < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8);
             if has_bottom && bx8 - 1 >= cmp::max(rt.tile_col.start >> 1, bx8 & !7) {
-                let rb = &rbi[offset - 1];
+                let rb = *rf.rp_proj.index(rbi - 1);
                 add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
             }
             if bx8 + bw8 < cmp::min(rt.tile_col.end >> 1, (bx8 & !7) + 8) {
                 if has_bottom {
-                    let rb = &rbi[offset + bw8 as usize];
+                    let rb = *rf.rp_proj.index(rbi + bw8 as usize);
                     add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
                 }
                 if (by8 + bh8 - 1) < cmp::min(rt.tile_row.end >> 1, (by8 & !7) + 8) {
-                    let rb = &rbi[offset + bw8 as usize - stride];
+                    let rb = *rf.rp_proj.index(rbi + bw8 as usize - stride);
                     add_temporal_candidate(rf, mvstack, cnt, rb, r#ref, None, frame_hdr);
                 }
             }
