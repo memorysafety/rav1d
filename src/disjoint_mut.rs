@@ -48,6 +48,16 @@ pub struct DisjointMut<T: ?Sized + AsMutPtr> {
     inner: UnsafeCell<T>,
 }
 
+impl<T: AsMutPtr> DisjointMut<T> {
+    pub const fn new(value: T) -> Self {
+        Self {
+            inner: UnsafeCell::new(value),
+            #[cfg(debug_assertions)]
+            bounds: debug::DisjointMutAllBounds::new(),
+        }
+    }
+}
+
 #[cfg_attr(not(debug_assertions), repr(transparent))]
 pub struct DisjointMutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
     slice: &'a mut V,
@@ -455,6 +465,15 @@ mod debug {
         mutable: Mutex<Vec<DisjointMutBounds>>,
 
         immutable: Mutex<Vec<DisjointMutBounds>>,
+    }
+
+    impl DisjointMutAllBounds {
+        pub const fn new() -> Self {
+            Self {
+                mutable: Mutex::new(Vec::new()),
+                immutable: Mutex::new(Vec::new()),
+            }
+        }
     }
 
     #[track_caller]
