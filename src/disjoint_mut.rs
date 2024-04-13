@@ -23,6 +23,7 @@ use std::ops::RangeInclusive;
 use std::ops::RangeTo;
 use std::ops::RangeToInclusive;
 use std::ptr;
+use std::ptr::addr_of_mut;
 
 use crate::src::align::AlignedByteChunk;
 use crate::src::align::AlignedVec;
@@ -623,6 +624,19 @@ unsafe impl<V> AsMutPtr for [V] {
 
     fn len(&self) -> usize {
         self.len()
+    }
+}
+
+unsafe impl<V> AsMutPtr for Box<[V]> {
+    type Target = V;
+
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
+        // SAFETY: `AsMutPtr::as_mut_ptr` may derefence `ptr`.
+        unsafe { addr_of_mut!(**ptr) }.cast()
+    }
+
+    fn len(&self) -> usize {
+        (**self).len()
     }
 }
 
