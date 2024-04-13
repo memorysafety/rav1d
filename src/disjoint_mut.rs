@@ -40,15 +40,15 @@ use crate::src::align::AlignedVec;
 /// for the lifetime of the returned borrow guard.
 #[derive(Default)]
 #[cfg_attr(not(debug_assertions), repr(transparent))]
-pub struct DisjointMut<T: AsMutPtr> {
-    inner: UnsafeCell<T>,
-
+pub struct DisjointMut<T: ?Sized + AsMutPtr> {
     #[cfg(debug_assertions)]
     bounds: debug::DisjointMutAllBounds,
+
+    inner: UnsafeCell<T>,
 }
 
 #[cfg_attr(not(debug_assertions), repr(transparent))]
-pub struct DisjointMutGuard<'a, T: AsMutPtr, V: ?Sized> {
+pub struct DisjointMutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
     slice: &'a mut V,
 
     phantom: PhantomData<&'a DisjointMut<T>>,
@@ -59,7 +59,7 @@ pub struct DisjointMutGuard<'a, T: AsMutPtr, V: ?Sized> {
     bounds: Bounds,
 }
 
-impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointMutGuard<'a, T, V> {
+impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> Deref for DisjointMutGuard<'a, T, V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -67,14 +67,14 @@ impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointMutGuard<'a, T, V> {
     }
 }
 
-impl<'a, T: AsMutPtr, V: ?Sized> DerefMut for DisjointMutGuard<'a, T, V> {
+impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DerefMut for DisjointMutGuard<'a, T, V> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.slice
     }
 }
 
 #[cfg_attr(not(debug_assertions), repr(transparent))]
-pub struct DisjointImmutGuard<'a, T: AsMutPtr, V: ?Sized> {
+pub struct DisjointImmutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
     slice: &'a V,
 
     phantom: PhantomData<&'a DisjointMut<T>>,
@@ -85,7 +85,7 @@ pub struct DisjointImmutGuard<'a, T: AsMutPtr, V: ?Sized> {
     bounds: Bounds,
 }
 
-impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointImmutGuard<'a, T, V> {
+impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> Deref for DisjointImmutGuard<'a, T, V> {
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
@@ -104,7 +104,7 @@ impl<'a, T: AsMutPtr, V: ?Sized> Deref for DisjointImmutGuard<'a, T, V> {
 ///
 /// This trait must not ever create a mutable reference to the underlying slice,
 /// as it may be (partially) immutably borrowed concurrently.
-pub unsafe trait AsMutPtr: Sized {
+pub unsafe trait AsMutPtr {
     type Target;
 
     /// Convert a mutable pointer to a collection to a mutable pointer to the
@@ -141,7 +141,7 @@ pub unsafe trait AsMutPtr: Sized {
     fn len(&self) -> usize;
 }
 
-impl<T: AsMutPtr> DisjointMut<T> {
+impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
     pub fn len(&self) -> usize {
         // SAFETY: The inner cell is safe to access immutably. We never create a
         // mutable reference to the inner value.
@@ -400,7 +400,7 @@ where
 mod release {
     use super::*;
 
-    impl<'a, T: AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
+    impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
         pub fn new(_parent: &'a DisjointMut<T>, slice: &'a mut V, _bounds: Bounds) -> Self {
             Self {
                 slice,
@@ -409,7 +409,7 @@ mod release {
         }
     }
 
-    impl<'a, T: AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
+    impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
         pub fn new(_parent: &'a DisjointMut<T>, slice: &'a V, _bounds: Bounds) -> Self {
             Self {
                 slice,
@@ -483,7 +483,7 @@ mod debug {
         panic!("{current_mutable} _[{current_bounds}] on {current_thread:?} overlaps with existing {existing_mutable} _[{existing_bounds}] on {existing_thread:?}:\nstack backtrace:\n{existing_backtrace}");
     }
 
-    impl<T: AsMutPtr> DisjointMut<T> {
+    impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         #[track_caller]
         fn add_mut_bounds(&self, bounds: Bounds) {
             for b in self.bounds.immutable.lock().unwrap().iter() {
@@ -528,7 +528,7 @@ mod debug {
         }
     }
 
-    impl<'a, T: AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
+    impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
         #[track_caller]
         pub fn new(parent: &'a DisjointMut<T>, slice: &'a mut V, bounds: Bounds) -> Self {
             parent.add_mut_bounds(bounds.clone());
@@ -541,13 +541,13 @@ mod debug {
         }
     }
 
-    impl<'a, T: AsMutPtr, V: ?Sized> Drop for DisjointMutGuard<'a, T, V> {
+    impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> Drop for DisjointMutGuard<'a, T, V> {
         fn drop(&mut self) {
             self.parent.remove_bound(&self.bounds, true);
         }
     }
 
-    impl<'a, T: AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
+    impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
         #[track_caller]
         pub fn new(parent: &'a DisjointMut<T>, slice: &'a V, bounds: Bounds) -> Self {
             parent.add_immut_bounds(bounds.clone());
@@ -560,7 +560,7 @@ mod debug {
         }
     }
 
-    impl<'a, T: AsMutPtr, V: ?Sized> Drop for DisjointImmutGuard<'a, T, V> {
+    impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> Drop for DisjointImmutGuard<'a, T, V> {
         fn drop(&mut self) {
             self.parent.remove_bound(&self.bounds, false);
         }
@@ -606,11 +606,23 @@ unsafe impl<V, const N: usize> AsMutPtr for [V; N] {
     type Target = V;
 
     unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut V {
-        ptr as *mut V
+        ptr.cast()
     }
 
     fn len(&self) -> usize {
         N
+    }
+}
+
+unsafe impl<V> AsMutPtr for [V] {
+    type Target = V;
+
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
+        ptr.cast()
+    }
+
+    fn len(&self) -> usize {
+        self.len()
     }
 }
 
