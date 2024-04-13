@@ -286,7 +286,6 @@ pub struct Rav1dContext {
     pub(crate) task_thread: Arc<TaskThreadData>,
 
     // reference/entropy state
-    pub(crate) segmap_pool: *mut Rav1dMemPool,
     pub(crate) refmvs_pool: *mut Rav1dMemPool,
     pub(crate) refs: [Rav1dContext_refs; 8],
     pub(crate) cdf_pool: *mut Rav1dMemPool,
@@ -742,7 +741,7 @@ pub(crate) struct Rav1dFrameData {
     pub mvs: *mut refmvs_temporal_block,
     pub ref_mvs: [*mut refmvs_temporal_block; 7],
     pub ref_mvs_ref: [*mut Rav1dRef; 7],
-    pub cur_segmap: Option<DisjointMutArcSlice<u8>>,
+    pub cur_segmap: Option<DisjointMutArcSlice<u8>>, // Previously pooled.
     pub prev_segmap: Option<DisjointMutArcSlice<u8>>,
     pub refpoc: [c_uint; 7],
     pub refrefpoc: [[c_uint; 7]; 7],
