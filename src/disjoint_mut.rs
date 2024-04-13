@@ -454,20 +454,34 @@ mod debug {
         immutable: Mutex<Vec<DisjointMutBounds>>,
     }
 
+    fn check_overlaps(
+        current_bounds: &Bounds,
+        current_mutable: bool,
+        existing: &DisjointMutBounds,
+        existing_mutable: bool,
+    ) {
+        let DisjointMutBounds {
+            bounds: existing_bounds,
+            backtrace: existing_backtrace,
+            thread: existing_thread,
+        } = existing;
+        if !current_bounds.overlaps(existing_bounds) {
+            return;
+        }
+        let current_thread = thread::current().id();
+        let [current_mutable, existing_mutable] =
+            [current_mutable, existing_mutable].map(|mutable| if mutable { "&mut" } else { "&" });
+        panic!("{current_mutable} _[{current_bounds}] on {current_thread:?} overlaps with existing {existing_mutable} _[{existing_bounds}] on {existing_thread:?}:\nstack backtrace:\n{existing_backtrace}");
+    }
+
     impl<T: AsMutPtr> DisjointMut<T> {
         fn add_mut_bounds(&self, bounds: Bounds) {
             for b in self.bounds.immutable.lock().unwrap().iter() {
-                if bounds.overlaps(&b.bounds) {
-                    let thread = thread::current().id();
-                    panic!("{bounds} on thread {thread:?} overlaps with an existing immutable range: {b:?}");
-                }
+                check_overlaps(&bounds, true, b, false);
             }
             let mut mut_bounds = self.bounds.mutable.lock().unwrap();
             for b in mut_bounds.iter() {
-                if bounds.overlaps(&b.bounds) {
-                    let thread = thread::current().id();
-                    panic!("{bounds} on thread {thread:?} overlaps with an existing mutable range: {b:?}");
-                }
+                check_overlaps(&bounds, true, b, true);
             }
             mut_bounds.push(DisjointMutBounds::new(bounds));
         }
@@ -475,10 +489,7 @@ mod debug {
         fn add_immut_bounds(&self, bounds: Bounds) {
             let mut_bounds = self.bounds.mutable.lock().unwrap();
             for b in mut_bounds.iter() {
-                if bounds.overlaps(&b.bounds) {
-                    let thread = thread::current().id();
-                    panic!("{bounds} on thread {thread:?} overlaps with an existing mutable range: {b:?}");
-                }
+                check_overlaps(&bounds, false, b, true);
             }
             self.bounds
                 .immutable
