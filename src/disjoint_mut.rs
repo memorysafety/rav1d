@@ -471,6 +471,12 @@ mod debug {
         let current_thread = thread::current().id();
         let [current_mutable, existing_mutable] =
             [current_mutable, existing_mutable].map(|mutable| if mutable { "&mut" } else { "&" });
+        // Example:
+        //
+        // &mut _[0..8] on ThreadId(3) overlaps with existing &mut _[0..8] on ThreadId(2):
+        // stack backtrace:
+        //    0: rav1d::src::disjoint_mut::debug::DisjointMutBounds::new
+        //              at ./src/disjoint_mut.rs:443:28
         panic!("{current_mutable} _[{current_bounds}] on {current_thread:?} overlaps with existing {existing_mutable} _[{existing_bounds}] on {existing_thread:?}:\nstack backtrace:\n{existing_backtrace}");
     }
 
