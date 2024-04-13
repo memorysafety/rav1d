@@ -222,7 +222,7 @@ pub(crate) struct RefMvsFrame {
 }
 
 impl RefMvsFrame {
-    pub fn as_dav1d<'a>(&'a mut self) -> refmvs_frame<'a> {
+    pub fn as_mut_dav1d<'a>(&'a self) -> refmvs_frame<'a> {
         let Self {
             iw4,
             ih4,
@@ -239,9 +239,9 @@ impl RefMvsFrame {
             n_mfmvs,
             rp,
             rp_ref,
-            ref mut rp_proj,
+            ref rp_proj,
             rp_stride,
-            ref mut r,
+            ref r,
             r_stride,
             n_tile_rows,
             n_tile_threads,

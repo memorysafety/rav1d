@@ -3921,7 +3921,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     }
 
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
-        let rf = f.rf.as_dav1d();
+        let rf = f.rf.as_mut_dav1d();
         (c.refmvs_dsp.load_tmvs)(
             &rf,
             ts.tiling.row,
@@ -4526,7 +4526,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             t.b.y = sby << 4 + seq_hdr.sb128;
             let by_end = t.b.y + f.sb_step >> 1;
             if frame_hdr.use_ref_frame_mvs != 0 {
-                let rf = f.rf.as_dav1d();
+                let rf = f.rf.as_mut_dav1d();
                 (c.refmvs_dsp.load_tmvs)(&rf, tile_row as c_int, 0, f.bw >> 1, t.b.y >> 1, by_end);
             }
             for col in 0..cols {
