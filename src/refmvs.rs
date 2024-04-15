@@ -1420,7 +1420,7 @@ unsafe extern "C" fn load_tmvs_c(
                 let mut x = col_start8i;
                 while x < col_end8i {
                     let mut rb = r.offset(x as isize);
-                    let b_ref = (*rb).r#ref as c_int;
+                    let b_ref = (*rb).r#ref;
                     if !(b_ref == 0) {
                         let ref2ref = rf.mfmv_ref2ref[n as usize][(b_ref - 1) as usize];
                         if !(ref2ref == 0) {
@@ -1451,7 +1451,7 @@ unsafe extern "C" fn load_tmvs_c(
                                     }
                                     rb = rb.offset(1);
                                     let rb_mv = (*rb).mv;
-                                    if (*rb).r#ref as c_int != b_ref || rb_mv != b_mv {
+                                    if (*rb).r#ref != b_ref || rb_mv != b_mv {
                                         break;
                                     }
                                     pos_x += 1;
@@ -1464,7 +1464,7 @@ unsafe extern "C" fn load_tmvs_c(
                                     }
                                     rb = rb.offset(1);
                                     let rb_mv = (*rb).mv;
-                                    if (*rb).r#ref as c_int != b_ref || rb_mv != b_mv {
+                                    if (*rb).r#ref != b_ref || rb_mv != b_mv {
                                         break;
                                     }
                                 }
