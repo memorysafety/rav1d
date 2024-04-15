@@ -1402,8 +1402,10 @@ unsafe extern "C" fn load_tmvs_c(
     let mut rp_proj_offset =
         16 * stride * tile_row_idx as usize + (row_start8 & 15) as usize * stride;
     for _ in row_start8..row_end8 {
-        for x in col_start8..col_end8 {
-            rp_proj.index_mut(rp_proj_offset + x as usize).mv = mv::INVALID;
+        for rp_proj in &mut *rp_proj
+            .index_mut(rp_proj_offset + col_start8 as usize..rp_proj_offset + col_end8 as usize)
+        {
+            rp_proj.mv = mv::INVALID;
         }
         rp_proj_offset += stride;
     }
