@@ -64,6 +64,7 @@ extern "C" {
         col_end8: c_int,
         row_start8: c_int,
         row_end8: c_int,
+        _rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
     );
 }
 
@@ -312,6 +313,7 @@ pub(crate) type load_tmvs_fn = unsafe extern "C" fn(
     col_end8: c_int,
     row_start8: c_int,
     row_end8: c_int,
+    rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
 ) -> ();
 
 pub type save_tmvs_fn = unsafe extern "C" fn(
@@ -1383,7 +1385,9 @@ unsafe extern "C" fn load_tmvs_c(
     col_end8: c_int,
     row_start8: c_int,
     mut row_end8: c_int,
+    rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
 ) {
+    let rp_proj = FFISafe::get(rp_proj);
     let rf = &*rf;
 
     if rf.n_tile_threads == 1 {
@@ -1394,17 +1398,16 @@ unsafe extern "C" fn load_tmvs_c(
     row_end8 = cmp::min(row_end8, rf.ih8);
     let col_start8i = cmp::max(col_start8 - 8, 0);
     let col_end8i = cmp::min(col_end8 + 8, rf.iw8);
-    let stride = rf.rp_stride;
-    let mut rp_proj = rf
-        .rp_proj
-        .offset(16 * stride * tile_row_idx as isize + (row_start8 & 15) as isize * stride);
+    let stride = rf.rp_stride as usize;
+    let mut rp_proj_offset =
+        16 * stride * tile_row_idx as usize + (row_start8 & 15) as usize * stride;
     for _ in row_start8..row_end8 {
         for x in col_start8..col_end8 {
-            (*rp_proj.offset(x as isize)).mv = mv::INVALID;
+            rp_proj.index_mut(rp_proj_offset + x as usize).mv = mv::INVALID;
         }
-        rp_proj = rp_proj.offset(stride as isize);
+        rp_proj_offset += stride;
     }
-    rp_proj = rf.rp_proj.offset(16 * stride * tile_row_idx as isize);
+    let rp_proj_offset = 16 * stride * tile_row_idx as usize;
     for n in 0..rf.n_mfmvs {
         let ref2cur = rf.mfmv_ref2cur[n as usize];
         if ref2cur == i32::MIN {
@@ -1413,7 +1416,7 @@ unsafe extern "C" fn load_tmvs_c(
         let r#ref = rf.mfmv_ref[n as usize] as c_int;
         let ref_sign = r#ref - 4;
         let mut r = (*rf.rp_ref.offset(r#ref as isize))
-            .offset(row_start8 as isize * stride)
+            .add(row_start8 as usize * stride)
             .cast_const();
         for y in row_start8..row_end8 {
             let y_sb_align = y & !7;
@@ -1439,13 +1442,15 @@ unsafe extern "C" fn load_tmvs_c(
                 let pos_y =
                     y + apply_sign((offset.y as c_int).abs() >> 6, offset.y as c_int ^ ref_sign);
                 if pos_y >= y_proj_start && pos_y < y_proj_end {
-                    let pos = (pos_y & 15) as isize * stride;
+                    let pos = (pos_y & 15) as usize * stride;
                     loop {
                         let x_sb_align = x & !7;
                         if pos_x >= cmp::max(x_sb_align - 8, col_start8)
                             && pos_x < cmp::min(x_sb_align + 16, col_end8)
                         {
-                            *rp_proj.offset(pos + pos_x as isize) = refmvs_temporal_block {
+                            *rp_proj.index_mut(
+                                rp_proj_offset + (pos as isize + pos_x as isize) as usize,
+                            ) = refmvs_temporal_block {
                                 mv: (*rb).mv,
                                 r#ref: ref2ref as i8,
                             };
