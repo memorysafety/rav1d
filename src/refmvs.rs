@@ -1399,17 +1399,15 @@ unsafe extern "C" fn load_tmvs_c(
     let col_start8i = cmp::max(col_start8 - 8, 0);
     let col_end8i = cmp::min(col_end8 + 8, rf.iw8);
     let stride = rf.rp_stride as usize;
-    let mut rp_proj_offset =
-        16 * stride * tile_row_idx as usize + (row_start8 & 15) as usize * stride;
-    for _ in row_start8..row_end8 {
-        for rp_proj in &mut *rp_proj
-            .index_mut(rp_proj_offset + col_start8 as usize..rp_proj_offset + col_end8 as usize)
+    let rp_proj_offset = 16 * stride * tile_row_idx as usize;
+    for y in row_start8..row_end8 {
+        let offset = rp_proj_offset + (y & 15) as usize * stride;
+        for rp_proj in
+            &mut *rp_proj.index_mut(offset + col_start8 as usize..offset + col_end8 as usize)
         {
             rp_proj.mv = mv::INVALID;
         }
-        rp_proj_offset += stride;
     }
-    let rp_proj_offset = 16 * stride * tile_row_idx as usize;
     for n in 0..rf.n_mfmvs {
         let ref2cur = rf.mfmv_ref2cur[n as usize];
         if ref2cur == i32::MIN {
