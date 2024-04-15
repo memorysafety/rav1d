@@ -2630,11 +2630,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             ),
                         ]);
                         let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
-                            let mut top_sb_edge: *const BD::Pixel =
-                                f.ipred_edge[0] as *mut BD::Pixel;
                             let sby = t.b.y >> f.sb_shift;
-                            top_sb_edge = top_sb_edge.offset((f.sb128w * 128 * (sby - 1)) as isize);
-                            Some(slice::from_raw_parts(top_sb_edge, f.sb128w as usize * 128))
+                            let offset = f.ipred_edge_off as isize * 0
+                                + (f.sb128w * 128 * (sby - 1)) as isize;
+                            Some((&f.ipred_edge, offset))
                         } else {
                             None
                         };
@@ -2867,12 +2866,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         if !(b.c2rust_unnamed.c2rust_unnamed.cfl_alpha[pl as usize] == 0) {
                             let mut angle = 0;
                             let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
-                                let mut top_sb_edge: *const BD::Pixel =
-                                    f.ipred_edge[(pl + 1) as usize] as *mut BD::Pixel;
                                 let sby = t.b.y >> f.sb_shift;
-                                top_sb_edge =
-                                    top_sb_edge.offset((f.sb128w * 128 * (sby - 1)) as isize);
-                                Some(slice::from_raw_parts(top_sb_edge, f.sb128w as usize * 128))
+                                let offset = (f.ipred_edge_off * (pl + 1)) as isize
+                                    + (f.sb128w * 128 * (sby - 1)) as isize;
+                                Some((&f.ipred_edge, offset))
                             } else {
                                 None
                             };
@@ -3069,15 +3066,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     EdgeFlags::I444_LEFT_HAS_BOTTOM
                                 });
                                 let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
-                                    let mut top_sb_edge: *const BD::Pixel =
-                                        f.ipred_edge[(1 + pl) as usize] as *const BD::Pixel;
                                     let sby = t.b.y >> f.sb_shift;
-                                    top_sb_edge =
-                                        top_sb_edge.offset((f.sb128w * 128 * (sby - 1)) as isize);
-                                    Some(slice::from_raw_parts(
-                                        top_sb_edge,
-                                        f.sb128w as usize * 128,
-                                    ))
+                                    let offset = (f.ipred_edge_off * (1 + pl)) as isize
+                                        + (f.sb128w * 128 * (sby - 1)) as isize;
+                                    Some((&f.ipred_edge, offset))
                                 } else {
                                     None
                                 };
@@ -3628,10 +3620,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             };
             let mut angle = 0;
             let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
-                let mut top_sb_edge = f.ipred_edge[0] as *const BD::Pixel;
                 let sby = t.b.y >> f.sb_shift;
-                top_sb_edge = top_sb_edge.offset((f.sb128w * 128 * (sby - 1)) as isize);
-                Some(slice::from_raw_parts(top_sb_edge, f.sb128w as usize * 128))
+                let offset =
+                    (f.ipred_edge_off * 0) as isize + (f.sb128w * 128 * (sby - 1)) as isize;
+                Some((&f.ipred_edge, offset))
             } else {
                 None
             };
@@ -3945,11 +3937,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             as *mut BD::Pixel)
                             .offset(uvdstoff as isize);
                         let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
-                            let mut top_sb_edge =
-                                f.ipred_edge[(pl + 1) as usize] as *const BD::Pixel;
                             let sby = t.b.y >> f.sb_shift;
-                            top_sb_edge = top_sb_edge.offset((f.sb128w * 128 * (sby - 1)) as isize);
-                            Some(slice::from_raw_parts(top_sb_edge, f.sb128w as usize * 128))
+                            let offset = (f.ipred_edge_off * (pl + 1)) as isize
+                                + (f.sb128w * 128 * (sby - 1)) as isize;
+                            Some((&f.ipred_edge, offset))
                         } else {
                             None
                         };
@@ -4529,15 +4520,14 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
     let y: *const BD::Pixel = (f.cur.data.as_ref().unwrap().data[0] as *const BD::Pixel)
         .offset((x_off * 4) as isize)
         .offset((((t.b.y + f.sb_step) * 4 - 1) as isize * BD::pxstride(f.cur.stride[0])) as isize);
+    let ipred_edge_off = (f.ipred_edge_off * 0) + (sby_off + x_off * 4) as usize;
+    let n = (4 * (ts.tiling.col_end - x_off)).try_into().unwrap();
     BD::pixel_copy(
-        &mut slice::from_raw_parts_mut(
-            f.ipred_edge[0].cast(),
-            (sby_off + x_off * 4 + (4 * (ts.tiling.col_end - x_off)))
-                .try_into()
-                .unwrap(),
-        )[(sby_off + x_off * 4).try_into().unwrap()..],
+        &mut f
+            .ipred_edge
+            .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
         slice::from_raw_parts(y, (4 * (ts.tiling.col_end - x_off)).try_into().unwrap()),
-        (4 * (ts.tiling.col_end - x_off)).try_into().unwrap(),
+        n,
     );
     if f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint {
         let ss_ver =
@@ -4548,22 +4538,22 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
             + (((t.b.y + f.sb_step) * 4 >> ss_ver) - 1) as isize * BD::pxstride(f.cur.stride[1]);
         let mut pl = 1;
         while pl <= 2 {
+            let ipred_edge_off =
+                (f.ipred_edge_off * pl) + (sby_off + (x_off * 4 >> ss_hor)) as usize;
+            let n = (4 * (ts.tiling.col_end - x_off) >> ss_hor)
+                .try_into()
+                .unwrap();
             BD::pixel_copy(
-                &mut slice::from_raw_parts_mut(
-                    f.ipred_edge[pl as usize].cast(),
-                    (sby_off + (x_off * 4 >> ss_hor) + (4 * (ts.tiling.col_end - x_off) >> ss_hor))
-                        .try_into()
-                        .unwrap(),
-                )[(sby_off + (x_off * 4 >> ss_hor)).try_into().unwrap()..],
+                &mut f
+                    .ipred_edge
+                    .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
                 &slice::from_raw_parts(
-                    f.cur.data.as_ref().unwrap().data[pl as usize].cast(),
+                    f.cur.data.as_ref().unwrap().data[pl].cast(),
                     (uv_off + (4 * (ts.tiling.col_end - x_off) >> ss_hor) as isize)
                         .try_into()
                         .unwrap(),
                 )[uv_off.try_into().unwrap()..],
-                (4 * (ts.tiling.col_end - x_off) >> ss_hor)
-                    .try_into()
-                    .unwrap(),
+                n,
             );
             pl += 1;
         }

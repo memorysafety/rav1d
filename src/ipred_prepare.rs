@@ -1,6 +1,8 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
+use crate::src::align::AlignedVec64;
 use crate::src::const_fn::const_for;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::env::BlockContext;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::IntraPredMode;
@@ -125,7 +127,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     edge_flags: EdgeFlags,
     dst: &[BD::Pixel], // contains 4*h first rows of picture, last row in slice contains 4*w samples
     stride: ptrdiff_t,
-    prefilter_toplevel_sb_edge: Option<&[BD::Pixel]>,
+    prefilter_toplevel_sb_edge: Option<(&DisjointMut<AlignedVec64<u8>>, isize)>,
     mut mode: IntraPredMode,
     angle: &mut c_int,
     tw: c_int,
@@ -169,6 +171,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     }
 
     // `dst_top` starts with either the top or top-left sample depending on whether have_left is true
+    let edge_buf_guard;
     let dst_top = if have_top
         && (av1_intra_prediction_edges[mode as usize]
             .needs
@@ -183,9 +186,10 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     {
         let px_have = cmp::min(8 * tw, 4 * (w - x)) as usize;
         let n = px_have + have_left as usize;
-        if let Some(prefilter_toplevel_sb_edge) = prefilter_toplevel_sb_edge {
-            let offset = (x * 4) as usize - have_left as usize;
-            &prefilter_toplevel_sb_edge[offset..][..n]
+        if let Some((edge_buf, base)) = prefilter_toplevel_sb_edge {
+            let offset = ((x * 4) as usize - have_left as usize).wrapping_add_signed(base);
+            edge_buf_guard = edge_buf.slice_as(offset..offset + n);
+            &edge_buf_guard
         } else {
             &dst[(dst_offset as isize - stride) as usize - have_left as usize..][..n]
         }

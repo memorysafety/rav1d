@@ -3,7 +3,6 @@ use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::BitDepthDependentType;
 use crate::include::common::bitdepth::BitDepthUnion;
-use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
@@ -907,8 +906,13 @@ pub(crate) struct Rav1dFrameData {
     pub n_ts: c_int,
     pub dsp: &'static Rav1dDSPContext,
 
-    pub ipred_edge_sz: c_int,
-    pub ipred_edge: [*mut DynPixel; 3],
+    // `ipred_edge` contains 3 arrays of size `ipred_edge_off`. Use `index *
+    // ipred_edge_off` to access one of the sub-arrays. Note that `ipred_edge_off`
+    // is in pixel units (not bytes), so use `slice_as`/`mut_slice_as` and an offset
+    // in pixel units when slicing.
+    pub ipred_edge: DisjointMut<AlignedVec64<u8>>, // DynPixel
+    pub ipred_edge_off: usize,
+
     pub b4_stride: ptrdiff_t,
     pub w4: c_int,
     pub h4: c_int,
