@@ -146,7 +146,6 @@ use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::recon::debug_block_info;
 use crate::src::refmvs::rav1d_refmvs_find;
 use crate::src::refmvs::rav1d_refmvs_init_frame;
-use crate::src::refmvs::rav1d_refmvs_save_tmvs;
 use crate::src::refmvs::rav1d_refmvs_tile_sbrow_init;
 use crate::src::refmvs::refmvs_block;
 use crate::src::refmvs::refmvs_mvpair;
@@ -4021,8 +4020,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         && c.tc.len() > 1
         && f.frame_hdr().frame_type.is_inter_or_switch()
     {
-        rav1d_refmvs_save_tmvs(
-            &c.refmvs_dsp,
+        c.refmvs_dsp.save_tmvs(
             &t.rt,
             &f.rf,
             ts.tiling.col_start >> 1,
@@ -4524,15 +4522,8 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
                 rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| EINVAL)?;
             }
             if f.frame_hdr().frame_type.is_inter_or_switch() {
-                rav1d_refmvs_save_tmvs(
-                    &c.refmvs_dsp,
-                    &t.rt,
-                    &f.rf,
-                    0,
-                    f.bw >> 1,
-                    t.b.y >> 1,
-                    by_end,
-                );
+                c.refmvs_dsp
+                    .save_tmvs(&t.rt, &f.rf, 0, f.bw >> 1, t.b.y >> 1, by_end);
             }
 
             // loopfilter + cdef + restoration
