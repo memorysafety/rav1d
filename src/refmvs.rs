@@ -363,6 +363,27 @@ pub(crate) struct Rav1dRefmvsDSPContext {
 }
 
 impl Rav1dRefmvsDSPContext {
+    pub unsafe fn load_tmvs(
+        &self,
+        rf: &RefMvsFrame,
+        tile_row_idx: c_int,
+        col_start8: c_int,
+        col_end8: c_int,
+        row_start8: c_int,
+        row_end8: c_int,
+    ) {
+        let rf_dav1d = rf.as_mut_dav1d();
+        (self.load_tmvs)(
+            &rf_dav1d,
+            tile_row_idx,
+            col_start8,
+            col_end8,
+            row_start8,
+            row_end8,
+            FFISafe::new(&rf.rp_proj),
+        );
+    }
+
     pub unsafe fn splat_mv(
         &self,
         rf: &RefMvsFrame,

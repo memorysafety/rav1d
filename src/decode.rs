@@ -62,7 +62,6 @@ use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
-use crate::src::ffi_safe::FFISafe;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::Bxy;
 use crate::src::internal::Rav1dContext;
@@ -3913,15 +3912,13 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     }
 
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
-        let rf = f.rf.as_mut_dav1d();
-        (c.refmvs_dsp.load_tmvs)(
-            &rf,
+        c.refmvs_dsp.load_tmvs(
+            &f.rf,
             ts.tiling.row,
             ts.tiling.col_start >> 1,
             ts.tiling.col_end >> 1,
             t.b.y >> 1,
             t.b.y + sb_step >> 1,
-            FFISafe::new(&f.rf.rp_proj),
         );
     }
     t.pal_sz_uv[1] = Default::default();
@@ -4519,16 +4516,8 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             t.b.y = sby << 4 + seq_hdr.sb128;
             let by_end = t.b.y + f.sb_step >> 1;
             if frame_hdr.use_ref_frame_mvs != 0 {
-                let rf = f.rf.as_mut_dav1d();
-                (c.refmvs_dsp.load_tmvs)(
-                    &rf,
-                    tile_row as c_int,
-                    0,
-                    f.bw >> 1,
-                    t.b.y >> 1,
-                    by_end,
-                    FFISafe::new(&f.rf.rp_proj),
-                );
+                c.refmvs_dsp
+                    .load_tmvs(&f.rf, tile_row as c_int, 0, f.bw >> 1, t.b.y >> 1, by_end);
             }
             for col in 0..cols {
                 t.ts = tile_row * cols + col;
