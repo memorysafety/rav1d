@@ -1445,8 +1445,10 @@ unsafe extern "C" fn load_tmvs_c(
                         if pos_x >= cmp::max(x_sb_align - 8, col_start8)
                             && pos_x < cmp::min(x_sb_align + 16, col_end8)
                         {
-                            (*rp_proj.offset(pos + pos_x as isize)).mv = (*rb).mv;
-                            (*rp_proj.offset(pos + pos_x as isize)).r#ref = ref2ref as i8;
+                            *rp_proj.offset(pos + pos_x as isize) = refmvs_temporal_block {
+                                mv: (*rb).mv,
+                                r#ref: ref2ref as i8,
+                            };
                         }
                         x += 1;
                         if x >= col_end8i {
