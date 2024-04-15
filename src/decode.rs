@@ -4051,16 +4051,18 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
     // up the initial value in neighbour tiles when running the loopfilter
     let mut align_h = f.bh + 31 & !31;
-    let (tx_lpf_right_edge_y, tx_lpf_right_edge_uv) = f.lf.tx_lpf_right_edge.get_mut();
-    tx_lpf_right_edge_y[(align_h * tile_col + t.b.y) as usize..][..sb_step as usize]
-        .copy_from_slice(&t.l.tx_lpf_y.0[(t.b.y & 16) as usize..][..sb_step as usize]);
+    let start_y = (align_h * tile_col + t.b.y) as usize;
+    f.lf.tx_lpf_right_edge.copy_from_slice_y(
+        start_y..start_y + sb_step as usize,
+        &t.l.tx_lpf_y.0[(t.b.y & 16) as usize..][..sb_step as usize],
+    );
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     align_h >>= ss_ver;
-    tx_lpf_right_edge_uv[(align_h * tile_col + (t.b.y >> ss_ver)) as usize..]
-        [..(sb_step >> ss_ver) as usize]
-        .copy_from_slice(
-            &t.l.tx_lpf_uv.0[((t.b.y & 16) >> ss_ver) as usize..][..(sb_step >> ss_ver) as usize],
-        );
+    let start_uv = (align_h * tile_col + (t.b.y >> ss_ver)) as usize;
+    f.lf.tx_lpf_right_edge.copy_from_slice_uv(
+        start_uv..start_uv + (sb_step >> ss_ver) as usize,
+        &t.l.tx_lpf_uv.0[((t.b.y & 16) >> ss_ver) as usize..][..(sb_step >> ss_ver) as usize],
+    );
 
     Ok(())
 }
