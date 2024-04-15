@@ -4341,15 +4341,12 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &mut f.dq);
     if frame_hdr.quant.qm != 0 {
         for i in 0..N_RECT_TX_SIZES {
-            f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i]
-                .map_or(std::ptr::null(), |qm| qm.as_ptr());
-            f.qm[i][1] = dav1d_qm_tbl[frame_hdr.quant.qm_u as usize][1][i]
-                .map_or(std::ptr::null(), |qm| qm.as_ptr());
-            f.qm[i][2] = dav1d_qm_tbl[frame_hdr.quant.qm_v as usize][1][i]
-                .map_or(std::ptr::null(), |qm| qm.as_ptr());
+            f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i];
+            f.qm[i][1] = dav1d_qm_tbl[frame_hdr.quant.qm_u as usize][1][i];
+            f.qm[i][2] = dav1d_qm_tbl[frame_hdr.quant.qm_v as usize][1][i];
         }
     } else {
-        f.qm = [[ptr::null(); 3]; 19]; // TODO(kkysen) can be Default::default once the type is Option
+        f.qm = Default::default();
     }
 
     // setup jnt_comp weights
