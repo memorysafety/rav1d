@@ -500,7 +500,9 @@ unsafe fn check_tile(t_idx: Rav1dTaskIndex, f: &Rav1dFrameData, frame_mt: c_int)
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
         let p_b: c_uint = (((*t).sby + 1) << f.sb_shift + 2) as c_uint;
         let tile_sby = (*t).sby - ((*ts).tiling.row_start >> f.sb_shift);
-        let lowest_px = &f.lowest_pixel_mem[(*ts).lowest_pixel + tile_sby as usize];
+        let lowest_px = f
+            .lowest_pixel_mem
+            .index((*ts).lowest_pixel + tile_sby as usize);
         for n in t.deps_skip..7 {
             'next: {
                 let lowest = if tp {
