@@ -182,6 +182,7 @@ impl<T: AsMutPtr> DisjointMut<T> {
     /// referenced data must be plain data and not contain any pointers or
     /// references to avoid other potential memory safety issues due to racy
     /// access.
+    #[cfg_attr(debug_assertions, track_caller)]
     pub unsafe fn index_mut<'a, I>(
         &'a self,
         index: I,
@@ -223,6 +224,7 @@ impl<T: AsMutPtr> DisjointMut<T> {
     /// during the lifetime of the returned borrow.
     ///
     /// [`index_mut`]: DisjointMut::index_mut
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn index<'a, I>(
         &'a self,
         index: I,
@@ -454,6 +456,7 @@ mod debug {
         immutable: Mutex<Vec<DisjointMutBounds>>,
     }
 
+    #[track_caller]
     fn check_overlaps(
         current_bounds: &Bounds,
         current_mutable: bool,
@@ -481,6 +484,7 @@ mod debug {
     }
 
     impl<T: AsMutPtr> DisjointMut<T> {
+        #[track_caller]
         fn add_mut_bounds(&self, bounds: Bounds) {
             for b in self.bounds.immutable.lock().unwrap().iter() {
                 check_overlaps(&bounds, true, b, false);
@@ -492,6 +496,7 @@ mod debug {
             mut_bounds.push(DisjointMutBounds::new(bounds));
         }
 
+        #[track_caller]
         fn add_immut_bounds(&self, bounds: Bounds) {
             let mut_bounds = self.bounds.mutable.lock().unwrap();
             for b in mut_bounds.iter() {
@@ -524,6 +529,7 @@ mod debug {
     }
 
     impl<'a, T: AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
+        #[track_caller]
         pub fn new(parent: &'a DisjointMut<T>, slice: &'a mut V, bounds: Bounds) -> Self {
             parent.add_mut_bounds(bounds.clone());
             Self {
@@ -542,6 +548,7 @@ mod debug {
     }
 
     impl<'a, T: AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
+        #[track_caller]
         pub fn new(parent: &'a DisjointMut<T>, slice: &'a V, bounds: Bounds) -> Self {
             parent.add_immut_bounds(bounds.clone());
             Self {
