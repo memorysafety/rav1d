@@ -775,7 +775,7 @@ pub(crate) struct Rav1dFrameData {
     pub sb_step: c_int,
     pub sr_sb128w: c_int,
     pub dq: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
-    pub qm: [[*const u8; 3]; 19],                         /* [3 plane][19] */
+    pub qm: [[Option<&'static [u8]>; 3]; 19],             /* [3 plane][19] */
     pub a: Vec<BlockContext>,                             /* len = w*tile_rows */
     pub rf: RefMvsFrame,
     pub jnt_weights: [[u8; 7]; 7],

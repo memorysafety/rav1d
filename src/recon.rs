@@ -1408,10 +1408,10 @@ unsafe fn decode_coefs<BD: BitDepth>(
         TileStateRef::Local => &ts.dqmem,
     };
     let dq_tbl = &dq[b.seg_id as usize][plane as usize];
-    let qm_tbl: *const u8 = if (*txtp as c_uint) < IDTX as c_int as c_uint {
+    let qm_tbl = if (*txtp as c_uint) < IDTX as c_int as c_uint {
         f.qm[tx as usize][plane as usize]
     } else {
-        0 as *const u8
+        None
     };
     let dq_shift = cmp::max(0 as c_int, (*t_dim).ctx as c_int - 2);
     let cf_max = !(!(127 as c_uint)
@@ -1424,7 +1424,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     if dc_tok == 0 {
         cul_level = 0 as c_int as c_uint;
         dc_sign_level = ((1 as c_int) << 6) as c_uint;
-        if !qm_tbl.is_null() {
+        if qm_tbl.is_some() {
             current_block = 1669574575799829731;
         } else {
             current_block = 2404388531445638768;
@@ -1441,8 +1441,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
         dc_dq = dq_tbl[0] as c_int;
         dc_sign_level = (dc_sign - 1 & (2 as c_int) << 6) as c_uint;
-        if !qm_tbl.is_null() {
-            dc_dq = dc_dq * *qm_tbl.offset(0) as c_int + 16 >> 5;
+        if let Some(qm_tbl) = qm_tbl {
+            dc_dq = dc_dq * qm_tbl[0] as c_int + 16 >> 5;
             if dc_tok == 15 as c_uint {
                 dc_tok = (read_golomb(&mut ts.msac)).wrapping_add(15 as c_int as c_uint);
                 if dbg {
@@ -1508,7 +1508,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let rc_tok: c_uint = cf[rc as usize].as_::<c_uint>();
                 let mut tok: c_uint;
                 let mut dq: c_uint = ac_dq
-                    .wrapping_mul(*qm_tbl.offset(rc as isize) as c_uint)
+                    // TODO: Remove `unwrap` once state machine control flow is cleaned up.
+                    .wrapping_mul(qm_tbl.unwrap()[rc as usize] as c_uint)
                     .wrapping_add(16 as c_int as c_uint)
                     >> 5;
                 let dq_sat;
