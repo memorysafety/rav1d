@@ -1384,113 +1384,97 @@ unsafe extern "C" fn load_tmvs_c(
     row_start8: c_int,
     mut row_end8: c_int,
 ) {
-    if (*rf).n_tile_threads == 1 {
-        tile_row_idx = 0 as c_int;
+    let rf = &*rf;
+
+    if rf.n_tile_threads == 1 {
+        tile_row_idx = 0;
     }
-    if !(row_start8 >= 0) {
-        unreachable!();
-    }
-    if !((row_end8 - row_start8) as c_uint <= 16 as c_uint) {
-        unreachable!();
-    }
-    row_end8 = cmp::min(row_end8, (*rf).ih8);
-    let col_start8i = cmp::max(col_start8 - 8, 0 as c_int);
-    let col_end8i = cmp::min(col_end8 + 8, (*rf).iw8);
-    let stride: ptrdiff_t = (*rf).rp_stride;
-    let mut rp_proj: *mut refmvs_temporal_block = &mut *((*rf).rp_proj)
-        .offset(16 * stride * tile_row_idx as isize + (row_start8 & 15) as isize * stride)
-        as *mut refmvs_temporal_block;
-    let mut y = row_start8;
-    while y < row_end8 {
-        let mut x = col_start8;
-        while x < col_end8 {
+    assert!(row_start8 >= 0);
+    assert!((row_end8 - row_start8) as c_uint <= 16);
+    row_end8 = cmp::min(row_end8, rf.ih8);
+    let col_start8i = cmp::max(col_start8 - 8, 0);
+    let col_end8i = cmp::min(col_end8 + 8, rf.iw8);
+    let stride = rf.rp_stride;
+    let mut rp_proj = rf
+        .rp_proj
+        .offset(16 * stride * tile_row_idx as isize + (row_start8 & 15) as isize * stride);
+    for _ in row_start8..row_end8 {
+        for x in col_start8..col_end8 {
             (*rp_proj.offset(x as isize)).mv = mv::INVALID;
-            x += 1;
         }
         rp_proj = rp_proj.offset(stride as isize);
-        y += 1;
     }
-    rp_proj = &mut *((*rf).rp_proj).offset(16 * stride * tile_row_idx as isize)
-        as *mut refmvs_temporal_block;
-    let mut n = 0;
-    while n < (*rf).n_mfmvs {
-        let ref2cur = (*rf).mfmv_ref2cur[n as usize];
-        if !(ref2cur == i32::MIN) {
-            let r#ref = (*rf).mfmv_ref[n as usize] as c_int;
-            let ref_sign = r#ref - 4;
-            let mut r: *const refmvs_temporal_block = &mut *(*((*rf).rp_ref).offset(r#ref as isize))
-                .offset(row_start8 as isize * stride)
-                as *mut refmvs_temporal_block;
-            let mut y_0 = row_start8;
-            while y_0 < row_end8 {
-                let y_sb_align = y_0 & !(7 as c_int);
-                let y_proj_start = cmp::max(y_sb_align, row_start8);
-                let y_proj_end = cmp::min(y_sb_align + 8, row_end8);
-                let mut x_0 = col_start8i;
-                while x_0 < col_end8i {
-                    let mut rb: *const refmvs_temporal_block =
-                        &*r.offset(x_0 as isize) as *const refmvs_temporal_block;
-                    let b_ref = (*rb).r#ref as c_int;
-                    if !(b_ref == 0) {
-                        let ref2ref = (*rf).mfmv_ref2ref[n as usize][(b_ref - 1) as usize];
-                        if !(ref2ref == 0) {
-                            let b_mv: mv = (*rb).mv;
-                            let offset: mv = mv_projection(b_mv, ref2cur, ref2ref);
-                            let mut pos_x = x_0
-                                + apply_sign(
-                                    (offset.x as c_int).abs() >> 6,
-                                    offset.x as c_int ^ ref_sign,
-                                );
-                            let pos_y = y_0
-                                + apply_sign(
-                                    (offset.y as c_int).abs() >> 6,
-                                    offset.y as c_int ^ ref_sign,
-                                );
-                            if pos_y >= y_proj_start && pos_y < y_proj_end {
-                                let pos: ptrdiff_t = (pos_y & 15) as isize * stride;
-                                loop {
-                                    let x_sb_align = x_0 & !(7 as c_int);
-                                    if pos_x >= cmp::max(x_sb_align - 8, col_start8)
-                                        && pos_x < cmp::min(x_sb_align + 16, col_end8)
-                                    {
-                                        (*rp_proj.offset(pos + pos_x as isize)).mv = (*rb).mv;
-                                        (*rp_proj.offset(pos + pos_x as isize)).r#ref =
-                                            ref2ref as i8;
-                                    }
-                                    x_0 += 1;
-                                    if x_0 >= col_end8i {
-                                        break;
-                                    }
-                                    rb = rb.offset(1);
-                                    let rb_mv = (*rb).mv;
-                                    if (*rb).r#ref as c_int != b_ref || rb_mv != b_mv {
-                                        break;
-                                    }
-                                    pos_x += 1;
-                                }
-                            } else {
-                                loop {
-                                    x_0 += 1;
-                                    if x_0 >= col_end8i {
-                                        break;
-                                    }
-                                    rb = rb.offset(1);
-                                    let rb_mv = (*rb).mv;
-                                    if (*rb).r#ref as c_int != b_ref || rb_mv != b_mv {
-                                        break;
-                                    }
-                                }
-                            }
-                            x_0 -= 1;
+    rp_proj = rf.rp_proj.offset(16 * stride * tile_row_idx as isize);
+    for n in 0..rf.n_mfmvs {
+        let ref2cur = rf.mfmv_ref2cur[n as usize];
+        if ref2cur == i32::MIN {
+            continue;
+        }
+        let r#ref = rf.mfmv_ref[n as usize] as c_int;
+        let ref_sign = r#ref - 4;
+        let mut r = (*rf.rp_ref.offset(r#ref as isize))
+            .offset(row_start8 as isize * stride)
+            .cast_const();
+        for y in row_start8..row_end8 {
+            let y_sb_align = y & !7;
+            let y_proj_start = cmp::max(y_sb_align, row_start8);
+            let y_proj_end = cmp::min(y_sb_align + 8, row_end8);
+            let mut x = col_start8i;
+            while x < col_end8i {
+                let mut rb = r.offset(x as isize);
+                let b_ref = (*rb).r#ref;
+                if b_ref == 0 {
+                    x += 1;
+                    continue;
+                }
+                let ref2ref = rf.mfmv_ref2ref[n as usize][(b_ref - 1) as usize];
+                if ref2ref == 0 {
+                    x += 1;
+                    continue;
+                }
+                let b_mv = (*rb).mv;
+                let offset = mv_projection(b_mv, ref2cur, ref2ref);
+                let mut pos_x =
+                    x + apply_sign((offset.x as c_int).abs() >> 6, offset.x as c_int ^ ref_sign);
+                let pos_y =
+                    y + apply_sign((offset.y as c_int).abs() >> 6, offset.y as c_int ^ ref_sign);
+                if pos_y >= y_proj_start && pos_y < y_proj_end {
+                    let pos = (pos_y & 15) as isize * stride;
+                    loop {
+                        let x_sb_align = x & !7;
+                        if pos_x >= cmp::max(x_sb_align - 8, col_start8)
+                            && pos_x < cmp::min(x_sb_align + 16, col_end8)
+                        {
+                            (*rp_proj.offset(pos + pos_x as isize)).mv = (*rb).mv;
+                            (*rp_proj.offset(pos + pos_x as isize)).r#ref = ref2ref as i8;
+                        }
+                        x += 1;
+                        if x >= col_end8i {
+                            break;
+                        }
+                        rb = rb.offset(1);
+                        let rb_mv = (*rb).mv;
+                        if (*rb).r#ref != b_ref || rb_mv != b_mv {
+                            break;
+                        }
+                        pos_x += 1;
+                    }
+                } else {
+                    loop {
+                        x += 1;
+                        if x >= col_end8i {
+                            break;
+                        }
+                        rb = rb.offset(1);
+                        let rb_mv = (*rb).mv;
+                        if (*rb).r#ref != b_ref || rb_mv != b_mv {
+                            break;
                         }
                     }
-                    x_0 += 1;
                 }
-                r = r.offset(stride as isize);
-                y_0 += 1;
             }
+            r = r.offset(stride as isize);
         }
-        n += 1;
     }
 }
 
