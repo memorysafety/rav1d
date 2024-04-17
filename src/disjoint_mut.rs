@@ -368,6 +368,7 @@ impl SliceBounds for RangeToInclusive<usize> {}
 impl<T> DisjointMutIndex<[T]> for usize {
     type Output = <[T] as Index<usize>>::Output;
 
+    #[cfg_attr(debug_assertions, track_caller)]
     unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
         // SAFETY: The safety precondition for this trait method requires that
         // we can immutably dereference `slice`.
@@ -378,7 +379,7 @@ impl<T> DisjointMutIndex<[T]> for usize {
             // an allocation of sufficient length.
             unsafe { (slice as *mut T).add(self) }
         } else {
-            panic!("{:?} was not a valid index", &self);
+            panic!("index out of bounds: the len is {len} but the index is {self}");
         }
     }
 }
@@ -389,6 +390,7 @@ where
 {
     type Output = <[T] as Index<Range<usize>>>::Output;
 
+    #[cfg_attr(debug_assertions, track_caller)]
     unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
         // SAFETY: The safety precondition for this trait method
         // requires that we can immutably dereference `slice`.
@@ -402,7 +404,16 @@ where
             let data = unsafe { (slice as *mut T).add(start) };
             ptr::slice_from_raw_parts_mut(data, end - start)
         } else {
-            panic!("{:?} was not a valid index", &self);
+            if start > end {
+                panic!("slice index starts at {start} but ends at {end}");
+            }
+            if end > len {
+                panic!("range end index {end} out of range for slice of length {len}");
+            }
+            if start >= len {
+                panic!("range start index {start} out of range for slice of length {len}")
+            }
+            unreachable!();
         }
     }
 }
