@@ -293,19 +293,14 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         addr_of_mut!(f.task_thread.finished).write(AtomicBool::new(true));
         addr_of_mut!(f.frame_thread).write(Default::default());
         addr_of_mut!(f.frame_thread_progress).write(Default::default());
+        addr_of_mut!(f.lowest_pixel_mem).write(Default::default());
+        addr_of_mut!(f.lf).write(Default::default());
         if n_tc > 1 {
             f.task_thread.lock = Mutex::new(());
             f.task_thread.cond = Condvar::new();
             f.task_thread.pending_tasks = Default::default();
         }
         (&mut f.task_thread.ttd as *mut Arc<TaskThreadData>).write(Arc::clone(&(*c).task_thread));
-        addr_of_mut!(f.lf.level).write(Default::default());
-        addr_of_mut!(f.lf.mask).write(Default::default());
-        addr_of_mut!(f.lf.lr_mask).write(Default::default());
-        addr_of_mut!(f.lf.tx_lpf_right_edge).write(Default::default());
-        addr_of_mut!(f.lf.cdef_line_buf).write(Default::default());
-        addr_of_mut!(f.lf.lr_line_buf).write(Default::default());
-        addr_of_mut!(f.lf.start_of_tile_row).write(Default::default());
         f.lf.last_sharpness = -(1 as c_int);
         rav1d_refmvs_init(&mut f.rf);
     }

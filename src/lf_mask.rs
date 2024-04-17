@@ -4,6 +4,7 @@ use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
 use crate::src::align::Align16;
+use crate::src::align::ArrayDefault;
 use crate::src::ctx::CaseSet;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::internal::Bxy;
@@ -25,6 +26,22 @@ pub struct Av1FilterLUT {
     pub e: [u8; 64],
     pub i: [u8; 64],
     pub sharp: [u64; 2],
+}
+
+impl Default for Av1FilterLUT {
+    fn default() -> Self {
+        Self {
+            e: [0; 64],
+            i: [0; 64],
+            sharp: Default::default(),
+        }
+    }
+}
+
+impl ArrayDefault for Av1FilterLUT {
+    fn default() -> Self {
+        Default::default()
+    }
 }
 
 #[derive(Clone, Copy, Default)]

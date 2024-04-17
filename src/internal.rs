@@ -553,6 +553,7 @@ impl TxLpfRightEdge {
 }
 
 /// loopfilter
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dFrameContext_lf {
     pub level: DisjointMut<Vec<[u8; 4]>>,
