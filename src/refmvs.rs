@@ -5,10 +5,12 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
 use crate::src::error::Rav1dResult;
+use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::Bxy;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::mv;
@@ -16,6 +18,7 @@ use crate::src::levels::BlockSize;
 use crate::src::tables::dav1d_block_dimensions;
 use cfg_if::cfg_if;
 use libc::ptrdiff_t;
+use std::array;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -47,6 +50,8 @@ extern "C" {
         row_end8: c_int,
         col_start8: c_int,
         row_start8: c_int,
+        _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
+        _ri: &[usize; 31],
     );
 }
 
@@ -89,6 +94,8 @@ extern "C" {
         row_end8: c_int,
         col_start8: c_int,
         row_start8: c_int,
+        _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
+        _ri: &[usize; 31],
     );
     fn dav1d_save_tmvs_avx512icl(
         rp: *mut refmvs_temporal_block,
@@ -99,6 +106,8 @@ extern "C" {
         row_end8: c_int,
         col_start8: c_int,
         row_start8: c_int,
+        _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
+        _ri: &[usize; 31],
     );
 }
 
@@ -205,7 +214,7 @@ pub(crate) struct RefMvsFrame {
     pub rp_ref: *const *mut refmvs_temporal_block,
     pub rp_proj: AlignedVec64<refmvs_temporal_block>,
     pub rp_stride: u32,
-    pub r: AlignedVec64<refmvs_block>,
+    pub r: DisjointMut<AlignedVec64<refmvs_block>>,
     pub r_stride: u32,
     pub n_tile_rows: u32,
     pub n_tile_threads: u32,
@@ -289,18 +298,6 @@ pub(crate) struct refmvs_tile {
     pub tile_row: refmvs_tile_range,
 }
 
-impl refmvs_tile {
-    pub fn r_ptrs(&self, r: &[refmvs_block]) -> [*const refmvs_block; 37] {
-        self.r
-            .map(|i| r.get(i).map_or_else(ptr::null, |r| r as *const _))
-    }
-
-    pub fn r_ptrs_mut(&self, r: &mut [refmvs_block]) -> [*mut refmvs_block; 37] {
-        self.r
-            .map(|i| r.get_mut(i).map_or_else(ptr::null_mut, |r| r as *mut _))
-    }
-}
-
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
 pub struct refmvs_candidate {
@@ -326,6 +323,8 @@ pub type save_tmvs_fn = unsafe extern "C" fn(
     row_end8: c_int,
     col_start8: c_int,
     row_start8: c_int,
+    r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
+    ri: &[usize; 31],
 ) -> ();
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
@@ -339,6 +338,8 @@ extern "C" {
         row_end8: c_int,
         col_start8: c_int,
         row_start8: c_int,
+        _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
+        _ri: &[usize; 31],
     );
 }
 
@@ -362,15 +363,33 @@ pub(crate) struct Rav1dRefmvsDSPContext {
 impl Rav1dRefmvsDSPContext {
     pub unsafe fn splat_mv(
         &self,
-        r: &mut [refmvs_block],
+        rf: &RefMvsFrame,
         rt: &refmvs_tile,
         rmv: &Align16<refmvs_block>,
         b4: Bxy,
         bw4: usize,
         bh4: usize,
     ) {
-        let mut r = rt.r_ptrs_mut(r);
-        let rr = &mut r[(b4.y as usize & 31) + 5..];
+        let start = (b4.y as usize & 31) + 5;
+        let bx4 = b4.x as usize;
+        let mut r: [_; 37] = array::from_fn(|i| {
+            if i < start {
+                return None;
+            }
+            let ri = rt.r[i];
+            if ri > rf.r.len() {
+                return None;
+            }
+            // This is the range that will actually be accessed,
+            // but `splat_mv` expects a pointer offset `bx4` backwards.
+            Some(rf.r.index_mut(ri + bx4..ri + bx4 + bw4))
+        });
+        let mut r: [_; 37] = array::from_fn(|i| {
+            r[i].as_mut()
+                .map(|r| r.as_mut_ptr().offset(-(bx4 as isize)))
+                .unwrap_or_else(ptr::null_mut)
+        });
+        let rr = &mut r[start..][..bh4];
         let bx4 = b4.x as _;
         let bw4 = bw4 as _;
         let bh4 = bh4 as _;
@@ -464,7 +483,8 @@ fn scan_row(
     cnt: &mut usize,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
-    b: &[refmvs_block],
+    r: &DisjointMut<AlignedVec64<refmvs_block>>,
+    b_offset: usize,
     bw4: c_int,
     w4: c_int,
     max_rows: c_int,
@@ -472,7 +492,7 @@ fn scan_row(
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) -> c_int {
-    let mut cand_b = b[0];
+    let mut cand_b = *r.index(b_offset);
     let first_cand_bs = cand_b.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bw4 = first_cand_b_dim[0] as c_int;
@@ -520,7 +540,7 @@ fn scan_row(
         if x >= w4 {
             return 1;
         }
-        cand_b = b[x as usize];
+        cand_b = *r.index(b_offset + x as usize);
         cand_bw4 = dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
         assert!(cand_bw4 < bw4);
         len = cmp::max(step, cand_bw4);
@@ -532,7 +552,7 @@ fn scan_col(
     cnt: &mut usize,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
-    r: &[refmvs_block],
+    r: &DisjointMut<AlignedVec64<refmvs_block>>,
     b: &[usize],
     bh4: c_int,
     h4: c_int,
@@ -542,7 +562,7 @@ fn scan_col(
     have_newmv_match: &mut c_int,
     have_refmv_match: &mut c_int,
 ) -> c_int {
-    let mut cand_b = r[b[0] + bx4 as usize];
+    let mut cand_b = *r.index(b[0] + bx4 as usize);
     let first_cand_bs = cand_b.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
     let mut cand_bh4 = first_cand_b_dim[1] as c_int;
@@ -590,7 +610,7 @@ fn scan_col(
         if y >= h4 {
             return 1;
         }
-        cand_b = r[b[y as usize] + bx4 as usize];
+        cand_b = *r.index(b[y as usize] + bx4 as usize);
         cand_bh4 = dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
         assert!(cand_bh4 < bh4);
         len = cmp::max(step, cand_bh4);
@@ -887,13 +907,14 @@ pub(crate) fn rav1d_refmvs_find(
             0 => 0,
             _ => 1,
         };
-        b_top = &rf.r[i - b_top_offset..];
+        b_top = i - b_top_offset;
         n_rows = scan_row(
             mvstack,
             cnt,
             r#ref,
             &gmv,
-            &b_top[b_top_offset..],
+            &rf.r,
+            b_top + b_top_offset,
             bw4,
             w4,
             max_rows as c_int,
@@ -946,7 +967,7 @@ pub(crate) fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            b_top[bw4 as usize + b_top_offset],
+            *rf.r.index(b_top + bw4 as usize + b_top_offset),
             r#ref,
             &gmv,
             &mut have_newmv,
@@ -1018,7 +1039,7 @@ pub(crate) fn rav1d_refmvs_find(
             mvstack,
             cnt,
             4,
-            b_top[b_top_offset - 1],
+            *rf.r.index(b_top + b_top_offset - 1),
             r#ref,
             &gmv,
             &mut have_dummy_newmv_match,
@@ -1032,13 +1053,15 @@ pub(crate) fn rav1d_refmvs_find(
     let mut n_cols = n_cols;
     for n in 2..=3 {
         if n > n_rows && n <= max_rows {
+            let ri =
+                rt.r[(((by4 & 31) - 2 * n as c_int + 1 | 1) + 5) as usize] + (bx4 as usize | 1);
             n_rows = n_rows.wrapping_add(scan_row(
                 mvstack,
                 cnt,
                 r#ref,
                 &gmv,
-                &rf.r[rt.r[(((by4 & 31) - 2 * n as c_int + 1 | 1) + 5) as usize]
-                    + (bx4 as usize | 1)..],
+                &rf.r,
+                ri,
                 bw4,
                 w4,
                 (1 + max_rows - n) as _,
@@ -1096,7 +1119,7 @@ pub(crate) fn rav1d_refmvs_find(
             if n_rows != !0 {
                 let mut x = 0;
                 while x < sz4 {
-                    let cand_b = b_top[x as usize + b_top_offset];
+                    let cand_b = *rf.r.index(b_top + x as usize + b_top_offset);
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1114,7 +1137,7 @@ pub(crate) fn rav1d_refmvs_find(
             if n_cols != !0 {
                 let mut y = 0;
                 while y < sz4 {
-                    let cand_b = rf.r[b_left[y as usize] + bx4 as usize - 1];
+                    let cand_b = *rf.r.index(b_left[y as usize] + bx4 as usize - 1);
                     add_compound_extended_candidate(
                         same,
                         &mut same_count,
@@ -1204,7 +1227,7 @@ pub(crate) fn rav1d_refmvs_find(
         if n_rows != !0 {
             let mut x = 0;
             while x < sz4 && *cnt < 2 {
-                let cand_b = b_top[x as usize + b_top_offset];
+                let cand_b = *rf.r.index(b_top + x as usize + b_top_offset);
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
                 x += dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
             }
@@ -1214,7 +1237,7 @@ pub(crate) fn rav1d_refmvs_find(
         if n_cols != !0 {
             let mut y = 0;
             while y < sz4 && *cnt < 2 {
-                let cand_b = rf.r[b_left[y as usize] + bx4 as usize - 1];
+                let cand_b = *rf.r.index(b_left[y as usize] + bx4 as usize - 1);
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
                 y += dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
             }
@@ -1264,11 +1287,32 @@ pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
     let stride = rf.rp_stride as isize;
     let ref_sign = &rf.mfmv_sign;
     let rp = rf.rp.offset(row_start8 as isize * stride);
-    let r = rt.r_ptrs(&rf.r);
-    let rr = <&[_; 31]>::try_from(&r[6..]).unwrap();
+    let ri = <&[_; 31]>::try_from(&rt.r[6..]).unwrap();
+
+    // SAFETY: Note that for asm calls, disjointedness is unchecked here,
+    // even with `#[cfg(debug_assertions)]`.  This is because the disjointedness
+    // is more fine-grained than the pointers passed to asm.
+    // For the Rust fallback fn, the extra args `&rf.r` and `ri`
+    // are passed to do allow for disjointedness checking.
+    let rr = &ri.map(|ri| {
+        if ri > rf.r.len() {
+            return ptr::null();
+        }
+        // SAFETY: `.add` is in-bounds; checked above.
+        unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
+    });
 
     (dsp.save_tmvs)(
-        rp, stride, rr, ref_sign, col_end8, row_end8, col_start8, row_start8,
+        rp,
+        stride,
+        rr,
+        ref_sign,
+        col_end8,
+        row_end8,
+        col_start8,
+        row_start8,
+        FFISafe::new(&rf.r),
+        ri,
     );
 }
 
@@ -1453,22 +1497,24 @@ unsafe extern "C" fn load_tmvs_c(
 unsafe extern "C" fn save_tmvs_c(
     mut rp: *mut refmvs_temporal_block,
     stride: ptrdiff_t,
-    rr: *const [*const refmvs_block; 31],
+    _rr: *const [*const refmvs_block; 31],
     ref_sign: *const [u8; 7],
     col_end8: c_int,
     row_end8: c_int,
     col_start8: c_int,
     row_start8: c_int,
+    r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
+    ri: &[usize; 31],
 ) {
-    let rr = &*rr;
+    let r = FFISafe::get(r);
     let ref_sign = &*ref_sign;
     let [col_end8, row_end8, col_start8, row_start8] =
         [col_end8, row_end8, col_start8, row_start8].map(|it| it as usize);
     for y in row_start8..row_end8 {
-        let b = rr[(y & 15) * 2];
+        let b = ri[(y & 15) * 2];
         let mut x = col_start8;
         while x < col_end8 {
-            let cand_b = *b.add(x * 2 + 1);
+            let cand_b = *r.index(b + x * 2 + 1);
             let bw8 = dav1d_block_dimensions[cand_b.bs as usize][0] + 1 >> 1;
             let block = |i: usize| {
                 let mv = cand_b.mv.mv[i];
