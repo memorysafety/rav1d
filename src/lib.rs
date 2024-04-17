@@ -218,8 +218,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
     (*c).cached_error_props = Default::default();
-    if rav1d_mem_pool_init(&mut (*c).segmap_pool).is_err()
-        || rav1d_mem_pool_init(&mut (*c).refmvs_pool).is_err()
+    if rav1d_mem_pool_init(&mut (*c).refmvs_pool).is_err()
         || rav1d_mem_pool_init(&mut (*c).cdf_pool).is_err()
     {
         return error(c, c_out);
@@ -684,7 +683,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         if (*c).refs[i as usize].p.p.frame_hdr.is_some() {
             rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
         }
-        rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).segmap);
+        let _ = mem::take(&mut (*c).refs[i as usize].segmap);
         rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
         let _ = mem::take(&mut (*c).cdf[i]);
         i += 1;
@@ -857,7 +856,7 @@ impl Drop for Rav1dContext {
                     );
                 }
                 rav1d_ref_dec(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).refmvs);
-                rav1d_ref_dec(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).segmap);
+                let _ = mem::take(&mut self.refs[n_4 as usize].segmap);
                 n_4 += 1;
             }
             let _ = mem::take(&mut self.seq_hdr);
@@ -865,7 +864,6 @@ impl Drop for Rav1dContext {
             let _ = mem::take(&mut self.mastering_display);
             let _ = mem::take(&mut self.content_light);
             let _ = mem::take(&mut self.itut_t35);
-            rav1d_mem_pool_end(self.segmap_pool);
             rav1d_mem_pool_end(self.refmvs_pool);
             rav1d_mem_pool_end(self.cdf_pool);
             rav1d_mem_pool_end(self.picture_pool);

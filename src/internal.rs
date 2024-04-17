@@ -28,6 +28,7 @@ use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
 use crate::src::disjoint_mut::DisjointMut;
+use crate::src::disjoint_mut::DisjointMutArcSlice;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dResult;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
@@ -223,7 +224,7 @@ pub(crate) struct TaskThreadData {
 #[repr(C)]
 pub(crate) struct Rav1dContext_refs {
     pub p: Rav1dThreadPicture,
-    pub segmap: *mut Rav1dRef,
+    pub segmap: Option<DisjointMutArcSlice<u8>>,
     pub refmvs: *mut Rav1dRef,
     pub refpoc: [c_uint; 7],
 }
@@ -285,7 +286,6 @@ pub struct Rav1dContext {
     pub(crate) task_thread: Arc<TaskThreadData>,
 
     // reference/entropy state
-    pub(crate) segmap_pool: *mut Rav1dMemPool,
     pub(crate) refmvs_pool: *mut Rav1dMemPool,
     pub(crate) refs: [Rav1dContext_refs; 8],
     pub(crate) cdf_pool: *mut Rav1dMemPool,
@@ -741,10 +741,8 @@ pub(crate) struct Rav1dFrameData {
     pub mvs: *mut refmvs_temporal_block,
     pub ref_mvs: [*mut refmvs_temporal_block; 7],
     pub ref_mvs_ref: [*mut Rav1dRef; 7],
-    pub cur_segmap_ref: *mut Rav1dRef,
-    pub prev_segmap_ref: *mut Rav1dRef,
-    pub cur_segmap: *mut u8,
-    pub prev_segmap: *const u8,
+    pub cur_segmap: Option<DisjointMutArcSlice<u8>>, // Previously pooled.
+    pub prev_segmap: Option<DisjointMutArcSlice<u8>>,
     pub refpoc: [c_uint; 7],
     pub refrefpoc: [[c_uint; 7]; 7],
     pub gmv_warp_allowed: [u8; 7],
