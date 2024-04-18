@@ -1003,7 +1003,8 @@ pub union Rav1dTaskContext_scratch_ac_txtp_map {
 pub struct Rav1dTaskContext_scratch_levels_pal_ac_interintra_edge {
     pub c2rust_unnamed: Rav1dTaskContext_scratch_levels_pal,
     pub ac_txtp_map: Rav1dTaskContext_scratch_ac_txtp_map,
-    pub pal_idx: [u8; 8192],
+    pub pal_idx_y: [u8; 32 * 64],
+    pub pal_idx_uv: [u8; 64 * 64], // also used as pre-pack scratch buffer
     pub interintra_edge_pal: BitDepthUnion<InterIntraEdgePal>,
 }
 

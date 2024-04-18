@@ -1444,10 +1444,13 @@ unsafe fn pal_pred_rust<BD: BitDepth>(
     while y < h {
         let mut x = 0;
         while x < w {
-            *dst.offset(x as isize) = *pal.offset(*idx.offset(x as isize) as isize);
-            x += 1;
+            let i = *idx;
+            assert!((i & 0x88) == 0);
+            *dst.offset(x as isize) = *pal.offset((i & 7) as isize);
+            *dst.offset(x as isize + 1) = *pal.offset((i >> 4) as isize);
+            idx = idx.offset(1);
+            x += 2;
         }
-        idx = idx.offset(w as isize);
         dst = dst.offset(BD::pxstride(stride));
         y += 1;
     }
