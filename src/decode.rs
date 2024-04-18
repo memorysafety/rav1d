@@ -3913,6 +3913,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
         c.refmvs_dsp.load_tmvs(
             &f.rf,
+            f.mvs,
+            &f.ref_mvs,
             ts.tiling.row,
             ts.tiling.col_start >> 1,
             ts.tiling.col_end >> 1,
@@ -4023,6 +4025,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         c.refmvs_dsp.save_tmvs(
             &t.rt,
             &f.rf,
+            f.mvs,
             ts.tiling.col_start >> 1,
             ts.tiling.col_end >> 1,
             t.b.y >> 1,
@@ -4318,7 +4321,6 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             seq_hdr,
             frame_hdr,
             &f.refpoc,
-            f.mvs,
             &f.refrefpoc,
             &f.ref_mvs,
             c.tc.len() as u32,
@@ -4514,8 +4516,16 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             t.b.y = sby << 4 + seq_hdr.sb128;
             let by_end = t.b.y + f.sb_step >> 1;
             if frame_hdr.use_ref_frame_mvs != 0 {
-                c.refmvs_dsp
-                    .load_tmvs(&f.rf, tile_row as c_int, 0, f.bw >> 1, t.b.y >> 1, by_end);
+                c.refmvs_dsp.load_tmvs(
+                    &f.rf,
+                    f.mvs,
+                    &f.ref_mvs,
+                    tile_row as c_int,
+                    0,
+                    f.bw >> 1,
+                    t.b.y >> 1,
+                    by_end,
+                );
             }
             for col in 0..cols {
                 t.ts = tile_row * cols + col;
@@ -4523,7 +4533,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             }
             if f.frame_hdr().frame_type.is_inter_or_switch() {
                 c.refmvs_dsp
-                    .save_tmvs(&t.rt, &f.rf, 0, f.bw >> 1, t.b.y >> 1, by_end);
+                    .save_tmvs(&t.rt, &f.rf, f.mvs, 0, f.bw >> 1, t.b.y >> 1, by_end);
             }
 
             // loopfilter + cdef + restoration
