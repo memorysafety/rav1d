@@ -308,6 +308,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         addr_of_mut!(f.lf.start_of_tile_row).write(Default::default());
         f.lf.last_sharpness = -(1 as c_int);
         rav1d_refmvs_init(&mut f.rf);
+        addr_of_mut!(f.lowest_pixel_mem).write(Default::default());
     }
     (*c).tc = (0..n_tc)
         .map(|n| {
