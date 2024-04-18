@@ -13,7 +13,6 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::slice;
 use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering;
 
@@ -206,15 +205,11 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             let cdef_off_y: ptrdiff_t = (sby * 4) as isize * BD::pxstride(src_stride[0]);
             let cdef_plane_y_sz = 4 * f.sbh as isize * y_stride;
             let y_span = cdef_plane_y_sz - y_stride;
+            let cdef_line_start = (f.lf.cdef_lpf_line[0] as isize + cmp::min(y_span, 0)) as usize;
             backup_lpf::<BD>(
                 c,
-                slice::from_raw_parts_mut(
-                    cdef_line_buf
-                        .as_mut_ptr()
-                        .add(f.lf.cdef_lpf_line[0])
-                        .offset(cmp::min(y_span, 0)),
-                    cdef_plane_y_sz.unsigned_abs(),
-                ),
+                &mut cdef_line_buf
+                    [cdef_line_start..cdef_line_start + cdef_plane_y_sz.unsigned_abs()],
                 (cdef_off_y - cmp::min(y_span, 0)) as usize,
                 src_stride[0],
                 src[0],
@@ -278,15 +273,12 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             if have_tt != 0 && resize != 0 {
                 let cdef_plane_uv_sz = 4 * f.sbh as isize * uv_stride;
                 let uv_span = cdef_plane_uv_sz - uv_stride;
+                let cdef_line_start =
+                    (f.lf.cdef_lpf_line[1] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
-                    slice::from_raw_parts_mut(
-                        cdef_line_buf
-                            .as_mut_ptr()
-                            .add(f.lf.cdef_lpf_line[1])
-                            .offset(cmp::min(uv_span, 0)),
-                        cdef_plane_uv_sz.unsigned_abs(),
-                    ),
+                    &mut cdef_line_buf
+                        [cdef_line_start..cdef_line_start + cdef_plane_uv_sz.unsigned_abs()],
                     (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
                     src_stride[1],
                     src[1],
@@ -338,15 +330,12 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
             if have_tt != 0 && resize != 0 {
                 let cdef_plane_uv_sz = 4 * f.sbh as isize * uv_stride;
                 let uv_span = cdef_plane_uv_sz - uv_stride;
+                let cdef_line_start =
+                    (f.lf.cdef_lpf_line[2] as isize + cmp::min(uv_span, 0)) as usize;
                 backup_lpf::<BD>(
                     c,
-                    slice::from_raw_parts_mut(
-                        cdef_line_buf
-                            .as_mut_ptr()
-                            .add(f.lf.cdef_lpf_line[2])
-                            .offset(cmp::min(uv_span, 0)),
-                        cdef_plane_uv_sz.unsigned_abs(),
-                    ),
+                    &mut cdef_line_buf
+                        [cdef_line_start..cdef_line_start + cdef_plane_uv_sz.unsigned_abs()],
                     (cdef_off_uv - cmp::min(uv_span, 0)) as usize,
                     src_stride[1],
                     src[2],
