@@ -368,6 +368,7 @@ impl SliceBounds for RangeToInclusive<usize> {}
 impl<T> DisjointMutIndex<[T]> for usize {
     type Output = <[T] as Index<usize>>::Output;
 
+    #[cfg_attr(debug_assertions, track_caller)]
     unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
         // SAFETY: The safety precondition for this trait method requires that
         // we can immutably dereference `slice`.
@@ -378,7 +379,7 @@ impl<T> DisjointMutIndex<[T]> for usize {
             // an allocation of sufficient length.
             unsafe { (slice as *mut T).add(self) }
         } else {
-            panic!("{:?} was not a valid index", &self);
+            panic!("index out of bounds: the len is {len} but the index is {self}");
         }
     }
 }
@@ -389,6 +390,7 @@ where
 {
     type Output = <[T] as Index<Range<usize>>>::Output;
 
+    #[cfg_attr(debug_assertions, track_caller)]
     unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
         // SAFETY: The safety precondition for this trait method
         // requires that we can immutably dereference `slice`.
@@ -402,7 +404,16 @@ where
             let data = unsafe { (slice as *mut T).add(start) };
             ptr::slice_from_raw_parts_mut(data, end - start)
         } else {
-            panic!("{:?} was not a valid index", &self);
+            if start > end {
+                panic!("slice index starts at {start} but ends at {end}");
+            }
+            if end > len {
+                panic!("range end index {end} out of range for slice of length {len}");
+            }
+            if start >= len {
+                panic!("range start index {start} out of range for slice of length {len}")
+            }
+            unreachable!();
         }
     }
 }
@@ -434,8 +445,10 @@ mod release {
 mod debug {
     use super::*;
     use std::backtrace::Backtrace;
+    use std::backtrace::BacktraceStatus;
     use std::fmt::Debug;
     use std::ops::Bound;
+    use std::panic::Location;
     use std::sync::Mutex;
     use std::thread;
     use std::thread::ThreadId;
@@ -443,20 +456,52 @@ mod debug {
     #[derive(Debug)]
     struct DisjointMutBounds {
         bounds: Bounds,
-
-        #[allow(unused)]
+        mutable: bool,
+        location: &'static Location<'static>,
         backtrace: Backtrace,
-        #[allow(unused)]
         thread: ThreadId,
     }
 
     impl DisjointMutBounds {
-        fn new(bounds: Bounds) -> Self {
+        #[track_caller]
+        pub fn new(bounds: Bounds, mutable: bool) -> Self {
             Self {
                 bounds,
+                mutable,
+                location: Location::caller(),
                 backtrace: Backtrace::capture(),
                 thread: thread::current().id(),
             }
+        }
+
+        pub fn check_overlaps(&self, existing: &Self) {
+            if !self.bounds.overlaps(&existing.bounds) {
+                return;
+            }
+            // Example:
+            //
+            //         overlapping DisjointMut:
+            //  current: &mut _[0..2] on ThreadId(2) at src/disjoint_mut.rs:855:24
+            // existing:    & _[0..1] on ThreadId(2) at src/disjoint_mut.rs:854:24
+            panic!("\toverlapping DisjointMut:\n current: {self}\nexisting: {existing}");
+        }
+    }
+
+    impl Display for DisjointMutBounds {
+        fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+            let Self {
+                bounds,
+                mutable,
+                location,
+                backtrace,
+                thread,
+            } = self;
+            let mutable = if *mutable { "&mut" } else { "   &" };
+            write!(f, "{mutable} _[{bounds}] on {thread:?} at {location}")?;
+            if backtrace.status() == BacktraceStatus::Captured {
+                write!(f, ":\nstack backtrace:\n{backtrace}")?;
+            }
+            Ok(())
         }
     }
 
@@ -476,57 +521,28 @@ mod debug {
         }
     }
 
-    #[track_caller]
-    fn check_overlaps(
-        current_bounds: &Bounds,
-        current_mutable: bool,
-        existing: &DisjointMutBounds,
-        existing_mutable: bool,
-    ) {
-        let DisjointMutBounds {
-            bounds: existing_bounds,
-            backtrace: existing_backtrace,
-            thread: existing_thread,
-        } = existing;
-        if !current_bounds.overlaps(existing_bounds) {
-            return;
-        }
-        let current_thread = thread::current().id();
-        let [current_mutable, existing_mutable] =
-            [current_mutable, existing_mutable].map(|mutable| if mutable { "&mut" } else { "&" });
-        // Example:
-        //
-        // &mut _[0..8] on ThreadId(3) overlaps with existing &mut _[0..8] on ThreadId(2):
-        // stack backtrace:
-        //    0: rav1d::src::disjoint_mut::debug::DisjointMutBounds::new
-        //              at ./src/disjoint_mut.rs:443:28
-        panic!("{current_mutable} _[{current_bounds}] on {current_thread:?} overlaps with existing {existing_mutable} _[{existing_bounds}] on {existing_thread:?}:\nstack backtrace:\n{existing_backtrace}");
-    }
-
     impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         #[track_caller]
         fn add_mut_bounds(&self, bounds: Bounds) {
-            for b in self.bounds.immutable.lock().unwrap().iter() {
-                check_overlaps(&bounds, true, b, false);
+            let current = DisjointMutBounds::new(bounds, true);
+            for existing in self.bounds.immutable.lock().unwrap().iter() {
+                current.check_overlaps(existing);
             }
             let mut mut_bounds = self.bounds.mutable.lock().unwrap();
-            for b in mut_bounds.iter() {
-                check_overlaps(&bounds, true, b, true);
+            for existing in mut_bounds.iter() {
+                current.check_overlaps(existing);
             }
-            mut_bounds.push(DisjointMutBounds::new(bounds));
+            mut_bounds.push(current);
         }
 
         #[track_caller]
         fn add_immut_bounds(&self, bounds: Bounds) {
+            let current = DisjointMutBounds::new(bounds, false);
             let mut_bounds = self.bounds.mutable.lock().unwrap();
-            for b in mut_bounds.iter() {
-                check_overlaps(&bounds, false, b, true);
+            for existing in mut_bounds.iter() {
+                current.check_overlaps(existing);
             }
-            self.bounds
-                .immutable
-                .lock()
-                .unwrap()
-                .push(DisjointMutBounds::new(bounds));
+            self.bounds.immutable.lock().unwrap().push(current);
         }
 
         fn remove_bound(&self, bounds: &Bounds, mutable: bool) {
