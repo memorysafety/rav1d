@@ -1,7 +1,3 @@
-use crate::src::mem::rav1d_mem_pool_pop;
-use crate::src::mem::rav1d_mem_pool_push;
-use crate::src::mem::Rav1dMemPool;
-use crate::src::mem::Rav1dMemPoolBuffer;
 use libc::free;
 use libc::malloc;
 use std::ffi::c_int;
@@ -22,37 +18,6 @@ pub struct Rav1dRef {
 #[inline]
 pub unsafe fn rav1d_ref_inc(r#ref: *mut Rav1dRef) {
     (*r#ref).ref_cnt.fetch_add(1, Ordering::Relaxed);
-}
-
-unsafe extern "C" fn pool_free_callback(data: *const u8, user_data: *mut c_void) {
-    rav1d_mem_pool_push(
-        data as *mut Rav1dMemPool,
-        user_data as *mut Rav1dMemPoolBuffer,
-    );
-}
-
-pub unsafe fn rav1d_ref_create_using_pool(
-    pool: *mut Rav1dMemPool,
-    mut size: usize,
-) -> *mut Rav1dRef {
-    size = size
-        .wrapping_add(::core::mem::size_of::<*mut c_void>())
-        .wrapping_sub(1)
-        & !(::core::mem::size_of::<*mut c_void>()).wrapping_sub(1);
-    let buf: *mut Rav1dMemPoolBuffer =
-        rav1d_mem_pool_pop(pool, size.wrapping_add(::core::mem::size_of::<Rav1dRef>()));
-    if buf.is_null() {
-        return 0 as *mut Rav1dRef;
-    }
-    let res: *mut Rav1dRef =
-        &mut *(buf as *mut Rav1dRef).offset(-(1 as c_int) as isize) as *mut Rav1dRef;
-    (*res).data = (*buf).data;
-    (*res).const_data = pool as *const c_void;
-    (*res).ref_cnt = AtomicI32::new(1);
-    (*res).free_ref = 0 as c_int;
-    (*res).free_callback = Some(pool_free_callback);
-    (*res).user_data = buf as *mut c_void;
-    return res;
 }
 
 pub unsafe fn rav1d_ref_wrap(

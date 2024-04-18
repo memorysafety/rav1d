@@ -54,7 +54,6 @@ use crate::src::mem::Rav1dMemPool;
 use crate::src::msac::MsacContext;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::r#ref::Rav1dRef;
 use crate::src::recon::backup_ipred_edge_fn;
 use crate::src::recon::copy_pal_block_fn;
 use crate::src::recon::filter_sbrow_fn;
@@ -225,7 +224,7 @@ pub(crate) struct TaskThreadData {
 pub(crate) struct Rav1dContext_refs {
     pub p: Rav1dThreadPicture,
     pub segmap: Option<DisjointMutArcSlice<u8>>,
-    pub refmvs: *mut Rav1dRef,
+    pub refmvs: Option<DisjointMutArcSlice<refmvs_temporal_block>>,
     pub refpoc: [c_uint; 7],
 }
 
@@ -738,10 +737,8 @@ pub(crate) struct Rav1dFrameData {
     pub cur: Rav1dPicture,
     // after super-resolution upscaling
     pub sr_cur: Rav1dThreadPicture,
-    pub mvs_ref: *mut Rav1dRef,
-    pub mvs: *mut refmvs_temporal_block,
-    pub ref_mvs: [*mut refmvs_temporal_block; 7],
-    pub ref_mvs_ref: [*mut Rav1dRef; 7],
+    pub mvs: Option<DisjointMutArcSlice<refmvs_temporal_block>>, // Previously pooled.
+    pub ref_mvs: [Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
     pub cur_segmap: Option<DisjointMutArcSlice<u8>>, // Previously pooled.
     pub prev_segmap: Option<DisjointMutArcSlice<u8>>,
     pub refpoc: [c_uint; 7],

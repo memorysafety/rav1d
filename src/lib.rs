@@ -51,7 +51,6 @@ use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::refmvs::rav1d_refmvs_clear;
 use crate::src::refmvs::rav1d_refmvs_dsp_init;
 use crate::src::refmvs::rav1d_refmvs_init;
@@ -679,7 +678,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
         }
         let _ = mem::take(&mut (*c).refs[i as usize].segmap);
-        rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
+        let _ = mem::take(&mut (*c).refs[i as usize].refmvs);
         let _ = mem::take(&mut (*c).cdf[i]);
         i += 1;
     }
@@ -850,7 +849,7 @@ impl Drop for Rav1dContext {
                         &mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p,
                     );
                 }
-                rav1d_ref_dec(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).refmvs);
+                let _ = mem::take(&mut self.refs[n_4 as usize].refmvs);
                 let _ = mem::take(&mut self.refs[n_4 as usize].segmap);
                 n_4 += 1;
             }
