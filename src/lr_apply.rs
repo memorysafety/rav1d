@@ -45,8 +45,6 @@ unsafe fn lr_stripe<BD: BitDepth>(
     let sby = y + (if y != 0 { 8 << ss_ver } else { 0 }) >> 6 - ss_ver + seq_hdr.sb128;
     let have_tt = (c.tc.len() > 1) as c_int;
     let lpf_stride = BD::pxstride(stride);
-    let lr_line_buf_lock = f.lf.lr_line_buf.read().unwrap();
-    let lr_line_buf = BD::cast_pixel_slice(&lr_line_buf_lock);
     let mut lpf_offset = f.lf.lr_lpf_line[plane as usize] as isize;
     lpf_offset += (have_tt * (sby * (4 << seq_hdr.sb128) - 4)) as isize * lpf_stride + x as isize;
     // The first stripe of the frame is shorter by 8 luma pixel rows.
@@ -93,6 +91,9 @@ unsafe fn lr_stripe<BD: BitDepth>(
         // Change the HAVE_BOTTOM bit in edges to (sby + 1 != f->sbh || y + stripe_h != row_h)
         edges ^= (-((sby + 1 != f.sbh || y + stripe_h != row_h) as c_int) as LrEdgeFlags ^ edges)
             & LR_HAVE_BOTTOM;
+        // SAFETY: Access to lr_line_buf here is unchecked, as we may need to
+        // pass an out-of-bounds pointer to this function which is then indexed
+        // back into bounds.
         lr_fn(
             p.as_mut_ptr().add(p_offset).cast(),
             stride,
@@ -101,7 +102,9 @@ unsafe fn lr_stripe<BD: BitDepth>(
             // `lr_line_buf`, so we must use `.wrapping_offset` here.
             // `.wrapping_offset` is needed since `.offset` requires the pointer is in bounds,
             // which `.wrapping_offset` does not, and delays that requirement to when the pointer is dereferenced
-            lr_line_buf.as_ptr().wrapping_offset(lpf_offset).cast(),
+            (f.lf.lr_line_buf.as_mut_ptr() as *const BD::Pixel)
+                .wrapping_offset(lpf_offset)
+                .cast(),
             unit_w,
             stripe_h,
             &mut params,

@@ -108,7 +108,6 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::OnceLock;
-use std::sync::RwLock;
 use std::thread::JoinHandle;
 
 #[repr(C)]
@@ -629,8 +628,11 @@ pub struct Rav1dFrameContext_lf {
     pub last_sharpness: c_int,
     pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub tx_lpf_right_edge: TxLpfRightEdge,
-    pub cdef_line_buf: DisjointMut<AlignedVec32<u8>>, /* AlignedVec32<DynPixel> */
-    pub lr_line_buf: RwLock<AlignedVec64<u8>>,
+    // cdef_line_buf was originally aligned to 32 bytes, but we need to pass
+    // both cdef_line_buf and lr_line_buf as the same parameter type to
+    // backup2lines.
+    pub cdef_line_buf: DisjointMut<AlignedVec64<u8>>, /* AlignedVec32<DynPixel> */
+    pub lr_line_buf: DisjointMut<AlignedVec64<u8>>,
     pub cdef_line: [[usize; 3]; 2], /* [2 pre/post][3 plane] */
     pub cdef_lpf_line: [usize; 3],  /* plane */
     pub lr_lpf_line: [usize; 3],    /* plane */

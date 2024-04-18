@@ -4218,7 +4218,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     alloc_sz += y_stride.unsigned_abs() * num_lines as usize;
     alloc_sz += uv_stride.unsigned_abs() * num_lines as usize * 2;
     // TODO: Fallible allocation
-    f.lf.lr_line_buf.try_write().unwrap().resize(alloc_sz, 0);
+    f.lf.lr_line_buf.resize(alloc_sz, 0);
 
     let y_stride_px = bpc.pxstride(y_stride);
     let uv_stride_px = bpc.pxstride(uv_stride);
