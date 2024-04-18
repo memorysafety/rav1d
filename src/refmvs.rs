@@ -222,61 +222,6 @@ pub(crate) struct RefMvsFrame {
     pub n_frame_threads: u32,
 }
 
-impl RefMvsFrame {
-    pub fn as_mut_dav1d<'a>(&'a self) -> refmvs_frame<'a> {
-        let Self {
-            iw4,
-            ih4,
-            iw8,
-            ih8,
-            sbsz,
-            use_ref_frame_mvs,
-            sign_bias,
-            mfmv_sign,
-            pocdiff,
-            mfmv_ref,
-            mfmv_ref2cur,
-            mfmv_ref2ref,
-            n_mfmvs,
-            rp,
-            rp_ref,
-            ref rp_proj,
-            rp_stride,
-            ref r,
-            r_stride,
-            n_tile_rows,
-            n_tile_threads,
-            n_frame_threads,
-        } = *self;
-        refmvs_frame {
-            _lifetime: PhantomData,
-            _frm_hdr: ptr::null(), // never used
-            iw4,
-            ih4,
-            iw8,
-            ih8,
-            sbsz,
-            use_ref_frame_mvs,
-            sign_bias,
-            mfmv_sign,
-            pocdiff,
-            mfmv_ref,
-            mfmv_ref2cur,
-            mfmv_ref2ref,
-            n_mfmvs,
-            rp,
-            rp_ref,
-            rp_proj: rp_proj.as_mut_ptr(),
-            rp_stride: rp_stride as _,
-            r: r.as_mut_ptr(),
-            r_stride: r_stride as _,
-            n_tile_rows: n_tile_rows as _,
-            n_tile_threads: n_tile_threads as _,
-            n_frame_threads: n_frame_threads as _,
-        }
-    }
-}
-
 #[repr(C)]
 pub struct refmvs_tile_range {
     pub start: c_int,
@@ -372,7 +317,56 @@ impl Rav1dRefmvsDSPContext {
         row_start8: c_int,
         row_end8: c_int,
     ) {
-        let rf_dav1d = rf.as_mut_dav1d();
+        let RefMvsFrame {
+            iw4,
+            ih4,
+            iw8,
+            ih8,
+            sbsz,
+            use_ref_frame_mvs,
+            sign_bias,
+            mfmv_sign,
+            pocdiff,
+            mfmv_ref,
+            mfmv_ref2cur,
+            mfmv_ref2ref,
+            n_mfmvs,
+            rp,
+            rp_ref,
+            ref rp_proj,
+            rp_stride,
+            ref r,
+            r_stride,
+            n_tile_rows,
+            n_tile_threads,
+            n_frame_threads,
+        } = *rf;
+        let rf_dav1d = refmvs_frame {
+            _lifetime: PhantomData,
+            _frm_hdr: ptr::null(), // never used
+            iw4,
+            ih4,
+            iw8,
+            ih8,
+            sbsz,
+            use_ref_frame_mvs,
+            sign_bias,
+            mfmv_sign,
+            pocdiff,
+            mfmv_ref,
+            mfmv_ref2cur,
+            mfmv_ref2ref,
+            n_mfmvs,
+            rp,
+            rp_ref,
+            rp_proj: rp_proj.as_mut_ptr(),
+            rp_stride: rp_stride as _,
+            r: r.as_mut_ptr(),
+            r_stride: r_stride as _,
+            n_tile_rows: n_tile_rows as _,
+            n_tile_threads: n_tile_threads as _,
+            n_frame_threads: n_frame_threads as _,
+        };
         (self.load_tmvs)(
             &rf_dav1d,
             tile_row_idx,
