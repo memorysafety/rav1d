@@ -1,6 +1,4 @@
 use crate::include::common::attributes::ctz;
-use crate::include::common::bitdepth::BitDepth16;
-use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign64;
@@ -21,7 +19,6 @@ use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
-use crate::src::cdef::rav1d_cdef_dsp_init;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
 use crate::src::cdf::rav1d_cdf_thread_init_static;
@@ -62,10 +59,10 @@ use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
-use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::Bxy;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
+use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
@@ -75,8 +72,6 @@ use crate::src::internal::TileStateRef;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
-use crate::src::ipred::rav1d_intra_pred_dsp_init;
-use crate::src::itx::rav1d_itx_dsp_init;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockLevel;
@@ -116,9 +111,6 @@ use crate::src::lf_mask::rav1d_create_lf_mask_inter;
 use crate::src::lf_mask::rav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
-use crate::src::loopfilter::rav1d_loop_filter_dsp_init;
-use crate::src::looprestoration::rav1d_loop_restoration_dsp_init;
-use crate::src::mc::rav1d_mc_dsp_init;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
@@ -4691,9 +4683,6 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     f.seq_hdr = c.seq_hdr.clone();
     f.frame_hdr = mem::take(&mut c.frame_hdr);
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    f.dsp = &mut c.dsp[seq_hdr.hbd as usize];
-
-    let bpc = 8 + 2 * seq_hdr.hbd;
 
     unsafe fn on_error(f: &mut Rav1dFrameData, c: &Rav1dContext, out: *mut Rav1dThreadPicture) {
         f.task_thread.error = AtomicI32::new(1);
@@ -4719,45 +4708,15 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         f.task_thread.finished.store(true, Ordering::SeqCst);
     }
 
-    // TODO(kkysen) Rather than lazy initializing this,
-    // we should probably initialize all the fn ptrs
-    // when `c` is allocated during [`rav1d_open`].
-    if !(*f.dsp).initialized {
-        let dsp = &mut c.dsp[seq_hdr.hbd as usize];
-        dsp.initialized = true;
-
-        match bpc {
-            #[cfg(feature = "bitdepth_8")]
-            8 => {
-                rav1d_cdef_dsp_init::<BitDepth8>(&mut dsp.cdef);
-                rav1d_intra_pred_dsp_init::<BitDepth8>(&mut dsp.ipred);
-                rav1d_itx_dsp_init::<BitDepth8>(&mut dsp.itx, bpc);
-                rav1d_loop_filter_dsp_init::<BitDepth8>(&mut dsp.lf);
-                rav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
-                rav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
-                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth8>();
-            }
-            #[cfg(feature = "bitdepth_16")]
-            10 | 12 => {
-                rav1d_cdef_dsp_init::<BitDepth16>(&mut dsp.cdef);
-                rav1d_intra_pred_dsp_init::<BitDepth16>(&mut dsp.ipred);
-                rav1d_itx_dsp_init::<BitDepth16>(&mut dsp.itx, bpc);
-                rav1d_loop_filter_dsp_init::<BitDepth16>(&mut dsp.lf);
-                rav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
-                rav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
-                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>();
-            }
-            _ => {
-                writeln!(
-                    c.logger,
-                    "Compiled without support for {}-bit decoding",
-                    8 + 2 * seq_hdr.hbd
-                );
-                on_error(f, c, out);
-                return Err(ENOPROTOOPT);
-            }
+    let bpc = 8 + 2 * seq_hdr.hbd;
+    match Rav1dDSPContext::get(bpc) {
+        Some(dsp) => f.dsp = dsp,
+        None => {
+            writeln!(c.logger, "Compiled without support for {bpc}-bit decoding",);
+            on_error(f, c, out);
+            return Err(ENOPROTOOPT);
         }
-    }
+    };
 
     fn scale_fac(ref_sz: i32, this_sz: i32) -> i32 {
         ((ref_sz << 14) + (this_sz >> 1)) / this_sz

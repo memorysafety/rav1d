@@ -16,6 +16,7 @@ use crate::src::error::Rav1dResult;
 use crate::src::fg_apply::rav1d_apply_grain_row;
 use crate::src::fg_apply::rav1d_prep_grain;
 use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
@@ -595,17 +596,12 @@ unsafe fn abort_frame(c: &Rav1dContext, f: &mut Rav1dFrameData, error: Rav1dResu
 
 #[inline]
 unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
-    c: &Rav1dContext,
     ttd: &'ttd TaskThreadData,
     task_thread_lock: &'l mut Option<MutexGuard<'ttd, TaskThreadData_delayed_fg>>,
 ) {
     let delayed_fg = &mut task_thread_lock.as_mut().unwrap();
     let in_0 = delayed_fg.in_0;
     let out = delayed_fg.out;
-    let mut off = 0;
-    if (*out).p.bpc != 8 as c_int {
-        off = ((*out).p.bpc >> 1) - 4;
-    }
     let mut row;
     let mut progmax;
     let mut done;
@@ -618,18 +614,18 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             // TODO(SJC): the thread lock was dropped here, but we need the grain out of it...
             match (*out).p.bpc {
                 #[cfg(feature = "bitdepth_8")]
-                8 => {
+                bpc @ 8 => {
                     rav1d_prep_grain::<BitDepth8>(
-                        &(*(c.dsp).as_ptr().offset(0)).fg,
+                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut *out,
                         &*in_0,
                         BitDepth8::select_mut(&mut delayed_fg.grain),
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
-                10 | 12 => {
+                bpc @ 10 | bpc @ 12 => {
                     rav1d_prep_grain::<BitDepth16>(
-                        &(*(c.dsp).as_ptr().offset(off as isize)).fg,
+                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut *out,
                         &*in_0,
                         BitDepth16::select_mut(&mut delayed_fg.grain),
@@ -666,9 +662,9 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             let delayed_fg = ttd.delayed_fg.lock().unwrap();
             match (*out).p.bpc {
                 #[cfg(feature = "bitdepth_8")]
-                8 => {
+                bpc @ 8 => {
                     rav1d_apply_grain_row::<BitDepth8>(
-                        &(*((*c).dsp).as_ptr().offset(0)).fg,
+                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut *out,
                         &*in_0,
                         BitDepth8::select(&delayed_fg.grain),
@@ -676,9 +672,9 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
-                10 | 12 => {
+                bpc @ 10 | bpc @ 12 => {
                     rav1d_apply_grain_row::<BitDepth16>(
-                        &(*((*c).dsp).as_ptr().offset(off as isize)).fg,
+                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut *out,
                         &*in_0,
                         BitDepth16::select(&delayed_fg.grain),
@@ -745,7 +741,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
         merge_pending(c);
         if task_thread_lock.as_ref().unwrap().exec != 0 {
             // run delayed film grain first
-            delayed_fg_task(c, ttd, &mut task_thread_lock);
+            delayed_fg_task(ttd, &mut task_thread_lock);
             continue 'outer;
         }
 

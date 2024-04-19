@@ -3,6 +3,7 @@ use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
+use crate::src::cpu::CpuFlags;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::ADST_FLIPADST;
@@ -46,12 +47,6 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
-
-#[cfg(feature = "asm")]
-use cfg_if::cfg_if;
 
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::bd_fn;
@@ -531,7 +526,7 @@ macro_rules! assign_itx_fn {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][$type_enum as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][$type_enum as usize]
                 = Some(bd_fn!(BD, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
@@ -540,7 +535,7 @@ macro_rules! assign_itx_fn {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
                 = Some(bd_fn!(BD, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
@@ -552,7 +547,7 @@ macro_rules! assign_itx_bpc_fn {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
                 = Some(bpc_fn!($bpc bpc, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
@@ -561,7 +556,7 @@ macro_rules! assign_itx_bpc_fn {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][$type_enum as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][$type_enum as usize]
                 = Some(bpc_fn!($bpc bpc, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
@@ -616,7 +611,6 @@ macro_rules! assign_itx2_fn {
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-#[rustfmt::skip]
 macro_rules! assign_itx12_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx2_bpc_fn!($c, $w, $h, $bpc bpc, $ext);
@@ -630,7 +624,6 @@ macro_rules! assign_itx12_bpc_fn {
         assign_itx_bpc_fn!($c, $w, $h, flipadst_adst, ADST_FLIPADST, $bpc bpc, $ext);
         assign_itx_bpc_fn!($c, $w, $h, flipadst_flipadst, FLIPADST_FLIPADST, $bpc bpc, $ext);
         assign_itx_bpc_fn!($c, $w, $h, identity_dct, V_DCT, $bpc bpc, $ext);
-
     }};
 
     ($c:ident, $pfx:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
@@ -649,7 +642,6 @@ macro_rules! assign_itx12_bpc_fn {
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-#[rustfmt::skip]
 macro_rules! assign_itx12_fn {
     ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
         assign_itx2_fn!($c, BD, $w, $h, $ext);
@@ -675,7 +667,16 @@ macro_rules! assign_itx12_fn {
         assign_itx_fn!($c, BD, $pfx, $w, $h, adst_flipadst, FLIPADST_ADST, $ext);
         assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_dct, DCT_FLIPADST, $ext);
         assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_adst, ADST_FLIPADST, $ext);
-        assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_flipadst, FLIPADST_FLIPADST, $ext);
+        assign_itx_fn!(
+            $c,
+            BD,
+            $pfx,
+            $w,
+            $h,
+            flipadst_flipadst,
+            FLIPADST_FLIPADST,
+            $ext
+        );
         assign_itx_fn!($c, BD, $pfx, $w, $h, identity_dct, V_DCT, $ext);
     }};
 }
@@ -718,227 +719,12 @@ macro_rules! assign_itx16_fn {
     }};
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-#[inline(always)]
-#[rustfmt::skip]
-unsafe fn itx_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
-
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::SSE2) {
-        return;
-    }
-
-    assign_itx_fn!(c, BD, 4, 4, wht_wht, WHT_WHT, sse2);
-
-    if !flags.contains(CpuFlags::SSSE3) {
-        return;
-    }
-
-    if BD::BITDEPTH == 8 {
-        assign_itx16_bpc_fn!(c,     4,  4, 8 bpc, ssse3);
-        assign_itx16_bpc_fn!(c, R,  4,  8, 8 bpc, ssse3);
-        assign_itx16_bpc_fn!(c, R,  8,  4, 8 bpc, ssse3);
-        assign_itx16_bpc_fn!(c,     8,  8, 8 bpc, ssse3);
-        assign_itx16_bpc_fn!(c, R,  4, 16, 8 bpc, ssse3);
-        assign_itx16_bpc_fn!(c, R, 16,  4, 8 bpc, ssse3);
-        assign_itx16_bpc_fn!(c, R,  8, 16, 8 bpc, ssse3);
-        assign_itx16_bpc_fn!(c, R, 16,  8, 8 bpc, ssse3);
-        assign_itx12_bpc_fn!(c,    16, 16, 8 bpc, ssse3);
-        assign_itx2_bpc_fn! (c, R,  8, 32, 8 bpc, ssse3);
-        assign_itx2_bpc_fn! (c, R, 32,  8, 8 bpc, ssse3);
-        assign_itx2_bpc_fn! (c, R, 16, 32, 8 bpc, ssse3);
-        assign_itx2_bpc_fn! (c, R, 32, 16, 8 bpc, ssse3);
-        assign_itx2_bpc_fn! (c,    32, 32, 8 bpc, ssse3);
-        assign_itx1_bpc_fn! (c, R, 16, 64, 8 bpc, ssse3);
-        assign_itx1_bpc_fn! (c, R, 32, 64, 8 bpc, ssse3);
-        assign_itx1_bpc_fn! (c, R, 64, 16, 8 bpc, ssse3);
-        assign_itx1_bpc_fn! (c, R, 64, 32, 8 bpc, ssse3);
-        assign_itx1_bpc_fn! (c,    64, 64, 8 bpc, ssse3);
-    }
-
-    if !flags.contains(CpuFlags::SSE41) {
-        return;
-    }
-
-    if BD::BITDEPTH == 16 {
-        if bpc == 10 {
-            assign_itx16_bpc_fn!(c,     4,  4, 16 bpc, sse4);
-            assign_itx16_bpc_fn!(c, R,  4,  8, 16 bpc, sse4);
-            assign_itx16_bpc_fn!(c, R,  4, 16, 16 bpc, sse4);
-            assign_itx16_bpc_fn!(c, R,  8,  4, 16 bpc, sse4);
-            assign_itx16_bpc_fn!(c,     8,  8, 16 bpc, sse4);
-            assign_itx16_bpc_fn!(c, R,  8, 16, 16 bpc, sse4);
-            assign_itx16_bpc_fn!(c, R, 16,  4, 16 bpc, sse4);
-            assign_itx16_bpc_fn!(c, R, 16,  8, 16 bpc, sse4);
-            assign_itx12_bpc_fn!(c,    16, 16, 16 bpc, sse4);
-            assign_itx2_bpc_fn! (c, R,  8, 32, 16 bpc, sse4);
-            assign_itx2_bpc_fn! (c, R, 16, 32, 16 bpc, sse4);
-            assign_itx2_bpc_fn! (c, R, 32,  8, 16 bpc, sse4);
-            assign_itx2_bpc_fn! (c, R, 32, 16, 16 bpc, sse4);
-            assign_itx2_bpc_fn! (c,    32, 32, 16 bpc, sse4);
-            assign_itx1_bpc_fn! (c, R, 16, 64, 16 bpc, sse4);
-            assign_itx1_bpc_fn! (c, R, 32, 64, 16 bpc, sse4);
-            assign_itx1_bpc_fn! (c, R, 64, 16, 16 bpc, sse4);
-            assign_itx1_bpc_fn! (c, R, 64, 32, 16 bpc, sse4);
-            assign_itx1_bpc_fn! (c,    64, 64, 16 bpc, sse4);
-        }
-    }
-
-    #[cfg(target_arch = "x86_64")]
-    {
-        if !flags.contains(CpuFlags::AVX2) {
-            return;
-        }
-
-        assign_itx_fn!(c, BD, 4, 4, wht_wht, WHT_WHT, avx2);
-
-        if BD::BITDEPTH == 8 {
-            assign_itx16_bpc_fn!(c,     4,  4, 8 bpc, avx2);
-            assign_itx16_bpc_fn!(c, R,  4,  8, 8 bpc, avx2);
-            assign_itx16_bpc_fn!(c, R,  4, 16, 8 bpc, avx2);
-            assign_itx16_bpc_fn!(c, R,  8,  4, 8 bpc, avx2);
-            assign_itx16_bpc_fn!(c,     8,  8, 8 bpc, avx2);
-            assign_itx16_bpc_fn!(c, R,  8, 16, 8 bpc, avx2);
-            assign_itx16_bpc_fn!(c, R, 16,  4, 8 bpc, avx2);
-            assign_itx16_bpc_fn!(c, R, 16,  8, 8 bpc, avx2);
-            assign_itx12_bpc_fn!(c,    16, 16, 8 bpc, avx2);
-            assign_itx2_bpc_fn! (c, R,  8, 32, 8 bpc, avx2);
-            assign_itx2_bpc_fn! (c, R, 16, 32, 8 bpc, avx2);
-            assign_itx2_bpc_fn! (c, R, 32,  8, 8 bpc, avx2);
-            assign_itx2_bpc_fn! (c, R, 32, 16, 8 bpc, avx2);
-            assign_itx2_bpc_fn! (c,    32, 32, 8 bpc, avx2);
-            assign_itx1_bpc_fn! (c, R, 16, 64, 8 bpc, avx2);
-            assign_itx1_bpc_fn! (c, R, 32, 64, 8 bpc, avx2);
-            assign_itx1_bpc_fn! (c, R, 64, 16, 8 bpc, avx2);
-            assign_itx1_bpc_fn! (c, R, 64, 32, 8 bpc, avx2);
-            assign_itx1_bpc_fn! (c,    64, 64, 8 bpc, avx2);
-        } else {
-            if bpc == 10 {
-                assign_itx16_bpc_fn!(c,     4,  4, 10 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R,  4,  8, 10 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R,  4, 16, 10 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R,  8,  4, 10 bpc, avx2);
-                assign_itx16_bpc_fn!(c,     8,  8, 10 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R,  8, 16, 10 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R, 16,  4, 10 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R, 16,  8, 10 bpc, avx2);
-                assign_itx12_bpc_fn!(c,    16, 16, 10 bpc, avx2);
-                assign_itx2_bpc_fn! (c, R,  8, 32, 10 bpc, avx2);
-                assign_itx2_bpc_fn! (c, R, 16, 32, 10 bpc, avx2);
-                assign_itx2_bpc_fn! (c, R, 32,  8, 10 bpc, avx2);
-                assign_itx2_bpc_fn! (c, R, 32, 16, 10 bpc, avx2);
-                assign_itx2_bpc_fn! (c,    32, 32, 10 bpc, avx2);
-                assign_itx1_bpc_fn! (c, R, 16, 64, 10 bpc, avx2);
-                assign_itx1_bpc_fn! (c, R, 32, 64, 10 bpc, avx2);
-                assign_itx1_bpc_fn! (c, R, 64, 16, 10 bpc, avx2);
-                assign_itx1_bpc_fn! (c, R, 64, 32, 10 bpc, avx2);
-                assign_itx1_bpc_fn! (c,    64, 64, 10 bpc, avx2);
-            } else {
-                assign_itx16_bpc_fn!(c,     4,  4, 12 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R,  4,  8, 12 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R,  4, 16, 12 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R,  8,  4, 12 bpc, avx2);
-                assign_itx16_bpc_fn!(c,     8,  8, 12 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R,  8, 16, 12 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R, 16,  4, 12 bpc, avx2);
-                assign_itx16_bpc_fn!(c, R, 16,  8, 12 bpc, avx2);
-                assign_itx12_bpc_fn!(c,    16, 16, 12 bpc, avx2);
-                assign_itx2_bpc_fn! (c, R,  8, 32, 12 bpc, avx2);
-                assign_itx2_bpc_fn! (c, R, 32,  8, 12 bpc, avx2);
-                assign_itx_bpc_fn!  (c, R, 16, 32, identity_identity, IDTX, 12 bpc, avx2);
-                assign_itx_bpc_fn!  (c, R, 32, 16, identity_identity, IDTX, 12 bpc, avx2);
-                assign_itx_bpc_fn!  (c,    32, 32, identity_identity, IDTX, 12 bpc, avx2);
-            }
-        }
-
-        if !flags.contains(CpuFlags::AVX512ICL) {
-            return;
-        }
-
-        if BD::BITDEPTH == 8 {
-            assign_itx16_bpc_fn!(c,     4,  4, 8 bpc, avx512icl); // no wht
-            assign_itx16_bpc_fn!(c, R,  4,  8, 8 bpc, avx512icl);
-            assign_itx16_bpc_fn!(c, R,  4, 16, 8 bpc, avx512icl);
-            assign_itx16_bpc_fn!(c, R,  8,  4, 8 bpc, avx512icl);
-            assign_itx16_bpc_fn!(c,     8,  8, 8 bpc, avx512icl);
-            assign_itx16_bpc_fn!(c, R,  8, 16, 8 bpc, avx512icl);
-            assign_itx16_bpc_fn!(c, R, 16,  4, 8 bpc, avx512icl);
-            assign_itx16_bpc_fn!(c, R, 16,  8, 8 bpc, avx512icl);
-            assign_itx12_bpc_fn!(c,    16, 16, 8 bpc, avx512icl);
-            assign_itx2_bpc_fn! (c, R,  8, 32, 8 bpc, avx512icl);
-            assign_itx2_bpc_fn! (c, R, 16, 32, 8 bpc, avx512icl);
-            assign_itx2_bpc_fn! (c, R, 32,  8, 8 bpc, avx512icl);
-            assign_itx2_bpc_fn! (c, R, 32, 16, 8 bpc, avx512icl);
-            assign_itx2_bpc_fn! (c,    32, 32, 8 bpc, avx512icl);
-            assign_itx1_bpc_fn! (c, R, 16, 64, 8 bpc, avx512icl);
-            assign_itx1_bpc_fn! (c, R, 32, 64, 8 bpc, avx512icl);
-            assign_itx1_bpc_fn! (c, R, 64, 16, 8 bpc, avx512icl);
-            assign_itx1_bpc_fn! (c, R, 64, 32, 8 bpc, avx512icl);
-            assign_itx1_bpc_fn! (c,    64, 64, 8 bpc, avx512icl);
-        } else {
-            if bpc == 10 {
-                assign_itx16_bpc_fn!(c,     8,  8, 10 bpc, avx512icl);
-                assign_itx16_bpc_fn!(c, R,  8, 16, 10 bpc, avx512icl);
-                assign_itx16_bpc_fn!(c, R, 16,  8, 10 bpc, avx512icl);
-                assign_itx12_bpc_fn!(c,    16, 16, 10 bpc, avx512icl);
-                assign_itx2_bpc_fn! (c, R,  8, 32, 10 bpc, avx512icl);
-                assign_itx2_bpc_fn! (c, R, 16, 32, 10 bpc, avx512icl);
-                assign_itx2_bpc_fn! (c, R, 32,  8, 10 bpc, avx512icl);
-                assign_itx2_bpc_fn! (c, R, 32, 16, 10 bpc, avx512icl);
-                assign_itx2_bpc_fn! (c,    32, 32, 10 bpc, avx512icl);
-                assign_itx1_bpc_fn! (c, R, 16, 64, 10 bpc, avx512icl);
-                assign_itx1_bpc_fn! (c, R, 32, 64, 10 bpc, avx512icl);
-                assign_itx1_bpc_fn! (c, R, 64, 16, 10 bpc, avx512icl);
-                assign_itx1_bpc_fn! (c, R, 64, 32, 10 bpc, avx512icl);
-                assign_itx1_bpc_fn! (c,    64, 64, 10 bpc, avx512icl);
-            }
-        }
-    }
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-#[inline(always)]
-#[rustfmt::skip]
-unsafe fn itx_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::NEON) {
-        return;
-    }
-
-    if BD::BITDEPTH == 16 && bpc != 10 {
-        return;
-    }
-
-    assign_itx_fn!  (c, BD, 4, 4, wht_wht, WHT_WHT, neon);
-    assign_itx16_fn!(c, BD,     4,  4, neon);
-    assign_itx16_fn!(c, BD, R,  4,  8, neon);
-    assign_itx16_fn!(c, BD, R,  4, 16, neon);
-    assign_itx16_fn!(c, BD, R,  8,  4, neon);
-    assign_itx16_fn!(c, BD,     8,  8, neon);
-    assign_itx16_fn!(c, BD, R,  8, 16, neon);
-    assign_itx16_fn!(c, BD, R, 16,  4, neon);
-    assign_itx16_fn!(c, BD, R, 16,  8, neon);
-    assign_itx12_fn!(c, BD,    16, 16, neon);
-    assign_itx2_fn! (c, BD, R,  8, 32, neon);
-    assign_itx2_fn! (c, BD, R, 16, 32, neon);
-    assign_itx2_fn! (c, BD, R, 32,  8, neon);
-    assign_itx2_fn! (c, BD, R, 32, 16, neon);
-    assign_itx2_fn! (c, BD,    32, 32, neon);
-    assign_itx1_fn! (c, BD, R, 16, 64, neon);
-    assign_itx1_fn! (c, BD, R, 32, 64, neon);
-    assign_itx1_fn! (c, BD, R, 64, 16, neon);
-    assign_itx1_fn! (c, BD, R, 64, 32, neon);
-    assign_itx1_fn! (c, BD,    64, 64, neon);
-}
-
 macro_rules! assign_itx_all_fn64 {
     ($c:ident, $BD:ty, $w:literal, $h:literal) => {{
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][DCT_DCT as usize] =
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_DCT as usize] =
                 Some([< inv_txfm_add_dct_dct_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -947,7 +733,7 @@ macro_rules! assign_itx_all_fn64 {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_DCT as usize]
                 = Some([< inv_txfm_add_dct_dct_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -959,7 +745,7 @@ macro_rules! assign_itx_all_fn32 {
 
         assign_itx_all_fn64!($c, BD, $w, $h);
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][IDTX as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][IDTX as usize]
                 = Some([< inv_txfm_add_identity_identity_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -969,7 +755,7 @@ macro_rules! assign_itx_all_fn32 {
 
         assign_itx_all_fn64!($c, BD, $w, $h, $pfx);
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][IDTX as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][IDTX as usize]
                 = Some([< inv_txfm_add_identity_identity_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -981,25 +767,25 @@ macro_rules! assign_itx_all_fn16 {
 
         assign_itx_all_fn32!($c, BD, $w, $h);
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][DCT_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_ADST as usize]
                 = Some([< inv_txfm_add_adst_dct_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][ADST_DCT as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_DCT as usize]
                 = Some([< inv_txfm_add_dct_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][ADST_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_ADST as usize]
                 = Some([< inv_txfm_add_adst_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
                 = Some([< inv_txfm_add_adst_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_dct_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
                 = Some([< inv_txfm_add_dct_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][H_DCT as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_DCT as usize]
                 = Some([< inv_txfm_add_dct_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][V_DCT as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_DCT as usize]
                 = Some([< inv_txfm_add_identity_dct_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -1009,25 +795,25 @@ macro_rules! assign_itx_all_fn16 {
 
         assign_itx_all_fn32!($c, BD, $w, $h, $pfx);
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_ADST as usize]
                 = Some([< inv_txfm_add_adst_dct_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_DCT as usize]
                 = Some([< inv_txfm_add_dct_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_ADST as usize]
                 = Some([< inv_txfm_add_adst_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
                 = Some([< inv_txfm_add_adst_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_dct_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
                 = Some([< inv_txfm_add_dct_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_DCT as usize]
                 = Some([< inv_txfm_add_dct_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_DCT as usize]
                 = Some([< inv_txfm_add_identity_dct_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -1039,13 +825,13 @@ macro_rules! assign_itx_all_fn84 {
 
         assign_itx_all_fn16!($c, BD, $w, $h);
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][H_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][V_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_FLIPADST as usize]
                 = Some([< inv_txfm_add_identity_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][H_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_ADST as usize]
                 = Some([< inv_txfm_add_adst_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][V_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_ADST as usize]
                 = Some([< inv_txfm_add_identity_adst_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -1055,51 +841,296 @@ macro_rules! assign_itx_all_fn84 {
 
         assign_itx_all_fn16!($c, BD, $w, $h, $pfx);
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_FLIPADST as usize]
                 = Some([< inv_txfm_add_identity_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_ADST as usize]
                 = Some([< inv_txfm_add_adst_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_ADST as usize]
                 = Some([< inv_txfm_add_identity_adst_ $w x $h _c_erased >]::<BD>);
         }
     }};
 }
 
-#[cold]
-#[rustfmt::skip]
-pub unsafe fn rav1d_itx_dsp_init<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, mut _bpc: c_int) {
+impl Rav1dInvTxfmDSPContext {
+    pub const fn default<BD: BitDepth>() -> Self {
+        let mut c = Self {
+            itxfm_add: [[None; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
+        };
 
+        c.itxfm_add[TX_4X4 as usize][WHT_WHT as usize] =
+            Some(inv_txfm_add_wht_wht_4x4_c_erased::<BD>);
 
-    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize]
-        = Some(inv_txfm_add_wht_wht_4x4_c_erased::<BD>);
-    assign_itx_all_fn84!(c, BD,  4,  4   );
-    assign_itx_all_fn84!(c, BD,  4,  8, R);
-    assign_itx_all_fn84!(c, BD,  4, 16, R);
-    assign_itx_all_fn84!(c, BD,  8,  4, R);
-    assign_itx_all_fn84!(c, BD,  8,  8   );
-    assign_itx_all_fn84!(c, BD,  8, 16, R);
-    assign_itx_all_fn32!(c, BD,  8, 32, R);
-    assign_itx_all_fn84!(c, BD, 16,  4, R);
-    assign_itx_all_fn84!(c, BD, 16,  8, R);
-    assign_itx_all_fn16!(c, BD, 16, 16   );
-    assign_itx_all_fn32!(c, BD, 16, 32, R);
-    assign_itx_all_fn64!(c, BD, 16, 64, R);
-    assign_itx_all_fn32!(c, BD, 32,  8, R);
-    assign_itx_all_fn32!(c, BD, 32, 16, R);
-    assign_itx_all_fn32!(c, BD, 32, 32   );
-    assign_itx_all_fn64!(c, BD, 32, 64, R);
-    assign_itx_all_fn64!(c, BD, 64, 16, R);
-    assign_itx_all_fn64!(c, BD, 64, 32, R);
-    assign_itx_all_fn64!(c, BD, 64, 64   );
+        #[rustfmt::skip]
+        const fn assign<BD: BitDepth>(mut c: Rav1dInvTxfmDSPContext) -> Rav1dInvTxfmDSPContext {
+            assign_itx_all_fn84!(c, BD,  4,  4   );
+            assign_itx_all_fn84!(c, BD,  4,  8, R);
+            assign_itx_all_fn84!(c, BD,  4, 16, R);
+            assign_itx_all_fn84!(c, BD,  8,  4, R);
+            assign_itx_all_fn84!(c, BD,  8,  8   );
+            assign_itx_all_fn84!(c, BD,  8, 16, R);
+            assign_itx_all_fn32!(c, BD,  8, 32, R);
+            assign_itx_all_fn84!(c, BD, 16,  4, R);
+            assign_itx_all_fn84!(c, BD, 16,  8, R);
+            assign_itx_all_fn16!(c, BD, 16, 16   );
+            assign_itx_all_fn32!(c, BD, 16, 32, R);
+            assign_itx_all_fn64!(c, BD, 16, 64, R);
+            assign_itx_all_fn32!(c, BD, 32,  8, R);
+            assign_itx_all_fn32!(c, BD, 32, 16, R);
+            assign_itx_all_fn32!(c, BD, 32, 32   );
+            assign_itx_all_fn64!(c, BD, 32, 64, R);
+            assign_itx_all_fn64!(c, BD, 64, 16, R);
+            assign_itx_all_fn64!(c, BD, 64, 32, R);
+            assign_itx_all_fn64!(c, BD, 64, 64   );
 
-    #[cfg(feature = "asm")]
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            itx_dsp_init_x86::<BD>(c, _bpc);
-        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-            itx_dsp_init_arm::<BD>(c, _bpc);
+            c
         }
+
+        assign::<BD>(c)
+    }
+
+    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[inline(always)]
+    const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags, bpc: c_int) -> Self {
+        if !flags.contains(CpuFlags::SSE2) {
+            return self;
+        }
+
+        assign_itx_fn!(self, BD, 4, 4, wht_wht, WHT_WHT, sse2);
+
+        if !flags.contains(CpuFlags::SSSE3) {
+            return self;
+        }
+
+        if BD::BITDEPTH == 8 {
+            assign_itx16_bpc_fn!(self,     4,  4, 8 bpc, ssse3);
+            assign_itx16_bpc_fn!(self, R,  4,  8, 8 bpc, ssse3);
+            assign_itx16_bpc_fn!(self, R,  8,  4, 8 bpc, ssse3);
+            assign_itx16_bpc_fn!(self,     8,  8, 8 bpc, ssse3);
+            assign_itx16_bpc_fn!(self, R,  4, 16, 8 bpc, ssse3);
+            assign_itx16_bpc_fn!(self, R, 16,  4, 8 bpc, ssse3);
+            assign_itx16_bpc_fn!(self, R,  8, 16, 8 bpc, ssse3);
+            assign_itx16_bpc_fn!(self, R, 16,  8, 8 bpc, ssse3);
+            assign_itx12_bpc_fn!(self,    16, 16, 8 bpc, ssse3);
+            assign_itx2_bpc_fn! (self, R,  8, 32, 8 bpc, ssse3);
+            assign_itx2_bpc_fn! (self, R, 32,  8, 8 bpc, ssse3);
+            assign_itx2_bpc_fn! (self, R, 16, 32, 8 bpc, ssse3);
+            assign_itx2_bpc_fn! (self, R, 32, 16, 8 bpc, ssse3);
+            assign_itx2_bpc_fn! (self,    32, 32, 8 bpc, ssse3);
+            assign_itx1_bpc_fn! (self, R, 16, 64, 8 bpc, ssse3);
+            assign_itx1_bpc_fn! (self, R, 32, 64, 8 bpc, ssse3);
+            assign_itx1_bpc_fn! (self, R, 64, 16, 8 bpc, ssse3);
+            assign_itx1_bpc_fn! (self, R, 64, 32, 8 bpc, ssse3);
+            assign_itx1_bpc_fn! (self,    64, 64, 8 bpc, ssse3);
+        }
+
+        if !flags.contains(CpuFlags::SSE41) {
+            return self;
+        }
+
+        if BD::BITDEPTH == 16 {
+            if bpc == 10 {
+                assign_itx16_bpc_fn!(self,     4,  4, 16 bpc, sse4);
+                assign_itx16_bpc_fn!(self, R,  4,  8, 16 bpc, sse4);
+                assign_itx16_bpc_fn!(self, R,  4, 16, 16 bpc, sse4);
+                assign_itx16_bpc_fn!(self, R,  8,  4, 16 bpc, sse4);
+                assign_itx16_bpc_fn!(self,     8,  8, 16 bpc, sse4);
+                assign_itx16_bpc_fn!(self, R,  8, 16, 16 bpc, sse4);
+                assign_itx16_bpc_fn!(self, R, 16,  4, 16 bpc, sse4);
+                assign_itx16_bpc_fn!(self, R, 16,  8, 16 bpc, sse4);
+                assign_itx12_bpc_fn!(self,    16, 16, 16 bpc, sse4);
+                assign_itx2_bpc_fn! (self, R,  8, 32, 16 bpc, sse4);
+                assign_itx2_bpc_fn! (self, R, 16, 32, 16 bpc, sse4);
+                assign_itx2_bpc_fn! (self, R, 32,  8, 16 bpc, sse4);
+                assign_itx2_bpc_fn! (self, R, 32, 16, 16 bpc, sse4);
+                assign_itx2_bpc_fn! (self,    32, 32, 16 bpc, sse4);
+                assign_itx1_bpc_fn! (self, R, 16, 64, 16 bpc, sse4);
+                assign_itx1_bpc_fn! (self, R, 32, 64, 16 bpc, sse4);
+                assign_itx1_bpc_fn! (self, R, 64, 16, 16 bpc, sse4);
+                assign_itx1_bpc_fn! (self, R, 64, 32, 16 bpc, sse4);
+                assign_itx1_bpc_fn! (self,    64, 64, 16 bpc, sse4);
+            }
+        }
+
+        #[cfg(target_arch = "x86_64")]
+        {
+            if !flags.contains(CpuFlags::AVX2) {
+                return self;
+            }
+
+            assign_itx_fn!(self, BD, 4, 4, wht_wht, WHT_WHT, avx2);
+
+            if BD::BITDEPTH == 8 {
+                assign_itx16_bpc_fn!(self,     4,  4, 8 bpc, avx2);
+                assign_itx16_bpc_fn!(self, R,  4,  8, 8 bpc, avx2);
+                assign_itx16_bpc_fn!(self, R,  4, 16, 8 bpc, avx2);
+                assign_itx16_bpc_fn!(self, R,  8,  4, 8 bpc, avx2);
+                assign_itx16_bpc_fn!(self,     8,  8, 8 bpc, avx2);
+                assign_itx16_bpc_fn!(self, R,  8, 16, 8 bpc, avx2);
+                assign_itx16_bpc_fn!(self, R, 16,  4, 8 bpc, avx2);
+                assign_itx16_bpc_fn!(self, R, 16,  8, 8 bpc, avx2);
+                assign_itx12_bpc_fn!(self,    16, 16, 8 bpc, avx2);
+                assign_itx2_bpc_fn! (self, R,  8, 32, 8 bpc, avx2);
+                assign_itx2_bpc_fn! (self, R, 16, 32, 8 bpc, avx2);
+                assign_itx2_bpc_fn! (self, R, 32,  8, 8 bpc, avx2);
+                assign_itx2_bpc_fn! (self, R, 32, 16, 8 bpc, avx2);
+                assign_itx2_bpc_fn! (self,    32, 32, 8 bpc, avx2);
+                assign_itx1_bpc_fn! (self, R, 16, 64, 8 bpc, avx2);
+                assign_itx1_bpc_fn! (self, R, 32, 64, 8 bpc, avx2);
+                assign_itx1_bpc_fn! (self, R, 64, 16, 8 bpc, avx2);
+                assign_itx1_bpc_fn! (self, R, 64, 32, 8 bpc, avx2);
+                assign_itx1_bpc_fn! (self,    64, 64, 8 bpc, avx2);
+            } else {
+                if bpc == 10 {
+                    assign_itx16_bpc_fn!(self,     4,  4, 10 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R,  4,  8, 10 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R,  4, 16, 10 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R,  8,  4, 10 bpc, avx2);
+                    assign_itx16_bpc_fn!(self,     8,  8, 10 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R,  8, 16, 10 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R, 16,  4, 10 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R, 16,  8, 10 bpc, avx2);
+                    assign_itx12_bpc_fn!(self,    16, 16, 10 bpc, avx2);
+                    assign_itx2_bpc_fn! (self, R,  8, 32, 10 bpc, avx2);
+                    assign_itx2_bpc_fn! (self, R, 16, 32, 10 bpc, avx2);
+                    assign_itx2_bpc_fn! (self, R, 32,  8, 10 bpc, avx2);
+                    assign_itx2_bpc_fn! (self, R, 32, 16, 10 bpc, avx2);
+                    assign_itx2_bpc_fn! (self,    32, 32, 10 bpc, avx2);
+                    assign_itx1_bpc_fn! (self, R, 16, 64, 10 bpc, avx2);
+                    assign_itx1_bpc_fn! (self, R, 32, 64, 10 bpc, avx2);
+                    assign_itx1_bpc_fn! (self, R, 64, 16, 10 bpc, avx2);
+                    assign_itx1_bpc_fn! (self, R, 64, 32, 10 bpc, avx2);
+                    assign_itx1_bpc_fn! (self,    64, 64, 10 bpc, avx2);
+                } else {
+                    assign_itx16_bpc_fn!(self,     4,  4, 12 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R,  4,  8, 12 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R,  4, 16, 12 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R,  8,  4, 12 bpc, avx2);
+                    assign_itx16_bpc_fn!(self,     8,  8, 12 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R,  8, 16, 12 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R, 16,  4, 12 bpc, avx2);
+                    assign_itx16_bpc_fn!(self, R, 16,  8, 12 bpc, avx2);
+                    assign_itx12_bpc_fn!(self,    16, 16, 12 bpc, avx2);
+                    assign_itx2_bpc_fn! (self, R,  8, 32, 12 bpc, avx2);
+                    assign_itx2_bpc_fn! (self, R, 32,  8, 12 bpc, avx2);
+                    assign_itx_bpc_fn!  (self, R, 16, 32, identity_identity, IDTX, 12 bpc, avx2);
+                    assign_itx_bpc_fn!  (self, R, 32, 16, identity_identity, IDTX, 12 bpc, avx2);
+                    assign_itx_bpc_fn!  (self,    32, 32, identity_identity, IDTX, 12 bpc, avx2);
+                }
+            }
+
+            if !flags.contains(CpuFlags::AVX512ICL) {
+                return self;
+            }
+
+            if BD::BITDEPTH == 8 {
+                assign_itx16_bpc_fn!(self,     4,  4, 8 bpc, avx512icl); // no wht
+                assign_itx16_bpc_fn!(self, R,  4,  8, 8 bpc, avx512icl);
+                assign_itx16_bpc_fn!(self, R,  4, 16, 8 bpc, avx512icl);
+                assign_itx16_bpc_fn!(self, R,  8,  4, 8 bpc, avx512icl);
+                assign_itx16_bpc_fn!(self,     8,  8, 8 bpc, avx512icl);
+                assign_itx16_bpc_fn!(self, R,  8, 16, 8 bpc, avx512icl);
+                assign_itx16_bpc_fn!(self, R, 16,  4, 8 bpc, avx512icl);
+                assign_itx16_bpc_fn!(self, R, 16,  8, 8 bpc, avx512icl);
+                assign_itx12_bpc_fn!(self,    16, 16, 8 bpc, avx512icl);
+                assign_itx2_bpc_fn! (self, R,  8, 32, 8 bpc, avx512icl);
+                assign_itx2_bpc_fn! (self, R, 16, 32, 8 bpc, avx512icl);
+                assign_itx2_bpc_fn! (self, R, 32,  8, 8 bpc, avx512icl);
+                assign_itx2_bpc_fn! (self, R, 32, 16, 8 bpc, avx512icl);
+                assign_itx2_bpc_fn! (self,    32, 32, 8 bpc, avx512icl);
+                assign_itx1_bpc_fn! (self, R, 16, 64, 8 bpc, avx512icl);
+                assign_itx1_bpc_fn! (self, R, 32, 64, 8 bpc, avx512icl);
+                assign_itx1_bpc_fn! (self, R, 64, 16, 8 bpc, avx512icl);
+                assign_itx1_bpc_fn! (self, R, 64, 32, 8 bpc, avx512icl);
+                assign_itx1_bpc_fn! (self,    64, 64, 8 bpc, avx512icl);
+            } else {
+                if bpc == 10 {
+                    assign_itx16_bpc_fn!(self,     8,  8, 10 bpc, avx512icl);
+                    assign_itx16_bpc_fn!(self, R,  8, 16, 10 bpc, avx512icl);
+                    assign_itx16_bpc_fn!(self, R, 16,  8, 10 bpc, avx512icl);
+                    assign_itx12_bpc_fn!(self,    16, 16, 10 bpc, avx512icl);
+                    assign_itx2_bpc_fn! (self, R,  8, 32, 10 bpc, avx512icl);
+                    assign_itx2_bpc_fn! (self, R, 16, 32, 10 bpc, avx512icl);
+                    assign_itx2_bpc_fn! (self, R, 32,  8, 10 bpc, avx512icl);
+                    assign_itx2_bpc_fn! (self, R, 32, 16, 10 bpc, avx512icl);
+                    assign_itx2_bpc_fn! (self,    32, 32, 10 bpc, avx512icl);
+                    assign_itx1_bpc_fn! (self, R, 16, 64, 10 bpc, avx512icl);
+                    assign_itx1_bpc_fn! (self, R, 32, 64, 10 bpc, avx512icl);
+                    assign_itx1_bpc_fn! (self, R, 64, 16, 10 bpc, avx512icl);
+                    assign_itx1_bpc_fn! (self, R, 64, 32, 10 bpc, avx512icl);
+                    assign_itx1_bpc_fn! (self,    64, 64, 10 bpc, avx512icl);
+                }
+            }
+        }
+
+        self
+    }
+
+    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[inline(always)]
+    const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags, bpc: c_int) -> Self {
+        if !flags.contains(CpuFlags::NEON) {
+            return self;
+        }
+
+        if BD::BITDEPTH == 16 && bpc != 10 {
+            return self;
+        }
+
+        assign_itx_fn!(self, BD, 4, 4, wht_wht, WHT_WHT, neon);
+
+        #[rustfmt::skip]
+        const fn assign<BD: BitDepth>(mut c: Rav1dInvTxfmDSPContext) -> Rav1dInvTxfmDSPContext {
+            assign_itx16_fn!(c, BD,     4,  4, neon);
+            assign_itx16_fn!(c, BD, R,  4,  8, neon);
+            assign_itx16_fn!(c, BD, R,  4, 16, neon);
+            assign_itx16_fn!(c, BD, R,  8,  4, neon);
+            assign_itx16_fn!(c, BD,     8,  8, neon);
+            assign_itx16_fn!(c, BD, R,  8, 16, neon);
+            assign_itx16_fn!(c, BD, R, 16,  4, neon);
+            assign_itx16_fn!(c, BD, R, 16,  8, neon);
+            assign_itx12_fn!(c, BD,    16, 16, neon);
+            assign_itx2_fn! (c, BD, R,  8, 32, neon);
+            assign_itx2_fn! (c, BD, R, 16, 32, neon);
+            assign_itx2_fn! (c, BD, R, 32,  8, neon);
+            assign_itx2_fn! (c, BD, R, 32, 16, neon);
+            assign_itx2_fn! (c, BD,    32, 32, neon);
+            assign_itx1_fn! (c, BD, R, 16, 64, neon);
+            assign_itx1_fn! (c, BD, R, 32, 64, neon);
+            assign_itx1_fn! (c, BD, R, 64, 16, neon);
+            assign_itx1_fn! (c, BD, R, 64, 32, neon);
+            assign_itx1_fn! (c, BD,    64, 64, neon);
+
+            c
+        }
+
+        assign::<BD>(self)
+    }
+
+    #[inline(always)]
+    const fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: c_int) -> Self {
+        #[cfg(feature = "asm")]
+        {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            {
+                return self.init_x86::<BD>(flags, bpc);
+            }
+            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+            {
+                return self.init_arm::<BD>(flags, bpc);
+            }
+        }
+
+        #[allow(unreachable_code)] // Reachable on some #[cfg]s.
+        {
+            let _ = flags;
+            let _ = bpc;
+            self
+        }
+    }
+
+    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
+        Self::default::<BD>().init::<BD>(flags, bpc)
     }
 }

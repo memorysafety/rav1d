@@ -27,6 +27,8 @@ use crate::src::align::*;
 use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
+use crate::src::cpu::rav1d_get_cpu_flags;
+use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutArcSlice;
 use crate::src::env::BlockContext;
@@ -105,6 +107,7 @@ use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::thread::JoinHandle;
 
 #[repr(C)]
@@ -117,6 +120,55 @@ pub(crate) struct Rav1dDSPContext {
     pub cdef: Rav1dCdefDSPContext,
     pub lr: Rav1dLoopRestorationDSPContext,
     pub initialized: bool,
+}
+
+impl Rav1dDSPContext {
+    pub const fn _default<BD: BitDepth>() -> Self {
+        Self {
+            fg: Rav1dFilmGrainDSPContext::default::<BD>(),
+            ipred: Rav1dIntraPredDSPContext::default::<BD>(),
+            mc: Rav1dMCDSPContext::default::<BD>(),
+            itx: Rav1dInvTxfmDSPContext::default::<BD>(),
+            lf: Rav1dLoopFilterDSPContext::default::<BD>(),
+            cdef: Rav1dCdefDSPContext::default::<BD>(),
+            lr: Rav1dLoopRestorationDSPContext::default::<BD>(),
+            initialized: true,
+        }
+    }
+
+    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
+        Self {
+            fg: Rav1dFilmGrainDSPContext::new::<BD>(flags),
+            ipred: Rav1dIntraPredDSPContext::new::<BD>(flags),
+            mc: Rav1dMCDSPContext::new::<BD>(flags),
+            itx: Rav1dInvTxfmDSPContext::new::<BD>(flags, bpc),
+            lf: Rav1dLoopFilterDSPContext::new::<BD>(flags),
+            cdef: Rav1dCdefDSPContext::new::<BD>(flags),
+            lr: Rav1dLoopRestorationDSPContext::new::<BD>(flags, bpc),
+            initialized: true,
+        }
+    }
+
+    pub fn get(bpc: c_int) -> Option<&'static Self> {
+        static BPC8: OnceLock<Rav1dDSPContext> = OnceLock::new();
+        static BPC10: OnceLock<Rav1dDSPContext> = OnceLock::new();
+        static BPC12: OnceLock<Rav1dDSPContext> = OnceLock::new();
+        Some(match bpc {
+            8 => BPC8.get_or_init(|| {
+                let flags = rav1d_get_cpu_flags();
+                Self::new::<BitDepth8>(flags, bpc)
+            }),
+            10 => BPC10.get_or_init(|| {
+                let flags = rav1d_get_cpu_flags();
+                Self::new::<BitDepth16>(flags, bpc)
+            }),
+            12 => BPC12.get_or_init(|| {
+                let flags = rav1d_get_cpu_flags();
+                Self::new::<BitDepth16>(flags, bpc)
+            }),
+            _ => return None,
+        })
+    }
 }
 
 #[derive(Clone, Default)]
@@ -288,7 +340,6 @@ pub struct Rav1dContext {
     pub(crate) refs: [Rav1dContext_refs; 8],
     pub(crate) cdf: [CdfThreadContext; 8], // Previously pooled
 
-    pub(crate) dsp: [Rav1dDSPContext; 3], /* 8, 10, 12 bits/component */
     pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,
 
     pub(crate) allocator: Rav1dPicAllocator,
@@ -753,7 +804,7 @@ pub(crate) struct Rav1dFrameData {
 
     pub ts: *mut Rav1dTileState,
     pub n_ts: c_int,
-    pub dsp: *const Rav1dDSPContext,
+    pub dsp: &'static Rav1dDSPContext,
 
     pub ipred_edge_sz: c_int,
     pub ipred_edge: [*mut DynPixel; 3],

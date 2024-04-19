@@ -6,6 +6,7 @@ use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
 use crate::src::align::Align16;
+use crate::src::cpu::CpuFlags;
 use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
 use libc::ptrdiff_t;
@@ -26,9 +27,6 @@ use libc::intptr_t;
     any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")
 ))]
 use crate::include::common::bitdepth::bd_fn;
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 extern "C" {
@@ -3454,110 +3452,132 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
     );
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-#[inline(always)]
-fn loop_restoration_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dLoopRestorationDSPContext, bpc: c_int) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::SSE2) {
-        return;
+impl Rav1dLoopRestorationDSPContext {
+    pub const fn default<BD: BitDepth>() -> Self {
+        Self {
+            wiener: [wiener_c_erased::<BD>; 2],
+            sgr: [
+                sgr_5x5_c_erased::<BD>,
+                sgr_3x3_c_erased::<BD>,
+                sgr_mix_c_erased::<BD>,
+            ],
+        }
     }
 
-    if BD::BPC == BPC::BPC8 {
-        c.wiener[0] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_sse2);
-        c.wiener[1] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_sse2);
-    }
-
-    if !flags.contains(CpuFlags::SSSE3) {
-        return;
-    }
-
-    c.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, ssse3);
-    c.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, ssse3);
-
-    if BD::BPC == BPC::BPC8 || bpc == 10 {
-        c.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, ssse3);
-        c.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, ssse3);
-        c.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, ssse3);
-    }
-
-    #[cfg(target_arch = "x86_64")]
-    {
-        if !flags.contains(CpuFlags::AVX2) {
-            return;
+    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[inline(always)]
+    const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags, bpc: c_int) -> Self {
+        if !flags.contains(CpuFlags::SSE2) {
+            return self;
         }
 
-        c.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, avx2);
-        c.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, avx2);
-
-        if BD::BPC == BPC::BPC8 || bpc == 10 {
-            c.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, avx2);
-            c.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, avx2);
-            c.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx2);
-        }
-
-        if !flags.contains(CpuFlags::AVX512ICL) {
-            return;
-        }
-
-        c.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, avx512icl);
-        c.wiener[1] = match BD::BPC {
-            // With VNNI we don't need a 5-tap version.
-            BPC::BPC8 => c.wiener[0],
-            BPC::BPC16 => decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_avx512icl),
+        if let BPC::BPC8 = BD::BPC {
+            self.wiener[0] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter7_8bpc_sse2);
+            self.wiener[1] = decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_8bpc_sse2);
         };
 
-        if BD::BPC == BPC::BPC8 || bpc == 10 {
-            c.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, avx512icl);
-            c.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, avx512icl);
-            c.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx512icl);
+        if !flags.contains(CpuFlags::SSSE3) {
+            return self;
+        }
+
+        self.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, ssse3);
+        self.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, ssse3);
+
+        if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+            self.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, ssse3);
+            self.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, ssse3);
+            self.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, ssse3);
+        }
+
+        #[cfg(target_arch = "x86_64")]
+        {
+            if !flags.contains(CpuFlags::AVX2) {
+                return self;
+            }
+
+            self.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, avx2);
+            self.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, avx2);
+
+            if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+                self.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, avx2);
+                self.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, avx2);
+                self.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx2);
+            }
+
+            if !flags.contains(CpuFlags::AVX512ICL) {
+                return self;
+            }
+
+            self.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, avx512icl);
+            self.wiener[1] = match BD::BPC {
+                // With VNNI we don't need a 5-tap version.
+                BPC::BPC8 => self.wiener[0],
+                BPC::BPC16 => {
+                    decl_looprestorationfilter_fn!(fn dav1d_wiener_filter5_16bpc_avx512icl)
+                }
+            };
+
+            if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+                self.sgr[0] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_5x5, avx512icl);
+                self.sgr[1] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_3x3, avx512icl);
+                self.sgr[2] = bd_fn!(decl_looprestorationfilter_fn, BD, sgr_filter_mix, avx512icl);
+            }
+        }
+
+        self
+    }
+
+    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[inline(always)]
+    const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags, bpc: c_int) -> Self {
+        if !flags.contains(CpuFlags::NEON) {
+            return self;
+        }
+
+        #[cfg(target_arch = "aarch64")]
+        {
+            self.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, neon);
+            self.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, neon);
+        }
+
+        #[cfg(target_arch = "arm")]
+        {
+            self.wiener[0] = wiener_filter_neon_erased::<BD>;
+            self.wiener[1] = wiener_filter_neon_erased::<BD>;
+        }
+
+        if matches!(BD::BPC, BPC::BPC8) || bpc == 10 {
+            self.sgr[0] = sgr_filter_5x5_neon_erased::<BD>;
+            self.sgr[1] = sgr_filter_3x3_neon_erased::<BD>;
+            self.sgr[2] = sgr_filter_mix_neon_erased::<BD>;
+        }
+
+        self
+    }
+
+    #[inline(always)]
+    const fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: c_int) -> Self {
+        #[cfg(feature = "asm")]
+        {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            {
+                return self.init_x86::<BD>(flags, bpc);
+            }
+            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+            {
+                return self.init_arm::<BD>(flags, bpc);
+            }
+        }
+
+        #[allow(unreachable_code)] // Reachable on some #[cfg]s.
+        {
+            let _ = flags;
+            let _ = bpc;
+            self
         }
     }
-}
 
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-#[inline(always)]
-fn loop_restoration_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dLoopRestorationDSPContext, bpc: c_int) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::NEON) {
-        return;
-    }
-
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "aarch64")] {
-            c.wiener[0] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter7, neon);
-            c.wiener[1] = bd_fn!(decl_looprestorationfilter_fn, BD, wiener_filter5, neon);
-        } else {
-            c.wiener[0] = wiener_filter_neon_erased::<BD>;
-            c.wiener[1] = wiener_filter_neon_erased::<BD>;
-        }
-    }
-
-    if BD::BPC == BPC::BPC8 || bpc == 10 {
-        c.sgr[0] = sgr_filter_5x5_neon_erased::<BD>;
-        c.sgr[1] = sgr_filter_3x3_neon_erased::<BD>;
-        c.sgr[2] = sgr_filter_mix_neon_erased::<BD>;
-    }
-}
-
-#[cold]
-pub fn rav1d_loop_restoration_dsp_init<BD: BitDepth>(
-    c: &mut Rav1dLoopRestorationDSPContext,
-    _bpc: c_int,
-) {
-    c.wiener[1] = wiener_c_erased::<BD>;
-    c.wiener[0] = c.wiener[1];
-    c.sgr[0] = sgr_5x5_c_erased::<BD>;
-    c.sgr[1] = sgr_3x3_c_erased::<BD>;
-    c.sgr[2] = sgr_mix_c_erased::<BD>;
-
-    #[cfg(feature = "asm")]
-    cfg_if::cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            loop_restoration_dsp_init_x86::<BD>(c, _bpc);
-        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]{
-            loop_restoration_dsp_init_arm::<BD>(c, _bpc);
-        }
+    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
+        Self::default::<BD>().init::<BD>(flags, bpc)
     }
 }

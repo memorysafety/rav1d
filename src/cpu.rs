@@ -180,7 +180,6 @@ static rav1d_cpu_flags: AtomicU32 = AtomicU32::new(0);
 /// so it shouldn't be performance sensitive.
 static rav1d_cpu_flags_mask: AtomicU32 = AtomicU32::new(!0);
 
-#[cfg(feature = "asm")]
 #[inline(always)]
 pub(crate) fn rav1d_get_cpu_flags() -> CpuFlags {
     let flags =
