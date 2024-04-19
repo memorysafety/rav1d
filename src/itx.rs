@@ -616,7 +616,6 @@ macro_rules! assign_itx2_fn {
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-#[rustfmt::skip]
 macro_rules! assign_itx12_bpc_fn {
     ($c:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
         assign_itx2_bpc_fn!($c, $w, $h, $bpc bpc, $ext);
@@ -630,7 +629,6 @@ macro_rules! assign_itx12_bpc_fn {
         assign_itx_bpc_fn!($c, $w, $h, flipadst_adst, ADST_FLIPADST, $bpc bpc, $ext);
         assign_itx_bpc_fn!($c, $w, $h, flipadst_flipadst, FLIPADST_FLIPADST, $bpc bpc, $ext);
         assign_itx_bpc_fn!($c, $w, $h, identity_dct, V_DCT, $bpc bpc, $ext);
-
     }};
 
     ($c:ident, $pfx:ident, $w:literal, $h:literal, $bpc:literal bpc, $ext:ident) => {{
@@ -649,7 +647,6 @@ macro_rules! assign_itx12_bpc_fn {
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-#[rustfmt::skip]
 macro_rules! assign_itx12_fn {
     ($c:ident, $BD:ty, $w:literal, $h:literal, $ext:ident) => {{
         assign_itx2_fn!($c, BD, $w, $h, $ext);
@@ -675,7 +672,16 @@ macro_rules! assign_itx12_fn {
         assign_itx_fn!($c, BD, $pfx, $w, $h, adst_flipadst, FLIPADST_ADST, $ext);
         assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_dct, DCT_FLIPADST, $ext);
         assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_adst, ADST_FLIPADST, $ext);
-        assign_itx_fn!($c, BD, $pfx, $w, $h, flipadst_flipadst, FLIPADST_FLIPADST, $ext);
+        assign_itx_fn!(
+            $c,
+            BD,
+            $pfx,
+            $w,
+            $h,
+            flipadst_flipadst,
+            FLIPADST_FLIPADST,
+            $ext
+        );
         assign_itx_fn!($c, BD, $pfx, $w, $h, identity_dct, V_DCT, $ext);
     }};
 }
@@ -720,9 +726,7 @@ macro_rules! assign_itx16_fn {
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-#[rustfmt::skip]
 unsafe fn itx_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
-
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
@@ -899,7 +903,6 @@ unsafe fn itx_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-#[rustfmt::skip]
 unsafe fn itx_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
     let flags = rav1d_get_cpu_flags();
 
@@ -911,26 +914,29 @@ unsafe fn itx_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_
         return;
     }
 
-    assign_itx_fn!  (c, BD, 4, 4, wht_wht, WHT_WHT, neon);
-    assign_itx16_fn!(c, BD,     4,  4, neon);
-    assign_itx16_fn!(c, BD, R,  4,  8, neon);
-    assign_itx16_fn!(c, BD, R,  4, 16, neon);
-    assign_itx16_fn!(c, BD, R,  8,  4, neon);
-    assign_itx16_fn!(c, BD,     8,  8, neon);
-    assign_itx16_fn!(c, BD, R,  8, 16, neon);
-    assign_itx16_fn!(c, BD, R, 16,  4, neon);
-    assign_itx16_fn!(c, BD, R, 16,  8, neon);
-    assign_itx12_fn!(c, BD,    16, 16, neon);
-    assign_itx2_fn! (c, BD, R,  8, 32, neon);
-    assign_itx2_fn! (c, BD, R, 16, 32, neon);
-    assign_itx2_fn! (c, BD, R, 32,  8, neon);
-    assign_itx2_fn! (c, BD, R, 32, 16, neon);
-    assign_itx2_fn! (c, BD,    32, 32, neon);
-    assign_itx1_fn! (c, BD, R, 16, 64, neon);
-    assign_itx1_fn! (c, BD, R, 32, 64, neon);
-    assign_itx1_fn! (c, BD, R, 64, 16, neon);
-    assign_itx1_fn! (c, BD, R, 64, 32, neon);
-    assign_itx1_fn! (c, BD,    64, 64, neon);
+    #[rustfmt::skip]
+    (|| {
+        assign_itx_fn!  (c, BD, 4, 4, wht_wht, WHT_WHT, neon);
+        assign_itx16_fn!(c, BD,     4,  4, neon);
+        assign_itx16_fn!(c, BD, R,  4,  8, neon);
+        assign_itx16_fn!(c, BD, R,  4, 16, neon);
+        assign_itx16_fn!(c, BD, R,  8,  4, neon);
+        assign_itx16_fn!(c, BD,     8,  8, neon);
+        assign_itx16_fn!(c, BD, R,  8, 16, neon);
+        assign_itx16_fn!(c, BD, R, 16,  4, neon);
+        assign_itx16_fn!(c, BD, R, 16,  8, neon);
+        assign_itx12_fn!(c, BD,    16, 16, neon);
+        assign_itx2_fn! (c, BD, R,  8, 32, neon);
+        assign_itx2_fn! (c, BD, R, 16, 32, neon);
+        assign_itx2_fn! (c, BD, R, 32,  8, neon);
+        assign_itx2_fn! (c, BD, R, 32, 16, neon);
+        assign_itx2_fn! (c, BD,    32, 32, neon);
+        assign_itx1_fn! (c, BD, R, 16, 64, neon);
+        assign_itx1_fn! (c, BD, R, 32, 64, neon);
+        assign_itx1_fn! (c, BD, R, 64, 16, neon);
+        assign_itx1_fn! (c, BD, R, 64, 32, neon);
+        assign_itx1_fn! (c, BD,    64, 64, neon);
+    })();
 }
 
 macro_rules! assign_itx_all_fn64 {
@@ -1068,31 +1074,32 @@ macro_rules! assign_itx_all_fn84 {
 }
 
 #[cold]
-#[rustfmt::skip]
 pub unsafe fn rav1d_itx_dsp_init<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, mut _bpc: c_int) {
+    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] =
+        Some(inv_txfm_add_wht_wht_4x4_c_erased::<BD>);
 
-
-    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize]
-        = Some(inv_txfm_add_wht_wht_4x4_c_erased::<BD>);
-    assign_itx_all_fn84!(c, BD,  4,  4   );
-    assign_itx_all_fn84!(c, BD,  4,  8, R);
-    assign_itx_all_fn84!(c, BD,  4, 16, R);
-    assign_itx_all_fn84!(c, BD,  8,  4, R);
-    assign_itx_all_fn84!(c, BD,  8,  8   );
-    assign_itx_all_fn84!(c, BD,  8, 16, R);
-    assign_itx_all_fn32!(c, BD,  8, 32, R);
-    assign_itx_all_fn84!(c, BD, 16,  4, R);
-    assign_itx_all_fn84!(c, BD, 16,  8, R);
-    assign_itx_all_fn16!(c, BD, 16, 16   );
-    assign_itx_all_fn32!(c, BD, 16, 32, R);
-    assign_itx_all_fn64!(c, BD, 16, 64, R);
-    assign_itx_all_fn32!(c, BD, 32,  8, R);
-    assign_itx_all_fn32!(c, BD, 32, 16, R);
-    assign_itx_all_fn32!(c, BD, 32, 32   );
-    assign_itx_all_fn64!(c, BD, 32, 64, R);
-    assign_itx_all_fn64!(c, BD, 64, 16, R);
-    assign_itx_all_fn64!(c, BD, 64, 32, R);
-    assign_itx_all_fn64!(c, BD, 64, 64   );
+    #[rustfmt::skip]
+    (|| {
+        assign_itx_all_fn84!(c, BD,  4,  4   );
+        assign_itx_all_fn84!(c, BD,  4,  8, R);
+        assign_itx_all_fn84!(c, BD,  4, 16, R);
+        assign_itx_all_fn84!(c, BD,  8,  4, R);
+        assign_itx_all_fn84!(c, BD,  8,  8   );
+        assign_itx_all_fn84!(c, BD,  8, 16, R);
+        assign_itx_all_fn32!(c, BD,  8, 32, R);
+        assign_itx_all_fn84!(c, BD, 16,  4, R);
+        assign_itx_all_fn84!(c, BD, 16,  8, R);
+        assign_itx_all_fn16!(c, BD, 16, 16   );
+        assign_itx_all_fn32!(c, BD, 16, 32, R);
+        assign_itx_all_fn64!(c, BD, 16, 64, R);
+        assign_itx_all_fn32!(c, BD, 32,  8, R);
+        assign_itx_all_fn32!(c, BD, 32, 16, R);
+        assign_itx_all_fn32!(c, BD, 32, 32   );
+        assign_itx_all_fn64!(c, BD, 32, 64, R);
+        assign_itx_all_fn64!(c, BD, 64, 16, R);
+        assign_itx_all_fn64!(c, BD, 64, 32, R);
+        assign_itx_all_fn64!(c, BD, 64, 64   );
+    })();
 
     #[cfg(feature = "asm")]
     cfg_if! {
