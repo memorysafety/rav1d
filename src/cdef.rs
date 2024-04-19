@@ -1190,6 +1190,7 @@ impl Rav1dCdefDSPContext {
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         match BD::BPC {
             BPC::BPC8 => {
@@ -1281,6 +1282,7 @@ impl Rav1dCdefDSPContext {
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::NEON) {
             return self;
@@ -1297,6 +1299,7 @@ impl Rav1dCdefDSPContext {
         self
     }
 
+    #[inline(always)]
     const fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
         #[cfg(feature = "asm")]
         {

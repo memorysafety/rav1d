@@ -2097,6 +2097,7 @@ impl Rav1dIntraPredDSPContext {
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::SSSE3) {
             return self;
@@ -2220,6 +2221,7 @@ impl Rav1dIntraPredDSPContext {
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::NEON) {
             return self;
@@ -2272,6 +2274,7 @@ impl Rav1dIntraPredDSPContext {
         self
     }
 
+    #[inline(always)]
     const fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
         #[cfg(feature = "asm")]
         {

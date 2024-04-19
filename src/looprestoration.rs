@@ -3465,6 +3465,7 @@ impl Rav1dLoopRestorationDSPContext {
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags, bpc: c_int) -> Self {
         if !flags.contains(CpuFlags::SSE2) {
             return self;
@@ -3527,6 +3528,7 @@ impl Rav1dLoopRestorationDSPContext {
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags, bpc: c_int) -> Self {
         if !flags.contains(CpuFlags::NEON) {
             return self;
@@ -3553,6 +3555,7 @@ impl Rav1dLoopRestorationDSPContext {
         self
     }
 
+    #[inline(always)]
     const fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: c_int) -> Self {
         #[cfg(feature = "asm")]
         {
