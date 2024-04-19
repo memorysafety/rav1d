@@ -59,7 +59,7 @@ where
 {
     /// Create an [`EnumMap`] with default values when `V: ` [`DefaultValue`].
     #[allow(dead_code)] // TODO(kkysen) remove when used
-    pub const fn default() -> Self {
+    const fn default() -> Self {
         Self {
             array: [V::DEFAULT; N],
             _phantom: PhantomData,

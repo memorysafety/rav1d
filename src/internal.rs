@@ -27,6 +27,7 @@ use crate::src::align::*;
 use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::CdfContext;
 use crate::src::cdf::CdfThreadContext;
+use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutArcSlice;
 use crate::src::env::BlockContext;
@@ -117,6 +118,34 @@ pub(crate) struct Rav1dDSPContext {
     pub cdef: Rav1dCdefDSPContext,
     pub lr: Rav1dLoopRestorationDSPContext,
     pub initialized: bool,
+}
+
+impl Rav1dDSPContext {
+    pub const fn _default<BD: BitDepth>() -> Self {
+        Self {
+            fg: Rav1dFilmGrainDSPContext::default::<BD>(),
+            ipred: Rav1dIntraPredDSPContext::default::<BD>(),
+            mc: Rav1dMCDSPContext::default::<BD>(),
+            itx: Rav1dInvTxfmDSPContext::default::<BD>(),
+            lf: Rav1dLoopFilterDSPContext::default::<BD>(),
+            cdef: Rav1dCdefDSPContext::default::<BD>(),
+            lr: Rav1dLoopRestorationDSPContext::default::<BD>(),
+            initialized: true,
+        }
+    }
+
+    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
+        Self {
+            fg: Rav1dFilmGrainDSPContext::new::<BD>(flags),
+            ipred: Rav1dIntraPredDSPContext::new::<BD>(flags),
+            mc: Rav1dMCDSPContext::new::<BD>(flags),
+            itx: Rav1dInvTxfmDSPContext::new::<BD>(flags, bpc),
+            lf: Rav1dLoopFilterDSPContext::new::<BD>(flags),
+            cdef: Rav1dCdefDSPContext::new::<BD>(flags),
+            lr: Rav1dLoopRestorationDSPContext::new::<BD>(flags, bpc),
+            initialized: true,
+        }
+    }
 }
 
 #[derive(Clone, Default)]

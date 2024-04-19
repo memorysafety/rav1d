@@ -3453,7 +3453,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
 }
 
 impl Rav1dLoopRestorationDSPContext {
-    const fn default<BD: BitDepth>() -> Self {
+    pub const fn default<BD: BitDepth>() -> Self {
         Self {
             wiener: [wiener_c_erased::<BD>; 2],
             sgr: [
@@ -3553,7 +3553,7 @@ impl Rav1dLoopRestorationDSPContext {
         self
     }
 
-    fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: c_int) -> Self {
+    const fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: c_int) -> Self {
         #[cfg(feature = "asm")]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -3574,7 +3574,7 @@ impl Rav1dLoopRestorationDSPContext {
         }
     }
 
-    pub fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
+    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
         Self::default::<BD>().init::<BD>(flags, bpc)
     }
 }

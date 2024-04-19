@@ -1092,7 +1092,7 @@ unsafe fn fguv_32x32xn_neon<BD: BitDepth, const NM: usize, const IS_SX: bool, co
 }
 
 impl Rav1dFilmGrainDSPContext {
-    const fn default<BD: BitDepth>() -> Self {
+    pub const fn default<BD: BitDepth>() -> Self {
         Self {
             generate_grain_y: generate_grain_y::Fn::new(generate_grain_y_c_erased::<BD>),
             generate_grain_uv: enum_map!(Rav1dPixelLayoutSubSampled => generate_grain_uv::Fn; match key {

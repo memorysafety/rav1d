@@ -21,7 +21,6 @@ use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
-use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
 use crate::src::cdf::rav1d_cdf_thread_init_static;
@@ -63,10 +62,10 @@ use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
-use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::Bxy;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
+use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_scratch_pal;
@@ -76,8 +75,6 @@ use crate::src::internal::TileStateRef;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
-use crate::src::ipred::Rav1dIntraPredDSPContext;
-use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockLevel;
@@ -117,9 +114,6 @@ use crate::src::lf_mask::rav1d_create_lf_mask_inter;
 use crate::src::lf_mask::rav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
-use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
-use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
-use crate::src::mc::Rav1dMCDSPContext;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
@@ -4725,29 +4719,16 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // when `c` is allocated during [`rav1d_open`].
     if !(*f.dsp).initialized {
         let dsp = &mut c.dsp[seq_hdr.hbd as usize];
-        dsp.initialized = true;
 
         let flags = rav1d_get_cpu_flags();
         match bpc {
             #[cfg(feature = "bitdepth_8")]
             8 => {
-                dsp.cdef = Rav1dCdefDSPContext::new::<BitDepth8>(flags);
-                dsp.ipred = Rav1dIntraPredDSPContext::new::<BitDepth8>(flags);
-                dsp.itx = Rav1dInvTxfmDSPContext::new::<BitDepth8>(flags, bpc);
-                dsp.lf = Rav1dLoopFilterDSPContext::new::<BitDepth8>(flags);
-                dsp.lr = Rav1dLoopRestorationDSPContext::new::<BitDepth8>(flags, bpc);
-                dsp.mc = Rav1dMCDSPContext::new::<BitDepth8>(flags);
-                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth8>(flags);
+                *dsp = Rav1dDSPContext::new::<BitDepth8>(flags, bpc);
             }
             #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
-                dsp.cdef = Rav1dCdefDSPContext::new::<BitDepth16>(flags);
-                dsp.ipred = Rav1dIntraPredDSPContext::new::<BitDepth16>(flags);
-                dsp.itx = Rav1dInvTxfmDSPContext::new::<BitDepth16>(flags, bpc);
-                dsp.lf = Rav1dLoopFilterDSPContext::new::<BitDepth16>(flags);
-                dsp.lr = Rav1dLoopRestorationDSPContext::new::<BitDepth16>(flags, bpc);
-                dsp.mc = Rav1dMCDSPContext::new::<BitDepth16>(flags);
-                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>(flags);
+                *dsp = Rav1dDSPContext::new::<BitDepth16>(flags, bpc);
             }
             _ => {
                 writeln!(

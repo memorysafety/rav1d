@@ -980,7 +980,7 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
 }
 
 impl Rav1dLoopFilterDSPContext {
-    const fn default<BD: BitDepth>() -> Self {
+    pub const fn default<BD: BitDepth>() -> Self {
         Self {
             loop_filter_sb: [
                 [
@@ -1085,7 +1085,7 @@ impl Rav1dLoopFilterDSPContext {
         self
     }
 
-    fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
+    const fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
         #[cfg(feature = "asm")]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -1105,7 +1105,7 @@ impl Rav1dLoopFilterDSPContext {
         }
     }
 
-    pub fn new<BD: BitDepth>(flags: CpuFlags) -> Self {
+    pub const fn new<BD: BitDepth>(flags: CpuFlags) -> Self {
         Self::default::<BD>().init::<BD>(flags)
     }
 }
