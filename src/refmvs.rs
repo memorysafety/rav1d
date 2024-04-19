@@ -1513,8 +1513,11 @@ unsafe extern "C" fn save_tmvs_c(
 ) {
     let r = FFISafe::get(r);
     let ref_sign = &*ref_sign;
+
+    let stride = stride as usize;
     let [col_end8, row_end8, col_start8, row_start8] =
         [col_end8, row_end8, col_start8, row_start8].map(|it| it as usize);
+
     for y in row_start8..row_end8 {
         let b = ri[(y & 15) * 2];
         let mut x = col_start8;
@@ -1535,7 +1538,7 @@ unsafe extern "C" fn save_tmvs_c(
             slice::from_raw_parts_mut(rp.add(x), bw8 as usize).fill(block);
             x += bw8 as usize;
         }
-        rp = rp.offset(stride as isize);
+        rp = rp.add(stride);
     }
 }
 
