@@ -286,8 +286,7 @@ pub struct Rav1dContext {
 
     // reference/entropy state
     pub(crate) refs: [Rav1dContext_refs; 8],
-    pub(crate) cdf_pool: *mut Rav1dMemPool,
-    pub(crate) cdf: [CdfThreadContext; 8],
+    pub(crate) cdf: [CdfThreadContext; 8], // Previously pooled
 
     pub(crate) dsp: [Rav1dDSPContext; 3], /* 8, 10, 12 bits/component */
     pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,

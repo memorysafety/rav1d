@@ -217,9 +217,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
     (*c).cached_error_props = Default::default();
-    if rav1d_mem_pool_init(&mut (*c).cdf_pool).is_err() {
-        return error(c, c_out);
-    }
     if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
         && (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {
@@ -856,7 +853,6 @@ impl Drop for Rav1dContext {
             let _ = mem::take(&mut self.mastering_display);
             let _ = mem::take(&mut self.content_light);
             let _ = mem::take(&mut self.itut_t35);
-            rav1d_mem_pool_end(self.cdf_pool);
             rav1d_mem_pool_end(self.picture_pool);
         }
     }
