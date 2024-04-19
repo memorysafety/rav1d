@@ -854,7 +854,7 @@ macro_rules! assign_itx_all_fn84 {
 }
 
 impl Rav1dInvTxfmDSPContext {
-    const fn new_c<BD: BitDepth>() -> Self {
+    const fn default<BD: BitDepth>() -> Self {
         let mut c = Self {
             itxfm_add: [[None; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
         };
@@ -1128,6 +1128,6 @@ impl Rav1dInvTxfmDSPContext {
     }
 
     pub fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
-        Self::new_c::<BD>().init::<BD>(flags, bpc)
+        Self::default::<BD>().init::<BD>(flags, bpc)
     }
 }

@@ -2049,7 +2049,7 @@ mod neon {
 }
 
 impl Rav1dIntraPredDSPContext {
-    const fn new_c<BD: BitDepth>() -> Self {
+    const fn default<BD: BitDepth>() -> Self {
         Self {
             intra_pred: {
                 let mut a = [DefaultValue::DEFAULT; N_IMPL_INTRA_PRED_MODES];
@@ -2293,6 +2293,6 @@ impl Rav1dIntraPredDSPContext {
     }
 
     pub fn new<BD: BitDepth>(flags: CpuFlags) -> Self {
-        Self::new_c::<BD>().init::<BD>(flags)
+        Self::default::<BD>().init::<BD>(flags)
     }
 }

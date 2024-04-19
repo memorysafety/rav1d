@@ -2184,7 +2184,7 @@ extern "C" {
 }
 
 impl Rav1dMCDSPContext {
-    const fn new_c<BD: BitDepth>() -> Self {
+    const fn default<BD: BitDepth>() -> Self {
         Self {
             mc: enum_map!(Filter2d => mc::Fn; match key {
                 Regular8Tap => mc::Fn::new(put_8tap_regular_c_erased::<BD>),
@@ -2551,6 +2551,6 @@ impl Rav1dMCDSPContext {
     }
 
     pub fn new<BD: BitDepth>(flags: CpuFlags) -> Self {
-        Self::new_c::<BD>().init::<BD>(flags)
+        Self::default::<BD>().init::<BD>(flags)
     }
 }

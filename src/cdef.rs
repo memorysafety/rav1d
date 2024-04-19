@@ -1178,7 +1178,7 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
 }
 
 impl Rav1dCdefDSPContext {
-    const fn new_c<BD: BitDepth>() -> Self {
+    const fn default<BD: BitDepth>() -> Self {
         Self {
             dir: cdef_find_dir_c_erased::<BD>,
             fb: [
@@ -1318,6 +1318,6 @@ impl Rav1dCdefDSPContext {
     }
 
     pub fn new<BD: BitDepth>(flags: CpuFlags) -> Self {
-        Self::new_c::<BD>().init::<BD>(flags)
+        Self::default::<BD>().init::<BD>(flags)
     }
 }
