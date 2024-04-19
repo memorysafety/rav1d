@@ -2091,16 +2091,16 @@ unsafe fn mc<BD: BitDepth>(
                 .offset(dx as isize);
         }
         if !dst8.is_null() {
-            (*f.dsp).mc.mc[filter_2d as usize](
-                dst8.cast(),
+            (*f.dsp).mc.mc[filter_2d as usize].call::<BD>(
+                dst8,
                 dst_stride,
-                r#ref.cast(),
+                r#ref,
                 ref_stride,
                 bw4 * h_mul,
                 bh4 * v_mul,
                 mx << (ss_hor == 0) as c_int,
                 my << (ss_ver == 0) as c_int,
-                f.bitdepth_max,
+                BitDepth::from_c(f.bitdepth_max),
             );
         } else {
             (*f.dsp).mc.mct[filter_2d as usize](
