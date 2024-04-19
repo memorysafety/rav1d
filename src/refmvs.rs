@@ -357,12 +357,80 @@ pub type splat_mv_fn = unsafe extern "C" fn(
 
 #[repr(C)]
 pub(crate) struct Rav1dRefmvsDSPContext {
-    pub load_tmvs: load_tmvs_fn,
-    pub save_tmvs: save_tmvs_fn,
-    pub splat_mv: splat_mv_fn,
+    load_tmvs: load_tmvs_fn,
+    save_tmvs: save_tmvs_fn,
+    splat_mv: splat_mv_fn,
 }
 
 impl Rav1dRefmvsDSPContext {
+    pub unsafe fn load_tmvs(
+        &self,
+        rf: &RefMvsFrame,
+        tile_row_idx: c_int,
+        col_start8: c_int,
+        col_end8: c_int,
+        row_start8: c_int,
+        row_end8: c_int,
+    ) {
+        let rf_dav1d = rf.as_mut_dav1d();
+        (self.load_tmvs)(
+            &rf_dav1d,
+            tile_row_idx,
+            col_start8,
+            col_end8,
+            row_start8,
+            row_end8,
+            FFISafe::new(&rf.rp_proj),
+        );
+    }
+
+    // cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
+    // into buffers for use in future frame's temporal MV prediction
+    pub unsafe fn save_tmvs(
+        &self,
+        rt: &refmvs_tile,
+        rf: &RefMvsFrame,
+        col_start8: c_int,
+        col_end8: c_int,
+        row_start8: c_int,
+        row_end8: c_int,
+    ) {
+        assert!(row_start8 >= 0);
+        assert!((row_end8 - row_start8) as c_uint <= 16);
+        let row_end8 = cmp::min(row_end8, rf.ih8);
+        let col_end8 = cmp::min(col_end8, rf.iw8);
+        let stride = rf.rp_stride as isize;
+        let ref_sign = &rf.mfmv_sign;
+        let rp = rf.rp.offset(row_start8 as isize * stride);
+        let ri = <&[_; 31]>::try_from(&rt.r[6..]).unwrap();
+
+        // SAFETY: Note that for asm calls, disjointedness is unchecked here,
+        // even with `#[cfg(debug_assertions)]`.  This is because the disjointedness
+        // is more fine-grained than the pointers passed to asm.
+        // For the Rust fallback fn, the extra args `&rf.r` and `ri`
+        // are passed to do allow for disjointedness checking.
+        let rr = &ri.map(|ri| {
+            if ri > rf.r.len() {
+                return ptr::null();
+            }
+            // SAFETY: `.add` is in-bounds; checked above.
+            unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
+        });
+
+        (self.save_tmvs)(
+            rp,
+            stride,
+            rr,
+            ref_sign,
+            col_end8,
+            row_end8,
+            col_start8,
+            row_start8,
+            FFISafe::new(&rf.r),
+            ri,
+        );
+    }
+
     pub unsafe fn splat_mv(
         &self,
         rf: &RefMvsFrame,
@@ -1269,53 +1337,6 @@ pub(crate) fn rav1d_refmvs_find(
     }
 
     *ctx = refmv_ctx << 4 | globalmv_ctx << 3 | newmv_ctx;
-}
-
-// cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
-// into buffers for use in future frame's temporal MV prediction
-pub(crate) unsafe fn rav1d_refmvs_save_tmvs(
-    dsp: &Rav1dRefmvsDSPContext,
-    rt: &refmvs_tile,
-    rf: &RefMvsFrame,
-    col_start8: c_int,
-    col_end8: c_int,
-    row_start8: c_int,
-    row_end8: c_int,
-) {
-    assert!(row_start8 >= 0);
-    assert!((row_end8 - row_start8) as c_uint <= 16);
-    let row_end8 = cmp::min(row_end8, rf.ih8);
-    let col_end8 = cmp::min(col_end8, rf.iw8);
-    let stride = rf.rp_stride as isize;
-    let ref_sign = &rf.mfmv_sign;
-    let rp = rf.rp.offset(row_start8 as isize * stride);
-    let ri = <&[_; 31]>::try_from(&rt.r[6..]).unwrap();
-
-    // SAFETY: Note that for asm calls, disjointedness is unchecked here,
-    // even with `#[cfg(debug_assertions)]`.  This is because the disjointedness
-    // is more fine-grained than the pointers passed to asm.
-    // For the Rust fallback fn, the extra args `&rf.r` and `ri`
-    // are passed to do allow for disjointedness checking.
-    let rr = &ri.map(|ri| {
-        if ri > rf.r.len() {
-            return ptr::null();
-        }
-        // SAFETY: `.add` is in-bounds; checked above.
-        unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
-    });
-
-    (dsp.save_tmvs)(
-        rp,
-        stride,
-        rr,
-        ref_sign,
-        col_end8,
-        row_end8,
-        col_start8,
-        row_start8,
-        FFISafe::new(&rf.r),
-        ri,
-    );
 }
 
 pub(crate) fn rav1d_refmvs_tile_sbrow_init(
