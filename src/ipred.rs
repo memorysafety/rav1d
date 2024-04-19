@@ -6,6 +6,7 @@ use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
+use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
@@ -14,6 +15,7 @@ use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
 use crate::src::levels::HOR_PRED;
 use crate::src::levels::LEFT_DC_PRED;
+use crate::src::levels::N_IMPL_INTRA_PRED_MODES;
 use crate::src::levels::PAETH_PRED;
 use crate::src::levels::SMOOTH_H_PRED;
 use crate::src::levels::SMOOTH_PRED;
@@ -40,7 +42,7 @@ use std::slice;
 use strum::FromRepr;
 
 #[cfg(feature = "asm")]
-use crate::{include::common::bitdepth::bd_fn, src::cpu::rav1d_get_cpu_flags, src::cpu::CpuFlags};
+use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]
 use crate::include::common::bitdepth::bpc_fn;
@@ -2046,210 +2048,251 @@ mod neon {
     }
 }
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-#[inline(always)]
-fn intra_pred_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::SSSE3) {
-        return;
+impl Rav1dIntraPredDSPContext {
+    const fn new_c<BD: BitDepth>() -> Self {
+        Self {
+            intra_pred: {
+                let mut a = [DefaultValue::DEFAULT; N_IMPL_INTRA_PRED_MODES];
+                a[DC_PRED as usize] =
+                    angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::TopLeft as u8 }>);
+                a[DC_128_PRED as usize] = angular_ipred::Fn::new(ipred_dc_128_c_erased::<BD>);
+                a[TOP_DC_PRED as usize] =
+                    angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::Top as u8 }>);
+                a[LEFT_DC_PRED as usize] =
+                    angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::Left as u8 }>);
+                a[HOR_PRED as usize] = angular_ipred::Fn::new(ipred_h_c_erased::<BD>);
+                a[VERT_PRED as usize] = angular_ipred::Fn::new(ipred_v_c_erased::<BD>);
+                a[PAETH_PRED as usize] = angular_ipred::Fn::new(ipred_paeth_c_erased::<BD>);
+                a[SMOOTH_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_c_erased::<BD>);
+                a[SMOOTH_V_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_v_c_erased::<BD>);
+                a[SMOOTH_H_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_h_c_erased::<BD>);
+                a[Z1_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 1>);
+                a[Z2_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 2>);
+                a[Z3_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 3>);
+                a[FILTER_PRED as usize] = angular_ipred::Fn::new(ipred_filter_c_erased::<BD>);
+                a
+            },
+            cfl_ac: enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
+                I420 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, true>),
+                I422 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, false>),
+                I444 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, false, false>),
+            }),
+            cfl_pred: {
+                // Not all elements are initialized with fns,
+                // so we default initialize first so that there is no unitialized memory.
+                // The defaults just call `unimplemented!()`,
+                // which shouldn't slow down the other code paths at all.
+                let mut a = [DefaultValue::DEFAULT; 6];
+                a[DC_PRED as usize] =
+                    cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::TopLeft as u8 }>);
+                a[DC_128_PRED as usize] = cfl_pred::Fn::new(ipred_cfl_128_c_erased::<BD>);
+                a[TOP_DC_PRED as usize] =
+                    cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Top as u8 }>);
+                a[LEFT_DC_PRED as usize] =
+                    cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Left as u8 }>);
+                a
+            },
+            pal_pred: pal_pred::Fn::new(pal_pred_c_erased::<BD>),
+        }
     }
 
-    c.intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, ssse3);
-    c.intra_pred[DC_128_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, ssse3);
-    c.intra_pred[TOP_DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, ssse3);
-    c.intra_pred[LEFT_DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, ssse3);
-    c.intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, ssse3);
-    c.intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, ssse3);
-    c.intra_pred[PAETH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, ssse3);
-    c.intra_pred[SMOOTH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, ssse3);
-    c.intra_pred[SMOOTH_H_PRED as usize] =
-        bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, ssse3);
-    c.intra_pred[SMOOTH_V_PRED as usize] =
-        bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, ssse3);
-    c.intra_pred[Z1_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, ssse3);
-    c.intra_pred[Z2_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, ssse3);
-    c.intra_pred[Z3_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, ssse3);
-    c.intra_pred[FILTER_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, ssse3);
-
-    c.cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, ssse3);
-    c.cfl_pred[DC_128_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, ssse3);
-    c.cfl_pred[TOP_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, ssse3);
-    c.cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, ssse3);
-
-    c.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
-        I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, ssse3),
-        I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, ssse3),
-        I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, ssse3),
-    });
-
-    c.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, ssse3);
-
-    #[cfg(target_arch = "x86_64")]
-    {
-        if !flags.contains(CpuFlags::AVX2) {
-            return;
+    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
+        if !flags.contains(CpuFlags::SSSE3) {
+            return self;
         }
 
-        c.intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, avx2);
-        c.intra_pred[DC_128_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, avx2);
-        c.intra_pred[TOP_DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, avx2);
-        c.intra_pred[LEFT_DC_PRED as usize] =
-            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, avx2);
-        c.intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, avx2);
-        c.intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, avx2);
-        c.intra_pred[PAETH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, avx2);
-        c.intra_pred[SMOOTH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, avx2);
-        c.intra_pred[SMOOTH_H_PRED as usize] =
-            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, avx2);
-        c.intra_pred[SMOOTH_V_PRED as usize] =
-            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, avx2);
-        c.intra_pred[Z1_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, avx2);
-        c.intra_pred[Z2_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, avx2);
-        c.intra_pred[Z3_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, avx2);
-        c.intra_pred[FILTER_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx2);
+        self.intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, ssse3);
+        self.intra_pred[DC_128_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, ssse3);
+        self.intra_pred[TOP_DC_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, ssse3);
+        self.intra_pred[LEFT_DC_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, ssse3);
+        self.intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, ssse3);
+        self.intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, ssse3);
+        self.intra_pred[PAETH_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, ssse3);
+        self.intra_pred[SMOOTH_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, ssse3);
+        self.intra_pred[SMOOTH_H_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, ssse3);
+        self.intra_pred[SMOOTH_V_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, ssse3);
+        self.intra_pred[Z1_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, ssse3);
+        self.intra_pred[Z2_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, ssse3);
+        self.intra_pred[Z3_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, ssse3);
+        self.intra_pred[FILTER_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, ssse3);
 
-        c.cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, avx2);
-        c.cfl_pred[DC_128_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, avx2);
-        c.cfl_pred[TOP_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, avx2);
-        c.cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, avx2);
+        self.cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, ssse3);
+        self.cfl_pred[DC_128_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, ssse3);
+        self.cfl_pred[TOP_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, ssse3);
+        self.cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, ssse3);
 
-        c.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
-            I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, avx2),
-            I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, avx2),
-            I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, avx2),
+        self.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
+            I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, ssse3),
+            I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, ssse3),
+            I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, ssse3),
         });
 
-        c.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, avx2);
+        self.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, ssse3);
 
-        if !flags.contains(CpuFlags::AVX512ICL) {
-            return;
+        #[cfg(target_arch = "x86_64")]
+        {
+            if !flags.contains(CpuFlags::AVX2) {
+                return self;
+            }
+
+            self.intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, avx2);
+            self.intra_pred[DC_128_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, avx2);
+            self.intra_pred[TOP_DC_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, avx2);
+            self.intra_pred[LEFT_DC_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, avx2);
+            self.intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, avx2);
+            self.intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, avx2);
+            self.intra_pred[PAETH_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, avx2);
+            self.intra_pred[SMOOTH_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, avx2);
+            self.intra_pred[SMOOTH_H_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, avx2);
+            self.intra_pred[SMOOTH_V_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, avx2);
+            self.intra_pred[Z1_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, avx2);
+            self.intra_pred[Z2_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, avx2);
+            self.intra_pred[Z3_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, avx2);
+            self.intra_pred[FILTER_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx2);
+
+            self.cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, avx2);
+            self.cfl_pred[DC_128_PRED as usize] =
+                bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, avx2);
+            self.cfl_pred[TOP_DC_PRED as usize] =
+                bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, avx2);
+            self.cfl_pred[LEFT_DC_PRED as usize] =
+                bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, avx2);
+
+            self.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
+                I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, avx2),
+                I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, avx2),
+                I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, avx2),
+            });
+
+            self.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, avx2);
+
+            if !flags.contains(CpuFlags::AVX512ICL) {
+                return self;
+            }
+
+            if let BPC::BPC8 = BD::BPC {
+                self.intra_pred[DC_PRED as usize] =
+                    bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc, avx512icl);
+                self.intra_pred[DC_128_PRED as usize] =
+                    bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_128, avx512icl);
+                self.intra_pred[TOP_DC_PRED as usize] =
+                    bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_top, avx512icl);
+                self.intra_pred[LEFT_DC_PRED as usize] =
+                    bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_left, avx512icl);
+                self.intra_pred[HOR_PRED as usize] =
+                    bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_h, avx512icl);
+                self.intra_pred[VERT_PRED as usize] =
+                    bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_v, avx512icl);
+            }
+
+            self.intra_pred[PAETH_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, avx512icl);
+            self.intra_pred[SMOOTH_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, avx512icl);
+            self.intra_pred[SMOOTH_H_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, avx512icl);
+            self.intra_pred[SMOOTH_V_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, avx512icl);
+            self.intra_pred[FILTER_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx512icl);
+
+            self.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, avx512icl);
         }
 
-        if BD::BPC == BPC::BPC8 {
-            c.intra_pred[DC_PRED as usize] =
-                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc, avx512icl);
-            c.intra_pred[DC_128_PRED as usize] =
-                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_128, avx512icl);
-            c.intra_pred[TOP_DC_PRED as usize] =
-                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_top, avx512icl);
-            c.intra_pred[LEFT_DC_PRED as usize] =
-                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_dc_left, avx512icl);
-            c.intra_pred[HOR_PRED as usize] =
-                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_h, avx512icl);
-            c.intra_pred[VERT_PRED as usize] =
-                bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_v, avx512icl);
+        self
+    }
+
+    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
+        if !flags.contains(CpuFlags::NEON) {
+            return self;
         }
 
-        c.intra_pred[PAETH_PRED as usize] =
-            bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, avx512icl);
-        c.intra_pred[SMOOTH_PRED as usize] =
-            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, avx512icl);
-        c.intra_pred[SMOOTH_H_PRED as usize] =
-            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, avx512icl);
-        c.intra_pred[SMOOTH_V_PRED as usize] =
-            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, avx512icl);
-        c.intra_pred[FILTER_PRED as usize] =
-            bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx512icl);
+        self.intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, neon);
+        self.intra_pred[DC_128_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, neon);
+        self.intra_pred[TOP_DC_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, neon);
+        self.intra_pred[LEFT_DC_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, neon);
+        self.intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, neon);
+        self.intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, neon);
+        self.intra_pred[PAETH_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, neon);
+        self.intra_pred[SMOOTH_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, neon);
+        self.intra_pred[SMOOTH_V_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, neon);
+        self.intra_pred[SMOOTH_H_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, neon);
+        #[cfg(target_arch = "aarch64")]
+        {
+            use self::neon::ipred_z_neon_erased;
 
-        c.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, avx512icl);
-    }
-}
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-#[inline(always)]
-fn intra_pred_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::NEON) {
-        return;
-    }
-
-    c.intra_pred[DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc, neon);
-    c.intra_pred[DC_128_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_128, neon);
-    c.intra_pred[TOP_DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_top, neon);
-    c.intra_pred[LEFT_DC_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_dc_left, neon);
-    c.intra_pred[HOR_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_h, neon);
-    c.intra_pred[VERT_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_v, neon);
-    c.intra_pred[PAETH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_paeth, neon);
-    c.intra_pred[SMOOTH_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth, neon);
-    c.intra_pred[SMOOTH_V_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, neon);
-    c.intra_pred[SMOOTH_H_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, neon);
-    #[cfg(target_arch = "aarch64")]
-    {
-        use self::neon::ipred_z_neon_erased;
-
-        c.intra_pred[Z1_PRED as usize] = angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 1>);
-        c.intra_pred[Z2_PRED as usize] = angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 2>);
-        c.intra_pred[Z3_PRED as usize] = angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 3>);
-    }
-    c.intra_pred[FILTER_PRED as usize] = bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, neon);
-
-    c.cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, neon);
-    c.cfl_pred[DC_128_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, neon);
-    c.cfl_pred[TOP_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, neon);
-    c.cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, neon);
-
-    c.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
-        I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, neon),
-        I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, neon),
-        I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, neon),
-    });
-
-    c.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, neon);
-}
-
-#[cold]
-pub(crate) fn rav1d_intra_pred_dsp_init<BD: BitDepth>(c: &mut Rav1dIntraPredDSPContext) {
-    c.intra_pred[DC_PRED as usize] =
-        angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::TopLeft as u8 }>);
-    c.intra_pred[DC_128_PRED as usize] = angular_ipred::Fn::new(ipred_dc_128_c_erased::<BD>);
-    c.intra_pred[TOP_DC_PRED as usize] =
-        angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::Top as u8 }>);
-    c.intra_pred[LEFT_DC_PRED as usize] =
-        angular_ipred::Fn::new(ipred_dc_c_erased::<BD, { DcGen::Left as u8 }>);
-    c.intra_pred[HOR_PRED as usize] = angular_ipred::Fn::new(ipred_h_c_erased::<BD>);
-    c.intra_pred[VERT_PRED as usize] = angular_ipred::Fn::new(ipred_v_c_erased::<BD>);
-    c.intra_pred[PAETH_PRED as usize] = angular_ipred::Fn::new(ipred_paeth_c_erased::<BD>);
-    c.intra_pred[SMOOTH_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_c_erased::<BD>);
-    c.intra_pred[SMOOTH_V_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_v_c_erased::<BD>);
-    c.intra_pred[SMOOTH_H_PRED as usize] = angular_ipred::Fn::new(ipred_smooth_h_c_erased::<BD>);
-    c.intra_pred[Z1_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 1>);
-    c.intra_pred[Z2_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 2>);
-    c.intra_pred[Z3_PRED as usize] = angular_ipred::Fn::new(ipred_z_c_erased::<BD, 3>);
-    c.intra_pred[FILTER_PRED as usize] = angular_ipred::Fn::new(ipred_filter_c_erased::<BD>);
-
-    c.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
-        I420 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, true>),
-        I422 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, true, false>),
-        I444 => cfl_ac::Fn::new(cfl_ac_c_erased::<BD, false, false>),
-    });
-
-    // Not all elements are initialized with fns,
-    // so we default initialize first so that there is no unitialized memory.
-    // The defaults just call `unimplemented!()`,
-    // which shouldn't slow down the other code paths at all.
-    c.cfl_pred = [DefaultValue::DEFAULT; 6];
-    c.cfl_pred[DC_PRED as usize] =
-        cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::TopLeft as u8 }>);
-    c.cfl_pred[DC_128_PRED as usize] = cfl_pred::Fn::new(ipred_cfl_128_c_erased::<BD>);
-    c.cfl_pred[TOP_DC_PRED as usize] =
-        cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Top as u8 }>);
-    c.cfl_pred[LEFT_DC_PRED as usize] =
-        cfl_pred::Fn::new(ipred_cfl_c_erased::<BD, { DcGen::Left as u8 }>);
-
-    c.pal_pred = pal_pred::Fn::new(pal_pred_c_erased::<BD>);
-
-    #[cfg(feature = "asm")]
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            use crate::src::ipred::intra_pred_dsp_init_x86;
-
-            intra_pred_dsp_init_x86::<BD>(c);
-        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-            use crate::src::ipred::intra_pred_dsp_init_arm;
-
-            intra_pred_dsp_init_arm::<BD>(c);
+            self.intra_pred[Z1_PRED as usize] =
+                angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 1>);
+            self.intra_pred[Z2_PRED as usize] =
+                angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 2>);
+            self.intra_pred[Z3_PRED as usize] =
+                angular_ipred::Fn::new(ipred_z_neon_erased::<BD, 3>);
         }
+        self.intra_pred[FILTER_PRED as usize] =
+            bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, neon);
+
+        self.cfl_pred[DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl, neon);
+        self.cfl_pred[DC_128_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_128, neon);
+        self.cfl_pred[TOP_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_top, neon);
+        self.cfl_pred[LEFT_DC_PRED as usize] = bd_fn!(cfl_pred::decl_fn, BD, ipred_cfl_left, neon);
+
+        self.cfl_ac = enum_map!(Rav1dPixelLayoutSubSampled => cfl_ac::Fn; match key {
+            I420 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_420, neon),
+            I422 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_422, neon),
+            I444 => bd_fn!(cfl_ac::decl_fn, BD, ipred_cfl_ac_444, neon),
+        });
+
+        self.pal_pred = bd_fn!(pal_pred::decl_fn, BD, pal_pred, neon);
+
+        self
+    }
+
+    fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
+        #[cfg(feature = "asm")]
+        {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            {
+                return self.init_x86::<BD>(flags);
+            }
+            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+            {
+                return self.init_arm::<BD>(flags);
+            }
+        }
+
+        #[allow(unreachable_code)] // Reachable on some #[cfg]s.
+        {
+            let _ = flags;
+            self
+        }
+    }
+
+    pub fn new<BD: BitDepth>(flags: CpuFlags) -> Self {
+        Self::new_c::<BD>().init::<BD>(flags)
     }
 }
