@@ -1,3 +1,4 @@
+use crate::src::enum_map::EnumKey;
 use std::ops::Neg;
 use strum::EnumCount;
 use strum::FromRepr;
@@ -180,6 +181,25 @@ pub enum Filter2d {
     Smooth8Tap = 7,
     SmoothSharp8Tap = 8,
     Bilinear = 9,
+}
+
+impl EnumKey<{ Self::COUNT }> for Filter2d {
+    const VALUES: [Self; Self::COUNT] = [
+        Self::Regular8Tap,
+        Self::RegularSmooth8Tap,
+        Self::RegularSharp8Tap,
+        Self::SharpRegular8Tap,
+        Self::SharpSmooth8Tap,
+        Self::Sharp8Tap,
+        Self::SmoothRegular8Tap,
+        Self::Smooth8Tap,
+        Self::SmoothSharp8Tap,
+        Self::Bilinear,
+    ];
+
+    fn as_usize(self) -> usize {
+        self as usize
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]

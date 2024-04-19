@@ -2091,7 +2091,7 @@ unsafe fn mc<BD: BitDepth>(
                 .offset(dx as isize);
         }
         if !dst8.is_null() {
-            (*f.dsp).mc.mc[filter_2d as usize].call::<BD>(
+            (*f.dsp).mc.mc[filter_2d].call::<BD>(
                 dst8,
                 dst_stride,
                 r#ref,
@@ -2103,7 +2103,7 @@ unsafe fn mc<BD: BitDepth>(
                 BitDepth::from_c(f.bitdepth_max),
             );
         } else {
-            (*f.dsp).mc.mct[filter_2d as usize].call::<BD>(
+            (*f.dsp).mc.mct[filter_2d].call::<BD>(
                 dst16,
                 r#ref,
                 ref_stride,
@@ -2171,7 +2171,7 @@ unsafe fn mc<BD: BitDepth>(
                 .offset(left as isize);
         }
         if !dst8.is_null() {
-            (*f.dsp).mc.mc_scaled[filter_2d as usize].call::<BD>(
+            (*f.dsp).mc.mc_scaled[filter_2d].call::<BD>(
                 dst8,
                 dst_stride,
                 r#ref,
@@ -2185,7 +2185,7 @@ unsafe fn mc<BD: BitDepth>(
                 BD::from_c(f.bitdepth_max),
             );
         } else {
-            (*f.dsp).mc.mct_scaled[filter_2d as usize].call::<BD>(
+            (*f.dsp).mc.mct_scaled[filter_2d].call::<BD>(
                 dst16,
                 r#ref,
                 ref_stride,
