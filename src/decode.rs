@@ -77,7 +77,7 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
-use crate::src::itx::rav1d_itx_dsp_init;
+use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::BlockLevel;
@@ -4733,7 +4733,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             8 => {
                 dsp.cdef = Rav1dCdefDSPContext::new::<BitDepth8>(flags);
                 dsp.ipred = Rav1dIntraPredDSPContext::new::<BitDepth8>(flags);
-                rav1d_itx_dsp_init::<BitDepth8>(&mut dsp.itx, bpc);
+                dsp.itx = Rav1dInvTxfmDSPContext::new::<BitDepth8>(flags, bpc);
                 rav1d_loop_filter_dsp_init::<BitDepth8>(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
                 rav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
@@ -4743,7 +4743,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             10 | 12 => {
                 dsp.cdef = Rav1dCdefDSPContext::new::<BitDepth16>(flags);
                 dsp.ipred = Rav1dIntraPredDSPContext::new::<BitDepth16>(flags);
-                rav1d_itx_dsp_init::<BitDepth16>(&mut dsp.itx, bpc);
+                dsp.itx = Rav1dInvTxfmDSPContext::new::<BitDepth16>(flags, bpc);
                 rav1d_loop_filter_dsp_init::<BitDepth16>(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
                 rav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
