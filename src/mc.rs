@@ -8,6 +8,7 @@ use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
 use crate::src::tables::dav1d_obmc_masks;
 use crate::src::tables::dav1d_resize_filter;
+use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::intptr_t;
 use libc::ptrdiff_t;
 use std::cmp;
@@ -1275,17 +1276,36 @@ pub type mask_fn = unsafe extern "C" fn(
     c_int,
 ) -> ();
 
-pub type w_mask_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const i16,
-    *const i16,
-    c_int,
-    c_int,
-    *mut u8,
-    c_int,
-    c_int,
-) -> ();
+wrap_fn_ptr!(pub unsafe extern "C" fn w_mask(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp1: *const i16,
+    tmp2: *const i16,
+    w: c_int,
+    h: c_int,
+    mask: *mut u8,
+    sign: c_int,
+    bitdepth_max: c_int,
+) -> ());
+
+impl w_mask::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        dst_stride: ptrdiff_t,
+        tmp1: *const i16,
+        tmp2: *const i16,
+        w: c_int,
+        h: c_int,
+        mask: *mut u8,
+        sign: c_int,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let bd = bd.into_c();
+        self.get()(dst, dst_stride, tmp1, tmp2, w, h, mask, sign, bd)
+    }
+}
 
 pub type blend_fn =
     unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const DynPixel, c_int, c_int, *const u8) -> ();
@@ -1327,7 +1347,7 @@ pub struct Rav1dMCDSPContext {
     pub avg: avg_fn,
     pub w_avg: w_avg_fn,
     pub mask: mask_fn,
-    pub w_mask: [w_mask_fn; 3],
+    pub w_mask: [w_mask::Fn; 3],
     pub blend: blend_fn,
     pub blend_v: blend_dir_fn,
     pub blend_h: blend_dir_fn,
@@ -2304,9 +2324,9 @@ fn mc_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dMCDSPContext) {
     c.w_avg = bd_fn!(BD, w_avg, ssse3);
     c.mask = bd_fn!(BD, mask, ssse3);
 
-    c.w_mask[0] = bd_fn!(BD, w_mask_444, ssse3);
-    c.w_mask[1] = bd_fn!(BD, w_mask_422, ssse3);
-    c.w_mask[2] = bd_fn!(BD, w_mask_420, ssse3);
+    c.w_mask[0] = w_mask::Fn::new(bd_fn!(BD, w_mask_444, ssse3));
+    c.w_mask[1] = w_mask::Fn::new(bd_fn!(BD, w_mask_422, ssse3));
+    c.w_mask[2] = w_mask::Fn::new(bd_fn!(BD, w_mask_420, ssse3));
 
     c.blend = bd_fn!(BD, blend, ssse3);
     c.blend_v = bd_fn!(BD, blend_v, ssse3);
@@ -2381,9 +2401,9 @@ fn mc_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dMCDSPContext) {
         c.w_avg = bd_fn!(BD, w_avg, avx2);
         c.mask = bd_fn!(BD, mask, avx2);
 
-        c.w_mask[0] = bd_fn!(BD, w_mask_444, avx2);
-        c.w_mask[1] = bd_fn!(BD, w_mask_422, avx2);
-        c.w_mask[2] = bd_fn!(BD, w_mask_420, avx2);
+        c.w_mask[0] = w_mask::Fn::new(bd_fn!(BD, w_mask_444, avx2));
+        c.w_mask[1] = w_mask::Fn::new(bd_fn!(BD, w_mask_422, avx2));
+        c.w_mask[2] = w_mask::Fn::new(bd_fn!(BD, w_mask_420, avx2));
 
         c.blend = bd_fn!(BD, blend, avx2);
         c.blend_v = bd_fn!(BD, blend_v, avx2);
@@ -2423,9 +2443,9 @@ fn mc_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dMCDSPContext) {
         c.w_avg = bd_fn!(BD, w_avg, avx512icl);
         c.mask = bd_fn!(BD, mask, avx512icl);
 
-        c.w_mask[0] = bd_fn!(BD, w_mask_444, avx512icl);
-        c.w_mask[1] = bd_fn!(BD, w_mask_422, avx512icl);
-        c.w_mask[2] = bd_fn!(BD, w_mask_420, avx512icl);
+        c.w_mask[0] = w_mask::Fn::new(bd_fn!(BD, w_mask_444, avx512icl));
+        c.w_mask[1] = w_mask::Fn::new(bd_fn!(BD, w_mask_422, avx512icl));
+        c.w_mask[2] = w_mask::Fn::new(bd_fn!(BD, w_mask_420, avx512icl));
 
         c.blend = bd_fn!(BD, blend, avx512icl);
         c.blend_v = bd_fn!(BD, blend_v, avx512icl);
@@ -2476,9 +2496,9 @@ fn mc_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dMCDSPContext) {
     c.blend_h = bd_fn!(BP, blend_h, neon);
     c.blend_v = bd_fn!(BP, blend_v, neon);
 
-    c.w_mask[0] = bd_fn!(BP, w_mask_444, neon);
-    c.w_mask[1] = bd_fn!(BP, w_mask_422, neon);
-    c.w_mask[2] = bd_fn!(BP, w_mask_420, neon);
+    c.w_mask[0] = w_mask::Fn::new(bd_fn!(BP, w_mask_444, neon));
+    c.w_mask[1] = w_mask::Fn::new(bd_fn!(BP, w_mask_422, neon));
+    c.w_mask[2] = w_mask::Fn::new(bd_fn!(BP, w_mask_420, neon));
 
     c.warp8x8 = bd_fn!(BP, warp_affine_8x8, neon);
     c.warp8x8t = bd_fn!(BP, warp_affine_8x8t, neon);
@@ -2537,9 +2557,9 @@ pub fn rav1d_mc_dsp_init<BD: BitDepth>(c: &mut Rav1dMCDSPContext) {
     c.w_avg = w_avg_c_erased::<BD>;
     c.mask = mask_c_erased::<BD>;
 
-    c.w_mask[0] = w_mask_444_c_erased::<BD>;
-    c.w_mask[1] = w_mask_422_c_erased::<BD>;
-    c.w_mask[2] = w_mask_420_c_erased::<BD>;
+    c.w_mask[0] = w_mask::Fn::new(w_mask_444_c_erased::<BD>);
+    c.w_mask[1] = w_mask::Fn::new(w_mask_422_c_erased::<BD>);
+    c.w_mask[2] = w_mask::Fn::new(w_mask_420_c_erased::<BD>);
 
     c.blend = blend_c_erased::<BD>;
     c.blend_v = blend_v_c_erased::<BD>;

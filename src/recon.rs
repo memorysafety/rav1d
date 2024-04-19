@@ -3313,8 +3313,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 );
             }
             CompInterType::Seg => {
-                dsp.mc.w_mask[chr_layout_idx](
-                    dst.cast(),
+                dsp.mc.w_mask[chr_layout_idx].call(
+                    dst,
                     f.cur.stride[0],
                     tmp[b.mask_sign() as usize].as_mut_ptr(),
                     tmp[(b.mask_sign() == 0) as usize].as_mut_ptr(),
@@ -3322,7 +3322,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     bh4 * 4,
                     seg_mask.as_mut_ptr(),
                     b.mask_sign() as c_int,
-                    f.bitdepth_max,
+                    BD::from_c(f.bitdepth_max),
                 );
                 mask = &seg_mask[..];
             }
