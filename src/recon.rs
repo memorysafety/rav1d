@@ -10,6 +10,7 @@ use crate::include::common::intops::clip;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
+use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::include::dav1d::headers::Rav1dWarpedMotionParams;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
@@ -3186,6 +3187,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     } else {
         Rav1dPixelLayout::I444 - f.cur.p.layout
     } as usize;
+    let chr_layout_idx_w_mask = f
+        .cur
+        .p
+        .layout
+        .try_into()
+        .unwrap_or(Rav1dPixelLayoutSubSampled::I444);
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let mut dst = (f.cur.data.data[0] as *mut BD::Pixel)
@@ -3313,7 +3320,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 );
             }
             CompInterType::Seg => {
-                dsp.mc.w_mask[chr_layout_idx].call(
+                dsp.mc.w_mask[chr_layout_idx_w_mask].call(
                     dst,
                     f.cur.stride[0],
                     tmp[b.mask_sign() as usize].as_mut_ptr(),
