@@ -28,6 +28,7 @@ use crate::src::fg_apply;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
+use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
@@ -609,17 +610,17 @@ pub(crate) unsafe fn rav1d_apply_grain(
         } else {
             match out.p.bpc {
                 #[cfg(feature = "bitdepth_8")]
-                8 => {
+                bpc @ 8 => {
                     fg_apply::rav1d_apply_grain::<BitDepth8>(
-                        &mut (*(c.dsp).as_mut_ptr().offset(0)).fg,
+                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
                         out,
                         in_0,
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
-                10 | 12 => {
+                bpc @ 10 | bpc @ 12 => {
                     fg_apply::rav1d_apply_grain::<BitDepth16>(
-                        &mut (*(c.dsp).as_mut_ptr().offset(((out.p.bpc >> 1) - 4) as isize)).fg,
+                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
                         out,
                         in_0,
                     );

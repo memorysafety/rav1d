@@ -1,6 +1,4 @@
 use crate::include::common::attributes::ctz;
-use crate::include::common::bitdepth::BitDepth16;
-use crate::include::common::bitdepth::BitDepth8;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign64;
@@ -27,7 +25,6 @@ use crate::src::cdf::rav1d_cdf_thread_init_static;
 use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
-use crate::src::cpu::rav1d_get_cpu_flags;
 use crate::src::ctx::CaseSet;
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::disjoint_mut::DisjointMut;
@@ -4686,9 +4683,6 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     f.seq_hdr = c.seq_hdr.clone();
     f.frame_hdr = mem::take(&mut c.frame_hdr);
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    f.dsp = &mut c.dsp[seq_hdr.hbd as usize];
-
-    let bpc = 8 + 2 * seq_hdr.hbd;
 
     unsafe fn on_error(f: &mut Rav1dFrameData, c: &Rav1dContext, out: *mut Rav1dThreadPicture) {
         f.task_thread.error = AtomicI32::new(1);
@@ -4714,33 +4708,15 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         f.task_thread.finished.store(true, Ordering::SeqCst);
     }
 
-    // TODO(kkysen) Rather than lazy initializing this,
-    // we should probably initialize all the fn ptrs
-    // when `c` is allocated during [`rav1d_open`].
-    if !(*f.dsp).initialized {
-        let dsp = &mut c.dsp[seq_hdr.hbd as usize];
-
-        let flags = rav1d_get_cpu_flags();
-        match bpc {
-            #[cfg(feature = "bitdepth_8")]
-            8 => {
-                *dsp = Rav1dDSPContext::new::<BitDepth8>(flags, bpc);
-            }
-            #[cfg(feature = "bitdepth_16")]
-            10 | 12 => {
-                *dsp = Rav1dDSPContext::new::<BitDepth16>(flags, bpc);
-            }
-            _ => {
-                writeln!(
-                    c.logger,
-                    "Compiled without support for {}-bit decoding",
-                    8 + 2 * seq_hdr.hbd
-                );
-                on_error(f, c, out);
-                return Err(ENOPROTOOPT);
-            }
+    let bpc = 8 + 2 * seq_hdr.hbd;
+    match Rav1dDSPContext::get(bpc) {
+        Some(dsp) => f.dsp = dsp,
+        None => {
+            writeln!(c.logger, "Compiled without support for {bpc}-bit decoding",);
+            on_error(f, c, out);
+            return Err(ENOPROTOOPT);
         }
-    }
+    };
 
     fn scale_fac(ref_sz: i32, this_sz: i32) -> i32 {
         ((ref_sz << 14) + (this_sz >> 1)) / this_sz

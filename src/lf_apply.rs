@@ -38,7 +38,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     ss_hor: c_int,
     lr_backup: c_int,
     frame_hdr: &Rav1dFrameHeader,
-    dsp: *const Rav1dDSPContext,
+    dsp: &Rav1dDSPContext,
     resize_step: [c_int; 2],
     resize_start: [c_int; 2],
     bitdepth_max: c_int,
@@ -82,7 +82,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     if lr_backup != 0 && frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         while row + stripe_h <= row_h {
             let n_lines = 4 - (row + stripe_h + 1 == h) as c_int;
-            ((*dsp).mc.resize)(
+            (dsp.mc.resize)(
                 dst.as_mut_ptr().add(dst_offset).cast(),
                 dst_stride,
                 src.as_ptr().add(src_offset).cast(),
@@ -398,8 +398,6 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     starty4: c_int,
     endy4: c_int,
 ) {
-    let dsp: &Rav1dDSPContext = &*f.dsp;
-
     // filter edges between columns (e.g. block1 | block2)
     for x in 0..w as usize {
         if !(!have_left && x == 0) {
@@ -419,7 +417,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 hmask[2] = mask[x][2][1].load(Ordering::Relaxed) as u32;
             }
             // hmask[3] = 0; already initialized above
-            dsp.lf.loop_filter_sb[0][0](
+            f.dsp.lf.loop_filter_sb[0][0](
                 dst.as_mut_ptr().add(dst_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
@@ -447,8 +445,6 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     starty4: c_int,
     endy4: c_int,
 ) {
-    let dsp: &Rav1dDSPContext = &*f.dsp;
-
     //                                 block1
     // filter edges between rows (e.g. ------)
     //                                 block2
@@ -463,7 +459,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                     | (mask[y as usize][2][1].load(Ordering::Relaxed) as u32) << 16,
                 0,
             ];
-            dsp.lf.loop_filter_sb[0][1](
+            f.dsp.lf.loop_filter_sb[0][1](
                 dst.as_mut_ptr().add(dst_offset).cast(),
                 ls,
                 vmask.as_ptr(),
@@ -494,8 +490,6 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     endy4: c_int,
     ss_ver: c_int,
 ) {
-    let dsp: &Rav1dDSPContext = &*f.dsp;
-
     // filter edges between columns (e.g. block1 | block2)
     for x in 0..w as usize {
         if !(!have_left && x == 0) {
@@ -514,7 +508,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 hmask[1] = mask[x as usize][1][1].load(Ordering::Relaxed) as u32;
             }
             // hmask[2] = 0; Already initialized to 0 above
-            dsp.lf.loop_filter_sb[1][0](
+            f.dsp.lf.loop_filter_sb[1][0](
                 u.as_mut_ptr().add(uv_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
@@ -524,7 +518,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 endy4 - starty4,
                 f.bitdepth_max,
             );
-            dsp.lf.loop_filter_sb[1][0](
+            f.dsp.lf.loop_filter_sb[1][0](
                 v.as_mut_ptr().add(uv_offset + x * 4).cast(),
                 ls,
                 hmask.as_mut_ptr(),
@@ -554,7 +548,6 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     endy4: c_int,
     ss_hor: c_int,
 ) {
-    let dsp: &Rav1dDSPContext = &*f.dsp;
     let mut off_l = uv_offset as ptrdiff_t;
 
     //                                 block1
@@ -569,7 +562,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                     | (mask[y as usize][1][1].load(Ordering::Relaxed) as u32) << (16 >> ss_hor),
                 0,
             ];
-            dsp.lf.loop_filter_sb[1][1](
+            f.dsp.lf.loop_filter_sb[1][1](
                 u.as_mut_ptr().offset(off_l).cast(),
                 ls,
                 vmask.as_ptr(),
@@ -579,7 +572,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 w,
                 f.bitdepth_max,
             );
-            dsp.lf.loop_filter_sb[1][1](
+            f.dsp.lf.loop_filter_sb[1][1](
                 v.as_mut_ptr().offset(off_l).cast(),
                 ls,
                 vmask.as_ptr(),
