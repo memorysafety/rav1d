@@ -986,7 +986,7 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-unsafe fn loop_filter_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPContext) {
+fn loop_filter_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dLoopFilterDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSSE3) {
@@ -994,10 +994,10 @@ unsafe fn loop_filter_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPConte
     }
     match BD::BPC {
         BPC::BPC8 => {
-            (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_ssse3;
-            (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_ssse3;
-            (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_ssse3;
-            (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_ssse3;
+            c.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_ssse3;
+            c.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_ssse3;
+            c.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_ssse3;
+            c.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_ssse3;
 
             #[cfg(target_arch = "x86_64")]
             {
@@ -1005,26 +1005,26 @@ unsafe fn loop_filter_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPConte
                     return;
                 }
 
-                (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx2;
-                (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx2;
-                (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx2;
-                (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx2;
+                c.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx2;
+                c.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx2;
+                c.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx2;
+                c.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx2;
 
                 if !flags.contains(CpuFlags::AVX512ICL) {
                     return;
                 }
 
-                (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx512icl;
-                (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx512icl;
-                (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx512icl;
-                (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx512icl;
+                c.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx512icl;
+                c.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx512icl;
+                c.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx512icl;
+                c.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx512icl;
             }
         }
         BPC::BPC16 => {
-            (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_ssse3;
-            (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_ssse3;
-            (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_ssse3;
-            (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_ssse3;
+            c.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_ssse3;
+            c.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_ssse3;
+            c.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_ssse3;
+            c.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_ssse3;
 
             #[cfg(target_arch = "x86_64")]
             {
@@ -1032,19 +1032,19 @@ unsafe fn loop_filter_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPConte
                     return;
                 }
 
-                (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx2;
-                (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx2;
-                (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx2;
-                (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx2;
+                c.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx2;
+                c.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx2;
+                c.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx2;
+                c.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx2;
 
                 if !flags.contains(CpuFlags::AVX512ICL) {
                     return;
                 }
 
-                (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx512icl;
-                (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx512icl;
-                (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx512icl;
-                (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx512icl;
+                c.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx512icl;
+                c.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx512icl;
+                c.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx512icl;
+                c.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx512icl;
             }
         }
     }
@@ -1052,7 +1052,7 @@ unsafe fn loop_filter_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPConte
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe fn loop_filter_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPContext) {
+fn loop_filter_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dLoopFilterDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -1061,26 +1061,26 @@ unsafe fn loop_filter_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPConte
 
     match BD::BPC {
         BPC::BPC8 => {
-            (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_neon;
-            (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_neon;
-            (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_neon;
-            (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_neon;
+            c.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_neon;
+            c.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_neon;
+            c.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_neon;
+            c.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_neon;
         }
         BPC::BPC16 => {
-            (*c).loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_neon;
-            (*c).loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_neon;
-            (*c).loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_neon;
-            (*c).loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_neon;
+            c.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_neon;
+            c.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_neon;
+            c.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_neon;
+            c.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_neon;
         }
     }
 }
 
 #[cold]
-pub unsafe fn rav1d_loop_filter_dsp_init<BD: BitDepth>(c: *mut Rav1dLoopFilterDSPContext) {
-    (*c).loop_filter_sb[0][0] = loop_filter_h_sb128y_c_erased::<BD>;
-    (*c).loop_filter_sb[0][1] = loop_filter_v_sb128y_c_erased::<BD>;
-    (*c).loop_filter_sb[1][0] = loop_filter_h_sb128uv_c_erased::<BD>;
-    (*c).loop_filter_sb[1][1] = loop_filter_v_sb128uv_c_erased::<BD>;
+pub fn rav1d_loop_filter_dsp_init<BD: BitDepth>(c: &mut Rav1dLoopFilterDSPContext) {
+    c.loop_filter_sb[0][0] = loop_filter_h_sb128y_c_erased::<BD>;
+    c.loop_filter_sb[0][1] = loop_filter_v_sb128y_c_erased::<BD>;
+    c.loop_filter_sb[1][0] = loop_filter_h_sb128uv_c_erased::<BD>;
+    c.loop_filter_sb[1][1] = loop_filter_v_sb128uv_c_erased::<BD>;
 
     #[cfg(feature = "asm")]
     cfg_if! {
