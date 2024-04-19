@@ -531,7 +531,7 @@ macro_rules! assign_itx_fn {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][$type_enum as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][$type_enum as usize]
                 = Some(bd_fn!(BD, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
@@ -540,7 +540,7 @@ macro_rules! assign_itx_fn {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
                 = Some(bd_fn!(BD, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
@@ -552,7 +552,7 @@ macro_rules! assign_itx_bpc_fn {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][$type_enum as usize]
                 = Some(bpc_fn!($bpc bpc, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
@@ -561,7 +561,7 @@ macro_rules! assign_itx_bpc_fn {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][$type_enum as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][$type_enum as usize]
                 = Some(bpc_fn!($bpc bpc, [< inv_txfm_add_ $type _ $w x $h >], $ext));
         }
     }};
@@ -726,7 +726,7 @@ macro_rules! assign_itx16_fn {
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 #[inline(always)]
-unsafe fn itx_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
+fn itx_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dInvTxfmDSPContext, bpc: c_int) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::SSE2) {
@@ -903,7 +903,7 @@ unsafe fn itx_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 #[inline(always)]
-unsafe fn itx_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, bpc: c_int) {
+fn itx_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dInvTxfmDSPContext, bpc: c_int) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
@@ -944,7 +944,7 @@ macro_rules! assign_itx_all_fn64 {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][DCT_DCT as usize] =
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_DCT as usize] =
                 Some([< inv_txfm_add_dct_dct_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -953,7 +953,7 @@ macro_rules! assign_itx_all_fn64 {
         use paste::paste;
 
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_DCT as usize]
                 = Some([< inv_txfm_add_dct_dct_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -965,7 +965,7 @@ macro_rules! assign_itx_all_fn32 {
 
         assign_itx_all_fn64!($c, BD, $w, $h);
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][IDTX as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][IDTX as usize]
                 = Some([< inv_txfm_add_identity_identity_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -975,7 +975,7 @@ macro_rules! assign_itx_all_fn32 {
 
         assign_itx_all_fn64!($c, BD, $w, $h, $pfx);
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][IDTX as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][IDTX as usize]
                 = Some([< inv_txfm_add_identity_identity_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -987,25 +987,25 @@ macro_rules! assign_itx_all_fn16 {
 
         assign_itx_all_fn32!($c, BD, $w, $h);
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][DCT_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_ADST as usize]
                 = Some([< inv_txfm_add_adst_dct_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][ADST_DCT as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_DCT as usize]
                 = Some([< inv_txfm_add_dct_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][ADST_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_ADST as usize]
                 = Some([< inv_txfm_add_adst_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
                 = Some([< inv_txfm_add_adst_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_dct_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
                 = Some([< inv_txfm_add_dct_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][H_DCT as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_DCT as usize]
                 = Some([< inv_txfm_add_dct_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][V_DCT as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_DCT as usize]
                 = Some([< inv_txfm_add_identity_dct_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -1015,25 +1015,25 @@ macro_rules! assign_itx_all_fn16 {
 
         assign_itx_all_fn32!($c, BD, $w, $h, $pfx);
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_ADST as usize]
                 = Some([< inv_txfm_add_adst_dct_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_DCT as usize]
                 = Some([< inv_txfm_add_dct_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_ADST as usize]
                 = Some([< inv_txfm_add_adst_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_adst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
                 = Some([< inv_txfm_add_adst_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_dct_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
                 = Some([< inv_txfm_add_dct_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_DCT as usize]
                 = Some([< inv_txfm_add_dct_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_DCT as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_DCT as usize]
                 = Some([< inv_txfm_add_identity_dct_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -1045,13 +1045,13 @@ macro_rules! assign_itx_all_fn84 {
 
         assign_itx_all_fn16!($c, BD, $w, $h);
         paste! {
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][H_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][V_FLIPADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_FLIPADST as usize]
                 = Some([< inv_txfm_add_identity_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][H_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_ADST as usize]
                 = Some([< inv_txfm_add_adst_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<TX_ $w X $h>] as usize][V_ADST as usize]
+            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_ADST as usize]
                 = Some([< inv_txfm_add_identity_adst_ $w x $h _c_erased >]::<BD>);
         }
     }};
@@ -1061,22 +1061,21 @@ macro_rules! assign_itx_all_fn84 {
 
         assign_itx_all_fn16!($c, BD, $w, $h, $pfx);
         paste! {
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_FLIPADST as usize]
                 = Some([< inv_txfm_add_flipadst_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_FLIPADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_FLIPADST as usize]
                 = Some([< inv_txfm_add_identity_flipadst_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_ADST as usize]
                 = Some([< inv_txfm_add_adst_identity_ $w x $h _c_erased >]::<BD>);
-            (*$c).itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_ADST as usize]
+            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_ADST as usize]
                 = Some([< inv_txfm_add_identity_adst_ $w x $h _c_erased >]::<BD>);
         }
     }};
 }
 
 #[cold]
-pub unsafe fn rav1d_itx_dsp_init<BD: BitDepth>(c: *mut Rav1dInvTxfmDSPContext, mut _bpc: c_int) {
-    (*c).itxfm_add[TX_4X4 as usize][WHT_WHT as usize] =
-        Some(inv_txfm_add_wht_wht_4x4_c_erased::<BD>);
+pub fn rav1d_itx_dsp_init<BD: BitDepth>(c: &mut Rav1dInvTxfmDSPContext, mut _bpc: c_int) {
+    c.itxfm_add[TX_4X4 as usize][WHT_WHT as usize] = Some(inv_txfm_add_wht_wht_4x4_c_erased::<BD>);
 
     #[rustfmt::skip]
     (|| {
