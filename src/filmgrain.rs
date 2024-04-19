@@ -11,6 +11,7 @@ use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
 use crate::src::assume::assume;
+use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
@@ -28,7 +29,7 @@ use std::ops::Shr;
 use to_method::To;
 
 #[cfg(feature = "asm")]
-use crate::{include::common::bitdepth::bd_fn, src::cpu::rav1d_get_cpu_flags, src::cpu::CpuFlags};
+use crate::include::common::bitdepth::bd_fn;
 
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
@@ -1109,7 +1110,6 @@ impl Rav1dFilmGrainDSPContext {
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-    #[inline(always)]
     const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::SSSE3) {
             return self;
@@ -1167,7 +1167,6 @@ impl Rav1dFilmGrainDSPContext {
     }
 
     #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-    #[inline(always)]
     const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
         if !flags.contains(CpuFlags::NEON) {
             return self;
@@ -1190,11 +1189,9 @@ impl Rav1dFilmGrainDSPContext {
         self
     }
 
-    fn init<BD: BitDepth>(self) -> Self {
+    const fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
         #[cfg(feature = "asm")]
         {
-            let flags = rav1d_get_cpu_flags();
-
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
             {
                 return self.init_x86::<BD>(flags);
@@ -1206,11 +1203,13 @@ impl Rav1dFilmGrainDSPContext {
         }
 
         #[allow(unreachable_code)] // Reachable on some #[cfg]s.
-        self
+        {
+            let _ = flags;
+            self
+        }
     }
 
-    #[cold]
-    pub fn new<BD: BitDepth>() -> Self {
-        Self::new_c::<BD>().init::<BD>()
+    pub const fn new<BD: BitDepth>(flags: CpuFlags) -> Self {
+        Self::new_c::<BD>().init::<BD>(flags)
     }
 }

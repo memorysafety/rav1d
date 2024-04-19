@@ -28,6 +28,7 @@ use crate::src::cdf::rav1d_cdf_thread_init_static;
 use crate::src::cdf::rav1d_cdf_thread_update;
 use crate::src::cdf::CdfMvComponent;
 use crate::src::cdf::CdfMvContext;
+use crate::src::cpu::rav1d_get_cpu_flags;
 use crate::src::ctx::CaseSet;
 use crate::src::dequant_tables::dav1d_dq_tbl;
 use crate::src::disjoint_mut::DisjointMut;
@@ -4726,6 +4727,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         let dsp = &mut c.dsp[seq_hdr.hbd as usize];
         dsp.initialized = true;
 
+        let flags = rav1d_get_cpu_flags();
         match bpc {
             #[cfg(feature = "bitdepth_8")]
             8 => {
@@ -4735,7 +4737,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 rav1d_loop_filter_dsp_init::<BitDepth8>(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth8>(&mut dsp.lr, bpc);
                 rav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
-                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth8>();
+                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth8>(flags);
             }
             #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
@@ -4745,7 +4747,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 rav1d_loop_filter_dsp_init::<BitDepth16>(&mut dsp.lf);
                 rav1d_loop_restoration_dsp_init::<BitDepth16>(&mut dsp.lr, bpc);
                 rav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
-                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>();
+                dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>(flags);
             }
             _ => {
                 writeln!(
