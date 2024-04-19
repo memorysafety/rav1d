@@ -2171,10 +2171,10 @@ unsafe fn mc<BD: BitDepth>(
                 .offset(left as isize);
         }
         if !dst8.is_null() {
-            (*f.dsp).mc.mc_scaled[filter_2d as usize](
-                dst8.cast(),
+            (*f.dsp).mc.mc_scaled[filter_2d as usize].call::<BD>(
+                dst8,
                 dst_stride,
-                r#ref.cast(),
+                r#ref,
                 ref_stride,
                 bw4 * h_mul,
                 bh4 * v_mul,
@@ -2182,7 +2182,7 @@ unsafe fn mc<BD: BitDepth>(
                 pos_y & 0x3ff,
                 f.svc[refidx][0].step,
                 f.svc[refidx][1].step,
-                f.bitdepth_max,
+                BD::from_c(f.bitdepth_max),
             );
         } else {
             (*f.dsp).mc.mct_scaled[filter_2d as usize](

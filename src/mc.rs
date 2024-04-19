@@ -1208,19 +1208,41 @@ impl mc::Fn {
     }
 }
 
-pub type mc_scaled_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const DynPixel,
-    ptrdiff_t,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-) -> ();
+wrap_fn_ptr!(pub unsafe extern "C" fn mc_scaled(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
+    w: c_int,
+    h: c_int,
+    mx: c_int,
+    my: c_int,
+    dx: c_int,
+    dy: c_int,
+    bitdepth_max: c_int,
+) -> ());
+
+impl mc_scaled::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        dst_stride: ptrdiff_t,
+        src: *const BD::Pixel,
+        src_stride: ptrdiff_t,
+        w: c_int,
+        h: c_int,
+        mx: c_int,
+        my: c_int,
+        dx: c_int,
+        dy: c_int,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let src = src.cast();
+        let bd = bd.into_c();
+        self.get()(dst, dst_stride, src, src_stride, w, h, mx, my, dx, dy, bd)
+    }
+}
 
 pub type warp8x8_fn = unsafe extern "C" fn(
     *mut DynPixel,
@@ -1365,7 +1387,7 @@ pub type resize_fn = unsafe extern "C" fn(
 #[repr(C)]
 pub struct Rav1dMCDSPContext {
     pub mc: [mc::Fn; 10],
-    pub mc_scaled: [mc_scaled_fn; 10],
+    pub mc_scaled: [mc_scaled::Fn; 10],
     pub mct: [mct_fn; 10],
     pub mct_scaled: [mct_scaled_fn; 10],
     pub avg: avg_fn,
@@ -1965,22 +1987,6 @@ macro_rules! decl_fn {
         );
     };
 
-    (mc_scaled, $name:ident) => {
-        pub(crate) fn $name(
-            dst: *mut DynPixel,
-            dst_stride: ptrdiff_t,
-            src: *const DynPixel,
-            src_stride: ptrdiff_t,
-            w: c_int,
-            h: c_int,
-            mx: c_int,
-            my: c_int,
-            dx: c_int,
-            dy: c_int,
-            bitdepth_max: c_int,
-        );
-    };
-
     (mct_scaled, $name:ident) => {
         pub(crate) fn $name(
             tmp: *mut i16,
@@ -2149,17 +2155,6 @@ extern "C" {
     decl_fns!(mct, dav1d_prep_8tap_sharp_smooth);
     decl_fns!(mct, dav1d_prep_bilin);
 
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_regular);
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_regular_smooth);
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_regular_sharp);
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_smooth);
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_smooth_regular);
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_smooth_sharp);
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_sharp);
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_sharp_regular);
-    decl_fns!(mc_scaled, dav1d_put_8tap_scaled_sharp_smooth);
-    decl_fns!(mc_scaled, dav1d_put_bilin_scaled);
-
     decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_regular);
     decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_regular_smooth);
     decl_fns!(mct_scaled, dav1d_prep_8tap_scaled_regular_sharp);
@@ -2266,16 +2261,32 @@ fn mc_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dMCDSPContext) {
     c.mct[Sharp8Tap as usize] = bd_fn!(BD, prep_8tap_sharp, ssse3);
     c.mct[Bilinear as usize] = bd_fn!(BD, prep_bilin, ssse3);
 
-    c.mc_scaled[Regular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular, ssse3);
-    c.mc_scaled[RegularSmooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular_smooth, ssse3);
-    c.mc_scaled[RegularSharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular_sharp, ssse3);
-    c.mc_scaled[SmoothRegular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth_regular, ssse3);
-    c.mc_scaled[Smooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth, ssse3);
-    c.mc_scaled[SmoothSharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth_sharp, ssse3);
-    c.mc_scaled[SharpRegular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp_regular, ssse3);
-    c.mc_scaled[SharpSmooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp_smooth, ssse3);
-    c.mc_scaled[Sharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp, ssse3);
-    c.mc_scaled[Bilinear as usize] = bd_fn!(BD, put_bilin_scaled, ssse3);
+    c.mc_scaled[Regular8Tap as usize] =
+        bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_regular, ssse3);
+    c.mc_scaled[RegularSmooth8Tap as usize] = bd_fn!(
+        mc_scaled::decl_fn,
+        BD,
+        put_8tap_scaled_regular_smooth,
+        ssse3
+    );
+    c.mc_scaled[RegularSharp8Tap as usize] =
+        bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_regular_sharp, ssse3);
+    c.mc_scaled[SmoothRegular8Tap as usize] = bd_fn!(
+        mc_scaled::decl_fn,
+        BD,
+        put_8tap_scaled_smooth_regular,
+        ssse3
+    );
+    c.mc_scaled[Smooth8Tap as usize] =
+        bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_smooth, ssse3);
+    c.mc_scaled[SmoothSharp8Tap as usize] =
+        bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_smooth_sharp, ssse3);
+    c.mc_scaled[SharpRegular8Tap as usize] =
+        bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_sharp_regular, ssse3);
+    c.mc_scaled[SharpSmooth8Tap as usize] =
+        bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_sharp_smooth, ssse3);
+    c.mc_scaled[Sharp8Tap as usize] = bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_sharp, ssse3);
+    c.mc_scaled[Bilinear as usize] = bd_fn!(mc_scaled::decl_fn, BD, put_bilin_scaled, ssse3);
 
     c.mct_scaled[Regular8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_regular, ssse3);
     c.mct_scaled[RegularSmooth8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_regular_smooth, ssse3);
@@ -2343,16 +2354,25 @@ fn mc_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dMCDSPContext) {
         c.mct[Sharp8Tap as usize] = bd_fn!(BD, prep_8tap_sharp, avx2);
         c.mct[Bilinear as usize] = bd_fn!(BD, prep_bilin, avx2);
 
-        c.mc_scaled[Regular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular, avx2);
-        c.mc_scaled[RegularSmooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular_smooth, avx2);
-        c.mc_scaled[RegularSharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_regular_sharp, avx2);
-        c.mc_scaled[SmoothRegular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth_regular, avx2);
-        c.mc_scaled[Smooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth, avx2);
-        c.mc_scaled[SmoothSharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_smooth_sharp, avx2);
-        c.mc_scaled[SharpRegular8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp_regular, avx2);
-        c.mc_scaled[SharpSmooth8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp_smooth, avx2);
-        c.mc_scaled[Sharp8Tap as usize] = bd_fn!(BD, put_8tap_scaled_sharp, avx2);
-        c.mc_scaled[Bilinear as usize] = bd_fn!(BD, put_bilin_scaled, avx2);
+        c.mc_scaled[Regular8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_regular, avx2);
+        c.mc_scaled[RegularSmooth8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_regular_smooth, avx2);
+        c.mc_scaled[RegularSharp8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_regular_sharp, avx2);
+        c.mc_scaled[SmoothRegular8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_smooth_regular, avx2);
+        c.mc_scaled[Smooth8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_smooth, avx2);
+        c.mc_scaled[SmoothSharp8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_smooth_sharp, avx2);
+        c.mc_scaled[SharpRegular8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_sharp_regular, avx2);
+        c.mc_scaled[SharpSmooth8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_sharp_smooth, avx2);
+        c.mc_scaled[Sharp8Tap as usize] =
+            bd_fn!(mc_scaled::decl_fn, BD, put_8tap_scaled_sharp, avx2);
+        c.mc_scaled[Bilinear as usize] = bd_fn!(mc_scaled::decl_fn, BD, put_bilin_scaled, avx2);
 
         c.mct_scaled[Regular8Tap as usize] = bd_fn!(BD, prep_8tap_scaled_regular, avx2);
         c.mct_scaled[RegularSmooth8Tap as usize] =
@@ -2511,16 +2531,22 @@ pub fn rav1d_mc_dsp_init<BD: BitDepth>(c: &mut Rav1dMCDSPContext) {
     c.mct[SmoothSharp8Tap as usize] = prep_8tap_smooth_sharp_c_erased::<BD>;
     c.mct[Bilinear as usize] = prep_bilin_c_erased::<BD>;
 
-    c.mc_scaled[Regular8Tap as usize] = put_8tap_regular_scaled_c_erased::<BD>;
-    c.mc_scaled[RegularSmooth8Tap as usize] = put_8tap_regular_smooth_scaled_c_erased::<BD>;
-    c.mc_scaled[RegularSharp8Tap as usize] = put_8tap_regular_sharp_scaled_c_erased::<BD>;
-    c.mc_scaled[SharpRegular8Tap as usize] = put_8tap_sharp_regular_scaled_c_erased::<BD>;
-    c.mc_scaled[SharpSmooth8Tap as usize] = put_8tap_sharp_smooth_scaled_c_erased::<BD>;
-    c.mc_scaled[Sharp8Tap as usize] = put_8tap_sharp_scaled_c_erased::<BD>;
-    c.mc_scaled[SmoothRegular8Tap as usize] = put_8tap_smooth_regular_scaled_c_erased::<BD>;
-    c.mc_scaled[Smooth8Tap as usize] = put_8tap_smooth_scaled_c_erased::<BD>;
-    c.mc_scaled[SmoothSharp8Tap as usize] = put_8tap_smooth_sharp_scaled_c_erased::<BD>;
-    c.mc_scaled[Bilinear as usize] = put_bilin_scaled_c_erased::<BD>;
+    c.mc_scaled[Regular8Tap as usize] = mc_scaled::Fn::new(put_8tap_regular_scaled_c_erased::<BD>);
+    c.mc_scaled[RegularSmooth8Tap as usize] =
+        mc_scaled::Fn::new(put_8tap_regular_smooth_scaled_c_erased::<BD>);
+    c.mc_scaled[RegularSharp8Tap as usize] =
+        mc_scaled::Fn::new(put_8tap_regular_sharp_scaled_c_erased::<BD>);
+    c.mc_scaled[SharpRegular8Tap as usize] =
+        mc_scaled::Fn::new(put_8tap_sharp_regular_scaled_c_erased::<BD>);
+    c.mc_scaled[SharpSmooth8Tap as usize] =
+        mc_scaled::Fn::new(put_8tap_sharp_smooth_scaled_c_erased::<BD>);
+    c.mc_scaled[Sharp8Tap as usize] = mc_scaled::Fn::new(put_8tap_sharp_scaled_c_erased::<BD>);
+    c.mc_scaled[SmoothRegular8Tap as usize] =
+        mc_scaled::Fn::new(put_8tap_smooth_regular_scaled_c_erased::<BD>);
+    c.mc_scaled[Smooth8Tap as usize] = mc_scaled::Fn::new(put_8tap_smooth_scaled_c_erased::<BD>);
+    c.mc_scaled[SmoothSharp8Tap as usize] =
+        mc_scaled::Fn::new(put_8tap_smooth_sharp_scaled_c_erased::<BD>);
+    c.mc_scaled[Bilinear as usize] = mc_scaled::Fn::new(put_bilin_scaled_c_erased::<BD>);
 
     c.mct_scaled[Regular8Tap as usize] = prep_8tap_regular_scaled_c_erased::<BD>;
     c.mct_scaled[RegularSmooth8Tap as usize] = prep_8tap_regular_smooth_scaled_c_erased::<BD>;
