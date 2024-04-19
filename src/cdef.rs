@@ -1032,7 +1032,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-unsafe fn cdef_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dCdefDSPContext) {
+fn cdef_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dCdefDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     match BD::BPC {
@@ -1041,27 +1041,27 @@ unsafe fn cdef_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dCdefDSPContext) {
                 return;
             }
 
-            (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_sse2;
-            (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_sse2;
-            (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_sse2;
+            c.fb[0] = dav1d_cdef_filter_8x8_8bpc_sse2;
+            c.fb[1] = dav1d_cdef_filter_4x8_8bpc_sse2;
+            c.fb[2] = dav1d_cdef_filter_4x4_8bpc_sse2;
 
             if !flags.contains(CpuFlags::SSSE3) {
                 return;
             }
 
-            (*c).dir = dav1d_cdef_dir_8bpc_ssse3;
-            (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_ssse3;
-            (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_ssse3;
-            (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_ssse3;
+            c.dir = dav1d_cdef_dir_8bpc_ssse3;
+            c.fb[0] = dav1d_cdef_filter_8x8_8bpc_ssse3;
+            c.fb[1] = dav1d_cdef_filter_4x8_8bpc_ssse3;
+            c.fb[2] = dav1d_cdef_filter_4x4_8bpc_ssse3;
 
             if !flags.contains(CpuFlags::SSE41) {
                 return;
             }
 
-            (*c).dir = dav1d_cdef_dir_8bpc_sse4;
-            (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_sse4;
-            (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_sse4;
-            (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_sse4;
+            c.dir = dav1d_cdef_dir_8bpc_sse4;
+            c.fb[0] = dav1d_cdef_filter_8x8_8bpc_sse4;
+            c.fb[1] = dav1d_cdef_filter_4x8_8bpc_sse4;
+            c.fb[2] = dav1d_cdef_filter_4x4_8bpc_sse4;
 
             #[cfg(target_arch = "x86_64")]
             {
@@ -1069,18 +1069,18 @@ unsafe fn cdef_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dCdefDSPContext) {
                     return;
                 }
 
-                (*c).dir = dav1d_cdef_dir_8bpc_avx2;
-                (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_avx2;
-                (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_avx2;
-                (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_avx2;
+                c.dir = dav1d_cdef_dir_8bpc_avx2;
+                c.fb[0] = dav1d_cdef_filter_8x8_8bpc_avx2;
+                c.fb[1] = dav1d_cdef_filter_4x8_8bpc_avx2;
+                c.fb[2] = dav1d_cdef_filter_4x4_8bpc_avx2;
 
                 if !flags.contains(CpuFlags::AVX512ICL) {
                     return;
                 }
 
-                (*c).fb[0] = dav1d_cdef_filter_8x8_8bpc_avx512icl;
-                (*c).fb[1] = dav1d_cdef_filter_4x8_8bpc_avx512icl;
-                (*c).fb[2] = dav1d_cdef_filter_4x4_8bpc_avx512icl;
+                c.fb[0] = dav1d_cdef_filter_8x8_8bpc_avx512icl;
+                c.fb[1] = dav1d_cdef_filter_4x8_8bpc_avx512icl;
+                c.fb[2] = dav1d_cdef_filter_4x4_8bpc_avx512icl;
             }
         }
         BPC::BPC16 => {
@@ -1088,16 +1088,16 @@ unsafe fn cdef_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dCdefDSPContext) {
                 return;
             }
 
-            (*c).dir = dav1d_cdef_dir_16bpc_ssse3;
-            (*c).fb[0] = dav1d_cdef_filter_8x8_16bpc_ssse3;
-            (*c).fb[1] = dav1d_cdef_filter_4x8_16bpc_ssse3;
-            (*c).fb[2] = dav1d_cdef_filter_4x4_16bpc_ssse3;
+            c.dir = dav1d_cdef_dir_16bpc_ssse3;
+            c.fb[0] = dav1d_cdef_filter_8x8_16bpc_ssse3;
+            c.fb[1] = dav1d_cdef_filter_4x8_16bpc_ssse3;
+            c.fb[2] = dav1d_cdef_filter_4x4_16bpc_ssse3;
 
             if !flags.contains(CpuFlags::SSE41) {
                 return;
             }
 
-            (*c).dir = dav1d_cdef_dir_16bpc_sse4;
+            c.dir = dav1d_cdef_dir_16bpc_sse4;
 
             #[cfg(target_arch = "x86_64")]
             {
@@ -1105,18 +1105,18 @@ unsafe fn cdef_dsp_init_x86<BD: BitDepth>(c: *mut Rav1dCdefDSPContext) {
                     return;
                 }
 
-                (*c).dir = dav1d_cdef_dir_16bpc_avx2;
-                (*c).fb[0] = dav1d_cdef_filter_8x8_16bpc_avx2;
-                (*c).fb[1] = dav1d_cdef_filter_4x8_16bpc_avx2;
-                (*c).fb[2] = dav1d_cdef_filter_4x4_16bpc_avx2;
+                c.dir = dav1d_cdef_dir_16bpc_avx2;
+                c.fb[0] = dav1d_cdef_filter_8x8_16bpc_avx2;
+                c.fb[1] = dav1d_cdef_filter_4x8_16bpc_avx2;
+                c.fb[2] = dav1d_cdef_filter_4x4_16bpc_avx2;
 
                 if !flags.contains(CpuFlags::AVX512ICL) {
                     return;
                 }
 
-                (*c).fb[0] = dav1d_cdef_filter_8x8_16bpc_avx512icl;
-                (*c).fb[1] = dav1d_cdef_filter_4x8_16bpc_avx512icl;
-                (*c).fb[2] = dav1d_cdef_filter_4x4_16bpc_avx512icl;
+                c.fb[0] = dav1d_cdef_filter_8x8_16bpc_avx512icl;
+                c.fb[1] = dav1d_cdef_filter_4x8_16bpc_avx512icl;
+                c.fb[2] = dav1d_cdef_filter_4x4_16bpc_avx512icl;
             }
         }
     };
@@ -1276,28 +1276,28 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
 
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-unsafe fn cdef_dsp_init_arm<BD: BitDepth>(c: *mut Rav1dCdefDSPContext) {
+fn cdef_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dCdefDSPContext) {
     let flags = rav1d_get_cpu_flags();
 
     if !flags.contains(CpuFlags::NEON) {
         return;
     }
 
-    (*c).dir = match BD::BPC {
+    c.dir = match BD::BPC {
         BPC::BPC8 => dav1d_cdef_find_dir_8bpc_neon,
         BPC::BPC16 => dav1d_cdef_find_dir_16bpc_neon,
     };
-    (*c).fb[0] = cdef_filter_8x8_neon_erased::<BD>;
-    (*c).fb[1] = cdef_filter_4x8_neon_erased::<BD>;
-    (*c).fb[2] = cdef_filter_4x4_neon_erased::<BD>;
+    c.fb[0] = cdef_filter_8x8_neon_erased::<BD>;
+    c.fb[1] = cdef_filter_4x8_neon_erased::<BD>;
+    c.fb[2] = cdef_filter_4x4_neon_erased::<BD>;
 }
 
 #[cold]
-pub unsafe fn rav1d_cdef_dsp_init<BD: BitDepth>(c: *mut Rav1dCdefDSPContext) {
-    (*c).dir = cdef_find_dir_c_erased::<BD>;
-    (*c).fb[0] = cdef_filter_block_8x8_c_erased::<BD>;
-    (*c).fb[1] = cdef_filter_block_4x8_c_erased::<BD>;
-    (*c).fb[2] = cdef_filter_block_4x4_c_erased::<BD>;
+pub fn rav1d_cdef_dsp_init<BD: BitDepth>(c: &mut Rav1dCdefDSPContext) {
+    c.dir = cdef_find_dir_c_erased::<BD>;
+    c.fb[0] = cdef_filter_block_8x8_c_erased::<BD>;
+    c.fb[1] = cdef_filter_block_4x8_c_erased::<BD>;
+    c.fb[2] = cdef_filter_block_4x4_c_erased::<BD>;
 
     #[cfg(feature = "asm")]
     cfg_if! {
