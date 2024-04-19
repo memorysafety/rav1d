@@ -862,20 +862,11 @@ fn get_prev_frame_segid(
 ) -> u8 {
     assert!(frame_hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE);
 
-    // Need checked casts here because an overflowing cast
-    // would give a too large `len` to [`std::slice::from_raw_parts`], which would UB.
-    let w4 = usize::try_from(w4).unwrap();
-    let h4 = usize::try_from(h4).unwrap();
-    let stride = usize::try_from(stride).unwrap();
-
     let mut prev_seg_id = 8;
-    let offset = b.y as usize * stride as usize + b.x as usize;
-    let len = h4 as usize * stride;
-    let ref_seg_map = ref_seg_map.index(offset..offset + len);
-
-    assert!(w4 <= stride);
-    for ref_seg_map in ref_seg_map.chunks_exact(stride) {
-        prev_seg_id = ref_seg_map[..w4]
+    for y in 0..h4 as usize {
+        let offset = (b.y as usize + y) * stride as usize + b.x as usize;
+        prev_seg_id = ref_seg_map
+            .index(offset..offset + w4 as usize)
             .iter()
             .copied()
             .fold(prev_seg_id, cmp::min);
