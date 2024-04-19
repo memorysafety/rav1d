@@ -285,7 +285,6 @@ pub struct Rav1dContext {
     pub(crate) task_thread: Arc<TaskThreadData>,
 
     // reference/entropy state
-    pub(crate) refmvs_pool: *mut Rav1dMemPool,
     pub(crate) refs: [Rav1dContext_refs; 8],
     pub(crate) cdf_pool: *mut Rav1dMemPool,
     pub(crate) cdf: [CdfThreadContext; 8],
