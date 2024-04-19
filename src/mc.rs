@@ -2352,8 +2352,8 @@ impl Rav1dMCDSPContext {
         }
 
         if let BPC::BPC8 = BD::BPC {
-            self.warp8x8 = dav1d_warp_affine_8x8_8bpc_sse4;
-            self.warp8x8t = dav1d_warp_affine_8x8t_8bpc_sse4;
+            self.warp8x8 = bpc_fn!(8 bpc, warp_affine_8x8, sse4);
+            self.warp8x8t = bpc_fn!(8 bpc, warp_affine_8x8t, sse4);
         }
 
         #[cfg(target_arch = "x86_64")]
