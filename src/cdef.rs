@@ -5,18 +5,13 @@ use crate::include::common::bitdepth::LeftPixelRow2px;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::ulog2;
+use crate::src::cpu::CpuFlags;
 use crate::src::tables::dav1d_cdef_directions;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-
-#[cfg(feature = "asm")]
-use cfg_if::cfg_if;
-
-#[cfg(feature = "asm")]
-use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(feature = "asm")]
 use crate::include::common::bitdepth::BPC;
@@ -1031,98 +1026,6 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
 }
 
 #[inline(always)]
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-fn cdef_dsp_init_x86<BD: BitDepth>(c: &mut Rav1dCdefDSPContext) {
-    let flags = rav1d_get_cpu_flags();
-
-    match BD::BPC {
-        BPC::BPC8 => {
-            if !flags.contains(CpuFlags::SSE2) {
-                return;
-            }
-
-            c.fb[0] = dav1d_cdef_filter_8x8_8bpc_sse2;
-            c.fb[1] = dav1d_cdef_filter_4x8_8bpc_sse2;
-            c.fb[2] = dav1d_cdef_filter_4x4_8bpc_sse2;
-
-            if !flags.contains(CpuFlags::SSSE3) {
-                return;
-            }
-
-            c.dir = dav1d_cdef_dir_8bpc_ssse3;
-            c.fb[0] = dav1d_cdef_filter_8x8_8bpc_ssse3;
-            c.fb[1] = dav1d_cdef_filter_4x8_8bpc_ssse3;
-            c.fb[2] = dav1d_cdef_filter_4x4_8bpc_ssse3;
-
-            if !flags.contains(CpuFlags::SSE41) {
-                return;
-            }
-
-            c.dir = dav1d_cdef_dir_8bpc_sse4;
-            c.fb[0] = dav1d_cdef_filter_8x8_8bpc_sse4;
-            c.fb[1] = dav1d_cdef_filter_4x8_8bpc_sse4;
-            c.fb[2] = dav1d_cdef_filter_4x4_8bpc_sse4;
-
-            #[cfg(target_arch = "x86_64")]
-            {
-                if !flags.contains(CpuFlags::AVX2) {
-                    return;
-                }
-
-                c.dir = dav1d_cdef_dir_8bpc_avx2;
-                c.fb[0] = dav1d_cdef_filter_8x8_8bpc_avx2;
-                c.fb[1] = dav1d_cdef_filter_4x8_8bpc_avx2;
-                c.fb[2] = dav1d_cdef_filter_4x4_8bpc_avx2;
-
-                if !flags.contains(CpuFlags::AVX512ICL) {
-                    return;
-                }
-
-                c.fb[0] = dav1d_cdef_filter_8x8_8bpc_avx512icl;
-                c.fb[1] = dav1d_cdef_filter_4x8_8bpc_avx512icl;
-                c.fb[2] = dav1d_cdef_filter_4x4_8bpc_avx512icl;
-            }
-        }
-        BPC::BPC16 => {
-            if !flags.contains(CpuFlags::SSSE3) {
-                return;
-            }
-
-            c.dir = dav1d_cdef_dir_16bpc_ssse3;
-            c.fb[0] = dav1d_cdef_filter_8x8_16bpc_ssse3;
-            c.fb[1] = dav1d_cdef_filter_4x8_16bpc_ssse3;
-            c.fb[2] = dav1d_cdef_filter_4x4_16bpc_ssse3;
-
-            if !flags.contains(CpuFlags::SSE41) {
-                return;
-            }
-
-            c.dir = dav1d_cdef_dir_16bpc_sse4;
-
-            #[cfg(target_arch = "x86_64")]
-            {
-                if !flags.contains(CpuFlags::AVX2) {
-                    return;
-                }
-
-                c.dir = dav1d_cdef_dir_16bpc_avx2;
-                c.fb[0] = dav1d_cdef_filter_8x8_16bpc_avx2;
-                c.fb[1] = dav1d_cdef_filter_4x8_16bpc_avx2;
-                c.fb[2] = dav1d_cdef_filter_4x4_16bpc_avx2;
-
-                if !flags.contains(CpuFlags::AVX512ICL) {
-                    return;
-                }
-
-                c.fb[0] = dav1d_cdef_filter_8x8_16bpc_avx512icl;
-                c.fb[1] = dav1d_cdef_filter_4x8_16bpc_avx512icl;
-                c.fb[2] = dav1d_cdef_filter_4x4_16bpc_avx512icl;
-            }
-        }
-    };
-}
-
-#[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
 unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
     dst: *mut DynPixel,
@@ -1274,37 +1177,147 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
     }
 }
 
-#[inline(always)]
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
-fn cdef_dsp_init_arm<BD: BitDepth>(c: &mut Rav1dCdefDSPContext) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::NEON) {
-        return;
+impl Rav1dCdefDSPContext {
+    const fn new_c<BD: BitDepth>() -> Self {
+        Self {
+            dir: cdef_find_dir_c_erased::<BD>,
+            fb: [
+                cdef_filter_block_8x8_c_erased::<BD>,
+                cdef_filter_block_4x8_c_erased::<BD>,
+                cdef_filter_block_4x4_c_erased::<BD>,
+            ],
+        }
     }
 
-    c.dir = match BD::BPC {
-        BPC::BPC8 => dav1d_cdef_find_dir_8bpc_neon,
-        BPC::BPC16 => dav1d_cdef_find_dir_16bpc_neon,
-    };
-    c.fb[0] = cdef_filter_8x8_neon_erased::<BD>;
-    c.fb[1] = cdef_filter_4x8_neon_erased::<BD>;
-    c.fb[2] = cdef_filter_4x4_neon_erased::<BD>;
-}
+    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
+        match BD::BPC {
+            BPC::BPC8 => {
+                if !flags.contains(CpuFlags::SSE2) {
+                    return self;
+                }
 
-#[cold]
-pub fn rav1d_cdef_dsp_init<BD: BitDepth>(c: &mut Rav1dCdefDSPContext) {
-    c.dir = cdef_find_dir_c_erased::<BD>;
-    c.fb[0] = cdef_filter_block_8x8_c_erased::<BD>;
-    c.fb[1] = cdef_filter_block_4x8_c_erased::<BD>;
-    c.fb[2] = cdef_filter_block_4x4_c_erased::<BD>;
+                self.fb[0] = dav1d_cdef_filter_8x8_8bpc_sse2;
+                self.fb[1] = dav1d_cdef_filter_4x8_8bpc_sse2;
+                self.fb[2] = dav1d_cdef_filter_4x4_8bpc_sse2;
 
-    #[cfg(feature = "asm")]
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            cdef_dsp_init_x86::<BD>(c);
-        } else if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-            cdef_dsp_init_arm::<BD>(c);
+                if !flags.contains(CpuFlags::SSSE3) {
+                    return self;
+                }
+
+                self.dir = dav1d_cdef_dir_8bpc_ssse3;
+                self.fb[0] = dav1d_cdef_filter_8x8_8bpc_ssse3;
+                self.fb[1] = dav1d_cdef_filter_4x8_8bpc_ssse3;
+                self.fb[2] = dav1d_cdef_filter_4x4_8bpc_ssse3;
+
+                if !flags.contains(CpuFlags::SSE41) {
+                    return self;
+                }
+
+                self.dir = dav1d_cdef_dir_8bpc_sse4;
+                self.fb[0] = dav1d_cdef_filter_8x8_8bpc_sse4;
+                self.fb[1] = dav1d_cdef_filter_4x8_8bpc_sse4;
+                self.fb[2] = dav1d_cdef_filter_4x4_8bpc_sse4;
+
+                #[cfg(target_arch = "x86_64")]
+                {
+                    if !flags.contains(CpuFlags::AVX2) {
+                        return self;
+                    }
+
+                    self.dir = dav1d_cdef_dir_8bpc_avx2;
+                    self.fb[0] = dav1d_cdef_filter_8x8_8bpc_avx2;
+                    self.fb[1] = dav1d_cdef_filter_4x8_8bpc_avx2;
+                    self.fb[2] = dav1d_cdef_filter_4x4_8bpc_avx2;
+
+                    if !flags.contains(CpuFlags::AVX512ICL) {
+                        return self;
+                    }
+
+                    self.fb[0] = dav1d_cdef_filter_8x8_8bpc_avx512icl;
+                    self.fb[1] = dav1d_cdef_filter_4x8_8bpc_avx512icl;
+                    self.fb[2] = dav1d_cdef_filter_4x4_8bpc_avx512icl;
+                }
+            }
+            BPC::BPC16 => {
+                if !flags.contains(CpuFlags::SSSE3) {
+                    return self;
+                }
+
+                self.dir = dav1d_cdef_dir_16bpc_ssse3;
+                self.fb[0] = dav1d_cdef_filter_8x8_16bpc_ssse3;
+                self.fb[1] = dav1d_cdef_filter_4x8_16bpc_ssse3;
+                self.fb[2] = dav1d_cdef_filter_4x4_16bpc_ssse3;
+
+                if !flags.contains(CpuFlags::SSE41) {
+                    return self;
+                }
+
+                self.dir = dav1d_cdef_dir_16bpc_sse4;
+
+                #[cfg(target_arch = "x86_64")]
+                {
+                    if !flags.contains(CpuFlags::AVX2) {
+                        return self;
+                    }
+
+                    self.dir = dav1d_cdef_dir_16bpc_avx2;
+                    self.fb[0] = dav1d_cdef_filter_8x8_16bpc_avx2;
+                    self.fb[1] = dav1d_cdef_filter_4x8_16bpc_avx2;
+                    self.fb[2] = dav1d_cdef_filter_4x4_16bpc_avx2;
+
+                    if !flags.contains(CpuFlags::AVX512ICL) {
+                        return self;
+                    }
+
+                    self.fb[0] = dav1d_cdef_filter_8x8_16bpc_avx512icl;
+                    self.fb[1] = dav1d_cdef_filter_4x8_16bpc_avx512icl;
+                    self.fb[2] = dav1d_cdef_filter_4x4_16bpc_avx512icl;
+                }
+            }
+        };
+
+        self
+    }
+
+    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags) -> Self {
+        if !flags.contains(CpuFlags::NEON) {
+            return self;
         }
+
+        self.dir = match BD::BPC {
+            BPC::BPC8 => dav1d_cdef_find_dir_8bpc_neon,
+            BPC::BPC16 => dav1d_cdef_find_dir_16bpc_neon,
+        };
+        self.fb[0] = cdef_filter_8x8_neon_erased::<BD>;
+        self.fb[1] = cdef_filter_4x8_neon_erased::<BD>;
+        self.fb[2] = cdef_filter_4x4_neon_erased::<BD>;
+
+        self
+    }
+
+    fn init<BD: BitDepth>(self, flags: CpuFlags) -> Self {
+        #[cfg(feature = "asm")]
+        {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            {
+                return self.init_x86::<BD>(flags);
+            }
+            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+            {
+                return self.init_arm::<BD>(flags);
+            }
+        }
+
+        #[allow(unreachable_code)] // Reachable on some #[cfg]s.
+        {
+            let _ = flags;
+            self
+        }
+    }
+
+    pub fn new<BD: BitDepth>(flags: CpuFlags) -> Self {
+        Self::new_c::<BD>().init::<BD>(flags)
     }
 }

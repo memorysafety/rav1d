@@ -21,7 +21,7 @@ use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
-use crate::src::cdef::rav1d_cdef_dsp_init;
+use crate::src::cdef::Rav1dCdefDSPContext;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
 use crate::src::cdf::rav1d_cdf_thread_init_static;
@@ -4731,7 +4731,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         match bpc {
             #[cfg(feature = "bitdepth_8")]
             8 => {
-                rav1d_cdef_dsp_init::<BitDepth8>(&mut dsp.cdef);
+                dsp.cdef = Rav1dCdefDSPContext::new::<BitDepth8>(flags);
                 rav1d_intra_pred_dsp_init::<BitDepth8>(&mut dsp.ipred);
                 rav1d_itx_dsp_init::<BitDepth8>(&mut dsp.itx, bpc);
                 rav1d_loop_filter_dsp_init::<BitDepth8>(&mut dsp.lf);
@@ -4741,7 +4741,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
             #[cfg(feature = "bitdepth_16")]
             10 | 12 => {
-                rav1d_cdef_dsp_init::<BitDepth16>(&mut dsp.cdef);
+                dsp.cdef = Rav1dCdefDSPContext::new::<BitDepth16>(flags);
                 rav1d_intra_pred_dsp_init::<BitDepth16>(&mut dsp.ipred);
                 rav1d_itx_dsp_init::<BitDepth16>(&mut dsp.itx, bpc);
                 rav1d_loop_filter_dsp_init::<BitDepth16>(&mut dsp.lf);
