@@ -6,6 +6,7 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
 use crate::src::disjoint_mut::DisjointMut;
+use crate::src::disjoint_mut::DisjointMutArcSlice;
 use crate::src::env::fix_mv_precision;
 use crate::src::env::get_gmv_2d;
 use crate::src::env::get_poc_diff;
@@ -25,7 +26,6 @@ use std::ffi::c_uint;
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
-use std::slice;
 use zerocopy::FromZeroes;
 
 #[cfg(feature = "asm")]
@@ -52,6 +52,7 @@ extern "C" {
         row_start8: c_int,
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
+        _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
     );
 }
 
@@ -65,6 +66,7 @@ extern "C" {
         row_start8: c_int,
         row_end8: c_int,
         _rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
+        _rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
     );
 }
 
@@ -97,6 +99,7 @@ extern "C" {
         row_start8: c_int,
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
+        _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
     );
     fn dav1d_save_tmvs_avx512icl(
         rp: *mut refmvs_temporal_block,
@@ -109,6 +112,7 @@ extern "C" {
         row_start8: c_int,
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
+        _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
     );
 }
 
@@ -124,7 +128,7 @@ extern "C" {
     );
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C, packed)]
 pub struct refmvs_temporal_block {
     pub mv: mv,
@@ -257,6 +261,7 @@ pub(crate) type load_tmvs_fn = unsafe extern "C" fn(
     row_start8: c_int,
     row_end8: c_int,
     rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
+    rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
 ) -> ();
 
 pub type save_tmvs_fn = unsafe extern "C" fn(
@@ -270,6 +275,7 @@ pub type save_tmvs_fn = unsafe extern "C" fn(
     row_start8: c_int,
     r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
     ri: &[usize; 31],
+    rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
 ) -> ();
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64"),))]
@@ -285,6 +291,7 @@ extern "C" {
         row_start8: c_int,
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
+        _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
     );
 }
 
@@ -309,8 +316,8 @@ impl Rav1dRefmvsDSPContext {
     pub unsafe fn load_tmvs(
         &self,
         rf: &RefMvsFrame,
-        rp: *mut refmvs_temporal_block,
-        rp_ref: &[*mut refmvs_temporal_block; 7],
+        rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
+        rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
         tile_row_idx: c_int,
         col_start8: c_int,
         col_end8: c_int,
@@ -339,6 +346,14 @@ impl Rav1dRefmvsDSPContext {
             n_tile_threads,
             n_frame_threads,
         } = *rf;
+        fn mvs_to_dav1d(
+            mvs: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
+        ) -> *mut refmvs_temporal_block {
+            mvs.as_ref()
+                .map(|rp| rp.inner.as_mut_ptr())
+                .unwrap_or_else(ptr::null_mut)
+        }
+        let rp_ref_dav1d = rp_ref.each_ref().map(mvs_to_dav1d);
         let rf_dav1d = refmvs_frame {
             _lifetime: PhantomData,
             _frm_hdr: ptr::null(), // never used
@@ -355,8 +370,8 @@ impl Rav1dRefmvsDSPContext {
             mfmv_ref2cur,
             mfmv_ref2ref,
             n_mfmvs,
-            rp,
-            rp_ref: rp_ref.as_ptr(),
+            rp: mvs_to_dav1d(rp),
+            rp_ref: rp_ref_dav1d.as_ptr(),
             rp_proj: rp_proj.as_mut_ptr(),
             rp_stride: rp_stride as _,
             r: r.as_mut_ptr(),
@@ -373,6 +388,7 @@ impl Rav1dRefmvsDSPContext {
             row_start8,
             row_end8,
             FFISafe::new(&rf.rp_proj),
+            FFISafe::new(rp_ref),
         );
     }
 
@@ -382,7 +398,7 @@ impl Rav1dRefmvsDSPContext {
         &self,
         rt: &refmvs_tile,
         rf: &RefMvsFrame,
-        rp: *mut refmvs_temporal_block,
+        rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
         col_start8: c_int,
         col_end8: c_int,
         row_start8: c_int,
@@ -390,18 +406,20 @@ impl Rav1dRefmvsDSPContext {
     ) {
         assert!(row_start8 >= 0);
         assert!((row_end8 - row_start8) as c_uint <= 16);
+
+        let rp = &*rp.as_ref().unwrap();
+
         let row_end8 = cmp::min(row_end8, rf.ih8);
         let col_end8 = cmp::min(col_end8, rf.iw8);
-        let stride = rf.rp_stride as isize;
+        let stride = rf.rp_stride as usize;
         let ref_sign = &rf.mfmv_sign;
-        let rp = rp.offset(row_start8 as isize * stride);
         let ri = <&[_; 31]>::try_from(&rt.r[6..]).unwrap();
 
         // SAFETY: Note that for asm calls, disjointedness is unchecked here,
         // even with `#[cfg(debug_assertions)]`.  This is because the disjointedness
         // is more fine-grained than the pointers passed to asm.
         // For the Rust fallback fn, the extra args `&rf.r` and `ri`
-        // are passed to do allow for disjointedness checking.
+        // are passed to allow for disjointedness checking.
         let rr = &ri.map(|ri| {
             if ri > rf.r.len() {
                 return ptr::null();
@@ -411,8 +429,13 @@ impl Rav1dRefmvsDSPContext {
         });
 
         (self.save_tmvs)(
-            rp,
-            stride,
+            // SAFETY: Note that for asm calls, disjointedness is unchecked here,
+            // even with `#[cfg(debug_assertions)]`.  This is because the disjointedness
+            // is more fine-grained than the pointers passed to asm.
+            // For the Rust fallback fn, the extra arg `rp`
+            // is passed to allow for disjointedness checking.
+            rp.inner.as_mut_ptr().add(row_start8 as usize * stride),
+            stride as isize,
             rr,
             ref_sign,
             col_end8,
@@ -421,6 +444,7 @@ impl Rav1dRefmvsDSPContext {
             row_start8,
             FFISafe::new(&rf.r),
             ri,
+            FFISafe::new(rp),
         );
     }
 
@@ -1400,8 +1424,10 @@ unsafe extern "C" fn load_tmvs_c(
     row_start8: c_int,
     mut row_end8: c_int,
     rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
+    rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
 ) {
     let rp_proj = FFISafe::get(rp_proj);
+    let rp_ref = FFISafe::get(rp_ref);
     let rf = &*rf;
 
     if rf.n_tile_threads == 1 {
@@ -1427,30 +1453,27 @@ unsafe extern "C" fn load_tmvs_c(
         if ref2cur == i32::MIN {
             continue;
         }
-        let r#ref = rf.mfmv_ref[n as usize] as c_int;
-        let ref_sign = r#ref - 4;
-        let mut r = (*rf.rp_ref.offset(r#ref as isize))
-            .add(row_start8 as usize * stride)
-            .cast_const();
+        let r#ref = rf.mfmv_ref[n as usize];
+        let ref_sign = r#ref as i32 - 4;
+        let r = &*rp_ref[r#ref as usize].as_ref().unwrap().inner;
         for y in row_start8..row_end8 {
             let y_sb_align = y & !7;
             let y_proj_start = cmp::max(y_sb_align, row_start8);
             let y_proj_end = cmp::min(y_sb_align + 8, row_end8);
             let mut x = col_start8i;
             while x < col_end8i {
-                let mut rb = r.offset(x as isize);
-                let b_ref = (*rb).r#ref;
-                if b_ref == 0 {
+                let mut rbi = y as usize * stride + x as usize;
+                let mut rb = *r.index(rbi);
+                if rb.r#ref == 0 {
                     x += 1;
                     continue;
                 }
-                let ref2ref = rf.mfmv_ref2ref[n as usize][(b_ref - 1) as usize];
+                let ref2ref = rf.mfmv_ref2ref[n as usize][(rb.r#ref - 1) as usize];
                 if ref2ref == 0 {
                     x += 1;
                     continue;
                 }
-                let b_mv = (*rb).mv;
-                let offset = mv_projection(b_mv, ref2cur, ref2ref);
+                let offset = mv_projection(rb.mv, ref2cur, ref2ref);
                 let mut pos_x =
                     x + apply_sign((offset.x as c_int).abs() >> 6, offset.x as c_int ^ ref_sign);
                 let pos_y =
@@ -1465,7 +1488,7 @@ unsafe extern "C" fn load_tmvs_c(
                             *rp_proj.index_mut(
                                 rp_proj_offset + (pos as isize + pos_x as isize) as usize,
                             ) = refmvs_temporal_block {
-                                mv: (*rb).mv,
+                                mv: rb.mv,
                                 r#ref: ref2ref as i8,
                             };
                         }
@@ -1473,9 +1496,10 @@ unsafe extern "C" fn load_tmvs_c(
                         if x >= col_end8i {
                             break;
                         }
-                        rb = rb.offset(1);
-                        let rb_mv = (*rb).mv;
-                        if (*rb).r#ref != b_ref || rb_mv != b_mv {
+                        let prev_rb = rb;
+                        rbi += 1;
+                        rb = *r.index(rbi);
+                        if rb != prev_rb {
                             break;
                         }
                         pos_x += 1;
@@ -1486,21 +1510,21 @@ unsafe extern "C" fn load_tmvs_c(
                         if x >= col_end8i {
                             break;
                         }
-                        rb = rb.offset(1);
-                        let rb_mv = (*rb).mv;
-                        if (*rb).r#ref != b_ref || rb_mv != b_mv {
+                        let prev_rb = rb;
+                        rbi += 1;
+                        rb = *r.index(rbi);
+                        if rb != prev_rb {
                             break;
                         }
                     }
                 }
             }
-            r = r.offset(stride as isize);
         }
     }
 }
 
 unsafe extern "C" fn save_tmvs_c(
-    mut rp: *mut refmvs_temporal_block,
+    _rp: *mut refmvs_temporal_block,
     stride: ptrdiff_t,
     _rr: *const [*const refmvs_block; 31],
     ref_sign: *const [u8; 7],
@@ -1510,11 +1534,17 @@ unsafe extern "C" fn save_tmvs_c(
     row_start8: c_int,
     r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
     ri: &[usize; 31],
+    rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
 ) {
     let r = FFISafe::get(r);
+    let rp = FFISafe::get(rp);
+    let rp = &*rp.inner;
     let ref_sign = &*ref_sign;
+
+    let stride = stride as usize;
     let [col_end8, row_end8, col_start8, row_start8] =
         [col_end8, row_end8, col_start8, row_start8].map(|it| it as usize);
+
     for y in row_start8..row_end8 {
         let b = ri[(y & 15) * 2];
         let mut x = col_start8;
@@ -1532,10 +1562,10 @@ unsafe extern "C" fn save_tmvs_c(
                 }
             };
             let block = block(1).or_else(|| block(0)).unwrap_or_default();
-            slice::from_raw_parts_mut(rp.add(x), bw8 as usize).fill(block);
+            let offset = y * stride + x;
+            rp.index_mut(offset..offset + bw8 as usize).fill(block);
             x += bw8 as usize;
         }
-        rp = rp.offset(stride as isize);
     }
 }
 
@@ -1545,7 +1575,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
     frm_hdr: &Rav1dFrameHeader,
     ref_poc: &[c_uint; 7],
     ref_ref_poc: &[[c_uint; 7]; 7],
-    rp_ref: &[*mut refmvs_temporal_block; 7],
+    rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
     n_tile_threads: u32,
     n_frame_threads: u32,
 ) -> Rav1dResult {
@@ -1596,12 +1626,12 @@ pub(crate) fn rav1d_refmvs_init_frame(
     rf.n_mfmvs = 0;
     if frm_hdr.use_ref_frame_mvs != 0 && seq_hdr.order_hint_n_bits != 0 {
         let mut total = 2;
-        if !rp_ref[0].is_null() && ref_ref_poc[0][6] != ref_poc[3] {
+        if rp_ref[0].is_some() && ref_ref_poc[0][6] != ref_poc[3] {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 0; // last
             rf.n_mfmvs += 1;
             total = 3;
         }
-        if !rp_ref[4].is_null()
+        if rp_ref[4].is_some()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[4] as c_int,
@@ -1611,7 +1641,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
             rf.mfmv_ref[rf.n_mfmvs as usize] = 4; // bwd
             rf.n_mfmvs += 1;
         }
-        if !rp_ref[5].is_null()
+        if rp_ref[5].is_some()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[5] as c_int,
@@ -1622,7 +1652,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
             rf.n_mfmvs += 1;
         }
         if rf.n_mfmvs < total
-            && !rp_ref[6].is_null()
+            && rp_ref[6].is_some()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[6] as c_int,
@@ -1632,7 +1662,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
             rf.mfmv_ref[rf.n_mfmvs as usize] = 6; // altref
             rf.n_mfmvs += 1;
         }
-        if rf.n_mfmvs < total && !rp_ref[1].is_null() {
+        if rf.n_mfmvs < total && rp_ref[1].is_some() {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 1; // last2
             rf.n_mfmvs += 1;
         }

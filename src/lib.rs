@@ -51,7 +51,6 @@ use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::r#ref::rav1d_ref_dec;
 use crate::src::refmvs::rav1d_refmvs_clear;
 use crate::src::refmvs::rav1d_refmvs_dsp_init;
 use crate::src::refmvs::rav1d_refmvs_init;
@@ -218,9 +217,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
     (*c).cached_error_props = Default::default();
-    if rav1d_mem_pool_init(&mut (*c).refmvs_pool).is_err()
-        || rav1d_mem_pool_init(&mut (*c).cdf_pool).is_err()
-    {
+    if rav1d_mem_pool_init(&mut (*c).cdf_pool).is_err() {
         return error(c, c_out);
     }
     if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
@@ -679,7 +676,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
         }
         let _ = mem::take(&mut (*c).refs[i as usize].segmap);
-        rav1d_ref_dec(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).refmvs);
+        let _ = mem::take(&mut (*c).refs[i as usize].refmvs);
         let _ = mem::take(&mut (*c).cdf[i]);
         i += 1;
     }
@@ -850,7 +847,7 @@ impl Drop for Rav1dContext {
                         &mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p,
                     );
                 }
-                rav1d_ref_dec(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).refmvs);
+                let _ = mem::take(&mut self.refs[n_4 as usize].refmvs);
                 let _ = mem::take(&mut self.refs[n_4 as usize].segmap);
                 n_4 += 1;
             }
@@ -859,7 +856,6 @@ impl Drop for Rav1dContext {
             let _ = mem::take(&mut self.mastering_display);
             let _ = mem::take(&mut self.content_light);
             let _ = mem::take(&mut self.itut_t35);
-            rav1d_mem_pool_end(self.refmvs_pool);
             rav1d_mem_pool_end(self.cdf_pool);
             rav1d_mem_pool_end(self.picture_pool);
         }

@@ -140,9 +140,6 @@ use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::qm::dav1d_qm_tbl;
-use crate::src::r#ref::rav1d_ref_create_using_pool;
-use crate::src::r#ref::rav1d_ref_dec;
-use crate::src::r#ref::rav1d_ref_inc;
 use crate::src::recon::debug_block_info;
 use crate::src::refmvs::rav1d_refmvs_find;
 use crate::src::refmvs::rav1d_refmvs_init_frame;
@@ -150,7 +147,6 @@ use crate::src::refmvs::rav1d_refmvs_tile_sbrow_init;
 use crate::src::refmvs::refmvs_block;
 use crate::src::refmvs::refmvs_mvpair;
 use crate::src::refmvs::refmvs_refpair;
-use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::RefMvsFrame;
 use crate::src::tables::cfl_allowed_mask;
 use crate::src::tables::dav1d_al_part_ctx;
@@ -183,7 +179,6 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::iter;
 use std::mem;
-use std::ptr;
 use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicI32;
@@ -3913,7 +3908,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
         c.refmvs_dsp.load_tmvs(
             &f.rf,
-            f.mvs,
+            &f.mvs,
             &f.ref_mvs,
             ts.tiling.row,
             ts.tiling.col_start >> 1,
@@ -4025,7 +4020,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         c.refmvs_dsp.save_tmvs(
             &t.rt,
             &f.rf,
-            f.mvs,
+            &f.mvs,
             ts.tiling.col_start >> 1,
             ts.tiling.col_end >> 1,
             t.b.y >> 1,
@@ -4518,7 +4513,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             if frame_hdr.use_ref_frame_mvs != 0 {
                 c.refmvs_dsp.load_tmvs(
                     &f.rf,
-                    f.mvs,
+                    &f.mvs,
                     &f.ref_mvs,
                     tile_row as c_int,
                     0,
@@ -4533,7 +4528,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             }
             if f.frame_hdr().frame_type.is_inter_or_switch() {
                 c.refmvs_dsp
-                    .save_tmvs(&t.rt, &f.rf, f.mvs, 0, f.bw >> 1, t.b.y >> 1, by_end);
+                    .save_tmvs(&t.rt, &f.rf, &f.mvs, 0, f.bw >> 1, t.b.y >> 1, by_end);
             }
 
             // loopfilter + cdef + restoration
@@ -4560,7 +4555,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
         if f.refp[i].p.frame_hdr.is_some() {
             rav1d_thread_picture_unref(&mut f.refp[i]);
         }
-        rav1d_ref_dec(&mut f.ref_mvs_ref[i]);
+        let _ = mem::take(&mut f.ref_mvs[i]);
     }
     rav1d_picture_unref_internal(&mut f.cur);
     rav1d_thread_picture_unref(&mut f.sr_cur);
@@ -4579,7 +4574,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
 
     let _ = mem::take(&mut f.cur_segmap);
     let _ = mem::take(&mut f.prev_segmap);
-    rav1d_ref_dec(&mut f.mvs_ref);
+    let _ = mem::take(&mut f.mvs);
     let _ = mem::take(&mut f.seq_hdr);
     let _ = mem::take(&mut f.frame_hdr);
     f.tiles.clear();
@@ -4710,12 +4705,12 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             if f.refp[i].p.frame_hdr.is_some() {
                 rav1d_thread_picture_unref(&mut f.refp[i]);
             }
-            rav1d_ref_dec(&mut f.ref_mvs_ref[i]);
+            let _ = mem::take(&mut f.ref_mvs[i]);
         }
         rav1d_thread_picture_unref(out);
         rav1d_picture_unref_internal(&mut f.cur);
         rav1d_thread_picture_unref(&mut f.sr_cur);
-        rav1d_ref_dec(&mut f.mvs_ref);
+        let _ = mem::take(&mut f.mvs);
         let _ = mem::take(&mut f.seq_hdr);
         let _ = mem::take(&mut f.frame_hdr);
         *c.cached_error_props.lock().unwrap() = c.in_0.m.clone();
@@ -4900,18 +4895,12 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
 
     // ref_mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
-        f.mvs_ref = rav1d_ref_create_using_pool(
-            c.refmvs_pool,
-            ::core::mem::size_of::<refmvs_temporal_block>()
-                * f.sb128h as usize
-                * 16
-                * (f.b4_stride >> 1) as usize,
+        // TODO fallible allocation
+        f.mvs = Some(
+            (0..f.sb128h as usize * 16 * (f.b4_stride >> 1) as usize)
+                .map(|_| Default::default())
+                .collect(),
         );
-        if f.mvs_ref.is_null() {
-            on_error(f, c, out);
-            return Err(ENOMEM);
-        }
-        f.mvs = (*f.mvs_ref).data.cast::<refmvs_temporal_block>();
         if !frame_hdr.allow_intrabc {
             for i in 0..7 {
                 f.refpoc[i] = f.refp[i].p.frame_hdr.as_ref().unwrap().frame_offset as c_uint;
@@ -4924,24 +4913,19 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 let refidx = frame_hdr.refidx[i] as usize;
                 let ref_w = (ref_coded_width[i] + 7 >> 3) << 1;
                 let ref_h = (f.refp[i].p.p.h + 7 >> 3) << 1;
-                if !c.refs[refidx].refmvs.is_null() && ref_w == f.bw && ref_h == f.bh {
-                    f.ref_mvs_ref[i] = c.refs[refidx].refmvs;
-                    rav1d_ref_inc(f.ref_mvs_ref[i]);
-                    f.ref_mvs[i] = (*c.refs[refidx].refmvs)
-                        .data
-                        .cast::<refmvs_temporal_block>();
+                if ref_w == f.bw && ref_h == f.bh {
+                    f.ref_mvs[i] = c.refs[refidx].refmvs.clone();
                 } else {
-                    f.ref_mvs[i] = ptr::null_mut();
-                    f.ref_mvs_ref[i] = ptr::null_mut();
+                    f.ref_mvs[i] = None;
                 }
                 f.refrefpoc[i] = c.refs[refidx].refpoc;
             }
         } else {
-            f.ref_mvs_ref.fill_with(ptr::null_mut);
+            f.ref_mvs.fill_with(Default::default);
         }
     } else {
-        f.mvs_ref = ptr::null_mut();
-        f.ref_mvs_ref.fill_with(ptr::null_mut);
+        f.mvs = None;
+        f.ref_mvs.fill_with(Default::default);
     }
 
     // segmap
@@ -5006,12 +4990,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
 
             c.refs[i].segmap = f.cur_segmap.clone();
-            rav1d_ref_dec(&mut c.refs[i].refmvs);
+            let _ = mem::take(&mut c.refs[i].refmvs);
             if !frame_hdr.allow_intrabc {
-                c.refs[i].refmvs = f.mvs_ref;
-                if !f.mvs_ref.is_null() {
-                    rav1d_ref_inc(f.mvs_ref);
-                }
+                c.refs[i].refmvs = f.mvs.clone();
             }
             c.refs[i].refpoc = f.refpoc;
         }
@@ -5028,7 +5009,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                     }
                     let _ = mem::take(&mut c.cdf[i]);
                     let _ = mem::take(&mut c.refs[i].segmap);
-                    rav1d_ref_dec(&mut c.refs[i].refmvs);
+                    let _ = mem::take(&mut c.refs[i].refmvs);
                 }
             }
             on_error(f, c, out);
