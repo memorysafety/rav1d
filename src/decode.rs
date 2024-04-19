@@ -119,7 +119,7 @@ use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
 use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
-use crate::src::mc::rav1d_mc_dsp_init;
+use crate::src::mc::Rav1dMCDSPContext;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
@@ -4736,7 +4736,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 dsp.itx = Rav1dInvTxfmDSPContext::new::<BitDepth8>(flags, bpc);
                 dsp.lf = Rav1dLoopFilterDSPContext::new::<BitDepth8>(flags);
                 dsp.lr = Rav1dLoopRestorationDSPContext::new::<BitDepth8>(flags, bpc);
-                rav1d_mc_dsp_init::<BitDepth8>(&mut dsp.mc);
+                dsp.mc = Rav1dMCDSPContext::new::<BitDepth8>(flags);
                 dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth8>(flags);
             }
             #[cfg(feature = "bitdepth_16")]
@@ -4746,7 +4746,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 dsp.itx = Rav1dInvTxfmDSPContext::new::<BitDepth16>(flags, bpc);
                 dsp.lf = Rav1dLoopFilterDSPContext::new::<BitDepth16>(flags);
                 dsp.lr = Rav1dLoopRestorationDSPContext::new::<BitDepth16>(flags, bpc);
-                rav1d_mc_dsp_init::<BitDepth16>(&mut dsp.mc);
+                dsp.mc = Rav1dMCDSPContext::new::<BitDepth16>(flags);
                 dsp.fg = Rav1dFilmGrainDSPContext::new::<BitDepth16>(flags);
             }
             _ => {
