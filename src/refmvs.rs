@@ -211,8 +211,6 @@ pub(crate) struct RefMvsFrame {
     pub mfmv_ref2cur: [c_int; 3],
     pub mfmv_ref2ref: [[c_int; 7]; 3],
     pub n_mfmvs: c_int,
-    pub rp: *mut refmvs_temporal_block,
-    pub rp_ref: *const *mut refmvs_temporal_block,
     pub rp_proj: DisjointMut<AlignedVec64<refmvs_temporal_block>>,
     pub rp_stride: u32,
     pub r: DisjointMut<AlignedVec64<refmvs_block>>,
@@ -220,61 +218,6 @@ pub(crate) struct RefMvsFrame {
     pub n_tile_rows: u32,
     pub n_tile_threads: u32,
     pub n_frame_threads: u32,
-}
-
-impl RefMvsFrame {
-    pub fn as_mut_dav1d<'a>(&'a self) -> refmvs_frame<'a> {
-        let Self {
-            iw4,
-            ih4,
-            iw8,
-            ih8,
-            sbsz,
-            use_ref_frame_mvs,
-            sign_bias,
-            mfmv_sign,
-            pocdiff,
-            mfmv_ref,
-            mfmv_ref2cur,
-            mfmv_ref2ref,
-            n_mfmvs,
-            rp,
-            rp_ref,
-            ref rp_proj,
-            rp_stride,
-            ref r,
-            r_stride,
-            n_tile_rows,
-            n_tile_threads,
-            n_frame_threads,
-        } = *self;
-        refmvs_frame {
-            _lifetime: PhantomData,
-            _frm_hdr: ptr::null(), // never used
-            iw4,
-            ih4,
-            iw8,
-            ih8,
-            sbsz,
-            use_ref_frame_mvs,
-            sign_bias,
-            mfmv_sign,
-            pocdiff,
-            mfmv_ref,
-            mfmv_ref2cur,
-            mfmv_ref2ref,
-            n_mfmvs,
-            rp,
-            rp_ref,
-            rp_proj: rp_proj.as_mut_ptr(),
-            rp_stride: rp_stride as _,
-            r: r.as_mut_ptr(),
-            r_stride: r_stride as _,
-            n_tile_rows: n_tile_rows as _,
-            n_tile_threads: n_tile_threads as _,
-            n_frame_threads: n_frame_threads as _,
-        }
-    }
 }
 
 #[repr(C)]
@@ -366,13 +309,62 @@ impl Rav1dRefmvsDSPContext {
     pub unsafe fn load_tmvs(
         &self,
         rf: &RefMvsFrame,
+        rp: *mut refmvs_temporal_block,
+        rp_ref: &[*mut refmvs_temporal_block; 7],
         tile_row_idx: c_int,
         col_start8: c_int,
         col_end8: c_int,
         row_start8: c_int,
         row_end8: c_int,
     ) {
-        let rf_dav1d = rf.as_mut_dav1d();
+        let RefMvsFrame {
+            iw4,
+            ih4,
+            iw8,
+            ih8,
+            sbsz,
+            use_ref_frame_mvs,
+            sign_bias,
+            mfmv_sign,
+            pocdiff,
+            mfmv_ref,
+            mfmv_ref2cur,
+            mfmv_ref2ref,
+            n_mfmvs,
+            ref rp_proj,
+            rp_stride,
+            ref r,
+            r_stride,
+            n_tile_rows,
+            n_tile_threads,
+            n_frame_threads,
+        } = *rf;
+        let rf_dav1d = refmvs_frame {
+            _lifetime: PhantomData,
+            _frm_hdr: ptr::null(), // never used
+            iw4,
+            ih4,
+            iw8,
+            ih8,
+            sbsz,
+            use_ref_frame_mvs,
+            sign_bias,
+            mfmv_sign,
+            pocdiff,
+            mfmv_ref,
+            mfmv_ref2cur,
+            mfmv_ref2ref,
+            n_mfmvs,
+            rp,
+            rp_ref: rp_ref.as_ptr(),
+            rp_proj: rp_proj.as_mut_ptr(),
+            rp_stride: rp_stride as _,
+            r: r.as_mut_ptr(),
+            r_stride: r_stride as _,
+            n_tile_rows: n_tile_rows as _,
+            n_tile_threads: n_tile_threads as _,
+            n_frame_threads: n_frame_threads as _,
+        };
         (self.load_tmvs)(
             &rf_dav1d,
             tile_row_idx,
@@ -390,6 +382,7 @@ impl Rav1dRefmvsDSPContext {
         &self,
         rt: &refmvs_tile,
         rf: &RefMvsFrame,
+        rp: *mut refmvs_temporal_block,
         col_start8: c_int,
         col_end8: c_int,
         row_start8: c_int,
@@ -401,7 +394,7 @@ impl Rav1dRefmvsDSPContext {
         let col_end8 = cmp::min(col_end8, rf.iw8);
         let stride = rf.rp_stride as isize;
         let ref_sign = &rf.mfmv_sign;
-        let rp = rf.rp.offset(row_start8 as isize * stride);
+        let rp = rp.offset(row_start8 as isize * stride);
         let ri = <&[_; 31]>::try_from(&rt.r[6..]).unwrap();
 
         // SAFETY: Note that for asm calls, disjointedness is unchecked here,
@@ -1551,7 +1544,6 @@ pub(crate) fn rav1d_refmvs_init_frame(
     seq_hdr: &Rav1dSequenceHeader,
     frm_hdr: &Rav1dFrameHeader,
     ref_poc: &[c_uint; 7],
-    rp: *mut refmvs_temporal_block,
     ref_ref_poc: &[[c_uint; 7]; 7],
     rp_ref: &[*mut refmvs_temporal_block; 7],
     n_tile_threads: u32,
@@ -1588,8 +1580,6 @@ pub(crate) fn rav1d_refmvs_init_frame(
     rf.n_tile_rows = n_tile_rows;
     rf.n_tile_threads = n_tile_threads;
     rf.n_frame_threads = n_frame_threads;
-    rf.rp = rp;
-    rf.rp_ref = rp_ref.as_ptr();
     let poc = frm_hdr.frame_offset as c_uint;
     for i in 0..7 {
         let poc_diff = get_poc_diff(seq_hdr.order_hint_n_bits, ref_poc[i] as c_int, poc as c_int);
