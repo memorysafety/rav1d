@@ -41,6 +41,7 @@ use crate::src::mem::rav1d_mem_pool_end;
 use crate::src::mem::rav1d_mem_pool_init;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
+use crate::src::pal::rav1d_pal_dsp_init;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
@@ -334,6 +335,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             }
         })
         .collect();
+    rav1d_pal_dsp_init(&mut (*c).pal_dsp);
     rav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
     Ok(())
 }

@@ -124,6 +124,7 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::rav1d_msac_decode_uniform;
 use crate::src::msac::rav1d_msac_init;
+use crate::src::pal::Rav1dPalDSPContext;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::rav1d_picture_ref;
 use crate::src::picture::rav1d_picture_unref_internal;
@@ -699,6 +700,7 @@ fn order_palette(
 
 unsafe fn read_pal_indices(
     ts: &mut Rav1dTileState,
+    pal_dsp: &Rav1dPalDSPContext,
     scratch_pal: &mut Rav1dTaskContext_scratch_pal,
     pal_tmp: &mut [u8],
     pal_idx: Option<&mut [u8]>, // if None, use pal_tmp instead of pal_idx
@@ -743,35 +745,14 @@ unsafe fn read_pal_indices(
             pal_tmp[offset..][..len].fill(filler);
         }
     }
-    if let Some(pal_idx) = pal_idx {
-        for i in 0..bw4 * h4 * 8 {
-            pal_idx[i] = pal_tmp[2 * i + 0] | (pal_tmp[2 * i + 1] << 4);
-        }
-        if h4 < bh4 {
-            let y_start = h4 * 4;
-            let len = bw4 * 2;
-            let packed_stride = bw4 * 2;
-            let (src, dests) = pal_idx.split_at_mut(packed_stride * y_start);
-            let src = &src[bw4 * h4 * 8 - packed_stride..][..len];
-            for y in 0..(bh4 - h4) * 4 {
-                dests[y * packed_stride..][..len].copy_from_slice(src);
-            }
-        }
-    } else {
-        for i in 0..bw4 * h4 * 8 {
-            pal_tmp[i] = pal_tmp[2 * i + 0] | (pal_tmp[2 * i + 1] << 4);
-        }
-        if h4 < bh4 {
-            let y_start = h4 * 4;
-            let len = bw4 * 2;
-            let packed_stride = bw4 * 2;
-            let (src, dests) = pal_tmp.split_at_mut(packed_stride * y_start);
-            let src = &src[bw4 * h4 * 8 - packed_stride..][..len];
-            for y in 0..(bh4 - h4) * 4 {
-                dests[y * packed_stride..][..len].copy_from_slice(src);
-            }
-        }
-    }
+    (pal_dsp.pal_idx_finish)(
+        pal_idx.unwrap_or(pal_tmp).as_mut_ptr(),
+        pal_tmp.as_ptr(),
+        bw4 as c_int * 4,
+        bh4 as c_int * 4,
+        w4 as c_int * 4,
+        h4 as c_int * 4,
+    );
 }
 
 unsafe fn read_vartx_tree(
@@ -1805,6 +1786,7 @@ unsafe fn decode_b(
             };
             read_pal_indices(
                 ts,
+                &c.pal_dsp,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
                 &mut t.scratch.c2rust_unnamed_0.pal_idx_uv,
                 Some(pal_idx),
@@ -1837,6 +1819,7 @@ unsafe fn decode_b(
             };
             read_pal_indices(
                 ts,
+                &c.pal_dsp,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
                 &mut t.scratch.c2rust_unnamed_0.pal_idx_uv,
                 pal_idx,

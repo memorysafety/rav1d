@@ -68,6 +68,7 @@ pub mod src {
     mod mem;
     mod msac;
     mod obu;
+    mod pal;
     mod picture;
     mod qm;
     mod recon;
