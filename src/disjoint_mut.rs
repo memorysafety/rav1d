@@ -232,17 +232,10 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
     /// references to avoid other potential memory safety issues due to racy
     /// access.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub unsafe fn index_mut<'a, I>(
-        &'a self,
-        index: I,
-    ) -> DisjointMutGuard<'a, T, <[<T as AsMutPtr>::Target] as Index<I>>::Output>
+    pub unsafe fn index_mut<'a, I>(&'a self, index: I) -> DisjointMutGuard<'a, T, I::Output>
     where
         I: Into<Bounds> + Clone,
-        [<T as AsMutPtr>::Target]: IndexMut<I>,
-        I: DisjointMutIndex<
-            [<T as AsMutPtr>::Target],
-            Output = <[<T as AsMutPtr>::Target] as Index<I>>::Output,
-        >,
+        I: DisjointMutIndex<[<T as AsMutPtr>::Target]>,
     {
         let bounds = index.clone().into();
         // SAFETY: The safety preconditions of `index` and `index_mut` imply
@@ -274,17 +267,10 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
     ///
     /// [`index_mut`]: DisjointMut::index_mut
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn index<'a, I>(
-        &'a self,
-        index: I,
-    ) -> DisjointImmutGuard<'a, T, <[<T as AsMutPtr>::Target] as Index<I>>::Output>
+    pub fn index<'a, I>(&'a self, index: I) -> DisjointImmutGuard<'a, T, I::Output>
     where
         I: Into<Bounds> + Clone,
-        [<T as AsMutPtr>::Target]: Index<I>,
-        I: DisjointMutIndex<
-            [<T as AsMutPtr>::Target],
-            Output = <[<T as AsMutPtr>::Target] as Index<I>>::Output,
-        >,
+        I: DisjointMutIndex<[<T as AsMutPtr>::Target]>,
     {
         let bounds = index.clone().into();
         // SAFETY: The safety preconditions of `index` and `index_mut` imply
@@ -465,6 +451,20 @@ impl From<RangeToInclusive<usize>> for Bounds {
     }
 }
 
+/// A majority of our slice ranges are of the form `[start..][..len]`.
+/// This is easy to express with normal slices where we can do the slicing multiple times,
+/// but with [`DisjointMut`], that's harder, so this adds support for
+/// `.index((start.., ..len))` to achieve the same.
+/// It's not as clear what it means initially, but we use this idiom so much
+/// I think it might be worth it for clarity through brevity.
+impl From<(RangeFrom<usize>, RangeTo<usize>)> for Bounds {
+    fn from((start, len): (RangeFrom<usize>, RangeTo<usize>)) -> Self {
+        Self {
+            range: start.start..start.start + len.end,
+        }
+    }
+}
+
 trait SliceBounds: Into<Bounds> + Clone + Debug {}
 
 impl SliceBounds for Range<usize> {}
@@ -472,6 +472,7 @@ impl SliceBounds for RangeFrom<usize> {}
 impl SliceBounds for RangeInclusive<usize> {}
 impl SliceBounds for RangeTo<usize> {}
 impl SliceBounds for RangeToInclusive<usize> {}
+impl SliceBounds for (RangeFrom<usize>, RangeTo<usize>) {}
 
 impl<T> DisjointMutIndex<[T]> for usize {
     type Output = <[T] as Index<usize>>::Output;
