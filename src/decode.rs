@@ -4564,7 +4564,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
     f: &mut Rav1dFrameData,
     retval: Rav1dResult,
 ) {
-    if !f.sr_cur.p.data.data[0].is_null() {
+    if f.sr_cur.p.data.is_some() {
         f.task_thread.error = AtomicI32::new(0);
     }
     let cf = f.frame_thread.cf.get_mut();
@@ -4669,8 +4669,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
-        if !out_delayed.p.data.data[0].is_null() || f.task_thread.error.load(Ordering::SeqCst) != 0
-        {
+        if out_delayed.p.data.is_some() || f.task_thread.error.load(Ordering::SeqCst) != 0 {
             let first = c.task_thread.first.load(Ordering::SeqCst);
             if first + 1 < c.n_fc {
                 c.task_thread.first.fetch_add(1, Ordering::SeqCst);
@@ -4695,7 +4694,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 c.cached_error = mem::replace(&mut error, Ok(()));
                 *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
                 rav1d_thread_picture_unref(out_delayed);
-            } else if !out_delayed.p.data.data[0].is_null() {
+            } else if out_delayed.p.data.is_some() {
                 let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
                 if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                     rav1d_thread_picture_ref(&mut c.out, out_delayed);
@@ -4756,14 +4755,14 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if frame_hdr.frame_type.is_inter_or_switch() {
         if frame_hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE {
             let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
-            if c.refs[pri_ref].p.p.data.data[0].is_null() {
+            if c.refs[pri_ref].p.p.data.is_none() {
                 on_error(f, c, out);
                 return Err(EINVAL);
             }
         }
         for i in 0..7 {
             let refidx = frame_hdr.refidx[i] as usize;
-            if c.refs[refidx].p.p.data.data[0].is_null()
+            if c.refs[refidx].p.p.data.is_none()
                 || (frame_hdr.size.width[0] * 2) < c.refs[refidx].p.p.p.w
                 || (frame_hdr.size.height * 2) < c.refs[refidx].p.p.p.h
                 || frame_hdr.size.width[0] > c.refs[refidx].p.p.p.w * 16
