@@ -10,7 +10,7 @@ jobs:
       matrix:
         build: [
           {name: "release", cargo_flags: "--release",  timeout_multiplier: 1},
-          {name: "debug", cargo_flags: "", timeout_multiplier: 10},
+          {name: "debug", cargo_flags: "", timeout_multiplier: 3},
         ]
     runs-on: macos-14
     name: test on macos-14-aarch64
@@ -38,8 +38,7 @@ jobs:
         run: |
           .github/workflows/test.sh \
             -r ./target/${{ matrix.build.name }}/dav1d \
-            -s ./target/${{ matrix.build.name }}/seek_stress \
-            -t ${{ matrix.build.timeout_multiplier }}
+            -s ./target/${{ matrix.build.name }}/seek_stress
         # release tests run quickly so also cover the frame delay cases
       - name: test release build with frame delay of 1
         if: ${{ matrix.build.name == 'release' }}
@@ -67,3 +66,4 @@ jobs:
           name: meson-test-logs-aarch64-apple-darwin-${{ matrix.build.name }}
           path: |
             ${{ github.workspace }}/build/meson-logs/testlog-*.txt
+

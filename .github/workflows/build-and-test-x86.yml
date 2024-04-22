@@ -16,7 +16,7 @@ jobs:
           # release build without optimized assembly routines
           {name: "release", flags: "--release --no-default-features --features=bitdepth_8,bitdepth_16", timeout_multiplier: 1},
           # debug build with optimizations to catch overflows with optimized assembly routines
-          {name: "opt-dev", flags: "--profile opt-dev", timeout_multiplier: 10}
+          {name: "opt-dev", flags: "--profile opt-dev", timeout_multiplier: 3}
         ]
         # Test with threads and framedelay
         framedelay: [
