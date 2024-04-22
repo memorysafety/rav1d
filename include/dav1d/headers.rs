@@ -10,8 +10,10 @@ use std::ops::Deref;
 use std::ops::Sub;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use strum::EnumCount;
 use strum::FromRepr;
+use try_lock::TryLock;
 
 /// This is so we can store both `*mut D` and `*mut R`
 /// for maintaining `dav1d` ABI compatibility,
@@ -837,6 +839,17 @@ impl From<Rav1dITUTT35> for Dav1dITUTT35 {
             // Cast to a thin ptr.
             payload: Box::into_raw(payload).cast::<u8>(),
         }
+    }
+}
+
+impl Rav1dITUTT35 {
+    pub fn to_immut(
+        mutable: Arc<TryLock<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
+    ) -> Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>> {
+        let DRav1d { rav1d, dav1d: _ } = Arc::into_inner(mutable).unwrap().into_inner();
+        let rav1d = rav1d.into_boxed_slice();
+        let dav1d = rav1d.iter().cloned().map(Dav1dITUTT35::from).collect();
+        Arc::new(DRav1d { rav1d, dav1d })
     }
 }
 
