@@ -231,14 +231,6 @@ pub trait BitDepth: Clone + Copy {
 
     fn get_intermediate_bits(&self) -> u8;
 
-    fn cast_pixel_slice(bytes: &[u8]) -> &[Self::Pixel] {
-        Self::Pixel::slice_from(bytes).unwrap()
-    }
-
-    fn cast_pixel_slice_mut(bytes: &mut [u8]) -> &mut [Self::Pixel] {
-        Self::Pixel::mut_slice_from(bytes).unwrap()
-    }
-
     fn _cast_coef_slice(bytes: &[u8]) -> &[Self::Coef] {
         Self::Coef::slice_from(bytes).unwrap()
     }

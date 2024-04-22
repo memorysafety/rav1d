@@ -515,7 +515,7 @@ impl Pal {
         &'a self,
         index: usize,
     ) -> DisjointImmutGuard<'b, AlignedVec64<u8>, PalArray<BD>> {
-        self.data.index_as(index)
+        self.data.element_as(index)
     }
 
     /// Mutably borrow a pal array.
@@ -537,7 +537,7 @@ impl Pal {
         // indexed region we are mutably borrowing is not concurrently borrowed
         // and will not be borrowed during the lifetime of the returned
         // reference.
-        unsafe { self.data.index_mut_as(index) }
+        unsafe { self.data.mut_element_as(index) }
     }
 }
 
@@ -628,8 +628,11 @@ pub struct Rav1dFrameContext_lf {
     pub last_sharpness: c_int,
     pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub tx_lpf_right_edge: TxLpfRightEdge,
-    pub cdef_line_buf: AlignedVec32<u8>, /* AlignedVec32<DynPixel> */
-    pub lr_line_buf: AlignedVec64<u8>,
+    // cdef_line_buf was originally aligned to 32 bytes, but we need to pass
+    // both cdef_line_buf and lr_line_buf as the same parameter type to
+    // backup2lines.
+    pub cdef_line_buf: DisjointMut<AlignedVec64<u8>>, /* AlignedVec32<DynPixel> */
+    pub lr_line_buf: DisjointMut<AlignedVec64<u8>>,
     pub cdef_line: [[usize; 3]; 2], /* [2 pre/post][3 plane] */
     pub cdef_lpf_line: [usize; 3],  /* plane */
     pub lr_lpf_line: [usize; 3],    /* plane */

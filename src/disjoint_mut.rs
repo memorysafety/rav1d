@@ -28,6 +28,7 @@ use std::ops::RangeTo;
 use std::ops::RangeToInclusive;
 use std::ptr;
 use std::ptr::addr_of_mut;
+use std::slice::SliceIndex;
 use std::sync::Arc;
 use zerocopy::AsBytes;
 use zerocopy::FromBytes;
@@ -75,6 +76,21 @@ pub struct DisjointMutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
 }
 
 impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
+    fn cast_slice<V: AsBytes + FromBytes>(self) -> DisjointMutGuard<'a, T, [V]> {
+        // We don't want to drop the old guard, because we aren't changing or
+        // removing the bounds from parent here.
+        let mut old_guard = ManuallyDrop::new(self);
+        let bytes = mem::take(&mut old_guard.slice);
+        DisjointMutGuard {
+            slice: V::mut_slice_from(bytes).unwrap(),
+            phantom: old_guard.phantom,
+            #[cfg(debug_assertions)]
+            parent: old_guard.parent,
+            #[cfg(debug_assertions)]
+            bounds: old_guard.bounds.clone(),
+        }
+    }
+
     fn cast<V: AsBytes + FromBytes>(self) -> DisjointMutGuard<'a, T, V> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -118,6 +134,21 @@ pub struct DisjointImmutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
 }
 
 impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
+    fn cast_slice<V: FromBytes>(self) -> DisjointImmutGuard<'a, T, [V]> {
+        // We don't want to drop the old guard, because we aren't changing or
+        // removing the bounds from parent here.
+        let mut old_guard = ManuallyDrop::new(self);
+        let bytes = mem::take(&mut old_guard.slice);
+        DisjointImmutGuard {
+            slice: V::slice_from(bytes).unwrap(),
+            phantom: old_guard.phantom,
+            #[cfg(debug_assertions)]
+            parent: old_guard.parent,
+            #[cfg(debug_assertions)]
+            bounds: old_guard.bounds.clone(),
+        }
+    }
+
     fn cast<V: FromBytes>(self) -> DisjointImmutGuard<'a, T, V> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -297,10 +328,10 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
 }
 
 impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
-    /// Mutably borrow a slice or element of a convertible type.
+    /// Mutably borrow a slice of a convertible type.
     ///
-    /// This method accesses an element or slice of elements of a type that
-    /// implements `zerocopy::FromBytes` from a buffer of `u8`.
+    /// This method accesses a slice of elements of a type that implements
+    /// `zerocopy::FromBytes` from a buffer of `u8`.
     ///
     /// This mutable borrow may be unchecked and callers must ensure that no
     /// other borrows from this collection overlap with the mutably borrowed
@@ -315,21 +346,49 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     /// references to avoid other potential memory safety issues due to racy
     /// access.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub unsafe fn index_mut_as<'a, I, V>(&'a self, index: I) -> DisjointMutGuard<'a, T, V>
+    pub unsafe fn mut_slice_as<'a, I, V>(&'a self, index: I) -> DisjointMutGuard<'a, T, [V]>
     where
-        I: Into<Bounds> + Clone,
+        I: Into<Bounds> + Clone + SliceIndex<[V]>,
         V: AsBytes + FromBytes,
     {
         let bounds = index.into().multiply(mem::size_of::<V>());
         // SAFETY: Same safety requirements as this method.
         let byte_guard = unsafe { self.index_mut(bounds.range) };
+        byte_guard.cast_slice()
+    }
+
+    /// Mutably borrow an element of a convertible type.
+    ///
+    /// This method accesses an element of a type that implements
+    /// `zerocopy::FromBytes` from a buffer of `u8`.
+    ///
+    /// This mutable borrow may be unchecked and callers must ensure that no
+    /// other borrows from this collection overlap with the mutably borrowed
+    /// region for the lifetime of that mutable borrow.
+    ///
+    /// # Safety
+    ///
+    /// Caller must ensure that no elements of the resulting borrowed slice or
+    /// element are concurrently borrowed (immutably or mutably) at all during
+    /// the lifetime of the returned mutable borrow. We require that the
+    /// referenced data must be plain data and not contain any pointers or
+    /// references to avoid other potential memory safety issues due to racy
+    /// access.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub unsafe fn mut_element_as<'a, V>(&'a self, index: usize) -> DisjointMutGuard<'a, T, V>
+    where
+        V: AsBytes + FromBytes,
+    {
+        let bounds = Bounds::from(index).multiply(mem::size_of::<V>());
+        // SAFETY: Same safety requirements as this method.
+        let byte_guard = unsafe { self.index_mut(bounds.range) };
         byte_guard.cast()
     }
 
-    /// Immutably borrow a slice or element of a convertible type.
+    /// Immutably borrow a slice of a convertible type.
     ///
-    /// This method accesses an element or slice of elements of a type that
-    /// implements `zerocopy::FromBytes` from a buffer of `u8`.
+    /// This method accesses a slice of elements of a type that implements
+    /// `zerocopy::FromBytes` from a buffer of `u8`.
     ///
     /// This immutable borrow may be unchecked and callers must ensure that no
     /// other mutable borrows from this collection overlap with the returned
@@ -350,12 +409,44 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     ///
     /// [`index_mut`]: DisjointMut::index_mut
     #[cfg_attr(debug_assertions, track_caller)]
-    pub fn index_as<'a, I, V>(&'a self, index: I) -> DisjointImmutGuard<'a, T, V>
+    pub fn slice_as<'a, I, V>(&'a self, index: I) -> DisjointImmutGuard<'a, T, [V]>
     where
-        I: Into<Bounds> + Clone,
-        V: FromBytes,
+        I: Into<Bounds> + Clone + SliceIndex<[V]>,
+        V: FromBytes + Sized,
     {
         let bounds = index.into().multiply(mem::size_of::<V>());
+        self.index(bounds.range).cast_slice()
+    }
+
+    /// Immutably borrow an element of a convertible type.
+    ///
+    /// This method accesses an element of a type that implements
+    /// `zerocopy::FromBytes` from a buffer of `u8`.
+    ///
+    /// This immutable borrow may be unchecked and callers must ensure that no
+    /// other mutable borrows from this collection overlap with the returned
+    /// immutably borrowed region for the lifetime of that borrow.
+    ///
+    /// # Safety
+    ///
+    /// This method is not marked as unsafe but its safety requires correct
+    /// usage alongside [`index_mut`]. It cannot result in a race condition
+    /// without creating an overlapping mutable range via [`index_mut`]. As an
+    /// internal helper, we ensure that all calls are safe and document this
+    /// when mutating rather than marking each immutable reference with
+    /// virtually identical safety justifications.
+    ///
+    /// Caller must take care that no elements of the resulting borrowed slice
+    /// or element are concurrently mutably borrowed at all by [`index_mut`]
+    /// during the lifetime of the returned borrow.
+    ///
+    /// [`index_mut`]: DisjointMut::index_mut
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn element_as<'a, V>(&'a self, index: usize) -> DisjointImmutGuard<'a, T, V>
+    where
+        V: FromBytes + Sized,
+    {
+        let bounds = Bounds::from(index).multiply(mem::size_of::<V>());
         self.index(bounds.range).cast()
     }
 }
