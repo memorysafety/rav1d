@@ -12,7 +12,6 @@ use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::dav1d::Rav1dInloopFilterType;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
-use crate::include::dav1d::headers::Dav1dITUTT35;
 use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dContentLightLevel;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
@@ -326,7 +325,7 @@ pub struct Rav1dContext {
     pub(crate) frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>, // TODO(kkysen) Previously pooled.
     pub(crate) content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub(crate) mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-    pub(crate) itut_t35: Arc<TryLock<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
+    pub(crate) itut_t35: Arc<TryLock<Vec<Rav1dITUTT35>>>,
 
     // decoded output picture queue
     pub(crate) in_0: Rav1dData,
