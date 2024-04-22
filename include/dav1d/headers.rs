@@ -57,16 +57,6 @@ where
     }
 }
 
-impl<R, D> DRav1d<Vec<R>, Vec<D>>
-where
-    R: Clone + Into<D>,
-{
-    pub fn push(&mut self, value: R) {
-        self.rav1d.push(value.clone());
-        self.dav1d.push(value.into());
-    }
-}
-
 // Constants from Section 3. "Symbols and abbreviated terms"
 pub const DAV1D_MAX_CDEF_STRENGTHS: usize = 8;
 pub const DAV1D_MAX_OPERATING_POINTS: usize = 32;
@@ -844,10 +834,11 @@ impl From<Rav1dITUTT35> for Dav1dITUTT35 {
 
 impl Rav1dITUTT35 {
     pub fn to_immut(
-        mutable: Arc<Mutex<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
+        mutable: Arc<Mutex<Vec<Rav1dITUTT35>>>,
     ) -> Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>> {
-        let DRav1d { rav1d, dav1d: _ } = Arc::into_inner(mutable).unwrap().into_inner().unwrap();
-        let rav1d = rav1d.into_boxed_slice();
+        let mutable = Arc::into_inner(mutable).unwrap().into_inner().unwrap();
+        let immutable = mutable.into_boxed_slice();
+        let rav1d = immutable;
         let dav1d = rav1d.iter().cloned().map(Dav1dITUTT35::from).collect();
         Arc::new(DRav1d { rav1d, dav1d })
     }

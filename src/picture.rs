@@ -265,7 +265,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     c: &Rav1dContext,
     f: &mut Rav1dFrameData,
     bpc: c_int,
-    itut_t35: Arc<Mutex<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
+    itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
     let have_frame_mt = c.n_fc > 1;
