@@ -262,7 +262,7 @@ unsafe fn lr_sbrow<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
     c: &Rav1dContext,
-    f: &mut Rav1dFrameData,
+    f: &Rav1dFrameData,
     dst: &mut [&mut [BD::Pixel]; 3],
     dst_offset: &[usize; 2],
     sby: c_int,
