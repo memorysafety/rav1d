@@ -250,7 +250,7 @@ pub fn rav1d_picture_copy_props(
     p: &mut Rav1dPicture,
     content_light: Option<Arc<Rav1dContentLightLevel>>,
     mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-    itut_t35: Arc<Mutex<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
+    itut_t35: Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>>,
     props: Rav1dDataProps,
 ) {
     p.m = props;
@@ -285,7 +285,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
         &mut p.p,
         c.content_light.clone(),
         c.mastering_display.clone(),
-        itut_t35,
+        Rav1dITUTT35::to_immut(itut_t35),
         f.tiles[0].data.m.clone(),
     );
 

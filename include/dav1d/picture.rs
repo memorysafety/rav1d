@@ -25,7 +25,6 @@ use std::ffi::c_void;
 use std::ptr;
 use std::ptr::NonNull;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
 pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;
@@ -91,7 +90,7 @@ pub struct Dav1dPicture {
     pub seq_hdr_ref: Option<RawArc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>, // opaque, so we can change this
     pub content_light_ref: Option<RawArc<Rav1dContentLightLevel>>, // opaque, so we can change this
     pub mastering_display_ref: Option<RawArc<Rav1dMasteringDisplay>>, // opaque, so we can change this
-    pub itut_t35_ref: Option<RawArc<Mutex<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>>, // opaque, so we can change this
+    pub itut_t35_ref: Option<RawArc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>>>, // opaque, so we can change this
     pub reserved_ref: [uintptr_t; 4],
     pub r#ref: Option<NonNull<Dav1dRef>>,
     pub allocator_data: Option<NonNull<c_void>>,
@@ -128,14 +127,7 @@ pub(crate) struct Rav1dPicture {
     pub m: Rav1dDataProps,
     pub content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
-
-    /// [`Option`] wasn't needed here since [`Vec`]`: `[`Default`],
-    /// but this does necessitate an allocation of `Vec::default()` every time,
-    /// and an [`Arc::clone`] on every clone,
-    /// even though having a [`Rav1dITUTT35`] is fairly rare.
-    /// This is a small cost compared to pixel data, however,
-    /// so until we notice a performance impact, this simpler way should suffice.
-    pub itut_t35: Arc<Mutex<DRav1d<Vec<Rav1dITUTT35>, Vec<Dav1dITUTT35>>>>,
+    pub itut_t35: Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>>,
     pub r#ref: Option<NonNull<Rav1dRef>>,
 }
 
@@ -208,13 +200,6 @@ impl From<Rav1dPicture> for Dav1dPicture {
             itut_t35,
             r#ref,
         } = value;
-        let (itut_t35_dav1d, n_itut_t35) = {
-            let itut_t35 = &*itut_t35.try_lock().unwrap();
-            let itut_t35_dav1d = Some(NonNull::new(itut_t35.dav1d.as_ptr().cast_mut()).unwrap());
-            let n_itut_t35 = itut_t35.len();
-            (itut_t35_dav1d, n_itut_t35)
-        };
-
         Self {
             // [`DRav1d::from_rav1d`] is called right after [`parse_seq_hdr`].
             seq_hdr: seq_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
@@ -227,8 +212,8 @@ impl From<Rav1dPicture> for Dav1dPicture {
             content_light: content_light.as_ref().map(|arc| arc.as_ref().into()),
             mastering_display: mastering_display.as_ref().map(|arc| arc.as_ref().into()),
             // [`DRav1d::from_rav1d`] is called in [`rav1d_parse_obus`].
-            itut_t35: itut_t35_dav1d,
-            n_itut_t35,
+            itut_t35: Some(NonNull::new(itut_t35.dav1d.as_ptr().cast_mut()).unwrap()),
+            n_itut_t35: itut_t35.len(),
             reserved: Default::default(),
             frame_hdr_ref: frame_hdr.map(RawArc::from_arc),
             seq_hdr_ref: seq_hdr.map(RawArc::from_arc),
