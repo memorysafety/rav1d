@@ -44,7 +44,6 @@ use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_picture_move_ref;
 use crate::src::picture::rav1d_picture_unref_internal;
 use crate::src::picture::rav1d_thread_picture_move_ref;
 use crate::src::picture::rav1d_thread_picture_ref;
@@ -392,7 +391,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
         &mut c.cache
     };
     if !c.apply_grain || !(*r#in).p.has_grain() {
-        rav1d_picture_move_ref(out, &mut (*r#in).p);
+        *out = mem::take(&mut (*r#in).p);
     } else {
         res = rav1d_apply_grain(c, out, &(*r#in).p);
     }
