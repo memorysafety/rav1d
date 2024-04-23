@@ -4,14 +4,13 @@ use crate::src::error::Rav1dError;
 use crate::src::internal::Rav1dContext;
 pub use crate::src::log::Dav1dLogger;
 use crate::src::log::Rav1dLogger;
-use crate::src::r#ref::Rav1dRef;
 use bitflags::bitflags;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use strum::FromRepr;
 
 pub type Dav1dContext = Rav1dContext;
-pub type Dav1dRef = Rav1dRef;
+pub type Dav1dRef = ();
 
 pub type Dav1dInloopFilterType = c_uint;
 pub const DAV1D_INLOOPFILTER_ALL: Dav1dInloopFilterType =

@@ -71,7 +71,6 @@ pub mod src {
     mod picture;
     mod qm;
     mod recon;
-    pub(crate) mod r#ref;
     mod refmvs;
     mod scan;
     mod tables;
