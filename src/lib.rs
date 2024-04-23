@@ -45,7 +45,6 @@ use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::rav1d_picture_move_ref;
-use crate::src::picture::rav1d_picture_ref;
 use crate::src::picture::rav1d_picture_unref_internal;
 use crate::src::picture::rav1d_thread_picture_move_ref;
 use crate::src::picture::rav1d_thread_picture_ref;
@@ -602,7 +601,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
     in_0: &Rav1dPicture,
 ) -> Rav1dResult {
     if !in_0.has_grain() {
-        rav1d_picture_ref(out, in_0);
+        *out = in_0.clone();
         return Ok(());
     }
     let res = rav1d_picture_alloc_copy(c, out, in_0.p.w, in_0);

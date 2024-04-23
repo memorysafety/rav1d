@@ -125,7 +125,6 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::rav1d_msac_decode_uniform;
 use crate::src::msac::rav1d_msac_init;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_picture_ref;
 use crate::src::picture::rav1d_picture_unref_internal;
 use crate::src::picture::rav1d_thread_picture_alloc;
 use crate::src::picture::rav1d_thread_picture_ref;
@@ -4839,7 +4838,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             return res;
         }
     } else {
-        rav1d_picture_ref(&mut f.cur, &mut f.sr_cur.p);
+        f.cur = f.sr_cur.p.clone();
     }
     if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         f.resize_step[0] = scale_fac(f.cur.p.w, f.sr_cur.p.p.w);

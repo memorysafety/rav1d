@@ -311,10 +311,6 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {
-    *dst = src.clone();
-}
-
 pub(crate) unsafe fn rav1d_picture_move_ref(dst: &mut Rav1dPicture, src: &mut Rav1dPicture) {
     *dst = mem::take(src);
 }
@@ -323,7 +319,7 @@ pub(crate) unsafe fn rav1d_thread_picture_ref(
     dst: *mut Rav1dThreadPicture,
     src: *const Rav1dThreadPicture,
 ) {
-    rav1d_picture_ref(&mut (*dst).p, &(*src).p);
+    (*dst).p = (*src).p.clone();
     (*dst).visible = (*src).visible;
     (*dst).showable = (*src).showable;
     (*dst).progress = (*src).progress.clone();
