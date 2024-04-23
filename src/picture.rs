@@ -311,13 +311,6 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_thread_picture_ref(
-    dst: *mut Rav1dThreadPicture,
-    src: *const Rav1dThreadPicture,
-) {
-    (*dst) = (*src).clone();
-}
-
 pub(crate) unsafe fn rav1d_thread_picture_move_ref(
     dst: *mut Rav1dThreadPicture,
     src: *mut Rav1dThreadPicture,

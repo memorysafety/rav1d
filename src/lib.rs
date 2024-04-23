@@ -45,7 +45,6 @@ use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::rav1d_thread_picture_move_ref;
-use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
@@ -477,7 +476,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
-                rav1d_thread_picture_ref(&mut c.out, out_delayed);
+                c.out = out_delayed.clone();
                 c.event_flags |= out_delayed.flags.into();
             }
             rav1d_thread_picture_unref(out_delayed);

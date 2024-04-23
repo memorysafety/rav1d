@@ -126,7 +126,6 @@ use crate::src::msac::rav1d_msac_decode_uniform;
 use crate::src::msac::rav1d_msac_init;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::rav1d_thread_picture_alloc;
-use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::qm::dav1d_qm_tbl;
@@ -4695,7 +4694,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             } else if out_delayed.p.data.is_some() {
                 let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
                 if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
-                    rav1d_thread_picture_ref(&mut c.out, out_delayed);
+                    c.out = out_delayed.clone();
                     c.event_flags |= out_delayed.flags.into();
                 }
                 rav1d_thread_picture_unref(out_delayed);
@@ -4774,7 +4773,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 on_error(f, c, out);
                 return Err(EINVAL);
             }
-            rav1d_thread_picture_ref(&mut f.refp[i], &mut c.refs[refidx].p);
+            f.refp[i] = c.refs[refidx].p.clone();
             ref_coded_width[i] = c.refs[refidx].p.p.frame_hdr.as_ref().unwrap().size.width[0];
             if frame_hdr.size.width[0] != c.refs[refidx].p.p.p.w
                 || frame_hdr.size.height != c.refs[refidx].p.p.p.h
@@ -4852,11 +4851,11 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // move f->cur into output queue
     if c.n_fc == 1 {
         if frame_hdr.show_frame != 0 || c.output_invisible_frames {
-            rav1d_thread_picture_ref(&mut c.out, &mut f.sr_cur);
+            c.out = f.sr_cur.clone();
             c.event_flags |= f.sr_cur.flags.into();
         }
     } else {
-        rav1d_thread_picture_ref(out, &mut f.sr_cur);
+        *out = f.sr_cur.clone();
     }
 
     f.w4 = frame_hdr.size.width[0] + 3 >> 2;
@@ -4966,7 +4965,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             if c.refs[i].p.p.frame_hdr.is_some() {
                 rav1d_thread_picture_unref(&mut c.refs[i].p);
             }
-            rav1d_thread_picture_ref(&mut c.refs[i].p, &mut f.sr_cur);
+            c.refs[i].p = f.sr_cur.clone();
 
             if frame_hdr.refresh_context != 0 {
                 c.cdf[i] = f.out_cdf.clone();
