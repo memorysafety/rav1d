@@ -98,7 +98,6 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::ops::Range;
 use std::ops::Sub;
-use std::ptr;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
@@ -1070,22 +1069,22 @@ pub(crate) struct Rav1dTaskContext {
 }
 
 impl Rav1dTaskContext {
-    pub(crate) unsafe fn new(task_thread: Arc<Rav1dTaskContext_task_thread>) -> Self {
+    pub(crate) fn new(task_thread: Arc<Rav1dTaskContext_task_thread>) -> Self {
         Self {
             ts: 0,
             b: Default::default(),
             l: Default::default(),
             a: 0,
-            rt: mem::zeroed(),
+            rt: Default::default(),
             cf: Default::default(),
             al_pal: Default::default(),
             pal_sz_uv: Default::default(),
-            scratch: mem::zeroed(),
-            warpmv: mem::zeroed(),
+            scratch: unsafe { mem::zeroed() },
+            warpmv: Default::default(),
             lf_mask: None,
             top_pre_cdef_toggle: 0,
             cur_sb_cdef_idx: 0,
-            tl_4x4_filter: mem::zeroed(),
+            tl_4x4_filter: Filter2d::Regular8Tap, // 0
             frame_thread: Rav1dTaskContext_frame_thread { pass: 0 },
             task_thread,
         }
