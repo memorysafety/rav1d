@@ -319,17 +319,15 @@ unsafe fn create_filter_sbrow(
     tasks.grow_tasks(num_tasks);
     let task_idx = Rav1dTaskIndex::Task((f.sbh * (pass & 1)) as usize);
     if pass & 1 != 0 {
-        f.frame_thread_progress.entropy = AtomicI32::new(0);
+        f.frame_thread_progress.entropy.store(0, Ordering::Relaxed);
     } else {
         let prog_sz = ((f.sbh + 31 & !(31 as c_int)) >> 5) as usize;
-        f.frame_thread_progress.frame.clear();
-        f.frame_thread_progress
-            .frame
-            .resize_with(prog_sz, || AtomicU32::new(0));
-        f.frame_thread_progress.copy_lpf.clear();
-        f.frame_thread_progress
-            .copy_lpf
-            .resize_with(prog_sz, || AtomicU32::new(0));
+        let mut frame = f.frame_thread_progress.frame.try_write().unwrap();
+        frame.clear();
+        frame.resize_with(prog_sz, || AtomicU32::new(0));
+        let mut copy_lpf = f.frame_thread_progress.copy_lpf.try_write().unwrap();
+        copy_lpf.clear();
+        copy_lpf.resize_with(prog_sz, || AtomicU32::new(0));
         f.frame_thread_progress.deblock.store(0, Ordering::SeqCst);
     }
     f.frame_thread.next_tile_row[(pass & 1) as usize].store(0, Ordering::Relaxed);
@@ -561,15 +559,16 @@ unsafe fn get_frame_progress(f: &Rav1dFrameData) -> c_int {
     }
     let mut idx = (frame_prog >> f.sb_shift + 7) as c_int;
     let mut prog;
+    let frame = f.frame_thread_progress.frame.try_read().unwrap();
     loop {
-        let val: c_uint = !(f.frame_thread_progress.frame)[idx as usize].load(Ordering::SeqCst);
+        let val: c_uint = !frame[idx as usize].load(Ordering::SeqCst);
         prog = if val != 0 { ctz(val) } else { 32 as c_int };
         if prog != 32 as c_int {
             break;
         }
         prog = 0 as c_int;
         idx += 1;
-        if !((idx as usize) < f.frame_thread_progress.frame.len()) {
+        if !((idx as usize) < frame.len()) {
             break;
         }
     }
@@ -873,7 +872,8 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             }
                             break 'found (f, t_idx, prev_t);
                         } else if t.type_0 == TaskType::Cdef {
-                            let p1_1 = f.frame_thread_progress.copy_lpf[(t.sby - 1 >> 5) as usize]
+                            let p1_1 = f.frame_thread_progress.copy_lpf.try_read().unwrap()
+                                [(t.sby - 1 >> 5) as usize]
                                 .load(Ordering::SeqCst);
                             if p1_1 as c_uint & (1 as c_uint) << (t.sby - 1 & 31) != 0 {
                                 break 'found (f, t_idx, prev_t);
@@ -1176,14 +1176,14 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 ttd.cond.notify_one();
                             }
                         } else if seq_hdr.cdef != 0 || f.lf.restore_planes != 0 {
-                            f.frame_thread_progress.copy_lpf[(sby >> 5) as usize]
+                            let copy_lpf = f.frame_thread_progress.copy_lpf.try_read().unwrap();
+                            copy_lpf[(sby >> 5) as usize]
                                 .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
                             // CDEF needs the top buffer to be saved by lr_copy_lpf of the
                             // previous sbrow
                             if sby != 0 {
-                                let prog_1 = f.frame_thread_progress.copy_lpf
-                                    [(sby - 1 >> 5) as usize]
-                                    .load(Ordering::SeqCst);
+                                let prog_1 =
+                                    copy_lpf[(sby - 1 >> 5) as usize].load(Ordering::SeqCst);
                                 if !prog_1 as c_uint & (1 as c_uint) << (sby - 1 & 31) != 0 {
                                     t.type_0 = TaskType::Cdef;
                                     t.deblock_progress = 0 as c_int;
@@ -1298,7 +1298,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 continue 'outer;
             }
             // t->type != DAV1D_TASK_TYPE_ENTROPY_PROGRESS
-            f.frame_thread_progress.frame[(sby >> 5) as usize]
+            f.frame_thread_progress.frame.try_read().unwrap()[(sby >> 5) as usize]
                 .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
             {
                 let _task_thread_lock = f.task_thread.lock.lock().unwrap();

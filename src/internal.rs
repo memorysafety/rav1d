@@ -107,6 +107,7 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::OnceLock;
+use std::sync::RwLock;
 use std::thread::JoinHandle;
 
 #[repr(C)]
@@ -791,8 +792,8 @@ impl Rav1dFrameContext_task_thread {
 pub(crate) struct Rav1dFrameContext_frame_thread_progress {
     pub entropy: AtomicI32,
     pub deblock: AtomicI32, // in sby units
-    pub frame: Vec<AtomicU32>,
-    pub copy_lpf: Vec<AtomicU32>,
+    pub frame: RwLock<Vec<AtomicU32>>,
+    pub copy_lpf: RwLock<Vec<AtomicU32>>,
 }
 
 #[repr(C)]
