@@ -67,7 +67,6 @@ use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::mem;
-use std::mem::MaybeUninit;
 use std::process::abort;
 use std::ptr;
 use std::ptr::addr_of_mut;
@@ -583,7 +582,7 @@ pub unsafe extern "C" fn dav1d_get_picture(
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
         let c = &mut *c;
-        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
+        let mut out_rust = Default::default(); // TODO(kkysen) Temporary until we return it directly.
         let result = rav1d_get_picture(c, &mut out_rust);
         out.write(out_rust.into());
         result
@@ -649,7 +648,7 @@ pub unsafe extern "C" fn dav1d_apply_grain(
         // Don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
         // Don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
         // Don't `.update_rav1d()` [`Rav1dITUTT35`] because we never read it.
-        let mut out_rust = MaybeUninit::zeroed().assume_init(); // TODO(kkysen) Temporary until we return it directly.
+        let mut out_rust = Default::default(); // TODO(kkysen) Temporary until we return it directly.
         let in_rust = in_0.into();
         let result = rav1d_apply_grain(c, &mut out_rust, &in_rust);
         out.write(out_rust.into());
