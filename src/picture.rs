@@ -329,11 +329,7 @@ pub(crate) unsafe fn rav1d_thread_picture_move_ref(
     *dst = mem::take(&mut *src);
 }
 
-pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
-    let _ = mem::take(p);
-}
-
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
-    rav1d_picture_unref_internal(&mut (*p).p);
+    let _ = mem::take(&mut (*p).p);
     let _ = mem::take(&mut (*p).progress);
 }

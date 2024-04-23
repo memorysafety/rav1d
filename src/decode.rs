@@ -125,7 +125,6 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::rav1d_msac_decode_uniform;
 use crate::src::msac::rav1d_msac_init;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_picture_unref_internal;
 use crate::src::picture::rav1d_thread_picture_alloc;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
@@ -4577,7 +4576,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
         }
         let _ = mem::take(&mut f.ref_mvs[i]);
     }
-    rav1d_picture_unref_internal(&mut f.cur);
+    let _ = mem::take(&mut f.cur);
     rav1d_thread_picture_unref(&mut f.sr_cur);
     let _ = mem::take(&mut f.in_cdf);
     if let Some(frame_hdr) = &f.frame_hdr {
@@ -4724,7 +4723,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             let _ = mem::take(&mut f.ref_mvs[i]);
         }
         rav1d_thread_picture_unref(out);
-        rav1d_picture_unref_internal(&mut f.cur);
+        let _ = mem::take(&mut f.cur);
         rav1d_thread_picture_unref(&mut f.sr_cur);
         let _ = mem::take(&mut f.mvs);
         let _ = mem::take(&mut f.seq_hdr);

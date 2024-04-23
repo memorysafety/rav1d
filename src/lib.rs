@@ -44,7 +44,6 @@ use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_picture_unref_internal;
 use crate::src::picture::rav1d_thread_picture_move_ref;
 use crate::src::picture::rav1d_thread_picture_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
@@ -605,7 +604,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
     }
     let res = rav1d_picture_alloc_copy(c, out, in_0.p.w, in_0);
     if res.is_err() {
-        rav1d_picture_unref_internal(out);
+        let _ = mem::take(out);
         return res;
     } else {
         if c.tc.len() > 1 {
@@ -891,7 +890,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
 }
 
 pub(crate) unsafe fn rav1d_picture_unref(p: &mut Rav1dPicture) {
-    rav1d_picture_unref_internal(p);
+    let _ = mem::take(p);
 }
 
 #[no_mangle]
