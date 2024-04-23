@@ -100,6 +100,18 @@ macro_rules! def_align {
         }
 
         impl AlignedByteChunk for $name<[u8; $align]> {}
+
+        unsafe impl<V, const N: usize> AsMutPtr for $name<[V; N]> {
+            type Target = V;
+
+            unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut V {
+                (*ptr).0.as_mut_ptr()
+            }
+
+            fn len(&self) -> usize {
+                N
+            }
+        }
     };
 }
 

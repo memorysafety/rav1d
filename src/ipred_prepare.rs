@@ -28,10 +28,10 @@ use std::ffi::c_int;
 
 #[inline]
 pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
-    if b.intra[idx] == 0 {
+    if *b.intra.index(idx) == 0 {
         return 0;
     }
-    let m = b.mode[idx];
+    let m = *b.mode.index(idx);
     if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
     } else {
@@ -41,7 +41,7 @@ pub fn sm_flag(b: &BlockContext, idx: usize) -> c_int {
 
 #[inline]
 pub fn sm_uv_flag(b: &BlockContext, idx: usize) -> c_int {
-    let m = b.uvmode[idx];
+    let m = *b.uvmode.index(idx);
     if m == SMOOTH_PRED || m == SMOOTH_H_PRED || m == SMOOTH_V_PRED {
         512
     } else {
