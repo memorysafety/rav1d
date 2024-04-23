@@ -44,7 +44,6 @@ use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::refmvs::rav1d_refmvs_clear;
@@ -392,7 +391,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     } else {
         res = rav1d_apply_grain(c, out, &(*r#in).p);
     }
-    rav1d_thread_picture_unref(&mut *r#in);
+    let _ = mem::take(&mut *r#in);
 
     if !c.all_layers && c.max_spatial_id && c.out.p.data.is_some() {
         *r#in = mem::take(&mut c.out);
@@ -411,7 +410,7 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
             {
                 return true;
             }
-            rav1d_thread_picture_unref(&mut c.cache);
+            let _ = mem::take(&mut c.cache);
             c.cache = mem::take(&mut c.out);
             return false;
         } else {
@@ -469,7 +468,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let error = mem::replace(&mut *f.task_thread.retval.try_lock().unwrap(), Ok(()));
         if error.is_err() {
             *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-            rav1d_thread_picture_unref(out_delayed);
+            let _ = mem::take(out_delayed);
             return error;
         }
         if out_delayed.p.data.is_some() {
@@ -478,7 +477,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 c.out = out_delayed.clone();
                 c.event_flags |= out_delayed.flags.into();
             }
-            rav1d_thread_picture_unref(out_delayed);
+            let _ = mem::take(out_delayed);
             if output_picture_ready(c, false) {
                 return output_image(c, out);
             }
@@ -661,17 +660,17 @@ pub unsafe extern "C" fn dav1d_apply_grain(
 pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     let _ = mem::take(&mut (*c).in_0);
     if (*c).out.p.frame_hdr.is_some() {
-        rav1d_thread_picture_unref(&mut (*c).out);
+        let _ = mem::take(&mut (*c).out);
     }
     if (*c).cache.p.frame_hdr.is_some() {
-        rav1d_thread_picture_unref(&mut (*c).cache);
+        let _ = mem::take(&mut (*c).cache);
     }
     (*c).drain = 0 as c_int;
     (*c).cached_error = Ok(());
     let mut i = 0;
     while i < 8 {
         if (*c).refs[i as usize].p.p.frame_hdr.is_some() {
-            rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
+            let _ = mem::take(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
         }
         let _ = mem::take(&mut (*c).refs[i as usize].segmap);
         let _ = mem::take(&mut (*c).refs[i as usize].refmvs);
@@ -730,7 +729,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             *f.task_thread.retval.try_lock().unwrap() = Ok(());
             let out_delayed = &mut (*c).frame_thread.out_delayed[next as usize];
             if out_delayed.p.frame_hdr.is_some() {
-                rav1d_thread_picture_unref(out_delayed);
+                let _ = mem::take(out_delayed);
             }
             n = n.wrapping_add(1);
             next = next.wrapping_add(1);
@@ -829,9 +828,7 @@ impl Drop for Rav1dContext {
                         .frame_hdr
                         .is_some()
                     {
-                        rav1d_thread_picture_unref(
-                            &mut self.frame_thread.out_delayed[n_2 as usize],
-                        );
+                        let _ = mem::take(&mut self.frame_thread.out_delayed[n_2 as usize]);
                     }
                     n_2 = n_2.wrapping_add(1);
                 }
@@ -841,9 +838,7 @@ impl Drop for Rav1dContext {
             let mut n_4 = 0;
             while n_4 < 8 {
                 if self.refs[n_4 as usize].p.p.frame_hdr.is_some() {
-                    rav1d_thread_picture_unref(
-                        &mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p,
-                    );
+                    let _ = mem::take(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p);
                 }
                 let _ = mem::take(&mut self.refs[n_4 as usize].refmvs);
                 let _ = mem::take(&mut self.refs[n_4 as usize].segmap);

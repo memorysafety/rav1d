@@ -64,7 +64,6 @@ use crate::src::internal::Rav1dTileGroupHeader;
 use crate::src::levels::ObuMetaType;
 use crate::src::log::Rav1dLog as _;
 use crate::src::picture::rav1d_picture_copy_props;
-use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::thread_task::FRAME_ERROR;
 use std::array;
@@ -2136,7 +2135,7 @@ unsafe fn parse_obus(
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
             if c.frame_hdr.as_ref().unwrap().refresh_frame_flags & (1 << i) != 0 {
-                rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
+                let _ = mem::take(&mut c.refs[i as usize].p);
                 c.refs[i as usize].p.p.frame_hdr = c.frame_hdr.clone();
                 c.refs[i as usize].p.p.seq_hdr = c.seq_hdr.clone();
             }
@@ -2291,7 +2290,7 @@ unsafe fn parse_obus(
                     let _ = mem::take(&mut c.mastering_display);
                     for i in 0..8 {
                         if c.refs[i as usize].p.p.frame_hdr.is_some() {
-                            rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
+                            let _ = mem::take(&mut c.refs[i as usize].p);
                         }
                         let _ = mem::take(&mut c.refs[i as usize].segmap);
                         let _ = mem::take(&mut c.refs[i as usize].refmvs);
@@ -2571,7 +2570,7 @@ unsafe fn parse_obus(
                 if error.is_err() {
                     c.cached_error = mem::replace(&mut *error, Ok(()));
                     *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-                    rav1d_thread_picture_unref(out_delayed);
+                    let _ = mem::take(out_delayed);
                 } else if out_delayed.p.data.is_some() {
                     let progress =
                         out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
@@ -2580,7 +2579,7 @@ unsafe fn parse_obus(
                         c.out = out_delayed.clone();
                         c.event_flags |= out_delayed.flags.into();
                     }
-                    rav1d_thread_picture_unref(out_delayed);
+                    let _ = mem::take(out_delayed);
                 }
                 *out_delayed = c.refs[frame_hdr.existing_frame_idx as usize].p.clone();
                 out_delayed.visible = true;
@@ -2610,7 +2609,7 @@ unsafe fn parse_obus(
                     }
 
                     if c.refs[i as usize].p.p.frame_hdr.is_some() {
-                        rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
+                        let _ = mem::take(&mut c.refs[i as usize].p);
                     }
                     c.refs[i as usize].p = c.refs[r as usize].p.clone();
 

@@ -126,7 +126,6 @@ use crate::src::msac::rav1d_msac_decode_uniform;
 use crate::src::msac::rav1d_msac_init;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::rav1d_thread_picture_alloc;
-use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::qm::dav1d_qm_tbl;
 use crate::src::recon::debug_block_info;
@@ -4571,12 +4570,12 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
     // TODO(kkysen) use array::zip when stable
     for i in 0..7 {
         if f.refp[i].p.frame_hdr.is_some() {
-            rav1d_thread_picture_unref(&mut f.refp[i]);
+            let _ = mem::take(&mut f.refp[i]);
         }
         let _ = mem::take(&mut f.ref_mvs[i]);
     }
     let _ = mem::take(&mut f.cur);
-    rav1d_thread_picture_unref(&mut f.sr_cur);
+    let _ = mem::take(&mut f.sr_cur);
     let _ = mem::take(&mut f.in_cdf);
     if let Some(frame_hdr) = &f.frame_hdr {
         if frame_hdr.refresh_context != 0 {
@@ -4690,14 +4689,14 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             if error.is_err() {
                 c.cached_error = mem::replace(&mut error, Ok(()));
                 *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-                rav1d_thread_picture_unref(out_delayed);
+                let _ = mem::take(out_delayed);
             } else if out_delayed.p.data.is_some() {
                 let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
                 if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                     c.out = out_delayed.clone();
                     c.event_flags |= out_delayed.flags.into();
                 }
-                rav1d_thread_picture_unref(out_delayed);
+                let _ = mem::take(out_delayed);
             }
         }
         (f, out_delayed as *mut _, Some(task_thread_lock))
@@ -4717,13 +4716,13 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
         for i in 0..7 {
             if f.refp[i].p.frame_hdr.is_some() {
-                rav1d_thread_picture_unref(&mut f.refp[i]);
+                let _ = mem::take(&mut f.refp[i]);
             }
             let _ = mem::take(&mut f.ref_mvs[i]);
         }
-        rav1d_thread_picture_unref(out);
+        let _ = mem::take(&mut *out);
         let _ = mem::take(&mut f.cur);
-        rav1d_thread_picture_unref(&mut f.sr_cur);
+        let _ = mem::take(&mut f.sr_cur);
         let _ = mem::take(&mut f.mvs);
         let _ = mem::take(&mut f.seq_hdr);
         let _ = mem::take(&mut f.frame_hdr);
@@ -4768,7 +4767,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 || bpc != c.refs[refidx].p.p.p.bpc
             {
                 for j in 0..i {
-                    rav1d_thread_picture_unref(&mut f.refp[j]);
+                    let _ = mem::take(&mut f.refp[j]);
                 }
                 on_error(f, c, out);
                 return Err(EINVAL);
@@ -4963,7 +4962,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     for i in 0..8 {
         if refresh_frame_flags & (1 << i) != 0 {
             if c.refs[i].p.p.frame_hdr.is_some() {
-                rav1d_thread_picture_unref(&mut c.refs[i].p);
+                let _ = mem::take(&mut c.refs[i].p);
             }
             c.refs[i].p = f.sr_cur.clone();
 
@@ -4985,11 +4984,11 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if c.n_fc == 1 {
         let res = rav1d_decode_frame(c, f);
         if res.is_err() {
-            rav1d_thread_picture_unref(&mut c.out);
+            let _ = mem::take(&mut c.out);
             for i in 0..8 {
                 if refresh_frame_flags & (1 << i) != 0 {
                     if c.refs[i].p.p.frame_hdr.is_some() {
-                        rav1d_thread_picture_unref(&mut c.refs[i].p);
+                        let _ = mem::take(&mut c.refs[i].p);
                     }
                     let _ = mem::take(&mut c.cdf[i]);
                     let _ = mem::take(&mut c.refs[i].segmap);
