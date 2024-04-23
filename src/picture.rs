@@ -64,7 +64,7 @@ impl From<PictureFlags> for Rav1dEventFlags {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dThreadPicture {
     pub p: Rav1dPicture,
@@ -315,11 +315,7 @@ pub(crate) unsafe fn rav1d_thread_picture_ref(
     dst: *mut Rav1dThreadPicture,
     src: *const Rav1dThreadPicture,
 ) {
-    (*dst).p = (*src).p.clone();
-    (*dst).visible = (*src).visible;
-    (*dst).showable = (*src).showable;
-    (*dst).progress = (*src).progress.clone();
-    (*dst).flags = (*src).flags;
+    (*dst) = (*src).clone();
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_move_ref(
