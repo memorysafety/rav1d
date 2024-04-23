@@ -224,6 +224,7 @@ pub(crate) struct RefMvsFrame {
     pub n_frame_threads: u32,
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct refmvs_tile_range {
     pub start: c_int,
@@ -244,6 +245,17 @@ pub(crate) struct refmvs_tile {
 
     pub tile_col: refmvs_tile_range,
     pub tile_row: refmvs_tile_range,
+}
+
+impl Default for refmvs_tile {
+    fn default() -> Self {
+        Self {
+            r: [Default::default(); 37],
+            rp_proj: Default::default(),
+            tile_col: Default::default(),
+            tile_row: Default::default(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Default)]
