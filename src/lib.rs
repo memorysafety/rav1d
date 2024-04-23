@@ -44,7 +44,6 @@ use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_thread_picture_move_ref;
 use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
@@ -396,7 +395,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     rav1d_thread_picture_unref(&mut *r#in);
 
     if !c.all_layers && c.max_spatial_id && c.out.p.data.is_some() {
-        rav1d_thread_picture_move_ref(r#in, &mut c.out);
+        *r#in = mem::take(&mut c.out);
     }
     res
 }
@@ -413,14 +412,14 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
                 return true;
             }
             rav1d_thread_picture_unref(&mut c.cache);
-            rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
+            c.cache = mem::take(&mut c.out);
             return false;
         } else {
             if c.cache.p.data.is_some() && drain {
                 return true;
             } else {
                 if c.out.p.data.is_some() {
-                    rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
+                    c.cache = mem::take(&mut c.out);
                     return false;
                 }
             }
