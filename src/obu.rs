@@ -2463,12 +2463,12 @@ unsafe fn parse_obus(
                         let country_code = country_code as u8;
                         let country_code_extension_byte = country_code_extension_byte as u8;
                         let payload = (0..payload_size).map(|_| gb.get_bits(8) as u8).collect(); // TODO(kkysen) fallible allocation
-
-                        c.itut_t35 = Some(Arc::new(DRav1d::from_rav1d(Rav1dITUTT35 {
+                        let itut_t35 = Rav1dITUTT35 {
                             country_code,
                             country_code_extension_byte,
                             payload,
-                        }))); // TODO(kkysen) fallible allocation
+                        };
+                        c.itut_t35.try_lock().unwrap().push(itut_t35); // TODO fallible allocation
                     }
                 }
                 Some(ObuMetaType::Scalability | ObuMetaType::Timecode) => {} // Ignore metadata OBUs we don't care about.
@@ -2529,7 +2529,7 @@ unsafe fn parse_obus(
                     c.content_light.clone(),
                     c.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    c.itut_t35.take(),
+                    Rav1dITUTT35::to_immut(mem::take(&mut c.itut_t35)),
                     props.clone(),
                 );
                 c.event_flags |= c.refs[frame_hdr.existing_frame_idx as usize].p.flags.into();
@@ -2593,7 +2593,7 @@ unsafe fn parse_obus(
                     c.content_light.clone(),
                     c.mastering_display.clone(),
                     // Must be moved from the context to the frame.
-                    c.itut_t35.take(),
+                    Rav1dITUTT35::to_immut(mem::take(&mut c.itut_t35)),
                     props.clone(),
                 );
             }

@@ -10,6 +10,8 @@ use std::ops::Deref;
 use std::ops::Sub;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::sync::Mutex;
 use strum::EnumCount;
 use strum::FromRepr;
 
@@ -39,6 +41,19 @@ impl<R, D> Deref for DRav1d<R, D> {
 
     fn deref(&self) -> &Self::Target {
         &self.rav1d
+    }
+}
+
+impl<R, D> Default for DRav1d<R, D>
+where
+    R: Default,
+    D: Default,
+{
+    fn default() -> Self {
+        Self {
+            rav1d: Default::default(),
+            dav1d: Default::default(),
+        }
     }
 }
 
@@ -814,6 +829,18 @@ impl From<Rav1dITUTT35> for Dav1dITUTT35 {
             // Cast to a thin ptr.
             payload: Box::into_raw(payload).cast::<u8>(),
         }
+    }
+}
+
+impl Rav1dITUTT35 {
+    pub fn to_immut(
+        mutable: Arc<Mutex<Vec<Rav1dITUTT35>>>,
+    ) -> Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>> {
+        let mutable = Arc::into_inner(mutable).unwrap().into_inner().unwrap();
+        let immutable = mutable.into_boxed_slice();
+        let rav1d = immutable;
+        let dav1d = rav1d.iter().cloned().map(Dav1dITUTT35::from).collect();
+        Arc::new(DRav1d { rav1d, dav1d })
     }
 }
 

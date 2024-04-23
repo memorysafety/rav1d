@@ -101,7 +101,7 @@ pub unsafe extern "C" fn dav1d_version() -> *const c_char {
 }
 
 pub const DAV1D_API_VERSION_MAJOR: u8 = 6;
-pub const DAV1D_API_VERSION_MINOR: u8 = 8;
+pub const DAV1D_API_VERSION_MINOR: u8 = 9;
 pub const DAV1D_API_VERSION_PATCH: u8 = 0;
 
 /// Get the `dav1d` library C API version.
@@ -277,6 +277,10 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     } else {
         Box::new([])
     });
+    addr_of_mut!((*c).itut_t35).write(Arc::new(Mutex::new(Default::default())));
+    addr_of_mut!((*c).out).write(Default::default());
+    addr_of_mut!((*c).cache).write(Default::default());
+    addr_of_mut!((*c).refs).write(Default::default());
     for n in 0..n_fc {
         let f: &mut Rav1dFrameData = &mut *((*c).fc).offset(n as isize);
         f.index = n;
@@ -297,6 +301,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         (&mut f.task_thread.ttd as *mut Arc<TaskThreadData>).write(Arc::clone(&(*c).task_thread));
         f.lf.last_sharpness = -(1 as c_int);
         rav1d_refmvs_init(&mut f.rf);
+        addr_of_mut!(f.refp).write(Default::default());
+        addr_of_mut!(f.cur).write(Default::default());
+        addr_of_mut!(f.sr_cur).write(Default::default());
     }
     (*c).tc = (0..n_tc)
         .map(|n| {
