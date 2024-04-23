@@ -19,14 +19,13 @@ use crate::src::tables::dav1d_partition_type_count;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::mem;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::RwLockWriteGuard;
 use strum::EnumCount;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct CdfContext {
     pub m: CdfModeContext,
@@ -36,14 +35,14 @@ pub struct CdfContext {
     pub dmv: CdfMvContext,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
     pub joint: Align8<[u16; 4]>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct CdfMvComponent {
     pub classes: Align32<[u16; 16]>,
@@ -56,7 +55,7 @@ pub struct CdfMvComponent {
     pub sign: Align4<[u16; 2]>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct CdfCoefContext {
     pub eob_bin_16: Align16<[[[u16; 8]; 2]; 2]>,
@@ -74,7 +73,7 @@ pub struct CdfCoefContext {
     pub dc_sign: Align4<[[[u16; 2]; 3]; 2]>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct CdfModeContext {
     pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
@@ -5127,7 +5126,7 @@ pub unsafe fn rav1d_cdf_thread_alloc(
         None
     };
     Ok(CdfThreadContext::Cdf(Arc::new(CdfThreadContext_data {
-        cdf: mem::zeroed(),
+        cdf: Default::default(),
         progress,
     })))
 }
