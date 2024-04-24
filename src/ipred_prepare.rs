@@ -127,6 +127,8 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
     edge_flags: EdgeFlags,
     dst: &[BD::Pixel], // contains 4*h first rows of picture, last row in slice contains 4*w samples
     stride: ptrdiff_t,
+    // Buffer and offset pair. `isize` value is the base offset that should be used
+    // when indexing into the buffer.
     prefilter_toplevel_sb_edge: Option<(&DisjointMut<AlignedVec64<u8>>, isize)>,
     mut mode: IntraPredMode,
     angle: &mut c_int,

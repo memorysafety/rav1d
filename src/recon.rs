@@ -4521,12 +4521,12 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
         .offset((x_off * 4) as isize)
         .offset((((t.b.y + f.sb_step) * 4 - 1) as isize * BD::pxstride(f.cur.stride[0])) as isize);
     let ipred_edge_off = (f.ipred_edge_off * 0) + (sby_off + x_off * 4) as usize;
-    let n = (4 * (ts.tiling.col_end - x_off)).try_into().unwrap();
+    let n = 4 * (ts.tiling.col_end - x_off) as usize;
     BD::pixel_copy(
         &mut f
             .ipred_edge
             .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
-        slice::from_raw_parts(y, (4 * (ts.tiling.col_end - x_off)).try_into().unwrap()),
+        slice::from_raw_parts(y, n),
         n,
     );
     if f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint {
@@ -4540,19 +4540,17 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
         while pl <= 2 {
             let ipred_edge_off =
                 (f.ipred_edge_off * pl) + (sby_off + (x_off * 4 >> ss_hor)) as usize;
-            let n = (4 * (ts.tiling.col_end - x_off) >> ss_hor)
-                .try_into()
-                .unwrap();
+            let n = 4 * (ts.tiling.col_end - x_off) as usize >> ss_hor;
             BD::pixel_copy(
                 &mut f
                     .ipred_edge
                     .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
                 &slice::from_raw_parts(
-                    f.cur.data.as_ref().unwrap().data[pl].cast(),
-                    (uv_off + (4 * (ts.tiling.col_end - x_off) >> ss_hor) as isize)
-                        .try_into()
-                        .unwrap(),
-                )[uv_off.try_into().unwrap()..],
+                    f.cur.data.as_ref().unwrap().data[pl]
+                        .cast::<BD::Pixel>()
+                        .offset(uv_off),
+                    n,
+                ),
                 n,
             );
             pl += 1;
