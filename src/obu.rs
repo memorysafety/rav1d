@@ -2460,7 +2460,7 @@ unsafe fn parse_obus(
                     } else {
                         let country_code = country_code as u8;
                         let country_code_extension_byte = country_code_extension_byte as u8;
-                        let payload = (0..payload_size).map(|_| gb.get_bits(8) as u8).collect(); // TODO(kkysen) fallible allocation
+                        let payload = gb.get_bytes(payload_size as usize).into(); // TODO fallible allocation
                         let itut_t35 = Rav1dITUTT35 {
                             country_code,
                             country_code_extension_byte,
