@@ -700,7 +700,8 @@ fn order_palette(
 unsafe fn read_pal_indices(
     ts: &mut Rav1dTileState,
     scratch_pal: &mut Rav1dTaskContext_scratch_pal,
-    pal_idx: &mut [u8],
+    pal_tmp: &mut [u8],
+    pal_idx: Option<&mut [u8]>, // if None, use pal_tmp instead of pal_idx
     b: &Av1Block,
     pl: bool,
     w4: c_int,
@@ -713,7 +714,7 @@ unsafe fn read_pal_indices(
     let pal_sz = b.pal_sz()[pli] as usize;
 
     let stride = bw4 * 4;
-    pal_idx[0] = rav1d_msac_decode_uniform(&mut ts.msac, pal_sz as c_uint) as u8;
+    pal_tmp[0] = rav1d_msac_decode_uniform(&mut ts.msac, pal_sz as c_uint) as u8;
     let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz - 2];
     let Rav1dTaskContext_scratch_pal {
         pal_order: order,
@@ -723,32 +724,52 @@ unsafe fn read_pal_indices(
         // top/left-to-bottom/right diagonals ("wave-front")
         let first = cmp::min(i, w4 * 4 - 1);
         let last = (i + 1).checked_sub(h4 * 4).unwrap_or(0);
-        order_palette(pal_idx, stride, i, first, last, order, ctx);
+        order_palette(pal_tmp, stride, i, first, last, order, ctx);
         for (m, j) in (last..=first).rev().enumerate() {
             let color_idx = rav1d_msac_decode_symbol_adapt8(
                 &mut ts.msac,
                 &mut color_map_cdf[ctx[m] as usize],
                 pal_sz - 1,
             ) as usize;
-            pal_idx[(i - j) * stride + j] = order[m][color_idx];
+            pal_tmp[(i - j) * stride + j] = order[m][color_idx];
         }
     }
-    // fill invisible edges
+    // fill invisible edges and pack to 4-bit (2 pixels per byte)
     if bw4 > w4 {
         for y in 0..4 * h4 {
             let offset = y * stride + (4 * w4);
             let len = 4 * (bw4 - w4);
-            let filler = pal_idx[offset - 1];
-            pal_idx[offset..][..len].fill(filler);
+            let filler = pal_tmp[offset - 1];
+            pal_tmp[offset..][..len].fill(filler);
         }
     }
-    if h4 < bh4 {
-        let y_start = h4 * 4;
-        let len = bw4 * 4;
-        let (src, dests) = pal_idx.split_at_mut(stride * y_start);
-        let src = &src[stride * (y_start - 1)..][..len];
-        for y in 0..(bh4 - h4) * 4 {
-            dests[y * stride..][..len].copy_from_slice(src);
+    if let Some(pal_idx) = pal_idx {
+        for i in 0..bw4 * h4 * 8 {
+            pal_idx[i] = pal_tmp[2 * i + 0] | (pal_tmp[2 * i + 1] << 4);
+        }
+        if h4 < bh4 {
+            let y_start = h4 * 4;
+            let len = bw4 * 2;
+            let packed_stride = bw4 * 2;
+            let (src, dests) = pal_idx.split_at_mut(packed_stride * y_start);
+            let src = &src[bw4 * h4 * 8 - packed_stride..][..len];
+            for y in 0..(bh4 - h4) * 4 {
+                dests[y * packed_stride..][..len].copy_from_slice(src);
+            }
+        }
+    } else {
+        for i in 0..bw4 * h4 * 8 {
+            pal_tmp[i] = pal_tmp[2 * i + 0] | (pal_tmp[2 * i + 1] << 4);
+        }
+        if h4 < bh4 {
+            let y_start = h4 * 4;
+            let len = bw4 * 2;
+            let packed_stride = bw4 * 2;
+            let (src, dests) = pal_tmp.split_at_mut(packed_stride * y_start);
+            let src = &src[bw4 * h4 * 8 - packed_stride..][..len];
+            for y in 0..(bh4 - h4) * 4 {
+                dests[y * packed_stride..][..len].copy_from_slice(src);
+            }
         }
     }
 }
@@ -1772,7 +1793,7 @@ unsafe fn decode_b(
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
-                let len = usize::try_from(bw4 * bh4 * 16).unwrap();
+                let len = usize::try_from(bw4 * bh4 * 8).unwrap();
                 pal_idx_guard = f
                     .frame_thread
                     .pal_idx
@@ -1780,12 +1801,13 @@ unsafe fn decode_b(
                 frame_thread.pal_idx += len;
                 &mut *pal_idx_guard
             } else {
-                &mut t.scratch.c2rust_unnamed_0.pal_idx
+                &mut t.scratch.c2rust_unnamed_0.pal_idx_y
             };
             read_pal_indices(
                 ts,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
-                pal_idx,
+                &mut t.scratch.c2rust_unnamed_0.pal_idx_uv,
+                Some(pal_idx),
                 b,
                 false,
                 w4,
@@ -1803,19 +1825,20 @@ unsafe fn decode_b(
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
-                let len = usize::try_from(cbw4 * cbh4 * 16).unwrap();
+                let len = usize::try_from(cbw4 * cbh4 * 8).unwrap();
                 pal_idx_guard = f
                     .frame_thread
                     .pal_idx
                     .index_mut(frame_thread.pal_idx..frame_thread.pal_idx + len);
                 frame_thread.pal_idx += len;
-                &mut *pal_idx_guard
+                Some(&mut *pal_idx_guard)
             } else {
-                &mut t.scratch.c2rust_unnamed_0.pal_idx[(bw4 * bh4 * 16) as usize..]
+                None
             };
             read_pal_indices(
                 ts,
                 &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
+                &mut t.scratch.c2rust_unnamed_0.pal_idx_uv,
                 pal_idx,
                 b,
                 true,
@@ -3666,7 +3689,7 @@ unsafe fn setup_tile(
     let size_mul = &ss_size_mul[f.cur.p.layout];
     for p in 0..2 {
         ts.frame_thread[p].pal_idx = if !f.frame_thread.pal_idx.is_empty() {
-            tile_start_off * size_mul[1] as usize / 4
+            tile_start_off * size_mul[1] as usize / 8
         } else {
             0
         };
@@ -4163,7 +4186,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             // TODO: Fallible allocation
             f.frame_thread
                 .pal_idx
-                .resize(pal_idx_sz as usize * 128 * 128 / 4, Default::default());
+                .resize(pal_idx_sz as usize * 128 * 128 / 8, Default::default());
         } else if !f.frame_thread.pal.is_empty() {
             let _ = mem::take(&mut f.frame_thread.pal);
             let _ = mem::take(&mut f.frame_thread.pal_idx);
