@@ -8,7 +8,8 @@ rust_test_path=
 seek_stress_test_rust_path=
 debug_opt=
 frame_delay=
-while getopts t:r:d:s:f: flag
+wrapper=
+while getopts t:r:d:s:f:w: flag
 do
     case "${flag}" in
         t) timeout_multiplier=${OPTARG};;
@@ -16,6 +17,7 @@ do
         s) seek_stress_test_rust_path="-Dseek_stress_test_rust_path=${OPTARG}";;
         d) debug_opt="-Ddebug=true";;
         f) frame_delay=${OPTARG};;
+        w) wrapper=${OPTARG};;
     esac
 done
 
@@ -65,6 +67,12 @@ if [[ -n $frame_delay ]]; then
     # These test args override the args from test-data, resulting in 2 threads
     # and a frame delay
     test_args+=(--test-args "--threads 2 --framedelay $frame_delay")
+fi
+
+if [[ -n $wrapper ]]; then
+    # This lets us run tests under QEMU to test instructions not supported
+    # by the current host or binaries compiled for another architecture
+    test_args+=(--wrapper "$wrapper")
 fi
 
 cd build && meson test "${test_args[@]}"
