@@ -960,7 +960,7 @@ impl ScratchLapInter {
 const EMU_EDGE_LEN: usize = 320 * (256 + 7);
 // stride=192 for non-SVC, or 320 for SVC
 #[derive(FromZeroes, FromBytes, AsBytes)]
-#[repr(C, align(32))]
+#[repr(C, align(64))]
 pub struct ScratchEmuEdge([u8; EMU_EDGE_LEN * 2]);
 
 impl ScratchEmuEdge {
@@ -1008,8 +1008,8 @@ impl ScratchInterintraBuf {
 }
 
 #[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
-#[repr(C, align(32))]
-pub struct ScratchEdgeBuf([u8; 257 * 2 + 30]); // 257 Pixel elements + 30 padding bytes
+#[repr(C, align(64))]
+pub struct ScratchEdgeBuf([u8; 257 * 2 + 62]); // 257 Pixel elements + 62 padding bytes
 
 impl ScratchEdgeBuf {
     pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; 257] {
@@ -1039,11 +1039,11 @@ pub struct ScratchInterintraEdgePal {
     pub pal: ScratchPalBuf,
 
     /// For `AsBytes`, so there's no implicit padding.
-    _padding: [u8; 48],
+    _padding: [u8; 16],
 }
 
 #[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
-#[repr(C, align(32))]
+#[repr(C, align(64))]
 pub struct ScratchAcTxtpMap([u8; 1024 * 2]);
 
 impl ScratchAcTxtpMap {
