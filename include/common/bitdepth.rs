@@ -546,7 +546,10 @@ where
 /// [`avx2`]: crate::src::cpu::CpuFlags::AVX2
 /// [`avx512icl`]: crate::src::cpu::CpuFlags::AVX512ICL
 /// [`neon`]: crate::src::cpu::CpuFlags::NEON
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! bd_fn {
     ($decl_fn:path, $BD:ty, $name:ident, $asm:ident) => {{
         use paste::paste;
@@ -588,18 +591,27 @@ macro_rules! bpc_fn {
     }};
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! fn_identity {
     (fn $name:ident) => {
         $name
     };
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 pub(crate) use bd_fn;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 pub(crate) use bpc_fn;
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 pub(crate) use fn_identity;

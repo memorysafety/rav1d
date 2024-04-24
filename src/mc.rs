@@ -21,7 +21,10 @@ use std::ffi::c_int;
 use std::iter;
 use to_method::To;
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
@@ -2008,7 +2011,10 @@ pub(crate) unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
 }
 
 // TODO(legare): Generated fns are temporarily pub until init fns are deduplicated.
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! decl_fn {
     (avg, $name:ident) => {
         pub(crate) fn $name(
@@ -2126,7 +2132,10 @@ macro_rules! decl_fn {
     };
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! decl_fns {
     ($fn_kind:ident, $name:ident, $asm:ident) => {
         paste::paste! {

@@ -9,7 +9,10 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 use crate::include::common::bitdepth::BPC;
 
 pub type loopfilter_sb_fn = unsafe extern "C" fn(
