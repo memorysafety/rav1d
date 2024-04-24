@@ -197,4 +197,11 @@ impl<'a> GetBits<'a> {
     pub const fn has_pending_bits(&self) -> bool {
         self.state != 0 || self.bits_left != 0
     }
+
+    pub fn get_bytes(&mut self, n: usize) -> &[u8] {
+        assert_eq!(self.bits_left, 0);
+        let i = self.index;
+        self.index += n;
+        &self.data[i..][..n]
+    }
 }
