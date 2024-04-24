@@ -399,7 +399,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     }
     rav1d_thread_picture_unref(&mut *r#in);
 
-    if !c.all_layers && c.max_spatial_id && !(c.out.p.data.data[0]).is_null() {
+    if !c.all_layers && c.max_spatial_id && c.out.p.data.is_some() {
         rav1d_thread_picture_move_ref(r#in, &mut c.out);
     }
     res
@@ -410,7 +410,7 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
         return true;
     }
     if !c.all_layers && c.max_spatial_id {
-        if !c.out.p.data.data[0].is_null() && !c.cache.p.data.data[0].is_null() {
+        if c.out.p.data.is_some() && c.cache.p.data.is_some() {
             if c.max_spatial_id == (c.cache.p.frame_hdr.as_ref().unwrap().spatial_id != 0)
                 || c.out.flags.contains(PictureFlags::NEW_TEMPORAL_UNIT)
             {
@@ -420,17 +420,17 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
             rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
             return false;
         } else {
-            if !c.cache.p.data.data[0].is_null() && drain {
+            if c.cache.p.data.is_some() && drain {
                 return true;
             } else {
-                if !c.out.p.data.data[0].is_null() {
+                if c.out.p.data.is_some() {
                     rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
                     return false;
                 }
             }
         }
     }
-    !c.out.p.data.data[0].is_null()
+    c.out.p.data.is_some()
 }
 
 unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
@@ -444,8 +444,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             task_thread_lock = f.task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
-        if !out_delayed.p.data.data[0].is_null() || f.task_thread.error.load(Ordering::SeqCst) != 0
-        {
+        if out_delayed.p.data.is_some() || f.task_thread.error.load(Ordering::SeqCst) != 0 {
             let first: c_uint = c.task_thread.first.load(Ordering::SeqCst);
             if first.wrapping_add(1 as c_uint) < c.n_fc {
                 c.task_thread.first.fetch_add(1, Ordering::SeqCst);
@@ -478,7 +477,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             rav1d_thread_picture_unref(out_delayed);
             return error;
         }
-        if !(out_delayed.p.data.data[0]).is_null() {
+        if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
                 rav1d_thread_picture_ref(&mut c.out, out_delayed);

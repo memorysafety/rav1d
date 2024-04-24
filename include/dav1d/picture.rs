@@ -1,7 +1,6 @@
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::dav1d::Dav1dRef;
 use crate::include::dav1d::headers::DRav1d;
 use crate::include::dav1d::headers::Dav1dFrameHeader;
 use crate::include::dav1d::headers::Dav1dITUTT35;
@@ -17,12 +16,10 @@ use crate::src::c_arc::RawArc;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::r#ref::Rav1dRef;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
-use std::ptr;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
@@ -92,22 +89,24 @@ pub struct Dav1dPicture {
     pub mastering_display_ref: Option<RawArc<Rav1dMasteringDisplay>>, // opaque, so we can change this
     pub itut_t35_ref: Option<RawArc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>>>, // opaque, so we can change this
     pub reserved_ref: [uintptr_t; 4],
-    pub r#ref: Option<NonNull<Dav1dRef>>,
+    pub r#ref: Option<RawArc<Rav1dPictureData>>, // opaque, so we can change this
     pub allocator_data: Option<NonNull<c_void>>,
 }
 
-#[derive(Clone)]
-pub(crate) struct Rav1dPictureData {
-    pub data: [*mut c_void; 3],
-    pub allocator_data: Option<NonNull<c_void>>,
+pub struct Rav1dPictureData {
+    pub(crate) data: [*mut c_void; 3],
+    pub(crate) allocator_data: Option<NonNull<c_void>>,
+    pub(crate) allocator: Rav1dPicAllocator,
 }
 
-impl Default for Rav1dPictureData {
-    fn default() -> Self {
-        Self {
-            data: [ptr::null_mut(); 3],
-            allocator_data: Default::default(),
-        }
+impl Drop for Rav1dPictureData {
+    fn drop(&mut self) {
+        let Self {
+            data,
+            allocator_data,
+            ref allocator,
+        } = *self;
+        allocator.dealloc_picture_data(data, allocator_data);
     }
 }
 
@@ -121,14 +120,13 @@ impl Default for Rav1dPictureData {
 pub(crate) struct Rav1dPicture {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
-    pub data: Rav1dPictureData,
+    pub data: Option<Arc<Rav1dPictureData>>,
     pub stride: [ptrdiff_t; 2],
     pub p: Rav1dPictureParameters,
     pub m: Rav1dDataProps,
     pub content_light: Option<Arc<Rav1dContentLightLevel>>,
     pub mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
     pub itut_t35: Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>>,
-    pub r#ref: Option<NonNull<Rav1dRef>>,
 }
 
 impl From<Dav1dPicture> for Rav1dPicture {
@@ -136,7 +134,7 @@ impl From<Dav1dPicture> for Rav1dPicture {
         let Dav1dPicture {
             seq_hdr: _,
             frame_hdr: _,
-            data,
+            data: _,
             stride,
             p,
             m,
@@ -151,8 +149,8 @@ impl From<Dav1dPicture> for Rav1dPicture {
             mastering_display_ref,
             itut_t35_ref,
             reserved_ref: _,
-            r#ref,
-            allocator_data,
+            r#ref: data_ref,
+            allocator_data: _,
         } = value;
         Self {
             // We don't `.update_rav1d()` [`Rav1dSequenceHeader`] because it's meant to be read-only.
@@ -161,10 +159,8 @@ impl From<Dav1dPicture> for Rav1dPicture {
             // We don't `.update_rav1d()` [`Rav1dFrameHeader`] because it's meant to be read-only.
             // Safety: `raw` came from [`RawArc::from_arc`].
             frame_hdr: frame_hdr_ref.map(|raw| unsafe { raw.into_arc() }),
-            data: Rav1dPictureData {
-                data: data.map(|data| data.map_or_else(ptr::null_mut, NonNull::as_ptr)),
-                allocator_data,
-            },
+            // Safety: `raw` came from [`RawArc::from_arc`].
+            data: data_ref.map(|raw| unsafe { raw.into_arc() }),
             stride,
             p: p.into(),
             m: m.into(),
@@ -177,7 +173,6 @@ impl From<Dav1dPicture> for Rav1dPicture {
             itut_t35: itut_t35_ref
                 .map(|raw| unsafe { raw.into_arc() })
                 .unwrap_or_default(),
-            r#ref,
         }
     }
 }
@@ -187,25 +182,23 @@ impl From<Rav1dPicture> for Dav1dPicture {
         let Rav1dPicture {
             seq_hdr,
             frame_hdr,
-            data:
-                Rav1dPictureData {
-                    data,
-                    allocator_data,
-                },
+            data,
             stride,
             p,
             m,
             content_light,
             mastering_display,
             itut_t35,
-            r#ref,
         } = value;
         Self {
             // [`DRav1d::from_rav1d`] is called right after [`parse_seq_hdr`].
             seq_hdr: seq_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             // [`DRav1d::from_rav1d`] is called in [`parse_frame_hdr`].
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
-            data: data.map(NonNull::new),
+            data: data
+                .as_ref()
+                .map(|arc| arc.data.map(NonNull::new))
+                .unwrap_or_default(),
             stride,
             p: p.into(),
             m: m.into(),
@@ -221,8 +214,9 @@ impl From<Rav1dPicture> for Dav1dPicture {
             mastering_display_ref: mastering_display.map(RawArc::from_arc),
             itut_t35_ref: Some(itut_t35).map(RawArc::from_arc),
             reserved_ref: Default::default(),
-            r#ref,
-            allocator_data,
+            // Order flipped so that the borrow comes before the move.
+            allocator_data: data.as_ref().and_then(|arc| arc.allocator_data),
+            r#ref: data.map(RawArc::from_arc),
         }
     }
 }

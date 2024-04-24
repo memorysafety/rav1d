@@ -1,4 +1,3 @@
-use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::headers::DRav1d;
@@ -29,9 +28,6 @@ use crate::src::mem::rav1d_mem_pool_pop;
 use crate::src::mem::rav1d_mem_pool_push;
 use crate::src::mem::Rav1dMemPool;
 use crate::src::mem::Rav1dMemPoolBuffer;
-use crate::src::r#ref::rav1d_ref_dec;
-use crate::src::r#ref::rav1d_ref_inc;
-use crate::src::r#ref::rav1d_ref_wrap;
 use atomig::Atom;
 use atomig::AtomLogic;
 use bitflags::bitflags;
@@ -83,18 +79,12 @@ pub(crate) struct Rav1dThreadPicture {
     pub progress: Option<Arc<[AtomicU32; 2]>>,
 }
 
-#[repr(C)]
-pub(crate) struct pic_ctx_context {
-    pub allocator: Rav1dPicAllocator,
-    pub pic: Rav1dPicture,
-}
-
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
     cookie: *mut c_void,
 ) -> Dav1dResult {
     assert!(::core::mem::size_of::<Rav1dMemPoolBuffer>() <= RAV1D_PICTURE_ALIGNMENT);
-    let mut p = p_c.read().to::<Rav1dPicture>();
+    let p = p_c.read().to::<Rav1dPicture>();
     let hbd = (p.p.bpc > 8) as c_int;
     let aligned_w = p.p.w + 127 & !127;
     let aligned_h = p.p.h + 127 & !127;
@@ -109,8 +99,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     if uv_stride & 1023 == 0 && has_chroma {
         uv_stride += RAV1D_PICTURE_ALIGNMENT as isize;
     }
-    p.stride[0] = y_stride;
-    p.stride[1] = uv_stride;
+    let stride = [y_stride, uv_stride];
     let y_sz = (y_stride * aligned_h as isize) as usize;
     let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size = y_sz + 2 * uv_sz;
@@ -129,11 +118,14 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     // were previously null instead of an empty slice when `!has_chroma`,
     // but this way is simpler and more uniform, especially when we move to slices.
     let data = [data0, data1, data2].map(|data| data.as_mut_ptr().cast());
-    p.data = Rav1dPictureData {
-        data,
-        allocator_data: NonNull::new(buf.cast()),
-    };
-    p_c.write(p.into());
+
+    (*p_c).stride = stride;
+    (*p_c).data = data.map(NonNull::new);
+    (*p_c).allocator_data = NonNull::new(buf.cast());
+    // The caller will create the real `Rav1dPicture` from the `Dav1dPicture` fields set above,
+    // so we don't want to drop the `Rav1dPicture` we created for convenience here.
+    mem::forget(p);
+
     Rav1dResult::Ok(()).into()
 }
 
@@ -153,15 +145,6 @@ impl Default for Rav1dPicAllocator {
             release_picture_callback: dav1d_default_picture_release,
         }
     }
-}
-
-unsafe extern "C" fn free_buffer(_data: *const u8, user_data: *mut c_void) {
-    let pic_ctx: *mut pic_ctx_context = user_data as *mut pic_ctx_context;
-    let pic_ctx = Box::from_raw(pic_ctx);
-    let data = &pic_ctx.pic.data;
-    pic_ctx
-        .allocator
-        .dealloc_picture_data(data.data, data.allocator_data);
 }
 
 impl Rav1dPicAllocator {
@@ -187,22 +170,18 @@ impl Rav1dPicAllocator {
         // Safety: `pic_c` is a valid `Dav1dPicture` with `data`, `stride`, `allocator_data` unset.
         let result = unsafe { (self.alloc_picture_callback)(&mut pic_c, self.cookie) };
         result.try_to::<Rav1dResult>().unwrap()?;
+        // `data`, `stride`, and `allocator_data` are the only fields set by the allocator.
+        // Of those, only `data` and `allocator_data` are read through `r#ref`,
+        // so we need to read those directly first and allocate the `Arc`.
+        let data = pic_c.data;
+        let allocator_data = pic_c.allocator_data;
         let mut pic = pic_c.to::<Rav1dPicture>();
-
-        let pic_ctx = Box::new(pic_ctx_context {
+        // TODO fallible allocation
+        pic.data = Some(Arc::new(Rav1dPictureData {
+            data: data.map(|data| data.unwrap().as_ptr()),
+            allocator_data,
             allocator: self.clone(),
-            pic: pic.clone(),
-        });
-        // Safety: TODO(kkysen) Will be replaced by an `Arc` shortly.
-        pic.r#ref = NonNull::new(unsafe {
-            rav1d_ref_wrap(
-                pic.data.data[0] as *const u8,
-                Some(free_buffer),
-                Box::into_raw(pic_ctx).cast(),
-            )
-        });
-        assert!(pic.r#ref.is_some()); // TODO(kkysen) Will be removed soon anyways.
-
+        }));
         Ok(pic)
     }
 
@@ -235,7 +214,7 @@ unsafe fn picture_alloc_with_edges(
     bpc: c_int,
     p_allocator: &Rav1dPicAllocator,
 ) -> Rav1dResult {
-    if !p.data.data[0].is_null() {
+    if p.data.is_some() {
         writeln!(logger, "Picture already allocated!",);
         return Err(EGeneric);
     }
@@ -311,8 +290,6 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
     w: c_int,
     src: &Rav1dPicture,
 ) -> Rav1dResult {
-    let pic_ctx: *mut pic_ctx_context =
-        (*src).r#ref.unwrap().as_mut().user_data as *mut pic_ctx_context;
     picture_alloc_with_edges(
         &c.logger,
         dst,
@@ -321,7 +298,7 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         src.seq_hdr.clone(),
         src.frame_hdr.clone(),
         src.p.bpc,
-        &mut (*pic_ctx).allocator,
+        &src.data.as_ref().unwrap().allocator,
     )?;
 
     rav1d_picture_copy_props(
@@ -335,27 +312,10 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
 }
 
 pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {
-    if validate_input!(dst.data.data[0].is_null()).is_err() {
-        return;
-    }
-    if let Some(r#ref) = src.r#ref {
-        if validate_input!(!src.data.data[0].is_null()).is_err() {
-            return;
-        }
-        rav1d_ref_inc(r#ref.as_ptr());
-    }
     *dst = src.clone();
 }
 
 pub(crate) unsafe fn rav1d_picture_move_ref(dst: &mut Rav1dPicture, src: &mut Rav1dPicture) {
-    if validate_input!(dst.data.data[0].is_null()).is_err() {
-        return;
-    }
-    if src.r#ref.is_some() {
-        if validate_input!(!src.data.data[0].is_null()).is_err() {
-            return;
-        }
-    }
     *dst = mem::take(src);
 }
 
@@ -378,13 +338,7 @@ pub(crate) unsafe fn rav1d_thread_picture_move_ref(
 }
 
 pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
-    let Rav1dPicture { data, r#ref, .. } = mem::take(p);
-    if let Some(r#ref) = r#ref {
-        if validate_input!(!data.data[0].is_null()).is_err() {
-            return;
-        }
-        rav1d_ref_dec(&mut r#ref.as_ptr());
-    }
+    let _ = mem::take(p);
 }
 
 pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {

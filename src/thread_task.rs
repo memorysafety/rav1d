@@ -1257,7 +1257,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 };
                 // Note that `progress.is_some() == c.n_fc > 1`.
                 let progress = &**f.sr_cur.progress.as_ref().unwrap();
-                if !(f.sr_cur.p.data.data[0]).is_null() {
+                if f.sr_cur.p.data.is_some() {
                     progress[0].store(if error_0 != 0 { FRAME_ERROR } else { y }, Ordering::SeqCst);
                 }
                 f.frame_thread_progress.entropy.store(
@@ -1310,7 +1310,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 // Note that `progress.is_some() == c.n_fc > 1`.
                 if let Some(progress) = &f.sr_cur.progress {
                     // upon flush, this can be free'ed already
-                    if !(f.sr_cur.p.data.data[0]).is_null() {
+                    if f.sr_cur.p.data.is_some() {
                         progress[1].store(
                             if error_0 != 0 { FRAME_ERROR } else { y_0 },
                             Ordering::SeqCst,
