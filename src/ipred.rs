@@ -41,7 +41,10 @@ use std::ffi::c_void;
 use std::slice;
 use strum::FromRepr;
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", target_arch = "x86_64"))]

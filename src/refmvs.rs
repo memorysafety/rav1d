@@ -28,7 +28,10 @@ use std::mem;
 use std::ptr;
 use zerocopy::FromZeroes;
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]

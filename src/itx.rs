@@ -48,7 +48,10 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_void;
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
@@ -190,7 +193,10 @@ pub struct Rav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! decl_itx_fn {
     ($name:ident) => {
         fn $name(
@@ -216,14 +222,20 @@ macro_rules! decl_itx_fn {
     };
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! decl_itx1_fns {
     ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
         decl_itx_fn!(dct, dct, $w x $h, $bpc bpc, $asm);
     };
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! decl_itx2_fns {
     ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
         decl_itx1_fns!($w x $h, $bpc bpc, $asm);
@@ -231,7 +243,10 @@ macro_rules! decl_itx2_fns {
     };
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! decl_itx12_fns {
     ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
         decl_itx2_fns!($w x $h, $bpc bpc, $asm);
@@ -248,7 +263,10 @@ macro_rules! decl_itx12_fns {
     };
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! decl_itx16_fns {
     ($w:literal x $h:literal, $bpc:literal bpc, $asm:ident) => {
         decl_itx12_fns!($w x $h, $bpc bpc, $asm);
@@ -259,7 +277,10 @@ macro_rules! decl_itx16_fns {
     };
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! decl_itx_fns {
     ($bpc:literal bpc, $asm:ident) => {
         decl_itx16_fns!( 4 x  4, $bpc bpc, $asm);
@@ -520,7 +541,10 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     }
 }
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 macro_rules! assign_itx_fn {
     ($c:ident, $BD:ty, $w:literal, $h:literal, $type:ident, $type_enum:ident, $ext:ident) => {{
         use paste::paste;

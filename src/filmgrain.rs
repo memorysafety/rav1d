@@ -28,7 +28,10 @@ use std::ops::Shl;
 use std::ops::Shr;
 use to_method::To;
 
-#[cfg(feature = "asm")]
+#[cfg(all(
+    feature = "asm",
+    not(any(target_arch = "riscv64", target_arch = "riscv32"))
+))]
 use crate::include::common::bitdepth::bd_fn;
 
 pub const GRAIN_WIDTH: usize = 82;
