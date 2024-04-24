@@ -1,4 +1,4 @@
-name: build and test on armv7 and aarch64 with QEMU
+name: build and test with QEMU
 on:
   push:
     branches:
@@ -12,29 +12,24 @@ jobs:
         include:
           - target: "armv7-unknown-linux-gnueabihf"
             linker: "arm-linux-gnueabihf-gcc"
-            interpreter: "qemu-arm"
+            wrapper: "qemu-arm-static"
             packages: "g++-arm-linux-gnueabihf libc6-dev-armhf-cross"
           - target: "aarch64-unknown-linux-gnu"
             linker: "aarch64-linux-gnu-gcc"
-            interpreter: "qemu-aarch64"
+            wrapper: "qemu-aarch64-static"
             packages: "g++-aarch64-linux-gnu libc6-dev-arm64-cross"
+          - target: "x86_64-unknown-linux-gnu"
+            linker: "cc"
+            wrapper: "qemu-x86_64-static -cpu max" # enable AVX512
+            packages: ""
     runs-on: ubuntu-latest
     name: test on ${{ matrix.target }}
     steps:
       - name: install prerequisites
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: ${{ matrix.packages }} binfmt-support qemu-user-static meson nasm
+          packages: ${{ matrix.packages }} qemu-user-static meson nasm
           version: 1.0 # version of cache to load
-        # since binfmt-support was likely cached from previous run, we need to
-        # re-run the post installation step from that package to register
-        # qemu-arm, qemu-aarch64, etc. as an interpreter for the cross compiled
-        # binaries.
-      - name: register ${{ matrix.interpreter }} as interpreter
-        run: |
-          sudo update-binfmts --import
-          sudo update-binfmts --enable ${{ matrix.interpreter }}
-          update-binfmts --display
       - name: git checkout
         uses: actions/checkout@v4
         with:
@@ -58,7 +53,8 @@ jobs:
         run: |
             .github/workflows/test.sh -t 2 \
               -r target/${{ matrix.target }}/release/dav1d \
-              -s target/${{ matrix.target }}/release/seek_stress
+              -s target/${{ matrix.target }}/release/seek_stress \
+              -w "${{ matrix.wrapper }}"
       - name: upload build artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
