@@ -47,12 +47,6 @@ use crate::src::pal::rav1d_pal_dsp_init;
 use crate::src::picture::dav1d_default_picture_alloc;
 use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
-use crate::src::picture::rav1d_picture_move_ref;
-use crate::src::picture::rav1d_picture_ref;
-use crate::src::picture::rav1d_picture_unref_internal;
-use crate::src::picture::rav1d_thread_picture_move_ref;
-use crate::src::picture::rav1d_thread_picture_ref;
-use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::refmvs::rav1d_refmvs_clear;
@@ -397,14 +391,14 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
         &mut c.cache
     };
     if !c.apply_grain || !(*r#in).p.has_grain() {
-        rav1d_picture_move_ref(out, &mut (*r#in).p);
+        *out = mem::take(&mut (*r#in).p);
     } else {
         res = rav1d_apply_grain(c, out, &(*r#in).p);
     }
-    rav1d_thread_picture_unref(&mut *r#in);
+    let _ = mem::take(&mut *r#in);
 
     if !c.all_layers && c.max_spatial_id && c.out.p.data.is_some() {
-        rav1d_thread_picture_move_ref(r#in, &mut c.out);
+        *r#in = mem::take(&mut c.out);
     }
     res
 }
@@ -420,15 +414,15 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
             {
                 return true;
             }
-            rav1d_thread_picture_unref(&mut c.cache);
-            rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
+            let _ = mem::take(&mut c.cache);
+            c.cache = mem::take(&mut c.out);
             return false;
         } else {
             if c.cache.p.data.is_some() && drain {
                 return true;
             } else {
                 if c.out.p.data.is_some() {
-                    rav1d_thread_picture_move_ref(&mut c.cache, &mut c.out);
+                    c.cache = mem::take(&mut c.out);
                     return false;
                 }
             }
@@ -478,16 +472,16 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let error = mem::replace(&mut *f.task_thread.retval.try_lock().unwrap(), Ok(()));
         if error.is_err() {
             *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-            rav1d_thread_picture_unref(out_delayed);
+            let _ = mem::take(out_delayed);
             return error;
         }
         if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
-                rav1d_thread_picture_ref(&mut c.out, out_delayed);
+                c.out = out_delayed.clone();
                 c.event_flags |= out_delayed.flags.into();
             }
-            rav1d_thread_picture_unref(out_delayed);
+            let _ = mem::take(out_delayed);
             if output_picture_ready(c, false) {
                 return output_image(c, out);
             }
@@ -606,12 +600,12 @@ pub(crate) unsafe fn rav1d_apply_grain(
     in_0: &Rav1dPicture,
 ) -> Rav1dResult {
     if !in_0.has_grain() {
-        rav1d_picture_ref(out, in_0);
+        *out = in_0.clone();
         return Ok(());
     }
     let res = rav1d_picture_alloc_copy(c, out, in_0.p.w, in_0);
     if res.is_err() {
-        rav1d_picture_unref_internal(out);
+        let _ = mem::take(out);
         return res;
     } else {
         if c.tc.len() > 1 {
@@ -670,17 +664,17 @@ pub unsafe extern "C" fn dav1d_apply_grain(
 pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     let _ = mem::take(&mut (*c).in_0);
     if (*c).out.p.frame_hdr.is_some() {
-        rav1d_thread_picture_unref(&mut (*c).out);
+        let _ = mem::take(&mut (*c).out);
     }
     if (*c).cache.p.frame_hdr.is_some() {
-        rav1d_thread_picture_unref(&mut (*c).cache);
+        let _ = mem::take(&mut (*c).cache);
     }
     (*c).drain = 0 as c_int;
     (*c).cached_error = Ok(());
     let mut i = 0;
     while i < 8 {
         if (*c).refs[i as usize].p.p.frame_hdr.is_some() {
-            rav1d_thread_picture_unref(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
+            let _ = mem::take(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
         }
         let _ = mem::take(&mut (*c).refs[i as usize].segmap);
         let _ = mem::take(&mut (*c).refs[i as usize].refmvs);
@@ -739,7 +733,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             *f.task_thread.retval.try_lock().unwrap() = Ok(());
             let out_delayed = &mut (*c).frame_thread.out_delayed[next as usize];
             if out_delayed.p.frame_hdr.is_some() {
-                rav1d_thread_picture_unref(out_delayed);
+                let _ = mem::take(out_delayed);
             }
             n = n.wrapping_add(1);
             next = next.wrapping_add(1);
@@ -838,9 +832,7 @@ impl Drop for Rav1dContext {
                         .frame_hdr
                         .is_some()
                     {
-                        rav1d_thread_picture_unref(
-                            &mut self.frame_thread.out_delayed[n_2 as usize],
-                        );
+                        let _ = mem::take(&mut self.frame_thread.out_delayed[n_2 as usize]);
                     }
                     n_2 = n_2.wrapping_add(1);
                 }
@@ -850,9 +842,7 @@ impl Drop for Rav1dContext {
             let mut n_4 = 0;
             while n_4 < 8 {
                 if self.refs[n_4 as usize].p.p.frame_hdr.is_some() {
-                    rav1d_thread_picture_unref(
-                        &mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p,
-                    );
+                    let _ = mem::take(&mut (*(self.refs).as_mut_ptr().offset(n_4 as isize)).p);
                 }
                 let _ = mem::take(&mut self.refs[n_4 as usize].refmvs);
                 let _ = mem::take(&mut self.refs[n_4 as usize].segmap);
@@ -897,7 +887,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
 }
 
 pub(crate) unsafe fn rav1d_picture_unref(p: &mut Rav1dPicture) {
-    rav1d_picture_unref_internal(p);
+    let _ = mem::take(p);
 }
 
 #[no_mangle]

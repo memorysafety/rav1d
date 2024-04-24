@@ -64,7 +64,7 @@ impl From<PictureFlags> for Rav1dEventFlags {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub(crate) struct Rav1dThreadPicture {
     pub p: Rav1dPicture,
@@ -309,39 +309,4 @@ pub(crate) unsafe fn rav1d_picture_alloc_copy(
         src.m.clone(),
     );
     Ok(())
-}
-
-pub(crate) unsafe fn rav1d_picture_ref(dst: &mut Rav1dPicture, src: &Rav1dPicture) {
-    *dst = src.clone();
-}
-
-pub(crate) unsafe fn rav1d_picture_move_ref(dst: &mut Rav1dPicture, src: &mut Rav1dPicture) {
-    *dst = mem::take(src);
-}
-
-pub(crate) unsafe fn rav1d_thread_picture_ref(
-    dst: *mut Rav1dThreadPicture,
-    src: *const Rav1dThreadPicture,
-) {
-    rav1d_picture_ref(&mut (*dst).p, &(*src).p);
-    (*dst).visible = (*src).visible;
-    (*dst).showable = (*src).showable;
-    (*dst).progress = (*src).progress.clone();
-    (*dst).flags = (*src).flags;
-}
-
-pub(crate) unsafe fn rav1d_thread_picture_move_ref(
-    dst: *mut Rav1dThreadPicture,
-    src: *mut Rav1dThreadPicture,
-) {
-    *dst = mem::take(&mut *src);
-}
-
-pub(crate) unsafe fn rav1d_picture_unref_internal(p: &mut Rav1dPicture) {
-    let _ = mem::take(p);
-}
-
-pub(crate) unsafe fn rav1d_thread_picture_unref(p: *mut Rav1dThreadPicture) {
-    rav1d_picture_unref_internal(&mut (*p).p);
-    let _ = mem::take(&mut (*p).progress);
 }

@@ -64,8 +64,6 @@ use crate::src::internal::Rav1dTileGroupHeader;
 use crate::src::levels::ObuMetaType;
 use crate::src::log::Rav1dLog as _;
 use crate::src::picture::rav1d_picture_copy_props;
-use crate::src::picture::rav1d_thread_picture_ref;
-use crate::src::picture::rav1d_thread_picture_unref;
 use crate::src::picture::PictureFlags;
 use crate::src::thread_task::FRAME_ERROR;
 use std::array;
@@ -2137,7 +2135,7 @@ unsafe fn parse_obus(
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
             if c.frame_hdr.as_ref().unwrap().refresh_frame_flags & (1 << i) != 0 {
-                rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
+                let _ = mem::take(&mut c.refs[i as usize].p);
                 c.refs[i as usize].p.p.frame_hdr = c.frame_hdr.clone();
                 c.refs[i as usize].p.p.seq_hdr = c.seq_hdr.clone();
             }
@@ -2292,7 +2290,7 @@ unsafe fn parse_obus(
                     let _ = mem::take(&mut c.mastering_display);
                     for i in 0..8 {
                         if c.refs[i as usize].p.p.frame_hdr.is_some() {
-                            rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
+                            let _ = mem::take(&mut c.refs[i as usize].p);
                         }
                         let _ = mem::take(&mut c.refs[i as usize].segmap);
                         let _ = mem::take(&mut c.refs[i as usize].refmvs);
@@ -2525,10 +2523,7 @@ unsafe fn parse_obus(
                 return Err(EINVAL);
             }
             if c.n_fc == 1 {
-                rav1d_thread_picture_ref(
-                    &mut c.out,
-                    &mut c.refs[frame_hdr.existing_frame_idx as usize].p,
-                );
+                c.out = c.refs[frame_hdr.existing_frame_idx as usize].p.clone();
                 rav1d_picture_copy_props(
                     &mut (*c).out.p,
                     c.content_light.clone(),
@@ -2575,21 +2570,18 @@ unsafe fn parse_obus(
                 if error.is_err() {
                     c.cached_error = mem::replace(&mut *error, Ok(()));
                     *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-                    rav1d_thread_picture_unref(out_delayed);
+                    let _ = mem::take(out_delayed);
                 } else if out_delayed.p.data.is_some() {
                     let progress =
                         out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
                     if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR
                     {
-                        rav1d_thread_picture_ref(&mut c.out, out_delayed);
+                        c.out = out_delayed.clone();
                         c.event_flags |= out_delayed.flags.into();
                     }
-                    rav1d_thread_picture_unref(out_delayed);
+                    let _ = mem::take(out_delayed);
                 }
-                rav1d_thread_picture_ref(
-                    out_delayed,
-                    &mut c.refs[frame_hdr.existing_frame_idx as usize].p,
-                );
+                *out_delayed = c.refs[frame_hdr.existing_frame_idx as usize].p.clone();
                 out_delayed.visible = true;
                 rav1d_picture_copy_props(
                     &mut out_delayed.p,
@@ -2617,9 +2609,9 @@ unsafe fn parse_obus(
                     }
 
                     if c.refs[i as usize].p.p.frame_hdr.is_some() {
-                        rav1d_thread_picture_unref(&mut c.refs[i as usize].p);
+                        let _ = mem::take(&mut c.refs[i as usize].p);
                     }
-                    rav1d_thread_picture_ref(&mut c.refs[i as usize].p, &mut c.refs[r as usize].p);
+                    c.refs[i as usize].p = c.refs[r as usize].p.clone();
 
                     c.cdf[i as usize] = c.cdf[r as usize].clone();
 
