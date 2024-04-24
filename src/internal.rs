@@ -944,6 +944,7 @@ impl Rav1dFrameData {
         addr_of_mut!((*data.as_mut_ptr()).sr_cur).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).out_cdf).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).tiles).write(vec![]);
+        addr_of_mut!((*data.as_mut_ptr()).ipred_edge).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).a).write(vec![]);
         addr_of_mut!((*data.as_mut_ptr()).rf).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).lowest_pixel_mem).write(Default::default());
