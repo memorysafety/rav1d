@@ -55,6 +55,7 @@ use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
 use crate::src::mc::Rav1dMCDSPContext;
 use crate::src::mem::Rav1dMemPool;
 use crate::src::msac::MsacContext;
+use crate::src::pal::Rav1dPalDSPContext;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::recon::backup_ipred_edge_fn;
@@ -339,6 +340,7 @@ pub struct Rav1dContext {
     pub(crate) refs: [Rav1dContext_refs; 8],
     pub(crate) cdf: [CdfThreadContext; 8], // Previously pooled
 
+    pub(crate) pal_dsp: Rav1dPalDSPContext,
     pub(crate) refmvs_dsp: Rav1dRefmvsDSPContext,
 
     pub(crate) allocator: Rav1dPicAllocator,

@@ -141,7 +141,7 @@ mod asm {
         fs::write(&config_path, &config_contents).unwrap();
 
         // Note that avx* is never (at runtime) supported on x86.
-        let x86_generic = &["cdef_sse", "itx_sse", "msac", "refmvs"][..];
+        let x86_generic = &["cdef_sse", "itx_sse", "msac", "pal", "refmvs"][..];
         let x86_64_generic = &[
             "cdef_avx2",
             "itx_avx2",
