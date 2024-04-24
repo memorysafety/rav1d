@@ -82,7 +82,7 @@ pub struct Dav1dPicture {
     pub mastering_display: Option<NonNull<Rav1dMasteringDisplay>>,
     pub itut_t35: Option<NonNull<Dav1dITUTT35>>,
     pub n_itut_t35: usize,
-    pub reserved: [uintptr_t; 3],
+    pub reserved: [uintptr_t; 4],
     pub frame_hdr_ref: Option<RawArc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>, // opaque, so we can change this
     pub seq_hdr_ref: Option<RawArc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>, // opaque, so we can change this
     pub content_light_ref: Option<RawArc<Rav1dContentLightLevel>>, // opaque, so we can change this

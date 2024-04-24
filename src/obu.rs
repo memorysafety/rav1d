@@ -176,8 +176,8 @@ fn parse_seq_hdr(
     } else {
         timing_info_present = gb.get_bit() as c_int;
         if timing_info_present != 0 {
-            num_units_in_tick = gb.get_bits(32) as c_int;
-            time_scale = gb.get_bits(32) as c_int;
+            num_units_in_tick = gb.get_bits(32) as u32;
+            time_scale = gb.get_bits(32) as u32;
             if strict_std_compliance && (num_units_in_tick == 0 || time_scale == 0) {
                 return Err(EINVAL);
             }
@@ -196,7 +196,7 @@ fn parse_seq_hdr(
             decoder_model_info_present = gb.get_bit() as c_int;
             if decoder_model_info_present != 0 {
                 encoder_decoder_buffer_delay_length = gb.get_bits(5) as c_int + 1;
-                num_units_in_decoding_tick = gb.get_bits(32) as c_int;
+                num_units_in_decoding_tick = gb.get_bits(32) as u32;
                 if strict_std_compliance && num_units_in_decoding_tick == 0 {
                     return Err(EINVAL);
                 }

@@ -978,13 +978,16 @@ pub struct Dav1dSequenceHeader {
     pub still_picture: c_int,
     pub reduced_still_picture_header: c_int,
     pub timing_info_present: c_int,
-    pub num_units_in_tick: c_int,
-    pub time_scale: c_int,
+    /// > 0 if defined, 0 otherwise
+    pub num_units_in_tick: u32,
+    /// > 0 if defined, 0 otherwise
+    pub time_scale: u32,
     pub equal_picture_interval: c_int,
     pub num_ticks_per_picture: c_uint,
     pub decoder_model_info_present: c_int,
     pub encoder_decoder_buffer_delay_length: c_int,
-    pub num_units_in_decoding_tick: c_int,
+    /// > 0 if defined, 0 otherwise
+    pub num_units_in_decoding_tick: u32,
     pub buffer_removal_delay_length: c_int,
     pub frame_presentation_delay_length: c_int,
     pub display_model_info_present: c_int,
@@ -1058,13 +1061,16 @@ pub struct Rav1dSequenceHeader {
     pub still_picture: c_int,
     pub reduced_still_picture_header: c_int,
     pub timing_info_present: c_int,
-    pub num_units_in_tick: c_int,
-    pub time_scale: c_int,
+    /// > 0 if defined, 0 otherwise
+    pub num_units_in_tick: u32,
+    /// > 0 if defined, 0 otherwise
+    pub time_scale: u32,
     pub equal_picture_interval: c_int,
     pub num_ticks_per_picture: c_uint,
     pub decoder_model_info_present: c_int,
     pub encoder_decoder_buffer_delay_length: c_int,
-    pub num_units_in_decoding_tick: c_int,
+    /// > 0 if defined, 0 otherwise
+    pub num_units_in_decoding_tick: u32,
     pub buffer_removal_delay_length: c_int,
     pub frame_presentation_delay_length: c_int,
     pub display_model_info_present: c_int,
