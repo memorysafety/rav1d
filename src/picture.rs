@@ -247,7 +247,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
-    let have_frame_mt = c.n_fc > 1;
+    let have_frame_mt = c.fc.len() > 1;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     picture_alloc_with_edges(
         &c.logger,

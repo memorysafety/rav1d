@@ -58,14 +58,9 @@ pub const TILE_ERROR: i32 = i32::MAX - 1;
 /// this special case.
 #[inline]
 unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint) -> c_int {
-    unsafe fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: u32) -> c_int {
-        let mut i: c_uint = ttd.cur.load(Ordering::Relaxed);
-        while i < c.n_fc {
-            (*(*(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize))
-                .task_thread
-                .tasks())
-            .cur_prev = None;
-            i = i + 1;
+    unsafe fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: usize) -> c_int {
+        for i in ttd.cur.load(Ordering::Relaxed) as usize..c.fc.len() {
+            (*c.fc[(first + i) % c.fc.len()].task_thread.tasks()).cur_prev = None;
         }
         return 1;
     }
@@ -80,7 +75,7 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
         reset_frame_idx = u32::MAX;
     }
     if ttd.cur.load(Ordering::Relaxed) == 0
-        && ((*(*(c.fc).offset(first as isize)).task_thread.tasks()).cur_prev).is_none()
+        && ((*c.fc[first as usize].task_thread.tasks()).cur_prev).is_none()
     {
         return 0 as c_int;
     }
@@ -91,7 +86,7 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
             }
             ttd.cur
                 .store(reset_frame_idx.wrapping_sub(first), Ordering::Relaxed);
-            return curr_found(c, ttd, first);
+            return curr_found(c, ttd, first as usize);
         }
     } else {
         if frame_idx == u32::MAX {
@@ -99,23 +94,19 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
         }
     }
     if frame_idx < first {
-        frame_idx = frame_idx.wrapping_add(c.n_fc);
+        frame_idx += c.fc.len() as c_uint;
     }
     min_frame_idx = cmp::min(reset_frame_idx, frame_idx);
     cur_frame_idx = first.wrapping_add(ttd.cur.load(Ordering::Relaxed));
-    if ttd.cur.load(Ordering::Relaxed) < c.n_fc && cur_frame_idx < min_frame_idx {
+    if (ttd.cur.load(Ordering::Relaxed) as usize) < c.fc.len() && cur_frame_idx < min_frame_idx {
         return 0 as c_int;
     }
     ttd.cur
         .store(min_frame_idx.wrapping_sub(first), Ordering::Relaxed);
-    while ttd.cur.load(Ordering::Relaxed) < c.n_fc {
-        if (*(*(c.fc).offset(
-            first
-                .wrapping_add(ttd.cur.load(Ordering::Relaxed))
-                .wrapping_rem(c.n_fc) as isize,
-        ))
-        .task_thread
-        .tasks())
+    while (ttd.cur.load(Ordering::Relaxed) as usize) < c.fc.len() {
+        if (*c.fc[((first + ttd.cur.load(Ordering::Relaxed)) as usize) % c.fc.len()]
+            .task_thread
+            .tasks())
         .head
         .is_some()
         {
@@ -123,7 +114,7 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
         }
         ttd.cur.fetch_add(1, Ordering::Relaxed);
     }
-    return curr_found(c, ttd, first);
+    return curr_found(c, ttd, first as usize);
 }
 
 #[inline]
@@ -300,10 +291,8 @@ unsafe fn merge_pending_frame(c: &Rav1dContext, f: &Rav1dFrameContext) -> c_int 
 #[inline]
 unsafe fn merge_pending(c: &Rav1dContext) -> c_int {
     let mut res = 0;
-    let mut i: c_uint = 0 as c_int as c_uint;
-    while i < c.n_fc {
-        res |= merge_pending_frame(c, &mut *(c.fc).offset(i as isize));
-        i = i.wrapping_add(1);
+    for fc in c.fc.iter() {
+        res |= merge_pending_frame(c, fc);
     }
     return res;
 }
@@ -322,7 +311,7 @@ unsafe fn create_filter_sbrow(
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
     let has_lr = f.lf.restore_planes;
     let tasks = &mut *fc.task_thread.tasks();
-    let uses_2pass = (c.n_fc > 1 as c_uint) as c_int;
+    let uses_2pass = (c.fc.len() > 1) as c_int;
     let num_tasks = (f.sbh * (1 + uses_2pass)) as usize;
     tasks.grow_tasks(num_tasks);
     let task_idx = Rav1dTaskIndex::Task((f.sbh * (pass & 1)) as usize);
@@ -354,7 +343,7 @@ unsafe fn create_filter_sbrow(
     } else {
         TaskType::ReconstructionProgress
     };
-    t.frame_idx = f.index as c_uint;
+    t.frame_idx = fc.index as c_uint;
     Ok(task_idx)
 }
 
@@ -366,7 +355,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     _cond_signal: c_int,
 ) -> Rav1dResult {
     let tasks = &mut *fc.task_thread.tasks();
-    let uses_2pass = (c.n_fc > 1 as c_uint) as c_int;
+    let uses_2pass = (c.fc.len() > 1) as c_int;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let num_tasks = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
     if pass < 2 {
@@ -398,7 +387,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
         } else {
             TaskType::TileEntropy
         };
-        t.frame_idx = f.index as c_uint;
+        t.frame_idx = fc.index as c_uint;
         if let Some(prev_t) = prev_t {
             tasks[prev_t].next = Some(t_idx);
         }
@@ -428,13 +417,13 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext, index: usize) {
+pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) {
     fc.task_thread.init_done.store(0, Ordering::SeqCst);
     let tasks = fc.task_thread.tasks();
     let t_idx = Rav1dTaskIndex::Init;
     let t = &mut (*tasks)[t_idx];
     t.type_0 = TaskType::Init;
-    t.frame_idx = index as c_uint;
+    t.frame_idx = fc.index as c_uint;
     t.sby = 0 as c_int;
     t.deblock_progress = 0 as c_int;
     t.recon_progress = t.deblock_progress;
@@ -563,7 +552,7 @@ unsafe fn check_tile(
 
 #[inline]
 unsafe fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
-    // Note that `progress.is_some() == c.n_fc > 1`.
+    // Note that `progress.is_some() == c.fc.len() > 1`.
     let frame_prog = f
         .sr_cur
         .progress
@@ -766,11 +755,9 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
         }
 
         let (fc, t_idx, prev_t) = 'found: {
-            if c.n_fc > 1 as c_uint {
+            if c.fc.len() > 1 {
                 // run init tasks second
-                'init_tasks: for i in 0..c.n_fc {
-                    let first = ttd.first.load(Ordering::SeqCst);
-                    let fc = &*(c.fc).offset(first.wrapping_add(i).wrapping_rem(c.n_fc) as isize);
+                'init_tasks: for fc in c.fc_iter(ttd.first.load(Ordering::SeqCst) as usize) {
                     let tasks = &*fc.task_thread.tasks();
                     if fc.task_thread.init_done.load(Ordering::SeqCst) != 0 {
                         continue 'init_tasks;
@@ -806,13 +793,9 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 }
             }
             // run decoding tasks last
-            while ttd.cur.load(Ordering::Relaxed) < c.n_fc {
-                let first_0 = ttd.first.load(Ordering::SeqCst);
-                let fc = &mut *(c.fc).offset(
-                    first_0
-                        .wrapping_add(ttd.cur.load(Ordering::Relaxed))
-                        .wrapping_rem(c.n_fc) as isize,
-                );
+            while (ttd.cur.load(Ordering::Relaxed) as usize) < c.fc.len() {
+                let first = ttd.first.load(Ordering::SeqCst);
+                let fc = &c.fc[(first + ttd.cur.load(Ordering::Relaxed)) as usize % c.fc.len()];
                 let tasks = &mut *fc.task_thread.tasks();
                 merge_pending_frame(c, fc);
                 let mut prev_t = tasks.cur_prev;
@@ -837,7 +820,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 t_idx,
                                 &fc.data.try_read().unwrap(),
                                 &fc.task_thread,
-                                (c.n_fc > 1 as c_uint) as c_int,
+                                (c.fc.len() > 1) as c_int,
                             ) == 0
                             {
                                 break 'found (fc, t_idx, prev_t);
@@ -968,7 +951,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
             'fallthrough: loop {
                 match task_type {
                     TaskType::Init => {
-                        if !(c.n_fc > 1 as c_uint) {
+                        if !(c.fc.len() > 1) {
                             unreachable!();
                         }
                         let res = rav1d_decode_frame_init(c, fc);
@@ -994,7 +977,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         continue 'outer;
                     }
                     TaskType::InitCdf => {
-                        if !(c.n_fc > 1 as c_uint) {
+                        if !(c.fc.len() > 1) {
                             unreachable!();
                         }
                         let mut res_0 = Err(EINVAL);
@@ -1017,7 +1000,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         }
                         drop(f);
                         if res_0.is_ok() {
-                            if !(c.n_fc > 1 as c_uint) {
+                            if !(c.fc.len() > 1) {
                                 unreachable!();
                             }
                             let mut p_0 = 1;
@@ -1041,7 +1024,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                         Ordering::SeqCst,
                                     );
 
-                                    // Note that `progress.is_some() == c.n_fc > 1`.
+                                    // Note that `progress.is_some() == c.fc.len() > 1`.
                                     let progress = &**f.sr_cur.progress.as_ref().unwrap();
                                     progress[(p_0 - 1) as usize]
                                         .store(FRAME_ERROR, Ordering::SeqCst);
@@ -1085,7 +1068,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             &mut *f.ts.offset(tile_idx as isize) as *mut Rav1dTileState;
                         tc.ts = tile_idx;
                         tc.b.y = sby << f.sb_shift;
-                        let uses_2pass = (c.n_fc > 1 as c_uint) as c_int;
+                        let uses_2pass = (c.fc.len() > 1) as c_int;
                         tc.frame_thread.pass = if uses_2pass == 0 {
                             0 as c_int
                         } else {
@@ -1106,7 +1089,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             t.deps_skip = 0 as c_int;
                             if check_tile(t_idx, &f, &fc.task_thread, uses_2pass) == 0 {
                                 (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
-                                reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
+                                reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
                                 if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                     ttd.cond.notify_one();
                                 }
@@ -1211,7 +1194,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 if error_0 != 0 { TILE_ERROR } else { sby + 1 },
                                 Ordering::SeqCst,
                             );
-                            reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
+                            reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 ttd.cond.notify_one();
                             }
@@ -1250,7 +1233,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 (f.bd_fn().filter_sbrow_cdef)(c, &f, &mut tc, sby);
                             }
                             drop(f);
-                            reset_task_cur_async(ttd, t.frame_idx, c.n_fc);
+                            reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
                             if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                 ttd.cond.notify_one();
                             }
@@ -1293,7 +1276,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
             }
             // if task completed [typically LR], signal picture progress as per below
             let f = fc.data.try_read().unwrap();
-            let uses_2pass_0 = (c.n_fc > 1 as c_uint) as c_int;
+            let uses_2pass_0 = (c.fc.len() > 1) as c_int;
             let sbh = f.sbh;
             let sbsz = f.sb_step * 4;
             if t.type_0 == TaskType::EntropyProgress {
@@ -1303,7 +1286,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 } else {
                     ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                 };
-                // Note that `progress.is_some() == c.n_fc > 1`.
+                // Note that `progress.is_some() == c.fc.len() > 1`.
                 let progress = &**f.sr_cur.progress.as_ref().unwrap();
                 if f.sr_cur.p.data.is_some() {
                     progress[0].store(if error_0 != 0 { FRAME_ERROR } else { y }, Ordering::SeqCst);
@@ -1356,7 +1339,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 } else {
                     ((sby + 1) as c_uint).wrapping_mul(sbsz as c_uint)
                 };
-                // Note that `progress.is_some() == c.n_fc > 1`.
+                // Note that `progress.is_some() == c.fc.len() > 1`.
                 if let Some(progress) = &f.sr_cur.progress {
                     // upon flush, this can be free'ed already
                     if f.sr_cur.p.data.is_some() {

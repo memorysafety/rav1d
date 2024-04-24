@@ -32,7 +32,6 @@ use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
-use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
@@ -52,12 +51,10 @@ use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
 use crate::src::refmvs::rav1d_refmvs_clear;
 use crate::src::refmvs::rav1d_refmvs_dsp_init;
-use crate::src::refmvs::rav1d_refmvs_init;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
 use libc::memset;
-use std::cell::UnsafeCell;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
@@ -78,7 +75,6 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::Once;
-use std::sync::RwLock;
 use std::thread;
 use to_method::To as _;
 
@@ -246,23 +242,12 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     }
     (*c).flush = AtomicI32::new(0);
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
-    (*c).n_fc = n_fc as c_uint;
-    (*c).fc = rav1d_alloc_aligned(
-        ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
-        32 as c_int as usize,
-    ) as *mut Rav1dFrameContext;
-    if ((*c).fc).is_null() {
-        return error(c, c_out);
-    }
-    memset(
-        (*c).fc as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<Rav1dFrameContext>().wrapping_mul((*c).n_fc as usize),
-    );
+    // TODO fallible allocation
+    (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::zeroed(i)).collect();
     let ttd = TaskThreadData {
         cond: Condvar::new(),
         first: AtomicU32::new(0),
-        cur: AtomicU32::new((*c).n_fc),
+        cur: AtomicU32::new(n_fc as u32),
         reset_task_cur: AtomicU32::new(u32::MAX),
         cond_signaled: AtomicI32::new(0),
         delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
@@ -271,8 +256,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     };
     (&mut (*c).task_thread as *mut Arc<TaskThreadData>).write(Arc::new(ttd));
     addr_of_mut!((*c).tiles).write(Default::default());
-    ptr::addr_of_mut!((*c).frame_thread.out_delayed).write(if (*c).n_fc > 1 {
-        (0..(*c).n_fc).map(|_| Default::default()).collect()
+    ptr::addr_of_mut!((*c).frame_thread.out_delayed).write(if n_fc > 1 {
+        (0..n_fc).map(|_| Default::default()).collect()
     } else {
         Box::new([])
     });
@@ -280,28 +265,11 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     addr_of_mut!((*c).out).write(Default::default());
     addr_of_mut!((*c).cache).write(Default::default());
     addr_of_mut!((*c).refs).write(Default::default());
-    for n in 0..n_fc {
-        let fc = &mut *((*c).fc).offset(n as isize);
-        addr_of_mut!(fc.data).write(RwLock::new(Rav1dFrameData::zeroed()));
+    for fc in (*c).fc.iter_mut() {
+        fc.task_thread.finished = AtomicBool::new(true);
+        fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
         let f = fc.data.get_mut().unwrap();
-        f.index = n;
-        addr_of_mut!(fc.in_cdf).write(RwLock::new(Default::default()));
-        addr_of_mut!(fc.task_thread.tasks).write(UnsafeCell::new(Default::default()));
-        addr_of_mut!(fc.task_thread.retval).write(Mutex::new(Ok(())));
-        addr_of_mut!(fc.task_thread.update_set).write(AtomicBool::new(false));
-        addr_of_mut!(fc.task_thread.finished).write(AtomicBool::new(true));
-        addr_of_mut!(fc.task_thread.ttd).write(Arc::clone(&(*c).task_thread));
-        addr_of_mut!(fc.frame_thread_progress).write(Default::default());
-        if n_tc > 1 {
-            fc.task_thread.lock = Mutex::new(());
-            fc.task_thread.cond = Condvar::new();
-            fc.task_thread.pending_tasks = Default::default();
-        }
         f.lf.last_sharpness = -(1 as c_int);
-        rav1d_refmvs_init(&mut f.rf);
-        addr_of_mut!(f.refp).write(Default::default());
-        addr_of_mut!(f.cur).write(Default::default());
-        addr_of_mut!(f.sr_cur).write(Default::default());
     }
     (*c).tc = (0..n_tc)
         .map(|n| {
@@ -437,7 +405,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
     let mut drained = 0;
     loop {
         let next: c_uint = c.frame_thread.next;
-        let fc = &(*(c.fc).offset(next as isize));
+        let fc = &c.fc[next as usize];
         let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
             task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
@@ -445,7 +413,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
             let first: c_uint = c.task_thread.first.load(Ordering::SeqCst);
-            if first.wrapping_add(1 as c_uint) < c.n_fc {
+            if (first.wrapping_add(1 as c_uint) as usize) < c.fc.len() {
                 c.task_thread.first.fetch_add(1, Ordering::SeqCst);
             } else {
                 c.task_thread.first.store(0, Ordering::SeqCst);
@@ -457,7 +425,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 Ordering::SeqCst,
             );
             if c.task_thread.cur.load(Ordering::Relaxed) != 0
-                && c.task_thread.cur.load(Ordering::Relaxed) < c.n_fc
+                && (c.task_thread.cur.load(Ordering::Relaxed) as usize) < c.fc.len()
             {
                 c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
             }
@@ -466,7 +434,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             break;
         }
         c.frame_thread.next = (c.frame_thread.next).wrapping_add(1);
-        if c.frame_thread.next == c.n_fc {
+        if c.frame_thread.next as usize == c.fc.len() {
             c.frame_thread.next = 0 as c_int as c_uint;
         }
         drop(task_thread_lock);
@@ -488,7 +456,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             }
         }
         drain_count = drain_count.wrapping_add(1);
-        if !(drain_count < c.n_fc) {
+        if !((drain_count as usize) < c.fc.len()) {
             break;
         }
     }
@@ -569,10 +537,10 @@ pub(crate) unsafe fn rav1d_get_picture(
     let drain = mem::replace(&mut c.drain, 1);
     gen_picture(c)?;
     mem::replace(&mut c.cached_error, Ok(()))?;
-    if output_picture_ready(c, c.n_fc == 1) {
+    if output_picture_ready(c, c.fc.len() == 1) {
         return output_image(c, out);
     }
-    if c.n_fc > 1 && drain != 0 {
+    if c.fc.len() > 1 && drain != 0 {
         return drain_picture(c, out);
     }
     Err(EAGAIN)
@@ -688,7 +656,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     let _ = mem::take(&mut (*c).mastering_display);
     let _ = mem::take(&mut (*c).itut_t35);
     let _ = mem::take(&mut (*c).cached_error_props);
-    if (*c).n_fc == 1 as c_uint && (*c).tc.len() == 1 {
+    if (*c).fc.len() == 1 && (*c).tc.len() == 1 {
         return;
     }
     (*c).flush.store(1, Ordering::SeqCst);
@@ -699,45 +667,31 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
                 task_thread_lock = tc.thread_data.cond.wait(task_thread_lock).unwrap();
             }
         }
-        let mut i_1: c_uint = 0 as c_int as c_uint;
-        while i_1 < (*c).n_fc {
-            let tasks = &mut *(*((*c).fc).offset(i_1 as isize)).task_thread.tasks();
+        for fc in (*c).fc.iter_mut() {
+            let tasks = &mut *fc.task_thread.tasks();
             tasks.head = None;
             tasks.tail = None;
             tasks.cur_prev = None;
-            *(*((*c).fc).offset(i_1 as isize))
-                .task_thread
-                .pending_tasks
-                .get_mut()
-                .unwrap() = Default::default();
-            *&mut (*((*c).fc).offset(i_1 as isize))
-                .task_thread
-                .pending_tasks_merge = AtomicI32::new(0);
-            i_1 = i_1.wrapping_add(1);
+            *fc.task_thread.pending_tasks.get_mut().unwrap() = Default::default();
+            fc.task_thread.pending_tasks_merge = AtomicI32::new(0);
         }
         (*c).task_thread.first.store(0, Ordering::SeqCst);
-        (*c).task_thread.cur.store((*c).n_fc, Ordering::SeqCst);
+        (*c).task_thread
+            .cur
+            .store((*c).fc.len() as u32, Ordering::SeqCst);
         (*c).task_thread
             .reset_task_cur
             .store(u32::MAX, Ordering::SeqCst);
         (*c).task_thread.cond_signaled.store(0, Ordering::SeqCst);
     }
-    if (*c).n_fc > 1 as c_uint {
-        let mut n: c_uint = 0 as c_int as c_uint;
-        let mut next: c_uint = (*c).frame_thread.next;
-        while n < (*c).n_fc {
-            if next == (*c).n_fc {
-                next = 0 as c_int as c_uint;
-            }
-            let fc = &(*((*c).fc).offset(next as isize));
+    if (*c).fc.len() > 1 {
+        for fc in (*c).fc_iter((*c).frame_thread.next as usize) {
             rav1d_decode_frame_exit(&*c, fc, Err(EGeneric));
             *fc.task_thread.retval.try_lock().unwrap() = Ok(());
-            let out_delayed = &mut (*c).frame_thread.out_delayed[next as usize];
+            let out_delayed = &mut (*c).frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
                 let _ = mem::take(out_delayed);
             }
-            n = n.wrapping_add(1);
-            next = next.wrapping_add(1);
         }
         (*c).frame_thread.next = 0 as c_int as c_uint;
     }
@@ -797,11 +751,10 @@ impl Drop for Rav1dContext {
                     }
                 }
             }
-            let mut n_1: c_uint = 0 as c_int as c_uint;
-            while !(self.fc).is_null() && n_1 < self.n_fc {
-                let fc = &mut (*(self.fc).offset(n_1 as isize));
+            let fc_len = self.fc.len();
+            for fc in self.fc.iter_mut() {
                 let f = fc.data.get_mut().unwrap();
-                if self.n_fc > 1 as c_uint {
+                if fc_len > 1 {
                     let _ = mem::take(&mut f.lowest_pixel_mem); // TODO: remove when context is owned
                 }
                 if self.tc.len() > 1 {
@@ -825,12 +778,10 @@ impl Drop for Rav1dContext {
                 rav1d_refmvs_clear(&mut f.rf);
                 let _ = mem::take(&mut f.lf.cdef_line_buf); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.lf.lr_line_buf); // TODO: remove when context is owned
-                n_1 = n_1.wrapping_add(1);
             }
-            rav1d_free_aligned(self.fc as *mut c_void);
-            if self.n_fc > 1 as c_uint && !self.frame_thread.out_delayed.is_empty() {
-                let mut n_2: c_uint = 0 as c_int as c_uint;
-                while n_2 < self.n_fc {
+            if self.fc.len() > 1 && !self.frame_thread.out_delayed.is_empty() {
+                let mut n_2 = 0;
+                while n_2 < self.fc.len() {
                     if self.frame_thread.out_delayed[n_2 as usize]
                         .p
                         .frame_hdr
