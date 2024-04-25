@@ -1,22 +1,21 @@
 use libc::free;
 use libc::posix_memalign;
-use std::collections::LinkedList;
 use std::ffi::c_void;
 use std::sync::Mutex;
 
 pub struct MemPool<T> {
-    bufs: Mutex<LinkedList<Vec<T>>>,
+    bufs: Mutex<Vec<Vec<T>>>,
 }
 
 impl<T> MemPool<T> {
     pub const fn new() -> Self {
         Self {
-            bufs: Mutex::new(LinkedList::new()),
+            bufs: Mutex::new(Vec::new()),
         }
     }
 
     pub fn pop(&self, size: usize) -> Vec<T> {
-        if let Some(mut buf) = self.bufs.lock().unwrap().pop_front() {
+        if let Some(mut buf) = self.bufs.lock().unwrap().pop() {
             if size > buf.capacity() {
                 // TODO fallible allocation
                 buf.reserve(size - buf.len());
@@ -28,7 +27,7 @@ impl<T> MemPool<T> {
     }
 
     pub fn push(&self, buf: Vec<T>) {
-        self.bufs.lock().unwrap().push_front(buf);
+        self.bufs.lock().unwrap().push(buf);
     }
 }
 
