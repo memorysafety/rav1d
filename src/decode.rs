@@ -65,9 +65,9 @@ use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
-use crate::src::internal::Rav1dTaskContext_scratch_pal;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::ScalableMotionParams;
+use crate::src::internal::ScratchPal;
 use crate::src::internal::TileStateRef;
 use crate::src::intra_edge::EdgeFlags;
 use crate::src::intra_edge::EdgeIndex;
@@ -697,7 +697,7 @@ fn order_palette(
 unsafe fn read_pal_indices(
     ts: &mut Rav1dTileState,
     pal_dsp: &Rav1dPalDSPContext,
-    scratch_pal: &mut Rav1dTaskContext_scratch_pal,
+    scratch_pal: &mut ScratchPal,
     pal_tmp: &mut [u8],
     pal_idx: Option<&mut [u8]>, // if None, use pal_tmp instead of pal_idx
     b: &Av1Block,
@@ -714,7 +714,7 @@ unsafe fn read_pal_indices(
     let stride = bw4 * 4;
     pal_tmp[0] = rav1d_msac_decode_uniform(&mut ts.msac, pal_sz as c_uint) as u8;
     let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz - 2];
-    let Rav1dTaskContext_scratch_pal {
+    let ScratchPal {
         pal_order: order,
         pal_ctx: ctx,
     } = scratch_pal;
@@ -1767,6 +1767,7 @@ unsafe fn decode_b(
 
         if b.pal_sz()[0] != 0 {
             let mut pal_idx_guard;
+            let scratch = t.scratch.inter_intra_mut();
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
@@ -1778,13 +1779,13 @@ unsafe fn decode_b(
                 frame_thread.pal_idx += len;
                 &mut *pal_idx_guard
             } else {
-                &mut t.scratch.c2rust_unnamed_0.pal_idx_y
+                &mut scratch.pal_idx_y
             };
             read_pal_indices(
                 ts,
                 &c.pal_dsp,
-                &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
-                &mut t.scratch.c2rust_unnamed_0.pal_idx_uv,
+                scratch.levels_pal.pal_mut(),
+                &mut scratch.pal_idx_uv,
                 Some(pal_idx),
                 b,
                 false,
@@ -1800,6 +1801,7 @@ unsafe fn decode_b(
 
         if has_chroma && b.pal_sz()[1] != 0 {
             let mut pal_idx_guard;
+            let scratch = t.scratch.inter_intra_mut();
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
                 let frame_thread = &mut ts.frame_thread[p as usize];
@@ -1816,8 +1818,8 @@ unsafe fn decode_b(
             read_pal_indices(
                 ts,
                 &c.pal_dsp,
-                &mut t.scratch.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed,
-                &mut t.scratch.c2rust_unnamed_0.pal_idx_uv,
+                scratch.levels_pal.pal_mut(),
+                &mut scratch.pal_idx_uv,
                 pal_idx,
                 b,
                 true,
