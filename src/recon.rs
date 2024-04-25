@@ -2526,7 +2526,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let intra_edge_filter = f.seq_hdr.as_ref().unwrap().intra_edge_filter;
-    let intra_edge_filter_flag = intra_edge_filter << 10;
+    let intra_edge_filter_flag = (intra_edge_filter as c_int) << 10;
     let mut init_y = 0;
     while init_y < h4 {
         let sub_h4 = cmp::min(h4, 16 + init_y);
@@ -2905,7 +2905,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 &mut angle,
                                 (*uv_t_dim).w as c_int,
                                 (*uv_t_dim).h as c_int,
-                                0 as c_int,
+                                0,
                                 edge_array,
                                 edge_offset,
                                 BD::from_c(f.bitdepth_max),

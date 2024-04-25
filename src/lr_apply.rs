@@ -42,7 +42,7 @@ unsafe fn lr_stripe<BD: BitDepth>(
     let chroma = (plane != 0) as c_int;
     let ss_ver = chroma & (f.sr_cur.p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let stride: ptrdiff_t = f.sr_cur.p.stride[chroma as usize];
-    let sby = y + (if y != 0 { 8 << ss_ver } else { 0 }) >> 6 - ss_ver + seq_hdr.sb128;
+    let sby = y + (if y != 0 { 8 << ss_ver } else { 0 }) >> 6 - ss_ver + seq_hdr.sb128 as c_int;
     let have_tt = (c.tc.len() > 1) as c_int;
     let lpf_stride = BD::pxstride(stride);
     let mut lpf_offset = f.lf.lr_lpf_line[plane as usize] as isize;
@@ -295,10 +295,10 @@ pub(crate) unsafe fn rav1d_lr_sbrow<BD: BitDepth>(
         let ss_hor = (f.sr_cur.p.p.layout != Rav1dPixelLayout::I444) as c_int;
         let h = f.sr_cur.p.p.h + ss_ver >> ss_ver;
         let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
-        let next_row_y = (sby + 1) << 6 - ss_ver + seq_hdr.sb128;
+        let next_row_y = (sby + 1) << 6 - ss_ver + seq_hdr.sb128 as c_int;
         let row_h = cmp::min(next_row_y - (8 >> ss_ver) * not_last, h);
         let offset_uv = offset_y >> ss_ver;
-        let y_stripe = (sby << 6 - ss_ver + seq_hdr.sb128) - offset_uv;
+        let y_stripe = (sby << 6 - ss_ver + seq_hdr.sb128 as c_int) - offset_uv;
         if restore_planes & LR_RESTORE_U as c_int != 0 {
             lr_sbrow::<BD>(
                 c,

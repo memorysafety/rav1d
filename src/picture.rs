@@ -160,7 +160,7 @@ impl Rav1dPicAllocator {
                 w,
                 h,
                 layout: seq_hdr.layout,
-                bpc: 8 + 2 * seq_hdr.hbd,
+                bpc: 8 + 2 * seq_hdr.hbd as c_int,
             },
             seq_hdr: Some(seq_hdr),
             frame_hdr,

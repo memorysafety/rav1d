@@ -4738,7 +4738,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         f.task_thread.finished.store(true, Ordering::SeqCst);
     }
 
-    let bpc = 8 + 2 * seq_hdr.hbd;
+    let bpc = 8 + 2 * seq_hdr.hbd as c_int;
     match Rav1dDSPContext::get(bpc) {
         Some(dsp) => f.dsp = dsp,
         None => {
@@ -4869,7 +4869,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     f.bh = (frame_hdr.size.height + 7 >> 3) << 1;
     f.sb128w = f.bw + 31 >> 5;
     f.sb128h = f.bh + 31 >> 5;
-    f.sb_shift = 4 + seq_hdr.sb128;
+    f.sb_shift = 4 + seq_hdr.sb128 as c_int;
     f.sb_step = 16 << seq_hdr.sb128;
     f.sbh = f.bh + f.sb_step - 1 >> f.sb_shift;
     f.b4_stride = (f.bw + 31 & !31) as ptrdiff_t;

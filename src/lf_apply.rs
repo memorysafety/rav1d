@@ -32,7 +32,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     mut src_offset: usize,
     src_stride: ptrdiff_t,
     ss_ver: c_int,
-    sb128: c_int,
+    sb128: u8,
     mut row: c_int,
     row_h: c_int,
     src_w: c_int,
@@ -52,7 +52,8 @@ unsafe fn backup_lpf<BD: BitDepth>(
         src_w
     };
     // The first stripe of the frame is shorter by 8 luma pixel rows.
-    let mut stripe_h = ((64 as c_int) << (cdef_backup & sb128)) - 8 * (row == 0) as c_int >> ss_ver;
+    let mut stripe_h =
+        ((64 as c_int) << (cdef_backup & sb128 as c_int)) - 8 * (row == 0) as c_int >> ss_ver;
     src_offset =
         (src_offset as isize + (stripe_h - 2) as isize * BD::pxstride(src_stride)) as usize;
     if c.tc.len() == 1 {
@@ -254,9 +255,9 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
         let ss_hor = (f.sr_cur.p.p.layout != Rav1dPixelLayout::I444) as c_int;
         let h_0 = f.cur.p.h + ss_ver >> ss_ver;
         let w_0 = f.bw << 2 - ss_hor;
-        let row_h_0 = cmp::min((sby + 1) << 6 - ss_ver + seq_hdr.sb128, h_0 - 1);
+        let row_h_0 = cmp::min((sby + 1) << 6 - ss_ver + seq_hdr.sb128 as c_int, h_0 - 1);
         let offset_uv = offset >> ss_ver;
-        let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128) - offset_uv;
+        let y_stripe_0 = (sby << 6 - ss_ver + seq_hdr.sb128 as c_int) - offset_uv;
         let cdef_off_uv: ptrdiff_t = sby as isize * 4 * src_uv_stride;
         if seq_hdr.cdef != 0 || restore_planes & LR_RESTORE_U as c_int != 0 {
             if restore_planes & LR_RESTORE_U as c_int != 0 || resize == 0 {
