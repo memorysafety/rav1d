@@ -253,9 +253,22 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub grain: BitDepthUnion<Grain>,
 }
 
+impl Default for TaskThreadData_delayed_fg {
+    fn default() -> Self {
+        Self {
+            exec: 0,
+            in_0: std::ptr::null(),
+            out: std::ptr::null_mut(),
+            type_0: Default::default(),
+            grain: Default::default(),
+        }
+    }
+}
+
 // TODO(SJC): Remove when TaskThreadData_delayed_fg is thread-safe
 unsafe impl Send for TaskThreadData_delayed_fg {}
 
+#[derive(Default)]
 #[repr(C)]
 pub(crate) struct TaskThreadData {
     pub cond: Condvar,
@@ -316,8 +329,7 @@ impl Rav1dContextTaskThread {
 
 #[repr(C)]
 pub struct Rav1dContext {
-    pub(crate) fc: *mut Rav1dFrameContext,
-    pub(crate) n_fc: c_uint,
+    pub(crate) fc: Box<[Rav1dFrameContext]>,
 
     /// Worker thread join handles and communication, or main thread task
     /// context if single-threaded
@@ -370,6 +382,15 @@ pub struct Rav1dContext {
     pub(crate) logger: Option<Rav1dLogger>,
 
     pub(crate) picture_pool: *mut Rav1dMemPool,
+}
+
+impl Rav1dContext {
+    /// Iterates over all frame contexts in the `fc` buffer, starting at a given
+    /// index. The iterator wraps around to the start of the buffer. so all
+    /// contexts will be included.
+    pub(crate) fn fc_iter(&self, start: usize) -> impl Iterator<Item = &Rav1dFrameContext> {
+        self.fc.iter().skip(start).chain(self.fc.iter().take(start))
+    }
 }
 
 // TODO(SJC): Remove when Rav1dContext is thread-safe
@@ -788,6 +809,26 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub pending_tasks: Mutex<Rav1dFrameContext_task_thread_pending_tasks>,
 }
 
+impl Default for Rav1dFrameContext_task_thread {
+    fn default() -> Self {
+        Self {
+            lock: Default::default(),
+            cond: Default::default(),
+            ttd: Default::default(),
+            tasks: Default::default(),
+            init_done: Default::default(),
+            done: Default::default(),
+            retval: Mutex::new(Ok(())),
+            finished: Default::default(),
+            update_set: Default::default(),
+            error: Default::default(),
+            task_counter: Default::default(),
+            pending_tasks_merge: Default::default(),
+            pending_tasks: Default::default(),
+        }
+    }
+}
+
 impl Rav1dFrameContext_task_thread {
     pub unsafe fn tasks(&self) -> *mut Rav1dTasks {
         self.tasks.get()
@@ -803,6 +844,9 @@ pub(crate) struct Rav1dFrameContext_frame_thread_progress {
 }
 
 pub(crate) struct Rav1dFrameContext {
+    /// Index in [`Rav1dContext::fc`]
+    pub index: usize,
+
     pub data: RwLock<Rav1dFrameData>,
     pub in_cdf: RwLock<CdfThreadContext>,
     pub task_thread: Rav1dFrameContext_task_thread,
@@ -810,6 +854,16 @@ pub(crate) struct Rav1dFrameContext {
 }
 
 impl Rav1dFrameContext {
+    pub(crate) unsafe fn zeroed(index: usize) -> Self {
+        Self {
+            index,
+            data: RwLock::new(unsafe { Rav1dFrameData::zeroed() }),
+            in_cdf: Default::default(),
+            task_thread: Default::default(),
+            frame_thread_progress: Default::default(),
+        }
+    }
+
     pub fn in_cdf<'a>(&'a self) -> RwLockReadGuard<'a, CdfThreadContext> {
         self.in_cdf.try_read().unwrap()
     }
@@ -827,9 +881,6 @@ impl Rav1dFrameContext {
 
 #[repr(C)]
 pub(crate) struct Rav1dFrameData {
-    /// Index in [`Rav1dContext::fc`]
-    pub index: usize,
-
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     pub frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
     pub refp: [Rav1dThreadPicture; 7],
@@ -884,9 +935,13 @@ pub(crate) struct Rav1dFrameData {
 impl Rav1dFrameData {
     pub unsafe fn zeroed() -> Self {
         let mut data: MaybeUninit<Rav1dFrameData> = MaybeUninit::zeroed();
+        addr_of_mut!((*data.as_mut_ptr()).refp).write(Default::default());
+        addr_of_mut!((*data.as_mut_ptr()).cur).write(Default::default());
+        addr_of_mut!((*data.as_mut_ptr()).sr_cur).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).out_cdf).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).tiles).write(vec![]);
         addr_of_mut!((*data.as_mut_ptr()).a).write(vec![]);
+        addr_of_mut!((*data.as_mut_ptr()).rf).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).lowest_pixel_mem).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).frame_thread).write(Default::default());
         addr_of_mut!((*data.as_mut_ptr()).lf).write(Default::default());

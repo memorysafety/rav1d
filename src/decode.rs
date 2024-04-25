@@ -3890,7 +3890,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         );
     }
 
-    if frame_hdr.frame_type.is_inter_or_switch() && c.n_fc > 1 {
+    if frame_hdr.frame_type.is_inter_or_switch() && c.fc.len() > 1 {
         let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
         *f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize) = [[i32::MIN; 2]; 7];
     }
@@ -4098,7 +4098,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
 
     let n_ts = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
     if n_ts != f.n_ts {
-        if c.n_fc > 1 {
+        if c.fc.len() > 1 {
             // TODO: Fallible allocation
             f.frame_thread.tile_start_off.resize(n_ts as usize, 0);
         }
@@ -4111,7 +4111,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         f.n_ts = n_ts;
     }
 
-    let a_sz = f.sb128w * frame_hdr.tiling.rows * (1 + (c.n_fc > 1 && c.tc.len() > 1) as c_int);
+    let a_sz = f.sb128w * frame_hdr.tiling.rows * (1 + (c.fc.len() > 1 && c.tc.len() > 1) as c_int);
     // TODO: Fallible allocation
     f.a.resize_with(a_sz as usize, Default::default);
 
@@ -4119,7 +4119,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     let size_mul = &ss_size_mul[f.cur.p.layout];
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let hbd = (seq_hdr.hbd != 0) as c_int;
-    if c.n_fc > 1 {
+    if c.fc.len() > 1 {
         let mut tile_idx = 0;
         let sb_step4 = f.sb_step as u32 * 4;
         for tile_row in 0..frame_hdr.tiling.rows {
@@ -4286,7 +4286,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     // index this from the level type and can thus over-read by up to 3 bytes.
     f.lf.level
         .resize(num_sb128 as usize * 32 * 32 + 1, [0u8; 4]); // TODO: Fallible allocation
-    if c.n_fc > 1 {
+    if c.fc.len() > 1 {
         // TODO: Fallible allocation
         f.frame_thread
             .b
@@ -4348,7 +4348,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             &f.refrefpoc,
             &f.ref_mvs,
             c.tc.len() as u32,
-            c.n_fc,
+            c.fc.len() as u32,
         )?;
     }
 
@@ -4423,7 +4423,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
         rav1d_cdf_thread_copy(&mut f.out_cdf.cdf_write(), in_cdf);
     }
 
-    let uses_2pass = c.n_fc > 1;
+    let uses_2pass = c.fc.len() > 1;
 
     let tiling = &frame_hdr.tiling;
 
@@ -4592,7 +4592,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
         task_thread.error.store(0, Ordering::Relaxed);
     }
     let cf = f.frame_thread.cf.get_mut();
-    if c.n_fc > 1 && retval.is_err() && !cf.is_empty() {
+    if c.fc.len() > 1 && retval.is_err() && !cf.is_empty() {
         cf.fill_with(Default::default);
     }
     // TODO(kkysen) use array::zip when stable
@@ -4628,7 +4628,7 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
 }
 
 pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Rav1dResult {
-    assert!(c.n_fc == 1);
+    assert!(c.fc.len() == 1);
     // if.tc.len() > 1 (but n_fc == 1), we could run init/exit in the task
     // threads also. Not sure it makes a measurable difference.
     let mut res = rav1d_decode_frame_init(c, fc);
@@ -4682,22 +4682,19 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
 
 pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // wait for c->out_delayed[next] and move into c->out if visible
-    let (fc, out, _task_thread_lock) = if c.n_fc > 1 {
+    let (fc, out, _task_thread_lock) = if c.fc.len() > 1 {
         let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
         let next = c.frame_thread.next;
-        c.frame_thread.next += 1;
-        if c.frame_thread.next == c.n_fc {
-            c.frame_thread.next = 0;
-        }
+        c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
 
-        let fc = &(*c.fc.offset(next as isize));
+        let fc = &c.fc[next as usize];
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
             task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
             let first = c.task_thread.first.load(Ordering::SeqCst);
-            if first + 1 < c.n_fc {
+            if first as usize + 1 < c.fc.len() {
                 c.task_thread.first.fetch_add(1, Ordering::SeqCst);
             } else {
                 c.task_thread.first.store(0, Ordering::SeqCst);
@@ -4710,7 +4707,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             );
             // `cur` is not actually mutated from multiple threads concurrently
             let cur = c.task_thread.cur.load(Ordering::Relaxed);
-            if cur != 0 && cur < c.n_fc {
+            if cur != 0 && (cur as usize) < c.fc.len() {
                 c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
             }
         }
@@ -4729,7 +4726,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         }
         (fc, out_delayed as *mut _, Some(task_thread_lock))
     } else {
-        (&(*c.fc), &mut c.out as *mut _, None)
+        (&c.fc[0], &mut c.out as *mut _, None)
     };
 
     let mut f = fc.data.try_write().unwrap();
@@ -4834,7 +4831,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         *fc.in_cdf.try_write().unwrap() = c.cdf[pri_ref].clone();
     }
     if frame_hdr.refresh_context != 0 {
-        let res = rav1d_cdf_thread_alloc(c, (c.n_fc > 1) as c_int);
+        let res = rav1d_cdf_thread_alloc(c, (c.fc.len() > 1) as c_int);
         match res {
             Err(e) => {
                 on_error(fc, &mut f, c, out);
@@ -4889,7 +4886,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     // move f->cur into output queue
-    if c.n_fc == 1 {
+    if c.fc.len() == 1 {
         if frame_hdr.show_frame != 0 || c.output_invisible_frames {
             c.out = f.sr_cur.clone();
             c.event_flags |= f.sr_cur.flags.into();
@@ -4910,7 +4907,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     f.b4_stride = (f.bw + 31 & !31) as ptrdiff_t;
     f.bitdepth_max = (1 << f.cur.p.bpc) - 1;
     fc.task_thread.error.store(0, Ordering::Relaxed);
-    let uses_2pass = (c.n_fc > 1) as c_int;
+    let uses_2pass = (c.fc.len() > 1) as c_int;
     let cols = frame_hdr.tiling.cols;
     let rows = frame_hdr.tiling.rows;
     fc.task_thread
@@ -5021,10 +5018,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             c.refs[i].refpoc = f.refpoc;
         }
     }
-    let index = f.index;
     drop(f);
 
-    if c.n_fc == 1 {
+    if c.fc.len() == 1 {
         let res = rav1d_decode_frame(c, &fc);
         if res.is_err() {
             let _ = mem::take(&mut c.out);
@@ -5043,7 +5039,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             return res;
         }
     } else {
-        rav1d_task_frame_init(c, fc, index);
+        rav1d_task_frame_init(c, fc);
     }
 
     Ok(())

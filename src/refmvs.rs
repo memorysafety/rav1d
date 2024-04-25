@@ -204,6 +204,7 @@ pub(crate) struct refmvs_frame<'a> {
     pub n_frame_threads: c_int,
 }
 
+#[derive(Default)]
 pub(crate) struct RefMvsFrame {
     pub iw4: c_int,
     pub ih4: c_int,
@@ -1706,13 +1707,6 @@ pub(crate) fn rav1d_refmvs_init_frame(
     rf.use_ref_frame_mvs = (rf.n_mfmvs > 0) as c_int;
 
     Ok(())
-}
-
-pub(crate) fn rav1d_refmvs_init(rf: &mut RefMvsFrame) {
-    rf.r = Default::default();
-    rf.r_stride = 0;
-    rf.rp_proj = Default::default();
-    rf.rp_stride = 0;
 }
 
 pub(crate) fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {

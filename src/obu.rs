@@ -2522,7 +2522,7 @@ unsafe fn parse_obus(
             {
                 return Err(EINVAL);
             }
-            if c.n_fc == 1 {
+            if c.fc.len() == 1 {
                 c.out = c.refs[frame_hdr.existing_frame_idx as usize].p.clone();
                 rav1d_picture_copy_props(
                     &mut (*c).out.p,
@@ -2537,12 +2537,9 @@ unsafe fn parse_obus(
                 let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
                 // Need to append this to the frame output queue.
                 let next = c.frame_thread.next;
-                c.frame_thread.next += 1;
-                if c.frame_thread.next == c.n_fc {
-                    c.frame_thread.next = 0;
-                }
+                c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
 
-                let fc = &(*c.fc.offset(next as isize));
+                let fc = &c.fc[next as usize];
                 while !fc.task_thread.finished.load(Ordering::SeqCst) {
                     task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
                 }
@@ -2550,7 +2547,7 @@ unsafe fn parse_obus(
                 if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0
                 {
                     let first = c.task_thread.first.load(Ordering::SeqCst);
-                    if first + 1 < c.n_fc {
+                    if first as usize + 1 < c.fc.len() {
                         c.task_thread.first.fetch_add(1, Ordering::SeqCst);
                     } else {
                         c.task_thread.first.store(0, Ordering::SeqCst);
@@ -2562,7 +2559,7 @@ unsafe fn parse_obus(
                         Ordering::SeqCst,
                     );
                     if c.task_thread.cur.load(Ordering::Relaxed) != 0
-                        && c.task_thread.cur.load(Ordering::Relaxed) < c.n_fc
+                        && (c.task_thread.cur.load(Ordering::Relaxed) as usize) < c.fc.len()
                     {
                         c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
                     }
