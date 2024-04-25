@@ -18,16 +18,12 @@ use crate::include::dav1d::picture::Rav1dPictureParameters;
 use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
-use crate::src::mem::rav1d_mem_pool_pop;
-use crate::src::mem::rav1d_mem_pool_push;
-use crate::src::mem::Rav1dMemPool;
-use crate::src::mem::Rav1dMemPoolBuffer;
+use crate::src::mem::MemPool;
 use atomig::Atom;
 use atomig::AtomLogic;
 use bitflags::bitflags;
@@ -37,7 +33,6 @@ use std::ffi::c_void;
 use std::mem;
 use std::ptr;
 use std::ptr::NonNull;
-use std::slice;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -83,7 +78,6 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
     cookie: *mut c_void,
 ) -> Dav1dResult {
-    assert!(::core::mem::size_of::<Rav1dMemPoolBuffer>() <= RAV1D_PICTURE_ALIGNMENT);
     let p = p_c.read().to::<Rav1dPicture>();
     let hbd = (p.p.bpc > 8) as c_int;
     let aligned_w = p.p.w + 127 & !127;
@@ -103,15 +97,28 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let y_sz = (y_stride * aligned_h as isize) as usize;
     let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size = y_sz + 2 * uv_sz;
-    let buf = rav1d_mem_pool_pop(
-        cookie as *mut Rav1dMemPool,
-        pic_size + RAV1D_PICTURE_ALIGNMENT - ::core::mem::size_of::<Rav1dMemPoolBuffer>(),
-    );
-    if buf.is_null() {
-        return Rav1dResult::<()>::Err(ENOMEM).into();
-    }
 
-    let data = slice::from_raw_parts_mut((*buf).data as *mut u8, pic_size);
+    let pool = &*cookie.cast::<MemPool<u8>>();
+    let pic_cap = pic_size + RAV1D_PICTURE_ALIGNMENT;
+    // TODO fallible allocation
+    let mut buf = pool.pop(pic_cap);
+    if cfg!(debug_assertions) {
+        buf.resize_with(pic_cap, Default::default);
+    } else {
+        assert!(buf.capacity() >= pic_cap);
+        // SAFETY: We checked the capacity, so it is safe on that front.
+        // As for initialized, the bytes are not yet initialized.
+        // We do materialize intermediate slices to them, which is technically UB,
+        // but we do write to them eventually before any reads.
+        // This is done for performance, as zeroing causes a 10% performance regression.
+        unsafe { buf.set_len(pic_cap) };
+    }
+    // We have to `Box` this because `Dav1dPicture::allocator_data` is only 8 bytes.
+    let mut buf = Box::new(buf);
+    // SAFETY: `Rav1dPicAllocator::alloc_picture_callback` requires that these are `RAV1D_PICTURE_ALIGNMENT`-aligned.
+    let align_offset = buf.as_ptr().align_offset(RAV1D_PICTURE_ALIGNMENT);
+    let data = &mut buf[align_offset..][..pic_size];
+
     let (data0, data12) = data.split_at_mut(y_sz);
     let (data1, data2) = data12.split_at_mut(uv_sz);
     // Note that `data[1]` and `data[2]`
@@ -121,7 +128,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
 
     (*p_c).stride = stride;
     (*p_c).data = data.map(NonNull::new);
-    (*p_c).allocator_data = NonNull::new(buf.cast());
+    (*p_c).allocator_data = NonNull::new(Box::into_raw(buf).cast::<c_void>());
     // The caller will create the real `Rav1dPicture` from the `Dav1dPicture` fields set above,
     // so we don't want to drop the `Rav1dPicture` we created for convenience here.
     mem::forget(p);
@@ -130,11 +137,10 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
 }
 
 pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut c_void) {
-    rav1d_mem_pool_push(
-        cookie as *mut Rav1dMemPool,
-        (*p).allocator_data
-            .map_or_else(ptr::null_mut, |data| data.as_ptr()) as *mut Rav1dMemPoolBuffer,
-    );
+    let pool = &*cookie.cast::<MemPool<u8>>();
+    let buf = (*p).allocator_data.unwrap().as_ptr().cast::<Vec<u8>>();
+    let buf = Box::from_raw(buf);
+    pool.push(*buf);
 }
 
 impl Default for Rav1dPicAllocator {
