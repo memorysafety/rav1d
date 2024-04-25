@@ -74,6 +74,11 @@ pub(crate) struct Rav1dThreadPicture {
     pub progress: Option<Arc<[AtomicU32; 2]>>,
 }
 
+struct MemPoolBuf<T> {
+    pool: Arc<MemPool<T>>,
+    buf: Vec<T>,
+}
+
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
     cookie: *mut c_void,
@@ -98,7 +103,8 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size = y_sz + 2 * uv_sz;
 
-    let pool = &*cookie.cast::<MemPool<u8>>();
+    let pool = &*cookie.cast::<Arc<MemPool<u8>>>();
+    let pool = pool.clone();
     let pic_cap = pic_size + RAV1D_PICTURE_ALIGNMENT;
     // TODO fallible allocation
     let mut buf = pool.pop(pic_cap);
@@ -114,10 +120,11 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
         unsafe { buf.set_len(pic_cap) };
     }
     // We have to `Box` this because `Dav1dPicture::allocator_data` is only 8 bytes.
-    let mut buf = Box::new(buf);
+    let mut buf = Box::new(MemPoolBuf { pool, buf });
+    let data = &mut buf.buf[..];
     // SAFETY: `Rav1dPicAllocator::alloc_picture_callback` requires that these are `RAV1D_PICTURE_ALIGNMENT`-aligned.
-    let align_offset = buf.as_ptr().align_offset(RAV1D_PICTURE_ALIGNMENT);
-    let data = &mut buf[align_offset..][..pic_size];
+    let align_offset = data.as_ptr().align_offset(RAV1D_PICTURE_ALIGNMENT);
+    let data = &mut data[align_offset..][..pic_size];
 
     let (data0, data12) = data.split_at_mut(y_sz);
     let (data1, data2) = data12.split_at_mut(uv_sz);
@@ -136,11 +143,15 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     Rav1dResult::Ok(()).into()
 }
 
-pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut c_void) {
-    let pool = &*cookie.cast::<MemPool<u8>>();
-    let buf = (*p).allocator_data.unwrap().as_ptr().cast::<Vec<u8>>();
+pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, _cookie: *mut c_void) {
+    let buf = (*p)
+        .allocator_data
+        .unwrap()
+        .as_ptr()
+        .cast::<MemPoolBuf<u8>>();
     let buf = Box::from_raw(buf);
-    pool.push(*buf);
+    let MemPoolBuf { pool, buf } = *buf;
+    pool.push(buf);
 }
 
 impl Default for Rav1dPicAllocator {

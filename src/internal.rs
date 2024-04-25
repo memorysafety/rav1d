@@ -381,7 +381,7 @@ pub struct Rav1dContext {
 
     pub(crate) logger: Option<Rav1dLogger>,
 
-    pub(crate) picture_pool: MemPool<u8>,
+    pub(crate) picture_pool: Arc<MemPool<u8>>,
 }
 
 impl Rav1dContext {

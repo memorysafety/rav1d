@@ -210,7 +210,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
     (*c).cached_error_props = Default::default();
-    (*c).picture_pool = Default::default();
+    addr_of_mut!((*c).picture_pool).write(Default::default());
     if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
         && (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {
