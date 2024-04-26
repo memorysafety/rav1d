@@ -4738,7 +4738,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         f.task_thread.finished.store(true, Ordering::SeqCst);
     }
 
-    let bpc = 8 + 2 * seq_hdr.hbd as c_int;
+    let bpc = 8 + 2 * seq_hdr.hbd;
     match Rav1dDSPContext::get(bpc) {
         Some(dsp) => f.dsp = dsp,
         None => {

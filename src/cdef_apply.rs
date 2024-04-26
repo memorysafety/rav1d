@@ -186,7 +186,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let sbsz = 16;
     let sb64w = f.sb128w << 1;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let damping = frame_hdr.cdef.damping + bitdepth_min_8;
+    let damping = frame_hdr.cdef.damping + bitdepth_min_8 as c_int;
     let layout: Rav1dPixelLayout = f.cur.p.layout;
     let uv_idx = (Rav1dPixelLayout::I444 as c_uint).wrapping_sub(layout as c_uint) as c_int;
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;

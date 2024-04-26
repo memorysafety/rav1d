@@ -135,7 +135,7 @@ impl Rav1dDSPContext {
         }
     }
 
-    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
+    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: u8) -> Self {
         Self {
             fg: Rav1dFilmGrainDSPContext::new::<BD>(flags),
             ipred: Rav1dIntraPredDSPContext::new::<BD>(flags),
@@ -148,7 +148,7 @@ impl Rav1dDSPContext {
         }
     }
 
-    pub fn get(bpc: c_int) -> Option<&'static Self> {
+    pub fn get(bpc: u8) -> Option<&'static Self> {
         static BPC8: OnceLock<Rav1dDSPContext> = OnceLock::new();
         static BPC10: OnceLock<Rav1dDSPContext> = OnceLock::new();
         static BPC12: OnceLock<Rav1dDSPContext> = OnceLock::new();

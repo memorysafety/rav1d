@@ -916,7 +916,7 @@ impl Rav1dInvTxfmDSPContext {
 
     #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
     #[inline(always)]
-    const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags, bpc: c_int) -> Self {
+    const fn init_x86<BD: BitDepth>(mut self, flags: CpuFlags, bpc: u8) -> Self {
         if !flags.contains(CpuFlags::SSE2) {
             return self;
         }
@@ -1093,7 +1093,7 @@ impl Rav1dInvTxfmDSPContext {
 
     #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
     #[inline(always)]
-    const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags, bpc: c_int) -> Self {
+    const fn init_arm<BD: BitDepth>(mut self, flags: CpuFlags, bpc: u8) -> Self {
         if !flags.contains(CpuFlags::NEON) {
             return self;
         }
@@ -1133,7 +1133,7 @@ impl Rav1dInvTxfmDSPContext {
     }
 
     #[inline(always)]
-    const fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: c_int) -> Self {
+    const fn init<BD: BitDepth>(self, flags: CpuFlags, bpc: u8) -> Self {
         #[cfg(feature = "asm")]
         {
             #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -1154,7 +1154,7 @@ impl Rav1dInvTxfmDSPContext {
         }
     }
 
-    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
+    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: u8) -> Self {
         Self::default::<BD>().init::<BD>(flags, bpc)
     }
 }

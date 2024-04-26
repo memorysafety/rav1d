@@ -42,7 +42,7 @@ pub(crate) struct Rav1dPictureParameters {
     pub w: c_int,
     pub h: c_int,
     pub layout: Rav1dPixelLayout,
-    pub bpc: c_int,
+    pub bpc: u8,
 }
 
 impl From<Dav1dPictureParameters> for Rav1dPictureParameters {
@@ -52,7 +52,7 @@ impl From<Dav1dPictureParameters> for Rav1dPictureParameters {
             w,
             h,
             layout: layout.try_into().unwrap(),
-            bpc,
+            bpc: bpc.try_into().unwrap(),
         }
     }
 }
@@ -64,7 +64,7 @@ impl From<Rav1dPictureParameters> for Dav1dPictureParameters {
             w,
             h,
             layout: layout.into(),
-            bpc,
+            bpc: bpc.into(),
         }
     }
 }
