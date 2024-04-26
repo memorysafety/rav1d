@@ -2262,7 +2262,7 @@ unsafe fn parse_obus(
                 return Err(EINVAL);
             }
 
-            let op_idx = if c.operating_point < seq_hdr.num_operating_points.into() {
+            let op_idx = if c.operating_point < seq_hdr.num_operating_points {
                 c.operating_point
             } else {
                 0

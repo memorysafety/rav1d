@@ -345,7 +345,7 @@ pub struct Rav1dContext {
 
     pub(crate) allocator: Rav1dPicAllocator,
     pub(crate) apply_grain: bool,
-    pub(crate) operating_point: c_int,
+    pub(crate) operating_point: u8,
     pub(crate) operating_point_idc: c_uint,
     pub(crate) all_layers: bool,
     pub(crate) max_spatial_id: bool,

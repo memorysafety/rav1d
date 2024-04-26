@@ -192,7 +192,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     initted.call_once(|| init_internal());
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
-    validate_input!((s.operating_point >= 0 && s.operating_point <= 31, EINVAL))?;
+    validate_input!((s.operating_point <= 31, EINVAL))?;
     *c_out = rav1d_alloc_aligned(::core::mem::size_of::<Rav1dContext>(), 64) as *mut Rav1dContext;
     let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
