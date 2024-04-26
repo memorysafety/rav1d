@@ -2406,7 +2406,7 @@ pub struct Dav1dFrameHeader_restoration {
 #[repr(C)]
 pub struct Rav1dFrameHeader_restoration {
     pub r#type: [Rav1dRestorationType; 3],
-    pub unit_size: [c_int; 2],
+    pub unit_size: [u8; 2],
 }
 
 impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
@@ -2414,7 +2414,7 @@ impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
         let Dav1dFrameHeader_restoration { r#type, unit_size } = value;
         Self {
             r#type: r#type.map(|e| Rav1dRestorationType::from_repr(e as usize).unwrap()),
-            unit_size,
+            unit_size: unit_size.map(|e| e.try_into().unwrap()),
         }
     }
 }
@@ -2424,7 +2424,7 @@ impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
         let Rav1dFrameHeader_restoration { r#type, unit_size } = value;
         Self {
             r#type: r#type.map(|e| e.to_repr()),
-            unit_size,
+            unit_size: unit_size.map(|e| e.into()),
         }
     }
 }

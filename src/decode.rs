@@ -3718,7 +3718,7 @@ unsafe fn setup_tile(
         }
 
         let lr_ref = if diff_width {
-            let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+            let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as u8;
             let d = frame_hdr.size.super_res.width_scale_denominator;
             let unit_size_log2 = frame_hdr.restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
@@ -3992,7 +3992,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 let x1 = (4 * (t.b.x + sb_step) * d >> ss_hor) + rnd >> shift;
 
                 for x in x0..cmp::min(x1, n_units) {
-                    let px_x = x << unit_size_log2 + ss_hor;
+                    let px_x = x << unit_size_log2 + ss_hor as u8;
                     let sb_idx = (t.b.y >> 5) * f.sr_sb128w + (px_x >> 7);
                     let unit_idx = ((t.b.y & 16) >> 3) + ((px_x & 64) >> 6);
                     let mut lr = f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]

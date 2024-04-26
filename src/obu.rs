@@ -1357,11 +1357,11 @@ fn parse_restoration(
             }
             _ => {
                 // Log2 of the restoration unit size.
-                let mut unit_size_0 = 6 + seqhdr.sb128 as c_int;
+                let mut unit_size_0 = 6 + seqhdr.sb128;
                 if gb.get_bit() {
                     unit_size_0 += 1;
                     if seqhdr.sb128 == 0 {
-                        unit_size_0 += gb.get_bit() as c_int;
+                        unit_size_0 += gb.get_bit() as u8;
                     }
                 }
 
@@ -1370,7 +1370,7 @@ fn parse_restoration(
                     && seqhdr.ss_hor == 1
                     && seqhdr.ss_ver == 1
                 {
-                    unit_size_0 - gb.get_bit() as c_int
+                    unit_size_0 - gb.get_bit() as u8
                 } else {
                     unit_size_0
                 };
