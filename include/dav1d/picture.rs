@@ -344,6 +344,8 @@ pub(crate) struct Rav1dPicAllocator {
     ///
     /// # Safety
     ///
+    /// `pic` is passed as a `&mut`.
+    ///
     /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe,
     /// i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`].
     pub alloc_picture_callback:
@@ -352,6 +354,8 @@ pub(crate) struct Rav1dPicAllocator {
     /// See [`Dav1dPicAllocator::release_picture_callback`].
     ///
     /// # Safety
+    ///
+    /// `pic` is passed as a `&mut`.
     ///
     /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe,
     /// i.e. [`Self::cookie`] must be [`Send`]` + `[`Sync`].
