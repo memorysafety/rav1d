@@ -1,5 +1,4 @@
 use crate::include::common::attributes::ctz;
-use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::iclip;
@@ -115,7 +114,6 @@ use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
-use crate::src::mem::rav1d_freep_aligned;
 use crate::src::msac::rav1d_msac_decode_bool;
 use crate::src::msac::rav1d_msac_decode_bool_adapt;
 use crate::src::msac::rav1d_msac_decode_bool_equi;
@@ -4318,21 +4316,9 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     rav1d_calc_lf_values(&mut f.lf.lvl, &frame_hdr, &[0, 0, 0, 0]);
 
     let ipred_edge_sz = f.sbh * f.sb128w << hbd;
-    if ipred_edge_sz != f.ipred_edge_sz {
-        rav1d_freep_aligned(
-            &mut *f.ipred_edge.as_mut_ptr().offset(0) as *mut *mut DynPixel as *mut c_void,
-        );
-        f.ipred_edge[0] =
-            rav1d_alloc_aligned(ipred_edge_sz as usize * 128 * 3, 64) as *mut DynPixel;
-        let ptr = f.ipred_edge[0] as *mut u8;
-        if ptr.is_null() {
-            f.ipred_edge_sz = 0;
-            return Err(ENOMEM);
-        }
-        f.ipred_edge[1] = ptr.offset(ipred_edge_sz as isize * 128 * 1) as *mut DynPixel;
-        f.ipred_edge[2] = ptr.offset(ipred_edge_sz as isize * 128 * 2) as *mut DynPixel;
-        f.ipred_edge_sz = ipred_edge_sz;
-    }
+    // TODO: Fallible allocation
+    f.ipred_edge.resize(ipred_edge_sz as usize * 128 * 3, 0);
+    f.ipred_edge_off = bpc.pxstride(ipred_edge_sz as usize * 128);
 
     let re_sz = f.sb128h * frame_hdr.tiling.cols;
     // TODO: Fallible allocation
