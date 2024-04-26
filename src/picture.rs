@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::headers::DRav1d;
@@ -223,7 +225,7 @@ impl Rav1dPicAllocator {
     }
 }
 
-unsafe fn picture_alloc_with_edges(
+fn picture_alloc_with_edges(
     logger: &Option<Rav1dLogger>,
     p: &mut Rav1dPicture,
     w: c_int,
@@ -259,7 +261,7 @@ pub fn rav1d_picture_copy_props(
 
 // itut_t35 was taken out of the c.itut_t35 originally, but that violates Rust
 // borrowing rules so we need to pass it to this function explicitly.
-pub(crate) unsafe fn rav1d_thread_picture_alloc(
+pub(crate) fn rav1d_thread_picture_alloc(
     c: &Rav1dContext,
     f: &mut Rav1dFrameData,
     bpc: c_int,
@@ -303,7 +305,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_picture_alloc_copy(
+pub(crate) fn rav1d_picture_alloc_copy(
     c: &Rav1dContext,
     dst: &mut Rav1dPicture,
     w: c_int,
