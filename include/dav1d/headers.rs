@@ -847,25 +847,25 @@ impl Rav1dITUTT35 {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingPoint {
-    pub major_level: c_int,
-    pub minor_level: c_int,
-    pub initial_display_delay: c_int,
-    pub idc: c_int,
-    pub tier: c_int,
-    pub decoder_model_param_present: c_int,
-    pub display_model_param_present: c_int,
+    pub major_level: u8,
+    pub minor_level: u8,
+    pub initial_display_delay: u8,
+    pub idc: u16,
+    pub tier: u8,
+    pub decoder_model_param_present: u8,
+    pub display_model_param_present: u8,
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C)]
 pub struct Rav1dSequenceHeaderOperatingPoint {
-    pub major_level: c_int,
-    pub minor_level: c_int,
-    pub initial_display_delay: c_int,
-    pub idc: c_int,
-    pub tier: c_int,
-    pub decoder_model_param_present: c_int,
-    pub display_model_param_present: c_int,
+    pub major_level: u8,
+    pub minor_level: u8,
+    pub initial_display_delay: u8,
+    pub idc: u16,
+    pub tier: u8,
+    pub decoder_model_param_present: u8,
+    pub display_model_param_present: u8,
 }
 
 impl From<Dav1dSequenceHeaderOperatingPoint> for Rav1dSequenceHeaderOperatingPoint {
@@ -917,17 +917,17 @@ impl From<Rav1dSequenceHeaderOperatingPoint> for Dav1dSequenceHeaderOperatingPoi
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Dav1dSequenceHeaderOperatingParameterInfo {
-    pub decoder_buffer_delay: c_int,
-    pub encoder_buffer_delay: c_int,
-    pub low_delay_mode: c_int,
+    pub decoder_buffer_delay: u32,
+    pub encoder_buffer_delay: u32,
+    pub low_delay_mode: u8,
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 #[repr(C)]
 pub struct Rav1dSequenceHeaderOperatingParameterInfo {
-    pub decoder_buffer_delay: c_int,
-    pub encoder_buffer_delay: c_int,
-    pub low_delay_mode: c_int,
+    pub decoder_buffer_delay: u32,
+    pub encoder_buffer_delay: u32,
+    pub low_delay_mode: u8,
 }
 
 impl From<Dav1dSequenceHeaderOperatingParameterInfo> for Rav1dSequenceHeaderOperatingParameterInfo {
@@ -963,7 +963,7 @@ impl From<Rav1dSequenceHeaderOperatingParameterInfo> for Dav1dSequenceHeaderOper
 #[derive(Clone)]
 #[repr(C)]
 pub struct Dav1dSequenceHeader {
-    pub profile: c_int,
+    pub profile: u8,
     pub max_width: c_int,
     pub max_height: c_int,
     pub layout: Dav1dPixelLayout,
@@ -971,53 +971,53 @@ pub struct Dav1dSequenceHeader {
     pub trc: Dav1dTransferCharacteristics,
     pub mtrx: Dav1dMatrixCoefficients,
     pub chr: Dav1dChromaSamplePosition,
-    pub hbd: c_int,
-    pub color_range: c_int,
-    pub num_operating_points: c_int,
+    pub hbd: u8,
+    pub color_range: u8,
+    pub num_operating_points: u8,
     pub operating_points: [Dav1dSequenceHeaderOperatingPoint; DAV1D_MAX_OPERATING_POINTS],
-    pub still_picture: c_int,
-    pub reduced_still_picture_header: c_int,
-    pub timing_info_present: c_int,
+    pub still_picture: u8,
+    pub reduced_still_picture_header: u8,
+    pub timing_info_present: u8,
     /// > 0 if defined, 0 otherwise
     pub num_units_in_tick: u32,
     /// > 0 if defined, 0 otherwise
     pub time_scale: u32,
-    pub equal_picture_interval: c_int,
-    pub num_ticks_per_picture: c_uint,
-    pub decoder_model_info_present: c_int,
-    pub encoder_decoder_buffer_delay_length: c_int,
+    pub equal_picture_interval: u8,
+    pub num_ticks_per_picture: u32,
+    pub decoder_model_info_present: u8,
+    pub encoder_decoder_buffer_delay_length: u8,
     /// > 0 if defined, 0 otherwise
     pub num_units_in_decoding_tick: u32,
-    pub buffer_removal_delay_length: c_int,
-    pub frame_presentation_delay_length: c_int,
-    pub display_model_info_present: c_int,
-    pub width_n_bits: c_int,
-    pub height_n_bits: c_int,
-    pub frame_id_numbers_present: c_int,
-    pub delta_frame_id_n_bits: c_int,
-    pub frame_id_n_bits: c_int,
-    pub sb128: c_int,
-    pub filter_intra: c_int,
-    pub intra_edge_filter: c_int,
-    pub inter_intra: c_int,
-    pub masked_compound: c_int,
-    pub warped_motion: c_int,
-    pub dual_filter: c_int,
-    pub order_hint: c_int,
-    pub jnt_comp: c_int,
-    pub ref_frame_mvs: c_int,
+    pub buffer_removal_delay_length: u8,
+    pub frame_presentation_delay_length: u8,
+    pub display_model_info_present: u8,
+    pub width_n_bits: u8,
+    pub height_n_bits: u8,
+    pub frame_id_numbers_present: u8,
+    pub delta_frame_id_n_bits: u8,
+    pub frame_id_n_bits: u8,
+    pub sb128: u8,
+    pub filter_intra: u8,
+    pub intra_edge_filter: u8,
+    pub inter_intra: u8,
+    pub masked_compound: u8,
+    pub warped_motion: u8,
+    pub dual_filter: u8,
+    pub order_hint: u8,
+    pub jnt_comp: u8,
+    pub ref_frame_mvs: u8,
     pub screen_content_tools: Dav1dAdaptiveBoolean,
     pub force_integer_mv: Dav1dAdaptiveBoolean,
-    pub order_hint_n_bits: c_int,
-    pub super_res: c_int,
-    pub cdef: c_int,
-    pub restoration: c_int,
-    pub ss_hor: c_int,
-    pub ss_ver: c_int,
-    pub monochrome: c_int,
-    pub color_description_present: c_int,
-    pub separate_uv_delta_q: c_int,
-    pub film_grain_present: c_int,
+    pub order_hint_n_bits: u8,
+    pub super_res: u8,
+    pub cdef: u8,
+    pub restoration: u8,
+    pub ss_hor: u8,
+    pub ss_ver: u8,
+    pub monochrome: u8,
+    pub color_description_present: u8,
+    pub separate_uv_delta_q: u8,
+    pub film_grain_present: u8,
     pub operating_parameter_info:
         [Dav1dSequenceHeaderOperatingParameterInfo; DAV1D_MAX_OPERATING_POINTS],
 }
@@ -1029,16 +1029,16 @@ pub enum Rav1dProfile {
     Professional = 2,
 }
 
-impl From<Rav1dProfile> for c_int {
+impl From<Rav1dProfile> for u8 {
     fn from(value: Rav1dProfile) -> Self {
-        value as c_int
+        value as u8
     }
 }
 
-impl TryFrom<c_int> for Rav1dProfile {
+impl TryFrom<u8> for Rav1dProfile {
     type Error = ();
 
-    fn try_from(value: c_int) -> Result<Self, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
         Self::from_repr(value as usize).ok_or(())
     }
 }
@@ -1054,53 +1054,53 @@ pub struct Rav1dSequenceHeader {
     pub trc: Rav1dTransferCharacteristics,
     pub mtrx: Rav1dMatrixCoefficients,
     pub chr: Rav1dChromaSamplePosition,
-    pub hbd: c_int,
-    pub color_range: c_int,
-    pub num_operating_points: c_int,
+    pub hbd: u8,
+    pub color_range: u8,
+    pub num_operating_points: u8,
     pub operating_points: [Rav1dSequenceHeaderOperatingPoint; RAV1D_MAX_OPERATING_POINTS],
-    pub still_picture: c_int,
-    pub reduced_still_picture_header: c_int,
-    pub timing_info_present: c_int,
+    pub still_picture: u8,
+    pub reduced_still_picture_header: u8,
+    pub timing_info_present: u8,
     /// > 0 if defined, 0 otherwise
     pub num_units_in_tick: u32,
     /// > 0 if defined, 0 otherwise
     pub time_scale: u32,
-    pub equal_picture_interval: c_int,
-    pub num_ticks_per_picture: c_uint,
-    pub decoder_model_info_present: c_int,
-    pub encoder_decoder_buffer_delay_length: c_int,
+    pub equal_picture_interval: u8,
+    pub num_ticks_per_picture: u32,
+    pub decoder_model_info_present: u8,
+    pub encoder_decoder_buffer_delay_length: u8,
     /// > 0 if defined, 0 otherwise
     pub num_units_in_decoding_tick: u32,
-    pub buffer_removal_delay_length: c_int,
-    pub frame_presentation_delay_length: c_int,
-    pub display_model_info_present: c_int,
-    pub width_n_bits: c_int,
-    pub height_n_bits: c_int,
-    pub frame_id_numbers_present: c_int,
-    pub delta_frame_id_n_bits: c_int,
-    pub frame_id_n_bits: c_int,
-    pub sb128: c_int,
-    pub filter_intra: c_int,
-    pub intra_edge_filter: c_int,
-    pub inter_intra: c_int,
-    pub masked_compound: c_int,
-    pub warped_motion: c_int,
-    pub dual_filter: c_int,
-    pub order_hint: c_int,
-    pub jnt_comp: c_int,
-    pub ref_frame_mvs: c_int,
+    pub buffer_removal_delay_length: u8,
+    pub frame_presentation_delay_length: u8,
+    pub display_model_info_present: u8,
+    pub width_n_bits: u8,
+    pub height_n_bits: u8,
+    pub frame_id_numbers_present: u8,
+    pub delta_frame_id_n_bits: u8,
+    pub frame_id_n_bits: u8,
+    pub sb128: u8,
+    pub filter_intra: u8,
+    pub intra_edge_filter: u8,
+    pub inter_intra: u8,
+    pub masked_compound: u8,
+    pub warped_motion: u8,
+    pub dual_filter: u8,
+    pub order_hint: u8,
+    pub jnt_comp: u8,
+    pub ref_frame_mvs: u8,
     pub screen_content_tools: Rav1dAdaptiveBoolean,
     pub force_integer_mv: Rav1dAdaptiveBoolean,
-    pub order_hint_n_bits: c_int,
-    pub super_res: c_int,
-    pub cdef: c_int,
-    pub restoration: c_int,
-    pub ss_hor: c_int,
-    pub ss_ver: c_int,
-    pub monochrome: c_int,
-    pub color_description_present: c_int,
-    pub separate_uv_delta_q: c_int,
-    pub film_grain_present: c_int,
+    pub order_hint_n_bits: u8,
+    pub super_res: u8,
+    pub cdef: u8,
+    pub restoration: u8,
+    pub ss_hor: u8,
+    pub ss_ver: u8,
+    pub monochrome: u8,
+    pub color_description_present: u8,
+    pub separate_uv_delta_q: u8,
+    pub film_grain_present: u8,
     pub operating_parameter_info:
         [Rav1dSequenceHeaderOperatingParameterInfo; RAV1D_MAX_OPERATING_POINTS],
 }
@@ -2406,7 +2406,7 @@ pub struct Dav1dFrameHeader_restoration {
 #[repr(C)]
 pub struct Rav1dFrameHeader_restoration {
     pub r#type: [Rav1dRestorationType; 3],
-    pub unit_size: [c_int; 2],
+    pub unit_size: [u8; 2],
 }
 
 impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
@@ -2414,7 +2414,7 @@ impl From<Dav1dFrameHeader_restoration> for Rav1dFrameHeader_restoration {
         let Dav1dFrameHeader_restoration { r#type, unit_size } = value;
         Self {
             r#type: r#type.map(|e| Rav1dRestorationType::from_repr(e as usize).unwrap()),
-            unit_size,
+            unit_size: unit_size.map(|e| e.try_into().unwrap()),
         }
     }
 }
@@ -2424,7 +2424,7 @@ impl From<Rav1dFrameHeader_restoration> for Dav1dFrameHeader_restoration {
         let Rav1dFrameHeader_restoration { r#type, unit_size } = value;
         Self {
             r#type: r#type.map(|e| e.to_repr()),
-            unit_size,
+            unit_size: unit_size.map(|e| e.into()),
         }
     }
 }

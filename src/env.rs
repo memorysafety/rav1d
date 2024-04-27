@@ -296,7 +296,7 @@ pub fn get_comp_dir_ctx(
 }
 
 #[inline]
-pub fn get_poc_diff(order_hint_n_bits: c_int, poc0: c_int, poc1: c_int) -> c_int {
+pub fn get_poc_diff(order_hint_n_bits: u8, poc0: c_int, poc1: c_int) -> c_int {
     if order_hint_n_bits == 0 {
         return 0;
     }
@@ -307,7 +307,7 @@ pub fn get_poc_diff(order_hint_n_bits: c_int, poc0: c_int, poc1: c_int) -> c_int
 
 #[inline]
 pub fn get_jnt_comp_ctx(
-    order_hint_n_bits: c_int,
+    order_hint_n_bits: u8,
     poc: c_uint,
     ref0poc: c_uint,
     ref1poc: c_uint,

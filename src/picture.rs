@@ -211,7 +211,7 @@ unsafe fn picture_alloc_with_edges(
     h: c_int,
     seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
     frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
-    bpc: c_int,
+    bpc: u8,
     p_allocator: &Rav1dPicAllocator,
 ) -> Rav1dResult {
     if p.data.is_some() {
@@ -243,7 +243,7 @@ pub fn rav1d_picture_copy_props(
 pub(crate) unsafe fn rav1d_thread_picture_alloc(
     c: &Rav1dContext,
     f: &mut Rav1dFrameData,
-    bpc: c_int,
+    bpc: u8,
     itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;

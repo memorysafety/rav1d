@@ -141,7 +141,7 @@ impl Rav1dDSPContext {
         }
     }
 
-    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: c_int) -> Self {
+    pub const fn new<BD: BitDepth>(flags: CpuFlags, bpc: u8) -> Self {
         Self {
             fg: Rav1dFilmGrainDSPContext::new::<BD>(flags),
             ipred: Rav1dIntraPredDSPContext::new::<BD>(flags),
@@ -154,7 +154,7 @@ impl Rav1dDSPContext {
         }
     }
 
-    pub fn get(bpc: c_int) -> Option<&'static Self> {
+    pub fn get(bpc: u8) -> Option<&'static Self> {
         static BPC8: OnceLock<Rav1dDSPContext> = OnceLock::new();
         static BPC10: OnceLock<Rav1dDSPContext> = OnceLock::new();
         static BPC12: OnceLock<Rav1dDSPContext> = OnceLock::new();
@@ -363,7 +363,7 @@ pub struct Rav1dContext {
 
     pub(crate) allocator: Rav1dPicAllocator,
     pub(crate) apply_grain: bool,
-    pub(crate) operating_point: c_int,
+    pub(crate) operating_point: u8,
     pub(crate) operating_point_idc: c_uint,
     pub(crate) all_layers: bool,
     pub(crate) max_spatial_id: bool,
