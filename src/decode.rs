@@ -1,6 +1,7 @@
 use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign64;
+use crate::include::common::intops::clip;
 use crate::include::common::intops::iclip;
 use crate::include::common::intops::iclip_u8;
 use crate::include::dav1d::headers::Dav1dFilterMode;
@@ -176,7 +177,7 @@ use strum::EnumCount;
 fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
-    qidx: c_int,
+    qidx: u8,
     dq: &mut [[[u16; 2]; 3]],
 ) {
     let tbl = &dav1d_dq_tbl;
@@ -185,15 +186,15 @@ fn init_quant_tables(
     let len = if segmentation_is_enabled { 8 } else { 1 };
     for i in 0..len {
         let yac = if segmentation_is_enabled {
-            iclip_u8(qidx + frame_hdr.segmentation.seg_data.d[i].delta_q)
+            iclip_u8(qidx as c_int + frame_hdr.segmentation.seg_data.d[i].delta_q as c_int)
         } else {
-            qidx
+            qidx.into()
         };
-        let ydc = iclip_u8(yac + frame_hdr.quant.ydc_delta);
-        let uac = iclip_u8(yac + frame_hdr.quant.uac_delta);
-        let udc = iclip_u8(yac + frame_hdr.quant.udc_delta);
-        let vac = iclip_u8(yac + frame_hdr.quant.vac_delta);
-        let vdc = iclip_u8(yac + frame_hdr.quant.vdc_delta);
+        let ydc = iclip_u8(yac + frame_hdr.quant.ydc_delta as c_int);
+        let uac = iclip_u8(yac + frame_hdr.quant.uac_delta as c_int);
+        let udc = iclip_u8(yac + frame_hdr.quant.udc_delta as c_int);
+        let vac = iclip_u8(yac + frame_hdr.quant.vac_delta as c_int);
+        let vdc = iclip_u8(yac + frame_hdr.quant.vdc_delta as c_int);
         dq[i][0][0] = tbl[seq_hdr.hbd as usize][ydc as usize][0];
         dq[i][0][1] = tbl[seq_hdr.hbd as usize][yac as usize][1];
         dq[i][1][0] = tbl[seq_hdr.hbd as usize][udc as usize][0];
@@ -358,7 +359,7 @@ unsafe fn read_tx_tree(
     };
 }
 
-fn neg_deinterleave(diff: c_int, r#ref: c_int, max: c_int) -> c_int {
+fn neg_deinterleave(diff: u8, r#ref: u8, max: u8) -> u8 {
     if r#ref == 0 {
         diff
     } else if r#ref >= max - 1 {
@@ -1347,11 +1348,10 @@ unsafe fn decode_b(
                     &mut ts.cdf.m.seg_id[seg_ctx as usize],
                     RAV1D_MAX_SEGMENTS as usize - 1,
                 );
-                let last_active_seg_id = frame_hdr.segmentation.seg_data.last_active_segid;
-                b.seg_id =
-                    neg_deinterleave(diff as c_int, pred_seg_id as c_int, last_active_seg_id + 1)
-                        as u8;
-                if b.seg_id as c_int > last_active_seg_id {
+                let last_active_seg_id_plus1 =
+                    (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
+                b.seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                if b.seg_id >= last_active_seg_id_plus1 {
                     b.seg_id = 0; // error?
                 }
                 if b.seg_id >= RAV1D_MAX_SEGMENTS {
@@ -1432,18 +1432,17 @@ unsafe fn decode_b(
                 f.b4_stride as usize,
             );
             if b.skip != 0 {
-                b.seg_id = pred_seg_id as u8;
+                b.seg_id = pred_seg_id;
             } else {
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts.msac,
                     &mut ts.cdf.m.seg_id[seg_ctx as usize],
                     RAV1D_MAX_SEGMENTS as usize - 1,
                 );
-                let last_active_seg_id = frame_hdr.segmentation.seg_data.last_active_segid;
-                b.seg_id =
-                    neg_deinterleave(diff as c_int, pred_seg_id as c_int, last_active_seg_id + 1)
-                        as u8;
-                if b.seg_id as i32 > last_active_seg_id {
+                let last_active_seg_id_plus1 =
+                    (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
+                b.seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
+                if b.seg_id >= last_active_seg_id_plus1 {
                     b.seg_id = 0; // error?
                 }
             }
@@ -1521,7 +1520,7 @@ unsafe fn decode_b(
                 }
                 delta_q *= 1 << frame_hdr.delta.q.res_log2;
             }
-            ts.last_qidx = iclip(ts.last_qidx + delta_q, 1, 255);
+            ts.last_qidx = clip(ts.last_qidx as c_int + delta_q, 1, 255);
             if have_delta_q && debug_block_info!(f, t.b) {
                 println!(
                     "Post-delta_q[{}->{}]: r={}",
@@ -3721,7 +3720,7 @@ unsafe fn setup_tile(
 
         let lr_ref = if diff_width {
             let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as u8;
-            let d = frame_hdr.size.super_res.width_scale_denominator;
+            let d = frame_hdr.size.super_res.width_scale_denominator as c_int;
             let unit_size_log2 = frame_hdr.restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
             let shift = unit_size_log2 + 3;
@@ -3900,7 +3899,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     );
     if t.frame_thread.pass == 2 {
         let off_2pass = if c.tc.len() > 1 {
-            f.sb128w * frame_hdr.tiling.rows
+            f.sb128w * frame_hdr.tiling.rows as c_int
         } else {
             0
         };
@@ -3987,7 +3986,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
                 let n_units = cmp::max(1, w + half_unit >> unit_size_log2);
 
-                let d = frame_hdr.size.super_res.width_scale_denominator;
+                let d = frame_hdr.size.super_res.width_scale_denominator as c_int;
                 let rnd = unit_size * 8 - 1;
                 let shift = unit_size_log2 + 3;
                 let x0 = (4 * t.b.x * d >> ss_hor) + rnd >> shift;
@@ -4086,7 +4085,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let mut sby = 0;
     for tile_row in 0..frame_hdr.tiling.rows {
-        f.lf.start_of_tile_row[sby as usize] = tile_row as u8;
+        f.lf.start_of_tile_row[sby as usize] = tile_row;
         sby += 1;
         while sby < frame_hdr.tiling.row_start_sb[(tile_row + 1) as usize] as c_int {
             f.lf.start_of_tile_row[sby as usize] = 0;
@@ -4094,7 +4093,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         }
     }
 
-    let n_ts = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
+    let n_ts = frame_hdr.tiling.cols as c_int * frame_hdr.tiling.rows as c_int;
     if n_ts != f.n_ts {
         if c.fc.len() > 1 {
             // TODO: Fallible allocation
@@ -4109,7 +4108,9 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         f.n_ts = n_ts;
     }
 
-    let a_sz = f.sb128w * frame_hdr.tiling.rows * (1 + (c.fc.len() > 1 && c.tc.len() > 1) as c_int);
+    let a_sz = f.sb128w
+        * frame_hdr.tiling.rows as c_int
+        * (1 + (c.fc.len() > 1 && c.tc.len() > 1) as c_int);
     // TODO: Fallible allocation
     f.a.resize_with(a_sz as usize, Default::default);
 
@@ -4136,20 +4137,19 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             }
         }
 
-        let lowest_pixel_mem_sz = frame_hdr.tiling.cols * f.sbh;
+        let lowest_pixel_mem_sz = frame_hdr.tiling.cols as usize * f.sbh as usize;
         // TODO: Fallible allocation
         f.lowest_pixel_mem
-            .resize(lowest_pixel_mem_sz as usize, Default::default());
+            .resize(lowest_pixel_mem_sz, Default::default());
 
         let mut lowest_pixel_offset = 0;
-        for tile_row in 0..frame_hdr.tiling.rows {
-            let tile_row_base = tile_row * frame_hdr.tiling.cols;
-            let tile_row_sb_h = frame_hdr.tiling.row_start_sb[(tile_row + 1) as usize] as c_int
-                - frame_hdr.tiling.row_start_sb[tile_row as usize] as c_int;
-            for tile_col in 0..frame_hdr.tiling.cols {
-                (*f.ts.offset((tile_row_base + tile_col) as isize)).lowest_pixel =
-                    lowest_pixel_offset;
-                lowest_pixel_offset += tile_row_sb_h as usize;
+        for tile_row in 0..frame_hdr.tiling.rows as usize {
+            let tile_row_base = tile_row * frame_hdr.tiling.cols as usize;
+            let tile_row_sb_h = frame_hdr.tiling.row_start_sb[tile_row + 1] as usize
+                - frame_hdr.tiling.row_start_sb[tile_row] as usize;
+            for tile_col in 0..frame_hdr.tiling.cols as usize {
+                (*f.ts.add(tile_row_base + tile_col)).lowest_pixel = lowest_pixel_offset;
+                lowest_pixel_offset += tile_row_sb_h;
             }
         }
 
@@ -4320,9 +4320,9 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     f.ipred_edge.resize(ipred_edge_sz as usize * 128 * 3, 0);
     f.ipred_edge_off = bpc.pxstride(ipred_edge_sz as usize * 128);
 
-    let re_sz = f.sb128h * frame_hdr.tiling.cols;
+    let re_sz = f.sb128h as usize * frame_hdr.tiling.cols as usize;
     // TODO: Fallible allocation
-    f.lf.tx_lpf_right_edge.resize(re_sz as usize, 0);
+    f.lf.tx_lpf_right_edge.resize(re_sz, 0);
 
     // init ref mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
@@ -4360,8 +4360,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
                     cmp::min(
                         (get_poc_diff(
                             seq_hdr.order_hint_n_bits,
-                            ref_pocs[ij],
-                            f.cur.frame_hdr.as_ref().unwrap().frame_offset,
+                            ref_pocs[ij] as c_int,
+                            f.cur.frame_hdr.as_ref().unwrap().frame_offset as c_int,
                         ))
                         .unsigned_abs(),
                         31,
@@ -4515,7 +4515,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
 
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
-    for ctx in &mut f.a[..(f.sb128w * frame_hdr.tiling.rows) as usize] {
+    for ctx in &mut f.a[..f.sb128w as usize * frame_hdr.tiling.rows as usize] {
         reset_context(ctx, frame_hdr.frame_type.is_key_or_intra(), 0);
     }
 
@@ -4896,9 +4896,10 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     let uses_2pass = (c.fc.len() > 1) as c_int;
     let cols = frame_hdr.tiling.cols;
     let rows = frame_hdr.tiling.rows;
-    fc.task_thread
-        .task_counter
-        .store(cols * rows + f.sbh << uses_2pass, Ordering::SeqCst);
+    fc.task_thread.task_counter.store(
+        cols as c_int * rows as c_int + f.sbh << uses_2pass,
+        Ordering::SeqCst,
+    );
 
     // ref_mvs
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {

@@ -5080,7 +5080,7 @@ pub(crate) fn rav1d_cdf_thread_update(
 }
 
 #[inline]
-unsafe fn get_qcat_idx(q: c_int) -> c_int {
+unsafe fn get_qcat_idx(q: u8) -> c_int {
     if q <= 20 {
         return 0 as c_int;
     }
@@ -5093,7 +5093,7 @@ unsafe fn get_qcat_idx(q: c_int) -> c_int {
     return 3 as c_int;
 }
 
-pub unsafe fn rav1d_cdf_thread_init_static(qidx: c_int) -> CdfThreadContext {
+pub unsafe fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
     CdfThreadContext::QCat(get_qcat_idx(qidx) as c_uint)
 }
 
