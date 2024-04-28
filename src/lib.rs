@@ -42,8 +42,6 @@ use crate::src::mem::rav1d_freep_aligned;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::pal::rav1d_pal_dsp_init;
-use crate::src::picture::dav1d_default_picture_alloc;
-use crate::src::picture::dav1d_default_picture_release;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
@@ -211,9 +209,8 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).decode_frame_type = s.decode_frame_type;
     (*c).cached_error_props = Default::default();
     addr_of_mut!((*c).picture_pool).write(Default::default());
-    if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
-        && (*c).allocator.release_picture_callback == dav1d_default_picture_release
-    {
+
+    if (*c).allocator.is_default() {
         if !(*c).allocator.cookie.is_null() {
             return error(c, c_out);
         }
@@ -222,10 +219,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         (*c).allocator.cookie = ptr::from_ref(&(*c).picture_pool)
             .cast::<c_void>()
             .cast_mut();
-    } else if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
-        || (*c).allocator.release_picture_callback == dav1d_default_picture_release
-    {
-        return error(c, c_out);
     }
     if (::core::mem::size_of::<usize>() as c_ulong) < 8 as c_ulong
         && (s.frame_size_limit).wrapping_sub(1 as c_int as c_uint) >= (8192 * 8192) as c_uint
