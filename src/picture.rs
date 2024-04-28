@@ -31,6 +31,7 @@ use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
+use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
 use std::sync::atomic::AtomicU32;
@@ -103,22 +104,12 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size = y_sz + 2 * uv_sz;
 
-    let pool = &*cookie.cast::<Arc<MemPool<u8>>>();
+    let pool = &*cookie.cast::<Arc<MemPool<MaybeUninit<u8>>>>();
     let pool = pool.clone();
     let pic_cap = pic_size + RAV1D_PICTURE_ALIGNMENT;
     // TODO fallible allocation
     let mut buf = pool.pop(pic_cap);
-    if cfg!(debug_assertions) {
-        buf.resize_with(pic_cap, Default::default);
-    } else {
-        assert!(buf.capacity() >= pic_cap);
-        // SAFETY: We checked the capacity, so it is safe on that front.
-        // As for initialized, the bytes are not yet initialized.
-        // We do materialize intermediate slices to them, which is technically UB,
-        // but we do write to them eventually before any reads.
-        // This is done for performance, as zeroing causes a 10% performance regression.
-        unsafe { buf.set_len(pic_cap) };
-    }
+    buf.resize_with(pic_cap, MaybeUninit::uninit);
     // We have to `Box` this because `Dav1dPicture::allocator_data` is only 8 bytes.
     let mut buf = Box::new(MemPoolBuf { pool, buf });
     let data = &mut buf.buf[..];
@@ -148,7 +139,7 @@ pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, _co
         .allocator_data
         .unwrap()
         .as_ptr()
-        .cast::<MemPoolBuf<u8>>();
+        .cast::<MemPoolBuf<MaybeUninit<u8>>>();
     let buf = Box::from_raw(buf);
     let MemPoolBuf { pool, buf } = *buf;
     pool.push(buf);
