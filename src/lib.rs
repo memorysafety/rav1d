@@ -347,7 +347,7 @@ impl Rav1dFilmGrainData {
 }
 
 impl Rav1dPicture {
-    unsafe fn has_grain(&self) -> bool {
+    fn has_grain(&self) -> bool {
         self.frame_hdr.as_ref().unwrap().film_grain.data.has_grain()
     }
 }
