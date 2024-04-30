@@ -379,15 +379,6 @@ pub struct Rav1dContext {
     pub(crate) picture_pool: Arc<MemPool<MaybeUninit<u8>>>,
 }
 
-impl Rav1dContext {
-    /// Iterates over all frame contexts in the `fc` buffer, starting at a given
-    /// index. The iterator wraps around to the start of the buffer. so all
-    /// contexts will be included.
-    pub(crate) fn fc_iter(&self, start: usize) -> impl Iterator<Item = &Rav1dFrameContext> {
-        self.fc.iter().skip(start).chain(self.fc.iter().take(start))
-    }
-}
-
 // TODO(SJC): Remove when Rav1dContext is thread-safe
 unsafe impl Send for Rav1dContext {}
 // TODO(SJC): Remove when Rav1dContext is thread-safe

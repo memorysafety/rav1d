@@ -35,6 +35,7 @@ use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
+use crate::src::iter::wrapping_iter;
 use crate::src::log::Rav1dLog as _;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
@@ -685,7 +686,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
         (*c).task_thread.cond_signaled.store(0, Ordering::SeqCst);
     }
     if (*c).fc.len() > 1 {
-        for fc in (*c).fc_iter((*c).frame_thread.next as usize) {
+        for fc in wrapping_iter((*c).fc.iter(), (*c).frame_thread.next as usize) {
             rav1d_decode_frame_exit(&*c, fc, Err(EGeneric));
             *fc.task_thread.retval.try_lock().unwrap() = Ok(());
             let out_delayed = &mut (*c).frame_thread.out_delayed[fc.index];
