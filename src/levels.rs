@@ -376,44 +376,44 @@ pub struct Av1Block {
     pub skip_mode: u8,
     pub skip: u8,
     pub uvtx: RectTxfmSize,
-    pub c2rust_unnamed: Av1Block_intra_inter,
+    pub ii: Av1Block_intra_inter,
 }
 
 impl Av1Block {
     pub unsafe fn cfl_alpha(&self) -> &[i8; 2] {
-        &self.c2rust_unnamed.c2rust_unnamed.cfl_alpha
+        &self.ii.c2rust_unnamed.cfl_alpha
     }
 
     pub unsafe fn cfl_alpha_mut(&mut self) -> &mut [i8; 2] {
-        &mut self.c2rust_unnamed.c2rust_unnamed.cfl_alpha
+        &mut self.ii.c2rust_unnamed.cfl_alpha
     }
 
     pub unsafe fn comp_type(&self) -> Option<CompInterType> {
-        self.c2rust_unnamed.c2rust_unnamed_0.comp_type
+        self.ii.c2rust_unnamed_0.comp_type
     }
 
     pub unsafe fn comp_type_mut(&mut self) -> &mut Option<CompInterType> {
-        &mut self.c2rust_unnamed.c2rust_unnamed_0.comp_type
+        &mut self.ii.c2rust_unnamed_0.comp_type
     }
 
     pub unsafe fn drl_idx(&self) -> DrlProximity {
-        self.c2rust_unnamed.c2rust_unnamed_0.drl_idx
+        self.ii.c2rust_unnamed_0.drl_idx
     }
 
     pub unsafe fn drl_idx_mut(&mut self) -> &mut DrlProximity {
-        &mut self.c2rust_unnamed.c2rust_unnamed_0.drl_idx
+        &mut self.ii.c2rust_unnamed_0.drl_idx
     }
 
     pub unsafe fn inter_mode(&self) -> u8 {
-        self.c2rust_unnamed.c2rust_unnamed_0.inter_mode
+        self.ii.c2rust_unnamed_0.inter_mode
     }
 
     pub unsafe fn inter_mode_mut(&mut self) -> &mut u8 {
-        &mut self.c2rust_unnamed.c2rust_unnamed_0.inter_mode
+        &mut self.ii.c2rust_unnamed_0.inter_mode
     }
 
     pub unsafe fn mask_sign(&self) -> u8 {
-        self.c2rust_unnamed
+        self.ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed
@@ -422,7 +422,7 @@ impl Av1Block {
 
     pub unsafe fn mask_sign_mut(&mut self) -> &mut u8 {
         &mut self
-            .c2rust_unnamed
+            .ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed
@@ -430,56 +430,56 @@ impl Av1Block {
     }
 
     pub unsafe fn pal_sz(&self) -> &[u8; 2] {
-        &self.c2rust_unnamed.c2rust_unnamed.pal_sz
+        &self.ii.c2rust_unnamed.pal_sz
     }
 
     pub unsafe fn pal_sz_mut(&mut self) -> &mut [u8; 2] {
-        &mut self.c2rust_unnamed.c2rust_unnamed.pal_sz
+        &mut self.ii.c2rust_unnamed.pal_sz
     }
 
     pub unsafe fn tx(&self) -> u8 {
-        self.c2rust_unnamed.c2rust_unnamed.tx
+        self.ii.c2rust_unnamed.tx
     }
 
     pub unsafe fn tx_mut(&mut self) -> &mut u8 {
-        &mut self.c2rust_unnamed.c2rust_unnamed.tx
+        &mut self.ii.c2rust_unnamed.tx
     }
 
     pub unsafe fn y_mode(&self) -> u8 {
-        self.c2rust_unnamed.c2rust_unnamed.y_mode
+        self.ii.c2rust_unnamed.y_mode
     }
 
     pub unsafe fn y_mode_mut(&mut self) -> &mut u8 {
-        &mut self.c2rust_unnamed.c2rust_unnamed.y_mode
+        &mut self.ii.c2rust_unnamed.y_mode
     }
 
     pub unsafe fn y_angle(&self) -> i8 {
-        self.c2rust_unnamed.c2rust_unnamed.y_angle
+        self.ii.c2rust_unnamed.y_angle
     }
 
     pub unsafe fn y_angle_mut(&mut self) -> &mut i8 {
-        &mut self.c2rust_unnamed.c2rust_unnamed.y_angle
+        &mut self.ii.c2rust_unnamed.y_angle
     }
 
     #[allow(dead_code)]
     pub unsafe fn uv_angle(&self) -> i8 {
-        self.c2rust_unnamed.c2rust_unnamed.uv_angle
+        self.ii.c2rust_unnamed.uv_angle
     }
 
     pub unsafe fn uv_angle_mut(&mut self) -> &mut i8 {
-        &mut self.c2rust_unnamed.c2rust_unnamed.uv_angle
+        &mut self.ii.c2rust_unnamed.uv_angle
     }
 
     pub unsafe fn uv_mode(&self) -> u8 {
-        self.c2rust_unnamed.c2rust_unnamed.uv_mode
+        self.ii.c2rust_unnamed.uv_mode
     }
 
     pub unsafe fn uv_mode_mut(&mut self) -> &mut u8 {
-        &mut self.c2rust_unnamed.c2rust_unnamed.uv_mode
+        &mut self.ii.c2rust_unnamed.uv_mode
     }
 
     pub unsafe fn wedge_idx(&self) -> u8 {
-        self.c2rust_unnamed
+        self.ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed
@@ -488,7 +488,7 @@ impl Av1Block {
 
     pub unsafe fn wedge_idx_mut(&mut self) -> &mut u8 {
         &mut self
-            .c2rust_unnamed
+            .ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed
@@ -497,7 +497,7 @@ impl Av1Block {
 
     pub unsafe fn matrix(&self) -> &[i16; 4] {
         &self
-            .c2rust_unnamed
+            .ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed_0
@@ -506,7 +506,7 @@ impl Av1Block {
 
     pub unsafe fn matrix_mut(&mut self) -> &mut [i16; 4] {
         &mut self
-            .c2rust_unnamed
+            .ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed_0
@@ -514,26 +514,16 @@ impl Av1Block {
     }
 
     pub unsafe fn mv(&self) -> &[mv; 2] {
-        &self
-            .c2rust_unnamed
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .mv
+        &self.ii.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed.mv
     }
 
     pub unsafe fn mv_mut(&mut self) -> &mut [mv; 2] {
-        &mut self
-            .c2rust_unnamed
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .mv
+        &mut self.ii.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed.mv
     }
 
     pub unsafe fn mv2d(&self) -> &mv {
         &self
-            .c2rust_unnamed
+            .ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed_0
@@ -541,39 +531,39 @@ impl Av1Block {
     }
 
     pub unsafe fn filter2d(&self) -> Filter2d {
-        self.c2rust_unnamed.c2rust_unnamed_0.filter2d
+        self.ii.c2rust_unnamed_0.filter2d
     }
 
     pub unsafe fn filter2d_mut(&mut self) -> &mut Filter2d {
-        &mut self.c2rust_unnamed.c2rust_unnamed_0.filter2d
+        &mut self.ii.c2rust_unnamed_0.filter2d
     }
 
     pub unsafe fn r#ref(&self) -> [i8; 2] {
-        self.c2rust_unnamed.c2rust_unnamed_0.r#ref
+        self.ii.c2rust_unnamed_0.r#ref
     }
 
     pub unsafe fn ref_mut(&mut self) -> &mut [i8; 2] {
-        &mut self.c2rust_unnamed.c2rust_unnamed_0.r#ref
+        &mut self.ii.c2rust_unnamed_0.r#ref
     }
 
     pub unsafe fn max_ytx(&self) -> u8 {
-        self.c2rust_unnamed.c2rust_unnamed_0.max_ytx
+        self.ii.c2rust_unnamed_0.max_ytx
     }
 
     pub unsafe fn max_ytx_mut(&mut self) -> &mut u8 {
-        &mut self.c2rust_unnamed.c2rust_unnamed_0.max_ytx
+        &mut self.ii.c2rust_unnamed_0.max_ytx
     }
 
     pub unsafe fn interintra_type(&self) -> Option<InterIntraType> {
-        self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
+        self.ii.c2rust_unnamed_0.interintra_type
     }
 
     pub unsafe fn interintra_type_mut(&mut self) -> &mut Option<InterIntraType> {
-        &mut self.c2rust_unnamed.c2rust_unnamed_0.interintra_type
+        &mut self.ii.c2rust_unnamed_0.interintra_type
     }
 
     pub unsafe fn interintra_mode(&self) -> InterIntraPredMode {
-        self.c2rust_unnamed
+        self.ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed
@@ -582,7 +572,7 @@ impl Av1Block {
 
     pub unsafe fn interintra_mode_mut(&mut self) -> &mut InterIntraPredMode {
         &mut self
-            .c2rust_unnamed
+            .ii
             .c2rust_unnamed_0
             .c2rust_unnamed
             .c2rust_unnamed
@@ -590,18 +580,18 @@ impl Av1Block {
     }
 
     pub unsafe fn motion_mode(&self) -> MotionMode {
-        self.c2rust_unnamed.c2rust_unnamed_0.motion_mode
+        self.ii.c2rust_unnamed_0.motion_mode
     }
 
     pub unsafe fn motion_mode_mut(&mut self) -> &mut MotionMode {
-        &mut self.c2rust_unnamed.c2rust_unnamed_0.motion_mode
+        &mut self.ii.c2rust_unnamed_0.motion_mode
     }
 
     pub unsafe fn tx_split0(&self) -> u8 {
-        self.c2rust_unnamed.c2rust_unnamed_0.tx_split0
+        self.ii.c2rust_unnamed_0.tx_split0
     }
 
     pub unsafe fn tx_split1(&self) -> u16 {
-        self.c2rust_unnamed.c2rust_unnamed_0.tx_split1
+        self.ii.c2rust_unnamed_0.tx_split1
     }
 }
