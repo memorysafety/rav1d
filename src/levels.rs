@@ -338,7 +338,7 @@ pub union Av1Block_inter_nd {
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1Block_inter {
-    pub c2rust_unnamed: Av1Block_inter_nd,
+    pub nd: Av1Block_inter_nd,
     pub comp_type: Option<CompInterType>,
     pub inter_mode: u8,
     pub motion_mode: MotionMode,
@@ -413,11 +413,11 @@ impl Av1Block {
     }
 
     pub unsafe fn mask_sign(&self) -> u8 {
-        self.ii.inter.c2rust_unnamed.c2rust_unnamed.mask_sign
+        self.ii.inter.nd.c2rust_unnamed.mask_sign
     }
 
     pub unsafe fn mask_sign_mut(&mut self) -> &mut u8 {
-        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed.mask_sign
+        &mut self.ii.inter.nd.c2rust_unnamed.mask_sign
     }
 
     pub unsafe fn pal_sz(&self) -> &[u8; 2] {
@@ -470,31 +470,31 @@ impl Av1Block {
     }
 
     pub unsafe fn wedge_idx(&self) -> u8 {
-        self.ii.inter.c2rust_unnamed.c2rust_unnamed.wedge_idx
+        self.ii.inter.nd.c2rust_unnamed.wedge_idx
     }
 
     pub unsafe fn wedge_idx_mut(&mut self) -> &mut u8 {
-        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed.wedge_idx
+        &mut self.ii.inter.nd.c2rust_unnamed.wedge_idx
     }
 
     pub unsafe fn matrix(&self) -> &[i16; 4] {
-        &self.ii.inter.c2rust_unnamed.c2rust_unnamed_0.matrix
+        &self.ii.inter.nd.c2rust_unnamed_0.matrix
     }
 
     pub unsafe fn matrix_mut(&mut self) -> &mut [i16; 4] {
-        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed_0.matrix
+        &mut self.ii.inter.nd.c2rust_unnamed_0.matrix
     }
 
     pub unsafe fn mv(&self) -> &[mv; 2] {
-        &self.ii.inter.c2rust_unnamed.c2rust_unnamed.mv
+        &self.ii.inter.nd.c2rust_unnamed.mv
     }
 
     pub unsafe fn mv_mut(&mut self) -> &mut [mv; 2] {
-        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed.mv
+        &mut self.ii.inter.nd.c2rust_unnamed.mv
     }
 
     pub unsafe fn mv2d(&self) -> &mv {
-        &self.ii.inter.c2rust_unnamed.c2rust_unnamed_0.mv2d
+        &self.ii.inter.nd.c2rust_unnamed_0.mv2d
     }
 
     pub unsafe fn filter2d(&self) -> Filter2d {
@@ -530,11 +530,11 @@ impl Av1Block {
     }
 
     pub unsafe fn interintra_mode(&self) -> InterIntraPredMode {
-        self.ii.inter.c2rust_unnamed.c2rust_unnamed.interintra_mode
+        self.ii.inter.nd.c2rust_unnamed.interintra_mode
     }
 
     pub unsafe fn interintra_mode_mut(&mut self) -> &mut InterIntraPredMode {
-        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed.interintra_mode
+        &mut self.ii.inter.nd.c2rust_unnamed.interintra_mode
     }
 
     pub unsafe fn motion_mode(&self) -> MotionMode {
