@@ -57,6 +57,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::ffi::CStr;
 use std::mem;
 use std::process::abort;
 use std::ptr;
@@ -80,16 +81,20 @@ fn init_internal() {
     rav1d_init_cpu();
 }
 
-pub fn rav1d_version() -> &'static str {
-    let null_termination_version = "966d63c1\0";
-    &null_termination_version[..null_termination_version.len() - 1]
+const DAV1D_VERSION: &CStr = c"966d63c1";
+const RAV1D_VERSION: &str = match DAV1D_VERSION.to_str() {
+    Ok(version) => version,
+    Err(_) => unreachable!(),
+};
+
+pub const fn rav1d_version() -> &'static str {
+    RAV1D_VERSION
 }
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_version() -> *const c_char {
-    // Safety: [`rav1d_version`] has a null-terminator.
-    rav1d_version().as_ptr().cast()
+pub extern "C" fn dav1d_version() -> *const c_char {
+    DAV1D_VERSION.as_ptr()
 }
 
 pub const DAV1D_API_VERSION_MAJOR: u8 = 7;
