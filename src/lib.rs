@@ -384,7 +384,6 @@ fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
             {
                 return true;
             }
-            let _ = mem::take(&mut c.cache);
             c.cache = mem::take(&mut c.out);
             return false;
         } else {
