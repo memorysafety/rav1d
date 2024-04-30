@@ -250,6 +250,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         cur: AtomicU32::new(n_fc as u32),
         reset_task_cur: AtomicU32::new(u32::MAX),
         cond_signaled: AtomicI32::new(0),
+        delayed_fg_exec: AtomicI32::new(0),
         delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
         delayed_fg_cond: Condvar::new(),
         delayed_fg: Mutex::new(mem::zeroed()),

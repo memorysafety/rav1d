@@ -440,11 +440,11 @@ pub(crate) unsafe fn rav1d_task_delayed_fg(
     delayed_fg.in_0 = in_0;
     delayed_fg.out = out;
     delayed_fg.type_0 = TaskType::FgPrep;
-    ttd.delayed_fg_progress[0].store(0, Ordering::SeqCst);
-    ttd.delayed_fg_progress[1].store(0, Ordering::SeqCst);
-    delayed_fg.exec = 1 as c_int;
+    ttd.delayed_fg_exec.store(1, Ordering::Relaxed);
     ttd.cond.notify_one();
     drop(ttd.delayed_fg_cond.wait(delayed_fg).unwrap());
+    ttd.delayed_fg_progress[0].store(0, Ordering::SeqCst);
+    ttd.delayed_fg_progress[1].store(0, Ordering::SeqCst);
 }
 
 #[inline]
@@ -616,7 +616,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
     let mut done;
     match delayed_fg.type_0 {
         TaskType::FgPrep => {
-            delayed_fg.exec = 0 as c_int;
+            ttd.delayed_fg_exec.store(0, Ordering::Relaxed);
             if ttd.cond_signaled.load(Ordering::SeqCst) != 0 {
                 ttd.cond.notify_one();
             }
@@ -645,7 +645,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                 }
             }
             delayed_fg.type_0 = TaskType::FgApply;
-            delayed_fg.exec = 1 as c_int;
+            ttd.delayed_fg_exec.store(1, Ordering::Relaxed);
         }
         TaskType::FgApply => {}
         _ => {
@@ -659,9 +659,8 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
         if (row + 1) < progmax {
             ttd.cond.notify_one();
         } else if row + 1 >= progmax {
-            let mut delayed_fg = ttd.delayed_fg.lock().unwrap();
-            delayed_fg.exec = 0 as c_int;
-            *task_thread_lock = Some(delayed_fg);
+            *task_thread_lock = ttd.delayed_fg.lock().ok();
+            ttd.delayed_fg_exec.store(0, Ordering::Relaxed);
             if row >= progmax {
                 break;
             }
@@ -704,9 +703,8 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
         if row < progmax {
             continue;
         }
-        let mut delayed_fg = ttd.delayed_fg.lock().unwrap();
-        delayed_fg.exec = 0 as c_int;
-        *task_thread_lock = Some(delayed_fg);
+        *task_thread_lock = ttd.delayed_fg.lock().ok();
+        ttd.delayed_fg_exec.store(0, Ordering::Relaxed);
         break;
     }
     done = ttd.delayed_fg_progress[1].fetch_add(1, Ordering::SeqCst) + 1;
@@ -748,7 +746,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
         }
 
         merge_pending(c);
-        if task_thread_lock.as_ref().unwrap().exec != 0 {
+        if ttd.delayed_fg_exec.load(Ordering::Relaxed) != 0 {
             // run delayed film grain first
             delayed_fg_task(ttd, &mut task_thread_lock);
             continue 'outer;

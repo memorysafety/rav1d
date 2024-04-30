@@ -245,7 +245,6 @@ impl BitDepthDependentType for Grain {
 
 #[repr(C)]
 pub(crate) struct TaskThreadData_delayed_fg {
-    pub exec: c_int,
     pub in_0: *const Rav1dPicture,
     pub out: *mut Rav1dPicture,
     pub type_0: TaskType,
@@ -255,7 +254,6 @@ pub(crate) struct TaskThreadData_delayed_fg {
 impl Default for TaskThreadData_delayed_fg {
     fn default() -> Self {
         Self {
-            exec: 0,
             in_0: std::ptr::null(),
             out: std::ptr::null_mut(),
             type_0: Default::default(),
@@ -279,6 +277,7 @@ pub(crate) struct TaskThreadData {
     /// See [`crate::src::thread_task::reset_task_cur`].
     pub reset_task_cur: AtomicU32,
     pub cond_signaled: AtomicI32,
+    pub delayed_fg_exec: AtomicI32,
     pub delayed_fg_progress: [AtomicI32; 2], /* [0]=started, [1]=completed */
     pub delayed_fg_cond: Condvar,
     /// This lock has a dual purpose - protecting the delayed_fg structure, as
