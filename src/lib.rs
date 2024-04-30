@@ -269,7 +269,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         fc.task_thread.finished = AtomicBool::new(true);
         fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
         let f = fc.data.get_mut().unwrap();
-        f.lf.last_sharpness = -(1 as c_int);
+        f.lf.last_sharpness = 255;
     }
     (*c).tc = (0..n_tc)
         .map(|n| {

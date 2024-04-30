@@ -1085,7 +1085,7 @@ pub(crate) fn rav1d_refmvs_find(
     }
 
     // temporal
-    let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs;
+    let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs as c_int;
     if rf.use_ref_frame_mvs != 0 {
         let stride = rf.rp_stride as usize;
         let by8 = by4 >> 1;
@@ -1651,7 +1651,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[4] as c_int,
-                frm_hdr.frame_offset,
+                frm_hdr.frame_offset as c_int,
             ) > 0
         {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 4; // bwd
@@ -1661,7 +1661,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[5] as c_int,
-                frm_hdr.frame_offset,
+                frm_hdr.frame_offset as c_int,
             ) > 0
         {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 5; // altref2
@@ -1672,7 +1672,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 ref_poc[6] as c_int,
-                frm_hdr.frame_offset,
+                frm_hdr.frame_offset as c_int,
             ) > 0
         {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 6; // altref
@@ -1688,7 +1688,7 @@ pub(crate) fn rav1d_refmvs_init_frame(
             let diff1 = get_poc_diff(
                 seq_hdr.order_hint_n_bits,
                 rpoc as c_int,
-                frm_hdr.frame_offset,
+                frm_hdr.frame_offset as c_int,
             );
             if diff1.abs() > 31 {
                 rf.mfmv_ref2cur[n] = i32::MIN;

@@ -1,4 +1,4 @@
-use crate::include::common::intops::iclip_u8;
+use crate::include::common::intops::clip_u8;
 use crate::include::common::intops::ulog2;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
@@ -580,7 +580,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
 unsafe fn parse_frame_size(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    refidx: Option<&[c_int; RAV1D_REFS_PER_FRAME]>,
+    refidx: Option<&[i8; RAV1D_REFS_PER_FRAME]>,
     frame_size_override: bool,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameSize> {
@@ -597,8 +597,8 @@ unsafe fn parse_frame_size(
                 let width_scale_denominator;
                 let width0;
                 if enabled {
-                    width_scale_denominator = 9 + gb.get_bits(3) as c_int;
-                    let d = width_scale_denominator;
+                    width_scale_denominator = 9 + gb.get_bits(3) as u8;
+                    let d = width_scale_denominator as c_int;
                     width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
                 } else {
                     width_scale_denominator = 8;
@@ -633,14 +633,14 @@ unsafe fn parse_frame_size(
     let width_scale_denominator;
     let width0;
     if enabled {
-        width_scale_denominator = 9 + gb.get_bits(3) as c_int;
-        let d = width_scale_denominator;
+        width_scale_denominator = 9 + gb.get_bits(3) as u8;
+        let d = width_scale_denominator as c_int;
         width0 = cmp::max((width1 * 8 + (d >> 1)) / d, cmp::min(16, width1));
     } else {
         width_scale_denominator = 8;
         width0 = width1;
     }
-    let have_render_size = gb.get_bit() as c_int;
+    let have_render_size = gb.get_bit() as u8;
     let render_width;
     let render_height;
     if have_render_size != 0 {
@@ -665,7 +665,7 @@ unsafe fn parse_frame_size(
 }
 
 #[inline]
-fn tile_log2(sz: c_int, tgt: c_int) -> c_int {
+fn tile_log2(sz: c_int, tgt: c_int) -> u8 {
     let mut k = 0;
     while sz << k < tgt {
         k += 1;
@@ -681,16 +681,16 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
 unsafe fn parse_refidx(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    frame_ref_short_signaling: c_int,
-    frame_offset: c_int,
-    frame_id: c_int,
+    frame_ref_short_signaling: u8,
+    frame_offset: u8,
+    frame_id: u32,
     gb: &mut GetBits,
-) -> Rav1dResult<[c_int; RAV1D_REFS_PER_FRAME]> {
+) -> Rav1dResult<[i8; RAV1D_REFS_PER_FRAME]> {
     let mut refidx = [-1; RAV1D_REFS_PER_FRAME];
     if frame_ref_short_signaling != 0 {
         // FIXME: Nearly verbatim copy from section 7.8
-        refidx[0] = gb.get_bits(3) as c_int;
-        refidx[3] = gb.get_bits(3) as c_int;
+        refidx[0] = gb.get_bits(3) as i8;
+        refidx[3] = gb.get_bits(3) as i8;
 
         let mut shifted_frame_offset = [0; 8];
         let current_frame_offset = 1 << seqhdr.order_hint_n_bits - 1;
@@ -704,8 +704,8 @@ unsafe fn parse_refidx(
                         .frame_hdr
                         .as_ref()
                         .ok_or(EINVAL)?
-                        .frame_offset,
-                    frame_offset,
+                        .frame_offset as c_int,
+                    frame_offset as c_int,
                 );
         }
 
@@ -794,14 +794,12 @@ unsafe fn parse_refidx(
     }
     for i in 0..7 {
         if frame_ref_short_signaling == 0 {
-            refidx[i as usize] = gb.get_bits(3) as c_int;
+            refidx[i as usize] = gb.get_bits(3) as i8;
         }
         if seqhdr.frame_id_numbers_present != 0 {
-            let delta_ref_frame_id_minus_1 =
-                gb.get_bits(seqhdr.delta_frame_id_n_bits.into()) as c_int;
-            let ref_frame_id =
-                frame_id + (1 << seqhdr.frame_id_n_bits) - delta_ref_frame_id_minus_1 - 1
-                    & (1 << seqhdr.frame_id_n_bits) - 1;
+            let delta_ref_frame_id = gb.get_bits(seqhdr.delta_frame_id_n_bits.into()) as u32 + 1;
+            let ref_frame_id = frame_id + (1 << seqhdr.frame_id_n_bits) - delta_ref_frame_id
+                & (1 << seqhdr.frame_id_n_bits) - 1;
             c.refs[refidx[i as usize] as usize]
                 .p
                 .p
@@ -820,7 +818,7 @@ fn parse_tiling(
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_tiling> {
-    let uniform = gb.get_bit() as c_int;
+    let uniform = gb.get_bit() as u8;
     let sbsz_min1 = ((64) << seqhdr.sb128) - 1;
     let sbsz_log2 = 6 + seqhdr.sb128;
     let sbw = size.width[0] + sbsz_min1 >> sbsz_log2;
@@ -850,7 +848,7 @@ fn parse_tiling(
             sbx += tile_w;
             cols += 1;
         }
-        let min_log2_rows = cmp::max(min_log2_tiles - log2_cols, 0);
+        let min_log2_rows = min_log2_tiles.saturating_sub(log2_cols);
 
         log2_rows = min_log2_rows;
         while log2_rows < max_log2_rows && gb.get_bit() {
@@ -869,7 +867,7 @@ fn parse_tiling(
         let mut widest_tile = 0;
         let mut max_tile_area_sb = sbw * sbh;
         let mut sbx = 0;
-        while sbx < sbw && cols < RAV1D_MAX_TILE_COLS as c_int {
+        while sbx < sbw && cols < RAV1D_MAX_TILE_COLS as u8 {
             let tile_width_sb = cmp::min(sbw - sbx, max_tile_width_sb);
             let tile_w = if tile_width_sb > 1 {
                 1 + gb.get_uniform(tile_width_sb as c_uint) as c_int
@@ -881,7 +879,7 @@ fn parse_tiling(
             widest_tile = cmp::max(widest_tile, tile_w);
             cols += 1;
         }
-        log2_cols = tile_log2(1, cols);
+        log2_cols = tile_log2(1, cols.into());
         if min_log2_tiles != 0 {
             max_tile_area_sb >>= min_log2_tiles + 1;
         }
@@ -889,7 +887,7 @@ fn parse_tiling(
 
         rows = 0;
         let mut sby = 0;
-        while sby < sbh && rows < RAV1D_MAX_TILE_ROWS as c_int {
+        while sby < sbh && rows < RAV1D_MAX_TILE_ROWS as u8 {
             let tile_height_sb = cmp::min(sbh - sby, max_tile_height_sb);
             let tile_h = if tile_height_sb > 1 {
                 1 + gb.get_uniform(tile_height_sb as c_uint) as c_int
@@ -900,21 +898,21 @@ fn parse_tiling(
             sby += tile_h;
             rows += 1;
         }
-        log2_rows = tile_log2(1, rows);
+        log2_rows = tile_log2(1, rows.into());
     }
     col_start_sb[cols as usize] = sbw as u16;
     row_start_sb[rows as usize] = sbh as u16;
     let update;
     let n_bytes;
     if log2_cols != 0 || log2_rows != 0 {
-        update = gb.get_bits(log2_cols + log2_rows) as c_int;
-        if update >= cols * rows {
+        update = gb.get_bits((log2_cols + log2_rows).into()) as u16;
+        if update >= cols as u16 * rows as u16 {
             return Err(EINVAL);
         }
-        n_bytes = gb.get_bits(2) + 1;
+        n_bytes = gb.get_bits(2) as u8 + 1;
     } else {
         update = 0;
-        n_bytes = update as c_uint;
+        n_bytes = update as u8;
     }
     debug.post(gb, "tiling");
     Ok(Rav1dFrameHeader_tiling {
@@ -940,8 +938,12 @@ fn parse_quant(
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dFrameHeader_quant {
-    let yac = gb.get_bits(8) as c_int;
-    let ydc_delta = if gb.get_bit() { gb.get_sbits(7) } else { 0 };
+    let yac = gb.get_bits(8) as u8;
+    let ydc_delta = if gb.get_bit() {
+        gb.get_sbits(7) as i8
+    } else {
+        0
+    };
     let udc_delta;
     let uac_delta;
     let vdc_delta;
@@ -955,11 +957,27 @@ fn parse_quant(
         } else {
             0
         };
-        udc_delta = if gb.get_bit() { gb.get_sbits(7) } else { 0 };
-        uac_delta = if gb.get_bit() { gb.get_sbits(7) } else { 0 };
+        udc_delta = if gb.get_bit() {
+            gb.get_sbits(7) as i8
+        } else {
+            0
+        };
+        uac_delta = if gb.get_bit() {
+            gb.get_sbits(7) as i8
+        } else {
+            0
+        };
         if diff_uv_delta != 0 {
-            vdc_delta = if gb.get_bit() { gb.get_sbits(7) } else { 0 };
-            vac_delta = if gb.get_bit() { gb.get_sbits(7) } else { 0 };
+            vdc_delta = if gb.get_bit() {
+                gb.get_sbits(7) as i8
+            } else {
+                0
+            };
+            vac_delta = if gb.get_bit() {
+                gb.get_sbits(7) as i8
+            } else {
+                0
+            };
         } else {
             vdc_delta = udc_delta;
             vac_delta = uac_delta;
@@ -972,15 +990,15 @@ fn parse_quant(
         vac_delta = Default::default();
     }
     debug.post(gb, "quant");
-    let qm = gb.get_bit() as c_int;
+    let qm = gb.get_bit() as u8;
     let qm_y;
     let qm_u;
     let qm_v;
     if qm != 0 {
-        qm_y = gb.get_bits(4) as c_int;
-        qm_u = gb.get_bits(4) as c_int;
+        qm_y = gb.get_bits(4) as u8;
+        qm_u = gb.get_bits(4) as u8;
         qm_v = if seqhdr.separate_uv_delta_q != 0 {
-            gb.get_bits(4) as c_int
+            gb.get_bits(4) as u8
         } else {
             qm_u
         };
@@ -1007,58 +1025,58 @@ fn parse_quant(
 
 fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
     let mut preskip = 0;
-    let mut last_active_segid = -1;
+    let mut last_active_segid = -1 as i8;
     let d = array::from_fn(|i| {
-        let i = i as c_int;
+        let i = i as i8;
         let delta_q;
         if gb.get_bit() {
-            delta_q = gb.get_sbits(9);
+            delta_q = gb.get_sbits(9) as i16;
             last_active_segid = i;
         } else {
             delta_q = 0;
         }
         let delta_lf_y_v;
         if gb.get_bit() {
-            delta_lf_y_v = gb.get_sbits(7);
+            delta_lf_y_v = gb.get_sbits(7) as i8;
             last_active_segid = i;
         } else {
             delta_lf_y_v = 0;
         }
         let delta_lf_y_h;
         if gb.get_bit() {
-            delta_lf_y_h = gb.get_sbits(7);
+            delta_lf_y_h = gb.get_sbits(7) as i8;
             last_active_segid = i;
         } else {
             delta_lf_y_h = 0;
         }
         let delta_lf_u;
         if gb.get_bit() {
-            delta_lf_u = gb.get_sbits(7);
+            delta_lf_u = gb.get_sbits(7) as i8;
             last_active_segid = i;
         } else {
             delta_lf_u = 0;
         }
         let delta_lf_v;
         if gb.get_bit() {
-            delta_lf_v = gb.get_sbits(7);
+            delta_lf_v = gb.get_sbits(7) as i8;
             last_active_segid = i;
         } else {
             delta_lf_v = 0;
         }
         let r#ref;
         if gb.get_bit() {
-            r#ref = gb.get_bits(3) as c_int;
+            r#ref = gb.get_bits(3) as i8;
             last_active_segid = i;
             preskip = 1;
         } else {
             r#ref = -1;
         }
-        let skip = gb.get_bit() as c_int;
+        let skip = gb.get_bit() as u8;
         if skip != 0 {
             last_active_segid = i;
             preskip = 1;
         }
-        let globalmv = gb.get_bit() as c_int;
+        let globalmv = gb.get_bit() as u8;
         if globalmv != 0 {
             last_active_segid = i;
             preskip = 1;
@@ -1083,13 +1101,13 @@ fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
 
 unsafe fn parse_segmentation(
     c: &Rav1dContext,
-    primary_ref_frame: c_int,
-    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
+    primary_ref_frame: u8,
+    refidx: &[i8; RAV1D_REFS_PER_FRAME],
     quant: &Rav1dFrameHeader_quant,
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_segmentation> {
-    let enabled = gb.get_bit() as c_int;
+    let enabled = gb.get_bit() as u8;
     let update_map;
     let temporal;
     let update_data;
@@ -1099,13 +1117,13 @@ unsafe fn parse_segmentation(
             temporal = 0;
             update_data = 1;
         } else {
-            update_map = gb.get_bit() as c_int;
+            update_map = gb.get_bit() as u8;
             temporal = if update_map != 0 {
-                gb.get_bit() as c_int
+                gb.get_bit() as u8
             } else {
                 0
             };
-            update_data = gb.get_bit() as c_int;
+            update_data = gb.get_bit() as u8;
         }
 
         if update_data != 0 {
@@ -1147,12 +1165,12 @@ unsafe fn parse_segmentation(
         && quant.vac_delta == 0) as c_int;
     let qidx = array::from_fn(|i| {
         if enabled != 0 {
-            iclip_u8(quant.yac + seg_data.d[i].delta_q)
+            clip_u8(quant.yac as c_int + seg_data.d[i].delta_q as c_int)
         } else {
             quant.yac
         }
     });
-    let lossless = array::from_fn(|i| (qidx[i] == 0 && delta_lossless != 0) as c_int);
+    let lossless = array::from_fn(|i| (qidx[i] == 0 && delta_lossless != 0) as u8);
     Ok(Rav1dFrameHeader_segmentation {
         enabled,
         update_map,
@@ -1172,29 +1190,25 @@ fn parse_delta(
 ) -> Rav1dFrameHeader_delta {
     let q = {
         let present = if quant.yac != 0 {
-            gb.get_bit() as c_int
+            gb.get_bit() as u8
         } else {
             0
         };
         let res_log2 = if present != 0 {
-            gb.get_bits(2) as c_int
+            gb.get_bits(2) as u8
         } else {
             0
         };
         Rav1dFrameHeader_delta_q { present, res_log2 }
     };
     let lf = {
-        let present = (q.present != 0 && !allow_intrabc && gb.get_bit()) as c_int;
+        let present = (q.present != 0 && !allow_intrabc && gb.get_bit()) as u8;
         let res_log2 = if present != 0 {
-            gb.get_bits(2) as c_int
+            gb.get_bits(2) as u8
         } else {
             0
         };
-        let multi = if present != 0 {
-            gb.get_bit() as c_int
-        } else {
-            0
-        };
+        let multi = if present != 0 { gb.get_bit() as u8 } else { 0 };
         Rav1dFrameHeader_delta_lf {
             present,
             res_log2,
@@ -1210,8 +1224,8 @@ unsafe fn parse_loopfilter(
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: bool,
     allow_intrabc: bool,
-    primary_ref_frame: c_int,
-    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
+    primary_ref_frame: u8,
+    refidx: &[i8; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_loopfilter> {
@@ -1231,16 +1245,16 @@ unsafe fn parse_loopfilter(
         mode_ref_delta_update = 1;
         mode_ref_deltas = default_mode_ref_deltas.clone();
     } else {
-        level_y = [gb.get_bits(6) as c_int, gb.get_bits(6) as c_int];
+        level_y = [gb.get_bits(6) as u8, gb.get_bits(6) as u8];
         if seqhdr.monochrome == 0 && (level_y[0] != 0 || level_y[1] != 0) {
-            level_u = gb.get_bits(6) as c_int;
-            level_v = gb.get_bits(6) as c_int;
+            level_u = gb.get_bits(6) as u8;
+            level_v = gb.get_bits(6) as u8;
         } else {
             // Default initialization.
             level_u = Default::default();
             level_v = Default::default();
         }
-        sharpness = gb.get_bits(3) as c_int;
+        sharpness = gb.get_bits(3) as u8;
 
         if primary_ref_frame == RAV1D_PRIMARY_REF_NONE {
             mode_ref_deltas = default_mode_ref_deltas.clone();
@@ -1256,18 +1270,18 @@ unsafe fn parse_loopfilter(
                 .mode_ref_deltas
                 .clone();
         }
-        mode_ref_delta_enabled = gb.get_bit() as c_int;
+        mode_ref_delta_enabled = gb.get_bit() as u8;
         if mode_ref_delta_enabled != 0 {
-            mode_ref_delta_update = gb.get_bit() as c_int;
+            mode_ref_delta_update = gb.get_bit() as u8;
             if mode_ref_delta_update != 0 {
                 for i in 0..8 {
                     if gb.get_bit() {
-                        mode_ref_deltas.ref_delta[i as usize] = gb.get_sbits(7);
+                        mode_ref_deltas.ref_delta[i as usize] = gb.get_sbits(7) as i8;
                     }
                 }
                 for i in 0..2 {
                     if gb.get_bit() {
-                        mode_ref_deltas.mode_delta[i as usize] = gb.get_sbits(7);
+                        mode_ref_deltas.mode_delta[i as usize] = gb.get_sbits(7) as i8;
                     }
                 }
             }
@@ -1300,12 +1314,12 @@ fn parse_cdef(
     let mut y_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
     let mut uv_strength = [0; RAV1D_MAX_CDEF_STRENGTHS];
     if !all_lossless && seqhdr.cdef != 0 && !allow_intrabc {
-        damping = gb.get_bits(2) as c_int + 3;
-        n_bits = gb.get_bits(2) as c_int;
+        damping = gb.get_bits(2) as u8 + 3;
+        n_bits = gb.get_bits(2) as u8;
         for i in 0..1 << n_bits {
-            y_strength[i as usize] = gb.get_bits(6) as c_int;
+            y_strength[i as usize] = gb.get_bits(6) as u8;
             if seqhdr.monochrome == 0 {
-                uv_strength[i as usize] = gb.get_bits(6) as c_int;
+                uv_strength[i as usize] = gb.get_bits(6) as u8;
             }
         }
     } else {
@@ -1391,10 +1405,10 @@ fn parse_restoration(
 unsafe fn parse_skip_mode(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    switchable_comp_refs: c_int,
+    switchable_comp_refs: u8,
     frame_type: Rav1dFrameType,
-    frame_offset: c_int,
-    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
+    frame_offset: u8,
+    refidx: &[i8; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameSkipMode> {
@@ -1481,11 +1495,7 @@ unsafe fn parse_skip_mode(
             }
         }
     }
-    let enabled = if allowed != 0 {
-        gb.get_bit() as c_int
-    } else {
-        0
-    };
+    let enabled = if allowed != 0 { gb.get_bit() as u8 } else { 0 };
     debug.post(gb, "extskip");
     Ok(Rav1dFrameSkipMode {
         allowed,
@@ -1497,8 +1507,8 @@ unsafe fn parse_skip_mode(
 unsafe fn parse_gmv(
     c: &Rav1dContext,
     frame_type: Rav1dFrameType,
-    primary_ref_frame: c_int,
-    refidx: &[c_int; RAV1D_REFS_PER_FRAME],
+    primary_ref_frame: u8,
+    refidx: &[i8; RAV1D_REFS_PER_FRAME],
     hp: bool,
     debug: &Debug,
     gb: &mut GetBits,
@@ -1677,22 +1687,22 @@ fn parse_film_grain_data(
 unsafe fn parse_film_grain(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    show_frame: c_int,
-    showable_frame: c_int,
+    show_frame: u8,
+    showable_frame: u8,
     frame_type: Rav1dFrameType,
-    ref_indices: &[c_int; RAV1D_REFS_PER_FRAME],
+    ref_indices: &[i8; RAV1D_REFS_PER_FRAME],
     debug: &Debug,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader_film_grain> {
     let present = (seqhdr.film_grain_present != 0
         && (show_frame != 0 || showable_frame != 0)
-        && gb.get_bit()) as c_int;
+        && gb.get_bit()) as u8;
     let update;
     let data = if present != 0 {
         let seed = gb.get_bits(16);
-        update = (frame_type != Rav1dFrameType::Inter || gb.get_bit()) as c_int;
+        update = (frame_type != Rav1dFrameType::Inter || gb.get_bit()) as u8;
         if update == 0 {
-            let refidx = gb.get_bits(3) as c_int;
+            let refidx = gb.get_bits(3) as i8;
             let mut found = false;
             for i in 0..7 {
                 if ref_indices[i as usize] == refidx {
@@ -1735,28 +1745,28 @@ unsafe fn parse_film_grain(
 unsafe fn parse_frame_hdr(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
-    temporal_id: c_int,
-    spatial_id: c_int,
+    temporal_id: u8,
+    spatial_id: u8,
     gb: &mut GetBits,
 ) -> Rav1dResult<Rav1dFrameHeader> {
     let debug = Debug::new(false, "HDR", gb);
 
     debug.post(gb, "show_existing_frame");
-    let show_existing_frame = (seqhdr.reduced_still_picture_header == 0 && gb.get_bit()) as c_int;
+    let show_existing_frame = (seqhdr.reduced_still_picture_header == 0 && gb.get_bit()) as u8;
     let existing_frame_idx;
     let mut frame_presentation_delay;
     if show_existing_frame != 0 {
-        existing_frame_idx = gb.get_bits(3) as c_int;
+        existing_frame_idx = gb.get_bits(3) as u8;
         if seqhdr.decoder_model_info_present != 0 && seqhdr.equal_picture_interval == 0 {
             frame_presentation_delay =
-                gb.get_bits(seqhdr.frame_presentation_delay_length.into()) as c_int;
+                gb.get_bits(seqhdr.frame_presentation_delay_length.into()) as u32;
         } else {
             // Default initialization.
             frame_presentation_delay = Default::default();
         }
         let frame_id;
         if seqhdr.frame_id_numbers_present != 0 {
-            frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into()) as c_int;
+            frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into()) as u32;
             c.refs[existing_frame_idx as usize]
                 .p
                 .p
@@ -1792,23 +1802,23 @@ unsafe fn parse_frame_hdr(
     } else {
         Rav1dFrameType::from_repr(gb.get_bits(2) as usize).unwrap()
     };
-    let show_frame = (seqhdr.reduced_still_picture_header != 0 || gb.get_bit()) as c_int;
+    let show_frame = (seqhdr.reduced_still_picture_header != 0 || gb.get_bit()) as u8;
     let showable_frame;
     if show_frame != 0 {
         if seqhdr.decoder_model_info_present != 0 && seqhdr.equal_picture_interval == 0 {
             frame_presentation_delay =
-                gb.get_bits(seqhdr.frame_presentation_delay_length.into()) as c_int;
+                gb.get_bits(seqhdr.frame_presentation_delay_length.into()) as u32;
         }
-        showable_frame = (frame_type != Rav1dFrameType::Key) as c_int;
+        showable_frame = (frame_type != Rav1dFrameType::Key) as u8;
     } else {
-        showable_frame = gb.get_bit() as c_int;
+        showable_frame = gb.get_bit() as u8;
     }
     let error_resilient_mode = (frame_type == Rav1dFrameType::Key && show_frame != 0
         || frame_type == Rav1dFrameType::Switch
         || seqhdr.reduced_still_picture_header != 0
-        || gb.get_bit()) as c_int;
+        || gb.get_bit()) as u8;
     debug.post(gb, "frametype_bits");
-    let disable_cdf_update = gb.get_bit() as c_int;
+    let disable_cdf_update = gb.get_bit() as u8;
     let allow_screen_content_tools = match seqhdr.screen_content_tools {
         Rav1dAdaptiveBoolean::Adaptive => gb.get_bit(),
         Rav1dAdaptiveBoolean::On => true,
@@ -1830,7 +1840,7 @@ unsafe fn parse_frame_hdr(
 
     let frame_id;
     if seqhdr.frame_id_numbers_present != 0 {
-        frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into()) as c_int;
+        frame_id = gb.get_bits(seqhdr.frame_id_n_bits.into()) as u32;
     } else {
         // Default initialization.
         frame_id = Default::default();
@@ -1845,12 +1855,12 @@ unsafe fn parse_frame_hdr(
     };
     debug.post(gb, "frame_size_override_flag");
     let frame_offset = if seqhdr.order_hint != 0 {
-        gb.get_bits(seqhdr.order_hint_n_bits.into()) as c_int
+        gb.get_bits(seqhdr.order_hint_n_bits.into()) as u8
     } else {
         0
     };
     let primary_ref_frame = if error_resilient_mode == 0 && frame_type.is_inter_or_switch() {
-        gb.get_bits(3) as c_int
+        gb.get_bits(3) as u8
     } else {
         RAV1D_PRIMARY_REF_NONE
     };
@@ -1859,7 +1869,7 @@ unsafe fn parse_frame_hdr(
     let mut operating_points =
         [Rav1dFrameHeaderOperatingPoint::default(); RAV1D_MAX_OPERATING_POINTS];
     if seqhdr.decoder_model_info_present != 0 {
-        buffer_removal_time_present = gb.get_bit() as c_int;
+        buffer_removal_time_present = gb.get_bit() as u8;
         if buffer_removal_time_present != 0 {
             for i in 0..seqhdr.num_operating_points {
                 let seqop = &seqhdr.operating_points[i as usize];
@@ -1869,7 +1879,7 @@ unsafe fn parse_frame_hdr(
                     let in_spatial_layer = seqop.idc >> spatial_id + 8 & 1;
                     if seqop.idc == 0 || in_temporal_layer != 0 && in_spatial_layer != 0 {
                         op.buffer_removal_time =
-                            gb.get_bits(seqhdr.buffer_removal_delay_length.into()) as c_int;
+                            gb.get_bits(seqhdr.buffer_removal_delay_length.into()) as u32;
                     }
                 }
             }
@@ -1892,7 +1902,7 @@ unsafe fn parse_frame_hdr(
         refresh_frame_flags = if frame_type == Rav1dFrameType::Key && show_frame != 0 {
             0xff
         } else {
-            gb.get_bits(8) as c_int
+            gb.get_bits(8) as u8
         };
         if refresh_frame_flags != 0xff && error_resilient_mode != 0 && seqhdr.order_hint != 0 {
             for _ in 0..8 {
@@ -1920,14 +1930,14 @@ unsafe fn parse_frame_hdr(
         refresh_frame_flags = if frame_type == Rav1dFrameType::Switch {
             0xff
         } else {
-            gb.get_bits(8) as c_int
+            gb.get_bits(8) as u8
         };
         if error_resilient_mode != 0 && seqhdr.order_hint != 0 {
             for _ in 0..8 {
                 gb.get_bits(seqhdr.order_hint_n_bits.into());
             }
         }
-        frame_ref_short_signaling = (seqhdr.order_hint != 0 && gb.get_bit()) as c_int;
+        frame_ref_short_signaling = (seqhdr.order_hint != 0 && gb.get_bit()) as u8;
         refidx = parse_refidx(
             c,
             seqhdr,
@@ -1950,18 +1960,18 @@ unsafe fn parse_frame_hdr(
         } else {
             Rav1dFilterMode::from_repr(gb.get_bits(2) as usize).unwrap()
         };
-        switchable_motion_mode = gb.get_bit() as c_int;
+        switchable_motion_mode = gb.get_bit() as u8;
         use_ref_frame_mvs = (error_resilient_mode == 0
             && seqhdr.ref_frame_mvs != 0
             && seqhdr.order_hint != 0
             && frame_type.is_inter_or_switch()
-            && gb.get_bit()) as c_int;
+            && gb.get_bit()) as u8;
     }
     debug.post(gb, "frametype-specific-bits");
 
     let refresh_context = (seqhdr.reduced_still_picture_header == 0
         && disable_cdf_update == 0
-        && !gb.get_bit()) as c_int;
+        && !gb.get_bit()) as u8;
     debug.post(gb, "refresh_context");
 
     let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;
@@ -1998,7 +2008,7 @@ unsafe fn parse_frame_hdr(
     };
     debug.post(gb, "txfmmode");
     let switchable_comp_refs = if frame_type.is_inter_or_switch() {
-        gb.get_bit() as c_int
+        gb.get_bit() as u8
     } else {
         0
     };
@@ -2016,9 +2026,9 @@ unsafe fn parse_frame_hdr(
     let warp_motion = (error_resilient_mode == 0
         && frame_type.is_inter_or_switch()
         && seqhdr.warped_motion != 0
-        && gb.get_bit()) as c_int;
+        && gb.get_bit()) as u8;
     debug.post(gb, "warpmotionbit");
-    let reduced_txtp_set = gb.get_bit() as c_int;
+    let reduced_txtp_set = gb.get_bit() as u8;
     debug.post(gb, "reducedtxtpset");
 
     let gmv = parse_gmv(c, frame_type, primary_ref_frame, &refidx, hp, &debug, gb)?;
@@ -2081,7 +2091,7 @@ unsafe fn parse_frame_hdr(
 }
 
 fn parse_tile_hdr(tiling: &Rav1dFrameHeader_tiling, gb: &mut GetBits) -> Rav1dTileGroupHeader {
-    let n_tiles = tiling.cols * tiling.rows;
+    let n_tiles = tiling.cols as c_int * tiling.rows as c_int;
     let have_tile_pos = if n_tiles > 1 {
         gb.get_bit() as c_int
     } else {
@@ -2090,8 +2100,8 @@ fn parse_tile_hdr(tiling: &Rav1dFrameHeader_tiling, gb: &mut GetBits) -> Rav1dTi
 
     if have_tile_pos != 0 {
         let n_bits = tiling.log2_cols + tiling.log2_rows;
-        let start = gb.get_bits(n_bits) as c_int;
-        let end = gb.get_bits(n_bits) as c_int;
+        let start = gb.get_bits(n_bits.into()) as c_int;
+        let end = gb.get_bits(n_bits.into()) as c_int;
         Rav1dTileGroupHeader { start, end }
     } else {
         Rav1dTileGroupHeader {
@@ -2132,8 +2142,8 @@ unsafe fn parse_obus(
     let mut temporal_id = 0;
     let mut spatial_id = 0;
     if has_extension {
-        temporal_id = gb.get_bits(3) as c_int;
-        spatial_id = gb.get_bits(2) as c_int;
+        temporal_id = gb.get_bits(3) as u8;
+        spatial_id = gb.get_bits(2) as u8;
         gb.get_bits(3); // reserved
     }
 
@@ -2568,7 +2578,7 @@ unsafe fn parse_obus(
                 }
             }
             c.frame_hdr = None;
-        } else if c.n_tiles == frame_hdr.tiling.cols * frame_hdr.tiling.rows {
+        } else if c.n_tiles == frame_hdr.tiling.cols as c_int * frame_hdr.tiling.rows as c_int {
             match frame_hdr.frame_type {
                 Rav1dFrameType::Inter | Rav1dFrameType::Switch => {
                     if c.decode_frame_type > Rav1dDecodeFrameType::Reference

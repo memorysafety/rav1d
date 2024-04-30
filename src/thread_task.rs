@@ -355,21 +355,21 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     _cond_signal: c_int,
 ) -> Rav1dResult {
     let tasks = &mut *fc.task_thread.tasks();
-    let uses_2pass = (c.fc.len() > 1) as c_int;
+    let uses_2pass = (c.fc.len() > 1) as usize;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let num_tasks = frame_hdr.tiling.cols * frame_hdr.tiling.rows;
+    let num_tasks = frame_hdr.tiling.cols as usize * frame_hdr.tiling.rows as usize;
     if pass < 2 {
         let alloc_num_tasks = num_tasks * (1 + uses_2pass);
-        tasks.grow_tile_tasks(alloc_num_tasks as usize);
-        tasks.tile_tasks[1] = Some(Rav1dTaskIndex::TileTask(num_tasks as usize));
+        tasks.grow_tile_tasks(alloc_num_tasks);
+        tasks.tile_tasks[1] = Some(Rav1dTaskIndex::TileTask(num_tasks));
     }
-    let tile_tasks = tasks.tile_tasks[0].map(|t| t + (num_tasks * (pass & 1)) as usize);
+    let tile_tasks = tasks.tile_tasks[0].map(|t| t + num_tasks * (pass & 1) as usize);
     let mut pf_t = Some(create_filter_sbrow(c, fc, f, pass)?);
     let mut prev_t = None;
     let mut tile_idx = 0;
     while tile_idx < num_tasks {
-        let ts: *mut Rav1dTileState = &mut *f.ts.offset(tile_idx as isize) as *mut Rav1dTileState;
-        let t_idx = tile_tasks.unwrap() + (tile_idx as usize);
+        let ts: *mut Rav1dTileState = &mut *f.ts.add(tile_idx) as *mut Rav1dTileState;
+        let t_idx = tile_tasks.unwrap() + tile_idx;
         let t = &mut tasks[t_idx];
         t.sby = (*ts).tiling.row_start >> f.sb_shift;
         if pf_t.is_some() && t.sby != 0 {
@@ -835,7 +835,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                 unreachable!();
                             }
                             let frame_hdr = fc.frame_hdr();
-                            let tile_row_base = frame_hdr.tiling.cols
+                            let tile_row_base = frame_hdr.tiling.cols as c_int
                                 * f.frame_thread.next_tile_row[p as usize].load(Ordering::Relaxed);
                             if p {
                                 let p1_0 = fc.frame_thread_progress.entropy.load(Ordering::SeqCst);
@@ -848,7 +848,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             }
                             for tc_0 in 0..frame_hdr.tiling.cols {
                                 let ts: *mut Rav1dTileState =
-                                    &mut *f.ts.offset((tile_row_base + tc_0) as isize)
+                                    &mut *f.ts.offset((tile_row_base + tc_0 as c_int) as isize)
                                         as *mut Rav1dTileState;
                                 let p2 = (*ts).progress[p as usize].load(Ordering::SeqCst);
                                 if p2 < t.recon_progress {
@@ -1020,7 +1020,9 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                     fc.task_thread.error.store(-(1 as c_int), Ordering::SeqCst);
                                     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                                     fc.task_thread.task_counter.fetch_sub(
-                                        frame_hdr.tiling.cols * frame_hdr.tiling.rows + f.sbh,
+                                        frame_hdr.tiling.cols as c_int
+                                            * frame_hdr.tiling.rows as c_int
+                                            + f.sbh,
                                         Ordering::SeqCst,
                                     );
 

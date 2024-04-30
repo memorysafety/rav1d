@@ -148,7 +148,7 @@ unsafe fn backup2x8<BD: BitDepth>(
     }
 }
 
-fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
+fn adjust_strength(strength: u8, var: c_uint) -> c_int {
     if var == 0 {
         return 0;
     }
@@ -159,7 +159,7 @@ fn adjust_strength(strength: c_int, var: c_uint) -> c_int {
         0
     };
 
-    strength * (4 + i) + 8 >> 4
+    strength as c_int * (4 + i) + 8 >> 4
 }
 
 pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
@@ -186,7 +186,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
     let sbsz = 16;
     let sb64w = f.sb128w << 1;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let damping = frame_hdr.cdef.damping + bitdepth_min_8 as c_int;
+    let damping = frame_hdr.cdef.damping + bitdepth_min_8;
     let layout: Rav1dPixelLayout = f.cur.p.layout;
     let uv_idx = (Rav1dPixelLayout::I444 as c_uint).wrapping_sub(layout as c_uint) as c_int;
     let ss_ver = (layout == Rav1dPixelLayout::I420) as c_int;
@@ -261,12 +261,12 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
 
                 let y_pri_lvl = (y_lvl >> 2) << bitdepth_min_8;
                 let mut y_sec_lvl = y_lvl & 3;
-                y_sec_lvl += (y_sec_lvl == 3) as c_int;
+                y_sec_lvl += (y_sec_lvl == 3) as u8;
                 y_sec_lvl <<= bitdepth_min_8;
 
                 let uv_pri_lvl = (uv_lvl >> 2) << bitdepth_min_8;
                 let mut uv_sec_lvl = uv_lvl & 3;
-                uv_sec_lvl += (uv_sec_lvl == 3) as c_int;
+                uv_sec_lvl += (uv_sec_lvl == 3) as u8;
                 uv_sec_lvl <<= bitdepth_min_8;
 
                 let mut bptrs = iptrs;
@@ -389,9 +389,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     top.cast(),
                                     bot.cast(),
                                     adj_y_pri_lvl,
-                                    y_sec_lvl,
+                                    y_sec_lvl.into(),
                                     dir,
-                                    damping,
+                                    damping.into(),
                                     edges,
                                     f.bitdepth_max,
                                 );
@@ -404,9 +404,9 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 top.cast(),
                                 bot.cast(),
                                 0 as c_int,
-                                y_sec_lvl,
+                                y_sec_lvl.into(),
                                 0 as c_int,
-                                damping,
+                                damping.into(),
                                 edges,
                                 f.bitdepth_max,
                             );
@@ -484,10 +484,10 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     lr_bak[bit as usize][pl].as_mut_ptr().cast(),
                                     top.cast(),
                                     bot.cast(),
-                                    uv_pri_lvl,
-                                    uv_sec_lvl,
+                                    uv_pri_lvl.into(),
+                                    uv_sec_lvl.into(),
                                     uvdir,
-                                    damping - 1,
+                                    (damping - 1).into(),
                                     edges,
                                     f.bitdepth_max,
                                 );

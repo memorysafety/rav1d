@@ -524,7 +524,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     }
     if all_skip != 0 {
         *res_ctx = 0x40 as c_int as u8;
-        *txtp = (lossless * WHT_WHT as c_int) as TxfmType;
+        *txtp = (lossless * WHT_WHT) as TxfmType;
         return -(1 as c_int);
     }
     if lossless != 0 {

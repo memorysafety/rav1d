@@ -653,7 +653,7 @@ pub struct Rav1dFrameContext_lf {
     pub mask: Vec<Av1Filter>, /* len = w*h */
     pub lr_mask: Vec<Av1Restoration>,
     pub lim_lut: Align16<Av1FilterLUT>,
-    pub last_sharpness: c_int,
+    pub last_sharpness: u8,
     pub lvl: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub tx_lpf_right_edge: TxLpfRightEdge,
     // cdef_line_buf was originally aligned to 32 bytes, but we need to pass
@@ -1002,7 +1002,7 @@ pub struct Rav1dTileState {
 
     pub dqmem: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
     pub dq: TileStateRef,
-    pub last_qidx: c_int,
+    pub last_qidx: u8,
     pub last_delta_lf: [i8; 4],
     pub lflvlmem: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub lflvl: TileStateRef,
