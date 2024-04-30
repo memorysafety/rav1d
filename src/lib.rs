@@ -217,7 +217,11 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         if !(*c).allocator.cookie.is_null() {
             return error(c, c_out);
         }
-        (*c).allocator.cookie = ptr::from_mut(&mut (*c).picture_pool).cast::<c_void>();
+        // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
+        // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
+        (*c).allocator.cookie = ptr::from_ref(&(*c).picture_pool)
+            .cast::<c_void>()
+            .cast_mut();
     } else if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
         || (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {

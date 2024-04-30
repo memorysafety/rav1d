@@ -76,6 +76,13 @@ pub(crate) struct Rav1dThreadPicture {
 }
 
 struct MemPoolBuf<T> {
+    /// This is an [`Arc`] because a [`Rav1dPicture`] can outlive
+    /// its [`Rav1dContext`], and that's how the API was designed.
+    /// If it were changed to require [`Rav1dContext`] to outlive
+    /// any [`Rav1dPicture`]s it creates (a reasonable API I think,
+    /// and easy to do with Rust lifetimes), then we wouldn't need
+    /// the [`Arc`] here.  But it's not the round-tripping through C
+    /// that requires this, just how the API was designed.
     pool: Arc<MemPool<T>>,
     buf: Vec<T>,
 }
