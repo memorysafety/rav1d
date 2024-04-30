@@ -302,7 +302,7 @@ pub enum MotionMode {
 
 #[derive(Copy, Clone, Default)]
 #[repr(C)]
-pub struct Av1Block_intra {
+pub struct Av1BlockIntra {
     pub y_mode: u8,
     pub uv_mode: u8,
     pub tx: u8,
@@ -314,7 +314,7 @@ pub struct Av1Block_intra {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Av1Block_inter_1d {
+pub struct Av1BlockInter1d {
     pub mv: [mv; 2],
     pub wedge_idx: u8,
     pub mask_sign: u8,
@@ -323,22 +323,22 @@ pub struct Av1Block_inter_1d {
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Av1Block_inter_2d {
+pub struct Av1BlockInter2d {
     pub mv2d: mv,
     pub matrix: [i16; 4],
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub union Av1Block_inter_nd {
-    pub one_d: Av1Block_inter_1d,
-    pub two_d: Av1Block_inter_2d,
+pub union Av1BlockInterNd {
+    pub one_d: Av1BlockInter1d,
+    pub two_d: Av1BlockInter2d,
 }
 
 #[derive(Clone, Copy)]
 #[repr(C)]
-pub struct Av1Block_inter {
-    pub nd: Av1Block_inter_nd,
+pub struct Av1BlockInter {
+    pub nd: Av1BlockInterNd,
     pub comp_type: Option<CompInterType>,
     pub inter_mode: u8,
     pub motion_mode: MotionMode,
@@ -352,14 +352,14 @@ pub struct Av1Block_inter {
 }
 
 #[repr(C)]
-pub union Av1Block_intra_inter {
-    pub intra: Av1Block_intra,
-    pub inter: Av1Block_inter,
+pub union Av1BlockIntraInter {
+    pub intra: Av1BlockIntra,
+    pub inter: Av1BlockInter,
 }
 
-impl Default for Av1Block_intra_inter {
+impl Default for Av1BlockIntraInter {
     fn default() -> Self {
-        Av1Block_intra_inter {
+        Av1BlockIntraInter {
             intra: Default::default(),
         }
     }
@@ -376,7 +376,7 @@ pub struct Av1Block {
     pub skip_mode: u8,
     pub skip: u8,
     pub uvtx: RectTxfmSize,
-    pub ii: Av1Block_intra_inter,
+    pub ii: Av1BlockIntraInter,
 }
 
 impl Av1Block {
