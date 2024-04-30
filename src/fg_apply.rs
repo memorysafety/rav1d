@@ -185,7 +185,7 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
 
 pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     dsp: &Rav1dFilmGrainDSPContext,
-    out: &mut Rav1dPicture,
+    out: &Rav1dPicture,
     r#in: &Rav1dPicture,
     grain: &GrainBD<BD>,
     row: usize,
