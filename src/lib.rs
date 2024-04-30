@@ -373,7 +373,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     res
 }
 
-unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
+fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
     if c.cached_error.is_err() {
         return true;
     }
