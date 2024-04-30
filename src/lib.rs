@@ -75,6 +75,7 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::Once;
+use std::sync::RwLock;
 use std::thread;
 use to_method::To as _;
 
@@ -245,14 +246,16 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     // TODO fallible allocation
     (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::zeroed(i)).collect();
     let ttd = TaskThreadData {
+        lock: Mutex::new(()),
         cond: Condvar::new(),
         first: AtomicU32::new(0),
         cur: AtomicU32::new(n_fc as u32),
         reset_task_cur: AtomicU32::new(u32::MAX),
         cond_signaled: AtomicI32::new(0),
-        delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
+        delayed_fg_exec: AtomicI32::new(0),
         delayed_fg_cond: Condvar::new(),
-        delayed_fg: Mutex::new(mem::zeroed()),
+        delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
+        delayed_fg: RwLock::new(mem::zeroed()),
     };
     (&mut (*c).task_thread as *mut Arc<TaskThreadData>).write(Arc::new(ttd));
     addr_of_mut!((*c).tiles).write(Default::default());
@@ -406,7 +409,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
     loop {
         let next: c_uint = c.frame_thread.next;
         let fc = &c.fc[next as usize];
-        let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
+        let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
             task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
         }
@@ -661,7 +664,7 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
     }
     (*c).flush.store(1, Ordering::SeqCst);
     if (*c).tc.len() > 1 {
-        let mut task_thread_lock = (*c).task_thread.delayed_fg.lock().unwrap();
+        let mut task_thread_lock = (*c).task_thread.lock.lock().unwrap();
         for tc in (*c).tc.iter() {
             while !tc.flushed() {
                 task_thread_lock = tc.thread_data.cond.wait(task_thread_lock).unwrap();
@@ -738,7 +741,7 @@ impl Drop for Rav1dContext {
         unsafe {
             if self.tc.len() > 1 {
                 let ttd: &TaskThreadData = &*self.task_thread;
-                let task_thread_lock = ttd.delayed_fg.lock().unwrap();
+                let task_thread_lock = ttd.lock.lock().unwrap();
                 for tc in self.tc.iter() {
                     tc.thread_data.die.store(true, Ordering::Relaxed);
                 }

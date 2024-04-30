@@ -4637,7 +4637,7 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext
             if c.tc.len() > 1 {
                 res = rav1d_task_create_tile_sbrow(c, fc, &f, 0, 1);
                 drop(f); // release the frame data before waiting for the other threads
-                let mut task_thread_lock = (*fc.task_thread.ttd).delayed_fg.lock().unwrap();
+                let mut task_thread_lock = (*fc.task_thread.ttd).lock.lock().unwrap();
                 (*fc.task_thread.ttd).cond.notify_one();
                 if res.is_ok() {
                     while fc.task_thread.done[0].load(Ordering::Relaxed) == 0
@@ -4677,7 +4677,7 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
 pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // wait for c->out_delayed[next] and move into c->out if visible
     let (fc, out, _task_thread_lock) = if c.fc.len() > 1 {
-        let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
+        let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
         let next = c.frame_thread.next;
         c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
 
