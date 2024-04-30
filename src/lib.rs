@@ -157,7 +157,7 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
+pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
