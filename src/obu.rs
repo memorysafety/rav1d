@@ -2484,7 +2484,7 @@ unsafe fn parse_obus(
                 );
                 c.event_flags |= c.refs[frame_hdr.existing_frame_idx as usize].p.flags.into();
             } else {
-                let mut task_thread_lock = c.task_thread.delayed_fg.lock().unwrap();
+                let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
                 // Need to append this to the frame output queue.
                 let next = c.frame_thread.next;
                 c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
