@@ -169,8 +169,9 @@ pub enum BlockSize {
     Bs4x4 = 21,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, EnumCount)]
+#[derive(Clone, Copy, PartialEq, Eq, EnumCount, Default)]
 pub enum Filter2d {
+    #[default] // TODO(kkysen) Maybe temporary.
     Regular8Tap = 0,
     RegularSmooth8Tap = 1,
     RegularSharp8Tap = 2,
@@ -217,8 +218,9 @@ pub const GLOBALMV: InterPredMode = 2;
 pub const NEARMV: InterPredMode = 1;
 pub const NEARESTMV: InterPredMode = 0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum DrlProximity {
+    #[default] // TODO(kkysen) Maybe temporary.
     Nearest,
     Nearer,
     Near,
@@ -293,8 +295,9 @@ impl Neg for mv {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, Default)]
 pub enum MotionMode {
+    #[default] // TODO(kkysen) Maybe temporary.
     Translation = 0,
     Obmc = 1,
     Warp = 2,
@@ -321,7 +324,7 @@ pub struct Av1BlockInter1d {
     pub interintra_mode: InterIntraPredMode,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Av1BlockInter2d {
     pub mv2d: mv,
@@ -335,7 +338,15 @@ pub union Av1BlockInterNd {
     pub two_d: Av1BlockInter2d,
 }
 
-#[derive(Clone, Copy)]
+impl Default for Av1BlockInterNd {
+    fn default() -> Self {
+        Self {
+            two_d: Default::default(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,
@@ -352,16 +363,44 @@ pub struct Av1BlockInter {
 }
 
 #[repr(C)]
-pub union Av1BlockIntraInter {
-    pub intra: Av1BlockIntra,
-    pub inter: Av1BlockInter,
+pub enum Av1BlockIntraInter {
+    Intra(Av1BlockIntra),
+    Inter(Av1BlockInter),
+}
+
+impl Av1BlockIntraInter {
+    pub const fn intra(&self) -> &Av1BlockIntra {
+        match self {
+            Self::Intra(intra) => intra,
+            _ => panic!(),
+        }
+    }
+
+    pub fn intra_mut(&mut self) -> &mut Av1BlockIntra {
+        match self {
+            Self::Intra(intra) => intra,
+            _ => panic!(),
+        }
+    }
+
+    pub const fn inter(&self) -> &Av1BlockInter {
+        match self {
+            Self::Inter(inter) => inter,
+            _ => panic!(),
+        }
+    }
+
+    pub fn inter_mut(&mut self) -> &mut Av1BlockInter {
+        match self {
+            Self::Inter(inter) => inter,
+            _ => panic!(),
+        }
+    }
 }
 
 impl Default for Av1BlockIntraInter {
     fn default() -> Self {
-        Av1BlockIntraInter {
-            intra: Default::default(),
-        }
+        Self::Intra(Default::default())
     }
 }
 
