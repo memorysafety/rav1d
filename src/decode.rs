@@ -831,8 +831,8 @@ unsafe fn read_vartx_tree(
         b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     }
     assert!(tx_split[0] & !0x33 == 0);
-    b.c2rust_unnamed.c2rust_unnamed_0.tx_split0 = tx_split[0] as u8;
-    b.c2rust_unnamed.c2rust_unnamed_0.tx_split1 = tx_split[1];
+    b.ii.inter.tx_split0 = tx_split[0] as u8;
+    b.ii.inter.tx_split1 = tx_split[1];
 }
 
 #[inline]
