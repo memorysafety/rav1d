@@ -631,44 +631,44 @@ pub unsafe extern "C" fn dav1d_apply_grain(
     .into()
 }
 
-pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
-    let _ = mem::take(&mut (*c).in_0);
-    if (*c).out.p.frame_hdr.is_some() {
-        let _ = mem::take(&mut (*c).out);
+pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
+    let _ = mem::take(&mut c.in_0);
+    if c.out.p.frame_hdr.is_some() {
+        let _ = mem::take(&mut c.out);
     }
-    if (*c).cache.p.frame_hdr.is_some() {
-        let _ = mem::take(&mut (*c).cache);
+    if c.cache.p.frame_hdr.is_some() {
+        let _ = mem::take(&mut c.cache);
     }
-    (*c).drain = 0 as c_int;
-    (*c).cached_error = Ok(());
+    c.drain = 0 as c_int;
+    c.cached_error = Ok(());
     let mut i = 0;
     while i < 8 {
-        if (*c).refs[i as usize].p.p.frame_hdr.is_some() {
-            let _ = mem::take(&mut (*((*c).refs).as_mut_ptr().offset(i as isize)).p);
+        if c.refs[i as usize].p.p.frame_hdr.is_some() {
+            let _ = mem::take(&mut (*(c.refs).as_mut_ptr().offset(i as isize)).p);
         }
-        let _ = mem::take(&mut (*c).refs[i as usize].segmap);
-        let _ = mem::take(&mut (*c).refs[i as usize].refmvs);
-        let _ = mem::take(&mut (*c).cdf[i]);
+        let _ = mem::take(&mut c.refs[i as usize].segmap);
+        let _ = mem::take(&mut c.refs[i as usize].refmvs);
+        let _ = mem::take(&mut c.cdf[i]);
         i += 1;
     }
-    let _ = mem::take(&mut (*c).frame_hdr); // TODO(kkysen) Why wasn't [`rav1d_ref_dec`] called on it?
-    let _ = mem::take(&mut (*c).seq_hdr);
-    let _ = mem::take(&mut (*c).content_light);
-    let _ = mem::take(&mut (*c).mastering_display);
-    let _ = mem::take(&mut (*c).itut_t35);
-    let _ = mem::take(&mut (*c).cached_error_props);
-    if (*c).fc.len() == 1 && (*c).tc.len() == 1 {
+    let _ = mem::take(&mut c.frame_hdr); // TODO(kkysen) Why wasn't [`rav1d_ref_dec`] called on it?
+    let _ = mem::take(&mut c.seq_hdr);
+    let _ = mem::take(&mut c.content_light);
+    let _ = mem::take(&mut c.mastering_display);
+    let _ = mem::take(&mut c.itut_t35);
+    let _ = mem::take(&mut c.cached_error_props);
+    if c.fc.len() == 1 && c.tc.len() == 1 {
         return;
     }
-    (*c).flush.store(1, Ordering::SeqCst);
-    if (*c).tc.len() > 1 {
-        let mut task_thread_lock = (*c).task_thread.lock.lock().unwrap();
-        for tc in (*c).tc.iter() {
+    c.flush.store(1, Ordering::SeqCst);
+    if c.tc.len() > 1 {
+        let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
+        for tc in c.tc.iter() {
             while !tc.flushed() {
                 task_thread_lock = tc.thread_data.cond.wait(task_thread_lock).unwrap();
             }
         }
-        for fc in (*c).fc.iter_mut() {
+        for fc in c.fc.iter_mut() {
             let tasks = &mut *fc.task_thread.tasks();
             tasks.head = None;
             tasks.tail = None;
@@ -676,32 +676,30 @@ pub(crate) unsafe fn rav1d_flush(c: *mut Rav1dContext) {
             *fc.task_thread.pending_tasks.get_mut().unwrap() = Default::default();
             fc.task_thread.pending_tasks_merge = AtomicI32::new(0);
         }
-        (*c).task_thread.first.store(0, Ordering::SeqCst);
-        (*c).task_thread
-            .cur
-            .store((*c).fc.len() as u32, Ordering::SeqCst);
-        (*c).task_thread
+        c.task_thread.first.store(0, Ordering::SeqCst);
+        c.task_thread.cur.store(c.fc.len() as u32, Ordering::SeqCst);
+        c.task_thread
             .reset_task_cur
             .store(u32::MAX, Ordering::SeqCst);
-        (*c).task_thread.cond_signaled.store(0, Ordering::SeqCst);
+        c.task_thread.cond_signaled.store(0, Ordering::SeqCst);
     }
-    if (*c).fc.len() > 1 {
-        for fc in wrapping_iter((*c).fc.iter(), (*c).frame_thread.next as usize) {
-            rav1d_decode_frame_exit(&*c, fc, Err(EGeneric));
+    if c.fc.len() > 1 {
+        for fc in wrapping_iter(c.fc.iter(), c.frame_thread.next as usize) {
+            rav1d_decode_frame_exit(c, fc, Err(EGeneric));
             *fc.task_thread.retval.try_lock().unwrap() = Ok(());
-            let out_delayed = &mut (*c).frame_thread.out_delayed[fc.index];
+            let out_delayed = &mut c.frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
                 let _ = mem::take(out_delayed);
             }
         }
-        (*c).frame_thread.next = 0 as c_int as c_uint;
+        c.frame_thread.next = 0 as c_int as c_uint;
     }
-    (*c).flush.store(0, Ordering::SeqCst);
+    c.flush.store(0, Ordering::SeqCst);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
-    rav1d_flush(c)
+    rav1d_flush(&mut *c)
 }
 
 #[cold]
@@ -725,7 +723,7 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
         return;
     }
     if flush != 0 {
-        rav1d_flush(c);
+        rav1d_flush(&mut *c);
     }
     c.drop_in_place();
     rav1d_freep_aligned(c_out as *mut _ as *mut c_void);
