@@ -353,14 +353,14 @@ pub struct Av1Block_inter {
 
 #[repr(C)]
 pub union Av1Block_intra_inter {
-    pub c2rust_unnamed: Av1Block_intra,
-    pub c2rust_unnamed_0: Av1Block_inter,
+    pub intra: Av1Block_intra,
+    pub inter: Av1Block_inter,
 }
 
 impl Default for Av1Block_intra_inter {
     fn default() -> Self {
         Av1Block_intra_inter {
-            c2rust_unnamed: Default::default(),
+            intra: Default::default(),
         }
     }
 }
@@ -381,217 +381,175 @@ pub struct Av1Block {
 
 impl Av1Block {
     pub unsafe fn cfl_alpha(&self) -> &[i8; 2] {
-        &self.ii.c2rust_unnamed.cfl_alpha
+        &self.ii.intra.cfl_alpha
     }
 
     pub unsafe fn cfl_alpha_mut(&mut self) -> &mut [i8; 2] {
-        &mut self.ii.c2rust_unnamed.cfl_alpha
+        &mut self.ii.intra.cfl_alpha
     }
 
     pub unsafe fn comp_type(&self) -> Option<CompInterType> {
-        self.ii.c2rust_unnamed_0.comp_type
+        self.ii.inter.comp_type
     }
 
     pub unsafe fn comp_type_mut(&mut self) -> &mut Option<CompInterType> {
-        &mut self.ii.c2rust_unnamed_0.comp_type
+        &mut self.ii.inter.comp_type
     }
 
     pub unsafe fn drl_idx(&self) -> DrlProximity {
-        self.ii.c2rust_unnamed_0.drl_idx
+        self.ii.inter.drl_idx
     }
 
     pub unsafe fn drl_idx_mut(&mut self) -> &mut DrlProximity {
-        &mut self.ii.c2rust_unnamed_0.drl_idx
+        &mut self.ii.inter.drl_idx
     }
 
     pub unsafe fn inter_mode(&self) -> u8 {
-        self.ii.c2rust_unnamed_0.inter_mode
+        self.ii.inter.inter_mode
     }
 
     pub unsafe fn inter_mode_mut(&mut self) -> &mut u8 {
-        &mut self.ii.c2rust_unnamed_0.inter_mode
+        &mut self.ii.inter.inter_mode
     }
 
     pub unsafe fn mask_sign(&self) -> u8 {
-        self.ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .mask_sign
+        self.ii.inter.c2rust_unnamed.c2rust_unnamed.mask_sign
     }
 
     pub unsafe fn mask_sign_mut(&mut self) -> &mut u8 {
-        &mut self
-            .ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .mask_sign
+        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed.mask_sign
     }
 
     pub unsafe fn pal_sz(&self) -> &[u8; 2] {
-        &self.ii.c2rust_unnamed.pal_sz
+        &self.ii.intra.pal_sz
     }
 
     pub unsafe fn pal_sz_mut(&mut self) -> &mut [u8; 2] {
-        &mut self.ii.c2rust_unnamed.pal_sz
+        &mut self.ii.intra.pal_sz
     }
 
     pub unsafe fn tx(&self) -> u8 {
-        self.ii.c2rust_unnamed.tx
+        self.ii.intra.tx
     }
 
     pub unsafe fn tx_mut(&mut self) -> &mut u8 {
-        &mut self.ii.c2rust_unnamed.tx
+        &mut self.ii.intra.tx
     }
 
     pub unsafe fn y_mode(&self) -> u8 {
-        self.ii.c2rust_unnamed.y_mode
+        self.ii.intra.y_mode
     }
 
     pub unsafe fn y_mode_mut(&mut self) -> &mut u8 {
-        &mut self.ii.c2rust_unnamed.y_mode
+        &mut self.ii.intra.y_mode
     }
 
     pub unsafe fn y_angle(&self) -> i8 {
-        self.ii.c2rust_unnamed.y_angle
+        self.ii.intra.y_angle
     }
 
     pub unsafe fn y_angle_mut(&mut self) -> &mut i8 {
-        &mut self.ii.c2rust_unnamed.y_angle
+        &mut self.ii.intra.y_angle
     }
 
     #[allow(dead_code)]
     pub unsafe fn uv_angle(&self) -> i8 {
-        self.ii.c2rust_unnamed.uv_angle
+        self.ii.intra.uv_angle
     }
 
     pub unsafe fn uv_angle_mut(&mut self) -> &mut i8 {
-        &mut self.ii.c2rust_unnamed.uv_angle
+        &mut self.ii.intra.uv_angle
     }
 
     pub unsafe fn uv_mode(&self) -> u8 {
-        self.ii.c2rust_unnamed.uv_mode
+        self.ii.intra.uv_mode
     }
 
     pub unsafe fn uv_mode_mut(&mut self) -> &mut u8 {
-        &mut self.ii.c2rust_unnamed.uv_mode
+        &mut self.ii.intra.uv_mode
     }
 
     pub unsafe fn wedge_idx(&self) -> u8 {
-        self.ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .wedge_idx
+        self.ii.inter.c2rust_unnamed.c2rust_unnamed.wedge_idx
     }
 
     pub unsafe fn wedge_idx_mut(&mut self) -> &mut u8 {
-        &mut self
-            .ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .wedge_idx
+        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed.wedge_idx
     }
 
     pub unsafe fn matrix(&self) -> &[i16; 4] {
-        &self
-            .ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed_0
-            .matrix
+        &self.ii.inter.c2rust_unnamed.c2rust_unnamed_0.matrix
     }
 
     pub unsafe fn matrix_mut(&mut self) -> &mut [i16; 4] {
-        &mut self
-            .ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed_0
-            .matrix
+        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed_0.matrix
     }
 
     pub unsafe fn mv(&self) -> &[mv; 2] {
-        &self.ii.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed.mv
+        &self.ii.inter.c2rust_unnamed.c2rust_unnamed.mv
     }
 
     pub unsafe fn mv_mut(&mut self) -> &mut [mv; 2] {
-        &mut self.ii.c2rust_unnamed_0.c2rust_unnamed.c2rust_unnamed.mv
+        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed.mv
     }
 
     pub unsafe fn mv2d(&self) -> &mv {
-        &self
-            .ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed_0
-            .mv2d
+        &self.ii.inter.c2rust_unnamed.c2rust_unnamed_0.mv2d
     }
 
     pub unsafe fn filter2d(&self) -> Filter2d {
-        self.ii.c2rust_unnamed_0.filter2d
+        self.ii.inter.filter2d
     }
 
     pub unsafe fn filter2d_mut(&mut self) -> &mut Filter2d {
-        &mut self.ii.c2rust_unnamed_0.filter2d
+        &mut self.ii.inter.filter2d
     }
 
     pub unsafe fn r#ref(&self) -> [i8; 2] {
-        self.ii.c2rust_unnamed_0.r#ref
+        self.ii.inter.r#ref
     }
 
     pub unsafe fn ref_mut(&mut self) -> &mut [i8; 2] {
-        &mut self.ii.c2rust_unnamed_0.r#ref
+        &mut self.ii.inter.r#ref
     }
 
     pub unsafe fn max_ytx(&self) -> u8 {
-        self.ii.c2rust_unnamed_0.max_ytx
+        self.ii.inter.max_ytx
     }
 
     pub unsafe fn max_ytx_mut(&mut self) -> &mut u8 {
-        &mut self.ii.c2rust_unnamed_0.max_ytx
+        &mut self.ii.inter.max_ytx
     }
 
     pub unsafe fn interintra_type(&self) -> Option<InterIntraType> {
-        self.ii.c2rust_unnamed_0.interintra_type
+        self.ii.inter.interintra_type
     }
 
     pub unsafe fn interintra_type_mut(&mut self) -> &mut Option<InterIntraType> {
-        &mut self.ii.c2rust_unnamed_0.interintra_type
+        &mut self.ii.inter.interintra_type
     }
 
     pub unsafe fn interintra_mode(&self) -> InterIntraPredMode {
-        self.ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .interintra_mode
+        self.ii.inter.c2rust_unnamed.c2rust_unnamed.interintra_mode
     }
 
     pub unsafe fn interintra_mode_mut(&mut self) -> &mut InterIntraPredMode {
-        &mut self
-            .ii
-            .c2rust_unnamed_0
-            .c2rust_unnamed
-            .c2rust_unnamed
-            .interintra_mode
+        &mut self.ii.inter.c2rust_unnamed.c2rust_unnamed.interintra_mode
     }
 
     pub unsafe fn motion_mode(&self) -> MotionMode {
-        self.ii.c2rust_unnamed_0.motion_mode
+        self.ii.inter.motion_mode
     }
 
     pub unsafe fn motion_mode_mut(&mut self) -> &mut MotionMode {
-        &mut self.ii.c2rust_unnamed_0.motion_mode
+        &mut self.ii.inter.motion_mode
     }
 
     pub unsafe fn tx_split0(&self) -> u8 {
-        self.ii.c2rust_unnamed_0.tx_split0
+        self.ii.inter.tx_split0
     }
 
     pub unsafe fn tx_split1(&self) -> u16 {
-        self.ii.c2rust_unnamed_0.tx_split1
+        self.ii.inter.tx_split1
     }
 }
