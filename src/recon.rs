@@ -527,7 +527,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
         return -(1 as c_int);
     }
     use Av1BlockIntraInter::*;
-    *txtp = match b.ii {
+    *txtp = match &b.ii {
         _ if lossless != 0 => {
             assert!((*t_dim).max == TX_4X4);
             WHT_WHT
@@ -1917,7 +1917,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     assert!(b.skip == 0);
     let uv_t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(b.uvtx as isize) as *const TxfmInfo;
-    let t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions.as_ptr().offset(match b.ii {
+    let t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions.as_ptr().offset(match &b.ii {
         Av1BlockIntraInter::Intra(intra) => intra.tx,
         Av1BlockIntraInter::Inter(inter) => inter.max_ytx,
     } as isize) as *const TxfmInfo;
@@ -1938,7 +1938,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                 x = init_x;
                 t.b.x += init_x;
                 while x < sub_w4 {
-                    match b.ii {
+                    match &b.ii {
                         Av1BlockIntraInter::Inter(inter) => {
                             let tx_split = [inter.tx_split0 as u16, inter.tx_split1];
                             read_coef_tree::<BD>(

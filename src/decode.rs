@@ -1171,7 +1171,7 @@ unsafe fn decode_b(
     let frame_type = f.frame_hdr.as_ref().unwrap().frame_type;
 
     if t.frame_thread.pass == 2 {
-        match b.ii {
+        match &b.ii {
             Av1BlockIntraInter::Intra(intra) => {
                 bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b);
 
@@ -3180,7 +3180,7 @@ unsafe fn decode_b(
         }
     }
 
-    match b.ii {
+    match &b.ii {
         Av1BlockIntraInter::Inter(inter)
             if t.frame_thread.pass == 1 && frame_hdr.frame_type.is_inter_or_switch() =>
         {
