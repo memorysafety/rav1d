@@ -639,7 +639,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     if c.cache.p.frame_hdr.is_some() {
         let _ = mem::take(&mut c.cache);
     }
-    c.drain = 0 as c_int;
+    c.drain = 0;
     c.cached_error = Ok(());
     let mut i = 0;
     while i < 8 {
@@ -692,7 +692,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
                 let _ = mem::take(out_delayed);
             }
         }
-        c.frame_thread.next = 0 as c_int as c_uint;
+        c.frame_thread.next = 0;
     }
     c.flush.store(0, Ordering::SeqCst);
 }
