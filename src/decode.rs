@@ -879,19 +879,19 @@ unsafe fn splat_oneref_mv(
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
     bs: BlockSize,
-    b: &Av1Block,
+    inter: &Av1BlockInter,
     bw4: usize,
     bh4: usize,
 ) {
-    let mode = b.ii.inter().inter_mode;
+    let mode = inter.inter_mode;
     let tmpl = Align16(refmvs_block {
         mv: refmvs_mvpair {
-            mv: [b.ii.inter().nd.one_d.mv[0], mv::ZERO],
+            mv: [inter.nd.one_d.mv[0], mv::ZERO],
         },
         r#ref: refmvs_refpair {
             r#ref: [
-                b.ii.inter().r#ref[0] + 1,
-                b.ii.inter().interintra_type.map(|_| 0).unwrap_or(-1),
+                inter.r#ref[0] + 1,
+                inter.interintra_type.map(|_| 0).unwrap_or(-1),
             ],
         },
         bs,
@@ -927,18 +927,18 @@ unsafe fn splat_tworef_mv(
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
     bs: BlockSize,
-    b: &Av1Block,
+    inter: &Av1BlockInter,
     bw4: usize,
     bh4: usize,
 ) {
     assert!(bw4 >= 2 && bh4 >= 2);
-    let mode = b.ii.inter().inter_mode;
+    let mode = inter.inter_mode;
     let tmpl = Align16(refmvs_block {
         mv: refmvs_mvpair {
-            mv: b.ii.inter().nd.one_d.mv,
+            mv: inter.nd.one_d.mv,
         },
         r#ref: refmvs_refpair {
-            r#ref: [b.ii.inter().r#ref[0] + 1, b.ii.inter().r#ref[1] + 1],
+            r#ref: [inter.r#ref[0] + 1, inter.r#ref[1] + 1],
         },
         bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
@@ -3115,9 +3115,9 @@ unsafe fn decode_b(
 
         // context updates
         if is_comp {
-            splat_tworef_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
+            splat_tworef_mv(c, t, &f.rf, bs, &inter, bw4 as usize, bh4 as usize);
         } else {
-            splat_oneref_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
+            splat_oneref_mv(c, t, &f.rf, bs, &inter, bw4 as usize, bh4 as usize);
         }
 
         CaseSet::<32, false>::many(
