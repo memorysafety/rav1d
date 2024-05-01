@@ -33,6 +33,7 @@ use crate::src::ipred_prepare::sm_flag;
 use crate::src::ipred_prepare::sm_uv_flag;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
+use crate::src::levels::Av1BlockIntra;
 use crate::src::levels::Av1BlockIntraInter;
 use crate::src::levels::BlockSize;
 use crate::src::levels::CompInterType;
@@ -137,7 +138,7 @@ macro_rules! debug_block_info {
 pub(crate) use debug_block_info;
 
 pub(crate) type recon_b_intra_fn =
-    unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, EdgeFlags, &Av1Block) -> ();
+    unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, EdgeFlags, &Av1Block, &Av1BlockIntra) -> ();
 
 pub(crate) type recon_b_inter_fn =
     unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext, BlockSize, &Av1Block) -> Result<(), ()>;
@@ -2480,6 +2481,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     bs: BlockSize,
     intra_edge_flags: EdgeFlags,
     b: &Av1Block,
+    intra: &Av1BlockIntra,
 ) {
     let ts = &mut *f.ts.offset(t.ts as isize);
 
@@ -2502,7 +2504,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
         && (bh4 > ss_ver || t.b.y & 1 != 0)) as c_int;
     let t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions
         .as_ptr()
-        .offset(b.ii.intra().tx as isize) as *const TxfmInfo;
+        .offset(intra.tx as isize) as *const TxfmInfo;
     let uv_t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(b.uvtx as isize) as *const TxfmInfo;
     let cbw4 = bw4 + ss_hor >> ss_hor;
@@ -2515,7 +2517,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
         let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
         let mut init_x = 0;
         while init_x < w4 {
-            if b.ii.intra().pal_sz[0] != 0 {
+            if intra.pal_sz[0] != 0 {
                 let dst: *mut BD::Pixel = (f.cur.data.as_ref().unwrap().data[0] as *mut BD::Pixel)
                     .offset(
                         (4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0]) + t.b.x as isize))
@@ -2600,8 +2602,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let mut angle;
                     let edge_flags: EdgeFlags;
                     let m: IntraPredMode;
-                    if !(b.ii.intra().pal_sz[0] != 0) {
-                        angle = b.ii.intra().y_angle as c_int;
+                    if !(intra.pal_sz[0] != 0) {
+                        angle = intra.y_angle as c_int;
                         edge_flags = EdgeFlags::union_all([
                             EdgeFlags::I444_TOP_HAS_RIGHT.select(
                                 !((y > init_y || !sb_has_tr) && x + (*t_dim).w as c_int >= sub_w4),
@@ -2645,7 +2647,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             dst_slice,
                             f.cur.stride[0],
                             top_sb_edge_slice,
-                            b.ii.intra().y_mode as IntraPredMode,
+                            intra.y_mode as IntraPredMode,
                             &mut angle,
                             (*t_dim).w as c_int,
                             (*t_dim).h as c_int,
@@ -2727,7 +2729,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     .lcoef
                                     .index_mut(a_start..a_start + (*t_dim).w as usize),
                                 &mut t.l.lcoef.index_mut(l_start..l_start + (*t_dim).h as usize),
-                                b.ii.intra().tx as RectTxfmSize,
+                                intra.tx as RectTxfmSize,
                                 bs,
                                 b,
                                 0 as c_int,
@@ -2739,7 +2741,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             if debug_block_info!(f, t.b) {
                                 println!(
                                     "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
-                                    b.ii.intra().tx as c_int,
+                                    intra.tx as c_int,
                                     txtp as c_uint,
                                     eob,
                                     ts.msac.rng,
@@ -2767,7 +2769,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     "dq",
                                 );
                             }
-                            ((*dsp).itx.itxfm_add[b.ii.intra().tx as usize][txtp as usize])
+                            ((*dsp).itx.itxfm_add[intra.tx as usize][txtp as usize])
                                 .expect("non-null function pointer")(
                                 dst.cast(),
                                 f.cur.stride[0],
@@ -2806,7 +2808,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
             t.b.y -= y;
             if !(has_chroma == 0) {
                 let stride: ptrdiff_t = f.cur.stride[1];
-                if b.ii.intra().uv_mode as c_int == CFL_PRED as c_int {
+                if intra.uv_mode as c_int == CFL_PRED as c_int {
                     assert!(init_x == 0 && init_y == 0);
                     let scratch = t.scratch.inter_intra_mut();
                     let ac = scratch.ac_txtp_map.ac_mut();
@@ -2842,7 +2844,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     );
                     let mut pl = 0;
                     while pl < 2 {
-                        if !(b.ii.intra().cfl_alpha[pl as usize] == 0) {
+                        if !(intra.cfl_alpha[pl as usize] == 0) {
                             let mut angle = 0;
                             let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
                                 let sby = t.b.y >> f.sb_shift;
@@ -2896,7 +2898,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 (*uv_t_dim).w as c_int * 4,
                                 (*uv_t_dim).h as c_int * 4,
                                 ac.as_mut_ptr(),
-                                b.ii.intra().cfl_alpha[pl as usize] as c_int,
+                                intra.cfl_alpha[pl as usize] as c_int,
                                 BD::from_c(f.bitdepth_max),
                             );
                         }
@@ -2919,7 +2921,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             "v-cfl-pred",
                         );
                     }
-                } else if b.ii.intra().pal_sz[1] != 0 {
+                } else if intra.pal_sz[1] != 0 {
                     let uv_dstoff: ptrdiff_t = 4
                         * ((t.b.x >> ss_hor) as isize
                             + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
@@ -3024,11 +3026,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             let xstart;
                             let ystart;
                             let m: IntraPredMode;
-                            if !(b.ii.intra().uv_mode as c_int == CFL_PRED as c_int
-                                && b.ii.intra().cfl_alpha[pl as usize] as c_int != 0
-                                || b.ii.intra().pal_sz[1] as c_int != 0)
+                            if !(intra.uv_mode as c_int == CFL_PRED as c_int
+                                && intra.cfl_alpha[pl as usize] as c_int != 0
+                                || intra.pal_sz[1] as c_int != 0)
                             {
-                                angle = b.ii.intra().uv_angle as c_int;
+                                angle = intra.uv_angle as c_int;
                                 edge_flags = (if (y > init_y >> ss_ver || !uv_sb_has_tr)
                                     && x + (*uv_t_dim).w as c_int >= sub_cw4
                                 {
@@ -3050,10 +3052,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 } else {
                                     None
                                 };
-                                uv_mode = (if b.ii.intra().uv_mode as c_int == CFL_PRED as c_int {
+                                uv_mode = (if intra.uv_mode as c_int == CFL_PRED as c_int {
                                     DC_PRED as c_int
                                 } else {
-                                    b.ii.intra().uv_mode as c_int
+                                    intra.uv_mode as c_int
                                 }) as IntraPredMode;
                                 xpos = t.b.x >> ss_hor;
                                 ypos = t.b.y >> ss_ver;

@@ -1173,7 +1173,7 @@ unsafe fn decode_b(
     if t.frame_thread.pass == 2 {
         match &b.ii {
             Av1BlockIntraInter::Intra(intra) => {
-                bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b);
+                bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b, intra);
 
                 let y_mode = intra.y_mode;
                 let y_mode_nofilt = if y_mode == FILTER_PRED {
@@ -1888,7 +1888,7 @@ unsafe fn decode_b(
         };
         let t_dim = &dav1d_txfm_dimensions[tx as usize];
 
-        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
+        let intra = Av1BlockIntra {
             y_mode,
             uv_mode,
             tx,
@@ -1896,13 +1896,14 @@ unsafe fn decode_b(
             y_angle,
             uv_angle,
             cfl_alpha,
-        });
+        };
+        b.ii = Av1BlockIntraInter::Intra(intra.clone()); // cheap 9-byte clone
 
         // reconstruction
         if t.frame_thread.pass == 1 {
             bd_fn.read_coef_blocks(f, t, bs, b);
         } else {
-            bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b);
+            bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b, &intra);
         }
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {

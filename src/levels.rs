@@ -304,7 +304,7 @@ pub enum MotionMode {
     Warp = 2,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Av1BlockIntra {
     pub y_mode: u8,
@@ -360,13 +360,6 @@ pub enum Av1BlockIntraInter {
 }
 
 impl Av1BlockIntraInter {
-    pub const fn intra(&self) -> &Av1BlockIntra {
-        match self {
-            Self::Intra(intra) => intra,
-            _ => panic!(),
-        }
-    }
-
     pub const fn inter(&self) -> &Av1BlockInter {
         match self {
             Self::Inter(inter) => inter,

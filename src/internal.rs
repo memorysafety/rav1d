@@ -40,6 +40,7 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
+use crate::src::levels::Av1BlockIntra;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
 use crate::src::levels::TxfmType;
@@ -473,8 +474,9 @@ impl Rav1dFrameContext_bd_fn {
         block_size: BlockSize,
         flags: EdgeFlags,
         block: &Av1Block,
+        intra: &Av1BlockIntra,
     ) {
-        (self.recon_b_intra)(f, context, block_size, flags, block);
+        (self.recon_b_intra)(f, context, block_size, flags, block, intra);
     }
 
     pub unsafe fn recon_b_inter(
