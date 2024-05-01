@@ -221,7 +221,7 @@ pub const NEARESTMV: InterPredMode = 0;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum DrlProximity {
-    #[default] // TODO(kkysen) Maybe temporary.
+    #[default]
     Nearest,
     Nearer,
     Near,
@@ -298,7 +298,7 @@ impl Neg for mv {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, Default)]
 pub enum MotionMode {
-    #[default] // TODO(kkysen) Maybe temporary.
+    #[default]
     Translation = 0,
     Obmc = 1,
     Warp = 2,
@@ -325,7 +325,7 @@ pub struct Av1BlockInter1d {
     pub interintra_mode: InterIntraPredMode,
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1BlockInter2d {
     pub mv2d: mv,
@@ -339,15 +339,7 @@ pub union Av1BlockInterNd {
     pub two_d: Av1BlockInter2d,
 }
 
-impl Default for Av1BlockInterNd {
-    fn default() -> Self {
-        Self {
-            two_d: Default::default(),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,

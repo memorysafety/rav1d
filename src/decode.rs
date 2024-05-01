@@ -1627,11 +1627,6 @@ unsafe fn decode_b(
         true
     };
     b.intra = intra as u8;
-    b.ii = if intra {
-        Av1BlockIntraInter::Intra(Default::default())
-    } else {
-        Av1BlockIntraInter::Inter(Default::default())
-    };
 
     // intra/inter-specific stuff
     if b.intra != 0 {
