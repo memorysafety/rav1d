@@ -527,19 +527,19 @@ unsafe fn decode_coefs<BD: BitDepth>(
         *txtp = (lossless * WHT_WHT) as TxfmType;
         return -(1 as c_int);
     }
-    if lossless != 0 {
+    *txtp = if lossless != 0 {
         assert!((*t_dim).max as c_int == TX_4X4 as c_int);
-        *txtp = WHT_WHT;
+        WHT_WHT
     } else if (*t_dim).max as c_int + intra >= TX_64X64 as c_int {
-        *txtp = DCT_DCT;
+        DCT_DCT
     } else if chroma != 0 {
-        *txtp = (if intra != 0 {
-            dav1d_txtp_from_uvmode[b.ii.intra().uv_mode as usize] as c_uint
+        if intra != 0 {
+            dav1d_txtp_from_uvmode[b.ii.intra().uv_mode as usize]
         } else {
-            get_uv_inter_txtp(&*t_dim, *txtp) as c_uint
-        }) as TxfmType;
+            get_uv_inter_txtp(&*t_dim, *txtp)
+        }
     } else if frame_hdr.segmentation.qidx[b.seg_id as usize] == 0 {
-        *txtp = DCT_DCT;
+        DCT_DCT
     } else {
         let idx: c_uint;
         if intra != 0 {
@@ -549,23 +549,22 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 } else {
                     b.ii.intra().y_mode as c_int
                 }) as IntraPredMode;
-            if frame_hdr.reduced_txtp_set != 0 || (*t_dim).min as c_int == TX_16X16 as c_int {
-                idx = rav1d_msac_decode_symbol_adapt4(
-                    &mut ts.msac,
-                    &mut ts.cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize],
-                    4 as c_int as usize,
-                );
-                *txtp = dav1d_tx_types_per_set[idx.wrapping_add(0 as c_int as c_uint) as usize]
-                    as TxfmType;
-            } else {
-                idx = rav1d_msac_decode_symbol_adapt8(
-                    &mut ts.msac,
-                    &mut ts.cdf.m.txtp_intra1[(*t_dim).min as usize][y_mode_nofilt as usize],
-                    6 as c_int as usize,
-                );
-                *txtp = dav1d_tx_types_per_set[idx.wrapping_add(5 as c_int as c_uint) as usize]
-                    as TxfmType;
-            }
+            let txtp =
+                if frame_hdr.reduced_txtp_set != 0 || (*t_dim).min as c_int == TX_16X16 as c_int {
+                    idx = rav1d_msac_decode_symbol_adapt4(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize],
+                        4 as c_int as usize,
+                    );
+                    dav1d_tx_types_per_set[idx.wrapping_add(0 as c_int as c_uint) as usize]
+                } else {
+                    idx = rav1d_msac_decode_symbol_adapt8(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.txtp_intra1[(*t_dim).min as usize][y_mode_nofilt as usize],
+                        6 as c_int as usize,
+                    );
+                    dav1d_tx_types_per_set[idx.wrapping_add(5 as c_int as c_uint) as usize]
+                };
             if dbg {
                 println!(
                     "Post-txtp-intra[{}->{}][{}][{}->{}]: r={}",
@@ -573,47 +572,47 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     (*t_dim).min as c_int,
                     y_mode_nofilt as c_uint,
                     idx,
-                    *txtp as c_uint,
+                    txtp,
                     ts.msac.rng,
                 );
             }
+            txtp
         } else {
-            if frame_hdr.reduced_txtp_set != 0 || (*t_dim).max as c_int == TX_32X32 as c_int {
-                idx = rav1d_msac_decode_bool_adapt(
-                    &mut ts.msac,
-                    &mut ts.cdf.m.txtp_inter3[(*t_dim).min as usize],
-                ) as c_uint;
-                *txtp =
-                    (idx.wrapping_sub(1 as c_int as c_uint) & IDTX as c_int as c_uint) as TxfmType;
-            } else if (*t_dim).min as c_int == TX_16X16 as c_int {
-                idx = rav1d_msac_decode_symbol_adapt16(
-                    &mut ts.msac,
-                    &mut ts.cdf.m.txtp_inter2.0,
-                    11 as c_int as usize,
-                );
-                *txtp = dav1d_tx_types_per_set[idx.wrapping_add(12 as c_int as c_uint) as usize]
-                    as TxfmType;
-            } else {
-                idx = rav1d_msac_decode_symbol_adapt16(
-                    &mut ts.msac,
-                    &mut ts.cdf.m.txtp_inter1[(*t_dim).min as usize],
-                    15 as c_int as usize,
-                );
-                *txtp = dav1d_tx_types_per_set[idx.wrapping_add(24 as c_int as c_uint) as usize]
-                    as TxfmType;
-            }
+            let txtp =
+                if frame_hdr.reduced_txtp_set != 0 || (*t_dim).max as c_int == TX_32X32 as c_int {
+                    idx = rav1d_msac_decode_bool_adapt(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.txtp_inter3[(*t_dim).min as usize],
+                    ) as c_uint;
+                    idx.wrapping_sub(1) as TxfmType & IDTX
+                } else if (*t_dim).min as c_int == TX_16X16 as c_int {
+                    idx = rav1d_msac_decode_symbol_adapt16(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.txtp_inter2.0,
+                        11 as c_int as usize,
+                    );
+                    dav1d_tx_types_per_set[idx.wrapping_add(12) as usize]
+                } else {
+                    idx = rav1d_msac_decode_symbol_adapt16(
+                        &mut ts.msac,
+                        &mut ts.cdf.m.txtp_inter1[(*t_dim).min as usize],
+                        15 as c_int as usize,
+                    );
+                    dav1d_tx_types_per_set[idx.wrapping_add(24) as usize]
+                };
             if dbg {
                 println!(
                     "Post-txtp-inter[{}->{}][{}->{}]: r={}",
                     tx as c_uint,
                     (*t_dim).min as c_int,
                     idx,
-                    *txtp as c_uint,
+                    txtp,
                     ts.msac.rng,
                 );
             }
+            txtp
         }
-    }
+    };
     let mut eob_bin = 0;
     let tx2dszctx = cmp::min((*t_dim).lw as c_int, TX_32X32 as c_int)
         + cmp::min((*t_dim).lh as c_int, TX_32X32 as c_int);
