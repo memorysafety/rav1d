@@ -897,13 +897,13 @@ unsafe fn splat_intrabc_mv(
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
     bs: BlockSize,
-    b: &Av1Block,
+    r#ref: mv,
     bw4: usize,
     bh4: usize,
 ) {
     let tmpl = Align16(refmvs_block {
         mv: refmvs_mvpair {
-            mv: [b.ii.inter().nd.one_d.mv[0], mv::ZERO],
+            mv: [r#ref, mv::ZERO],
         },
         r#ref: refmvs_refpair { r#ref: [0, -1] },
         bs,
@@ -2124,7 +2124,7 @@ unsafe fn decode_b(
             bd_fn.recon_b_inter(f, t, bs, b)?;
         }
 
-        splat_intrabc_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
+        splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
 
         CaseSet::<32, false>::many(
             [(&t.l, 1), (&f.a[t.a], 0)],
