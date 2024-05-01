@@ -752,29 +752,35 @@ unsafe fn read_pal_indices(
     );
 }
 
+struct VarTx {
+    uvtx: TxfmSize,
+    max_ytx: TxfmSize,
+    tx_split0: u8,
+    tx_split1: u16,
+}
+
 unsafe fn read_vartx_tree(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
-    b: &mut Av1Block,
+    b: &Av1Block,
     bs: BlockSize,
     bx4: c_int,
     by4: c_int,
-) {
+) -> VarTx {
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bw4 = b_dim[0] as usize;
     let bh4 = b_dim[1] as usize;
 
     // var-tx tree coding
     let mut tx_split = [0u16; 2];
-    b.ii.inter_mut().max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+    let mut max_ytx = dav1d_max_txfm_size_for_bs[bs as usize][0];
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
-    if b.skip == 0
-        && (frame_hdr.segmentation.lossless[b.seg_id as usize] != 0
-            || b.ii.inter().max_ytx as TxfmSize == TX_4X4)
+    let uvtx;
+    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 || max_ytx == TX_4X4)
     {
-        b.uvtx = TX_4X4 as u8;
-        b.ii.inter_mut().max_ytx = b.uvtx;
+        uvtx = TX_4X4;
+        max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
             CaseSet::<32, false>::many(
                 [&t.l, &f.a[t.a]],
@@ -796,25 +802,17 @@ unsafe fn read_vartx_tree(
                 },
             );
         }
-        b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
+        uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     } else {
-        assert!(bw4 <= 16 || bh4 <= 16 || b.ii.inter().max_ytx as TxfmSize == TX_64X64);
-        let ytx = &dav1d_txfm_dimensions[b.ii.inter().max_ytx as usize];
+        assert!(bw4 <= 16 || bh4 <= 16 || max_ytx == TX_64X64);
+        let ytx = &dav1d_txfm_dimensions[max_ytx as usize];
         let h = ytx.h as usize;
         let w = ytx.w as usize;
         debug_assert_eq!(bh4 % h, 0);
         debug_assert_eq!(bw4 % w, 0);
         for y_off in 0..bh4 / h {
             for x_off in 0..bw4 / w {
-                read_tx_tree(
-                    &mut *t,
-                    f,
-                    b.ii.inter().max_ytx as RectTxfmSize,
-                    0,
-                    &mut tx_split,
-                    x_off,
-                    y_off,
-                );
+                read_tx_tree(t, f, max_ytx, 0, &mut tx_split, x_off, y_off);
                 // contexts are updated inside read_tx_tree()
                 t.b.x += w as c_int;
             }
@@ -829,11 +827,18 @@ unsafe fn read_vartx_tree(
                 tx_split[0], tx_split[1], ts.msac.rng
             );
         }
-        b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
+        uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
     }
     assert!(tx_split[0] & !0x33 == 0);
-    b.ii.inter_mut().tx_split0 = tx_split[0] as u8;
-    b.ii.inter_mut().tx_split1 = tx_split[1];
+    let tx_split0 = tx_split[0] as u8;
+    let tx_split1 = tx_split[1];
+
+    VarTx {
+        uvtx,
+        max_ytx,
+        tx_split0,
+        tx_split1,
+    }
 }
 
 #[inline]
@@ -2112,9 +2117,19 @@ unsafe fn decode_b(
                 ts.msac.rng,
             );
         }
-        b.ii.inter_mut().nd.one_d.mv[0] = r#ref;
 
-        read_vartx_tree(t, f, b, bs, bx4, by4);
+        let VarTx {
+            uvtx,
+            max_ytx,
+            tx_split0,
+            tx_split1,
+        } = read_vartx_tree(t, f, b, bs, bx4, by4);
+
+        b.ii.inter_mut().nd.one_d.mv[0] = r#ref;
+        b.uvtx = uvtx;
+        b.ii.inter_mut().max_ytx = max_ytx;
+        b.ii.inter_mut().tx_split0 = tx_split0;
+        b.ii.inter_mut().tx_split1 = tx_split1;
 
         // reconstruction
         if t.frame_thread.pass == 1 {
@@ -2955,7 +2970,17 @@ unsafe fn decode_b(
         };
         b.ii.inter_mut().filter2d = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
 
-        read_vartx_tree(t, f, b, bs, bx4, by4);
+        let VarTx {
+            uvtx,
+            max_ytx,
+            tx_split0,
+            tx_split1,
+        } = read_vartx_tree(t, f, b, bs, bx4, by4);
+
+        b.uvtx = uvtx;
+        b.ii.inter_mut().max_ytx = max_ytx;
+        b.ii.inter_mut().tx_split0 = tx_split0;
+        b.ii.inter_mut().tx_split1 = tx_split1;
 
         // reconstruction
         if t.frame_thread.pass == 1 {
