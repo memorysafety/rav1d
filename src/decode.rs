@@ -1721,17 +1721,7 @@ unsafe fn decode_b(
             cfl_alpha = Default::default();
         }
 
-        let pal_sz = [0, 0];
-        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
-            y_mode,
-            uv_mode,
-            tx: Default::default(),
-            pal_sz,
-            y_angle,
-            uv_angle,
-            cfl_alpha,
-        });
-
+        let mut pal_sz = [0; 2];
         if frame_hdr.allow_screen_content_tools && cmp::max(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
             if y_mode == DC_PRED {
@@ -1745,12 +1735,13 @@ unsafe fn decode_b(
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts.msac.rng);
                 }
                 if use_y_pal {
-                    (bd_fn.read_pal_plane)(t, f, b, false, sz_ctx, bx4 as usize, by4 as usize);
+                    pal_sz[0] =
+                        (bd_fn.read_pal_plane)(t, f, false, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
 
-            if has_chroma && b.ii.intra().uv_mode == DC_PRED {
-                let pal_ctx = b.ii.intra().pal_sz[0] > 0;
+            if has_chroma && uv_mode == DC_PRED {
+                let pal_ctx = pal_sz[0] > 0;
                 let use_uv_pal = rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.pal_uv[pal_ctx as usize],
@@ -1760,14 +1751,17 @@ unsafe fn decode_b(
                 }
                 if use_uv_pal {
                     // see aomedia bug 2183 for why we use luma coordinates
-                    (bd_fn.read_pal_uv)(t, f, b, sz_ctx, bx4 as usize, by4 as usize);
+                    pal_sz[1] = (bd_fn.read_pal_uv)(t, f, sz_ctx, bx4 as usize, by4 as usize);
                 }
             }
         }
+        let pal_sz = pal_sz;
 
+        let mut y_mode = y_mode;
+        let mut y_angle = y_angle;
         let seq_hdr = f.seq_hdr();
-        if b.ii.intra().y_mode == DC_PRED
-            && b.ii.intra().pal_sz[0] == 0
+        if y_mode == DC_PRED
+            && pal_sz[0] == 0
             && cmp::max(b_dim[2], b_dim[3]) <= 3
             && seq_hdr.filter_intra != 0
         {
@@ -1776,22 +1770,32 @@ unsafe fn decode_b(
                 &mut ts.cdf.m.use_filter_intra[bs as usize],
             );
             if is_filter {
-                b.ii.intra_mut().y_mode = FILTER_PRED as u8;
-                b.ii.intra_mut().y_angle =
+                y_mode = FILTER_PRED as u8;
+                y_angle =
                     rav1d_msac_decode_symbol_adapt4(&mut ts.msac, &mut ts.cdf.m.filter_intra.0, 4)
                         as i8;
             }
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-filterintramode[{}/{}]: r={}",
-                    b.ii.intra().y_mode,
-                    b.ii.intra().y_angle,
-                    ts.msac.rng,
+                    y_mode, y_angle, ts.msac.rng,
                 );
             }
         }
+        let y_mode = y_mode;
+        let y_angle = y_angle;
 
-        if b.ii.intra().pal_sz[0] != 0 {
+        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
+            y_mode,
+            uv_mode,
+            tx: Default::default(),
+            pal_sz,
+            y_angle,
+            uv_angle,
+            cfl_alpha,
+        });
+
+        if pal_sz[0] != 0 {
             let mut pal_idx_guard;
             let scratch = t.scratch.inter_intra_mut();
             let pal_idx = if t.frame_thread.pass != 0 {

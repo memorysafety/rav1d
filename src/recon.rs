@@ -160,21 +160,19 @@ pub(crate) type copy_pal_block_fn = unsafe fn(
 pub(crate) type read_pal_plane_fn = unsafe fn(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
-    b: &mut Av1Block,
     pl: bool,
     sz_ctx: u8,
     bx4: usize,
     by4: usize,
-) -> ();
+) -> u8; // `pal_sz`
 
 pub(crate) type read_pal_uv_fn = unsafe fn(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
-    b: &mut Av1Block,
     sz_ctx: u8,
     bx4: usize,
     by4: usize,
-) -> ();
+) -> u8; // `pal_sz[1]`
 
 #[inline]
 fn read_golomb(msac: &mut MsacContext) -> c_uint {
@@ -4613,28 +4611,27 @@ pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
     }
 }
 
+/// Return `pal_sz`.
 pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
-    b: &mut Av1Block,
     pl: bool,
     sz_ctx: u8,
     bx4: usize,
     by4: usize,
-) {
+) -> u8 {
     let pli = pl as usize;
     let not_pl = !pl as u16;
 
     let ts = &mut *f.ts.offset(t.ts as isize);
 
-    let pal_sz = rav1d_msac_decode_symbol_adapt8(
+    let pal_sz_u8 = rav1d_msac_decode_symbol_adapt8(
         &mut ts.msac,
         &mut ts.cdf.m.pal_sz[pli][sz_ctx as usize],
         6,
     ) as u8
         + 2;
-    b.ii.intra_mut().pal_sz[pli] = pal_sz;
-    let pal_sz = pal_sz as usize;
+    let pal_sz = pal_sz_u8 as usize;
     let mut cache = [0.as_::<BD::Pixel>(); 16];
     let mut used_cache = [0.as_::<BD::Pixel>(); 8];
     let mut l_cache = if pl {
@@ -4805,17 +4802,19 @@ pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
         }
         println!("]");
     }
+
+    pal_sz_u8
 }
 
+/// Return `pal_sz[1]`.
 pub(crate) unsafe fn rav1d_read_pal_uv<BD: BitDepth>(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
-    b: &mut Av1Block,
     sz_ctx: u8,
     bx4: usize,
     by4: usize,
-) {
-    rav1d_read_pal_plane::<BD>(t, f, b, true, sz_ctx, bx4, by4);
+) -> u8 {
+    let pal_sz = rav1d_read_pal_plane::<BD>(t, f, true, sz_ctx, bx4, by4);
 
     // V pal coding
     let ts = &mut *f.ts.offset(t.ts as isize);
@@ -4835,7 +4834,7 @@ pub(crate) unsafe fn rav1d_read_pal_uv<BD: BitDepth>(
             .pal
             .buf_mut::<BD>()[2]
     };
-    let pal = &mut pal[..b.ii.intra().pal_sz[1] as usize];
+    let pal = &mut pal[..pal_sz as usize];
     if rav1d_msac_decode_bool_equi(&mut ts.msac) {
         let bits = f.cur.p.bpc as u32 + rav1d_msac_decode_bools(&mut ts.msac, 2) - 4;
         let mut prev = rav1d_msac_decode_bools(&mut ts.msac, f.cur.p.bpc as c_uint) as u16;
@@ -4865,4 +4864,6 @@ pub(crate) unsafe fn rav1d_read_pal_uv<BD: BitDepth>(
         }
         println!("]");
     }
+
+    pal_sz
 }
