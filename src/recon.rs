@@ -489,7 +489,6 @@ unsafe fn decode_coefs<BD: BitDepth>(
     tx: RectTxfmSize,
     bs: BlockSize,
     b: &Av1Block,
-    intra: c_int,
     plane: c_int,
     cf: CfSelect,
     txtp: *mut TxfmType,
@@ -530,27 +529,28 @@ unsafe fn decode_coefs<BD: BitDepth>(
     *txtp = if lossless != 0 {
         assert!((*t_dim).max as c_int == TX_4X4 as c_int);
         WHT_WHT
-    } else if (*t_dim).max as c_int + intra >= TX_64X64 as c_int {
+    } else if (*t_dim).max + matches!(b.ii, Av1BlockIntraInter::Intra(_)) as TxfmSize >= TX_64X64 {
         DCT_DCT
     } else if chroma != 0 {
-        if intra != 0 {
-            dav1d_txtp_from_uvmode[b.ii.intra().uv_mode as usize]
-        } else {
-            get_uv_inter_txtp(&*t_dim, *txtp)
+        match b.ii {
+            Av1BlockIntraInter::Intra(intra) => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
+            Av1BlockIntraInter::Inter(_) => get_uv_inter_txtp(t_dim, *txtp),
         }
     } else if frame_hdr.segmentation.qidx[b.seg_id as usize] == 0 {
         DCT_DCT
     } else {
         let idx: c_uint;
-        if intra != 0 {
-            let y_mode_nofilt: IntraPredMode =
-                (if b.ii.intra().y_mode as c_int == FILTER_PRED as c_int {
-                    dav1d_filter_mode_to_y_mode[b.ii.intra().y_angle as usize] as c_int
+        match b.ii {
+            Av1BlockIntraInter::Intra(intra) => {
+                let y_mode_nofilt: IntraPredMode = (if intra.y_mode as c_int == FILTER_PRED as c_int
+                {
+                    dav1d_filter_mode_to_y_mode[intra.y_angle as usize] as c_int
                 } else {
-                    b.ii.intra().y_mode as c_int
+                    intra.y_mode as c_int
                 }) as IntraPredMode;
-            let txtp =
-                if frame_hdr.reduced_txtp_set != 0 || (*t_dim).min as c_int == TX_16X16 as c_int {
+                let txtp = if frame_hdr.reduced_txtp_set != 0
+                    || (*t_dim).min as c_int == TX_16X16 as c_int
+                {
                     idx = rav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize],
@@ -565,21 +565,23 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     );
                     dav1d_tx_types_per_set[idx.wrapping_add(5 as c_int as c_uint) as usize]
                 };
-            if dbg {
-                println!(
-                    "Post-txtp-intra[{}->{}][{}][{}->{}]: r={}",
-                    tx as c_uint,
-                    (*t_dim).min as c_int,
-                    y_mode_nofilt as c_uint,
-                    idx,
-                    txtp,
-                    ts.msac.rng,
-                );
+                if dbg {
+                    println!(
+                        "Post-txtp-intra[{}->{}][{}][{}->{}]: r={}",
+                        tx as c_uint,
+                        (*t_dim).min as c_int,
+                        y_mode_nofilt as c_uint,
+                        idx,
+                        txtp,
+                        ts.msac.rng,
+                    );
+                }
+                txtp
             }
-            txtp
-        } else {
-            let txtp =
-                if frame_hdr.reduced_txtp_set != 0 || (*t_dim).max as c_int == TX_32X32 as c_int {
+            Av1BlockIntraInter::Inter(_) => {
+                let txtp = if frame_hdr.reduced_txtp_set != 0
+                    || (*t_dim).max as c_int == TX_32X32 as c_int
+                {
                     idx = rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.txtp_inter3[(*t_dim).min as usize],
@@ -600,17 +602,18 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     );
                     dav1d_tx_types_per_set[idx.wrapping_add(24) as usize]
                 };
-            if dbg {
-                println!(
-                    "Post-txtp-inter[{}->{}][{}->{}]: r={}",
-                    tx as c_uint,
-                    (*t_dim).min as c_int,
-                    idx,
-                    txtp,
-                    ts.msac.rng,
-                );
+                if dbg {
+                    println!(
+                        "Post-txtp-inter[{}->{}][{}->{}]: r={}",
+                        tx as c_uint,
+                        (*t_dim).min as c_int,
+                        idx,
+                        txtp,
+                        ts.msac.rng,
+                    );
+                }
+                txtp
             }
-            txtp
         }
     };
     let mut eob_bin = 0;
@@ -1788,7 +1791,6 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 bs,
                 b,
                 0 as c_int,
-                0 as c_int,
                 cf,
                 &mut txtp,
                 &mut cf_ctx,
@@ -1981,7 +1983,6 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 intra.tx,
                                 bs,
                                 b,
-                                1 as c_int,
                                 0 as c_int,
                                 CfSelect::Frame(ts.frame_thread[1].cf),
                                 &mut txtp,
@@ -2060,7 +2061,6 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 b.uvtx as RectTxfmSize,
                                 bs,
                                 b,
-                                matches!(b.ii, Av1BlockIntraInter::Intra(_)) as c_int,
                                 1 + pl as c_int,
                                 CfSelect::Frame(ts.frame_thread[1].cf),
                                 &mut txtp,
@@ -2741,7 +2741,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 b.ii.intra().tx as RectTxfmSize,
                                 bs,
                                 b,
-                                1 as c_int,
                                 0 as c_int,
                                 CfSelect::Task,
                                 &mut txtp,
@@ -3190,7 +3189,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         b.uvtx as RectTxfmSize,
                                         bs,
                                         b,
-                                        1 as c_int,
                                         1 + pl as c_int,
                                         CfSelect::Task,
                                         &mut txtp,
@@ -4144,7 +4142,6 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     b.uvtx,
                                     bs,
                                     b,
-                                    0,
                                     1 + pl as c_int,
                                     CfSelect::Task,
                                     &mut txtp,
