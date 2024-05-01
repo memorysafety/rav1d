@@ -1852,27 +1852,17 @@ unsafe fn decode_b(
             }
         }
 
-        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
-            y_mode,
-            uv_mode,
-            tx: Default::default(),
-            pal_sz,
-            y_angle,
-            uv_angle,
-            cfl_alpha,
-        });
-
         let frame_hdr = f.frame_hdr();
-        let t_dim = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
-            b.uvtx = TX_4X4 as u8;
-            b.ii.intra_mut().tx = b.uvtx;
-            &dav1d_txfm_dimensions[TX_4X4 as usize]
+
+        let tx = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
+            b.uvtx = TX_4X4;
+            b.uvtx
         } else {
-            b.ii.intra_mut().tx = dav1d_max_txfm_size_for_bs[bs as usize][0];
+            let mut tx = dav1d_max_txfm_size_for_bs[bs as usize][0];
             b.uvtx = dav1d_max_txfm_size_for_bs[bs as usize][f.cur.p.layout as usize];
-            let mut t_dim = &dav1d_txfm_dimensions[b.ii.intra().tx as usize];
+            let mut t_dim = &dav1d_txfm_dimensions[tx as usize];
             if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TX_4X4 as u8 {
-                let tctx = get_tx_ctx(&f.a[t.a], &t.l, &*t_dim, by4, bx4);
+                let tctx = get_tx_ctx(&f.a[t.a], &t.l, t_dim, by4, bx4);
                 let tx_cdf = &mut ts.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
                 let depth = rav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
@@ -1881,15 +1871,26 @@ unsafe fn decode_b(
                 ) as c_int;
 
                 for _ in 0..depth {
-                    b.ii.intra_mut().tx = t_dim.sub;
-                    t_dim = &dav1d_txfm_dimensions[b.ii.intra().tx as usize];
+                    tx = t_dim.sub;
+                    t_dim = &dav1d_txfm_dimensions[tx as usize];
                 }
             }
             if debug_block_info!(f, t.b) {
-                println!("Post-tx[{}]: r={}", b.ii.intra().tx, ts.msac.rng);
+                println!("Post-tx[{}]: r={}", tx, ts.msac.rng);
             }
-            t_dim
+            tx
         };
+        let t_dim = &dav1d_txfm_dimensions[tx as usize];
+
+        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
+            y_mode,
+            uv_mode,
+            tx,
+            pal_sz,
+            y_angle,
+            uv_angle,
+            cfl_alpha,
+        });
 
         // reconstruction
         if t.frame_thread.pass == 1 {

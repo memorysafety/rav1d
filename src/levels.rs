@@ -376,13 +376,6 @@ impl Av1BlockIntraInter {
         }
     }
 
-    pub fn intra_mut(&mut self) -> &mut Av1BlockIntra {
-        match self {
-            Self::Intra(intra) => intra,
-            _ => panic!(),
-        }
-    }
-
     pub const fn inter(&self) -> &Av1BlockInter {
         match self {
             Self::Inter(inter) => inter,
