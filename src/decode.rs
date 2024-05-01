@@ -702,7 +702,7 @@ unsafe fn read_pal_indices(
     scratch_pal: &mut ScratchPal,
     pal_tmp: &mut [u8],
     pal_idx: Option<&mut [u8]>, // if None, use pal_tmp instead of pal_idx
-    b: &Av1Block,
+    pal_sz: u8,
     pl: bool,
     w4: c_int,
     h4: c_int,
@@ -711,11 +711,10 @@ unsafe fn read_pal_indices(
 ) {
     let [w4, h4, bw4, bh4] = [w4, h4, bw4, bh4].map(|n| usize::try_from(n).unwrap());
     let pli = pl as usize;
-    let pal_sz = b.ii.intra().pal_sz[pli] as usize;
 
     let stride = bw4 * 4;
     pal_tmp[0] = rav1d_msac_decode_uniform(&mut ts.msac, pal_sz as c_uint) as u8;
-    let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz - 2];
+    let color_map_cdf = &mut ts.cdf.m.color_map[pli][pal_sz as usize - 2];
     let ScratchPal {
         pal_order: order,
         pal_ctx: ctx,
@@ -729,7 +728,7 @@ unsafe fn read_pal_indices(
             let color_idx = rav1d_msac_decode_symbol_adapt8(
                 &mut ts.msac,
                 &mut color_map_cdf[ctx[m] as usize],
-                pal_sz - 1,
+                pal_sz as usize - 1,
             ) as usize;
             pal_tmp[(i - j) * stride + j] = order[m][color_idx];
         }
@@ -1785,16 +1784,6 @@ unsafe fn decode_b(
         let y_mode = y_mode;
         let y_angle = y_angle;
 
-        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
-            y_mode,
-            uv_mode,
-            tx: Default::default(),
-            pal_sz,
-            y_angle,
-            uv_angle,
-            cfl_alpha,
-        });
-
         if pal_sz[0] != 0 {
             let mut pal_idx_guard;
             let scratch = t.scratch.inter_intra_mut();
@@ -1817,7 +1806,7 @@ unsafe fn decode_b(
                 scratch.levels_pal.pal_mut(),
                 &mut scratch.pal_idx_uv,
                 Some(pal_idx),
-                b,
+                pal_sz[0],
                 false,
                 w4,
                 h4,
@@ -1829,7 +1818,7 @@ unsafe fn decode_b(
             }
         }
 
-        if has_chroma && b.ii.intra().pal_sz[1] != 0 {
+        if has_chroma && pal_sz[1] != 0 {
             let mut pal_idx_guard;
             let scratch = t.scratch.inter_intra_mut();
             let pal_idx = if t.frame_thread.pass != 0 {
@@ -1851,7 +1840,7 @@ unsafe fn decode_b(
                 scratch.levels_pal.pal_mut(),
                 &mut scratch.pal_idx_uv,
                 pal_idx,
-                b,
+                pal_sz[1],
                 true,
                 cw4,
                 ch4,
@@ -1862,6 +1851,16 @@ unsafe fn decode_b(
                 println!("Post-uv-pal-indices: r={}", ts.msac.rng);
             }
         }
+
+        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
+            y_mode,
+            uv_mode,
+            tx: Default::default(),
+            pal_sz,
+            y_angle,
+            uv_angle,
+            cfl_alpha,
+        });
 
         let frame_hdr = f.frame_hdr();
         let t_dim = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
