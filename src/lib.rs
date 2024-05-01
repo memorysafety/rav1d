@@ -502,7 +502,7 @@ pub(crate) unsafe fn rav1d_send_data(c: &mut Rav1dContext, in_0: &mut Rav1dData)
     if in_0.data.is_some() {
         let sz = in_0.data.as_ref().unwrap().len();
         validate_input!((sz > 0 && sz <= usize::MAX / 2, EINVAL))?;
-        c.drain = 0 as c_int;
+        c.drain = false;
     }
     if c.in_0.data.is_some() {
         return Err(EAGAIN);
@@ -535,13 +535,13 @@ pub(crate) unsafe fn rav1d_get_picture(
     c: &mut Rav1dContext,
     out: &mut Rav1dPicture,
 ) -> Rav1dResult {
-    let drain = mem::replace(&mut c.drain, 1);
+    let drain = mem::replace(&mut c.drain, true);
     gen_picture(c)?;
     mem::replace(&mut c.cached_error, Ok(()))?;
     if output_picture_ready(c, c.fc.len() == 1) {
         return output_image(c, out);
     }
-    if c.fc.len() > 1 && drain != 0 {
+    if c.fc.len() > 1 && drain {
         return drain_picture(c, out);
     }
     Err(EAGAIN)
@@ -635,7 +635,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     let _ = mem::take(&mut c.in_0);
     let _ = mem::take(&mut c.out);
     let _ = mem::take(&mut c.cache);
-    c.drain = 0;
+    c.drain = false;
     c.cached_error = Ok(());
     let _ = mem::take(&mut c.refs);
     let _ = mem::take(&mut c.cdf);

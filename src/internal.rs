@@ -368,7 +368,7 @@ pub struct Rav1dContext {
     pub(crate) output_invisible_frames: bool,
     pub(crate) inloop_filters: Rav1dInloopFilterType,
     pub(crate) decode_frame_type: Rav1dDecodeFrameType,
-    pub(crate) drain: c_int,
+    pub(crate) drain: bool,
     pub(crate) frame_flags: Atomic<PictureFlags>,
     pub(crate) event_flags: Rav1dEventFlags,
     pub(crate) cached_error_props: Mutex<Rav1dDataProps>,
