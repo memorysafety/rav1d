@@ -52,7 +52,7 @@ use crate::src::log::Rav1dLogger;
 use crate::src::loopfilter::Rav1dLoopFilterDSPContext;
 use crate::src::looprestoration::Rav1dLoopRestorationDSPContext;
 use crate::src::mc::Rav1dMCDSPContext;
-use crate::src::mem::Rav1dMemPool;
+use crate::src::mem::MemPool;
 use crate::src::msac::MsacContext;
 use crate::src::pal::Rav1dPalDSPContext;
 use crate::src::picture::PictureFlags;
@@ -376,7 +376,7 @@ pub struct Rav1dContext {
 
     pub(crate) logger: Option<Rav1dLogger>,
 
-    pub(crate) picture_pool: *mut Rav1dMemPool,
+    pub(crate) picture_pool: Arc<MemPool<MaybeUninit<u8>>>,
 }
 
 impl Rav1dContext {

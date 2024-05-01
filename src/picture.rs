@@ -18,16 +18,12 @@ use crate::include::dav1d::picture::Rav1dPictureParameters;
 use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
-use crate::src::mem::rav1d_mem_pool_pop;
-use crate::src::mem::rav1d_mem_pool_push;
-use crate::src::mem::Rav1dMemPool;
-use crate::src::mem::Rav1dMemPoolBuffer;
+use crate::src::mem::MemPool;
 use atomig::Atom;
 use atomig::AtomLogic;
 use bitflags::bitflags;
@@ -35,9 +31,9 @@ use libc::ptrdiff_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
+use std::mem::MaybeUninit;
 use std::ptr;
 use std::ptr::NonNull;
-use std::slice;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -79,11 +75,22 @@ pub(crate) struct Rav1dThreadPicture {
     pub progress: Option<Arc<[AtomicU32; 2]>>,
 }
 
+struct MemPoolBuf<T> {
+    /// This is an [`Arc`] because a [`Rav1dPicture`] can outlive
+    /// its [`Rav1dContext`], and that's how the API was designed.
+    /// If it were changed to require [`Rav1dContext`] to outlive
+    /// any [`Rav1dPicture`]s it creates (a reasonable API I think,
+    /// and easy to do with Rust lifetimes), then we wouldn't need
+    /// the [`Arc`] here.  But it's not the round-tripping through C
+    /// that requires this, just how the API was designed.
+    pool: Arc<MemPool<T>>,
+    buf: Vec<T>,
+}
+
 pub unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
     cookie: *mut c_void,
 ) -> Dav1dResult {
-    assert!(::core::mem::size_of::<Rav1dMemPoolBuffer>() <= RAV1D_PICTURE_ALIGNMENT);
     let p = p_c.read().to::<Rav1dPicture>();
     let hbd = (p.p.bpc > 8) as c_int;
     let aligned_w = p.p.w + 127 & !127;
@@ -103,15 +110,20 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let y_sz = (y_stride * aligned_h as isize) as usize;
     let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size = y_sz + 2 * uv_sz;
-    let buf = rav1d_mem_pool_pop(
-        cookie as *mut Rav1dMemPool,
-        pic_size + RAV1D_PICTURE_ALIGNMENT - ::core::mem::size_of::<Rav1dMemPoolBuffer>(),
-    );
-    if buf.is_null() {
-        return Rav1dResult::<()>::Err(ENOMEM).into();
-    }
 
-    let data = slice::from_raw_parts_mut((*buf).data as *mut u8, pic_size);
+    let pool = &*cookie.cast::<Arc<MemPool<MaybeUninit<u8>>>>();
+    let pool = pool.clone();
+    let pic_cap = pic_size + RAV1D_PICTURE_ALIGNMENT;
+    // TODO fallible allocation
+    let mut buf = pool.pop(pic_cap);
+    buf.resize_with(pic_cap, MaybeUninit::uninit);
+    // We have to `Box` this because `Dav1dPicture::allocator_data` is only 8 bytes.
+    let mut buf = Box::new(MemPoolBuf { pool, buf });
+    let data = &mut buf.buf[..];
+    // SAFETY: `Rav1dPicAllocator::alloc_picture_callback` requires that these are `RAV1D_PICTURE_ALIGNMENT`-aligned.
+    let align_offset = data.as_ptr().align_offset(RAV1D_PICTURE_ALIGNMENT);
+    let data = &mut data[align_offset..][..pic_size];
+
     let (data0, data12) = data.split_at_mut(y_sz);
     let (data1, data2) = data12.split_at_mut(uv_sz);
     // Note that `data[1]` and `data[2]`
@@ -121,7 +133,7 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
 
     (*p_c).stride = stride;
     (*p_c).data = data.map(NonNull::new);
-    (*p_c).allocator_data = NonNull::new(buf.cast());
+    (*p_c).allocator_data = NonNull::new(Box::into_raw(buf).cast::<c_void>());
     // The caller will create the real `Rav1dPicture` from the `Dav1dPicture` fields set above,
     // so we don't want to drop the `Rav1dPicture` we created for convenience here.
     mem::forget(p);
@@ -129,12 +141,15 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     Rav1dResult::Ok(()).into()
 }
 
-pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, cookie: *mut c_void) {
-    rav1d_mem_pool_push(
-        cookie as *mut Rav1dMemPool,
-        (*p).allocator_data
-            .map_or_else(ptr::null_mut, |data| data.as_ptr()) as *mut Rav1dMemPoolBuffer,
-    );
+pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, _cookie: *mut c_void) {
+    let buf = (*p)
+        .allocator_data
+        .unwrap()
+        .as_ptr()
+        .cast::<MemPoolBuf<MaybeUninit<u8>>>();
+    let buf = Box::from_raw(buf);
+    let MemPoolBuf { pool, buf } = *buf;
+    pool.push(buf);
 }
 
 impl Default for Rav1dPicAllocator {

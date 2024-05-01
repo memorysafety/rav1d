@@ -39,8 +39,6 @@ use crate::src::log::Rav1dLog as _;
 use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
-use crate::src::mem::rav1d_mem_pool_end;
-use crate::src::mem::rav1d_mem_pool_init;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::pal::rav1d_pal_dsp_init;
@@ -213,16 +211,18 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
     (*c).cached_error_props = Default::default();
+    addr_of_mut!((*c).picture_pool).write(Default::default());
     if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
         && (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {
-        if !((*c).allocator.cookie).is_null() {
+        if !(*c).allocator.cookie.is_null() {
             return error(c, c_out);
         }
-        if rav1d_mem_pool_init(&mut (*c).picture_pool).is_err() {
-            return error(c, c_out);
-        }
-        (*c).allocator.cookie = (*c).picture_pool as *mut c_void;
+        // SAFETY: When `allocator.is_default()`, `allocator.cookie` should be a `&c.picture_pool`.
+        // See `Rav1dPicAllocator::cookie` docs for more, including an analysis of the lifetime.
+        (*c).allocator.cookie = ptr::from_ref(&(*c).picture_pool)
+            .cast::<c_void>()
+            .cast_mut();
     } else if (*c).allocator.alloc_picture_callback == dav1d_default_picture_alloc
         || (*c).allocator.release_picture_callback == dav1d_default_picture_release
     {
@@ -811,7 +811,7 @@ impl Drop for Rav1dContext {
             let _ = mem::take(&mut self.mastering_display);
             let _ = mem::take(&mut self.content_light);
             let _ = mem::take(&mut self.itut_t35);
-            rav1d_mem_pool_end(self.picture_pool);
+            let _ = mem::take(&mut self.picture_pool);
         }
     }
 }
