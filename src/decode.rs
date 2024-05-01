@@ -78,6 +78,7 @@ use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
 use crate::src::levels::Av1BlockInter;
 use crate::src::levels::Av1BlockInter1d;
+use crate::src::levels::Av1BlockInter2d;
 use crate::src::levels::Av1BlockInterNd;
 use crate::src::levels::Av1BlockIntra;
 use crate::src::levels::Av1BlockIntraInter;
@@ -2141,7 +2142,7 @@ unsafe fn decode_b(
                     mv: [r#ref, Default::default()],
                     wedge_idx: Default::default(),
                     mask_sign: Default::default(),
-                    interintra_mode: InterIntraPredMode::Dc, // 0
+                    interintra_mode: Default::default(),
                 },
             },
             comp_type: Default::default(),
@@ -2214,14 +2215,31 @@ unsafe fn decode_b(
             false
         };
 
-        if b.skip_mode != 0 {
-            b.ii.inter_mut().r#ref = [
+        struct Inter {
+            nd: Av1BlockInterNd,
+            comp_type: Option<CompInterType>,
+            inter_mode: u8,
+            motion_mode: MotionMode,
+            drl_idx: DrlProximity,
+            r#ref: [i8; 2],
+            interintra_type: Option<InterIntraType>,
+        }
+        let Inter {
+            nd,
+            comp_type,
+            inter_mode,
+            motion_mode,
+            drl_idx,
+            r#ref,
+            interintra_type,
+        } = if b.skip_mode != 0 {
+            let r#ref = [
                 frame_hdr.skip_mode.refs[0] as i8,
                 frame_hdr.skip_mode.refs[1] as i8,
             ];
-            b.ii.inter_mut().comp_type = Some(CompInterType::Avg);
-            b.ii.inter_mut().inter_mode = NEARESTMV_NEARESTMV;
-            b.ii.inter_mut().drl_idx = DrlProximity::Nearest;
+            let comp_type = CompInterType::Avg;
+            let inter_mode = NEARESTMV_NEARESTMV;
+            let drl_idx = DrlProximity::Nearest;
             has_subpel_filter = false;
 
             let mut mvstack = [Default::default(); 8];
@@ -2233,7 +2251,7 @@ unsafe fn decode_b(
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
-                [b.ii.inter().r#ref[0] + 1, b.ii.inter().r#ref[1] + 1].into(),
+                [r#ref[0] + 1, r#ref[1] + 1].into(),
                 bs,
                 intra_edge_flags,
                 t.b.y,
@@ -2241,60 +2259,79 @@ unsafe fn decode_b(
                 frame_hdr,
             );
 
-            b.ii.inter_mut().nd.one_d.mv = mvstack[0].mv.mv;
-            fix_mv_precision(frame_hdr, &mut b.ii.inter_mut().nd.one_d.mv[0]);
-            fix_mv_precision(frame_hdr, &mut b.ii.inter_mut().nd.one_d.mv[1]);
+            let mut mv1d = mvstack[0].mv.mv;
+            fix_mv_precision(frame_hdr, &mut mv1d[0]);
+            fix_mv_precision(frame_hdr, &mut mv1d[1]);
+            let mv1d = mv1d;
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-skipmodeblock[mv=1:y={},x={},2:y={},x={},refs={}+{}",
-                    b.ii.inter().nd.one_d.mv[0].y,
-                    b.ii.inter().nd.one_d.mv[0].x,
-                    b.ii.inter().nd.one_d.mv[1].y,
-                    b.ii.inter().nd.one_d.mv[1].x,
-                    b.ii.inter().r#ref[0],
-                    b.ii.inter().r#ref[1],
+                    mv1d[0].y, mv1d[0].x, mv1d[1].y, mv1d[1].x, r#ref[0], r#ref[1],
                 );
+            }
+
+            let nd = Av1BlockInterNd {
+                one_d: Av1BlockInter1d {
+                    mv: mv1d,
+                    wedge_idx: Default::default(),
+                    mask_sign: Default::default(),
+                    interintra_mode: Default::default(),
+                },
+            };
+
+            Inter {
+                nd,
+                comp_type: Some(comp_type),
+                inter_mode,
+                motion_mode: Default::default(),
+                drl_idx,
+                r#ref,
+                interintra_type: None,
             }
         } else if is_comp {
             let dir_ctx = get_comp_dir_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-            if rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.comp_dir[dir_ctx as usize])
-            {
+            let r#ref = if rav1d_msac_decode_bool_adapt(
+                &mut ts.msac,
+                &mut ts.cdf.m.comp_dir[dir_ctx as usize],
+            ) {
                 // bidir - first reference (fw)
                 let ctx1 = av1_get_fwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                if rav1d_msac_decode_bool_adapt(
+                let ref0 = if rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.comp_fwd_ref[0][ctx1 as usize],
                 ) {
                     let ctx2 =
                         av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                    b.ii.inter_mut().r#ref[0] = 2 + rav1d_msac_decode_bool_adapt(
+                    2 + rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.comp_fwd_ref[2][ctx2 as usize],
-                    ) as i8;
+                    ) as i8
                 } else {
                     let ctx2 =
                         av1_get_fwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                    b.ii.inter_mut().r#ref[0] = rav1d_msac_decode_bool_adapt(
+                    rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.comp_fwd_ref[1][ctx2 as usize],
-                    ) as i8;
-                }
+                    ) as i8
+                };
 
                 // second reference (bw)
                 let ctx3 = av1_get_bwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                if rav1d_msac_decode_bool_adapt(
+                let ref1 = if rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
                     &mut ts.cdf.m.comp_bwd_ref[0][ctx3 as usize],
                 ) {
-                    b.ii.inter_mut().r#ref[1] = 6;
+                    6
                 } else {
                     let ctx4 =
                         av1_get_bwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                    b.ii.inter_mut().r#ref[1] = 4 + rav1d_msac_decode_bool_adapt(
+                    4 + rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.comp_bwd_ref[1][ctx4 as usize],
-                    ) as i8;
-                }
+                    ) as i8
+                };
+
+                [ref0, ref1]
             } else {
                 // unidir
                 let uctx_p = av1_get_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
@@ -2302,11 +2339,11 @@ unsafe fn decode_b(
                     &mut ts.msac,
                     &mut ts.cdf.m.comp_uni_ref[0][uctx_p as usize],
                 ) {
-                    b.ii.inter_mut().r#ref = [4, 6];
+                    [4, 6]
                 } else {
                     let uctx_p1 =
                         av1_get_uni_p1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                    b.ii.inter_mut().r#ref = [
+                    let mut r#ref = [
                         0,
                         1 + rav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
@@ -2314,23 +2351,20 @@ unsafe fn decode_b(
                         ) as i8,
                     ];
 
-                    if b.ii.inter().r#ref[1] == 2 {
+                    if r#ref[1] == 2 {
                         let uctx_p2 =
                             av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                        b.ii.inter_mut().r#ref[1] += rav1d_msac_decode_bool_adapt(
+                        r#ref[1] += rav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.comp_uni_ref[2][uctx_p2 as usize],
                         ) as i8;
                     }
+
+                    r#ref
                 }
-            }
+            };
             if debug_block_info!(f, t.b) {
-                println!(
-                    "Post-refs[{}/{}]: r={}",
-                    b.ii.inter().r#ref[0],
-                    b.ii.inter().r#ref[1],
-                    ts.msac.rng,
-                );
+                println!("Post-refs[{}/{}]: r={}", r#ref[0], r#ref[1], ts.msac.rng,);
             }
 
             let mut mvstack = [Default::default(); 8];
@@ -2342,7 +2376,7 @@ unsafe fn decode_b(
                 &mut mvstack,
                 &mut n_mvs,
                 &mut ctx,
-                [b.ii.inter().r#ref[0] + 1, b.ii.inter().r#ref[1] + 1].into(),
+                [r#ref[0] + 1, r#ref[1] + 1].into(),
                 bs,
                 intra_edge_flags,
                 t.b.y,
@@ -2350,7 +2384,7 @@ unsafe fn decode_b(
                 frame_hdr,
             );
 
-            b.ii.inter_mut().inter_mode = rav1d_msac_decode_symbol_adapt8(
+            let inter_mode = rav1d_msac_decode_symbol_adapt8(
                 &mut ts.msac,
                 &mut ts.cdf.m.comp_inter_mode[ctx as usize],
                 N_COMP_INTER_PRED_MODES as usize - 1,
@@ -2358,16 +2392,13 @@ unsafe fn decode_b(
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
-                    b.ii.inter().inter_mode,
-                    ctx,
-                    n_mvs,
-                    ts.msac.rng,
+                    inter_mode, ctx, n_mvs, ts.msac.rng,
                 );
             }
 
-            let im = &dav1d_comp_inter_pred_modes[b.ii.inter().inter_mode as usize];
-            b.ii.inter_mut().drl_idx = DrlProximity::Nearest;
-            if b.ii.inter().inter_mode == NEWMV_NEWMV {
+            let im = &dav1d_comp_inter_pred_modes[inter_mode as usize];
+            let mut drl_idx = DrlProximity::Nearest;
+            if inter_mode == NEWMV_NEWMV {
                 if n_mvs > 1 {
                     // `Nearer` or `Near`
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
@@ -2375,7 +2406,7 @@ unsafe fn decode_b(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
                     ) {
-                        b.ii.inter_mut().drl_idx = DrlProximity::Nearer;
+                        drl_idx = DrlProximity::Nearer;
 
                         if n_mvs > 2 {
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
@@ -2383,21 +2414,19 @@ unsafe fn decode_b(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                             ) {
-                                b.ii.inter_mut().drl_idx = DrlProximity::Near;
+                                drl_idx = DrlProximity::Near;
                             }
                         }
                     }
                     if debug_block_info!(f, t.b) {
                         println!(
                             "Post-drlidx[{:?},n_mvs={}]: r={}",
-                            b.ii.inter().drl_idx,
-                            n_mvs,
-                            ts.msac.rng,
+                            drl_idx, n_mvs, ts.msac.rng,
                         );
                     }
                 }
             } else if im[0] == NEARMV || im[1] == NEARMV {
-                b.ii.inter_mut().drl_idx = DrlProximity::Nearer;
+                drl_idx = DrlProximity::Nearer;
                 if n_mvs > 2 {
                     // `Near` or `Nearish`
                     let drl_ctx_v2 = get_drl_context(&mvstack, 1);
@@ -2405,7 +2434,7 @@ unsafe fn decode_b(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                     ) {
-                        b.ii.inter_mut().drl_idx = DrlProximity::Near;
+                        drl_idx = DrlProximity::Near;
 
                         if n_mvs > 3 {
                             let drl_ctx_v3 = get_drl_context(&mvstack, 2);
@@ -2413,69 +2442,55 @@ unsafe fn decode_b(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
                             ) {
-                                b.ii.inter_mut().drl_idx = DrlProximity::Nearish;
+                                drl_idx = DrlProximity::Nearish;
                             }
                         }
                     }
                     if debug_block_info!(f, t.b) {
                         println!(
                             "Post-drlidx[{:?},n_mvs={}]: r={}",
-                            b.ii.inter().drl_idx,
-                            n_mvs,
-                            ts.msac.rng,
+                            drl_idx, n_mvs, ts.msac.rng,
                         );
                     }
                 }
             }
+            let drl_idx = drl_idx;
 
-            has_subpel_filter =
-                cmp::min(bw4, bh4) == 1 || b.ii.inter().inter_mode != GLOBALMV_GLOBALMV;
-            let mut assign_comp_mv = |idx: usize| match im[idx] {
+            has_subpel_filter = cmp::min(bw4, bh4) == 1 || inter_mode != GLOBALMV_GLOBALMV;
+            let mv1d = array::from_fn(|i| match im[i] {
                 NEARMV | NEARESTMV => {
-                    b.ii.inter_mut().nd.one_d.mv[idx] =
-                        mvstack[b.ii.inter().drl_idx as usize].mv.mv[idx];
-                    fix_mv_precision(frame_hdr, &mut b.ii.inter_mut().nd.one_d.mv[idx]);
+                    let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
+                    fix_mv_precision(frame_hdr, &mut mv1d);
+                    mv1d
                 }
                 GLOBALMV => {
-                    has_subpel_filter |= frame_hdr.gmv[b.ii.inter().r#ref[idx] as usize].r#type
+                    has_subpel_filter |= frame_hdr.gmv[r#ref[i] as usize].r#type
                         == Rav1dWarpedMotionType::Translation;
-                    b.ii.inter_mut().nd.one_d.mv[idx] = get_gmv_2d(
-                        &frame_hdr.gmv[b.ii.inter().r#ref[idx] as usize],
+                    get_gmv_2d(
+                        &frame_hdr.gmv[r#ref[i] as usize],
                         t.b.x,
                         t.b.y,
                         bw4,
                         bh4,
                         frame_hdr,
-                    );
+                    )
                 }
                 NEWMV => {
-                    b.ii.inter_mut().nd.one_d.mv[idx] =
-                        mvstack[b.ii.inter().drl_idx as usize].mv.mv[idx];
-                    read_mv_residual(
-                        t,
-                        f,
-                        &mut b.ii.inter_mut().nd.one_d.mv[idx],
-                        &mut ts.cdf.mv,
-                        !frame_hdr.force_integer_mv,
-                    );
+                    let mut mv1d = mvstack[drl_idx as usize].mv.mv[i];
+                    read_mv_residual(t, f, &mut mv1d, &mut ts.cdf.mv, !frame_hdr.force_integer_mv);
+                    mv1d
                 }
-                _ => {}
-            };
-            assign_comp_mv(0);
-            assign_comp_mv(1);
+                _ => unreachable!(),
+            });
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-residual_mv[1:y={},x={},2:y={},x={}]: r={}",
-                    b.ii.inter().nd.one_d.mv[0].y,
-                    b.ii.inter().nd.one_d.mv[0].x,
-                    b.ii.inter().nd.one_d.mv[1].y,
-                    b.ii.inter().nd.one_d.mv[1].x,
-                    ts.msac.rng,
+                    mv1d[0].y, mv1d[0].x, mv1d[1].y, mv1d[1].x, ts.msac.rng,
                 );
             }
 
             // jnt_comp vs. seg vs. wedge
-            let mut is_segwedge = false;
+            let is_segwedge;
             if seq_hdr.masked_compound != 0 {
                 let mask_ctx = get_mask_comp_ctx(&f.a[t.a], &t.l, by4, bx4);
                 is_segwedge = rav1d_msac_decode_bool_adapt(
@@ -2488,11 +2503,16 @@ unsafe fn decode_b(
                         is_segwedge, mask_ctx, ts.msac.rng,
                     );
                 }
+            } else {
+                is_segwedge = false;
             }
 
+            let comp_type;
+            let mask_sign;
+            let mut wedge_idx = Default::default();
             if !is_segwedge {
                 if seq_hdr.jnt_comp != 0 {
-                    let [ref0poc, ref1poc] = b.ii.inter().r#ref.map(|r#ref| {
+                    let [ref0poc, ref1poc] = r#ref.map(|r#ref| {
                         f.refp[r#ref as usize]
                             .p
                             .frame_hdr
@@ -2510,7 +2530,7 @@ unsafe fn decode_b(
                         by4,
                         bx4,
                     );
-                    let comp_type = if rav1d_msac_decode_bool_adapt(
+                    comp_type = if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.jnt_comp[jnt_ctx as usize],
                     ) {
@@ -2518,7 +2538,6 @@ unsafe fn decode_b(
                     } else {
                         CompInterType::WeightedAvg
                     };
-                    b.ii.inter_mut().comp_type = Some(comp_type);
                     if debug_block_info!(f, t.b) {
                         let a = &f.a[t.a];
                         let l = &t.l;
@@ -2534,10 +2553,11 @@ unsafe fn decode_b(
                         );
                     }
                 } else {
-                    b.ii.inter_mut().comp_type = Some(CompInterType::Avg);
+                    comp_type = CompInterType::Avg;
                 }
+                mask_sign = Default::default();
             } else {
-                if wedge_allowed_mask & (1 << bs as u8) != 0 {
+                comp_type = if wedge_allowed_mask & (1 << bs as u8) != 0 {
                     let ctx = dav1d_wedge_ctx_lut[bs as usize] as usize;
                     let comp_type = if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
@@ -2547,54 +2567,72 @@ unsafe fn decode_b(
                     } else {
                         CompInterType::Wedge
                     };
-                    b.ii.inter_mut().comp_type = Some(comp_type);
                     if comp_type == CompInterType::Wedge {
-                        b.ii.inter_mut().nd.one_d.wedge_idx = rav1d_msac_decode_symbol_adapt16(
+                        wedge_idx = rav1d_msac_decode_symbol_adapt16(
                             &mut ts.msac,
                             &mut ts.cdf.m.wedge_idx[ctx],
                             15,
                         ) as u8;
                     }
+                    comp_type
                 } else {
-                    b.ii.inter_mut().comp_type = Some(CompInterType::Seg);
-                }
-                b.ii.inter_mut().nd.one_d.mask_sign =
-                    rav1d_msac_decode_bool_equi(&mut ts.msac) as u8;
+                    CompInterType::Seg
+                };
+
+                mask_sign = rav1d_msac_decode_bool_equi(&mut ts.msac) as u8;
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-seg/wedge[{},wedge_idx={},sign={}]: r={}",
-                        b.ii.inter().comp_type == Some(CompInterType::Wedge),
-                        b.ii.inter().nd.one_d.wedge_idx,
-                        b.ii.inter().nd.one_d.mask_sign,
+                        comp_type == CompInterType::Wedge,
+                        wedge_idx,
+                        mask_sign,
                         ts.msac.rng,
                     );
                 }
             }
-        } else {
-            b.ii.inter_mut().comp_type = None;
+            let wedge_idx = wedge_idx;
 
+            Inter {
+                nd: Av1BlockInterNd {
+                    one_d: Av1BlockInter1d {
+                        mv: mv1d,
+                        wedge_idx,
+                        mask_sign,
+                        interintra_mode: Default::default(),
+                    },
+                },
+                comp_type: Some(comp_type),
+                inter_mode,
+                motion_mode: Default::default(),
+                drl_idx,
+                r#ref,
+                interintra_type: None,
+            }
+        } else {
             // ref
-            if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
-                b.ii.inter_mut().r#ref[0] = seg.r#ref as i8 - 1;
+            let ref0 = if let Some(seg) = seg.filter(|seg| seg.r#ref > 0) {
+                seg.r#ref as i8 - 1
             } else if let Some(_) = seg.filter(|seg| seg.globalmv != 0 || seg.skip != 0) {
-                b.ii.inter_mut().r#ref[0] = 0;
+                0
             } else {
                 let ctx1 = av1_get_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                if rav1d_msac_decode_bool_adapt(&mut ts.msac, &mut ts.cdf.m.r#ref[0][ctx1 as usize])
-                {
+                let ref0 = if rav1d_msac_decode_bool_adapt(
+                    &mut ts.msac,
+                    &mut ts.cdf.m.r#ref[0][ctx1 as usize],
+                ) {
                     let ctx2 = av1_get_bwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
                     if rav1d_msac_decode_bool_adapt(
                         &mut ts.msac,
                         &mut ts.cdf.m.r#ref[1][ctx2 as usize],
                     ) {
-                        b.ii.inter_mut().r#ref[0] = 6;
+                        6
                     } else {
                         let ctx3 =
                             av1_get_bwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                        b.ii.inter_mut().r#ref[0] = 4 + rav1d_msac_decode_bool_adapt(
+                        4 + rav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.r#ref[5][ctx3 as usize],
-                        ) as i8;
+                        ) as i8
                     }
                 } else {
                     let ctx2 = av1_get_fwd_ref_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
@@ -2604,24 +2642,25 @@ unsafe fn decode_b(
                     ) {
                         let ctx3 =
                             av1_get_fwd_ref_2_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                        b.ii.inter_mut().r#ref[0] = 2 + rav1d_msac_decode_bool_adapt(
+                        2 + rav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.r#ref[4][ctx3 as usize],
-                        ) as i8;
+                        ) as i8
                     } else {
                         let ctx3 =
                             av1_get_fwd_ref_1_ctx(&f.a[t.a], &t.l, by4, bx4, have_top, have_left);
-                        b.ii.inter_mut().r#ref[0] = rav1d_msac_decode_bool_adapt(
+                        rav1d_msac_decode_bool_adapt(
                             &mut ts.msac,
                             &mut ts.cdf.m.r#ref[3][ctx3 as usize],
-                        ) as i8;
+                        ) as i8
                     }
-                }
+                };
                 if debug_block_info!(f, t.b) {
-                    println!("Post-ref[{}]: r={}", b.ii.inter().r#ref[0], ts.msac.rng);
+                    println!("Post-ref[{}]: r={}", ref0, ts.msac.rng);
                 }
-            }
-            b.ii.inter_mut().r#ref[1] = -1;
+                ref0
+            };
+            let r#ref = [ref0, -1];
 
             let mut mvstack = [Default::default(); 8];
             let mut n_mvs = 0;
@@ -2633,7 +2672,7 @@ unsafe fn decode_b(
                 &mut n_mvs,
                 &mut ctx,
                 refmvs_refpair {
-                    r#ref: [b.ii.inter().r#ref[0] + 1, -1],
+                    r#ref: [r#ref[0] + 1, -1],
                 },
                 bs,
                 intra_edge_flags,
@@ -2643,6 +2682,9 @@ unsafe fn decode_b(
             );
 
             // mode parsing and mv derivation from ref_mvs
+            let inter_mode;
+            let mut mv1d0;
+            let mut drl_idx;
             if seg
                 .map(|seg| seg.skip != 0 || seg.globalmv != 0)
                 .unwrap_or(false)
@@ -2659,9 +2701,9 @@ unsafe fn decode_b(
                         &mut ts.cdf.m.globalmv_mode[(ctx >> 3 & 1) as usize],
                     )
                 {
-                    b.ii.inter_mut().inter_mode = GLOBALMV;
-                    b.ii.inter_mut().nd.one_d.mv[0] = get_gmv_2d(
-                        &frame_hdr.gmv[b.ii.inter().r#ref[0] as usize],
+                    inter_mode = GLOBALMV;
+                    mv1d0 = get_gmv_2d(
+                        &frame_hdr.gmv[r#ref[0] as usize],
                         t.b.x,
                         t.b.y,
                         bw4,
@@ -2669,8 +2711,10 @@ unsafe fn decode_b(
                         frame_hdr,
                     );
                     has_subpel_filter = cmp::min(bw4, bh4) == 1
-                        || frame_hdr.gmv[b.ii.inter().r#ref[0] as usize].r#type
+                        || frame_hdr.gmv[r#ref[0] as usize].r#type
                             == Rav1dWarpedMotionType::Translation;
+
+                    drl_idx = Default::default();
                 } else {
                     has_subpel_filter = true;
                     if rav1d_msac_decode_bool_adapt(
@@ -2678,8 +2722,8 @@ unsafe fn decode_b(
                         &mut ts.cdf.m.refmv_mode[(ctx >> 4 & 15) as usize],
                     ) {
                         // `Nearer`, `Near` or `Nearish`
-                        b.ii.inter_mut().inter_mode = NEARMV;
-                        b.ii.inter_mut().drl_idx = DrlProximity::Nearer;
+                        inter_mode = NEARMV;
+                        drl_idx = DrlProximity::Nearer;
                         if n_mvs > 2 {
                             // `Nearer`, `Near` or `Nearish`
                             let drl_ctx_v2 = get_drl_context(&mvstack, 1);
@@ -2687,7 +2731,7 @@ unsafe fn decode_b(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                             ) {
-                                b.ii.inter_mut().drl_idx = DrlProximity::Near;
+                                drl_idx = DrlProximity::Near;
 
                                 if n_mvs > 3 {
                                     // `Near` or `Nearish`
@@ -2696,37 +2740,31 @@ unsafe fn decode_b(
                                         &mut ts.msac,
                                         &mut ts.cdf.m.drl_bit[drl_ctx_v3 as usize],
                                     ) {
-                                        b.ii.inter_mut().drl_idx = DrlProximity::Nearish;
+                                        drl_idx = DrlProximity::Nearish;
                                     }
                                 }
                             }
                         }
                     } else {
-                        b.ii.inter_mut().inter_mode = NEARESTMV as u8;
-                        b.ii.inter_mut().drl_idx = DrlProximity::Nearest;
+                        inter_mode = NEARESTMV;
+                        drl_idx = DrlProximity::Nearest;
                     }
-                    b.ii.inter_mut().nd.one_d.mv[0] =
-                        mvstack[b.ii.inter().drl_idx as usize].mv.mv[0];
-                    if b.ii.inter().drl_idx < DrlProximity::Near {
-                        fix_mv_precision(frame_hdr, &mut b.ii.inter_mut().nd.one_d.mv[0]);
+                    mv1d0 = mvstack[drl_idx as usize].mv.mv[0];
+                    if drl_idx < DrlProximity::Near {
+                        fix_mv_precision(frame_hdr, &mut mv1d0);
                     }
                 }
 
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-intermode[{},drl={:?},mv=y:{},x:{},n_mvs={}]: r={}",
-                        b.ii.inter().inter_mode,
-                        b.ii.inter().drl_idx,
-                        b.ii.inter().nd.one_d.mv[0].y,
-                        b.ii.inter().nd.one_d.mv[0].x,
-                        n_mvs,
-                        ts.msac.rng,
+                        inter_mode, drl_idx, mv1d0.y, mv1d0.x, n_mvs, ts.msac.rng,
                     );
                 }
             } else {
                 has_subpel_filter = true;
-                b.ii.inter_mut().inter_mode = NEWMV;
-                b.ii.inter_mut().drl_idx = DrlProximity::Nearest;
+                inter_mode = NEWMV;
+                drl_idx = DrlProximity::Nearest;
                 if n_mvs > 1 {
                     // `Nearer`, `Near` or `Nearish`
                     let drl_ctx_v1 = get_drl_context(&mvstack, 0);
@@ -2734,7 +2772,7 @@ unsafe fn decode_b(
                         &mut ts.msac,
                         &mut ts.cdf.m.drl_bit[drl_ctx_v1 as usize],
                     ) {
-                        b.ii.inter_mut().drl_idx = DrlProximity::Nearer;
+                        drl_idx = DrlProximity::Nearer;
 
                         if n_mvs > 2 {
                             // `Near` or `Nearish`
@@ -2743,45 +2781,45 @@ unsafe fn decode_b(
                                 &mut ts.msac,
                                 &mut ts.cdf.m.drl_bit[drl_ctx_v2 as usize],
                             ) {
-                                b.ii.inter_mut().drl_idx = DrlProximity::Near;
+                                drl_idx = DrlProximity::Near;
                             }
                         }
                     }
                 }
                 if n_mvs > 1 {
-                    b.ii.inter_mut().nd.one_d.mv[0] =
-                        mvstack[b.ii.inter().drl_idx as usize].mv.mv[0];
+                    mv1d0 = mvstack[drl_idx as usize].mv.mv[0];
                 } else {
-                    assert_eq!(b.ii.inter().drl_idx, DrlProximity::Nearest);
-                    b.ii.inter_mut().nd.one_d.mv[0] = mvstack[0].mv.mv[0];
-                    fix_mv_precision(frame_hdr, &mut b.ii.inter_mut().nd.one_d.mv[0]);
+                    assert_eq!(drl_idx, DrlProximity::Nearest);
+                    mv1d0 = mvstack[0].mv.mv[0];
+                    fix_mv_precision(frame_hdr, &mut mv1d0);
                 }
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-intermode[{},drl={:?}]: r={}",
-                        b.ii.inter().inter_mode,
-                        b.ii.inter().drl_idx,
-                        ts.msac.rng,
+                        inter_mode, drl_idx, ts.msac.rng,
                     );
                 }
                 read_mv_residual(
                     t,
                     f,
-                    &mut b.ii.inter_mut().nd.one_d.mv[0],
+                    &mut mv1d0,
                     &mut ts.cdf.mv,
                     !frame_hdr.force_integer_mv,
                 );
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-residualmv[mv=y:{},x:{}]: r={}",
-                        b.ii.inter().nd.one_d.mv[0].y,
-                        b.ii.inter().nd.one_d.mv[0].x,
-                        ts.msac.rng,
+                        mv1d0.y, mv1d0.x, ts.msac.rng,
                     );
                 }
             }
+            let drl_idx = drl_idx;
+            let mv1d0 = mv1d0;
 
             // interintra flags
+            let interintra_mode;
+            let interintra_type;
+            let mut wedge_idx = Default::default();
             let ii_sz_grp = dav1d_ymode_size_context[bs as usize] as c_int;
             if seq_hdr.inter_intra != 0
                 && interintra_allowed_mask & (1 << bs as u8) != 0
@@ -2790,13 +2828,12 @@ unsafe fn decode_b(
                     &mut ts.cdf.m.interintra[ii_sz_grp as usize],
                 )
             {
-                b.ii.inter_mut().nd.one_d.interintra_mode =
-                    InterIntraPredMode::from_repr(rav1d_msac_decode_symbol_adapt4(
-                        &mut ts.msac,
-                        &mut ts.cdf.m.interintra_mode[ii_sz_grp as usize],
-                        InterIntraPredMode::COUNT as usize - 1,
-                    ) as usize)
-                    .expect("valid variant");
+                interintra_mode = InterIntraPredMode::from_repr(rav1d_msac_decode_symbol_adapt4(
+                    &mut ts.msac,
+                    &mut ts.cdf.m.interintra_mode[ii_sz_grp as usize],
+                    InterIntraPredMode::COUNT as usize - 1,
+                ) as usize)
+                .expect("valid variant");
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;
                 let ii_type = if rav1d_msac_decode_bool_adapt(
                     &mut ts.msac,
@@ -2806,38 +2843,39 @@ unsafe fn decode_b(
                 } else {
                     InterIntraType::Blend
                 };
-                b.ii.inter_mut().interintra_type = Some(ii_type);
+                interintra_type = Some(ii_type);
                 if ii_type == InterIntraType::Wedge {
-                    b.ii.inter_mut().nd.one_d.wedge_idx = rav1d_msac_decode_symbol_adapt16(
+                    wedge_idx = rav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         &mut ts.cdf.m.wedge_idx[wedge_ctx as usize],
                         15,
                     ) as u8;
                 }
             } else {
-                b.ii.inter_mut().interintra_type = None;
+                interintra_mode = Default::default();
+                interintra_type = None;
             }
+            let wedge_idx = wedge_idx;
             if debug_block_info!(f, t.b)
                 && seq_hdr.inter_intra != 0
                 && interintra_allowed_mask & (1 << bs as u8) != 0
             {
                 println!(
                     "Post-interintra[t={:?},m={:?},w={}]: r={}",
-                    b.ii.inter().interintra_type,
-                    b.ii.inter().nd.one_d.interintra_mode,
-                    b.ii.inter().nd.one_d.wedge_idx,
-                    ts.msac.rng,
+                    interintra_type, interintra_mode, wedge_idx, ts.msac.rng,
                 );
             }
 
             // motion variation
+            let motion_mode;
+            let mut matrix = None;
             if frame_hdr.switchable_motion_mode != 0
-                && b.ii.inter().interintra_type == None
+                && interintra_type == None
                 && cmp::min(bw4, bh4) >= 2
                 // is not warped global motion
                 && !(!frame_hdr.force_integer_mv
-                    && b.ii.inter().inter_mode == GLOBALMV
-                    && frame_hdr.gmv[b.ii.inter().r#ref[0] as usize].r#type > Rav1dWarpedMotionType::Translation)
+                    && inter_mode == GLOBALMV
+                    && frame_hdr.gmv[r#ref[0] as usize].r#type > Rav1dWarpedMotionType::Translation)
                 // has overlappable neighbours
                 && (have_left && findoddzero(&t.l.intra.index(by4 as usize..(by4 + h4) as usize))
                     || have_top && findoddzero(&f.a[t.a].intra.index(bx4 as usize..(bx4 + w4) as usize)))
@@ -2855,15 +2893,15 @@ unsafe fn decode_b(
                     h4,
                     have_left,
                     have_top,
-                    b.ii.inter().r#ref[0],
+                    r#ref[0],
                     &mut mask,
                 );
-                let allow_warp = (f.svc[b.ii.inter().r#ref[0] as usize][0].scale == 0
+                let allow_warp = (f.svc[r#ref[0] as usize][0].scale == 0
                     && !frame_hdr.force_integer_mv
                     && frame_hdr.warp_motion != 0
                     && mask[0] | mask[1] != 0) as c_int;
 
-                b.ii.inter_mut().motion_mode = MotionMode::from_repr(if allow_warp != 0 {
+                motion_mode = MotionMode::from_repr(if allow_warp != 0 {
                     rav1d_msac_decode_symbol_adapt4(
                         &mut ts.msac,
                         &mut ts.cdf.m.motion_mode[bs as usize],
@@ -2874,17 +2912,9 @@ unsafe fn decode_b(
                         as usize
                 })
                 .expect("valid variant");
-                if b.ii.inter().motion_mode == MotionMode::Warp {
+                if motion_mode == MotionMode::Warp {
                     has_subpel_filter = false;
-                    t.warpmv = derive_warpmv(
-                        &f.rf.r,
-                        t,
-                        bw4,
-                        bh4,
-                        &mask,
-                        b.ii.inter().nd.one_d.mv[0],
-                        t.warpmv.clone(),
-                    );
+                    t.warpmv = derive_warpmv(&f.rf.r, t, bw4, bh4, &mask, mv1d0, t.warpmv.clone());
                     if debug_block_info!(f, t.b) {
                         println!(
                             "[ {} {} {}\n  {} {} {} ]\n\
@@ -2899,66 +2929,74 @@ unsafe fn decode_b(
                             SignAbs(t.warpmv.beta().into()),
                             SignAbs(t.warpmv.gamma().into()),
                             SignAbs(t.warpmv.delta().into()),
-                            b.ii.inter().nd.one_d.mv[0].y,
-                            b.ii.inter().nd.one_d.mv[0].x,
+                            mv1d0.y,
+                            mv1d0.x,
                         );
                     }
                     if t.frame_thread.pass != 0 {
-                        if t.warpmv.r#type == Rav1dWarpedMotionType::Affine {
-                            b.ii.inter_mut().nd.two_d.matrix[0] =
-                                (t.warpmv.matrix[2] - 0x10000) as i16;
-                            b.ii.inter_mut().nd.two_d.matrix[1] = t.warpmv.matrix[3] as i16;
-                            b.ii.inter_mut().nd.two_d.matrix[2] = t.warpmv.matrix[4] as i16;
-                            b.ii.inter_mut().nd.two_d.matrix[3] =
-                                (t.warpmv.matrix[5] - 0x10000) as i16;
+                        matrix = Some(if t.warpmv.r#type == Rav1dWarpedMotionType::Affine {
+                            [
+                                t.warpmv.matrix[2] - 0x10000,
+                                t.warpmv.matrix[3],
+                                t.warpmv.matrix[4],
+                                t.warpmv.matrix[5] - 0x10000,
+                            ]
+                            .map(|it| it as i16)
                         } else {
-                            b.ii.inter_mut().nd.two_d.matrix[0] = i16::MIN;
-                        }
+                            [i16::MIN, 0, 0, 0]
+                        });
                     }
                 }
 
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-motionmode[{:?}]: r={} [mask: 0x{:x}/0x{:x}]",
-                        b.ii.inter().motion_mode,
-                        ts.msac.rng,
-                        mask[0],
-                        mask[1],
+                        motion_mode, ts.msac.rng, mask[0], mask[1],
                     );
                 }
             } else {
-                b.ii.inter_mut().motion_mode = MotionMode::Translation;
+                motion_mode = MotionMode::Translation;
             }
-        }
+            let matrix = matrix;
+
+            Inter {
+                nd: match matrix {
+                    None => Av1BlockInterNd {
+                        one_d: Av1BlockInter1d {
+                            mv: [mv1d0, Default::default()],
+                            wedge_idx,
+                            mask_sign: Default::default(),
+                            interintra_mode,
+                        },
+                    },
+                    Some(matrix) => Av1BlockInterNd {
+                        two_d: Av1BlockInter2d {
+                            mv2d: mv1d0,
+                            matrix,
+                        },
+                    },
+                },
+                comp_type: None,
+                inter_mode,
+                motion_mode,
+                drl_idx,
+                r#ref,
+                interintra_type,
+            }
+        };
 
         // subpel filter
         let filter = if frame_hdr.subpel_filter_mode == Rav1dFilterMode::Switchable {
             if has_subpel_filter {
-                let comp = b.ii.inter().comp_type.is_some();
-                let ctx1 = get_filter_ctx(
-                    &f.a[t.a],
-                    &t.l,
-                    comp,
-                    false,
-                    b.ii.inter().r#ref[0],
-                    by4,
-                    bx4,
-                );
+                let comp = comp_type.is_some();
+                let ctx1 = get_filter_ctx(&f.a[t.a], &t.l, comp, false, r#ref[0], by4, bx4);
                 let filter0 = rav1d_msac_decode_symbol_adapt4(
                     &mut ts.msac,
                     &mut ts.cdf.m.filter.0[0][ctx1 as usize],
                     Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize - 1,
                 ) as Dav1dFilterMode;
                 if seq_hdr.dual_filter != 0 {
-                    let ctx2 = get_filter_ctx(
-                        &f.a[t.a],
-                        &t.l,
-                        comp,
-                        true,
-                        b.ii.inter().r#ref[0],
-                        by4,
-                        bx4,
-                    );
+                    let ctx2 = get_filter_ctx(&f.a[t.a], &t.l, comp, true, r#ref[0], by4, bx4);
                     if debug_block_info!(f, t.b) {
                         println!(
                             "Post-subpel_filter1[{},ctx={}]: r={}",
@@ -2992,7 +3030,7 @@ unsafe fn decode_b(
         } else {
             [frame_hdr.subpel_filter_mode as u8; 2]
         };
-        b.ii.inter_mut().filter2d = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
+        let filter2d = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
 
         let VarTx {
             uvtx,
@@ -3002,9 +3040,19 @@ unsafe fn decode_b(
         } = read_vartx_tree(t, f, b, bs, bx4, by4);
 
         b.uvtx = uvtx;
-        b.ii.inter_mut().max_ytx = max_ytx;
-        b.ii.inter_mut().tx_split0 = tx_split0;
-        b.ii.inter_mut().tx_split1 = tx_split1;
+        b.ii = Av1BlockIntraInter::Inter(Av1BlockInter {
+            nd,
+            comp_type,
+            inter_mode,
+            motion_mode,
+            drl_idx,
+            r#ref,
+            max_ytx,
+            filter2d,
+            interintra_type,
+            tx_split0,
+            tx_split1,
+        });
 
         // reconstruction
         if t.frame_thread.pass == 1 {
@@ -3015,15 +3063,14 @@ unsafe fn decode_b(
 
         let frame_hdr = f.frame_hdr();
         if frame_hdr.loopfilter.level_y != [0, 0] {
-            let is_globalmv = (b.ii.inter().inter_mode
-                == if is_comp { GLOBALMV_GLOBALMV } else { GLOBALMV })
-                as c_int;
-            let tx_split = [b.ii.inter().tx_split0 as u16, b.ii.inter().tx_split1];
-            let mut ytx = b.ii.inter().max_ytx as RectTxfmSize;
-            let mut uvtx = b.uvtx as RectTxfmSize;
+            let is_globalmv =
+                (inter_mode == if is_comp { GLOBALMV_GLOBALMV } else { GLOBALMV }) as c_int;
+            let tx_split = [tx_split0 as u16, tx_split1];
+            let mut ytx = max_ytx;
+            let mut uvtx = b.uvtx;
             if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
-                ytx = TX_4X4 as RectTxfmSize;
-                uvtx = TX_4X4 as RectTxfmSize;
+                ytx = TX_4X4;
+                uvtx = TX_4X4;
             }
             let lflvl = match ts.lflvl {
                 TileStateRef::Frame => &f.lf.lvl,
@@ -3041,7 +3088,7 @@ unsafe fn decode_b(
                 // Dereferencing this in Rust is UB, so instead
                 // we pass the indices as args, which are then applied at the use sites.
                 &lflvl[b.seg_id as usize],
-                (b.ii.inter().r#ref[0] + 1) as usize,
+                (r#ref[0] + 1) as usize,
                 is_globalmv == 0,
                 t.b,
                 f.w4,
@@ -3090,12 +3137,12 @@ unsafe fn decode_b(
                 // see aomedia bug 2183 for why this is outside if (has_chroma)
                 case.set(&mut t.pal_sz_uv[dir_index], 0);
                 case.set_disjoint(&dir.tx_intra, b_dim[2 + dir_index] as i8);
-                case.set_disjoint(&dir.comp_type, b.ii.inter().comp_type);
+                case.set_disjoint(&dir.comp_type, comp_type);
                 case.set_disjoint(&dir.filter[0], filter[0]);
                 case.set_disjoint(&dir.filter[1], filter[1]);
-                case.set_disjoint(&dir.mode, b.ii.inter().inter_mode);
-                case.set_disjoint(&dir.r#ref[0], b.ii.inter().r#ref[0]);
-                case.set_disjoint(&dir.r#ref[1], b.ii.inter().r#ref[1]);
+                case.set_disjoint(&dir.mode, inter_mode);
+                case.set_disjoint(&dir.r#ref[0], r#ref[0]);
+                case.set_disjoint(&dir.r#ref[1], r#ref[1]);
             },
         );
 

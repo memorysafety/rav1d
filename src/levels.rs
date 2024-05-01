@@ -115,8 +115,9 @@ pub const HOR_PRED: IntraPredMode = 2;
 pub const VERT_PRED: IntraPredMode = 1;
 pub const DC_PRED: IntraPredMode = 0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, EnumCount)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, FromRepr, EnumCount, Default)]
 pub enum InterIntraPredMode {
+    #[default]
     Dc = 0,
     Vert = 1,
     Hor = 2,
@@ -377,13 +378,6 @@ impl Av1BlockIntraInter {
     }
 
     pub const fn inter(&self) -> &Av1BlockInter {
-        match self {
-            Self::Inter(inter) => inter,
-            _ => panic!(),
-        }
-    }
-
-    pub fn inter_mut(&mut self) -> &mut Av1BlockInter {
         match self {
             Self::Inter(inter) => inter,
             _ => panic!(),
