@@ -526,94 +526,83 @@ unsafe fn decode_coefs<BD: BitDepth>(
         *txtp = (lossless * WHT_WHT) as TxfmType;
         return -(1 as c_int);
     }
-    *txtp = if lossless != 0 {
-        assert!((*t_dim).max as c_int == TX_4X4 as c_int);
-        WHT_WHT
-    } else if (*t_dim).max + matches!(b.ii, Av1BlockIntraInter::Intra(_)) as TxfmSize >= TX_64X64 {
-        DCT_DCT
-    } else if chroma != 0 {
-        match b.ii {
-            Av1BlockIntraInter::Intra(intra) => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
-            Av1BlockIntraInter::Inter(_) => get_uv_inter_txtp(t_dim, *txtp),
+    use Av1BlockIntraInter::*;
+    *txtp = match b.ii {
+        _ if lossless != 0 => {
+            assert!((*t_dim).max == TX_4X4);
+            WHT_WHT
         }
-    } else if frame_hdr.segmentation.qidx[b.seg_id as usize] == 0 {
-        DCT_DCT
-    } else {
-        let idx: c_uint;
-        match b.ii {
-            Av1BlockIntraInter::Intra(intra) => {
-                let y_mode_nofilt: IntraPredMode = (if intra.y_mode as c_int == FILTER_PRED as c_int
-                {
-                    dav1d_filter_mode_to_y_mode[intra.y_angle as usize] as c_int
-                } else {
-                    intra.y_mode as c_int
-                }) as IntraPredMode;
-                let txtp = if frame_hdr.reduced_txtp_set != 0
-                    || (*t_dim).min as c_int == TX_16X16 as c_int
-                {
-                    idx = rav1d_msac_decode_symbol_adapt4(
-                        &mut ts.msac,
-                        &mut ts.cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize],
-                        4 as c_int as usize,
-                    );
-                    dav1d_tx_types_per_set[idx.wrapping_add(0 as c_int as c_uint) as usize]
-                } else {
-                    idx = rav1d_msac_decode_symbol_adapt8(
-                        &mut ts.msac,
-                        &mut ts.cdf.m.txtp_intra1[(*t_dim).min as usize][y_mode_nofilt as usize],
-                        6 as c_int as usize,
-                    );
-                    dav1d_tx_types_per_set[idx.wrapping_add(5 as c_int as c_uint) as usize]
-                };
-                if dbg {
-                    println!(
-                        "Post-txtp-intra[{}->{}][{}][{}->{}]: r={}",
-                        tx as c_uint,
-                        (*t_dim).min as c_int,
-                        y_mode_nofilt as c_uint,
-                        idx,
-                        txtp,
-                        ts.msac.rng,
-                    );
-                }
-                txtp
+        Intra(_) if (*t_dim).max >= TX_32X32 => DCT_DCT,
+        Inter(_) if (*t_dim).max >= TX_64X64 => DCT_DCT,
+        Intra(intra) if chroma != 0 => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
+        Inter(_) if chroma != 0 => get_uv_inter_txtp(t_dim, *txtp),
+        _ if frame_hdr.segmentation.qidx[b.seg_id as usize] == 0 => DCT_DCT,
+        Intra(intra) => {
+            let y_mode_nofilt = if intra.y_mode == FILTER_PRED {
+                dav1d_filter_mode_to_y_mode[intra.y_angle as usize]
+            } else {
+                intra.y_mode
+            };
+            let idx;
+            let txtp = if frame_hdr.reduced_txtp_set != 0 || (*t_dim).min == TX_16X16 {
+                idx = rav1d_msac_decode_symbol_adapt4(
+                    &mut ts.msac,
+                    &mut ts.cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize],
+                    4,
+                );
+                dav1d_tx_types_per_set[idx as usize + 0]
+            } else {
+                idx = rav1d_msac_decode_symbol_adapt8(
+                    &mut ts.msac,
+                    &mut ts.cdf.m.txtp_intra1[(*t_dim).min as usize][y_mode_nofilt as usize],
+                    6,
+                );
+                dav1d_tx_types_per_set[idx as usize + 5]
+            };
+            if dbg {
+                println!(
+                    "Post-txtp-intra[{}->{}][{}][{}->{}]: r={}",
+                    tx,
+                    (*t_dim).min,
+                    y_mode_nofilt,
+                    idx,
+                    txtp,
+                    ts.msac.rng,
+                );
             }
-            Av1BlockIntraInter::Inter(_) => {
-                let txtp = if frame_hdr.reduced_txtp_set != 0
-                    || (*t_dim).max as c_int == TX_32X32 as c_int
-                {
-                    idx = rav1d_msac_decode_bool_adapt(
-                        &mut ts.msac,
-                        &mut ts.cdf.m.txtp_inter3[(*t_dim).min as usize],
-                    ) as c_uint;
-                    idx.wrapping_sub(1) as TxfmType & IDTX
-                } else if (*t_dim).min as c_int == TX_16X16 as c_int {
-                    idx = rav1d_msac_decode_symbol_adapt16(
-                        &mut ts.msac,
-                        &mut ts.cdf.m.txtp_inter2.0,
-                        11 as c_int as usize,
-                    );
-                    dav1d_tx_types_per_set[idx.wrapping_add(12) as usize]
-                } else {
-                    idx = rav1d_msac_decode_symbol_adapt16(
-                        &mut ts.msac,
-                        &mut ts.cdf.m.txtp_inter1[(*t_dim).min as usize],
-                        15 as c_int as usize,
-                    );
-                    dav1d_tx_types_per_set[idx.wrapping_add(24) as usize]
-                };
-                if dbg {
-                    println!(
-                        "Post-txtp-inter[{}->{}][{}->{}]: r={}",
-                        tx as c_uint,
-                        (*t_dim).min as c_int,
-                        idx,
-                        txtp,
-                        ts.msac.rng,
-                    );
-                }
-                txtp
+            txtp
+        }
+        Inter(_) => {
+            let idx;
+            let txtp = if frame_hdr.reduced_txtp_set != 0 || (*t_dim).max == TX_32X32 {
+                idx = rav1d_msac_decode_bool_adapt(
+                    &mut ts.msac,
+                    &mut ts.cdf.m.txtp_inter3[(*t_dim).min as usize],
+                ) as c_uint;
+                idx.wrapping_sub(1) as TxfmType & IDTX
+            } else if (*t_dim).min == TX_16X16 {
+                idx =
+                    rav1d_msac_decode_symbol_adapt16(&mut ts.msac, &mut ts.cdf.m.txtp_inter2.0, 11);
+                dav1d_tx_types_per_set[idx as usize + 12]
+            } else {
+                idx = rav1d_msac_decode_symbol_adapt16(
+                    &mut ts.msac,
+                    &mut ts.cdf.m.txtp_inter1[(*t_dim).min as usize],
+                    15,
+                );
+                dav1d_tx_types_per_set[idx as usize + 24]
+            };
+            if dbg {
+                println!(
+                    "Post-txtp-inter[{}->{}][{}->{}]: r={}",
+                    tx,
+                    (*t_dim).min,
+                    idx,
+                    txtp,
+                    ts.msac.rng,
+                );
             }
+            txtp
         }
     };
     let mut eob_bin = 0;
