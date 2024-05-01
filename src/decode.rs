@@ -4632,7 +4632,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_decode_frame_exit(
+pub(crate) fn rav1d_decode_frame_exit(
     c: &Rav1dContext,
     fc: &Rav1dFrameContext,
     retval: Rav1dResult,
