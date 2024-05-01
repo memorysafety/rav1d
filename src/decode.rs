@@ -1175,7 +1175,7 @@ unsafe fn decode_b(
             Av1BlockIntraInter::Intra(intra) => {
                 bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b);
 
-                let y_mode = b.ii.intra().y_mode;
+                let y_mode = intra.y_mode;
                 let y_mode_nofilt = if y_mode == FILTER_PRED {
                     DC_PRED
                 } else {
@@ -1921,8 +1921,8 @@ unsafe fn decode_b(
                 f.w4,
                 f.h4,
                 bs,
-                b.ii.intra().tx as RectTxfmSize,
-                b.uvtx as RectTxfmSize,
+                tx,
+                b.uvtx,
                 f.cur.p.layout,
                 &mut f.a[t.a]
                     .tx_lpf_y
@@ -1943,10 +1943,10 @@ unsafe fn decode_b(
         }
 
         // update contexts
-        let y_mode_nofilt = if b.ii.intra().y_mode == FILTER_PRED {
+        let y_mode_nofilt = if y_mode == FILTER_PRED {
             DC_PRED
         } else {
-            b.ii.intra().y_mode
+            y_mode
         };
         let is_inter_or_switch = f.frame_hdr().frame_type.is_inter_or_switch();
         CaseSet::<32, false>::many(
@@ -1957,7 +1957,7 @@ unsafe fn decode_b(
                 case.set_disjoint(&dir.tx_intra, lw_lh as i8);
                 case.set_disjoint(&dir.tx, lw_lh);
                 case.set_disjoint(&dir.mode, y_mode_nofilt);
-                case.set_disjoint(&dir.pal_sz, b.ii.intra().pal_sz[0]);
+                case.set_disjoint(&dir.pal_sz, pal_sz[0]);
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
                 case.set_disjoint(&dir.skip_mode, 0);
                 case.set_disjoint(&dir.intra, 1);
@@ -1965,11 +1965,7 @@ unsafe fn decode_b(
                 // see aomedia bug 2183 for why we use luma coordinates here
                 case.set(
                     &mut t.pal_sz_uv[dir_index],
-                    if has_chroma {
-                        b.ii.intra().pal_sz[1]
-                    } else {
-                        0
-                    },
+                    if has_chroma { pal_sz[1] } else { 0 },
                 );
                 if is_inter_or_switch {
                     case.set_disjoint(&dir.comp_type, None);
@@ -1980,7 +1976,7 @@ unsafe fn decode_b(
                 }
             },
         );
-        if b.ii.intra().pal_sz[0] != 0 {
+        if pal_sz[0] != 0 {
             (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
         }
         if has_chroma {
@@ -1989,10 +1985,10 @@ unsafe fn decode_b(
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
-                    case.set_disjoint(&dir.uvmode, b.ii.intra().uv_mode);
+                    case.set_disjoint(&dir.uvmode, uv_mode);
                 },
             );
-            if b.ii.intra().pal_sz[1] != 0 {
+            if pal_sz[1] != 0 {
                 (bd_fn.copy_pal_block_uv)(
                     t,
                     f,
