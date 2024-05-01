@@ -332,12 +332,14 @@ pub struct Av1BlockInter2d {
     pub matrix: [i16; 4],
 }
 
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub union Av1BlockInterNd {
     pub one_d: Av1BlockInter1d,
     pub two_d: Av1BlockInter2d,
 }
 
+#[derive(Clone)]
 #[repr(C)]
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,

@@ -1258,7 +1258,7 @@ unsafe fn decode_b(
                         }
                     }
                 }
-                bd_fn.recon_b_inter(f, t, bs, b)?;
+                bd_fn.recon_b_inter(f, t, bs, b, inter)?;
 
                 let filter = &dav1d_filter_dir[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
@@ -2130,7 +2130,7 @@ unsafe fn decode_b(
         };
 
         b.uvtx = uvtx;
-        b.ii = Av1BlockIntraInter::Inter(Av1BlockInter {
+        let inter = Av1BlockInter {
             nd: Av1BlockInterNd {
                 one_d: Av1BlockInter1d {
                     mv: [r#ref, Default::default()],
@@ -2149,13 +2149,14 @@ unsafe fn decode_b(
             interintra_type: Default::default(),
             tx_split0,
             tx_split1,
-        });
+        };
+        b.ii = Av1BlockIntraInter::Inter(inter.clone()); // Cheap 24-byte clone
 
         // reconstruction
         if t.frame_thread.pass == 1 {
             bd_fn.read_coef_blocks(f, t, bs, b);
         } else {
-            bd_fn.recon_b_inter(f, t, bs, b)?;
+            bd_fn.recon_b_inter(f, t, bs, b, &inter)?;
         }
 
         splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
@@ -3034,7 +3035,7 @@ unsafe fn decode_b(
         } = read_vartx_tree(t, f, b, bs, bx4, by4);
 
         b.uvtx = uvtx;
-        b.ii = Av1BlockIntraInter::Inter(Av1BlockInter {
+        let inter = Av1BlockInter {
             nd,
             comp_type,
             inter_mode,
@@ -3046,13 +3047,14 @@ unsafe fn decode_b(
             interintra_type,
             tx_split0,
             tx_split1,
-        });
+        };
+        b.ii = Av1BlockIntraInter::Inter(inter.clone());
 
         // reconstruction
         if t.frame_thread.pass == 1 {
             bd_fn.read_coef_blocks(f, t, bs, b);
         } else {
-            bd_fn.recon_b_inter(f, t, bs, b)?;
+            bd_fn.recon_b_inter(f, t, bs, b, &inter)?;
         }
 
         let frame_hdr = f.frame_hdr();
