@@ -3973,7 +3973,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         t.a = (off_2pass + col_sb128_start + tile_row * f.sb128w) as usize;
         for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
             t.b.x = bx;
-            if c.flush.load(Ordering::Acquire) != 0 {
+            if c.flush.load(Ordering::Acquire) {
                 return Err(());
             }
             decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
@@ -4008,7 +4008,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     t.lf_mask = Some((sb128y * f.sb128w + col_sb128_start) as usize);
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.b.x = bx;
-        if c.flush.load(Ordering::Acquire) != 0 {
+        if c.flush.load(Ordering::Acquire) {
             return Err(());
         }
         let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;

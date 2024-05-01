@@ -240,7 +240,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             );
         }
     }
-    (*c).flush = AtomicI32::new(0);
+    (*c).flush = AtomicBool::new(false);
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     // TODO fallible allocation
     (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::zeroed(i)).collect();
@@ -648,7 +648,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     if c.fc.len() == 1 && c.tc.len() == 1 {
         return;
     }
-    c.flush.store(1, Ordering::SeqCst);
+    c.flush.store(true, Ordering::SeqCst);
     if c.tc.len() > 1 {
         let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
         for tc in c.tc.iter() {
@@ -682,7 +682,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
         }
         c.frame_thread.next = 0;
     }
-    c.flush.store(0, Ordering::SeqCst);
+    c.flush.store(false, Ordering::SeqCst);
 }
 
 #[no_mangle]

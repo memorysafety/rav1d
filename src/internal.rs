@@ -344,7 +344,7 @@ pub struct Rav1dContext {
     pub(crate) in_0: Rav1dData,
     pub(crate) out: Rav1dThreadPicture,
     pub(crate) cache: Rav1dThreadPicture,
-    pub(crate) flush: AtomicI32,
+    pub(crate) flush: AtomicBool,
     pub(crate) frame_thread: Rav1dContext_frame_thread,
 
     // task threading (refer to tc[] for per_thread thingies)
