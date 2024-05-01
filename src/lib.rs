@@ -633,25 +633,13 @@ pub unsafe extern "C" fn dav1d_apply_grain(
 
 pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     let _ = mem::take(&mut c.in_0);
-    if c.out.p.frame_hdr.is_some() {
-        let _ = mem::take(&mut c.out);
-    }
-    if c.cache.p.frame_hdr.is_some() {
-        let _ = mem::take(&mut c.cache);
-    }
+    let _ = mem::take(&mut c.out);
+    let _ = mem::take(&mut c.cache);
     c.drain = 0;
     c.cached_error = Ok(());
-    let mut i = 0;
-    while i < 8 {
-        if c.refs[i as usize].p.p.frame_hdr.is_some() {
-            let _ = mem::take(&mut c.refs[i as usize].p);
-        }
-        let _ = mem::take(&mut c.refs[i as usize].segmap);
-        let _ = mem::take(&mut c.refs[i as usize].refmvs);
-        i += 1;
-    }
+    let _ = mem::take(&mut c.refs);
     let _ = mem::take(&mut c.cdf);
-    let _ = mem::take(&mut c.frame_hdr); // TODO(kkysen) Why wasn't [`rav1d_ref_dec`] called on it?
+    let _ = mem::take(&mut c.frame_hdr);
     let _ = mem::take(&mut c.seq_hdr);
     let _ = mem::take(&mut c.content_light);
     let _ = mem::take(&mut c.mastering_display);
