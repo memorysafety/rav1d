@@ -76,6 +76,7 @@ use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
+use crate::src::levels::Av1BlockIntra;
 use crate::src::levels::Av1BlockIntraInter;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
@@ -1633,53 +1634,52 @@ unsafe fn decode_b(
                 [dav1d_intra_mode_context[*f.a[t.a].mode.index(bx4 as usize) as usize] as usize]
                 [dav1d_intra_mode_context[*t.l.mode.index(by4 as usize) as usize] as usize]
         };
-        b.ii.intra_mut().y_mode = rav1d_msac_decode_symbol_adapt16(
+        let y_mode = rav1d_msac_decode_symbol_adapt16(
             &mut ts.msac,
             ymode_cdf,
             (N_INTRA_PRED_MODES - 1) as usize,
         ) as u8;
         if debug_block_info!(f, t.b) {
-            println!("Post-ymode[{}]: r={}", b.ii.intra().y_mode, ts.msac.rng);
+            println!("Post-ymode[{}]: r={}", y_mode, ts.msac.rng);
         }
 
         // angle delta
-        if b_dim[2] + b_dim[3] >= 2
-            && b.ii.intra().y_mode >= VERT_PRED
-            && b.ii.intra().y_mode <= VERT_LEFT_PRED
+        let y_angle = if b_dim[2] + b_dim[3] >= 2 && y_mode >= VERT_PRED && y_mode <= VERT_LEFT_PRED
         {
-            let acdf = &mut ts.cdf.m.angle_delta[b.ii.intra().y_mode as usize - VERT_PRED as usize];
+            let acdf = &mut ts.cdf.m.angle_delta[y_mode as usize - VERT_PRED as usize];
             let angle = rav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf, 6);
-            b.ii.intra_mut().y_angle = angle as i8 - 3;
+            angle as i8 - 3
         } else {
-            b.ii.intra_mut().y_angle = 0;
-        }
+            0
+        };
 
+        let uv_mode;
+        let uv_angle;
+        let cfl_alpha;
         if has_chroma {
             let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
                 cbw4 == 1 && cbh4 == 1
             } else {
                 (cfl_allowed_mask & (1 << bs as u8)) != 0
             };
-            let uvmode_cdf =
-                &mut ts.cdf.m.uv_mode[cfl_allowed as usize][b.ii.intra().y_mode as usize];
-            b.ii.intra_mut().uv_mode = rav1d_msac_decode_symbol_adapt16(
+            let uvmode_cdf = &mut ts.cdf.m.uv_mode[cfl_allowed as usize][y_mode as usize];
+            uv_mode = rav1d_msac_decode_symbol_adapt16(
                 &mut ts.msac,
                 uvmode_cdf,
                 (N_UV_INTRA_PRED_MODES as usize) - 1 - (!cfl_allowed as usize),
             ) as u8;
             if debug_block_info!(f, t.b) {
-                println!("Post-uvmode[{}]: r={}", b.ii.intra().uv_mode, ts.msac.rng);
+                println!("Post-uvmode[{}]: r={}", uv_mode, ts.msac.rng);
             }
 
-            b.ii.intra_mut().uv_angle = 0;
-            if b.ii.intra().uv_mode == CFL_PRED {
+            if uv_mode == CFL_PRED {
                 let sign =
                     rav1d_msac_decode_symbol_adapt8(&mut ts.msac, &mut ts.cdf.m.cfl_sign.0, 7) + 1;
                 let sign_u = sign * 0x56 >> 8;
                 let sign_v = sign - sign_u * 3;
                 assert!(sign_u == sign / 3);
                 let sign_uv = [sign_u, sign_v];
-                b.ii.intra_mut().cfl_alpha = array::from_fn(|i| {
+                cfl_alpha = array::from_fn(|i| {
                     if sign_uv[i] == 0 {
                         return 0;
                     }
@@ -1699,26 +1699,42 @@ unsafe fn decode_b(
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-uvalphas[{}/{}]: r={}",
-                        b.ii.intra().cfl_alpha[0],
-                        b.ii.intra().cfl_alpha[1],
-                        ts.msac.rng,
+                        cfl_alpha[0], cfl_alpha[1], ts.msac.rng,
                     );
                 }
+                uv_angle = 0;
             } else if b_dim[2] + b_dim[3] >= 2
-                && b.ii.intra().uv_mode >= VERT_PRED as u8
-                && b.ii.intra().uv_mode <= VERT_LEFT_PRED as u8
+                && uv_mode >= VERT_PRED as u8
+                && uv_mode <= VERT_LEFT_PRED as u8
             {
-                let acdf =
-                    &mut ts.cdf.m.angle_delta[b.ii.intra().uv_mode as usize - VERT_PRED as usize];
+                let acdf = &mut ts.cdf.m.angle_delta[uv_mode as usize - VERT_PRED as usize];
                 let angle = rav1d_msac_decode_symbol_adapt8(&mut ts.msac, acdf, 6) as c_int;
-                b.ii.intra_mut().uv_angle = (angle - 3) as i8;
+                uv_angle = (angle - 3) as i8;
+                cfl_alpha = Default::default();
+            } else {
+                uv_angle = 0;
+                cfl_alpha = Default::default();
             }
+        } else {
+            uv_mode = Default::default();
+            uv_angle = Default::default();
+            cfl_alpha = Default::default();
         }
 
-        b.ii.intra_mut().pal_sz = [0, 0];
+        let pal_sz = [0, 0];
+        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
+            y_mode,
+            uv_mode,
+            tx: Default::default(),
+            pal_sz,
+            y_angle,
+            uv_angle,
+            cfl_alpha,
+        });
+
         if frame_hdr.allow_screen_content_tools && cmp::max(bw4, bh4) <= 16 && bw4 + bh4 >= 4 {
             let sz_ctx = b_dim[2] + b_dim[3] - 2;
-            if b.ii.intra().y_mode == DC_PRED {
+            if y_mode == DC_PRED {
                 let pal_ctx = (*f.a[t.a].pal_sz.index(bx4 as usize) > 0) as usize
                     + (*t.l.pal_sz.index(by4 as usize) > 0) as usize;
                 let use_y_pal = rav1d_msac_decode_bool_adapt(
