@@ -648,9 +648,9 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
         }
         let _ = mem::take(&mut c.refs[i as usize].segmap);
         let _ = mem::take(&mut c.refs[i as usize].refmvs);
-        let _ = mem::take(&mut c.cdf[i]);
         i += 1;
     }
+    let _ = mem::take(&mut c.cdf);
     let _ = mem::take(&mut c.frame_hdr); // TODO(kkysen) Why wasn't [`rav1d_ref_dec`] called on it?
     let _ = mem::take(&mut c.seq_hdr);
     let _ = mem::take(&mut c.content_light);
