@@ -644,7 +644,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     let mut i = 0;
     while i < 8 {
         if c.refs[i as usize].p.p.frame_hdr.is_some() {
-            let _ = mem::take(&mut (*(c.refs).as_mut_ptr().offset(i as isize)).p);
+            let _ = mem::take(&mut c.refs[i as usize].p);
         }
         let _ = mem::take(&mut c.refs[i as usize].segmap);
         let _ = mem::take(&mut c.refs[i as usize].refmvs);
