@@ -60,8 +60,11 @@ pub const TILE_ERROR: i32 = i32::MAX - 1;
 #[inline]
 unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint) -> c_int {
     unsafe fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: usize) -> c_int {
-        for i in ttd.cur.load(Ordering::Relaxed) as usize..c.fc.len() {
-            (*c.fc[(first + i) % c.fc.len()].task_thread.tasks()).cur_prev = None;
+        for fc in wrapping_iter(
+            c.fc.iter(),
+            first + ttd.cur.load(Ordering::Relaxed) as usize,
+        ) {
+            (*fc.task_thread.tasks()).cur_prev = None;
         }
         return 1;
     }
