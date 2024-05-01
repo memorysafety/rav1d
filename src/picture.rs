@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::dav1d::Rav1dEventFlags;
 use crate::include::dav1d::headers::DRav1d;
@@ -87,11 +89,16 @@ struct MemPoolBuf<T> {
     buf: Vec<T>,
 }
 
-pub unsafe extern "C" fn dav1d_default_picture_alloc(
+/// # Safety
+///
+/// * `p_c` must be from a `&mut Dav1dPicture`.
+/// * `cookie` must be from a `&Arc<MemPool<MaybeUninit<u8>>>`.
+unsafe extern "C" fn dav1d_default_picture_alloc(
     p_c: *mut Dav1dPicture,
     cookie: *mut c_void,
 ) -> Dav1dResult {
-    let p = p_c.read().to::<Rav1dPicture>();
+    // SAFETY: Guaranteed by safety preconditions.
+    let p = unsafe { p_c.read() }.to::<Rav1dPicture>();
     let hbd = (p.p.bpc > 8) as c_int;
     let aligned_w = p.p.w + 127 & !127;
     let aligned_h = p.p.h + 127 & !127;
@@ -111,7 +118,8 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size = y_sz + 2 * uv_sz;
 
-    let pool = &*cookie.cast::<Arc<MemPool<MaybeUninit<u8>>>>();
+    // SAFETY: Guaranteed by safety preconditions.
+    let pool = unsafe { &*cookie.cast::<Arc<MemPool<MaybeUninit<u8>>>>() };
     let pool = pool.clone();
     let pic_cap = pic_size + RAV1D_PICTURE_ALIGNMENT;
     // TODO fallible allocation
@@ -131,9 +139,11 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     // but this way is simpler and more uniform, especially when we move to slices.
     let data = [data0, data1, data2].map(|data| data.as_mut_ptr().cast());
 
-    (*p_c).stride = stride;
-    (*p_c).data = data.map(NonNull::new);
-    (*p_c).allocator_data = NonNull::new(Box::into_raw(buf).cast::<c_void>());
+    // SAFETY: Guaranteed by safety preconditions.
+    let p_c = unsafe { &mut *p_c };
+    p_c.stride = stride;
+    p_c.data = data.map(NonNull::new);
+    p_c.allocator_data = NonNull::new(Box::into_raw(buf).cast::<c_void>());
     // The caller will create the real `Rav1dPicture` from the `Dav1dPicture` fields set above,
     // so we don't want to drop the `Rav1dPicture` we created for convenience here.
     mem::forget(p);
@@ -141,13 +151,16 @@ pub unsafe extern "C" fn dav1d_default_picture_alloc(
     Rav1dResult::Ok(()).into()
 }
 
-pub unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, _cookie: *mut c_void) {
-    let buf = (*p)
-        .allocator_data
-        .unwrap()
-        .as_ptr()
-        .cast::<MemPoolBuf<MaybeUninit<u8>>>();
-    let buf = Box::from_raw(buf);
+/// # Safety
+///
+/// * `p` is from a `&mut Dav1dPicture` initialized by [`dav1d_default_picture_alloc`].
+unsafe extern "C" fn dav1d_default_picture_release(p: *mut Dav1dPicture, _cookie: *mut c_void) {
+    // SAFETY: Guaranteed by safety preconditions.
+    let p = unsafe { &mut *p };
+    let buf = p.allocator_data.unwrap().as_ptr();
+    // SAFETY: `dav1d_default_picture_alloc` stores `Box::into_raw` of a `MemPoolBuf<MaybeUninit<u8>>` in `Dav1dPicture::allocator_data`,
+    // and `(Rav1dPicAllocator::release_picture_callback == dav1d_default_picture_release) == (Rav1dPicAllocator::alloc_picture_callback == dav1d_default_picture_alloc)`.
+    let buf = unsafe { Box::from_raw(buf.cast::<MemPoolBuf<MaybeUninit<u8>>>()) };
     let MemPoolBuf { pool, buf } = *buf;
     pool.push(buf);
 }
@@ -156,9 +169,25 @@ impl Default for Rav1dPicAllocator {
     fn default() -> Self {
         Self {
             cookie: ptr::null_mut(),
+            // SAFETY: `dav1d_default_picture_alloc` requires `p_c` be from a `&mut Dav1dPicture`,
+            // `Self::alloc_picture_callback` safety preconditions guarantee that.
+            // `dav1d_default_picture_alloc` also requires that `cookie` be from a `&Arc<MemPool<MaybeUninit<u8>>>`,
+            // which is set if `Self::is_default()` in `rav1d_open`.
             alloc_picture_callback: dav1d_default_picture_alloc,
+            // SAFETY: `dav1d_default_picture_release` requires `p` be from a `&mut Dav1dPicture`
+            // initialized by `dav1d_default_picture_alloc`.
+            // Since these `fn`s are private and we only use them here, that is guaranteed.
             release_picture_callback: dav1d_default_picture_release,
         }
+    }
+}
+
+impl Rav1dPicAllocator {
+    pub fn is_default(&self) -> bool {
+        let alloc = self.alloc_picture_callback == dav1d_default_picture_alloc;
+        let release = self.release_picture_callback == dav1d_default_picture_release;
+        assert!(alloc == release); // This should be impossible since these `fn`s are private.
+        alloc && release
     }
 }
 
@@ -219,7 +248,7 @@ impl Rav1dPicAllocator {
     }
 }
 
-unsafe fn picture_alloc_with_edges(
+fn picture_alloc_with_edges(
     logger: &Option<Rav1dLogger>,
     p: &mut Rav1dPicture,
     w: c_int,
@@ -255,7 +284,7 @@ pub fn rav1d_picture_copy_props(
 
 // itut_t35 was taken out of the c.itut_t35 originally, but that violates Rust
 // borrowing rules so we need to pass it to this function explicitly.
-pub(crate) unsafe fn rav1d_thread_picture_alloc(
+pub(crate) fn rav1d_thread_picture_alloc(
     c: &Rav1dContext,
     f: &mut Rav1dFrameData,
     bpc: u8,
@@ -299,7 +328,7 @@ pub(crate) unsafe fn rav1d_thread_picture_alloc(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_picture_alloc_copy(
+pub(crate) fn rav1d_picture_alloc_copy(
     c: &Rav1dContext,
     dst: &mut Rav1dPicture,
     w: c_int,
