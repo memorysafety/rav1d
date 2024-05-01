@@ -2128,6 +2128,12 @@ unsafe fn decode_b(
             tx_split1,
         } = read_vartx_tree(t, f, b, bs, bx4, by4);
 
+        let filter2d = if t.frame_thread.pass == 1 {
+            Filter2d::Bilinear
+        } else {
+            Filter2d::Regular8Tap // 0
+        };
+
         b.uvtx = uvtx;
         b.ii = Av1BlockIntraInter::Inter(Av1BlockInter {
             nd: Av1BlockInterNd {
@@ -2144,7 +2150,7 @@ unsafe fn decode_b(
             drl_idx: Default::default(),
             r#ref: Default::default(),
             max_ytx,
-            filter2d: Default::default(),
+            filter2d,
             interintra_type: Default::default(),
             tx_split0,
             tx_split1,
@@ -2153,7 +2159,6 @@ unsafe fn decode_b(
         // reconstruction
         if t.frame_thread.pass == 1 {
             bd_fn.read_coef_blocks(f, t, bs, b);
-            b.ii.inter_mut().filter2d = Filter2d::Bilinear;
         } else {
             bd_fn.recon_b_inter(f, t, bs, b)?;
         }
