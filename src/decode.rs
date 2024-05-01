@@ -4648,13 +4648,8 @@ pub(crate) fn rav1d_decode_frame_exit(
     if c.fc.len() > 1 && retval.is_err() && !cf.is_empty() {
         cf.fill_with(Default::default);
     }
-    // TODO(kkysen) use array::zip when stable
-    for i in 0..7 {
-        if f.refp[i].p.frame_hdr.is_some() {
-            let _ = mem::take(&mut f.refp[i]);
-        }
-        let _ = mem::take(&mut f.ref_mvs[i]);
-    }
+    let _ = mem::take(&mut f.refp);
+    let _ = mem::take(&mut f.ref_mvs);
     let _ = mem::take(&mut f.cur);
     let _ = mem::take(&mut f.sr_cur);
     let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
