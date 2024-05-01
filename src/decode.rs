@@ -76,6 +76,9 @@ use crate::src::intra_edge::EdgeIndex;
 use crate::src::intra_edge::IntraEdges;
 use crate::src::levels::mv;
 use crate::src::levels::Av1Block;
+use crate::src::levels::Av1BlockInter;
+use crate::src::levels::Av1BlockInter1d;
+use crate::src::levels::Av1BlockInterNd;
 use crate::src::levels::Av1BlockIntra;
 use crate::src::levels::Av1BlockIntraInter;
 use crate::src::levels::BlockLevel;
@@ -2125,11 +2128,27 @@ unsafe fn decode_b(
             tx_split1,
         } = read_vartx_tree(t, f, b, bs, bx4, by4);
 
-        b.ii.inter_mut().nd.one_d.mv[0] = r#ref;
         b.uvtx = uvtx;
-        b.ii.inter_mut().max_ytx = max_ytx;
-        b.ii.inter_mut().tx_split0 = tx_split0;
-        b.ii.inter_mut().tx_split1 = tx_split1;
+        b.ii = Av1BlockIntraInter::Inter(Av1BlockInter {
+            nd: Av1BlockInterNd {
+                one_d: Av1BlockInter1d {
+                    mv: [r#ref, Default::default()],
+                    wedge_idx: Default::default(),
+                    mask_sign: Default::default(),
+                    interintra_mode: InterIntraPredMode::Dc, // 0
+                },
+            },
+            comp_type: Default::default(),
+            inter_mode: Default::default(),
+            motion_mode: Default::default(),
+            drl_idx: Default::default(),
+            r#ref: Default::default(),
+            max_ytx,
+            filter2d: Default::default(),
+            interintra_type: Default::default(),
+            tx_split0,
+            tx_split1,
+        });
 
         // reconstruction
         if t.frame_thread.pass == 1 {
