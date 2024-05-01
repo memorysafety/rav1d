@@ -4645,7 +4645,7 @@ pub(crate) fn rav1d_decode_frame_exit(
         task_thread.error.store(0, Ordering::Relaxed);
     }
     let cf = f.frame_thread.cf.get_mut();
-    if c.fc.len() > 1 && retval.is_err() && !cf.is_empty() {
+    if c.fc.len() > 1 && retval.is_err() {
         cf.fill_with(Default::default);
     }
     let _ = mem::take(&mut f.refp);
