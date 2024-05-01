@@ -2020,26 +2020,23 @@ unsafe fn decode_b(
             frame_hdr,
         );
 
-        if mvstack[0].mv.mv[0] != mv::ZERO {
-            b.ii.inter_mut().nd.one_d.mv[0] = mvstack[0].mv.mv[0];
+        let mut r#ref = if mvstack[0].mv.mv[0] != mv::ZERO {
+            mvstack[0].mv.mv[0]
         } else if mvstack[1].mv.mv[0] != mv::ZERO {
-            b.ii.inter_mut().nd.one_d.mv[0] = mvstack[1].mv.mv[0];
+            mvstack[1].mv.mv[0]
         } else if t.b.y - (16 << seq_hdr.sb128) < ts.tiling.row_start {
-            b.ii.inter_mut().nd.one_d.mv[0].y = 0;
-            b.ii.inter_mut().nd.one_d.mv[0].x = (-(512 << seq_hdr.sb128) - 2048) as i16;
+            mv {
+                y: 0,
+                x: (-(512 << seq_hdr.sb128) - 2048) as i16,
+            }
         } else {
-            b.ii.inter_mut().nd.one_d.mv[0].y = -(512 << seq_hdr.sb128) as i16;
-            b.ii.inter_mut().nd.one_d.mv[0].x = 0;
-        }
+            mv {
+                y: -(512 << seq_hdr.sb128) as i16,
+                x: 0,
+            }
+        };
 
-        let r#ref = b.ii.inter().nd.one_d.mv[0];
-        read_mv_residual(
-            t,
-            f,
-            &mut b.ii.inter_mut().nd.one_d.mv[0],
-            &mut ts.cdf.dmv,
-            false,
-        );
+        read_mv_residual(t, f, &mut r#ref, &mut ts.cdf.dmv, false);
 
         // clip intrabc motion vector to decoded parts of current tile
         let mut border_left = ts.tiling.col_start * 4;
@@ -2052,8 +2049,8 @@ unsafe fn decode_b(
                 border_top += 4;
             }
         }
-        let mut src_left = t.b.x * 4 + (b.ii.inter().nd.one_d.mv[0].x as c_int >> 3);
-        let mut src_top = t.b.y * 4 + (b.ii.inter().nd.one_d.mv[0].y as c_int >> 3);
+        let mut src_left = t.b.x * 4 + (r#ref.x as c_int >> 3);
+        let mut src_top = t.b.y * 4 + (r#ref.y as c_int >> 3);
         let mut src_right = src_left + bw4 * 4;
         let mut src_bottom = src_top + bh4 * 4;
         let border_right = (ts.tiling.col_end + (bw4 - 1) & !(bw4 - 1)) * 4;
@@ -2097,21 +2094,26 @@ unsafe fn decode_b(
             return Err(());
         }
 
-        b.ii.inter_mut().nd.one_d.mv[0].x = ((src_left - t.b.x * 4) * 8) as i16;
-        b.ii.inter_mut().nd.one_d.mv[0].y = ((src_top - t.b.y * 4) * 8) as i16;
+        let prev_ref = r#ref;
+        let r#ref = mv {
+            x: ((src_left - t.b.x * 4) * 8) as i16,
+            y: ((src_top - t.b.y * 4) * 8) as i16,
+        };
 
         if debug_block_info!(f, t.b) {
             println!(
                 "Post-dmv[{}/{},ref={}/{}|{}/{}]: r={}",
-                b.ii.inter().nd.one_d.mv[0].y,
-                b.ii.inter().nd.one_d.mv[0].x,
                 r#ref.y,
                 r#ref.x,
+                prev_ref.y,
+                prev_ref.x,
                 mvstack[0].mv.mv[0].y,
                 mvstack[0].mv.mv[0].x,
                 ts.msac.rng,
             );
         }
+        b.ii.inter_mut().nd.one_d.mv[0] = r#ref;
+
         read_vartx_tree(t, f, b, bs, bx4, by4);
 
         // reconstruction
