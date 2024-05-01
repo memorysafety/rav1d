@@ -389,7 +389,6 @@ pub struct Av1Block {
     pub bl: BlockLevel,
     pub bs: u8,
     pub bp: BlockPartition,
-    pub intra: u8,
     pub seg_id: u8,
     pub skip_mode: u8,
     pub skip: u8,
