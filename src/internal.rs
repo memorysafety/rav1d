@@ -816,7 +816,7 @@ impl Default for Rav1dFrameContext_task_thread {
 }
 
 impl Rav1dFrameContext_task_thread {
-    pub unsafe fn tasks(&self) -> *mut Rav1dTasks {
+    pub fn tasks(&self) -> *mut Rav1dTasks {
         self.tasks.get()
     }
 }
