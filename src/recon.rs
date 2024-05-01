@@ -3726,8 +3726,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                             - 1,
                                     )
                                     .ii
-                                    .inter()
-                                    .filter2d
+                                    .filter2d()
                             },
                         )?;
                     }
@@ -3768,8 +3767,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                             as usize,
                                     )
                                     .ii
-                                    .inter()
-                                    .filter2d
+                                    .filter2d()
                             },
                         )?;
                     }
@@ -3809,8 +3807,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                             + t.b.x as usize,
                                     )
                                     .ii
-                                    .inter()
-                                    .filter2d
+                                    .filter2d()
                             },
                         )?;
                     }

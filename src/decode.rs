@@ -2126,7 +2126,7 @@ unsafe fn decode_b(
         let filter2d = if t.frame_thread.pass == 1 {
             Filter2d::Bilinear
         } else {
-            Filter2d::Regular8Tap // 0
+            Default::default()
         };
 
         b.uvtx = uvtx;

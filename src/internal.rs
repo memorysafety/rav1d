@@ -1256,7 +1256,7 @@ impl Rav1dTaskContext {
             lf_mask: None,
             top_pre_cdef_toggle: 0,
             cur_sb_cdef_idx: 0,
-            tl_4x4_filter: Filter2d::Regular8Tap, // 0
+            tl_4x4_filter: Default::default(),
             frame_thread: Rav1dTaskContext_frame_thread { pass: 0 },
             task_thread,
         }

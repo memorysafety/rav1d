@@ -172,7 +172,7 @@ pub enum BlockSize {
 
 #[derive(Clone, Copy, PartialEq, Eq, EnumCount, Default)]
 pub enum Filter2d {
-    #[default] // TODO(kkysen) Maybe temporary.
+    #[default]
     Regular8Tap = 0,
     RegularSmooth8Tap = 1,
     RegularSharp8Tap = 2,
@@ -362,11 +362,14 @@ pub enum Av1BlockIntraInter {
 }
 
 impl Av1BlockIntraInter {
-    pub const fn inter(&self) -> &Av1BlockInter {
+    pub fn filter2d(&self) -> Filter2d {
+        // More optimal code if we use a default instead of just panicking.
         match self {
-            Self::Inter(inter) => inter,
-            _ => panic!(),
+            Self::Inter(inter) => Some(inter),
+            _ => None,
         }
+        .map(|inter| inter.filter2d)
+        .unwrap_or_default()
     }
 }
 
