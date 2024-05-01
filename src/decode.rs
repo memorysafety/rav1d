@@ -1678,34 +1678,24 @@ unsafe fn decode_b(
                 let sign_u = sign * 0x56 >> 8;
                 let sign_v = sign - sign_u * 3;
                 assert!(sign_u == sign / 3);
-                if sign_u != 0 {
-                    let ctx = (sign_u == 2) as usize * 3 + sign_v as usize;
-                    b.ii.intra_mut().cfl_alpha[0] = rav1d_msac_decode_symbol_adapt16(
+                let sign_uv = [sign_u, sign_v];
+                b.ii.intra_mut().cfl_alpha = array::from_fn(|i| {
+                    if sign_uv[i] == 0 {
+                        return 0;
+                    }
+                    let ctx = (sign_uv[i] == 2) as usize * 3 + sign_uv[1 - i] as usize;
+                    let cfl_alpha = rav1d_msac_decode_symbol_adapt16(
                         &mut ts.msac,
                         &mut ts.cdf.m.cfl_alpha[ctx],
                         15,
                     ) as i8
                         + 1;
-                    if sign_u == 1 {
-                        b.ii.intra_mut().cfl_alpha[0] = -b.ii.intra().cfl_alpha[0];
+                    if sign_uv[i] == 1 {
+                        -cfl_alpha
+                    } else {
+                        cfl_alpha
                     }
-                } else {
-                    b.ii.intra_mut().cfl_alpha[0] = 0;
-                }
-                if sign_v != 0 {
-                    let ctx = (sign_v == 2) as usize * 3 + sign_u as usize;
-                    b.ii.intra_mut().cfl_alpha[1] = rav1d_msac_decode_symbol_adapt16(
-                        &mut ts.msac,
-                        &mut ts.cdf.m.cfl_alpha[ctx],
-                        15,
-                    ) as i8
-                        + 1;
-                    if sign_v == 1 {
-                        b.ii.intra_mut().cfl_alpha[1] = -b.ii.intra().cfl_alpha[1];
-                    }
-                } else {
-                    b.ii.intra_mut().cfl_alpha[1] = 0;
-                }
+                });
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-uvalphas[{}/{}]: r={}",
