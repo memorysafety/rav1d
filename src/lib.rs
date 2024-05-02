@@ -50,7 +50,6 @@ use crate::src::picture::Rav1dThreadPicture;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
-use libc::memset;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
@@ -61,7 +60,6 @@ use std::ffi::CStr;
 use std::mem;
 use std::process::abort;
 use std::ptr;
-use std::ptr::addr_of_mut;
 use std::ptr::NonNull;
 use std::slice;
 use std::sync::atomic::AtomicBool;
@@ -198,11 +196,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     if c.is_null() {
         return error(c, c_out);
     }
-    memset(
-        c as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<Rav1dContext>(),
-    );
+    c.write(Default::default());
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
     (*c).apply_grain = s.apply_grain;
@@ -214,7 +208,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
     (*c).cached_error_props = Default::default();
-    addr_of_mut!((*c).picture_pool).write(Default::default());
+    (*c).picture_pool = Default::default();
 
     if (*c).allocator.is_default() {
         if !(*c).allocator.cookie.is_null() {
@@ -255,17 +249,17 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
         delayed_fg: RwLock::new(mem::zeroed()),
     };
-    (&mut (*c).task_thread as *mut Arc<TaskThreadData>).write(Arc::new(ttd));
-    addr_of_mut!((*c).tiles).write(Default::default());
-    ptr::addr_of_mut!((*c).frame_thread.out_delayed).write(if n_fc > 1 {
+    (*c).task_thread = Arc::new(ttd);
+    (*c).tiles = Default::default();
+    (*c).frame_thread.out_delayed = if n_fc > 1 {
         (0..n_fc).map(|_| Default::default()).collect()
     } else {
         Box::new([])
-    });
-    addr_of_mut!((*c).itut_t35).write(Arc::new(Mutex::new(Default::default())));
-    addr_of_mut!((*c).out).write(Default::default());
-    addr_of_mut!((*c).cache).write(Default::default());
-    addr_of_mut!((*c).refs).write(Default::default());
+    };
+    (*c).itut_t35 = Arc::new(Mutex::new(Default::default()));
+    (*c).out = Default::default();
+    (*c).cache = Default::default();
+    (*c).refs = Default::default();
     for fc in (*c).fc.iter_mut() {
         fc.task_thread.finished = AtomicBool::new(true);
         fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
