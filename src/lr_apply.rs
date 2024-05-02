@@ -5,8 +5,8 @@ use crate::src::align::Align16;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::lf_mask::Av1RestorationUnit;
-use crate::src::looprestoration::looprestorationfilter_fn;
 use crate::src::looprestoration::LooprestorationParams;
+use crate::src::looprestoration::LooprestorationParamsSgr;
 use crate::src::looprestoration::LrEdgeFlags;
 use crate::src::looprestoration::LR_HAVE_BOTTOM;
 use crate::src::looprestoration::LR_HAVE_LEFT;
@@ -49,12 +49,11 @@ unsafe fn lr_stripe<BD: BitDepth>(
     lpf_offset += (have_tt * (sby * (4 << seq_hdr.sb128) - 4)) as isize * lpf_stride + x as isize;
     // The first stripe of the frame is shorter by 8 luma pixel rows.
     let mut stripe_h = cmp::min(64 - 8 * (y == 0) as c_int >> ss_ver, row_h - y);
-    let lr_fn: looprestorationfilter_fn;
-    let mut params: LooprestorationParams = LooprestorationParams {
-        filter: [[0; 8]; 2].into(),
-    };
+
+    let mut params = LooprestorationParams::default();
+    let lr_fn;
     if lr.r#type == Rav1dRestorationType::Wiener {
-        let filter = &mut params.filter.0;
+        let filter = &mut params.filter;
         filter[0][0] = lr.filter_h[0] as i16;
         filter[0][1] = lr.filter_h[1] as i16;
         filter[0][2] = lr.filter_h[2] as i16;
@@ -80,12 +79,15 @@ unsafe fn lr_stripe<BD: BitDepth>(
     } else {
         let sgr_idx = assert_matches!(lr.r#type, Rav1dRestorationType::SgrProj(idx) => idx);
         let sgr_params = &dav1d_sgr_params[sgr_idx as usize];
-        params.sgr.s0 = sgr_params[0] as u32;
-        params.sgr.s1 = sgr_params[1] as u32;
-        params.sgr.w0 = lr.sgr_weights[0] as i16;
-        params.sgr.w1 = 128 - (lr.sgr_weights[0] as i16 + lr.sgr_weights[1] as i16);
+        *params.sgr_mut() = LooprestorationParamsSgr {
+            s0: sgr_params[0] as u32,
+            s1: sgr_params[1] as u32,
+            w0: lr.sgr_weights[0] as i16,
+            w1: 128 - (lr.sgr_weights[0] as i16 + lr.sgr_weights[1] as i16),
+        };
         lr_fn = f.dsp.lr.sgr[(sgr_params[0] != 0) as usize + (sgr_params[1] != 0) as usize * 2 - 1];
     }
+
     let mut left = &left[..];
     while y + stripe_h <= row_h {
         // Change the HAVE_BOTTOM bit in edges to (sby + 1 != f->sbh || y + stripe_h != row_h)
