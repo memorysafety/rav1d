@@ -2481,9 +2481,12 @@ impl Rav1dMCDSPContext {
             self.blend = bd_fn!(BD, blend, avx512icl);
             self.blend_v = bd_fn!(BD, blend_v, avx512icl);
             self.blend_h = bd_fn!(BD, blend_h, avx512icl);
-            self.warp8x8 = bd_fn!(BD, warp_affine_8x8, avx512icl);
-            self.warp8x8t = bd_fn!(BD, warp_affine_8x8t, avx512icl);
-            self.resize = bd_fn!(BD, resize, avx512icl);
+
+            if !flags.contains(CpuFlags::SLOW_GATHER) {
+                self.resize = bd_fn!(BD, resize, avx512icl);
+                self.warp8x8 = bd_fn!(BD, warp_affine_8x8, avx512icl);
+                self.warp8x8t = bd_fn!(BD, warp_affine_8x8t, avx512icl);
+            }
         }
 
         self

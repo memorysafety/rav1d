@@ -2207,6 +2207,8 @@ impl Rav1dIntraPredDSPContext {
                     bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_h, avx512icl);
                 self.intra_pred[VERT_PRED as usize] =
                     bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_v, avx512icl);
+                self.intra_pred[Z2_PRED as usize] =
+                    bpc_fn!(angular_ipred::decl_fn, 8 bpc, ipred_z2, avx512icl);
             }
 
             self.intra_pred[PAETH_PRED as usize] =
@@ -2217,6 +2219,12 @@ impl Rav1dIntraPredDSPContext {
                 bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_h, avx512icl);
             self.intra_pred[SMOOTH_V_PRED as usize] =
                 bd_fn!(angular_ipred::decl_fn, BD, ipred_smooth_v, avx512icl);
+            self.intra_pred[Z1_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_z1, avx512icl);
+            self.intra_pred[Z2_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_z2, avx512icl);
+            self.intra_pred[Z3_PRED as usize] =
+                bd_fn!(angular_ipred::decl_fn, BD, ipred_z3, avx512icl);
             self.intra_pred[FILTER_PRED as usize] =
                 bd_fn!(angular_ipred::decl_fn, BD, ipred_filter, avx512icl);
 

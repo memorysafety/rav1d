@@ -136,7 +136,7 @@ impl CpuFlags {
                 flags |= Self::AVX512ICL;
             }
 
-            /// Detect Excavator, Zen, Zen+, Zen 2, Zen 3, Zen 3+.
+            /// Detect Excavator, Zen, Zen+, Zen 2, Zen 3, Zen 3+, Zen 4.
             fn is_slow_gather() -> Option<()> {
                 let cpu_id = CpuId::new();
 
@@ -148,11 +148,8 @@ impl CpuFlags {
 
                 let features = cpu_id.get_feature_info()?;
                 let family = features.family_id();
-                let model = features.model_id();
 
-                (family < 0x19
-                    || (family == 0x19 && (model < 0x10 || (model >= 0x20 && model < 0x60))))
-                    .then_some(())
+                (family <= 0x19).then_some(())
             }
             if flags.contains(Self::AVX2) && is_slow_gather().is_some() {
                 flags |= Self::SLOW_GATHER;

@@ -1159,12 +1159,14 @@ impl Rav1dFilmGrainDSPContext {
                 return self;
             }
 
-            self.fgy_32x32xn = bd_fn!(fgy_32x32xn::decl_fn, BD, fgy_32x32xn, avx512icl);
-            self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => fguv_32x32xn::Fn; match key {
-                I420 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i420, avx512icl),
-                I422 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i422, avx512icl),
-                I444 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i444, avx512icl),
-            });
+            if BD::BITDEPTH == 8 || !flags.contains(CpuFlags::SLOW_GATHER) {
+                self.fgy_32x32xn = bd_fn!(fgy_32x32xn::decl_fn, BD, fgy_32x32xn, avx512icl);
+                self.fguv_32x32xn = enum_map!(Rav1dPixelLayoutSubSampled => fguv_32x32xn::Fn; match key {
+                    I420 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i420, avx512icl),
+                    I422 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i422, avx512icl),
+                    I444 => bd_fn!(fguv_32x32xn::decl_fn, BD, fguv_32x32xn_i444, avx512icl),
+                });
+            }
         }
 
         self
