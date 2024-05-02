@@ -577,7 +577,7 @@ pub(crate) fn rav1d_parse_sequence_header(
     res.map(DRav1d::from_rav1d)
 }
 
-unsafe fn parse_frame_size(
+fn parse_frame_size(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     refidx: Option<&[i8; RAV1D_REFS_PER_FRAME]>,
