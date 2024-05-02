@@ -126,7 +126,6 @@ pub(crate) struct Rav1dDSPContext {
     pub lf: Rav1dLoopFilterDSPContext,
     pub cdef: Rav1dCdefDSPContext,
     pub lr: Rav1dLoopRestorationDSPContext,
-    pub initialized: bool,
 }
 
 impl Rav1dDSPContext {
@@ -139,7 +138,6 @@ impl Rav1dDSPContext {
             lf: Rav1dLoopFilterDSPContext::default::<BD>(),
             cdef: Rav1dCdefDSPContext::default::<BD>(),
             lr: Rav1dLoopRestorationDSPContext::default::<BD>(),
-            initialized: true,
         }
     }
 
@@ -152,7 +150,6 @@ impl Rav1dDSPContext {
             lf: Rav1dLoopFilterDSPContext::new::<BD>(flags),
             cdef: Rav1dCdefDSPContext::new::<BD>(flags),
             lr: Rav1dLoopRestorationDSPContext::new::<BD>(flags, bpc),
-            initialized: true,
         }
     }
 
