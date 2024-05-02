@@ -57,6 +57,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_ulong;
 use std::ffi::c_void;
+use std::ffi::CStr;
 use std::mem;
 use std::process::abort;
 use std::ptr;
@@ -80,16 +81,20 @@ fn init_internal() {
     rav1d_init_cpu();
 }
 
-pub fn rav1d_version() -> &'static str {
-    let null_termination_version = "966d63c1\0";
-    &null_termination_version[..null_termination_version.len() - 1]
+const DAV1D_VERSION: &CStr = c"966d63c1";
+const RAV1D_VERSION: &str = match DAV1D_VERSION.to_str() {
+    Ok(version) => version,
+    Err(_) => unreachable!(),
+};
+
+pub const fn rav1d_version() -> &'static str {
+    RAV1D_VERSION
 }
 
 #[no_mangle]
 #[cold]
-pub unsafe extern "C" fn dav1d_version() -> *const c_char {
-    // Safety: [`rav1d_version`] has a null-terminator.
-    rav1d_version().as_ptr().cast()
+pub extern "C" fn dav1d_version() -> *const c_char {
+    DAV1D_VERSION.as_ptr()
 }
 
 pub const DAV1D_API_VERSION_MAJOR: u8 = 7;
@@ -157,7 +162,7 @@ fn get_num_threads(s: &Rav1dSettings) -> NumThreads {
 }
 
 #[cold]
-pub(crate) unsafe fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
+pub(crate) fn rav1d_get_frame_delay(s: &Rav1dSettings) -> Rav1dResult<usize> {
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     let NumThreads { n_tc: _, n_fc } = get_num_threads(s);
@@ -342,7 +347,7 @@ impl Rav1dFilmGrainData {
 }
 
 impl Rav1dPicture {
-    unsafe fn has_grain(&self) -> bool {
+    fn has_grain(&self) -> bool {
         self.frame_hdr.as_ref().unwrap().film_grain.data.has_grain()
     }
 }
@@ -368,7 +373,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
     res
 }
 
-unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
+fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
     if c.cached_error.is_err() {
         return true;
     }
@@ -379,7 +384,6 @@ unsafe fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
             {
                 return true;
             }
-            let _ = mem::take(&mut c.cache);
             c.cache = mem::take(&mut c.out);
             return false;
         } else {
