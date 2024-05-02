@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use crate::src::enum_map::EnumKey;
 use std::mem;
 use std::ops::Neg;
