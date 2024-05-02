@@ -678,7 +678,7 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
-unsafe fn parse_refidx(
+fn parse_refidx(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     frame_ref_short_signaling: u8,
