@@ -400,7 +400,7 @@ fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
 
 unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
     let mut drain_count = 0u32;
-    let mut drained = 0;
+    let mut drained = false;
     loop {
         let next = c.frame_thread.next;
         let fc = &c.fc[next as usize];
@@ -427,8 +427,8 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             {
                 c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
             }
-            drained = 1;
-        } else if drained != 0 {
+            drained = true;
+        } else if drained {
             break;
         }
         c.frame_thread.next += 1;
