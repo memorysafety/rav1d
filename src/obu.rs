@@ -1402,7 +1402,7 @@ fn parse_restoration(
     Rav1dFrameHeader_restoration { r#type, unit_size }
 }
 
-unsafe fn parse_skip_mode(
+fn parse_skip_mode(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     switchable_comp_refs: u8,
