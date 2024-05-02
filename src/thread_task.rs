@@ -558,7 +558,7 @@ unsafe fn check_tile(
 }
 
 #[inline]
-unsafe fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
+fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
     // Note that `progress.is_some() == c.fc.len() > 1`.
     let frame_prog = f
         .sr_cur
