@@ -2117,7 +2117,7 @@ unsafe fn parse_obus(
     props: &Rav1dDataProps,
     gb: &mut GetBits,
 ) -> Rav1dResult<()> {
-    unsafe fn skip(c: &mut Rav1dContext) {
+    fn skip(c: &mut Rav1dContext) {
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
             if c.frame_hdr.as_ref().unwrap().refresh_frame_flags & (1 << i) != 0 {
