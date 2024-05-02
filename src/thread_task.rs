@@ -1,4 +1,3 @@
-use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BitDepth;
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
@@ -574,7 +573,7 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
     let frame = fc.frame_thread_progress.frame.try_read().unwrap();
     loop {
         let val = !frame[idx as usize].load(Ordering::SeqCst);
-        prog = if val != 0 { ctz(val) } else { 32 };
+        prog = val.trailing_zeros();
         if prog != 32 {
             break;
         }
@@ -584,7 +583,7 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
             break;
         }
     }
-    return (idx << 5 | prog) - 1;
+    return (idx << 5 | prog as c_int) - 1;
 }
 
 #[inline]
