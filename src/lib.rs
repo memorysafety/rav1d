@@ -17,6 +17,7 @@ use crate::include::dav1d::headers::Dav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicture;
+use crate::src::cpu::rav1d_get_cpu_flags;
 use crate::src::cpu::rav1d_init_cpu;
 use crate::src::cpu::rav1d_num_logical_processors;
 use crate::src::decode::rav1d_decode_frame_exit;
@@ -42,11 +43,11 @@ use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
-use crate::src::pal::rav1d_pal_dsp_init;
+use crate::src::pal::Rav1dPalDSPContext;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::refmvs::rav1d_refmvs_dsp_init;
+use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
@@ -301,8 +302,9 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             }
         })
         .collect();
-    rav1d_pal_dsp_init(&mut (*c).pal_dsp);
-    rav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
+    let flags = rav1d_get_cpu_flags();
+    (*c).pal_dsp = Rav1dPalDSPContext::new(flags);
+    (*c).refmvs_dsp = Rav1dRefmvsDSPContext::new(flags);
     Ok(())
 }
 

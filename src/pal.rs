@@ -1,8 +1,4 @@
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-use crate::src::cpu::rav1d_get_cpu_flags;
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
 use crate::src::cpu::CpuFlags;
-use cfg_if::cfg_if;
 use std::ffi::c_int;
 use std::slice;
 
@@ -99,41 +95,68 @@ extern "C" {
     );
 }
 
-#[inline(always)]
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64"),))]
-unsafe fn pal_dsp_init_x86(c: *mut Rav1dPalDSPContext) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::SSSE3) {
-        return;
+impl Rav1dPalDSPContext {
+    pub const fn default() -> Self {
+        Self {
+            pal_idx_finish: pal_idx_finish_rust,
+        }
     }
 
-    (*c).pal_idx_finish = dav1d_pal_idx_finish_ssse3;
+    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[inline(always)]
+    const fn init_x86(mut self, flags: CpuFlags) -> Self {
+        if !flags.contains(CpuFlags::SSSE3) {
+            return self;
+        }
 
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86_64"))] {
+        self.pal_idx_finish = dav1d_pal_idx_finish_ssse3;
+
+        #[cfg(target_arch = "x86_64")]
+        {
             if !flags.contains(CpuFlags::AVX2) {
-                return;
+                return self;
             }
 
-            (*c).pal_idx_finish = dav1d_pal_idx_finish_avx2;
+            self.pal_idx_finish = dav1d_pal_idx_finish_avx2;
 
             if !flags.contains(CpuFlags::AVX512ICL) {
-                return;
+                return self;
             }
 
-            (*c).pal_idx_finish = dav1d_pal_idx_finish_avx512icl;
+            self.pal_idx_finish = dav1d_pal_idx_finish_avx512icl;
+        }
+
+        self
+    }
+
+    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[inline(always)]
+    const fn init_arm(self, _flags: CpuFlags) -> Self {
+        self
+    }
+
+    #[inline(always)]
+    const fn init(self, flags: CpuFlags) -> Self {
+        #[cfg(feature = "asm")]
+        {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            {
+                return self.init_x86(flags);
+            }
+            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+            {
+                return self.init_arm(flags);
+            }
+        }
+
+        #[allow(unreachable_code)] // Reachable on some #[cfg]s.
+        {
+            let _ = flags;
+            self
         }
     }
-}
 
-pub(crate) unsafe fn rav1d_pal_dsp_init(c: *mut Rav1dPalDSPContext) -> () {
-    (*c).pal_idx_finish = pal_idx_finish_rust;
-
-    #[cfg(feature = "asm")]
-    cfg_if! {
-        if #[cfg(any(target_arch = "x86", target_arch = "x86_64"))] {
-            pal_dsp_init_x86(c);
-        }
+    pub const fn new(flags: CpuFlags) -> Self {
+        Self::default().init(flags)
     }
 }
