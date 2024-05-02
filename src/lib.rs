@@ -26,6 +26,7 @@ use crate::src::error::Rav1dError::EAGAIN;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
+use crate::src::extensions::OptionError as _;
 use crate::src::fg_apply;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
@@ -431,14 +432,12 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         }
         c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
         drop(task_thread_lock);
-        match mem::take(&mut *fc.task_thread.retval.try_lock().unwrap()) {
-            Some(e) => Err(e),
-            None => Ok(()),
-        }
-        .inspect_err(|_| {
-            *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-            let _ = mem::take(out_delayed);
-        })?;
+        mem::take(&mut *fc.task_thread.retval.try_lock().unwrap())
+            .err_or(())
+            .inspect_err(|_| {
+                *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
+                let _ = mem::take(out_delayed);
+            })?;
         if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
@@ -527,10 +526,7 @@ pub(crate) unsafe fn rav1d_get_picture(
 ) -> Rav1dResult {
     let drain = mem::replace(&mut c.drain, true);
     gen_picture(c)?;
-    match mem::take(&mut c.cached_error) {
-        Some(e) => Err(e),
-        None => Ok(()),
-    }?;
+    mem::take(&mut c.cached_error).err_or(())?;
     if output_picture_ready(c, c.fc.len() == 1) {
         return output_image(c, out);
     }

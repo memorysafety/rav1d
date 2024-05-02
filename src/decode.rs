@@ -60,6 +60,7 @@ use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
+use crate::src::extensions::OptionError as _;
 use crate::src::internal::Bxy;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
@@ -4801,10 +4802,7 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext
                     }
                 }
                 drop(task_thread_lock);
-                res = match *fc.task_thread.retval.try_lock().unwrap() {
-                    Some(e) => Err(e),
-                    None => Ok(()),
-                };
+                res = fc.task_thread.retval.try_lock().unwrap().err_or(());
             } else {
                 res = rav1d_decode_frame_main(c, &mut f);
                 let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
