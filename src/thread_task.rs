@@ -568,22 +568,20 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
     if frame_prog >= FRAME_ERROR {
         return f.sbh - 1;
     }
-    let mut idx = frame_prog >> f.sb_shift + 7;
-    let mut prog;
     let frame = fc.frame_thread_progress.frame.try_read().unwrap();
-    loop {
-        let val = !frame[idx as usize].load(Ordering::SeqCst);
-        prog = val.trailing_zeros();
-        if prog != 32 {
-            break;
-        }
-        prog = 0;
-        idx += 1;
-        if !((idx as usize) < frame.len()) {
-            break;
-        }
-    }
-    (idx << 5 | prog) as c_int - 1
+    let (idx, prog) = frame
+        .iter()
+        .enumerate()
+        .skip(frame_prog as usize >> (f.sb_shift + 7))
+        .find_map(|(i, progress)| {
+            let val = !progress.load(Ordering::SeqCst);
+            match val.trailing_zeros() {
+                32 => None,
+                progress => Some((i, progress)),
+            }
+        })
+        .unwrap_or((frame.len(), 0));
+    ((idx as u32) << 5 | prog) as c_int - 1
 }
 
 #[inline]
