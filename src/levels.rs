@@ -172,7 +172,7 @@ pub enum BlockSize {
 
 #[derive(Clone, Copy, PartialEq, Eq, EnumCount, Default)]
 pub enum Filter2d {
-    #[default] // TODO(kkysen) Maybe temporary.
+    #[default]
     Regular8Tap = 0,
     RegularSmooth8Tap = 1,
     RegularSharp8Tap = 2,
@@ -304,7 +304,7 @@ pub enum MotionMode {
     Warp = 2,
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Clone, Default)]
 #[repr(C)]
 pub struct Av1BlockIntra {
     pub y_mode: u8,
@@ -339,7 +339,7 @@ pub union Av1BlockInterNd {
     pub two_d: Av1BlockInter2d,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Av1BlockInter {
     pub nd: Av1BlockInterNd,
@@ -362,18 +362,14 @@ pub enum Av1BlockIntraInter {
 }
 
 impl Av1BlockIntraInter {
-    pub const fn intra(&self) -> &Av1BlockIntra {
+    pub fn filter2d(&self) -> Filter2d {
+        // More optimal code if we use a default instead of just panicking.
         match self {
-            Self::Intra(intra) => intra,
-            _ => panic!(),
+            Self::Inter(inter) => Some(inter),
+            _ => None,
         }
-    }
-
-    pub const fn inter(&self) -> &Av1BlockInter {
-        match self {
-            Self::Inter(inter) => inter,
-            _ => panic!(),
-        }
+        .map(|inter| inter.filter2d)
+        .unwrap_or_default()
     }
 }
 
@@ -389,7 +385,6 @@ pub struct Av1Block {
     pub bl: BlockLevel,
     pub bs: u8,
     pub bp: BlockPartition,
-    pub intra: u8,
     pub seg_id: u8,
     pub skip_mode: u8,
     pub skip: u8,

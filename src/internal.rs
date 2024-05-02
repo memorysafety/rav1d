@@ -40,6 +40,8 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::ipred::Rav1dIntraPredDSPContext;
 use crate::src::itx::Rav1dInvTxfmDSPContext;
 use crate::src::levels::Av1Block;
+use crate::src::levels::Av1BlockInter;
+use crate::src::levels::Av1BlockIntra;
 use crate::src::levels::BlockSize;
 use crate::src::levels::Filter2d;
 use crate::src::levels::TxfmType;
@@ -464,8 +466,9 @@ impl Rav1dFrameContext_bd_fn {
         block_size: BlockSize,
         flags: EdgeFlags,
         block: &Av1Block,
+        intra: &Av1BlockIntra,
     ) {
-        (self.recon_b_intra)(f, context, block_size, flags, block);
+        (self.recon_b_intra)(f, context, block_size, flags, block, intra);
     }
 
     pub unsafe fn recon_b_inter(
@@ -474,8 +477,9 @@ impl Rav1dFrameContext_bd_fn {
         context: &mut Rav1dTaskContext,
         block_size: BlockSize,
         block: &Av1Block,
+        inter: &Av1BlockInter,
     ) -> Result<(), ()> {
-        (self.recon_b_inter)(f, context, block_size, block)
+        (self.recon_b_inter)(f, context, block_size, block, inter)
     }
 
     pub unsafe fn read_coef_blocks(
@@ -1243,7 +1247,7 @@ impl Rav1dTaskContext {
             lf_mask: None,
             top_pre_cdef_toggle: 0,
             cur_sb_cdef_idx: 0,
-            tl_4x4_filter: Filter2d::Regular8Tap, // 0
+            tl_4x4_filter: Default::default(),
             frame_thread: Rav1dTaskContext_frame_thread { pass: 0 },
             task_thread,
         }

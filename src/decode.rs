@@ -879,19 +879,19 @@ unsafe fn splat_oneref_mv(
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
     bs: BlockSize,
-    b: &Av1Block,
+    inter: &Av1BlockInter,
     bw4: usize,
     bh4: usize,
 ) {
-    let mode = b.ii.inter().inter_mode;
+    let mode = inter.inter_mode;
     let tmpl = Align16(refmvs_block {
         mv: refmvs_mvpair {
-            mv: [b.ii.inter().nd.one_d.mv[0], mv::ZERO],
+            mv: [inter.nd.one_d.mv[0], mv::ZERO],
         },
         r#ref: refmvs_refpair {
             r#ref: [
-                b.ii.inter().r#ref[0] + 1,
-                b.ii.inter().interintra_type.map(|_| 0).unwrap_or(-1),
+                inter.r#ref[0] + 1,
+                inter.interintra_type.map(|_| 0).unwrap_or(-1),
             ],
         },
         bs,
@@ -927,18 +927,18 @@ unsafe fn splat_tworef_mv(
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
     bs: BlockSize,
-    b: &Av1Block,
+    inter: &Av1BlockInter,
     bw4: usize,
     bh4: usize,
 ) {
     assert!(bw4 >= 2 && bh4 >= 2);
-    let mode = b.ii.inter().inter_mode;
+    let mode = inter.inter_mode;
     let tmpl = Align16(refmvs_block {
         mv: refmvs_mvpair {
-            mv: b.ii.inter().nd.one_d.mv,
+            mv: inter.nd.one_d.mv,
         },
         r#ref: refmvs_refpair {
-            r#ref: [b.ii.inter().r#ref[0] + 1, b.ii.inter().r#ref[1] + 1],
+            r#ref: [inter.r#ref[0] + 1, inter.r#ref[1] + 1],
         },
         bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
@@ -1171,131 +1171,134 @@ unsafe fn decode_b(
     let frame_type = f.frame_hdr.as_ref().unwrap().frame_type;
 
     if t.frame_thread.pass == 2 {
-        if b.intra != 0 {
-            bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b);
+        match &b.ii {
+            Av1BlockIntraInter::Intra(intra) => {
+                bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b, intra);
 
-            let y_mode = b.ii.intra().y_mode;
-            let y_mode_nofilt = if y_mode == FILTER_PRED {
-                DC_PRED
-            } else {
-                y_mode
-            };
-            CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
-                [bh4 as usize, bw4 as usize],
-                [by4 as usize, bx4 as usize],
-                |case, dir| {
-                    case.set_disjoint(&dir.mode, y_mode_nofilt);
-                    case.set_disjoint(&dir.intra, 1);
-                },
-            );
-            if frame_type.is_inter_or_switch() {
-                let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
-                let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
-                for block in r {
-                    block.r#ref.r#ref[0] = 0;
-                    block.bs = bs;
-                }
-                let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
-                for r in rr {
-                    let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
-                    block.r#ref.r#ref[0] = 0;
-                    block.bs = bs;
-                }
-            }
-
-            if has_chroma {
+                let y_mode = intra.y_mode;
+                let y_mode_nofilt = if y_mode == FILTER_PRED {
+                    DC_PRED
+                } else {
+                    y_mode
+                };
                 CaseSet::<32, false>::many(
                     [&t.l, &f.a[t.a]],
-                    [cbh4 as usize, cbw4 as usize],
-                    [cby4 as usize, cbx4 as usize],
+                    [bh4 as usize, bw4 as usize],
+                    [by4 as usize, bx4 as usize],
                     |case, dir| {
-                        case.set_disjoint(&dir.uvmode, b.ii.intra().uv_mode);
+                        case.set_disjoint(&dir.mode, y_mode_nofilt);
+                        case.set_disjoint(&dir.intra, 1);
                     },
                 );
-            }
-        } else {
-            if frame_type.is_inter_or_switch() /* not intrabc */
-                && b.ii.inter().comp_type.is_none()
-                && b.ii.inter().motion_mode == MotionMode::Warp
-            {
-                if b.ii.inter().nd.two_d.matrix[0] == i16::MIN {
-                    t.warpmv.r#type = Rav1dWarpedMotionType::Identity;
-                } else {
-                    t.warpmv.r#type = Rav1dWarpedMotionType::Affine;
-                    t.warpmv.matrix[2] = b.ii.inter().nd.two_d.matrix[0] as i32 + 0x10000;
-                    t.warpmv.matrix[3] = b.ii.inter().nd.two_d.matrix[1] as i32;
-                    t.warpmv.matrix[4] = b.ii.inter().nd.two_d.matrix[2] as i32;
-                    t.warpmv.matrix[5] = b.ii.inter().nd.two_d.matrix[3] as i32 + 0x10000;
-                    rav1d_set_affine_mv2d(
-                        bw4,
-                        bh4,
-                        b.ii.inter().nd.two_d.mv2d,
-                        &mut t.warpmv,
-                        t.b.x,
-                        t.b.y,
-                    );
-                    rav1d_get_shear_params(&mut t.warpmv);
-                    if debug_block_info!(f, t.b) {
-                        println!(
-                            "[ {} {} {}\n  {} {} {} ]\n\
-                            alpha={}, beta={}, gamma={}, deta={}, mv=y:{},x:{}",
-                            SignAbs(t.warpmv.matrix[0]),
-                            SignAbs(t.warpmv.matrix[1]),
-                            SignAbs(t.warpmv.matrix[2]),
-                            SignAbs(t.warpmv.matrix[3]),
-                            SignAbs(t.warpmv.matrix[4]),
-                            SignAbs(t.warpmv.matrix[5]),
-                            SignAbs(t.warpmv.alpha().into()),
-                            SignAbs(t.warpmv.beta().into()),
-                            SignAbs(t.warpmv.gamma().into()),
-                            SignAbs(t.warpmv.delta().into()),
-                            b.ii.inter().nd.two_d.mv2d.y,
-                            b.ii.inter().nd.two_d.mv2d.x,
-                        );
+                if frame_type.is_inter_or_switch() {
+                    let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
+                    let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
+                    for block in r {
+                        block.r#ref.r#ref[0] = 0;
+                        block.bs = bs;
+                    }
+                    let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
+                    for r in rr {
+                        let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
+                        block.r#ref.r#ref[0] = 0;
+                        block.bs = bs;
                     }
                 }
-            }
-            bd_fn.recon_b_inter(f, t, bs, b)?;
 
-            let filter = &dav1d_filter_dir[b.ii.inter().filter2d as usize];
-            CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
-                [bh4 as usize, bw4 as usize],
-                [by4 as usize, bx4 as usize],
-                |case, dir| {
-                    case.set_disjoint(&dir.filter[0], filter[0].into());
-                    case.set_disjoint(&dir.filter[1], filter[1].into());
-                    case.set_disjoint(&dir.intra, 0);
-                },
-            );
-
-            if frame_type.is_inter_or_switch() {
-                let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
-                let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
-                for block in r {
-                    block.r#ref.r#ref[0] = b.ii.inter().r#ref[0] + 1;
-                    block.mv.mv[0] = b.ii.inter().nd.one_d.mv[0];
-                    block.bs = bs;
-                }
-                let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
-                for r in rr {
-                    let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
-                    block.r#ref.r#ref[0] = b.ii.inter().r#ref[0] + 1;
-                    block.mv.mv[0] = b.ii.inter().nd.one_d.mv[0];
-                    block.bs = bs;
+                if has_chroma {
+                    CaseSet::<32, false>::many(
+                        [&t.l, &f.a[t.a]],
+                        [cbh4 as usize, cbw4 as usize],
+                        [cby4 as usize, cbx4 as usize],
+                        |case, dir| {
+                            case.set_disjoint(&dir.uvmode, intra.uv_mode);
+                        },
+                    );
                 }
             }
+            Av1BlockIntraInter::Inter(inter) => {
+                if frame_type.is_inter_or_switch() /* not intrabc */
+                && inter.comp_type.is_none()
+                && inter.motion_mode == MotionMode::Warp
+                {
+                    if inter.nd.two_d.matrix[0] == i16::MIN {
+                        t.warpmv.r#type = Rav1dWarpedMotionType::Identity;
+                    } else {
+                        t.warpmv.r#type = Rav1dWarpedMotionType::Affine;
+                        t.warpmv.matrix[2] = inter.nd.two_d.matrix[0] as i32 + 0x10000;
+                        t.warpmv.matrix[3] = inter.nd.two_d.matrix[1] as i32;
+                        t.warpmv.matrix[4] = inter.nd.two_d.matrix[2] as i32;
+                        t.warpmv.matrix[5] = inter.nd.two_d.matrix[3] as i32 + 0x10000;
+                        rav1d_set_affine_mv2d(
+                            bw4,
+                            bh4,
+                            inter.nd.two_d.mv2d,
+                            &mut t.warpmv,
+                            t.b.x,
+                            t.b.y,
+                        );
+                        rav1d_get_shear_params(&mut t.warpmv);
+                        if debug_block_info!(f, t.b) {
+                            println!(
+                                "[ {} {} {}\n  {} {} {} ]\n\
+                            alpha={}, beta={}, gamma={}, deta={}, mv=y:{},x:{}",
+                                SignAbs(t.warpmv.matrix[0]),
+                                SignAbs(t.warpmv.matrix[1]),
+                                SignAbs(t.warpmv.matrix[2]),
+                                SignAbs(t.warpmv.matrix[3]),
+                                SignAbs(t.warpmv.matrix[4]),
+                                SignAbs(t.warpmv.matrix[5]),
+                                SignAbs(t.warpmv.alpha().into()),
+                                SignAbs(t.warpmv.beta().into()),
+                                SignAbs(t.warpmv.gamma().into()),
+                                SignAbs(t.warpmv.delta().into()),
+                                inter.nd.two_d.mv2d.y,
+                                inter.nd.two_d.mv2d.x,
+                            );
+                        }
+                    }
+                }
+                bd_fn.recon_b_inter(f, t, bs, b, inter)?;
 
-            if has_chroma {
+                let filter = &dav1d_filter_dir[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
                     [&t.l, &f.a[t.a]],
-                    [cbh4 as usize, cbw4 as usize],
-                    [cby4 as usize, cbx4 as usize],
+                    [bh4 as usize, bw4 as usize],
+                    [by4 as usize, bx4 as usize],
                     |case, dir| {
-                        case.set_disjoint(&dir.uvmode, DC_PRED);
+                        case.set_disjoint(&dir.filter[0], filter[0].into());
+                        case.set_disjoint(&dir.filter[1], filter[1].into());
+                        case.set_disjoint(&dir.intra, 0);
                     },
                 );
+
+                if frame_type.is_inter_or_switch() {
+                    let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
+                    let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
+                    for block in r {
+                        block.r#ref.r#ref[0] = inter.r#ref[0] + 1;
+                        block.mv.mv[0] = inter.nd.one_d.mv[0];
+                        block.bs = bs;
+                    }
+                    let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
+                    for r in rr {
+                        let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
+                        block.r#ref.r#ref[0] = inter.r#ref[0] + 1;
+                        block.mv.mv[0] = inter.nd.one_d.mv[0];
+                        block.bs = bs;
+                    }
+                }
+
+                if has_chroma {
+                    CaseSet::<32, false>::many(
+                        [&t.l, &f.a[t.a]],
+                        [cbh4 as usize, cbw4 as usize],
+                        [cby4 as usize, cbx4 as usize],
+                        |case, dir| {
+                            case.set_disjoint(&dir.uvmode, DC_PRED);
+                        },
+                    );
+                }
             }
         }
 
@@ -1626,10 +1629,9 @@ unsafe fn decode_b(
     } else {
         true
     };
-    b.intra = intra as u8;
 
     // intra/inter-specific stuff
-    if b.intra != 0 {
+    if intra {
         let ymode_cdf = if frame_hdr.frame_type.is_inter_or_switch() {
             &mut ts.cdf.m.y_mode[dav1d_ymode_size_context[bs as usize] as usize]
         } else {
@@ -1886,7 +1888,7 @@ unsafe fn decode_b(
         };
         let t_dim = &dav1d_txfm_dimensions[tx as usize];
 
-        b.ii = Av1BlockIntraInter::Intra(Av1BlockIntra {
+        let intra = Av1BlockIntra {
             y_mode,
             uv_mode,
             tx,
@@ -1894,13 +1896,14 @@ unsafe fn decode_b(
             y_angle,
             uv_angle,
             cfl_alpha,
-        });
+        };
+        b.ii = Av1BlockIntraInter::Intra(intra.clone()); // cheap 9-byte clone
 
         // reconstruction
         if t.frame_thread.pass == 1 {
             bd_fn.read_coef_blocks(f, t, bs, b);
         } else {
-            bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b);
+            bd_fn.recon_b_intra(f, t, bs, intra_edge_flags, b, &intra);
         }
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {
@@ -1919,8 +1922,8 @@ unsafe fn decode_b(
                 f.w4,
                 f.h4,
                 bs,
-                b.ii.intra().tx as RectTxfmSize,
-                b.uvtx as RectTxfmSize,
+                tx,
+                b.uvtx,
                 f.cur.p.layout,
                 &mut f.a[t.a]
                     .tx_lpf_y
@@ -1941,10 +1944,10 @@ unsafe fn decode_b(
         }
 
         // update contexts
-        let y_mode_nofilt = if b.ii.intra().y_mode == FILTER_PRED {
+        let y_mode_nofilt = if y_mode == FILTER_PRED {
             DC_PRED
         } else {
-            b.ii.intra().y_mode
+            y_mode
         };
         let is_inter_or_switch = f.frame_hdr().frame_type.is_inter_or_switch();
         CaseSet::<32, false>::many(
@@ -1955,7 +1958,7 @@ unsafe fn decode_b(
                 case.set_disjoint(&dir.tx_intra, lw_lh as i8);
                 case.set_disjoint(&dir.tx, lw_lh);
                 case.set_disjoint(&dir.mode, y_mode_nofilt);
-                case.set_disjoint(&dir.pal_sz, b.ii.intra().pal_sz[0]);
+                case.set_disjoint(&dir.pal_sz, pal_sz[0]);
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
                 case.set_disjoint(&dir.skip_mode, 0);
                 case.set_disjoint(&dir.intra, 1);
@@ -1963,11 +1966,7 @@ unsafe fn decode_b(
                 // see aomedia bug 2183 for why we use luma coordinates here
                 case.set(
                     &mut t.pal_sz_uv[dir_index],
-                    if has_chroma {
-                        b.ii.intra().pal_sz[1]
-                    } else {
-                        0
-                    },
+                    if has_chroma { pal_sz[1] } else { 0 },
                 );
                 if is_inter_or_switch {
                     case.set_disjoint(&dir.comp_type, None);
@@ -1978,7 +1977,7 @@ unsafe fn decode_b(
                 }
             },
         );
-        if b.ii.intra().pal_sz[0] != 0 {
+        if pal_sz[0] != 0 {
             (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
         }
         if has_chroma {
@@ -1987,10 +1986,10 @@ unsafe fn decode_b(
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
                 |case, dir| {
-                    case.set_disjoint(&dir.uvmode, b.ii.intra().uv_mode);
+                    case.set_disjoint(&dir.uvmode, uv_mode);
                 },
             );
-            if b.ii.intra().pal_sz[1] != 0 {
+            if pal_sz[1] != 0 {
                 (bd_fn.copy_pal_block_uv)(
                     t,
                     f,
@@ -2127,11 +2126,11 @@ unsafe fn decode_b(
         let filter2d = if t.frame_thread.pass == 1 {
             Filter2d::Bilinear
         } else {
-            Filter2d::Regular8Tap // 0
+            Default::default()
         };
 
         b.uvtx = uvtx;
-        b.ii = Av1BlockIntraInter::Inter(Av1BlockInter {
+        let inter = Av1BlockInter {
             nd: Av1BlockInterNd {
                 one_d: Av1BlockInter1d {
                     mv: [r#ref, Default::default()],
@@ -2150,13 +2149,14 @@ unsafe fn decode_b(
             interintra_type: Default::default(),
             tx_split0,
             tx_split1,
-        });
+        };
+        b.ii = Av1BlockIntraInter::Inter(inter.clone()); // Cheap 24-byte clone
 
         // reconstruction
         if t.frame_thread.pass == 1 {
             bd_fn.read_coef_blocks(f, t, bs, b);
         } else {
-            bd_fn.recon_b_inter(f, t, bs, b)?;
+            bd_fn.recon_b_inter(f, t, bs, b, &inter)?;
         }
 
         splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
@@ -3035,7 +3035,7 @@ unsafe fn decode_b(
         } = read_vartx_tree(t, f, b, bs, bx4, by4);
 
         b.uvtx = uvtx;
-        b.ii = Av1BlockIntraInter::Inter(Av1BlockInter {
+        let inter = Av1BlockInter {
             nd,
             comp_type,
             inter_mode,
@@ -3047,13 +3047,14 @@ unsafe fn decode_b(
             interintra_type,
             tx_split0,
             tx_split1,
-        });
+        };
+        b.ii = Av1BlockIntraInter::Inter(inter.clone());
 
         // reconstruction
         if t.frame_thread.pass == 1 {
             bd_fn.read_coef_blocks(f, t, bs, b);
         } else {
-            bd_fn.recon_b_inter(f, t, bs, b)?;
+            bd_fn.recon_b_inter(f, t, bs, b, &inter)?;
         }
 
         let frame_hdr = f.frame_hdr();
@@ -3114,9 +3115,9 @@ unsafe fn decode_b(
 
         // context updates
         if is_comp {
-            splat_tworef_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
+            splat_tworef_mv(c, t, &f.rf, bs, &inter, bw4 as usize, bh4 as usize);
         } else {
-            splat_oneref_mv(c, t, &f.rf, bs, b, bw4 as usize, bh4 as usize);
+            splat_oneref_mv(c, t, &f.rf, bs, &inter, bw4 as usize, bh4 as usize);
         }
 
         CaseSet::<32, false>::many(
@@ -3182,149 +3183,41 @@ unsafe fn decode_b(
         }
     }
 
-    if t.frame_thread.pass == 1 && b.intra == 0 && frame_hdr.frame_type.is_inter_or_switch() {
-        let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
-        let mut lowest_px = f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize);
-        // keep track of motion vectors for each reference
-        if b.ii.inter().comp_type.is_none() {
-            // y
-            if cmp::min(bw4, bh4) > 1
-                && (b.ii.inter().inter_mode == GLOBALMV
-                    && f.gmv_warp_allowed[b.ii.inter().r#ref[0] as usize] != 0
-                    || b.ii.inter().motion_mode == MotionMode::Warp
-                        && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
-            {
-                affine_lowest_px_luma(
-                    t,
-                    &mut lowest_px[b.ii.inter().r#ref[0] as usize][0],
-                    b_dim,
-                    if b.ii.inter().motion_mode == MotionMode::Warp {
-                        &t.warpmv
-                    } else {
-                        &frame_hdr.gmv[b.ii.inter().r#ref[0] as usize]
-                    },
-                );
-            } else {
-                mc_lowest_px(
-                    &mut lowest_px[b.ii.inter().r#ref[0] as usize][0],
-                    t.b.y,
-                    bh4,
-                    b.ii.inter().nd.one_d.mv[0].y,
-                    0,
-                    &f.svc[b.ii.inter().r#ref[0] as usize][1],
-                );
-                if b.ii.inter().motion_mode == MotionMode::Obmc {
-                    obmc_lowest_px(
-                        &f.rf.r,
-                        t,
-                        &*f.ts.offset(t.ts as isize),
-                        f.cur.p.layout,
-                        &f.svc,
-                        &mut lowest_px,
-                        false,
-                        b_dim,
-                        bx4,
-                        by4,
-                        w4,
-                        h4,
-                    );
-                }
-            }
-
-            // uv
-            if has_chroma {
-                // sub8x8 derivation
-                let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
-                let r = if is_sub8x8 {
-                    assert!(ss_hor == 1);
-                    let r =
-                        <[_; 2]>::try_from(&t.rt.r[(t.b.y as usize & 31) + 5 - 1..][..2]).unwrap();
-
-                    if bw4 == 1 {
-                        is_sub8x8 &= f.rf.r.index(r[1] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
-                    }
-                    if bh4 == ss_ver {
-                        is_sub8x8 &= f.rf.r.index(r[0] + t.b.x as usize).r#ref.r#ref[0] > 0;
-                    }
-                    if bw4 == 1 && bh4 == ss_ver {
-                        is_sub8x8 &= f.rf.r.index(r[0] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
-                    }
-
-                    r
-                } else {
-                    Default::default() // Never actually used.
-                };
-
-                // chroma prediction
-                if is_sub8x8 {
-                    if bw4 == 1 && bh4 == ss_ver {
-                        let rr = *f.rf.r.index(r[0] + t.b.x as usize - 1);
-                        mc_lowest_px(
-                            &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
-                            t.b.y - 1,
-                            bh4,
-                            rr.mv.mv[0].y,
-                            ss_ver,
-                            &f.svc[rr.r#ref.r#ref[0] as usize - 1][1],
-                        );
-                    }
-                    if bw4 == 1 {
-                        let rr = *f.rf.r.index(r[1] + t.b.x as usize - 1);
-                        mc_lowest_px(
-                            &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
-                            t.b.y,
-                            bh4,
-                            rr.mv.mv[0].y,
-                            ss_ver,
-                            &f.svc[rr.r#ref.r#ref[0] as usize - 1][1],
-                        );
-                    }
-                    if bh4 == ss_ver {
-                        let rr = *f.rf.r.index(r[0] + t.b.x as usize);
-                        mc_lowest_px(
-                            &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
-                            t.b.y - 1,
-                            bh4,
-                            rr.mv.mv[0].y,
-                            ss_ver,
-                            &f.svc[rr.r#ref.r#ref[0] as usize - 1][1],
-                        );
-                    }
-                    mc_lowest_px(
-                        &mut lowest_px[b.ii.inter().r#ref[0] as usize][1],
-                        t.b.y,
-                        bh4,
-                        b.ii.inter().nd.one_d.mv[0].y,
-                        ss_ver,
-                        &f.svc[b.ii.inter().r#ref[0] as usize][1],
-                    );
-                } else if cmp::min(cbw4, cbh4) > 1
-                    && (b.ii.inter().inter_mode == GLOBALMV
-                        && f.gmv_warp_allowed[b.ii.inter().r#ref[0] as usize] != 0
-                        || b.ii.inter().motion_mode == MotionMode::Warp
+    match &b.ii {
+        Av1BlockIntraInter::Inter(inter)
+            if t.frame_thread.pass == 1 && frame_hdr.frame_type.is_inter_or_switch() =>
+        {
+            let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
+            let mut lowest_px = f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize);
+            // keep track of motion vectors for each reference
+            if inter.comp_type.is_none() {
+                // y
+                if cmp::min(bw4, bh4) > 1
+                    && (inter.inter_mode == GLOBALMV
+                        && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+                        || inter.motion_mode == MotionMode::Warp
                             && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                 {
-                    affine_lowest_px_chroma(
+                    affine_lowest_px_luma(
                         t,
-                        f.cur.p.layout,
-                        &mut lowest_px[b.ii.inter().r#ref[0] as usize][1],
+                        &mut lowest_px[inter.r#ref[0] as usize][0],
                         b_dim,
-                        if b.ii.inter().motion_mode == MotionMode::Warp {
+                        if inter.motion_mode == MotionMode::Warp {
                             &t.warpmv
                         } else {
-                            &frame_hdr.gmv[b.ii.inter().r#ref[0] as usize]
+                            &frame_hdr.gmv[inter.r#ref[0] as usize]
                         },
                     );
                 } else {
                     mc_lowest_px(
-                        &mut lowest_px[b.ii.inter().r#ref[0] as usize][1],
-                        t.b.y & !ss_ver,
-                        bh4 << (bh4 == ss_ver) as c_int,
-                        b.ii.inter().nd.one_d.mv[0].y,
-                        ss_ver,
-                        &f.svc[b.ii.inter().r#ref[0] as usize][1],
+                        &mut lowest_px[inter.r#ref[0] as usize][0],
+                        t.b.y,
+                        bh4,
+                        inter.nd.one_d.mv[0].y,
+                        0,
+                        &f.svc[inter.r#ref[0] as usize][1],
                     );
-                    if b.ii.inter().motion_mode == MotionMode::Obmc {
+                    if inter.motion_mode == MotionMode::Obmc {
                         obmc_lowest_px(
                             &f.rf.r,
                             t,
@@ -3332,7 +3225,7 @@ unsafe fn decode_b(
                             f.cur.p.layout,
                             &f.svc,
                             &mut lowest_px,
-                            true,
+                            false,
                             b_dim,
                             bx4,
                             by4,
@@ -3341,79 +3234,192 @@ unsafe fn decode_b(
                         );
                     }
                 }
-            }
-        } else {
-            // y
-            let refmvs = || {
-                std::iter::zip(b.ii.inter().r#ref, b.ii.inter().nd.one_d.mv)
-                    .map(|(r#ref, mv)| (r#ref as usize, mv))
-            };
-            for (r#ref, mv) in refmvs() {
-                if b.ii.inter().inter_mode == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
-                    affine_lowest_px_luma(
-                        t,
-                        &mut lowest_px[r#ref][0],
-                        b_dim,
-                        &frame_hdr.gmv[r#ref],
-                    );
-                } else {
-                    mc_lowest_px(
-                        &mut lowest_px[r#ref][0],
-                        t.b.y,
-                        bh4,
-                        mv.y,
-                        0,
-                        &f.svc[r#ref][1],
-                    );
-                }
-            }
-            for (r#ref, mv) in refmvs() {
-                if b.ii.inter().inter_mode == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
-                    affine_lowest_px_luma(
-                        t,
-                        &mut lowest_px[r#ref][0],
-                        b_dim,
-                        &frame_hdr.gmv[r#ref],
-                    );
-                } else {
-                    mc_lowest_px(
-                        &mut lowest_px[r#ref][0],
-                        t.b.y,
-                        bh4,
-                        mv.y,
-                        0,
-                        &f.svc[r#ref][1],
-                    );
-                }
-            }
 
-            // uv
-            if has_chroma {
-                for (r#ref, mv) in refmvs() {
-                    if b.ii.inter().inter_mode == GLOBALMV_GLOBALMV
-                        && cmp::min(cbw4, cbh4) > 1
-                        && f.gmv_warp_allowed[r#ref] != 0
+                // uv
+                if has_chroma {
+                    // sub8x8 derivation
+                    let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
+                    let r = if is_sub8x8 {
+                        assert!(ss_hor == 1);
+                        let r = <[_; 2]>::try_from(&t.rt.r[(t.b.y as usize & 31) + 5 - 1..][..2])
+                            .unwrap();
+
+                        if bw4 == 1 {
+                            is_sub8x8 &= f.rf.r.index(r[1] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
+                        }
+                        if bh4 == ss_ver {
+                            is_sub8x8 &= f.rf.r.index(r[0] + t.b.x as usize).r#ref.r#ref[0] > 0;
+                        }
+                        if bw4 == 1 && bh4 == ss_ver {
+                            is_sub8x8 &= f.rf.r.index(r[0] + t.b.x as usize - 1).r#ref.r#ref[0] > 0;
+                        }
+
+                        r
+                    } else {
+                        Default::default() // Never actually used.
+                    };
+
+                    // chroma prediction
+                    if is_sub8x8 {
+                        if bw4 == 1 && bh4 == ss_ver {
+                            let rr = *f.rf.r.index(r[0] + t.b.x as usize - 1);
+                            mc_lowest_px(
+                                &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
+                                t.b.y - 1,
+                                bh4,
+                                rr.mv.mv[0].y,
+                                ss_ver,
+                                &f.svc[rr.r#ref.r#ref[0] as usize - 1][1],
+                            );
+                        }
+                        if bw4 == 1 {
+                            let rr = *f.rf.r.index(r[1] + t.b.x as usize - 1);
+                            mc_lowest_px(
+                                &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
+                                t.b.y,
+                                bh4,
+                                rr.mv.mv[0].y,
+                                ss_ver,
+                                &f.svc[rr.r#ref.r#ref[0] as usize - 1][1],
+                            );
+                        }
+                        if bh4 == ss_ver {
+                            let rr = *f.rf.r.index(r[0] + t.b.x as usize);
+                            mc_lowest_px(
+                                &mut lowest_px[rr.r#ref.r#ref[0] as usize - 1][1],
+                                t.b.y - 1,
+                                bh4,
+                                rr.mv.mv[0].y,
+                                ss_ver,
+                                &f.svc[rr.r#ref.r#ref[0] as usize - 1][1],
+                            );
+                        }
+                        mc_lowest_px(
+                            &mut lowest_px[inter.r#ref[0] as usize][1],
+                            t.b.y,
+                            bh4,
+                            inter.nd.one_d.mv[0].y,
+                            ss_ver,
+                            &f.svc[inter.r#ref[0] as usize][1],
+                        );
+                    } else if cmp::min(cbw4, cbh4) > 1
+                        && (inter.inter_mode == GLOBALMV
+                            && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
+                            || inter.motion_mode == MotionMode::Warp
+                                && t.warpmv.r#type > Rav1dWarpedMotionType::Translation)
                     {
                         affine_lowest_px_chroma(
                             t,
                             f.cur.p.layout,
-                            &mut lowest_px[r#ref][1],
+                            &mut lowest_px[inter.r#ref[0] as usize][1],
+                            b_dim,
+                            if inter.motion_mode == MotionMode::Warp {
+                                &t.warpmv
+                            } else {
+                                &frame_hdr.gmv[inter.r#ref[0] as usize]
+                            },
+                        );
+                    } else {
+                        mc_lowest_px(
+                            &mut lowest_px[inter.r#ref[0] as usize][1],
+                            t.b.y & !ss_ver,
+                            bh4 << (bh4 == ss_ver) as c_int,
+                            inter.nd.one_d.mv[0].y,
+                            ss_ver,
+                            &f.svc[inter.r#ref[0] as usize][1],
+                        );
+                        if inter.motion_mode == MotionMode::Obmc {
+                            obmc_lowest_px(
+                                &f.rf.r,
+                                t,
+                                &*f.ts.offset(t.ts as isize),
+                                f.cur.p.layout,
+                                &f.svc,
+                                &mut lowest_px,
+                                true,
+                                b_dim,
+                                bx4,
+                                by4,
+                                w4,
+                                h4,
+                            );
+                        }
+                    }
+                }
+            } else {
+                // y
+                let refmvs = || {
+                    std::iter::zip(inter.r#ref, inter.nd.one_d.mv)
+                        .map(|(r#ref, mv)| (r#ref as usize, mv))
+                };
+                for (r#ref, mv) in refmvs() {
+                    if inter.inter_mode == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
+                        affine_lowest_px_luma(
+                            t,
+                            &mut lowest_px[r#ref][0],
                             b_dim,
                             &frame_hdr.gmv[r#ref],
                         );
                     } else {
                         mc_lowest_px(
-                            &mut lowest_px[r#ref][1],
+                            &mut lowest_px[r#ref][0],
                             t.b.y,
                             bh4,
                             mv.y,
-                            ss_ver,
+                            0,
                             &f.svc[r#ref][1],
                         );
                     }
                 }
+                for (r#ref, mv) in refmvs() {
+                    if inter.inter_mode == GLOBALMV_GLOBALMV && f.gmv_warp_allowed[r#ref] != 0 {
+                        affine_lowest_px_luma(
+                            t,
+                            &mut lowest_px[r#ref][0],
+                            b_dim,
+                            &frame_hdr.gmv[r#ref],
+                        );
+                    } else {
+                        mc_lowest_px(
+                            &mut lowest_px[r#ref][0],
+                            t.b.y,
+                            bh4,
+                            mv.y,
+                            0,
+                            &f.svc[r#ref][1],
+                        );
+                    }
+                }
+
+                // uv
+                if has_chroma {
+                    for (r#ref, mv) in refmvs() {
+                        if inter.inter_mode == GLOBALMV_GLOBALMV
+                            && cmp::min(cbw4, cbh4) > 1
+                            && f.gmv_warp_allowed[r#ref] != 0
+                        {
+                            affine_lowest_px_chroma(
+                                t,
+                                f.cur.p.layout,
+                                &mut lowest_px[r#ref][1],
+                                b_dim,
+                                &frame_hdr.gmv[r#ref],
+                            );
+                        } else {
+                            mc_lowest_px(
+                                &mut lowest_px[r#ref][1],
+                                t.b.y,
+                                bh4,
+                                mv.y,
+                                ss_ver,
+                                &f.svc[r#ref][1],
+                            );
+                        }
+                    }
+                }
             }
         }
+        _ => {}
     }
 
     Ok(())
