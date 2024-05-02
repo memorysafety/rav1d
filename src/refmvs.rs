@@ -315,8 +315,7 @@ pub type splat_mv_fn = unsafe extern "C" fn(
     rr_len: usize,
 ) -> ();
 
-#[repr(C)]
-pub(crate) struct Rav1dRefmvsDSPContext {
+pub struct Rav1dRefmvsDSPContext {
     load_tmvs: load_tmvs_fn,
     save_tmvs: save_tmvs_fn,
     splat_mv: splat_mv_fn,

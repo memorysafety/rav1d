@@ -117,8 +117,7 @@ use zerocopy::AsBytes;
 use zerocopy::FromBytes;
 use zerocopy::FromZeroes;
 
-#[repr(C)]
-pub(crate) struct Rav1dDSPContext {
+pub struct Rav1dDSPContext {
     pub fg: Rav1dFilmGrainDSPContext,
     pub ipred: Rav1dIntraPredDSPContext,
     pub mc: Rav1dMCDSPContext,

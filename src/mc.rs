@@ -1423,7 +1423,7 @@ pub type resize_fn = unsafe extern "C" fn(
     c_int,
     c_int,
 ) -> ();
-#[repr(C)]
+
 pub struct Rav1dMCDSPContext {
     pub mc: enum_map_ty!(Filter2d, mc::Fn),
     pub mc_scaled: enum_map_ty!(Filter2d, mc_scaled::Fn),

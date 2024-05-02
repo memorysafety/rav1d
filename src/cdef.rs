@@ -47,7 +47,6 @@ pub type cdef_fn = unsafe extern "C" fn(
 pub type cdef_dir_fn =
     unsafe extern "C" fn(*const DynPixel, ptrdiff_t, *mut c_uint, c_int) -> c_int;
 
-#[repr(C)]
 pub struct Rav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
     pub fb: [cdef_fn; 3],

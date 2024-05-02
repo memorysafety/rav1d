@@ -11,8 +11,7 @@ pub type pal_idx_finish_fn = unsafe extern "C" fn(
     h: c_int,
 ) -> ();
 
-#[repr(C)]
-pub(crate) struct Rav1dPalDSPContext {
+pub struct Rav1dPalDSPContext {
     pub pal_idx_finish: pal_idx_finish_fn,
 }
 

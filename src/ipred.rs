@@ -165,8 +165,7 @@ impl pal_pred::Fn {
     }
 }
 
-#[repr(C)]
-pub(crate) struct Rav1dIntraPredDSPContext {
+pub struct Rav1dIntraPredDSPContext {
     pub intra_pred: [angular_ipred::Fn; 14],
     pub cfl_ac: enum_map_ty!(Rav1dPixelLayoutSubSampled, cfl_ac::Fn),
     pub cfl_pred: [cfl_pred::Fn; 6],

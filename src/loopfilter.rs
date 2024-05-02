@@ -26,7 +26,6 @@ pub type loopfilter_sb_fn = unsafe extern "C" fn(
     c_int,
 ) -> ();
 
-#[repr(C)]
 pub struct Rav1dLoopFilterDSPContext {
     pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
 }
