@@ -46,7 +46,6 @@ use crate::src::pal::rav1d_pal_dsp_init;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::refmvs::rav1d_refmvs_clear;
 use crate::src::refmvs::rav1d_refmvs_dsp_init;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
@@ -762,7 +761,7 @@ impl Drop for Rav1dContext {
                 let _ = mem::take(&mut f.lf.level);
                 let _ = mem::take(&mut f.lf.tx_lpf_right_edge); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.lf.start_of_tile_row); // TODO: remove when context is owned
-                rav1d_refmvs_clear(&mut f.rf);
+                let _ = mem::take(&mut f.rf);
                 let _ = mem::take(&mut f.lf.cdef_line_buf); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.lf.lr_line_buf); // TODO: remove when context is owned
             }

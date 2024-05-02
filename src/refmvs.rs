@@ -1709,11 +1709,6 @@ pub(crate) fn rav1d_refmvs_init_frame(
     Ok(())
 }
 
-pub(crate) fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
-    let _ = mem::take(&mut rf.r);
-    let _ = mem::take(&mut rf.rp_proj);
-}
-
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
     rmv: *const Align16<refmvs_block>,
