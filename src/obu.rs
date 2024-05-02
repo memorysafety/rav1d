@@ -1219,7 +1219,7 @@ fn parse_delta(
     Rav1dFrameHeader_delta { q, lf }
 }
 
-unsafe fn parse_loopfilter(
+fn parse_loopfilter(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: bool,
