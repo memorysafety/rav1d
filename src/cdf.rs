@@ -5116,6 +5116,7 @@ pub fn rav1d_cdf_thread_copy(dst: &mut CdfContext, src: &CdfThreadContext) {
 }
 
 pub fn rav1d_cdf_thread_alloc(have_frame_mt: bool) -> Rav1dResult<CdfThreadContext> {
+    // TODO fallible allocation
     Ok(CdfThreadContext::Cdf(Arc::new(CdfThreadContext_data {
         cdf: Default::default(),
         progress: have_frame_mt.then_some(AtomicU32::new(0)),
