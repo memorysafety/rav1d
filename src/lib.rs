@@ -399,9 +399,8 @@ fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
 }
 
 unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
-    let mut drain_count = 0u32;
     let mut drained = false;
-    loop {
+    for _ in 0..c.fc.len() {
         let next = c.frame_thread.next;
         let fc = &c.fc[next as usize];
         let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
@@ -448,10 +447,6 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
             if output_picture_ready(c, false) {
                 return output_image(c, out);
             }
-        }
-        drain_count += 1;
-        if !((drain_count as usize) < c.fc.len()) {
-            break;
         }
     }
     if output_picture_ready(c, true) {
