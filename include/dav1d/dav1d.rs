@@ -55,9 +55,10 @@ pub const DAV1D_DECODEFRAMETYPE_INTRA: Dav1dDecodeFrameType =
 pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType =
     Rav1dDecodeFrameType::Key as Dav1dDecodeFrameType;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr, Default)]
 pub(crate) enum Rav1dDecodeFrameType {
     /// decode and return all frames
+    #[default]
     All = 0,
     /// decode and return frames referenced by other frames only
     Reference = 1,

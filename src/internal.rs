@@ -249,6 +249,7 @@ impl Default for TaskType {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub(crate) struct Rav1dContext_frame_thread {
     pub out_delayed: Box<[Rav1dThreadPicture]>,
@@ -360,6 +361,7 @@ impl Rav1dContextTaskThread {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dContext {
     pub(crate) fc: Box<[Rav1dFrameContext]>,
