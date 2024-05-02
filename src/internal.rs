@@ -151,6 +151,12 @@ impl Rav1dDSPContext {
     }
 }
 
+impl Default for &'static Rav1dDSPContext {
+    fn default() -> Self {
+        Rav1dDSPContext::get()
+    }
+}
+
 pub struct Rav1dBitDepthDSPContext {
     pub fg: Rav1dFilmGrainDSPContext,
     pub ipred: Rav1dIntraPredDSPContext,
