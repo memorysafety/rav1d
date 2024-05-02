@@ -588,7 +588,7 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
 }
 
 #[inline]
-unsafe fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
+fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
     fc.task_thread.error.store(
         if error == Err(EINVAL) {
             1 as c_int
