@@ -372,7 +372,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
 }
 
 fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
-    if c.cached_error.is_err() {
+    if c.cached_error.is_some() {
         return true;
     }
     if !c.all_layers && c.max_spatial_id {
@@ -431,12 +431,14 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         }
         c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
         drop(task_thread_lock);
-        mem::replace(&mut *fc.task_thread.retval.try_lock().unwrap(), Ok(())).inspect_err(
-            |_| {
-                *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-                let _ = mem::take(out_delayed);
-            },
-        )?;
+        match mem::take(&mut *fc.task_thread.retval.try_lock().unwrap()) {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
+        .inspect_err(|_| {
+            *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
+            let _ = mem::take(out_delayed);
+        })?;
         if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
@@ -525,7 +527,10 @@ pub(crate) unsafe fn rav1d_get_picture(
 ) -> Rav1dResult {
     let drain = mem::replace(&mut c.drain, true);
     gen_picture(c)?;
-    mem::replace(&mut c.cached_error, Ok(()))?;
+    match mem::take(&mut c.cached_error) {
+        Some(e) => Err(e),
+        None => Ok(()),
+    }?;
     if output_picture_ready(c, c.fc.len() == 1) {
         return output_image(c, out);
     }
@@ -624,7 +629,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     let _ = mem::take(&mut c.out);
     let _ = mem::take(&mut c.cache);
     c.drain = false;
-    c.cached_error = Ok(());
+    c.cached_error = None;
     let _ = mem::take(&mut c.refs);
     let _ = mem::take(&mut c.cdf);
     let _ = mem::take(&mut c.frame_hdr);
@@ -662,7 +667,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     if c.fc.len() > 1 {
         for fc in wrapping_iter(c.fc.iter(), c.frame_thread.next as usize) {
             rav1d_decode_frame_exit(c, fc, Err(EGeneric));
-            *fc.task_thread.retval.try_lock().unwrap() = Ok(());
+            *fc.task_thread.retval.try_lock().unwrap() = None;
             let out_delayed = &mut c.frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
                 let _ = mem::take(out_delayed);

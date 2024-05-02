@@ -2524,9 +2524,9 @@ unsafe fn parse_obus(
                         c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
                     }
                 }
-                let mut error = fc.task_thread.retval.try_lock().unwrap();
-                if error.is_err() {
-                    c.cached_error = mem::replace(&mut *error, Ok(()));
+                let error = &mut *fc.task_thread.retval.try_lock().unwrap();
+                if error.is_some() {
+                    c.cached_error = mem::take(error);
                     *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
                     let _ = mem::take(out_delayed);
                 } else if out_delayed.p.data.is_some() {

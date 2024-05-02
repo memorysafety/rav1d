@@ -32,7 +32,7 @@ use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutArcSlice;
 use crate::src::disjoint_mut::DisjointMutGuard;
 use crate::src::env::BlockContext;
-use crate::src::error::Rav1dResult;
+use crate::src::error::Rav1dError;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::filmgrain::GRAIN_HEIGHT;
 use crate::src::filmgrain::GRAIN_WIDTH;
@@ -409,7 +409,7 @@ pub struct Rav1dContext {
     pub(crate) frame_flags: Atomic<PictureFlags>,
     pub(crate) event_flags: Rav1dEventFlags,
     pub(crate) cached_error_props: Mutex<Rav1dDataProps>,
-    pub(crate) cached_error: Rav1dResult,
+    pub(crate) cached_error: Option<Rav1dError>,
 
     pub(crate) logger: Option<Rav1dLogger>,
 
@@ -816,6 +816,7 @@ impl IndexMut<Rav1dTaskIndex> for Rav1dTasks {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameContext_task_thread {
     pub lock: Mutex<()>,
@@ -824,7 +825,7 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub tasks: UnsafeCell<Rav1dTasks>,
     pub init_done: AtomicI32,
     pub done: [AtomicI32; 2],
-    pub retval: Mutex<Rav1dResult>,
+    pub retval: Mutex<Option<Rav1dError>>,
     pub finished: AtomicBool,   // true when FrameData.tiles is cleared
     pub update_set: AtomicBool, // whether we need to update CDF reference
     pub error: AtomicI32,
@@ -832,26 +833,6 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     // async task insertion
     pub pending_tasks_merge: AtomicI32,
     pub pending_tasks: Mutex<Rav1dFrameContext_task_thread_pending_tasks>,
-}
-
-impl Default for Rav1dFrameContext_task_thread {
-    fn default() -> Self {
-        Self {
-            lock: Default::default(),
-            cond: Default::default(),
-            ttd: Default::default(),
-            tasks: Default::default(),
-            init_done: Default::default(),
-            done: Default::default(),
-            retval: Mutex::new(Ok(())),
-            finished: Default::default(),
-            update_set: Default::default(),
-            error: Default::default(),
-            task_counter: Default::default(),
-            pending_tasks_merge: Default::default(),
-            pending_tasks: Default::default(),
-        }
-    }
 }
 
 impl Rav1dFrameContext_task_thread {
