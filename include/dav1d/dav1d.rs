@@ -55,7 +55,6 @@ pub const DAV1D_DECODEFRAMETYPE_INTRA: Dav1dDecodeFrameType =
 pub const DAV1D_DECODEFRAMETYPE_KEY: Dav1dDecodeFrameType =
     Rav1dDecodeFrameType::Key as Dav1dDecodeFrameType;
 
-#[repr(u8)]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromRepr)]
 pub(crate) enum Rav1dDecodeFrameType {
     /// decode and return all frames
@@ -78,8 +77,7 @@ impl TryFrom<Dav1dDecodeFrameType> for Rav1dDecodeFrameType {
     type Error = Rav1dError;
 
     fn try_from(value: Dav1dDecodeFrameType) -> Result<Self, Self::Error> {
-        let value = u8::try_from(value).map_err(|_| Rav1dError::EINVAL)?;
-        Self::from_repr(value).ok_or(Rav1dError::EINVAL)
+        Self::from_repr(value as usize).ok_or(Rav1dError::EINVAL)
     }
 }
 
