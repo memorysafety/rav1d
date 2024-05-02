@@ -125,9 +125,9 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
 fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
     let first = ttd.first.load(Ordering::SeqCst);
     if frame_idx < first {
-        frame_idx = frame_idx.wrapping_add(n_frames);
+        frame_idx += n_frames;
     }
-    let mut last_idx: c_uint = frame_idx;
+    let mut last_idx = frame_idx;
     loop {
         frame_idx = last_idx;
         last_idx = ttd.reset_task_cur.swap(frame_idx, Ordering::SeqCst);
