@@ -6,7 +6,6 @@ use crate::src::align::Align32;
 use crate::src::align::Align4;
 use crate::src::align::Align8;
 use crate::src::error::Rav1dResult;
-use crate::src::internal::Rav1dContext;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
@@ -5116,10 +5115,7 @@ pub fn rav1d_cdf_thread_copy(dst: &mut CdfContext, src: &CdfThreadContext) {
     }
 }
 
-pub fn rav1d_cdf_thread_alloc(
-    _c: &Rav1dContext,
-    have_frame_mt: c_int,
-) -> Rav1dResult<CdfThreadContext> {
+pub fn rav1d_cdf_thread_alloc(have_frame_mt: c_int) -> Rav1dResult<CdfThreadContext> {
     let progress = if have_frame_mt != 0 {
         Some(AtomicU32::new(0))
     } else {
