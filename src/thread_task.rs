@@ -122,7 +122,7 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
 }
 
 #[inline]
-unsafe fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
+fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
     let first = ttd.first.load(Ordering::SeqCst);
     if frame_idx < first {
         frame_idx = frame_idx.wrapping_add(n_frames);
