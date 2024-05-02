@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
