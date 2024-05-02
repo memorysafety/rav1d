@@ -2134,9 +2134,7 @@ unsafe fn decode_b(
             nd: Av1BlockInterNd {
                 one_d: Av1BlockInter1d {
                     mv: [r#ref, Default::default()],
-                    wedge_idx: Default::default(),
-                    mask_sign: Default::default(),
-                    interintra_mode: Default::default(),
+                    ..Default::default()
                 },
             },
             comp_type: Default::default(),
@@ -2268,9 +2266,7 @@ unsafe fn decode_b(
             let nd = Av1BlockInterNd {
                 one_d: Av1BlockInter1d {
                     mv: mv1d,
-                    wedge_idx: Default::default(),
-                    mask_sign: Default::default(),
-                    interintra_mode: Default::default(),
+                    ..Default::default()
                 },
             };
 
@@ -2593,7 +2589,7 @@ unsafe fn decode_b(
                         mv: mv1d,
                         wedge_idx,
                         mask_sign,
-                        interintra_mode: Default::default(),
+                        ..Default::default()
                     },
                 },
                 comp_type: Some(comp_type),
@@ -2966,8 +2962,8 @@ unsafe fn decode_b(
                         one_d: Av1BlockInter1d {
                             mv: [mv1d0, Default::default()],
                             wedge_idx,
-                            mask_sign: Default::default(),
                             interintra_mode,
+                            ..Default::default()
                         },
                     },
                     Some(matrix) => Av1BlockInterNd {

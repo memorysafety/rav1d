@@ -316,7 +316,7 @@ pub struct Av1BlockIntra {
     pub cfl_alpha: [i8; 2],
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 #[repr(C)]
 pub struct Av1BlockInter1d {
     pub mv: [mv; 2],
