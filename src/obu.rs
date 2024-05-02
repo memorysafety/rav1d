@@ -1684,7 +1684,7 @@ fn parse_film_grain_data(
     })
 }
 
-unsafe fn parse_film_grain(
+fn parse_film_grain(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     show_frame: u8,
