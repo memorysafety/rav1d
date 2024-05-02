@@ -432,12 +432,12 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         }
         c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
         drop(task_thread_lock);
-        let error = mem::replace(&mut *fc.task_thread.retval.try_lock().unwrap(), Ok(()));
-        if error.is_err() {
-            *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-            let _ = mem::take(out_delayed);
-            return error;
-        }
+        mem::replace(&mut *fc.task_thread.retval.try_lock().unwrap(), Ok(())).inspect_err(
+            |_| {
+                *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
+                let _ = mem::take(out_delayed);
+            },
+        )?;
         if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
