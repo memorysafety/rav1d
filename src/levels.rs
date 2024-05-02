@@ -342,6 +342,18 @@ pub union Av1BlockInterNd {
     pub two_d: Av1BlockInter2d,
 }
 
+impl From<Av1BlockInter1d> for Av1BlockInterNd {
+    fn from(one_d: Av1BlockInter1d) -> Self {
+        Self { one_d }
+    }
+}
+
+impl From<Av1BlockInter2d> for Av1BlockInterNd {
+    fn from(two_d: Av1BlockInter2d) -> Self {
+        Self { two_d }
+    }
+}
+
 #[derive(Clone)]
 #[repr(C)]
 pub struct Av1BlockInter {

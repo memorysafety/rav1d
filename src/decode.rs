@@ -2131,12 +2131,11 @@ unsafe fn decode_b(
 
         b.uvtx = uvtx;
         let inter = Av1BlockInter {
-            nd: Av1BlockInterNd {
-                one_d: Av1BlockInter1d {
-                    mv: [r#ref, Default::default()],
-                    ..Default::default()
-                },
-            },
+            nd: Av1BlockInter1d {
+                mv: [r#ref, Default::default()],
+                ..Default::default()
+            }
+            .into(),
             comp_type: Default::default(),
             inter_mode: Default::default(),
             motion_mode: Default::default(),
@@ -2263,15 +2262,12 @@ unsafe fn decode_b(
                 );
             }
 
-            let nd = Av1BlockInterNd {
-                one_d: Av1BlockInter1d {
+            Inter {
+                nd: Av1BlockInter1d {
                     mv: mv1d,
                     ..Default::default()
-                },
-            };
-
-            Inter {
-                nd,
+                }
+                .into(),
                 comp_type: Some(comp_type),
                 inter_mode,
                 motion_mode: Default::default(),
@@ -2584,14 +2580,13 @@ unsafe fn decode_b(
             let wedge_idx = wedge_idx;
 
             Inter {
-                nd: Av1BlockInterNd {
-                    one_d: Av1BlockInter1d {
-                        mv: mv1d,
-                        wedge_idx,
-                        mask_sign,
-                        ..Default::default()
-                    },
-                },
+                nd: Av1BlockInter1d {
+                    mv: mv1d,
+                    wedge_idx,
+                    mask_sign,
+                    ..Default::default()
+                }
+                .into(),
                 comp_type: Some(comp_type),
                 inter_mode,
                 motion_mode: Default::default(),
@@ -2958,20 +2953,18 @@ unsafe fn decode_b(
 
             Inter {
                 nd: match matrix {
-                    None => Av1BlockInterNd {
-                        one_d: Av1BlockInter1d {
-                            mv: [mv1d0, Default::default()],
-                            wedge_idx,
-                            interintra_mode,
-                            ..Default::default()
-                        },
-                    },
-                    Some(matrix) => Av1BlockInterNd {
-                        two_d: Av1BlockInter2d {
-                            mv2d: mv1d0,
-                            matrix,
-                        },
-                    },
+                    None => Av1BlockInter1d {
+                        mv: [mv1d0, Default::default()],
+                        wedge_idx,
+                        interintra_mode,
+                        ..Default::default()
+                    }
+                    .into(),
+                    Some(matrix) => Av1BlockInter2d {
+                        mv2d: mv1d0,
+                        matrix,
+                    }
+                    .into(),
                 },
                 comp_type: None,
                 inter_mode,
