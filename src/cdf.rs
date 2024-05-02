@@ -5116,7 +5116,7 @@ pub fn rav1d_cdf_thread_copy(dst: &mut CdfContext, src: &CdfThreadContext) {
     }
 }
 
-pub unsafe fn rav1d_cdf_thread_alloc(
+pub fn rav1d_cdf_thread_alloc(
     _c: &Rav1dContext,
     have_frame_mt: c_int,
 ) -> Rav1dResult<CdfThreadContext> {
