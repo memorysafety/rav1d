@@ -461,7 +461,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
     if output_picture_ready(c, true) {
         return output_image(c, out);
     }
-    return Err(EAGAIN);
+    Err(EAGAIN)
 }
 
 unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
