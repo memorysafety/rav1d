@@ -1504,7 +1504,7 @@ fn parse_skip_mode(
     })
 }
 
-unsafe fn parse_gmv(
+fn parse_gmv(
     c: &Rav1dContext,
     frame_type: Rav1dFrameType,
     primary_ref_frame: u8,
