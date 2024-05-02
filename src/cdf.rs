@@ -5079,7 +5079,7 @@ pub(crate) fn rav1d_cdf_thread_update(
 }
 
 #[inline]
-unsafe fn get_qcat_idx(q: u8) -> c_int {
+fn get_qcat_idx(q: u8) -> c_int {
     if q <= 20 {
         return 0 as c_int;
     }
