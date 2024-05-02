@@ -422,10 +422,9 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 Ordering::SeqCst,
                 Ordering::SeqCst,
             );
-            if c.task_thread.cur.load(Ordering::Relaxed) != 0
-                && (c.task_thread.cur.load(Ordering::Relaxed) as usize) < c.fc.len()
-            {
-                c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
+            let cur = c.task_thread.cur.load(Ordering::Relaxed);
+            if cur != 0 && (cur as usize) < c.fc.len() {
+                c.task_thread.cur.store(cur - 1, Ordering::Relaxed);
             }
             drained = true;
         } else if drained {
