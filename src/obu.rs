@@ -2174,7 +2174,7 @@ unsafe fn parse_obus(
         }
     }
 
-    unsafe fn parse_tile_grp(
+    fn parse_tile_grp(
         c: &mut Rav1dContext,
         r#in: &CArc<[u8]>,
         props: &Rav1dDataProps,
