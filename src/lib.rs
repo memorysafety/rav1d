@@ -399,10 +399,10 @@ fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
 }
 
 unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
-    let mut drain_count: c_uint = 0 as c_int as c_uint;
+    let mut drain_count = 0 as c_int as c_uint;
     let mut drained = 0;
     loop {
-        let next: c_uint = c.frame_thread.next;
+        let next = c.frame_thread.next;
         let fc = &c.fc[next as usize];
         let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
@@ -410,7 +410,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
-            let first: c_uint = c.task_thread.first.load(Ordering::SeqCst);
+            let first = c.task_thread.first.load(Ordering::SeqCst);
             if (first.wrapping_add(1 as c_uint) as usize) < c.fc.len() {
                 c.task_thread.first.fetch_add(1, Ordering::SeqCst);
             } else {
