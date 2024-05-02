@@ -29,6 +29,7 @@ use crate::src::internal::Rav1dTileState;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskThreadData_delayed_fg;
 use crate::src::internal::TaskType;
+use crate::src::iter::wrapping_iter;
 use crate::src::picture::Rav1dThreadPicture;
 use std::cmp;
 use std::ffi::c_int;
@@ -59,8 +60,11 @@ pub const TILE_ERROR: i32 = i32::MAX - 1;
 #[inline]
 unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: c_uint) -> c_int {
     unsafe fn curr_found(c: &Rav1dContext, ttd: &TaskThreadData, first: usize) -> c_int {
-        for i in ttd.cur.load(Ordering::Relaxed) as usize..c.fc.len() {
-            (*c.fc[(first + i) % c.fc.len()].task_thread.tasks()).cur_prev = None;
+        for fc in wrapping_iter(
+            c.fc.iter(),
+            first + ttd.cur.load(Ordering::Relaxed) as usize,
+        ) {
+            (*fc.task_thread.tasks()).cur_prev = None;
         }
         return 1;
     }
@@ -151,7 +155,7 @@ unsafe fn insert_tasks_between(
     cond_signal: c_int,
 ) {
     let ttd: &TaskThreadData = &*f.task_thread.ttd;
-    if c.flush.load(Ordering::SeqCst) != 0 {
+    if c.flush.load(Ordering::SeqCst) {
         return;
     }
     let tasks = &mut *f.task_thread.tasks();
@@ -746,7 +750,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
 
     let mut task_thread_lock = Some(ttd.lock.lock().unwrap());
     'outer: while !tc.task_thread.die.load(Ordering::Relaxed) {
-        if c.flush.load(Ordering::SeqCst) != 0 {
+        if c.flush.load(Ordering::SeqCst) {
             task_thread_lock = Some(park(c, &mut tc, ttd, task_thread_lock.take().unwrap()));
             continue 'outer;
         }
@@ -761,7 +765,9 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
         let (fc, t_idx, prev_t) = 'found: {
             if c.fc.len() > 1 {
                 // run init tasks second
-                'init_tasks: for fc in c.fc_iter(ttd.first.load(Ordering::SeqCst) as usize) {
+                'init_tasks: for fc in
+                    wrapping_iter(c.fc.iter(), ttd.first.load(Ordering::SeqCst) as usize)
+                {
                     let tasks = &*fc.task_thread.tasks();
                     if fc.task_thread.init_done.load(Ordering::SeqCst) != 0 {
                         continue 'init_tasks;
@@ -946,7 +952,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
         drop(task_thread_lock.take().expect("thread lock was not held"));
 
         'found_unlocked: loop {
-            let flush = c.flush.load(Ordering::SeqCst);
+            let flush = c.flush.load(Ordering::SeqCst) as i32;
             let mut error_0 = fc.task_thread.error.fetch_or(flush, Ordering::SeqCst) | flush;
 
             // run it

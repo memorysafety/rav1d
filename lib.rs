@@ -58,6 +58,7 @@ pub mod src {
     mod intra_edge;
     mod ipred;
     mod ipred_prepare;
+    mod iter;
     mod itx;
     mod itx_1d;
     mod levels;

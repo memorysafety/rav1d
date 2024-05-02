@@ -344,7 +344,7 @@ pub struct Rav1dContext {
     pub(crate) in_0: Rav1dData,
     pub(crate) out: Rav1dThreadPicture,
     pub(crate) cache: Rav1dThreadPicture,
-    pub(crate) flush: AtomicI32,
+    pub(crate) flush: AtomicBool,
     pub(crate) frame_thread: Rav1dContext_frame_thread,
 
     // task threading (refer to tc[] for per_thread thingies)
@@ -368,7 +368,7 @@ pub struct Rav1dContext {
     pub(crate) output_invisible_frames: bool,
     pub(crate) inloop_filters: Rav1dInloopFilterType,
     pub(crate) decode_frame_type: Rav1dDecodeFrameType,
-    pub(crate) drain: c_int,
+    pub(crate) drain: bool,
     pub(crate) frame_flags: Atomic<PictureFlags>,
     pub(crate) event_flags: Rav1dEventFlags,
     pub(crate) cached_error_props: Mutex<Rav1dDataProps>,
@@ -377,15 +377,6 @@ pub struct Rav1dContext {
     pub(crate) logger: Option<Rav1dLogger>,
 
     pub(crate) picture_pool: Arc<MemPool<MaybeUninit<u8>>>,
-}
-
-impl Rav1dContext {
-    /// Iterates over all frame contexts in the `fc` buffer, starting at a given
-    /// index. The iterator wraps around to the start of the buffer. so all
-    /// contexts will be included.
-    pub(crate) fn fc_iter(&self, start: usize) -> impl Iterator<Item = &Rav1dFrameContext> {
-        self.fc.iter().skip(start).chain(self.fc.iter().take(start))
-    }
 }
 
 // TODO(SJC): Remove when Rav1dContext is thread-safe
@@ -825,7 +816,7 @@ impl Default for Rav1dFrameContext_task_thread {
 }
 
 impl Rav1dFrameContext_task_thread {
-    pub unsafe fn tasks(&self) -> *mut Rav1dTasks {
+    pub fn tasks(&self) -> *mut Rav1dTasks {
         self.tasks.get()
     }
 }

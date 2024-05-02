@@ -3973,7 +3973,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         t.a = (off_2pass + col_sb128_start + tile_row * f.sb128w) as usize;
         for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
             t.b.x = bx;
-            if c.flush.load(Ordering::Acquire) != 0 {
+            if c.flush.load(Ordering::Acquire) {
                 return Err(());
             }
             decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
@@ -4008,7 +4008,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     t.lf_mask = Some((sb128y * f.sb128w + col_sb128_start) as usize);
     for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.b.x = bx;
-        if c.flush.load(Ordering::Acquire) != 0 {
+        if c.flush.load(Ordering::Acquire) {
             return Err(());
         }
         let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
@@ -4632,7 +4632,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_decode_frame_exit(
+pub(crate) fn rav1d_decode_frame_exit(
     c: &Rav1dContext,
     fc: &Rav1dFrameContext,
     retval: Rav1dResult,
@@ -4645,16 +4645,11 @@ pub(crate) unsafe fn rav1d_decode_frame_exit(
         task_thread.error.store(0, Ordering::Relaxed);
     }
     let cf = f.frame_thread.cf.get_mut();
-    if c.fc.len() > 1 && retval.is_err() && !cf.is_empty() {
+    if c.fc.len() > 1 && retval.is_err() {
         cf.fill_with(Default::default);
     }
-    // TODO(kkysen) use array::zip when stable
-    for i in 0..7 {
-        if f.refp[i].p.frame_hdr.is_some() {
-            let _ = mem::take(&mut f.refp[i]);
-        }
-        let _ = mem::take(&mut f.ref_mvs[i]);
-    }
+    let _ = mem::take(&mut f.refp);
+    let _ = mem::take(&mut f.ref_mvs);
     let _ = mem::take(&mut f.cur);
     let _ = mem::take(&mut f.sr_cur);
     let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
