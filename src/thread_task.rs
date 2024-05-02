@@ -573,7 +573,7 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
     let mut prog;
     let frame = fc.frame_thread_progress.frame.try_read().unwrap();
     loop {
-        let val: c_uint = !frame[idx as usize].load(Ordering::SeqCst);
+        let val = !frame[idx as usize].load(Ordering::SeqCst);
         prog = if val != 0 { ctz(val) } else { 32 };
         if prog != 32 {
             break;
