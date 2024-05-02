@@ -430,10 +430,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         } else if drained {
             break;
         }
-        c.frame_thread.next += 1;
-        if c.frame_thread.next as usize == c.fc.len() {
-            c.frame_thread.next = 0;
-        }
+        c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
         drop(task_thread_lock);
         let error = mem::replace(&mut *fc.task_thread.retval.try_lock().unwrap(), Ok(()));
         if error.is_err() {
