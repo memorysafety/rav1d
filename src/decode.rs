@@ -3917,7 +3917,7 @@ unsafe fn setup_tile(
     }
 }
 
-unsafe fn read_restoration_info(
+fn read_restoration_info(
     ts: &mut Rav1dTileState,
     lr: &mut Av1RestorationUnit,
     p: usize,
