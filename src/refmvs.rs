@@ -199,7 +199,7 @@ pub(crate) struct refmvs_frame<'a> {
 }
 
 #[derive(Default)]
-pub(crate) struct RefMvsFrame {
+pub struct RefMvsFrame {
     pub iw4: c_int,
     pub ih4: c_int,
     pub iw8: c_int,
@@ -229,7 +229,7 @@ pub struct refmvs_tile_range {
     pub end: c_int,
 }
 
-pub(crate) struct refmvs_tile {
+pub struct refmvs_tile {
     /// Unique indices into [`RefMvsFrame::r`].
     /// Out of bounds indices correspond to null pointers.
     ///
@@ -1808,5 +1808,11 @@ impl Rav1dRefmvsDSPContext {
 
     pub const fn new(flags: CpuFlags) -> Self {
         Self::default().init(flags)
+    }
+}
+
+impl Default for Rav1dRefmvsDSPContext {
+    fn default() -> Self {
+        Self::default()
     }
 }

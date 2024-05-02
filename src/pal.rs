@@ -159,3 +159,9 @@ impl Rav1dPalDSPContext {
         Self::default().init(flags)
     }
 }
+
+impl Default for Rav1dPalDSPContext {
+    fn default() -> Self {
+        Self::default()
+    }
+}

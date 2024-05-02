@@ -1,6 +1,7 @@
 use crate::include::common::attributes::clz;
 use crate::include::common::intops::inv_recenter;
 use crate::include::common::intops::ulog2;
+use crate::src::cpu::CpuFlags;
 use cfg_if::cfg_if;
 use std::ffi::c_int;
 use std::ffi::c_uint;
@@ -60,6 +61,78 @@ extern "C" {
     ) -> c_uint;
 }
 
+pub struct Rav1dMsacDSPContext {
+    symbol_adapt16: unsafe extern "C" fn(
+        s: &mut MsacContext,
+        cdf: *mut u16,
+        n_symbols: usize,
+        _cdf_len: usize,
+    ) -> c_uint,
+}
+
+impl Rav1dMsacDSPContext {
+    pub const fn default() -> Self {
+        Self {
+            symbol_adapt16: rav1d_msac_decode_symbol_adapt_c,
+        }
+    }
+
+    #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+    #[inline(always)]
+    const fn init_x86_64(mut self, flags: CpuFlags) -> Self {
+        if !flags.contains(CpuFlags::SSE2) {
+            return self;
+        }
+
+        self.symbol_adapt16 = dav1d_msac_decode_symbol_adapt16_sse2;
+
+        if !flags.contains(CpuFlags::AVX2) {
+            return self;
+        }
+
+        self.symbol_adapt16 = dav1d_msac_decode_symbol_adapt16_avx2;
+
+        self
+    }
+
+    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[inline(always)]
+    const fn init_arm(self, _flags: CpuFlags) -> Self {
+        self
+    }
+
+    #[inline(always)]
+    const fn init(self, flags: CpuFlags) -> Self {
+        #[cfg(feature = "asm")]
+        {
+            #[cfg(target_arch = "x86_64")]
+            {
+                return self.init_x86_64(flags);
+            }
+            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+            {
+                return self.init_arm(flags);
+            }
+        }
+
+        #[allow(unreachable_code)] // Reachable on some #[cfg]s.
+        {
+            let _ = flags;
+            self
+        }
+    }
+
+    pub const fn new(flags: CpuFlags) -> Self {
+        Self::default().init(flags)
+    }
+}
+
+impl Default for Rav1dMsacDSPContext {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
 pub type ec_win = usize;
 
 #[repr(C)]
@@ -71,7 +144,12 @@ pub struct MsacContext {
     pub cnt: c_int,
     allow_update_cdf: c_int,
     #[cfg(all(feature = "asm", target_arch = "x86_64"))]
-    symbol_adapt16: unsafe extern "C" fn(&mut MsacContext, *mut u16, usize, usize) -> c_uint,
+    symbol_adapt16: unsafe extern "C" fn(
+        s: &mut MsacContext,
+        cdf: *mut u16,
+        n_symbols: usize,
+        _cdf_len: usize,
+    ) -> c_uint,
 }
 
 impl MsacContext {
@@ -123,20 +201,6 @@ pub fn rav1d_msac_decode_uniform(s: &mut MsacContext, n: c_uint) -> c_int {
     } else {
         (v << 1) - m + rav1d_msac_decode_bool_equi(s) as c_uint
     }) as c_int
-}
-
-#[cfg(all(feature = "asm", target_arch = "x86_64"))]
-#[inline(always)]
-fn msac_init_x86(s: &mut MsacContext) {
-    use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
-
-    let flags = rav1d_get_cpu_flags();
-    if flags.contains(CpuFlags::SSE2) {
-        s.symbol_adapt16 = dav1d_msac_decode_symbol_adapt16_sse2;
-    }
-    if flags.contains(CpuFlags::AVX2) {
-        s.symbol_adapt16 = dav1d_msac_decode_symbol_adapt16_avx2;
-    }
 }
 
 const EC_PROB_SHIFT: c_uint = 6;
@@ -337,6 +401,7 @@ pub unsafe fn rav1d_msac_init(
     data: *const u8,
     sz: usize,
     disable_cdf_update_flag: bool,
+    dsp: &Rav1dMsacDSPContext,
 ) {
     s.set_buf(std::slice::from_raw_parts(data, sz));
     s.dif = (1 << (EC_WIN_SIZE - 1)) - 1;
@@ -345,10 +410,16 @@ pub unsafe fn rav1d_msac_init(
     s.set_allow_update_cdf(!disable_cdf_update_flag);
     ctx_refill(s);
 
-    #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+    #[cfg(feature = "asm")]
     {
-        s.symbol_adapt16 = rav1d_msac_decode_symbol_adapt_c;
-        msac_init_x86(s);
+        #[cfg(target_arch = "x86_64")]
+        {
+            s.symbol_adapt16 = dsp.symbol_adapt16;
+        }
+        #[cfg(not(target_arch = "x86_64"))]
+        {
+            let _ = dsp.symbol_adapt16;
+        }
     }
 }
 
@@ -391,7 +462,7 @@ pub fn rav1d_msac_decode_symbol_adapt8(
                 dav1d_msac_decode_symbol_adapt8_neon(s, cdf.as_mut_ptr(), n_symbols)
             }
         } else {
-             rav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
+            rav1d_msac_decode_symbol_adapt_rust(s, cdf, n_symbols)
         }
     }
 }
