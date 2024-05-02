@@ -16,7 +16,6 @@ use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::tables::dav1d_partition_type_count;
 use std::cmp;
-use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
@@ -5079,21 +5078,17 @@ pub(crate) fn rav1d_cdf_thread_update(
 }
 
 #[inline]
-fn get_qcat_idx(q: u8) -> c_int {
-    if q <= 20 {
-        return 0 as c_int;
+const fn get_qcat_idx(q: u8) -> u32 {
+    match q {
+        ..=20 => 0,
+        ..=60 => 1,
+        ..=120 => 2,
+        _ => 3,
     }
-    if q <= 60 {
-        return 1 as c_int;
-    }
-    if q <= 120 {
-        return 2 as c_int;
-    }
-    return 3 as c_int;
 }
 
 pub unsafe fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
-    CdfThreadContext::QCat(get_qcat_idx(qidx) as c_uint)
+    CdfThreadContext::QCat(get_qcat_idx(qidx))
 }
 
 pub fn rav1d_cdf_thread_copy(dst: &mut CdfContext, src: &CdfThreadContext) {
