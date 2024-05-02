@@ -5087,7 +5087,7 @@ const fn get_qcat_idx(q: u8) -> u32 {
     }
 }
 
-pub unsafe fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
+pub fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
     CdfThreadContext::QCat(get_qcat_idx(qidx))
 }
 
