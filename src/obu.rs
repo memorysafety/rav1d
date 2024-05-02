@@ -1099,7 +1099,7 @@ fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
     }
 }
 
-unsafe fn parse_segmentation(
+fn parse_segmentation(
     c: &Rav1dContext,
     primary_ref_frame: u8,
     refidx: &[i8; RAV1D_REFS_PER_FRAME],
