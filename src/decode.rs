@@ -1221,22 +1221,16 @@ unsafe fn decode_b(
                 && inter.comp_type.is_none()
                 && inter.motion_mode == MotionMode::Warp
                 {
-                    if inter.nd.two_d.matrix[0] == i16::MIN {
+                    let two_d = inter.nd.two_d();
+                    if two_d.matrix[0] == i16::MIN {
                         t.warpmv.r#type = Rav1dWarpedMotionType::Identity;
                     } else {
                         t.warpmv.r#type = Rav1dWarpedMotionType::Affine;
-                        t.warpmv.matrix[2] = inter.nd.two_d.matrix[0] as i32 + 0x10000;
-                        t.warpmv.matrix[3] = inter.nd.two_d.matrix[1] as i32;
-                        t.warpmv.matrix[4] = inter.nd.two_d.matrix[2] as i32;
-                        t.warpmv.matrix[5] = inter.nd.two_d.matrix[3] as i32 + 0x10000;
-                        rav1d_set_affine_mv2d(
-                            bw4,
-                            bh4,
-                            inter.nd.two_d.mv2d,
-                            &mut t.warpmv,
-                            t.b.x,
-                            t.b.y,
-                        );
+                        t.warpmv.matrix[2] = two_d.matrix[0] as i32 + 0x10000;
+                        t.warpmv.matrix[3] = two_d.matrix[1] as i32;
+                        t.warpmv.matrix[4] = two_d.matrix[2] as i32;
+                        t.warpmv.matrix[5] = two_d.matrix[3] as i32 + 0x10000;
+                        rav1d_set_affine_mv2d(bw4, bh4, two_d.mv2d, &mut t.warpmv, t.b.x, t.b.y);
                         rav1d_get_shear_params(&mut t.warpmv);
                         if debug_block_info!(f, t.b) {
                             println!(
@@ -1252,8 +1246,8 @@ unsafe fn decode_b(
                                 SignAbs(t.warpmv.beta().into()),
                                 SignAbs(t.warpmv.gamma().into()),
                                 SignAbs(t.warpmv.delta().into()),
-                                inter.nd.two_d.mv2d.y,
-                                inter.nd.two_d.mv2d.x,
+                                two_d.mv2d.y,
+                                two_d.mv2d.x,
                             );
                         }
                     }

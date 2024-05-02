@@ -1,4 +1,5 @@
 use crate::src::enum_map::EnumKey;
+use std::mem;
 use std::ops::Neg;
 use strum::EnumCount;
 use strum::FromRepr;
@@ -356,7 +357,7 @@ impl From<MaskedInterIntraPredMode> for InterIntraPredMode {
     }
 }
 
-#[derive(Clone, Copy, Default, FromZeroes, FromBytes, AsBytes)]
+#[derive(Clone, Default, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
 pub struct Av1BlockInter1d {
     pub mv: [mv; 2],
@@ -368,7 +369,7 @@ pub struct Av1BlockInter1d {
     pub _padding: u8,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
 pub struct Av1BlockInter2d {
     pub mv2d: mv,
@@ -378,11 +379,26 @@ pub struct Av1BlockInter2d {
     pub matrix: [i16; 4],
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 #[repr(C)]
-pub union Av1BlockInterNd {
+pub struct Av1BlockInterNd {
+    /// Make [`Av1BlockInter1d`] the field instead of [`Av1BlockInter2d`]
+    /// simply because it is used much more often, so it's more convenient.
+    ///
+    /// `[`[`u8`]`; 12]` is not used because it has a lower alignment.
+    /// [`Av1BlockInter1d`] and [`Av1BlockInter2d`] both have the same size and alignment.
     pub one_d: Av1BlockInter1d,
-    pub two_d: Av1BlockInter2d,
+}
+
+impl Av1BlockInterNd {
+    pub fn two_d(&self) -> &Av1BlockInter2d {
+        // These asserts ensure this is a no-op.
+        const _: () =
+            assert!(mem::size_of::<Av1BlockInter1d>() == mem::size_of::<Av1BlockInter2d>());
+        const _: () =
+            assert!(mem::align_of::<Av1BlockInter1d>() == mem::align_of::<Av1BlockInter2d>());
+        FromBytes::ref_from(AsBytes::as_bytes(&self.one_d)).unwrap()
+    }
 }
 
 impl From<Av1BlockInter1d> for Av1BlockInterNd {
@@ -393,7 +409,10 @@ impl From<Av1BlockInter1d> for Av1BlockInterNd {
 
 impl From<Av1BlockInter2d> for Av1BlockInterNd {
     fn from(two_d: Av1BlockInter2d) -> Self {
-        Self { two_d }
+        let one_d = <Av1BlockInter1d as FromBytes>::ref_from(AsBytes::as_bytes(&two_d))
+            .unwrap()
+            .clone(); // Cheap 12-byte clone.
+        Self { one_d }
     }
 }
 
