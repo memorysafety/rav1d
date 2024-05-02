@@ -329,6 +329,9 @@ pub struct Av1BlockInter1d {
 #[repr(C)]
 pub struct Av1BlockInter2d {
     pub mv2d: mv,
+
+    /// These are `i14`s (except for an [`i16::MIN`] stored as a discriminant).
+    /// Not sure how we could stably use that niche, though.
     pub matrix: [i16; 4],
 }
 

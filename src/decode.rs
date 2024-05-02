@@ -2936,7 +2936,13 @@ unsafe fn decode_b(
                                 t.warpmv.matrix[4],
                                 t.warpmv.matrix[5] - 0x10000,
                             ]
-                            .map(|it| it as i16)
+                            .map(|coef| {
+                                let coef = coef as i16;
+                                // warped matrix coefs are at least `i14`s.
+                                debug_assert!(coef < (1 << 13));
+                                debug_assert!(coef >= -(1 << 13));
+                                coef
+                            })
                         } else {
                             [i16::MIN, 0, 0, 0]
                         });
