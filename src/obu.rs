@@ -2601,7 +2601,7 @@ unsafe fn parse_obus(
             if c.tiles.is_empty() {
                 return Err(EINVAL);
             }
-            rav1d_submit_frame(&mut *c)?;
+            rav1d_submit_frame(c)?;
             assert!(c.tiles.is_empty());
             c.frame_hdr = None;
             c.n_tiles = 0;
