@@ -568,7 +568,7 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
     if frame_prog >= FRAME_ERROR {
         return f.sbh - 1;
     }
-    let mut idx = (frame_prog >> f.sb_shift + 7) as c_int;
+    let mut idx = frame_prog >> f.sb_shift + 7;
     let mut prog;
     let frame = fc.frame_thread_progress.frame.try_read().unwrap();
     loop {
@@ -583,7 +583,7 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
             break;
         }
     }
-    (idx << 5 | prog as c_int) - 1
+    (idx << 5 | prog) as c_int - 1
 }
 
 #[inline]
