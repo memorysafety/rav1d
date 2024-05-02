@@ -411,7 +411,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
             let first = c.task_thread.first.load(Ordering::SeqCst);
-            if (first.wrapping_add(1) as usize) < c.fc.len() {
+            if first as usize + 1 < c.fc.len() {
                 c.task_thread.first.fetch_add(1, Ordering::SeqCst);
             } else {
                 c.task_thread.first.store(0, Ordering::SeqCst);
@@ -431,7 +431,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         } else if drained != 0 {
             break;
         }
-        c.frame_thread.next = (c.frame_thread.next).wrapping_add(1);
+        c.frame_thread.next += 1;
         if c.frame_thread.next as usize == c.fc.len() {
             c.frame_thread.next = 0;
         }
@@ -453,7 +453,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 return output_image(c, out);
             }
         }
-        drain_count = drain_count.wrapping_add(1);
+        drain_count += 1;
         if !((drain_count as usize) < c.fc.len()) {
             break;
         }
