@@ -4979,7 +4979,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         *fc.in_cdf.try_write().unwrap() = c.cdf[pri_ref].clone();
     }
     if frame_hdr.refresh_context != 0 {
-        let res = rav1d_cdf_thread_alloc((c.fc.len() > 1) as c_int);
+        let res = rav1d_cdf_thread_alloc(c.fc.len() > 1);
         match res {
             Err(e) => {
                 on_error(fc, &mut f, c, out);

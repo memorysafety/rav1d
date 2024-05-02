@@ -5115,14 +5115,9 @@ pub fn rav1d_cdf_thread_copy(dst: &mut CdfContext, src: &CdfThreadContext) {
     }
 }
 
-pub fn rav1d_cdf_thread_alloc(have_frame_mt: c_int) -> Rav1dResult<CdfThreadContext> {
-    let progress = if have_frame_mt != 0 {
-        Some(AtomicU32::new(0))
-    } else {
-        None
-    };
+pub fn rav1d_cdf_thread_alloc(have_frame_mt: bool) -> Rav1dResult<CdfThreadContext> {
     Ok(CdfThreadContext::Cdf(Arc::new(CdfThreadContext_data {
         cdf: Default::default(),
-        progress,
+        progress: have_frame_mt.then_some(AtomicU32::new(0)),
     })))
 }
