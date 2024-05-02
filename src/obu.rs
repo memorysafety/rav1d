@@ -532,7 +532,7 @@ fn parse_seq_hdr(
     })
 }
 
-pub(crate) unsafe fn rav1d_parse_sequence_header(
+pub(crate) fn rav1d_parse_sequence_header(
     mut data: &[u8],
 ) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
     let mut res = Err(ENOENT);
