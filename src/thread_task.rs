@@ -583,7 +583,7 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
             break;
         }
     }
-    return (idx << 5 | prog as c_int) - 1;
+    (idx << 5 | prog as c_int) - 1
 }
 
 #[inline]
