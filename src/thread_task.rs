@@ -434,7 +434,7 @@ pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, fc: &Rav1dFrameCont
     insert_task(c, fc, t_idx, 1 as c_int);
 }
 
-pub(crate) unsafe fn rav1d_task_delayed_fg(
+pub(crate) fn rav1d_task_delayed_fg(
     c: &mut Rav1dContext,
     out: &mut Rav1dPicture,
     in_0: &Rav1dPicture,
