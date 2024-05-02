@@ -2956,7 +2956,7 @@ unsafe fn decode_b(
                     None => Av1BlockInter1d {
                         mv: [mv1d0, Default::default()],
                         wedge_idx,
-                        interintra_mode,
+                        interintra_mode: interintra_mode.into(),
                         ..Default::default()
                     }
                     .into(),

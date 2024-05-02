@@ -3600,10 +3600,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             let interintra_edge_pal = &mut t.scratch.inter_intra_mut().interintra_edge_pal;
             let tl_edge_array = interintra_edge_pal.edge.buf_mut::<BD>();
             let tl_edge_offset = 32;
-            let mut m = if inter.nd.one_d.interintra_mode == InterIntraPredMode::Smooth {
-                SMOOTH_PRED
-            } else {
-                inter.nd.one_d.interintra_mode as IntraPredMode
+            let mut m = match inter.nd.one_d.interintra_mode.get() {
+                InterIntraPredMode::Smooth => SMOOTH_PRED,
+                mode => mode as IntraPredMode,
             };
             let mut angle = 0;
             let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
@@ -3658,7 +3657,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             );
             let ii_mask = match interintra_type {
                 InterIntraType::Blend => {
-                    dav1d_ii_masks[bs as usize][0][inter.nd.one_d.interintra_mode as usize]
+                    dav1d_ii_masks[bs as usize][0][inter.nd.one_d.interintra_mode.get() as usize]
                 }
                 InterIntraType::Wedge => {
                     dav1d_wedge_masks[bs as usize][0][0][inter.nd.one_d.wedge_idx as usize]
@@ -3905,7 +3904,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     let ii_mask = match interintra_type {
                         InterIntraType::Blend => {
                             dav1d_ii_masks[bs as usize][chr_layout_idx]
-                                [inter.nd.one_d.interintra_mode as usize]
+                                [inter.nd.one_d.interintra_mode.get() as usize]
                         }
                         InterIntraType::Wedge => {
                             dav1d_wedge_masks[bs as usize][chr_layout_idx][0]
@@ -3917,11 +3916,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut t.scratch.inter_intra_mut().interintra_edge_pal;
                         let tl_edge_array = interintra_edge_pal.edge.buf_mut::<BD>();
                         let tl_edge_offset = 32;
-                        let mut m = if inter.nd.one_d.interintra_mode == InterIntraPredMode::Smooth
-                        {
-                            SMOOTH_PRED
-                        } else {
-                            inter.nd.one_d.interintra_mode as IntraPredMode
+                        let mut m = match inter.nd.one_d.interintra_mode.get() {
+                            InterIntraPredMode::Smooth => SMOOTH_PRED,
+                            mode => mode as IntraPredMode,
                         };
                         let mut angle = 0;
                         let uvdst = (f.cur.data.as_ref().unwrap().data[(1 + pl) as usize]
