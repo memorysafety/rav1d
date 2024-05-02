@@ -190,74 +190,41 @@ unsafe fn insert_tasks(
 ) {
     let tasks = &*f.task_thread.tasks();
     let mut prev_t = None;
-    let mut current_block_34: u64;
-    let mut maybe_t = tasks.head;
-    while let Some(t) = maybe_t {
-        if tasks[t].type_0 == TaskType::TileEntropy {
-            if tasks[first].type_0 > TaskType::TileEntropy {
-                current_block_34 = 11174649648027449784;
-            } else if tasks[first].sby > tasks[t].sby {
-                current_block_34 = 11174649648027449784;
-            } else {
-                if tasks[first].sby < tasks[t].sby {
-                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                    return;
-                }
-                current_block_34 = 15904375183555213903;
-            }
-        } else {
-            if tasks[first].type_0 == TaskType::TileEntropy {
-                insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                return;
-            }
-            if tasks[first].sby > tasks[t].sby {
-                current_block_34 = 11174649648027449784;
-            } else {
-                if tasks[first].sby < tasks[t].sby {
-                    insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                    return;
-                }
-                if tasks[first].type_0 as c_uint > tasks[t].type_0 as c_uint {
-                    current_block_34 = 11174649648027449784;
-                } else {
-                    if (tasks[first].type_0 as c_uint) < tasks[t].type_0 as c_uint {
-                        insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
-                        return;
-                    }
-                    current_block_34 = 15904375183555213903;
-                }
-            }
-        }
-        match current_block_34 {
-            15904375183555213903 => {
-                if !matches!(
-                    tasks[first].type_0,
-                    TaskType::TileReconstruction | TaskType::TileEntropy
-                ) {
-                    unreachable!();
-                }
-                if !(tasks[first].type_0 == tasks[t].type_0) {
-                    unreachable!();
-                }
-                if !(tasks[t].sby == tasks[first].sby) {
-                    unreachable!();
-                }
+    let mut t_ptr = tasks.head;
+
+    while let Some(t) = t_ptr {
+        // Check if the current task should be inserted before `t` based on type and sby.
+        let should_insert_before = match (tasks[first].type_0, tasks[t].type_0) {
+            // Entropy tasks are always inserted before other types.
+            (TaskType::TileEntropy, _) if tasks[first].type_0 > tasks[t].type_0 => false,
+            (_, TaskType::TileEntropy) => true,
+            // For the same type, compare sby.
+            (type_0, type_1) if type_0 == type_1 => tasks[first].sby <= tasks[t].sby,
+            // Otherwise, keep iterating.
+            _ => false,
+        };
+
+        if should_insert_before {
+            // If both tasks have the same type and sby, further compare by tile index.
+            if tasks[first].type_0 == tasks[t].type_0 && tasks[first].sby == tasks[t].sby {
                 let p = tasks[first].type_0 == TaskType::TileEntropy;
                 let t_tile_idx = first - tasks.tile_tasks[p as usize].unwrap();
                 let p_tile_idx = t - tasks.tile_tasks[p as usize].unwrap();
-                if !(t_tile_idx != p_tile_idx) {
-                    unreachable!();
-                }
-                if !(t_tile_idx > p_tile_idx) {
+                if t_tile_idx <= p_tile_idx {
                     insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
                     return;
                 }
+            } else {
+                insert_tasks_between(c, f, first, last, prev_t, Some(t), cond_signal);
+                return;
             }
-            _ => {}
         }
+
         prev_t = Some(t);
-        maybe_t = tasks[t].next;
+        t_ptr = tasks[t].next;
     }
+
+    // If no insertion point was found, append the tasks at the end.
     insert_tasks_between(c, f, first, last, prev_t, None, cond_signal);
 }
 
