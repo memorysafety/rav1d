@@ -586,14 +586,9 @@ fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
 
 #[inline]
 fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
-    fc.task_thread.error.store(
-        if error == Err(EINVAL) {
-            1 as c_int
-        } else {
-            -(1 as c_int)
-        },
-        Ordering::SeqCst,
-    );
+    fc.task_thread
+        .error
+        .store(if error == Err(EINVAL) { 1 } else { -1 }, Ordering::SeqCst);
     fc.task_thread.task_counter.store(0, Ordering::SeqCst);
     fc.task_thread.done[0].store(1, Ordering::SeqCst);
     fc.task_thread.done[1].store(1, Ordering::SeqCst);
