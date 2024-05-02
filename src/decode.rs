@@ -3846,7 +3846,7 @@ unsafe fn setup_tile(
         };
     }
 
-    rav1d_cdf_thread_copy(&mut ts.cdf, in_cdf);
+    ts.cdf = rav1d_cdf_thread_copy(in_cdf);
     ts.last_qidx = frame_hdr.quant.yac;
     ts.last_delta_lf.fill(0);
 
@@ -4572,7 +4572,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
     if frame_hdr.refresh_context != 0 {
-        rav1d_cdf_thread_copy(&mut f.out_cdf.cdf_write(), in_cdf);
+        *f.out_cdf.cdf_write() = rav1d_cdf_thread_copy(in_cdf);
     }
 
     let uses_2pass = c.fc.len() > 1;

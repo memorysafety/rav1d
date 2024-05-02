@@ -33,14 +33,23 @@ pub struct CdfContext {
     pub dmv: CdfMvContext,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
     pub joint: Align8<[u16; 4]>,
 }
 
-#[derive(Clone, Default)]
+impl Default for CdfMvContext {
+    fn default() -> Self {
+        Self {
+            comp: Default::default(),
+            joint: default_mv_joint_cdf,
+        }
+    }
+}
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfMvComponent {
     pub classes: Align32<[u16; 16]>,
@@ -51,6 +60,12 @@ pub struct CdfMvComponent {
     pub class0: Align4<[u16; 2]>,
     pub classN: Align4<[[u16; 2]; 10]>,
     pub sign: Align4<[u16; 2]>,
+}
+
+impl Default for CdfMvComponent {
+    fn default() -> Self {
+        default_mv_component_cdf.clone()
+    }
 }
 
 #[derive(Clone, Default)]
@@ -71,7 +86,7 @@ pub struct CdfCoefContext {
     pub dc_sign: Align4<[[[u16; 2]; 3]; 2]>,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfModeContext {
     pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
@@ -125,6 +140,12 @@ pub struct CdfModeContext {
     pub pal_y: Align4<[[[u16; 2]; 3]; 7]>,
     pub pal_uv: Align4<[[u16; 2]; 2]>,
     pub intrabc: Align4<[u16; 2]>,
+}
+
+impl Default for CdfModeContext {
+    fn default() -> Self {
+        av1_default_cdf.clone()
+    }
 }
 
 #[derive(Clone)]
@@ -5091,22 +5112,16 @@ pub fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
     CdfThreadContext::QCat(get_qcat_idx(qidx))
 }
 
-pub fn rav1d_cdf_thread_copy(dst: &mut CdfContext, src: &CdfThreadContext) {
+pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
     match src {
-        CdfThreadContext::Cdf(src) => {
-            *dst = src.cdf.try_read().unwrap().clone();
-        }
-        CdfThreadContext::QCat(i) => {
-            dst.m = av1_default_cdf.clone();
-            dst.kfym = default_kf_y_mode_cdf;
-            dst.coef = av1_default_coef_cdf[*i as usize].clone();
-            dst.mv.joint = default_mv_joint_cdf;
-            dst.dmv.joint = default_mv_joint_cdf;
-            dst.dmv.comp[1] = default_mv_component_cdf.clone();
-            dst.dmv.comp[0] = dst.dmv.comp[1].clone();
-            dst.mv.comp[1] = dst.dmv.comp[0].clone();
-            dst.mv.comp[0] = dst.mv.comp[1].clone();
-        }
+        CdfThreadContext::Cdf(src) => src.cdf.try_read().unwrap().clone(),
+        CdfThreadContext::QCat(i) => CdfContext {
+            m: Default::default(),
+            kfym: default_kf_y_mode_cdf,
+            coef: av1_default_coef_cdf[*i as usize].clone(),
+            mv: Default::default(),
+            dmv: Default::default(),
+        },
     }
 }
 
