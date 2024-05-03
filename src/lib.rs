@@ -26,12 +26,12 @@ use crate::src::error::Rav1dError::EAGAIN;
 use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
+use crate::src::extensions::OptionError as _;
 use crate::src::fg_apply;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
@@ -49,18 +49,15 @@ use crate::src::picture::Rav1dThreadPicture;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
-use libc::memset;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
 use std::process::abort;
 use std::ptr;
-use std::ptr::addr_of_mut;
 use std::ptr::NonNull;
 use std::slice;
 use std::sync::atomic::AtomicBool;
@@ -197,11 +194,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     if c.is_null() {
         return error(c, c_out);
     }
-    memset(
-        c as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<Rav1dContext>(),
-    );
+    c.write(Default::default());
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
     (*c).apply_grain = s.apply_grain;
@@ -212,8 +205,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).output_invisible_frames = s.output_invisible_frames;
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
-    (*c).cached_error_props = Default::default();
-    addr_of_mut!((*c).picture_pool).write(Default::default());
 
     if (*c).allocator.is_default() {
         if !(*c).allocator.cookie.is_null() {
@@ -225,10 +216,13 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             .cast::<c_void>()
             .cast_mut();
     }
-    if (::core::mem::size_of::<usize>() as c_ulong) < 8 as c_ulong
-        && (s.frame_size_limit).wrapping_sub(1 as c_int as c_uint) >= (8192 * 8192) as c_uint
-    {
-        (*c).frame_size_limit = (8192 * 8192) as c_uint;
+
+    // On 32-bit systems, extremely large frame sizes can cause overflows in
+    // `rav1d_decode_frame` alloc size calculations. Prevent that from occuring
+    // by enforcing a maximum frame size limit, chosen to roughly correspond to
+    // the largest size possible to decode without exhausting virtual memory.
+    if mem::size_of::<usize>() < 8 && s.frame_size_limit.wrapping_sub(1) >= 8192 * 8192 {
+        (*c).frame_size_limit = 8192 * 8192;
         if s.frame_size_limit != 0 {
             writeln!(
                 (*c).logger,
@@ -238,7 +232,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             );
         }
     }
-    (*c).flush = AtomicBool::new(false);
+
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     // TODO fallible allocation
     (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::zeroed(i)).collect();
@@ -254,17 +248,12 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
         delayed_fg: RwLock::new(mem::zeroed()),
     };
-    (&mut (*c).task_thread as *mut Arc<TaskThreadData>).write(Arc::new(ttd));
-    addr_of_mut!((*c).tiles).write(Default::default());
-    ptr::addr_of_mut!((*c).frame_thread.out_delayed).write(if n_fc > 1 {
+    (*c).task_thread = Arc::new(ttd);
+    (*c).frame_thread.out_delayed = if n_fc > 1 {
         (0..n_fc).map(|_| Default::default()).collect()
     } else {
         Box::new([])
-    });
-    addr_of_mut!((*c).itut_t35).write(Arc::new(Mutex::new(Default::default())));
-    addr_of_mut!((*c).out).write(Default::default());
-    addr_of_mut!((*c).cache).write(Default::default());
-    addr_of_mut!((*c).refs).write(Default::default());
+    };
     for fc in (*c).fc.iter_mut() {
         fc.task_thread.finished = AtomicBool::new(true);
         fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
@@ -300,7 +289,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             }
         })
         .collect();
-    (*c).dsp = Rav1dDSPContext::get();
     Ok(())
 }
 
@@ -372,7 +360,7 @@ unsafe fn output_image(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRes
 }
 
 fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
-    if c.cached_error.is_err() {
+    if c.cached_error.is_some() {
         return true;
     }
     if !c.all_layers && c.max_spatial_id {
@@ -431,12 +419,12 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         }
         c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
         drop(task_thread_lock);
-        mem::replace(&mut *fc.task_thread.retval.try_lock().unwrap(), Ok(())).inspect_err(
-            |_| {
+        mem::take(&mut *fc.task_thread.retval.try_lock().unwrap())
+            .err_or(())
+            .inspect_err(|_| {
                 *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
                 let _ = mem::take(out_delayed);
-            },
-        )?;
+            })?;
         if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
@@ -525,7 +513,7 @@ pub(crate) unsafe fn rav1d_get_picture(
 ) -> Rav1dResult {
     let drain = mem::replace(&mut c.drain, true);
     gen_picture(c)?;
-    mem::replace(&mut c.cached_error, Ok(()))?;
+    mem::take(&mut c.cached_error).err_or(())?;
     if output_picture_ready(c, c.fc.len() == 1) {
         return output_image(c, out);
     }
@@ -624,7 +612,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     let _ = mem::take(&mut c.out);
     let _ = mem::take(&mut c.cache);
     c.drain = false;
-    c.cached_error = Ok(());
+    c.cached_error = None;
     let _ = mem::take(&mut c.refs);
     let _ = mem::take(&mut c.cdf);
     let _ = mem::take(&mut c.frame_hdr);
@@ -662,7 +650,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     if c.fc.len() > 1 {
         for fc in wrapping_iter(c.fc.iter(), c.frame_thread.next as usize) {
             rav1d_decode_frame_exit(c, fc, Err(EGeneric));
-            *fc.task_thread.retval.try_lock().unwrap() = Ok(());
+            *fc.task_thread.retval.try_lock().unwrap() = None;
             let out_delayed = &mut c.frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
                 let _ = mem::take(out_delayed);

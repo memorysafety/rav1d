@@ -60,6 +60,7 @@ use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
+use crate::src::extensions::OptionError as _;
 use crate::src::internal::Bxy;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
@@ -4772,7 +4773,7 @@ pub(crate) fn rav1d_decode_frame_exit(
     let _ = mem::take(&mut f.frame_hdr);
     f.tiles.clear();
     task_thread.finished.store(true, Ordering::SeqCst);
-    *task_thread.retval.try_lock().unwrap() = retval;
+    *task_thread.retval.try_lock().unwrap() = retval.err();
 }
 
 pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Rav1dResult {
@@ -4801,7 +4802,7 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext
                     }
                 }
                 drop(task_thread_lock);
-                res = *fc.task_thread.retval.try_lock().unwrap();
+                res = fc.task_thread.retval.try_lock().unwrap().err_or(());
             } else {
                 res = rav1d_decode_frame_main(c, &mut f);
                 let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
@@ -4859,9 +4860,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
             }
         }
-        let mut error = fc.task_thread.retval.try_lock().unwrap();
-        if error.is_err() {
-            c.cached_error = mem::replace(&mut *error, Ok(()));
+        let error = &mut *fc.task_thread.retval.try_lock().unwrap();
+        if error.is_some() {
+            c.cached_error = mem::take(&mut *error);
             *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
             let _ = mem::take(out_delayed);
         } else if out_delayed.p.data.is_some() {
