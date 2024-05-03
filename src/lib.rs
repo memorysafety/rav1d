@@ -399,10 +399,9 @@ fn output_picture_ready(c: &mut Rav1dContext, drain: bool) -> bool {
 }
 
 unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dResult {
-    let mut drain_count: c_uint = 0 as c_int as c_uint;
-    let mut drained = 0;
-    loop {
-        let next: c_uint = c.frame_thread.next;
+    let mut drained = false;
+    for _ in 0..c.fc.len() {
+        let next = c.frame_thread.next;
         let fc = &c.fc[next as usize];
         let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
@@ -410,8 +409,8 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
-            let first: c_uint = c.task_thread.first.load(Ordering::SeqCst);
-            if (first.wrapping_add(1 as c_uint) as usize) < c.fc.len() {
+            let first = c.task_thread.first.load(Ordering::SeqCst);
+            if first as usize + 1 < c.fc.len() {
                 c.task_thread.first.fetch_add(1, Ordering::SeqCst);
             } else {
                 c.task_thread.first.store(0, Ordering::SeqCst);
@@ -422,26 +421,22 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 Ordering::SeqCst,
                 Ordering::SeqCst,
             );
-            if c.task_thread.cur.load(Ordering::Relaxed) != 0
-                && (c.task_thread.cur.load(Ordering::Relaxed) as usize) < c.fc.len()
-            {
-                c.task_thread.cur.fetch_sub(1, Ordering::Relaxed);
+            let cur = c.task_thread.cur.load(Ordering::Relaxed);
+            if cur != 0 && (cur as usize) < c.fc.len() {
+                c.task_thread.cur.store(cur - 1, Ordering::Relaxed);
             }
-            drained = 1 as c_int;
-        } else if drained != 0 {
+            drained = true;
+        } else if drained {
             break;
         }
-        c.frame_thread.next = (c.frame_thread.next).wrapping_add(1);
-        if c.frame_thread.next as usize == c.fc.len() {
-            c.frame_thread.next = 0 as c_int as c_uint;
-        }
+        c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
         drop(task_thread_lock);
-        let error = mem::replace(&mut *fc.task_thread.retval.try_lock().unwrap(), Ok(()));
-        if error.is_err() {
-            *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
-            let _ = mem::take(out_delayed);
-            return error;
-        }
+        mem::replace(&mut *fc.task_thread.retval.try_lock().unwrap(), Ok(())).inspect_err(
+            |_| {
+                *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
+                let _ = mem::take(out_delayed);
+            },
+        )?;
         if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
             if (out_delayed.visible || c.output_invisible_frames) && progress != FRAME_ERROR {
@@ -453,15 +448,11 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
                 return output_image(c, out);
             }
         }
-        drain_count = drain_count.wrapping_add(1);
-        if !((drain_count as usize) < c.fc.len()) {
-            break;
-        }
     }
     if output_picture_ready(c, true) {
         return output_image(c, out);
     }
-    return Err(EAGAIN);
+    Err(EAGAIN)
 }
 
 unsafe fn gen_picture(c: &mut Rav1dContext) -> Rav1dResult {
