@@ -3846,7 +3846,7 @@ unsafe fn setup_tile(
         };
     }
 
-    rav1d_cdf_thread_copy(&mut ts.cdf, in_cdf);
+    ts.cdf = rav1d_cdf_thread_copy(in_cdf);
     ts.last_qidx = frame_hdr.quant.yac;
     ts.last_delta_lf.fill(0);
 
@@ -3917,7 +3917,7 @@ unsafe fn setup_tile(
     }
 }
 
-unsafe fn read_restoration_info(
+fn read_restoration_info(
     ts: &mut Rav1dTileState,
     lr: &mut Av1RestorationUnit,
     p: usize,
@@ -4572,7 +4572,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
     if frame_hdr.refresh_context != 0 {
-        rav1d_cdf_thread_copy(&mut f.out_cdf.cdf_write(), in_cdf);
+        *f.out_cdf.cdf_write() = rav1d_cdf_thread_copy(in_cdf);
     }
 
     let uses_2pass = c.fc.len() > 1;
@@ -4979,7 +4979,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         *fc.in_cdf.try_write().unwrap() = c.cdf[pri_ref].clone();
     }
     if frame_hdr.refresh_context != 0 {
-        let res = rav1d_cdf_thread_alloc(c, (c.fc.len() > 1) as c_int);
+        let res = rav1d_cdf_thread_alloc(c.fc.len() > 1);
         match res {
             Err(e) => {
                 on_error(fc, &mut f, c, out);

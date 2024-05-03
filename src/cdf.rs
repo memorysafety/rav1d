@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
@@ -6,7 +8,6 @@ use crate::src::align::Align32;
 use crate::src::align::Align4;
 use crate::src::align::Align8;
 use crate::src::error::Rav1dResult;
-use crate::src::internal::Rav1dContext;
 use crate::src::levels::BlockLevel;
 use crate::src::levels::BlockPartition;
 use crate::src::levels::BlockSize;
@@ -17,7 +18,6 @@ use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::tables::dav1d_partition_type_count;
 use std::cmp;
-use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
@@ -35,14 +35,23 @@ pub struct CdfContext {
     pub dmv: CdfMvContext,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfMvContext {
     pub comp: [CdfMvComponent; 2],
     pub joint: Align8<[u16; 4]>,
 }
 
-#[derive(Clone, Default)]
+impl Default for CdfMvContext {
+    fn default() -> Self {
+        Self {
+            comp: Default::default(),
+            joint: default_mv_joint_cdf,
+        }
+    }
+}
+
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfMvComponent {
     pub classes: Align32<[u16; 16]>,
@@ -53,6 +62,12 @@ pub struct CdfMvComponent {
     pub class0: Align4<[u16; 2]>,
     pub classN: Align4<[[u16; 2]; 10]>,
     pub sign: Align4<[u16; 2]>,
+}
+
+impl Default for CdfMvComponent {
+    fn default() -> Self {
+        default_mv_component_cdf.clone()
+    }
 }
 
 #[derive(Clone, Default)]
@@ -73,7 +88,7 @@ pub struct CdfCoefContext {
     pub dc_sign: Align4<[[[u16; 2]; 3]; 2]>,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct CdfModeContext {
     pub y_mode: Align32<[[u16; N_INTRA_PRED_MODES + 3]; 4]>,
@@ -127,6 +142,12 @@ pub struct CdfModeContext {
     pub pal_y: Align4<[[[u16; 2]; 3]; 7]>,
     pub pal_uv: Align4<[[u16; 2]; 2]>,
     pub intrabc: Align4<[u16; 2]>,
+}
+
+impl Default for CdfModeContext {
+    fn default() -> Self {
+        av1_default_cdf.clone()
+    }
 }
 
 #[derive(Clone)]
@@ -5080,53 +5101,37 @@ pub(crate) fn rav1d_cdf_thread_update(
 }
 
 #[inline]
-unsafe fn get_qcat_idx(q: u8) -> c_int {
-    if q <= 20 {
-        return 0 as c_int;
+const fn get_qcat_idx(q: u8) -> u32 {
+    match q {
+        ..=20 => 0,
+        ..=60 => 1,
+        ..=120 => 2,
+        _ => 3,
     }
-    if q <= 60 {
-        return 1 as c_int;
-    }
-    if q <= 120 {
-        return 2 as c_int;
-    }
-    return 3 as c_int;
 }
 
-pub unsafe fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
-    CdfThreadContext::QCat(get_qcat_idx(qidx) as c_uint)
+pub fn rav1d_cdf_thread_init_static(qidx: u8) -> CdfThreadContext {
+    CdfThreadContext::QCat(get_qcat_idx(qidx))
 }
 
-pub fn rav1d_cdf_thread_copy(dst: &mut CdfContext, src: &CdfThreadContext) {
+pub fn rav1d_cdf_thread_copy(src: &CdfThreadContext) -> CdfContext {
     match src {
-        CdfThreadContext::Cdf(src) => {
-            *dst = src.cdf.try_read().unwrap().clone();
-        }
-        CdfThreadContext::QCat(i) => {
-            dst.m = av1_default_cdf.clone();
-            dst.kfym = default_kf_y_mode_cdf;
-            dst.coef = av1_default_coef_cdf[*i as usize].clone();
-            dst.mv.joint = default_mv_joint_cdf;
-            dst.dmv.joint = default_mv_joint_cdf;
-            dst.dmv.comp[1] = default_mv_component_cdf.clone();
-            dst.dmv.comp[0] = dst.dmv.comp[1].clone();
-            dst.mv.comp[1] = dst.dmv.comp[0].clone();
-            dst.mv.comp[0] = dst.mv.comp[1].clone();
-        }
+        CdfThreadContext::Cdf(src) => src.cdf.try_read().unwrap().clone(),
+        CdfThreadContext::QCat(i) => CdfContext {
+            m: Default::default(),
+            kfym: default_kf_y_mode_cdf,
+            coef: av1_default_coef_cdf[*i as usize].clone(),
+            mv: Default::default(),
+            dmv: Default::default(),
+        },
     }
 }
 
-pub unsafe fn rav1d_cdf_thread_alloc(
-    _c: &Rav1dContext,
-    have_frame_mt: c_int,
-) -> Rav1dResult<CdfThreadContext> {
-    let progress = if have_frame_mt != 0 {
-        Some(AtomicU32::new(0))
-    } else {
-        None
-    };
+pub fn rav1d_cdf_thread_alloc(have_frame_mt: bool) -> Rav1dResult<CdfThreadContext> {
+    // TODO fallible allocation
+    // Previously pooled.
     Ok(CdfThreadContext::Cdf(Arc::new(CdfThreadContext_data {
         cdf: Default::default(),
-        progress,
+        progress: have_frame_mt.then_some(AtomicU32::new(0)),
     })))
 }

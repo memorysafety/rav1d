@@ -1,4 +1,3 @@
-use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BitDepth;
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
@@ -122,12 +121,12 @@ unsafe fn reset_task_cur(c: &Rav1dContext, ttd: &TaskThreadData, mut frame_idx: 
 }
 
 #[inline]
-unsafe fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
+fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_frames: c_uint) {
     let first = ttd.first.load(Ordering::SeqCst);
     if frame_idx < first {
-        frame_idx = frame_idx.wrapping_add(n_frames);
+        frame_idx += n_frames;
     }
-    let mut last_idx: c_uint = frame_idx;
+    let mut last_idx = frame_idx;
     loop {
         frame_idx = last_idx;
         last_idx = ttd.reset_task_cur.swap(frame_idx, Ordering::SeqCst);
@@ -434,7 +433,7 @@ pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, fc: &Rav1dFrameCont
     insert_task(c, fc, t_idx, 1 as c_int);
 }
 
-pub(crate) unsafe fn rav1d_task_delayed_fg(
+pub(crate) fn rav1d_task_delayed_fg(
     c: &mut Rav1dContext,
     out: &mut Rav1dPicture,
     in_0: &Rav1dPicture,
@@ -558,7 +557,7 @@ unsafe fn check_tile(
 }
 
 #[inline]
-unsafe fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
+fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_int {
     // Note that `progress.is_some() == c.fc.len() > 1`.
     let frame_prog = f
         .sr_cur
@@ -569,34 +568,27 @@ unsafe fn get_frame_progress(fc: &Rav1dFrameContext, f: &Rav1dFrameData) -> c_in
     if frame_prog >= FRAME_ERROR {
         return f.sbh - 1;
     }
-    let mut idx = (frame_prog >> f.sb_shift + 7) as c_int;
-    let mut prog;
     let frame = fc.frame_thread_progress.frame.try_read().unwrap();
-    loop {
-        let val: c_uint = !frame[idx as usize].load(Ordering::SeqCst);
-        prog = if val != 0 { ctz(val) } else { 32 as c_int };
-        if prog != 32 as c_int {
-            break;
-        }
-        prog = 0 as c_int;
-        idx += 1;
-        if !((idx as usize) < frame.len()) {
-            break;
-        }
-    }
-    return (idx << 5 | prog) - 1;
+    let (idx, prog) = frame
+        .iter()
+        .enumerate()
+        .skip(frame_prog as usize >> (f.sb_shift + 7))
+        .find_map(|(i, progress)| {
+            let val = !progress.load(Ordering::SeqCst);
+            match val.trailing_zeros() {
+                32 => None,
+                progress => Some((i, progress)),
+            }
+        })
+        .unwrap_or((frame.len(), 0));
+    ((idx as u32) << 5 | prog) as c_int - 1
 }
 
 #[inline]
-unsafe fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
-    fc.task_thread.error.store(
-        if error == Err(EINVAL) {
-            1 as c_int
-        } else {
-            -(1 as c_int)
-        },
-        Ordering::SeqCst,
-    );
+fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
+    fc.task_thread
+        .error
+        .store(if error == Err(EINVAL) { 1 } else { -1 }, Ordering::SeqCst);
     fc.task_thread.task_counter.store(0, Ordering::SeqCst);
     fc.task_thread.done[0].store(1, Ordering::SeqCst);
     fc.task_thread.done[1].store(1, Ordering::SeqCst);

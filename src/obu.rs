@@ -532,7 +532,7 @@ fn parse_seq_hdr(
     })
 }
 
-pub(crate) unsafe fn rav1d_parse_sequence_header(
+pub(crate) fn rav1d_parse_sequence_header(
     mut data: &[u8],
 ) -> Rav1dResult<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>> {
     let mut res = Err(ENOENT);
@@ -577,7 +577,7 @@ pub(crate) unsafe fn rav1d_parse_sequence_header(
     res.map(DRav1d::from_rav1d)
 }
 
-unsafe fn parse_frame_size(
+fn parse_frame_size(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     refidx: Option<&[i8; RAV1D_REFS_PER_FRAME]>,
@@ -678,7 +678,7 @@ static default_mode_ref_deltas: Rav1dLoopfilterModeRefDeltas = Rav1dLoopfilterMo
     ref_delta: [1, 0, 0, 0, -1, 0, -1, -1],
 };
 
-unsafe fn parse_refidx(
+fn parse_refidx(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     frame_ref_short_signaling: u8,
@@ -1099,7 +1099,7 @@ fn parse_seg_data(gb: &mut GetBits) -> Rav1dSegmentationDataSet {
     }
 }
 
-unsafe fn parse_segmentation(
+fn parse_segmentation(
     c: &Rav1dContext,
     primary_ref_frame: u8,
     refidx: &[i8; RAV1D_REFS_PER_FRAME],
@@ -1219,7 +1219,7 @@ fn parse_delta(
     Rav1dFrameHeader_delta { q, lf }
 }
 
-unsafe fn parse_loopfilter(
+fn parse_loopfilter(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     all_lossless: bool,
@@ -1402,7 +1402,7 @@ fn parse_restoration(
     Rav1dFrameHeader_restoration { r#type, unit_size }
 }
 
-unsafe fn parse_skip_mode(
+fn parse_skip_mode(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     switchable_comp_refs: u8,
@@ -1504,7 +1504,7 @@ unsafe fn parse_skip_mode(
     })
 }
 
-unsafe fn parse_gmv(
+fn parse_gmv(
     c: &Rav1dContext,
     frame_type: Rav1dFrameType,
     primary_ref_frame: u8,
@@ -1684,7 +1684,7 @@ fn parse_film_grain_data(
     })
 }
 
-unsafe fn parse_film_grain(
+fn parse_film_grain(
     c: &Rav1dContext,
     seqhdr: &Rav1dSequenceHeader,
     show_frame: u8,
@@ -2117,7 +2117,7 @@ unsafe fn parse_obus(
     props: &Rav1dDataProps,
     gb: &mut GetBits,
 ) -> Rav1dResult<()> {
-    unsafe fn skip(c: &mut Rav1dContext) {
+    fn skip(c: &mut Rav1dContext) {
         // update refs with only the headers in case we skip the frame
         for i in 0..8 {
             if c.frame_hdr.as_ref().unwrap().refresh_frame_flags & (1 << i) != 0 {
@@ -2174,7 +2174,7 @@ unsafe fn parse_obus(
         }
     }
 
-    unsafe fn parse_tile_grp(
+    fn parse_tile_grp(
         c: &mut Rav1dContext,
         r#in: &CArc<[u8]>,
         props: &Rav1dDataProps,
@@ -2601,7 +2601,7 @@ unsafe fn parse_obus(
             if c.tiles.is_empty() {
                 return Err(EINVAL);
             }
-            rav1d_submit_frame(&mut *c)?;
+            rav1d_submit_frame(c)?;
             assert!(c.tiles.is_empty());
             c.frame_hdr = None;
             c.n_tiles = 0;
