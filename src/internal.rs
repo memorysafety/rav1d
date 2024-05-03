@@ -1237,6 +1237,7 @@ impl TaskContextScratch {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dTaskContext_frame_thread {
     pub pass: c_int,
@@ -1295,21 +1296,21 @@ pub(crate) struct Rav1dTaskContext {
 impl Rav1dTaskContext {
     pub(crate) fn new(task_thread: Arc<Rav1dTaskContext_task_thread>) -> Self {
         Self {
-            ts: 0,
+            ts: Default::default(),
             b: Default::default(),
             l: Default::default(),
-            a: 0,
+            a: Default::default(),
             rt: Default::default(),
             cf: Default::default(),
             al_pal: Default::default(),
             pal_sz_uv: Default::default(),
             scratch: FromZeroes::new_zeroed(),
             warpmv: Default::default(),
-            lf_mask: None,
-            top_pre_cdef_toggle: 0,
-            cur_sb_cdef_idx: 0,
+            lf_mask: Default::default(),
+            top_pre_cdef_toggle: Default::default(),
+            cur_sb_cdef_idx: Default::default(),
             tl_4x4_filter: Default::default(),
-            frame_thread: Rav1dTaskContext_frame_thread { pass: 0 },
+            frame_thread: Default::default(),
             task_thread,
         }
     }
