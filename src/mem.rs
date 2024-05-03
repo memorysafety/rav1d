@@ -53,12 +53,3 @@ pub unsafe fn rav1d_alloc_aligned(sz: usize, align: usize) -> *mut c_void {
 pub unsafe fn rav1d_free_aligned(ptr: *mut c_void) {
     free(ptr);
 }
-
-#[inline]
-pub unsafe fn rav1d_freep_aligned(ptr: *mut c_void) {
-    let mem: *mut *mut c_void = ptr as *mut *mut c_void;
-    if !(*mem).is_null() {
-        rav1d_free_aligned(*mem);
-        *mem = 0 as *mut c_void;
-    }
-}

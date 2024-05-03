@@ -38,9 +38,7 @@ use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::iter::wrapping_iter;
 use crate::src::log::Rav1dLog as _;
-use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
-use crate::src::mem::rav1d_freep_aligned;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::rav1d_picture_alloc_copy;
@@ -189,12 +187,13 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     validate_input!((s.operating_point <= 31, EINVAL))?;
-    *c_out = rav1d_alloc_aligned(::core::mem::size_of::<Rav1dContext>(), 64) as *mut Rav1dContext;
+    let c = Box::new(Default::default());
+    let c = Box::into_raw(c);
+    *c_out = c;
     let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
         return error(c, c_out);
     }
-    c.write(Default::default());
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
     (*c).apply_grain = s.apply_grain;
@@ -686,11 +685,11 @@ unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
     if c.is_null() {
         return;
     }
+    *c_out = ptr::null_mut();
+    let mut c = Box::from_raw(c);
     if flush != 0 {
-        rav1d_flush(&mut *c);
+        rav1d_flush(&mut c);
     }
-    c.drop_in_place();
-    rav1d_freep_aligned(c_out as *mut _ as *mut c_void);
 }
 
 impl Drop for Rav1dContext {
