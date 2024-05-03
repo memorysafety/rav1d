@@ -105,7 +105,10 @@ use std::ops::Sub;
 use std::ptr;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicI8;
 use std::sync::atomic::AtomicU32;
+use std::sync::atomic::AtomicU8;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Condvar;
@@ -914,8 +917,7 @@ pub(crate) struct Rav1dFrameData {
     pub resize_step: [c_int; 2],             /* y, uv */
     pub resize_start: [c_int; 2],            /* y, uv */
 
-    pub ts: *mut Rav1dTileState,
-    pub n_ts: c_int,
+    pub ts: Vec<Rav1dTileState>,
     pub dsp: &'static Rav1dBitDepthDSPContext,
 
     // `ipred_edge` contains 3 arrays of size `ipred_edge_off`. Use `index *
@@ -968,8 +970,7 @@ impl Default for Rav1dFrameData {
             svc: Default::default(),
             resize_step: Default::default(),
             resize_start: Default::default(),
-            ts: ptr::null_mut(),
-            n_ts: Default::default(),
+            ts: Default::default(),
             dsp: Default::default(),
             ipred_edge: Default::default(),
             ipred_edge_off: Default::default(),
@@ -1012,23 +1013,51 @@ impl Rav1dFrameData {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dTileState_tiling {
     // in 4px units
-    pub col_start: c_int,
-    pub col_end: c_int,
-    pub row_start: c_int,
-    pub row_end: c_int,
+    pub col_start: AtomicI32,
+    pub col_end: AtomicI32,
+    pub row_start: AtomicI32,
+    pub row_end: AtomicI32,
 
     // in tile units
-    pub col: c_int,
-    pub row: c_int,
+    pub col: AtomicI32,
+    pub row: AtomicI32,
 }
 
+impl Rav1dTileState_tiling {
+    pub fn col_start(&self) -> i32 {
+        self.col_start.load(Ordering::Relaxed)
+    }
+
+    pub fn col_end(&self) -> i32 {
+        self.col_end.load(Ordering::Relaxed)
+    }
+
+    pub fn row_start(&self) -> i32 {
+        self.row_start.load(Ordering::Relaxed)
+    }
+
+    pub fn row_end(&self) -> i32 {
+        self.row_end.load(Ordering::Relaxed)
+    }
+
+    pub fn col(&self) -> i32 {
+        self.col.load(Ordering::Relaxed)
+    }
+
+    pub fn row(&self) -> i32 {
+        self.row.load(Ordering::Relaxed)
+    }
+}
+
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dTileState_frame_thread {
-    pub pal_idx: usize, // Offset into `f.frame_thread.pal_idx`
-    pub cf: usize,      // Offset into `f.frame_thread.cf`
+    pub pal_idx: AtomicUsize, // Offset into `f.frame_thread.pal_idx`
+    pub cf: AtomicUsize,      // Offset into `f.frame_thread.cf`
 }
 
 #[derive(Default)]
@@ -1038,7 +1067,8 @@ pub struct Rav1dTileStateContext {
     pub msac: MsacContext,
 }
 
-#[repr(C)]
+#[derive(Default)]
+#[repr(C, align(32))]
 pub struct Rav1dTileState {
     pub context: Mutex<Rav1dTileStateContext>,
 
@@ -1052,18 +1082,31 @@ pub struct Rav1dTileState {
     // each entry is one tile-sbrow; middle index is refidx
     pub lowest_pixel: usize,
 
-    pub dqmem: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
-    pub dq: TileStateRef,
-    pub last_qidx: u8,
-    pub last_delta_lf: [i8; 4],
-    pub lflvlmem: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
-    pub lflvl: TileStateRef,
+    pub dqmem: RwLock<[[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize]>, /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub dq: Atomic<TileStateRef>,
+    pub last_qidx: AtomicU8,
+    pub last_delta_lf: [AtomicI8; 4],
+    pub lflvlmem: RwLock<[[[[u8; 2]; 8]; 4]; 8]>, /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
+    pub lflvl: Atomic<TileStateRef>,
 
-    pub lr_ref: [Av1RestorationUnit; 3],
+    pub lr_ref: RwLock<[Av1RestorationUnit; 3]>,
 }
 
-#[derive(Clone, Copy)]
+impl Rav1dTileState {
+    pub fn last_delta_lf(&self) -> [i8; 4] {
+        [
+            self.last_delta_lf[0].load(Ordering::Relaxed),
+            self.last_delta_lf[1].load(Ordering::Relaxed),
+            self.last_delta_lf[2].load(Ordering::Relaxed),
+            self.last_delta_lf[3].load(Ordering::Relaxed),
+        ]
+    }
+}
+
+#[derive(Clone, Copy, Default, Atom)]
+#[repr(u8)]
 pub enum TileStateRef {
+    #[default]
     Frame,
     Local,
 }

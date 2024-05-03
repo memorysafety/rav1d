@@ -725,7 +725,7 @@ impl Drop for Rav1dContext {
                 mem::take(fc.frame_thread_progress.copy_lpf.get_mut().unwrap()); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.frame_thread); // TODO: remove when context is owned
                 mem::take(&mut fc.task_thread.tasks); // TODO: remove when context is owned
-                rav1d_free_aligned(f.ts as *mut c_void);
+                let _ = mem::take(&mut f.ts); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.ipred_edge); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.a); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.out_cdf); // TODO: remove when context is owned

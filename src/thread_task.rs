@@ -370,10 +370,10 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     let mut prev_t = None;
     let mut tile_idx = 0;
     while tile_idx < num_tasks {
-        let ts: *mut Rav1dTileState = &mut *f.ts.add(tile_idx) as *mut Rav1dTileState;
+        let ts = &f.ts[tile_idx];
         let t_idx = tile_tasks.unwrap() + tile_idx;
         let t = &mut tasks[t_idx];
-        t.sby = (*ts).tiling.row_start >> f.sb_shift;
+        t.sby = (*ts).tiling.row_start.load(Ordering::SeqCst) >> f.sb_shift;
         if pf_t.is_some() && t.sby != 0 {
             tasks[prev_t.unwrap()].next = pf_t;
             prev_t = pf_t;
@@ -490,15 +490,15 @@ unsafe fn check_tile(
     let tile_idx = (t_idx - tasks.tile_tasks[tp as usize].unwrap())
         .raw_index()
         .expect("t_idx was not a valid tile task");
-    let ts: *mut Rav1dTileState = &mut *f.ts.offset(tile_idx as isize) as *mut Rav1dTileState;
-    let p1 = (*ts).progress[tp as usize].load(Ordering::SeqCst);
+    let ts = &f.ts[tile_idx];
+    let p1 = ts.progress[tp as usize].load(Ordering::SeqCst);
     if p1 < t.sby {
         return 1;
     }
     let mut error = (p1 == TILE_ERROR) as c_int;
     error |= task_thread.error.fetch_or(error, Ordering::SeqCst);
     if error == 0 && frame_mt != 0 && !tp {
-        let p2 = (*ts).progress[1].load(Ordering::SeqCst);
+        let p2 = ts.progress[1].load(Ordering::SeqCst);
         if p2 <= (*t).sby {
             return 1;
         }
@@ -512,10 +512,10 @@ unsafe fn check_tile(
         let ss_ver =
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
         let p_b: c_uint = (((*t).sby + 1) << f.sb_shift + 2) as c_uint;
-        let tile_sby = (*t).sby - ((*ts).tiling.row_start >> f.sb_shift);
+        let tile_sby = (*t).sby - (ts.tiling.row_start.load(Ordering::SeqCst) >> f.sb_shift);
         let lowest_px = f
             .lowest_pixel_mem
-            .index((*ts).lowest_pixel + tile_sby as usize);
+            .index(ts.lowest_pixel + tile_sby as usize);
         for n in t.deps_skip..7 {
             'next: {
                 let lowest = if tp {
@@ -847,10 +847,8 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                     .fetch_or((p1_0 == TILE_ERROR) as c_int, Ordering::SeqCst);
                             }
                             for tc_0 in 0..frame_hdr.tiling.cols {
-                                let ts: *mut Rav1dTileState =
-                                    &mut *f.ts.offset((tile_row_base + tc_0 as c_int) as isize)
-                                        as *mut Rav1dTileState;
-                                let p2 = (*ts).progress[p as usize].load(Ordering::SeqCst);
+                                let ts = &f.ts[(tile_row_base + tc_0 as c_int) as usize];
+                                let p2 = ts.progress[p as usize].load(Ordering::SeqCst);
                                 if p2 < t.recon_progress {
                                     break 'next;
                                 }
@@ -1066,8 +1064,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         let tile_idx = (t_idx - tile_tasks[p_1 as usize].unwrap())
                             .raw_index()
                             .unwrap();
-                        let ts_0: *mut Rav1dTileState =
-                            &mut *f.ts.offset(tile_idx as isize) as *mut Rav1dTileState;
+                        let ts = &f.ts[tile_idx];
                         tc.ts = tile_idx;
                         tc.b.y = sby << f.sb_shift;
                         let uses_2pass = (c.fc.len() > 1) as c_int;
@@ -1086,18 +1083,18 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
 
                         // signal progress
                         fc.task_thread.error.fetch_or(error_0, Ordering::SeqCst);
-                        if (sby + 1) << f.sb_shift < (*ts_0).tiling.row_end {
+                        if (sby + 1) << f.sb_shift < ts.tiling.row_end.load(Ordering::SeqCst) {
                             t.sby += 1;
                             t.deps_skip = 0 as c_int;
                             if check_tile(t_idx, &f, &fc.task_thread, uses_2pass) == 0 {
-                                (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
+                                ts.progress[p_1 as usize].store(progress, Ordering::SeqCst);
                                 reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
                                 if ttd.cond_signaled.fetch_or(1, Ordering::SeqCst) == 0 {
                                     ttd.cond.notify_one();
                                 }
                                 continue 'found_unlocked;
                             }
-                            (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
+                            ts.progress[p_1 as usize].store(progress, Ordering::SeqCst);
                             add_pending(fc, t_idx);
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             drop(f);
@@ -1105,7 +1102,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         } else {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             task_thread_lock = Some(ttd.lock.lock().unwrap());
-                            (*ts_0).progress[p_1 as usize].store(progress, Ordering::SeqCst);
+                            ts.progress[p_1 as usize].store(progress, Ordering::SeqCst);
                             reset_task_cur(c, ttd, t.frame_idx);
                             error_0 = fc.task_thread.error.load(Ordering::SeqCst);
                             let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
@@ -1118,7 +1115,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                     rav1d_cdf_thread_update(
                                         frame_hdr,
                                         &mut f.out_cdf.cdf_write(),
-                                        &(*(f.ts).offset(frame_hdr.tiling.update as isize))
+                                        &f.ts[frame_hdr.tiling.update as usize]
                                             .context
                                             .try_lock()
                                             .unwrap()
