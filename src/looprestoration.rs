@@ -5,7 +5,6 @@ use crate::include::common::bitdepth::LeftPixelRow;
 use crate::include::common::bitdepth::ToPrimitive;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::iclip;
-use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
 use crate::src::cursor::CursorMut;
 use crate::src::tables::dav1d_sgr_x_by_x;
@@ -13,11 +12,18 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::mem;
 use std::ops::Add;
 use to_method::To;
+use zerocopy::AsBytes;
+use zerocopy::FromBytes;
+use zerocopy::FromZeroes;
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 use std::ffi::c_void;
+
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+use crate::src::align::Align16;
 
 #[cfg(all(feature = "asm", target_arch = "arm"))]
 use libc::intptr_t;
@@ -71,19 +77,52 @@ pub const LR_HAVE_TOP: LrEdgeFlags = 4;
 pub const LR_HAVE_RIGHT: LrEdgeFlags = 2;
 pub const LR_HAVE_LEFT: LrEdgeFlags = 1;
 
-#[derive(Clone, Copy)]
+#[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
-pub struct LooprestorationParams_sgr {
+pub struct LooprestorationParamsSgr {
     pub s0: u32,
     pub s1: u32,
     pub w0: i16,
     pub w1: i16,
 }
 
+/// This [`zerocopy`]-based "`union`" has the same layout
+/// as an actual `union` would, so it's safe to continue passing to asm,
+/// but it's otherwise safe to use from Rust.
+///
+/// [`zerocopy`]: ::zerocopy
+#[derive(Default)]
 #[repr(C)]
-pub union LooprestorationParams {
-    pub filter: Align16<[[i16; 8]; 2]>,
-    pub sgr: LooprestorationParams_sgr,
+#[repr(align(16))]
+pub struct LooprestorationParams {
+    /// [`Align16`] moved to [`Self`] we can't `#[derive(`[`AsBytes`]`)]` on it due to generics.
+    ///
+    /// [`Align16`]: crate::src::align::Align16
+    pub filter: [[i16; 8]; 2],
+}
+
+impl LooprestorationParams {
+    pub fn sgr(&self) -> &LooprestorationParamsSgr {
+        // These asserts ensure this is a no-op.
+        const _: () = assert!(
+            mem::size_of::<LooprestorationParams>() >= mem::size_of::<LooprestorationParamsSgr>()
+        );
+        let _: () = assert!(
+            mem::align_of::<LooprestorationParams>() >= mem::align_of::<LooprestorationParamsSgr>()
+        );
+        FromBytes::ref_from_prefix(AsBytes::as_bytes(&self.filter)).unwrap()
+    }
+
+    pub fn sgr_mut(&mut self) -> &mut LooprestorationParamsSgr {
+        // These asserts ensure this is a no-op.
+        const _: () = assert!(
+            mem::size_of::<LooprestorationParams>() >= mem::size_of::<LooprestorationParamsSgr>()
+        );
+        const _: () = assert!(
+            mem::align_of::<LooprestorationParams>() >= mem::align_of::<LooprestorationParamsSgr>()
+        );
+        FromBytes::mut_from_prefix(AsBytes::as_bytes_mut(&mut self.filter)).unwrap()
+    }
 }
 
 pub type looprestorationfilter_fn = unsafe extern "C" fn(
@@ -324,7 +363,7 @@ unsafe fn wiener_rust<BD: BitDepth>(
     // fit in a u8.
     let mut hor = [0; 70 /*(64 + 3 + 3)*/ * REST_UNIT_STRIDE];
 
-    let filter = &params.filter.0;
+    let filter = &params.filter;
     let bitdepth = bd.bitdepth().as_::<c_int>();
     let round_bits_h = 3 + (bitdepth == 12) as c_int * 2;
     let rounding_off_h = 1 << round_bits_h - 1;
@@ -734,6 +773,7 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
         h as usize,
         edges,
     );
+    let sgr = (*params).sgr();
     selfguided_filter(
         &mut dst,
         &mut tmp,
@@ -741,11 +781,11 @@ unsafe fn sgr_5x5_rust<BD: BitDepth>(
         w,
         h,
         25,
-        (*params).sgr.s0,
+        sgr.s0,
         bd,
     );
 
-    let w0 = (*params).sgr.w0 as c_int;
+    let w0 = sgr.w0 as c_int;
     for j in 0..h {
         for i in 0..w {
             let v = w0 * dst[(j * 384 + i) as usize].as_::<c_int>();
@@ -804,6 +844,7 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
         h as usize,
         edges,
     );
+    let sgr = (*params).sgr();
     selfguided_filter(
         &mut dst,
         &mut tmp,
@@ -811,11 +852,11 @@ unsafe fn sgr_3x3_rust<BD: BitDepth>(
         w,
         h,
         9,
-        (*params).sgr.s1,
+        sgr.s1,
         bd,
     );
 
-    let w1 = (*params).sgr.w1 as c_int;
+    let w1 = sgr.w1 as c_int;
     for j in 0..h {
         for i in 0..w {
             let v = w1 * dst[(j * 384 + i) as usize].as_::<c_int>();
@@ -875,6 +916,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         h as usize,
         edges,
     );
+    let sgr = (*params).sgr();
     selfguided_filter(
         &mut dst0,
         &mut tmp,
@@ -882,7 +924,7 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         w,
         h,
         25,
-        (*params).sgr.s0,
+        sgr.s0,
         bd,
     );
     selfguided_filter(
@@ -892,12 +934,12 @@ unsafe fn sgr_mix_rust<BD: BitDepth>(
         w,
         h,
         9,
-        (*params).sgr.s1,
+        sgr.s1,
         bd,
     );
 
-    let w0 = (*params).sgr.w0 as c_int;
-    let w1 = (*params).sgr.w1 as c_int;
+    let w0 = sgr.w0 as c_int;
+    let w1 = sgr.w1 as c_int;
     for j in 0..h {
         for i in 0..w {
             let v = w0 * dst0[(j * 384 + i) as usize].as_::<c_int>()
@@ -915,7 +957,7 @@ unsafe fn rav1d_wiener_filter_h_neon<BD: BitDepth>(
     left: *const [BD::Pixel; 4],
     src: *const BD::Pixel,
     stride: ptrdiff_t,
-    fh: *const [i16; 8],
+    fh: &[i16; 8],
     w: intptr_t,
     h: c_int,
     edges: LrEdgeFlags,
@@ -947,7 +989,7 @@ unsafe fn rav1d_wiener_filter_h_neon<BD: BitDepth>(
         left.cast(),
         src.cast(),
         stride,
-        fh.cast(),
+        fh.as_ptr(),
         w,
         h,
         edges,
@@ -962,7 +1004,7 @@ unsafe fn rav1d_wiener_filter_v_neon<BD: BitDepth>(
     mid: &mut [i16],
     w: c_int,
     h: c_int,
-    fv: *const [i16; 8],
+    fv: &[i16; 8],
     edges: LrEdgeFlags,
     mid_stride: ptrdiff_t,
     bd: BD,
@@ -994,7 +1036,7 @@ unsafe fn rav1d_wiener_filter_v_neon<BD: BitDepth>(
         mid.as_mut_ptr(),
         w,
         h,
-        fv.cast(),
+        fv.as_ptr(),
         edges,
         mid_stride,
         bd.into_c(),
@@ -1038,7 +1080,7 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
     edges: LrEdgeFlags,
     bd: BD,
 ) {
-    let filter: *const [i16; 8] = (*params).filter.0.as_ptr();
+    let filter = &(*params).filter;
     let mut mid: Align16<[i16; 68 * 384]> = Align16([0; 68 * 384]);
     let mid_stride: c_int = w + 7 & !7;
     rav1d_wiener_filter_h_neon(
@@ -1046,7 +1088,7 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
         left,
         dst,
         stride,
-        filter.offset(0),
+        &filter[0],
         w as intptr_t,
         h,
         edges,
@@ -1058,7 +1100,7 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
             core::ptr::null(),
             lpf,
             stride,
-            filter.offset(0),
+            &filter[0],
             w as intptr_t,
             2,
             edges,
@@ -1071,7 +1113,7 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
             core::ptr::null(),
             lpf.offset(6 * BD::pxstride(stride)),
             stride,
-            filter.offset(0),
+            &filter[0],
             w as intptr_t,
             2,
             edges,
@@ -1084,7 +1126,7 @@ unsafe fn wiener_filter_neon<BD: BitDepth>(
         &mut mid.0[2 * mid_stride as usize..],
         w,
         h,
-        filter.offset(1),
+        &filter[1],
         edges,
         (mid_stride as usize * ::core::mem::size_of::<i16>()) as ptrdiff_t,
         bd,
@@ -1466,29 +1508,9 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     bd: BD,
 ) {
     let mut tmp: Align16<[i16; 24576]> = Align16([0; 24576]);
-    rav1d_sgr_filter2_neon(
-        &mut tmp.0,
-        dst,
-        stride,
-        left,
-        lpf,
-        w,
-        h,
-        (*params).sgr.s0,
-        edges,
-        bd,
-    );
-    rav1d_sgr_weighted1_neon(
-        dst,
-        stride,
-        dst,
-        stride,
-        &mut tmp.0,
-        w,
-        h,
-        (*params).sgr.w0,
-        bd,
-    );
+    let sgr = (*params).sgr();
+    rav1d_sgr_filter2_neon(&mut tmp.0, dst, stride, left, lpf, w, h, sgr.s0, edges, bd);
+    rav1d_sgr_weighted1_neon(dst, stride, dst, stride, &mut tmp.0, w, h, sgr.w0, bd);
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
@@ -1529,29 +1551,9 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     bd: BD,
 ) {
     let mut tmp: Align16<[i16; 24576]> = Align16([0; 24576]);
-    rav1d_sgr_filter1_neon(
-        &mut tmp.0,
-        dst,
-        stride,
-        left,
-        lpf,
-        w,
-        h,
-        (*params).sgr.s1,
-        edges,
-        bd,
-    );
-    rav1d_sgr_weighted1_neon(
-        dst,
-        stride,
-        dst,
-        stride,
-        &mut tmp.0,
-        w,
-        h,
-        (*params).sgr.w1,
-        bd,
-    );
+    let sgr = (*params).sgr();
+    rav1d_sgr_filter1_neon(&mut tmp.0, dst, stride, left, lpf, w, h, sgr.s1, edges, bd);
+    rav1d_sgr_weighted1_neon(dst, stride, dst, stride, &mut tmp.0, w, h, sgr.w1, bd);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]
@@ -2093,6 +2095,8 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
     }
     let mut track = Track::main;
 
+    let sgr = (*params).sgr();
+
     if (edges & LR_HAVE_TOP) != 0 {
         sumsq_ptrs = sumsq_rows;
         sum_ptrs = sum_rows;
@@ -2125,7 +2129,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             left,
             src,
             w,
-            (*params).sgr.s1 as c_int,
+            sgr.s1 as c_int,
             edges,
             bd,
         );
@@ -2146,7 +2150,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 left,
                 src,
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 edges,
                 bd,
             );
@@ -2173,7 +2177,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             A_ptrs[2],
             B_ptrs[2],
             w,
-            (*params).sgr.s1 as c_int,
+            sgr.s1 as c_int,
             bd,
         );
         rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
@@ -2193,7 +2197,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 left,
                 src,
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 edges,
                 bd,
             );
@@ -2222,7 +2226,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             left,
             src,
             w,
-            (*params).sgr.s1 as c_int,
+            sgr.s1 as c_int,
             edges,
             bd,
         );
@@ -2235,7 +2239,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             &mut A_ptrs,
             &mut B_ptrs,
             w,
-            (*params).sgr.w1 as c_int,
+            sgr.w1 as c_int,
             bd,
         );
         h -= 1;
@@ -2255,7 +2259,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 0 as *const LeftPixelRow<BD::Pixel>,
                 lpf_bottom,
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 edges,
                 bd,
             );
@@ -2267,7 +2271,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut A_ptrs,
                 &mut B_ptrs,
                 w,
-                (*params).sgr.w1 as c_int,
+                sgr.w1 as c_int,
                 bd,
             );
 
@@ -2279,7 +2283,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 0 as *const LeftPixelRow<BD::Pixel>,
                 lpf_bottom,
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 edges,
                 bd,
             );
@@ -2290,7 +2294,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut A_ptrs,
                 &mut B_ptrs,
                 w,
-                (*params).sgr.w1 as c_int,
+                sgr.w1 as c_int,
                 bd,
             );
         }
@@ -2303,7 +2307,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 A_ptrs[2],
                 B_ptrs[2],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             rotate_ab_3(&mut A_ptrs, &mut B_ptrs);
@@ -2317,7 +2321,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 A_ptrs[2],
                 B_ptrs[2],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
 
@@ -2327,7 +2331,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
                 &mut A_ptrs,
                 &mut B_ptrs,
                 w,
-                (*params).sgr.w1 as c_int,
+                sgr.w1 as c_int,
                 bd,
             );
         }
@@ -2342,7 +2346,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             A_ptrs[2],
             B_ptrs[2],
             w,
-            (*params).sgr.s1 as c_int,
+            sgr.s1 as c_int,
             bd,
         );
 
@@ -2352,7 +2356,7 @@ unsafe fn sgr_filter_3x3_neon<BD: BitDepth>(
             &mut A_ptrs,
             &mut B_ptrs,
             w,
-            (*params).sgr.w1 as c_int,
+            sgr.w1 as c_int,
             bd,
         );
     }
@@ -2408,6 +2412,8 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
     }
     let mut track = Track::main;
 
+    let sgr = (*params).sgr();
+
     if (edges & LR_HAVE_TOP) != 0 {
         for i in 0..5 {
             sumsq_ptrs[i] = sumsq_rows[if i > 0 { i - 1 } else { 0 }];
@@ -2452,7 +2458,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 A_ptrs[1],
                 B_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
@@ -2492,7 +2498,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 A_ptrs[1],
                 B_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
@@ -2524,7 +2530,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                         A_ptrs[1],
                         B_ptrs[1],
                         w,
-                        (*params).sgr.s0 as c_int,
+                        sgr.s0 as c_int,
                         bd,
                     );
 
@@ -2535,7 +2541,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                         &mut B_ptrs,
                         w,
                         2,
-                        (*params).sgr.w0 as c_int,
+                        sgr.w0 as c_int,
                         bd,
                     );
 
@@ -2574,7 +2580,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 A_ptrs[1],
                 B_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             sgr_finish2_neon(
@@ -2584,7 +2590,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 &mut B_ptrs,
                 w,
                 2,
-                (*params).sgr.w0 as c_int,
+                sgr.w0 as c_int,
                 bd,
             );
             h -= 1;
@@ -2627,7 +2633,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 A_ptrs[1],
                 B_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             rotate_ab_2(&mut A_ptrs, &mut B_ptrs);
@@ -2650,7 +2656,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 A_ptrs[1],
                 B_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             sgr_finish2_neon(
@@ -2660,7 +2666,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 &mut B_ptrs,
                 w,
                 2,
-                (*params).sgr.w0 as c_int,
+                sgr.w0 as c_int,
                 bd,
             );
         }
@@ -2674,7 +2680,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 A_ptrs[1],
                 B_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             sgr_finish2_neon(
@@ -2684,7 +2690,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 &mut B_ptrs,
                 w,
                 2,
-                (*params).sgr.w0 as c_int,
+                sgr.w0 as c_int,
                 bd,
             );
         }
@@ -2701,7 +2707,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 A_ptrs[1],
                 B_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             sgr_finish2_neon(
@@ -2711,7 +2717,7 @@ unsafe fn sgr_filter_5x5_neon<BD: BitDepth>(
                 &mut B_ptrs,
                 w,
                 1,
-                (*params).sgr.w0 as c_int,
+                sgr.w0 as c_int,
                 bd,
             );
         }
@@ -2802,6 +2808,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
         sum5_ptrs[i] = sum5_rows[if lr_have_top && i > 0 { i - 1 } else { 0 }];
     }
 
+    let sgr = (*params).sgr();
+
     if lr_have_top {
         rav1d_sgr_box35_row_h_neon(
             sumsq3_rows[0],
@@ -2848,7 +2856,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             A3_ptrs[3],
             B3_ptrs[3],
             w,
-            (*params).sgr.s1 as c_int,
+            sgr.s1 as c_int,
             bd,
         );
         rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -2877,7 +2885,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A5_ptrs[1],
                 B5_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
@@ -2888,7 +2896,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -2924,7 +2932,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             A3_ptrs[3],
             B3_ptrs[3],
             w,
-            (*params).sgr.s1 as i32,
+            sgr.s1 as i32,
             bd,
         );
         rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -2959,7 +2967,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A5_ptrs[1],
                 B5_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
@@ -2970,7 +2978,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -3007,7 +3015,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                     A3_ptrs[3],
                     B3_ptrs[3],
                     w,
-                    (*params).sgr.s1 as c_int,
+                    sgr.s1 as c_int,
                     bd,
                 );
                 rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -3036,7 +3044,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                         A5_ptrs[1],
                         B5_ptrs[1],
                         w,
-                        (*params).sgr.s0 as c_int,
+                        sgr.s0 as c_int,
                         bd,
                     );
                     sgr_box3_vert_neon(
@@ -3045,7 +3053,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                         A3_ptrs[3],
                         B3_ptrs[3],
                         w,
-                        (*params).sgr.s1 as c_int,
+                        sgr.s1 as c_int,
                         bd,
                     );
                     sgr_finish_mix_neon(
@@ -3057,8 +3065,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                         &mut B3_ptrs,
                         w,
                         2,
-                        (*params).sgr.w0 as c_int,
-                        (*params).sgr.w1 as c_int,
+                        sgr.w0 as c_int,
+                        sgr.w1 as c_int,
                         bd,
                     );
 
@@ -3099,7 +3107,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
             A3_ptrs[3],
             B3_ptrs[3],
             w,
-            (*params).sgr.s1 as c_int,
+            sgr.s1 as c_int,
             bd,
         );
         rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -3128,7 +3136,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A5_ptrs[1],
                 B5_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             sgr_box3_vert_neon(
@@ -3137,7 +3145,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             sgr_finish_mix_neon(
@@ -3149,8 +3157,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 &mut B3_ptrs,
                 w,
                 2,
-                (*params).sgr.w0 as c_int,
-                (*params).sgr.w1 as c_int,
+                sgr.w0 as c_int,
+                sgr.w1 as c_int,
                 bd,
             );
             h -= 1;
@@ -3182,7 +3190,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -3213,7 +3221,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A5_ptrs[1],
                 B5_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             rotate_ab_2(&mut A5_ptrs, &mut B5_ptrs);
@@ -3223,7 +3231,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -3243,7 +3251,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -3265,7 +3273,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A5_ptrs[1],
                 B5_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             sgr_box3_vert_neon(
@@ -3274,7 +3282,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             sgr_finish_mix_neon(
@@ -3286,8 +3294,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 &mut B3_ptrs,
                 w,
                 2,
-                (*params).sgr.w0 as c_int,
-                (*params).sgr.w1 as c_int,
+                sgr.w0 as c_int,
+                sgr.w1 as c_int,
                 bd,
             );
         }
@@ -3301,7 +3309,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A5_ptrs[1],
                 B5_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             sgr_box3_vert_neon(
@@ -3310,7 +3318,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             sgr_finish_mix_neon(
@@ -3322,8 +3330,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 &mut B3_ptrs,
                 w,
                 2,
-                (*params).sgr.w0 as c_int,
-                (*params).sgr.w1 as c_int,
+                sgr.w0 as c_int,
+                sgr.w1 as c_int,
                 bd,
             );
         }
@@ -3343,7 +3351,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A5_ptrs[1],
                 B5_ptrs[1],
                 w,
-                (*params).sgr.s0 as c_int,
+                sgr.s0 as c_int,
                 bd,
             );
             sgr_box3_vert_neon(
@@ -3352,7 +3360,7 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 A3_ptrs[3],
                 B3_ptrs[3],
                 w,
-                (*params).sgr.s1 as c_int,
+                sgr.s1 as c_int,
                 bd,
             );
             rotate_ab_4(&mut A3_ptrs, &mut B3_ptrs);
@@ -3366,8 +3374,8 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
                 &mut B3_ptrs,
                 w,
                 1,
-                (*params).sgr.w0 as c_int,
-                (*params).sgr.w1 as c_int,
+                sgr.w0 as c_int,
+                sgr.w1 as c_int,
                 bd,
             );
         }
@@ -3413,31 +3421,10 @@ unsafe fn sgr_filter_mix_neon<BD: BitDepth>(
 ) {
     let mut tmp1: Align16<[i16; 24576]> = Align16([0; 24576]);
     let mut tmp2: Align16<[i16; 24576]> = Align16([0; 24576]);
-    rav1d_sgr_filter2_neon(
-        &mut tmp1.0,
-        dst,
-        stride,
-        left,
-        lpf,
-        w,
-        h,
-        (*params).sgr.s0,
-        edges,
-        bd,
-    );
-    rav1d_sgr_filter1_neon(
-        &mut tmp2.0,
-        dst,
-        stride,
-        left,
-        lpf,
-        w,
-        h,
-        (*params).sgr.s1,
-        edges,
-        bd,
-    );
-    let wt: [i16; 2] = [(*params).sgr.w0, (*params).sgr.w1];
+    let sgr = (*params).sgr();
+    rav1d_sgr_filter2_neon(&mut tmp1.0, dst, stride, left, lpf, w, h, sgr.s0, edges, bd);
+    rav1d_sgr_filter1_neon(&mut tmp2.0, dst, stride, left, lpf, w, h, sgr.s1, edges, bd);
+    let wt: [i16; 2] = [sgr.w0, sgr.w1];
     rav1d_sgr_weighted2_neon(
         dst,
         stride,
