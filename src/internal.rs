@@ -102,7 +102,7 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::ops::Range;
 use std::ops::Sub;
-use std::ptr::addr_of_mut;
+use std::ptr;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
@@ -157,7 +157,7 @@ impl Default for &'static Rav1dDSPContext {
     }
 }
 
-pub struct Rav1dBitDepthDSPContext {
+pub(crate) struct Rav1dBitDepthDSPContext {
     pub fg: Rav1dFilmGrainDSPContext,
     pub ipred: Rav1dIntraPredDSPContext,
     pub mc: Rav1dMCDSPContext,
@@ -211,6 +211,14 @@ impl Rav1dBitDepthDSPContext {
             }),
             _ => return None,
         })
+    }
+}
+
+impl Default for &'static Rav1dBitDepthDSPContext {
+    fn default() -> Self {
+        // Just need to choose one for default initialization, not an actual default,
+        // but it doesn't hurt to initialize this slightly early.
+        Rav1dBitDepthDSPContext::get(8).unwrap()
     }
 }
 
@@ -444,6 +452,7 @@ pub struct Rav1dTask {
     pub next: Option<Rav1dTaskIndex>,
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct ScalableMotionParams {
     pub scale: c_int, // if no scaling, this is 0
@@ -863,10 +872,10 @@ pub(crate) struct Rav1dFrameContext {
 }
 
 impl Rav1dFrameContext {
-    pub(crate) unsafe fn zeroed(index: usize) -> Self {
+    pub fn default(index: usize) -> Self {
         Self {
             index,
-            data: RwLock::new(unsafe { Rav1dFrameData::zeroed() }),
+            data: Default::default(),
             in_cdf: Default::default(),
             task_thread: Default::default(),
             frame_thread_progress: Default::default(),
@@ -946,23 +955,56 @@ pub(crate) struct Rav1dFrameData {
     pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
 }
 
-impl Rav1dFrameData {
-    pub unsafe fn zeroed() -> Self {
-        let mut data: MaybeUninit<Rav1dFrameData> = MaybeUninit::zeroed();
-        addr_of_mut!((*data.as_mut_ptr()).refp).write(Default::default());
-        addr_of_mut!((*data.as_mut_ptr()).cur).write(Default::default());
-        addr_of_mut!((*data.as_mut_ptr()).sr_cur).write(Default::default());
-        addr_of_mut!((*data.as_mut_ptr()).out_cdf).write(Default::default());
-        addr_of_mut!((*data.as_mut_ptr()).tiles).write(vec![]);
-        addr_of_mut!((*data.as_mut_ptr()).ipred_edge).write(Default::default());
-        addr_of_mut!((*data.as_mut_ptr()).a).write(vec![]);
-        addr_of_mut!((*data.as_mut_ptr()).rf).write(Default::default());
-        addr_of_mut!((*data.as_mut_ptr()).lowest_pixel_mem).write(Default::default());
-        addr_of_mut!((*data.as_mut_ptr()).frame_thread).write(Default::default());
-        addr_of_mut!((*data.as_mut_ptr()).lf).write(Default::default());
-        data.assume_init()
+impl Default for Rav1dFrameData {
+    fn default() -> Self {
+        Self {
+            seq_hdr: Default::default(),
+            frame_hdr: Default::default(),
+            refp: Default::default(),
+            cur: Default::default(),
+            sr_cur: Default::default(),
+            mvs: Default::default(),
+            ref_mvs: Default::default(),
+            cur_segmap: Default::default(),
+            prev_segmap: Default::default(),
+            refpoc: Default::default(),
+            refrefpoc: Default::default(),
+            gmv_warp_allowed: Default::default(),
+            out_cdf: Default::default(),
+            tiles: Default::default(),
+            svc: Default::default(),
+            resize_step: Default::default(),
+            resize_start: Default::default(),
+            ts: ptr::null_mut(),
+            n_ts: Default::default(),
+            dsp: Default::default(),
+            ipred_edge: Default::default(),
+            ipred_edge_off: Default::default(),
+            b4_stride: Default::default(),
+            w4: Default::default(),
+            h4: Default::default(),
+            bw: Default::default(),
+            bh: Default::default(),
+            sb128w: Default::default(),
+            sb128h: Default::default(),
+            sbh: Default::default(),
+            sb_shift: Default::default(),
+            sb_step: Default::default(),
+            sr_sb128w: Default::default(),
+            dq: Default::default(),
+            qm: Default::default(),
+            a: Default::default(),
+            rf: Default::default(),
+            jnt_weights: Default::default(),
+            bitdepth_max: Default::default(),
+            frame_thread: Default::default(),
+            lf: Default::default(),
+            lowest_pixel_mem: Default::default(),
+        }
     }
+}
 
+impl Rav1dFrameData {
     pub fn bd_fn(&self) -> &'static Rav1dFrameContext_bd_fn {
         let bpc = BPC::from_bitdepth_max(self.bitdepth_max);
         Rav1dFrameContext_bd_fn::get(bpc)

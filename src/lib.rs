@@ -233,7 +233,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
 
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     // TODO fallible allocation
-    (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::zeroed(i)).collect();
+    (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::default(i)).collect();
     let ttd = TaskThreadData {
         lock: Mutex::new(()),
         cond: Condvar::new(),
