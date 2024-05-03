@@ -5,6 +5,7 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
+use crate::src::cpu::CpuFlags;
 use crate::src::disjoint_mut::DisjointMut;
 use crate::src::disjoint_mut::DisjointMutArcSlice;
 use crate::src::env::fix_mv_precision;
@@ -17,7 +18,6 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
 use crate::src::tables::dav1d_block_dimensions;
-use cfg_if::cfg_if;
 use libc::ptrdiff_t;
 use std::array;
 use std::cmp;
@@ -27,12 +27,6 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
 use zerocopy::FromZeroes;
-
-#[cfg(all(
-    feature = "asm",
-    not(any(target_arch = "riscv64", target_arch = "riscv32"))
-))]
-use crate::src::cpu::{rav1d_get_cpu_flags, CpuFlags};
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 extern "C" {
@@ -205,7 +199,7 @@ pub(crate) struct refmvs_frame<'a> {
 }
 
 #[derive(Default)]
-pub(crate) struct RefMvsFrame {
+pub struct RefMvsFrame {
     pub iw4: c_int,
     pub ih4: c_int,
     pub iw8: c_int,
@@ -235,7 +229,7 @@ pub struct refmvs_tile_range {
     pub end: c_int,
 }
 
-pub(crate) struct refmvs_tile {
+pub struct refmvs_tile {
     /// Unique indices into [`RefMvsFrame::r`].
     /// Out of bounds indices correspond to null pointers.
     ///
@@ -321,8 +315,7 @@ pub type splat_mv_fn = unsafe extern "C" fn(
     rr_len: usize,
 ) -> ();
 
-#[repr(C)]
-pub(crate) struct Rav1dRefmvsDSPContext {
+pub struct Rav1dRefmvsDSPContext {
     load_tmvs: load_tmvs_fn,
     save_tmvs: save_tmvs_fn,
     splat_mv: splat_mv_fn,
@@ -1709,11 +1702,6 @@ pub(crate) fn rav1d_refmvs_init_frame(
     Ok(())
 }
 
-pub(crate) fn rav1d_refmvs_clear(rf: &mut RefMvsFrame) {
-    let _ = mem::take(&mut rf.r);
-    let _ = mem::take(&mut rf.rp_proj);
-}
-
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
     rmv: *const Align16<refmvs_block>,
@@ -1734,67 +1722,97 @@ unsafe extern "C" fn splat_mv_rust(
     }
 }
 
-#[inline(always)]
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))]
-fn refmvs_dsp_init_x86(c: &mut Rav1dRefmvsDSPContext) {
-    let flags = rav1d_get_cpu_flags();
-
-    if !flags.contains(CpuFlags::SSE2) {
-        return;
+impl Rav1dRefmvsDSPContext {
+    pub const fn default() -> Self {
+        Self {
+            load_tmvs: load_tmvs_c,
+            save_tmvs: save_tmvs_c,
+            splat_mv: splat_mv_rust,
+        }
     }
 
-    c.splat_mv = dav1d_splat_mv_sse2;
-
-    if !flags.contains(CpuFlags::SSSE3) {
-        return;
-    }
-
-    c.save_tmvs = dav1d_save_tmvs_ssse3;
-
-    if !flags.contains(CpuFlags::SSE41) {
-        return;
-    }
-
-    #[cfg(target_arch = "x86_64")]
-    {
-        c.load_tmvs = dav1d_load_tmvs_sse4;
-
-        if !flags.contains(CpuFlags::AVX2) {
-            return;
+    #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+    #[inline(always)]
+    const fn init_x86(mut self, flags: CpuFlags) -> Self {
+        if !flags.contains(CpuFlags::SSE2) {
+            return self;
         }
 
-        c.save_tmvs = dav1d_save_tmvs_avx2;
-        c.splat_mv = dav1d_splat_mv_avx2;
+        self.splat_mv = dav1d_splat_mv_sse2;
 
-        if !flags.contains(CpuFlags::AVX512ICL) {
-            return;
+        if !flags.contains(CpuFlags::SSSE3) {
+            return self;
         }
 
-        c.save_tmvs = dav1d_save_tmvs_avx512icl;
-        c.splat_mv = dav1d_splat_mv_avx512icl;
+        self.save_tmvs = dav1d_save_tmvs_ssse3;
+
+        if !flags.contains(CpuFlags::SSE41) {
+            return self;
+        }
+
+        #[cfg(target_arch = "x86_64")]
+        {
+            self.load_tmvs = dav1d_load_tmvs_sse4;
+
+            if !flags.contains(CpuFlags::AVX2) {
+                return self;
+            }
+
+            self.save_tmvs = dav1d_save_tmvs_avx2;
+            self.splat_mv = dav1d_splat_mv_avx2;
+
+            if !flags.contains(CpuFlags::AVX512ICL) {
+                return self;
+            }
+
+            self.save_tmvs = dav1d_save_tmvs_avx512icl;
+            self.splat_mv = dav1d_splat_mv_avx512icl;
+        }
+
+        self
+    }
+
+    #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+    #[inline(always)]
+    const fn init_arm(mut self, flags: CpuFlags) -> Self {
+        if !flags.contains(CpuFlags::NEON) {
+            return self;
+        }
+
+        self.save_tmvs = dav1d_save_tmvs_neon;
+        self.splat_mv = dav1d_splat_mv_neon;
+
+        self
+    }
+
+    #[inline(always)]
+    const fn init(self, flags: CpuFlags) -> Self {
+        #[cfg(feature = "asm")]
+        {
+            #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+            {
+                return self.init_x86(flags);
+            }
+            #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+            {
+                return self.init_arm(flags);
+            }
+        }
+
+        #[allow(unreachable_code)] // Reachable on some #[cfg]s.
+        {
+            let _ = flags;
+            self
+        }
+    }
+
+    pub const fn new(flags: CpuFlags) -> Self {
+        Self::default().init(flags)
     }
 }
 
-#[inline(always)]
-#[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), feature = "asm"))]
-fn refmvs_dsp_init_arm(c: &mut Rav1dRefmvsDSPContext) {
-    let flags = rav1d_get_cpu_flags();
-    if flags.contains(CpuFlags::NEON) {
-        c.save_tmvs = dav1d_save_tmvs_neon;
-        c.splat_mv = dav1d_splat_mv_neon;
-    }
-}
-
-#[cold]
-pub(crate) fn rav1d_refmvs_dsp_init(c: &mut Rav1dRefmvsDSPContext) {
-    c.load_tmvs = load_tmvs_c;
-    c.save_tmvs = save_tmvs_c;
-    c.splat_mv = splat_mv_rust;
-    cfg_if! {
-        if #[cfg(all(any(target_arch = "x86", target_arch = "x86_64"), feature = "asm"))] {
-            refmvs_dsp_init_x86(c);
-        } else if #[cfg(all(any(target_arch = "arm", target_arch = "aarch64"), feature = "asm"))] {
-            refmvs_dsp_init_arm(c);
-        }
+impl Default for Rav1dRefmvsDSPContext {
+    fn default() -> Self {
+        Self::default()
     }
 }

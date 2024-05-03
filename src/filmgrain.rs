@@ -194,8 +194,7 @@ impl fguv_32x32xn::Fn {
     }
 }
 
-#[repr(C)]
-pub(crate) struct Rav1dFilmGrainDSPContext {
+pub struct Rav1dFilmGrainDSPContext {
     pub generate_grain_y: generate_grain_y::Fn,
     pub generate_grain_uv: enum_map_ty!(Rav1dPixelLayoutSubSampled, generate_grain_uv::Fn),
     pub fgy_32x32xn: fgy_32x32xn::Fn,

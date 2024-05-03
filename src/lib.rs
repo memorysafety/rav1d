@@ -27,6 +27,7 @@ use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::fg_apply;
+use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
@@ -42,12 +43,9 @@ use crate::src::mem::rav1d_free_aligned;
 use crate::src::mem::rav1d_freep_aligned;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
-use crate::src::pal::rav1d_pal_dsp_init;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::PictureFlags;
 use crate::src::picture::Rav1dThreadPicture;
-use crate::src::refmvs::rav1d_refmvs_clear;
-use crate::src::refmvs::rav1d_refmvs_dsp_init;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
@@ -302,8 +300,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             }
         })
         .collect();
-    rav1d_pal_dsp_init(&mut (*c).pal_dsp);
-    rav1d_refmvs_dsp_init(&mut (*c).refmvs_dsp);
+    (*c).dsp = Rav1dDSPContext::get();
     Ok(())
 }
 
@@ -585,7 +582,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
                 #[cfg(feature = "bitdepth_8")]
                 bpc @ 8 => {
                     fg_apply::rav1d_apply_grain::<BitDepth8>(
-                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
+                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         out,
                         in_0,
                     );
@@ -593,7 +590,7 @@ pub(crate) unsafe fn rav1d_apply_grain(
                 #[cfg(feature = "bitdepth_16")]
                 bpc @ 10 | bpc @ 12 => {
                     fg_apply::rav1d_apply_grain::<BitDepth16>(
-                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
+                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         out,
                         in_0,
                     );
@@ -762,7 +759,7 @@ impl Drop for Rav1dContext {
                 let _ = mem::take(&mut f.lf.level);
                 let _ = mem::take(&mut f.lf.tx_lpf_right_edge); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.lf.start_of_tile_row); // TODO: remove when context is owned
-                rav1d_refmvs_clear(&mut f.rf);
+                let _ = mem::take(&mut f.rf);
                 let _ = mem::take(&mut f.lf.cdef_line_buf); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.lf.lr_line_buf); // TODO: remove when context is owned
             }

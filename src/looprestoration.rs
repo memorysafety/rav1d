@@ -137,7 +137,6 @@ pub type looprestorationfilter_fn = unsafe extern "C" fn(
     c_int,
 ) -> ();
 
-#[repr(C)]
 pub struct Rav1dLoopRestorationDSPContext {
     pub wiener: [looprestorationfilter_fn; 2],
     pub sgr: [looprestorationfilter_fn; 3],

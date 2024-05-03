@@ -20,8 +20,8 @@ use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::Bxy;
 use crate::src::internal::Cf;
 use crate::src::internal::CodedBlockInfo;
+use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::ScratchEmuEdge;
@@ -2497,7 +2497,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
 ) {
     let ts = &mut *f.ts.offset(t.ts as isize);
 
-    let dsp: *const Rav1dDSPContext = f.dsp;
+    let dsp: *const Rav1dBitDepthDSPContext = f.dsp;
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;

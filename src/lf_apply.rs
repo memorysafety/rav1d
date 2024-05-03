@@ -4,8 +4,8 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::src::align::AlignedVec64;
 use crate::src::disjoint_mut::DisjointMut;
+use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::lr_apply::LR_RESTORE_U;
 use crate::src::lr_apply::LR_RESTORE_V;
@@ -40,7 +40,7 @@ unsafe fn backup_lpf<BD: BitDepth>(
     ss_hor: c_int,
     lr_backup: c_int,
     frame_hdr: &Rav1dFrameHeader,
-    dsp: &Rav1dDSPContext,
+    dsp: &Rav1dBitDepthDSPContext,
     resize_step: [c_int; 2],
     resize_start: [c_int; 2],
     bitdepth_max: c_int,

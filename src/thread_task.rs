@@ -17,8 +17,8 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::fg_apply::rav1d_apply_grain_row;
 use crate::src::fg_apply::rav1d_prep_grain;
+use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
-use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameContext_task_thread;
 use crate::src::internal::Rav1dFrameData;
@@ -635,7 +635,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                 #[cfg(feature = "bitdepth_8")]
                 bpc @ 8 => {
                     rav1d_prep_grain::<BitDepth8>(
-                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
+                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut *out,
                         &*in_0,
                         BitDepth8::select_mut(&mut delayed_fg.grain),
@@ -644,7 +644,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                 #[cfg(feature = "bitdepth_16")]
                 bpc @ 10 | bpc @ 12 => {
                     rav1d_prep_grain::<BitDepth16>(
-                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
+                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut *out,
                         &*in_0,
                         BitDepth16::select_mut(&mut delayed_fg.grain),
@@ -682,7 +682,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                 #[cfg(feature = "bitdepth_8")]
                 bpc @ 8 => {
                     rav1d_apply_grain_row::<BitDepth8>(
-                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
+                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut *out,
                         &*in_0,
                         BitDepth8::select(&delayed_fg.grain),
@@ -692,7 +692,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                 #[cfg(feature = "bitdepth_16")]
                 bpc @ 10 | bpc @ 12 => {
                     rav1d_apply_grain_row::<BitDepth16>(
-                        &Rav1dDSPContext::get(bpc).as_ref().unwrap().fg,
+                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut *out,
                         &*in_0,
                         BitDepth16::select(&delayed_fg.grain),

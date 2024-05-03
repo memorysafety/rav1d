@@ -61,9 +61,9 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
 use crate::src::internal::Bxy;
+use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
@@ -897,7 +897,7 @@ unsafe fn splat_oneref_mv(
         bs,
         mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     });
-    c.refmvs_dsp.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -918,7 +918,7 @@ unsafe fn splat_intrabc_mv(
         bs,
         mf: 0,
     });
-    c.refmvs_dsp.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -943,7 +943,7 @@ unsafe fn splat_tworef_mv(
         bs,
         mf: (mode == GLOBALMV_GLOBALMV) as u8 | (1 << mode & 0xbc != 0) as u8 * 2,
     });
-    c.refmvs_dsp.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
@@ -963,7 +963,7 @@ unsafe fn splat_intraref(
         bs,
         mf: 0,
     });
-    c.refmvs_dsp.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
+    c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 fn mc_lowest_px(
@@ -1802,7 +1802,7 @@ unsafe fn decode_b(
             };
             read_pal_indices(
                 ts,
-                &c.pal_dsp,
+                &c.dsp.pal,
                 scratch.levels_pal.pal_mut(),
                 &mut scratch.pal_idx_uv,
                 Some(pal_idx),
@@ -1836,7 +1836,7 @@ unsafe fn decode_b(
             };
             read_pal_indices(
                 ts,
-                &c.pal_dsp,
+                &c.dsp.pal,
                 scratch.levels_pal.pal_mut(),
                 &mut scratch.pal_idx_uv,
                 pal_idx,
@@ -3855,6 +3855,7 @@ unsafe fn setup_tile(
         data.as_ptr(),
         data.len(),
         frame_hdr.disable_cdf_update != 0,
+        &c.dsp.msac,
     );
 
     ts.tiling.row = tile_row as c_int;
@@ -4089,7 +4090,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     }
 
     if c.tc.len() > 1 && frame_hdr.use_ref_frame_mvs != 0 {
-        c.refmvs_dsp.load_tmvs(
+        c.dsp.refmvs.load_tmvs(
             &f.rf,
             &f.mvs,
             &f.ref_mvs,
@@ -4198,7 +4199,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         && c.tc.len() > 1
         && f.frame_hdr().frame_type.is_inter_or_switch()
     {
-        c.refmvs_dsp.save_tmvs(
+        c.dsp.refmvs.save_tmvs(
             &t.rt,
             &f.rf,
             &f.mvs,
@@ -4702,7 +4703,7 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             t.b.y = sby << 4 + seq_hdr.sb128;
             let by_end = t.b.y + f.sb_step >> 1;
             if frame_hdr.use_ref_frame_mvs != 0 {
-                c.refmvs_dsp.load_tmvs(
+                c.dsp.refmvs.load_tmvs(
                     &f.rf,
                     &f.mvs,
                     &f.ref_mvs,
@@ -4718,7 +4719,8 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
                 rav1d_decode_tile_sbrow(c, &mut t, f).map_err(|()| EINVAL)?;
             }
             if f.frame_hdr().frame_type.is_inter_or_switch() {
-                c.refmvs_dsp
+                c.dsp
+                    .refmvs
                     .save_tmvs(&t.rt, &f.rf, &f.mvs, 0, f.bw >> 1, t.b.y >> 1, by_end);
             }
 
@@ -4910,7 +4912,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     }
 
     let bpc = 8 + 2 * seq_hdr.hbd;
-    match Rav1dDSPContext::get(bpc) {
+    match Rav1dBitDepthDSPContext::get(bpc) {
         Some(dsp) => f.dsp = dsp,
         None => {
             writeln!(c.logger, "Compiled without support for {bpc}-bit decoding",);
