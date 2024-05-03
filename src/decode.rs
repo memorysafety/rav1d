@@ -1221,22 +1221,16 @@ unsafe fn decode_b(
                 && inter.comp_type.is_none()
                 && inter.motion_mode == MotionMode::Warp
                 {
-                    if inter.nd.two_d.matrix[0] == i16::MIN {
+                    let two_d = inter.nd.two_d();
+                    if two_d.matrix[0] == i16::MIN {
                         t.warpmv.r#type = Rav1dWarpedMotionType::Identity;
                     } else {
                         t.warpmv.r#type = Rav1dWarpedMotionType::Affine;
-                        t.warpmv.matrix[2] = inter.nd.two_d.matrix[0] as i32 + 0x10000;
-                        t.warpmv.matrix[3] = inter.nd.two_d.matrix[1] as i32;
-                        t.warpmv.matrix[4] = inter.nd.two_d.matrix[2] as i32;
-                        t.warpmv.matrix[5] = inter.nd.two_d.matrix[3] as i32 + 0x10000;
-                        rav1d_set_affine_mv2d(
-                            bw4,
-                            bh4,
-                            inter.nd.two_d.mv2d,
-                            &mut t.warpmv,
-                            t.b.x,
-                            t.b.y,
-                        );
+                        t.warpmv.matrix[2] = two_d.matrix[0] as i32 + 0x10000;
+                        t.warpmv.matrix[3] = two_d.matrix[1] as i32;
+                        t.warpmv.matrix[4] = two_d.matrix[2] as i32;
+                        t.warpmv.matrix[5] = two_d.matrix[3] as i32 + 0x10000;
+                        rav1d_set_affine_mv2d(bw4, bh4, two_d.mv2d, &mut t.warpmv, t.b.x, t.b.y);
                         rav1d_get_shear_params(&mut t.warpmv);
                         if debug_block_info!(f, t.b) {
                             println!(
@@ -1252,8 +1246,8 @@ unsafe fn decode_b(
                                 SignAbs(t.warpmv.beta().into()),
                                 SignAbs(t.warpmv.gamma().into()),
                                 SignAbs(t.warpmv.delta().into()),
-                                inter.nd.two_d.mv2d.y,
-                                inter.nd.two_d.mv2d.x,
+                                two_d.mv2d.y,
+                                two_d.mv2d.x,
                             );
                         }
                     }
@@ -2131,14 +2125,11 @@ unsafe fn decode_b(
 
         b.uvtx = uvtx;
         let inter = Av1BlockInter {
-            nd: Av1BlockInterNd {
-                one_d: Av1BlockInter1d {
-                    mv: [r#ref, Default::default()],
-                    wedge_idx: Default::default(),
-                    mask_sign: Default::default(),
-                    interintra_mode: Default::default(),
-                },
-            },
+            nd: Av1BlockInter1d {
+                mv: [r#ref, Default::default()],
+                ..Default::default()
+            }
+            .into(),
             comp_type: Default::default(),
             inter_mode: Default::default(),
             motion_mode: Default::default(),
@@ -2265,17 +2256,12 @@ unsafe fn decode_b(
                 );
             }
 
-            let nd = Av1BlockInterNd {
-                one_d: Av1BlockInter1d {
-                    mv: mv1d,
-                    wedge_idx: Default::default(),
-                    mask_sign: Default::default(),
-                    interintra_mode: Default::default(),
-                },
-            };
-
             Inter {
-                nd,
+                nd: Av1BlockInter1d {
+                    mv: mv1d,
+                    ..Default::default()
+                }
+                .into(),
                 comp_type: Some(comp_type),
                 inter_mode,
                 motion_mode: Default::default(),
@@ -2588,14 +2574,13 @@ unsafe fn decode_b(
             let wedge_idx = wedge_idx;
 
             Inter {
-                nd: Av1BlockInterNd {
-                    one_d: Av1BlockInter1d {
-                        mv: mv1d,
-                        wedge_idx,
-                        mask_sign,
-                        interintra_mode: Default::default(),
-                    },
-                },
+                nd: Av1BlockInter1d {
+                    mv: mv1d,
+                    wedge_idx,
+                    mask_sign,
+                    ..Default::default()
+                }
+                .into(),
                 comp_type: Some(comp_type),
                 inter_mode,
                 motion_mode: Default::default(),
@@ -2936,7 +2921,13 @@ unsafe fn decode_b(
                                 t.warpmv.matrix[4],
                                 t.warpmv.matrix[5] - 0x10000,
                             ]
-                            .map(|it| it as i16)
+                            .map(|coef| {
+                                let coef = coef as i16;
+                                // warped matrix coefs are at least `i14`s.
+                                debug_assert!(coef < (1 << 13));
+                                debug_assert!(coef >= -(1 << 13));
+                                coef
+                            })
                         } else {
                             [i16::MIN, 0, 0, 0]
                         });
@@ -2956,20 +2947,18 @@ unsafe fn decode_b(
 
             Inter {
                 nd: match matrix {
-                    None => Av1BlockInterNd {
-                        one_d: Av1BlockInter1d {
-                            mv: [mv1d0, Default::default()],
-                            wedge_idx,
-                            mask_sign: Default::default(),
-                            interintra_mode,
-                        },
-                    },
-                    Some(matrix) => Av1BlockInterNd {
-                        two_d: Av1BlockInter2d {
-                            mv2d: mv1d0,
-                            matrix,
-                        },
-                    },
+                    None => Av1BlockInter1d {
+                        mv: [mv1d0, Default::default()],
+                        wedge_idx,
+                        interintra_mode: interintra_mode.into(),
+                        ..Default::default()
+                    }
+                    .into(),
+                    Some(matrix) => Av1BlockInter2d {
+                        mv2d: mv1d0,
+                        matrix,
+                    }
+                    .into(),
                 },
                 comp_type: None,
                 inter_mode,
