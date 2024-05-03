@@ -925,7 +925,6 @@ pub(crate) struct Rav1dFrameData {
     pub resize_start: [c_int; 2],            /* y, uv */
 
     pub ts: *mut Rav1dTileState,
-    pub ts_c: DisjointMut<Vec<Rav1dTileStateContext>>,
     pub n_ts: c_int,
     pub dsp: &'static Rav1dBitDepthDSPContext,
 
@@ -980,7 +979,6 @@ impl Default for Rav1dFrameData {
             resize_step: Default::default(),
             resize_start: Default::default(),
             ts: ptr::null_mut(),
-            ts_c: Default::default(),
             n_ts: Default::default(),
             dsp: Default::default(),
             ipred_edge: Default::default(),
@@ -1043,6 +1041,7 @@ pub struct Rav1dTileState_frame_thread {
     pub cf: usize,      // Offset into `f.frame_thread.cf`
 }
 
+#[derive(Default)]
 #[repr(C, align(32))]
 pub struct Rav1dTileStateContext {
     pub cdf: CdfContext,
@@ -1051,6 +1050,8 @@ pub struct Rav1dTileStateContext {
 
 #[repr(C)]
 pub struct Rav1dTileState {
+    pub context: Mutex<Rav1dTileStateContext>,
+
     pub tiling: Rav1dTileState_tiling,
 
     // in sby units, TILE_ERROR after a decoding error

@@ -177,9 +177,13 @@ use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::iter;
 use std::mem;
+use std::mem::MaybeUninit;
+use std::ptr::addr_of;
+use std::ptr::addr_of_mut;
 use std::slice;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 use strum::EnumCount;
 
 fn init_quant_tables(
@@ -347,18 +351,54 @@ unsafe fn read_tx_tree(
         let txsw = sub_t_dim.w as c_int;
         let txsh = sub_t_dim.h as c_int;
 
-        read_tx_tree(t, f, ts_c, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 0);
+        read_tx_tree(
+            t,
+            f,
+            ts_c,
+            sub,
+            depth + 1,
+            masks,
+            x_off * 2 + 0,
+            y_off * 2 + 0,
+        );
         t.b.x += txsw;
         if txw >= txh && t.b.x < f.bw {
-            read_tx_tree(t, f, ts_c, sub, depth + 1, masks, x_off * 2 + 1, y_off * 2 + 0);
+            read_tx_tree(
+                t,
+                f,
+                ts_c,
+                sub,
+                depth + 1,
+                masks,
+                x_off * 2 + 1,
+                y_off * 2 + 0,
+            );
         }
         t.b.x -= txsw;
         t.b.y += txsh;
         if txh >= txw && t.b.y < f.bh {
-            read_tx_tree(t, f, ts_c, sub, depth + 1, masks, x_off * 2 + 0, y_off * 2 + 1);
+            read_tx_tree(
+                t,
+                f,
+                ts_c,
+                sub,
+                depth + 1,
+                masks,
+                x_off * 2 + 0,
+                y_off * 2 + 1,
+            );
             t.b.x += txsw;
             if txw >= txh && t.b.x < f.bw {
-                read_tx_tree(t, f, ts_c, sub, depth + 1, masks, x_off * 2 + 1, y_off * 2 + 1);
+                read_tx_tree(
+                    t,
+                    f,
+                    ts_c,
+                    sub,
+                    depth + 1,
+                    masks,
+                    x_off * 2 + 1,
+                    y_off * 2 + 1,
+                );
             }
             t.b.x -= txsw;
         }
@@ -1309,7 +1349,7 @@ unsafe fn decode_b(
         return Ok(());
     }
 
-    let ts_c = &mut *f.ts_c.index_mut(t.ts);
+    let ts_c = &mut *ts.context.try_lock().unwrap();
 
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
@@ -1749,8 +1789,15 @@ unsafe fn decode_b(
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts_c.msac.rng);
                 }
                 if use_y_pal {
-                    pal_sz[0] =
-                        (bd_fn.read_pal_plane)(t, f, ts_c, false, sz_ctx, bx4 as usize, by4 as usize);
+                    pal_sz[0] = (bd_fn.read_pal_plane)(
+                        t,
+                        f,
+                        ts_c,
+                        false,
+                        sz_ctx,
+                        bx4 as usize,
+                        by4 as usize,
+                    );
                 }
             }
 
@@ -3475,7 +3522,7 @@ unsafe fn decode_sb(
         None
     } else {
         if false && bl == BlockLevel::Bl64x64 {
-            let ts_c = f.ts_c.index(t.ts);
+            let ts_c = ts.context.try_lock().unwrap();
             println!(
                 "poc={},y={},x={},bl={:?},r={}",
                 frame_hdr.frame_offset, t.b.y, t.b.x, bl, ts_c.msac.rng,
@@ -3483,13 +3530,13 @@ unsafe fn decode_sb(
         }
         bx8 = (t.b.x & 31) >> 1;
         by8 = (t.b.y & 31) >> 1;
-        Some(get_partition_ctx(&f.a[t.a], &t.l, bl, by8, bx8) as usize)
+        Some(get_partition_ctx(&f.a[t.a], &t.l, bl, by8, bx8))
     };
 
     if have_h_split && have_v_split {
         if let Some(ctx) = ctx {
-            let ts_c = &mut *f.ts_c.index_mut(t.ts);
-            let pc = &mut ts_c.cdf.m.partition[bl as usize][ctx];
+            let ts_c = &mut *ts.context.try_lock().unwrap();
+            let pc = &mut ts_c.cdf.m.partition[bl as usize][ctx as usize];
             bp = BlockPartition::from_repr(rav1d_msac_decode_symbol_adapt16(
                 &mut ts_c.msac,
                 pc,
@@ -3660,8 +3707,8 @@ unsafe fn decode_sb(
     } else if have_h_split {
         let is_split;
         if let Some(ctx) = ctx {
-            let ts_c = &mut *f.ts_c.index_mut(t.ts);
-            let pc = &mut ts_c.cdf.m.partition[bl as usize][ctx];
+            let ts_c = &mut *ts.context.try_lock().unwrap();
+            let pc = &mut ts_c.cdf.m.partition[bl as usize][ctx as usize];
             is_split = rav1d_msac_decode_bool(&mut ts_c.msac, gather_top_partition_prob(pc, bl));
             if debug_block_info!(f, t.b) {
                 println!(
@@ -3715,8 +3762,8 @@ unsafe fn decode_sb(
         assert!(have_v_split);
         let is_split;
         if let Some(ctx) = ctx {
-            let ts_c = &mut *f.ts_c.index_mut(t.ts);
-            let pc = &mut ts_c.cdf.m.partition[bl as usize][ctx];
+            let ts_c = &mut *ts.context.try_lock().unwrap();
+            let pc = &mut ts_c.cdf.m.partition[bl as usize][ctx as usize];
             is_split = rav1d_msac_decode_bool(&mut ts_c.msac, gather_left_partition_prob(pc, bl));
             if f.cur.p.layout == Rav1dPixelLayout::I422 && !is_split {
                 return Err(());
@@ -3842,7 +3889,6 @@ static ss_size_mul: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPix
 unsafe fn setup_tile(
     c: &Rav1dContext,
     ts: &mut Rav1dTileState,
-    ts_c: &mut Rav1dTileStateContext,
     f: &Rav1dFrameData,
     in_cdf: &CdfThreadContext,
     data: &[u8],
@@ -3875,6 +3921,7 @@ unsafe fn setup_tile(
         };
     }
 
+    let ts_c = &mut *ts.context.try_lock().unwrap();
     ts_c.cdf = rav1d_cdf_thread_copy(in_cdf);
     ts.last_qidx = frame_hdr.quant.yac;
     ts.last_delta_lf.fill(0);
@@ -3942,12 +3989,12 @@ unsafe fn setup_tile(
 
 fn read_restoration_info(
     ts: &mut Rav1dTileState,
-    ts_c: &mut Rav1dTileStateContext,
     lr: &mut Av1RestorationUnit,
     p: usize,
     frame_type: Rav1dRestorationType,
     debug_block_info: bool,
 ) {
+    let ts_c = &mut *ts.context.try_lock().unwrap();
     let lr_ref = ts.lr_ref[p];
 
     if frame_type == Rav1dRestorationType::Switchable {
@@ -4117,7 +4164,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     }
 
     // error out on symbol decoder overread
-    if f.ts_c.index(t.ts).msac.cnt < -15 {
+    if ts.context.try_lock().unwrap().msac.cnt < -15 {
         return Err(());
     }
 
@@ -4179,7 +4226,6 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             }
 
             let frame_type = frame_hdr.restoration.r#type[p as usize];
-            let ts_c = &mut *f.ts_c.index_mut(t.ts);
 
             if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                 let w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
@@ -4199,14 +4245,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                         .try_write()
                         .unwrap();
 
-                    read_restoration_info(
-                        ts,
-                        ts_c,
-                        &mut lr,
-                        p,
-                        frame_type,
-                        debug_block_info!(f, t.b),
-                    );
+                    read_restoration_info(ts, &mut lr, p, frame_type, debug_block_info!(f, t.b));
                 }
             } else {
                 let x = 4 * t.b.x >> ss_hor;
@@ -4225,7 +4264,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                     .try_write()
                     .unwrap();
 
-                read_restoration_info(ts, ts_c, &mut lr, p, frame_type, debug_block_info!(f, t.b));
+                read_restoration_info(ts, &mut lr, p, frame_type, debug_block_info!(f, t.b));
             }
         }
         decode_sb(c, t, f, root_bl, EdgeIndex::root())?;
@@ -4311,8 +4350,13 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
         if f.ts.is_null() {
             return Err(ENOMEM);
         }
-        f.ts_c.resize_with(n_ts as usize, || mem::uninitialized());
         f.n_ts = n_ts;
+
+        for index in 0..n_ts as usize {
+            let ts = &mut *f.ts.add(index);
+            // TODO: Safe initialization.
+            addr_of_mut!(ts.context).write(Mutex::new(Default::default()));
+        }
     }
 
     let a_sz = f.sb128w
@@ -4634,8 +4678,8 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
         let end: usize = tile.hdr.end.try_into().unwrap();
 
         let mut data = tile.data.as_ref();
-        for (j, (ts_idx, tile_start_off)) in iter::zip(
-            0..end + 1,
+        for (j, (ts, tile_start_off)) in iter::zip(
+            slice::from_raw_parts_mut(f.ts, end + 1),
             if uses_2pass {
                 &f.frame_thread.tile_start_off[..end + 1]
             } else {
@@ -4669,12 +4713,9 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
             };
 
             let (cur_data, rest_data) = data.split_at(tile_sz);
-            let ts = &mut *f.ts.add(ts_idx);
-            let ts_c = &mut *f.ts_c.index_mut(ts_idx);
             setup_tile(
                 c,
                 ts,
-                ts_c,
                 f,
                 in_cdf,
                 cur_data,
@@ -4856,7 +4897,11 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext
                     rav1d_cdf_thread_update(
                         frame_hdr,
                         &mut f.out_cdf.cdf_write(),
-                        &f.ts_c.index(frame_hdr.tiling.update as usize).cdf,
+                        &(*f.ts.offset(frame_hdr.tiling.update as isize))
+                            .context
+                            .try_lock()
+                            .unwrap()
+                            .cdf,
                     );
                 }
             }
