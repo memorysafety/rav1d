@@ -7,6 +7,7 @@
 
 use crate::src::align::AlignedByteChunk;
 use crate::src::align::AlignedVec;
+use crate::src::disjoint_mut::debug::DisjointMutBounds;
 use std::cell::UnsafeCell;
 use std::fmt;
 use std::fmt::Debug;
@@ -72,7 +73,7 @@ pub struct DisjointMutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
     #[cfg(debug_assertions)]
     parent: &'a DisjointMut<T>,
     #[cfg(debug_assertions)]
-    bounds: Bounds,
+    bounds: DisjointMutBounds,
 }
 
 impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
@@ -130,7 +131,7 @@ pub struct DisjointImmutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
     #[cfg(debug_assertions)]
     parent: &'a DisjointMut<T>,
     #[cfg(debug_assertions)]
-    bounds: Bounds,
+    bounds: debug::DisjointMutBounds,
 }
 
 impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
@@ -654,12 +655,21 @@ mod debug {
     use std::thread::ThreadId;
 
     #[derive(Debug)]
-    struct DisjointMutBounds {
+    pub(crate) struct DisjointMutBounds {
         bounds: Bounds,
         mutable: bool,
         location: &'static Location<'static>,
         backtrace: Backtrace,
         thread: ThreadId,
+    }
+
+    impl PartialEq for DisjointMutBounds {
+        fn eq(&self, other: &Self) -> bool {
+            self.bounds == other.bounds
+                && self.mutable == other.mutable
+                && self.location == other.location
+                && self.thread == other.thread
+        }
     }
 
     impl DisjointMutBounds {
@@ -723,8 +733,7 @@ mod debug {
 
     impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         #[track_caller]
-        fn add_mut_bounds(&self, bounds: Bounds) {
-            let current = DisjointMutBounds::new(bounds, true);
+        fn add_mut_bounds(&self, current: DisjointMutBounds) {
             for existing in self.bounds.immutable.lock().unwrap().iter() {
                 current.check_overlaps(existing);
             }
@@ -736,8 +745,7 @@ mod debug {
         }
 
         #[track_caller]
-        fn add_immut_bounds(&self, bounds: Bounds) {
-            let current = DisjointMutBounds::new(bounds, false);
+        fn add_immut_bounds(&self, current: DisjointMutBounds) {
             let mut_bounds = self.bounds.mutable.lock().unwrap();
             for existing in mut_bounds.iter() {
                 current.check_overlaps(existing);
@@ -745,8 +753,8 @@ mod debug {
             self.bounds.immutable.lock().unwrap().push(current);
         }
 
-        fn remove_bound(&self, bounds: &Bounds, mutable: bool) {
-            let all_bounds = if mutable {
+        fn remove_bound(&self, bounds: &DisjointMutBounds) {
+            let all_bounds = if bounds.mutable {
                 self.bounds.mutable.lock()
             } else {
                 self.bounds.immutable.lock()
@@ -758,7 +766,7 @@ mod debug {
             };
             let idx = all_bounds
                 .iter()
-                .position(|r| r.bounds == *bounds)
+                .position(|r| r == bounds)
                 .expect("Expected range {range:?} to be in the active ranges");
             all_bounds.remove(idx);
         }
@@ -767,7 +775,8 @@ mod debug {
     impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointMutGuard<'a, T, V> {
         #[track_caller]
         pub fn new(parent: &'a DisjointMut<T>, slice: &'a mut V, bounds: Bounds) -> Self {
-            parent.add_mut_bounds(bounds.clone());
+            parent.add_mut_bounds(DisjointMutBounds::new(bounds.clone(), true));
+            let bounds = DisjointMutBounds::new(bounds, true);
             Self {
                 parent,
                 slice,
@@ -779,14 +788,15 @@ mod debug {
 
     impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> Drop for DisjointMutGuard<'a, T, V> {
         fn drop(&mut self) {
-            self.parent.remove_bound(&self.bounds, true);
+            self.parent.remove_bound(&self.bounds);
         }
     }
 
     impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> DisjointImmutGuard<'a, T, V> {
         #[track_caller]
         pub fn new(parent: &'a DisjointMut<T>, slice: &'a V, bounds: Bounds) -> Self {
-            parent.add_immut_bounds(bounds.clone());
+            parent.add_immut_bounds(DisjointMutBounds::new(bounds.clone(), false));
+            let bounds = DisjointMutBounds::new(bounds, false);
             Self {
                 parent,
                 slice,
@@ -798,7 +808,7 @@ mod debug {
 
     impl<'a, T: ?Sized + AsMutPtr, V: ?Sized> Drop for DisjointImmutGuard<'a, T, V> {
         fn drop(&mut self) {
-            self.parent.remove_bound(&self.bounds, false);
+            self.parent.remove_bound(&self.bounds);
         }
     }
 }
