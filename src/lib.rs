@@ -49,7 +49,6 @@ use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
 use std::cmp;
 use std::ffi::c_char;
-use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::ffi::CStr;
@@ -177,7 +176,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1d
 pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
     unsafe fn error(c: *mut Rav1dContext, c_out: &mut *mut Rav1dContext) -> Rav1dResult {
         if !c.is_null() {
-            close_internal(c_out, 0 as c_int);
+            close_internal(c_out, false);
         }
         return Err(ENOMEM);
     }
@@ -667,7 +666,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
 
 #[cold]
 pub(crate) unsafe fn rav1d_close(c_out: &mut *mut Rav1dContext) {
-    close_internal(c_out, 1 as c_int);
+    close_internal(c_out, true);
 }
 
 #[no_mangle]
@@ -680,14 +679,14 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
 }
 
 #[cold]
-unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
+unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: bool) {
     let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
         return;
     }
     *c_out = ptr::null_mut();
     let mut c = Box::from_raw(c);
-    if flush != 0 {
+    if flush {
         rav1d_flush(&mut c);
     }
 }
