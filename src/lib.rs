@@ -54,7 +54,6 @@ use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
@@ -220,10 +219,13 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             .cast::<c_void>()
             .cast_mut();
     }
-    if (::core::mem::size_of::<usize>() as c_ulong) < 8 as c_ulong
-        && (s.frame_size_limit).wrapping_sub(1 as c_int as c_uint) >= (8192 * 8192) as c_uint
-    {
-        (*c).frame_size_limit = (8192 * 8192) as c_uint;
+
+    // On 32-bit systems, extremely large frame sizes can cause overflows in
+    // `rav1d_decode_frame` alloc size calculations. Prevent that from occuring
+    // by enforcing a maximum frame size limit, chosen to roughly correspond to
+    // the largest size possible to decode without exhausting virtual memory.
+    if mem::size_of::<usize>() < 8 && s.frame_size_limit.wrapping_sub(1) >= 8192 * 8192 {
+        (*c).frame_size_limit = 8192 * 8192;
         if s.frame_size_limit != 0 {
             writeln!(
                 (*c).logger,
@@ -233,6 +235,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             );
         }
     }
+
     (*c).flush = AtomicBool::new(false);
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     // TODO fallible allocation
