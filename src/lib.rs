@@ -38,9 +38,7 @@ use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::iter::wrapping_iter;
 use crate::src::log::Rav1dLog as _;
-use crate::src::mem::rav1d_alloc_aligned;
 use crate::src::mem::rav1d_free_aligned;
-use crate::src::mem::rav1d_freep_aligned;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::rav1d_picture_alloc_copy;
@@ -51,7 +49,6 @@ use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
 use std::cmp;
 use std::ffi::c_char;
-use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::ffi::CStr;
@@ -179,7 +176,7 @@ pub unsafe extern "C" fn dav1d_get_frame_delay(s: *const Dav1dSettings) -> Dav1d
 pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings) -> Rav1dResult {
     unsafe fn error(c: *mut Rav1dContext, c_out: &mut *mut Rav1dContext) -> Rav1dResult {
         if !c.is_null() {
-            close_internal(c_out, 0 as c_int);
+            close_internal(c_out, false);
         }
         return Err(ENOMEM);
     }
@@ -189,12 +186,13 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     validate_input!((s.n_threads >= 0 && s.n_threads <= 256, EINVAL))?;
     validate_input!((s.max_frame_delay >= 0 && s.max_frame_delay <= 256, EINVAL))?;
     validate_input!((s.operating_point <= 31, EINVAL))?;
-    *c_out = rav1d_alloc_aligned(::core::mem::size_of::<Rav1dContext>(), 64) as *mut Rav1dContext;
+    let c = Box::new(Default::default());
+    let c = Box::into_raw(c);
+    *c_out = c;
     let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
         return error(c, c_out);
     }
-    c.write(Default::default());
     (*c).allocator = s.allocator.clone();
     (*c).logger = s.logger.clone();
     (*c).apply_grain = s.apply_grain;
@@ -668,7 +666,7 @@ pub unsafe extern "C" fn dav1d_flush(c: *mut Dav1dContext) {
 
 #[cold]
 pub(crate) unsafe fn rav1d_close(c_out: &mut *mut Rav1dContext) {
-    close_internal(c_out, 1 as c_int);
+    close_internal(c_out, true);
 }
 
 #[no_mangle]
@@ -681,16 +679,16 @@ pub unsafe extern "C" fn dav1d_close(c_out: *mut *mut Dav1dContext) {
 }
 
 #[cold]
-unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: c_int) {
+unsafe fn close_internal(c_out: &mut *mut Rav1dContext, flush: bool) {
     let c: *mut Rav1dContext = *c_out;
     if c.is_null() {
         return;
     }
-    if flush != 0 {
-        rav1d_flush(&mut *c);
+    *c_out = ptr::null_mut();
+    let mut c = Box::from_raw(c);
+    if flush {
+        rav1d_flush(&mut c);
     }
-    c.drop_in_place();
-    rav1d_freep_aligned(c_out as *mut _ as *mut c_void);
 }
 
 impl Drop for Rav1dContext {

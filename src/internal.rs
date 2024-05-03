@@ -363,6 +363,7 @@ impl Rav1dContextTaskThread {
 
 #[derive(Default)]
 #[repr(C)]
+#[repr(align(64))]
 pub struct Rav1dContext {
     pub(crate) fc: Box<[Rav1dFrameContext]>,
 
