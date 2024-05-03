@@ -32,7 +32,6 @@ use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskThread;
 use crate::src::internal::Rav1dContextTaskType;
-use crate::src::internal::Rav1dDSPContext;
 use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
@@ -206,8 +205,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     (*c).output_invisible_frames = s.output_invisible_frames;
     (*c).inloop_filters = s.inloop_filters;
     (*c).decode_frame_type = s.decode_frame_type;
-    (*c).cached_error_props = Default::default();
-    (*c).picture_pool = Default::default();
 
     if (*c).allocator.is_default() {
         if !(*c).allocator.cookie.is_null() {
@@ -236,7 +233,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         }
     }
 
-    (*c).flush = AtomicBool::new(false);
     let NumThreads { n_tc, n_fc } = get_num_threads(s);
     // TODO fallible allocation
     (*c).fc = (0..n_fc).map(|i| Rav1dFrameContext::zeroed(i)).collect();
@@ -253,16 +249,11 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         delayed_fg: RwLock::new(mem::zeroed()),
     };
     (*c).task_thread = Arc::new(ttd);
-    (*c).tiles = Default::default();
     (*c).frame_thread.out_delayed = if n_fc > 1 {
         (0..n_fc).map(|_| Default::default()).collect()
     } else {
         Box::new([])
     };
-    (*c).itut_t35 = Arc::new(Mutex::new(Default::default()));
-    (*c).out = Default::default();
-    (*c).cache = Default::default();
-    (*c).refs = Default::default();
     for fc in (*c).fc.iter_mut() {
         fc.task_thread.finished = AtomicBool::new(true);
         fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
@@ -298,7 +289,6 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
             }
         })
         .collect();
-    (*c).dsp = Rav1dDSPContext::get();
     Ok(())
 }
 
