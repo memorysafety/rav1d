@@ -3851,12 +3851,7 @@ unsafe fn setup_tile(
     ts.last_qidx = frame_hdr.quant.yac;
     ts.last_delta_lf.fill(0);
 
-    ts.msac = MsacContext::new(
-        data.as_ptr(),
-        data.len(),
-        frame_hdr.disable_cdf_update != 0,
-        &c.dsp.msac,
-    );
+    ts.msac = MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac);
 
     ts.tiling.row = tile_row as c_int;
     ts.tiling.col = tile_col as c_int;

@@ -7,7 +7,6 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::mem;
 use std::ops::Range;
-use std::slice;
 
 #[cfg(all(feature = "asm", target_feature = "sse2"))]
 extern "C" {
@@ -399,16 +398,12 @@ fn rav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> c_u
 impl MsacContext {
     /// # Safety
     ///
-    /// `data` and `sz` must form a valid slice,
-    /// and must live longer than all of the other functions called on the returned [`Self`].
+    /// `data` must live longer than all of the other functions called on the returned [`Self`].
     pub unsafe fn new(
-        data: *const u8,
-        sz: usize,
+        data: &[u8],
         disable_cdf_update_flag: bool,
         dsp: &Rav1dMsacDSPContext,
     ) -> Self {
-        // SAFETY: Guaranteed by safety preconditions.
-        let data = unsafe { slice::from_raw_parts(data, sz) };
         let Range {
             start: buf_pos,
             end: buf_end,
