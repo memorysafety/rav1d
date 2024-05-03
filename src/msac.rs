@@ -181,10 +181,6 @@ impl MsacContext {
     fn allow_update_cdf(&self) -> bool {
         self.allow_update_cdf != 0
     }
-
-    fn set_allow_update_cdf(&mut self, val: bool) {
-        self.allow_update_cdf = val.into()
-    }
 }
 
 #[inline]
@@ -399,34 +395,32 @@ fn rav1d_msac_decode_hi_tok_rust(s: &mut MsacContext, cdf: &mut [u16; 4]) -> c_u
     tok
 }
 
-/// # Safety
-///
-/// `data` and `sz` must form a valid slice,
-/// and must live longer than all of the other functions called on [`MsacContext`].
-pub unsafe fn rav1d_msac_init(
-    s: &mut MsacContext,
-    data: *const u8,
-    sz: usize,
-    disable_cdf_update_flag: bool,
-    dsp: &Rav1dMsacDSPContext,
-) {
-    s.set_buf(std::slice::from_raw_parts(data, sz));
-    s.dif = (1 << (EC_WIN_SIZE - 1)) - 1;
-    s.rng = 0x8000;
-    s.cnt = -15;
-    s.set_allow_update_cdf(!disable_cdf_update_flag);
-    ctx_refill(s);
-
-    #[cfg(feature = "asm")]
-    {
-        #[cfg(target_arch = "x86_64")]
-        {
-            s.symbol_adapt16 = dsp.symbol_adapt16;
-        }
-        #[cfg(not(target_arch = "x86_64"))]
-        {
-            let _ = dsp.symbol_adapt16;
-        }
+impl MsacContext {
+    /// # Safety
+    ///
+    /// `data` must live longer than all of the other functions called on the returned [`Self`].
+    pub unsafe fn new(
+        data: &[u8],
+        disable_cdf_update_flag: bool,
+        dsp: &Rav1dMsacDSPContext,
+    ) -> Self {
+        let Range {
+            start: buf_pos,
+            end: buf_end,
+        } = data.as_ptr_range();
+        let mut s = Self {
+            buf_pos,
+            buf_end,
+            dif: (1 << (EC_WIN_SIZE - 1)) - 1,
+            rng: 0x8000,
+            cnt: -15,
+            allow_update_cdf: (!disable_cdf_update_flag).into(),
+            #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+            symbol_adapt16: dsp.symbol_adapt16,
+        };
+        let _ = dsp.symbol_adapt16; // Silence unused warnings.
+        ctx_refill(&mut s);
+        s
     }
 }
 

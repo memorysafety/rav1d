@@ -131,7 +131,7 @@ use crate::src::msac::rav1d_msac_decode_symbol_adapt16;
 use crate::src::msac::rav1d_msac_decode_symbol_adapt4;
 use crate::src::msac::rav1d_msac_decode_symbol_adapt8;
 use crate::src::msac::rav1d_msac_decode_uniform;
-use crate::src::msac::rav1d_msac_init;
+use crate::src::msac::MsacContext;
 use crate::src::pal::Rav1dPalDSPContext;
 use crate::src::picture::rav1d_picture_alloc_copy;
 use crate::src::picture::rav1d_thread_picture_alloc;
@@ -3851,13 +3851,7 @@ unsafe fn setup_tile(
     ts.last_qidx = frame_hdr.quant.yac;
     ts.last_delta_lf.fill(0);
 
-    rav1d_msac_init(
-        &mut ts.msac,
-        data.as_ptr(),
-        data.len(),
-        frame_hdr.disable_cdf_update != 0,
-        &c.dsp.msac,
-    );
+    ts.msac = MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac);
 
     ts.tiling.row = tile_row as c_int;
     ts.tiling.col = tile_col as c_int;
