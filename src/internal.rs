@@ -510,33 +510,36 @@ impl Rav1dFrameContext_bd_fn {
         &self,
         f: &Rav1dFrameData,
         context: &mut Rav1dTaskContext,
+        ts_c: Option<&mut Rav1dTileStateContext>,
         block_size: BlockSize,
         flags: EdgeFlags,
         block: &Av1Block,
         intra: &Av1BlockIntra,
     ) {
-        (self.recon_b_intra)(f, context, block_size, flags, block, intra);
+        (self.recon_b_intra)(f, context, ts_c, block_size, flags, block, intra);
     }
 
     pub unsafe fn recon_b_inter(
         &self,
         f: &Rav1dFrameData,
         context: &mut Rav1dTaskContext,
+        ts_c: Option<&mut Rav1dTileStateContext>,
         block_size: BlockSize,
         block: &Av1Block,
         inter: &Av1BlockInter,
     ) -> Result<(), ()> {
-        (self.recon_b_inter)(f, context, block_size, block, inter)
+        (self.recon_b_inter)(f, context, ts_c, block_size, block, inter)
     }
 
     pub unsafe fn read_coef_blocks(
         &self,
         f: &Rav1dFrameData,
         context: &mut Rav1dTaskContext,
+        ts_c: &mut Rav1dTileStateContext,
         block_size: BlockSize,
         block: &Av1Block,
     ) {
-        (self.read_coef_blocks)(f, context, block_size, block);
+        (self.read_coef_blocks)(f, context, ts_c, block_size, block);
     }
 }
 
@@ -922,6 +925,7 @@ pub(crate) struct Rav1dFrameData {
     pub resize_start: [c_int; 2],            /* y, uv */
 
     pub ts: *mut Rav1dTileState,
+    pub ts_c: DisjointMut<Vec<Rav1dTileStateContext>>,
     pub n_ts: c_int,
     pub dsp: &'static Rav1dBitDepthDSPContext,
 
@@ -976,6 +980,7 @@ impl Default for Rav1dFrameData {
             resize_step: Default::default(),
             resize_start: Default::default(),
             ts: ptr::null_mut(),
+            ts_c: Default::default(),
             n_ts: Default::default(),
             dsp: Default::default(),
             ipred_edge: Default::default(),
@@ -1038,10 +1043,14 @@ pub struct Rav1dTileState_frame_thread {
     pub cf: usize,      // Offset into `f.frame_thread.cf`
 }
 
-#[repr(C)]
-pub struct Rav1dTileState {
+#[repr(C, align(32))]
+pub struct Rav1dTileStateContext {
     pub cdf: CdfContext,
     pub msac: MsacContext,
+}
+
+#[repr(C)]
+pub struct Rav1dTileState {
     pub tiling: Rav1dTileState_tiling,
 
     // in sby units, TILE_ERROR after a decoding error
