@@ -1026,10 +1026,13 @@ impl Rav1dLoopFilterDSPContext {
                         return self;
                     }
 
-                    self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx512icl;
                     self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx512icl;
-                    self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx512icl;
                     self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx512icl;
+
+                    if !flags.contains(CpuFlags::SLOW_GATHER) {
+                        self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx512icl;
+                        self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx512icl;
+                    }
                 }
             }
             BPC::BPC16 => {
@@ -1053,10 +1056,13 @@ impl Rav1dLoopFilterDSPContext {
                         return self;
                     }
 
-                    self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx512icl;
                     self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx512icl;
-                    self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx512icl;
                     self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx512icl;
+
+                    if !flags.contains(CpuFlags::SLOW_GATHER) {
+                        self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx512icl;
+                        self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx512icl;
+                    }
                 }
             }
         }
