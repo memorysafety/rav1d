@@ -56,7 +56,7 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
-pub type itx_1d_fn = unsafe extern "C" fn(*mut i32, ptrdiff_t, c_int, c_int) -> ();
+pub type itx_1d_fn = unsafe extern "C" fn(c: *mut i32, stride: ptrdiff_t, min: c_int, max: c_int);
 
 pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
