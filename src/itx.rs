@@ -95,8 +95,7 @@ pub unsafe fn inv_txfm_add_rust<
         dc = dc * 181 + 128 + 2048 >> 12;
         for _ in 0..H {
             for x in 0..W {
-                *dst.offset(x as isize) =
-                    bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + dc);
+                *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + dc);
             }
             dst = dst.offset(BD::pxstride(stride));
         }
@@ -106,7 +105,7 @@ pub unsafe fn inv_txfm_add_rust<
     let sh = cmp::min(H, 32);
     let sw = cmp::min(W, 32);
 
-    let coeff = slice::from_raw_parts_mut(coeff, sh as usize * sw as usize);
+    let coeff = slice::from_raw_parts_mut(coeff, sh * sw);
 
     let row_clip_min;
     let col_clip_min;
@@ -125,25 +124,25 @@ pub unsafe fn inv_txfm_add_rust<
     for y in 0..sh {
         if is_rect2 {
             for x in 0..sw {
-                c[x as usize] = coeff[(y + x * sh) as usize].as_::<c_int>() * 181 + 128 >> 8;
+                c[x] = coeff[y + x * sh].as_::<c_int>() * 181 + 128 >> 8;
             }
         } else {
             for x in 0..sw {
-                c[x as usize] = coeff[(y + x * sh) as usize].as_();
+                c[x] = coeff[y + x * sh].as_();
             }
         }
         first_1d_fn(c.as_mut_ptr(), 1, row_clip_min, row_clip_max);
-        c = &mut c[W as usize..];
+        c = &mut c[W..];
     }
 
     coeff.fill(0.into());
     for i in 0..W * sh {
-        tmp[i as usize] = iclip(tmp[i as usize] + rnd >> SHIFT, col_clip_min, col_clip_max);
+        tmp[i] = iclip(tmp[i] + rnd >> SHIFT, col_clip_min, col_clip_max);
     }
 
     for x in 0..W {
         second_1d_fn(
-            tmp[x as usize..].as_mut_ptr(),
+            tmp[x..].as_mut_ptr(),
             W as ptrdiff_t,
             col_clip_min,
             col_clip_max,
@@ -153,8 +152,7 @@ pub unsafe fn inv_txfm_add_rust<
     c = &mut tmp[..];
     for _ in 0..H {
         for x in 0..W {
-            *dst.offset(x as isize) =
-                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + (c[0] + 8 >> 4));
+            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + (c[0] + 8 >> 4));
             c = &mut c[1..];
         }
         dst = dst.offset(BD::pxstride(stride));
