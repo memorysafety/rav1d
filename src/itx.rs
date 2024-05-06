@@ -42,11 +42,10 @@ use crate::src::levels::V_ADST;
 use crate::src::levels::V_DCT;
 use crate::src::levels::V_FLIPADST;
 use crate::src::levels::WHT_WHT;
-use libc::memset;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
-use std::ffi::c_void;
+use std::slice;
 
 #[cfg(all(
     feature = "asm",
@@ -147,13 +146,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
         y_0 += 1;
         c = c.offset(w as isize);
     }
-    memset(
-        coeff as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<BD::Coef>()
-            .wrapping_mul(sw as usize)
-            .wrapping_mul(sh as usize),
-    );
+    slice::from_raw_parts_mut(coeff, sw as usize * sh as usize).fill(0.into());
     let mut i = 0;
     while i < w * sh {
         tmp[i as usize] = iclip(tmp[i as usize] + rnd >> shift, col_clip_min, col_clip_max);
@@ -509,13 +502,7 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
         y += 1;
         c = c.offset(4);
     }
-    memset(
-        coeff as *mut c_void,
-        0 as c_int,
-        ::core::mem::size_of::<BD::Coef>()
-            .wrapping_mul(4)
-            .wrapping_mul(4),
-    );
+    slice::from_raw_parts_mut(coeff, 4 * 4).fill(0.into());
     let mut x_0 = 0;
     while x_0 < 4 {
         dav1d_inv_wht4_1d_c(

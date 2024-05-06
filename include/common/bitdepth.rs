@@ -158,6 +158,7 @@ pub trait BitDepth: Clone + Copy {
     type AlignPixelX8: Copy;
 
     type Coef: Copy
+        + From<i8>
         + FromPrimitive<c_int>
         + FromPrimitive<c_uint>
         + ToPrimitive<c_int>
