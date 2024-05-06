@@ -38,7 +38,6 @@ use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::iter::wrapping_iter;
 use crate::src::log::Rav1dLog as _;
-use crate::src::mem::rav1d_free_aligned;
 use crate::src::obu::rav1d_parse_obus;
 use crate::src::obu::rav1d_parse_sequence_header;
 use crate::src::picture::rav1d_picture_alloc_copy;

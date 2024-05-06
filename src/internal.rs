@@ -102,7 +102,6 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::ops::Range;
 use std::ops::Sub;
-use std::ptr;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicI8;
