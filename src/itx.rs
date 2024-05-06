@@ -466,8 +466,8 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
 ) {
     use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
 
-    let mut tmp: [i32; 16] = [0; 16];
-    let mut c: *mut i32 = tmp.as_mut_ptr();
+    let mut tmp = [0; 16];
+    let mut c = tmp.as_mut_ptr();
     let mut y = 0;
     while y < 4 {
         let mut x = 0;
