@@ -73,15 +73,9 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
 ) {
     let bitdepth_max: c_int = bd.bitdepth_max().as_();
     let stride = stride as usize;
-    if !(w >= 4 && w <= 64) {
-        unreachable!();
-    }
-    if !(h >= 4 && h <= 64) {
-        unreachable!();
-    }
-    if !(eob >= 0) {
-        unreachable!();
-    }
+    assert!(w >= 4 && w <= 64);
+    assert!(h >= 4 && h <= 64);
+    assert!(eob >= 0);
     let is_rect2: c_int = (w * 2 == h || h * 2 == w) as c_int;
     let rnd = (1 as c_int) << shift >> 1;
     if eob < has_dconly {
