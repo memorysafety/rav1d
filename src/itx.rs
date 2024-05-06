@@ -119,7 +119,7 @@ pub unsafe fn inv_txfm_add_rust<
     let row_clip_max = !row_clip_min;
     let col_clip_max = !col_clip_min;
 
-    let mut tmp = [0; 4096];
+    let mut tmp = [0; 64 * 64]; // Should be `W * H`.
     let mut c = &mut tmp[..];
     for y in 0..sh {
         if is_rect2 {
@@ -466,30 +466,33 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
 ) {
     use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
 
-    let mut tmp = [0; 16];
+    const H: usize = 4;
+    const W: usize = 4;
+
+    let mut tmp = [0; W * H];
     let mut c = &mut tmp[..];
     let mut y = 0;
-    while y < 4 {
+    while y < H {
         let mut x = 0;
-        while x < 4 {
-            c[x as usize] = (*coeff.offset((y + x * 4) as isize)).as_::<i32>() >> 2;
+        while x < W {
+            c[x as usize] = (*coeff.offset((y + x * H) as isize)).as_::<i32>() >> 2;
             x += 1;
         }
         dav1d_inv_wht4_1d_c(c.as_mut_ptr(), 1);
         y += 1;
-        c = &mut c[4..];
+        c = &mut c[W..];
     }
-    slice::from_raw_parts_mut(coeff, 4 * 4).fill(0.into());
+    slice::from_raw_parts_mut(coeff, W * H).fill(0.into());
     let mut x = 0;
-    while x < 4 {
-        dav1d_inv_wht4_1d_c(tmp[x as usize..].as_mut_ptr(), 4);
+    while x < W {
+        dav1d_inv_wht4_1d_c(tmp[x as usize..].as_mut_ptr(), H as isize);
         x += 1;
     }
     c = &mut tmp[..];
     let mut y = 0;
-    while y < 4 {
+    while y < H {
         let mut x = 0;
-        while x < 4 {
+        while x < W {
             *dst.offset(x as isize) =
                 bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + c[0]);
             c = &mut c[1..];
