@@ -46,11 +46,6 @@ pub fn iclip(v: c_int, min: c_int, max: c_int) -> c_int {
 }
 
 #[inline]
-pub fn iclip_u8(v: c_int) -> c_int {
-    clip_u8(v).into()
-}
-
-#[inline]
 pub fn apply_sign(v: c_int, s: c_int) -> c_int {
     if s < 0 {
         -v
