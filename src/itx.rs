@@ -78,13 +78,13 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     assert!(h >= 4 && h <= 64);
     assert!(eob >= 0);
 
-    let is_rect2 = (w * 2 == h || h * 2 == w) as c_int;
+    let is_rect2 = w * 2 == h || h * 2 == w;
     let rnd = 1 << shift >> 1;
 
     if eob < has_dconly {
         let mut dc = (*coeff.offset(0)).as_::<c_int>();
         *coeff.offset(0) = 0.as_();
-        if is_rect2 != 0 {
+        if is_rect2 {
             dc = dc * 181 + 128 >> 8;
         }
         dc = dc * 181 + 128 >> 8;
@@ -122,7 +122,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     let mut c = tmp.as_mut_ptr();
     let mut y = 0;
     while y < sh {
-        if is_rect2 != 0 {
+        if is_rect2 {
             let mut x = 0;
             while x < sw {
                 *c.offset(x as isize) =
