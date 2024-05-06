@@ -124,26 +124,25 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     let col_clip_max = !col_clip_min;
 
     let mut tmp = [0; 4096];
-    let mut c = tmp.as_mut_ptr();
+    let mut c = &mut tmp[..];
     let mut y = 0;
     while y < sh {
         if is_rect2 {
             let mut x = 0;
             while x < sw {
-                *c.offset(x as isize) =
-                    coeff[(y + x * sh) as usize].as_::<c_int>() * 181 + 128 >> 8;
+                c[x as usize] = coeff[(y + x * sh) as usize].as_::<c_int>() * 181 + 128 >> 8;
                 x += 1;
             }
         } else {
             let mut x = 0;
             while x < sw {
-                *c.offset(x as isize) = coeff[(y + x * sh) as usize].as_();
+                c[x as usize] = coeff[(y + x * sh) as usize].as_();
                 x += 1;
             }
         }
-        first_1d_fn(c, 1, row_clip_min, row_clip_max);
+        first_1d_fn(c.as_mut_ptr(), 1, row_clip_min, row_clip_max);
         y += 1;
-        c = c.offset(w as isize);
+        c = &mut c[w as usize..];
     }
 
     coeff.fill(0.into());
@@ -156,7 +155,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     let mut x = 0;
     while x < w {
         second_1d_fn(
-            &mut *tmp.as_mut_ptr().offset(x as isize),
+            tmp[x as usize..].as_mut_ptr(),
             w as ptrdiff_t,
             col_clip_min,
             col_clip_max,
@@ -164,14 +163,14 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
         x += 1;
     }
 
-    c = tmp.as_mut_ptr();
+    c = &mut tmp[..];
     let mut y = 0;
     while y < h {
         let mut x = 0;
         while x < w {
             *dst.offset(x as isize) =
-                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + (*c + 8 >> 4));
-            c = c.offset(1);
+                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + (c[0] + 8 >> 4));
+            c = &mut c[1..];
             x += 1;
         }
         y += 1;
