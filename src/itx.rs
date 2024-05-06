@@ -475,7 +475,7 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     let mut c = &mut tmp[..];
     for y in 0..H {
         for x in 0..W {
-            c[x as usize] = coeff[(y + x * H) as usize].as_::<i32>() >> 2;
+            c[x] = coeff[y + x * H].as_::<i32>() >> 2;
         }
         dav1d_inv_wht4_1d_c(c.as_mut_ptr(), 1);
         c = &mut c[W..];
@@ -483,14 +483,13 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     coeff.fill(0.into());
 
     for x in 0..W {
-        dav1d_inv_wht4_1d_c(tmp[x as usize..].as_mut_ptr(), H as isize);
+        dav1d_inv_wht4_1d_c(tmp[x..].as_mut_ptr(), H as isize);
     }
 
     let mut c = &tmp[..];
     for _ in 0..H {
         for x in 0..W {
-            *dst.offset(x as isize) =
-                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + c[0]);
+            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + c[0]);
             c = &c[1..];
         }
         dst = dst.offset(BD::pxstride(stride as usize) as isize);
