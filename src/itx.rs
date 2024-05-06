@@ -79,7 +79,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     assert!(eob >= 0);
 
     let is_rect2: c_int = (w * 2 == h || h * 2 == w) as c_int;
-    let rnd = (1 as c_int) << shift >> 1;
+    let rnd = 1 << shift >> 1;
 
     if eob < has_dconly {
         let mut dc: c_int = (*coeff.offset(0)).as_();
@@ -104,16 +104,16 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
         return;
     }
 
-    let sh = cmp::min(h, 32 as c_int);
-    let sw = cmp::min(w, 32 as c_int);
+    let sh = cmp::min(h, 32);
+    let sw = cmp::min(w, 32);
     let row_clip_min;
     let col_clip_min;
     if BD::BITDEPTH == 8 {
         row_clip_min = i16::MIN as i32;
         col_clip_min = i16::MIN as i32;
     } else {
-        row_clip_min = ((!bitdepth_max) << 7) as c_int;
-        col_clip_min = ((!bitdepth_max) << 5) as c_int;
+        row_clip_min = (!bitdepth_max) << 7;
+        col_clip_min = (!bitdepth_max) << 5;
     }
     let row_clip_max = !row_clip_min;
     let col_clip_max = !col_clip_min;
@@ -136,7 +136,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
                 x += 1;
             }
         }
-        first_1d_fn(c, 1 as c_int as ptrdiff_t, row_clip_min, row_clip_max);
+        first_1d_fn(c, 1, row_clip_min, row_clip_max);
         y += 1;
         c = c.offset(w as isize);
     }
