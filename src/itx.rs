@@ -490,10 +490,8 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     while y < 4 {
         let mut x = 0;
         while x < 4 {
-            let fresh1 = c;
+            *dst.offset(x as isize) = bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + *c);
             c = c.offset(1);
-            *dst.offset(x as isize) =
-                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + *fresh1);
             x += 1;
         }
         y += 1;
