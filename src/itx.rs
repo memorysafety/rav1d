@@ -58,13 +58,11 @@ use crate::include::common::bitdepth::bpc_fn;
 
 pub type itx_1d_fn = unsafe extern "C" fn(c: *mut i32, stride: ptrdiff_t, min: c_int, max: c_int);
 
-pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
+pub unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     coeff: *mut BD::Coef,
     eob: c_int,
-    w: c_int,
-    h: c_int,
     shift: c_int,
     first_1d_fn: itx_1d_fn,
     second_1d_fn: itx_1d_fn,
@@ -73,11 +71,11 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
 ) {
     let bitdepth_max = bd.bitdepth_max().as_::<c_int>();
 
-    assert!(w >= 4 && w <= 64);
-    assert!(h >= 4 && h <= 64);
+    assert!(W >= 4 && W <= 64);
+    assert!(H >= 4 && H <= 64);
     assert!(eob >= 0);
 
-    let is_rect2 = w * 2 == h || h * 2 == w;
+    let is_rect2 = W * 2 == H || H * 2 == W;
     let rnd = 1 << shift >> 1;
 
     if eob < has_dconly {
@@ -91,8 +89,8 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
         dc = dc * 181 + 128 >> 8;
         dc = dc + rnd >> shift;
         dc = dc * 181 + 128 + 2048 >> 12;
-        for _ in 0..h {
-            for x in 0..w {
+        for _ in 0..H {
+            for x in 0..W {
                 *dst.offset(x as isize) =
                     bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + dc);
             }
@@ -101,8 +99,8 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
         return;
     }
 
-    let sh = cmp::min(h, 32);
-    let sw = cmp::min(w, 32);
+    let sh = cmp::min(H, 32);
+    let sw = cmp::min(W, 32);
 
     let coeff = slice::from_raw_parts_mut(coeff, sh as usize * sw as usize);
 
@@ -131,26 +129,26 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
             }
         }
         first_1d_fn(c.as_mut_ptr(), 1, row_clip_min, row_clip_max);
-        c = &mut c[w as usize..];
+        c = &mut c[W as usize..];
     }
 
     coeff.fill(0.into());
-    for i in 0..w * sh {
+    for i in 0..W * sh {
         tmp[i as usize] = iclip(tmp[i as usize] + rnd >> shift, col_clip_min, col_clip_max);
     }
 
-    for x in 0..w {
+    for x in 0..W {
         second_1d_fn(
             tmp[x as usize..].as_mut_ptr(),
-            w as ptrdiff_t,
+            W as ptrdiff_t,
             col_clip_min,
             col_clip_max,
         );
     }
 
     c = &mut tmp[..];
-    for _ in 0..h {
-        for x in 0..w {
+    for _ in 0..H {
+        for x in 0..W {
             *dst.offset(x as isize) =
                 bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + (c[0] + 8 >> 4));
             c = &mut c[1..];
@@ -368,13 +366,11 @@ macro_rules! inv_txfm_fn {
                 bitdepth_max: c_int,
             ) {
                 use crate::src::itx_1d::*;
-                inv_txfm_add_rust(
+                inv_txfm_add_rust::<$w, $h, BD>(
                     dst.cast(),
                     stride,
                     coeff.cast(),
                     eob,
-                    $w,
-                    $h,
                     $shift,
                     [<dav1d_inv_ $type1 $w _1d_c>],
                     [<dav1d_inv_ $type2 $h _1d_c>],
