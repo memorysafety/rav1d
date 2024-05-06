@@ -469,20 +469,22 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     const H: usize = 4;
     const W: usize = 4;
 
+    let coeff = slice::from_raw_parts_mut(coeff, W * H);
+
     let mut tmp = [0; W * H];
     let mut c = &mut tmp[..];
     let mut y = 0;
     while y < H {
         let mut x = 0;
         while x < W {
-            c[x as usize] = (*coeff.offset((y + x * H) as isize)).as_::<i32>() >> 2;
+            c[x as usize] = coeff[(y + x * H) as usize].as_::<i32>() >> 2;
             x += 1;
         }
         dav1d_inv_wht4_1d_c(c.as_mut_ptr(), 1);
         y += 1;
         c = &mut c[W..];
     }
-    slice::from_raw_parts_mut(coeff, W * H).fill(0.into());
+    coeff.fill(0.into());
     let mut x = 0;
     while x < W {
         dav1d_inv_wht4_1d_c(tmp[x as usize..].as_mut_ptr(), H as isize);
