@@ -58,14 +58,19 @@ use crate::include::common::bitdepth::bpc_fn;
 
 pub type itx_1d_fn = unsafe extern "C" fn(c: *mut i32, stride: ptrdiff_t, min: c_int, max: c_int);
 
-pub unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const SHIFT: u8, BD: BitDepth>(
+pub unsafe fn inv_txfm_add_rust<
+    const W: usize,
+    const H: usize,
+    const SHIFT: u8,
+    const HAS_DC_ONLY: bool,
+    BD: BitDepth,
+>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     coeff: *mut BD::Coef,
     eob: c_int,
     first_1d_fn: itx_1d_fn,
     second_1d_fn: itx_1d_fn,
-    has_dconly: c_int,
     bd: BD,
 ) {
     let bitdepth_max = bd.bitdepth_max().as_::<c_int>();
@@ -77,7 +82,7 @@ pub unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const SHIFT: u8,
     let is_rect2 = W * 2 == H || H * 2 == W;
     let rnd = 1 << SHIFT >> 1;
 
-    if eob < has_dconly {
+    if eob < HAS_DC_ONLY as c_int {
         let coeff = slice::from_raw_parts_mut(coeff, 1);
 
         let mut dc = coeff[0].as_::<c_int>();
@@ -365,14 +370,13 @@ macro_rules! inv_txfm_fn {
                 bitdepth_max: c_int,
             ) {
                 use crate::src::itx_1d::*;
-                inv_txfm_add_rust::<$w, $h, $shift, BD>(
+                inv_txfm_add_rust::<$w, $h, $shift, $has_dconly, BD>(
                     dst.cast(),
                     stride,
                     coeff.cast(),
                     eob,
                     [<dav1d_inv_ $type1 $w _1d_c>],
                     [<dav1d_inv_ $type2 $h _1d_c>],
-                    $has_dconly as c_int,
                     BD::from_c(bitdepth_max),
                 );
             }
