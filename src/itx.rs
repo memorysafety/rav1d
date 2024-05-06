@@ -149,11 +149,11 @@ pub unsafe fn inv_txfm_add_rust<
         );
     }
 
-    c = &mut tmp[..];
+    let mut c = &tmp[..];
     for _ in 0..H {
         for x in 0..W {
             *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + (c[0] + 8 >> 4));
-            c = &mut c[1..];
+            c = &c[1..];
         }
         dst = dst.offset(BD::pxstride(stride));
     }
