@@ -7,6 +7,7 @@ use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::mem;
 use std::ops::Range;
+use std::ptr;
 
 #[cfg(all(feature = "asm", target_feature = "sse2"))]
 extern "C" {
@@ -157,6 +158,22 @@ pub struct MsacContext {
         n_symbols: usize,
         _cdf_len: usize,
     ) -> c_uint,
+}
+
+impl Default for MsacContext {
+    fn default() -> Self {
+        Self {
+            buf_pos: ptr::null(),
+            buf_end: ptr::null(),
+            dif: Default::default(),
+            rng: Default::default(),
+            cnt: Default::default(),
+            allow_update_cdf: Default::default(),
+
+            #[cfg(all(feature = "asm", target_arch = "x86_64"))]
+            symbol_adapt16: Rav1dMsacDSPContext::default().symbol_adapt16,
+        }
+    }
 }
 
 impl MsacContext {

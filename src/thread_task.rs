@@ -1120,7 +1120,11 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                     rav1d_cdf_thread_update(
                                         frame_hdr,
                                         &mut f.out_cdf.cdf_write(),
-                                        &(*(f.ts).offset(frame_hdr.tiling.update as isize)).cdf,
+                                        &(*(f.ts).offset(frame_hdr.tiling.update as isize))
+                                            .context
+                                            .try_lock()
+                                            .unwrap()
+                                            .cdf,
                                     );
                                 }
                                 if let Some(progress) = f.out_cdf.progress() {
