@@ -491,15 +491,15 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
         dav1d_inv_wht4_1d_c(tmp[x as usize..].as_mut_ptr(), H as isize);
         x += 1;
     }
-    
-    c = &mut tmp[..];
+
+    let mut c = &tmp[..];
     let mut y = 0;
     while y < H {
         let mut x = 0;
         while x < W {
             *dst.offset(x as isize) =
                 bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + c[0]);
-            c = &mut c[1..];
+            c = &c[1..];
             x += 1;
         }
         y += 1;
