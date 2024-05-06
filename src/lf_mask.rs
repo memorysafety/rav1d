@@ -4,6 +4,7 @@ use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dLoopfilterModeRefDeltas;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dRestorationType;
+use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::src::align::Align16;
 use crate::src::align::ArrayDefault;
 use crate::src::ctx::CaseSet;
@@ -686,11 +687,15 @@ fn calc_lf_value_chroma(
 }
 
 pub(crate) fn rav1d_calc_lf_values(
-    lflvl_values: &mut [[[[u8; 2]; 8]; 4]; 8],
+    lflvl_values: &mut [[[[u8; 2]; 8]; 4]; RAV1D_MAX_SEGMENTS as usize],
     hdr: &Rav1dFrameHeader,
     lf_delta: &[i8; 4],
 ) {
-    let n_seg = if hdr.segmentation.enabled != 0 { 8 } else { 1 };
+    let n_seg = if hdr.segmentation.enabled != 0 {
+        RAV1D_MAX_SEGMENTS as usize
+    } else {
+        1
+    };
 
     if hdr.loopfilter.level_y[0] == 0 && hdr.loopfilter.level_y[1] == 0 {
         lflvl_values[..n_seg].fill_with(Default::default);

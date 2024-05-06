@@ -2,8 +2,8 @@ use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::clip;
+use crate::include::common::intops::clip_u8;
 use crate::include::common::intops::iclip;
-use crate::include::common::intops::iclip_u8;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
@@ -185,29 +185,35 @@ fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     qidx: u8,
-    dq: &mut [[[u16; 2]; 3]],
+    dq: &mut [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
 ) {
-    let tbl = &dav1d_dq_tbl;
+    let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
 
     let segmentation_is_enabled = frame_hdr.segmentation.enabled != 0;
-    let len = if segmentation_is_enabled { 8 } else { 1 };
+    let len = if segmentation_is_enabled {
+        RAV1D_MAX_SEGMENTS as usize
+    } else {
+        1
+    };
     for i in 0..len {
         let yac = if segmentation_is_enabled {
-            iclip_u8(qidx as c_int + frame_hdr.segmentation.seg_data.d[i].delta_q as c_int)
+            clip_u8(qidx as c_int + frame_hdr.segmentation.seg_data.d[i].delta_q as c_int)
         } else {
-            qidx.into()
-        };
-        let ydc = iclip_u8(yac + frame_hdr.quant.ydc_delta as c_int);
-        let uac = iclip_u8(yac + frame_hdr.quant.uac_delta as c_int);
-        let udc = iclip_u8(yac + frame_hdr.quant.udc_delta as c_int);
-        let vac = iclip_u8(yac + frame_hdr.quant.vac_delta as c_int);
-        let vdc = iclip_u8(yac + frame_hdr.quant.vdc_delta as c_int);
-        dq[i][0][0] = tbl[seq_hdr.hbd as usize][ydc as usize][0];
-        dq[i][0][1] = tbl[seq_hdr.hbd as usize][yac as usize][1];
-        dq[i][1][0] = tbl[seq_hdr.hbd as usize][udc as usize][0];
-        dq[i][1][1] = tbl[seq_hdr.hbd as usize][uac as usize][1];
-        dq[i][2][0] = tbl[seq_hdr.hbd as usize][vdc as usize][0];
-        dq[i][2][1] = tbl[seq_hdr.hbd as usize][vac as usize][1];
+            qidx
+        } as i16;
+        let ydc = clip_u8(yac + frame_hdr.quant.ydc_delta as i16);
+        let uac = clip_u8(yac + frame_hdr.quant.uac_delta as i16);
+        let udc = clip_u8(yac + frame_hdr.quant.udc_delta as i16);
+        let vac = clip_u8(yac + frame_hdr.quant.vac_delta as i16);
+        let vdc = clip_u8(yac + frame_hdr.quant.vdc_delta as i16);
+
+        let dq = &mut dq[i];
+        dq[0][0] = tbl[ydc as usize][0];
+        dq[0][1] = tbl[yac as usize][1];
+        dq[1][0] = tbl[udc as usize][0];
+        dq[1][1] = tbl[uac as usize][1];
+        dq[2][0] = tbl[vdc as usize][0];
+        dq[2][1] = tbl[vac as usize][1];
     }
 }
 
