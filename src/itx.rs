@@ -58,12 +58,11 @@ use crate::include::common::bitdepth::bpc_fn;
 
 pub type itx_1d_fn = unsafe extern "C" fn(c: *mut i32, stride: ptrdiff_t, min: c_int, max: c_int);
 
-pub unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, BD: BitDepth>(
+pub unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const SHIFT: u8, BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     coeff: *mut BD::Coef,
     eob: c_int,
-    shift: c_int,
     first_1d_fn: itx_1d_fn,
     second_1d_fn: itx_1d_fn,
     has_dconly: c_int,
@@ -76,7 +75,7 @@ pub unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, BD: BitDepth>(
     assert!(eob >= 0);
 
     let is_rect2 = W * 2 == H || H * 2 == W;
-    let rnd = 1 << shift >> 1;
+    let rnd = 1 << SHIFT >> 1;
 
     if eob < has_dconly {
         let coeff = slice::from_raw_parts_mut(coeff, 1);
@@ -87,7 +86,7 @@ pub unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, BD: BitDepth>(
             dc = dc * 181 + 128 >> 8;
         }
         dc = dc * 181 + 128 >> 8;
-        dc = dc + rnd >> shift;
+        dc = dc + rnd >> SHIFT;
         dc = dc * 181 + 128 + 2048 >> 12;
         for _ in 0..H {
             for x in 0..W {
@@ -134,7 +133,7 @@ pub unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, BD: BitDepth>(
 
     coeff.fill(0.into());
     for i in 0..W * sh {
-        tmp[i as usize] = iclip(tmp[i as usize] + rnd >> shift, col_clip_min, col_clip_max);
+        tmp[i as usize] = iclip(tmp[i as usize] + rnd >> SHIFT, col_clip_min, col_clip_max);
     }
 
     for x in 0..W {
@@ -366,12 +365,11 @@ macro_rules! inv_txfm_fn {
                 bitdepth_max: c_int,
             ) {
                 use crate::src::itx_1d::*;
-                inv_txfm_add_rust::<$w, $h, BD>(
+                inv_txfm_add_rust::<$w, $h, $shift, BD>(
                     dst.cast(),
                     stride,
                     coeff.cast(),
                     eob,
-                    $shift,
                     [<dav1d_inv_ $type1 $w _1d_c>],
                     [<dav1d_inv_ $type2 $h _1d_c>],
                     $has_dconly as c_int,
