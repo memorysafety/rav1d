@@ -475,17 +475,14 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
             *c.offset(x as isize) = (*coeff.offset((y + x * 4) as isize)).as_::<i32>() >> 2;
             x += 1;
         }
-        dav1d_inv_wht4_1d_c(c, 1 as c_int as ptrdiff_t);
+        dav1d_inv_wht4_1d_c(c, 1);
         y += 1;
         c = c.offset(4);
     }
     slice::from_raw_parts_mut(coeff, 4 * 4).fill(0.into());
     let mut x_0 = 0;
     while x_0 < 4 {
-        dav1d_inv_wht4_1d_c(
-            &mut *tmp.as_mut_ptr().offset(x_0 as isize),
-            4 as c_int as ptrdiff_t,
-        );
+        dav1d_inv_wht4_1d_c(&mut *tmp.as_mut_ptr().offset(x_0 as isize), 4);
         x_0 += 1;
     }
     c = tmp.as_mut_ptr();
