@@ -492,7 +492,7 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
             *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + c[0]);
             c = &c[1..];
         }
-        dst = dst.offset(BD::pxstride(stride as usize) as isize);
+        dst = dst.offset(BD::pxstride(stride));
     }
 }
 
