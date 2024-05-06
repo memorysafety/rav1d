@@ -17,6 +17,7 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::include::dav1d::headers::SgrIdx;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
+use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
@@ -56,7 +57,6 @@ use crate::src::env::get_poc_diff;
 use crate::src::env::get_tx_ctx;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
 use crate::src::extensions::OptionError as _;
@@ -65,6 +65,8 @@ use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameContext_frame_thread;
+use crate::src::internal::Rav1dFrameContext_lf;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
@@ -120,8 +122,6 @@ use crate::src::lf_mask::rav1d_create_lf_mask_inter;
 use crate::src::lf_mask::rav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
-use crate::src::mem::rav1d_alloc_aligned;
-use crate::src::mem::rav1d_free_aligned;
 use crate::src::msac::rav1d_msac_decode_bool;
 use crate::src::msac::rav1d_msac_decode_bool_adapt;
 use crate::src::msac::rav1d_msac_decode_bool_equi;
@@ -173,14 +173,11 @@ use std::array;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 use std::iter;
 use std::mem;
-use std::ptr::addr_of_mut;
-use std::slice;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU8;
 use std::sync::atomic::Ordering;
-use std::sync::Mutex;
 use strum::EnumCount;
 
 fn init_quant_tables(
@@ -465,7 +462,7 @@ unsafe fn find_matching_ref(
     let mut have_topleft = have_top && have_left;
     let mut have_topright = cmp::max(bw4, bh4) < 32
         && have_top
-        && t.b.x + bw4 < ts.tiling.col_end()
+        && t.b.x + bw4 < ts.tiling.col_end
         && intra_edge_flags.contains(EdgeFlags::I444_TOP_HAS_RIGHT);
 
     let bs = |rp: refmvs_block| dav1d_block_dimensions[rp.bs as usize];
@@ -1122,7 +1119,7 @@ unsafe fn obmc_lowest_px(
     let ss_hor = (is_chroma && layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
-    if t.b.y > ts.tiling.row_start()
+    if t.b.y > ts.tiling.row_start
         && (!is_chroma || b_dim[0] as c_int * h_mul + b_dim[1] as c_int * v_mul >= 16)
     {
         let mut i = 0;
@@ -1145,7 +1142,7 @@ unsafe fn obmc_lowest_px(
             x += cmp::max(a_b_dim[0] as c_int, 2);
         }
     }
-    if t.b.x > ts.tiling.col_start() {
+    if t.b.x > ts.tiling.col_start {
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3] as c_int, 4) {
@@ -1216,8 +1213,8 @@ unsafe fn decode_b(
     let h4 = cmp::min(bh4, f.bh - t.b.y);
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
-    let have_left = t.b.x > ts.tiling.col_start();
-    let have_top = t.b.y > ts.tiling.row_start();
+    let have_left = t.b.x > ts.tiling.col_start;
+    let have_top = t.b.y > ts.tiling.row_start;
     let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
@@ -2106,7 +2103,7 @@ unsafe fn decode_b(
             mvstack[0].mv.mv[0]
         } else if mvstack[1].mv.mv[0] != mv::ZERO {
             mvstack[1].mv.mv[0]
-        } else if t.b.y - (16 << seq_hdr.sb128) < ts.tiling.row_start() {
+        } else if t.b.y - (16 << seq_hdr.sb128) < ts.tiling.row_start {
             mv {
                 y: 0,
                 x: (-(512 << seq_hdr.sb128) - 2048) as i16,
@@ -2121,8 +2118,8 @@ unsafe fn decode_b(
         read_mv_residual(f, ts_c, &mut r#ref, MvCdfSelect::Dmv, false);
 
         // clip intrabc motion vector to decoded parts of current tile
-        let mut border_left = ts.tiling.col_start() * 4;
-        let mut border_top = ts.tiling.row_start() * 4;
+        let mut border_left = ts.tiling.col_start * 4;
+        let mut border_top = ts.tiling.row_start * 4;
         if has_chroma {
             if bw4 < 2 && ss_hor != 0 {
                 border_left += 4;
@@ -2135,7 +2132,7 @@ unsafe fn decode_b(
         let mut src_top = t.b.y * 4 + (r#ref.y as c_int >> 3);
         let mut src_right = src_left + bw4 * 4;
         let mut src_bottom = src_top + bh4 * 4;
-        let border_right = (ts.tiling.col_end() + (bw4 - 1) & !(bw4 - 1)) * 4;
+        let border_right = (ts.tiling.col_end + (bw4 - 1) & !(bw4 - 1)) * 4;
 
         // check against left or right tile boundary and adjust if necessary
         if src_left < border_left {
@@ -3271,7 +3268,7 @@ unsafe fn decode_b(
         Av1BlockIntraInter::Inter(inter)
             if t.frame_thread.pass == 1 && frame_hdr.frame_type.is_inter_or_switch() =>
         {
-            let sby = t.b.y - ts.tiling.row_start() >> f.sb_shift;
+            let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
             let mut lowest_px = f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize);
             // keep track of motion vectors for each reference
             if inter.comp_type.is_none() {
@@ -3916,28 +3913,34 @@ static ss_size_mul: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPix
 
 unsafe fn setup_tile(
     c: &Rav1dContext,
-    ts: &Rav1dTileState,
-    f: &Rav1dFrameData,
+    ts: &mut Rav1dTileState,
+    seq_hdr: &Rav1dSequenceHeader,
+    frame_hdr: &Rav1dFrameHeader,
+    bitdepth_max: i32,
+    sb_shift: i32,
+    f_cur: &Rav1dPicture,
+    bw: i32,
+    bh: i32,
+    frame_thread: &Rav1dFrameContext_frame_thread,
+    sr_sb128w: i32,
+    sb128w: i32,
+    lf: &mut Rav1dFrameContext_lf,
     in_cdf: &CdfThreadContext,
     data: &[u8],
     tile_row: usize,
     tile_col: usize,
     tile_start_off: usize,
 ) {
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-
     let col_sb_start = frame_hdr.tiling.col_start_sb[tile_col] as c_int;
     let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
     let col_sb_end = frame_hdr.tiling.col_start_sb[tile_col + 1] as c_int;
     let row_sb_start = frame_hdr.tiling.row_start_sb[tile_row] as c_int;
     let row_sb_end = frame_hdr.tiling.row_start_sb[tile_row + 1] as c_int;
-    let sb_shift = f.sb_shift;
 
-    let size_mul = &ss_size_mul[f.cur.p.layout];
+    let size_mul = &ss_size_mul[f_cur.p.layout];
     for p in 0..2 {
         ts.frame_thread[p].pal_idx.store(
-            if !f.frame_thread.pal_idx.is_empty() {
+            if !frame_thread.pal_idx.is_empty() {
                 tile_start_off * size_mul[1] as usize / 8
             } else {
                 0
@@ -3945,8 +3948,8 @@ unsafe fn setup_tile(
             Ordering::Relaxed,
         );
         ts.frame_thread[p].cf.store(
-            if !f.frame_thread.cf.is_empty() {
-                let bpc = BPC::from_bitdepth_max(f.bitdepth_max);
+            if !frame_thread.cf.is_empty() {
+                let bpc = BPC::from_bitdepth_max(bitdepth_max);
                 bpc.coef_stride(
                     tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int,
                 )
@@ -3959,63 +3962,53 @@ unsafe fn setup_tile(
 
     let ts_c = &mut *ts.context.try_lock().unwrap();
     ts_c.cdf = rav1d_cdf_thread_copy(in_cdf);
-    ts.last_qidx.store(frame_hdr.quant.yac, Ordering::Relaxed);
-    for ldl in &ts.last_delta_lf {
-        ldl.store(0, Ordering::Relaxed);
-    }
+    ts.last_qidx = AtomicU8::new(frame_hdr.quant.yac);
+    ts.last_delta_lf.fill_with(Default::default);
 
     ts_c.msac = MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac);
 
-    ts.tiling.row.store(tile_row as c_int, Ordering::Relaxed);
-    ts.tiling.col.store(tile_col as c_int, Ordering::Relaxed);
-    ts.tiling
-        .col_start
-        .store(col_sb_start << sb_shift, Ordering::Relaxed);
-    ts.tiling
-        .col_end
-        .store(cmp::min(col_sb_end << sb_shift, f.bw), Ordering::Relaxed);
-    ts.tiling
-        .row_start
-        .store(row_sb_start << sb_shift, Ordering::Relaxed);
-    ts.tiling
-        .row_end
-        .store(cmp::min(row_sb_end << sb_shift, f.bh), Ordering::Relaxed);
+    ts.tiling.row = tile_row as i32;
+    ts.tiling.col = tile_col as i32;
+    ts.tiling.col_start = col_sb_start << sb_shift;
+    ts.tiling.col_end = cmp::min(col_sb_end << sb_shift, bw);
+    ts.tiling.row_start = row_sb_start << sb_shift;
+    ts.tiling.row_end = cmp::min(row_sb_end << sb_shift, bh);
     let diff_width = frame_hdr.size.width[0] != frame_hdr.size.width[1];
 
     // Reference Restoration Unit (used for exp coding)
     let (sb_idx, unit_idx) = if diff_width {
         // vertical components only
         (
-            (ts.tiling.row_start() >> 5) * f.sr_sb128w,
-            (ts.tiling.row_start() & 16) >> 3,
+            (ts.tiling.row_start >> 5) * sr_sb128w,
+            (ts.tiling.row_start & 16) >> 3,
         )
     } else {
         (
-            (ts.tiling.row_start() >> 5) * f.sb128w + col_sb128_start,
-            ((ts.tiling.row_start() & 16) >> 3) + ((ts.tiling.col_start() & 16) >> 4),
+            (ts.tiling.row_start >> 5) * sb128w + col_sb128_start,
+            ((ts.tiling.row_start & 16) >> 3) + ((ts.tiling.col_start & 16) >> 4),
         )
     };
     for p in 0..3 {
-        if !((f.lf.restore_planes >> p) & 1 != 0) {
+        if !((lf.restore_planes >> p) & 1 != 0) {
             continue;
         }
 
         let lr_ref = if diff_width {
-            let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as u8;
+            let ss_hor = (p != 0 && f_cur.p.layout != Rav1dPixelLayout::I444) as u8;
             let d = frame_hdr.size.super_res.width_scale_denominator as c_int;
             let unit_size_log2 = frame_hdr.restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
             let shift = unit_size_log2 + 3;
-            let x = (4 * ts.tiling.col_start() * d >> ss_hor) + rnd >> shift;
+            let x = (4 * ts.tiling.col_start * d >> ss_hor) + rnd >> shift;
             let px_x = x << unit_size_log2 + ss_hor;
             let u_idx = unit_idx + ((px_x & 64) >> 6);
             let sb128x = px_x >> 7;
-            if sb128x >= f.sr_sb128w {
+            if sb128x >= sr_sb128w {
                 continue;
             }
-            &f.lf.lr_mask[(sb_idx + sb128x) as usize].lr[p][u_idx as usize]
+            &mut lf.lr_mask[(sb_idx + sb128x) as usize].lr[p][u_idx as usize]
         } else {
-            &f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
+            &mut lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
         };
 
         let mut lr = lr_ref.try_write().unwrap();
@@ -4025,13 +4018,11 @@ unsafe fn setup_tile(
             sgr_weights: [-32, 31],
             ..*lr
         };
-        ts.lr_ref.try_write().unwrap()[p] = *lr;
+        ts.lr_ref.get_mut().unwrap()[p] = *lr;
     }
 
     if c.tc.len() > 1 {
-        for progress in &ts.progress {
-            progress.store(row_sb_start, Ordering::Relaxed);
-        }
+        ts.progress.fill_with(|| AtomicI32::new(row_sb_start));
     }
 }
 
@@ -4161,8 +4152,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     };
     let ts = &f.ts[t.ts];
     let sb_step = f.sb_step;
-    let tile_row = ts.tiling.row();
-    let tile_col = ts.tiling.col();
+    let tile_row = ts.tiling.row;
+    let tile_col = ts.tiling.col;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let col_sb_start = frame_hdr.tiling.col_start_sb[tile_col as usize] as c_int;
     let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
@@ -4170,18 +4161,18 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     if frame_hdr.frame_type.is_inter_or_switch() || frame_hdr.allow_intrabc {
         t.rt = rav1d_refmvs_tile_sbrow_init(
             &f.rf,
-            ts.tiling.col_start(),
-            ts.tiling.col_end(),
-            ts.tiling.row_start(),
-            ts.tiling.row_end(),
+            ts.tiling.col_start,
+            ts.tiling.col_end,
+            ts.tiling.row_start,
+            ts.tiling.row_end,
             t.b.y >> f.sb_shift,
-            ts.tiling.row(),
+            ts.tiling.row,
             t.frame_thread.pass,
         );
     }
 
     if frame_hdr.frame_type.is_inter_or_switch() && c.fc.len() > 1 {
-        let sby = t.b.y - ts.tiling.row_start() >> f.sb_shift;
+        let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
         *f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize) = [[i32::MIN; 2]; 7];
     }
 
@@ -4197,7 +4188,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             0
         };
         t.a = (off_2pass + col_sb128_start + tile_row * f.sb128w) as usize;
-        for bx in (ts.tiling.col_start()..ts.tiling.col_end()).step_by(sb_step as usize) {
+        for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
             t.b.x = bx;
             if c.flush.load(Ordering::Acquire) {
                 return Err(());
@@ -4221,9 +4212,9 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             &f.rf,
             &f.mvs,
             &f.ref_mvs,
-            ts.tiling.row(),
-            ts.tiling.col_start() >> 1,
-            ts.tiling.col_end() >> 1,
+            ts.tiling.row,
+            ts.tiling.col_start >> 1,
+            ts.tiling.col_end >> 1,
             t.b.y >> 1,
             t.b.y + sb_step >> 1,
         );
@@ -4232,7 +4223,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     let sb128y = t.b.y >> 5;
     t.a = (col_sb128_start + tile_row * f.sb128w) as usize;
     t.lf_mask = Some((sb128y * f.sb128w + col_sb128_start) as usize);
-    for bx in (ts.tiling.col_start()..ts.tiling.col_end()).step_by(sb_step as usize) {
+    for bx in (ts.tiling.col_start..ts.tiling.col_end).step_by(sb_step as usize) {
         t.b.x = bx;
         if c.flush.load(Ordering::Acquire) {
             return Err(());
@@ -4330,8 +4321,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
             &t.rt,
             &f.rf,
             &f.mvs,
-            ts.tiling.col_start() >> 1,
-            ts.tiling.col_end() >> 1,
+            ts.tiling.col_start >> 1,
+            ts.tiling.col_end >> 1,
             t.b.y >> 1,
             t.b.y + sb_step >> 1,
         );
@@ -4714,7 +4705,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
 
         let mut data = tile.data.as_ref();
         for (j, (ts, tile_start_off)) in iter::zip(
-            &f.ts[..end + 1],
+            &mut f.ts[..end + 1],
             if uses_2pass {
                 &f.frame_thread.tile_start_off[..end + 1]
             } else {
@@ -4751,7 +4742,17 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
             setup_tile(
                 c,
                 ts,
-                f,
+                &***f.seq_hdr.as_ref().unwrap(),
+                frame_hdr,
+                f.bitdepth_max,
+                f.sb_shift,
+                &f.cur,
+                f.bw,
+                f.bh,
+                &f.frame_thread,
+                f.sr_sb128w,
+                f.sb128w,
+                &mut f.lf,
                 in_cdf,
                 cur_data,
                 tile_row,

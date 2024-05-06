@@ -2353,7 +2353,7 @@ unsafe fn obmc<BD: BitDepth>(
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     let ts = &f.ts[t.ts];
-    if t.b.y > ts.tiling.row_start()
+    if t.b.y > ts.tiling.row_start
         && (pl == 0 || b_dim[0] as c_int * h_mul + b_dim[1] as c_int * v_mul >= 16)
     {
         let mut i = 0;
@@ -2395,7 +2395,7 @@ unsafe fn obmc<BD: BitDepth>(
             x += step4 as c_int;
         }
     }
-    if t.b.x > ts.tiling.col_start() {
+    if t.b.x > ts.tiling.col_start {
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3], 4) {
@@ -2680,8 +2680,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             .buf_mut::<BD>();
                         let edge_offset = 128;
                         let data_stride = BD::pxstride(f.cur.stride[0]);
-                        let data_width = 4 * ts.tiling.col_end();
-                        let data_height = 4 * ts.tiling.row_end();
+                        let data_width = 4 * ts.tiling.col_end;
+                        let data_height = 4 * ts.tiling.row_end;
                         let data_diff = (data_height - 1) as isize * data_stride;
                         let dst_slice = slice::from_raw_parts(
                             (f.cur.data.as_ref().unwrap().data[0] as *const BD::Pixel)
@@ -2690,11 +2690,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         );
                         m = rav1d_prepare_intra_edges(
                             t.b.x,
-                            t.b.x > ts.tiling.col_start(),
+                            t.b.x > ts.tiling.col_start,
                             t.b.y,
-                            t.b.y > ts.tiling.row_start(),
-                            ts.tiling.col_end(),
-                            ts.tiling.row_end(),
+                            t.b.y > ts.tiling.row_start,
+                            ts.tiling.col_end,
+                            ts.tiling.row_end,
                             edge_flags,
                             dst_slice,
                             f.cur.stride[0],
@@ -2909,13 +2909,13 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             };
                             let xpos = t.b.x >> ss_hor;
                             let ypos = t.b.y >> ss_ver;
-                            let xstart = ts.tiling.col_start() >> ss_hor;
-                            let ystart = ts.tiling.row_start() >> ss_ver;
+                            let xstart = ts.tiling.col_start >> ss_hor;
+                            let ystart = ts.tiling.row_start >> ss_ver;
                             let edge_array = scratch.interintra_edge_pal.edge.buf_mut::<BD>();
                             let edge_offset = 128;
                             let data_stride = BD::pxstride(f.cur.stride[1]);
-                            let data_width = 4 * ts.tiling.col_end() >> ss_hor;
-                            let data_height = 4 * ts.tiling.row_end() >> ss_ver;
+                            let data_width = 4 * ts.tiling.col_end >> ss_hor;
+                            let data_height = 4 * ts.tiling.row_end >> ss_ver;
                             let data_diff = (data_height - 1) as isize * data_stride;
                             let uvdst_slice = slice::from_raw_parts(
                                 (f.cur.data.as_ref().unwrap().data[1 + pl as usize]
@@ -2928,8 +2928,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 xpos > xstart,
                                 ypos,
                                 ypos > ystart,
-                                ts.tiling.col_end() >> ss_hor,
-                                ts.tiling.row_end() >> ss_ver,
+                                ts.tiling.col_end >> ss_hor,
+                                ts.tiling.row_end >> ss_ver,
                                 EdgeFlags::empty(),
                                 uvdst_slice,
                                 stride,
@@ -3115,8 +3115,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 }) as IntraPredMode;
                                 xpos = t.b.x >> ss_hor;
                                 ypos = t.b.y >> ss_ver;
-                                xstart = (*ts).tiling.col_start() >> ss_hor;
-                                ystart = (*ts).tiling.row_start() >> ss_ver;
+                                xstart = (*ts).tiling.col_start >> ss_hor;
+                                ystart = (*ts).tiling.row_start >> ss_ver;
                                 let edge_array = t
                                     .scratch
                                     .inter_intra_mut()
@@ -3125,8 +3125,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     .buf_mut::<BD>();
                                 let edge_offset = 128;
                                 let data_stride = BD::pxstride(f.cur.stride[1]);
-                                let data_width = 4 * ts.tiling.col_end() >> ss_hor;
-                                let data_height = 4 * ts.tiling.row_end() >> ss_ver;
+                                let data_width = 4 * ts.tiling.col_end >> ss_hor;
+                                let data_height = 4 * ts.tiling.row_end >> ss_ver;
                                 let data_diff = (data_height - 1) as isize * data_stride;
                                 let dstuv_slice = slice::from_raw_parts(
                                     (f.cur.data.as_ref().unwrap().data[1 + pl as usize]
@@ -3139,8 +3139,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     xpos > xstart,
                                     ypos,
                                     ypos > ystart,
-                                    ts.tiling.col_end() >> ss_hor,
-                                    ts.tiling.row_end() >> ss_ver,
+                                    ts.tiling.col_end >> ss_hor,
+                                    ts.tiling.row_end >> ss_ver,
                                     edge_flags,
                                     dstuv_slice,
                                     stride,
@@ -3665,8 +3665,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 None
             };
             let data_stride = BD::pxstride(f.cur.stride[0]);
-            let data_width = 4 * ts.tiling.col_end();
-            let data_height = 4 * ts.tiling.row_end();
+            let data_width = 4 * ts.tiling.col_end;
+            let data_height = 4 * ts.tiling.row_end;
             let data_diff = (data_height - 1) as isize * data_stride;
             let dst_slice = slice::from_raw_parts(
                 (f.cur.data.as_ref().unwrap().data[0] as *const BD::Pixel)
@@ -3675,11 +3675,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             );
             m = rav1d_prepare_intra_edges(
                 t.b.x,
-                t.b.x > ts.tiling.col_start(),
+                t.b.x > ts.tiling.col_start,
                 t.b.y,
-                t.b.y > ts.tiling.row_start(),
-                ts.tiling.col_end(),
-                ts.tiling.row_end(),
+                t.b.y > ts.tiling.row_start,
+                ts.tiling.col_end,
+                ts.tiling.row_end,
                 EdgeFlags::empty(),
                 dst_slice,
                 f.cur.stride[0],
@@ -3984,8 +3984,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             None
                         };
                         let data_stride = BD::pxstride(f.cur.stride[1]);
-                        let data_width = 4 * ts.tiling.col_end() >> ss_hor;
-                        let data_height = 4 * ts.tiling.row_end() >> ss_ver;
+                        let data_width = 4 * ts.tiling.col_end >> ss_hor;
+                        let data_height = 4 * ts.tiling.row_end >> ss_ver;
                         let data_diff = (data_height - 1) as isize * data_stride;
                         let dstuv_slice = slice::from_raw_parts(
                             (f.cur.data.as_ref().unwrap().data[1 + pl as usize]
@@ -3995,11 +3995,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         );
                         m = rav1d_prepare_intra_edges(
                             t.b.x >> ss_hor,
-                            t.b.x >> ss_hor > ts.tiling.col_start() >> ss_hor,
+                            t.b.x >> ss_hor > ts.tiling.col_start >> ss_hor,
                             t.b.y >> ss_ver,
-                            t.b.y >> ss_ver > ts.tiling.row_start() >> ss_ver,
-                            ts.tiling.col_end() >> ss_hor,
-                            ts.tiling.row_end() >> ss_ver,
+                            t.b.y >> ss_ver > ts.tiling.row_start >> ss_ver,
+                            ts.tiling.col_end >> ss_hor,
+                            ts.tiling.row_end >> ss_ver,
                             EdgeFlags::empty(),
                             dstuv_slice,
                             f.cur.stride[1],
@@ -4560,12 +4560,12 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
     let ts = &f.ts[t.ts];
     let sby = t.b.y >> f.sb_shift;
     let sby_off = f.sb128w * 128 * sby;
-    let x_off = ts.tiling.col_start();
+    let x_off = ts.tiling.col_start;
     let y: *const BD::Pixel = (f.cur.data.as_ref().unwrap().data[0] as *const BD::Pixel)
         .offset((x_off * 4) as isize)
         .offset((((t.b.y + f.sb_step) * 4 - 1) as isize * BD::pxstride(f.cur.stride[0])) as isize);
     let ipred_edge_off = (f.ipred_edge_off * 0) + (sby_off + x_off * 4) as usize;
-    let n = 4 * (ts.tiling.col_end() - x_off) as usize;
+    let n = 4 * (ts.tiling.col_end - x_off) as usize;
     BD::pixel_copy(
         &mut f
             .ipred_edge
@@ -4584,7 +4584,7 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
         while pl <= 2 {
             let ipred_edge_off =
                 (f.ipred_edge_off * pl) + (sby_off + (x_off * 4 >> ss_hor)) as usize;
-            let n = 4 * (ts.tiling.col_end() - x_off) as usize >> ss_hor;
+            let n = 4 * (ts.tiling.col_end - x_off) as usize >> ss_hor;
             BD::pixel_copy(
                 &mut f
                     .ipred_edge

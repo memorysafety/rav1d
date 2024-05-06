@@ -1017,40 +1017,14 @@ impl Rav1dFrameData {
 #[repr(C)]
 pub struct Rav1dTileState_tiling {
     // in 4px units
-    pub col_start: AtomicI32,
-    pub col_end: AtomicI32,
-    pub row_start: AtomicI32,
-    pub row_end: AtomicI32,
+    pub col_start: i32,
+    pub col_end: i32,
+    pub row_start: i32,
+    pub row_end: i32,
 
     // in tile units
-    pub col: AtomicI32,
-    pub row: AtomicI32,
-}
-
-impl Rav1dTileState_tiling {
-    pub fn col_start(&self) -> i32 {
-        self.col_start.load(Ordering::Relaxed)
-    }
-
-    pub fn col_end(&self) -> i32 {
-        self.col_end.load(Ordering::Relaxed)
-    }
-
-    pub fn row_start(&self) -> i32 {
-        self.row_start.load(Ordering::Relaxed)
-    }
-
-    pub fn row_end(&self) -> i32 {
-        self.row_end.load(Ordering::Relaxed)
-    }
-
-    pub fn col(&self) -> i32 {
-        self.col.load(Ordering::Relaxed)
-    }
-
-    pub fn row(&self) -> i32 {
-        self.row.load(Ordering::Relaxed)
-    }
+    pub col: i32,
+    pub row: i32,
 }
 
 #[derive(Default)]

@@ -24,7 +24,6 @@ use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::Rav1dTaskIndex;
-use crate::src::internal::Rav1dTileState;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskType;
 use crate::src::iter::wrapping_iter;
@@ -373,7 +372,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
         let ts = &f.ts[tile_idx];
         let t_idx = tile_tasks.unwrap() + tile_idx;
         let t = &mut tasks[t_idx];
-        t.sby = (*ts).tiling.row_start.load(Ordering::SeqCst) >> f.sb_shift;
+        t.sby = (*ts).tiling.row_start >> f.sb_shift;
         if pf_t.is_some() && t.sby != 0 {
             tasks[prev_t.unwrap()].next = pf_t;
             prev_t = pf_t;
@@ -512,7 +511,7 @@ unsafe fn check_tile(
         let ss_ver =
             ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
         let p_b: c_uint = (((*t).sby + 1) << f.sb_shift + 2) as c_uint;
-        let tile_sby = (*t).sby - (ts.tiling.row_start.load(Ordering::SeqCst) >> f.sb_shift);
+        let tile_sby = (*t).sby - (ts.tiling.row_start >> f.sb_shift);
         let lowest_px = f
             .lowest_pixel_mem
             .index(ts.lowest_pixel + tile_sby as usize);
@@ -1083,7 +1082,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
 
                         // signal progress
                         fc.task_thread.error.fetch_or(error_0, Ordering::SeqCst);
-                        if (sby + 1) << f.sb_shift < ts.tiling.row_end.load(Ordering::SeqCst) {
+                        if (sby + 1) << f.sb_shift < ts.tiling.row_end {
                             t.sby += 1;
                             t.deps_skip = 0 as c_int;
                             if check_tile(t_idx, &f, &fc.task_thread, uses_2pass) == 0 {
