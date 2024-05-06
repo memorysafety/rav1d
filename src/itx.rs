@@ -485,11 +485,13 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
         c = &mut c[W..];
     }
     coeff.fill(0.into());
+
     let mut x = 0;
     while x < W {
         dav1d_inv_wht4_1d_c(tmp[x as usize..].as_mut_ptr(), H as isize);
         x += 1;
     }
+    
     c = &mut tmp[..];
     let mut y = 0;
     while y < H {
