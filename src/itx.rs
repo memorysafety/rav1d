@@ -467,31 +467,32 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
 
     let mut tmp = [0; 16];
-    let mut c = tmp.as_mut_ptr();
+    let mut c = &mut tmp[..];
     let mut y = 0;
     while y < 4 {
         let mut x = 0;
         while x < 4 {
-            *c.offset(x as isize) = (*coeff.offset((y + x * 4) as isize)).as_::<i32>() >> 2;
+            c[x as usize] = (*coeff.offset((y + x * 4) as isize)).as_::<i32>() >> 2;
             x += 1;
         }
-        dav1d_inv_wht4_1d_c(c, 1);
+        dav1d_inv_wht4_1d_c(c.as_mut_ptr(), 1);
         y += 1;
-        c = c.offset(4);
+        c = &mut c[4..];
     }
     slice::from_raw_parts_mut(coeff, 4 * 4).fill(0.into());
     let mut x = 0;
     while x < 4 {
-        dav1d_inv_wht4_1d_c(&mut *tmp.as_mut_ptr().offset(x as isize), 4);
+        dav1d_inv_wht4_1d_c(tmp[x as usize..].as_mut_ptr(), 4);
         x += 1;
     }
-    c = tmp.as_mut_ptr();
+    c = &mut tmp[..];
     let mut y = 0;
     while y < 4 {
         let mut x = 0;
         while x < 4 {
-            *dst.offset(x as isize) = bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + *c);
-            c = c.offset(1);
+            *dst.offset(x as isize) =
+                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + c[0]);
+            c = &mut c[1..];
             x += 1;
         }
         y += 1;
