@@ -115,24 +115,24 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     let col_clip_max = !col_clip_min;
     let mut tmp: [i32; 4096] = [0; 4096];
     let mut c: *mut i32 = tmp.as_mut_ptr();
-    let mut y_0 = 0;
-    while y_0 < sh {
+    let mut y = 0;
+    while y < sh {
         if is_rect2 != 0 {
-            let mut x_0 = 0;
-            while x_0 < sw {
-                *c.offset(x_0 as isize) =
-                    (*coeff.offset((y_0 + x_0 * sh) as isize)).as_::<c_int>() * 181 + 128 >> 8;
-                x_0 += 1;
+            let mut x = 0;
+            while x < sw {
+                *c.offset(x as isize) =
+                    (*coeff.offset((y + x * sh) as isize)).as_::<c_int>() * 181 + 128 >> 8;
+                x += 1;
             }
         } else {
-            let mut x_1 = 0;
-            while x_1 < sw {
-                *c.offset(x_1 as isize) = (*coeff.offset((y_0 + x_1 * sh) as isize)).as_();
-                x_1 += 1;
+            let mut x = 0;
+            while x < sw {
+                *c.offset(x as isize) = (*coeff.offset((y + x * sh) as isize)).as_();
+                x += 1;
             }
         }
         first_1d_fn(c, 1 as c_int as ptrdiff_t, row_clip_min, row_clip_max);
-        y_0 += 1;
+        y += 1;
         c = c.offset(w as isize);
     }
     slice::from_raw_parts_mut(coeff, sw as usize * sh as usize).fill(0.into());
@@ -141,28 +141,28 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
         tmp[i as usize] = iclip(tmp[i as usize] + rnd >> shift, col_clip_min, col_clip_max);
         i += 1;
     }
-    let mut x_2 = 0;
-    while x_2 < w {
+    let mut x = 0;
+    while x < w {
         second_1d_fn(
-            &mut *tmp.as_mut_ptr().offset(x_2 as isize),
+            &mut *tmp.as_mut_ptr().offset(x as isize),
             w as ptrdiff_t,
             col_clip_min,
             col_clip_max,
         );
-        x_2 += 1;
+        x += 1;
     }
     c = tmp.as_mut_ptr();
-    let mut y_1 = 0;
-    while y_1 < h {
-        let mut x_3 = 0;
-        while x_3 < w {
+    let mut y = 0;
+    while y < h {
+        let mut x = 0;
+        while x < w {
             let fresh0 = c;
             c = c.offset(1);
-            *dst.offset(x_3 as isize) =
-                bd.iclip_pixel((*dst.offset(x_3 as isize)).as_::<c_int>() + (*fresh0 + 8 >> 4));
-            x_3 += 1;
+            *dst.offset(x as isize) =
+                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + (*fresh0 + 8 >> 4));
+            x += 1;
         }
-        y_1 += 1;
+        y += 1;
         dst = dst.offset(BD::pxstride(stride) as isize);
     }
 }
