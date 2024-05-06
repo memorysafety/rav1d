@@ -217,7 +217,7 @@ fn init_quant_tables(
     }
 }
 
-unsafe fn read_mv_component_diff(
+fn read_mv_component_diff(
     f: &Rav1dFrameData,
     msac: &mut MsacContext,
     mv_comp: &mut CdfMvComponent,
@@ -276,7 +276,7 @@ enum MvCdfSelect {
     Dmv,
 }
 
-unsafe fn read_mv_residual(
+fn read_mv_residual(
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,
     ref_mv: &mut mv,
@@ -314,7 +314,7 @@ unsafe fn read_mv_residual(
     };
 }
 
-unsafe fn read_tx_tree(
+fn read_tx_tree(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,
@@ -409,7 +409,8 @@ unsafe fn read_tx_tree(
             [(&t.l, txh), (&f.a[t.a], txw)],
             [t_dim.h as usize, t_dim.w as usize],
             [by4 as usize, bx4 as usize],
-            |case, (dir, val)| {
+            // SAFETY: Only one thread is accessing the written portion of the buffer at a time.
+            |case, (dir, val)| unsafe {
                 case.set_disjoint(&dir.tx, if is_split { TX_4X4 } else { val });
             },
         );
@@ -444,7 +445,7 @@ fn neg_deinterleave(diff: u8, r#ref: u8, max: u8) -> u8 {
     }
 }
 
-unsafe fn find_matching_ref(
+fn find_matching_ref(
     f: &Rav1dFrameData,
     t: &Rav1dTaskContext,
     intra_edge_flags: EdgeFlags,
@@ -552,7 +553,7 @@ unsafe fn find_matching_ref(
     }
 }
 
-unsafe fn derive_warpmv(
+fn derive_warpmv(
     r: &DisjointMut<AlignedVec64<refmvs_block>>,
     t: &Rav1dTaskContext,
     bw4: c_int,
@@ -751,7 +752,7 @@ fn order_palette(
     }
 }
 
-unsafe fn read_pal_indices(
+fn read_pal_indices(
     ts_c: &mut Rav1dTileStateContext,
     pal_dsp: &Rav1dPalDSPContext,
     scratch_pal: &mut ScratchPal,
@@ -797,14 +798,20 @@ unsafe fn read_pal_indices(
             pal_tmp[offset..][..len].fill(filler);
         }
     }
-    (pal_dsp.pal_idx_finish)(
-        pal_idx.unwrap_or(pal_tmp).as_mut_ptr(),
-        pal_tmp.as_ptr(),
-        bw4 as c_int * 4,
-        bh4 as c_int * 4,
-        w4 as c_int * 4,
-        h4 as c_int * 4,
-    );
+
+    // SAFETY: Unsafe asm call, checkasm tests have verified that the signature is
+    // correct. `pal_idx` and `pal_tmp` are at least `(bw4 * 4) * (bh4 * 4)`
+    // elements long, which is how many elements `pal_idx_finish` will read/write.
+    unsafe {
+        (pal_dsp.pal_idx_finish)(
+            pal_idx.unwrap_or(pal_tmp).as_mut_ptr(),
+            pal_tmp.as_ptr(),
+            bw4 as c_int * 4,
+            bh4 as c_int * 4,
+            w4 as c_int * 4,
+            h4 as c_int * 4,
+        );
+    }
 }
 
 struct VarTx {
@@ -814,7 +821,7 @@ struct VarTx {
     tx_split1: u16,
 }
 
-unsafe fn read_vartx_tree(
+fn read_vartx_tree(
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
     ts_c: &mut Rav1dTileStateContext,
@@ -842,7 +849,8 @@ unsafe fn read_vartx_tree(
                 [&t.l, &f.a[t.a]],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
-                |case, dir| {
+                // SAFETY: Only this thread is accessing the written portion of the buffer.
+                |case, dir| unsafe {
                     case.set_disjoint(&dir.tx, TX_4X4);
                 },
             );
@@ -853,7 +861,8 @@ unsafe fn read_vartx_tree(
                 [(&t.l, 1), (&f.a[t.a], 0)],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
-                |case, (dir, dir_index)| {
+                // SAFETY: Only this thread is accessing the written portion of the buffer.
+                |case, (dir, dir_index)| unsafe {
                     case.set_disjoint(&dir.tx, b_dim[2 + dir_index]);
                 },
             );
@@ -925,7 +934,7 @@ fn get_prev_frame_segid(
 }
 
 #[inline]
-unsafe fn splat_oneref_mv(
+fn splat_oneref_mv(
     c: &Rav1dContext,
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
@@ -948,11 +957,12 @@ unsafe fn splat_oneref_mv(
         bs,
         mf: (mode == GLOBALMV && cmp::min(bw4, bh4) >= 2) as u8 | (mode == NEWMV) as u8 * 2,
     });
+
     c.dsp.refmvs.splat_mv(rf, &t.rt, &tmpl, t.b, bw4, bh4);
 }
 
 #[inline]
-unsafe fn splat_intrabc_mv(
+fn splat_intrabc_mv(
     c: &Rav1dContext,
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
@@ -973,7 +983,7 @@ unsafe fn splat_intrabc_mv(
 }
 
 #[inline]
-unsafe fn splat_tworef_mv(
+fn splat_tworef_mv(
     c: &Rav1dContext,
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
@@ -998,7 +1008,7 @@ unsafe fn splat_tworef_mv(
 }
 
 #[inline]
-unsafe fn splat_intraref(
+fn splat_intraref(
     c: &Rav1dContext,
     t: &Rav1dTaskContext,
     rf: &RefMvsFrame,
@@ -1078,7 +1088,7 @@ fn affine_lowest_px_luma(
 }
 
 #[inline(never)]
-unsafe fn affine_lowest_px_chroma(
+fn affine_lowest_px_chroma(
     t: &Rav1dTaskContext,
     layout: Rav1dPixelLayout,
     dst: &mut c_int,
@@ -1100,7 +1110,7 @@ unsafe fn affine_lowest_px_chroma(
     };
 }
 
-unsafe fn obmc_lowest_px(
+fn obmc_lowest_px(
     r: &DisjointMut<AlignedVec64<refmvs_block>>,
     t: &mut Rav1dTaskContext,
     ts: &Rav1dTileState,
@@ -3906,7 +3916,7 @@ static ss_size_mul: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPix
     I444 => [12, 8],
 });
 
-unsafe fn setup_tile(
+fn setup_tile(
     c: &Rav1dContext,
     ts: &mut Rav1dTileState,
     seq_hdr: &Rav1dSequenceHeader,
@@ -3960,7 +3970,8 @@ unsafe fn setup_tile(
     ts.last_qidx = AtomicU8::new(frame_hdr.quant.yac);
     ts.last_delta_lf = Default::default();
 
-    ts_c.msac = MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac);
+    // SAFETY: `data` comes from `f.tiles`, which will live at least as long as the created `MsacContext`.
+    ts_c.msac = unsafe { MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac) };
 
     ts.tiling.row = tile_row as i32;
     ts.tiling.col = tile_col as i32;
@@ -4351,10 +4362,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_decode_frame_init(
-    c: &Rav1dContext,
-    fc: &Rav1dFrameContext,
-) -> Rav1dResult {
+pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Rav1dResult {
     let mut f = fc.data.try_write().unwrap();
     let f = &mut *f;
 
@@ -4669,7 +4677,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
+pub(crate) fn rav1d_decode_frame_init_cdf(
     c: &Rav1dContext,
     fc: &Rav1dFrameContext,
     f: &mut Rav1dFrameData,

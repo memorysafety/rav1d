@@ -457,7 +457,7 @@ impl Rav1dRefmvsDSPContext {
         );
     }
 
-    pub unsafe fn splat_mv(
+    pub fn splat_mv(
         &self,
         rf: &RefMvsFrame,
         rt: &refmvs_tile,
@@ -478,18 +478,28 @@ impl Rav1dRefmvsDSPContext {
             }
             // This is the range that will actually be accessed,
             // but `splat_mv` expects a pointer offset `bx4` backwards.
-            Some(rf.r.index_mut(ri + bx4..ri + bx4 + bw4))
+            //
+            // SAFETY: Only this thread is accessing the indexed portion of the buffer.
+            Some(unsafe { rf.r.index_mut(ri + bx4..ri + bx4 + bw4) })
         });
         let mut r: [_; 37] = array::from_fn(|i| {
             r[i].as_mut()
-                .map(|r| r.as_mut_ptr().offset(-(bx4 as isize)))
+                // SAFETY: The pointer stays within bounds of the owning allocation. See comment
+                // on `index_mut` above.
+                .map(|r| unsafe { r.as_mut_ptr().offset(-(bx4 as isize)) })
                 .unwrap_or_else(ptr::null_mut)
         });
         let rr = &mut r[start..][..bh4];
         let bx4 = b4.x as _;
         let bw4 = bw4 as _;
         let bh4 = bh4 as _;
-        (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4, bw4, bh4, rr.len());
+
+        // SAFETY: Unsafe asm call, checkasm has verified the signature is correct. `rr` is at
+        // least `bh4` elements long, and each pointer in `rr` is non-null and points to at
+        // least `bx4 * bw4` elements, which is what will be accessed in `splat_mv`.
+        unsafe {
+            (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4, bw4, bh4, rr.len());
+        }
     }
 }
 
