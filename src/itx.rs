@@ -164,10 +164,9 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     while y < h {
         let mut x = 0;
         while x < w {
-            let fresh0 = c;
-            c = c.offset(1);
             *dst.offset(x as isize) =
-                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + (*fresh0 + 8 >> 4));
+                bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + (*c + 8 >> 4));
+            c = c.offset(1);
             x += 1;
         }
         y += 1;
