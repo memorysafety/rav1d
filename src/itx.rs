@@ -56,7 +56,7 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
-pub type itx_1d_fn = Option<unsafe extern "C" fn(*mut i32, ptrdiff_t, c_int, c_int) -> ()>;
+pub type itx_1d_fn = unsafe extern "C" fn(*mut i32, ptrdiff_t, c_int, c_int) -> ();
 
 pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
@@ -137,12 +137,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
                 x_1 += 1;
             }
         }
-        first_1d_fn.expect("non-null function pointer")(
-            c,
-            1 as c_int as ptrdiff_t,
-            row_clip_min,
-            row_clip_max,
-        );
+        first_1d_fn(c, 1 as c_int as ptrdiff_t, row_clip_min, row_clip_max);
         y_0 += 1;
         c = c.offset(w as isize);
     }
@@ -154,7 +149,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     }
     let mut x_2 = 0;
     while x_2 < w {
-        second_1d_fn.expect("non-null function pointer")(
+        second_1d_fn(
             &mut *tmp.as_mut_ptr().offset(x_2 as isize),
             w as ptrdiff_t,
             col_clip_min,
@@ -395,8 +390,8 @@ macro_rules! inv_txfm_fn {
                     $w,
                     $h,
                     $shift,
-                    Some([<dav1d_inv_ $type1 $w _1d_c>]),
-                    Some([<dav1d_inv_ $type2 $h _1d_c>]),
+                    [<dav1d_inv_ $type1 $w _1d_c>],
+                    [<dav1d_inv_ $type2 $h _1d_c>],
                     $has_dconly as c_int,
                     BD::from_c(bitdepth_max),
                 );
