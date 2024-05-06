@@ -72,7 +72,6 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let bitdepth_max = bd.bitdepth_max().as_::<c_int>();
-    let stride = stride as usize;
 
     assert!(w >= 4 && w <= 64);
     assert!(h >= 4 && h <= 64);
@@ -101,7 +100,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
                 x += 1;
             }
             y += 1;
-            dst = dst.offset(BD::pxstride(stride) as isize);
+            dst = dst.offset(BD::pxstride(stride));
         }
         return;
     }
@@ -174,7 +173,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
             x += 1;
         }
         y += 1;
-        dst = dst.offset(BD::pxstride(stride) as isize);
+        dst = dst.offset(BD::pxstride(stride));
     }
 }
 
