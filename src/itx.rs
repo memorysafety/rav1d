@@ -82,8 +82,10 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
     let rnd = 1 << shift >> 1;
 
     if eob < has_dconly {
-        let mut dc = (*coeff.offset(0)).as_::<c_int>();
-        *coeff.offset(0) = 0.as_();
+        let coeff = slice::from_raw_parts_mut(coeff, 1);
+
+        let mut dc = coeff[0].as_::<c_int>();
+        coeff[0] = 0.as_();
         if is_rect2 {
             dc = dc * 181 + 128 >> 8;
         }
@@ -106,6 +108,9 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
 
     let sh = cmp::min(h, 32);
     let sw = cmp::min(w, 32);
+
+    let coeff = slice::from_raw_parts_mut(coeff, sh as usize * sw as usize);
+
     let row_clip_min;
     let col_clip_min;
     if BD::BITDEPTH == 8 {
@@ -126,13 +131,13 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
             let mut x = 0;
             while x < sw {
                 *c.offset(x as isize) =
-                    (*coeff.offset((y + x * sh) as isize)).as_::<c_int>() * 181 + 128 >> 8;
+                    coeff[(y + x * sh) as usize].as_::<c_int>() * 181 + 128 >> 8;
                 x += 1;
             }
         } else {
             let mut x = 0;
             while x < sw {
-                *c.offset(x as isize) = (*coeff.offset((y + x * sh) as isize)).as_();
+                *c.offset(x as isize) = coeff[(y + x * sh) as usize].as_();
                 x += 1;
             }
         }
@@ -141,7 +146,7 @@ pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
         c = c.offset(w as isize);
     }
 
-    slice::from_raw_parts_mut(coeff, sw as usize * sh as usize).fill(0.into());
+    coeff.fill(0.into());
     let mut i = 0;
     while i < w * sh {
         tmp[i as usize] = iclip(tmp[i as usize] + rnd >> shift, col_clip_min, col_clip_max);
