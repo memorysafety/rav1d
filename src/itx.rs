@@ -149,11 +149,9 @@ pub unsafe fn inv_txfm_add_rust<
         );
     }
 
-    let mut c = &tmp[..];
-    for _ in 0..H {
+    for y in 0..H {
         for x in 0..W {
-            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + (c[0] + 8 >> 4));
-            c = &c[1..];
+            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + (tmp[y * W + x] + 8 >> 4));
         }
         dst = dst.offset(BD::pxstride(stride));
     }
@@ -486,11 +484,9 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
         dav1d_inv_wht4_1d_c(tmp[x..].as_mut_ptr(), H as isize);
     }
 
-    let mut c = &tmp[..];
-    for _ in 0..H {
+    for y in 0..H {
         for x in 0..W {
-            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + c[0]);
-            c = &c[1..];
+            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + tmp[y * W + x]);
         }
         dst = dst.offset(BD::pxstride(stride));
     }
