@@ -646,26 +646,26 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let tx2dszctx = cmp::min((*t_dim).lw, TX_32X32 as u8) + cmp::min((*t_dim).lh, TX_32X32 as u8);
     let tx_class = dav1d_tx_type_class[*txtp as usize];
     let chroma = chroma as usize;
-    let is_1d = tx_class != TxClass::TwoD;
+    let is_1d = (tx_class != TxClass::TwoD) as usize;
     let eob_bin = match tx2dszctx {
         0 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_16[chroma][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_16[chroma][is_1d];
             rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, eob_bin_cdf, (4 + 0) as usize)
         }
         1 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_32[chroma][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_32[chroma][is_1d];
             rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 1) as usize)
         }
         2 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_64[chroma][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_64[chroma][is_1d];
             rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 2) as usize)
         }
         3 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_128[chroma][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_128[chroma][is_1d];
             rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 3) as usize)
         }
         4 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_256[chroma][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_256[chroma][is_1d];
             rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 4) as usize)
         }
         5 => {
