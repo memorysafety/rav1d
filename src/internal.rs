@@ -892,6 +892,7 @@ impl Rav1dFrameContext {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameData {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
@@ -947,54 +948,6 @@ pub(crate) struct Rav1dFrameData {
     pub frame_thread: Rav1dFrameContext_frame_thread,
     pub lf: Rav1dFrameContext_lf,
     pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
-}
-
-impl Default for Rav1dFrameData {
-    fn default() -> Self {
-        Self {
-            seq_hdr: Default::default(),
-            frame_hdr: Default::default(),
-            refp: Default::default(),
-            cur: Default::default(),
-            sr_cur: Default::default(),
-            mvs: Default::default(),
-            ref_mvs: Default::default(),
-            cur_segmap: Default::default(),
-            prev_segmap: Default::default(),
-            refpoc: Default::default(),
-            refrefpoc: Default::default(),
-            gmv_warp_allowed: Default::default(),
-            out_cdf: Default::default(),
-            tiles: Default::default(),
-            svc: Default::default(),
-            resize_step: Default::default(),
-            resize_start: Default::default(),
-            ts: Default::default(),
-            dsp: Default::default(),
-            ipred_edge: Default::default(),
-            ipred_edge_off: Default::default(),
-            b4_stride: Default::default(),
-            w4: Default::default(),
-            h4: Default::default(),
-            bw: Default::default(),
-            bh: Default::default(),
-            sb128w: Default::default(),
-            sb128h: Default::default(),
-            sbh: Default::default(),
-            sb_shift: Default::default(),
-            sb_step: Default::default(),
-            sr_sb128w: Default::default(),
-            dq: Default::default(),
-            qm: Default::default(),
-            a: Default::default(),
-            rf: Default::default(),
-            jnt_weights: Default::default(),
-            bitdepth_max: Default::default(),
-            frame_thread: Default::default(),
-            lf: Default::default(),
-            lowest_pixel_mem: Default::default(),
-        }
-    }
 }
 
 impl Rav1dFrameData {
