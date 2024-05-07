@@ -523,7 +523,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let mut dc_dq;
     let current_block: u64;
     let ts = &f.ts[ts];
-    let chroma = (plane != 0) as c_int;
+    let chroma = (plane != 0) as usize;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
@@ -534,7 +534,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     }
 
     // does this block have any non-zero coefficients
-    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout) as c_int;
+    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma as c_int, f.cur.p.layout) as c_int;
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
         &mut ts_c.cdf.coef.skip[(*t_dim).ctx as usize][sctx as usize],
@@ -648,31 +648,31 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let is_1d = tx_class != TxClass::TwoD;
     let eob_bin = match tx2dszctx {
         0 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_16[chroma as usize][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_16[chroma][is_1d as usize];
             rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, eob_bin_cdf, (4 + 0) as usize)
         }
         1 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_32[chroma as usize][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_32[chroma][is_1d as usize];
             rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 1) as usize)
         }
         2 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_64[chroma as usize][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_64[chroma][is_1d as usize];
             rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 2) as usize)
         }
         3 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_128[chroma as usize][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_128[chroma][is_1d as usize];
             rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 3) as usize)
         }
         4 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_256[chroma as usize][is_1d as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_256[chroma][is_1d as usize];
             rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 4) as usize)
         }
         5 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_512[chroma as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_512[chroma];
             rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 5) as usize)
         }
         6 => {
-            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_1024[chroma as usize];
+            let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_1024[chroma];
             rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 6) as usize)
         }
         // `tx2dszctx` is `cmp::min(_, 3) + cmp::min(_, 3)`, where `TX_32X32 as u8 == 3`,
@@ -692,7 +692,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let eob;
     if eob_bin > 1 {
         let eob_hi_bit_cdf =
-            &mut ts_c.cdf.coef.eob_hi_bit[(*t_dim).ctx as usize][chroma as usize][eob_bin as usize];
+            &mut ts_c.cdf.coef.eob_hi_bit[(*t_dim).ctx as usize][chroma][eob_bin as usize];
         let eob_hi_bit = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, eob_hi_bit_cdf) as c_uint;
         if dbg {
             println!(
@@ -716,16 +716,16 @@ unsafe fn decode_coefs<BD: BitDepth>(
 
     // base tokens
     let eob_cdf: *mut [u16; 4] =
-        (ts_c.cdf.coef.eob_base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
+        (ts_c.cdf.coef.eob_base_tok[(*t_dim).ctx as usize][chroma]).as_mut_ptr();
     let hi_cdf: *mut [u16; 4] = (ts_c.cdf.coef.br_tok
-        [cmp::min((*t_dim).ctx as c_int, 3 as c_int) as usize][chroma as usize])
+        [cmp::min((*t_dim).ctx as c_int, 3 as c_int) as usize][chroma])
         .as_mut_ptr();
     let mut rc;
     let mut dc_tok;
 
     if eob != 0 {
         let lo_cdf: *mut [u16; 4] =
-            (ts_c.cdf.coef.base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
+            (ts_c.cdf.coef.base_tok[(*t_dim).ctx as usize][chroma]).as_mut_ptr();
         let levels = scratch.inter_intra_mut().levels_pal.levels_mut();
         let sw = cmp::min((*t_dim).w as c_int, 8 as c_int);
         let sh = cmp::min((*t_dim).h as c_int, 8 as c_int);
@@ -1485,7 +1485,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
     } else {
         dc_sign_ctx = get_dc_sign_ctx(tx, a, l) as c_int;
-        let dc_sign_cdf = &mut ts_c.cdf.coef.dc_sign[chroma as usize][dc_sign_ctx as usize];
+        let dc_sign_cdf = &mut ts_c.cdf.coef.dc_sign[chroma][dc_sign_ctx as usize];
         dc_sign = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, dc_sign_cdf) as c_int;
         if dbg {
             println!(
