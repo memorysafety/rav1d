@@ -894,74 +894,52 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     abcd: &[i16; 4],
-    mut mx: c_int,
-    mut my: c_int,
+    mx: c_int,
+    my: c_int,
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
-    let mut mid: [i16; 120] = [0; 120];
-    let mut mid_ptr: *mut i16 = mid.as_mut_ptr();
+    let mut mid = [[0; 8]; 15];
+
     src = src.offset(-3 * BD::pxstride(src_stride));
-    let mut y = 0;
-    while y < 15 {
-        let mut x = 0;
-        let mut tmx = mx;
-        while x < 8 {
-            let filter: *const i8 =
-                (dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize]).as_ptr();
-            *mid_ptr.offset(x as isize) = (*filter.offset(0) as c_int
-                * (*src.offset((x - 3 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(1) as c_int * (*src.offset((x - 2 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(2) as c_int * (*src.offset((x - 1 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(3) as c_int * (*src.offset((x + 0 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(4) as c_int * (*src.offset((x + 1 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(5) as c_int * (*src.offset((x + 2 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(6) as c_int * (*src.offset((x + 3 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(7) as c_int * (*src.offset((x + 4 * 1) as isize)).as_::<c_int>()
-                + ((1 as c_int) << 7 - intermediate_bits >> 1)
+    for (y, mid) in mid.iter_mut().enumerate() {
+        let mx = mx + y as c_int * abcd[1] as c_int;
+        for (x, mid) in mid.iter_mut().enumerate() {
+            let tmx = mx + x as c_int * abcd[0] as c_int;
+            let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
+            *mid = (filter[0] as c_int * (*src.offset(x as isize - 3 * 1)).as_::<c_int>()
+                + filter[1] as c_int * (*src.offset(x as isize - 2 * 1)).as_::<c_int>()
+                + filter[2] as c_int * (*src.offset(x as isize - 1 * 1)).as_::<c_int>()
+                + filter[3] as c_int * (*src.offset(x as isize + 0 * 1)).as_::<c_int>()
+                + filter[4] as c_int * (*src.offset(x as isize + 1 * 1)).as_::<c_int>()
+                + filter[5] as c_int * (*src.offset(x as isize + 2 * 1)).as_::<c_int>()
+                + filter[6] as c_int * (*src.offset(x as isize + 3 * 1)).as_::<c_int>()
+                + filter[7] as c_int * (*src.offset(x as isize + 4 * 1)).as_::<c_int>()
+                + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
-            x += 1;
-            tmx += abcd[0] as c_int;
         }
         src = src.offset(BD::pxstride(src_stride));
-        mid_ptr = mid_ptr.offset(8);
-        y += 1;
-        mx += abcd[1] as c_int;
     }
-    mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut i16;
-    let mut y_0 = 0;
-    while y_0 < 8 {
-        let mut x_0 = 0;
-        let mut tmy = my;
-        while x_0 < 8 {
-            let filter_0: *const i8 =
-                (dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize]).as_ptr();
-            *dst.offset(x_0 as isize) = bd.iclip_pixel(
-                *filter_0.offset(0) as c_int * *mid_ptr.offset((x_0 - 3 * 8) as isize) as c_int
-                    + *filter_0.offset(1) as c_int
-                        * *mid_ptr.offset((x_0 - 2 * 8) as isize) as c_int
-                    + *filter_0.offset(2) as c_int
-                        * *mid_ptr.offset((x_0 - 1 * 8) as isize) as c_int
-                    + *filter_0.offset(3) as c_int
-                        * *mid_ptr.offset((x_0 + 0 * 8) as isize) as c_int
-                    + *filter_0.offset(4) as c_int
-                        * *mid_ptr.offset((x_0 + 1 * 8) as isize) as c_int
-                    + *filter_0.offset(5) as c_int
-                        * *mid_ptr.offset((x_0 + 2 * 8) as isize) as c_int
-                    + *filter_0.offset(6) as c_int
-                        * *mid_ptr.offset((x_0 + 3 * 8) as isize) as c_int
-                    + *filter_0.offset(7) as c_int
-                        * *mid_ptr.offset((x_0 + 4 * 8) as isize) as c_int
-                    + ((1 as c_int) << 7 + intermediate_bits >> 1)
+
+    for y in 0..8 {
+        let my = my + y as c_int * abcd[3] as c_int;
+        for x in 0..8 {
+            let tmy = my + x as c_int * abcd[2] as c_int;
+            let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
+            *dst.add(x) = bd.iclip_pixel(
+                filter[0] as c_int * mid[y + 0][x] as c_int
+                    + filter[1] as c_int * mid[y + 1][x] as c_int
+                    + filter[2] as c_int * mid[y + 2][x] as c_int
+                    + filter[3] as c_int * mid[y + 3][x] as c_int
+                    + filter[4] as c_int * mid[y + 4][x] as c_int
+                    + filter[5] as c_int * mid[y + 5][x] as c_int
+                    + filter[6] as c_int * mid[y + 6][x] as c_int
+                    + filter[7] as c_int * mid[y + 7][x] as c_int
+                    + (1 << 7 + intermediate_bits >> 1)
                     >> 7 + intermediate_bits,
             );
-            x_0 += 1;
-            tmy += abcd[2] as c_int;
         }
-        mid_ptr = mid_ptr.offset(8);
         dst = dst.offset(BD::pxstride(dst_stride));
-        y_0 += 1;
-        my += abcd[3] as c_int;
     }
 }
 
@@ -971,67 +949,51 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     abcd: &[i16; 4],
-    mut mx: c_int,
-    mut my: c_int,
+    mx: c_int,
+    my: c_int,
     bd: BD,
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
-    let mut mid: [i16; 120] = [0; 120];
-    let mut mid_ptr: *mut i16 = mid.as_mut_ptr();
+    let mut mid = [[0; 8]; 15];
+
     src = src.offset(-3 * BD::pxstride(src_stride));
-    let mut y = 0;
-    while y < 15 {
-        let mut x = 0;
-        let mut tmx = mx;
-        while x < 8 {
-            let filter: *const i8 =
-                (dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize]).as_ptr();
-            *mid_ptr.offset(x as isize) = (*filter.offset(0) as c_int
-                * (*src.offset((x - 3 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(1) as c_int * (*src.offset((x - 2 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(2) as c_int * (*src.offset((x - 1 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(3) as c_int * (*src.offset((x + 0 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(4) as c_int * (*src.offset((x + 1 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(5) as c_int * (*src.offset((x + 2 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(6) as c_int * (*src.offset((x + 3 * 1) as isize)).as_::<c_int>()
-                + *filter.offset(7) as c_int * (*src.offset((x + 4 * 1) as isize)).as_::<c_int>()
-                + ((1 as c_int) << 7 - intermediate_bits >> 1)
+    for (y, mid) in mid.iter_mut().enumerate() {
+        let mx = mx + y as c_int * abcd[1] as c_int;
+        for (x, mid) in mid.iter_mut().enumerate() {
+            let tmx = mx + x as c_int * abcd[0] as c_int;
+            let filter = &dav1d_mc_warp_filter[(64 + (tmx + 512 >> 10)) as usize];
+            *mid = (filter[0] as c_int * (*src.offset(x as isize - 3 * 1)).as_::<c_int>()
+                + filter[1] as c_int * (*src.offset(x as isize - 2 * 1)).as_::<c_int>()
+                + filter[2] as c_int * (*src.offset(x as isize - 1 * 1)).as_::<c_int>()
+                + filter[3] as c_int * (*src.offset(x as isize + 0 * 1)).as_::<c_int>()
+                + filter[4] as c_int * (*src.offset(x as isize + 1 * 1)).as_::<c_int>()
+                + filter[5] as c_int * (*src.offset(x as isize + 2 * 1)).as_::<c_int>()
+                + filter[6] as c_int * (*src.offset(x as isize + 3 * 1)).as_::<c_int>()
+                + filter[7] as c_int * (*src.offset(x as isize + 4 * 1)).as_::<c_int>()
+                + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
-            x += 1;
-            tmx += abcd[0] as c_int;
         }
         src = src.offset(BD::pxstride(src_stride));
-        mid_ptr = mid_ptr.offset(8);
-        y += 1;
-        mx += abcd[1] as c_int;
     }
-    mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut i16;
-    let mut y_0 = 0;
-    while y_0 < 8 {
-        let mut x_0 = 0;
-        let mut tmy = my;
-        while x_0 < 8 {
-            let filter_0: *const i8 =
-                (dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize]).as_ptr();
-            *tmp.offset(x_0 as isize) = ((*filter_0.offset(0) as c_int
-                * *mid_ptr.offset((x_0 - 3 * 8) as isize) as c_int
-                + *filter_0.offset(1) as c_int * *mid_ptr.offset((x_0 - 2 * 8) as isize) as c_int
-                + *filter_0.offset(2) as c_int * *mid_ptr.offset((x_0 - 1 * 8) as isize) as c_int
-                + *filter_0.offset(3) as c_int * *mid_ptr.offset((x_0 + 0 * 8) as isize) as c_int
-                + *filter_0.offset(4) as c_int * *mid_ptr.offset((x_0 + 1 * 8) as isize) as c_int
-                + *filter_0.offset(5) as c_int * *mid_ptr.offset((x_0 + 2 * 8) as isize) as c_int
-                + *filter_0.offset(6) as c_int * *mid_ptr.offset((x_0 + 3 * 8) as isize) as c_int
-                + *filter_0.offset(7) as c_int * *mid_ptr.offset((x_0 + 4 * 8) as isize) as c_int
-                + ((1 as c_int) << 7 >> 1)
+
+    for y in 0..8 {
+        let my = my + y as c_int * abcd[3] as c_int;
+        for x in 0..8 {
+            let tmy = my + x as c_int * abcd[2] as c_int;
+            let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
+            *tmp.add(x) = ((filter[0] as c_int * mid[y + 0][x] as c_int
+                + filter[1] as c_int * mid[y + 1][x] as c_int
+                + filter[2] as c_int * mid[y + 2][x] as c_int
+                + filter[3] as c_int * mid[y + 3][x] as c_int
+                + filter[4] as c_int * mid[y + 4][x] as c_int
+                + filter[5] as c_int * mid[y + 5][x] as c_int
+                + filter[6] as c_int * mid[y + 6][x] as c_int
+                + filter[7] as c_int * mid[y + 7][x] as c_int
+                + (1 << 7 >> 1)
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
-            x_0 += 1;
-            tmy += abcd[2] as c_int;
         }
-        mid_ptr = mid_ptr.offset(8);
-        tmp = tmp.offset(tmp_stride as isize);
-        y_0 += 1;
-        my += abcd[3] as c_int;
+        tmp = tmp.offset(tmp_stride);
     }
 }
 
