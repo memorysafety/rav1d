@@ -557,7 +557,7 @@ macro_rules! bd_fn {
         use $crate::include::common::bitdepth::BPC;
 
         paste! {
-            match BD::BPC {
+            match $BD::BPC {
                 BPC::BPC8 => $decl_fn!(fn [<dav1d_ $name _8bpc_ $asm>]),
                 BPC::BPC16 => $decl_fn!(fn [<dav1d_ $name _16bpc_ $asm>]),
             }

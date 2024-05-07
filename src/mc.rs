@@ -2524,12 +2524,12 @@ impl Rav1dMCDSPContext {
             Bilinear => bd_fn!(mct::decl_fn, BD, prep_bilin, neon),
         });
 
-        self.avg = bd_fn!(BP, avg, neon);
-        self.w_avg = bd_fn!(BP, w_avg, neon);
-        self.mask = bd_fn!(BP, mask, neon);
-        self.blend = bd_fn!(BP, blend, neon);
-        self.blend_h = bd_fn!(BP, blend_h, neon);
-        self.blend_v = bd_fn!(BP, blend_v, neon);
+        self.avg = bd_fn!(BD, avg, neon);
+        self.w_avg = bd_fn!(BD, w_avg, neon);
+        self.mask = bd_fn!(BD, mask, neon);
+        self.blend = bd_fn!(BD, blend, neon);
+        self.blend_h = bd_fn!(BD, blend_h, neon);
+        self.blend_v = bd_fn!(BD, blend_v, neon);
 
         self.w_mask = enum_map!(Rav1dPixelLayoutSubSampled => w_mask::Fn; match key {
             I420 => bd_fn!(w_mask::decl_fn, BD, w_mask_420, neon),
@@ -2537,9 +2537,9 @@ impl Rav1dMCDSPContext {
             I444 => bd_fn!(w_mask::decl_fn, BD, w_mask_444, neon),
         });
 
-        self.warp8x8 = bd_fn!(BP, warp_affine_8x8, neon);
-        self.warp8x8t = bd_fn!(BP, warp_affine_8x8t, neon);
-        self.emu_edge = bd_fn!(BP, emu_edge, neon);
+        self.warp8x8 = bd_fn!(BD, warp_affine_8x8, neon);
+        self.warp8x8t = bd_fn!(BD, warp_affine_8x8t, neon);
+        self.emu_edge = bd_fn!(BD, emu_edge, neon);
 
         self
     }
