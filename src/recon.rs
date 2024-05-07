@@ -280,11 +280,11 @@ fn get_skip_ctx(
     bs: BlockSize,
     a: &[u8],
     l: &[u8],
-    chroma: c_int,
+    chroma: bool,
     layout: Rav1dPixelLayout,
 ) -> u8 {
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    if chroma != 0 {
+    if chroma {
         let ss_ver = layout == Rav1dPixelLayout::I420;
         let ss_hor = layout != Rav1dPixelLayout::I444;
         let not_one_blk = b_dim[2] - (b_dim[2] != 0 && ss_hor) as u8 > t_dim.lw
@@ -523,7 +523,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let mut dc_dq;
     let current_block: u64;
     let ts = &f.ts[ts];
-    let chroma = (plane != 0) as usize;
+    let chroma = plane != 0;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
@@ -534,7 +534,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     }
 
     // does this block have any non-zero coefficients
-    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma as c_int, f.cur.p.layout) as c_int;
+    let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout) as c_int;
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
         &mut ts_c.cdf.coef.skip[(*t_dim).ctx as usize][sctx as usize],
@@ -563,9 +563,9 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
         Intra(_) if (*t_dim).max >= TX_32X32 => DCT_DCT,
         Inter(_) if (*t_dim).max >= TX_64X64 => DCT_DCT,
-        Intra(intra) if chroma != 0 => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
+        Intra(intra) if chroma => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
         // inferred from either the luma txtp (inter) or a LUT (intra)
-        Inter(_) if chroma != 0 => get_uv_inter_txtp(t_dim, *txtp),
+        Inter(_) if chroma => get_uv_inter_txtp(t_dim, *txtp),
         // In libaom, lossless is checked by a literal qidx == 0, but not all
         // such blocks are actually lossless. The remainder gets an implicit
         // transform type (for luma)
@@ -645,6 +645,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     // find end-of-block (eob)
     let tx2dszctx = cmp::min((*t_dim).lw, TX_32X32 as u8) + cmp::min((*t_dim).lh, TX_32X32 as u8);
     let tx_class = dav1d_tx_type_class[*txtp as usize];
+    let chroma = chroma as usize;
     let is_1d = tx_class != TxClass::TwoD;
     let eob_bin = match tx2dszctx {
         0 => {
