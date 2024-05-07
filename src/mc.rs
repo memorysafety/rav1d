@@ -915,7 +915,7 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
                 + filter[5] as c_int * (*src.offset(x as isize + 2 * 1)).as_::<c_int>()
                 + filter[6] as c_int * (*src.offset(x as isize + 3 * 1)).as_::<c_int>()
                 + filter[7] as c_int * (*src.offset(x as isize + 4 * 1)).as_::<c_int>()
-                + ((1 as c_int) << 7 - intermediate_bits >> 1)
+                + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
         }
         src = src.offset(BD::pxstride(src_stride));
@@ -935,7 +935,7 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
                     + filter[5] as c_int * mid[y + 5][x] as c_int
                     + filter[6] as c_int * mid[y + 6][x] as c_int
                     + filter[7] as c_int * mid[y + 7][x] as c_int
-                    + ((1 as c_int) << 7 + intermediate_bits >> 1)
+                    + (1 << 7 + intermediate_bits >> 1)
                     >> 7 + intermediate_bits,
             );
         }
@@ -970,7 +970,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 + filter[5] as c_int * (*src.offset(x as isize + 2 * 1)).as_::<c_int>()
                 + filter[6] as c_int * (*src.offset(x as isize + 3 * 1)).as_::<c_int>()
                 + filter[7] as c_int * (*src.offset(x as isize + 4 * 1)).as_::<c_int>()
-                + ((1 as c_int) << 7 - intermediate_bits >> 1)
+                + (1 << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
         }
         src = src.offset(BD::pxstride(src_stride));
@@ -989,7 +989,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 + filter[5] as c_int * mid[y + 5][x] as c_int
                 + filter[6] as c_int * mid[y + 6][x] as c_int
                 + filter[7] as c_int * mid[y + 7][x] as c_int
-                + ((1 as c_int) << 7 >> 1)
+                + (1 << 7 >> 1)
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
         }
