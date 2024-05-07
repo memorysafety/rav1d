@@ -893,7 +893,7 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     dst_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mut mx: c_int,
     mut my: c_int,
     bd: BD,
@@ -921,12 +921,12 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
                 + ((1 as c_int) << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
             x += 1;
-            tmx += *abcd.offset(0) as c_int;
+            tmx += abcd[0] as c_int;
         }
         src = src.offset(BD::pxstride(src_stride));
         mid_ptr = mid_ptr.offset(8);
         y += 1;
-        mx += *abcd.offset(1) as c_int;
+        mx += abcd[1] as c_int;
     }
     mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut i16;
     let mut y_0 = 0;
@@ -956,12 +956,12 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
                     >> 7 + intermediate_bits,
             );
             x_0 += 1;
-            tmy += *abcd.offset(2) as c_int;
+            tmy += abcd[2] as c_int;
         }
         mid_ptr = mid_ptr.offset(8);
         dst = dst.offset(BD::pxstride(dst_stride));
         y_0 += 1;
-        my += *abcd.offset(3) as c_int;
+        my += abcd[3] as c_int;
     }
 }
 
@@ -970,7 +970,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     tmp_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mut mx: c_int,
     mut my: c_int,
     bd: BD,
@@ -998,12 +998,12 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 + ((1 as c_int) << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
             x += 1;
-            tmx += *abcd.offset(0) as c_int;
+            tmx += abcd[0] as c_int;
         }
         src = src.offset(BD::pxstride(src_stride));
         mid_ptr = mid_ptr.offset(8);
         y += 1;
-        mx += *abcd.offset(1) as c_int;
+        mx += abcd[1] as c_int;
     }
     mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut i16;
     let mut y_0 = 0;
@@ -1026,12 +1026,12 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
             x_0 += 1;
-            tmy += *abcd.offset(2) as c_int;
+            tmy += abcd[2] as c_int;
         }
         mid_ptr = mid_ptr.offset(8);
         tmp = tmp.offset(tmp_stride as isize);
         y_0 += 1;
-        my += *abcd.offset(3) as c_int;
+        my += abcd[3] as c_int;
     }
 }
 
@@ -1250,7 +1250,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8(
     dst_stride: ptrdiff_t,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
@@ -1263,7 +1263,7 @@ impl warp8x8::Fn {
         dst_stride: ptrdiff_t,
         src: *const BD::Pixel,
         src_stride: ptrdiff_t,
-        abcd: *const i16,
+        abcd: &[i16; 4],
         mx: c_int,
         my: c_int,
         bd: BD,
@@ -1342,7 +1342,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8t(
     tmp_stride: ptrdiff_t,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
@@ -1355,7 +1355,7 @@ impl warp8x8t::Fn {
         tmp_stride: ptrdiff_t,
         src: *const BD::Pixel,
         src_stride: ptrdiff_t,
-        abcd: *const i16,
+        abcd: &[i16; 4],
         mx: c_int,
         my: c_int,
         bd: BD,
@@ -1953,7 +1953,7 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
     dst_stride: ptrdiff_t,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
@@ -1976,7 +1976,7 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
     tmp_stride: ptrdiff_t,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
