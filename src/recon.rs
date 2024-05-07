@@ -2497,26 +2497,26 @@ unsafe fn warp_affine<BD: BitDepth>(
                     .offset(dx as isize);
             }
             if !dst16.is_null() {
-                (f.dsp.mc.warp8x8t)(
+                f.dsp.mc.warp8x8t.call(
                     &mut *dst16.offset(x as isize),
                     dstride,
-                    ref_ptr.cast(),
+                    ref_ptr,
                     ref_stride,
-                    wmp.abcd.get().as_ptr(),
+                    &wmp.abcd.get(),
                     mx,
                     my,
-                    f.bitdepth_max,
+                    BD::from_c(f.bitdepth_max),
                 );
             } else {
-                (f.dsp.mc.warp8x8)(
-                    dst8.offset(x as isize).cast(),
+                f.dsp.mc.warp8x8.call(
+                    dst8.offset(x as isize),
                     dstride,
-                    ref_ptr.cast(),
+                    ref_ptr,
                     ref_stride,
-                    wmp.abcd.get().as_ptr(),
+                    &wmp.abcd.get(),
                     mx,
                     my,
-                    f.bitdepth_max,
+                    BD::from_c(f.bitdepth_max),
                 );
             }
         }

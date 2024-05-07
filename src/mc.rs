@@ -893,7 +893,7 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
     dst_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mut mx: c_int,
     mut my: c_int,
     bd: BD,
@@ -921,12 +921,12 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
                 + ((1 as c_int) << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
             x += 1;
-            tmx += *abcd.offset(0) as c_int;
+            tmx += abcd[0] as c_int;
         }
         src = src.offset(BD::pxstride(src_stride));
         mid_ptr = mid_ptr.offset(8);
         y += 1;
-        mx += *abcd.offset(1) as c_int;
+        mx += abcd[1] as c_int;
     }
     mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut i16;
     let mut y_0 = 0;
@@ -956,12 +956,12 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
                     >> 7 + intermediate_bits,
             );
             x_0 += 1;
-            tmy += *abcd.offset(2) as c_int;
+            tmy += abcd[2] as c_int;
         }
         mid_ptr = mid_ptr.offset(8);
         dst = dst.offset(BD::pxstride(dst_stride));
         y_0 += 1;
-        my += *abcd.offset(3) as c_int;
+        my += abcd[3] as c_int;
     }
 }
 
@@ -970,7 +970,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     tmp_stride: ptrdiff_t,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mut mx: c_int,
     mut my: c_int,
     bd: BD,
@@ -998,12 +998,12 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 + ((1 as c_int) << 7 - intermediate_bits >> 1)
                 >> 7 - intermediate_bits) as i16;
             x += 1;
-            tmx += *abcd.offset(0) as c_int;
+            tmx += abcd[0] as c_int;
         }
         src = src.offset(BD::pxstride(src_stride));
         mid_ptr = mid_ptr.offset(8);
         y += 1;
-        mx += *abcd.offset(1) as c_int;
+        mx += abcd[1] as c_int;
     }
     mid_ptr = &mut *mid.as_mut_ptr().offset((3 * 8) as isize) as *mut i16;
     let mut y_0 = 0;
@@ -1026,12 +1026,12 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
             x_0 += 1;
-            tmy += *abcd.offset(2) as c_int;
+            tmy += abcd[2] as c_int;
         }
         mid_ptr = mid_ptr.offset(8);
         tmp = tmp.offset(tmp_stride as isize);
         y_0 += 1;
-        my += *abcd.offset(3) as c_int;
+        my += abcd[3] as c_int;
     }
 }
 
@@ -1245,16 +1245,35 @@ impl mc_scaled::Fn {
     }
 }
 
-pub type warp8x8_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const DynPixel,
-    ptrdiff_t,
-    *const i16,
-    c_int,
-    c_int,
-    c_int,
-) -> ();
+wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
+    abcd: &[i16; 4],
+    mx: c_int,
+    my: c_int,
+    bitdepth_max: c_int,
+) -> ());
+
+impl warp8x8::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        dst_stride: ptrdiff_t,
+        src: *const BD::Pixel,
+        src_stride: ptrdiff_t,
+        abcd: &[i16; 4],
+        mx: c_int,
+        my: c_int,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let src = src.cast();
+        let bd = bd.into_c();
+        self.get()(dst, dst_stride, src, src_stride, abcd, mx, my, bd)
+    }
+}
 
 wrap_fn_ptr!(pub unsafe extern "C" fn mct(
     tmp: *mut i16,
@@ -1318,16 +1337,34 @@ impl mct_scaled::Fn {
     }
 }
 
-pub type warp8x8t_fn = unsafe extern "C" fn(
-    *mut i16,
-    ptrdiff_t,
-    *const DynPixel,
-    ptrdiff_t,
-    *const i16,
-    c_int,
-    c_int,
-    c_int,
-) -> ();
+wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8t(
+    tmp: *mut i16,
+    tmp_stride: ptrdiff_t,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
+    abcd: &[i16; 4],
+    mx: c_int,
+    my: c_int,
+    bitdepth_max: c_int,
+) -> ());
+
+impl warp8x8t::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        tmp: *mut i16,
+        tmp_stride: ptrdiff_t,
+        src: *const BD::Pixel,
+        src_stride: ptrdiff_t,
+        abcd: &[i16; 4],
+        mx: c_int,
+        my: c_int,
+        bd: BD,
+    ) {
+        let src = src.cast();
+        let bd = bd.into_c();
+        self.get()(tmp, tmp_stride, src, src_stride, abcd, mx, my, bd)
+    }
+}
 
 pub type avg_fn = unsafe extern "C" fn(
     *mut DynPixel,
@@ -1436,8 +1473,8 @@ pub struct Rav1dMCDSPContext {
     pub blend: blend_fn,
     pub blend_v: blend_dir_fn,
     pub blend_h: blend_dir_fn,
-    pub warp8x8: warp8x8_fn,
-    pub warp8x8t: warp8x8t_fn,
+    pub warp8x8: warp8x8::Fn,
+    pub warp8x8t: warp8x8t::Fn,
     pub emu_edge: emu_edge_fn,
     pub resize: resize_fn,
 }
@@ -1916,7 +1953,7 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
     dst_stride: ptrdiff_t,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
@@ -1939,7 +1976,7 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
     tmp_stride: ptrdiff_t,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
-    abcd: *const i16,
+    abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
@@ -2075,32 +2112,6 @@ macro_rules! decl_fn {
         );
     };
 
-    (warp8x8, $name:ident) => {
-        pub(crate) fn $name(
-            dst: *mut DynPixel,
-            dst_stride: ptrdiff_t,
-            src: *const DynPixel,
-            src_stride: ptrdiff_t,
-            abcd: *const i16,
-            mx: c_int,
-            my: c_int,
-            bitdepth_max: c_int,
-        );
-    };
-
-    (warp8x8t, $name:ident) => {
-        pub(crate) fn $name(
-            tmp: *mut i16,
-            tmp_stride: ptrdiff_t,
-            src: *const DynPixel,
-            src_stride: ptrdiff_t,
-            abcd: *const i16,
-            mx: c_int,
-            my: c_int,
-            bitdepth_max: c_int,
-        );
-    };
-
     (emu_edge, $name:ident) => {
         pub(crate) fn $name(
             bw: intptr_t,
@@ -2168,11 +2179,6 @@ extern "C" {
     decl_fns!(blend_dir, dav1d_blend_v);
     decl_fns!(blend_dir, dav1d_blend_h);
 
-    decl_fns!(warp8x8, dav1d_warp_affine_8x8);
-    decl_fns!(warp8x8, dav1d_warp_affine_8x8, sse4);
-    decl_fns!(warp8x8t, dav1d_warp_affine_8x8t);
-    decl_fns!(warp8x8t, dav1d_warp_affine_8x8t, sse4);
-
     decl_fns!(emu_edge, dav1d_emu_edge);
     decl_fns!(resize, dav1d_resize);
 }
@@ -2185,9 +2191,6 @@ extern "C" {
     decl_fns!(blend, dav1d_blend, neon);
     decl_fns!(blend_dir, dav1d_blend_v, neon);
     decl_fns!(blend_dir, dav1d_blend_h, neon);
-
-    decl_fns!(warp8x8, dav1d_warp_affine_8x8, neon);
-    decl_fns!(warp8x8t, dav1d_warp_affine_8x8t, neon);
 
     decl_fns!(emu_edge, dav1d_emu_edge, neon);
 }
@@ -2254,8 +2257,8 @@ impl Rav1dMCDSPContext {
             blend: blend_c_erased::<BD>,
             blend_v: blend_v_c_erased::<BD>,
             blend_h: blend_h_c_erased::<BD>,
-            warp8x8: warp_affine_8x8_c_erased::<BD>,
-            warp8x8t: warp_affine_8x8t_c_erased::<BD>,
+            warp8x8: warp8x8::Fn::new(warp_affine_8x8_c_erased::<BD>),
+            warp8x8t: warp8x8t::Fn::new(warp_affine_8x8t_c_erased::<BD>),
             emu_edge: emu_edge_c_erased::<BD>,
             resize: resize_c_erased::<BD>,
         }
@@ -2282,8 +2285,8 @@ impl Rav1dMCDSPContext {
                 Sharp8Tap => bpc_fn!(mct::decl_fn, 8 bpc, prep_8tap_sharp, sse2),
             });
 
-            self.warp8x8 = bpc_fn!(8 bpc, warp_affine_8x8, sse2);
-            self.warp8x8t = bpc_fn!(8 bpc, warp_affine_8x8t, sse2);
+            self.warp8x8 = bpc_fn!(warp8x8::decl_fn, 8 bpc, warp_affine_8x8, sse2);
+            self.warp8x8t = bpc_fn!(warp8x8t::decl_fn, 8 bpc, warp_affine_8x8t, sse2);
         }
 
         if !flags.contains(CpuFlags::SSSE3) {
@@ -2352,8 +2355,8 @@ impl Rav1dMCDSPContext {
         self.blend = bd_fn!(BD, blend, ssse3);
         self.blend_v = bd_fn!(BD, blend_v, ssse3);
         self.blend_h = bd_fn!(BD, blend_h, ssse3);
-        self.warp8x8 = bd_fn!(BD, warp_affine_8x8, ssse3);
-        self.warp8x8t = bd_fn!(BD, warp_affine_8x8t, ssse3);
+        self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, ssse3);
+        self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, ssse3);
         self.emu_edge = bd_fn!(BD, emu_edge, ssse3);
         self.resize = bd_fn!(BD, resize, ssse3);
 
@@ -2362,8 +2365,8 @@ impl Rav1dMCDSPContext {
         }
 
         if let BPC::BPC8 = BD::BPC {
-            self.warp8x8 = bpc_fn!(8 bpc, warp_affine_8x8, sse4);
-            self.warp8x8t = bpc_fn!(8 bpc, warp_affine_8x8t, sse4);
+            self.warp8x8 = bpc_fn!(warp8x8::decl_fn, 8 bpc, warp_affine_8x8, sse4);
+            self.warp8x8t = bpc_fn!(warp8x8t::decl_fn, 8 bpc, warp_affine_8x8t, sse4);
         }
 
         #[cfg(target_arch = "x86_64")]
@@ -2434,8 +2437,8 @@ impl Rav1dMCDSPContext {
             self.blend = bd_fn!(BD, blend, avx2);
             self.blend_v = bd_fn!(BD, blend_v, avx2);
             self.blend_h = bd_fn!(BD, blend_h, avx2);
-            self.warp8x8 = bd_fn!(BD, warp_affine_8x8, avx2);
-            self.warp8x8t = bd_fn!(BD, warp_affine_8x8t, avx2);
+            self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, avx2);
+            self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, avx2);
             self.emu_edge = bd_fn!(BD, emu_edge, avx2);
             self.resize = bd_fn!(BD, resize, avx2);
 
@@ -2484,8 +2487,8 @@ impl Rav1dMCDSPContext {
 
             if !flags.contains(CpuFlags::SLOW_GATHER) {
                 self.resize = bd_fn!(BD, resize, avx512icl);
-                self.warp8x8 = bd_fn!(BD, warp_affine_8x8, avx512icl);
-                self.warp8x8t = bd_fn!(BD, warp_affine_8x8t, avx512icl);
+                self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, avx512icl);
+                self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, avx512icl);
             }
         }
 
@@ -2524,12 +2527,12 @@ impl Rav1dMCDSPContext {
             Bilinear => bd_fn!(mct::decl_fn, BD, prep_bilin, neon),
         });
 
-        self.avg = bd_fn!(BP, avg, neon);
-        self.w_avg = bd_fn!(BP, w_avg, neon);
-        self.mask = bd_fn!(BP, mask, neon);
-        self.blend = bd_fn!(BP, blend, neon);
-        self.blend_h = bd_fn!(BP, blend_h, neon);
-        self.blend_v = bd_fn!(BP, blend_v, neon);
+        self.avg = bd_fn!(BD, avg, neon);
+        self.w_avg = bd_fn!(BD, w_avg, neon);
+        self.mask = bd_fn!(BD, mask, neon);
+        self.blend = bd_fn!(BD, blend, neon);
+        self.blend_h = bd_fn!(BD, blend_h, neon);
+        self.blend_v = bd_fn!(BD, blend_v, neon);
 
         self.w_mask = enum_map!(Rav1dPixelLayoutSubSampled => w_mask::Fn; match key {
             I420 => bd_fn!(w_mask::decl_fn, BD, w_mask_420, neon),
@@ -2537,9 +2540,9 @@ impl Rav1dMCDSPContext {
             I444 => bd_fn!(w_mask::decl_fn, BD, w_mask_444, neon),
         });
 
-        self.warp8x8 = bd_fn!(BP, warp_affine_8x8, neon);
-        self.warp8x8t = bd_fn!(BP, warp_affine_8x8t, neon);
-        self.emu_edge = bd_fn!(BP, emu_edge, neon);
+        self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, neon);
+        self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, neon);
+        self.emu_edge = bd_fn!(BD, emu_edge, neon);
 
         self
     }
