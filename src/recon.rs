@@ -1800,9 +1800,10 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         let mut cbi_idx = 0;
         if (*t).frame_thread.pass != 0 {
             let p = (*t).frame_thread.pass & 1;
-            cf = CfSelect::Frame(ts.frame_thread[p as usize].cf.load(Ordering::Relaxed));
-            ts.frame_thread[p as usize].cf.fetch_add(
-                cmp::min((*t_dim).w, 8) as usize * cmp::min((*t_dim).h, 8) as usize * 16,
+            let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
+            cf = CfSelect::Frame(cf_idx);
+            ts.frame_thread[p as usize].cf.store(
+                cf_idx + cmp::min((*t_dim).w, 8) as usize * cmp::min((*t_dim).h, 8) as usize * 16,
                 Ordering::Relaxed,
             );
             cbi_idx = ((*t).b.y as isize * f.b4_stride + (*t).b.x as isize) as usize;
@@ -2009,6 +2010,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             let a_len = (*t_dim).w as usize;
                             let l_start = (by4 + y) as usize;
                             let l_len = (*t_dim).h as usize;
+                            let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
                             let eob = decode_coefs::<BD>(
                                 f,
                                 t.ts,
@@ -2022,7 +2024,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 bs,
                                 b,
                                 0 as c_int,
-                                CfSelect::Frame(ts.frame_thread[1].cf.load(Ordering::Relaxed)),
+                                CfSelect::Frame(cf_idx),
                                 &mut txtp,
                                 &mut cf_ctx,
                             ) as c_int;
@@ -2034,10 +2036,11 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             }
                             f.frame_thread.cbi[cbi_idx..][t.b.x as usize][0]
                                 .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
-                            ts.frame_thread[1].cf.fetch_add(
-                                cmp::min((*t_dim).w, 8) as usize
-                                    * cmp::min((*t_dim).h, 8) as usize
-                                    * 16,
+                            ts.frame_thread[1].cf.store(
+                                cf_idx
+                                    + cmp::min((*t_dim).w, 8) as usize
+                                        * cmp::min((*t_dim).h, 8) as usize
+                                        * 16,
                                 Ordering::Relaxed,
                             );
                             CaseSet::<16, true>::many(
@@ -2091,6 +2094,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             let l_start = (cby4 + y) as usize;
                             let l_len = (*uv_t_dim).h as usize;
                             let l_ccoef = &t.l.ccoef[pl];
+                            let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
                             let eob = decode_coefs::<BD>(
                                 f,
                                 t.ts,
@@ -2104,7 +2108,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 bs,
                                 b,
                                 1 + pl as c_int,
-                                CfSelect::Frame(ts.frame_thread[1].cf.load(Ordering::Relaxed)),
+                                CfSelect::Frame(cf_idx),
                                 &mut txtp,
                                 &mut cf_ctx,
                             );
@@ -2118,8 +2122,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 CodedBlockInfo::new(eob as i16, txtp),
                                 atomig::Ordering::Relaxed,
                             );
-                            ts.frame_thread[1].cf.fetch_add(
-                                (*uv_t_dim).w as usize * (*uv_t_dim).h as usize * 16,
+                            ts.frame_thread[1].cf.store(
+                                cf_idx +(*uv_t_dim).w as usize * (*uv_t_dim).h as usize * 16,
                                 Ordering::Relaxed,
                             );
                             CaseSet::<16, true>::many(

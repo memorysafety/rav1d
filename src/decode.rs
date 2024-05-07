@@ -3917,7 +3917,7 @@ unsafe fn setup_tile(
     frame_hdr: &Rav1dFrameHeader,
     bitdepth_max: i32,
     sb_shift: i32,
-    f_cur: &Rav1dPicture,
+    cur: &Rav1dPicture,
     bw: i32,
     bh: i32,
     frame_thread: &Rav1dFrameContext_frame_thread,
@@ -3936,7 +3936,7 @@ unsafe fn setup_tile(
     let row_sb_start = frame_hdr.tiling.row_start_sb[tile_row] as c_int;
     let row_sb_end = frame_hdr.tiling.row_start_sb[tile_row + 1] as c_int;
 
-    let size_mul = &ss_size_mul[f_cur.p.layout];
+    let size_mul = &ss_size_mul[cur.p.layout];
     for p in 0..2 {
         ts.frame_thread[p].pal_idx.store(
             if !frame_thread.pal_idx.is_empty() {
@@ -3993,7 +3993,7 @@ unsafe fn setup_tile(
         }
 
         let lr_ref = if diff_width {
-            let ss_hor = (p != 0 && f_cur.p.layout != Rav1dPixelLayout::I444) as u8;
+            let ss_hor = (p != 0 && cur.p.layout != Rav1dPixelLayout::I444) as u8;
             let d = frame_hdr.size.super_res.width_scale_denominator as c_int;
             let unit_size_log2 = frame_hdr.restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
@@ -4010,7 +4010,7 @@ unsafe fn setup_tile(
             &mut lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
         };
 
-        let mut lr = lr_ref.try_write().unwrap();
+        let lr = lr_ref.get_mut().unwrap();
         *lr = Av1RestorationUnit {
             filter_v: [3, -7, 15],
             filter_h: [3, -7, 15],
