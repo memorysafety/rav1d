@@ -494,9 +494,10 @@ impl Rav1dRefmvsDSPContext {
         let bw4 = bw4 as _;
         let bh4 = bh4 as _;
 
-        // SAFETY: Unsafe asm call, checkasm has verified the signature is correct. `rr` is at
-        // least `bh4` elements long, and each pointer in `rr` is non-null and points to at
-        // least `bx4 * bw4` elements, which is what will be accessed in `splat_mv`.
+        // SAFETY: Unsafe asm call. `rr` is at least `bh4` elements long, and
+        // each pointer in `rr` is non-null and points to at least `bx4 + bw4`
+        // elements, which is what will be accessed in `splat_mv`. For the Rust
+        // fallback function we pass the length of `rr` directly.
         unsafe {
             (self.splat_mv)(rr.as_mut_ptr(), rmv, bx4, bw4, bh4, rr.len());
         }
