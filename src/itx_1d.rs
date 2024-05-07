@@ -1,9 +1,11 @@
+#![deny(unsafe_code)]
+
 use crate::include::common::intops::iclip;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
 
 #[inline(never)]
-unsafe fn inv_dct4_1d_internal_c(
+fn inv_dct4_1d_internal_c(
     c: &mut [i32],
     stride: NonZeroUsize,
     min: c_int,
@@ -37,12 +39,12 @@ unsafe fn inv_dct4_1d_internal_c(
     c[3 * stride] = iclip(t0 - t3, min, max);
 }
 
-pub unsafe fn dav1d_inv_dct4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn dav1d_inv_dct4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct4_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
 #[inline(never)]
-unsafe fn inv_dct8_1d_internal_c(
+fn inv_dct8_1d_internal_c(
     c: &mut [i32],
     stride: NonZeroUsize,
     min: c_int,
@@ -91,12 +93,12 @@ unsafe fn inv_dct8_1d_internal_c(
     c[7 * stride] = iclip(t0 - t7, min, max);
 }
 
-pub unsafe fn dav1d_inv_dct8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn dav1d_inv_dct8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct8_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
 #[inline(never)]
-unsafe fn inv_dct16_1d_internal_c(
+fn inv_dct16_1d_internal_c(
     c: &mut [i32],
     stride: NonZeroUsize,
     min: c_int,
@@ -191,12 +193,12 @@ unsafe fn inv_dct16_1d_internal_c(
     c[15 * stride] = iclip(t0 - t15a, min, max);
 }
 
-pub unsafe fn dav1d_inv_dct16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn dav1d_inv_dct16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct16_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
 #[inline(never)]
-unsafe fn inv_dct32_1d_internal_c(
+fn inv_dct32_1d_internal_c(
     c: &mut [i32],
     stride: NonZeroUsize,
     min: c_int,
@@ -395,11 +397,11 @@ unsafe fn inv_dct32_1d_internal_c(
     c[31 * stride] = iclip(t0 - t31, min, max);
 }
 
-pub unsafe fn dav1d_inv_dct32_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn dav1d_inv_dct32_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct32_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
-pub unsafe fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     let stride = stride.get();
 
     inv_dct32_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, 1 as c_int);
@@ -742,7 +744,7 @@ pub unsafe fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_i
 }
 
 #[inline(never)]
-unsafe fn inv_adst4_1d_internal_c(
+fn inv_adst4_1d_internal_c(
     c: &mut [i32],
     stride: NonZeroUsize,
     out_backwards: bool,
@@ -786,7 +788,7 @@ unsafe fn inv_adst4_1d_internal_c(
 }
 
 #[inline(never)]
-unsafe fn inv_adst8_1d_internal_c(
+fn inv_adst8_1d_internal_c(
     c: &mut [i32],
     stride: NonZeroUsize,
     out_backwards: bool,
@@ -850,7 +852,7 @@ unsafe fn inv_adst8_1d_internal_c(
 }
 
 #[inline(never)]
-unsafe fn inv_adst16_1d_internal_c(
+fn inv_adst16_1d_internal_c(
     c: &mut [i32],
     stride: NonZeroUsize,
     out_backwards: bool,
@@ -977,51 +979,31 @@ unsafe fn inv_adst16_1d_internal_c(
     out[(out_off + 10 * out_s) as usize] = (t14a - t15a) * 181 + 128 >> 8;
 }
 
-pub unsafe fn dav1d_inv_flipadst4_1d_c(
-    c: &mut [i32],
-    stride: NonZeroUsize,
-    min: c_int,
-    max: c_int,
-) {
+pub fn dav1d_inv_flipadst4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst4_1d_internal_c(c, stride, true, min, max);
 }
 
-pub unsafe fn dav1d_inv_adst4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn dav1d_inv_adst4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst4_1d_internal_c(c, stride, false, min, max);
 }
 
-pub unsafe fn dav1d_inv_adst8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn dav1d_inv_adst8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst8_1d_internal_c(c, stride, false, min, max);
 }
 
-pub unsafe fn dav1d_inv_flipadst8_1d_c(
-    c: &mut [i32],
-    stride: NonZeroUsize,
-    min: c_int,
-    max: c_int,
-) {
+pub fn dav1d_inv_flipadst8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst8_1d_internal_c(c, stride, true, min, max);
 }
 
-pub unsafe fn dav1d_inv_flipadst16_1d_c(
-    c: &mut [i32],
-    stride: NonZeroUsize,
-    min: c_int,
-    max: c_int,
-) {
+pub fn dav1d_inv_flipadst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst16_1d_internal_c(c, stride, true, min, max);
 }
 
-pub unsafe fn dav1d_inv_adst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn dav1d_inv_adst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst16_1d_internal_c(c, stride, false, min, max);
 }
 
-pub unsafe fn dav1d_inv_identity4_1d_c(
-    c: &mut [i32],
-    stride: NonZeroUsize,
-    _min: c_int,
-    _max: c_int,
-) {
+pub fn dav1d_inv_identity4_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
     let mut i = 0;
@@ -1032,12 +1014,7 @@ pub unsafe fn dav1d_inv_identity4_1d_c(
     }
 }
 
-pub unsafe fn dav1d_inv_identity8_1d_c(
-    c: &mut [i32],
-    stride: NonZeroUsize,
-    _min: c_int,
-    _max: c_int,
-) {
+pub fn dav1d_inv_identity8_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
     let mut i = 0;
@@ -1047,12 +1024,7 @@ pub unsafe fn dav1d_inv_identity8_1d_c(
     }
 }
 
-pub unsafe fn dav1d_inv_identity16_1d_c(
-    c: &mut [i32],
-    stride: NonZeroUsize,
-    _min: c_int,
-    _max: c_int,
-) {
+pub fn dav1d_inv_identity16_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
     let mut i = 0;
@@ -1063,12 +1035,7 @@ pub unsafe fn dav1d_inv_identity16_1d_c(
     }
 }
 
-pub unsafe fn dav1d_inv_identity32_1d_c(
-    c: &mut [i32],
-    stride: NonZeroUsize,
-    _min: c_int,
-    _max: c_int,
-) {
+pub fn dav1d_inv_identity32_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
     let mut i = 0;
@@ -1078,7 +1045,7 @@ pub unsafe fn dav1d_inv_identity32_1d_c(
     }
 }
 
-pub unsafe fn dav1d_inv_wht4_1d_c(c: &mut [i32], stride: NonZeroUsize) {
+pub fn dav1d_inv_wht4_1d_c(c: &mut [i32], stride: NonZeroUsize) {
     let stride = stride.get();
 
     let in0 = c[0 * stride];
