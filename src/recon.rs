@@ -1488,8 +1488,10 @@ unsafe fn decode_coefs<BD: BitDepth>(
         cul_level = 0 as c_int as c_uint;
         dc_sign_level = ((1 as c_int) << 6) as c_uint;
         if qm_tbl.is_some() {
+            // goto ac_qm;
             current_block = 1669574575799829731;
         } else {
+            // goto ac_noqm;
             current_block = 2404388531445638768;
         }
     } else {
@@ -1579,6 +1581,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
     }
     match current_block {
+        // ac_qm:
         1669574575799829731 => {
             let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
@@ -1630,6 +1633,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 }
             }
         }
+        // ac_noqm:
         2404388531445638768 => {
             let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
