@@ -799,9 +799,17 @@ fn read_pal_indices(
         }
     }
 
-    // SAFETY: Unsafe asm call, checkasm tests have verified that the signature is
-    // correct. `pal_idx` and `pal_tmp` are at least `(bw4 * 4) * (bh4 * 4)`
-    // elements long, which is how many elements `pal_idx_finish` will read/write.
+    if let Some(pal_idx) = &pal_idx {
+        let read_len = bw4 * 2 * bh4 * 4;
+        debug_assert!(pal_idx.len() >= read_len);
+    }
+    let read_len = bw4 * 4 * bh4 * 4;
+    debug_assert!(pal_tmp.len() >= read_len);
+
+    // SAFETY: Unsafe asm call. `pal_idx` is at least `(bw * 2) * (bh * 4)`
+    // elements long and `pal_tmp` is at least `(bw4 * 4)
+    // * (bh4 * 4)` elements long, which is how many elements `pal_idx_finish`
+    // will read/write.
     unsafe {
         (pal_dsp.pal_idx_finish)(
             pal_idx.unwrap_or(pal_tmp).as_mut_ptr(),
