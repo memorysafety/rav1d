@@ -1573,7 +1573,7 @@ unsafe fn decode_b(
                 })
                 || b.skip == 0);
 
-        let prev_delta_lf = ts.last_delta_lf();
+        let prev_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
 
         if have_delta_q {
             let mut delta_q =
@@ -1614,6 +1614,7 @@ unsafe fn decode_b(
                     1
                 };
 
+                let mut last_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
                 for i in 0..n_lfs as usize {
                     let delta_lf_index = i + frame_hdr.delta.lf.multi as usize;
                     let mut delta_lf = rav1d_msac_decode_symbol_adapt4(
@@ -1633,14 +1634,12 @@ unsafe fn decode_b(
                         }
                         delta_lf *= 1 << frame_hdr.delta.lf.res_log2;
                     }
-                    ts.last_delta_lf[i].store(
-                        iclip(ts.last_delta_lf()[i] as c_int + delta_lf, -63, 63) as i8,
-                        Ordering::Relaxed,
-                    );
+                    last_delta_lf[i] = clip(last_delta_lf[i] as c_int + delta_lf, -63, 63);
                     if have_delta_q && debug_block_info!(f, t.b) {
                         println!("Post-delta_lf[{}:{}]: r={}", i, delta_lf, ts_c.msac.rng);
                     }
                 }
+                ts.last_delta_lf.store(last_delta_lf, Ordering::Relaxed);
             }
         }
         let last_qidx = ts.last_qidx.load(Ordering::Relaxed);
@@ -1657,7 +1656,7 @@ unsafe fn decode_b(
             );
             ts.dq.store(TileStateRef::Local, Ordering::Relaxed);
         }
-        let last_delta_lf = ts.last_delta_lf();
+        let last_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
         if last_delta_lf == [0, 0, 0, 0] {
             // assign frame-wide lf values to this sb
             ts.lflvl.store(TileStateRef::Frame, Ordering::Relaxed);
@@ -3963,7 +3962,7 @@ unsafe fn setup_tile(
     let ts_c = &mut *ts.context.try_lock().unwrap();
     ts_c.cdf = rav1d_cdf_thread_copy(in_cdf);
     ts.last_qidx = AtomicU8::new(frame_hdr.quant.yac);
-    ts.last_delta_lf.fill_with(Default::default);
+    ts.last_delta_lf = Default::default();
 
     ts_c.msac = MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac);
 

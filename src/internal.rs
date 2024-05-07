@@ -104,7 +104,6 @@ use std::ops::Range;
 use std::ops::Sub;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
-use std::sync::atomic::AtomicI8;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::AtomicU8;
 use std::sync::atomic::AtomicUsize;
@@ -1011,22 +1010,11 @@ pub struct Rav1dTileState {
     pub dqmem: RwLock<[[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize]>, /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
     pub dq: Atomic<TileStateRef>,
     pub last_qidx: AtomicU8,
-    pub last_delta_lf: [AtomicI8; 4],
+    pub last_delta_lf: Atomic<[i8; 4]>,
     pub lflvlmem: RwLock<[[[[u8; 2]; 8]; 4]; 8]>, /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
     pub lflvl: Atomic<TileStateRef>,
 
     pub lr_ref: RwLock<[Av1RestorationUnit; 3]>,
-}
-
-impl Rav1dTileState {
-    pub fn last_delta_lf(&self) -> [i8; 4] {
-        [
-            self.last_delta_lf[0].load(Ordering::Relaxed),
-            self.last_delta_lf[1].load(Ordering::Relaxed),
-            self.last_delta_lf[2].load(Ordering::Relaxed),
-            self.last_delta_lf[3].load(Ordering::Relaxed),
-        ]
-    }
 }
 
 #[derive(Clone, Copy, Default, Atom)]
