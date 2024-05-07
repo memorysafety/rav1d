@@ -643,53 +643,42 @@ unsafe fn decode_coefs<BD: BitDepth>(
     };
 
     // find end-of-block (eob)
-    let mut eob_bin = 0;
     let tx2dszctx = cmp::min((*t_dim).lw, TX_32X32 as u8) + cmp::min((*t_dim).lh, TX_32X32 as u8);
     let tx_class = dav1d_tx_type_class[*txtp as usize];
     let is_1d = tx_class != TxClass::TwoD;
-    match tx2dszctx {
+    let eob_bin = match tx2dszctx {
         0 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_16[chroma as usize][is_1d as usize];
-            eob_bin = rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, eob_bin_cdf, (4 + 0) as usize)
-                as c_int;
+            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, eob_bin_cdf, (4 + 0) as usize)
         }
         1 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_32[chroma as usize][is_1d as usize];
-            eob_bin = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 1) as usize)
-                as c_int;
+            rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 1) as usize)
         }
         2 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_64[chroma as usize][is_1d as usize];
-            eob_bin = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 2) as usize)
-                as c_int;
+            rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 2) as usize)
         }
         3 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_128[chroma as usize][is_1d as usize];
-            eob_bin = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 3) as usize)
-                as c_int;
+            rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, eob_bin_cdf, (4 + 3) as usize)
         }
         4 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_256[chroma as usize][is_1d as usize];
-            eob_bin =
-                rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 4) as usize)
-                    as c_int;
+            rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 4) as usize)
         }
         5 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_512[chroma as usize];
-            eob_bin =
-                rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 5) as usize)
-                    as c_int;
+            rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 5) as usize)
         }
         6 => {
             let eob_bin_cdf = &mut ts_c.cdf.coef.eob_bin_1024[chroma as usize];
-            eob_bin =
-                rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 6) as usize)
-                    as c_int;
+            rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 6) as usize)
         }
         // `tx2dszctx` is `cmp::min(_, 3) + cmp::min(_, 3)`, where `TX_32X32 as u8 == 3`,
         // and we cover `0..=6`.  `rustc` should eliminate this.
         _ => unreachable!(),
-    }
+    };
     if dbg {
         println!(
             "Post-eob_bin_{}[{}][{}][{}]: r={}",
@@ -704,7 +693,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     if eob_bin > 1 {
         let eob_hi_bit_cdf =
             &mut ts_c.cdf.coef.eob_hi_bit[(*t_dim).ctx as usize][chroma as usize][eob_bin as usize];
-        let eob_hi_bit = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, eob_hi_bit_cdf) as c_int;
+        let eob_hi_bit = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, eob_hi_bit_cdf) as c_uint;
         if dbg {
             println!(
                 "Post-eob_hi_bit[{}][{}][{}][{}]: r={}",
@@ -715,14 +704,13 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 ts_c.msac.rng,
             );
         }
-        eob = (((eob_hi_bit | 2) << eob_bin - 2) as c_uint
-            | rav1d_msac_decode_bools(&mut ts_c.msac, (eob_bin - 2) as c_uint))
-            as c_int;
+        eob = ((eob_hi_bit | 2) << eob_bin - 2
+            | rav1d_msac_decode_bools(&mut ts_c.msac, eob_bin - 2)) as c_int;
         if dbg {
             println!("Post-eob[{}]: r={}", eob, ts_c.msac.rng);
         }
     } else {
-        eob = eob_bin;
+        eob = eob_bin as c_int;
     }
     assert!(eob >= 0);
 
