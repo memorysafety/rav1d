@@ -806,7 +806,7 @@ fn read_pal_indices(
     let read_len = bw4 * 4 * bh4 * 4;
     debug_assert!(pal_tmp.len() >= read_len);
 
-    // SAFETY: Unsafe asm call. `pal_idx` is at least `(bw * 2) * (bh * 4)`
+    // SAFETY: Unsafe asm call. `pal_idx` is at least `(bw4 * 2) * (bh4 * 4)`
     // elements long and `pal_tmp` is at least `(bw4 * 4)
     // * (bh4 * 4)` elements long, which is how many elements `pal_idx_finish`
     // will read/write.
