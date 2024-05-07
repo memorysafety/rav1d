@@ -1,11 +1,10 @@
 use crate::include::common::intops::iclip;
 use std::ffi::c_int;
-use std::num::NonZeroIsize;
 use std::num::NonZeroUsize;
 
 #[inline(never)]
 unsafe fn inv_dct4_1d_internal_c(
-    c: *mut i32,
+    c: &mut [i32],
     stride: NonZeroUsize,
     min: c_int,
     max: c_int,
@@ -13,8 +12,8 @@ unsafe fn inv_dct4_1d_internal_c(
 ) {
     let stride = stride.get();
 
-    let in0 = *c.offset((0 * stride) as isize);
-    let in1 = *c.offset((1 * stride) as isize);
+    let in0 = c[0 * stride];
+    let in1 = c[1 * stride];
     let t0;
     let t1;
     let t2;
@@ -25,26 +24,26 @@ unsafe fn inv_dct4_1d_internal_c(
         t2 = in1 * 1567 + 2048 >> 12;
         t3 = in1 * 3784 + 2048 >> 12;
     } else {
-        let in2 = *c.offset((2 * stride) as isize);
-        let in3 = *c.offset((3 * stride) as isize);
+        let in2 = c[2 * stride];
+        let in3 = c[3 * stride];
         t0 = (in0 + in2) * 181 + 128 >> 8;
         t1 = (in0 - in2) * 181 + 128 >> 8;
         t2 = (in1 * 1567 - in3 * (3784 - 4096) + 2048 >> 12) - in3;
         t3 = (in1 * (3784 - 4096) + in3 * 1567 + 2048 >> 12) + in1;
     }
-    *c.offset((0 * stride) as isize) = iclip(t0 + t3, min, max);
-    *c.offset((1 * stride) as isize) = iclip(t1 + t2, min, max);
-    *c.offset((2 * stride) as isize) = iclip(t1 - t2, min, max);
-    *c.offset((3 * stride) as isize) = iclip(t0 - t3, min, max);
+    c[0 * stride] = iclip(t0 + t3, min, max);
+    c[1 * stride] = iclip(t1 + t2, min, max);
+    c[2 * stride] = iclip(t1 - t2, min, max);
+    c[3 * stride] = iclip(t0 - t3, min, max);
 }
 
-pub unsafe fn dav1d_inv_dct4_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
+pub unsafe fn dav1d_inv_dct4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct4_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
 #[inline(never)]
 unsafe fn inv_dct8_1d_internal_c(
-    c: *mut i32,
+    c: &mut [i32],
     stride: NonZeroUsize,
     min: c_int,
     max: c_int,
@@ -53,8 +52,8 @@ unsafe fn inv_dct8_1d_internal_c(
     let stride = stride.get();
 
     inv_dct4_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
-    let in1 = *c.offset((1 * stride) as isize);
-    let in3 = *c.offset((3 * stride) as isize);
+    let in1 = c[1 * stride];
+    let in3 = c[3 * stride];
     let t4a;
     let mut t5a;
     let mut t6a;
@@ -65,8 +64,8 @@ unsafe fn inv_dct8_1d_internal_c(
         t6a = in3 * 3406 + 2048 >> 12;
         t7a = in1 * 4017 + 2048 >> 12;
     } else {
-        let in5 = *c.offset((5 * stride) as isize);
-        let in7 = *c.offset((7 * stride) as isize);
+        let in5 = c[5 * stride];
+        let in7 = c[7 * stride];
         t4a = (in1 * 799 - in7 * (4017 - 4096) + 2048 >> 12) - in7;
         t5a = in5 * 1703 - in3 * 1138 + 1024 >> 11;
         t6a = in5 * 1138 + in3 * 1703 + 1024 >> 11;
@@ -78,27 +77,27 @@ unsafe fn inv_dct8_1d_internal_c(
     t6a = iclip(t7a - t6a, min, max);
     let t5 = (t6a - t5a) * 181 + 128 >> 8;
     let t6 = (t6a + t5a) * 181 + 128 >> 8;
-    let t0 = *c.offset((0 * stride) as isize);
-    let t1 = *c.offset((2 * stride) as isize);
-    let t2 = *c.offset((4 * stride) as isize);
-    let t3 = *c.offset((6 * stride) as isize);
-    *c.offset((0 * stride) as isize) = iclip(t0 + t7, min, max);
-    *c.offset((1 * stride) as isize) = iclip(t1 + t6, min, max);
-    *c.offset((2 * stride) as isize) = iclip(t2 + t5, min, max);
-    *c.offset((3 * stride) as isize) = iclip(t3 + t4, min, max);
-    *c.offset((4 * stride) as isize) = iclip(t3 - t4, min, max);
-    *c.offset((5 * stride) as isize) = iclip(t2 - t5, min, max);
-    *c.offset((6 * stride) as isize) = iclip(t1 - t6, min, max);
-    *c.offset((7 * stride) as isize) = iclip(t0 - t7, min, max);
+    let t0 = c[0 * stride];
+    let t1 = c[2 * stride];
+    let t2 = c[4 * stride];
+    let t3 = c[6 * stride];
+    c[0 * stride] = iclip(t0 + t7, min, max);
+    c[1 * stride] = iclip(t1 + t6, min, max);
+    c[2 * stride] = iclip(t2 + t5, min, max);
+    c[3 * stride] = iclip(t3 + t4, min, max);
+    c[4 * stride] = iclip(t3 - t4, min, max);
+    c[5 * stride] = iclip(t2 - t5, min, max);
+    c[6 * stride] = iclip(t1 - t6, min, max);
+    c[7 * stride] = iclip(t0 - t7, min, max);
 }
 
-pub unsafe fn dav1d_inv_dct8_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
+pub unsafe fn dav1d_inv_dct8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct8_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
 #[inline(never)]
 unsafe fn inv_dct16_1d_internal_c(
-    c: *mut i32,
+    c: &mut [i32],
     stride: NonZeroUsize,
     min: c_int,
     max: c_int,
@@ -107,10 +106,10 @@ unsafe fn inv_dct16_1d_internal_c(
     let stride = stride.get();
 
     inv_dct8_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
-    let in1 = *c.offset((1 * stride) as isize);
-    let in3 = *c.offset((3 * stride) as isize);
-    let in5 = *c.offset((5 * stride) as isize);
-    let in7 = *c.offset((7 * stride) as isize);
+    let in1 = c[1 * stride];
+    let in3 = c[3 * stride];
+    let in5 = c[5 * stride];
+    let in7 = c[7 * stride];
     let mut t8a;
     let mut t9a;
     let mut t10a;
@@ -129,10 +128,10 @@ unsafe fn inv_dct16_1d_internal_c(
         t14a = in7 * 3166 + 2048 >> 12;
         t15a = in1 * 4076 + 2048 >> 12;
     } else {
-        let in9 = *c.offset((9 * stride) as isize);
-        let in11 = *c.offset((11 * stride) as isize);
-        let in13 = *c.offset((13 * stride) as isize);
-        let in15 = *c.offset((15 * stride) as isize);
+        let in9 = c[9 * stride];
+        let in11 = c[11 * stride];
+        let in13 = c[13 * stride];
+        let in15 = c[15 * stride];
         t8a = (in1 * 401 - in15 * (4076 - 4096) + 2048 >> 12) - in15;
         t9a = in9 * 1583 - in7 * 1299 + 1024 >> 11;
         t10a = (in5 * 1931 - in11 * (3612 - 4096) + 2048 >> 12) - in11;
@@ -166,39 +165,39 @@ unsafe fn inv_dct16_1d_internal_c(
     t13a = (t13 + t10) * 181 + 128 >> 8;
     t11 = (t12a - t11a) * 181 + 128 >> 8;
     t12 = (t12a + t11a) * 181 + 128 >> 8;
-    let t0 = *c.offset((0 * stride) as isize);
-    let t1 = *c.offset((2 * stride) as isize);
-    let t2 = *c.offset((4 * stride) as isize);
-    let t3 = *c.offset((6 * stride) as isize);
-    let t4 = *c.offset((8 * stride) as isize);
-    let t5 = *c.offset((10 * stride) as isize);
-    let t6 = *c.offset((12 * stride) as isize);
-    let t7 = *c.offset((14 * stride) as isize);
-    *c.offset((0 * stride) as isize) = iclip(t0 + t15a, min, max);
-    *c.offset((1 * stride) as isize) = iclip(t1 + t14, min, max);
-    *c.offset((2 * stride) as isize) = iclip(t2 + t13a, min, max);
-    *c.offset((3 * stride) as isize) = iclip(t3 + t12, min, max);
-    *c.offset((4 * stride) as isize) = iclip(t4 + t11, min, max);
-    *c.offset((5 * stride) as isize) = iclip(t5 + t10a, min, max);
-    *c.offset((6 * stride) as isize) = iclip(t6 + t9, min, max);
-    *c.offset((7 * stride) as isize) = iclip(t7 + t8a, min, max);
-    *c.offset((8 * stride) as isize) = iclip(t7 - t8a, min, max);
-    *c.offset((9 * stride) as isize) = iclip(t6 - t9, min, max);
-    *c.offset((10 * stride) as isize) = iclip(t5 - t10a, min, max);
-    *c.offset((11 * stride) as isize) = iclip(t4 - t11, min, max);
-    *c.offset((12 * stride) as isize) = iclip(t3 - t12, min, max);
-    *c.offset((13 * stride) as isize) = iclip(t2 - t13a, min, max);
-    *c.offset((14 * stride) as isize) = iclip(t1 - t14, min, max);
-    *c.offset((15 * stride) as isize) = iclip(t0 - t15a, min, max);
+    let t0 = c[0 * stride];
+    let t1 = c[2 * stride];
+    let t2 = c[4 * stride];
+    let t3 = c[6 * stride];
+    let t4 = c[8 * stride];
+    let t5 = c[10 * stride];
+    let t6 = c[12 * stride];
+    let t7 = c[14 * stride];
+    c[0 * stride] = iclip(t0 + t15a, min, max);
+    c[1 * stride] = iclip(t1 + t14, min, max);
+    c[2 * stride] = iclip(t2 + t13a, min, max);
+    c[3 * stride] = iclip(t3 + t12, min, max);
+    c[4 * stride] = iclip(t4 + t11, min, max);
+    c[5 * stride] = iclip(t5 + t10a, min, max);
+    c[6 * stride] = iclip(t6 + t9, min, max);
+    c[7 * stride] = iclip(t7 + t8a, min, max);
+    c[8 * stride] = iclip(t7 - t8a, min, max);
+    c[9 * stride] = iclip(t6 - t9, min, max);
+    c[10 * stride] = iclip(t5 - t10a, min, max);
+    c[11 * stride] = iclip(t4 - t11, min, max);
+    c[12 * stride] = iclip(t3 - t12, min, max);
+    c[13 * stride] = iclip(t2 - t13a, min, max);
+    c[14 * stride] = iclip(t1 - t14, min, max);
+    c[15 * stride] = iclip(t0 - t15a, min, max);
 }
 
-pub unsafe fn dav1d_inv_dct16_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
+pub unsafe fn dav1d_inv_dct16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct16_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
 #[inline(never)]
 unsafe fn inv_dct32_1d_internal_c(
-    c: *mut i32,
+    c: &mut [i32],
     stride: NonZeroUsize,
     min: c_int,
     max: c_int,
@@ -207,14 +206,14 @@ unsafe fn inv_dct32_1d_internal_c(
     let stride = stride.get();
 
     inv_dct16_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
-    let in1 = *c.offset((1 * stride) as isize);
-    let in3 = *c.offset((3 * stride) as isize);
-    let in5 = *c.offset((5 * stride) as isize);
-    let in7 = *c.offset((7 * stride) as isize);
-    let in9 = *c.offset((9 * stride) as isize);
-    let in11 = *c.offset((11 * stride) as isize);
-    let in13 = *c.offset((13 * stride) as isize);
-    let in15 = *c.offset((15 * stride) as isize);
+    let in1 = c[1 * stride];
+    let in3 = c[3 * stride];
+    let in5 = c[5 * stride];
+    let in7 = c[7 * stride];
+    let in9 = c[9 * stride];
+    let in11 = c[11 * stride];
+    let in13 = c[13 * stride];
+    let in15 = c[15 * stride];
     let mut t16a;
     let mut t17a;
     let mut t18a;
@@ -249,14 +248,14 @@ unsafe fn inv_dct32_1d_internal_c(
         t30a = in15 * 3035 + 2048 >> 12;
         t31a = in1 * 4091 + 2048 >> 12;
     } else {
-        let in17 = *c.offset((17 * stride) as isize);
-        let in19 = *c.offset((19 * stride) as isize);
-        let in21 = *c.offset((21 * stride) as isize);
-        let in23 = *c.offset((23 * stride) as isize);
-        let in25 = *c.offset((25 * stride) as isize);
-        let in27 = *c.offset((27 * stride) as isize);
-        let in29 = *c.offset((29 * stride) as isize);
-        let in31 = *c.offset((31 * stride) as isize);
+        let in17 = c[17 * stride];
+        let in19 = c[19 * stride];
+        let in21 = c[21 * stride];
+        let in23 = c[23 * stride];
+        let in25 = c[25 * stride];
+        let in27 = c[27 * stride];
+        let in29 = c[29 * stride];
+        let in31 = c[31 * stride];
         t16a = (in1 * 201 - in31 * (4091 - 4096) + 2048 >> 12) - in31;
         t17a = (in17 * (3035 - 4096) - in15 * 2751 + 2048 >> 12) + in17;
         t18a = (in9 * 1751 - in23 * (3703 - 4096) + 2048 >> 12) - in23;
@@ -346,80 +345,80 @@ unsafe fn inv_dct32_1d_internal_c(
     t25 = (t25a + t22a) * 181 + 128 >> 8;
     t23a = (t24 - t23) * 181 + 128 >> 8;
     t24a = (t24 + t23) * 181 + 128 >> 8;
-    let t0 = *c.offset((0 * stride) as isize);
-    let t1 = *c.offset((2 * stride) as isize);
-    let t2 = *c.offset((4 * stride) as isize);
-    let t3 = *c.offset((6 * stride) as isize);
-    let t4 = *c.offset((8 * stride) as isize);
-    let t5 = *c.offset((10 * stride) as isize);
-    let t6 = *c.offset((12 * stride) as isize);
-    let t7 = *c.offset((14 * stride) as isize);
-    let t8 = *c.offset((16 * stride) as isize);
-    let t9 = *c.offset((18 * stride) as isize);
-    let t10 = *c.offset((20 * stride) as isize);
-    let t11 = *c.offset((22 * stride) as isize);
-    let t12 = *c.offset((24 * stride) as isize);
-    let t13 = *c.offset((26 * stride) as isize);
-    let t14 = *c.offset((28 * stride) as isize);
-    let t15 = *c.offset((30 * stride) as isize);
-    *c.offset((0 * stride) as isize) = iclip(t0 + t31, min, max);
-    *c.offset((1 * stride) as isize) = iclip(t1 + t30a, min, max);
-    *c.offset((2 * stride) as isize) = iclip(t2 + t29, min, max);
-    *c.offset((3 * stride) as isize) = iclip(t3 + t28a, min, max);
-    *c.offset((4 * stride) as isize) = iclip(t4 + t27, min, max);
-    *c.offset((5 * stride) as isize) = iclip(t5 + t26a, min, max);
-    *c.offset((6 * stride) as isize) = iclip(t6 + t25, min, max);
-    *c.offset((7 * stride) as isize) = iclip(t7 + t24a, min, max);
-    *c.offset((8 * stride) as isize) = iclip(t8 + t23a, min, max);
-    *c.offset((9 * stride) as isize) = iclip(t9 + t22, min, max);
-    *c.offset((10 * stride) as isize) = iclip(t10 + t21a, min, max);
-    *c.offset((11 * stride) as isize) = iclip(t11 + t20, min, max);
-    *c.offset((12 * stride) as isize) = iclip(t12 + t19a, min, max);
-    *c.offset((13 * stride) as isize) = iclip(t13 + t18, min, max);
-    *c.offset((14 * stride) as isize) = iclip(t14 + t17a, min, max);
-    *c.offset((15 * stride) as isize) = iclip(t15 + t16, min, max);
-    *c.offset((16 * stride) as isize) = iclip(t15 - t16, min, max);
-    *c.offset((17 * stride) as isize) = iclip(t14 - t17a, min, max);
-    *c.offset((18 * stride) as isize) = iclip(t13 - t18, min, max);
-    *c.offset((19 * stride) as isize) = iclip(t12 - t19a, min, max);
-    *c.offset((20 * stride) as isize) = iclip(t11 - t20, min, max);
-    *c.offset((21 * stride) as isize) = iclip(t10 - t21a, min, max);
-    *c.offset((22 * stride) as isize) = iclip(t9 - t22, min, max);
-    *c.offset((23 * stride) as isize) = iclip(t8 - t23a, min, max);
-    *c.offset((24 * stride) as isize) = iclip(t7 - t24a, min, max);
-    *c.offset((25 * stride) as isize) = iclip(t6 - t25, min, max);
-    *c.offset((26 * stride) as isize) = iclip(t5 - t26a, min, max);
-    *c.offset((27 * stride) as isize) = iclip(t4 - t27, min, max);
-    *c.offset((28 * stride) as isize) = iclip(t3 - t28a, min, max);
-    *c.offset((29 * stride) as isize) = iclip(t2 - t29, min, max);
-    *c.offset((30 * stride) as isize) = iclip(t1 - t30a, min, max);
-    *c.offset((31 * stride) as isize) = iclip(t0 - t31, min, max);
+    let t0 = c[0 * stride];
+    let t1 = c[2 * stride];
+    let t2 = c[4 * stride];
+    let t3 = c[6 * stride];
+    let t4 = c[8 * stride];
+    let t5 = c[10 * stride];
+    let t6 = c[12 * stride];
+    let t7 = c[14 * stride];
+    let t8 = c[16 * stride];
+    let t9 = c[18 * stride];
+    let t10 = c[20 * stride];
+    let t11 = c[22 * stride];
+    let t12 = c[24 * stride];
+    let t13 = c[26 * stride];
+    let t14 = c[28 * stride];
+    let t15 = c[30 * stride];
+    c[0 * stride] = iclip(t0 + t31, min, max);
+    c[1 * stride] = iclip(t1 + t30a, min, max);
+    c[2 * stride] = iclip(t2 + t29, min, max);
+    c[3 * stride] = iclip(t3 + t28a, min, max);
+    c[4 * stride] = iclip(t4 + t27, min, max);
+    c[5 * stride] = iclip(t5 + t26a, min, max);
+    c[6 * stride] = iclip(t6 + t25, min, max);
+    c[7 * stride] = iclip(t7 + t24a, min, max);
+    c[8 * stride] = iclip(t8 + t23a, min, max);
+    c[9 * stride] = iclip(t9 + t22, min, max);
+    c[10 * stride] = iclip(t10 + t21a, min, max);
+    c[11 * stride] = iclip(t11 + t20, min, max);
+    c[12 * stride] = iclip(t12 + t19a, min, max);
+    c[13 * stride] = iclip(t13 + t18, min, max);
+    c[14 * stride] = iclip(t14 + t17a, min, max);
+    c[15 * stride] = iclip(t15 + t16, min, max);
+    c[16 * stride] = iclip(t15 - t16, min, max);
+    c[17 * stride] = iclip(t14 - t17a, min, max);
+    c[18 * stride] = iclip(t13 - t18, min, max);
+    c[19 * stride] = iclip(t12 - t19a, min, max);
+    c[20 * stride] = iclip(t11 - t20, min, max);
+    c[21 * stride] = iclip(t10 - t21a, min, max);
+    c[22 * stride] = iclip(t9 - t22, min, max);
+    c[23 * stride] = iclip(t8 - t23a, min, max);
+    c[24 * stride] = iclip(t7 - t24a, min, max);
+    c[25 * stride] = iclip(t6 - t25, min, max);
+    c[26 * stride] = iclip(t5 - t26a, min, max);
+    c[27 * stride] = iclip(t4 - t27, min, max);
+    c[28 * stride] = iclip(t3 - t28a, min, max);
+    c[29 * stride] = iclip(t2 - t29, min, max);
+    c[30 * stride] = iclip(t1 - t30a, min, max);
+    c[31 * stride] = iclip(t0 - t31, min, max);
 }
 
-pub unsafe fn dav1d_inv_dct32_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
+pub unsafe fn dav1d_inv_dct32_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct32_1d_internal_c(c, stride, min, max, 0 as c_int);
 }
 
-pub unsafe fn dav1d_inv_dct64_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
+pub unsafe fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     let stride = stride.get();
 
     inv_dct32_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, 1 as c_int);
-    let in1 = *c.offset((1 * stride) as isize);
-    let in3 = *c.offset((3 * stride) as isize);
-    let in5 = *c.offset((5 * stride) as isize);
-    let in7 = *c.offset((7 * stride) as isize);
-    let in9 = *c.offset((9 * stride) as isize);
-    let in11 = *c.offset((11 * stride) as isize);
-    let in13 = *c.offset((13 * stride) as isize);
-    let in15 = *c.offset((15 * stride) as isize);
-    let in17 = *c.offset((17 * stride) as isize);
-    let in19 = *c.offset((19 * stride) as isize);
-    let in21 = *c.offset((21 * stride) as isize);
-    let in23 = *c.offset((23 * stride) as isize);
-    let in25 = *c.offset((25 * stride) as isize);
-    let in27 = *c.offset((27 * stride) as isize);
-    let in29 = *c.offset((29 * stride) as isize);
-    let in31 = *c.offset((31 * stride) as isize);
+    let in1 = c[1 * stride];
+    let in3 = c[3 * stride];
+    let in5 = c[5 * stride];
+    let in7 = c[7 * stride];
+    let in9 = c[9 * stride];
+    let in11 = c[11 * stride];
+    let in13 = c[13 * stride];
+    let in15 = c[15 * stride];
+    let in17 = c[17 * stride];
+    let in19 = c[19 * stride];
+    let in21 = c[21 * stride];
+    let in23 = c[23 * stride];
+    let in25 = c[25 * stride];
+    let in27 = c[27 * stride];
+    let in29 = c[29 * stride];
+    let in31 = c[31 * stride];
     let mut t32a = in1 * 101 + 2048 >> 12;
     let mut t33a = in31 * -(2824 as c_int) + 2048 >> 12;
     let mut t34a = in17 * 1660 + 2048 >> 12;
@@ -644,132 +643,142 @@ pub unsafe fn dav1d_inv_dct64_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int
     t53a = (t42 + t53) * 181 + 128 >> 8;
     t54 = (t41a + t54a) * 181 + 128 >> 8;
     t55a = (t40 + t55) * 181 + 128 >> 8;
-    let t0 = *c.offset((0 * stride) as isize);
-    let t1 = *c.offset((2 * stride) as isize);
-    let t2 = *c.offset((4 * stride) as isize);
-    let t3 = *c.offset((6 * stride) as isize);
-    let t4 = *c.offset((8 * stride) as isize);
-    let t5 = *c.offset((10 * stride) as isize);
-    let t6 = *c.offset((12 * stride) as isize);
-    let t7 = *c.offset((14 * stride) as isize);
-    let t8 = *c.offset((16 * stride) as isize);
-    let t9 = *c.offset((18 * stride) as isize);
-    let t10 = *c.offset((20 * stride) as isize);
-    let t11 = *c.offset((22 * stride) as isize);
-    let t12 = *c.offset((24 * stride) as isize);
-    let t13 = *c.offset((26 * stride) as isize);
-    let t14 = *c.offset((28 * stride) as isize);
-    let t15 = *c.offset((30 * stride) as isize);
-    let t16 = *c.offset((32 * stride) as isize);
-    let t17 = *c.offset((34 * stride) as isize);
-    let t18 = *c.offset((36 * stride) as isize);
-    let t19 = *c.offset((38 * stride) as isize);
-    let t20 = *c.offset((40 * stride) as isize);
-    let t21 = *c.offset((42 * stride) as isize);
-    let t22 = *c.offset((44 * stride) as isize);
-    let t23 = *c.offset((46 * stride) as isize);
-    let t24 = *c.offset((48 * stride) as isize);
-    let t25 = *c.offset((50 * stride) as isize);
-    let t26 = *c.offset((52 * stride) as isize);
-    let t27 = *c.offset((54 * stride) as isize);
-    let t28 = *c.offset((56 * stride) as isize);
-    let t29 = *c.offset((58 * stride) as isize);
-    let t30 = *c.offset((60 * stride) as isize);
-    let t31 = *c.offset((62 * stride) as isize);
-    *c.offset((0 * stride) as isize) = iclip(t0 + t63a, min, max);
-    *c.offset((1 * stride) as isize) = iclip(t1 + t62, min, max);
-    *c.offset((2 * stride) as isize) = iclip(t2 + t61a, min, max);
-    *c.offset((3 * stride) as isize) = iclip(t3 + t60, min, max);
-    *c.offset((4 * stride) as isize) = iclip(t4 + t59a, min, max);
-    *c.offset((5 * stride) as isize) = iclip(t5 + t58, min, max);
-    *c.offset((6 * stride) as isize) = iclip(t6 + t57a, min, max);
-    *c.offset((7 * stride) as isize) = iclip(t7 + t56, min, max);
-    *c.offset((8 * stride) as isize) = iclip(t8 + t55a, min, max);
-    *c.offset((9 * stride) as isize) = iclip(t9 + t54, min, max);
-    *c.offset((10 * stride) as isize) = iclip(t10 + t53a, min, max);
-    *c.offset((11 * stride) as isize) = iclip(t11 + t52, min, max);
-    *c.offset((12 * stride) as isize) = iclip(t12 + t51a, min, max);
-    *c.offset((13 * stride) as isize) = iclip(t13 + t50, min, max);
-    *c.offset((14 * stride) as isize) = iclip(t14 + t49a, min, max);
-    *c.offset((15 * stride) as isize) = iclip(t15 + t48, min, max);
-    *c.offset((16 * stride) as isize) = iclip(t16 + t47, min, max);
-    *c.offset((17 * stride) as isize) = iclip(t17 + t46a, min, max);
-    *c.offset((18 * stride) as isize) = iclip(t18 + t45, min, max);
-    *c.offset((19 * stride) as isize) = iclip(t19 + t44a, min, max);
-    *c.offset((20 * stride) as isize) = iclip(t20 + t43, min, max);
-    *c.offset((21 * stride) as isize) = iclip(t21 + t42a, min, max);
-    *c.offset((22 * stride) as isize) = iclip(t22 + t41, min, max);
-    *c.offset((23 * stride) as isize) = iclip(t23 + t40a, min, max);
-    *c.offset((24 * stride) as isize) = iclip(t24 + t39, min, max);
-    *c.offset((25 * stride) as isize) = iclip(t25 + t38a, min, max);
-    *c.offset((26 * stride) as isize) = iclip(t26 + t37, min, max);
-    *c.offset((27 * stride) as isize) = iclip(t27 + t36a, min, max);
-    *c.offset((28 * stride) as isize) = iclip(t28 + t35, min, max);
-    *c.offset((29 * stride) as isize) = iclip(t29 + t34a, min, max);
-    *c.offset((30 * stride) as isize) = iclip(t30 + t33, min, max);
-    *c.offset((31 * stride) as isize) = iclip(t31 + t32a, min, max);
-    *c.offset((32 * stride) as isize) = iclip(t31 - t32a, min, max);
-    *c.offset((33 * stride) as isize) = iclip(t30 - t33, min, max);
-    *c.offset((34 * stride) as isize) = iclip(t29 - t34a, min, max);
-    *c.offset((35 * stride) as isize) = iclip(t28 - t35, min, max);
-    *c.offset((36 * stride) as isize) = iclip(t27 - t36a, min, max);
-    *c.offset((37 * stride) as isize) = iclip(t26 - t37, min, max);
-    *c.offset((38 * stride) as isize) = iclip(t25 - t38a, min, max);
-    *c.offset((39 * stride) as isize) = iclip(t24 - t39, min, max);
-    *c.offset((40 * stride) as isize) = iclip(t23 - t40a, min, max);
-    *c.offset((41 * stride) as isize) = iclip(t22 - t41, min, max);
-    *c.offset((42 * stride) as isize) = iclip(t21 - t42a, min, max);
-    *c.offset((43 * stride) as isize) = iclip(t20 - t43, min, max);
-    *c.offset((44 * stride) as isize) = iclip(t19 - t44a, min, max);
-    *c.offset((45 * stride) as isize) = iclip(t18 - t45, min, max);
-    *c.offset((46 * stride) as isize) = iclip(t17 - t46a, min, max);
-    *c.offset((47 * stride) as isize) = iclip(t16 - t47, min, max);
-    *c.offset((48 * stride) as isize) = iclip(t15 - t48, min, max);
-    *c.offset((49 * stride) as isize) = iclip(t14 - t49a, min, max);
-    *c.offset((50 * stride) as isize) = iclip(t13 - t50, min, max);
-    *c.offset((51 * stride) as isize) = iclip(t12 - t51a, min, max);
-    *c.offset((52 * stride) as isize) = iclip(t11 - t52, min, max);
-    *c.offset((53 * stride) as isize) = iclip(t10 - t53a, min, max);
-    *c.offset((54 * stride) as isize) = iclip(t9 - t54, min, max);
-    *c.offset((55 * stride) as isize) = iclip(t8 - t55a, min, max);
-    *c.offset((56 * stride) as isize) = iclip(t7 - t56, min, max);
-    *c.offset((57 * stride) as isize) = iclip(t6 - t57a, min, max);
-    *c.offset((58 * stride) as isize) = iclip(t5 - t58, min, max);
-    *c.offset((59 * stride) as isize) = iclip(t4 - t59a, min, max);
-    *c.offset((60 * stride) as isize) = iclip(t3 - t60, min, max);
-    *c.offset((61 * stride) as isize) = iclip(t2 - t61a, min, max);
-    *c.offset((62 * stride) as isize) = iclip(t1 - t62, min, max);
-    *c.offset((63 * stride) as isize) = iclip(t0 - t63a, min, max);
+    let t0 = c[0 * stride];
+    let t1 = c[2 * stride];
+    let t2 = c[4 * stride];
+    let t3 = c[6 * stride];
+    let t4 = c[8 * stride];
+    let t5 = c[10 * stride];
+    let t6 = c[12 * stride];
+    let t7 = c[14 * stride];
+    let t8 = c[16 * stride];
+    let t9 = c[18 * stride];
+    let t10 = c[20 * stride];
+    let t11 = c[22 * stride];
+    let t12 = c[24 * stride];
+    let t13 = c[26 * stride];
+    let t14 = c[28 * stride];
+    let t15 = c[30 * stride];
+    let t16 = c[32 * stride];
+    let t17 = c[34 * stride];
+    let t18 = c[36 * stride];
+    let t19 = c[38 * stride];
+    let t20 = c[40 * stride];
+    let t21 = c[42 * stride];
+    let t22 = c[44 * stride];
+    let t23 = c[46 * stride];
+    let t24 = c[48 * stride];
+    let t25 = c[50 * stride];
+    let t26 = c[52 * stride];
+    let t27 = c[54 * stride];
+    let t28 = c[56 * stride];
+    let t29 = c[58 * stride];
+    let t30 = c[60 * stride];
+    let t31 = c[62 * stride];
+    c[0 * stride] = iclip(t0 + t63a, min, max);
+    c[1 * stride] = iclip(t1 + t62, min, max);
+    c[2 * stride] = iclip(t2 + t61a, min, max);
+    c[3 * stride] = iclip(t3 + t60, min, max);
+    c[4 * stride] = iclip(t4 + t59a, min, max);
+    c[5 * stride] = iclip(t5 + t58, min, max);
+    c[6 * stride] = iclip(t6 + t57a, min, max);
+    c[7 * stride] = iclip(t7 + t56, min, max);
+    c[8 * stride] = iclip(t8 + t55a, min, max);
+    c[9 * stride] = iclip(t9 + t54, min, max);
+    c[10 * stride] = iclip(t10 + t53a, min, max);
+    c[11 * stride] = iclip(t11 + t52, min, max);
+    c[12 * stride] = iclip(t12 + t51a, min, max);
+    c[13 * stride] = iclip(t13 + t50, min, max);
+    c[14 * stride] = iclip(t14 + t49a, min, max);
+    c[15 * stride] = iclip(t15 + t48, min, max);
+    c[16 * stride] = iclip(t16 + t47, min, max);
+    c[17 * stride] = iclip(t17 + t46a, min, max);
+    c[18 * stride] = iclip(t18 + t45, min, max);
+    c[19 * stride] = iclip(t19 + t44a, min, max);
+    c[20 * stride] = iclip(t20 + t43, min, max);
+    c[21 * stride] = iclip(t21 + t42a, min, max);
+    c[22 * stride] = iclip(t22 + t41, min, max);
+    c[23 * stride] = iclip(t23 + t40a, min, max);
+    c[24 * stride] = iclip(t24 + t39, min, max);
+    c[25 * stride] = iclip(t25 + t38a, min, max);
+    c[26 * stride] = iclip(t26 + t37, min, max);
+    c[27 * stride] = iclip(t27 + t36a, min, max);
+    c[28 * stride] = iclip(t28 + t35, min, max);
+    c[29 * stride] = iclip(t29 + t34a, min, max);
+    c[30 * stride] = iclip(t30 + t33, min, max);
+    c[31 * stride] = iclip(t31 + t32a, min, max);
+    c[32 * stride] = iclip(t31 - t32a, min, max);
+    c[33 * stride] = iclip(t30 - t33, min, max);
+    c[34 * stride] = iclip(t29 - t34a, min, max);
+    c[35 * stride] = iclip(t28 - t35, min, max);
+    c[36 * stride] = iclip(t27 - t36a, min, max);
+    c[37 * stride] = iclip(t26 - t37, min, max);
+    c[38 * stride] = iclip(t25 - t38a, min, max);
+    c[39 * stride] = iclip(t24 - t39, min, max);
+    c[40 * stride] = iclip(t23 - t40a, min, max);
+    c[41 * stride] = iclip(t22 - t41, min, max);
+    c[42 * stride] = iclip(t21 - t42a, min, max);
+    c[43 * stride] = iclip(t20 - t43, min, max);
+    c[44 * stride] = iclip(t19 - t44a, min, max);
+    c[45 * stride] = iclip(t18 - t45, min, max);
+    c[46 * stride] = iclip(t17 - t46a, min, max);
+    c[47 * stride] = iclip(t16 - t47, min, max);
+    c[48 * stride] = iclip(t15 - t48, min, max);
+    c[49 * stride] = iclip(t14 - t49a, min, max);
+    c[50 * stride] = iclip(t13 - t50, min, max);
+    c[51 * stride] = iclip(t12 - t51a, min, max);
+    c[52 * stride] = iclip(t11 - t52, min, max);
+    c[53 * stride] = iclip(t10 - t53a, min, max);
+    c[54 * stride] = iclip(t9 - t54, min, max);
+    c[55 * stride] = iclip(t8 - t55a, min, max);
+    c[56 * stride] = iclip(t7 - t56, min, max);
+    c[57 * stride] = iclip(t6 - t57a, min, max);
+    c[58 * stride] = iclip(t5 - t58, min, max);
+    c[59 * stride] = iclip(t4 - t59a, min, max);
+    c[60 * stride] = iclip(t3 - t60, min, max);
+    c[61 * stride] = iclip(t2 - t61a, min, max);
+    c[62 * stride] = iclip(t1 - t62, min, max);
+    c[63 * stride] = iclip(t0 - t63a, min, max);
 }
 
 #[inline(never)]
 unsafe fn inv_adst4_1d_internal_c(
-    in_0: *const i32,
-    in_s: NonZeroUsize,
+    c: &mut [i32],
+    stride: NonZeroUsize,
+    out_backwards: bool,
     _min: c_int,
     _max: c_int,
-    out: *mut i32,
-    out_s: NonZeroIsize,
 ) {
-    let in_s = in_s.get();
-    let out_s = out_s.get();
+    let stride = stride.get();
 
-    let in0 = *in_0.offset((0 * in_s) as isize);
-    let in1 = *in_0.offset((1 * in_s) as isize);
-    let in2 = *in_0.offset((2 * in_s) as isize);
-    let in3 = *in_0.offset((3 * in_s) as isize);
-    *out.offset((0 * out_s) as isize) =
+    let in_0 = &c[..];
+    let in_s = stride;
+
+    let in0 = in_0[0 * in_s];
+    let in1 = in_0[1 * in_s];
+    let in2 = in_0[2 * in_s];
+    let in3 = in_0[3 * in_s];
+
+    let out = &mut c[..];
+    let stride = stride as isize;
+    let (out_off, out_s) = if out_backwards {
+        ((4 - 1) * stride, -stride)
+    } else {
+        (0, stride)
+    };
+
+    out[(out_off + 0 * out_s) as usize] =
         (1321 * in0 + (3803 - 4096) * in2 + (2482 - 4096) * in3 + (3344 - 4096) * in1 + 2048 >> 12)
             + in2
             + in3
             + in1;
-    *out.offset((1 * out_s) as isize) =
+    out[(out_off + 1 * out_s) as usize] =
         ((2482 - 4096) * in0 - 1321 * in2 - (3803 - 4096) * in3 + (3344 - 4096) * in1 + 2048 >> 12)
             + in0
             - in3
             + in1;
-    *out.offset((2 * out_s) as isize) = 209 * (in0 - in2 + in3) + 128 >> 8;
-    *out.offset((3 * out_s) as isize) =
+    out[(out_off + 2 * out_s) as usize] = 209 * (in0 - in2 + in3) + 128 >> 8;
+    out[(out_off + 3 * out_s) as usize] =
         ((3803 - 4096) * in0 + (2482 - 4096) * in2 - 1321 * in3 - (3344 - 4096) * in1 + 2048 >> 12)
             + in0
             + in2
@@ -778,24 +787,25 @@ unsafe fn inv_adst4_1d_internal_c(
 
 #[inline(never)]
 unsafe fn inv_adst8_1d_internal_c(
-    in_0: *const i32,
-    in_s: NonZeroUsize,
+    c: &mut [i32],
+    stride: NonZeroUsize,
+    out_backwards: bool,
     min: c_int,
     max: c_int,
-    out: *mut i32,
-    out_s: NonZeroIsize,
 ) {
-    let in_s = in_s.get();
-    let out_s = out_s.get();
+    let stride = stride.get();
 
-    let in0 = *in_0.offset((0 * in_s) as isize);
-    let in1 = *in_0.offset((1 * in_s) as isize);
-    let in2 = *in_0.offset((2 * in_s) as isize);
-    let in3 = *in_0.offset((3 * in_s) as isize);
-    let in4 = *in_0.offset((4 * in_s) as isize);
-    let in5 = *in_0.offset((5 * in_s) as isize);
-    let in6 = *in_0.offset((6 * in_s) as isize);
-    let in7 = *in_0.offset((7 * in_s) as isize);
+    let in_0 = &c[..];
+    let in_s = stride;
+
+    let in0 = in_0[0 * in_s];
+    let in1 = in_0[1 * in_s];
+    let in2 = in_0[2 * in_s];
+    let in3 = in_0[3 * in_s];
+    let in4 = in_0[4 * in_s];
+    let in5 = in_0[5 * in_s];
+    let in6 = in_0[6 * in_s];
+    let in7 = in_0[7 * in_s];
     let t0a = ((4076 - 4096) * in7 + 401 * in0 + 2048 >> 12) + in7;
     let t1a = (401 * in7 - (4076 - 4096) * in0 + 2048 >> 12) - in0;
     let t2a = ((3612 - 4096) * in5 + 1931 * in2 + 2048 >> 12) + in5;
@@ -816,48 +826,58 @@ unsafe fn inv_adst8_1d_internal_c(
     t5a = (1567 * t4 - (3784 - 4096) * t5 + 2048 >> 12) - t5;
     t6a = ((3784 - 4096) * t7 - 1567 * t6 + 2048 >> 12) + t7;
     t7a = (1567 * t7 + (3784 - 4096) * t6 + 2048 >> 12) + t6;
-    *out.offset((0 * out_s) as isize) = iclip(t0 + t2, min, max);
-    *out.offset((7 * out_s) as isize) = -iclip(t1 + t3, min, max);
+
+    let out = &mut c[..];
+    let stride = stride as isize;
+    let (out_off, out_s) = if out_backwards {
+        ((8 - 1) * stride, -stride)
+    } else {
+        (0, stride)
+    };
+
+    out[(out_off + 0 * out_s) as usize] = iclip(t0 + t2, min, max);
+    out[(out_off + 7 * out_s) as usize] = -iclip(t1 + t3, min, max);
     t2 = iclip(t0 - t2, min, max);
     t3 = iclip(t1 - t3, min, max);
-    *out.offset((1 * out_s) as isize) = -iclip(t4a + t6a, min, max);
-    *out.offset((6 * out_s) as isize) = iclip(t5a + t7a, min, max);
+    out[(out_off + 1 * out_s) as usize] = -iclip(t4a + t6a, min, max);
+    out[(out_off + 6 * out_s) as usize] = iclip(t5a + t7a, min, max);
     t6 = iclip(t4a - t6a, min, max);
     t7 = iclip(t5a - t7a, min, max);
-    *out.offset((3 * out_s) as isize) = -((t2 + t3) * 181 + 128 >> 8);
-    *out.offset((4 * out_s) as isize) = (t2 - t3) * 181 + 128 >> 8;
-    *out.offset((2 * out_s) as isize) = (t6 + t7) * 181 + 128 >> 8;
-    *out.offset((5 * out_s) as isize) = -((t6 - t7) * 181 + 128 >> 8);
+    out[(out_off + 3 * out_s) as usize] = -((t2 + t3) * 181 + 128 >> 8);
+    out[(out_off + 4 * out_s) as usize] = (t2 - t3) * 181 + 128 >> 8;
+    out[(out_off + 2 * out_s) as usize] = (t6 + t7) * 181 + 128 >> 8;
+    out[(out_off + 5 * out_s) as usize] = -((t6 - t7) * 181 + 128 >> 8);
 }
 
 #[inline(never)]
 unsafe fn inv_adst16_1d_internal_c(
-    in_0: *const i32,
-    in_s: NonZeroUsize,
+    c: &mut [i32],
+    stride: NonZeroUsize,
+    out_backwards: bool,
     min: c_int,
     max: c_int,
-    out: *mut i32,
-    out_s: NonZeroIsize,
 ) {
-    let in_s = in_s.get();
-    let out_s = out_s.get();
+    let stride = stride.get();
 
-    let in0 = *in_0.offset((0 * in_s) as isize);
-    let in1 = *in_0.offset((1 * in_s) as isize);
-    let in2 = *in_0.offset((2 * in_s) as isize);
-    let in3 = *in_0.offset((3 * in_s) as isize);
-    let in4 = *in_0.offset((4 * in_s) as isize);
-    let in5 = *in_0.offset((5 * in_s) as isize);
-    let in6 = *in_0.offset((6 * in_s) as isize);
-    let in7 = *in_0.offset((7 * in_s) as isize);
-    let in8 = *in_0.offset((8 * in_s) as isize);
-    let in9 = *in_0.offset((9 * in_s) as isize);
-    let in10 = *in_0.offset((10 * in_s) as isize);
-    let in11 = *in_0.offset((11 * in_s) as isize);
-    let in12 = *in_0.offset((12 * in_s) as isize);
-    let in13 = *in_0.offset((13 * in_s) as isize);
-    let in14 = *in_0.offset((14 * in_s) as isize);
-    let in15 = *in_0.offset((15 * in_s) as isize);
+    let in_0 = &c[..];
+    let in_s = stride;
+
+    let in0 = in_0[0 * in_s];
+    let in1 = in_0[1 * in_s];
+    let in2 = in_0[2 * in_s];
+    let in3 = in_0[3 * in_s];
+    let in4 = in_0[4 * in_s];
+    let in5 = in_0[5 * in_s];
+    let in6 = in_0[6 * in_s];
+    let in7 = in_0[7 * in_s];
+    let in8 = in_0[8 * in_s];
+    let in9 = in_0[9 * in_s];
+    let in10 = in_0[10 * in_s];
+    let in11 = in_0[11 * in_s];
+    let in12 = in_0[12 * in_s];
+    let in13 = in_0[13 * in_s];
+    let in14 = in_0[14 * in_s];
+    let in15 = in_0[15 * in_s];
     let mut t0 = (in15 * (4091 - 4096) + in0 * 201 + 2048 >> 12) + in15;
     let mut t1 = (in15 * 201 - in0 * (4091 - 4096) + 2048 >> 12) - in0;
     let mut t2 = (in13 * (3973 - 4096) + in2 * 995 + 2048 >> 12) + in13;
@@ -922,79 +942,82 @@ unsafe fn inv_adst16_1d_internal_c(
     t13 = (t12a * 1567 - t13a * (3784 - 4096) + 2048 >> 12) - t13a;
     t14 = (t15a * (3784 - 4096) - t14a * 1567 + 2048 >> 12) + t15a;
     t15 = (t15a * 1567 + t14a * (3784 - 4096) + 2048 >> 12) + t14a;
-    *out.offset((0 * out_s) as isize) = iclip(t0 + t2, min, max);
-    *out.offset((15 * out_s) as isize) = -iclip(t1 + t3, min, max);
+
+    let out = &mut c[..];
+    let stride = stride as isize;
+    let (out_off, out_s) = if out_backwards {
+        ((16 - 1) * stride, -stride)
+    } else {
+        (0, stride)
+    };
+
+    out[(out_off + 0 * out_s) as usize] = iclip(t0 + t2, min, max);
+    out[(out_off + 15 * out_s) as usize] = -iclip(t1 + t3, min, max);
     t2a = iclip(t0 - t2, min, max);
     t3a = iclip(t1 - t3, min, max);
-    *out.offset((3 * out_s) as isize) = -iclip(t4a + t6a, min, max);
-    *out.offset((12 * out_s) as isize) = iclip(t5a + t7a, min, max);
+    out[(out_off + 3 * out_s) as usize] = -iclip(t4a + t6a, min, max);
+    out[(out_off + 12 * out_s) as usize] = iclip(t5a + t7a, min, max);
     t6 = iclip(t4a - t6a, min, max);
     t7 = iclip(t5a - t7a, min, max);
-    *out.offset((1 * out_s) as isize) = -iclip(t8a + t10a, min, max);
-    *out.offset((14 * out_s) as isize) = iclip(t9a + t11a, min, max);
+    out[(out_off + 1 * out_s) as usize] = -iclip(t8a + t10a, min, max);
+    out[(out_off + 14 * out_s) as usize] = iclip(t9a + t11a, min, max);
     t10 = iclip(t8a - t10a, min, max);
     t11 = iclip(t9a - t11a, min, max);
-    *out.offset((2 * out_s) as isize) = iclip(t12 + t14, min, max);
-    *out.offset((13 * out_s) as isize) = -iclip(t13 + t15, min, max);
+    out[(out_off + 2 * out_s) as usize] = iclip(t12 + t14, min, max);
+    out[(out_off + 13 * out_s) as usize] = -iclip(t13 + t15, min, max);
     t14a = iclip(t12 - t14, min, max);
     t15a = iclip(t13 - t15, min, max);
-    *out.offset((7 * out_s) as isize) = -((t2a + t3a) * 181 + 128 >> 8);
-    *out.offset((8 * out_s) as isize) = (t2a - t3a) * 181 + 128 >> 8;
-    *out.offset((4 * out_s) as isize) = (t6 + t7) * 181 + 128 >> 8;
-    *out.offset((11 * out_s) as isize) = -((t6 - t7) * 181 + 128 >> 8);
-    *out.offset((6 * out_s) as isize) = (t10 + t11) * 181 + 128 >> 8;
-    *out.offset((9 * out_s) as isize) = -((t10 - t11) * 181 + 128 >> 8);
-    *out.offset((5 * out_s) as isize) = -((t14a + t15a) * 181 + 128 >> 8);
-    *out.offset((10 * out_s) as isize) = (t14a - t15a) * 181 + 128 >> 8;
+    out[(out_off + 7 * out_s) as usize] = -((t2a + t3a) * 181 + 128 >> 8);
+    out[(out_off + 8 * out_s) as usize] = (t2a - t3a) * 181 + 128 >> 8;
+    out[(out_off + 4 * out_s) as usize] = (t6 + t7) * 181 + 128 >> 8;
+    out[(out_off + 11 * out_s) as usize] = -((t6 - t7) * 181 + 128 >> 8);
+    out[(out_off + 6 * out_s) as usize] = (t10 + t11) * 181 + 128 >> 8;
+    out[(out_off + 9 * out_s) as usize] = -((t10 - t11) * 181 + 128 >> 8);
+    out[(out_off + 5 * out_s) as usize] = -((t14a + t15a) * 181 + 128 >> 8);
+    out[(out_off + 10 * out_s) as usize] = (t14a - t15a) * 181 + 128 >> 8;
 }
 
-pub unsafe fn dav1d_inv_flipadst4_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_adst4_1d_internal_c(
-        c,
-        stride,
-        min,
-        max,
-        &mut *c.add((4 - 1) * stride.get()),
-        (-(stride.get() as isize)).try_into().unwrap(),
-    );
+pub unsafe fn dav1d_inv_flipadst4_1d_c(
+    c: &mut [i32],
+    stride: NonZeroUsize,
+    min: c_int,
+    max: c_int,
+) {
+    inv_adst4_1d_internal_c(c, stride, true, min, max);
 }
 
-pub unsafe fn dav1d_inv_adst4_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_adst4_1d_internal_c(c, stride, min, max, c, stride.try_into().unwrap());
+pub unsafe fn dav1d_inv_adst4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+    inv_adst4_1d_internal_c(c, stride, false, min, max);
 }
 
-pub unsafe fn dav1d_inv_adst8_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_adst8_1d_internal_c(c, stride, min, max, c, stride.try_into().unwrap());
+pub unsafe fn dav1d_inv_adst8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+    inv_adst8_1d_internal_c(c, stride, false, min, max);
 }
 
-pub unsafe fn dav1d_inv_flipadst8_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_adst8_1d_internal_c(
-        c,
-        stride,
-        min,
-        max,
-        &mut *c.add((8 - 1) * stride.get()),
-        (-(stride.get() as isize)).try_into().unwrap(),
-    );
+pub unsafe fn dav1d_inv_flipadst8_1d_c(
+    c: &mut [i32],
+    stride: NonZeroUsize,
+    min: c_int,
+    max: c_int,
+) {
+    inv_adst8_1d_internal_c(c, stride, true, min, max);
 }
 
-pub unsafe fn dav1d_inv_flipadst16_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_adst16_1d_internal_c(
-        c,
-        stride,
-        min,
-        max,
-        &mut *c.add((16 - 1) * stride.get()),
-        (-(stride.get() as isize)).try_into().unwrap(),
-    );
+pub unsafe fn dav1d_inv_flipadst16_1d_c(
+    c: &mut [i32],
+    stride: NonZeroUsize,
+    min: c_int,
+    max: c_int,
+) {
+    inv_adst16_1d_internal_c(c, stride, true, min, max);
 }
 
-pub unsafe fn dav1d_inv_adst16_1d_c(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_adst16_1d_internal_c(c, stride, min, max, c, stride.try_into().unwrap());
+pub unsafe fn dav1d_inv_adst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+    inv_adst16_1d_internal_c(c, stride, false, min, max);
 }
 
 pub unsafe fn dav1d_inv_identity4_1d_c(
-    c: *mut i32,
+    c: &mut [i32],
     stride: NonZeroUsize,
     _min: c_int,
     _max: c_int,
@@ -1003,14 +1026,14 @@ pub unsafe fn dav1d_inv_identity4_1d_c(
 
     let mut i = 0;
     while i < 4 {
-        let in_0 = *c.offset((stride * i) as isize);
-        *c.offset((stride * i) as isize) = in_0 + (in_0 * 1697 + 2048 >> 12);
+        let in_0 = c[stride * i];
+        c[stride * i] = in_0 + (in_0 * 1697 + 2048 >> 12);
         i += 1;
     }
 }
 
 pub unsafe fn dav1d_inv_identity8_1d_c(
-    c: *mut i32,
+    c: &mut [i32],
     stride: NonZeroUsize,
     _min: c_int,
     _max: c_int,
@@ -1019,14 +1042,13 @@ pub unsafe fn dav1d_inv_identity8_1d_c(
 
     let mut i = 0;
     while i < 8 {
-        let ref mut fresh0 = *c.offset((stride * i) as isize);
-        *fresh0 *= 2 as c_int;
+        c[stride * i] *= 2;
         i += 1;
     }
 }
 
 pub unsafe fn dav1d_inv_identity16_1d_c(
-    c: *mut i32,
+    c: &mut [i32],
     stride: NonZeroUsize,
     _min: c_int,
     _max: c_int,
@@ -1035,14 +1057,14 @@ pub unsafe fn dav1d_inv_identity16_1d_c(
 
     let mut i = 0;
     while i < 16 {
-        let in_0 = *c.offset((stride * i) as isize);
-        *c.offset((stride * i) as isize) = 2 * in_0 + (in_0 * 1697 + 1024 >> 11);
+        let in_0 = c[stride * i];
+        c[stride * i] = 2 * in_0 + (in_0 * 1697 + 1024 >> 11);
         i += 1;
     }
 }
 
 pub unsafe fn dav1d_inv_identity32_1d_c(
-    c: *mut i32,
+    c: &mut [i32],
     stride: NonZeroUsize,
     _min: c_int,
     _max: c_int,
@@ -1051,26 +1073,25 @@ pub unsafe fn dav1d_inv_identity32_1d_c(
 
     let mut i = 0;
     while i < 32 {
-        let ref mut fresh1 = *c.offset((stride * i) as isize);
-        *fresh1 *= 4 as c_int;
+        c[stride * i] *= 4;
         i += 1;
     }
 }
 
-pub unsafe fn dav1d_inv_wht4_1d_c(c: *mut i32, stride: NonZeroUsize) {
+pub unsafe fn dav1d_inv_wht4_1d_c(c: &mut [i32], stride: NonZeroUsize) {
     let stride = stride.get();
 
-    let in0 = *c.offset((0 * stride) as isize);
-    let in1 = *c.offset((1 * stride) as isize);
-    let in2 = *c.offset((2 * stride) as isize);
-    let in3 = *c.offset((3 * stride) as isize);
+    let in0 = c[0 * stride];
+    let in1 = c[1 * stride];
+    let in2 = c[2 * stride];
+    let in3 = c[3 * stride];
     let t0 = in0 + in1;
     let t2 = in2 - in3;
     let t4 = t0 - t2 >> 1;
     let t3 = t4 - in3;
     let t1 = t4 - in1;
-    *c.offset((0 * stride) as isize) = t0 - t3;
-    *c.offset((1 * stride) as isize) = t3;
-    *c.offset((2 * stride) as isize) = t1;
-    *c.offset((3 * stride) as isize) = t2 + t1;
+    c[0 * stride] = t0 - t3;
+    c[1 * stride] = t3;
+    c[2 * stride] = t1;
+    c[3 * stride] = t2 + t1;
 }

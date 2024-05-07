@@ -57,7 +57,7 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
-pub type itx_1d_fn = unsafe fn(c: *mut i32, stride: NonZeroUsize, min: c_int, max: c_int);
+pub type itx_1d_fn = unsafe fn(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int);
 
 pub unsafe fn inv_txfm_add_rust<
     const W: usize,
@@ -132,12 +132,7 @@ pub unsafe fn inv_txfm_add_rust<
                 c[x] = coeff[y + x * sh].as_();
             }
         }
-        first_1d_fn(
-            c.as_mut_ptr(),
-            1.try_into().unwrap(),
-            row_clip_min,
-            row_clip_max,
-        );
+        first_1d_fn(c, 1.try_into().unwrap(), row_clip_min, row_clip_max);
         c = &mut c[W..];
     }
 
@@ -148,7 +143,7 @@ pub unsafe fn inv_txfm_add_rust<
 
     for x in 0..W {
         second_1d_fn(
-            tmp[x..].as_mut_ptr(),
+            &mut tmp[x..],
             W.try_into().unwrap(),
             col_clip_min,
             col_clip_max,
@@ -481,13 +476,13 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
         for x in 0..W {
             c[x] = coeff[y + x * H].as_::<i32>() >> 2;
         }
-        dav1d_inv_wht4_1d_c(c.as_mut_ptr(), 1.try_into().unwrap());
+        dav1d_inv_wht4_1d_c(c, 1.try_into().unwrap());
         c = &mut c[W..];
     }
     coeff.fill(0.into());
 
     for x in 0..W {
-        dav1d_inv_wht4_1d_c(tmp[x..].as_mut_ptr(), H.try_into().unwrap());
+        dav1d_inv_wht4_1d_c(&mut tmp[x..], H.try_into().unwrap());
     }
 
     for y in 0..H {
