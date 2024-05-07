@@ -1440,13 +1440,9 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
         rc = 0 as c_int as c_uint;
     }
-    let dqmem_guard;
     let dq = match ts.dq.load(Ordering::Relaxed) {
         TileStateRef::Frame => &f.dq,
-        TileStateRef::Local => {
-            dqmem_guard = ts.dqmem.try_read().unwrap();
-            &*dqmem_guard
-        }
+        TileStateRef::Local => &ts.dqmem,
     };
     let dq_tbl = &dq[b.seg_id as usize][plane as usize];
     let qm_tbl = if (*txtp as c_uint) < IDTX as c_int as c_uint {
@@ -1480,7 +1476,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 chroma, dc_sign_ctx, dc_sign, ts_c.msac.rng,
             );
         }
-        dc_dq = dq_tbl[0] as c_int;
+        dc_dq = dq_tbl[0].load(Ordering::Relaxed) as c_int;
         dc_sign_level = (dc_sign - 1 & (2 as c_int) << 6) as c_uint;
         if let Some(qm_tbl) = qm_tbl {
             dc_dq = dc_dq * qm_tbl[0] as c_int + 16 >> 5;
@@ -1550,7 +1546,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     }
     match current_block {
         1669574575799829731 => {
-            let ac_dq: c_uint = dq_tbl[1] as c_uint;
+            let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as c_int;
                 if dbg {
@@ -1598,7 +1594,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             }
         }
         2404388531445638768 => {
-            let ac_dq: c_uint = dq_tbl[1] as c_uint;
+            let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
                 let sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as c_int;
                 if dbg {
@@ -2123,7 +2119,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 atomig::Ordering::Relaxed,
                             );
                             ts.frame_thread[1].cf.store(
-                                cf_idx +(*uv_t_dim).w as usize * (*uv_t_dim).h as usize * 16,
+                                cf_idx + (*uv_t_dim).w as usize * (*uv_t_dim).h as usize * 16,
                                 Ordering::Relaxed,
                             );
                             CaseSet::<16, true>::many(

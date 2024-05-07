@@ -176,6 +176,7 @@ use std::ffi::c_uint;
 use std::iter;
 use std::mem;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU16;
 use std::sync::atomic::AtomicU8;
 use std::sync::atomic::Ordering;
 use strum::EnumCount;
@@ -184,7 +185,7 @@ fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     qidx: u8,
-    dq: &mut [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
+    dq: &[[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
 ) {
     let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
 
@@ -206,13 +207,13 @@ fn init_quant_tables(
         let vac = clip_u8(yac + frame_hdr.quant.vac_delta as i16);
         let vdc = clip_u8(yac + frame_hdr.quant.vdc_delta as i16);
 
-        let dq = &mut dq[i];
-        dq[0][0] = tbl[ydc as usize][0];
-        dq[0][1] = tbl[yac as usize][1];
-        dq[1][0] = tbl[udc as usize][0];
-        dq[1][1] = tbl[uac as usize][1];
-        dq[2][0] = tbl[vdc as usize][0];
-        dq[2][1] = tbl[vac as usize][1];
+        let dq = &dq[i];
+        dq[0][0].store(tbl[ydc as usize][0], Ordering::Relaxed);
+        dq[0][1].store(tbl[yac as usize][1], Ordering::Relaxed);
+        dq[1][0].store(tbl[udc as usize][0], Ordering::Relaxed);
+        dq[1][1].store(tbl[uac as usize][1], Ordering::Relaxed);
+        dq[2][0].store(tbl[vdc as usize][0], Ordering::Relaxed);
+        dq[2][1].store(tbl[vac as usize][1], Ordering::Relaxed);
     }
 }
 
@@ -1648,12 +1649,7 @@ unsafe fn decode_b(
             ts.dq.store(TileStateRef::Frame, Ordering::Relaxed);
         } else if last_qidx != prev_qidx {
             // find sb-specific quant parameters
-            init_quant_tables(
-                seq_hdr,
-                frame_hdr,
-                last_qidx,
-                &mut *ts.dqmem.try_write().unwrap(),
-            );
+            init_quant_tables(seq_hdr, frame_hdr, last_qidx, &ts.dqmem);
             ts.dq.store(TileStateRef::Local, Ordering::Relaxed);
         }
         let last_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
@@ -4615,7 +4611,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     }
 
     // setup dequant tables
-    init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &mut f.dq);
+    init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &f.dq);
     if frame_hdr.quant.qm != 0 {
         for i in 0..N_RECT_TX_SIZES {
             f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i];

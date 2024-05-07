@@ -104,6 +104,7 @@ use std::ops::Range;
 use std::ops::Sub;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU16;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::AtomicU8;
 use std::sync::atomic::AtomicUsize;
@@ -937,7 +938,7 @@ pub(crate) struct Rav1dFrameData {
     pub sb_shift: c_int,
     pub sb_step: c_int,
     pub sr_sb128w: c_int,
-    pub dq: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub dq: [[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
     pub qm: [[Option<&'static [u8]>; 3]; 19],             /* [3 plane][19] */
     pub a: Vec<BlockContext>,                             /* len = w*tile_rows */
     pub rf: RefMvsFrame,
@@ -1007,7 +1008,7 @@ pub struct Rav1dTileState {
     // each entry is one tile-sbrow; middle index is refidx
     pub lowest_pixel: usize,
 
-    pub dqmem: RwLock<[[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize]>, /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub dqmem: [[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
     pub dq: Atomic<TileStateRef>,
     pub last_qidx: AtomicU8,
     pub last_delta_lf: Atomic<[i8; 4]>,
