@@ -686,7 +686,9 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 rav1d_msac_decode_symbol_adapt16(&mut ts_c.msac, eob_bin_cdf, (4 + 6) as usize)
                     as c_int;
         }
-        _ => {}
+        // `tx2dszctx` is `cmp::min(_, 3) + cmp::min(_, 3)`, where `TX_32X32 as u8 == 3`,
+        // and we cover `0..=6`.  `rustc` should eliminate this.
+        _ => unreachable!(),
     }
     if dbg {
         println!(
