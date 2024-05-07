@@ -16,6 +16,7 @@ fn inv_dct4_1d_internal_c(
 
     let in0 = c[0 * stride];
     let in1 = c[1 * stride];
+
     let t0;
     let t1;
     let t2;
@@ -28,11 +29,13 @@ fn inv_dct4_1d_internal_c(
     } else {
         let in2 = c[2 * stride];
         let in3 = c[3 * stride];
+
         t0 = (in0 + in2) * 181 + 128 >> 8;
         t1 = (in0 - in2) * 181 + 128 >> 8;
         t2 = (in1 * 1567 - in3 * (3784 - 4096) + 2048 >> 12) - in3;
         t3 = (in1 * (3784 - 4096) + in3 * 1567 + 2048 >> 12) + in1;
     }
+
     c[0 * stride] = iclip(t0 + t3, min, max);
     c[1 * stride] = iclip(t1 + t2, min, max);
     c[2 * stride] = iclip(t1 - t2, min, max);
@@ -54,8 +57,10 @@ fn inv_dct8_1d_internal_c(
     let stride = stride.get();
 
     inv_dct4_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
+
     let in1 = c[1 * stride];
     let in3 = c[3 * stride];
+
     let t4a;
     let mut t5a;
     let mut t6a;
@@ -68,21 +73,26 @@ fn inv_dct8_1d_internal_c(
     } else {
         let in5 = c[5 * stride];
         let in7 = c[7 * stride];
+
         t4a = (in1 * 799 - in7 * (4017 - 4096) + 2048 >> 12) - in7;
         t5a = in5 * 1703 - in3 * 1138 + 1024 >> 11;
         t6a = in5 * 1138 + in3 * 1703 + 1024 >> 11;
         t7a = (in1 * (4017 - 4096) + in7 * 799 + 2048 >> 12) + in1;
     }
+
     let t4 = iclip(t4a + t5a, min, max);
     t5a = iclip(t4a - t5a, min, max);
     let t7 = iclip(t7a + t6a, min, max);
     t6a = iclip(t7a - t6a, min, max);
+
     let t5 = (t6a - t5a) * 181 + 128 >> 8;
     let t6 = (t6a + t5a) * 181 + 128 >> 8;
+
     let t0 = c[0 * stride];
     let t1 = c[2 * stride];
     let t2 = c[4 * stride];
     let t3 = c[6 * stride];
+
     c[0 * stride] = iclip(t0 + t7, min, max);
     c[1 * stride] = iclip(t1 + t6, min, max);
     c[2 * stride] = iclip(t2 + t5, min, max);
@@ -108,10 +118,12 @@ fn inv_dct16_1d_internal_c(
     let stride = stride.get();
 
     inv_dct8_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
+
     let in1 = c[1 * stride];
     let in3 = c[3 * stride];
     let in5 = c[5 * stride];
     let in7 = c[7 * stride];
+
     let mut t8a;
     let mut t9a;
     let mut t10a;
@@ -134,6 +146,7 @@ fn inv_dct16_1d_internal_c(
         let in11 = c[11 * stride];
         let in13 = c[13 * stride];
         let in15 = c[15 * stride];
+
         t8a = (in1 * 401 - in15 * (4076 - 4096) + 2048 >> 12) - in15;
         t9a = in9 * 1583 - in7 * 1299 + 1024 >> 11;
         t10a = (in5 * 1931 - in11 * (3612 - 4096) + 2048 >> 12) - in11;
@@ -143,6 +156,7 @@ fn inv_dct16_1d_internal_c(
         t14a = in9 * 1299 + in7 * 1583 + 1024 >> 11;
         t15a = (in1 * (4076 - 4096) + in15 * 401 + 2048 >> 12) + in1;
     }
+
     let t8 = iclip(t8a + t9a, min, max);
     let mut t9 = iclip(t8a - t9a, min, max);
     let mut t10 = iclip(t11a - t10a, min, max);
@@ -151,6 +165,7 @@ fn inv_dct16_1d_internal_c(
     let mut t13 = iclip(t12a - t13a, min, max);
     let mut t14 = iclip(t15a - t14a, min, max);
     let t15 = iclip(t15a + t14a, min, max);
+
     t9a = (t14 * 1567 - t9 * (3784 - 4096) + 2048 >> 12) - t9;
     t14a = (t14 * (3784 - 4096) + t9 * 1567 + 2048 >> 12) + t14;
     t10a = (-(t13 * (3784 - 4096) + t10 * 1567) + 2048 >> 12) - t13;
@@ -163,10 +178,12 @@ fn inv_dct16_1d_internal_c(
     t13 = iclip(t14a - t13a, min, max);
     t14 = iclip(t14a + t13a, min, max);
     t15a = iclip(t15 + t12, min, max);
+
     t10a = (t13 - t10) * 181 + 128 >> 8;
     t13a = (t13 + t10) * 181 + 128 >> 8;
     t11 = (t12a - t11a) * 181 + 128 >> 8;
     t12 = (t12a + t11a) * 181 + 128 >> 8;
+
     let t0 = c[0 * stride];
     let t1 = c[2 * stride];
     let t2 = c[4 * stride];
@@ -175,6 +192,7 @@ fn inv_dct16_1d_internal_c(
     let t5 = c[10 * stride];
     let t6 = c[12 * stride];
     let t7 = c[14 * stride];
+
     c[0 * stride] = iclip(t0 + t15a, min, max);
     c[1 * stride] = iclip(t1 + t14, min, max);
     c[2 * stride] = iclip(t2 + t13a, min, max);
@@ -208,6 +226,7 @@ fn inv_dct32_1d_internal_c(
     let stride = stride.get();
 
     inv_dct16_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
+
     let in1 = c[1 * stride];
     let in3 = c[3 * stride];
     let in5 = c[5 * stride];
@@ -216,6 +235,7 @@ fn inv_dct32_1d_internal_c(
     let in11 = c[11 * stride];
     let in13 = c[13 * stride];
     let in15 = c[15 * stride];
+
     let mut t16a;
     let mut t17a;
     let mut t18a;
@@ -258,6 +278,7 @@ fn inv_dct32_1d_internal_c(
         let in27 = c[27 * stride];
         let in29 = c[29 * stride];
         let in31 = c[31 * stride];
+
         t16a = (in1 * 201 - in31 * (4091 - 4096) + 2048 >> 12) - in31;
         t17a = (in17 * (3035 - 4096) - in15 * 2751 + 2048 >> 12) + in17;
         t18a = (in9 * 1751 - in23 * (3703 - 4096) + 2048 >> 12) - in23;
@@ -275,6 +296,7 @@ fn inv_dct32_1d_internal_c(
         t30a = (in17 * 2751 + in15 * (3035 - 4096) + 2048 >> 12) + in15;
         t31a = (in1 * (4091 - 4096) + in31 * 201 + 2048 >> 12) + in1;
     }
+
     let mut t16 = iclip(t16a + t17a, min, max);
     let mut t17 = iclip(t16a - t17a, min, max);
     let mut t18 = iclip(t19a - t18a, min, max);
@@ -291,6 +313,7 @@ fn inv_dct32_1d_internal_c(
     let mut t29 = iclip(t28a - t29a, min, max);
     let mut t30 = iclip(t31a - t30a, min, max);
     let mut t31 = iclip(t31a + t30a, min, max);
+
     t17a = (t30 * 799 - t17 * (4017 - 4096) + 2048 >> 12) - t17;
     t30a = (t30 * (4017 - 4096) + t17 * 799 + 2048 >> 12) + t30;
     t18a = (-(t29 * (4017 - 4096) + t18 * 799) + 2048 >> 12) - t29;
@@ -299,6 +322,7 @@ fn inv_dct32_1d_internal_c(
     t26a = t26 * 1138 + t21 * 1703 + 1024 >> 11;
     t22a = -(t25 * 1138 + t22 * 1703) + 1024 >> 11;
     t25a = t25 * 1703 - t22 * 1138 + 1024 >> 11;
+
     t16a = iclip(t16 + t19, min, max);
     t17 = iclip(t17a + t18a, min, max);
     t18 = iclip(t17a - t18a, min, max);
@@ -315,6 +339,7 @@ fn inv_dct32_1d_internal_c(
     t29 = iclip(t30a - t29a, min, max);
     t30 = iclip(t30a + t29a, min, max);
     t31a = iclip(t31 + t28, min, max);
+
     t18a = (t29 * 1567 - t18 * (3784 - 4096) + 2048 >> 12) - t18;
     t29a = (t29 * (3784 - 4096) + t18 * 1567 + 2048 >> 12) + t29;
     t19 = (t28a * 1567 - t19a * (3784 - 4096) + 2048 >> 12) - t19a;
@@ -323,6 +348,7 @@ fn inv_dct32_1d_internal_c(
     t27 = (t27a * 1567 - t20a * (3784 - 4096) + 2048 >> 12) - t20a;
     t21a = (-(t26 * (3784 - 4096) + t21 * 1567) + 2048 >> 12) - t26;
     t26a = (t26 * 1567 - t21 * (3784 - 4096) + 2048 >> 12) - t21;
+
     t16 = iclip(t16a + t23a, min, max);
     t17a = iclip(t17 + t22, min, max);
     t18 = iclip(t18a + t21a, min, max);
@@ -339,6 +365,7 @@ fn inv_dct32_1d_internal_c(
     t29 = iclip(t29a + t26a, min, max);
     t30a = iclip(t30 + t25, min, max);
     t31 = iclip(t31a + t24a, min, max);
+
     t20 = (t27a - t20a) * 181 + 128 >> 8;
     t27 = (t27a + t20a) * 181 + 128 >> 8;
     t21a = (t26 - t21) * 181 + 128 >> 8;
@@ -347,6 +374,7 @@ fn inv_dct32_1d_internal_c(
     t25 = (t25a + t22a) * 181 + 128 >> 8;
     t23a = (t24 - t23) * 181 + 128 >> 8;
     t24a = (t24 + t23) * 181 + 128 >> 8;
+
     let t0 = c[0 * stride];
     let t1 = c[2 * stride];
     let t2 = c[4 * stride];
@@ -363,6 +391,7 @@ fn inv_dct32_1d_internal_c(
     let t13 = c[26 * stride];
     let t14 = c[28 * stride];
     let t15 = c[30 * stride];
+
     c[0 * stride] = iclip(t0 + t31, min, max);
     c[1 * stride] = iclip(t1 + t30a, min, max);
     c[2 * stride] = iclip(t2 + t29, min, max);
@@ -405,6 +434,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     let stride = stride.get();
 
     inv_dct32_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, 1 as c_int);
+
     let in1 = c[1 * stride];
     let in3 = c[3 * stride];
     let in5 = c[5 * stride];
@@ -421,6 +451,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     let in27 = c[27 * stride];
     let in29 = c[29 * stride];
     let in31 = c[31 * stride];
+
     let mut t32a = in1 * 101 + 2048 >> 12;
     let mut t33a = in31 * -(2824 as c_int) + 2048 >> 12;
     let mut t34a = in17 * 1660 + 2048 >> 12;
@@ -453,6 +484,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     let mut t61a = in17 * 3745 + 2048 >> 12;
     let mut t62a = in31 * 2967 + 2048 >> 12;
     let mut t63a = in1 * 4095 + 2048 >> 12;
+
     let mut t32 = iclip(t32a + t33a, min, max);
     let mut t33 = iclip(t32a - t33a, min, max);
     let mut t34 = iclip(t35a - t34a, min, max);
@@ -485,6 +517,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     let mut t61 = iclip(t60a - t61a, min, max);
     let mut t62 = iclip(t63a - t62a, min, max);
     let mut t63 = iclip(t63a + t62a, min, max);
+
     t33a = (t33 * (4096 - 4076) + t62 * 401 + 2048 >> 12) - t33;
     t34a = (t34 * -(401 as c_int) + t61 * (4096 - 4076) + 2048 >> 12) - t61;
     t37a = t37 * -(1299 as c_int) + t58 * 1583 + 1024 >> 11;
@@ -501,6 +534,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     t58a = t37 * 1583 + t58 * 1299 + 1024 >> 11;
     t61a = (t34 * (4096 - 4076) + t61 * 401 + 2048 >> 12) - t34;
     t62a = (t33 * 401 + t62 * (4076 - 4096) + 2048 >> 12) + t62;
+
     t32a = iclip(t32 + t35, min, max);
     t33 = iclip(t33a + t34a, min, max);
     t34 = iclip(t33a - t34a, min, max);
@@ -533,6 +567,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     t61 = iclip(t62a - t61a, min, max);
     t62 = iclip(t62a + t61a, min, max);
     t63a = iclip(t63 + t60, min, max);
+
     t34a = (t34 * (4096 - 4017) + t61 * 799 + 2048 >> 12) - t34;
     t35 = (t35a * (4096 - 4017) + t60a * 799 + 2048 >> 12) - t35a;
     t36 = (t36a * -(799 as c_int) + t59a * (4096 - 4017) + 2048 >> 12) - t59a;
@@ -549,6 +584,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     t59 = (t36a * (4096 - 4017) + t59a * 799 + 2048 >> 12) - t36a;
     t60 = (t35a * 799 + t60a * (4017 - 4096) + 2048 >> 12) + t60a;
     t61a = (t34 * 799 + t61 * (4017 - 4096) + 2048 >> 12) + t61;
+
     t32 = iclip(t32a + t39a, min, max);
     t33a = iclip(t33 + t38, min, max);
     t34 = iclip(t34a + t37a, min, max);
@@ -581,6 +617,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     t61 = iclip(t61a + t58a, min, max);
     t62a = iclip(t62 + t57, min, max);
     t63 = iclip(t63a + t56a, min, max);
+
     t36 = (t36a * (4096 - 3784) + t59a * 1567 + 2048 >> 12) - t36a;
     t37a = (t37 * (4096 - 3784) + t58 * 1567 + 2048 >> 12) - t37;
     t38 = (t38a * (4096 - 3784) + t57a * 1567 + 2048 >> 12) - t38a;
@@ -597,6 +634,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     t57 = (t38a * 1567 + t57a * (3784 - 4096) + 2048 >> 12) + t57a;
     t58a = (t37 * 1567 + t58 * (3784 - 4096) + 2048 >> 12) + t58;
     t59 = (t36a * 1567 + t59a * (3784 - 4096) + 2048 >> 12) + t59a;
+
     t32a = iclip(t32 + t47, min, max);
     t33 = iclip(t33a + t46a, min, max);
     t34a = iclip(t34 + t45, min, max);
@@ -629,6 +667,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     t61a = iclip(t61 + t50, min, max);
     t62 = iclip(t62a + t49a, min, max);
     t63a = iclip(t63 + t48, min, max);
+
     t40a = (t55 - t40) * 181 + 128 >> 8;
     t41 = (t54a - t41a) * 181 + 128 >> 8;
     t42a = (t53 - t42) * 181 + 128 >> 8;
@@ -645,6 +684,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     t53a = (t42 + t53) * 181 + 128 >> 8;
     t54 = (t41a + t54a) * 181 + 128 >> 8;
     t55a = (t40 + t55) * 181 + 128 >> 8;
+
     let t0 = c[0 * stride];
     let t1 = c[2 * stride];
     let t2 = c[4 * stride];
@@ -677,6 +717,7 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     let t29 = c[58 * stride];
     let t30 = c[60 * stride];
     let t31 = c[62 * stride];
+
     c[0 * stride] = iclip(t0 + t63a, min, max);
     c[1 * stride] = iclip(t1 + t62, min, max);
     c[2 * stride] = iclip(t2 + t61a, min, max);
@@ -808,6 +849,7 @@ fn inv_adst8_1d_internal_c(
     let in5 = in_0[5 * in_s];
     let in6 = in_0[6 * in_s];
     let in7 = in_0[7 * in_s];
+
     let t0a = ((4076 - 4096) * in7 + 401 * in0 + 2048 >> 12) + in7;
     let t1a = (401 * in7 - (4076 - 4096) * in0 + 2048 >> 12) - in0;
     let t2a = ((3612 - 4096) * in5 + 1931 * in2 + 2048 >> 12) + in5;
@@ -816,6 +858,7 @@ fn inv_adst8_1d_internal_c(
     let mut t5a = 1583 * in3 - 1299 * in4 + 1024 >> 11;
     let mut t6a = (1189 * in1 + (3920 - 4096) * in6 + 2048 >> 12) + in6;
     let mut t7a = ((3920 - 4096) * in1 - 1189 * in6 + 2048 >> 12) + in1;
+
     let t0 = iclip(t0a + t4a, min, max);
     let t1 = iclip(t1a + t5a, min, max);
     let mut t2 = iclip(t2a + t6a, min, max);
@@ -824,6 +867,7 @@ fn inv_adst8_1d_internal_c(
     let t5 = iclip(t1a - t5a, min, max);
     let mut t6 = iclip(t2a - t6a, min, max);
     let mut t7 = iclip(t3a - t7a, min, max);
+
     t4a = ((3784 - 4096) * t4 + 1567 * t5 + 2048 >> 12) + t4;
     t5a = (1567 * t4 - (3784 - 4096) * t5 + 2048 >> 12) - t5;
     t6a = ((3784 - 4096) * t7 - 1567 * t6 + 2048 >> 12) + t7;
@@ -845,6 +889,7 @@ fn inv_adst8_1d_internal_c(
     out[(out_off + 6 * out_s) as usize] = iclip(t5a + t7a, min, max);
     t6 = iclip(t4a - t6a, min, max);
     t7 = iclip(t5a - t7a, min, max);
+
     out[(out_off + 3 * out_s) as usize] = -((t2 + t3) * 181 + 128 >> 8);
     out[(out_off + 4 * out_s) as usize] = (t2 - t3) * 181 + 128 >> 8;
     out[(out_off + 2 * out_s) as usize] = (t6 + t7) * 181 + 128 >> 8;
@@ -880,6 +925,7 @@ fn inv_adst16_1d_internal_c(
     let in13 = in_0[13 * in_s];
     let in14 = in_0[14 * in_s];
     let in15 = in_0[15 * in_s];
+
     let mut t0 = (in15 * (4091 - 4096) + in0 * 201 + 2048 >> 12) + in15;
     let mut t1 = (in15 * 201 - in0 * (4091 - 4096) + 2048 >> 12) - in0;
     let mut t2 = (in13 * (3973 - 4096) + in2 * 995 + 2048 >> 12) + in13;
@@ -896,6 +942,7 @@ fn inv_adst16_1d_internal_c(
     let mut t13 = (in3 * (3857 - 4096) - in12 * 1380 + 2048 >> 12) + in3;
     let mut t14 = (in1 * 601 + in14 * (4052 - 4096) + 2048 >> 12) + in14;
     let mut t15 = (in1 * (4052 - 4096) - in14 * 601 + 2048 >> 12) + in1;
+
     let t0a = iclip(t0 + t8, min, max);
     let t1a = iclip(t1 + t9, min, max);
     let mut t2a = iclip(t2 + t10, min, max);
@@ -912,6 +959,7 @@ fn inv_adst16_1d_internal_c(
     let mut t13a = iclip(t5 - t13, min, max);
     let mut t14a = iclip(t6 - t14, min, max);
     let mut t15a = iclip(t7 - t15, min, max);
+
     t8 = (t8a * (4017 - 4096) + t9a * 799 + 2048 >> 12) + t8a;
     t9 = (t8a * 799 - t9a * (4017 - 4096) + 2048 >> 12) - t9a;
     t10 = (t10a * 2276 + t11a * (3406 - 4096) + 2048 >> 12) + t11a;
@@ -920,6 +968,7 @@ fn inv_adst16_1d_internal_c(
     t13 = (t13a * 799 + t12a * (4017 - 4096) + 2048 >> 12) + t12a;
     t14 = (t15a * 2276 - t14a * (3406 - 4096) + 2048 >> 12) - t14a;
     t15 = (t15a * (3406 - 4096) + t14a * 2276 + 2048 >> 12) + t15a;
+
     t0 = iclip(t0a + t4a, min, max);
     t1 = iclip(t1a + t5a, min, max);
     t2 = iclip(t2a + t6a, min, max);
@@ -936,6 +985,7 @@ fn inv_adst16_1d_internal_c(
     t13a = iclip(t9 - t13, min, max);
     t14a = iclip(t10 - t14, min, max);
     t15a = iclip(t11 - t15, min, max);
+
     t4a = (t4 * (3784 - 4096) + t5 * 1567 + 2048 >> 12) + t4;
     t5a = (t4 * 1567 - t5 * (3784 - 4096) + 2048 >> 12) - t5;
     t6a = (t7 * (3784 - 4096) - t6 * 1567 + 2048 >> 12) + t7;
@@ -969,6 +1019,7 @@ fn inv_adst16_1d_internal_c(
     out[(out_off + 13 * out_s) as usize] = -iclip(t13 + t15, min, max);
     t14a = iclip(t12 - t14, min, max);
     t15a = iclip(t13 - t15, min, max);
+
     out[(out_off + 7 * out_s) as usize] = -((t2a + t3a) * 181 + 128 >> 8);
     out[(out_off + 8 * out_s) as usize] = (t2a - t3a) * 181 + 128 >> 8;
     out[(out_off + 4 * out_s) as usize] = (t6 + t7) * 181 + 128 >> 8;
@@ -1044,11 +1095,13 @@ pub fn dav1d_inv_wht4_1d_c(c: &mut [i32], stride: NonZeroUsize) {
     let in1 = c[1 * stride];
     let in2 = c[2 * stride];
     let in3 = c[3 * stride];
+
     let t0 = in0 + in1;
     let t2 = in2 - in3;
     let t4 = t0 - t2 >> 1;
     let t3 = t4 - in3;
     let t1 = t4 - in1;
+
     c[0 * stride] = t0 - t3;
     c[1 * stride] = t3;
     c[2 * stride] = t1;
