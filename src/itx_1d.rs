@@ -1,18 +1,18 @@
 use crate::include::common::intops::iclip;
-use libc::ptrdiff_t;
 use std::ffi::c_int;
+use std::num::NonZeroIsize;
+use std::num::NonZeroUsize;
 
 #[inline(never)]
 unsafe fn inv_dct4_1d_internal_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
     tx64: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
+    let stride = stride.get();
+
     let in0 = *c.offset((0 * stride) as isize);
     let in1 = *c.offset((1 * stride) as isize);
     let t0;
@@ -40,7 +40,7 @@ unsafe fn inv_dct4_1d_internal_c(
 
 pub unsafe extern "C" fn dav1d_inv_dct4_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
@@ -50,15 +50,14 @@ pub unsafe extern "C" fn dav1d_inv_dct4_1d_c(
 #[inline(never)]
 unsafe fn inv_dct8_1d_internal_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
     tx64: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
-    inv_dct4_1d_internal_c(c, stride << 1, min, max, tx64);
+    let stride = stride.get();
+
+    inv_dct4_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
     let in1 = *c.offset((1 * stride) as isize);
     let in3 = *c.offset((3 * stride) as isize);
     let t4a;
@@ -100,7 +99,7 @@ unsafe fn inv_dct8_1d_internal_c(
 
 pub unsafe extern "C" fn dav1d_inv_dct8_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
@@ -110,15 +109,14 @@ pub unsafe extern "C" fn dav1d_inv_dct8_1d_c(
 #[inline(never)]
 unsafe fn inv_dct16_1d_internal_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
     tx64: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
-    inv_dct8_1d_internal_c(c, stride << 1, min, max, tx64);
+    let stride = stride.get();
+
+    inv_dct8_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
     let in1 = *c.offset((1 * stride) as isize);
     let in3 = *c.offset((3 * stride) as isize);
     let in5 = *c.offset((5 * stride) as isize);
@@ -206,7 +204,7 @@ unsafe fn inv_dct16_1d_internal_c(
 
 pub unsafe extern "C" fn dav1d_inv_dct16_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
@@ -216,15 +214,14 @@ pub unsafe extern "C" fn dav1d_inv_dct16_1d_c(
 #[inline(never)]
 unsafe fn inv_dct32_1d_internal_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
     tx64: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
-    inv_dct16_1d_internal_c(c, stride << 1, min, max, tx64);
+    let stride = stride.get();
+
+    inv_dct16_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, tx64);
     let in1 = *c.offset((1 * stride) as isize);
     let in3 = *c.offset((3 * stride) as isize);
     let in5 = *c.offset((5 * stride) as isize);
@@ -416,7 +413,7 @@ unsafe fn inv_dct32_1d_internal_c(
 
 pub unsafe extern "C" fn dav1d_inv_dct32_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
@@ -425,14 +422,13 @@ pub unsafe extern "C" fn dav1d_inv_dct32_1d_c(
 
 pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
-    inv_dct32_1d_internal_c(c, stride << 1, min, max, 1 as c_int);
+    let stride = stride.get();
+
+    inv_dct32_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, 1 as c_int);
     let in1 = *c.offset((1 * stride) as isize);
     let in3 = *c.offset((3 * stride) as isize);
     let in5 = *c.offset((5 * stride) as isize);
@@ -774,15 +770,15 @@ pub unsafe extern "C" fn dav1d_inv_dct64_1d_c(
 #[inline(never)]
 unsafe fn inv_adst4_1d_internal_c(
     in_0: *const i32,
-    in_s: ptrdiff_t,
+    in_s: NonZeroUsize,
     _min: c_int,
     _max: c_int,
     out: *mut i32,
-    out_s: ptrdiff_t,
+    out_s: NonZeroIsize,
 ) {
-    if !(in_s > 0 && out_s != 0) {
-        unreachable!();
-    }
+    let in_s = in_s.get();
+    let out_s = out_s.get();
+
     let in0 = *in_0.offset((0 * in_s) as isize);
     let in1 = *in_0.offset((1 * in_s) as isize);
     let in2 = *in_0.offset((2 * in_s) as isize);
@@ -808,15 +804,15 @@ unsafe fn inv_adst4_1d_internal_c(
 #[inline(never)]
 unsafe fn inv_adst8_1d_internal_c(
     in_0: *const i32,
-    in_s: ptrdiff_t,
+    in_s: NonZeroUsize,
     min: c_int,
     max: c_int,
     out: *mut i32,
-    out_s: ptrdiff_t,
+    out_s: NonZeroIsize,
 ) {
-    if !(in_s > 0 && out_s != 0) {
-        unreachable!();
-    }
+    let in_s = in_s.get();
+    let out_s = out_s.get();
+
     let in0 = *in_0.offset((0 * in_s) as isize);
     let in1 = *in_0.offset((1 * in_s) as isize);
     let in2 = *in_0.offset((2 * in_s) as isize);
@@ -862,15 +858,15 @@ unsafe fn inv_adst8_1d_internal_c(
 #[inline(never)]
 unsafe fn inv_adst16_1d_internal_c(
     in_0: *const i32,
-    in_s: ptrdiff_t,
+    in_s: NonZeroUsize,
     min: c_int,
     max: c_int,
     out: *mut i32,
-    out_s: ptrdiff_t,
+    out_s: NonZeroIsize,
 ) {
-    if !(in_s > 0 && out_s != 0) {
-        unreachable!();
-    }
+    let in_s = in_s.get();
+    let out_s = out_s.get();
+
     let in0 = *in_0.offset((0 * in_s) as isize);
     let in1 = *in_0.offset((1 * in_s) as isize);
     let in2 = *in_0.offset((2 * in_s) as isize);
@@ -979,7 +975,7 @@ unsafe fn inv_adst16_1d_internal_c(
 
 pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
@@ -988,32 +984,32 @@ pub unsafe extern "C" fn dav1d_inv_flipadst4_1d_c(
         stride,
         min,
         max,
-        &mut *c.offset(((4 - 1) as isize * stride) as isize),
-        -stride,
+        &mut *c.add((4 - 1) * stride.get()),
+        (-(stride.get() as isize)).try_into().unwrap(),
     );
 }
 
 pub unsafe extern "C" fn dav1d_inv_adst4_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
-    inv_adst4_1d_internal_c(c, stride, min, max, c, stride);
+    inv_adst4_1d_internal_c(c, stride, min, max, c, stride.try_into().unwrap());
 }
 
 pub unsafe extern "C" fn dav1d_inv_adst8_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
-    inv_adst8_1d_internal_c(c, stride, min, max, c, stride);
+    inv_adst8_1d_internal_c(c, stride, min, max, c, stride.try_into().unwrap());
 }
 
 pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
@@ -1022,14 +1018,14 @@ pub unsafe extern "C" fn dav1d_inv_flipadst8_1d_c(
         stride,
         min,
         max,
-        &mut *c.offset(((8 - 1) as isize * stride) as isize),
-        -stride,
+        &mut *c.add((8 - 1) * stride.get()),
+        (-(stride.get() as isize)).try_into().unwrap(),
     );
 }
 
 pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
@@ -1038,49 +1034,47 @@ pub unsafe extern "C" fn dav1d_inv_flipadst16_1d_c(
         stride,
         min,
         max,
-        &mut *c.offset((16 - 1) as isize * stride),
-        -stride,
+        &mut *c.add((16 - 1) * stride.get()),
+        (-(stride.get() as isize)).try_into().unwrap(),
     );
 }
 
 pub unsafe extern "C" fn dav1d_inv_adst16_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     min: c_int,
     max: c_int,
 ) {
-    inv_adst16_1d_internal_c(c, stride, min, max, c, stride);
+    inv_adst16_1d_internal_c(c, stride, min, max, c, stride.try_into().unwrap());
 }
 
 pub unsafe extern "C" fn dav1d_inv_identity4_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     _min: c_int,
     _max: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
+    let stride = stride.get();
+
     let mut i = 0;
     while i < 4 {
-        let in_0 = *c.offset(stride * i as isize);
-        *c.offset(stride * i as isize) = in_0 + (in_0 * 1697 + 2048 >> 12);
+        let in_0 = *c.offset((stride * i) as isize);
+        *c.offset((stride * i) as isize) = in_0 + (in_0 * 1697 + 2048 >> 12);
         i += 1;
     }
 }
 
 pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     _min: c_int,
     _max: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
+    let stride = stride.get();
+
     let mut i = 0;
     while i < 8 {
-        let ref mut fresh0 = *c.offset((stride * i as isize) as isize);
+        let ref mut fresh0 = *c.offset((stride * i) as isize);
         *fresh0 *= 2 as c_int;
         i += 1;
     }
@@ -1088,42 +1082,39 @@ pub unsafe extern "C" fn dav1d_inv_identity8_1d_c(
 
 pub unsafe extern "C" fn dav1d_inv_identity16_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     _min: c_int,
     _max: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
+    let stride = stride.get();
+
     let mut i = 0;
     while i < 16 {
-        let in_0 = *c.offset((stride * i as isize) as isize);
-        *c.offset((stride * i as isize) as isize) = 2 * in_0 + (in_0 * 1697 + 1024 >> 11);
+        let in_0 = *c.offset((stride * i) as isize);
+        *c.offset((stride * i) as isize) = 2 * in_0 + (in_0 * 1697 + 1024 >> 11);
         i += 1;
     }
 }
 
 pub unsafe extern "C" fn dav1d_inv_identity32_1d_c(
     c: *mut i32,
-    stride: ptrdiff_t,
+    stride: NonZeroUsize,
     _min: c_int,
     _max: c_int,
 ) {
-    if !(stride > 0) {
-        unreachable!();
-    }
+    let stride = stride.get();
+
     let mut i = 0;
     while i < 32 {
-        let ref mut fresh1 = *c.offset((stride * i as isize) as isize);
+        let ref mut fresh1 = *c.offset((stride * i) as isize);
         *fresh1 *= 4 as c_int;
         i += 1;
     }
 }
 
-pub unsafe fn dav1d_inv_wht4_1d_c(c: *mut i32, stride: ptrdiff_t) {
-    if !(stride > 0) {
-        unreachable!();
-    }
+pub unsafe fn dav1d_inv_wht4_1d_c(c: *mut i32, stride: NonZeroUsize) {
+    let stride = stride.get();
+
     let in0 = *c.offset((0 * stride) as isize);
     let in1 = *c.offset((1 * stride) as isize);
     let in2 = *c.offset((2 * stride) as isize);
