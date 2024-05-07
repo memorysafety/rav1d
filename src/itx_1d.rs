@@ -1006,42 +1006,34 @@ pub fn dav1d_inv_adst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, ma
 pub fn dav1d_inv_identity4_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
-    let mut i = 0;
-    while i < 4 {
+    for i in 0..4 {
         let in_0 = c[stride * i];
         c[stride * i] = in_0 + (in_0 * 1697 + 2048 >> 12);
-        i += 1;
     }
 }
 
 pub fn dav1d_inv_identity8_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
-    let mut i = 0;
-    while i < 8 {
+    for i in 0..8 {
         c[stride * i] *= 2;
-        i += 1;
     }
 }
 
 pub fn dav1d_inv_identity16_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
-    let mut i = 0;
-    while i < 16 {
+    for i in 0..16 {
         let in_0 = c[stride * i];
         c[stride * i] = 2 * in_0 + (in_0 * 1697 + 1024 >> 11);
-        i += 1;
     }
 }
 
 pub fn dav1d_inv_identity32_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
-    let mut i = 0;
-    while i < 32 {
+    for i in 0..32 {
         c[stride * i] *= 4;
-        i += 1;
     }
 }
 
