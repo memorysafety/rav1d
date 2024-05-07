@@ -1084,11 +1084,11 @@ impl Rav1dInvTxfmDSPContext {
             return self;
         }
 
+        assign_itx_fn!(self, BD, 4, 4, wht_wht, WHT_WHT, neon);
+
         if BD::BITDEPTH == 16 && bpc != 10 {
             return self;
         }
-
-        assign_itx_fn!(self, BD, 4, 4, wht_wht, WHT_WHT, neon);
 
         #[rustfmt::skip]
         const fn assign<BD: BitDepth>(mut c: Rav1dInvTxfmDSPContext) -> Rav1dInvTxfmDSPContext {
