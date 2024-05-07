@@ -122,6 +122,25 @@ impl Debug {
     }
 }
 
+fn check_trailing_bits(gb: &mut GetBits, strict_std_compliance: bool) -> Rav1dResult {
+    // trailing_one_bit + trailing_zero_bit
+    if !gb.get_bit() || gb.pending_bits() != 0 || gb.has_error() != 0 {
+        return Err(EINVAL);
+    }
+
+    if !strict_std_compliance {
+        return Ok(());
+    }
+
+    gb.bytealign();
+
+    if gb.get_bytes(gb.remaining_len()).iter().any(|&b| b != 0) {
+        return Err(EINVAL);
+    }
+
+    Ok(())
+}
+
 #[inline(never)]
 fn parse_seq_hdr(
     gb: &mut GetBits,
@@ -469,12 +488,11 @@ fn parse_seq_hdr(
     let film_grain_present = gb.get_bit() as u8;
     debug.post(gb, "filmgrain");
 
-    gb.get_bit(); // dummy bit
-
     // We needn't bother flushing the OBU here: we'll check we didn't
     // overrun in the caller and will then discard gb, so there's no
     // point in setting its position properly.
 
+    check_trailing_bits(gb, strict_std_compliance)?;
     Ok(Rav1dSequenceHeader {
         profile,
         max_width,
@@ -2293,10 +2311,7 @@ unsafe fn parse_obus(
             if r#type != Some(Rav1dObuType::Frame) {
                 // This is actually a frame header OBU,
                 // so read the trailing bit and check for overrun.
-                gb.get_bit();
-                if gb.has_error() != 0 {
-                    return Err(EINVAL);
-                }
+                check_trailing_bits(gb, c.strict_std_compliance)?;
             }
 
             if c.frame_size_limit != 0
@@ -2356,12 +2371,7 @@ unsafe fn parse_obus(
                         ),
                     );
 
-                    // Skip the trailing bit, align to the next byte boundary and check for overrun.
-                    gb.get_bit();
-                    gb.bytealign();
-                    if gb.has_error() != 0 {
-                        return Err(EINVAL);
-                    }
+                    check_trailing_bits(gb, c.strict_std_compliance)?;
 
                     c.content_light = Some(Arc::new(Rav1dContentLightLevel {
                         max_content_light_level,
@@ -2384,12 +2394,7 @@ unsafe fn parse_obus(
                     debug.log(&gb, format_args!("max-luminance: {max_luminance}"));
                     let min_luminance = gb.get_bits(32);
                     debug.log(&gb, format_args!("min-luminance: {min_luminance}"));
-                    // Skip the trailing bit, align to the next byte boundary and check for overrun.
-                    gb.get_bit();
-                    gb.bytealign();
-                    if gb.has_error() != 0 {
-                        return Err(EINVAL);
-                    }
+                    check_trailing_bits(gb, c.strict_std_compliance)?;
 
                     c.mastering_display = Some(Arc::new(Rav1dMasteringDisplay {
                         primaries,
@@ -2414,7 +2419,7 @@ unsafe fn parse_obus(
                         payload_size -= 1;
                     }
 
-                    if payload_size <= 0 {
+                    if payload_size <= 0 || gb[payload_size] != 0x80 {
                         writeln!(c.logger, "Malformed ITU-T T.35 metadata message format");
                     } else {
                         let country_code = country_code as u8;
