@@ -1,5 +1,42 @@
 #![deny(unsafe_code)]
 
+//! In some places, we use the pattern like this:
+//!
+//! ```
+//! # fn f(in1: i32, in3: i32) {
+//! # let t2;
+//! t2 = ((in1 *  1567         - in3 * (3784 - 4096) + 2048) >> 12) - in3;
+//! # }
+//! ```
+//!
+//! even though the reference code might use something like:
+//!
+//! ```
+//! # fn f(in1: i32, in3: i32) {
+//! # let t2;
+//! t2 =  (in1 *  1567         - in3 *  3784         + 2048) >> 12;
+//! # }
+//! ```
+//!
+//! The reason for this is that for 12 bits/component bitstreams (corrupt/
+//! invalid ones, but they are codable nonetheless), each coefficient or
+//! input can be 19(+sign) bits, and therefore if the combination of the
+//! two multipliers (each 12 bits) is >= 4096, the result of the add/sub
+//! after the pair of multiplies will exceed the 31+sign bit range. Signed
+//! integer overflows are UB in C, and we'd like to prevent that.
+//!
+//! To workaround this, we invert one of the two coefficients (or, if both are
+//! multiples of 2, we reduce their magnitude by one bit). It should be noted
+//! that SIMD implementations do not have to follow this exact behaviour. The
+//! AV1 spec clearly states that the result of the multiply/add pairs should
+//! fit in 31+sign bit intermediates, and that streams violating this convention
+//! are not AV1-compliant. So, as long as we don't trigger UB (which some people
+//! would consider a security vulnerability), we're fine. So, SIMD can simply
+//! use the faster implementation, even if that might in some cases result in
+//! integer overflows, since these are not considered valid AV1 anyway, and in
+//! e.g. x86 assembly, integer overflows are not considered UB, but they merely
+//! wrap around.
+
 use crate::include::common::intops::iclip;
 use std::ffi::c_int;
 use std::num::NonZeroUsize;
