@@ -80,7 +80,7 @@ fn inv_dct4_1d_internal_c(
     c[3 * stride] = clip(t0 - t3);
 }
 
-pub fn dav1d_inv_dct4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_dct4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct4_1d_internal_c(c, stride, min, max, 0);
 }
 
@@ -142,7 +142,7 @@ fn inv_dct8_1d_internal_c(
     c[7 * stride] = clip(t0 - t7);
 }
 
-pub fn dav1d_inv_dct8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_dct8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct8_1d_internal_c(c, stride, min, max, 0);
 }
 
@@ -251,7 +251,7 @@ fn inv_dct16_1d_internal_c(
     c[15 * stride] = clip(t0 - t15a);
 }
 
-pub fn dav1d_inv_dct16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_dct16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct16_1d_internal_c(c, stride, min, max, 0);
 }
 
@@ -467,11 +467,11 @@ fn inv_dct32_1d_internal_c(
     c[31 * stride] = clip(t0 - t31);
 }
 
-pub fn dav1d_inv_dct32_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_dct32_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_dct32_1d_internal_c(c, stride, min, max, 0);
 }
 
-pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     let clip = |v| iclip(v, min, max);
     let stride = stride.get();
 
@@ -1074,31 +1074,31 @@ fn inv_adst16_1d_internal_c(
     out[(out_off + 10 * out_s) as usize] = (t14a - t15a) * 181 + 128 >> 8;
 }
 
-pub fn dav1d_inv_flipadst4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_flipadst4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst4_1d_internal_c(c, stride, true, min, max);
 }
 
-pub fn dav1d_inv_adst4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_adst4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst4_1d_internal_c(c, stride, false, min, max);
 }
 
-pub fn dav1d_inv_adst8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_adst8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst8_1d_internal_c(c, stride, false, min, max);
 }
 
-pub fn dav1d_inv_flipadst8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_flipadst8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst8_1d_internal_c(c, stride, true, min, max);
 }
 
-pub fn dav1d_inv_flipadst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_flipadst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst16_1d_internal_c(c, stride, true, min, max);
 }
 
-pub fn dav1d_inv_adst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
+pub fn rav1d_inv_adst16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     inv_adst16_1d_internal_c(c, stride, false, min, max);
 }
 
-pub fn dav1d_inv_identity4_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
+pub fn rav1d_inv_identity4_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
     for i in 0..4 {
@@ -1107,7 +1107,7 @@ pub fn dav1d_inv_identity4_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int
     }
 }
 
-pub fn dav1d_inv_identity8_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
+pub fn rav1d_inv_identity8_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
     for i in 0..8 {
@@ -1115,7 +1115,7 @@ pub fn dav1d_inv_identity8_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int
     }
 }
 
-pub fn dav1d_inv_identity16_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
+pub fn rav1d_inv_identity16_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
     for i in 0..16 {
@@ -1124,7 +1124,7 @@ pub fn dav1d_inv_identity16_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_in
     }
 }
 
-pub fn dav1d_inv_identity32_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
+pub fn rav1d_inv_identity32_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_int, _max: c_int) {
     let stride = stride.get();
 
     for i in 0..32 {
@@ -1132,7 +1132,7 @@ pub fn dav1d_inv_identity32_1d_c(c: &mut [i32], stride: NonZeroUsize, _min: c_in
     }
 }
 
-pub fn dav1d_inv_wht4_1d_c(c: &mut [i32], stride: NonZeroUsize) {
+pub fn rav1d_inv_wht4_1d_c(c: &mut [i32], stride: NonZeroUsize) {
     let stride = stride.get();
 
     let in0 = c[0 * stride];

@@ -4,6 +4,7 @@ use crate::include::common::bitdepth::DynCoef;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::src::cpu::CpuFlags;
+use crate::src::itx_1d::rav1d_inv_wht4_1d_c;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::ADST_FLIPADST;
@@ -372,8 +373,8 @@ macro_rules! inv_txfm_fn {
                     stride,
                     coeff.cast(),
                     eob,
-                    [<dav1d_inv_ $type1 $w _1d_c>],
-                    [<dav1d_inv_ $type2 $h _1d_c>],
+                    [<rav1d_inv_ $type1 $w _1d_c>],
+                    [<rav1d_inv_ $type2 $h _1d_c>],
                     BD::from_c(bitdepth_max),
                 );
             }
@@ -463,8 +464,6 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
     _eob: c_int,
     bd: BD,
 ) {
-    use crate::src::itx_1d::dav1d_inv_wht4_1d_c;
-
     const H: usize = 4;
     const W: usize = 4;
 
@@ -476,13 +475,13 @@ unsafe fn inv_txfm_add_wht_wht_4x4_rust<BD: BitDepth>(
         for x in 0..W {
             c[x] = coeff[y + x * H].as_::<i32>() >> 2;
         }
-        dav1d_inv_wht4_1d_c(c, 1.try_into().unwrap());
+        rav1d_inv_wht4_1d_c(c, 1.try_into().unwrap());
         c = &mut c[W..];
     }
     coeff.fill(0.into());
 
     for x in 0..W {
-        dav1d_inv_wht4_1d_c(&mut tmp[x..], H.try_into().unwrap());
+        rav1d_inv_wht4_1d_c(&mut tmp[x..], H.try_into().unwrap());
     }
 
     for y in 0..H {
