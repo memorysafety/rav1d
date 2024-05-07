@@ -102,10 +102,12 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::ops::Range;
 use std::ops::Sub;
-use std::ptr;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU16;
 use std::sync::atomic::AtomicU32;
+use std::sync::atomic::AtomicU8;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Condvar;
@@ -890,6 +892,7 @@ impl Rav1dFrameContext {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub(crate) struct Rav1dFrameData {
     pub seq_hdr: Option<Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>>,
@@ -914,8 +917,7 @@ pub(crate) struct Rav1dFrameData {
     pub resize_step: [c_int; 2],             /* y, uv */
     pub resize_start: [c_int; 2],            /* y, uv */
 
-    pub ts: *mut Rav1dTileState,
-    pub n_ts: c_int,
+    pub ts: Vec<Rav1dTileState>,
     pub dsp: &'static Rav1dBitDepthDSPContext,
 
     // `ipred_edge` contains 3 arrays of size `ipred_edge_off`. Use `index *
@@ -936,9 +938,9 @@ pub(crate) struct Rav1dFrameData {
     pub sb_shift: c_int,
     pub sb_step: c_int,
     pub sr_sb128w: c_int,
-    pub dq: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
-    pub qm: [[Option<&'static [u8]>; 3]; 19],             /* [3 plane][19] */
-    pub a: Vec<BlockContext>,                             /* len = w*tile_rows */
+    pub dq: [[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub qm: [[Option<&'static [u8]>; 3]; 19],                   /* [3 plane][19] */
+    pub a: Vec<BlockContext>,                                   /* len = w*tile_rows */
     pub rf: RefMvsFrame,
     pub jnt_weights: [[u8; 7]; 7],
     pub bitdepth_max: c_int,
@@ -946,55 +948,6 @@ pub(crate) struct Rav1dFrameData {
     pub frame_thread: Rav1dFrameContext_frame_thread,
     pub lf: Rav1dFrameContext_lf,
     pub lowest_pixel_mem: DisjointMut<Vec<[[c_int; 2]; 7]>>,
-}
-
-impl Default for Rav1dFrameData {
-    fn default() -> Self {
-        Self {
-            seq_hdr: Default::default(),
-            frame_hdr: Default::default(),
-            refp: Default::default(),
-            cur: Default::default(),
-            sr_cur: Default::default(),
-            mvs: Default::default(),
-            ref_mvs: Default::default(),
-            cur_segmap: Default::default(),
-            prev_segmap: Default::default(),
-            refpoc: Default::default(),
-            refrefpoc: Default::default(),
-            gmv_warp_allowed: Default::default(),
-            out_cdf: Default::default(),
-            tiles: Default::default(),
-            svc: Default::default(),
-            resize_step: Default::default(),
-            resize_start: Default::default(),
-            ts: ptr::null_mut(),
-            n_ts: Default::default(),
-            dsp: Default::default(),
-            ipred_edge: Default::default(),
-            ipred_edge_off: Default::default(),
-            b4_stride: Default::default(),
-            w4: Default::default(),
-            h4: Default::default(),
-            bw: Default::default(),
-            bh: Default::default(),
-            sb128w: Default::default(),
-            sb128h: Default::default(),
-            sbh: Default::default(),
-            sb_shift: Default::default(),
-            sb_step: Default::default(),
-            sr_sb128w: Default::default(),
-            dq: Default::default(),
-            qm: Default::default(),
-            a: Default::default(),
-            rf: Default::default(),
-            jnt_weights: Default::default(),
-            bitdepth_max: Default::default(),
-            frame_thread: Default::default(),
-            lf: Default::default(),
-            lowest_pixel_mem: Default::default(),
-        }
-    }
 }
 
 impl Rav1dFrameData {
@@ -1012,23 +965,25 @@ impl Rav1dFrameData {
     }
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dTileState_tiling {
     // in 4px units
-    pub col_start: c_int,
-    pub col_end: c_int,
-    pub row_start: c_int,
-    pub row_end: c_int,
+    pub col_start: i32,
+    pub col_end: i32,
+    pub row_start: i32,
+    pub row_end: i32,
 
     // in tile units
-    pub col: c_int,
-    pub row: c_int,
+    pub col: i32,
+    pub row: i32,
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dTileState_frame_thread {
-    pub pal_idx: usize, // Offset into `f.frame_thread.pal_idx`
-    pub cf: usize,      // Offset into `f.frame_thread.cf`
+    pub pal_idx: AtomicUsize, // Offset into `f.frame_thread.pal_idx`
+    pub cf: AtomicUsize,      // Offset into `f.frame_thread.cf`
 }
 
 #[derive(Default)]
@@ -1038,7 +993,8 @@ pub struct Rav1dTileStateContext {
     pub msac: MsacContext,
 }
 
-#[repr(C)]
+#[derive(Default)]
+#[repr(C, align(32))]
 pub struct Rav1dTileState {
     pub context: Mutex<Rav1dTileStateContext>,
 
@@ -1052,18 +1008,20 @@ pub struct Rav1dTileState {
     // each entry is one tile-sbrow; middle index is refidx
     pub lowest_pixel: usize,
 
-    pub dqmem: [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
-    pub dq: TileStateRef,
-    pub last_qidx: u8,
-    pub last_delta_lf: [i8; 4],
-    pub lflvlmem: [[[[u8; 2]; 8]; 4]; 8], /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
-    pub lflvl: TileStateRef,
+    pub dqmem: [[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize], /* [RAV1D_MAX_SEGMENTS][3 plane][2 dc/ac] */
+    pub dq: Atomic<TileStateRef>,
+    pub last_qidx: AtomicU8,
+    pub last_delta_lf: Atomic<[i8; 4]>,
+    pub lflvlmem: RwLock<[[[[u8; 2]; 8]; 4]; 8]>, /* [8 seg_id][4 dir][8 ref][2 is_gmv] */
+    pub lflvl: Atomic<TileStateRef>,
 
-    pub lr_ref: [Av1RestorationUnit; 3],
+    pub lr_ref: RwLock<[Av1RestorationUnit; 3]>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default, Atom)]
+#[repr(u8)]
 pub enum TileStateRef {
+    #[default]
     Frame,
     Local,
 }

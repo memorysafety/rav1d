@@ -17,6 +17,7 @@ use crate::include::dav1d::headers::Rav1dWarpedMotionType;
 use crate::include::dav1d::headers::SgrIdx;
 use crate::include::dav1d::headers::RAV1D_MAX_SEGMENTS;
 use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
+use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
@@ -56,7 +57,6 @@ use crate::src::env::get_poc_diff;
 use crate::src::env::get_tx_ctx;
 use crate::src::env::BlockContext;
 use crate::src::error::Rav1dError::EINVAL;
-use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dError::ENOPROTOOPT;
 use crate::src::error::Rav1dResult;
 use crate::src::extensions::OptionError as _;
@@ -65,6 +65,8 @@ use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dContextTaskType;
 use crate::src::internal::Rav1dFrameContext;
+use crate::src::internal::Rav1dFrameContext_frame_thread;
+use crate::src::internal::Rav1dFrameContext_lf;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
 use crate::src::internal::Rav1dTileState;
@@ -120,8 +122,6 @@ use crate::src::lf_mask::rav1d_create_lf_mask_inter;
 use crate::src::lf_mask::rav1d_create_lf_mask_intra;
 use crate::src::lf_mask::Av1RestorationUnit;
 use crate::src::log::Rav1dLog as _;
-use crate::src::mem::rav1d_alloc_aligned;
-use crate::src::mem::rav1d_free_aligned;
 use crate::src::msac::rav1d_msac_decode_bool;
 use crate::src::msac::rav1d_msac_decode_bool_adapt;
 use crate::src::msac::rav1d_msac_decode_bool_equi;
@@ -173,21 +173,19 @@ use std::array;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 use std::iter;
 use std::mem;
-use std::ptr::addr_of_mut;
-use std::slice;
 use std::sync::atomic::AtomicI32;
+use std::sync::atomic::AtomicU16;
+use std::sync::atomic::AtomicU8;
 use std::sync::atomic::Ordering;
-use std::sync::Mutex;
 use strum::EnumCount;
 
 fn init_quant_tables(
     seq_hdr: &Rav1dSequenceHeader,
     frame_hdr: &Rav1dFrameHeader,
     qidx: u8,
-    dq: &mut [[[u16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
+    dq: &[[[AtomicU16; 2]; 3]; RAV1D_MAX_SEGMENTS as usize],
 ) {
     let tbl = &dav1d_dq_tbl[seq_hdr.hbd as usize];
 
@@ -209,13 +207,13 @@ fn init_quant_tables(
         let vac = clip_u8(yac + frame_hdr.quant.vac_delta as i16);
         let vdc = clip_u8(yac + frame_hdr.quant.vdc_delta as i16);
 
-        let dq = &mut dq[i];
-        dq[0][0] = tbl[ydc as usize][0];
-        dq[0][1] = tbl[yac as usize][1];
-        dq[1][0] = tbl[udc as usize][0];
-        dq[1][1] = tbl[uac as usize][1];
-        dq[2][0] = tbl[vdc as usize][0];
-        dq[2][1] = tbl[vac as usize][1];
+        let dq = &dq[i];
+        dq[0][0].store(tbl[ydc as usize][0], Ordering::Relaxed);
+        dq[0][1].store(tbl[yac as usize][1], Ordering::Relaxed);
+        dq[1][0].store(tbl[udc as usize][0], Ordering::Relaxed);
+        dq[1][1].store(tbl[uac as usize][1], Ordering::Relaxed);
+        dq[2][0].store(tbl[vdc as usize][0], Ordering::Relaxed);
+        dq[2][1].store(tbl[vac as usize][1], Ordering::Relaxed);
     }
 }
 
@@ -461,7 +459,7 @@ unsafe fn find_matching_ref(
 ) {
     let r = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
     let mut count = 0;
-    let ts = &*f.ts.offset(t.ts as isize);
+    let ts = &f.ts[t.ts];
     let mut have_topleft = have_top && have_left;
     let mut have_topright = cmp::max(bw4, bh4) < 32
         && have_top
@@ -1201,7 +1199,7 @@ unsafe fn decode_b(
         &mut b_mem
     };
 
-    let ts = &mut *f.ts.offset(t.ts as isize);
+    let ts = &f.ts[t.ts];
     let bd_fn = f.bd_fn();
     let b_dim = &dav1d_block_dimensions[bs as usize];
     let bx4 = t.b.x & 31;
@@ -1566,7 +1564,7 @@ unsafe fn decode_b(
     // delta-q/lf
     let not_sb128 = (seq_hdr.sb128 == 0) as c_int;
     if t.b.x & (31 >> not_sb128) == 0 && t.b.y & (31 >> not_sb128) == 0 {
-        let prev_qidx = ts.last_qidx;
+        let prev_qidx = ts.last_qidx.load(Ordering::Relaxed);
         let have_delta_q = frame_hdr.delta.q.present != 0
             && (bs
                 != (if seq_hdr.sb128 != 0 {
@@ -1576,7 +1574,7 @@ unsafe fn decode_b(
                 })
                 || b.skip == 0);
 
-        let prev_delta_lf = ts.last_delta_lf;
+        let prev_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
 
         if have_delta_q {
             let mut delta_q =
@@ -1593,11 +1591,16 @@ unsafe fn decode_b(
                 }
                 delta_q *= 1 << frame_hdr.delta.q.res_log2;
             }
-            ts.last_qidx = clip(ts.last_qidx as c_int + delta_q, 1, 255);
+            let last_qidx = clip(
+                ts.last_qidx.load(Ordering::Relaxed) as c_int + delta_q,
+                1,
+                255,
+            );
+            ts.last_qidx.store(last_qidx, Ordering::Relaxed);
             if have_delta_q && debug_block_info!(f, t.b) {
                 println!(
                     "Post-delta_q[{}->{}]: r={}",
-                    delta_q, ts.last_qidx, ts_c.msac.rng
+                    delta_q, last_qidx, ts_c.msac.rng
                 );
             }
 
@@ -1612,6 +1615,7 @@ unsafe fn decode_b(
                     1
                 };
 
+                let mut last_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
                 for i in 0..n_lfs as usize {
                     let delta_lf_index = i + frame_hdr.delta.lf.multi as usize;
                     let mut delta_lf = rav1d_msac_decode_symbol_adapt4(
@@ -1631,29 +1635,35 @@ unsafe fn decode_b(
                         }
                         delta_lf *= 1 << frame_hdr.delta.lf.res_log2;
                     }
-                    ts.last_delta_lf[i] =
-                        iclip(ts.last_delta_lf[i] as c_int + delta_lf, -63, 63) as i8;
+                    last_delta_lf[i] = clip(last_delta_lf[i] as c_int + delta_lf, -63, 63);
                     if have_delta_q && debug_block_info!(f, t.b) {
                         println!("Post-delta_lf[{}:{}]: r={}", i, delta_lf, ts_c.msac.rng);
                     }
                 }
+                ts.last_delta_lf.store(last_delta_lf, Ordering::Relaxed);
             }
         }
-        if ts.last_qidx == frame_hdr.quant.yac {
+        let last_qidx = ts.last_qidx.load(Ordering::Relaxed);
+        if last_qidx == frame_hdr.quant.yac {
             // assign frame-wide q values to this sb
-            ts.dq = TileStateRef::Frame;
-        } else if ts.last_qidx != prev_qidx {
+            ts.dq.store(TileStateRef::Frame, Ordering::Relaxed);
+        } else if last_qidx != prev_qidx {
             // find sb-specific quant parameters
-            init_quant_tables(seq_hdr, frame_hdr, ts.last_qidx, &mut ts.dqmem);
-            ts.dq = TileStateRef::Local;
+            init_quant_tables(seq_hdr, frame_hdr, last_qidx, &ts.dqmem);
+            ts.dq.store(TileStateRef::Local, Ordering::Relaxed);
         }
-        if ts.last_delta_lf == [0, 0, 0, 0] {
+        let last_delta_lf = ts.last_delta_lf.load(Ordering::Relaxed);
+        if last_delta_lf == [0, 0, 0, 0] {
             // assign frame-wide lf values to this sb
-            ts.lflvl = TileStateRef::Frame;
-        } else if ts.last_delta_lf != prev_delta_lf {
+            ts.lflvl.store(TileStateRef::Frame, Ordering::Relaxed);
+        } else if last_delta_lf != prev_delta_lf {
             // find sb-specific lf lvl parameters
-            rav1d_calc_lf_values(&mut ts.lflvlmem, frame_hdr, &ts.last_delta_lf);
-            ts.lflvl = TileStateRef::Local;
+            rav1d_calc_lf_values(
+                &mut *ts.lflvlmem.try_write().unwrap(),
+                frame_hdr,
+                &last_delta_lf,
+            );
+            ts.lflvl.store(TileStateRef::Local, Ordering::Relaxed);
         }
     }
 
@@ -1856,13 +1866,11 @@ unsafe fn decode_b(
             let scratch = t.scratch.inter_intra_mut();
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
-                let frame_thread = &mut ts.frame_thread[p as usize];
+                let frame_thread = &ts.frame_thread[p as usize];
                 let len = usize::try_from(bw4 * bh4 * 8).unwrap();
-                pal_idx_guard = f
-                    .frame_thread
-                    .pal_idx
-                    .index_mut(frame_thread.pal_idx..frame_thread.pal_idx + len);
-                frame_thread.pal_idx += len;
+                let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
+                pal_idx_guard = f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len);
+                frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
                 &mut *pal_idx_guard
             } else {
                 &mut scratch.pal_idx_y
@@ -1890,13 +1898,11 @@ unsafe fn decode_b(
             let scratch = t.scratch.inter_intra_mut();
             let pal_idx = if t.frame_thread.pass != 0 {
                 let p = t.frame_thread.pass & 1;
-                let frame_thread = &mut ts.frame_thread[p as usize];
+                let frame_thread = &ts.frame_thread[p as usize];
                 let len = usize::try_from(cbw4 * cbh4 * 8).unwrap();
-                pal_idx_guard = f
-                    .frame_thread
-                    .pal_idx
-                    .index_mut(frame_thread.pal_idx..frame_thread.pal_idx + len);
-                frame_thread.pal_idx += len;
+                let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
+                pal_idx_guard = f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len);
+                frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
                 Some(&mut *pal_idx_guard)
             } else {
                 None
@@ -1968,9 +1974,13 @@ unsafe fn decode_b(
         }
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {
-            let lflvl = match ts.lflvl {
+            let lflvlmem_guard;
+            let lflvl = match ts.lflvl.load(Ordering::Relaxed) {
                 TileStateRef::Frame => &f.lf.lvl,
-                TileStateRef::Local => &ts.lflvlmem,
+                TileStateRef::Local => {
+                    lflvlmem_guard = ts.lflvlmem.try_read().unwrap();
+                    &*lflvlmem_guard
+                }
             };
             let mut a_uv_guard;
             let mut l_uv_guard;
@@ -3130,9 +3140,13 @@ unsafe fn decode_b(
                 ytx = TX_4X4;
                 uvtx = TX_4X4;
             }
-            let lflvl = match ts.lflvl {
+            let lflvlmem_guard;
+            let lflvl = match ts.lflvl.load(Ordering::Relaxed) {
                 TileStateRef::Frame => &f.lf.lvl,
-                TileStateRef::Local => &ts.lflvlmem,
+                TileStateRef::Local => {
+                    lflvlmem_guard = ts.lflvlmem.try_read().unwrap();
+                    &*lflvlmem_guard
+                }
             };
             let mut a_uv_guard;
             let mut l_uv_guard;
@@ -3283,7 +3297,7 @@ unsafe fn decode_b(
                         obmc_lowest_px(
                             &f.rf.r,
                             t,
-                            &*f.ts.offset(t.ts as isize),
+                            &f.ts[t.ts],
                             f.cur.p.layout,
                             &f.svc,
                             &mut lowest_px,
@@ -3394,7 +3408,7 @@ unsafe fn decode_b(
                             obmc_lowest_px(
                                 &f.rf.r,
                                 t,
-                                &*f.ts.offset(t.ts as isize),
+                                &f.ts[t.ts],
                                 f.cur.p.layout,
                                 &f.svc,
                                 &mut lowest_px,
@@ -3494,7 +3508,7 @@ unsafe fn decode_sb(
     bl: BlockLevel,
     edge_index: EdgeIndex,
 ) -> Result<(), ()> {
-    let ts = &mut *f.ts.offset(t.ts as isize);
+    let ts = &f.ts[t.ts];
     let hsz = 16 >> bl as u8;
     let have_h_split = f.bw > t.b.x + hsz;
     let have_v_split = f.bh > t.b.y + hsz;
@@ -3620,7 +3634,10 @@ unsafe fn decode_sb(
                             // In 8-bit mode coef is 2 bytes wide, so we align to 32
                             // elements to get 64 byte alignment.
                             let p = (t.frame_thread.pass & 1) as usize;
-                            ts.frame_thread[p].cf = (ts.frame_thread[p].cf + 31) & !31;
+                            let cf = ts.frame_thread[p].cf.load(Ordering::Relaxed);
+                            ts.frame_thread[p]
+                                .cf
+                                .store((cf + 31) & !31, Ordering::Relaxed);
                         }
                     }
                     Some(next_bl) => {
@@ -3892,73 +3909,87 @@ static ss_size_mul: enum_map_ty!(Rav1dPixelLayout, [u8; 2]) = enum_map!(Rav1dPix
 unsafe fn setup_tile(
     c: &Rav1dContext,
     ts: &mut Rav1dTileState,
-    f: &Rav1dFrameData,
+    seq_hdr: &Rav1dSequenceHeader,
+    frame_hdr: &Rav1dFrameHeader,
+    bitdepth_max: i32,
+    sb_shift: i32,
+    cur: &Rav1dPicture,
+    bw: i32,
+    bh: i32,
+    frame_thread: &Rav1dFrameContext_frame_thread,
+    sr_sb128w: i32,
+    sb128w: i32,
+    lf: &mut Rav1dFrameContext_lf,
     in_cdf: &CdfThreadContext,
     data: &[u8],
     tile_row: usize,
     tile_col: usize,
     tile_start_off: usize,
 ) {
-    let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-
     let col_sb_start = frame_hdr.tiling.col_start_sb[tile_col] as c_int;
     let col_sb128_start = col_sb_start >> (seq_hdr.sb128 == 0) as c_int;
     let col_sb_end = frame_hdr.tiling.col_start_sb[tile_col + 1] as c_int;
     let row_sb_start = frame_hdr.tiling.row_start_sb[tile_row] as c_int;
     let row_sb_end = frame_hdr.tiling.row_start_sb[tile_row + 1] as c_int;
-    let sb_shift = f.sb_shift;
 
-    let size_mul = &ss_size_mul[f.cur.p.layout];
+    let size_mul = &ss_size_mul[cur.p.layout];
     for p in 0..2 {
-        ts.frame_thread[p].pal_idx = if !f.frame_thread.pal_idx.is_empty() {
-            tile_start_off * size_mul[1] as usize / 8
-        } else {
-            0
-        };
-        ts.frame_thread[p].cf = if !f.frame_thread.cf.is_empty() {
-            let bpc = BPC::from_bitdepth_max(f.bitdepth_max);
-            bpc.coef_stride(tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int)
-        } else {
-            0
-        };
+        ts.frame_thread[p].pal_idx.store(
+            if !frame_thread.pal_idx.is_empty() {
+                tile_start_off * size_mul[1] as usize / 8
+            } else {
+                0
+            },
+            Ordering::Relaxed,
+        );
+        ts.frame_thread[p].cf.store(
+            if !frame_thread.cf.is_empty() {
+                let bpc = BPC::from_bitdepth_max(bitdepth_max);
+                bpc.coef_stride(
+                    tile_start_off * size_mul[0] as usize >> (seq_hdr.hbd == 0) as c_int,
+                )
+            } else {
+                0
+            },
+            Ordering::Relaxed,
+        );
     }
 
     let ts_c = &mut *ts.context.try_lock().unwrap();
     ts_c.cdf = rav1d_cdf_thread_copy(in_cdf);
-    ts.last_qidx = frame_hdr.quant.yac;
-    ts.last_delta_lf.fill(0);
+    ts.last_qidx = AtomicU8::new(frame_hdr.quant.yac);
+    ts.last_delta_lf = Default::default();
 
     ts_c.msac = MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac);
 
-    ts.tiling.row = tile_row as c_int;
-    ts.tiling.col = tile_col as c_int;
+    ts.tiling.row = tile_row as i32;
+    ts.tiling.col = tile_col as i32;
     ts.tiling.col_start = col_sb_start << sb_shift;
-    ts.tiling.col_end = cmp::min(col_sb_end << sb_shift, f.bw);
+    ts.tiling.col_end = cmp::min(col_sb_end << sb_shift, bw);
     ts.tiling.row_start = row_sb_start << sb_shift;
-    ts.tiling.row_end = cmp::min(row_sb_end << sb_shift, f.bh);
+    ts.tiling.row_end = cmp::min(row_sb_end << sb_shift, bh);
     let diff_width = frame_hdr.size.width[0] != frame_hdr.size.width[1];
 
     // Reference Restoration Unit (used for exp coding)
     let (sb_idx, unit_idx) = if diff_width {
         // vertical components only
         (
-            (ts.tiling.row_start >> 5) * f.sr_sb128w,
+            (ts.tiling.row_start >> 5) * sr_sb128w,
             (ts.tiling.row_start & 16) >> 3,
         )
     } else {
         (
-            (ts.tiling.row_start >> 5) * f.sb128w + col_sb128_start,
+            (ts.tiling.row_start >> 5) * sb128w + col_sb128_start,
             ((ts.tiling.row_start & 16) >> 3) + ((ts.tiling.col_start & 16) >> 4),
         )
     };
     for p in 0..3 {
-        if !((f.lf.restore_planes >> p) & 1 != 0) {
+        if !((lf.restore_planes >> p) & 1 != 0) {
             continue;
         }
 
         let lr_ref = if diff_width {
-            let ss_hor = (p != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as u8;
+            let ss_hor = (p != 0 && cur.p.layout != Rav1dPixelLayout::I444) as u8;
             let d = frame_hdr.size.super_res.width_scale_denominator as c_int;
             let unit_size_log2 = frame_hdr.restoration.unit_size[(p != 0) as usize];
             let rnd = (8 << unit_size_log2) - 1;
@@ -3967,22 +3998,22 @@ unsafe fn setup_tile(
             let px_x = x << unit_size_log2 + ss_hor;
             let u_idx = unit_idx + ((px_x & 64) >> 6);
             let sb128x = px_x >> 7;
-            if sb128x >= f.sr_sb128w {
+            if sb128x >= sr_sb128w {
                 continue;
             }
-            &f.lf.lr_mask[(sb_idx + sb128x) as usize].lr[p][u_idx as usize]
+            &mut lf.lr_mask[(sb_idx + sb128x) as usize].lr[p][u_idx as usize]
         } else {
-            &f.lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
+            &mut lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
         };
 
-        let mut lr = lr_ref.try_write().unwrap();
+        let lr = lr_ref.get_mut().unwrap();
         *lr = Av1RestorationUnit {
             filter_v: [3, -7, 15],
             filter_h: [3, -7, 15],
             sgr_weights: [-32, 31],
             ..*lr
         };
-        ts.lr_ref[p] = *lr;
+        ts.lr_ref.get_mut().unwrap()[p] = *lr;
     }
 
     if c.tc.len() > 1 {
@@ -3991,14 +4022,14 @@ unsafe fn setup_tile(
 }
 
 fn read_restoration_info(
-    ts: &mut Rav1dTileState,
+    ts: &Rav1dTileState,
     lr: &mut Av1RestorationUnit,
     p: usize,
     frame_type: Rav1dRestorationType,
     debug_block_info: bool,
 ) {
     let ts_c = &mut *ts.context.try_lock().unwrap();
-    let lr_ref = ts.lr_ref[p];
+    let lr_ref = ts.lr_ref.try_read().unwrap()[p];
 
     if frame_type == Rav1dRestorationType::Switchable {
         let filter = rav1d_msac_decode_symbol_adapt4(
@@ -4059,7 +4090,7 @@ fn read_restoration_info(
             lr.filter_h[1] = msac_decode_lr_subexp(ts_c, lr_ref.filter_h[1], 2, 23);
             lr.filter_h[2] = msac_decode_lr_subexp(ts_c, lr_ref.filter_h[2], 3, 17);
             lr.sgr_weights = lr_ref.sgr_weights;
-            ts.lr_ref[p] = *lr;
+            ts.lr_ref.try_write().unwrap()[p] = *lr;
             if debug_block_info {
                 println!(
                     "Post-lr_wiener[pl={},v[{},{},{}],h[{},{},{}]]: r={}",
@@ -4091,7 +4122,7 @@ fn read_restoration_info(
             };
             lr.filter_v = lr_ref.filter_v;
             lr.filter_h = lr_ref.filter_h;
-            ts.lr_ref[p] = *lr;
+            ts.lr_ref.try_write().unwrap()[p] = *lr;
             if debug_block_info {
                 println!(
                     "Post-lr_sgrproj[pl={},idx={},w[{},{}]]: r={}",
@@ -4114,7 +4145,7 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
     } else {
         BlockLevel::Bl64x64
     };
-    let ts = &mut *f.ts.offset(t.ts as isize);
+    let ts = &f.ts[t.ts];
     let sb_step = f.sb_step;
     let tile_row = ts.tiling.row;
     let tile_col = ts.tiling.col;
@@ -4342,25 +4373,12 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     }
 
     let n_ts = frame_hdr.tiling.cols as c_int * frame_hdr.tiling.rows as c_int;
-    if n_ts != f.n_ts {
-        if c.fc.len() > 1 {
-            // TODO: Fallible allocation
-            f.frame_thread.tile_start_off.resize(n_ts as usize, 0);
-        }
-        rav1d_free_aligned(f.ts as *mut c_void);
-        f.ts = rav1d_alloc_aligned(::core::mem::size_of::<Rav1dTileState>() * n_ts as usize, 32)
-            as *mut Rav1dTileState;
-        if f.ts.is_null() {
-            return Err(ENOMEM);
-        }
-        f.n_ts = n_ts;
-
-        for index in 0..n_ts as usize {
-            let ts = &mut *f.ts.add(index);
-            // TODO: Safe initialization.
-            addr_of_mut!(ts.context).write(Mutex::new(Default::default()));
-        }
+    if c.fc.len() > 1 {
+        // TODO: Fallible allocation
+        f.frame_thread.tile_start_off.resize(n_ts as usize, 0);
     }
+    // TODO: Fallible allocation
+    f.ts.resize_with(n_ts as usize, Default::default);
 
     let a_sz = f.sb128w
         * frame_hdr.tiling.rows as c_int
@@ -4402,7 +4420,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
             let tile_row_sb_h = frame_hdr.tiling.row_start_sb[tile_row + 1] as usize
                 - frame_hdr.tiling.row_start_sb[tile_row] as usize;
             for tile_col in 0..frame_hdr.tiling.cols as usize {
-                (*f.ts.add(tile_row_base + tile_col)).lowest_pixel = lowest_pixel_offset;
+                f.ts[tile_row_base + tile_col].lowest_pixel = lowest_pixel_offset;
                 lowest_pixel_offset += tile_row_sb_h;
             }
         }
@@ -4593,7 +4611,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init(
     }
 
     // setup dequant tables
-    init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &mut f.dq);
+    init_quant_tables(&seq_hdr, &frame_hdr, frame_hdr.quant.yac, &f.dq);
     if frame_hdr.quant.qm != 0 {
         for i in 0..N_RECT_TX_SIZES {
             f.qm[i][0] = dav1d_qm_tbl[frame_hdr.quant.qm_y as usize][0][i];
@@ -4682,7 +4700,7 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
 
         let mut data = tile.data.as_ref();
         for (j, (ts, tile_start_off)) in iter::zip(
-            slice::from_raw_parts_mut(f.ts, end + 1),
+            &mut f.ts[..end + 1],
             if uses_2pass {
                 &f.frame_thread.tile_start_off[..end + 1]
             } else {
@@ -4719,7 +4737,17 @@ pub(crate) unsafe fn rav1d_decode_frame_init_cdf(
             setup_tile(
                 c,
                 ts,
-                f,
+                &***f.seq_hdr.as_ref().unwrap(),
+                frame_hdr,
+                f.bitdepth_max,
+                f.sb_shift,
+                &f.cur,
+                f.bw,
+                f.bh,
+                &f.frame_thread,
+                f.sr_sb128w,
+                f.sb128w,
+                &mut f.lf,
                 in_cdf,
                 cur_data,
                 tile_row,
@@ -4900,7 +4928,7 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext
                     rav1d_cdf_thread_update(
                         frame_hdr,
                         &mut f.out_cdf.cdf_write(),
-                        &(*f.ts.offset(frame_hdr.tiling.update as isize))
+                        &f.ts[frame_hdr.tiling.update as usize]
                             .context
                             .try_lock()
                             .unwrap()
