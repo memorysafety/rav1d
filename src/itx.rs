@@ -56,125 +56,106 @@ use crate::include::common::bitdepth::bd_fn;
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
 use crate::include::common::bitdepth::bpc_fn;
 
-pub type itx_1d_fn = Option<unsafe extern "C" fn(*mut i32, ptrdiff_t, c_int, c_int) -> ()>;
+pub type itx_1d_fn = unsafe extern "C" fn(c: *mut i32, stride: ptrdiff_t, min: c_int, max: c_int);
 
-pub unsafe fn inv_txfm_add_rust<BD: BitDepth>(
+pub unsafe fn inv_txfm_add_rust<
+    const W: usize,
+    const H: usize,
+    const SHIFT: u8,
+    const HAS_DC_ONLY: bool,
+    BD: BitDepth,
+>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     coeff: *mut BD::Coef,
     eob: c_int,
-    w: c_int,
-    h: c_int,
-    shift: c_int,
     first_1d_fn: itx_1d_fn,
     second_1d_fn: itx_1d_fn,
-    has_dconly: c_int,
     bd: BD,
 ) {
-    let bitdepth_max: c_int = bd.bitdepth_max().as_();
-    let stride = stride as usize;
-    if !(w >= 4 && w <= 64) {
-        unreachable!();
-    }
-    if !(h >= 4 && h <= 64) {
-        unreachable!();
-    }
-    if !(eob >= 0) {
-        unreachable!();
-    }
-    let is_rect2: c_int = (w * 2 == h || h * 2 == w) as c_int;
-    let rnd = (1 as c_int) << shift >> 1;
-    if eob < has_dconly {
-        let mut dc: c_int = (*coeff.offset(0)).as_();
-        *coeff.offset(0) = 0.as_();
-        if is_rect2 != 0 {
+    let bitdepth_max = bd.bitdepth_max().as_::<c_int>();
+
+    assert!(W >= 4 && W <= 64);
+    assert!(H >= 4 && H <= 64);
+    assert!(eob >= 0);
+
+    let is_rect2 = W * 2 == H || H * 2 == W;
+    let rnd = 1 << SHIFT >> 1;
+
+    if eob < HAS_DC_ONLY as c_int {
+        let coeff = slice::from_raw_parts_mut(coeff, 1);
+
+        let mut dc = coeff[0].as_::<c_int>();
+        coeff[0] = 0.as_();
+        if is_rect2 {
             dc = dc * 181 + 128 >> 8;
         }
         dc = dc * 181 + 128 >> 8;
-        dc = dc + rnd >> shift;
+        dc = dc + rnd >> SHIFT;
         dc = dc * 181 + 128 + 2048 >> 12;
-        let mut y = 0;
-        while y < h {
-            let mut x = 0;
-            while x < w {
-                *dst.offset(x as isize) =
-                    bd.iclip_pixel((*dst.offset(x as isize)).as_::<c_int>() + dc);
-                x += 1;
+        for _ in 0..H {
+            for x in 0..W {
+                *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + dc);
             }
-            y += 1;
-            dst = dst.offset(BD::pxstride(stride) as isize);
+            dst = dst.offset(BD::pxstride(stride));
         }
         return;
     }
-    let sh = cmp::min(h, 32 as c_int);
-    let sw = cmp::min(w, 32 as c_int);
+
+    let sh = cmp::min(H, 32);
+    let sw = cmp::min(W, 32);
+
+    let coeff = slice::from_raw_parts_mut(coeff, sh * sw);
+
     let row_clip_min;
     let col_clip_min;
     if BD::BITDEPTH == 8 {
         row_clip_min = i16::MIN as i32;
         col_clip_min = i16::MIN as i32;
     } else {
-        row_clip_min = ((!bitdepth_max) << 7) as c_int;
-        col_clip_min = ((!bitdepth_max) << 5) as c_int;
+        row_clip_min = (!bitdepth_max) << 7;
+        col_clip_min = (!bitdepth_max) << 5;
     }
     let row_clip_max = !row_clip_min;
     let col_clip_max = !col_clip_min;
-    let mut tmp: [i32; 4096] = [0; 4096];
-    let mut c: *mut i32 = tmp.as_mut_ptr();
-    let mut y_0 = 0;
-    while y_0 < sh {
-        if is_rect2 != 0 {
-            let mut x_0 = 0;
-            while x_0 < sw {
-                *c.offset(x_0 as isize) =
-                    (*coeff.offset((y_0 + x_0 * sh) as isize)).as_::<c_int>() * 181 + 128 >> 8;
-                x_0 += 1;
+
+    let mut tmp = [0; 4096];
+    let mut c = &mut tmp[..];
+    for y in 0..sh {
+        if is_rect2 {
+            for x in 0..sw {
+                c[x] = coeff[y + x * sh].as_::<c_int>() * 181 + 128 >> 8;
             }
         } else {
-            let mut x_1 = 0;
-            while x_1 < sw {
-                *c.offset(x_1 as isize) = (*coeff.offset((y_0 + x_1 * sh) as isize)).as_();
-                x_1 += 1;
+            for x in 0..sw {
+                c[x] = coeff[y + x * sh].as_();
             }
         }
-        first_1d_fn.expect("non-null function pointer")(
-            c,
-            1 as c_int as ptrdiff_t,
-            row_clip_min,
-            row_clip_max,
-        );
-        y_0 += 1;
-        c = c.offset(w as isize);
+        first_1d_fn(c.as_mut_ptr(), 1, row_clip_min, row_clip_max);
+        c = &mut c[W..];
     }
-    slice::from_raw_parts_mut(coeff, sw as usize * sh as usize).fill(0.into());
-    let mut i = 0;
-    while i < w * sh {
-        tmp[i as usize] = iclip(tmp[i as usize] + rnd >> shift, col_clip_min, col_clip_max);
-        i += 1;
+
+    coeff.fill(0.into());
+    for i in 0..W * sh {
+        tmp[i] = iclip(tmp[i] + rnd >> SHIFT, col_clip_min, col_clip_max);
     }
-    let mut x_2 = 0;
-    while x_2 < w {
-        second_1d_fn.expect("non-null function pointer")(
-            &mut *tmp.as_mut_ptr().offset(x_2 as isize),
-            w as ptrdiff_t,
+
+    for x in 0..W {
+        second_1d_fn(
+            tmp[x..].as_mut_ptr(),
+            W as ptrdiff_t,
             col_clip_min,
             col_clip_max,
         );
-        x_2 += 1;
     }
-    c = tmp.as_mut_ptr();
-    let mut y_1 = 0;
-    while y_1 < h {
-        let mut x_3 = 0;
-        while x_3 < w {
-            let fresh0 = c;
-            c = c.offset(1);
-            *dst.offset(x_3 as isize) =
-                bd.iclip_pixel((*dst.offset(x_3 as isize)).as_::<c_int>() + (*fresh0 + 8 >> 4));
-            x_3 += 1;
+
+    let mut c = &tmp[..];
+    for _ in 0..H {
+        for x in 0..W {
+            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + (c[0] + 8 >> 4));
+            c = &c[1..];
         }
-        y_1 += 1;
-        dst = dst.offset(BD::pxstride(stride) as isize);
+        dst = dst.offset(BD::pxstride(stride));
     }
 }
 
@@ -387,17 +368,13 @@ macro_rules! inv_txfm_fn {
                 bitdepth_max: c_int,
             ) {
                 use crate::src::itx_1d::*;
-                inv_txfm_add_rust(
+                inv_txfm_add_rust::<$w, $h, $shift, $has_dconly, BD>(
                     dst.cast(),
                     stride,
                     coeff.cast(),
                     eob,
-                    $w,
-                    $h,
-                    $shift,
-                    Some([<dav1d_inv_ $type1 $w _1d_c>]),
-                    Some([<dav1d_inv_ $type2 $h _1d_c>]),
-                    $has_dconly as c_int,
+                    [<dav1d_inv_ $type1 $w _1d_c>],
+                    [<dav1d_inv_ $type2 $h _1d_c>],
                     BD::from_c(bitdepth_max),
                 );
             }
