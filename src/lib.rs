@@ -629,12 +629,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
             }
         }
         for fc in c.fc.iter_mut() {
-            let tasks = &mut *fc.task_thread.tasks();
-            tasks.head = None;
-            tasks.tail = None;
-            tasks.cur_prev = None;
-            *fc.task_thread.pending_tasks.get_mut().unwrap() = Default::default();
-            fc.task_thread.pending_tasks_merge = AtomicI32::new(0);
+            fc.task_thread.tasks.clear();
         }
         c.task_thread.first.store(0, Ordering::SeqCst);
         c.task_thread.cur.store(c.fc.len() as u32, Ordering::SeqCst);
@@ -715,9 +710,6 @@ impl Drop for Rav1dContext {
                 let f = fc.data.get_mut().unwrap();
                 if fc_len > 1 {
                     let _ = mem::take(&mut f.lowest_pixel_mem); // TODO: remove when context is owned
-                }
-                if self.tc.len() > 1 {
-                    let _ = mem::take(&mut fc.task_thread.pending_tasks); // TODO: remove when context is owned
                 }
                 mem::take(fc.in_cdf.get_mut().unwrap()); // TODO: remove when context is owned
                 mem::take(fc.frame_thread_progress.frame.get_mut().unwrap()); // TODO: remove when context is owned
