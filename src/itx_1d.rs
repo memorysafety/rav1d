@@ -81,7 +81,7 @@ fn inv_dct4_1d_internal_c(
 }
 
 pub fn dav1d_inv_dct4_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_dct4_1d_internal_c(c, stride, min, max, 0 as c_int);
+    inv_dct4_1d_internal_c(c, stride, min, max, 0);
 }
 
 #[inline(never)]
@@ -106,7 +106,7 @@ fn inv_dct8_1d_internal_c(
     let t7a;
     if tx64 != 0 {
         t4a = in1 * 799 + 2048 >> 12;
-        t5a = in3 * -(2276 as c_int) + 2048 >> 12;
+        t5a = in3 * -2276 + 2048 >> 12;
         t6a = in3 * 3406 + 2048 >> 12;
         t7a = in1 * 4017 + 2048 >> 12;
     } else {
@@ -143,7 +143,7 @@ fn inv_dct8_1d_internal_c(
 }
 
 pub fn dav1d_inv_dct8_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_dct8_1d_internal_c(c, stride, min, max, 0 as c_int);
+    inv_dct8_1d_internal_c(c, stride, min, max, 0);
 }
 
 #[inline(never)]
@@ -174,9 +174,9 @@ fn inv_dct16_1d_internal_c(
     let mut t15a;
     if tx64 != 0 {
         t8a = in1 * 401 + 2048 >> 12;
-        t9a = in7 * -(2598 as c_int) + 2048 >> 12;
+        t9a = in7 * -2598 + 2048 >> 12;
         t10a = in5 * 1931 + 2048 >> 12;
-        t11a = in3 * -(1189 as c_int) + 2048 >> 12;
+        t11a = in3 * -1189 + 2048 >> 12;
         t12a = in3 * 3920 + 2048 >> 12;
         t13a = in5 * 3612 + 2048 >> 12;
         t14a = in7 * 3166 + 2048 >> 12;
@@ -252,7 +252,7 @@ fn inv_dct16_1d_internal_c(
 }
 
 pub fn dav1d_inv_dct16_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_dct16_1d_internal_c(c, stride, min, max, 0 as c_int);
+    inv_dct16_1d_internal_c(c, stride, min, max, 0);
 }
 
 #[inline(never)]
@@ -295,13 +295,13 @@ fn inv_dct32_1d_internal_c(
     let mut t31a;
     if tx64 != 0 {
         t16a = in1 * 201 + 2048 >> 12;
-        t17a = in15 * -(2751 as c_int) + 2048 >> 12;
+        t17a = in15 * -2751 + 2048 >> 12;
         t18a = in9 * 1751 + 2048 >> 12;
-        t19a = in7 * -(1380 as c_int) + 2048 >> 12;
+        t19a = in7 * -1380 + 2048 >> 12;
         t20a = in5 * 995 + 2048 >> 12;
-        t21a = in11 * -(2106 as c_int) + 2048 >> 12;
+        t21a = in11 * -2106 + 2048 >> 12;
         t22a = in13 * 2440 + 2048 >> 12;
-        t23a = in3 * -(601 as c_int) + 2048 >> 12;
+        t23a = in3 * -601 + 2048 >> 12;
         t24a = in3 * 4052 + 2048 >> 12;
         t25a = in13 * 3290 + 2048 >> 12;
         t26a = in11 * 3513 + 2048 >> 12;
@@ -468,14 +468,14 @@ fn inv_dct32_1d_internal_c(
 }
 
 pub fn dav1d_inv_dct32_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
-    inv_dct32_1d_internal_c(c, stride, min, max, 0 as c_int);
+    inv_dct32_1d_internal_c(c, stride, min, max, 0);
 }
 
 pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int) {
     let clip = |v| iclip(v, min, max);
     let stride = stride.get();
 
-    inv_dct32_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, 1 as c_int);
+    inv_dct32_1d_internal_c(c, (stride << 1).try_into().unwrap(), min, max, 1);
 
     let in1 = c[1 * stride];
     let in3 = c[3 * stride];
@@ -495,21 +495,21 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     let in31 = c[31 * stride];
 
     let mut t32a = in1 * 101 + 2048 >> 12;
-    let mut t33a = in31 * -(2824 as c_int) + 2048 >> 12;
+    let mut t33a = in31 * -2824 + 2048 >> 12;
     let mut t34a = in17 * 1660 + 2048 >> 12;
-    let mut t35a = in15 * -(1474 as c_int) + 2048 >> 12;
+    let mut t35a = in15 * -1474 + 2048 >> 12;
     let mut t36a = in9 * 897 + 2048 >> 12;
-    let mut t37a = in23 * -(2191 as c_int) + 2048 >> 12;
+    let mut t37a = in23 * -2191 + 2048 >> 12;
     let mut t38a = in25 * 2359 + 2048 >> 12;
-    let mut t39a = in7 * -(700 as c_int) + 2048 >> 12;
+    let mut t39a = in7 * -700 + 2048 >> 12;
     let mut t40a = in5 * 501 + 2048 >> 12;
-    let mut t41a = in27 * -(2520 as c_int) + 2048 >> 12;
+    let mut t41a = in27 * -2520 + 2048 >> 12;
     let mut t42a = in21 * 2019 + 2048 >> 12;
-    let mut t43a = in11 * -(1092 as c_int) + 2048 >> 12;
+    let mut t43a = in11 * -1092 + 2048 >> 12;
     let mut t44a = in13 * 1285 + 2048 >> 12;
-    let mut t45a = in19 * -(1842 as c_int) + 2048 >> 12;
+    let mut t45a = in19 * -1842 + 2048 >> 12;
     let mut t46a = in29 * 2675 + 2048 >> 12;
-    let mut t47a = in3 * -(301 as c_int) + 2048 >> 12;
+    let mut t47a = in3 * -301 + 2048 >> 12;
     let mut t48a = in3 * 4085 + 2048 >> 12;
     let mut t49a = in29 * 3102 + 2048 >> 12;
     let mut t50a = in19 * 3659 + 2048 >> 12;
@@ -561,18 +561,18 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     let mut t63 = clip(t63a + t62a);
 
     t33a = (t33 * (4096 - 4076) + t62 * 401 + 2048 >> 12) - t33;
-    t34a = (t34 * -(401 as c_int) + t61 * (4096 - 4076) + 2048 >> 12) - t61;
-    t37a = t37 * -(1299 as c_int) + t58 * 1583 + 1024 >> 11;
-    t38a = t38 * -(1583 as c_int) + t57 * -(1299 as c_int) + 1024 >> 11;
+    t34a = (t34 * -401 + t61 * (4096 - 4076) + 2048 >> 12) - t61;
+    t37a = t37 * -1299 + t58 * 1583 + 1024 >> 11;
+    t38a = t38 * -1583 + t57 * -1299 + 1024 >> 11;
     t41a = (t41 * (4096 - 3612) + t54 * 1931 + 2048 >> 12) - t41;
-    t42a = (t42 * -(1931 as c_int) + t53 * (4096 - 3612) + 2048 >> 12) - t53;
-    t45a = (t45 * -(1189 as c_int) + t50 * (3920 - 4096) + 2048 >> 12) + t50;
-    t46a = (t46 * (4096 - 3920) + t49 * -(1189 as c_int) + 2048 >> 12) - t46;
-    t49a = (t46 * -(1189 as c_int) + t49 * (3920 - 4096) + 2048 >> 12) + t49;
+    t42a = (t42 * -1931 + t53 * (4096 - 3612) + 2048 >> 12) - t53;
+    t45a = (t45 * -1189 + t50 * (3920 - 4096) + 2048 >> 12) + t50;
+    t46a = (t46 * (4096 - 3920) + t49 * -1189 + 2048 >> 12) - t46;
+    t49a = (t46 * -1189 + t49 * (3920 - 4096) + 2048 >> 12) + t49;
     t50a = (t45 * (3920 - 4096) + t50 * 1189 + 2048 >> 12) + t45;
     t53a = (t42 * (4096 - 3612) + t53 * 1931 + 2048 >> 12) - t42;
     t54a = (t41 * 1931 + t54 * (3612 - 4096) + 2048 >> 12) + t54;
-    t57a = t38 * -(1299 as c_int) + t57 * 1583 + 1024 >> 11;
+    t57a = t38 * -1299 + t57 * 1583 + 1024 >> 11;
     t58a = t37 * 1583 + t58 * 1299 + 1024 >> 11;
     t61a = (t34 * (4096 - 4076) + t61 * 401 + 2048 >> 12) - t34;
     t62a = (t33 * 401 + t62 * (4076 - 4096) + 2048 >> 12) + t62;
@@ -612,14 +612,14 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
 
     t34a = (t34 * (4096 - 4017) + t61 * 799 + 2048 >> 12) - t34;
     t35 = (t35a * (4096 - 4017) + t60a * 799 + 2048 >> 12) - t35a;
-    t36 = (t36a * -(799 as c_int) + t59a * (4096 - 4017) + 2048 >> 12) - t59a;
-    t37a = (t37 * -(799 as c_int) + t58 * (4096 - 4017) + 2048 >> 12) - t58;
-    t42a = t42 * -(1138 as c_int) + t53 * 1703 + 1024 >> 11;
-    t43 = t43a * -(1138 as c_int) + t52a * 1703 + 1024 >> 11;
-    t44 = t44a * -(1703 as c_int) + t51a * -(1138 as c_int) + 1024 >> 11;
-    t45a = t45 * -(1703 as c_int) + t50 * -(1138 as c_int) + 1024 >> 11;
-    t50a = t45 * -(1138 as c_int) + t50 * 1703 + 1024 >> 11;
-    t51 = t44a * -(1138 as c_int) + t51a * 1703 + 1024 >> 11;
+    t36 = (t36a * -799 + t59a * (4096 - 4017) + 2048 >> 12) - t59a;
+    t37a = (t37 * -799 + t58 * (4096 - 4017) + 2048 >> 12) - t58;
+    t42a = t42 * -1138 + t53 * 1703 + 1024 >> 11;
+    t43 = t43a * -1138 + t52a * 1703 + 1024 >> 11;
+    t44 = t44a * -1703 + t51a * -1138 + 1024 >> 11;
+    t45a = t45 * -1703 + t50 * -1138 + 1024 >> 11;
+    t50a = t45 * -1138 + t50 * 1703 + 1024 >> 11;
+    t51 = t44a * -1138 + t51a * 1703 + 1024 >> 11;
     t52 = t43a * 1703 + t52a * 1138 + 1024 >> 11;
     t53a = t42 * 1703 + t53 * 1138 + 1024 >> 11;
     t58a = (t37 * (4096 - 4017) + t58 * 799 + 2048 >> 12) - t37;
@@ -664,10 +664,10 @@ pub fn dav1d_inv_dct64_1d_c(c: &mut [i32], stride: NonZeroUsize, min: c_int, max
     t37a = (t37 * (4096 - 3784) + t58 * 1567 + 2048 >> 12) - t37;
     t38 = (t38a * (4096 - 3784) + t57a * 1567 + 2048 >> 12) - t38a;
     t39a = (t39 * (4096 - 3784) + t56 * 1567 + 2048 >> 12) - t39;
-    t40a = (t40 * -(1567 as c_int) + t55 * (4096 - 3784) + 2048 >> 12) - t55;
-    t41 = (t41a * -(1567 as c_int) + t54a * (4096 - 3784) + 2048 >> 12) - t54a;
-    t42a = (t42 * -(1567 as c_int) + t53 * (4096 - 3784) + 2048 >> 12) - t53;
-    t43 = (t43a * -(1567 as c_int) + t52a * (4096 - 3784) + 2048 >> 12) - t52a;
+    t40a = (t40 * -1567 + t55 * (4096 - 3784) + 2048 >> 12) - t55;
+    t41 = (t41a * -1567 + t54a * (4096 - 3784) + 2048 >> 12) - t54a;
+    t42a = (t42 * -1567 + t53 * (4096 - 3784) + 2048 >> 12) - t53;
+    t43 = (t43a * -1567 + t52a * (4096 - 3784) + 2048 >> 12) - t52a;
     t52 = (t43a * (4096 - 3784) + t52a * 1567 + 2048 >> 12) - t43a;
     t53a = (t42 * (4096 - 3784) + t53 * 1567 + 2048 >> 12) - t42;
     t54 = (t41a * (4096 - 3784) + t54a * 1567 + 2048 >> 12) - t41a;
