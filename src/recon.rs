@@ -644,8 +644,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
 
     // find end-of-block (eob)
     let mut eob_bin = 0;
-    let tx2dszctx = cmp::min((*t_dim).lw as c_int, TX_32X32 as c_int)
-        + cmp::min((*t_dim).lh as c_int, TX_32X32 as c_int);
+    let tx2dszctx = cmp::min((*t_dim).lw, TX_32X32 as u8) + cmp::min((*t_dim).lh, TX_32X32 as u8);
     let tx_class = dav1d_tx_type_class[*txtp as usize];
     let is_1d = tx_class != TxClass::TwoD;
     match tx2dszctx {
