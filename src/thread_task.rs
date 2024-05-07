@@ -26,7 +26,6 @@ use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::Rav1dTaskIndex;
 use crate::src::internal::Rav1dTileState;
 use crate::src::internal::TaskThreadData;
-use crate::src::internal::TaskThreadData_delayed_fg;
 use crate::src::internal::TaskType;
 use crate::src::iter::wrapping_iter;
 use crate::src::picture::Rav1dThreadPicture;
@@ -441,8 +440,8 @@ pub(crate) fn rav1d_task_delayed_fg(
     let ttd: &TaskThreadData = &c.task_thread;
     {
         let mut delayed_fg = ttd.delayed_fg.try_write().unwrap();
-        delayed_fg.in_0 = in_0;
-        delayed_fg.out = out;
+        delayed_fg.in_0 = in_0.clone();
+        delayed_fg.out = out.clone();
         delayed_fg.type_0 = TaskType::FgPrep;
     }
     let task_thread_lock = ttd.lock.lock().unwrap();
@@ -451,6 +450,8 @@ pub(crate) fn rav1d_task_delayed_fg(
     drop(ttd.delayed_fg_cond.wait(task_thread_lock).unwrap());
     ttd.delayed_fg_progress[0].store(0, Ordering::SeqCst);
     ttd.delayed_fg_progress[1].store(0, Ordering::SeqCst);
+    // Release reference to in and out pictures
+    let _ = mem::take(&mut *ttd.delayed_fg.try_write().unwrap());
 }
 
 #[inline]
@@ -607,12 +608,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
     ttd: &'ttd TaskThreadData,
     task_thread_lock: &'l mut Option<MutexGuard<'ttd, ()>>,
 ) {
-    let TaskThreadData_delayed_fg {
-        in_0,
-        out,
-        type_0: delayed_fg_type,
-        ..
-    } = *ttd.delayed_fg.try_read().unwrap();
+    let delayed_fg_type = ttd.delayed_fg.try_read().unwrap().type_0;
     let mut row;
     let mut progmax;
     let mut done;
@@ -622,14 +618,16 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             if ttd.cond_signaled.load(Ordering::SeqCst) != 0 {
                 ttd.cond.notify_one();
             }
-            let mut delayed_fg = ttd.delayed_fg.try_write().unwrap();
-            match (*out).p.bpc {
+            let mut delayed_fg_guard = ttd.delayed_fg.try_write().unwrap();
+            // re-borrow to allow independent field borrows
+            let delayed_fg = &mut *delayed_fg_guard;
+            match delayed_fg.out.p.bpc {
                 #[cfg(feature = "bitdepth_8")]
                 bpc @ 8 => {
                     rav1d_prep_grain::<BitDepth8>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
-                        &mut *out,
-                        &*in_0,
+                        &mut delayed_fg.out,
+                        &delayed_fg.in_0,
                         BitDepth8::select_mut(&mut delayed_fg.grain),
                     );
                 }
@@ -637,8 +635,8 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                 bpc @ 10 | bpc @ 12 => {
                     rav1d_prep_grain::<BitDepth16>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
-                        &mut *out,
-                        &*in_0,
+                        &mut delayed_fg.out,
+                        &delayed_fg.in_0,
                         BitDepth16::select_mut(&mut delayed_fg.grain),
                     );
                 }
@@ -656,7 +654,8 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
     }
     row = ttd.delayed_fg_progress[0].fetch_add(1, Ordering::SeqCst);
     let _ = task_thread_lock.take();
-    progmax = (*out).p.h + 31 >> 5;
+    let delayed_fg = ttd.delayed_fg.try_read().unwrap();
+    progmax = delayed_fg.out.p.h + 31 >> 5;
     loop {
         if (row + 1) < progmax {
             ttd.cond.notify_one();
@@ -669,14 +668,13 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             let _ = task_thread_lock.take();
         }
         {
-            let delayed_fg = ttd.delayed_fg.try_read().unwrap();
-            match (*out).p.bpc {
+            match delayed_fg.out.p.bpc {
                 #[cfg(feature = "bitdepth_8")]
                 bpc @ 8 => {
                     rav1d_apply_grain_row::<BitDepth8>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
-                        &mut *out,
-                        &*in_0,
+                        &delayed_fg.out,
+                        &delayed_fg.in_0,
                         BitDepth8::select(&delayed_fg.grain),
                         row as usize,
                     );
@@ -685,8 +683,8 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                 bpc @ 10 | bpc @ 12 => {
                     rav1d_apply_grain_row::<BitDepth16>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
-                        &mut *out,
-                        &*in_0,
+                        &delayed_fg.out,
+                        &delayed_fg.in_0,
                         BitDepth16::select(&delayed_fg.grain),
                         row as usize,
                     );

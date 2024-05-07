@@ -65,7 +65,6 @@ use std::sync::Arc;
 use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::Once;
-use std::sync::RwLock;
 use std::thread;
 use to_method::To as _;
 
@@ -244,7 +243,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
         delayed_fg_exec: AtomicI32::new(0),
         delayed_fg_cond: Condvar::new(),
         delayed_fg_progress: [AtomicI32::new(0), AtomicI32::new(0)],
-        delayed_fg: RwLock::new(mem::zeroed()),
+        delayed_fg: Default::default(),
     };
     (*c).task_thread = Arc::new(ttd);
     (*c).frame_thread.out_delayed = if n_fc > 1 {

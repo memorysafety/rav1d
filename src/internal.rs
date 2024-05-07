@@ -290,23 +290,13 @@ impl BitDepthDependentType for Grain {
     type T<BD: BitDepth> = GrainBD<BD>;
 }
 
+#[derive(Default)]
 #[repr(C)]
 pub(crate) struct TaskThreadData_delayed_fg {
-    pub in_0: *const Rav1dPicture,
-    pub out: *mut Rav1dPicture,
+    pub in_0: Rav1dPicture,
+    pub out: Rav1dPicture,
     pub type_0: TaskType,
     pub grain: BitDepthUnion<Grain>,
-}
-
-impl Default for TaskThreadData_delayed_fg {
-    fn default() -> Self {
-        Self {
-            in_0: std::ptr::null(),
-            out: std::ptr::null_mut(),
-            type_0: Default::default(),
-            grain: Default::default(),
-        }
-    }
 }
 
 // TODO(SJC): Remove when TaskThreadData_delayed_fg is thread-safe
