@@ -40,7 +40,11 @@ pub struct BlockContext {
     pub intra: DisjointMut<Align8<[u8; 32]>>,
     pub comp_type: DisjointMut<Align8<[Option<CompInterType>; 32]>>,
     pub r#ref: [DisjointMut<Align8<[i8; 32]>>; 2],
-    pub filter: [DisjointMut<Align8<[u8; 32]>>; 2],
+
+    /// No [`Rav1dFilterMode::Switchable`]s here.
+    /// TODO(kkysen) split [`Rav1dFilterMode`] into a version without [`Rav1dFilterMode::Switchable`].
+    pub filter: [DisjointMut<Align8<[Rav1dFilterMode; 32]>>; 2],
+
     pub tx_intra: DisjointMut<Align8<[i8; 32]>>,
     pub tx: DisjointMut<Align8<[u8; 32]>>,
     pub tx_lpf_y: DisjointMut<Align8<[u8; 32]>>,
@@ -169,7 +173,7 @@ pub fn get_filter_ctx(
     });
 
     (comp as u8) * 4
-        + if a_filter == l_filter {
+        + (if a_filter == l_filter {
             a_filter
         } else if a_filter == Rav1dFilterMode::N_SWITCHABLE_FILTERS {
             l_filter
@@ -177,7 +181,7 @@ pub fn get_filter_ctx(
             a_filter
         } else {
             Rav1dFilterMode::N_SWITCHABLE_FILTERS
-        }
+        } as u8)
 }
 
 #[inline]

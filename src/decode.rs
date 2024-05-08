@@ -5,7 +5,6 @@ use crate::include::common::intops::clip;
 use crate::include::common::intops::clip_u8;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::common::Rav1dDataProps;
-use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
 use crate::include::dav1d::headers::Rav1dFrameHeader_tiling;
@@ -2983,27 +2982,29 @@ fn decode_b(
             if has_subpel_filter {
                 let comp = comp_type.is_some();
                 let ctx1 = get_filter_ctx(&f.a[t.a], &t.l, comp, false, r#ref[0], by4, bx4);
-                let filter0 = rav1d_msac_decode_symbol_adapt4(
+                let filter0 = Rav1dFilterMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.filter.0[0][ctx1 as usize],
                     Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8 - 1,
-                ) as Dav1dFilterMode;
+                ) as usize)
+                .unwrap();
                 if seq_hdr.dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&f.a[t.a], &t.l, comp, true, r#ref[0], by4, bx4);
                     if debug_block_info!(f, t.b) {
                         println!(
-                            "Post-subpel_filter1[{},ctx={}]: r={}",
+                            "Post-subpel_filter1[{:?},ctx={}]: r={}",
                             filter0, ctx1, ts_c.msac.rng,
                         );
                     }
-                    let filter1 = rav1d_msac_decode_symbol_adapt4(
+                    let filter1 = Rav1dFilterMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.m.filter.0[1][ctx2 as usize],
                         Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8 - 1,
-                    ) as Dav1dFilterMode;
+                    ) as usize)
+                    .unwrap();
                     if debug_block_info!(f, t.b) {
                         println!(
-                            "Post-subpel_filter2[{},ctx={}]: r={}",
+                            "Post-subpel_filter2[{:?},ctx={}]: r={}",
                             filter1, ctx2, ts_c.msac.rng,
                         );
                     }
@@ -3011,17 +3012,17 @@ fn decode_b(
                 } else {
                     if debug_block_info!(f, t.b) {
                         println!(
-                            "Post-subpel_filter[{},ctx={}]: r={}",
+                            "Post-subpel_filter[{:?},ctx={}]: r={}",
                             filter0, ctx1, ts_c.msac.rng
                         );
                     }
                     [filter0; 2]
                 }
             } else {
-                [Rav1dFilterMode::Regular8Tap as u8; 2]
+                [Rav1dFilterMode::Regular8Tap; 2]
             }
         } else {
-            [frame_hdr.subpel_filter_mode as u8; 2]
+            [frame_hdr.subpel_filter_mode; 2]
         };
         let filter2d = dav1d_filter_2d[filter[1] as usize][filter[0] as usize];
 
@@ -3805,7 +3806,7 @@ fn reset_context(ctx: &mut BlockContext, keyframe: bool, pass: c_int) {
         filter
             .get_mut()
             .0
-            .fill(Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8);
+            .fill(Rav1dFilterMode::N_SWITCHABLE_FILTERS);
     }
     ctx.seg_pred.get_mut().0.fill(0);
     ctx.pal_sz.get_mut().0.fill(0);

@@ -1,3 +1,4 @@
+use crate::src::align::ArrayDefault;
 use crate::src::enum_map::EnumKey;
 use crate::src::levels::SegmentId;
 use crate::src::relaxed_atomic::RelaxedAtomic;
@@ -139,7 +140,7 @@ pub const DAV1D_FILTER_8TAP_SMOOTH: Dav1dFilterMode =
 pub const DAV1D_FILTER_8TAP_REGULAR: Dav1dFilterMode =
     Rav1dFilterMode::Regular8Tap as Dav1dFilterMode;
 
-#[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, FromRepr, Default, Debug)]
 pub enum Rav1dFilterMode {
     #[default] // Not really a real default.
     Regular8Tap = 0,
@@ -149,9 +150,15 @@ pub enum Rav1dFilterMode {
     Switchable = 4,
 }
 
+impl ArrayDefault for Rav1dFilterMode {
+    fn default() -> Self {
+        Default::default()
+    }
+}
+
 impl Rav1dFilterMode {
     pub const N_FILTERS: usize = 4;
-    pub const N_SWITCHABLE_FILTERS: u8 = 3;
+    pub const N_SWITCHABLE_FILTERS: Self = Self::Bilinear;
 }
 
 impl From<Rav1dFilterMode> for Dav1dFilterMode {
