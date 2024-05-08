@@ -230,7 +230,7 @@ fn read_mv_component_diff(
     let mut hp = true;
 
     if cl == 0 {
-        up = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class0.0) as c_uint;
+        up = rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.class0.0) as u16;
         if mv_prec >= 0 {
             // !force_integer_mv
             fp = rav1d_msac_decode_symbol_adapt4(msac, &mut mv_comp.class0_fp[up as usize], 3);
@@ -240,9 +240,10 @@ fn read_mv_component_diff(
             }
         }
     } else {
+        // `cl` is in the range `0..=10`, so `up` is a `u10`.
         up = 1 << cl;
         for n in 0..cl as usize {
-            up |= (rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.classN[n]) as c_uint) << n;
+            up |= (rav1d_msac_decode_bool_adapt(msac, &mut mv_comp.classN[n]) as u16) << n;
         }
         if mv_prec >= 0 {
             // !force_integer_mv
@@ -253,9 +254,9 @@ fn read_mv_component_diff(
             }
         }
     }
-    let hp = hp as c_uint;
+    let hp = hp as u16;
 
-    let diff = ((up << 3 | fp << 1 | hp) + 1) as c_int;
+    let diff = ((up << 3 | (fp as u16) << 1 | hp) + 1) as c_int;
 
     if sign {
         -diff
@@ -268,7 +269,7 @@ fn read_mv_residual(ts_c: &mut Rav1dTileStateContext, ref_mv: &mut mv, mv_prec: 
     let mv_joint = MVJoint::from_bits_truncate(rav1d_msac_decode_symbol_adapt4(
         &mut ts_c.msac,
         &mut ts_c.cdf.mv.joint.0,
-        MVJoint::all().bits().into(),
+        MVJoint::all().bits(),
     ) as u8);
 
     let mv_cdf = &mut ts_c.cdf.mv;
@@ -753,7 +754,7 @@ fn read_pal_indices(
             let color_idx = rav1d_msac_decode_symbol_adapt8(
                 &mut ts_c.msac,
                 &mut color_map_cdf[ctx[m] as usize],
-                pal_sz as usize - 1,
+                pal_sz as u8 - 1,
             ) as usize;
             pal_tmp[(i - j) * stride + j] = order[m][color_idx];
         }
@@ -1374,7 +1375,7 @@ fn decode_b(
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.seg_id[seg_ctx as usize],
-                    SegmentId::COUNT - 1,
+                    SegmentId::COUNT as u8 - 1,
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
@@ -1462,7 +1463,7 @@ fn decode_b(
                 let diff = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.seg_id[seg_ctx as usize],
-                    SegmentId::COUNT - 1,
+                    SegmentId::COUNT as u8 - 1,
                 );
                 let last_active_seg_id_plus1 =
                     (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
@@ -1493,7 +1494,7 @@ fn decode_b(
         let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
         let cur_idx = t.cur_sb_cdef_idx + idx;
         if cdef_idx[cur_idx].get() == -1 {
-            let v = rav1d_msac_decode_bools(&mut ts_c.msac, frame_hdr.cdef.n_bits as c_uint) as i8;
+            let v = rav1d_msac_decode_bools(&mut ts_c.msac, frame_hdr.cdef.n_bits) as i8;
             cdef_idx[cur_idx].set(v);
             if bw4 > 16 {
                 cdef_idx[cur_idx + 1].set(v)
@@ -1535,7 +1536,7 @@ fn decode_b(
                 rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut ts_c.cdf.m.delta_q.0, 3)
                     as c_int;
             if delta_q == 3 {
-                let n_bits = 1 + rav1d_msac_decode_bools(&mut ts_c.msac, 3);
+                let n_bits = 1 + rav1d_msac_decode_bools(&mut ts_c.msac, 3) as u8;
                 delta_q =
                     (rav1d_msac_decode_bools(&mut ts_c.msac, n_bits) + 1 + (1 << n_bits)) as c_int;
             }
@@ -1574,7 +1575,7 @@ fn decode_b(
                         3,
                     ) as c_int;
                     if delta_lf == 3 {
-                        let n_bits = 1 + rav1d_msac_decode_bools(&mut ts_c.msac, 3);
+                        let n_bits = 1 + rav1d_msac_decode_bools(&mut ts_c.msac, 3) as u8;
                         delta_lf = (rav1d_msac_decode_bools(&mut ts_c.msac, n_bits)
                             + 1
                             + (1 << n_bits)) as c_int;
@@ -1653,8 +1654,8 @@ fn decode_b(
         let y_mode = rav1d_msac_decode_symbol_adapt16(
             &mut ts_c.msac,
             ymode_cdf,
-            (N_INTRA_PRED_MODES - 1) as usize,
-        ) as u8;
+            N_INTRA_PRED_MODES as u8 - 1,
+        );
         if debug_block_info!(f, t.b) {
             println!("Post-ymode[{}]: r={}", y_mode, ts_c.msac.rng);
         }
@@ -1682,8 +1683,8 @@ fn decode_b(
             uv_mode = rav1d_msac_decode_symbol_adapt16(
                 &mut ts_c.msac,
                 uvmode_cdf,
-                (N_UV_INTRA_PRED_MODES as usize) - 1 - (!cfl_allowed as usize),
-            ) as u8;
+                (N_UV_INTRA_PRED_MODES as u8) - 1 - (!cfl_allowed as u8),
+            );
             if debug_block_info!(f, t.b) {
                 println!("Post-uvmode[{}]: r={}", uv_mode, ts_c.msac.rng);
             }
@@ -1692,7 +1693,7 @@ fn decode_b(
                 let sign =
                     rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, &mut ts_c.cdf.m.cfl_sign.0, 7)
                         + 1;
-                let sign_u = sign * 0x56 >> 8;
+                let sign_u = (sign as u16 * 0x56 >> 8) as u8;
                 let sign_v = sign - sign_u * 3;
                 assert!(sign_u == sign / 3);
                 let sign_uv = [sign_u, sign_v];
@@ -1720,13 +1721,11 @@ fn decode_b(
                     );
                 }
                 uv_angle = 0;
-            } else if b_dim[2] + b_dim[3] >= 2
-                && uv_mode >= VERT_PRED as u8
-                && uv_mode <= VERT_LEFT_PRED as u8
+            } else if b_dim[2] + b_dim[3] >= 2 && uv_mode >= VERT_PRED && uv_mode <= VERT_LEFT_PRED
             {
                 let acdf = &mut ts_c.cdf.m.angle_delta[uv_mode as usize - VERT_PRED as usize];
-                let angle = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, acdf, 6) as c_int;
-                uv_angle = (angle - 3) as i8;
+                let angle = rav1d_msac_decode_symbol_adapt8(&mut ts_c.msac, acdf, 6);
+                uv_angle = angle as i8 - 3;
                 cfl_alpha = Default::default();
             } else {
                 uv_angle = 0;
@@ -1882,11 +1881,9 @@ fn decode_b(
             if frame_hdr.txfm_mode == Rav1dTxfmMode::Switchable && t_dim.max > TX_4X4 as u8 {
                 let tctx = get_tx_ctx(&f.a[t.a], &t.l, t_dim, by4, bx4);
                 let tx_cdf = &mut ts_c.cdf.m.txsz[(t_dim.max - 1) as usize][tctx as usize];
-                let depth = rav1d_msac_decode_symbol_adapt4(
-                    &mut ts_c.msac,
-                    tx_cdf,
-                    cmp::min(t_dim.max, 2) as usize,
-                ) as c_int;
+                let depth =
+                    rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, tx_cdf, cmp::min(t_dim.max, 2))
+                        as c_int;
 
                 for _ in 0..depth {
                     tx = t_dim.sub;
@@ -2386,8 +2383,8 @@ fn decode_b(
             let inter_mode = rav1d_msac_decode_symbol_adapt8(
                 &mut ts_c.msac,
                 &mut ts_c.cdf.m.comp_inter_mode[ctx as usize],
-                N_COMP_INTER_PRED_MODES as usize - 1,
-            ) as u8;
+                N_COMP_INTER_PRED_MODES as u8 - 1,
+            );
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-compintermode[{},ctx={},n_mvs={}]: r={}",
@@ -2823,7 +2820,7 @@ fn decode_b(
                 interintra_mode = InterIntraPredMode::from_repr(rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.interintra_mode[ii_sz_grp as usize],
-                    InterIntraPredMode::COUNT as usize - 1,
+                    InterIntraPredMode::COUNT as u8 - 1,
                 ) as usize)
                 .expect("valid variant");
                 let wedge_ctx = dav1d_wedge_ctx_lut[bs as usize] as c_int;
@@ -2989,7 +2986,7 @@ fn decode_b(
                 let filter0 = rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.filter.0[0][ctx1 as usize],
-                    Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize - 1,
+                    Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8 - 1,
                 ) as Dav1dFilterMode;
                 if seq_hdr.dual_filter != 0 {
                     let ctx2 = get_filter_ctx(&f.a[t.a], &t.l, comp, true, r#ref[0], by4, bx4);
@@ -3002,7 +2999,7 @@ fn decode_b(
                     let filter1 = rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
                         &mut ts_c.cdf.m.filter.0[1][ctx2 as usize],
-                        Rav1dFilterMode::N_SWITCHABLE_FILTERS as usize - 1,
+                        Rav1dFilterMode::N_SWITCHABLE_FILTERS as u8 - 1,
                     ) as Dav1dFilterMode;
                     if debug_block_info!(f, t.b) {
                         println!(
@@ -3987,7 +3984,7 @@ fn read_restoration_info(
     fn msac_decode_lr_subexp(
         ts_c: &mut Rav1dTileStateContext,
         r#ref: i8,
-        k: u32,
+        k: u8,
         adjustment: i8,
     ) -> i8 {
         (rav1d_msac_decode_subexp(&mut ts_c.msac, (r#ref + adjustment) as c_uint, 8 << k, k)
