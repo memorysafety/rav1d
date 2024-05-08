@@ -538,14 +538,14 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
         &mut ts_c.cdf.coef.skip[t_dim.ctx as usize][sctx as usize],
-    ) as c_int;
+    );
     if dbg {
         println!(
             "Post-non-zero[{}][{}][{}]: r={}",
             t_dim.ctx as c_int, sctx, all_skip, ts_c.msac.rng,
         );
     }
-    if all_skip != 0 {
+    if all_skip {
         *res_ctx = 0x40 as c_int as u8;
         *txtp = (lossless * WHT_WHT) as TxfmType; // `lossless ? WHT_WHT : DCT_DCT`
         return -(1 as c_int);
