@@ -742,7 +742,11 @@ fn decode_coefs<BD: BitDepth>(
                 };
                 let shift2: c_uint = 0;
                 let mask: c_uint = 4 * sh as c_uint - 1;
-                levels[..stride * (4 * sw as usize + 2)].fill(0);
+                // Optimizes better than `.fill(0)`,
+                // which doesn't elide the bounds check, inline, or vectorize.
+                for i in 0..stride * (4 * sw as usize + 2) {
+                    levels[i] = 0;
+                }
                 let mut x: c_uint;
                 let mut y: c_uint;
                 match tx_class {
@@ -934,7 +938,11 @@ fn decode_coefs<BD: BitDepth>(
                 let shift: c_uint = t_dim.lh as c_uint + 2;
                 let shift2: c_uint = 0;
                 let mask: c_uint = 4 * sh as c_uint - 1;
-                levels[..stride * (4 * sh as usize + 2)].fill(0);
+                // Optimizes better than `.fill(0)`,
+                // which doesn't elide the bounds check, inline, or vectorize.
+                for i in 0..stride * (4 * sh as usize + 2) {
+                    levels[i] = 0;
+                }
                 let mut x: c_uint;
                 let mut y: c_uint;
                 match tx_class {
@@ -1121,7 +1129,11 @@ fn decode_coefs<BD: BitDepth>(
                 let shift: c_uint = t_dim.lw as c_uint + 2;
                 let shift2: c_uint = t_dim.lh as c_uint + 2;
                 let mask: c_uint = 4 * sw as c_uint - 1;
-                levels[..stride * (4 * sw as usize + 2)].fill(0);
+                // Optimizes better than `.fill(0)`,
+                // which doesn't elide the bounds check, inline, or vectorize.
+                for i in 0..stride * (4 * sw as usize + 2) {
+                    levels[i] = 0;
+                }
                 let mut x: c_uint;
                 let mut y: c_uint;
                 match tx_class {
