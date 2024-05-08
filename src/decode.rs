@@ -420,7 +420,7 @@ fn read_tx_tree(
 fn neg_deinterleave(diff: u8, r#ref: u8, max: u8) -> u8 {
     if r#ref == 0 {
         diff
-    } else if r#ref >= max - 1 {
+    } else if r#ref + 1 >= max {
         max - diff - 1
     } else if 2 * r#ref < max {
         if diff <= 2 * r#ref {
