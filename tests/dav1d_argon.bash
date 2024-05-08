@@ -151,13 +151,13 @@ for i in "${!files[@]}"; do
     printf "\033[1K\r[%3d%% %d/%d] Verifying %s" "$(((i+1)*100/${#files[@]}))" "$((i+1))" "${#files[@]}" "$f"
     cmd=("$DAV1D" -i "$f" --filmgrain "$FILMGRAIN" --verify "$md5" --cpumask "$CPUMASK" --threads "$THREADS" -q)
     if [ "$JOBS" -gt 1 ]; then
-        "${cmd[@]}" 2>/dev/null &
+        "${cmd[@]}"  &
         p=$!
         pids+=("$p")
         declare "file$p=$f"
         block_pids
     else
-        if ! "${cmd[@]}" 2>/dev/null; then
+        if ! "${cmd[@]}" ; then
             fail "$f"
         fi
     fi
