@@ -547,14 +547,14 @@ unsafe fn decode_coefs<BD: BitDepth>(
     }
     if all_skip {
         *res_ctx = 0x40 as c_int as u8;
-        *txtp = (lossless * WHT_WHT) as TxfmType; // `lossless ? WHT_WHT : DCT_DCT`
+        *txtp = if lossless { WHT_WHT } else { DCT_DCT };
         return -(1 as c_int);
     }
 
     // transform type (chroma: derived, luma: explicitly coded)
     use Av1BlockIntraInter::*;
     *txtp = match &b.ii {
-        _ if lossless != 0 => {
+        _ if lossless => {
             assert!(t_dim.max == TX_4X4);
             WHT_WHT
         }
