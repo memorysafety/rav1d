@@ -528,9 +528,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let lossless = frame_hdr.segmentation.lossless[b.seg_id as usize];
     let t_dim = &dav1d_txfm_dimensions[tx as usize];
     let dbg = dbg_block_info && plane != 0 && false;
+
     if dbg {
         println!("Start: r={}", ts_c.msac.rng);
     }
+
+    // does this block have any non-zero coefficients
     let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout) as c_int;
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
@@ -547,9 +550,11 @@ unsafe fn decode_coefs<BD: BitDepth>(
     }
     if all_skip != 0 {
         *res_ctx = 0x40 as c_int as u8;
-        *txtp = (lossless * WHT_WHT) as TxfmType;
+        *txtp = (lossless * WHT_WHT) as TxfmType; // `lossless ? WHT_WHT : DCT_DCT`
         return -(1 as c_int);
     }
+
+    // transform type (chroma: derived, luma: explicitly coded)
     use Av1BlockIntraInter::*;
     *txtp = match &b.ii {
         _ if lossless != 0 => {
@@ -559,7 +564,11 @@ unsafe fn decode_coefs<BD: BitDepth>(
         Intra(_) if (*t_dim).max >= TX_32X32 => DCT_DCT,
         Inter(_) if (*t_dim).max >= TX_64X64 => DCT_DCT,
         Intra(intra) if chroma != 0 => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
+        // inferred from either the luma txtp (inter) or a LUT (intra)
         Inter(_) if chroma != 0 => get_uv_inter_txtp(t_dim, *txtp),
+        // In libaom, lossless is checked by a literal qidx == 0, but not all
+        // such blocks are actually lossless. The remainder gets an implicit
+        // transform type (for luma)
         _ if frame_hdr.segmentation.qidx[b.seg_id as usize] == 0 => DCT_DCT,
         Intra(intra) => {
             let y_mode_nofilt = if intra.y_mode == FILTER_PRED {
@@ -603,7 +612,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter3[(*t_dim).min as usize],
                 ) as c_uint;
-                idx.wrapping_sub(1) as TxfmType & IDTX
+                idx.wrapping_sub(1) as TxfmType & IDTX // `idx ? DCT_DCT : IDTX`
             } else if (*t_dim).min == TX_16X16 {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
@@ -632,6 +641,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
             txtp
         }
     };
+
+    // find end-of-block (eob)
     let mut eob_bin = 0;
     let tx2dszctx = cmp::min((*t_dim).lw as c_int, TX_32X32 as c_int)
         + cmp::min((*t_dim).lh as c_int, TX_32X32 as c_int);
@@ -713,6 +724,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         eob = eob_bin;
     }
     assert!(eob >= 0);
+
+    // base tokens
     let eob_cdf: *mut [u16; 4] =
         (ts_c.cdf.coef.eob_base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
     let hi_cdf: *mut [u16; 4] = (ts_c.cdf.coef.br_tok
@@ -720,12 +733,15 @@ unsafe fn decode_coefs<BD: BitDepth>(
         .as_mut_ptr();
     let mut rc;
     let mut dc_tok;
+
     if eob != 0 {
         let lo_cdf: *mut [u16; 4] =
             (ts_c.cdf.coef.base_tok[(*t_dim).ctx as usize][chroma as usize]).as_mut_ptr();
         let levels = scratch.inter_intra_mut().levels_pal.levels_mut();
         let sw = cmp::min((*t_dim).w as c_int, 8 as c_int);
         let sh = cmp::min((*t_dim).h as c_int, 8 as c_int);
+
+        // eob
         let mut ctx: c_uint =
             (1 as c_int + (eob > sw * sh * 2) as c_int + (eob > sw * sh * 4) as c_int) as c_uint;
         let eob_tok = rav1d_msac_decode_symbol_adapt4(
@@ -736,6 +752,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
         let mut tok = eob_tok + 1;
         let mut level_tok = tok * 0x41 as c_int;
         let mut mag: c_uint = 0;
+
         let mut scan: &[u16] = &[];
         match tx_class {
             TxClass::TwoD => {
@@ -764,6 +781,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         y = rc & mask;
                     }
                     TxClass::H => {
+                        // Transposing reduces the stride and padding requirements.
                         x = eob as c_uint & mask;
                         y = (eob >> shift) as c_uint;
                         rc = eob as c_uint;
@@ -818,6 +836,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 levels[(x as isize * stride + y as isize) as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
+                    // ac
                     let rc_i: c_uint;
                     match tx_class {
                         TxClass::TwoD => {
@@ -904,8 +923,10 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         );
                         rc = rc_i;
                     } else {
+                        // `0x1` for `tok`, `0x7ff` as bitmask for `rc`, `0x41` for `level_tok`.
                         tok *= 0x17ff41 as c_int;
                         level[0] = tok as u8;
+                        // `tok ? (tok << 11) | rc : 0`
                         tok = ((tok >> 9) as c_uint & rc.wrapping_add(!(0x7ff as c_uint))) as c_int;
                         if tok != 0 {
                             rc = rc_i;
@@ -914,6 +935,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     i -= 1;
                 }
+                // dc
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
@@ -1410,6 +1432,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             }
         }
     } else {
+        // dc-only
         let tok_br = rav1d_msac_decode_symbol_adapt4(
             &mut ts_c.msac,
             &mut *eob_cdf.offset(0),
@@ -1440,6 +1463,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
         rc = 0 as c_int as c_uint;
     }
+
+    // residual and sign
     let dq = match ts.dq.load(Ordering::Relaxed) {
         TileStateRef::Frame => &f.dq,
         TileStateRef::Local => &ts.dqmem,
@@ -1458,12 +1483,15 @@ unsafe fn decode_coefs<BD: BitDepth>(
         })) as c_int;
     let mut cul_level: c_uint;
     let dc_sign_level: c_uint;
+
     if dc_tok == 0 {
         cul_level = 0 as c_int as c_uint;
         dc_sign_level = ((1 as c_int) << 6) as c_uint;
         if qm_tbl.is_some() {
+            // goto ac_qm;
             current_block = 1669574575799829731;
         } else {
+            // goto ac_noqm;
             current_block = 2404388531445638768;
         }
     } else {
@@ -1476,10 +1504,13 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 chroma, dc_sign_ctx, dc_sign, ts_c.msac.rng,
             );
         }
+
         dc_dq = dq_tbl[0].load(Ordering::Relaxed) as c_int;
         dc_sign_level = (dc_sign - 1 & (2 as c_int) << 6) as c_uint;
+
         if let Some(qm_tbl) = qm_tbl {
             dc_dq = dc_dq * qm_tbl[0] as c_int + 16 >> 5;
+
             if dc_tok == 15 as c_uint {
                 dc_tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15 as c_int as c_uint);
                 if dbg {
@@ -1490,6 +1521,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         ts_c.msac.rng,
                     );
                 }
+
                 dc_tok &= 0xfffff as c_int as c_uint;
                 dc_dq =
                     ((dc_dq as c_uint).wrapping_mul(dc_tok) & 0xffffff as c_int as c_uint) as c_int;
@@ -1506,12 +1538,14 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 0,
                 (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
             );
+
             if rc != 0 {
                 current_block = 1669574575799829731;
             } else {
                 current_block = 15494703142406051947;
             }
         } else {
+            // non-qmatrix is the common case and allows for additional optimizations
             if dc_tok == 15 as c_uint {
                 dc_tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15 as c_int as c_uint);
                 if dbg {
@@ -1522,6 +1556,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         ts_c.msac.rng,
                     );
                 }
+
                 dc_tok &= 0xfffff as c_int as c_uint;
                 dc_dq = (((dc_dq as c_uint).wrapping_mul(dc_tok) & 0xffffff as c_int as c_uint)
                     >> dq_shift) as c_int;
@@ -1537,6 +1572,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 0,
                 (if dc_sign != 0 { -dc_dq } else { dc_dq }).as_::<BD::Coef>(),
             );
+
             if rc != 0 {
                 current_block = 2404388531445638768;
             } else {
@@ -1545,6 +1581,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
     }
     match current_block {
+        // ac_qm:
         1669574575799829731 => {
             let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
@@ -1560,6 +1597,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     .wrapping_add(16 as c_int as c_uint)
                     >> 5;
                 let dq_sat;
+
                 if rc_tok >= ((15 as c_int) << 11) as c_uint {
                     tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15 as c_int as c_uint);
                     if dbg {
@@ -1571,6 +1609,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             ts_c.msac.rng,
                         );
                     }
+
                     tok &= 0xfffff as c_int as c_uint;
                     dq = dq.wrapping_mul(tok) & 0xffffff as c_int as c_uint;
                 } else {
@@ -1587,12 +1626,14 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     rc as usize,
                     (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
                 );
+
                 rc = rc_tok & 0x3ff as c_int as c_uint;
                 if !(rc != 0) {
                     break;
                 }
             }
         }
+        // ac_noqm:
         2404388531445638768 => {
             let ac_dq: c_uint = dq_tbl[1].load(Ordering::Relaxed) as c_uint;
             loop {
@@ -1603,6 +1644,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let rc_tok: c_uint = cf.get::<BD>(f, t_cf, rc as usize).as_::<c_uint>();
                 let mut tok: c_uint;
                 let mut dq;
+
+                // residual
                 if rc_tok >= ((15 as c_int) << 11) as c_uint {
                     tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15 as c_int as c_uint);
                     if dbg {
@@ -1614,11 +1657,16 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             ts_c.msac.rng,
                         );
                     }
+
+                    // coefficient parsing, see 5.11.39
                     tok &= 0xfffff as c_int as c_uint;
+
+                    // dequant, see 7.12.3
                     dq = ((ac_dq.wrapping_mul(tok) & 0xffffff as c_int as c_uint) >> dq_shift)
                         as c_int;
                     dq = cmp::min(dq as c_uint, (cf_max + sign) as c_uint) as c_int;
                 } else {
+                    // cannot exceed `cf_max`, so we can avoid the clipping
                     tok = rc_tok >> 11;
                     dq = (ac_dq.wrapping_mul(tok) >> dq_shift) as c_int;
                     assert!(dq <= cf_max);
@@ -1630,7 +1678,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     rc as usize,
                     (if sign != 0 { -dq } else { dq }).as_::<BD::Coef>(),
                 );
-                rc = rc_tok & 0x3ff as c_int as c_uint;
+
+                rc = rc_tok & 0x3ff as c_int as c_uint; // next non-zero `rc`, zero if `eob`
                 if !(rc != 0) {
                     break;
                 }
@@ -1638,7 +1687,10 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
         _ => {}
     }
+
+    // context
     *res_ctx = (cmp::min(cul_level, 63 as c_int as c_uint) | dc_sign_level) as u8;
+
     return eob;
 }
 
