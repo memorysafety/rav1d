@@ -700,17 +700,14 @@ unsafe fn decode_coefs<BD: BitDepth>(
     assert!(eob >= 0);
 
     // base tokens
-    let eob_cdf: *mut [u16; 4] =
-        (ts_c.cdf.coef.eob_base_tok[t_dim.ctx as usize][chroma]).as_mut_ptr();
-    let hi_cdf: *mut [u16; 4] = (ts_c.cdf.coef.br_tok
-        [cmp::min(t_dim.ctx as c_int, 3 as c_int) as usize][chroma])
-        .as_mut_ptr();
+    let eob_cdf = &mut ts_c.cdf.coef.eob_base_tok[t_dim.ctx as usize][chroma];
+    let hi_cdf =
+        &mut ts_c.cdf.coef.br_tok[cmp::min(t_dim.ctx as c_int, 3 as c_int) as usize][chroma];
     let mut rc;
     let mut dc_tok;
 
     if eob != 0 {
-        let lo_cdf: *mut [u16; 4] =
-            (ts_c.cdf.coef.base_tok[t_dim.ctx as usize][chroma]).as_mut_ptr();
+        let lo_cdf = &mut ts_c.cdf.coef.base_tok[t_dim.ctx as usize][chroma];
         let levels = scratch.inter_intra_mut().levels_pal.levels_mut();
         let sw = cmp::min(t_dim.w as c_int, 8 as c_int);
         let sh = cmp::min(t_dim.h as c_int, 8 as c_int);
@@ -720,7 +717,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             (1 as c_int + (eob > sw * sh * 2) as c_int + (eob > sw * sh * 4) as c_int) as c_uint;
         let eob_tok = rav1d_msac_decode_symbol_adapt4(
             &mut ts_c.msac,
-            &mut *eob_cdf.offset(ctx as isize),
+            &mut eob_cdf[ctx as usize],
             2 as c_int as usize,
         ) as c_int;
         let mut tok = eob_tok + 1;
@@ -783,9 +780,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     } else {
                         7 as c_int
                     }) as c_uint;
-                    tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize))
-                            as c_int;
+                    tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                        as c_int;
                     level_tok = tok + ((3 as c_int) << 6);
                     if dbg {
                         println!(
@@ -839,7 +835,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
-                        &mut *lo_cdf.offset(ctx as isize),
+                        &mut lo_cdf[ctx as usize],
                         3 as c_int as usize,
                     ) as c_int;
                     if dbg {
@@ -860,10 +856,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             } else {
                                 mag.wrapping_add(1 as c_int as c_uint) >> 1
                             });
-                        tok = rav1d_msac_decode_hi_tok(
-                            &mut ts_c.msac,
-                            &mut *hi_cdf.offset(ctx as isize),
-                        ) as c_int;
+                        tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                            as c_int;
                         if dbg {
                             println!(
                                 "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
@@ -913,7 +907,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 };
                 dc_tok = rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
-                    &mut *lo_cdf.offset(ctx as isize),
+                    &mut lo_cdf[ctx as usize],
                     3 as c_int as usize,
                 );
                 if dbg {
@@ -935,8 +929,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     } else {
                         mag.wrapping_add(1 as c_int as c_uint) >> 1
                     };
-                    dc_tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize));
+                    dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                     if dbg {
                         println!(
                             "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
@@ -991,9 +984,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     } else {
                         7 as c_int
                     }) as c_uint;
-                    tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize))
-                            as c_int;
+                    tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                        as c_int;
                     level_tok = tok + ((3 as c_int) << 6);
                     if dbg {
                         println!(
@@ -1046,7 +1038,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
-                        &mut *lo_cdf.offset(ctx as isize),
+                        &mut lo_cdf[ctx as usize],
                         3 as c_int as usize,
                     ) as c_int;
                     if dbg {
@@ -1067,10 +1059,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             } else {
                                 mag.wrapping_add(1 as c_int as c_uint) >> 1
                             });
-                        tok = rav1d_msac_decode_hi_tok(
-                            &mut ts_c.msac,
-                            &mut *hi_cdf.offset(ctx as isize),
-                        ) as c_int;
+                        tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                            as c_int;
                         if dbg {
                             println!(
                                 "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
@@ -1117,7 +1107,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 };
                 dc_tok = rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
-                    &mut *lo_cdf.offset(ctx as isize),
+                    &mut lo_cdf[ctx as usize],
                     3 as c_int as usize,
                 );
                 if dbg {
@@ -1139,8 +1129,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     } else {
                         mag.wrapping_add(1 as c_int as c_uint) >> 1
                     };
-                    dc_tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize));
+                    dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                     if dbg {
                         println!(
                             "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
@@ -1195,9 +1184,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     } else {
                         7 as c_int
                     }) as c_uint;
-                    tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize))
-                            as c_int;
+                    tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                        as c_int;
                     level_tok = tok + ((3 as c_int) << 6);
                     if dbg {
                         println!(
@@ -1250,7 +1238,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
-                        &mut *lo_cdf.offset(ctx as isize),
+                        &mut lo_cdf[ctx as usize],
                         3 as c_int as usize,
                     ) as c_int;
                     if dbg {
@@ -1271,10 +1259,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
                             } else {
                                 mag.wrapping_add(1 as c_int as c_uint) >> 1
                             });
-                        tok = rav1d_msac_decode_hi_tok(
-                            &mut ts_c.msac,
-                            &mut *hi_cdf.offset(ctx as isize),
-                        ) as c_int;
+                        tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                            as c_int;
                         if dbg {
                             println!(
                                 "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
@@ -1321,7 +1307,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 };
                 dc_tok = rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
-                    &mut *lo_cdf.offset(ctx as isize),
+                    &mut lo_cdf[ctx as usize],
                     3 as c_int as usize,
                 );
                 if dbg {
@@ -1343,8 +1329,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     } else {
                         mag.wrapping_add(1 as c_int as c_uint) >> 1
                     };
-                    dc_tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize));
+                    dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                     if dbg {
                         println!(
                             "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
@@ -1359,11 +1344,9 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
     } else {
         // dc-only
-        let tok_br = rav1d_msac_decode_symbol_adapt4(
-            &mut ts_c.msac,
-            &mut *eob_cdf.offset(0),
-            2 as c_int as usize,
-        ) as c_int;
+        let tok_br =
+            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[0], 2 as c_int as usize)
+                as c_int;
         dc_tok = (1 + tok_br) as c_uint;
         if dbg {
             println!(
@@ -1372,7 +1355,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             );
         }
         if tok_br == 2 {
-            dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(0));
+            dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[0]);
             if dbg {
                 println!(
                     "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
