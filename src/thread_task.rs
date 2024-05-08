@@ -813,14 +813,17 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             t.type_0,
                             TaskType::TileEntropy | TaskType::TileReconstruction
                         ) {
+                            // We need to block here because we are seeing rare
+                            // contention. The fields we access out of
+                            // `Rav1dFrameData` are probably ok to read
+                            // concurrently with other tasks writing, but we
+                            // haven't separated out these fields.
+                            let f = fc.data.read().unwrap();
+
                             // if not bottom sbrow of tile, this task will be re-added
                             // after it's finished
-                            if check_tile(
-                                t_idx,
-                                &fc.data.try_read().unwrap(),
-                                &fc.task_thread,
-                                (c.fc.len() > 1) as c_int,
-                            ) == 0
+                            if check_tile(t_idx, &f, &fc.task_thread, (c.fc.len() > 1) as c_int)
+                                == 0
                             {
                                 break 'found (fc, t_idx, prev_t);
                             }
