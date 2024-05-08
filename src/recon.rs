@@ -1556,7 +1556,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     // context
     *res_ctx = (cmp::min(cul_level, 63) | dc_sign_level) as u8;
 
-    return eob;
+    eob
 }
 
 #[derive(Clone, Copy)]
