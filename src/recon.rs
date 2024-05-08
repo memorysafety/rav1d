@@ -515,8 +515,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
     b: &Av1Block,
     plane: c_int,
     cf: CfSelect,
-    txtp: *mut TxfmType,
-    res_ctx: *mut u8,
+    txtp: &mut TxfmType,
+    res_ctx: &mut u8,
 ) -> c_int {
     let dc_sign_ctx;
     let dc_sign;
@@ -537,32 +537,29 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let sctx = get_skip_ctx(t_dim, bs, a, l, chroma, f.cur.p.layout) as c_int;
     let all_skip = rav1d_msac_decode_bool_adapt(
         &mut ts_c.msac,
-        &mut ts_c.cdf.coef.skip[(*t_dim).ctx as usize][sctx as usize],
-    ) as c_int;
+        &mut ts_c.cdf.coef.skip[t_dim.ctx as usize][sctx as usize],
+    );
     if dbg {
         println!(
             "Post-non-zero[{}][{}][{}]: r={}",
-            (*t_dim).ctx as c_int,
-            sctx,
-            all_skip,
-            ts_c.msac.rng,
+            t_dim.ctx, sctx, all_skip, ts_c.msac.rng,
         );
     }
-    if all_skip != 0 {
-        *res_ctx = 0x40 as c_int as u8;
-        *txtp = (lossless * WHT_WHT) as TxfmType; // `lossless ? WHT_WHT : DCT_DCT`
-        return -(1 as c_int);
+    if all_skip {
+        *res_ctx = 0x40;
+        *txtp = if lossless { WHT_WHT } else { DCT_DCT };
+        return -1;
     }
 
     // transform type (chroma: derived, luma: explicitly coded)
     use Av1BlockIntraInter::*;
     *txtp = match &b.ii {
-        _ if lossless != 0 => {
-            assert!((*t_dim).max == TX_4X4);
+        _ if lossless => {
+            assert!(t_dim.max == TX_4X4);
             WHT_WHT
         }
-        Intra(_) if (*t_dim).max >= TX_32X32 => DCT_DCT,
-        Inter(_) if (*t_dim).max >= TX_64X64 => DCT_DCT,
+        Intra(_) if t_dim.max >= TX_32X32 => DCT_DCT,
+        Inter(_) if t_dim.max >= TX_64X64 => DCT_DCT,
         Intra(intra) if chroma => dav1d_txtp_from_uvmode[intra.uv_mode as usize],
         // inferred from either the luma txtp (inter) or a LUT (intra)
         Inter(_) if chroma => get_uv_inter_txtp(t_dim, *txtp),
@@ -577,17 +574,17 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 intra.y_mode
             };
             let idx;
-            let txtp = if frame_hdr.reduced_txtp_set != 0 || (*t_dim).min == TX_16X16 {
+            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.min == TX_16X16 {
                 idx = rav1d_msac_decode_symbol_adapt4(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.txtp_intra2[(*t_dim).min as usize][y_mode_nofilt as usize],
+                    &mut ts_c.cdf.m.txtp_intra2[t_dim.min as usize][y_mode_nofilt as usize],
                     4,
                 );
                 dav1d_tx_types_per_set[idx as usize + 0]
             } else {
                 idx = rav1d_msac_decode_symbol_adapt8(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.txtp_intra1[(*t_dim).min as usize][y_mode_nofilt as usize],
+                    &mut ts_c.cdf.m.txtp_intra1[t_dim.min as usize][y_mode_nofilt as usize],
                     6,
                 );
                 dav1d_tx_types_per_set[idx as usize + 5]
@@ -595,25 +592,25 @@ unsafe fn decode_coefs<BD: BitDepth>(
             if dbg {
                 println!(
                     "Post-txtp-intra[{}->{}][{}][{}->{}]: r={}",
-                    tx,
-                    (*t_dim).min,
-                    y_mode_nofilt,
-                    idx,
-                    txtp,
-                    ts_c.msac.rng,
+                    tx, t_dim.min, y_mode_nofilt, idx, txtp, ts_c.msac.rng,
                 );
             }
             txtp
         }
         Inter(_) => {
             let idx;
-            let txtp = if frame_hdr.reduced_txtp_set != 0 || (*t_dim).max == TX_32X32 {
-                idx = rav1d_msac_decode_bool_adapt(
+            let txtp = if frame_hdr.reduced_txtp_set != 0 || t_dim.max == TX_32X32 {
+                let bool_idx = rav1d_msac_decode_bool_adapt(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.txtp_inter3[(*t_dim).min as usize],
-                ) as c_uint;
-                idx.wrapping_sub(1) as TxfmType & IDTX // `idx ? DCT_DCT : IDTX`
-            } else if (*t_dim).min == TX_16X16 {
+                    &mut ts_c.cdf.m.txtp_inter3[t_dim.min as usize],
+                );
+                idx = bool_idx as c_uint;
+                if bool_idx {
+                    DCT_DCT
+                } else {
+                    IDTX
+                }
+            } else if t_dim.min == TX_16X16 {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
                     &mut ts_c.cdf.m.txtp_inter2.0,
@@ -623,7 +620,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             } else {
                 idx = rav1d_msac_decode_symbol_adapt16(
                     &mut ts_c.msac,
-                    &mut ts_c.cdf.m.txtp_inter1[(*t_dim).min as usize],
+                    &mut ts_c.cdf.m.txtp_inter1[t_dim.min as usize],
                     15,
                 );
                 dav1d_tx_types_per_set[idx as usize + 24]
@@ -631,11 +628,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
             if dbg {
                 println!(
                     "Post-txtp-inter[{}->{}][{}->{}]: r={}",
-                    tx,
-                    (*t_dim).min,
-                    idx,
-                    txtp,
-                    ts_c.msac.rng,
+                    tx, t_dim.min, idx, txtp, ts_c.msac.rng,
                 );
             }
             txtp
@@ -643,7 +636,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     };
 
     // find end-of-block (eob)
-    let tx2dszctx = cmp::min((*t_dim).lw, TX_32X32 as u8) + cmp::min((*t_dim).lh, TX_32X32 as u8);
+    let tx2dszctx = cmp::min(t_dim.lw, TX_32X32 as u8) + cmp::min(t_dim.lh, TX_32X32 as u8);
     let tx_class = dav1d_tx_type_class[*txtp as usize];
     let chroma = chroma as usize;
     let is_1d = (tx_class != TxClass::TwoD) as usize;
@@ -683,7 +676,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     if dbg {
         println!(
             "Post-eob_bin_{}[{}][{}][{}]: r={}",
-            (16 as c_int) << tx2dszctx,
+            16 << tx2dszctx,
             chroma,
             is_1d,
             eob_bin,
@@ -693,16 +686,12 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let eob;
     if eob_bin > 1 {
         let eob_hi_bit_cdf =
-            &mut ts_c.cdf.coef.eob_hi_bit[(*t_dim).ctx as usize][chroma][eob_bin as usize];
+            &mut ts_c.cdf.coef.eob_hi_bit[t_dim.ctx as usize][chroma][eob_bin as usize];
         let eob_hi_bit = rav1d_msac_decode_bool_adapt(&mut ts_c.msac, eob_hi_bit_cdf) as c_uint;
         if dbg {
             println!(
                 "Post-eob_hi_bit[{}][{}][{}][{}]: r={}",
-                (*t_dim).ctx as c_int,
-                chroma,
-                eob_bin,
-                eob_hi_bit,
-                ts_c.msac.rng,
+                t_dim.ctx, chroma, eob_bin, eob_hi_bit, ts_c.msac.rng,
             );
         }
         eob = ((eob_hi_bit | 2) << eob_bin - 2
@@ -716,52 +705,45 @@ unsafe fn decode_coefs<BD: BitDepth>(
     assert!(eob >= 0);
 
     // base tokens
-    let eob_cdf: *mut [u16; 4] =
-        (ts_c.cdf.coef.eob_base_tok[(*t_dim).ctx as usize][chroma]).as_mut_ptr();
-    let hi_cdf: *mut [u16; 4] = (ts_c.cdf.coef.br_tok
-        [cmp::min((*t_dim).ctx as c_int, 3 as c_int) as usize][chroma])
-        .as_mut_ptr();
+    let eob_cdf = &mut ts_c.cdf.coef.eob_base_tok[t_dim.ctx as usize][chroma];
+    let hi_cdf = &mut ts_c.cdf.coef.br_tok[cmp::min(t_dim.ctx, 3) as usize][chroma];
     let mut rc;
     let mut dc_tok;
 
     if eob != 0 {
-        let lo_cdf: *mut [u16; 4] =
-            (ts_c.cdf.coef.base_tok[(*t_dim).ctx as usize][chroma]).as_mut_ptr();
+        let lo_cdf = &mut ts_c.cdf.coef.base_tok[t_dim.ctx as usize][chroma];
         let levels = scratch.inter_intra_mut().levels_pal.levels_mut();
-        let sw = cmp::min((*t_dim).w as c_int, 8 as c_int);
-        let sh = cmp::min((*t_dim).h as c_int, 8 as c_int);
+        let sw = cmp::min(t_dim.w, 8);
+        let sh = cmp::min(t_dim.h, 8);
 
         // eob
-        let mut ctx: c_uint =
-            (1 as c_int + (eob > sw * sh * 2) as c_int + (eob > sw * sh * 4) as c_int) as c_uint;
-        let eob_tok = rav1d_msac_decode_symbol_adapt4(
-            &mut ts_c.msac,
-            &mut *eob_cdf.offset(ctx as isize),
-            2 as c_int as usize,
-        ) as c_int;
+        let mut ctx: c_uint = 1
+            + (eob > sw as c_int * sh as c_int * 2) as c_uint
+            + (eob > sw as c_int * sh as c_int * 4) as c_uint;
+        let eob_tok =
+            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[ctx as usize], 2) as c_int;
         let mut tok = eob_tok + 1;
-        let mut level_tok = tok * 0x41 as c_int;
+        let mut level_tok = tok * 0x41;
         let mut mag: c_uint = 0;
 
         let mut scan: &[u16] = &[];
         match tx_class {
             TxClass::TwoD => {
-                let nonsquare_tx: c_uint =
-                    (tx as c_uint >= RTX_4X8 as c_int as c_uint) as c_int as c_uint;
+                let nonsquare_tx: c_uint = (tx >= RTX_4X8) as c_uint;
                 let lo_ctx_offsets = Some(
                     &dav1d_lo_ctx_offsets
                         [nonsquare_tx.wrapping_add(tx as c_uint & nonsquare_tx) as usize],
                 );
                 scan = dav1d_scans[tx as usize];
-                let stride: ptrdiff_t = (4 * sh) as ptrdiff_t;
-                let shift: c_uint = (if ((*t_dim).lh as c_int) < 4 {
-                    (*t_dim).lh as c_int + 2
+                let stride = 4 * sh as usize;
+                let shift: c_uint = if t_dim.lh < 4 {
+                    t_dim.lh as c_uint + 2
                 } else {
-                    5 as c_int
-                }) as c_uint;
-                let shift2: c_uint = 0 as c_int as c_uint;
-                let mask: c_uint = (4 * sh - 1) as c_uint;
-                levels[..(stride * (4 * sw as isize + 2)) as usize].fill(0);
+                    5
+                };
+                let shift2: c_uint = 0;
+                let mask: c_uint = 4 * sh as c_uint - 1;
+                levels[..stride * (4 * sw as usize + 2)].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
                 match tx_class {
@@ -785,34 +767,26 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!(
                         "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
-                        (*t_dim).ctx as c_int,
-                        chroma,
-                        ctx,
-                        eob,
-                        rc,
-                        tok,
-                        ts_c.msac.rng,
+                        t_dim.ctx, chroma, ctx, eob, rc, tok, ts_c.msac.rng,
                     );
                 }
                 if eob_tok == 2 {
-                    ctx = (if if tx_class == TxClass::TwoD {
-                        (x | y > 1 as c_uint) as c_int
+                    ctx = if if tx_class == TxClass::TwoD {
+                        (x | y) > 1
                     } else {
-                        (y != 0 as c_int as c_uint) as c_int
-                    } != 0
-                    {
-                        14 as c_int
+                        y != 0
+                    } {
+                        14
                     } else {
-                        7 as c_int
-                    }) as c_uint;
-                    tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize))
-                            as c_int;
-                    level_tok = tok + ((3 as c_int) << 6);
+                        7
+                    };
+                    tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                        as c_int;
+                    level_tok = tok + (3 << 6);
                     if dbg {
                         println!(
                             "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
-                            cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                            cmp::min(t_dim.ctx, 3),
                             chroma,
                             ctx,
                             eob,
@@ -823,7 +797,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[(x as isize * stride + y as isize) as usize] = level_tok as u8;
+                levels[x as usize * stride + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     // ac
@@ -846,7 +820,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[(x as isize * stride + y as isize) as usize..];
+                    let level = &mut levels[x as usize * stride + y as usize..];
                     ctx = get_lo_ctx(
                         level,
                         tx_class,
@@ -854,48 +828,40 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         lo_ctx_offsets,
                         x as usize,
                         y as usize,
-                        stride as usize,
+                        stride,
                     ) as c_uint;
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
-                        &mut *lo_cdf.offset(ctx as isize),
-                        3 as c_int as usize,
+                        &mut lo_cdf[ctx as usize],
+                        3,
                     ) as c_int;
                     if dbg {
                         println!(
                             "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
-                            (*t_dim).ctx as c_int,
-                            chroma,
-                            ctx,
-                            i,
-                            rc_i,
-                            tok,
-                            ts_c.msac.rng,
+                            t_dim.ctx, chroma, ctx, i, rc_i, tok, ts_c.msac.rng,
                         );
                     }
                     if tok == 3 {
-                        mag &= 63 as c_int as c_uint;
+                        mag &= 63;
                         ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
-                            14 as c_int
+                            14
                         } else {
-                            7 as c_int
+                            7
                         }) as c_uint)
-                            .wrapping_add(if mag > 12 as c_uint {
-                                6 as c_int as c_uint
+                            .wrapping_add(if mag > 12 {
+                                6
                             } else {
-                                mag.wrapping_add(1 as c_int as c_uint) >> 1
+                                mag.wrapping_add(1) >> 1
                             });
-                        tok = rav1d_msac_decode_hi_tok(
-                            &mut ts_c.msac,
-                            &mut *hi_cdf.offset(ctx as isize),
-                        ) as c_int;
+                        tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                            as c_int;
                         if dbg {
                             println!(
                                 "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
-                                cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                                cmp::min(t_dim.ctx, 3),
                                 chroma,
                                 ctx,
                                 i,
@@ -904,7 +870,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                                 ts_c.msac.rng,
                             );
                         }
-                        level[0] = (tok + ((3 as c_int) << 6)) as u8;
+                        level[0] = (tok + (3 << 6)) as u8;
                         cf.set::<BD>(
                             f,
                             t_cf,
@@ -914,10 +880,10 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         rc = rc_i;
                     } else {
                         // `0x1` for `tok`, `0x7ff` as bitmask for `rc`, `0x41` for `level_tok`.
-                        tok *= 0x17ff41 as c_int;
+                        tok *= 0x17ff41;
                         level[0] = tok as u8;
                         // `tok ? (tok << 11) | rc : 0`
-                        tok = ((tok >> 9) as c_uint & rc.wrapping_add(!(0x7ff as c_uint))) as c_int;
+                        tok = ((tok as c_uint >> 9) & rc.wrapping_add(!(0x7ff as c_uint))) as c_int;
                         if tok != 0 {
                             rc = rc_i;
                         }
@@ -929,50 +895,33 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 ctx = if tx_class == TxClass::TwoD {
                     0
                 } else {
-                    get_lo_ctx(
-                        levels,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        0,
-                        0,
-                        stride as usize,
-                    ) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
                 };
-                dc_tok = rav1d_msac_decode_symbol_adapt4(
-                    &mut ts_c.msac,
-                    &mut *lo_cdf.offset(ctx as isize),
-                    3 as c_int as usize,
-                );
+                dc_tok =
+                    rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3);
                 if dbg {
                     println!(
                         "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
-                        (*t_dim).ctx as c_int,
-                        chroma,
-                        ctx,
-                        dc_tok,
-                        ts_c.msac.rng,
+                        t_dim.ctx, chroma, ctx, dc_tok, ts_c.msac.rng,
                     );
                 }
-                if dc_tok == 3 as c_uint {
+                if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = (levels[(0 * stride + 1) as usize] as c_int
-                            + levels[(1 * stride + 0) as usize] as c_int
-                            + levels[(1 * stride + 1) as usize] as c_int)
-                            as c_uint;
+                        mag = levels[0 * stride + 1] as c_uint
+                            + levels[1 * stride + 0] as c_uint
+                            + levels[1 * stride + 1] as c_uint;
                     }
-                    mag &= 63 as c_int as c_uint;
-                    ctx = if mag > 12 as c_uint {
-                        6 as c_int as c_uint
+                    mag &= 63;
+                    ctx = if mag > 12 {
+                        6
                     } else {
-                        mag.wrapping_add(1 as c_int as c_uint) >> 1
+                        mag.wrapping_add(1) >> 1
                     };
-                    dc_tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize));
+                    dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                     if dbg {
                         println!(
                             "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
-                            cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                            cmp::min(t_dim.ctx, 3),
                             chroma,
                             dc_tok,
                             ts_c.msac.rng,
@@ -982,11 +931,11 @@ unsafe fn decode_coefs<BD: BitDepth>(
             }
             TxClass::H => {
                 let lo_ctx_offsets = None;
-                let stride: ptrdiff_t = 16 as c_int as ptrdiff_t;
-                let shift: c_uint = ((*t_dim).lh as c_int + 2) as c_uint;
-                let shift2: c_uint = 0 as c_int as c_uint;
-                let mask: c_uint = (4 * sh - 1) as c_uint;
-                levels[..(stride * (4 * sh + 2) as isize) as usize].fill(0);
+                let stride = 16;
+                let shift: c_uint = t_dim.lh as c_uint + 2;
+                let shift2: c_uint = 0;
+                let mask: c_uint = 4 * sh as c_uint - 1;
+                levels[..stride * (4 * sh as usize + 2)].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
                 match tx_class {
@@ -1009,34 +958,26 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!(
                         "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
-                        (*t_dim).ctx as c_int,
-                        chroma,
-                        ctx,
-                        eob,
-                        rc,
-                        tok,
-                        ts_c.msac.rng,
+                        t_dim.ctx, chroma, ctx, eob, rc, tok, ts_c.msac.rng,
                     );
                 }
                 if eob_tok == 2 {
-                    ctx = (if if tx_class == TxClass::TwoD {
-                        (x | y > 1 as c_uint) as c_int
+                    ctx = if if tx_class == TxClass::TwoD {
+                        (x | y) > 1
                     } else {
-                        (y != 0 as c_int as c_uint) as c_int
-                    } != 0
-                    {
-                        14 as c_int
+                        y != 0
+                    } {
+                        14
                     } else {
-                        7 as c_int
-                    }) as c_uint;
-                    tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize))
-                            as c_int;
-                    level_tok = tok + ((3 as c_int) << 6);
+                        7
+                    };
+                    tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                        as c_int;
+                    level_tok = tok + (3 << 6);
                     if dbg {
                         println!(
                             "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
-                            cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                            cmp::min(t_dim.ctx, 3),
                             chroma,
                             ctx,
                             eob,
@@ -1047,7 +988,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[(x as isize * stride + y as isize) as usize] = level_tok as u8;
+                levels[x as usize * stride + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
@@ -1069,7 +1010,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[(x as isize * stride as isize + y as isize) as usize..];
+                    let level = &mut levels[x as usize * stride + y as usize..];
                     ctx = get_lo_ctx(
                         level,
                         tx_class,
@@ -1077,48 +1018,40 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         lo_ctx_offsets,
                         x as usize,
                         y as usize,
-                        stride as usize,
+                        stride,
                     ) as c_uint;
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
-                        &mut *lo_cdf.offset(ctx as isize),
-                        3 as c_int as usize,
+                        &mut lo_cdf[ctx as usize],
+                        3,
                     ) as c_int;
                     if dbg {
                         println!(
                             "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
-                            (*t_dim).ctx as c_int,
-                            chroma,
-                            ctx,
-                            i,
-                            rc_i,
-                            tok,
-                            ts_c.msac.rng,
+                            t_dim.ctx, chroma, ctx, i, rc_i, tok, ts_c.msac.rng,
                         );
                     }
                     if tok == 3 {
-                        mag &= 63 as c_int as c_uint;
+                        mag &= 63;
                         ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
-                            14 as c_int
+                            14
                         } else {
-                            7 as c_int
+                            7
                         }) as c_uint)
-                            .wrapping_add(if mag > 12 as c_uint {
-                                6 as c_int as c_uint
+                            .wrapping_add(if mag > 12 {
+                                6
                             } else {
-                                mag.wrapping_add(1 as c_int as c_uint) >> 1
+                                mag.wrapping_add(1) >> 1
                             });
-                        tok = rav1d_msac_decode_hi_tok(
-                            &mut ts_c.msac,
-                            &mut *hi_cdf.offset(ctx as isize),
-                        ) as c_int;
+                        tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                            as c_int;
                         if dbg {
                             println!(
                                 "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
-                                cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                                cmp::min(t_dim.ctx, 3),
                                 chroma,
                                 ctx,
                                 i,
@@ -1127,7 +1060,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                                 ts_c.msac.rng,
                             );
                         }
-                        level[0] = (tok + ((3 as c_int) << 6)) as u8;
+                        level[0] = (tok + (3 << 6)) as u8;
                         cf.set::<BD>(
                             f,
                             t_cf,
@@ -1136,9 +1069,9 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         );
                         rc = rc_i;
                     } else {
-                        tok *= 0x17ff41 as c_int;
+                        tok *= 0x17ff41;
                         level[0] = tok as u8;
-                        tok = ((tok >> 9) as c_uint & rc.wrapping_add(!(0x7ff as c_uint))) as c_int;
+                        tok = ((tok as c_uint >> 9) & rc.wrapping_add(!(0x7ff as c_uint))) as c_int;
                         if tok != 0 {
                             rc = rc_i;
                         }
@@ -1147,52 +1080,35 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     i -= 1;
                 }
                 ctx = if tx_class == TxClass::TwoD {
-                    0 as c_int as c_uint
+                    0
                 } else {
-                    get_lo_ctx(
-                        levels,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        0,
-                        0,
-                        stride as usize,
-                    ) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
                 };
-                dc_tok = rav1d_msac_decode_symbol_adapt4(
-                    &mut ts_c.msac,
-                    &mut *lo_cdf.offset(ctx as isize),
-                    3 as c_int as usize,
-                );
+                dc_tok =
+                    rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3);
                 if dbg {
                     println!(
                         "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
-                        (*t_dim).ctx as c_int,
-                        chroma,
-                        ctx,
-                        dc_tok,
-                        ts_c.msac.rng,
+                        t_dim.ctx, chroma, ctx, dc_tok, ts_c.msac.rng,
                     );
                 }
-                if dc_tok == 3 as c_uint {
+                if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = (levels[(0 * stride + 1) as usize] as c_int
-                            + levels[(1 * stride + 0) as usize] as c_int
-                            + levels[(1 * stride + 1) as usize] as c_int)
-                            as c_uint;
+                        mag = levels[0 * stride + 1] as c_uint
+                            + levels[1 * stride + 0] as c_uint
+                            + levels[1 * stride + 1] as c_uint;
                     }
-                    mag &= 63 as c_int as c_uint;
-                    ctx = if mag > 12 as c_uint {
-                        6 as c_int as c_uint
+                    mag &= 63;
+                    ctx = if mag > 12 {
+                        6
                     } else {
-                        mag.wrapping_add(1 as c_int as c_uint) >> 1
+                        mag.wrapping_add(1) >> 1
                     };
-                    dc_tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize));
+                    dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                     if dbg {
                         println!(
                             "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
-                            cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                            cmp::min(t_dim.ctx, 3),
                             chroma,
                             dc_tok,
                             ts_c.msac.rng,
@@ -1202,11 +1118,11 @@ unsafe fn decode_coefs<BD: BitDepth>(
             }
             TxClass::V => {
                 let lo_ctx_offsets = None;
-                let stride: ptrdiff_t = 16 as c_int as ptrdiff_t;
-                let shift: c_uint = ((*t_dim).lw as c_int + 2) as c_uint;
-                let shift2: c_uint = ((*t_dim).lh as c_int + 2) as c_uint;
-                let mask: c_uint = (4 * sw - 1) as c_uint;
-                levels[..(stride * (4 * sw + 2) as isize) as usize].fill(0);
+                let stride = 16;
+                let shift: c_uint = t_dim.lw as c_uint + 2;
+                let shift2: c_uint = t_dim.lh as c_uint + 2;
+                let mask: c_uint = 4 * sw as c_uint - 1;
+                levels[..stride * (4 * sw as usize + 2)].fill(0);
                 let mut x: c_uint;
                 let mut y: c_uint;
                 match tx_class {
@@ -1229,34 +1145,26 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 if dbg {
                     println!(
                         "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
-                        (*t_dim).ctx as c_int,
-                        chroma,
-                        ctx,
-                        eob,
-                        rc,
-                        tok,
-                        ts_c.msac.rng,
+                        t_dim.ctx, chroma, ctx, eob, rc, tok, ts_c.msac.rng,
                     );
                 }
                 if eob_tok == 2 {
-                    ctx = (if if tx_class == TxClass::TwoD {
-                        (x | y > 1 as c_uint) as c_int
+                    ctx = if if tx_class == TxClass::TwoD {
+                        (x | y) > 1
                     } else {
-                        (y != 0 as c_int as c_uint) as c_int
-                    } != 0
-                    {
-                        14 as c_int
+                        y != 0
+                    } {
+                        14
                     } else {
-                        7 as c_int
-                    }) as c_uint;
-                    tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize))
-                            as c_int;
-                    level_tok = tok + ((3 as c_int) << 6);
+                        7
+                    };
+                    tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                        as c_int;
+                    level_tok = tok + (3 << 6);
                     if dbg {
                         println!(
                             "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
-                            cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                            cmp::min(t_dim.ctx, 3),
                             chroma,
                             ctx,
                             eob,
@@ -1267,7 +1175,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     }
                 }
                 cf.set::<BD>(f, t_cf, rc as usize, (tok << 11).as_::<BD::Coef>());
-                levels[(x as isize * stride + y as isize) as usize] = level_tok as u8;
+                levels[x as usize * stride + y as usize] = level_tok as u8;
                 let mut i = eob - 1;
                 while i > 0 {
                     let rc_i: c_uint;
@@ -1289,7 +1197,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         }
                     }
                     assert!(x < 32 && y < 32);
-                    let level = &mut levels[(x as isize * stride + y as isize) as usize..];
+                    let level = &mut levels[x as usize * stride + y as usize..];
                     ctx = get_lo_ctx(
                         level,
                         tx_class,
@@ -1297,48 +1205,40 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         lo_ctx_offsets,
                         x as usize,
                         y as usize,
-                        stride as usize,
+                        stride,
                     ) as c_uint;
                     if tx_class == TxClass::TwoD {
                         y |= x;
                     }
                     tok = rav1d_msac_decode_symbol_adapt4(
                         &mut ts_c.msac,
-                        &mut *lo_cdf.offset(ctx as isize),
-                        3 as c_int as usize,
+                        &mut lo_cdf[ctx as usize],
+                        3,
                     ) as c_int;
                     if dbg {
                         println!(
                             "Post-lo_tok[{}][{}][{}][{}={}={}]: r={}",
-                            (*t_dim).ctx as c_int,
-                            chroma,
-                            ctx,
-                            i,
-                            rc_i,
-                            tok,
-                            ts_c.msac.rng,
+                            t_dim.ctx, chroma, ctx, i, rc_i, tok, ts_c.msac.rng,
                         );
                     }
                     if tok == 3 {
-                        mag &= 63 as c_int as c_uint;
-                        ctx = ((if y > (tx_class == TxClass::TwoD) as c_int as c_uint {
-                            14 as c_int
+                        mag &= 63;
+                        ctx = ((if y > (tx_class == TxClass::TwoD) as c_uint {
+                            14
                         } else {
-                            7 as c_int
+                            7
                         }) as c_uint)
-                            .wrapping_add(if mag > 12 as c_uint {
-                                6 as c_int as c_uint
+                            .wrapping_add(if mag > 12 {
+                                6
                             } else {
-                                mag.wrapping_add(1 as c_int as c_uint) >> 1
+                                mag.wrapping_add(1) >> 1
                             });
-                        tok = rav1d_msac_decode_hi_tok(
-                            &mut ts_c.msac,
-                            &mut *hi_cdf.offset(ctx as isize),
-                        ) as c_int;
+                        tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize])
+                            as c_int;
                         if dbg {
                             println!(
                                 "Post-hi_tok[{}][{}][{}][{}={}={}]: r={}",
-                                cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                                cmp::min(t_dim.ctx, 3),
                                 chroma,
                                 ctx,
                                 i,
@@ -1347,7 +1247,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                                 ts_c.msac.rng,
                             );
                         }
-                        level[0] = (tok + ((3 as c_int) << 6)) as u8;
+                        level[0] = (tok + (3 << 6)) as u8;
                         cf.set::<BD>(
                             f,
                             t_cf,
@@ -1356,9 +1256,9 @@ unsafe fn decode_coefs<BD: BitDepth>(
                         );
                         rc = rc_i;
                     } else {
-                        tok *= 0x17ff41 as c_int;
+                        tok *= 0x17ff41;
                         level[0] = tok as u8;
-                        tok = ((tok >> 9) as c_uint & rc.wrapping_add(!(0x7ff as c_uint))) as c_int;
+                        tok = ((tok as c_uint >> 9) & rc.wrapping_add(!(0x7ff as c_uint))) as c_int;
                         if tok != 0 {
                             rc = rc_i;
                         }
@@ -1367,52 +1267,35 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     i -= 1;
                 }
                 ctx = if tx_class == TxClass::TwoD {
-                    0 as c_int as c_uint
+                    0
                 } else {
-                    get_lo_ctx(
-                        levels,
-                        tx_class,
-                        &mut mag,
-                        lo_ctx_offsets,
-                        0,
-                        0,
-                        stride as usize,
-                    ) as c_uint
+                    get_lo_ctx(levels, tx_class, &mut mag, lo_ctx_offsets, 0, 0, stride) as c_uint
                 };
-                dc_tok = rav1d_msac_decode_symbol_adapt4(
-                    &mut ts_c.msac,
-                    &mut *lo_cdf.offset(ctx as isize),
-                    3 as c_int as usize,
-                );
+                dc_tok =
+                    rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut lo_cdf[ctx as usize], 3);
                 if dbg {
                     println!(
                         "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
-                        (*t_dim).ctx as c_int,
-                        chroma,
-                        ctx,
-                        dc_tok,
-                        ts_c.msac.rng,
+                        t_dim.ctx, chroma, ctx, dc_tok, ts_c.msac.rng,
                     );
                 }
-                if dc_tok == 3 as c_uint {
+                if dc_tok == 3 {
                     if tx_class == TxClass::TwoD {
-                        mag = (levels[(0 * stride + 1) as usize] as c_int
-                            + levels[(1 * stride + 0) as usize] as c_int
-                            + levels[(1 * stride + 1) as usize] as c_int)
-                            as c_uint;
+                        mag = levels[0 * stride + 1] as c_uint
+                            + levels[1 * stride + 0] as c_uint
+                            + levels[1 * stride + 1] as c_uint;
                     }
-                    mag &= 63 as c_int as c_uint;
-                    ctx = if mag > 12 as c_uint {
-                        6 as c_int as c_uint
+                    mag &= 63;
+                    ctx = if mag > 12 {
+                        6
                     } else {
-                        mag.wrapping_add(1 as c_int as c_uint) >> 1
+                        mag.wrapping_add(1) >> 1
                     };
-                    dc_tok =
-                        rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(ctx as isize));
+                    dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[ctx as usize]);
                     if dbg {
                         println!(
                             "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
-                            cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                            cmp::min(t_dim.ctx, 3),
                             chroma,
                             dc_tok,
                             ts_c.msac.rng,
@@ -1423,35 +1306,29 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
     } else {
         // dc-only
-        let tok_br = rav1d_msac_decode_symbol_adapt4(
-            &mut ts_c.msac,
-            &mut *eob_cdf.offset(0),
-            2 as c_int as usize,
-        ) as c_int;
+        let tok_br =
+            rav1d_msac_decode_symbol_adapt4(&mut ts_c.msac, &mut eob_cdf[0], 2 as c_int as usize)
+                as c_int;
         dc_tok = (1 + tok_br) as c_uint;
         if dbg {
             println!(
                 "Post-dc_lo_tok[{}][{}][{}][{}]: r={}",
-                (*t_dim).ctx as c_int,
-                chroma,
-                0 as c_int,
-                dc_tok,
-                ts_c.msac.rng,
+                t_dim.ctx, chroma, 0, dc_tok, ts_c.msac.rng,
             );
         }
         if tok_br == 2 {
-            dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut *hi_cdf.offset(0));
+            dc_tok = rav1d_msac_decode_hi_tok(&mut ts_c.msac, &mut hi_cdf[0]);
             if dbg {
                 println!(
                     "Post-dc_hi_tok[{}][{}][0][{}]: r={}",
-                    cmp::min((*t_dim).ctx as c_int, 3 as c_int),
+                    cmp::min(t_dim.ctx, 3),
                     chroma,
                     dc_tok,
                     ts_c.msac.rng,
                 );
             }
         }
-        rc = 0 as c_int as c_uint;
+        rc = 0;
     }
 
     // residual and sign
@@ -1460,13 +1337,13 @@ unsafe fn decode_coefs<BD: BitDepth>(
         TileStateRef::Local => &ts.dqmem,
     };
     let dq_tbl = &dq[b.seg_id as usize][plane as usize];
-    let qm_tbl = if (*txtp as c_uint) < IDTX as c_int as c_uint {
+    let qm_tbl = if *txtp < IDTX {
         f.qm[tx as usize][plane as usize]
     } else {
         None
     };
-    let dq_shift = cmp::max(0 as c_int, (*t_dim).ctx as c_int - 2);
-    let cf_max = !(!(127 as c_uint)
+    let dq_shift = cmp::max(0, t_dim.ctx as c_int - 2);
+    let cf_max = !(!127u32
         << (match BD::BPC {
             BPC::BPC8 => 8,
             BPC::BPC16 => f.cur.p.bpc,
@@ -1475,8 +1352,8 @@ unsafe fn decode_coefs<BD: BitDepth>(
     let dc_sign_level: c_uint;
 
     if dc_tok == 0 {
-        cul_level = 0 as c_int as c_uint;
-        dc_sign_level = ((1 as c_int) << 6) as c_uint;
+        cul_level = 0;
+        dc_sign_level = 1 << 6;
         if qm_tbl.is_some() {
             // goto ac_qm;
             current_block = 1669574575799829731;
@@ -1496,32 +1373,31 @@ unsafe fn decode_coefs<BD: BitDepth>(
         }
 
         dc_dq = dq_tbl[0].load(Ordering::Relaxed) as c_int;
-        dc_sign_level = (dc_sign - 1 & (2 as c_int) << 6) as c_uint;
+        dc_sign_level = (dc_sign - 1 & 2 << 6) as c_uint;
 
         if let Some(qm_tbl) = qm_tbl {
             dc_dq = dc_dq * qm_tbl[0] as c_int + 16 >> 5;
 
-            if dc_tok == 15 as c_uint {
-                dc_tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15 as c_int as c_uint);
+            if dc_tok == 15 {
+                dc_tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15);
                 if dbg {
                     println!(
                         "Post-dc_residual[{}->{}]: r={}",
-                        dc_tok.wrapping_sub(15 as c_int as c_uint),
+                        dc_tok.wrapping_sub(15),
                         dc_tok,
                         ts_c.msac.rng,
                     );
                 }
 
-                dc_tok &= 0xfffff as c_int as c_uint;
-                dc_dq =
-                    ((dc_dq as c_uint).wrapping_mul(dc_tok) & 0xffffff as c_int as c_uint) as c_int;
+                dc_tok &= 0xfffff;
+                dc_dq = ((dc_dq as c_uint).wrapping_mul(dc_tok) & 0xffffff) as c_int;
             } else {
-                dc_dq = (dc_dq as c_uint).wrapping_mul(dc_tok) as c_int as c_int;
+                dc_dq = (dc_dq as c_uint).wrapping_mul(dc_tok) as c_int;
                 assert!(dc_dq <= 0xffffff);
             }
             cul_level = dc_tok;
             dc_dq >>= dq_shift;
-            dc_dq = cmp::min(dc_dq as c_uint, (cf_max + dc_sign) as c_uint) as c_int;
+            dc_dq = cmp::min(dc_dq, cf_max + dc_sign);
             cf.set::<BD>(
                 f,
                 t_cf,
@@ -1536,21 +1412,21 @@ unsafe fn decode_coefs<BD: BitDepth>(
             }
         } else {
             // non-qmatrix is the common case and allows for additional optimizations
-            if dc_tok == 15 as c_uint {
-                dc_tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15 as c_int as c_uint);
+            if dc_tok == 15 {
+                dc_tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15);
                 if dbg {
                     println!(
                         "Post-dc_residual[{}->{}]: r={}",
-                        dc_tok.wrapping_sub(15 as c_int as c_uint),
+                        dc_tok.wrapping_sub(15),
                         dc_tok,
                         ts_c.msac.rng,
                     );
                 }
 
-                dc_tok &= 0xfffff as c_int as c_uint;
+                dc_tok &= 0xfffff;
                 dc_dq = (((dc_dq as c_uint).wrapping_mul(dc_tok) & 0xffffff as c_int as c_uint)
                     >> dq_shift) as c_int;
-                dc_dq = cmp::min(dc_dq as c_uint, (cf_max + dc_sign) as c_uint) as c_int;
+                dc_dq = cmp::min(dc_dq, cf_max + dc_sign);
             } else {
                 dc_dq = ((dc_dq as c_uint).wrapping_mul(dc_tok) >> dq_shift) as c_int;
                 assert!(dc_dq <= cf_max);
@@ -1584,24 +1460,24 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let mut dq: c_uint = ac_dq
                     // TODO: Remove `unwrap` once state machine control flow is cleaned up.
                     .wrapping_mul(qm_tbl.unwrap()[rc as usize] as c_uint)
-                    .wrapping_add(16 as c_int as c_uint)
+                    .wrapping_add(16)
                     >> 5;
                 let dq_sat;
 
-                if rc_tok >= ((15 as c_int) << 11) as c_uint {
-                    tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15 as c_int as c_uint);
+                if rc_tok >= 15 << 11 {
+                    tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15);
                     if dbg {
                         println!(
                             "Post-residual[{}={}->{}]: r={}",
                             rc,
-                            tok.wrapping_sub(15 as c_int as c_uint),
+                            tok.wrapping_sub(15),
                             tok,
                             ts_c.msac.rng,
                         );
                     }
 
-                    tok &= 0xfffff as c_int as c_uint;
-                    dq = dq.wrapping_mul(tok) & 0xffffff as c_int as c_uint;
+                    tok &= 0xfffff;
+                    dq = dq.wrapping_mul(tok) & 0xffffff;
                 } else {
                     tok = rc_tok >> 11;
                     dq = dq.wrapping_mul(tok);
@@ -1609,7 +1485,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 }
                 cul_level = cul_level.wrapping_add(tok);
                 dq >>= dq_shift;
-                dq_sat = cmp::min(dq, (cf_max + sign) as c_uint) as c_int;
+                dq_sat = cmp::min(dq as c_int, cf_max + sign);
                 cf.set::<BD>(
                     f,
                     t_cf,
@@ -1617,7 +1493,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     (if sign != 0 { -dq_sat } else { dq_sat }).as_::<BD::Coef>(),
                 );
 
-                rc = rc_tok & 0x3ff as c_int as c_uint;
+                rc = rc_tok & 0x3ff;
                 if !(rc != 0) {
                     break;
                 }
@@ -1636,25 +1512,24 @@ unsafe fn decode_coefs<BD: BitDepth>(
                 let mut dq;
 
                 // residual
-                if rc_tok >= ((15 as c_int) << 11) as c_uint {
-                    tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15 as c_int as c_uint);
+                if rc_tok >= 15 << 11 {
+                    tok = (read_golomb(&mut ts_c.msac)).wrapping_add(15);
                     if dbg {
                         println!(
                             "Post-residual[{}={}->{}]: r={}",
                             rc,
-                            tok.wrapping_sub(15 as c_int as c_uint),
+                            tok.wrapping_sub(15),
                             tok,
                             ts_c.msac.rng,
                         );
                     }
 
                     // coefficient parsing, see 5.11.39
-                    tok &= 0xfffff as c_int as c_uint;
+                    tok &= 0xfffff;
 
                     // dequant, see 7.12.3
-                    dq = ((ac_dq.wrapping_mul(tok) & 0xffffff as c_int as c_uint) >> dq_shift)
-                        as c_int;
-                    dq = cmp::min(dq as c_uint, (cf_max + sign) as c_uint) as c_int;
+                    dq = ((ac_dq.wrapping_mul(tok) & 0xffffff) >> dq_shift) as c_int;
+                    dq = cmp::min(dq, cf_max + sign);
                 } else {
                     // cannot exceed `cf_max`, so we can avoid the clipping
                     tok = rc_tok >> 11;
@@ -1669,7 +1544,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
                     (if sign != 0 { -dq } else { dq }).as_::<BD::Coef>(),
                 );
 
-                rc = rc_tok & 0x3ff as c_int as c_uint; // next non-zero `rc`, zero if `eob`
+                rc = rc_tok & 0x3ff; // next non-zero `rc`, zero if `eob`
                 if !(rc != 0) {
                     break;
                 }
@@ -1679,9 +1554,9 @@ unsafe fn decode_coefs<BD: BitDepth>(
     }
 
     // context
-    *res_ctx = (cmp::min(cul_level, 63 as c_int as c_uint) | dc_sign_level) as u8;
+    *res_ctx = (cmp::min(cul_level, 63) | dc_sign_level) as u8;
 
-    return eob;
+    eob
 }
 
 #[derive(Clone, Copy)]

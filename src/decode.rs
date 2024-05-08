@@ -848,8 +848,7 @@ fn read_vartx_tree(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let txfm_mode = frame_hdr.txfm_mode;
     let uvtx;
-    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 || max_ytx == TX_4X4)
-    {
+    if b.skip == 0 && (frame_hdr.segmentation.lossless[b.seg_id as usize] || max_ytx == TX_4X4) {
         uvtx = TX_4X4;
         max_ytx = uvtx;
         if txfm_mode == Rav1dTxfmMode::Switchable {
@@ -1741,7 +1740,7 @@ unsafe fn decode_b(
         let uv_angle;
         let cfl_alpha;
         if has_chroma {
-            let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
+            let cfl_allowed = if frame_hdr.segmentation.lossless[b.seg_id as usize] {
                 cbw4 == 1 && cbh4 == 1
             } else {
                 (cfl_allowed_mask & (1 << bs as u8)) != 0
@@ -1945,7 +1944,7 @@ unsafe fn decode_b(
 
         let frame_hdr = f.frame_hdr();
 
-        let tx = if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
+        let tx = if frame_hdr.segmentation.lossless[b.seg_id as usize] {
             b.uvtx = TX_4X4;
             b.uvtx
         } else {
@@ -3154,7 +3153,7 @@ unsafe fn decode_b(
             let tx_split = [tx_split0 as u16, tx_split1];
             let mut ytx = max_ytx;
             let mut uvtx = b.uvtx;
-            if frame_hdr.segmentation.lossless[b.seg_id as usize] != 0 {
+            if frame_hdr.segmentation.lossless[b.seg_id as usize] {
                 ytx = TX_4X4;
                 uvtx = TX_4X4;
             }

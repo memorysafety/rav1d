@@ -1158,11 +1158,11 @@ fn parse_segmentation(
     debug.post(gb, "segmentation");
 
     // derive lossless flags
-    let delta_lossless = (quant.ydc_delta == 0
+    let delta_lossless = quant.ydc_delta == 0
         && quant.udc_delta == 0
         && quant.uac_delta == 0
         && quant.vdc_delta == 0
-        && quant.vac_delta == 0) as c_int;
+        && quant.vac_delta == 0;
     let qidx = array::from_fn(|i| {
         if enabled != 0 {
             clip_u8(quant.yac as c_int + seg_data.d[i].delta_q as c_int)
@@ -1170,7 +1170,7 @@ fn parse_segmentation(
             quant.yac
         }
     });
-    let lossless = array::from_fn(|i| (qidx[i] == 0 && delta_lossless != 0) as u8);
+    let lossless = array::from_fn(|i| qidx[i] == 0 && delta_lossless);
     Ok(Rav1dFrameHeader_segmentation {
         enabled,
         update_map,
@@ -1977,7 +1977,7 @@ unsafe fn parse_frame_hdr(
     let tiling = parse_tiling(seqhdr, &size, &debug, gb)?;
     let quant = parse_quant(seqhdr, &debug, gb);
     let segmentation = parse_segmentation(c, primary_ref_frame, &refidx, &quant, &debug, gb)?;
-    let all_lossless = segmentation.lossless.iter().all(|&it| it != 0);
+    let all_lossless = segmentation.lossless.iter().all(|&it| it);
     let delta = parse_delta(&quant, allow_intrabc, &debug, gb);
     let loopfilter = parse_loopfilter(
         c,

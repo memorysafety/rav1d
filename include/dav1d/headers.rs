@@ -2105,7 +2105,8 @@ pub struct Rav1dFrameHeader_segmentation {
     pub temporal: u8,
     pub update_data: u8,
     pub seg_data: Rav1dSegmentationDataSet,
-    pub lossless: [u8; RAV1D_MAX_SEGMENTS as usize],
+    /// TODO compress `[bool; 8]` into `u8`.
+    pub lossless: [bool; RAV1D_MAX_SEGMENTS as usize],
     pub qidx: [u8; RAV1D_MAX_SEGMENTS as usize],
 }
 
@@ -2126,7 +2127,7 @@ impl From<Dav1dFrameHeader_segmentation> for Rav1dFrameHeader_segmentation {
             temporal,
             update_data,
             seg_data: seg_data.into(),
-            lossless,
+            lossless: lossless.map(|e| e != 0),
             qidx,
         }
     }
@@ -2149,7 +2150,7 @@ impl From<Rav1dFrameHeader_segmentation> for Dav1dFrameHeader_segmentation {
             temporal,
             update_data,
             seg_data: seg_data.into(),
-            lossless,
+            lossless: lossless.map(|e| e as u8),
             qidx,
         }
     }
