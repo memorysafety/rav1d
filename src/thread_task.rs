@@ -27,7 +27,6 @@ use crate::src::internal::Rav1dTaskContext_task_thread;
 use crate::src::internal::TaskThreadData;
 use crate::src::internal::TaskType;
 use crate::src::iter::wrapping_iter;
-use crate::src::picture::Rav1dThreadPicture;
 use atomig::Atom;
 use atomig::Atomic;
 use parking_lot::Mutex;
@@ -373,7 +372,7 @@ impl Rav1dTasks {
     }
 
     #[inline]
-    unsafe fn merge_pending_frame(&self, c: &Rav1dContext) -> bool {
+    fn merge_pending_frame(&self, c: &Rav1dContext) -> bool {
         let merge = self.pending_tasks_merge.swap(false, Ordering::SeqCst);
         if merge {
             let mut pending_tasks = self.pending_tasks.lock();
@@ -398,7 +397,7 @@ impl Rav1dTasks {
 }
 
 #[inline]
-unsafe fn merge_pending(c: &Rav1dContext) -> c_int {
+fn merge_pending(c: &Rav1dContext) -> c_int {
     let mut res = 0;
     for fc in c.fc.iter() {
         res |= fc.task_thread.tasks.merge_pending_frame(c) as c_int;
@@ -406,11 +405,7 @@ unsafe fn merge_pending(c: &Rav1dContext) -> c_int {
     return res;
 }
 
-unsafe fn create_filter_sbrow(
-    fc: &Rav1dFrameContext,
-    f: &Rav1dFrameData,
-    pass: c_int,
-) -> Rav1dResult {
+fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) -> Rav1dResult {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     let has_deblock = (frame_hdr.loopfilter.level_y != [0; 2]) as c_int;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
@@ -457,7 +452,7 @@ unsafe fn create_filter_sbrow(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
+pub(crate) fn rav1d_task_create_tile_sbrow(
     fc: &Rav1dFrameContext,
     f: &Rav1dFrameData,
     pass: c_int,
@@ -494,7 +489,7 @@ pub(crate) unsafe fn rav1d_task_create_tile_sbrow(
     Ok(())
 }
 
-pub(crate) unsafe fn rav1d_task_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) {
+pub(crate) fn rav1d_task_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) {
     fc.task_thread.init_done.store(0, Ordering::SeqCst);
     let init_task = Rav1dTask::init(fc.index as c_uint);
     fc.task_thread.insert_task(c, init_task, 1 as c_int);
@@ -537,7 +532,7 @@ pub(crate) fn rav1d_task_delayed_fg(
 }
 
 #[inline]
-unsafe fn ensure_progress<'l, 'ttd: 'l>(
+fn ensure_progress<'l, 'ttd: 'l>(
     ttd: &'ttd TaskThreadData,
     f: &Rav1dFrameContext,
     t: &Rav1dTask,
@@ -563,7 +558,7 @@ unsafe fn ensure_progress<'l, 'ttd: 'l>(
 }
 
 #[inline]
-unsafe fn check_tile(
+fn check_tile(
     f: &Rav1dFrameData,
     task_thread: &Rav1dFrameContext_task_thread,
     t: &Rav1dTask,
@@ -580,7 +575,7 @@ unsafe fn check_tile(
     error |= task_thread.error.fetch_or(error, Ordering::SeqCst);
     if error == 0 && frame_mt != 0 && !tp {
         let p2 = ts.progress[1].load(Ordering::SeqCst);
-        if p2 <= (*t).sby {
+        if p2 <= t.sby {
             return 1;
         }
         error = (p2 == TILE_ERROR) as c_int;
@@ -589,11 +584,10 @@ unsafe fn check_tile(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if error == 0 && frame_mt != 0 && !frame_hdr.frame_type.is_key_or_intra() {
         // check reference state
-        let p: *const Rav1dThreadPicture = &f.sr_cur;
-        let ss_ver =
-            ((*p).p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-        let p_b: c_uint = (((*t).sby + 1) << f.sb_shift + 2) as c_uint;
-        let tile_sby = (*t).sby - (ts.tiling.row_start >> f.sb_shift);
+        let p = &f.sr_cur;
+        let ss_ver = (p.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
+        let p_b: c_uint = ((t.sby + 1) << f.sb_shift + 2) as c_uint;
+        let tile_sby = t.sby - (ts.tiling.row_start >> f.sb_shift);
         let lowest_px = f
             .lowest_pixel_mem
             .index(ts.lowest_pixel + tile_sby as usize);
@@ -685,7 +679,7 @@ fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
 }
 
 #[inline]
-unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
+fn delayed_fg_task<'l, 'ttd: 'l>(
     ttd: &'ttd TaskThreadData,
     task_thread_lock: &'l mut Option<MutexGuard<'ttd, ()>>,
 ) {
@@ -709,21 +703,27 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             match &mut delayed_fg.grain {
                 #[cfg(feature = "bitdepth_8")]
                 Grain::Bpc8(grain) => {
-                    rav1d_prep_grain::<BitDepth8>(
-                        dsp,
-                        &mut delayed_fg.out,
-                        &delayed_fg.in_0,
-                        grain,
-                    );
+                    // SAFETY: TODO make safe
+                    unsafe {
+                        rav1d_prep_grain::<BitDepth8>(
+                            dsp,
+                            &mut delayed_fg.out,
+                            &delayed_fg.in_0,
+                            grain,
+                        );
+                    }
                 }
                 #[cfg(feature = "bitdepth_16")]
                 Grain::Bpc16(grain) => {
-                    rav1d_prep_grain::<BitDepth16>(
-                        dsp,
-                        &mut delayed_fg.out,
-                        &delayed_fg.in_0,
-                        grain,
-                    );
+                    // SAFETY: TODO make safe
+                    unsafe {
+                        rav1d_prep_grain::<BitDepth16>(
+                            dsp,
+                            &mut delayed_fg.out,
+                            &delayed_fg.in_0,
+                            grain,
+                        );
+                    }
                 }
             }
             delayed_fg.type_0 = TaskType::FgApply;
@@ -757,23 +757,29 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             match &delayed_fg.grain {
                 #[cfg(feature = "bitdepth_8")]
                 Grain::Bpc8(grain) => {
-                    rav1d_apply_grain_row::<BitDepth8>(
-                        dsp,
-                        &delayed_fg.out,
-                        &delayed_fg.in_0,
-                        grain,
-                        row as usize,
-                    );
+                    // SAFETY: TODO make safe
+                    unsafe {
+                        rav1d_apply_grain_row::<BitDepth8>(
+                            dsp,
+                            &delayed_fg.out,
+                            &delayed_fg.in_0,
+                            grain,
+                            row as usize,
+                        );
+                    }
                 }
                 #[cfg(feature = "bitdepth_16")]
                 Grain::Bpc16(grain) => {
-                    rav1d_apply_grain_row::<BitDepth16>(
-                        dsp,
-                        &delayed_fg.out,
-                        &delayed_fg.in_0,
-                        grain,
-                        row as usize,
-                    );
+                    // SAFETY: TODO make safe
+                    unsafe {
+                        rav1d_apply_grain_row::<BitDepth16>(
+                            dsp,
+                            &delayed_fg.out,
+                            &delayed_fg.in_0,
+                            grain,
+                            row as usize,
+                        );
+                    }
                 }
             }
         }
@@ -797,7 +803,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
     }
 }
 
-pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_task_thread>) {
+pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_task_thread>) {
     let mut tc = Rav1dTaskContext::new(task_thread);
 
     // We clone the Arc here for the lifetime of this function to avoid an
@@ -805,7 +811,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
     let ttd_clone = Arc::clone(&tc.task_thread.ttd);
     let ttd = &*ttd_clone;
 
-    unsafe fn park<'ttd>(
+    fn park<'ttd>(
         c: &Rav1dContext,
         tc: &mut Rav1dTaskContext,
         ttd: &TaskThreadData,
@@ -1149,7 +1155,8 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             1 as c_int + (t.type_0 == TaskType::TileReconstruction) as c_int
                         };
                         if error_0 == 0 {
-                            error_0 = match rav1d_decode_tile_sbrow(c, &mut tc, &f) {
+                            // SAFETY: TODO make safe
+                            error_0 = match unsafe { rav1d_decode_tile_sbrow(c, &mut tc, &f) } {
                                 Ok(()) => 0,
                                 Err(()) => 1,
                             };
@@ -1238,7 +1245,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         {
                             let f = fc.data.try_read().unwrap();
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn().filter_sbrow_deblock_cols)(c, &f, &mut tc, sby);
+                                // SAFETY: TODO make safe
+                                unsafe {
+                                    (f.bd_fn().filter_sbrow_deblock_cols)(c, &f, &mut tc, sby);
+                                }
                             }
                         }
                         if ensure_progress(
@@ -1258,7 +1268,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                     TaskType::DeblockRows => {
                         let f = fc.data.try_read().unwrap();
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                            (f.bd_fn().filter_sbrow_deblock_rows)(c, &f, &mut tc, sby);
+                            // SAFETY: TODO make safe
+                            unsafe {
+                                (f.bd_fn().filter_sbrow_deblock_rows)(c, &f, &mut tc, sby);
+                            }
                         }
                         // signal deblock progress
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
@@ -1306,7 +1319,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         if seq_hdr.cdef != 0 {
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn().filter_sbrow_cdef)(c, &f, &mut tc, sby);
+                                // SAFETY: TODO make safe
+                                unsafe {
+                                    (f.bd_fn().filter_sbrow_cdef)(c, &f, &mut tc, sby);
+                                }
                             }
                             drop(f);
                             reset_task_cur_async(ttd, t.frame_idx, c.fc.len() as u32);
@@ -1322,7 +1338,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
                         if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
                             if fc.task_thread.error.load(Ordering::SeqCst) == 0 {
-                                (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
+                                // SAFETY: TODO make safe
+                                unsafe {
+                                    (f.bd_fn().filter_sbrow_resize)(c, &f, &mut tc, sby);
+                                }
                             }
                         }
                         task_type = TaskType::LoopRestoration;
@@ -1333,7 +1352,10 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         if fc.task_thread.error.load(Ordering::SeqCst) == 0
                             && f.lf.restore_planes != 0
                         {
-                            (f.bd_fn().filter_sbrow_lr)(c, &f, &mut tc, sby);
+                            // SAFETY: TODO make safe
+                            unsafe {
+                                (f.bd_fn().filter_sbrow_lr)(c, &f, &mut tc, sby);
+                            }
                         }
                         task_type = TaskType::ReconstructionProgress;
                         continue 'fallthrough;
