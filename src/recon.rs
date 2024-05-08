@@ -516,7 +516,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     plane: c_int,
     cf: CfSelect,
     txtp: &mut TxfmType,
-    res_ctx: *mut u8,
+    res_ctx: &mut u8,
 ) -> c_int {
     let dc_sign_ctx;
     let dc_sign;
