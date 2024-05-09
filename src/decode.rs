@@ -4,6 +4,7 @@ use crate::include::common::intops::apply_sign64;
 use crate::include::common::intops::clip;
 use crate::include::common::intops::clip_u8;
 use crate::include::common::intops::iclip;
+use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::headers::Dav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dFrameHeader;
@@ -169,6 +170,7 @@ use crate::src::warpmv::rav1d_find_affine_int;
 use crate::src::warpmv::rav1d_get_shear_params;
 use crate::src::warpmv::rav1d_set_affine_mv2d;
 use libc::ptrdiff_t;
+use parking_lot::Mutex;
 use std::array;
 use std::cmp;
 use std::ffi::c_int;
@@ -4953,7 +4955,7 @@ pub(crate) fn rav1d_decode_frame_exit(
     retval
 }
 
-pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Rav1dResult {
+pub(crate) fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Rav1dResult {
     assert!(c.fc.len() == 1);
     // if.tc.len() > 1 (but n_fc == 1), we could run init/exit in the task
     // threads also. Not sure it makes a measurable difference.
@@ -5009,7 +5011,7 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
     x0 & 0x3fff
 }
 
-pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
+pub fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // wait for c->out_delayed[next] and move into c->out if visible
     let (fc, out, _task_thread_lock) = if c.fc.len() > 1 {
         let mut task_thread_lock = c.task_thread.lock.lock();
@@ -5053,9 +5055,9 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
             let _ = mem::take(out_delayed);
         }
-        (fc, out_delayed as *mut _, Some(task_thread_lock))
+        (fc, out_delayed, Some(task_thread_lock))
     } else {
-        (&c.fc[0], &mut c.out as *mut _, None)
+        (&c.fc[0], &mut c.out, None)
     };
 
     let mut f = fc.data.try_write().unwrap();
@@ -5063,11 +5065,12 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     f.frame_hdr = mem::take(&mut c.frame_hdr);
     let seq_hdr = f.seq_hdr.clone().unwrap();
 
-    unsafe fn on_error(
+    fn on_error(
         fc: &Rav1dFrameContext,
         f: &mut Rav1dFrameData,
-        c: &Rav1dContext,
-        out: *mut Rav1dThreadPicture,
+        out: &mut Rav1dThreadPicture,
+        cached_error_props: &Mutex<Rav1dDataProps>,
+        m: &Rav1dDataProps,
     ) {
         fc.task_thread.error.store(1, Ordering::Relaxed);
         let _ = mem::take(&mut *fc.in_cdf.try_write().unwrap());
@@ -5080,13 +5083,13 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
             }
             let _ = mem::take(&mut f.ref_mvs[i]);
         }
-        let _ = mem::take(&mut *out);
+        let _ = mem::take(out);
         let _ = mem::take(&mut f.cur);
         let _ = mem::take(&mut f.sr_cur);
         let _ = mem::take(&mut f.mvs);
         let _ = mem::take(&mut f.seq_hdr);
         let _ = mem::take(&mut f.frame_hdr);
-        *c.cached_error_props.lock() = c.in_0.m.clone();
+        *cached_error_props.lock() = m.clone();
 
         f.tiles.clear();
         fc.task_thread.finished.store(true, Ordering::SeqCst);
@@ -5097,7 +5100,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         Some(dsp) => f.dsp = dsp,
         None => {
             writeln!(c.logger, "Compiled without support for {bpc}-bit decoding",);
-            on_error(fc, &mut f, c, out);
+            on_error(fc, &mut f, out, &c.cached_error_props, &c.in_0.m);
             return Err(ENOPROTOOPT);
         }
     };
@@ -5112,7 +5115,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         if frame_hdr.primary_ref_frame != RAV1D_PRIMARY_REF_NONE {
             let pri_ref = frame_hdr.refidx[frame_hdr.primary_ref_frame as usize] as usize;
             if c.refs[pri_ref].p.p.data.is_none() {
-                on_error(fc, &mut f, c, out);
+                on_error(fc, &mut f, out, &c.cached_error_props, &c.in_0.m);
                 return Err(EINVAL);
             }
         }
@@ -5129,7 +5132,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 for j in 0..i {
                     let _ = mem::take(&mut f.refp[j]);
                 }
-                on_error(fc, &mut f, c, out);
+                on_error(fc, &mut f, out, &c.cached_error_props, &c.in_0.m);
                 return Err(EINVAL);
             }
             f.refp[i] = c.refs[refidx].p.clone();
@@ -5163,7 +5166,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         let res = rav1d_cdf_thread_alloc(c.fc.len() > 1);
         match res {
             Err(e) => {
-                on_error(fc, &mut f, c, out);
+                on_error(fc, &mut f, out, &c.cached_error_props, &c.in_0.m);
                 return Err(e);
             }
             Ok(res) => {
@@ -5184,9 +5187,20 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // We must take itut_t35 out of the context before the call so borrowck can
     // see we mutably borrow `c.itut_t35` disjointly from the task thread lock.
     let itut_t35 = mem::take(&mut c.itut_t35);
-    let res = rav1d_thread_picture_alloc(c, &mut f, bpc, itut_t35);
+    let res = rav1d_thread_picture_alloc(
+        &c.fc,
+        &c.logger,
+        &c.allocator,
+        c.content_light.clone(),
+        c.mastering_display.clone(),
+        c.output_invisible_frames,
+        &c.frame_flags,
+        &mut f,
+        bpc,
+        itut_t35,
+    );
     if res.is_err() {
-        on_error(fc, &mut f, c, out);
+        on_error(fc, &mut f, out, &c.cached_error_props, &c.in_0.m);
         return res;
     }
 
@@ -5196,9 +5210,10 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     if frame_hdr.size.width[0] != frame_hdr.size.width[1] {
         // Re-borrow to allow independent borrows of fields
         let f = &mut *f;
-        let res = rav1d_picture_alloc_copy(c, &mut f.cur, frame_hdr.size.width[0], &f.sr_cur.p);
+        let res =
+            rav1d_picture_alloc_copy(&c.logger, &mut f.cur, frame_hdr.size.width[0], &f.sr_cur.p);
         if res.is_err() {
-            on_error(fc, f, c, out);
+            on_error(fc, f, out, &c.cached_error_props, &c.in_0.m);
             return res;
         }
     } else {
@@ -5217,7 +5232,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // move f->cur into output queue
     if c.fc.len() == 1 {
         if frame_hdr.show_frame != 0 || c.output_invisible_frames {
-            c.out = f.sr_cur.clone();
+            *out = f.sr_cur.clone();
             c.event_flags |= f.sr_cur.flags.into();
         }
     } else {
@@ -5365,7 +5380,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
                 }
             }
             let mut f = fc.data.try_write().unwrap();
-            on_error(fc, &mut f, c, out);
+            on_error(fc, &mut f, &mut c.out, &c.cached_error_props, &c.in_0.m);
             return res;
         }
     } else {
