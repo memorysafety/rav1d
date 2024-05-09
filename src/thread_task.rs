@@ -160,6 +160,21 @@ fn reset_task_cur_async(ttd: &TaskThreadData, mut frame_idx: c_uint, n_frames: c
     }
 }
 
+#[derive(Default)]
+pub struct Rav1dTasks {
+    // TODO: probably should be a VecDeque, we need to empty this and I don't think we do yet.
+    tasks: RwLock<Vec<Rav1dTask>>,
+    pending_tasks: Mutex<Vec<Rav1dTask>>,
+    pending_tasks_merge: AtomicBool,
+
+    pub head: Atomic<Rav1dTaskIndex>,
+    // Points to the task directly before the cur pointer in the queue.
+    // This cur pointer is theoretical here, we actually keep track of the
+    // "prev_t" variable. This is needed to not loose the tasks in
+    // [head;cur-1] when picking one for execution.
+    pub cur_prev: Atomic<Rav1dTaskIndex>,
+}
+
 impl Rav1dTasks {
     fn insert_tasks_between(
         &self,
@@ -264,32 +279,7 @@ impl Rav1dTasks {
         // 1-based index into tasks, so we use length after pushing
         Rav1dTaskIndex(NonZeroU32::new(tasks.len() as u32))
     }
-}
 
-impl Rav1dFrameContext_task_thread {
-    fn insert_task(&self, c: &Rav1dContext, task: Rav1dTask, cond_signal: c_int) -> Rav1dTaskIndex {
-        let idx = self.tasks.push(task);
-        self.tasks.insert_tasks(c, idx, idx, cond_signal);
-        idx
-    }
-}
-
-#[derive(Default)]
-pub struct Rav1dTasks {
-    // TODO: probably should be a VecDeque, we need to empty this and I don't think we do yet.
-    tasks: RwLock<Vec<Rav1dTask>>,
-    pending_tasks: Mutex<Vec<Rav1dTask>>,
-    pending_tasks_merge: AtomicBool,
-
-    pub head: Atomic<Rav1dTaskIndex>,
-    // Points to the task directly before the cur pointer in the queue.
-    // This cur pointer is theoretical here, we actually keep track of the
-    // "prev_t" variable. This is needed to not loose the tasks in
-    // [head;cur-1] when picking one for execution.
-    pub cur_prev: Atomic<Rav1dTaskIndex>,
-}
-
-impl Rav1dTasks {
     pub fn clear(&mut self) {
         self.tasks.get_mut().clear();
         self.pending_tasks.get_mut().clear();
@@ -322,6 +312,44 @@ impl Rav1dTasks {
         } else {
             panic!("Cannot index with None");
         }
+    }
+
+    #[inline]
+    fn add_pending(&self, task: Rav1dTask) {
+        self.pending_tasks.lock().push(task);
+        self.pending_tasks_merge.store(true, Ordering::SeqCst);
+    }
+
+    #[inline]
+    fn merge_pending_frame(&self, c: &Rav1dContext) -> bool {
+        let merge = self.pending_tasks_merge.swap(false, Ordering::SeqCst);
+        if merge {
+            let mut pending_tasks = self.pending_tasks.lock();
+            let range = {
+                let mut tasks = self.tasks.try_write().unwrap();
+                if self.head.load(Ordering::Relaxed).is_none() {
+                    tasks.clear();
+                }
+                let start = tasks.len() as u32;
+                tasks.extend(pending_tasks.drain(..));
+                start..tasks.len() as u32
+            };
+
+            for i in range {
+                // 1-based index, so we have to add 1
+                let task_idx = Rav1dTaskIndex(NonZeroU32::new(i + 1));
+                self.insert_tasks(c, task_idx, task_idx, 0);
+            }
+        }
+        merge
+    }
+}
+
+impl Rav1dFrameContext_task_thread {
+    fn insert_task(&self, c: &Rav1dContext, task: Rav1dTask, cond_signal: c_int) -> Rav1dTaskIndex {
+        let idx = self.tasks.push(task);
+        self.tasks.insert_tasks(c, idx, idx, cond_signal);
+        idx
     }
 }
 
@@ -361,38 +389,6 @@ impl Add<u32> for Rav1dTaskIndex {
 impl AddAssign<u32> for Rav1dTaskIndex {
     fn add_assign(&mut self, rhs: u32) {
         *self = *self + rhs;
-    }
-}
-
-impl Rav1dTasks {
-    #[inline]
-    fn add_pending(&self, task: Rav1dTask) {
-        self.pending_tasks.lock().push(task);
-        self.pending_tasks_merge.store(true, Ordering::SeqCst);
-    }
-
-    #[inline]
-    fn merge_pending_frame(&self, c: &Rav1dContext) -> bool {
-        let merge = self.pending_tasks_merge.swap(false, Ordering::SeqCst);
-        if merge {
-            let mut pending_tasks = self.pending_tasks.lock();
-            let range = {
-                let mut tasks = self.tasks.try_write().unwrap();
-                if self.head.load(Ordering::Relaxed).is_none() {
-                    tasks.clear();
-                }
-                let start = tasks.len() as u32;
-                tasks.extend(pending_tasks.drain(..));
-                start..tasks.len() as u32
-            };
-
-            for i in range {
-                // 1-based index, so we have to add 1
-                let task_idx = Rav1dTaskIndex(NonZeroU32::new(i + 1));
-                self.insert_tasks(c, task_idx, task_idx, 0);
-            }
-        }
-        merge
     }
 }
 
