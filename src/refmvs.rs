@@ -322,7 +322,7 @@ pub struct Rav1dRefmvsDSPContext {
 }
 
 impl Rav1dRefmvsDSPContext {
-    pub unsafe fn load_tmvs(
+    pub fn load_tmvs(
         &self,
         rf: &RefMvsFrame,
         rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
@@ -389,21 +389,27 @@ impl Rav1dRefmvsDSPContext {
             n_tile_threads: n_tile_threads as _,
             n_frame_threads: n_frame_threads as _,
         };
-        (self.load_tmvs)(
-            &rf_dav1d,
-            tile_row_idx,
-            col_start8,
-            col_end8,
-            row_start8,
-            row_end8,
-            FFISafe::new(&rf.rp_proj),
-            FFISafe::new(rp_ref),
-        );
+
+        // SAFETY: Assembly call. Arguments are safe Rust references converted to
+        // pointers for use in assembly. For the Rust fallback function the extra args
+        // `rf.rp_proj` and `rp_ref` are passed to allow for disjointedness checking.
+        unsafe {
+            (self.load_tmvs)(
+                &rf_dav1d,
+                tile_row_idx,
+                col_start8,
+                col_end8,
+                row_start8,
+                row_end8,
+                FFISafe::new(&rf.rp_proj),
+                FFISafe::new(rp_ref),
+            );
+        }
     }
 
     // cache the current tile/sbrow (or frame/sbrow)'s projectable motion vectors
     // into buffers for use in future frame's temporal MV prediction
-    pub unsafe fn save_tmvs(
+    pub fn save_tmvs(
         &self,
         rt: &refmvs_tile,
         rf: &RefMvsFrame,
@@ -437,24 +443,28 @@ impl Rav1dRefmvsDSPContext {
             unsafe { rf.r.as_mut_ptr().cast_const().add(ri) }
         });
 
-        (self.save_tmvs)(
-            // SAFETY: Note that for asm calls, disjointedness is unchecked here,
-            // even with `#[cfg(debug_assertions)]`.  This is because the disjointedness
-            // is more fine-grained than the pointers passed to asm.
-            // For the Rust fallback fn, the extra arg `rp`
-            // is passed to allow for disjointedness checking.
-            rp.inner.as_mut_ptr().add(row_start8 as usize * stride),
-            stride as isize,
-            rr,
-            ref_sign,
-            col_end8,
-            row_end8,
-            col_start8,
-            row_start8,
-            FFISafe::new(&rf.r),
-            ri,
-            FFISafe::new(rp),
-        );
+        // SAFETY: Assembly call. Arguments are safe Rust references converted to
+        // pointers for use in assembly.
+        unsafe {
+            (self.save_tmvs)(
+                // SAFETY: Note that for asm calls, disjointedness is unchecked here,
+                // even with `#[cfg(debug_assertions)]`. This is because the disjointedness
+                // is more fine-grained than the pointers passed to asm.
+                // For the Rust fallback fn, the extra arg `rp`
+                // is passed to allow for disjointedness checking.
+                rp.inner.as_mut_ptr().add(row_start8 as usize * stride),
+                stride as isize,
+                rr,
+                ref_sign,
+                col_end8,
+                row_end8,
+                col_start8,
+                row_start8,
+                FFISafe::new(&rf.r),
+                ri,
+                FFISafe::new(rp),
+            );
+        }
     }
 
     pub fn splat_mv(

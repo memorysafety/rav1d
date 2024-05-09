@@ -4220,7 +4220,7 @@ fn read_restoration_info(
     }
 }
 
-pub(crate) unsafe fn rav1d_decode_tile_sbrow(
+pub(crate) fn rav1d_decode_tile_sbrow(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
@@ -4254,7 +4254,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 
     if frame_hdr.frame_type.is_inter_or_switch() && c.fc.len() > 1 {
         let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
-        *f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize) = [[i32::MIN; 2]; 7];
+        // SAFETY: No other thread is accessing the accessed element.
+        unsafe {
+            *f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize) = [[i32::MIN; 2]; 7];
+        }
     }
 
     reset_context(
@@ -4279,7 +4282,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 t.a += 1;
             }
         }
-        (f.bd_fn().backup_ipred_edge)(f, t);
+        // SAFETY: Function call with all safe args, will be marked safe.
+        unsafe {
+            (f.bd_fn().backup_ipred_edge)(f, t);
+        }
         return Ok(());
     }
 
@@ -4411,7 +4417,8 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 
     // backup pre-loopfilter pixels for intra prediction of the next sbrow
     if t.frame_thread.pass != 1 {
-        (f.bd_fn().backup_ipred_edge)(f, t);
+        // Function call with all safe args, will be marked safe.
+        unsafe { (f.bd_fn().backup_ipred_edge)(f, t); }
     }
 
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
