@@ -4877,7 +4877,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
     Ok(())
 }
 
-unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dResult {
+fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dResult {
     assert!(c.tc.len() == 1);
 
     let Rav1dContextTaskType::Single(t) = &c.tc[0].task else {
@@ -4931,7 +4931,9 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             }
 
             // loopfilter + cdef + restoration
-            (f.bd_fn().filter_sbrow)(c, f, &mut t, sby);
+            //
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { (f.bd_fn().filter_sbrow)(c, f, &mut t, sby) };
         }
     }
 
