@@ -4418,7 +4418,9 @@ pub(crate) fn rav1d_decode_tile_sbrow(
     // backup pre-loopfilter pixels for intra prediction of the next sbrow
     if t.frame_thread.pass != 1 {
         // Function call with all safe args, will be marked safe.
-        unsafe { (f.bd_fn().backup_ipred_edge)(f, t); }
+        unsafe {
+            (f.bd_fn().backup_ipred_edge)(f, t);
+        }
     }
 
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
