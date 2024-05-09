@@ -123,13 +123,18 @@ impl Debug {
 }
 
 fn check_trailing_bits(gb: &mut GetBits, strict_std_compliance: bool) -> Rav1dResult {
-    // trailing_one_bit + trailing_zero_bit
-    if !gb.get_bit() || gb.pending_bits() != 0 || gb.has_error() != 0 {
+    let trailing_one_bit = gb.get_bit();
+
+    if gb.has_error() != 0 {
         return Err(EINVAL);
     }
 
     if !strict_std_compliance {
         return Ok(());
+    }
+
+    if !trailing_one_bit || gb.pending_bits() != 0 {
+        return Err(EINVAL);
     }
 
     gb.bytealign();
@@ -2150,7 +2155,10 @@ unsafe fn parse_obus(
     }
 
     // obu header
-    gb.get_bit(); // obu_forbidden_bit
+    let obu_forbidden_bit = gb.get_bit();
+    if c.strict_std_compliance && obu_forbidden_bit {
+        return Err(EINVAL);
+    }
     let raw_type = gb.get_bits(4);
     let r#type = Rav1dObuType::from_repr(raw_type as usize);
     let has_extension = gb.get_bit();
