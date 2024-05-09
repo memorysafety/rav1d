@@ -396,7 +396,7 @@ fn mask_edges_chroma(
     );
 }
 
-pub(crate) unsafe fn rav1d_create_lf_mask_intra(
+pub(crate) fn rav1d_create_lf_mask_intra(
     lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
@@ -423,23 +423,21 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     let by4 = by & 31;
 
     if bw4 != 0 && bh4 != 0 {
-        let mut level_cache_ptr = level_cache
-            .as_mut_ptr()
-            .offset((by * b4_stride + bx) as isize);
+        let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
-            for x in 0..bw4 as isize {
-                let cur = level_cache_ptr.offset(x);
-                let offset = cur.offset_from(level_cache.as_mut_ptr());
-                assert!(offset >= 0 && offset as usize <= level_cache.len());
-                // SAFETY: This element is not concurrently accessed by any
-                // other threads and the assert above ensures that it is in
-                // bounds.
+            for x in 0..bw4 {
+                let idx = level_cache_off + x;
+                assert!(idx < level_cache.len());
+                // SAFETY: The Y portion of this element (indices 0 and 1) is not
+                // concurrently accessed by any other threads and the assert above ensures
+                // that it is in bounds.
                 unsafe {
+                    let cur = level_cache.as_mut_ptr().add(idx);
                     (*cur)[0] = filter_level[0][0][0];
                     (*cur)[1] = filter_level[1][0][0];
                 }
             }
-            level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+            level_cache_off += b4_stride;
         }
 
         mask_edges_intra(&lflvl.filter_y, by4, bx4, bw4, bh4, ytx, ay, ly);
@@ -468,23 +466,21 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
 
-    let mut level_cache_ptr = level_cache
-        .as_mut_ptr()
-        .offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
+    let mut level_cache_off = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for _y in 0..cbh4 {
-        for x in 0..cbw4 as isize {
-            let cur = level_cache_ptr.offset(x);
-            let offset = cur.offset_from(level_cache.as_mut_ptr());
-            assert!(offset >= 0 && offset as usize <= level_cache.len());
-            // SAFETY: This element is not concurrently accessed by any
-            // other threads and the assert above ensures that it is in
+        for x in 0..cbw4 {
+            let idx = level_cache_off + x;
+            assert!(idx < level_cache.len());
+            // SAFETY: The UV portion of this element (indices 2 and 3) is not concurrently
+            // accessed by any other threads and the assert above ensures that it is in
             // bounds.
             unsafe {
+                let cur = level_cache.as_mut_ptr().add(idx);
                 (*cur)[2] = filter_level[2][0][0];
                 (*cur)[3] = filter_level[3][0][0];
             }
         }
-        level_cache_ptr = level_cache_ptr.offset(b4_stride as isize)
+        level_cache_off += b4_stride;
     }
 
     mask_edges_chroma(
@@ -502,7 +498,7 @@ pub(crate) unsafe fn rav1d_create_lf_mask_intra(
     );
 }
 
-pub(crate) unsafe fn rav1d_create_lf_mask_inter(
+pub(crate) fn rav1d_create_lf_mask_inter(
     lflvl: &Av1Filter,
     level_cache: &DisjointMut<Vec<[u8; 4]>>,
     b4_stride: ptrdiff_t,
@@ -534,23 +530,21 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     let by4 = by & 31;
 
     if bw4 != 0 && bh4 != 0 {
-        let mut level_cache_ptr = level_cache
-            .as_mut_ptr()
-            .offset((by * b4_stride + bx) as isize);
+        let mut level_cache_off = by * b4_stride + bx;
         for _y in 0..bh4 {
-            for x in 0..bw4 as isize {
-                let cur = level_cache_ptr.offset(x);
-                let offset = cur.offset_from(level_cache.as_mut_ptr());
-                assert!(offset >= 0 && offset as usize <= level_cache.len());
-                // SAFETY: This element is not concurrently accessed by any
-                // other threads and the assert above ensures that it is in
-                // bounds.
+            for x in 0..bw4 {
+                let idx = level_cache_off + x;
+                assert!(idx < level_cache.len());
+                // SAFETY: The Y portion of this element (indices 0 and 1) is not
+                // concurrently accessed by any other threads and the assert above ensures
+                // that it is in bounds.
                 unsafe {
+                    let cur = level_cache.as_mut_ptr().add(idx);
                     (*cur)[0] = filter_level[0][r#ref][is_gmv];
                     (*cur)[1] = filter_level[1][r#ref][is_gmv];
                 }
             }
-            level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+            level_cache_off += b4_stride;
         }
 
         mask_edges_inter(
@@ -590,23 +584,21 @@ pub(crate) unsafe fn rav1d_create_lf_mask_inter(
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
 
-    let mut level_cache_ptr = level_cache
-        .as_mut_ptr()
-        .offset(((by >> ss_ver) * b4_stride + (bx >> ss_hor)) as isize);
+    let mut level_cache_off = (by >> ss_ver) * b4_stride + (bx >> ss_hor);
     for _y in 0..cbh4 {
-        for x in 0..cbw4 as isize {
-            let cur = level_cache_ptr.offset(x);
-            let offset = cur.offset_from(level_cache.as_mut_ptr());
-            assert!(offset >= 0 && offset as usize <= level_cache.len());
-            // SAFETY: This element is not concurrently accessed by any
-            // other threads and the assert above ensures that it is in
+        for x in 0..cbw4 {
+            let idx = level_cache_off + x;
+            assert!(idx < level_cache.len());
+            // SAFETY: The UV part of this element (indices 2 and 3) is not concurrently
+            // accessed by any other threads and the assert above ensures that it is in
             // bounds.
             unsafe {
+                let cur = level_cache.as_mut_ptr().add(idx);
                 (*cur)[2] = filter_level[2][r#ref][is_gmv];
                 (*cur)[3] = filter_level[3][r#ref][is_gmv];
             }
         }
-        level_cache_ptr = level_cache_ptr.offset(b4_stride as isize);
+        level_cache_off += b4_stride;
     }
 
     mask_edges_chroma(
