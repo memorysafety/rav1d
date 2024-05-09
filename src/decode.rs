@@ -417,7 +417,7 @@ fn read_tx_tree(
     };
 }
 
-fn neg_deinterleave(diff: u8, r#ref: u8, max: u8) -> u8 {
+fn neg_deinterleave(diff: i32, r#ref: i32, max: i32) -> i32 {
     if r#ref == 0 {
         diff
     } else if r#ref + 1 >= max {
@@ -1435,9 +1435,11 @@ unsafe fn decode_b(
                     RAV1D_MAX_SEGMENTS as usize - 1,
                 );
                 let last_active_seg_id_plus1 =
-                    (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                b.seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
-                if b.seg_id >= last_active_seg_id_plus1 {
+                    (frame_hdr.segmentation.seg_data.last_active_segid + 1) as i32;
+                b.seg_id =
+                    neg_deinterleave(diff as i32, pred_seg_id as i32, last_active_seg_id_plus1)
+                        as u8;
+                if b.seg_id as i32 >= last_active_seg_id_plus1 {
                     b.seg_id = 0; // error?
                 }
                 if b.seg_id >= RAV1D_MAX_SEGMENTS {
@@ -1527,9 +1529,11 @@ unsafe fn decode_b(
                     RAV1D_MAX_SEGMENTS as usize - 1,
                 );
                 let last_active_seg_id_plus1 =
-                    (frame_hdr.segmentation.seg_data.last_active_segid + 1) as u8;
-                b.seg_id = neg_deinterleave(diff as u8, pred_seg_id, last_active_seg_id_plus1);
-                if b.seg_id >= last_active_seg_id_plus1 {
+                    (frame_hdr.segmentation.seg_data.last_active_segid + 1) as i32;
+                b.seg_id =
+                    neg_deinterleave(diff as i32, pred_seg_id as i32, last_active_seg_id_plus1)
+                        as u8;
+                if b.seg_id as i32 >= last_active_seg_id_plus1 {
                     b.seg_id = 0; // error?
                 }
             }
