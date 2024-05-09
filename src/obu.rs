@@ -2507,14 +2507,14 @@ unsafe fn parse_obus(
                 );
                 c.event_flags |= c.refs[frame_hdr.existing_frame_idx as usize].p.flags.into();
             } else {
-                let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
+                let mut task_thread_lock = c.task_thread.lock.lock();
                 // Need to append this to the frame output queue.
                 let next = c.frame_thread.next;
                 c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
 
                 let fc = &c.fc[next as usize];
                 while !fc.task_thread.finished.load(Ordering::SeqCst) {
-                    task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
+                    fc.task_thread.cond.wait(&mut task_thread_lock);
                 }
                 let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
                 if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0
@@ -2540,7 +2540,7 @@ unsafe fn parse_obus(
                 let error = &mut *fc.task_thread.retval.try_lock().unwrap();
                 if error.is_some() {
                     c.cached_error = mem::take(error);
-                    *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
+                    *c.cached_error_props.get_mut() = out_delayed.p.m.clone();
                     let _ = mem::take(out_delayed);
                 } else if out_delayed.p.data.is_some() {
                     let progress =
@@ -2633,7 +2633,7 @@ pub(crate) unsafe fn rav1d_parse_obus(
 
     parse_obus(c, r#in, props, gb)
         .inspect_err(|_| {
-            *c.cached_error_props.get_mut().unwrap() = props.clone();
+            *c.cached_error_props.get_mut() = props.clone();
             writeln!(
                 c.logger,
                 "{}",

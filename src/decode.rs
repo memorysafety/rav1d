@@ -4056,14 +4056,14 @@ fn setup_tile(
             &mut lf.lr_mask[sb_idx as usize].lr[p][unit_idx as usize]
         };
 
-        let lr = lr_ref.get_mut().unwrap();
+        let lr = lr_ref.get_mut();
         *lr = Av1RestorationUnit {
             filter_v: [3, -7, 15],
             filter_h: [3, -7, 15],
             sgr_weights: [-32, 31],
             ..*lr
         };
-        ts.lr_ref.get_mut().unwrap()[p] = *lr;
+        ts.lr_ref.get_mut()[p] = *lr;
     }
 
     if c.tc.len() > 1 {
@@ -4840,7 +4840,7 @@ fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dRes
     let Rav1dContextTaskType::Single(t) = &c.tc[0].task else {
         panic!("Expected a single-threaded context");
     };
-    let mut t = t.lock().unwrap();
+    let mut t = t.lock();
 
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
@@ -4905,7 +4905,7 @@ pub(crate) fn rav1d_decode_frame_exit(
     let task_thread = &fc.task_thread;
     // We use a blocking lock here because we have rare contention with other
     // threads.
-    let mut f = fc.data.write().unwrap();
+    let mut f = fc.data.write();
     if f.sr_cur.p.data.is_some() {
         task_thread.error.store(0, Ordering::Relaxed);
     }
@@ -4969,13 +4969,13 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext
             if c.tc.len() > 1 {
                 res = rav1d_task_create_tile_sbrow(fc, &f, 0, 1);
                 drop(f); // release the frame data before waiting for the other threads
-                let mut task_thread_lock = (*fc.task_thread.ttd).lock.lock().unwrap();
+                let mut task_thread_lock = (*fc.task_thread.ttd).lock.lock();
                 (*fc.task_thread.ttd).cond.notify_one();
                 if res.is_ok() {
                     while fc.task_thread.done[0].load(Ordering::SeqCst) == 0
                         || fc.task_thread.task_counter.load(Ordering::SeqCst) > 0
                     {
-                        task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
+                        fc.task_thread.cond.wait(&mut task_thread_lock);
                     }
                 }
                 drop(task_thread_lock);
@@ -5012,13 +5012,13 @@ fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {
 pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
     // wait for c->out_delayed[next] and move into c->out if visible
     let (fc, out, _task_thread_lock) = if c.fc.len() > 1 {
-        let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
+        let mut task_thread_lock = c.task_thread.lock.lock();
         let next = c.frame_thread.next;
         c.frame_thread.next = (c.frame_thread.next + 1) % c.fc.len() as u32;
 
         let fc = &c.fc[next as usize];
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
-            task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
+            fc.task_thread.cond.wait(&mut task_thread_lock);
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
@@ -5043,7 +5043,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         let error = &mut *fc.task_thread.retval.try_lock().unwrap();
         if error.is_some() {
             c.cached_error = mem::take(&mut *error);
-            *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
+            *c.cached_error_props.get_mut() = out_delayed.p.m.clone();
             let _ = mem::take(out_delayed);
         } else if out_delayed.p.data.is_some() {
             let progress = out_delayed.progress.as_ref().unwrap()[1].load(Ordering::Relaxed);
@@ -5086,7 +5086,7 @@ pub unsafe fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         let _ = mem::take(&mut f.mvs);
         let _ = mem::take(&mut f.seq_hdr);
         let _ = mem::take(&mut f.frame_hdr);
-        *c.cached_error_props.lock().unwrap() = c.in_0.m.clone();
+        *c.cached_error_props.lock() = c.in_0.m.clone();
 
         f.tiles.clear();
         fc.task_thread.finished.store(true, Ordering::SeqCst);

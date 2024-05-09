@@ -17,12 +17,12 @@ use crate::src::levels::N_INTRA_PRED_MODES;
 use crate::src::levels::N_TX_SIZES;
 use crate::src::levels::N_UV_INTRA_PRED_MODES;
 use crate::src::tables::dav1d_partition_type_count;
+use parking_lot::RwLock;
+use parking_lot::RwLockWriteGuard;
 use std::cmp;
 use std::ffi::c_uint;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
-use std::sync::RwLock;
-use std::sync::RwLockWriteGuard;
 use strum::EnumCount;
 
 #[derive(Clone, Default)]
@@ -167,7 +167,7 @@ impl CdfThreadContext {
     pub fn cdf_write(&self) -> RwLockWriteGuard<CdfContext> {
         match self {
             Self::QCat(_) => panic!("Expected a Cdf"),
-            Self::Cdf(cdf) => cdf.cdf.try_write().ok().unwrap(),
+            Self::Cdf(cdf) => cdf.cdf.try_write().unwrap(),
         }
     }
 }

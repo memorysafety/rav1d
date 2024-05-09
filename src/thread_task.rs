@@ -30,6 +30,7 @@ use crate::src::iter::wrapping_iter;
 use atomig::Atom;
 use atomig::Atomic;
 use parking_lot::Mutex;
+use parking_lot::MutexGuard;
 use parking_lot::RwLock;
 use parking_lot::RwLockReadGuard;
 use std::cmp;
@@ -46,7 +47,6 @@ use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::sync::MutexGuard;
 
 pub const FRAME_ERROR: u32 = u32::MAX - 1;
 pub const TILE_ERROR: i32 = i32::MAX - 1;
@@ -415,7 +415,7 @@ fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) 
         frame.resize_with(prog_sz, || AtomicU32::new(0));
         // copy_lpf is read during task selection, so we are seeing contention
         // here. This seems rare enough that it is not worth optimizing.
-        let mut copy_lpf = fc.frame_thread_progress.copy_lpf.write().unwrap();
+        let mut copy_lpf = fc.frame_thread_progress.copy_lpf.write();
         copy_lpf.clear();
         copy_lpf.resize_with(prog_sz, || AtomicU32::new(0));
         fc.frame_thread_progress.deblock.store(0, Ordering::SeqCst);
@@ -514,10 +514,11 @@ pub(crate) fn rav1d_task_delayed_fg(
             _ => unreachable!(),
         }
     }
-    let task_thread_lock = ttd.lock.lock().unwrap();
+    let mut task_thread_lock = ttd.lock.lock();
     ttd.delayed_fg_exec.store(1, Ordering::Relaxed);
     ttd.cond.notify_one();
-    drop(ttd.delayed_fg_cond.wait(task_thread_lock).unwrap());
+    ttd.delayed_fg_cond.wait(&mut task_thread_lock);
+    drop(task_thread_lock);
     ttd.delayed_fg_progress[0].store(0, Ordering::SeqCst);
     ttd.delayed_fg_progress[1].store(0, Ordering::SeqCst);
     // Release reference to in and out pictures
@@ -544,7 +545,7 @@ fn ensure_progress<'l, 'ttd: 'l>(
             ..*t
         };
         f.task_thread.tasks.add_pending(t);
-        *task_thread_lock = Some(ttd.lock.lock().unwrap());
+        *task_thread_lock = Some(ttd.lock.lock());
         return 1 as c_int;
     }
     return 0 as c_int;
@@ -735,7 +736,7 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
         if (row + 1) < progmax {
             ttd.cond.notify_one();
         } else if row + 1 >= progmax {
-            *task_thread_lock = ttd.lock.lock().ok();
+            *task_thread_lock = Some(ttd.lock.lock());
             ttd.delayed_fg_exec.store(0, Ordering::Relaxed);
             if row >= progmax {
                 break;
@@ -785,7 +786,7 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
         if row < progmax {
             continue;
         }
-        *task_thread_lock = ttd.lock.lock().ok();
+        *task_thread_lock = Some(ttd.lock.lock());
         ttd.delayed_fg_exec.store(0, Ordering::Relaxed);
         break;
     }
@@ -808,22 +809,21 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
         c: &Rav1dContext,
         tc: &mut Rav1dTaskContext,
         ttd: &TaskThreadData,
-        task_thread_lock: MutexGuard<'ttd, ()>,
-    ) -> MutexGuard<'ttd, ()> {
+        task_thread_lock: &mut MutexGuard<'ttd, ()>,
+    ) {
         tc.task_thread.flushed.store(true, Ordering::Relaxed);
         tc.task_thread.cond.notify_one();
         // we want to be woken up next time progress is signaled
         ttd.cond_signaled.store(0, Ordering::SeqCst);
-        let task_thread_lock = ttd.cond.wait(task_thread_lock).unwrap();
+        ttd.cond.wait(task_thread_lock);
         tc.task_thread.flushed.store(false, Ordering::Relaxed);
         reset_task_cur(c, ttd, u32::MAX);
-        task_thread_lock
     }
 
-    let mut task_thread_lock = Some(ttd.lock.lock().unwrap());
+    let mut task_thread_lock = Some(ttd.lock.lock());
     'outer: while !tc.task_thread.die.load(Ordering::Relaxed) {
         if c.flush.load(Ordering::SeqCst) {
-            task_thread_lock = Some(park(c, &mut tc, ttd, task_thread_lock.take().unwrap()));
+            park(c, &mut tc, ttd, task_thread_lock.as_mut().unwrap());
             continue 'outer;
         }
 
@@ -902,7 +902,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                             // `Rav1dFrameData` are probably ok to read
                             // concurrently with other tasks writing, but we
                             // haven't separated out these fields.
-                            let f = fc.data.read().unwrap();
+                            let f = fc.data.read();
 
                             // if not bottom sbrow of tile, this task will be re-added
                             // after it's finished
@@ -991,7 +991,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
             if merge_pending(c) != 0 {
                 continue 'outer;
             }
-            task_thread_lock = Some(park(c, &mut tc, ttd, task_thread_lock.take().unwrap()));
+            park(c, &mut tc, ttd, task_thread_lock.as_mut().unwrap());
             continue 'outer;
         };
         // found:
@@ -1034,7 +1034,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                         }) as c_int;
                         if res.is_err() || p1_3 == TILE_ERROR {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
-                            task_thread_lock = Some(ttd.lock.lock().unwrap());
+                            task_thread_lock = Some(ttd.lock.lock());
                             abort_frame(c, fc, if res.is_err() { res } else { Err(EINVAL) });
                             reset_task_cur(c, ttd, t.frame_idx);
                         } else {
@@ -1044,7 +1044,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                             }
                             fc.task_thread.tasks.add_pending(t);
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
-                            task_thread_lock = Some(ttd.lock.lock().unwrap());
+                            task_thread_lock = Some(ttd.lock.lock());
                         }
                         continue 'outer;
                     }
@@ -1084,7 +1084,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                                         task_thread_lock.is_none(),
                                         "thread lock should not be held"
                                     );
-                                    task_thread_lock = Some(ttd.lock.lock().unwrap());
+                                    task_thread_lock = Some(ttd.lock.lock());
                                     // memory allocation failed
                                     fc.task_thread.done[(2 - p_0) as usize]
                                         .store(1 as c_int, Ordering::SeqCst);
@@ -1121,10 +1121,10 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                                 p_0 += 1;
                             }
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
-                            task_thread_lock = Some(ttd.lock.lock().unwrap());
+                            task_thread_lock = Some(ttd.lock.lock());
                         } else {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
-                            task_thread_lock = Some(ttd.lock.lock().unwrap());
+                            task_thread_lock = Some(ttd.lock.lock());
                             abort_frame(c, fc, res_0);
                             reset_task_cur(c, ttd, t.frame_idx);
                             fc.task_thread.init_done.store(1, Ordering::SeqCst);
@@ -1169,10 +1169,10 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                             fc.task_thread.tasks.add_pending(t);
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
                             drop(f);
-                            task_thread_lock = Some(ttd.lock.lock().unwrap());
+                            task_thread_lock = Some(ttd.lock.lock());
                         } else {
                             assert!(task_thread_lock.is_none(), "thread lock should not be held");
-                            task_thread_lock = Some(ttd.lock.lock().unwrap());
+                            task_thread_lock = Some(ttd.lock.lock());
                             ts.progress[p_1 as usize].store(progress, Ordering::SeqCst);
                             reset_task_cur(c, ttd, t.frame_idx);
                             error_0 = fc.task_thread.error.load(Ordering::SeqCst);
@@ -1295,7 +1295,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                                         task_thread_lock.is_none(),
                                         "thread lock should not be held"
                                     );
-                                    task_thread_lock = Some(ttd.lock.lock().unwrap());
+                                    task_thread_lock = Some(ttd.lock.lock());
                                     continue 'outer;
                                 }
                             }
@@ -1387,7 +1387,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                     fc.task_thread.done[1].store(1, Ordering::SeqCst);
                 }
                 assert!(task_thread_lock.is_none(), "thread lock should not be held");
-                task_thread_lock = Some(ttd.lock.lock().unwrap());
+                task_thread_lock = Some(ttd.lock.lock());
                 let num_tasks = fc.task_thread.task_counter.fetch_sub(1, Ordering::SeqCst) - 1;
                 if (sby + 1) < sbh && num_tasks != 0 {
                     reset_task_cur(c, ttd, t.frame_idx);
@@ -1418,7 +1418,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
             fc.frame_thread_progress.frame.try_read().unwrap()[(sby >> 5) as usize]
                 .fetch_or((1 as c_uint) << (sby & 31), Ordering::SeqCst);
             {
-                let _task_thread_lock = fc.task_thread.lock.lock().unwrap();
+                let _task_thread_lock = fc.task_thread.lock.lock();
                 sby = get_frame_progress(fc, &f);
                 error_0 = fc.task_thread.error.load(Ordering::SeqCst);
                 let y_0: c_uint = if sby + 1 == sbh {
@@ -1442,7 +1442,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                 fc.task_thread.done[0].store(1, Ordering::SeqCst);
             }
             assert!(task_thread_lock.is_none(), "thread lock should not be held");
-            task_thread_lock = Some(ttd.lock.lock().unwrap());
+            task_thread_lock = Some(ttd.lock.lock());
             let num_tasks_0 = fc.task_thread.task_counter.fetch_sub(1, Ordering::SeqCst) - 1;
             if (sby + 1) < sbh && num_tasks_0 != 0 {
                 reset_task_cur(c, ttd, t.frame_idx);
