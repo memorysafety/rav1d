@@ -3585,7 +3585,7 @@ fn decode_b(
     Ok(())
 }
 
-unsafe fn decode_sb(
+fn decode_sb(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
@@ -3927,7 +3927,8 @@ unsafe fn decode_sb(
             [(&f.a[t.a], 0), (&t.l, 1)],
             [hsz as usize; 2],
             [bx8 as usize, by8 as usize],
-            |case, (dir, dir_index)| {
+            // SAFETY: No other thread is accessing the written portion of the buffer.
+            |case, (dir, dir_index)| unsafe {
                 case.set_disjoint(
                     &dir.partition,
                     dav1d_al_part_ctx[dir_index][bl as usize][bp as usize],
