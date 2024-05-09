@@ -49,6 +49,26 @@ static int parse_seq_hdr_error(void) {
     return DAV1D_ERR(EINVAL);
 }
 
+static int check_trailing_bits(GetBits *const gb,
+                               const int strict_std_compliance)
+{
+    if (!dav1d_get_bit(gb) || gb->state || gb->error) // trailing_one_bit + trailing_zero_bit
+        return DAV1D_ERR(EINVAL);
+
+    if (!strict_std_compliance)
+        return 0;
+
+    ptrdiff_t size = gb->ptr_end - gb->ptr;
+    while (size > 0 && gb->ptr[size - 1] == 0)
+        size--;
+
+    if (size)
+        return DAV1D_ERR(EINVAL);
+
+    return 0;
+}
+
+
 static NOINLINE int parse_seq_hdr(Dav1dSequenceHeader *const hdr,
                                   GetBits *const gb,
                                   const int strict_std_compliance)
@@ -269,13 +289,11 @@ static NOINLINE int parse_seq_hdr(Dav1dSequenceHeader *const hdr,
            dav1d_get_bits_pos(gb) - init_bit_pos);
 #endif
 
-    dav1d_get_bit(gb); // dummy bit
-
     // We needn't bother flushing the OBU here: we'll check we didn't
     // overrun in the caller and will then discard gb, so there's no
     // point in setting its position properly.
 
-    return 0;
+    return check_trailing_bits(gb, strict_std_compliance);
 }
 
 int dav1d_parse_sequence_header(Dav1dSequenceHeader *const out,
@@ -1349,8 +1367,7 @@ ptrdiff_t dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
         if (type != DAV1D_OBU_FRAME) {
             // This is actually a frame header OBU so read the
             // trailing bit and check for overrun.
-            dav1d_get_bit(&gb);
-            if (gb.error) {
+            if (check_trailing_bits(&gb, c->strict_std_compliance) < 0) {
                 c->frame_hdr = NULL;
                 return dav1d_parse_obus_error(c, in, &gb);
             }
@@ -1439,10 +1456,7 @@ ptrdiff_t dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
                    (gb.ptr - init_ptr) * 8 - gb.bits_left);
 #endif
 
-            // Skip the trailing bit, align to the next byte boundary and check for overrun.
-            dav1d_get_bit(&gb);
-            dav1d_bytealign_get_bits(&gb);
-            if (gb.error) {
+            if (check_trailing_bits(&gb, c->strict_std_compliance) < 0) {
                 dav1d_ref_dec(&ref);
                 return dav1d_parse_obus_error(c, in, &gb);
             }
@@ -1491,10 +1505,7 @@ ptrdiff_t dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
                    mastering_display->min_luminance,
                    (gb.ptr - init_ptr) * 8 - gb.bits_left);
 #endif
-            // Skip the trailing bit, align to the next byte boundary and check for overrun.
-            dav1d_get_bit(&gb);
-            dav1d_bytealign_get_bits(&gb);
-            if (gb.error) {
+            if (check_trailing_bits(&gb, c->strict_std_compliance) < 0) {
                 dav1d_ref_dec(&ref);
                 return dav1d_parse_obus_error(c, in, &gb);
             }
@@ -1519,7 +1530,7 @@ ptrdiff_t dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
                 payload_size--;
             }
 
-            if (payload_size <= 0) {
+            if (payload_size <= 0 || gb.ptr[payload_size] != 0x80) {
                 dav1d_log(c, "Malformed ITU-T T.35 metadata message format\n");
                 break;
             }

@@ -199,6 +199,10 @@ impl<'a> GetBits<'a> {
         self.bits_left == 0
     }
 
+    pub const fn pending_bits(&self) -> u64 {
+        self.state
+    }
+
     pub const fn has_pending_bits(&self) -> bool {
         self.state != 0 || self.bits_left != 0
     }
