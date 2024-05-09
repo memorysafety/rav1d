@@ -1180,7 +1180,7 @@ fn obmc_lowest_px(
     }
 }
 
-unsafe fn decode_b(
+fn decode_b(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
@@ -1204,10 +1204,12 @@ unsafe fn decode_b(
     let mut b_guard;
     let mut b_mem = Av1Block::default();
     let b = if t.frame_thread.pass != 0 {
-        b_guard = f
-            .frame_thread
-            .b
-            .index_mut((t.b.y as isize * f.b4_stride + t.b.x as isize) as usize);
+        // SAFETY: No other thread is accessing the borrowed element.
+        b_guard = unsafe {
+            f.frame_thread
+                .b
+                .index_mut((t.b.y as isize * f.b4_stride + t.b.x as isize) as usize)
+        };
         &mut *b_guard
     } else {
         &mut b_mem
@@ -1238,7 +1240,10 @@ unsafe fn decode_b(
     if t.frame_thread.pass == 2 {
         match &b.ii {
             Av1BlockIntraInter::Intra(intra) => {
-                bd_fn.recon_b_intra(f, t, None, bs, intra_edge_flags, b, intra);
+                // SAFETY: Function call with all safe args, will be marked safe.
+                unsafe {
+                    bd_fn.recon_b_intra(f, t, None, bs, intra_edge_flags, b, intra);
+                }
 
                 let y_mode = intra.y_mode;
                 let y_mode_nofilt = if y_mode == FILTER_PRED {
@@ -1250,21 +1255,25 @@ unsafe fn decode_b(
                     [&t.l, &f.a[t.a]],
                     [bh4 as usize, bw4 as usize],
                     [by4 as usize, bx4 as usize],
-                    |case, dir| {
+                    // SAFETY: No other thread is accessing the written portion of the buffers.
+                    |case, dir| unsafe {
                         case.set_disjoint(&dir.mode, y_mode_nofilt);
                         case.set_disjoint(&dir.intra, 1);
                     },
                 );
                 if frame_type.is_inter_or_switch() {
                     let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
-                    let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
+                    // SAFETY: No other thread is accessing the borrowed range.
+                    let r = unsafe { &mut *f.rf.r.index_mut(ri..ri + bw4 as usize) };
                     for block in r {
                         block.r#ref.r#ref[0] = 0;
                         block.bs = bs;
                     }
                     let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
                     for r in rr {
-                        let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
+                        // SAFETY: No other thread is accessing the borrowed element.
+                        let block =
+                            unsafe { &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1) };
                         block.r#ref.r#ref[0] = 0;
                         block.bs = bs;
                     }
@@ -1275,7 +1284,8 @@ unsafe fn decode_b(
                         [&t.l, &f.a[t.a]],
                         [cbh4 as usize, cbw4 as usize],
                         [cby4 as usize, cbx4 as usize],
-                        |case, dir| {
+                        // SAFETY: No other thread is accessing the written portion of the buffer.
+                        |case, dir| unsafe {
                             case.set_disjoint(&dir.uvmode, intra.uv_mode);
                         },
                     );
@@ -1317,14 +1327,19 @@ unsafe fn decode_b(
                         }
                     }
                 }
-                bd_fn.recon_b_inter(f, t, None, bs, b, inter)?;
+
+                // SAFETY: Function call with all safe args, will be marked safe.
+                unsafe {
+                    bd_fn.recon_b_inter(f, t, None, bs, b, inter)?;
+                }
 
                 let filter = &dav1d_filter_dir[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
                     [&t.l, &f.a[t.a]],
                     [bh4 as usize, bw4 as usize],
                     [by4 as usize, bx4 as usize],
-                    |case, dir| {
+                    // SAFETY: No other thread is accessing the written portion of the buffers.
+                    |case, dir| unsafe {
                         case.set_disjoint(&dir.filter[0], filter[0].into());
                         case.set_disjoint(&dir.filter[1], filter[1].into());
                         case.set_disjoint(&dir.intra, 0);
@@ -1333,7 +1348,8 @@ unsafe fn decode_b(
 
                 if frame_type.is_inter_or_switch() {
                     let ri = t.rt.r[(t.b.y as usize & 31) + 5 + bh4 as usize - 1] + t.b.x as usize;
-                    let r = &mut *f.rf.r.index_mut(ri..ri + bw4 as usize);
+                    // SAFETY: No other thread is accessing the borrowed range.
+                    let r = unsafe { &mut *f.rf.r.index_mut(ri..ri + bw4 as usize) };
                     for block in r {
                         block.r#ref.r#ref[0] = inter.r#ref[0] + 1;
                         block.mv.mv[0] = inter.nd.one_d.mv[0];
@@ -1341,7 +1357,9 @@ unsafe fn decode_b(
                     }
                     let rr = &t.rt.r[(t.b.y as usize & 31) + 5..][..bh4 as usize - 1];
                     for r in rr {
-                        let block = &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1);
+                        // SAFETY: No other thread is accessing the borrowed element.
+                        let block =
+                            unsafe { &mut f.rf.r.index_mut(r + t.b.x as usize + bw4 as usize - 1) };
                         block.r#ref.r#ref[0] = inter.r#ref[0] + 1;
                         block.mv.mv[0] = inter.nd.one_d.mv[0];
                         block.bs = bs;
@@ -1353,7 +1371,8 @@ unsafe fn decode_b(
                         [&t.l, &f.a[t.a]],
                         [cbh4 as usize, cbw4 as usize],
                         [cby4 as usize, cbx4 as usize],
-                        |case, dir| {
+                        // SAFETY: No other thread is accessing the written portion of the buffer.
+                        |case, dir| unsafe {
                             case.set_disjoint(&dir.uvmode, DC_PRED);
                         },
                     );
@@ -1816,15 +1835,18 @@ unsafe fn decode_b(
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts_c.msac.rng);
                 }
                 if use_y_pal {
-                    pal_sz[0] = (bd_fn.read_pal_plane)(
-                        t,
-                        f,
-                        ts_c,
-                        false,
-                        sz_ctx,
-                        bx4 as usize,
-                        by4 as usize,
-                    );
+                    // SAFETY: Function call with all safe args, will be marked safe.
+                    pal_sz[0] = unsafe {
+                        (bd_fn.read_pal_plane)(
+                            t,
+                            f,
+                            ts_c,
+                            false,
+                            sz_ctx,
+                            bx4 as usize,
+                            by4 as usize,
+                        )
+                    };
                 }
             }
 
@@ -1839,7 +1861,11 @@ unsafe fn decode_b(
                 }
                 if use_uv_pal {
                     // see aomedia bug 2183 for why we use luma coordinates
-                    pal_sz[1] = (bd_fn.read_pal_uv)(t, f, ts_c, sz_ctx, bx4 as usize, by4 as usize);
+                    //
+                    // SAFETY: Function call with all safe args, will be marked safe.
+                    pal_sz[1] = unsafe {
+                        (bd_fn.read_pal_uv)(t, f, ts_c, sz_ctx, bx4 as usize, by4 as usize)
+                    };
                 }
             }
         }
@@ -1883,7 +1909,8 @@ unsafe fn decode_b(
                 let frame_thread = &ts.frame_thread[p as usize];
                 let len = usize::try_from(bw4 * bh4 * 8).unwrap();
                 let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
-                pal_idx_guard = f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len);
+                // SAFETY: No other thread is accessing the borrowed range.
+                pal_idx_guard = unsafe { f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len) };
                 frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
                 &mut *pal_idx_guard
             } else {
@@ -1915,7 +1942,8 @@ unsafe fn decode_b(
                 let frame_thread = &ts.frame_thread[p as usize];
                 let len = usize::try_from(cbw4 * cbh4 * 8).unwrap();
                 let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
-                pal_idx_guard = f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len);
+                // SAFETY: No other thread is accessing the borrowed range.
+                pal_idx_guard = unsafe { f.frame_thread.pal_idx.index_mut(pal_idx..pal_idx + len) };
                 frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
                 Some(&mut *pal_idx_guard)
             } else {
@@ -1982,9 +2010,11 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            bd_fn.read_coef_blocks(f, t, ts_c, bs, b);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
         } else {
-            bd_fn.recon_b_intra(f, t, Some(ts_c), bs, intra_edge_flags, b, &intra);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.recon_b_intra(f, t, Some(ts_c), bs, intra_edge_flags, b, &intra) };
         }
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {
@@ -2010,17 +2040,24 @@ unsafe fn decode_b(
                 tx,
                 b.uvtx,
                 f.cur.p.layout,
-                &mut f.a[t.a]
-                    .tx_lpf_y
-                    .index_mut(bx4 as usize..(bx4 + bw4) as usize),
-                &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize),
+                // SAFETY: No other thread is accessing the borrowed range.
+                unsafe {
+                    &mut f.a[t.a]
+                        .tx_lpf_y
+                        .index_mut(bx4 as usize..(bx4 + bw4) as usize)
+                },
+                // SAFETY: No other thread is accessing the borrowed range.
+                unsafe { &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize) },
                 if has_chroma {
-                    a_uv_guard = f.a[t.a]
-                        .tx_lpf_uv
-                        .index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
-                    l_uv_guard =
-                        t.l.tx_lpf_uv
-                            .index_mut(cby4 as usize..(cby4 + cbh4) as usize);
+                    // SAFETY: No other thread is accessing the borrowed range.
+                    unsafe {
+                        a_uv_guard = f.a[t.a]
+                            .tx_lpf_uv
+                            .index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
+                        l_uv_guard =
+                            t.l.tx_lpf_uv
+                                .index_mut(cby4 as usize..(cby4 + cbh4) as usize);
+                    }
                     Some((&mut a_uv_guard, &mut l_uv_guard))
                 } else {
                     None
@@ -2039,7 +2076,8 @@ unsafe fn decode_b(
             [(&t.l, t_dim.lh, 1), (&f.a[t.a], t_dim.lw, 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
-            |case, (dir, lw_lh, dir_index)| {
+            // SAFETY: No other thread is acessing the written portion of the buffers.
+            |case, (dir, lw_lh, dir_index)| unsafe {
                 case.set_disjoint(&dir.tx_intra, lw_lh as i8);
                 case.set_disjoint(&dir.tx, lw_lh);
                 case.set_disjoint(&dir.mode, y_mode_nofilt);
@@ -2063,26 +2101,40 @@ unsafe fn decode_b(
             },
         );
         if pal_sz[0] != 0 {
-            (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
-        }
-        if has_chroma {
-            CaseSet::<32, false>::many(
-                [&t.l, &f.a[t.a]],
-                [cbh4 as usize, cbw4 as usize],
-                [cby4 as usize, cbx4 as usize],
-                |case, dir| {
-                    case.set_disjoint(&dir.uvmode, uv_mode);
-                },
-            );
-            if pal_sz[1] != 0 {
-                (bd_fn.copy_pal_block_uv)(
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe {
+                (bd_fn.copy_pal_block_y)(
                     t,
                     f,
                     bx4 as usize,
                     by4 as usize,
                     bw4 as usize,
                     bh4 as usize,
-                );
+                )
+            };
+        }
+        if has_chroma {
+            CaseSet::<32, false>::many(
+                [&t.l, &f.a[t.a]],
+                [cbh4 as usize, cbw4 as usize],
+                [cby4 as usize, cbx4 as usize],
+                // SAFETY: No other thread is accessing the written portion of the buffer.
+                |case, dir| unsafe {
+                    case.set_disjoint(&dir.uvmode, uv_mode);
+                },
+            );
+            if pal_sz[1] != 0 {
+                // SAFEETY: Function call with all safe args, will be marked safe.
+                unsafe {
+                    (bd_fn.copy_pal_block_uv)(
+                        t,
+                        f,
+                        bx4 as usize,
+                        by4 as usize,
+                        bw4 as usize,
+                        bh4 as usize,
+                    );
+                }
             }
         }
         let frame_hdr = f.frame_hdr();
@@ -2236,9 +2288,11 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            bd_fn.read_coef_blocks(f, t, ts_c, bs, b);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
         } else {
-            bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)?;
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)? };
         }
 
         splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
@@ -2247,7 +2301,8 @@ unsafe fn decode_b(
             [(&t.l, 1), (&f.a[t.a], 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
-            |case, (dir, dir_index)| {
+            // SAFETY: No other thread is accessing the written portion of the buffers.
+            |case, (dir, dir_index)| unsafe {
                 case.set_disjoint(&dir.tx_intra, b_dim[2 + dir_index] as i8);
                 case.set_disjoint(&dir.mode, DC_PRED);
                 case.set_disjoint(&dir.pal_sz, 0);
@@ -2264,7 +2319,8 @@ unsafe fn decode_b(
                 [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
-                |case, dir| {
+                // SAFETY: No other thread is accessing the written portion of the buffer.
+                |case, dir| unsafe {
                     case.set_disjoint(&dir.uvmode, DC_PRED);
                 },
             );
@@ -3138,9 +3194,11 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            bd_fn.read_coef_blocks(f, t, ts_c, bs, b);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
         } else {
-            bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)?;
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)? };
         }
 
         let frame_hdr = f.frame_hdr();
@@ -3185,17 +3243,24 @@ unsafe fn decode_b(
                 &tx_split,
                 uvtx,
                 f.cur.p.layout,
-                &mut f.a[t.a]
-                    .tx_lpf_y
-                    .index_mut(bx4 as usize..(bx4 + bw4) as usize),
-                &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize),
+                // SAFETY: No other thread is accessing the borrowed range.
+                unsafe {
+                    &mut f.a[t.a]
+                        .tx_lpf_y
+                        .index_mut(bx4 as usize..(bx4 + bw4) as usize)
+                },
+                // SAFETY: No other thread is accessing the borrowed range.
+                unsafe { &mut t.l.tx_lpf_y.index_mut(by4 as usize..(by4 + bh4) as usize) },
                 if has_chroma {
-                    a_uv_guard = f.a[t.a]
-                        .tx_lpf_uv
-                        .index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
-                    l_uv_guard =
-                        t.l.tx_lpf_uv
-                            .index_mut(cby4 as usize..(cby4 + cbh4) as usize);
+                    // SAFETY: No other thread is accessing the borrowed ranges.
+                    unsafe {
+                        a_uv_guard = f.a[t.a]
+                            .tx_lpf_uv
+                            .index_mut(cbx4 as usize..(cbx4 + cbw4) as usize);
+                        l_uv_guard =
+                            t.l.tx_lpf_uv
+                                .index_mut(cby4 as usize..(cby4 + cbh4) as usize)
+                    };
                     Some((&mut *a_uv_guard, &mut *l_uv_guard))
                 } else {
                     None
@@ -3214,7 +3279,8 @@ unsafe fn decode_b(
             [(&t.l, 1), (&f.a[t.a], 0)],
             [bh4 as usize, bw4 as usize],
             [by4 as usize, bx4 as usize],
-            |case, (dir, dir_index)| {
+            // SAFETY: No other thread is accessing the written portion of the buffers.
+            |case, (dir, dir_index)| unsafe {
                 case.set_disjoint(&dir.seg_pred, seg_pred.into());
                 case.set_disjoint(&dir.skip_mode, b.skip_mode);
                 case.set_disjoint(&dir.intra, 0);
@@ -3237,7 +3303,8 @@ unsafe fn decode_b(
                 [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
                 [cby4 as usize, cbx4 as usize],
-                |case, dir| {
+                // SAFETY: No other thread is accessing the written portion of the buffer.
+                |case, dir| unsafe {
                     case.set_disjoint(&dir.uvmode, DC_PRED);
                 },
             );
@@ -3255,7 +3322,8 @@ unsafe fn decode_b(
         CaseSet::<32, false>::one((), bw4, 0, |case, ()| {
             for i in 0..bh4 {
                 let i = offset + i * b4_stride;
-                case.set(&mut cur_segmap.index_mut(i..i + bw4), b.seg_id);
+                // SAFETY: No other thread is accessing the written portion of the buffer.
+                case.set(unsafe { &mut cur_segmap.index_mut(i..i + bw4) }, b.seg_id);
             }
         });
     }
@@ -3278,7 +3346,9 @@ unsafe fn decode_b(
             if t.frame_thread.pass == 1 && frame_hdr.frame_type.is_inter_or_switch() =>
         {
             let sby = t.b.y - ts.tiling.row_start >> f.sb_shift;
-            let mut lowest_px = f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize);
+            // SAFETY: No other thread is accessing the borrowed element.
+            let mut lowest_px =
+                unsafe { f.lowest_pixel_mem.index_mut(ts.lowest_pixel + sby as usize) };
             // keep track of motion vectors for each reference
             if inter.comp_type.is_none() {
                 // y
