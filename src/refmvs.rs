@@ -478,9 +478,7 @@ impl Rav1dRefmvsDSPContext {
             }
             // This is the range that will actually be accessed,
             // but `splat_mv` expects a pointer offset `bx4` backwards.
-            //
-            // SAFETY: Only this thread is accessing the indexed portion of the buffer.
-            Some(unsafe { rf.r.index_mut(ri + bx4..ri + bx4 + bw4) })
+            Some(rf.r.index_mut(ri + bx4..ri + bx4 + bw4))
         });
         let mut r: [_; 37] = array::from_fn(|i| {
             r[i].as_mut()

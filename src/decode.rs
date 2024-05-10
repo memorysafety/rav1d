@@ -409,8 +409,7 @@ fn read_tx_tree(
             [(&t.l, txh), (&f.a[t.a], txw)],
             [t_dim.h as usize, t_dim.w as usize],
             [by4 as usize, bx4 as usize],
-            // SAFETY: Only one thread is accessing the written portion of the buffer at a time.
-            |case, (dir, val)| unsafe {
+            |case, (dir, val)| {
                 case.set_disjoint(&dir.tx, if is_split { TX_4X4 } else { val });
             },
         );
@@ -856,8 +855,7 @@ fn read_vartx_tree(
                 [&t.l, &f.a[t.a]],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
-                // SAFETY: Only this thread is accessing the written portion of the buffer.
-                |case, dir| unsafe {
+                |case, dir| {
                     case.set_disjoint(&dir.tx, TX_4X4);
                 },
             );
@@ -868,8 +866,7 @@ fn read_vartx_tree(
                 [(&t.l, 1), (&f.a[t.a], 0)],
                 [bh4 as usize, bw4 as usize],
                 [by4 as usize, bx4 as usize],
-                // SAFETY: Only this thread is accessing the written portion of the buffer.
-                |case, (dir, dir_index)| unsafe {
+                |case, (dir, dir_index)| {
                     case.set_disjoint(&dir.tx, b_dim[2 + dir_index]);
                 },
             );

@@ -91,12 +91,12 @@ impl<const UP_TO: usize, const WITH_DEFAULT: bool> CaseSetter<UP_TO, WITH_DEFAUL
     /// Caller must ensure that no elements of the written range are concurrently
     /// borrowed (immutably or mutably) at all during the call to `set_disjoint`.
     #[inline]
-    pub unsafe fn set_disjoint<T, V>(&self, buf: &DisjointMut<T>, val: V)
+    pub fn set_disjoint<T, V>(&self, buf: &DisjointMut<T>, val: V)
     where
         T: AsMutPtr<Target = V>,
         V: Clone + Copy,
     {
-        let mut buf = unsafe { buf.index_mut(self.offset..self.offset + self.len) };
+        let mut buf = buf.index_mut(self.offset..self.offset + self.len);
         small_memset::<V, UP_TO, WITH_DEFAULT>(&mut *buf, val);
     }
 }
