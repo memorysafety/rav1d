@@ -311,7 +311,7 @@ pub unsafe extern "C" fn dav1d_parse_sequence_header(
     (|| {
         validate_input!((!out.is_null(), EINVAL))?;
         validate_input!((!ptr.is_null(), EINVAL))?;
-        validate_input!((sz > 0, EINVAL))?;
+        validate_input!((sz > 0 && sz <= usize::MAX / 2, EINVAL))?;
         let seq_hdr = rav1d_parse_sequence_header(slice::from_raw_parts(ptr, sz))?;
         out.write(seq_hdr.dav1d);
         Ok(())

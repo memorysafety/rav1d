@@ -52,11 +52,16 @@ static int parse_seq_hdr_error(void) {
 static int check_trailing_bits(GetBits *const gb,
                                const int strict_std_compliance)
 {
-    if (!dav1d_get_bit(gb) || gb->state || gb->error) // trailing_one_bit + trailing_zero_bit
+    const int trailing_one_bit = dav1d_get_bit(gb);
+
+    if (gb->error)
         return DAV1D_ERR(EINVAL);
 
     if (!strict_std_compliance)
         return 0;
+
+    if (!trailing_one_bit || gb->state)
+        return DAV1D_ERR(EINVAL);
 
     ptrdiff_t size = gb->ptr_end - gb->ptr;
     while (size > 0 && gb->ptr[size - 1] == 0)
@@ -301,7 +306,7 @@ int dav1d_parse_sequence_header(Dav1dSequenceHeader *const out,
 {
     validate_input_or_ret(out != NULL, DAV1D_ERR(EINVAL));
     validate_input_or_ret(ptr != NULL, DAV1D_ERR(EINVAL));
-    validate_input_or_ret(sz > 0, DAV1D_ERR(EINVAL));
+    validate_input_or_ret(sz > 0 && sz <= SIZE_MAX / 2, DAV1D_ERR(EINVAL));
 
     GetBits gb;
     dav1d_init_get_bits(&gb, ptr, sz);
@@ -1245,7 +1250,8 @@ ptrdiff_t dav1d_parse_obus(Dav1dContext *const c, Dav1dData *const in) {
     dav1d_init_get_bits(&gb, in->data, in->sz);
 
     // obu header
-    dav1d_get_bit(&gb); // obu_forbidden_bit
+    const int obu_forbidden_bit = dav1d_get_bit(&gb);
+    if (c->strict_std_compliance && obu_forbidden_bit) goto error;
     const enum Dav1dObuType type = dav1d_get_bits(&gb, 4);
     const int has_extension = dav1d_get_bit(&gb);
     const int has_length_field = dav1d_get_bit(&gb);
