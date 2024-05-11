@@ -1823,9 +1823,9 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     let by4 = t.b.y & 31;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    let bw4 = *b_dim.offset(0) as c_int;
-    let bh4 = *b_dim.offset(1) as c_int;
+    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let bw4 = b_dim[0] as c_int;
+    let bh4 = b_dim[1] as c_int;
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let has_chroma = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
