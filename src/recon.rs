@@ -1765,13 +1765,11 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 }
             });
             if t.frame_thread.pass == 1 {
-                f.frame_thread.cbi[cbi_idx][0].store(
-                    CodedBlockInfo::new(eob as i16, txtp),
-                    atomig::Ordering::Relaxed,
-                );
+                f.frame_thread.cbi[cbi_idx][0]
+                    .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
             }
         } else {
-            let cbi = f.frame_thread.cbi[cbi_idx][0].load(atomig::Ordering::Relaxed);
+            let cbi = f.frame_thread.cbi[cbi_idx][0].load(Ordering::Relaxed);
             eob = cbi.eob().into();
             txtp = cbi.txtp();
         }
@@ -2025,10 +2023,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     pl, b.uvtx as c_int, txtp as c_uint, eob, ts_c.msac.rng,
                                 );
                             }
-                            f.frame_thread.cbi[cbi_idx..][t.b.x as usize][(1 + pl) as usize].store(
-                                CodedBlockInfo::new(eob as i16, txtp),
-                                atomig::Ordering::Relaxed,
-                            );
+                            f.frame_thread.cbi[cbi_idx..][t.b.x as usize][(1 + pl) as usize]
+                                .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
                             ts.frame_thread[1].cf.store(
                                 cf_idx + (*uv_t_dim).w as usize * (*uv_t_dim).h as usize * 16,
                                 Ordering::Relaxed,
@@ -2675,7 +2671,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 .store(cf_idx + len, Ordering::Relaxed);
                             let cbi = f.frame_thread.cbi
                                 [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize][0]
-                                .load(atomig::Ordering::Relaxed);
+                                .load(Ordering::Relaxed);
                             eob = cbi.eob().into();
                             txtp = cbi.txtp();
                         } else {
@@ -3126,7 +3122,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     let cbi = f.frame_thread.cbi
                                         [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
                                         [(pl + 1) as usize]
-                                        .load(atomig::Ordering::Relaxed);
+                                        .load(Ordering::Relaxed);
                                     eob = cbi.eob().into();
                                     txtp = cbi.txtp();
                                 } else {
@@ -4074,7 +4070,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 let cbi = f.frame_thread.cbi
                                     [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
                                     [(1 + pl) as usize]
-                                    .load(atomig::Ordering::Relaxed);
+                                    .load(Ordering::Relaxed);
                                 eob = cbi.eob().into();
                                 txtp = cbi.txtp();
                             } else {
