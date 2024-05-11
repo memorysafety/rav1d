@@ -1901,8 +1901,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             );
                         }
                         Av1BlockIntraInter::Intra(intra) => {
-                            let mut cf_ctx: u8 = 0x40;
-                            let mut txtp: TxfmType = DCT_DCT;
+                            let mut cf_ctx = 0x40;
+                            let mut txtp = DCT_DCT;
                             let a_start = (bx4 + x) as usize;
                             let a_len = t_dim.w as usize;
                             let l_start = (by4 + y) as usize;
@@ -1975,7 +1975,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                         x = init_x >> ss_hor;
                         t.b.x += init_x;
                         while x < sub_cw4 {
-                            let mut cf_ctx: u8 = 0x40;
+                            let mut cf_ctx = 0x40;
                             let mut txtp = match b.ii {
                                 Av1BlockIntraInter::Intra(_) => DCT_DCT,
                                 Av1BlockIntraInter::Inter(_) => t
