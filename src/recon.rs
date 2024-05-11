@@ -2371,21 +2371,28 @@ unsafe fn warp_affine<BD: BitDepth>(
     let mat = &wmp.matrix;
     let width = refp.p.p.w + ss_hor >> ss_hor;
     let height = refp.p.p.h + ss_ver >> ss_ver;
+
     for y in (0..b_dim[1] as c_int * v_mul).step_by(8) {
         let src_y = b.y * 4 + ((y + 4) << ss_ver);
         let mat3_y = mat[3] as i64 * src_y as i64 + mat[0] as i64;
         let mat5_y = mat[5] as i64 * src_y as i64 + mat[1] as i64;
         for x in (0..b_dim[0] as c_int * h_mul).step_by(8) {
+            // Calculate transformation relative to
+            // center of 8x8 block in luma pixel units.
             let src_x = b.x * 4 + ((x + 4) << ss_hor);
             let mvx = mat[2] as i64 * src_x as i64 + mat3_y >> ss_hor;
             let mvy = mat[4] as i64 * src_x as i64 + mat5_y >> ss_ver;
+
             let dx = (mvx >> 16) as i32 - 4;
             let mx = (mvx as i32 & 0xffff) - wmp.alpha() as i32 * 4 - wmp.beta() as i32 * 7 & !0x3f;
+
             let dy = (mvy >> 16) as i32 - 4;
             let my =
                 (mvy as i32 & 0xffff) - wmp.gamma() as i32 * 4 - wmp.delta() as i32 * 4 & !0x3f;
+
             let ref_ptr;
             let mut ref_stride = refp.p.stride[(pl != 0) as usize];
+
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf = emu_edge.buf_mut::<BD>();
                 (f.dsp.mc.emu_edge)(
