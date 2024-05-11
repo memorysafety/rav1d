@@ -1316,7 +1316,7 @@ impl warp8x8t::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         tmp: &mut [i16],
-        tmp_stride: ptrdiff_t,
+        tmp_stride: usize,
         src: *const BD::Pixel,
         src_stride: ptrdiff_t,
         abcd: &[i16; 4],
@@ -1325,6 +1325,7 @@ impl warp8x8t::Fn {
         bd: BD,
     ) {
         let tmp = tmp.as_mut_ptr();
+        let tmp_stride = tmp_stride as isize;
         let src = src.cast();
         let bd = bd.into_c();
         self.get()(tmp, tmp_stride, src, src_stride, abcd, mx, my, bd)
