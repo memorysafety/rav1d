@@ -2077,7 +2077,7 @@ unsafe fn mc<BD: BitDepth>(
     bh4: c_int,
     bx: c_int,
     by: c_int,
-    pl: c_int,
+    pl: usize,
     mv: mv,
     refp: &Rav1dThreadPicture,
     refidx: usize,
@@ -2124,7 +2124,7 @@ unsafe fn mc<BD: BitDepth>(
                 (dy - (my != 0) as c_int * 3) as intptr_t,
                 emu_edge_buf.as_mut_ptr().cast(),
                 192 * ::core::mem::size_of::<BD::Pixel>() as isize,
-                refp.p.data.as_ref().unwrap().data[pl as usize].cast(),
+                refp.p.data.as_ref().unwrap().data[pl].cast(),
                 ref_stride,
             );
             r#ref = emu_edge_buf
@@ -2132,7 +2132,7 @@ unsafe fn mc<BD: BitDepth>(
                 .add((192 * (my != 0) as c_int * 3 + (mx != 0) as c_int * 3) as usize);
             ref_stride = 192 * ::core::mem::size_of::<BD::Pixel>() as isize;
         } else {
-            r#ref = (refp.p.data.as_ref().unwrap().data[pl as usize] as *mut BD::Pixel)
+            r#ref = (refp.p.data.as_ref().unwrap().data[pl] as *mut BD::Pixel)
                 .offset(BD::pxstride(ref_stride) * dy as isize)
                 .add(dx as usize);
         }
@@ -2196,7 +2196,7 @@ unsafe fn mc<BD: BitDepth>(
                 (top - 3) as intptr_t,
                 emu_edge_buf.as_mut_ptr().cast(),
                 320 * ::core::mem::size_of::<BD::Pixel>() as isize,
-                refp.p.data.as_ref().unwrap().data[pl as usize].cast(),
+                refp.p.data.as_ref().unwrap().data[pl].cast(),
                 ref_stride,
             );
             r#ref = emu_edge_buf.as_mut_ptr().add((320 * 3 + 3) as usize);
@@ -2205,7 +2205,7 @@ unsafe fn mc<BD: BitDepth>(
                 println!("Emu");
             }
         } else {
-            r#ref = (refp.p.data.as_ref().unwrap().data[pl as usize] as *mut BD::Pixel)
+            r#ref = (refp.p.data.as_ref().unwrap().data[pl] as *mut BD::Pixel)
                 .offset(BD::pxstride(ref_stride) * top as isize)
                 .offset(left as isize);
         }
@@ -2237,7 +2237,7 @@ unsafe fn obmc<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
     b_dim: &[u8; 4],
-    pl: c_int,
+    pl: usize,
     bx4: c_int,
     by4: c_int,
     w4: c_int,
@@ -2356,7 +2356,7 @@ unsafe fn warp_affine<BD: BitDepth>(
     b: Bxy,
     mut dst: MaybeTempPixels<BD, usize>,
     b_dim: &[u8; 4],
-    pl: c_int,
+    pl: usize,
     refp: &Rav1dThreadPicture,
     wmp: &Rav1dWarpedMotionParams,
 ) -> Result<(), ()> {
@@ -2397,13 +2397,13 @@ unsafe fn warp_affine<BD: BitDepth>(
                     (dy - 3) as intptr_t,
                     emu_edge_buf.as_mut_ptr().cast(),
                     32 * ::core::mem::size_of::<BD::Pixel>() as isize,
-                    refp.p.data.as_ref().unwrap().data[pl as usize].cast(),
+                    refp.p.data.as_ref().unwrap().data[pl].cast(),
                     ref_stride,
                 );
                 ref_ptr = emu_edge_buf.as_ptr().add(32 * 3 + 3);
                 ref_stride = 32 * ::core::mem::size_of::<BD::Pixel>() as isize;
             } else {
-                ref_ptr = (refp.p.data.as_ref().unwrap().data[pl as usize] as *const BD::Pixel)
+                ref_ptr = (refp.p.data.as_ref().unwrap().data[pl] as *const BD::Pixel)
                     .offset((BD::pxstride(ref_stride) * dy as isize) as isize)
                     .offset(dx as isize);
             }
