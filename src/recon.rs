@@ -2484,8 +2484,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     let has_chroma = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0)) as c_int;
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(intra.tx as isize) as *const TxfmInfo;
+    let t_dim = &dav1d_txfm_dimensions[intra.tx as usize];
     let uv_t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(b.uvtx as isize) as *const TxfmInfo;
     let cbw4 = bw4 + ss_hor >> ss_hor;
@@ -2585,10 +2584,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         angle = intra.y_angle as c_int;
                         edge_flags = EdgeFlags::union_all([
                             EdgeFlags::I444_TOP_HAS_RIGHT.select(
-                                !((y > init_y || !sb_has_tr) && x + (*t_dim).w as c_int >= sub_w4),
+                                !((y > init_y || !sb_has_tr) && x + t_dim.w as c_int >= sub_w4),
                             ),
                             EdgeFlags::I444_LEFT_HAS_BOTTOM.select(
-                                !(x > init_x || (!sb_has_bl && y + (*t_dim).h as c_int >= sub_h4)),
+                                !(x > init_x || (!sb_has_bl && y + t_dim.h as c_int >= sub_h4)),
                             ),
                         ]);
                         let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
@@ -2628,8 +2627,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             top_sb_edge_slice,
                             intra.y_mode as IntraPredMode,
                             &mut angle,
-                            (*t_dim).w as c_int,
-                            (*t_dim).h as c_int,
+                            t_dim.w as c_int,
+                            t_dim.h as c_int,
                             intra_edge_filter,
                             edge_array,
                             edge_offset,
@@ -2640,8 +2639,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             dst,
                             f.cur.stride[0],
                             edge,
-                            (*t_dim).w as c_int * 4,
-                            (*t_dim).h as c_int * 4,
+                            t_dim.w as c_int * 4,
+                            t_dim.h as c_int * 4,
                             angle | intra_flags,
                             4 * f.bw - 4 * t.b.x,
                             4 * f.bh - 4 * t.b.y,
@@ -2649,25 +2648,25 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         );
                         if debug_block_info!(f, t.b) && 0 != 0 {
                             hex_dump::<BD>(
-                                edge.offset(-(((*t_dim).h as c_int * 4) as isize)),
-                                (*t_dim).h as usize * 4,
-                                (*t_dim).h as usize * 4,
+                                edge.offset(-((t_dim.h as c_int * 4) as isize)),
+                                t_dim.h as usize * 4,
+                                t_dim.h as usize * 4,
                                 2,
                                 "l",
                             );
                             hex_dump::<BD>(edge, 0, 1, 1, "tl");
                             hex_dump::<BD>(
                                 edge.offset(1),
-                                (*t_dim).w as usize * 4,
-                                (*t_dim).w as usize * 4,
+                                t_dim.w as usize * 4,
+                                t_dim.w as usize * 4,
                                 2,
                                 "t",
                             );
                             hex_dump::<BD>(
                                 dst,
                                 f.cur.stride[0] as usize,
-                                (*t_dim).w as usize * 4,
-                                (*t_dim).h as usize * 4,
+                                t_dim.w as usize * 4,
+                                t_dim.h as usize * 4,
                                 "y-intra-pred",
                             );
                         }
@@ -2679,9 +2678,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         let mut txtp: TxfmType = DCT_DCT;
                         if t.frame_thread.pass != 0 {
                             let p = t.frame_thread.pass & 1;
-                            let len = cmp::min((*t_dim).h as usize, 8)
+                            let len = cmp::min(t_dim.h as usize, 8)
                                 * 4
-                                * cmp::min((*t_dim).w as usize, 8)
+                                * cmp::min(t_dim.w as usize, 8)
                                 * 4;
                             let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
                             cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
@@ -2707,8 +2706,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 &mut t.cf,
                                 &mut f.a[t.a]
                                     .lcoef
-                                    .index_mut(a_start..a_start + (*t_dim).w as usize),
-                                &mut t.l.lcoef.index_mut(l_start..l_start + (*t_dim).h as usize),
+                                    .index_mut(a_start..a_start + t_dim.w as usize),
+                                &mut t.l.lcoef.index_mut(l_start..l_start + t_dim.h as usize),
                                 intra.tx as RectTxfmSize,
                                 bs,
                                 b,
@@ -2730,8 +2729,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             CaseSet::<16, true>::many(
                                 [&t.l, &f.a[t.a]],
                                 [
-                                    cmp::min((*t_dim).h as i32, f.bh - t.b.y) as usize,
-                                    cmp::min((*t_dim).w as i32, f.bw - t.b.x) as usize,
+                                    cmp::min(t_dim.h as i32, f.bh - t.b.y) as usize,
+                                    cmp::min(t_dim.w as i32, f.bw - t.b.x) as usize,
                                 ],
                                 [(by4 + y) as usize, (bx4 + x) as usize],
                                 |case, dir| {
@@ -2743,8 +2742,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             if debug_block_info!(f, t.b) && 0 != 0 {
                                 coef_dump(
                                     cf,
-                                    cmp::min((*t_dim).h as usize, 8) * 4,
-                                    cmp::min((*t_dim).w as usize, 8) * 4,
+                                    cmp::min(t_dim.h as usize, 8) * 4,
+                                    cmp::min(t_dim.w as usize, 8) * 4,
                                     3,
                                     "dq",
                                 );
@@ -2761,8 +2760,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 hex_dump::<BD>(
                                     dst,
                                     f.cur.stride[0] as usize,
-                                    (*t_dim).w as usize * 4,
-                                    (*t_dim).h as usize * 4,
+                                    t_dim.w as usize * 4,
+                                    t_dim.h as usize * 4,
                                     "recon",
                                 );
                             }
@@ -2770,20 +2769,20 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     } else if t.frame_thread.pass == 0 {
                         CaseSet::<16, false>::many(
                             [&t.l, &f.a[t.a]],
-                            [(*t_dim).h as usize, (*t_dim).w as usize],
+                            [t_dim.h as usize, t_dim.w as usize],
                             [(by4 + y) as usize, (bx4 + x) as usize],
                             |case, dir| {
                                 case.set_disjoint(&dir.lcoef, 0x40);
                             },
                         );
                     }
-                    dst = dst.offset((4 * (*t_dim).w as c_int) as isize);
-                    x += (*t_dim).w as c_int;
-                    t.b.x += (*t_dim).w as c_int;
+                    dst = dst.offset((4 * t_dim.w as c_int) as isize);
+                    x += t_dim.w as c_int;
+                    t.b.x += t_dim.w as c_int;
                 }
                 t.b.x -= x;
-                y += (*t_dim).h as c_int;
-                t.b.y += (*t_dim).h as c_int;
+                y += t_dim.h as c_int;
+                t.b.y += t_dim.h as c_int;
             }
             t.b.y -= y;
             if !(has_chroma == 0) {
@@ -2810,9 +2809,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             .offset(uv_off as isize),
                     ];
                     let furthest_r =
-                        (cw4 << ss_hor) + (*t_dim).w as c_int - 1 & !((*t_dim).w as c_int - 1);
+                        (cw4 << ss_hor) + t_dim.w as c_int - 1 & !(t_dim.w as c_int - 1);
                     let furthest_b =
-                        (ch4 << ss_ver) + (*t_dim).h as c_int - 1 & !((*t_dim).h as c_int - 1);
+                        (ch4 << ss_ver) + t_dim.h as c_int - 1 & !(t_dim.h as c_int - 1);
                     f.dsp.ipred.cfl_ac[f.cur.p.layout.try_into().unwrap()].call::<BD>(
                         ac.as_mut_ptr(),
                         y_src,
