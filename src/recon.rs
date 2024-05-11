@@ -1869,11 +1869,9 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
         Av1BlockIntraInter::Inter(inter) => inter.max_ytx,
     } as usize];
 
-    let mut init_y = 0;
-    while init_y < h4 {
+    for init_y in (0..h4).step_by(16) {
         let sub_h4 = cmp::min(h4, 16 + init_y);
-        let mut init_x = 0;
-        while init_x < w4 {
+        for init_x in (0..w4).step_by(16) {
             let sub_w4 = cmp::min(w4, init_x + 16);
             let mut y_off = (init_y != 0) as c_int;
             let mut y;
@@ -2049,9 +2047,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                     pl += 1;
                 }
             }
-            init_x += 16;
         }
-        init_y += 16;
     }
 }
 
