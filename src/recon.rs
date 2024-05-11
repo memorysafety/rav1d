@@ -1603,7 +1603,7 @@ impl CfSelect {
 
 unsafe fn read_coef_tree<BD: BitDepth>(
     f: &Rav1dFrameData,
-    t: *mut Rav1dTaskContext,
+    t: &mut Rav1dTaskContext,
     mut ts_c: Option<&mut Rav1dTileStateContext>,
     bs: BlockSize,
     b: &Av1Block,
@@ -1614,7 +1614,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     y_off: c_int,
     mut dst: *mut BD::Pixel,
 ) {
-    let ts = &f.ts[(*t).ts];
+    let ts = &f.ts[t.ts];
     let t_dim: *const TxfmInfo =
         &*dav1d_txfm_dimensions.as_ptr().offset(ytx as isize) as *const TxfmInfo;
     let txw = (*t_dim).w as c_int;
@@ -1641,8 +1641,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             y_off * 2 + 0,
             dst,
         );
-        (*t).b.x += txsw;
-        if txw >= txh && (*t).b.x < f.bw {
+        t.b.x += txsw;
+        if txw >= txh && t.b.x < f.bw {
             read_coef_tree::<BD>(
                 f,
                 t,
@@ -1661,9 +1661,9 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 },
             );
         }
-        (*t).b.x -= txsw;
-        (*t).b.y += txsh;
-        if txh >= txw && (*t).b.y < f.bh {
+        t.b.x -= txsw;
+        t.b.y += txsh;
+        if txh >= txw && t.b.y < f.bh {
             if !dst.is_null() {
                 dst = dst.offset((4 * txsh) as isize * BD::pxstride(f.cur.stride[0]));
             }
@@ -1680,8 +1680,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 y_off * 2 + 1,
                 dst,
             );
-            (*t).b.x += txsw;
-            if txw >= txh && (*t).b.x < f.bw {
+            t.b.x += txsw;
+            if txw >= txh && t.b.x < f.bw {
                 read_coef_tree::<BD>(
                     f,
                     t,
@@ -1700,42 +1700,40 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     },
                 );
             }
-            (*t).b.x -= txsw;
+            t.b.x -= txsw;
         }
-        (*t).b.y -= txsh;
+        t.b.y -= txsh;
     } else {
-        let bx4 = (*t).b.x & 31;
-        let by4 = (*t).b.y & 31;
+        let bx4 = t.b.x & 31;
+        let by4 = t.b.y & 31;
         let mut txtp: TxfmType = DCT_DCT;
         let mut cf_ctx: u8 = 0;
         let eob;
         let cf;
         let mut cbi_idx = 0;
-        if (*t).frame_thread.pass != 0 {
-            let p = (*t).frame_thread.pass & 1;
+        if t.frame_thread.pass != 0 {
+            let p = t.frame_thread.pass & 1;
             let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
             cf = CfSelect::Frame(cf_idx);
             ts.frame_thread[p as usize].cf.store(
                 cf_idx + cmp::min((*t_dim).w, 8) as usize * cmp::min((*t_dim).h, 8) as usize * 16,
                 Ordering::Relaxed,
             );
-            cbi_idx = ((*t).b.y as isize * f.b4_stride + (*t).b.x as isize) as usize;
+            cbi_idx = (t.b.y as isize * f.b4_stride + t.b.x as isize) as usize;
         } else {
             cf = CfSelect::Task;
         }
-        if (*t).frame_thread.pass != 2 as c_int {
+        if t.frame_thread.pass != 2 as c_int {
             let ts_c = ts_c.as_deref_mut().unwrap();
             eob = decode_coefs::<BD>(
                 f,
-                (*t).ts,
+                t.ts,
                 ts_c,
-                debug_block_info!(f, (*t).b),
-                &mut (*t).scratch,
-                &mut (*t).cf,
-                &mut f.a[(*t).a]
-                    .lcoef
-                    .index_mut(bx4 as usize..(bx4 + txw) as usize),
-                &mut (*t).l.lcoef.index_mut(by4 as usize..(by4 + txh) as usize),
+                debug_block_info!(f, t.b),
+                &mut t.scratch,
+                &mut t.cf,
+                &mut f.a[t.a].lcoef.index_mut(bx4 as usize..(bx4 + txw) as usize),
+                &mut t.l.lcoef.index_mut(by4 as usize..(by4 + txh) as usize),
                 ytx,
                 bs,
                 b,
@@ -1744,31 +1742,31 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 &mut txtp,
                 &mut cf_ctx,
             );
-            if debug_block_info!(f, (*t).b) {
+            if debug_block_info!(f, t.b) {
                 println!(
                     "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
                     ytx as c_uint, txtp as c_uint, eob, ts_c.msac.rng,
                 );
             }
             CaseSet::<16, true>::many(
-                [&(*t).l.lcoef, &f.a[(*t).a].lcoef],
+                [&t.l.lcoef, &f.a[t.a].lcoef],
                 [
-                    cmp::min(txh, f.bh - (*t).b.y) as usize,
-                    cmp::min(txw, f.bw - (*t).b.x) as usize,
+                    cmp::min(txh, f.bh - t.b.y) as usize,
+                    cmp::min(txw, f.bw - t.b.x) as usize,
                 ],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
                     case.set_disjoint(dir, cf_ctx);
                 },
             );
-            let txtp_map = &mut (*t).scratch.inter_intra_mut().ac_txtp_map.txtp_map_mut()
+            let txtp_map = &mut t.scratch.inter_intra_mut().ac_txtp_map.txtp_map_mut()
                 [(by4 * 32 + bx4) as usize..];
             CaseSet::<16, false>::one((), txw as usize, 0, |case, ()| {
                 for txtp_map in txtp_map.chunks_mut(32).take(txh as usize) {
                     case.set(txtp_map, txtp);
                 }
             });
-            if (*t).frame_thread.pass == 1 {
+            if t.frame_thread.pass == 1 {
                 f.frame_thread.cbi[cbi_idx][0].store(
                     CodedBlockInfo::new(eob as i16, txtp),
                     atomig::Ordering::Relaxed,
@@ -1779,7 +1777,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             eob = cbi.eob().into();
             txtp = cbi.txtp();
         }
-        if (*t).frame_thread.pass & 1 == 0 {
+        if t.frame_thread.pass & 1 == 0 {
             assert!(!dst.is_null());
             if eob >= 0 {
                 let mut cf_guard;
@@ -1792,9 +1790,9 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                         cf_guard = f.frame_thread.cf.mut_slice_as(offset..offset + len);
                         &mut *cf_guard
                     }
-                    CfSelect::Task => &mut BD::select_mut(&mut (*t).cf).0,
+                    CfSelect::Task => &mut BD::select_mut(&mut t.cf).0,
                 };
-                if debug_block_info!(f, (*t).b) && 0 != 0 {
+                if debug_block_info!(f, t.b) && 0 != 0 {
                     coef_dump(
                         cf,
                         cmp::min((*t_dim).h as usize, 8) * 4,
@@ -1811,7 +1809,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     eob,
                     f.bitdepth_max,
                 );
-                if debug_block_info!(f, (*t).b) && 0 != 0 {
+                if debug_block_info!(f, t.b) && 0 != 0 {
                     hex_dump::<BD>(
                         dst,
                         f.cur.stride[0] as usize,
