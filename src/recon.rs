@@ -1616,16 +1616,16 @@ unsafe fn read_coef_tree<BD: BitDepth>(
 ) {
     let ts = &f.ts[t.ts];
     let t_dim = &dav1d_txfm_dimensions[ytx as usize];
-    let txw = t_dim.w as c_int;
-    let txh = t_dim.h as c_int;
+    let txw = t_dim.w;
+    let txh = t_dim.h;
     if depth < 2
         && tx_split[depth as usize] as c_int != 0
         && tx_split[depth as usize] as c_int & (1 as c_int) << y_off * 4 + x_off != 0
     {
         let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
-        let txsw = sub_t_dim.w as c_int;
-        let txsh = sub_t_dim.h as c_int;
+        let txsw = sub_t_dim.w;
+        let txsh = sub_t_dim.h;
         read_coef_tree::<BD>(
             f,
             t,
@@ -1639,7 +1639,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             y_off * 2 + 0,
             dst,
         );
-        t.b.x += txsw;
+        t.b.x += txsw as c_int;
         if txw >= txh && t.b.x < f.bw {
             read_coef_tree::<BD>(
                 f,
@@ -1659,8 +1659,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 },
             );
         }
-        t.b.x -= txsw;
-        t.b.y += txsh;
+        t.b.x -= txsw as c_int;
+        t.b.y += txsh as c_int;
         if txh >= txw && t.b.y < f.bh {
             if !dst.is_null() {
                 dst = dst.offset((4 * txsh) as isize * BD::pxstride(f.cur.stride[0]));
@@ -1678,7 +1678,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 y_off * 2 + 1,
                 dst,
             );
-            t.b.x += txsw;
+            t.b.x += txsw as c_int;
             if txw >= txh && t.b.x < f.bw {
                 read_coef_tree::<BD>(
                     f,
@@ -1698,9 +1698,9 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     },
                 );
             }
-            t.b.x -= txsw;
+            t.b.x -= txsw as c_int;
         }
-        t.b.y -= txsh;
+        t.b.y -= txsh as c_int;
     } else {
         let bx4 = t.b.x & 31;
         let by4 = t.b.y & 31;
@@ -1730,8 +1730,13 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 debug_block_info!(f, t.b),
                 &mut t.scratch,
                 &mut t.cf,
-                &mut f.a[t.a].lcoef.index_mut(bx4 as usize..(bx4 + txw) as usize),
-                &mut t.l.lcoef.index_mut(by4 as usize..(by4 + txh) as usize),
+                &mut f.a[t.a]
+                    .lcoef
+                    .index_mut(bx4 as usize..bx4 as usize + txw as usize),
+                &mut t
+                    .l
+                    .lcoef
+                    .index_mut(by4 as usize..by4 as usize + txh as usize),
                 ytx,
                 bs,
                 b,
@@ -1749,8 +1754,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             CaseSet::<16, true>::many(
                 [&t.l.lcoef, &f.a[t.a].lcoef],
                 [
-                    cmp::min(txh, f.bh - t.b.y) as usize,
-                    cmp::min(txw, f.bw - t.b.x) as usize,
+                    cmp::min(txh as c_int, f.bh - t.b.y) as usize,
+                    cmp::min(txw as c_int, f.bw - t.b.x) as usize,
                 ],
                 [by4 as usize, bx4 as usize],
                 |case, dir| {
