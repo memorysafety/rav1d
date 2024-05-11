@@ -2286,7 +2286,7 @@ unsafe fn obmc<BD: BitDepth>(
                         [*f.a[t.a].filter[0].index((bx4 + x + 1) as usize) as usize],
                 )?;
                 (f.dsp.mc.blend_h)(
-                    dst.offset((x * h_mul) as isize).cast(),
+                    dst.add((x * h_mul) as usize).cast(),
                     dst_stride,
                     lap.cast(),
                     h_mul * ow4 as c_int,
