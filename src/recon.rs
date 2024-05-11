@@ -513,7 +513,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     tx: RectTxfmSize,
     bs: BlockSize,
     b: &Av1Block,
-    plane: c_int,
+    plane: usize,
     cf: CfSelect,
     txtp: &mut TxfmType,
     res_ctx: &mut u8,
@@ -1336,9 +1336,9 @@ unsafe fn decode_coefs<BD: BitDepth>(
         TileStateRef::Frame => &f.dq,
         TileStateRef::Local => &ts.dqmem,
     };
-    let dq_tbl = &dq[b.seg_id as usize][plane as usize];
+    let dq_tbl = &dq[b.seg_id as usize][plane];
     let qm_tbl = if *txtp < IDTX {
-        f.qm[tx as usize][plane as usize]
+        f.qm[tx as usize][plane]
     } else {
         None
     };
@@ -2006,7 +2006,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             b.uvtx as RectTxfmSize,
                             bs,
                             b,
-                            1 + pl as c_int,
+                            1 + pl,
                             CfSelect::Frame(cf_idx),
                             &mut txtp,
                             &mut cf_ctx,
@@ -2683,7 +2683,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 intra.tx as RectTxfmSize,
                                 bs,
                                 b,
-                                0 as c_int,
+                                0,
                                 CfSelect::Task,
                                 &mut txtp,
                                 &mut cf_ctx,
@@ -3136,7 +3136,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         b.uvtx as RectTxfmSize,
                                         bs,
                                         b,
-                                        1 + pl as c_int,
+                                        1 + pl,
                                         CfSelect::Task,
                                         &mut txtp,
                                         &mut cf_ctx,
@@ -4084,7 +4084,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     b.uvtx,
                                     bs,
                                     b,
-                                    1 + pl as c_int,
+                                    1 + pl,
                                     CfSelect::Task,
                                     &mut txtp,
                                     &mut cf_ctx,
