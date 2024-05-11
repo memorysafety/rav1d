@@ -1618,11 +1618,16 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     let t_dim = &dav1d_txfm_dimensions[ytx as usize];
     let txw = t_dim.w;
     let txh = t_dim.h;
+
+    // `y_off` can be larger than 3 since lossless blocks
+    // use `TX_4X4` but can't be splitted.
+    // Avoids an undefined left shift.
     if depth < 2 && tx_split[depth] != 0 && tx_split[depth] & 1 << y_off * 4 + x_off != 0 {
         let sub = t_dim.sub as RectTxfmSize;
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
         let txsw = sub_t_dim.w;
         let txsh = sub_t_dim.h;
+
         read_coef_tree::<BD>(
             f,
             t,
@@ -1696,6 +1701,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         let eob;
         let cf;
         let mut cbi_idx = 0;
+
         if t.frame_thread.pass != 0 {
             let p = t.frame_thread.pass & 1;
             let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
