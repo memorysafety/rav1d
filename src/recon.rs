@@ -20,7 +20,6 @@ use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::Bxy;
 use crate::src::internal::Cf;
 use crate::src::internal::CodedBlockInfo;
-use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
@@ -2469,7 +2468,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
 ) {
     let ts = &f.ts[t.ts];
 
-    let dsp: *const Rav1dBitDepthDSPContext = f.dsp;
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
     let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
@@ -2638,7 +2636,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             BD::from_c(f.bitdepth_max),
                         );
                         let edge = edge_array.as_ptr().add(edge_offset);
-                        (*dsp).ipred.intra_pred[m as usize].call(
+                        f.dsp.ipred.intra_pred[m as usize].call(
                             dst,
                             f.cur.stride[0],
                             edge,
@@ -2751,7 +2749,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     "dq",
                                 );
                             }
-                            ((*dsp).itx.itxfm_add[intra.tx as usize][txtp as usize])
+                            (f.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize])
                                 .expect("non-null function pointer")(
                                 dst.cast(),
                                 f.cur.stride[0],
@@ -2815,7 +2813,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         (cw4 << ss_hor) + (*t_dim).w as c_int - 1 & !((*t_dim).w as c_int - 1);
                     let furthest_b =
                         (ch4 << ss_ver) + (*t_dim).h as c_int - 1 & !((*t_dim).h as c_int - 1);
-                    (*dsp).ipred.cfl_ac[f.cur.p.layout.try_into().unwrap()].call::<BD>(
+                    f.dsp.ipred.cfl_ac[f.cur.p.layout.try_into().unwrap()].call::<BD>(
                         ac.as_mut_ptr(),
                         y_src,
                         f.cur.stride[0],
@@ -2873,7 +2871,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 BD::from_c(f.bitdepth_max),
                             );
                             let edge = edge_array.as_ptr().add(edge_offset);
-                            (*dsp).ipred.cfl_pred[m as usize].call(
+                            f.dsp.ipred.cfl_pred[m as usize].call(
                                 uv_dst[pl as usize],
                                 stride,
                                 edge,
@@ -3085,7 +3083,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 );
                                 angle |= intra_edge_filter_flag;
                                 let edge = edge_array.as_ptr().add(edge_offset);
-                                (*dsp).ipred.intra_pred[m as usize].call(
+                                f.dsp.ipred.intra_pred[m as usize].call(
                                     dst,
                                     stride,
                                     edge,
@@ -3213,7 +3211,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                             "dq",
                                         );
                                     }
-                                    ((*dsp).itx.itxfm_add[b.uvtx as usize][txtp as usize])
+                                    (f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize])
                                         .expect("non-null function pointer")(
                                         dst.cast(),
                                         stride,
