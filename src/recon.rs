@@ -2412,7 +2412,7 @@ unsafe fn warp_affine<BD: BitDepth>(
             } else {
                 ref_ptr = (refp.p.data.as_ref().unwrap().data[pl] as *const BD::Pixel)
                     .offset((BD::pxstride(ref_stride) * dy as isize) as isize)
-                    .offset(dx as isize);
+                    .add(dx as usize);
             }
             match dst {
                 MaybeTempPixels::Temp {
@@ -2432,7 +2432,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                 }
                 MaybeTempPixels::NonTemp { dst, dst_stride } => {
                     f.dsp.mc.warp8x8.call(
-                        dst.offset(x as isize),
+                        dst.add(x as usize),
                         dst_stride,
                         ref_ptr,
                         ref_stride,
