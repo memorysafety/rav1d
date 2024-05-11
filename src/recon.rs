@@ -2132,7 +2132,7 @@ unsafe fn mc<BD: BitDepth>(
         } else {
             r#ref = (refp.p.data.as_ref().unwrap().data[pl as usize] as *mut BD::Pixel)
                 .offset(BD::pxstride(ref_stride) * dy as isize)
-                .offset(dx as isize);
+                .add(dx as usize);
         }
 
         let w = bw4 * h_mul;
@@ -2152,14 +2152,12 @@ unsafe fn mc<BD: BitDepth>(
         assert!(!ptr::eq(refp, &f.sr_cur));
         let orig_pos_y = (by * v_mul << 4) + mvy * (1 << (ss_ver == 0) as c_int);
         let orig_pos_x = (bx * h_mul << 4) + mvx * (1 << (ss_hor == 0) as c_int);
-        let pos_y;
-        let pos_x;
         let tmp = orig_pos_x as i64 * f.svc[refidx][0].scale as i64
             + ((f.svc[refidx][0].scale - 0x4000) * 8) as i64;
-        pos_x = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
+        let pos_x = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
         let tmp = orig_pos_y as i64 * f.svc[refidx][1].scale as i64
             + ((f.svc[refidx][1].scale - 0x4000) * 8) as i64;
-        pos_y = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
+        let pos_y = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
         let left = pos_x >> 10;
         let top = pos_y >> 10;
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx][0].step >> 10) + 1;
