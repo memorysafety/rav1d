@@ -2481,9 +2481,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     let h4 = cmp::min(bh4, f.bh - t.b.y);
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
-    let has_chroma = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
+    let has_chroma = f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
         && (bw4 > ss_hor || t.b.x & 1 != 0)
-        && (bh4 > ss_ver || t.b.y & 1 != 0)) as c_int;
+        && (bh4 > ss_ver || t.b.y & 1 != 0);
     let t_dim = &dav1d_txfm_dimensions[intra.tx as usize];
     let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
     let cbw4 = bw4 + ss_hor >> ss_hor;
@@ -2784,7 +2784,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 t.b.y += t_dim.h as c_int;
             }
             t.b.y -= y;
-            if !(has_chroma == 0) {
+            if !(!has_chroma) {
                 let stride: ptrdiff_t = f.cur.stride[1];
                 if intra.uv_mode as c_int == CFL_PRED as c_int {
                     assert!(init_x == 0 && init_y == 0);
