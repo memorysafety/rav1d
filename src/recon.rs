@@ -2490,12 +2490,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let intra_edge_filter = f.seq_hdr.as_ref().unwrap().intra_edge_filter;
     let intra_edge_filter_flag = (intra_edge_filter as c_int) << 10;
-    let mut init_y = 0;
-    while init_y < h4 {
+    for init_y in (0..h4).step_by(16) {
         let sub_h4 = cmp::min(h4, 16 + init_y);
         let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
-        let mut init_x = 0;
-        while init_x < w4 {
+        for init_x in (0..w4).step_by(16) {
             if intra.pal_sz[0] != 0 {
                 let dst: *mut BD::Pixel = (f.cur.data.as_ref().unwrap().data[0] as *mut BD::Pixel)
                     .offset(
@@ -2820,8 +2818,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         cbw4 * 4,
                         cbh4 * 4,
                     );
-                    let mut pl = 0;
-                    while pl < 2 {
+                    for pl in 0..2 {
                         if !(intra.cfl_alpha[pl as usize] == 0) {
                             let mut angle = 0;
                             let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
@@ -2880,7 +2877,6 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 BD::from_c(f.bitdepth_max),
                             );
                         }
-                        pl += 1;
                     }
                     if debug_block_info!(&*f, t.b) && 0 != 0 {
                         ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
@@ -2983,8 +2979,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     intra_edge_flags.contains(EdgeFlags::I420_LEFT_HAS_BOTTOM >> f.cur.p.layout)
                 };
                 let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
-                let mut pl = 0;
-                while pl < 2 {
+                for pl in 0..2 {
                     y = init_y >> ss_ver;
                     t.b.y += init_y;
                     while y < sub_ch4 {
@@ -3245,12 +3240,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         t.b.y += (uv_t_dim.h as c_int) << ss_ver;
                     }
                     t.b.y -= y << ss_ver;
-                    pl += 1;
                 }
             }
-            init_x += 16 as c_int;
         }
-        init_y += 16 as c_int;
     }
 }
 
