@@ -1819,8 +1819,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
 ) {
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as u8;
     let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as u8;
-    let bx4 = t.b.x & 31;
-    let by4 = t.b.y & 31;
+    let bx4 = t.b.x as usize & 31;
+    let by4 = t.b.y as usize & 31;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let b_dim = &dav1d_block_dimensions[bs as usize];
@@ -1836,7 +1836,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
         CaseSet::<32, false>::many(
             [&t.l, &f.a[t.a]],
             [bh4 as usize, bw4 as usize],
-            [by4 as usize, bx4 as usize],
+            [by4, bx4],
             |case, dir| {
                 case.set_disjoint(&dir.lcoef, 0x40);
             },
@@ -1845,7 +1845,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
             CaseSet::<32, false>::many(
                 [&t.l, &f.a[t.a]],
                 [cbh4 as usize, cbw4 as usize],
-                [cby4 as usize, cbx4 as usize],
+                [cby4, cbx4],
                 |case, dir| {
                     for ccoef in &dir.ccoef {
                         case.set_disjoint(ccoef, 0x40)
@@ -1904,9 +1904,9 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                         Av1BlockIntraInter::Intra(intra) => {
                             let mut cf_ctx = 0x40;
                             let mut txtp = DCT_DCT;
-                            let a_start = bx4 as usize + x as usize;
+                            let a_start = bx4 + x as usize;
                             let a_len = t_dim.w as usize;
-                            let l_start = by4 as usize + y as usize;
+                            let l_start = by4 + y as usize;
                             let l_len = t_dim.h as usize;
                             let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
                             let eob = decode_coefs::<BD>(
@@ -1947,7 +1947,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     cmp::min(t_dim.h as i32, f.bh - t.b.y) as usize,
                                     cmp::min(t_dim.w as i32, f.bw - t.b.x) as usize,
                                 ],
-                                [by4 as usize + y as usize, bx4 as usize + x as usize],
+                                [by4 + y as usize, bx4 + x as usize],
                                 |case, dir| {
                                     case.set_disjoint(dir, cf_ctx);
                                 },
@@ -1975,7 +1975,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                 y = init_y >> ss_ver;
                 t.b.y += init_y as c_int;
                 while y < sub_ch4 {
-                    let cbi_idx = (t.b.y as isize * f.b4_stride) as usize;
+                    let cbi_idx = t.b.y as usize * f.b4_stride as usize;
                     x = init_x >> ss_hor;
                     t.b.x += init_x as c_int;
                     while x < sub_cw4 {
@@ -1986,14 +1986,14 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 t.scratch.inter_intra().ac_txtp_map.txtp_map()[(by4 as usize
                                     + (y << ss_ver) as usize)
                                     * 32
-                                    + bx4 as usize
+                                    + bx4
                                     + (x << ss_hor) as usize]
                             }
                         };
-                        let a_start = cbx4 as usize + x as usize;
+                        let a_start = cbx4 + x as usize;
                         let a_len = uv_t_dim.w as usize;
                         let a_ccoef = &f.a[t.a].ccoef[pl];
-                        let l_start = cby4 as usize + y as usize;
+                        let l_start = cby4 + y as usize;
                         let l_len = uv_t_dim.h as usize;
                         let l_ccoef = &t.l.ccoef[pl];
                         let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
@@ -2038,7 +2038,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     f.bw - t.b.x + ss_hor as c_int >> ss_hor,
                                 ) as usize,
                             ],
-                            [cby4 as usize + y as usize, cbx4 as usize + x as usize],
+                            [cby4 + y as usize, cbx4 as usize + x as usize],
                             |case, dir| {
                                 case.set_disjoint(dir, cf_ctx);
                             },
