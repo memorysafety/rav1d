@@ -2133,8 +2133,8 @@ unsafe fn mc<BD: BitDepth>(
                 f.dsp.mc.mc[filter_2d]
                     .call::<BD>(dst, dst_stride, r#ref, ref_stride, w, h, mx, my, bd);
             }
-            MaybeTempPixels::Temp { dst, dst_stride: _ } => {
-                f.dsp.mc.mct[filter_2d].call::<BD>(dst, r#ref, ref_stride, w, h, mx, my, bd);
+            MaybeTempPixels::Temp { tmp, tmp_stride: _ } => {
+                f.dsp.mc.mct[filter_2d].call::<BD>(tmp, r#ref, ref_stride, w, h, mx, my, bd);
             }
         }
     } else {
@@ -2205,9 +2205,9 @@ unsafe fn mc<BD: BitDepth>(
                 f.dsp.mc.mc_scaled[filter_2d]
                     .call::<BD>(dst, dst_stride, r#ref, ref_stride, w, h, mx, my, dx, dy, bd);
             }
-            MaybeTempPixels::Temp { dst, dst_stride: _ } => {
+            MaybeTempPixels::Temp { tmp, tmp_stride: _ } => {
                 f.dsp.mc.mct_scaled[filter_2d]
-                    .call::<BD>(dst, r#ref, ref_stride, w, h, mx, my, dx, dy, bd);
+                    .call::<BD>(tmp, r#ref, ref_stride, w, h, mx, my, dx, dy, bd);
             }
         }
     }
@@ -2334,8 +2334,8 @@ enum MaybeTempPixels<'tmp, BD: BitDepth> {
         dst_stride: isize,
     },
     Temp {
-        dst: &'tmp mut [i16],
-        dst_stride: usize,
+        tmp: &'tmp mut [i16],
+        tmp_stride: usize,
     },
 }
 
@@ -2398,12 +2398,12 @@ unsafe fn warp_affine<BD: BitDepth>(
             }
             match dst {
                 MaybeTempPixels::Temp {
-                    ref mut dst,
-                    dst_stride,
+                    ref mut tmp,
+                    tmp_stride,
                 } => {
                     f.dsp.mc.warp8x8t.call(
-                        &mut dst[x as usize..],
-                        dst_stride,
+                        &mut tmp[x as usize..],
+                        tmp_stride,
                         ref_ptr,
                         ref_stride,
                         abcd,
@@ -2431,9 +2431,9 @@ unsafe fn warp_affine<BD: BitDepth>(
                 dst: dst.offset(8 * BD::pxstride(dst_stride)),
                 dst_stride,
             },
-            MaybeTempPixels::Temp { dst, dst_stride } => MaybeTempPixels::Temp {
-                dst: &mut dst[8 * dst_stride..],
-                dst_stride,
+            MaybeTempPixels::Temp { tmp, tmp_stride } => MaybeTempPixels::Temp {
+                tmp: &mut tmp[8 * tmp_stride..],
+                tmp_stride,
             },
         };
     }
@@ -3343,8 +3343,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     &mut scratch.emu_edge,
                     t.b,
                     MaybeTempPixels::Temp {
-                        dst: &mut tmp[i],
-                        dst_stride: bw4 as usize * 4,
+                        tmp: &mut tmp[i],
+                        tmp_stride: bw4 as usize * 4,
                     },
                     b_dim,
                     0,
@@ -3357,8 +3357,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     &mut scratch.emu_edge,
                     t.b,
                     MaybeTempPixels::Temp {
-                        dst: &mut tmp[i],
-                        dst_stride: 0,
+                        tmp: &mut tmp[i],
+                        tmp_stride: 0,
                     },
                     bw4,
                     bh4,
@@ -3446,8 +3446,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut scratch.emu_edge,
                             t.b,
                             MaybeTempPixels::Temp {
-                                dst: &mut tmp[i],
-                                dst_stride: bw4 as usize * 4 >> ss_hor,
+                                tmp: &mut tmp[i],
+                                tmp_stride: bw4 as usize * 4 >> ss_hor,
                             },
                             b_dim,
                             1 + pl,
@@ -3460,8 +3460,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut scratch.emu_edge,
                             t.b,
                             MaybeTempPixels::Temp {
-                                dst: &mut tmp[i],
-                                dst_stride: 0,
+                                tmp: &mut tmp[i],
+                                tmp_stride: 0,
                             },
                             bw4,
                             bh4,
