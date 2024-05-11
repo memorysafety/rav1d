@@ -1817,8 +1817,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     bs: BlockSize,
     b: &Av1Block,
 ) {
-    let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
     let cbx4 = bx4 >> ss_hor;
@@ -1828,7 +1828,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     let bh4 = b_dim[1] as c_int;
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
-    let has_chroma = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
+    let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0)) as c_int;
     if b.skip != 0 {
@@ -1901,7 +1901,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             );
                         }
                         Av1BlockIntraInter::Intra(intra) => {
-                            let mut cf_ctx: u8 = 0x40 as c_int as u8;
+                            let mut cf_ctx: u8 = 0x40;
                             let mut txtp: TxfmType = DCT_DCT;
                             let a_start = (bx4 + x) as usize;
                             let a_len = t_dim.w as usize;
@@ -1920,11 +1920,11 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 intra.tx,
                                 bs,
                                 b,
-                                0 as c_int,
+                                0,
                                 CfSelect::Frame(cf_idx),
                                 &mut txtp,
                                 &mut cf_ctx,
-                            ) as c_int;
+                            );
                             if debug_block_info!(f, t.b) {
                                 println!(
                                     "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
@@ -1935,8 +1935,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
                             ts.frame_thread[1].cf.store(
                                 cf_idx
-                                    + cmp::min(t_dim.w, 8) as usize
-                                        * cmp::min(t_dim.h, 8) as usize
+                                    + cmp::min(t_dim.w as usize, 8)
+                                        * cmp::min(t_dim.h as usize, 8)
                                         * 16,
                                 Ordering::Relaxed,
                             );
@@ -1975,7 +1975,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                         x = init_x >> ss_hor;
                         t.b.x += init_x;
                         while x < sub_cw4 {
-                            let mut cf_ctx: u8 = 0x40 as c_int as u8;
+                            let mut cf_ctx: u8 = 0x40;
                             let mut txtp = match b.ii {
                                 Av1BlockIntraInter::Intra(_) => DCT_DCT,
                                 Av1BlockIntraInter::Inter(_) => t
@@ -2012,7 +2012,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             if debug_block_info!(f, t.b) {
                                 println!(
                                     "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
-                                    pl, b.uvtx as c_int, txtp as c_uint, eob, ts_c.msac.rng,
+                                    pl, b.uvtx, txtp, eob, ts_c.msac.rng,
                                 );
                             }
                             f.frame_thread.cbi[cbi_idx..][t.b.x as usize][(1 + pl) as usize]
@@ -2045,9 +2045,9 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                     pl += 1;
                 }
             }
-            init_x += 16 as c_int;
+            init_x += 16;
         }
-        init_y += 16 as c_int;
+        init_y += 16;
     }
 }
 
