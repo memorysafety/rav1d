@@ -1702,8 +1702,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         }
         t.b.y -= txsh as c_int;
     } else {
-        let bx4 = t.b.x & 31;
-        let by4 = t.b.y & 31;
+        let bx4 = t.b.x as usize & 31;
+        let by4 = t.b.y as usize & 31;
         let mut txtp: TxfmType = DCT_DCT;
         let mut cf_ctx: u8 = 0;
         let eob;
@@ -1730,13 +1730,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 debug_block_info!(f, t.b),
                 &mut t.scratch,
                 &mut t.cf,
-                &mut f.a[t.a]
-                    .lcoef
-                    .index_mut(bx4 as usize..bx4 as usize + txw as usize),
-                &mut t
-                    .l
-                    .lcoef
-                    .index_mut(by4 as usize..by4 as usize + txh as usize),
+                &mut f.a[t.a].lcoef.index_mut(bx4..bx4 + txw as usize),
+                &mut t.l.lcoef.index_mut(by4..by4 + txh as usize),
                 ytx,
                 bs,
                 b,
@@ -1757,13 +1752,13 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     cmp::min(txh as c_int, f.bh - t.b.y) as usize,
                     cmp::min(txw as c_int, f.bw - t.b.x) as usize,
                 ],
-                [by4 as usize, bx4 as usize],
+                [by4, bx4],
                 |case, dir| {
                     case.set_disjoint(dir, cf_ctx);
                 },
             );
-            let txtp_map = &mut t.scratch.inter_intra_mut().ac_txtp_map.txtp_map_mut()
-                [(by4 * 32 + bx4) as usize..];
+            let txtp_map =
+                &mut t.scratch.inter_intra_mut().ac_txtp_map.txtp_map_mut()[by4 * 32 + bx4..];
             CaseSet::<16, false>::one((), txw as usize, 0, |case, ()| {
                 for txtp_map in txtp_map.chunks_mut(32).take(txh as usize) {
                     case.set(txtp_map, txtp);
