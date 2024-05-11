@@ -1653,7 +1653,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 x_off * 2 + 1,
                 y_off * 2 + 0,
                 if !dst.is_null() {
-                    &mut *dst.offset((4 * txsw) as isize)
+                    dst.add(4 * txsw as usize)
                 } else {
                     0 as *mut BD::Pixel
                 },
@@ -1663,7 +1663,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         t.b.y += txsh as c_int;
         if txh >= txw && t.b.y < f.bh {
             if !dst.is_null() {
-                dst = dst.offset((4 * txsh) as isize * BD::pxstride(f.cur.stride[0]));
+                dst = dst.offset(4 * txsh as isize * BD::pxstride(f.cur.stride[0]));
             }
             read_coef_tree::<BD>(
                 f,
@@ -1692,7 +1692,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     x_off * 2 + 1,
                     y_off * 2 + 1,
                     if !dst.is_null() {
-                        &mut *dst.offset((4 * txsw) as isize)
+                        dst.add(4 * txsw as usize)
                     } else {
                         0 as *mut BD::Pixel
                     },
