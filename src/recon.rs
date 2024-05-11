@@ -1622,7 +1622,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         && tx_split[depth as usize] != 0
         && tx_split[depth as usize] & 1 << y_off * 4 + x_off != 0
     {
-        let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
+        let sub = t_dim.sub as RectTxfmSize;
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
         let txsw = sub_t_dim.w;
         let txsh = sub_t_dim.h;
@@ -1704,8 +1704,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     } else {
         let bx4 = t.b.x as usize & 31;
         let by4 = t.b.y as usize & 31;
-        let mut txtp: TxfmType = DCT_DCT;
-        let mut cf_ctx: u8 = 0;
+        let mut txtp = DCT_DCT;
+        let mut cf_ctx = 0;
         let eob;
         let cf;
         let mut cbi_idx = 0;
