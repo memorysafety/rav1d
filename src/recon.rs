@@ -2321,9 +2321,9 @@ unsafe fn obmc<BD: BitDepth>(
     Ok(())
 }
 
-enum MaybeTempPixels<BD: BitDepth> {
+enum MaybeTempPixels<'tmp, BD: BitDepth> {
     NonTemp(*mut BD::Pixel),
-    Temp(*mut i16),
+    Temp(&'tmp mut [i16]),
 }
 
 unsafe fn warp_affine<BD: BitDepth>(
@@ -2384,10 +2384,10 @@ unsafe fn warp_affine<BD: BitDepth>(
                     .offset((BD::pxstride(ref_stride) * dy as isize) as isize)
                     .offset(dx as isize);
             }
-            match dst {
+            match &mut dst {
                 MaybeTempPixels::Temp(dst) => {
                     f.dsp.mc.warp8x8t.call(
-                        dst.offset(x as isize),
+                        &mut dst[x as usize..],
                         dstride,
                         ref_ptr,
                         ref_stride,
@@ -2415,7 +2415,7 @@ unsafe fn warp_affine<BD: BitDepth>(
             MaybeTempPixels::NonTemp(dst) => {
                 MaybeTempPixels::NonTemp(dst.offset(8 * BD::pxstride(dstride)))
             }
-            MaybeTempPixels::Temp(dst) => MaybeTempPixels::Temp(dst.offset((8 * dstride) as isize)),
+            MaybeTempPixels::Temp(dst) => MaybeTempPixels::Temp(&mut dst[8 * dstride as usize..]),
         };
     }
     Ok(())
@@ -3321,7 +3321,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     f,
                     &mut scratch.emu_edge,
                     t.b,
-                    MaybeTempPixels::Temp(tmp[i].as_mut_ptr()),
+                    MaybeTempPixels::Temp(&mut tmp[i]),
                     (bw4 * 4) as ptrdiff_t,
                     b_dim,
                     0,
@@ -3333,7 +3333,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     f,
                     &mut scratch.emu_edge,
                     t.b,
-                    MaybeTempPixels::Temp(tmp[i].as_mut_ptr()),
+                    MaybeTempPixels::Temp(&mut tmp[i]),
                     0,
                     bw4,
                     bh4,
@@ -3420,7 +3420,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f,
                             &mut scratch.emu_edge,
                             t.b,
-                            MaybeTempPixels::Temp(tmp[i].as_mut_ptr()),
+                            MaybeTempPixels::Temp(&mut tmp[i]),
                             (bw4 * 4 >> ss_hor) as ptrdiff_t,
                             b_dim,
                             1 + pl,
@@ -3432,7 +3432,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f,
                             &mut scratch.emu_edge,
                             t.b,
-                            MaybeTempPixels::Temp(tmp[i].as_mut_ptr()),
+                            MaybeTempPixels::Temp(&mut tmp[i]),
                             0,
                             bw4,
                             bh4,
