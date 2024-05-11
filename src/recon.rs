@@ -1612,7 +1612,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     tx_split: [u16; 2],
     x_off: c_int,
     y_off: c_int,
-    mut dst: *mut BD::Pixel,
+    mut dst: Option<*mut BD::Pixel>,
 ) {
     let ts = &f.ts[t.ts];
     let t_dim = &dav1d_txfm_dimensions[ytx as usize];
@@ -1649,19 +1649,13 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 tx_split,
                 x_off * 2 + 1,
                 y_off * 2 + 0,
-                if !dst.is_null() {
-                    dst.add(4 * txsw as usize)
-                } else {
-                    0 as *mut BD::Pixel
-                },
+                dst.map(|dst| dst.add(4 * txsw as usize)),
             );
         }
         t.b.x -= txsw as c_int;
         t.b.y += txsh as c_int;
         if txh >= txw && t.b.y < f.bh {
-            if !dst.is_null() {
-                dst = dst.offset(4 * txsh as isize * BD::pxstride(f.cur.stride[0]));
-            }
+            dst = dst.map(|dst| dst.offset(4 * txsh as isize * BD::pxstride(f.cur.stride[0])));
             read_coef_tree::<BD>(
                 f,
                 t,
@@ -1688,11 +1682,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     tx_split,
                     x_off * 2 + 1,
                     y_off * 2 + 1,
-                    if !dst.is_null() {
-                        dst.add(4 * txsw as usize)
-                    } else {
-                        0 as *mut BD::Pixel
-                    },
+                    dst.map(|dst| dst.add(4 * txsw as usize)),
                 );
             }
             t.b.x -= txsw as c_int;
@@ -1771,7 +1761,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             txtp = cbi.txtp();
         }
         if t.frame_thread.pass & 1 == 0 {
-            assert!(!dst.is_null());
+            let dst = dst.unwrap();
             if eob >= 0 {
                 let mut cf_guard;
                 let cf = match cf {
@@ -1783,7 +1773,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     }
                     CfSelect::Task => &mut BD::select_mut(&mut t.cf).0,
                 };
-                if debug_block_info!(f, t.b) && 0 != 0 {
+                if debug_block_info!(f, t.b) && false {
                     coef_dump(
                         cf,
                         cmp::min(t_dim.h as usize, 8) * 4,
@@ -1902,7 +1892,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 tx_split,
                                 x_off,
                                 y_off,
-                                0 as *mut BD::Pixel,
+                                None,
                             );
                         }
                         Av1BlockIntraInter::Intra(intra) => {
@@ -4024,7 +4014,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         tx_split,
                         x_off,
                         y_off,
-                        &mut *dst.offset((x * 4) as isize),
+                        Some(dst.offset((x * 4) as isize)),
                     );
                     t.b.x += ytx.w as c_int;
                     x += ytx.w as c_int;
