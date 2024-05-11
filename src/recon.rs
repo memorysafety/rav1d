@@ -1862,10 +1862,10 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     assert!(t.frame_thread.pass == 1);
     assert!(b.skip == 0);
     let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
-    let t_dim: *const TxfmInfo = &*dav1d_txfm_dimensions.as_ptr().offset(match &b.ii {
+    let t_dim = &dav1d_txfm_dimensions[match &b.ii {
         Av1BlockIntraInter::Intra(intra) => intra.tx,
         Av1BlockIntraInter::Inter(inter) => inter.max_ytx,
-    } as isize) as *const TxfmInfo;
+    } as usize];
     let mut init_y = 0;
     while init_y < h4 {
         let sub_h4 = cmp::min(h4, 16 + init_y);
@@ -1904,9 +1904,9 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             let mut cf_ctx: u8 = 0x40 as c_int as u8;
                             let mut txtp: TxfmType = DCT_DCT;
                             let a_start = (bx4 + x) as usize;
-                            let a_len = (*t_dim).w as usize;
+                            let a_len = t_dim.w as usize;
                             let l_start = (by4 + y) as usize;
-                            let l_len = (*t_dim).h as usize;
+                            let l_len = t_dim.h as usize;
                             let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
                             let eob = decode_coefs::<BD>(
                                 f,
@@ -1935,16 +1935,16 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
                             ts.frame_thread[1].cf.store(
                                 cf_idx
-                                    + cmp::min((*t_dim).w, 8) as usize
-                                        * cmp::min((*t_dim).h, 8) as usize
+                                    + cmp::min(t_dim.w, 8) as usize
+                                        * cmp::min(t_dim.h, 8) as usize
                                         * 16,
                                 Ordering::Relaxed,
                             );
                             CaseSet::<16, true>::many(
                                 [&t.l.lcoef, &f.a[t.a].lcoef],
                                 [
-                                    cmp::min((*t_dim).h as i32, f.bh - t.b.y) as usize,
-                                    cmp::min((*t_dim).w as i32, f.bw - t.b.x) as usize,
+                                    cmp::min(t_dim.h as i32, f.bh - t.b.y) as usize,
+                                    cmp::min(t_dim.w as i32, f.bw - t.b.x) as usize,
                                 ],
                                 [(by4 + y) as usize, (bx4 + x) as usize],
                                 |case, dir| {
@@ -1953,13 +1953,13 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             );
                         }
                     }
-                    x += (*t_dim).w as c_int;
-                    t.b.x += (*t_dim).w as c_int;
+                    x += t_dim.w as c_int;
+                    t.b.x += t_dim.w as c_int;
                     x_off += 1;
                 }
                 t.b.x -= x;
-                y += (*t_dim).h as c_int;
-                t.b.y += (*t_dim).h as c_int;
+                y += t_dim.h as c_int;
+                t.b.y += t_dim.h as c_int;
                 y_off += 1;
             }
             t.b.y -= y;
