@@ -2252,15 +2252,18 @@ unsafe fn obmc<BD: BitDepth>(
     let h_mul = 4 >> ss_hor;
     let v_mul = 4 >> ss_ver;
     let ts = &f.ts[t.ts];
+
     if t.b.y > ts.tiling.row_start
         && (pl == 0 || b_dim[0] as c_int * h_mul + b_dim[1] as c_int * v_mul >= 16)
     {
         let mut i = 0;
         let mut x = 0;
         while x < w4 && i < cmp::min(b_dim[2], 4) {
+            // only odd blocks are considered for overlap handling, hence +1
             let a_r = *f.rf.r.index(r[0] + t.b.x as usize + x as usize + 1);
             let a_b_dim = &dav1d_block_dimensions[a_r.bs as usize];
             let step4 = clip(a_b_dim[0], 2, 16);
+
             if a_r.r#ref.r#ref[0] > 0 {
                 let ow4 = cmp::min(step4, b_dim[0]);
                 let oh4 = cmp::min(b_dim[1], 16) >> 1;
@@ -2297,13 +2300,16 @@ unsafe fn obmc<BD: BitDepth>(
             x += step4 as c_int;
         }
     }
+
     if t.b.x > ts.tiling.col_start {
         let mut i = 0;
         let mut y = 0;
         while y < h4 && i < cmp::min(b_dim[3], 4) {
+            // only odd blocks are considered for overlap handling, hence +1
             let l_r = *f.rf.r.index(r[y as usize + 1 + 1] + t.b.x as usize - 1);
             let l_b_dim = &dav1d_block_dimensions[l_r.bs as usize];
             let step4 = clip(l_b_dim[1], 2, 16);
+
             if l_r.r#ref.r#ref[0] > 0 {
                 let ow4 = cmp::min(b_dim[0], 16) >> 1;
                 let oh4 = cmp::min(step4, b_dim[1]);
