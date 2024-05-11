@@ -1831,6 +1831,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
         && (bh4 > ss_ver || t.b.y & 1 != 0);
+
     if b.skip != 0 {
         CaseSet::<32, false>::many(
             [&t.l, &f.a[t.a]],
@@ -1854,6 +1855,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
         }
         return;
     }
+
     let ts = &f.ts[t.ts];
     let w4 = cmp::min(bw4, f.bw - t.b.x);
     let h4 = cmp::min(bh4, f.bh - t.b.y);
@@ -1866,6 +1868,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
         Av1BlockIntraInter::Intra(intra) => intra.tx,
         Av1BlockIntraInter::Inter(inter) => inter.max_ytx,
     } as usize];
+
     let mut init_y = 0;
     while init_y < h4 {
         let sub_h4 = cmp::min(h4, 16 + init_y);
@@ -1963,6 +1966,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                 y_off += 1;
             }
             t.b.y -= y;
+
             if has_chroma {
                 let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
                 let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
