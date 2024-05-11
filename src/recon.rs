@@ -1965,87 +1965,86 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
             }
             t.b.y -= y;
 
-            if has_chroma {
-                let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
-                let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
-                let mut pl = 0;
-                while pl < 2 {
-                    y = init_y >> ss_ver;
-                    t.b.y += init_y;
-                    while y < sub_ch4 {
-                        let cbi_idx = (t.b.y as isize * f.b4_stride) as usize;
-                        x = init_x >> ss_hor;
-                        t.b.x += init_x;
-                        while x < sub_cw4 {
-                            let mut cf_ctx = 0x40;
-                            let mut txtp = match b.ii {
-                                Av1BlockIntraInter::Intra(_) => DCT_DCT,
-                                Av1BlockIntraInter::Inter(_) => t
-                                    .scratch
-                                    .inter_intra()
-                                    .ac_txtp_map
-                                    .txtp_map()
-                                    [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize],
-                            };
-                            let a_start = (cbx4 + x) as usize;
-                            let a_len = uv_t_dim.w as usize;
-                            let a_ccoef = &f.a[t.a].ccoef[pl];
-                            let l_start = (cby4 + y) as usize;
-                            let l_len = uv_t_dim.h as usize;
-                            let l_ccoef = &t.l.ccoef[pl];
-                            let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
-                            let eob = decode_coefs::<BD>(
-                                f,
-                                t.ts,
-                                ts_c,
-                                debug_block_info!(f, t.b),
-                                &mut t.scratch,
-                                &mut t.cf,
-                                &mut a_ccoef.index_mut(a_start..a_start + a_len),
-                                &mut l_ccoef.index_mut(l_start..l_start + l_len),
-                                b.uvtx as RectTxfmSize,
-                                bs,
-                                b,
-                                1 + pl as c_int,
-                                CfSelect::Frame(cf_idx),
-                                &mut txtp,
-                                &mut cf_ctx,
-                            );
-                            if debug_block_info!(f, t.b) {
-                                println!(
-                                    "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
-                                    pl, b.uvtx, txtp, eob, ts_c.msac.rng,
-                                );
+            if !has_chroma {
+                continue;
+            }
+            let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
+            let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
+            let mut pl = 0;
+            while pl < 2 {
+                y = init_y >> ss_ver;
+                t.b.y += init_y;
+                while y < sub_ch4 {
+                    let cbi_idx = (t.b.y as isize * f.b4_stride) as usize;
+                    x = init_x >> ss_hor;
+                    t.b.x += init_x;
+                    while x < sub_cw4 {
+                        let mut cf_ctx = 0x40;
+                        let mut txtp = match b.ii {
+                            Av1BlockIntraInter::Intra(_) => DCT_DCT,
+                            Av1BlockIntraInter::Inter(_) => {
+                                t.scratch.inter_intra().ac_txtp_map.txtp_map()
+                                    [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
                             }
-                            f.frame_thread.cbi[cbi_idx..][t.b.x as usize][(1 + pl) as usize]
-                                .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
-                            ts.frame_thread[1].cf.store(
-                                cf_idx + uv_t_dim.w as usize * uv_t_dim.h as usize * 16,
-                                Ordering::Relaxed,
+                        };
+                        let a_start = (cbx4 + x) as usize;
+                        let a_len = uv_t_dim.w as usize;
+                        let a_ccoef = &f.a[t.a].ccoef[pl];
+                        let l_start = (cby4 + y) as usize;
+                        let l_len = uv_t_dim.h as usize;
+                        let l_ccoef = &t.l.ccoef[pl];
+                        let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
+                        let eob = decode_coefs::<BD>(
+                            f,
+                            t.ts,
+                            ts_c,
+                            debug_block_info!(f, t.b),
+                            &mut t.scratch,
+                            &mut t.cf,
+                            &mut a_ccoef.index_mut(a_start..a_start + a_len),
+                            &mut l_ccoef.index_mut(l_start..l_start + l_len),
+                            b.uvtx as RectTxfmSize,
+                            bs,
+                            b,
+                            1 + pl as c_int,
+                            CfSelect::Frame(cf_idx),
+                            &mut txtp,
+                            &mut cf_ctx,
+                        );
+                        if debug_block_info!(f, t.b) {
+                            println!(
+                                "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
+                                pl, b.uvtx, txtp, eob, ts_c.msac.rng,
                             );
-                            CaseSet::<16, true>::many(
-                                [l_ccoef, a_ccoef],
-                                [
-                                    cmp::min(uv_t_dim.h as i32, f.bh - t.b.y + ss_ver >> ss_ver)
-                                        as usize,
-                                    cmp::min(uv_t_dim.w as i32, f.bw - t.b.x + ss_hor >> ss_hor)
-                                        as usize,
-                                ],
-                                [(cby4 + y) as usize, (cbx4 + x) as usize],
-                                |case, dir| {
-                                    case.set_disjoint(dir, cf_ctx);
-                                },
-                            );
-                            x += uv_t_dim.w as c_int;
-                            t.b.x += (uv_t_dim.w as c_int) << ss_hor;
                         }
-                        t.b.x -= x << ss_hor;
-                        y += uv_t_dim.h as c_int;
-                        t.b.y += (uv_t_dim.h as c_int) << ss_ver;
+                        f.frame_thread.cbi[cbi_idx..][t.b.x as usize][(1 + pl) as usize]
+                            .store(CodedBlockInfo::new(eob as i16, txtp), Ordering::Relaxed);
+                        ts.frame_thread[1].cf.store(
+                            cf_idx + uv_t_dim.w as usize * uv_t_dim.h as usize * 16,
+                            Ordering::Relaxed,
+                        );
+                        CaseSet::<16, true>::many(
+                            [l_ccoef, a_ccoef],
+                            [
+                                cmp::min(uv_t_dim.h as i32, f.bh - t.b.y + ss_ver >> ss_ver)
+                                    as usize,
+                                cmp::min(uv_t_dim.w as i32, f.bw - t.b.x + ss_hor >> ss_hor)
+                                    as usize,
+                            ],
+                            [(cby4 + y) as usize, (cbx4 + x) as usize],
+                            |case, dir| {
+                                case.set_disjoint(dir, cf_ctx);
+                            },
+                        );
+                        x += uv_t_dim.w as c_int;
+                        t.b.x += (uv_t_dim.w as c_int) << ss_hor;
                     }
-                    t.b.y -= y << ss_ver;
-                    pl += 1;
+                    t.b.x -= x << ss_hor;
+                    y += uv_t_dim.h as c_int;
+                    t.b.y += (uv_t_dim.h as c_int) << ss_ver;
                 }
+                t.b.y -= y << ss_ver;
+                pl += 1;
             }
         }
     }
