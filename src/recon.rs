@@ -1615,15 +1615,14 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
 ) {
     let ts = &f.ts[t.ts];
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(ytx as isize) as *const TxfmInfo;
-    let txw = (*t_dim).w as c_int;
-    let txh = (*t_dim).h as c_int;
+    let t_dim = &dav1d_txfm_dimensions[ytx as usize];
+    let txw = t_dim.w as c_int;
+    let txh = t_dim.h as c_int;
     if depth < 2
         && tx_split[depth as usize] as c_int != 0
         && tx_split[depth as usize] as c_int & (1 as c_int) << y_off * 4 + x_off != 0
     {
-        let sub: RectTxfmSize = (*t_dim).sub as RectTxfmSize;
+        let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
         let sub_t_dim: *const TxfmInfo =
             &*dav1d_txfm_dimensions.as_ptr().offset(sub as isize) as *const TxfmInfo;
         let txsw = (*sub_t_dim).w as c_int;
@@ -1716,7 +1715,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
             cf = CfSelect::Frame(cf_idx);
             ts.frame_thread[p as usize].cf.store(
-                cf_idx + cmp::min((*t_dim).w, 8) as usize * cmp::min((*t_dim).h, 8) as usize * 16,
+                cf_idx + cmp::min(t_dim.w, 8) as usize * cmp::min(t_dim.h, 8) as usize * 16,
                 Ordering::Relaxed,
             );
             cbi_idx = (t.b.y as isize * f.b4_stride + t.b.x as isize) as usize;
@@ -1783,10 +1782,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 let mut cf_guard;
                 let cf = match cf {
                     CfSelect::Frame(offset) => {
-                        let len = cmp::min((*t_dim).h as usize, 8)
-                            * 4
-                            * cmp::min((*t_dim).w as usize, 8)
-                            * 4;
+                        let len =
+                            cmp::min(t_dim.h as usize, 8) * 4 * cmp::min(t_dim.w as usize, 8) * 4;
                         cf_guard = f.frame_thread.cf.mut_slice_as(offset..offset + len);
                         &mut *cf_guard
                     }
@@ -1795,8 +1792,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 if debug_block_info!(f, t.b) && 0 != 0 {
                     coef_dump(
                         cf,
-                        cmp::min((*t_dim).h as usize, 8) * 4,
-                        cmp::min((*t_dim).w as usize, 8) * 4,
+                        cmp::min(t_dim.h as usize, 8) * 4,
+                        cmp::min(t_dim.w as usize, 8) * 4,
                         3,
                         "dq",
                     );
@@ -1813,8 +1810,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     hex_dump::<BD>(
                         dst,
                         f.cur.stride[0] as usize,
-                        (*t_dim).w as usize * 4,
-                        (*t_dim).h as usize * 4,
+                        t_dim.w as usize * 4,
+                        t_dim.h as usize * 4,
                         "recon",
                     );
                 }
