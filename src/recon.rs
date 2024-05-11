@@ -2344,19 +2344,25 @@ unsafe fn obmc<BD: BitDepth>(
     Ok(())
 }
 
+enum MaybeTempPixels<BD: BitDepth> {
+    NonTemp(*mut BD::Pixel),
+    Temp(*mut i16),
+}
+
 unsafe fn warp_affine<BD: BitDepth>(
     f: &Rav1dFrameData,
     emu_edge: &mut ScratchEmuEdge,
     b: Bxy,
-    mut dst8: *mut BD::Pixel,
-    mut dst16: *mut i16,
+    mut dst: MaybeTempPixels<BD>,
     dstride: ptrdiff_t,
     b_dim: &[u8; 4],
     pl: c_int,
     refp: &Rav1dThreadPicture,
     wmp: &Rav1dWarpedMotionParams,
 ) -> Result<(), ()> {
-    assert!(dst8.is_null() ^ dst16.is_null());
+    let abcd = &wmp.abcd.get();
+    let bd = BD::from_c(f.bitdepth_max);
+
     let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
@@ -2401,35 +2407,39 @@ unsafe fn warp_affine<BD: BitDepth>(
                     .offset((BD::pxstride(ref_stride) * dy as isize) as isize)
                     .offset(dx as isize);
             }
-            if !dst16.is_null() {
-                f.dsp.mc.warp8x8t.call(
-                    &mut *dst16.offset(x as isize),
-                    dstride,
-                    ref_ptr,
-                    ref_stride,
-                    &wmp.abcd.get(),
-                    mx,
-                    my,
-                    BD::from_c(f.bitdepth_max),
-                );
-            } else {
-                f.dsp.mc.warp8x8.call(
-                    dst8.offset(x as isize),
-                    dstride,
-                    ref_ptr,
-                    ref_stride,
-                    &wmp.abcd.get(),
-                    mx,
-                    my,
-                    BD::from_c(f.bitdepth_max),
-                );
+            match dst {
+                MaybeTempPixels::Temp(dst) => {
+                    f.dsp.mc.warp8x8t.call(
+                        dst.offset(x as isize),
+                        dstride,
+                        ref_ptr,
+                        ref_stride,
+                        abcd,
+                        mx,
+                        my,
+                        bd,
+                    );
+                }
+                MaybeTempPixels::NonTemp(dst) => {
+                    f.dsp.mc.warp8x8.call(
+                        dst.offset(x as isize),
+                        dstride,
+                        ref_ptr,
+                        ref_stride,
+                        abcd,
+                        mx,
+                        my,
+                        bd,
+                    );
+                }
             }
         }
-        if !dst8.is_null() {
-            dst8 = dst8.offset(8 * BD::pxstride(dstride));
-        } else {
-            dst16 = dst16.offset((8 * dstride) as isize);
-        }
+        dst = match dst {
+            MaybeTempPixels::NonTemp(dst) => {
+                MaybeTempPixels::NonTemp(dst.offset(8 * BD::pxstride(dstride)))
+            }
+            MaybeTempPixels::Temp(dst) => MaybeTempPixels::Temp(dst.offset((8 * dstride) as isize)),
+        };
     }
     Ok(())
 }
@@ -3334,8 +3344,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     f,
                     &mut scratch.emu_edge,
                     t.b,
-                    0 as *mut BD::Pixel,
-                    tmp[i].as_mut_ptr(),
+                    MaybeTempPixels::Temp(tmp[i].as_mut_ptr()),
                     (bw4 * 4) as ptrdiff_t,
                     b_dim,
                     0,
@@ -3435,8 +3444,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f,
                             &mut scratch.emu_edge,
                             t.b,
-                            0 as *mut BD::Pixel,
-                            tmp[i].as_mut_ptr(),
+                            MaybeTempPixels::Temp(tmp[i].as_mut_ptr()),
                             (bw4 * 4 >> ss_hor) as ptrdiff_t,
                             b_dim,
                             1 + pl,
@@ -3518,8 +3526,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 f,
                 &mut t.scratch.inter_mut().emu_edge,
                 t.b,
-                dst,
-                0 as *mut i16,
+                MaybeTempPixels::NonTemp(dst),
                 f.cur.stride[0],
                 b_dim,
                 0,
@@ -3802,10 +3809,11 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             f,
                             &mut t.scratch.inter_mut().emu_edge,
                             t.b,
-                            (f.cur.data.as_ref().unwrap().data[(1 + pl) as usize]
-                                as *mut BD::Pixel)
-                                .offset(uvdstoff as isize),
-                            0 as *mut i16,
+                            MaybeTempPixels::NonTemp(
+                                (f.cur.data.as_ref().unwrap().data[(1 + pl) as usize]
+                                    as *mut BD::Pixel)
+                                    .offset(uvdstoff as isize),
+                            ),
                             f.cur.stride[1],
                             b_dim,
                             1 + pl,
