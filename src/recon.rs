@@ -2155,12 +2155,14 @@ unsafe fn mc<BD: BitDepth>(
 
         let orig_pos_y = (by * v_mul << 4) + mvy * (1 << (ss_ver == 0) as c_int);
         let orig_pos_x = (bx * h_mul << 4) + mvx * (1 << (ss_hor == 0) as c_int);
-        let tmp = orig_pos_x as i64 * f.svc[refidx][0].scale as i64
-            + ((f.svc[refidx][0].scale - 0x4000) * 8) as i64;
-        let pos_x = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
-        let tmp = orig_pos_y as i64 * f.svc[refidx][1].scale as i64
-            + ((f.svc[refidx][1].scale - 0x4000) * 8) as i64;
-        let pos_y = apply_sign64((tmp.abs() + 128 >> 8) as c_int, tmp) + 32;
+
+        let scale_mv = |val, scale| {
+            let tmp = val as i64 * scale as i64 + ((scale - 0x4000) * 8) as i64;
+            apply_sign64(((tmp.abs() + 128) >> 8) as c_int, tmp) + 32
+        };
+
+        let pos_x = scale_mv(orig_pos_x, f.svc[refidx][0].scale);
+        let pos_y = scale_mv(orig_pos_y, f.svc[refidx][1].scale);
         let left = pos_x >> 10;
         let top = pos_y >> 10;
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx][0].step >> 10) + 1;
