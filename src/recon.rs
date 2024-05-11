@@ -1608,7 +1608,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     bs: BlockSize,
     b: &Av1Block,
     ytx: RectTxfmSize,
-    depth: c_int,
+    depth: usize,
     tx_split: [u16; 2],
     x_off: c_int,
     y_off: c_int,
@@ -1618,10 +1618,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     let t_dim = &dav1d_txfm_dimensions[ytx as usize];
     let txw = t_dim.w;
     let txh = t_dim.h;
-    if depth < 2
-        && tx_split[depth as usize] != 0
-        && tx_split[depth as usize] & 1 << y_off * 4 + x_off != 0
-    {
+    if depth < 2 && tx_split[depth] != 0 && tx_split[depth] & 1 << y_off * 4 + x_off != 0 {
         let sub = t_dim.sub as RectTxfmSize;
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
         let txsw = sub_t_dim.w;
@@ -1901,7 +1898,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 bs,
                                 b,
                                 inter.max_ytx as RectTxfmSize,
-                                0 as c_int,
+                                0,
                                 tx_split,
                                 x_off,
                                 y_off,
