@@ -1817,15 +1817,15 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     bs: BlockSize,
     b: &Av1Block,
 ) {
-    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
+    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as u8;
+    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as u8;
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    let bw4 = b_dim[0] as c_int;
-    let bh4 = b_dim[1] as c_int;
+    let bw4 = b_dim[0];
+    let bh4 = b_dim[1];
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
@@ -1857,8 +1857,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
     }
 
     let ts = &f.ts[t.ts];
-    let w4 = cmp::min(bw4, f.bw - t.b.x);
-    let h4 = cmp::min(bh4, f.bh - t.b.y);
+    let w4 = cmp::min(bw4 as c_int, f.bw - t.b.x) as u8;
+    let h4 = cmp::min(bh4 as c_int, f.bh - t.b.y) as u8;
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
     assert!(t.frame_thread.pass == 1);
@@ -1877,12 +1877,12 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
             let mut y;
             let mut x;
             y = init_y;
-            t.b.y += init_y;
+            t.b.y += init_y as c_int;
             while y < sub_h4 {
                 let cbi_idx = (t.b.y as isize * f.b4_stride) as usize;
                 let mut x_off = (init_x != 0) as c_int;
                 x = init_x;
-                t.b.x += init_x;
+                t.b.x += init_x as c_int;
                 while x < sub_w4 {
                     match &b.ii {
                         Av1BlockIntraInter::Inter(inter) => {
@@ -1904,9 +1904,9 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                         Av1BlockIntraInter::Intra(intra) => {
                             let mut cf_ctx = 0x40;
                             let mut txtp = DCT_DCT;
-                            let a_start = (bx4 + x) as usize;
+                            let a_start = bx4 as usize + x as usize;
                             let a_len = t_dim.w as usize;
-                            let l_start = (by4 + y) as usize;
+                            let l_start = by4 as usize + y as usize;
                             let l_len = t_dim.h as usize;
                             let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
                             let eob = decode_coefs::<BD>(
@@ -1947,23 +1947,23 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                     cmp::min(t_dim.h as i32, f.bh - t.b.y) as usize,
                                     cmp::min(t_dim.w as i32, f.bw - t.b.x) as usize,
                                 ],
-                                [(by4 + y) as usize, (bx4 + x) as usize],
+                                [by4 as usize + y as usize, bx4 as usize + x as usize],
                                 |case, dir| {
                                     case.set_disjoint(dir, cf_ctx);
                                 },
                             );
                         }
                     }
-                    x += t_dim.w as c_int;
+                    x += t_dim.w;
                     t.b.x += t_dim.w as c_int;
                     x_off += 1;
                 }
-                t.b.x -= x;
-                y += t_dim.h as c_int;
+                t.b.x -= x as c_int;
+                y += t_dim.h;
                 t.b.y += t_dim.h as c_int;
                 y_off += 1;
             }
-            t.b.y -= y;
+            t.b.y -= y as c_int;
 
             if !has_chroma {
                 continue;
@@ -1973,24 +1973,27 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
             let mut pl = 0;
             while pl < 2 {
                 y = init_y >> ss_ver;
-                t.b.y += init_y;
+                t.b.y += init_y as c_int;
                 while y < sub_ch4 {
                     let cbi_idx = (t.b.y as isize * f.b4_stride) as usize;
                     x = init_x >> ss_hor;
-                    t.b.x += init_x;
+                    t.b.x += init_x as c_int;
                     while x < sub_cw4 {
                         let mut cf_ctx = 0x40;
                         let mut txtp = match b.ii {
                             Av1BlockIntraInter::Intra(_) => DCT_DCT,
                             Av1BlockIntraInter::Inter(_) => {
-                                t.scratch.inter_intra().ac_txtp_map.txtp_map()
-                                    [((by4 + (y << ss_ver)) * 32 + bx4 + (x << ss_hor)) as usize]
+                                t.scratch.inter_intra().ac_txtp_map.txtp_map()[(by4 as usize
+                                    + (y << ss_ver) as usize)
+                                    * 32
+                                    + bx4 as usize
+                                    + (x << ss_hor) as usize]
                             }
                         };
-                        let a_start = (cbx4 + x) as usize;
+                        let a_start = cbx4 as usize + x as usize;
                         let a_len = uv_t_dim.w as usize;
                         let a_ccoef = &f.a[t.a].ccoef[pl];
-                        let l_start = (cby4 + y) as usize;
+                        let l_start = cby4 as usize + y as usize;
                         let l_len = uv_t_dim.h as usize;
                         let l_ccoef = &t.l.ccoef[pl];
                         let cf_idx = ts.frame_thread[1].cf.load(Ordering::Relaxed);
@@ -2026,24 +2029,28 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                         CaseSet::<16, true>::many(
                             [l_ccoef, a_ccoef],
                             [
-                                cmp::min(uv_t_dim.h as i32, f.bh - t.b.y + ss_ver >> ss_ver)
-                                    as usize,
-                                cmp::min(uv_t_dim.w as i32, f.bw - t.b.x + ss_hor >> ss_hor)
-                                    as usize,
+                                cmp::min(
+                                    uv_t_dim.h as i32,
+                                    f.bh - t.b.y + ss_ver as c_int >> ss_ver,
+                                ) as usize,
+                                cmp::min(
+                                    uv_t_dim.w as i32,
+                                    f.bw - t.b.x + ss_hor as c_int >> ss_hor,
+                                ) as usize,
                             ],
-                            [(cby4 + y) as usize, (cbx4 + x) as usize],
+                            [cby4 as usize + y as usize, cbx4 as usize + x as usize],
                             |case, dir| {
                                 case.set_disjoint(dir, cf_ctx);
                             },
                         );
-                        x += uv_t_dim.w as c_int;
+                        x += uv_t_dim.w;
                         t.b.x += (uv_t_dim.w as c_int) << ss_hor;
                     }
-                    t.b.x -= x << ss_hor;
-                    y += uv_t_dim.h as c_int;
+                    t.b.x -= (x << ss_hor) as c_int;
+                    y += uv_t_dim.h;
                     t.b.y += (uv_t_dim.h as c_int) << ss_ver;
                 }
-                t.b.y -= y << ss_ver;
+                t.b.y -= (y << ss_ver) as c_int;
                 pl += 1;
             }
         }
