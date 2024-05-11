@@ -1619,8 +1619,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     let txw = t_dim.w;
     let txh = t_dim.h;
     if depth < 2
-        && tx_split[depth as usize] as c_int != 0
-        && tx_split[depth as usize] as c_int & (1 as c_int) << y_off * 4 + x_off != 0
+        && tx_split[depth as usize] != 0
+        && tx_split[depth as usize] & 1 << y_off * 4 + x_off != 0
     {
         let sub: RectTxfmSize = t_dim.sub as RectTxfmSize;
         let sub_t_dim = &dav1d_txfm_dimensions[sub as usize];
@@ -1721,7 +1721,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
         } else {
             cf = CfSelect::Task;
         }
-        if t.frame_thread.pass != 2 as c_int {
+        if t.frame_thread.pass != 2 {
             let ts_c = ts_c.as_deref_mut().unwrap();
             eob = decode_coefs::<BD>(
                 f,
@@ -1735,7 +1735,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 ytx,
                 bs,
                 b,
-                0 as c_int,
+                0,
                 cf,
                 &mut txtp,
                 &mut cf_ctx,
@@ -1743,7 +1743,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
-                    ytx as c_uint, txtp as c_uint, eob, ts_c.msac.rng,
+                    ytx, txtp, eob, ts_c.msac.rng,
                 );
             }
             CaseSet::<16, true>::many(
@@ -1805,7 +1805,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     eob,
                     f.bitdepth_max,
                 );
-                if debug_block_info!(f, t.b) && 0 != 0 {
+                if debug_block_info!(f, t.b) && false {
                     hex_dump::<BD>(
                         dst,
                         f.cur.stride[0] as usize,
