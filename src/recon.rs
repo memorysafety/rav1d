@@ -1879,7 +1879,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
             y = init_y;
             t.b.y += init_y as c_int;
             while y < sub_h4 {
-                let cbi_idx = (t.b.y as isize * f.b4_stride) as usize;
+                let cbi_idx = t.b.y as usize * f.b4_stride as usize;
                 let mut x_off = (init_x != 0) as c_int;
                 x = init_x;
                 t.b.x += init_x as c_int;
@@ -1893,7 +1893,7 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 Some(ts_c),
                                 bs,
                                 b,
-                                inter.max_ytx as RectTxfmSize,
+                                inter.max_ytx,
                                 0,
                                 tx_split,
                                 x_off,
@@ -1916,8 +1916,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                                 debug_block_info!(f, t.b),
                                 &mut t.scratch,
                                 &mut t.cf,
-                                &mut f.a[t.a].lcoef.index_mut(a_start..a_start + a_len),
-                                &mut t.l.lcoef.index_mut(l_start..l_start + l_len),
+                                &mut f.a[t.a].lcoef.index_mut((a_start.., ..a_len)),
+                                &mut t.l.lcoef.index_mut((l_start.., ..l_len)),
                                 intra.tx,
                                 bs,
                                 b,
@@ -2004,8 +2004,8 @@ pub(crate) unsafe fn rav1d_read_coef_blocks<BD: BitDepth>(
                             debug_block_info!(f, t.b),
                             &mut t.scratch,
                             &mut t.cf,
-                            &mut a_ccoef.index_mut(a_start..a_start + a_len),
-                            &mut l_ccoef.index_mut(l_start..l_start + l_len),
+                            &mut a_ccoef.index_mut((a_start.., ..a_len)),
+                            &mut l_ccoef.index_mut((l_start.., ..l_len)),
                             b.uvtx as RectTxfmSize,
                             bs,
                             b,
