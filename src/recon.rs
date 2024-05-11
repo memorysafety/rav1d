@@ -2095,11 +2095,13 @@ unsafe fn mc<BD: BitDepth>(
     let my = mvy & 15 >> (ss_ver == 0) as c_int;
     let mut ref_stride = refp.p.stride[(pl != 0) as usize];
     let r#ref;
+
     if refp.p.p.w == f.cur.p.w && refp.p.p.h == f.cur.p.h {
         let dx = bx * h_mul + (mvx >> 3 + ss_hor);
         let dy = by * v_mul + (mvy >> 3 + ss_ver);
         let w;
         let h;
+
         if refp.p.data.as_ref().unwrap().data[0] != f.cur.data.as_ref().unwrap().data[0] {
             w = f.cur.p.w + ss_hor >> ss_hor;
             h = f.cur.p.h + ss_ver >> ss_ver;
@@ -2150,6 +2152,7 @@ unsafe fn mc<BD: BitDepth>(
         }
     } else {
         assert!(!ptr::eq(refp, &f.sr_cur));
+
         let orig_pos_y = (by * v_mul << 4) + mvy * (1 << (ss_ver == 0) as c_int);
         let orig_pos_x = (bx * h_mul << 4) + mvx * (1 << (ss_hor == 0) as c_int);
         let tmp = orig_pos_x as i64 * f.svc[refidx][0].scale as i64
@@ -2162,6 +2165,7 @@ unsafe fn mc<BD: BitDepth>(
         let top = pos_y >> 10;
         let right = (pos_x + (bw4 * h_mul - 1) * (*f).svc[refidx][0].step >> 10) + 1;
         let bottom = (pos_y + (bh4 * v_mul - 1) * (*f).svc[refidx][1].step >> 10) + 1;
+
         if debug_block_info!(f, b) {
             println!(
                 "Off {}x{} [{},{},{}], size {}x{} [{},{}]",
@@ -2176,6 +2180,7 @@ unsafe fn mc<BD: BitDepth>(
                 f.svc[refidx][1].step,
             );
         }
+
         let w = refp.p.p.w + ss_hor >> ss_hor;
         let h = refp.p.p.h + ss_ver >> ss_ver;
         if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
