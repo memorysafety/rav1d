@@ -2510,7 +2510,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let frame_thread = &ts.frame_thread[p];
                     let len = (bw4 * bh4 * 8) as usize;
                     let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
-                    pal_idx_guard = f.frame_thread.pal_idx.index(pal_idx..pal_idx + len);
+                    pal_idx_guard = f.frame_thread.pal_idx.index((pal_idx.., ..len));
                     frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
                     &*pal_idx_guard
                 } else {
@@ -2523,14 +2523,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let index =
                         ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
                     pal_guard = f.frame_thread.pal.index::<BD>(index);
-                    pal_guard[0].as_ptr()
+                    &pal_guard[0]
                 } else {
-                    scratch.interintra_edge_pal.pal.buf::<BD>()[0].as_ptr()
+                    &scratch.interintra_edge_pal.pal.buf::<BD>()[0]
                 };
                 f.dsp.ipred.pal_pred.call::<BD>(
                     dst,
                     f.cur.stride[0],
-                    pal,
+                    pal.as_ptr(),
                     pal_idx.as_ptr(),
                     bw4 * 4,
                     bh4 * 4,
