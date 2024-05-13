@@ -1011,10 +1011,12 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     ref_stride: ptrdiff_t,
 ) {
     let dst = &mut *dst;
+    let dst_stride = BD::pxstride(dst_stride);
+    let ref_stride = BD::pxstride(ref_stride);
 
     // find offset in reference of visible block to copy
     r#ref = r#ref.offset(
-        iclip(y as c_int, 0 as c_int, ih as c_int - 1) as isize * BD::pxstride(ref_stride)
+        iclip(y as c_int, 0 as c_int, ih as c_int - 1) as isize * ref_stride
             + iclip(x as c_int, 0 as c_int, iw as c_int - 1) as isize,
     );
 
@@ -1027,7 +1029,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     assert!(((top_ext + bottom_ext) as isize) < bh);
 
     // copy visible portion first
-    let mut blk = top_ext as usize * BD::pxstride(dst_stride);
+    let mut blk = top_ext as usize * dst_stride;
     let center_w = (bw - left_ext as isize - right_ext as isize) as c_int;
     let center_h = (bh - top_ext as isize - bottom_ext as isize) as c_int;
     let mut y_0 = 0;
@@ -1047,14 +1049,14 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             let val = dst[(blk + (left_ext + center_w) as usize - 1) as usize];
             dst[blk + (left_ext + center_w) as usize..][..right_ext as usize].fill(val);
         }
-        r#ref = r#ref.offset(BD::pxstride(ref_stride));
-        blk += BD::pxstride(dst_stride);
+        r#ref = r#ref.offset(ref_stride);
+        blk += dst_stride;
         y_0 += 1;
     }
 
     // copy top
     let mut dst_off = 0;
-    let blk = top_ext as usize * BD::pxstride(dst_stride);
+    let blk = top_ext as usize * dst_stride;
     let mut y_1 = 0;
     while y_1 < top_ext {
         let (front, back) = dst.split_at_mut(blk);
@@ -1063,21 +1065,21 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             &mut back[..bw as usize],
             bw as usize,
         );
-        dst_off += BD::pxstride(dst_stride);
+        dst_off += dst_stride;
         y_1 += 1;
     }
 
     // copy bottom
-    dst_off += center_h as usize * BD::pxstride(dst_stride);
+    dst_off += center_h as usize * dst_stride;
     let mut y_2 = 0;
     while y_2 < bottom_ext {
         let (front, back) = dst.split_at_mut(dst_off);
         BD::pixel_copy(
             &mut back[..bw as usize],
-            &mut front[dst_off - BD::pxstride(dst_stride)..][..bw as usize],
+            &mut front[dst_off - dst_stride..][..bw as usize],
             bw as usize,
         );
-        dst_off += BD::pxstride(dst_stride);
+        dst_off += dst_stride;
         y_2 += 1;
     }
 }
