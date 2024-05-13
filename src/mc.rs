@@ -1006,7 +1006,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     x: intptr_t,
     y: intptr_t,
     dst: *mut [BD::Pixel; EMU_EDGE_LEN],
-    dst_stride: ptrdiff_t,
+    dst_stride: usize,
     mut r#ref: *const BD::Pixel,
     ref_stride: ptrdiff_t,
 ) {
@@ -1027,7 +1027,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     assert!(((top_ext + bottom_ext) as isize) < bh);
 
     // copy visible portion first
-    let mut blk = top_ext as usize * BD::pxstride(dst_stride) as usize;
+    let mut blk = top_ext as usize * BD::pxstride(dst_stride);
     let center_w = (bw - left_ext as isize - right_ext as isize) as c_int;
     let center_h = (bh - top_ext as isize - bottom_ext as isize) as c_int;
     let mut y_0 = 0;
@@ -1048,13 +1048,13 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             dst[blk + (left_ext + center_w) as usize..][..right_ext as usize].fill(val);
         }
         r#ref = r#ref.offset(BD::pxstride(ref_stride));
-        blk += BD::pxstride(dst_stride) as usize;
+        blk += BD::pxstride(dst_stride);
         y_0 += 1;
     }
 
     // copy top
     let mut dst_off = 0;
-    let blk = top_ext as usize * BD::pxstride(dst_stride) as usize;
+    let blk = top_ext as usize * BD::pxstride(dst_stride);
     let mut y_1 = 0;
     while y_1 < top_ext {
         let (front, back) = dst.split_at_mut(blk);
@@ -1063,21 +1063,21 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             &mut back[..bw as usize],
             bw as usize,
         );
-        dst_off += BD::pxstride(dst_stride) as usize;
+        dst_off += BD::pxstride(dst_stride);
         y_1 += 1;
     }
 
     // copy bottom
-    dst_off += center_h as usize * BD::pxstride(dst_stride) as usize;
+    dst_off += center_h as usize * BD::pxstride(dst_stride);
     let mut y_2 = 0;
     while y_2 < bottom_ext {
         let (front, back) = dst.split_at_mut(dst_off);
         BD::pixel_copy(
             &mut back[..bw as usize],
-            &mut front[dst_off - BD::pxstride(dst_stride) as usize..][..bw as usize],
+            &mut front[dst_off - BD::pxstride(dst_stride)..][..bw as usize],
             bw as usize,
         );
-        dst_off += BD::pxstride(dst_stride) as usize;
+        dst_off += BD::pxstride(dst_stride);
         y_2 += 1;
     }
 }
@@ -1412,7 +1412,7 @@ pub type emu_edge_fn = unsafe extern "C" fn(
     intptr_t,
     intptr_t,
     *mut [DynPixel; EMU_EDGE_LEN],
-    ptrdiff_t,
+    usize,
     *const DynPixel,
     ptrdiff_t,
 ) -> ();
@@ -1971,7 +1971,7 @@ pub(crate) unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     x: intptr_t,
     y: intptr_t,
     dst: *mut [DynPixel; EMU_EDGE_LEN],
-    dst_stride: ptrdiff_t,
+    dst_stride: usize,
     r#ref: *const DynPixel,
     ref_stride: ptrdiff_t,
 ) {
@@ -2090,7 +2090,7 @@ macro_rules! decl_fn {
             x: intptr_t,
             y: intptr_t,
             dst: *mut [DynPixel; EMU_EDGE_LEN],
-            dst_stride: ptrdiff_t,
+            dst_stride: usize,
             src: *const DynPixel,
             src_stride: ptrdiff_t,
         );
