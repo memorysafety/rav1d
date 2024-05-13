@@ -138,6 +138,8 @@ macro_rules! debug_block_info {
 }
 pub(crate) use debug_block_info;
 
+const DEBUG_B_PIXELS: bool = false;
+
 pub(crate) type recon_b_intra_fn = unsafe fn(
     &Rav1dFrameData,
     &mut Rav1dTaskContext,
@@ -1778,7 +1780,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     }
                     CfSelect::Task => &mut BD::select_mut(&mut t.cf).0,
                 };
-                if debug_block_info!(f, t.b) && false {
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     coef_dump(
                         cf,
                         cmp::min(t_dim.h as usize, 8) * 4,
@@ -1795,7 +1797,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     eob,
                     f.bitdepth_max,
                 );
-                if debug_block_info!(f, t.b) && false {
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
                         dst,
                         f.cur.stride[0] as usize,
@@ -2529,7 +2531,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     bw4 * 4,
                     bh4 * 4,
                 );
-                if debug_block_info!(f, t.b) && 0 != 0 {
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
                         dst,
                         BD::pxstride(f.cur.stride[0]) as usize,
@@ -2640,7 +2642,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             4 * f.bh - 4 * t.b.y,
                             BD::from_c(f.bitdepth_max),
                         );
-                        if debug_block_info!(f, t.b) && 0 != 0 {
+                        if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                             hex_dump::<BD>(
                                 edge.offset(-(t_dim.h as isize * 4)),
                                 t_dim.h as usize * 4,
@@ -2731,7 +2733,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             );
                         }
                         if eob >= 0 {
-                            if debug_block_info!(f, t.b) && 0 != 0 {
+                            if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 coef_dump(
                                     cf,
                                     cmp::min(t_dim.h as usize, 8) * 4,
@@ -2748,7 +2750,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 eob,
                                 f.bitdepth_max,
                             );
-                            if debug_block_info!(f, t.b) && 0 != 0 {
+                            if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 hex_dump::<BD>(
                                     dst,
                                     f.cur.stride[0] as usize,
@@ -2866,7 +2868,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         BD::from_c(f.bitdepth_max),
                     );
                 }
-                if debug_block_info!(&*f, t.b) && 0 != 0 {
+                if debug_block_info!(&*f, t.b) && DEBUG_B_PIXELS {
                     ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
                     hex_dump::<BD>(
                         uv_dst[0],
@@ -2929,7 +2931,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     cbw4 * 4,
                     cbh4 * 4,
                 );
-                if debug_block_info!(f, t.b) && 0 != 0 {
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
                         (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel).offset(uv_dstoff),
                         BD::pxstride(f.cur.stride[1] as usize),
@@ -3062,7 +3064,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 4 * f.bh + ss_ver - 4 * (t.b.y & !ss_ver) >> ss_ver,
                                 BD::from_c(f.bitdepth_max),
                             );
-                            if debug_block_info!(f, t.b) && 0 != 0 {
+                            if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 hex_dump::<BD>(
                                     edge.offset(-(uv_t_dim.h as isize * 4)),
                                     uv_t_dim.h as usize * 4,
@@ -3160,7 +3162,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 );
                             }
                             if eob >= 0 {
-                                if debug_block_info!(f, t.b) && 0 != 0 {
+                                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     coef_dump(
                                         cf,
                                         uv_t_dim.h as usize * 4,
@@ -3177,7 +3179,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     eob,
                                     f.bitdepth_max,
                                 );
-                                if debug_block_info!(f, t.b) && 0 != 0 {
+                                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
                                         dst,
                                         stride as usize,
@@ -3937,7 +3939,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         t.tl_4x4_filter = filter_2d;
     }
 
-    if debug_block_info!(f, t.b) && 0 != 0 {
+    if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
         hex_dump::<BD>(
             dst,
             f.cur.stride[0] as usize,
@@ -4113,7 +4115,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 );
                             }
                             if eob >= 0 {
-                                if debug_block_info!(f, t.b) && 0 != 0 {
+                                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     coef_dump(
                                         cf,
                                         uvtx.h as usize * 4,
@@ -4130,7 +4132,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     eob,
                                     f.bitdepth_max,
                                 );
-                                if debug_block_info!(f, t.b) && 0 != 0 {
+                                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
                                         &mut *uvdst.offset((4 * x) as isize),
                                         f.cur.stride[1] as usize,
