@@ -1026,16 +1026,27 @@ pub enum TileStateRef {
     Local,
 }
 
-pub struct Cf;
+#[derive(FromZeroes)]
+#[repr(align(64))]
+pub struct Cf([u8; 4 * 32 * 32]); // 32 * 32 elements of either `i16` or `i32`.
 
-impl BitDepthDependentType for Cf {
-    type T<BD: BitDepth> = Align64<[BD::Coef; 32 * 32]>;
+impl Cf {
+    pub fn select<BD: BitDepth>(&self) -> &[BD::Coef; 32 * 32] {
+        FromBytes::ref_from_prefix(&self.0).unwrap()
+    }
+
+    pub fn select_mut<BD: BitDepth>(&mut self) -> &mut [BD::Coef; 32 * 32] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
-pub struct AlPal;
+#[derive(FromZeroes)]
+pub struct AlPal([u8; 2 * 8 * 3 * 32 * 2]); /* [2 a/l][32 bx/y4][3 plane][8 palette_idx] of `u8` or `u16` */
 
-impl BitDepthDependentType for AlPal {
-    type T<BD: BitDepth> = [[[[BD::Pixel; 8]; 3]; 32]; 2]; /* [2 a/l][32 bx/y4][3 plane][8 palette_idx] */
+impl AlPal {
+    pub fn select_mut<BD: BitDepth>(&mut self) -> &mut [[[[BD::Pixel; 8]; 3]; 32]; 2] {
+        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+    }
 }
 
 #[derive(FromZeroes, FromBytes, AsBytes)]
@@ -1233,8 +1244,8 @@ pub(crate) struct Rav1dTaskContext {
     pub l: BlockContext,
     pub a: usize, // Offset into `f.a`
     pub rt: refmvs_tile,
-    pub cf: BitDepthUnion<Cf>,
-    pub al_pal: BitDepthUnion<AlPal>,
+    pub cf: Cf,
+    pub al_pal: AlPal,
     pub pal_sz_uv: [[u8; 32]; 2], /* [2 a/l][32 bx4/by4] */
     pub scratch: TaskContextScratch,
 
@@ -1259,8 +1270,8 @@ impl Rav1dTaskContext {
             l: Default::default(),
             a: Default::default(),
             rt: Default::default(),
-            cf: Default::default(),
-            al_pal: Default::default(),
+            cf: FromZeroes::new_zeroed(),
+            al_pal: FromZeroes::new_zeroed(),
             pal_sz_uv: Default::default(),
             scratch: FromZeroes::new_zeroed(),
             warpmv: Default::default(),

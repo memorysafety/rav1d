@@ -1,6 +1,5 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
-use crate::include::common::bitdepth::BitDepthUnion;
 use crate::include::common::bitdepth::BPC;
 use crate::include::common::dump::ac_dump;
 use crate::include::common::dump::coef_dump;
@@ -508,7 +507,7 @@ unsafe fn decode_coefs<BD: BitDepth>(
     ts_c: &mut Rav1dTileStateContext,
     dbg_block_info: bool,
     scratch: &mut TaskContextScratch,
-    t_cf: &mut BitDepthUnion<Cf>,
+    t_cf: &mut Cf,
     a: &mut [u8],
     l: &mut [u8],
     tx: RectTxfmSize,
@@ -1573,7 +1572,7 @@ impl CfSelect {
     unsafe fn set<BD: BitDepth>(
         self,
         f: &Rav1dFrameData,
-        task_cf: &mut BitDepthUnion<Cf>,
+        task_cf: &mut Cf,
         index: usize,
         value: BD::Coef,
     ) {
@@ -1583,21 +1582,16 @@ impl CfSelect {
                 *cf = value;
             }
             CfSelect::Task => {
-                let cf = &mut unsafe { BD::select_mut(task_cf) }.0[index];
+                let cf = &mut task_cf.select_mut::<BD>()[index];
                 *cf = value;
             }
         };
     }
 
-    fn get<BD: BitDepth>(
-        self,
-        f: &Rav1dFrameData,
-        t_cf: &BitDepthUnion<Cf>,
-        index: usize,
-    ) -> BD::Coef {
+    fn get<BD: BitDepth>(self, f: &Rav1dFrameData, t_cf: &Cf, index: usize) -> BD::Coef {
         match self {
             CfSelect::Frame(offset) => *f.frame_thread.cf.element_as(offset + index),
-            CfSelect::Task => unsafe { BD::select(&t_cf).0[index] },
+            CfSelect::Task => t_cf.select::<BD>()[index],
         }
     }
 }
@@ -1778,7 +1772,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                         cf_guard = f.frame_thread.cf.mut_slice_as(offset..offset + len);
                         &mut *cf_guard
                     }
-                    CfSelect::Task => &mut BD::select_mut(&mut t.cf).0,
+                    CfSelect::Task => t.cf.select_mut::<BD>(),
                 };
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     coef_dump(
@@ -2718,7 +2712,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 &mut txtp,
                                 &mut cf_ctx,
                             );
-                            cf = &mut BD::select_mut(&mut t.cf).0;
+                            cf = t.cf.select_mut::<BD>();
                             if debug_block_info!(f, t.b) {
                                 println!(
                                     "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
@@ -3153,7 +3147,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     &mut txtp,
                                     &mut cf_ctx,
                                 );
-                                cf = &mut BD::select_mut(&mut t.cf).0;
+                                cf = t.cf.select_mut::<BD>();
                                 if debug_block_info!(f, t.b) {
                                     println!(
                                             "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={} [x={},cbx4={}]",
@@ -4119,7 +4113,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     &mut txtp,
                                     &mut cf_ctx,
                                 );
-                                cf = &mut BD::select_mut(&mut t.cf).0;
+                                cf = t.cf.select_mut::<BD>();
                                 if debug_block_info!(f, t.b) {
                                     println!(
                                         "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={}",
@@ -4540,10 +4534,11 @@ pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
     } else {
         &t.scratch.inter_intra().interintra_edge_pal.pal.buf::<BD>()[0]
     };
-    for al_pal in &mut BD::select_mut(&mut t.al_pal)[0][bx4..][..bw4] {
+    let al_pal = t.al_pal.select_mut::<BD>();
+    for al_pal in &mut al_pal[0][bx4..][..bw4] {
         al_pal[0] = *pal;
     }
-    for al_pal in &mut BD::select_mut(&mut t.al_pal)[1][by4..][..bh4] {
+    for al_pal in &mut al_pal[1][by4..][..bh4] {
         al_pal[0] = *pal;
     }
 }
@@ -4567,12 +4562,13 @@ pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
         t.scratch.inter_intra().interintra_edge_pal.pal.buf::<BD>()
     };
     // see aomedia bug 2183 for why we use luma coordinates here
+    let al_pal = t.al_pal.select_mut::<BD>();
     for pl in 1..3 {
         for x in 0..bw4 {
-            BD::select_mut(&mut t.al_pal)[0][bx4 + x][pl] = pal[pl];
+            al_pal[0][bx4 + x][pl] = pal[pl];
         }
         for y in 0..bh4 {
-            BD::select_mut(&mut t.al_pal)[1][by4 + y][pl] = pal[pl];
+            al_pal[1][by4 + y][pl] = pal[pl];
         }
     }
 }
@@ -4615,7 +4611,7 @@ pub(crate) unsafe fn rav1d_read_pal_plane<BD: BitDepth>(
     } else {
         0
     };
-    let [a, l] = BD::select_mut(&mut t.al_pal);
+    let [a, l] = t.al_pal.select_mut::<BD>();
     let mut l = &l[by4][pli][..];
     let mut a = &a[bx4][pli][..];
 
