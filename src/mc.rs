@@ -1010,7 +1010,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     mut r#ref: *const BD::Pixel,
     ref_stride: ptrdiff_t,
 ) {
-    let mut dst = (*dst).as_mut_ptr();
+    let dst = &mut *dst;
 
     // find offset in reference of visible block to copy
     r#ref = r#ref.offset(
@@ -1027,64 +1027,57 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     assert!(((top_ext + bottom_ext) as isize) < bh);
 
     // copy visible portion first
-    let mut blk: *mut BD::Pixel =
-        dst.offset((top_ext as isize * BD::pxstride(dst_stride)) as isize);
+    let mut blk = top_ext as usize * BD::pxstride(dst_stride) as usize;
     let center_w = (bw - left_ext as isize - right_ext as isize) as c_int;
     let center_h = (bh - top_ext as isize - bottom_ext as isize) as c_int;
     let mut y_0 = 0;
     while y_0 < center_h {
         BD::pixel_copy(
-            std::slice::from_raw_parts_mut(blk.offset(left_ext as isize), center_w as usize),
+            &mut dst[blk + left_ext as usize..][..center_w as usize],
             std::slice::from_raw_parts(r#ref, center_w as usize),
             center_w as usize,
         );
         // extend left edge for this line
         if left_ext != 0 {
-            BD::pixel_set(
-                std::slice::from_raw_parts_mut(blk, left_ext as usize),
-                *blk.offset(left_ext as isize),
-                left_ext as usize,
-            );
+            let val = dst[blk + left_ext as usize];
+            dst[blk..][..left_ext as usize].fill(val);
         }
         // extend right edge for this line
         if right_ext != 0 {
-            BD::pixel_set(
-                std::slice::from_raw_parts_mut(
-                    blk.offset(left_ext as isize).offset(center_w as isize),
-                    right_ext as usize,
-                ),
-                *blk.offset((left_ext + center_w - 1) as isize),
-                right_ext as usize,
-            );
+            let val = dst[(blk + (left_ext + center_w) as usize - 1) as usize];
+            dst[blk + (left_ext + center_w) as usize..][..right_ext as usize].fill(val);
         }
         r#ref = r#ref.offset(BD::pxstride(ref_stride));
-        blk = blk.offset(BD::pxstride(dst_stride));
+        blk += BD::pxstride(dst_stride) as usize;
         y_0 += 1;
     }
 
     // copy top
-    blk = dst.offset((top_ext as isize * BD::pxstride(dst_stride)) as isize);
+    let mut dst_off = 0;
+    let blk = top_ext as usize * BD::pxstride(dst_stride) as usize;
     let mut y_1 = 0;
     while y_1 < top_ext {
+        let (front, back) = dst.split_at_mut(blk);
         BD::pixel_copy(
-            std::slice::from_raw_parts_mut(dst, bw as usize),
-            std::slice::from_raw_parts(blk, bw as usize),
+            &mut front[dst_off..][..bw as usize],
+            &mut back[..bw as usize],
             bw as usize,
         );
-        dst = dst.offset(BD::pxstride(dst_stride));
+        dst_off += BD::pxstride(dst_stride) as usize;
         y_1 += 1;
     }
 
     // copy bottom
-    dst = dst.offset((center_h as isize * BD::pxstride(dst_stride)) as isize);
+    dst_off += center_h as usize * BD::pxstride(dst_stride) as usize;
     let mut y_2 = 0;
     while y_2 < bottom_ext {
+        let (front, back) = dst.split_at_mut(dst_off);
         BD::pixel_copy(
-            std::slice::from_raw_parts_mut(dst, bw as usize),
-            std::slice::from_raw_parts(dst.offset(-BD::pxstride(dst_stride)), bw as usize),
+            &mut back[..bw as usize],
+            &mut front[dst_off - BD::pxstride(dst_stride) as usize..][..bw as usize],
             bw as usize,
         );
-        dst = dst.offset(BD::pxstride(dst_stride));
+        dst_off += BD::pxstride(dst_stride) as usize;
         y_2 += 1;
     }
 }
