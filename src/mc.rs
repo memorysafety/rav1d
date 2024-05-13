@@ -1009,10 +1009,13 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     mut r#ref: *const BD::Pixel,
     ref_stride: ptrdiff_t,
 ) {
+    // find offset in reference of visible block to copy
     r#ref = r#ref.offset(
         iclip(y as c_int, 0 as c_int, ih as c_int - 1) as isize * BD::pxstride(ref_stride)
             + iclip(x as c_int, 0 as c_int, iw as c_int - 1) as isize,
     );
+
+    // number of pixels to extend (left, right, top, bottom)
     let left_ext = iclip(-x as c_int, 0 as c_int, bw as c_int - 1);
     let right_ext = iclip((x + bw - iw) as c_int, 0 as c_int, bw as c_int - 1);
     if !(((left_ext + right_ext) as isize) < bw) {
@@ -1023,6 +1026,8 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     if !(((top_ext + bottom_ext) as isize) < bh) {
         unreachable!();
     }
+
+    // copy visible portion first
     let mut blk: *mut BD::Pixel =
         dst.offset((top_ext as isize * BD::pxstride(dst_stride)) as isize);
     let center_w = (bw - left_ext as isize - right_ext as isize) as c_int;
@@ -1034,6 +1039,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             std::slice::from_raw_parts(r#ref, center_w as usize),
             center_w as usize,
         );
+        // extend left edge for this line
         if left_ext != 0 {
             BD::pixel_set(
                 std::slice::from_raw_parts_mut(blk, left_ext as usize),
@@ -1041,6 +1047,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
                 left_ext as usize,
             );
         }
+        // extend right edge for this line
         if right_ext != 0 {
             BD::pixel_set(
                 std::slice::from_raw_parts_mut(
@@ -1055,6 +1062,8 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
         blk = blk.offset(BD::pxstride(dst_stride));
         y_0 += 1;
     }
+
+    // copy top
     blk = dst.offset((top_ext as isize * BD::pxstride(dst_stride)) as isize);
     let mut y_1 = 0;
     while y_1 < top_ext {
@@ -1066,6 +1075,8 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
         dst = dst.offset(BD::pxstride(dst_stride));
         y_1 += 1;
     }
+
+    // copy bottom
     dst = dst.offset((center_h as isize * BD::pxstride(dst_stride)) as isize);
     let mut y_2 = 0;
     while y_2 < bottom_ext {
