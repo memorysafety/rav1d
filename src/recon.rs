@@ -2988,19 +2988,13 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             || intra.pal_sz[1] != 0)
                         {
                             angle = intra.uv_angle as c_int;
-                            edge_flags = (if (y > init_y >> ss_ver || !uv_sb_has_tr)
-                                && x + uv_t_dim.w as c_int >= sub_cw4
-                            {
-                                EdgeFlags::empty()
-                            } else {
-                                EdgeFlags::I444_TOP_HAS_RIGHT
-                            }) | (if x > init_x >> ss_hor
-                                || !uv_sb_has_bl && y + uv_t_dim.h as c_int >= sub_ch4
-                            {
-                                EdgeFlags::empty()
-                            } else {
-                                EdgeFlags::I444_LEFT_HAS_BOTTOM
-                            });
+                            edge_flags = EdgeFlags::I444_TOP_HAS_RIGHT.select(
+                                !((y > init_y >> ss_ver || !uv_sb_has_tr)
+                                    && x + uv_t_dim.w as c_int >= sub_cw4),
+                            ) | EdgeFlags::I444_LEFT_HAS_BOTTOM.select(
+                                !(x > init_x >> ss_hor
+                                    || !uv_sb_has_bl && y + uv_t_dim.h as c_int >= sub_ch4),
+                            );
                             let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
                                 let sby = t.b.y >> f.sb_shift;
                                 let offset = (f.ipred_edge_off * (1 + pl)) as isize
@@ -3016,8 +3010,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             };
                             xpos = t.b.x >> ss_hor;
                             ypos = t.b.y >> ss_ver;
-                            xstart = (*ts).tiling.col_start >> ss_hor;
-                            ystart = (*ts).tiling.row_start >> ss_ver;
+                            xstart = ts.tiling.col_start >> ss_hor;
+                            ystart = ts.tiling.row_start >> ss_ver;
                             let edge_array = t
                                 .scratch
                                 .inter_intra_mut()
