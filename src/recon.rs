@@ -2468,6 +2468,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     b: &Av1Block,
     intra: &Av1BlockIntra,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
     let ts = &f.ts[t.ts];
 
     let bx4 = t.b.x & 31;
@@ -2633,7 +2634,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             intra_edge_filter,
                             edge_array,
                             edge_offset,
-                            BD::from_c(f.bitdepth_max),
+                            bd,
                         );
                         let edge = edge_array.as_ptr().add(edge_offset);
                         f.dsp.ipred.intra_pred[m as usize].call(
@@ -2645,7 +2646,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             angle | intra_flags,
                             4 * f.bw - 4 * t.b.x,
                             4 * f.bh - 4 * t.b.y,
-                            BD::from_c(f.bitdepth_max),
+                            bd,
                         );
 
                         if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
@@ -2866,7 +2867,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         0,
                         edge_array,
                         edge_offset,
-                        BD::from_c(f.bitdepth_max),
+                        bd,
                     );
                     let edge = edge_array.as_ptr().add(edge_offset);
                     f.dsp.ipred.cfl_pred[m as usize].call(
@@ -2877,7 +2878,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         uv_t_dim.h as c_int * 4,
                         ac.as_mut_ptr(),
                         intra.cfl_alpha[pl] as c_int,
-                        BD::from_c(f.bitdepth_max),
+                        bd,
                     );
                 }
                 if debug_block_info!(&*f, t.b) && DEBUG_B_PIXELS {
@@ -3066,7 +3067,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 intra_edge_filter,
                                 edge_array,
                                 edge_offset,
-                                BD::from_c(f.bitdepth_max),
+                                bd,
                             );
                             angle |= intra_edge_filter_flag;
                             let edge = edge_array.as_ptr().add(edge_offset);
@@ -3079,7 +3080,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 angle | sm_uv_fl,
                                 4 * f.bw + ss_hor - 4 * (t.b.x & !ss_hor) >> ss_hor,
                                 4 * f.bh + ss_ver - 4 * (t.b.y & !ss_ver) >> ss_ver,
-                                BD::from_c(f.bitdepth_max),
+                                bd,
                             );
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 hex_dump::<BD>(
