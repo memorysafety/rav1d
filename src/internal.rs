@@ -1062,7 +1062,7 @@ impl ScratchLapInter {
     }
 }
 
-const EMU_EDGE_LEN: usize = 320 * (256 + 7);
+pub const EMU_EDGE_LEN: usize = 320 * (256 + 7);
 // stride=192 for non-SVC, or 320 for SVC
 #[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]

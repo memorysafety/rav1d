@@ -8,6 +8,7 @@ use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
+use crate::src::internal::EMU_EDGE_LEN;
 use crate::src::levels::Filter2d;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
@@ -1004,11 +1005,13 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     ih: intptr_t,
     x: intptr_t,
     y: intptr_t,
-    mut dst: *mut BD::Pixel,
+    dst: *mut [BD::Pixel; EMU_EDGE_LEN],
     dst_stride: ptrdiff_t,
     mut r#ref: *const BD::Pixel,
     ref_stride: ptrdiff_t,
 ) {
+    let mut dst = (*dst).as_mut_ptr();
+
     // find offset in reference of visible block to copy
     r#ref = r#ref.offset(
         iclip(y as c_int, 0 as c_int, ih as c_int - 1) as isize * BD::pxstride(ref_stride)
@@ -1415,7 +1418,7 @@ pub type emu_edge_fn = unsafe extern "C" fn(
     intptr_t,
     intptr_t,
     intptr_t,
-    *mut DynPixel,
+    *mut [DynPixel; EMU_EDGE_LEN],
     ptrdiff_t,
     *const DynPixel,
     ptrdiff_t,
@@ -1974,7 +1977,7 @@ pub(crate) unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     ih: intptr_t,
     x: intptr_t,
     y: intptr_t,
-    dst: *mut DynPixel,
+    dst: *mut [DynPixel; EMU_EDGE_LEN],
     dst_stride: ptrdiff_t,
     r#ref: *const DynPixel,
     ref_stride: ptrdiff_t,
@@ -2093,7 +2096,7 @@ macro_rules! decl_fn {
             ih: intptr_t,
             x: intptr_t,
             y: intptr_t,
-            dst: *mut DynPixel,
+            dst: *mut [DynPixel; EMU_EDGE_LEN],
             dst_stride: ptrdiff_t,
             src: *const DynPixel,
             src_stride: ptrdiff_t,
