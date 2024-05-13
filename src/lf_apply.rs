@@ -13,11 +13,10 @@ use crate::src::lr_apply::LR_RESTORE_Y;
 use crate::src::unstable_extensions::as_chunks;
 use crate::src::unstable_extensions::flatten;
 use libc::ptrdiff_t;
+use std::cell::UnsafeCell;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::sync::atomic::AtomicU16;
-use std::sync::atomic::Ordering;
 
 // The loop filter buffer stores 12 rows of pixels. A superblock block will
 // contain at most 2 stripes. Each stripe requires 4 rows pixels (2 above
@@ -388,7 +387,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     have_left: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
-    mask: &[[[AtomicU16; 2]; 3]; 32],
+    mask: &[[[UnsafeCell<u16>; 2]; 3]; 32],
     dst: &mut [BD::Pixel],
     dst_offset: usize,
     ls: ptrdiff_t,
@@ -401,18 +400,18 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 4] = [0; 4];
             if starty4 == 0 {
-                hmask[0] = mask[x][0][0].load(Ordering::Relaxed) as u32;
-                hmask[1] = mask[x][1][0].load(Ordering::Relaxed) as u32;
-                hmask[2] = mask[x][2][0].load(Ordering::Relaxed) as u32;
+                hmask[0] = *mask[x][0][0].get() as u32;
+                hmask[1] = *mask[x][1][0].get() as u32;
+                hmask[2] = *mask[x][2][0].get() as u32;
                 if endy4 > 16 {
-                    hmask[0] |= (mask[x][0][1].load(Ordering::Relaxed) as u32) << 16;
-                    hmask[1] |= (mask[x][1][1].load(Ordering::Relaxed) as u32) << 16;
-                    hmask[2] |= (mask[x][2][1].load(Ordering::Relaxed) as u32) << 16;
+                    hmask[0] |= (*mask[x][0][1].get() as u32) << 16;
+                    hmask[1] |= (*mask[x][1][1].get() as u32) << 16;
+                    hmask[2] |= (*mask[x][2][1].get() as u32) << 16;
                 }
             } else {
-                hmask[0] = mask[x][0][1].load(Ordering::Relaxed) as u32;
-                hmask[1] = mask[x][1][1].load(Ordering::Relaxed) as u32;
-                hmask[2] = mask[x][2][1].load(Ordering::Relaxed) as u32;
+                hmask[0] = *mask[x][0][1].get() as u32;
+                hmask[1] = *mask[x][1][1].get() as u32;
+                hmask[2] = *mask[x][2][1].get() as u32;
             }
             // hmask[3] = 0; already initialized above
             f.dsp.lf.loop_filter_sb[0][0](
@@ -435,7 +434,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     have_top: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
-    mask: &[[[AtomicU16; 2]; 3]; 32],
+    mask: &[[[UnsafeCell<u16>; 2]; 3]; 32],
     dst: &mut [BD::Pixel],
     mut dst_offset: usize,
     ls: ptrdiff_t,
@@ -449,12 +448,12 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 4] = [
-                mask[y as usize][0][0].load(Ordering::Relaxed) as u32
-                    | (mask[y as usize][0][1].load(Ordering::Relaxed) as u32) << 16,
-                mask[y as usize][1][0].load(Ordering::Relaxed) as u32
-                    | (mask[y as usize][1][1].load(Ordering::Relaxed) as u32) << 16,
-                mask[y as usize][2][0].load(Ordering::Relaxed) as u32
-                    | (mask[y as usize][2][1].load(Ordering::Relaxed) as u32) << 16,
+                *mask[y as usize][0][0].get() as u32
+                    | (*mask[y as usize][0][1].get() as u32) << 16,
+                *mask[y as usize][1][0].get() as u32
+                    | (*mask[y as usize][1][1].get() as u32) << 16,
+                *mask[y as usize][2][0].get() as u32
+                    | (*mask[y as usize][2][1].get() as u32) << 16,
                 0,
             ];
             f.dsp.lf.loop_filter_sb[0][1](
@@ -478,7 +477,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
     have_left: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
-    mask: &[[[AtomicU16; 2]; 2]; 32],
+    mask: &[[[UnsafeCell<u16>; 2]; 2]; 32],
     u: &mut [BD::Pixel],
     v: &mut [BD::Pixel],
     uv_offset: usize,
@@ -493,17 +492,17 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
         if !(!have_left && x == 0) {
             let mut hmask: [u32; 3] = [0; 3];
             if starty4 == 0 {
-                hmask[0] = mask[x as usize][0][0].load(Ordering::Relaxed) as u32;
-                hmask[1] = mask[x as usize][1][0].load(Ordering::Relaxed) as u32;
+                hmask[0] = *mask[x as usize][0][0].get() as u32;
+                hmask[1] = *mask[x as usize][1][0].get() as u32;
                 if endy4 > 16 >> ss_ver {
                     hmask[0] |=
-                        (mask[x as usize][0][1].load(Ordering::Relaxed) as u32) << (16 >> ss_ver);
+                        (*mask[x as usize][0][1].get() as u32) << (16 >> ss_ver);
                     hmask[1] |=
-                        (mask[x as usize][1][1].load(Ordering::Relaxed) as u32) << (16 >> ss_ver);
+                        (*mask[x as usize][1][1].get() as u32) << (16 >> ss_ver);
                 }
             } else {
-                hmask[0] = mask[x as usize][0][1].load(Ordering::Relaxed) as u32;
-                hmask[1] = mask[x as usize][1][1].load(Ordering::Relaxed) as u32;
+                hmask[0] = *mask[x as usize][0][1].get() as u32;
+                hmask[1] = *mask[x as usize][1][1].get() as u32;
             }
             // hmask[2] = 0; Already initialized to 0 above
             f.dsp.lf.loop_filter_sb[1][0](
@@ -536,7 +535,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     have_top: bool,
     lvl: &[[u8; 4]],
     b4_stride: ptrdiff_t,
-    mask: &[[[AtomicU16; 2]; 2]; 32],
+    mask: &[[[UnsafeCell<u16>; 2]; 2]; 32],
     u: &mut [BD::Pixel],
     v: &mut [BD::Pixel],
     uv_offset: usize,
@@ -554,10 +553,10 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
             let vmask: [u32; 3] = [
-                mask[y as usize][0][0].load(Ordering::Relaxed) as u32
-                    | (mask[y as usize][0][1].load(Ordering::Relaxed) as u32) << (16 >> ss_hor),
-                mask[y as usize][1][0].load(Ordering::Relaxed) as u32
-                    | (mask[y as usize][1][1].load(Ordering::Relaxed) as u32) << (16 >> ss_hor),
+                *mask[y as usize][0][0].get() as u32
+                    | (*mask[y as usize][0][1].get() as u32) << (16 >> ss_hor),
+                *mask[y as usize][1][0].get() as u32
+                    | (*mask[y as usize][1][1].get() as u32) << (16 >> ss_hor),
                 0,
             ];
             f.dsp.lf.loop_filter_sb[1][1](
@@ -632,25 +631,23 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
             let mask: u32 = 1 << y;
             let sidx = (mask >= 0x10000) as usize;
             let smask = (mask >> (sidx << 4)) as u16;
-            let idx = 2 * (y_hmask[2][sidx].load(Ordering::Relaxed) & smask != 0) as usize
-                + (y_hmask[1][sidx].load(Ordering::Relaxed) & smask != 0) as usize;
-            y_hmask[2][sidx].fetch_and(!smask, Ordering::Relaxed);
-            y_hmask[1][sidx].fetch_and(!smask, Ordering::Relaxed);
-            y_hmask[0][sidx].fetch_and(!smask, Ordering::Relaxed);
-            y_hmask[cmp::min(idx, lpf_y[(y - starty4) as usize] as usize)][sidx]
-                .fetch_or(smask, Ordering::Relaxed);
+            let idx = 2 * (*y_hmask[2][sidx].get() & smask != 0) as usize
+                + (*y_hmask[1][sidx].get() & smask != 0) as usize;
+            *y_hmask[2][sidx].get() &= !smask;
+            *y_hmask[1][sidx].get() &= !smask;
+            *y_hmask[0][sidx].get() &= !smask;
+            *y_hmask[cmp::min(idx, lpf_y[(y - starty4) as usize] as usize)][sidx].get() |= smask;
         }
         if f.cur.p.layout != Rav1dPixelLayout::I400 {
-            let uv_hmask: &[[AtomicU16; 2]; 2] = &lflvl[x as usize].filter_uv[0][cbx4 as usize];
+            let uv_hmask = &lflvl[x as usize].filter_uv[0][cbx4 as usize];
             for y in starty4 >> ss_ver..uv_endy4 {
                 let uv_mask: u32 = 1 << y;
                 let sidx = (uv_mask >= vmax) as usize;
                 let smask = (uv_mask >> (sidx << 4 - ss_ver)) as u16;
-                let idx = (uv_hmask[1][sidx].load(Ordering::Relaxed) & smask != 0) as usize;
-                uv_hmask[1][sidx].fetch_and(!smask, Ordering::Relaxed);
-                uv_hmask[0][sidx].fetch_and(!smask, Ordering::Relaxed);
-                uv_hmask[cmp::min(idx, lpf_uv[(y - (starty4 >> ss_ver)) as usize] as usize)][sidx]
-                    .fetch_or(smask, Ordering::Relaxed);
+                let idx = (*uv_hmask[1][sidx].get() & smask != 0) as usize;
+                *uv_hmask[1][sidx].get() &= !smask;
+                *uv_hmask[0][sidx].get() &= !smask;
+                *uv_hmask[cmp::min(idx, lpf_uv[(y - (starty4 >> ss_ver)) as usize] as usize)][sidx].get() |= smask;
             }
         }
         lpf_y_idx += halign;
@@ -668,27 +665,25 @@ pub(crate) unsafe fn rav1d_loopfilter_sbrow_cols<BD: BitDepth>(
                 let mask: u32 = 1 << i;
                 let sidx = (mask >= 0x10000) as usize;
                 let smask = (mask >> (sidx << 4)) as u16;
-                let idx = 2 * (y_vmask[2][sidx].load(Ordering::Relaxed) & smask != 0) as usize
-                    + (y_vmask[1][sidx].load(Ordering::Relaxed) & smask != 0) as usize;
-                y_vmask[2][sidx].fetch_and(!smask, Ordering::Relaxed);
-                y_vmask[1][sidx].fetch_and(!smask, Ordering::Relaxed);
-                y_vmask[0][sidx].fetch_and(!smask, Ordering::Relaxed);
-                y_vmask[cmp::min(idx, *a[0].tx_lpf_y.index(i as usize) as usize)][sidx]
-                    .fetch_or(smask, Ordering::Relaxed);
+                let idx = 2 * (*y_vmask[2][sidx].get() & smask != 0) as usize
+                    + (*y_vmask[1][sidx].get() & smask != 0) as usize;
+                *y_vmask[2][sidx].get() &= !smask;
+                *y_vmask[1][sidx].get() &= !smask;
+                *y_vmask[0][sidx].get() &= !smask;
+                *y_vmask[cmp::min(idx, *a[0].tx_lpf_y.index(i as usize) as usize)][sidx].get() |= smask;
             }
             if f.cur.p.layout != Rav1dPixelLayout::I400 {
                 let cw: c_uint = w.wrapping_add(ss_hor as c_uint) >> ss_hor;
-                let uv_vmask: &[[AtomicU16; 2]; 2] =
+                let uv_vmask =
                     &lflvl[x as usize].filter_uv[1][(starty4 >> ss_ver) as usize];
                 for i in 0..cw {
                     let uv_mask: u32 = 1 << i;
                     let sidx = (uv_mask >= hmax) as usize;
                     let smask = (uv_mask >> (sidx << 4 - ss_hor)) as u16;
-                    let idx = (uv_vmask[1][sidx].load(Ordering::Relaxed) & smask != 0) as usize;
-                    uv_vmask[1][sidx].fetch_and(!smask, Ordering::Relaxed);
-                    uv_vmask[0][sidx].fetch_and(!smask, Ordering::Relaxed);
-                    uv_vmask[cmp::min(idx, *a[0].tx_lpf_uv.index(i as usize) as usize)][sidx]
-                        .fetch_or(smask, Ordering::Relaxed);
+                    let idx = (*uv_vmask[1][sidx].get() & smask != 0) as usize;
+                    *uv_vmask[1][sidx].get() &= !smask;
+                    *uv_vmask[0][sidx].get() &= !smask;
+                    *uv_vmask[cmp::min(idx, *a[0].tx_lpf_uv.index(i as usize) as usize)][sidx].get() |= smask;
                 }
             }
             a = &a[1..];

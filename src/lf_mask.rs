@@ -16,11 +16,9 @@ use crate::src::levels::TX_4X4;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
 use libc::ptrdiff_t;
+use std::cell::UnsafeCell;
 use std::cmp;
 use std::ffi::c_int;
-use std::sync::atomic::AtomicI8;
-use std::sync::atomic::AtomicU16;
-use std::sync::atomic::Ordering;
 use std::sync::RwLock;
 
 #[repr(C)]
@@ -61,12 +59,12 @@ pub struct Av1RestorationUnit {
 #[repr(C)]
 pub struct Av1Filter {
     // each bit is 1 col
-    pub filter_y: [[[[AtomicU16; 2]; 3]; 32]; 2], // 0=col, 1=row
-    pub filter_uv: [[[[AtomicU16; 2]; 2]; 32]; 2], // 0=col, 1=row
+    pub filter_y: [[[[UnsafeCell<u16>; 2]; 3]; 32]; 2], // 0=col, 1=row
+    pub filter_uv: [[[[UnsafeCell<u16>; 2]; 2]; 32]; 2], // 0=col, 1=row
     /// -1 means "unset"
-    pub cdef_idx: [AtomicI8; 4],
+    pub cdef_idx: [UnsafeCell<i8>; 4],
     /// for 8x8 blocks, but stored on a 4x8 basis
-    pub noskip_mask: [[AtomicU16; 2]; 16],
+    pub noskip_mask: [[UnsafeCell<u16>; 2]; 16],
 }
 
 /// each struct describes one 128x128 area (1 or 4 SBs), post-superres-scaling
@@ -147,7 +145,7 @@ fn decomp_tx(
 
 #[inline]
 fn mask_edges_inter(
-    masks: &[[[[AtomicU16; 2]; 3]; 32]; 2],
+    masks: &[[[[UnsafeCell<u16>; 2]; 3]; 32]; 2],
     by4: usize,
     bx4: usize,
     w4: usize,
@@ -174,8 +172,10 @@ fn mask_edges_inter(
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4][cmp::min(txa[0][0][y][0], l[y]) as usize][sidx]
-            .fetch_or(smask as u16, Ordering::Relaxed);
+        // SAFETY: Other threads may not access the same element of `masks` concurrently.
+        unsafe {
+            *masks[0][bx4][cmp::min(txa[0][0][y][0], l[y]) as usize][sidx].get() |= smask as u16;
+        }
     }
 
     // top block edge
@@ -183,8 +183,10 @@ fn mask_edges_inter(
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[1][by4][cmp::min(txa[1][0][0][x], a[x]) as usize][sidx]
-            .fetch_or(smask as u16, Ordering::Relaxed);
+        // SAFETY: Other threads may not access the same element of `masks` concurrently.
+        unsafe {
+            *masks[1][by4][cmp::min(txa[1][0][0][x], a[x]) as usize][sidx].get() |= smask as u16;
+        }
     }
     if !skip {
         // inner (tx) left|right edges
@@ -197,8 +199,10 @@ fn mask_edges_inter(
             let mut x = step;
             while x < w4 {
                 let rtx = txa[0][0][y][x];
-                masks[0][bx4 + x][cmp::min(rtx, ltx) as usize][sidx]
-                    .fetch_or(smask as u16, Ordering::Relaxed);
+                // SAFETY: Other threads may not access the same element of `masks` concurrently.
+                unsafe {
+                    *masks[0][bx4 + x][cmp::min(rtx, ltx) as usize][sidx].get() |= smask as u16;
+                }
                 ltx = rtx;
                 let step = txa[0][1][y][x] as usize;
                 x += step;
@@ -217,8 +221,10 @@ fn mask_edges_inter(
             let mut y = step;
             while y < h4 {
                 let btx = txa[1][0][y][x];
-                masks[1][by4 + y][cmp::min(ttx, btx) as usize][sidx]
-                    .fetch_or(smask as u16, Ordering::Relaxed);
+                // SAFETY: Other threads may not access the same element of `masks` concurrently.
+                unsafe {
+                    *masks[1][by4 + y][cmp::min(ttx, btx) as usize][sidx].get() |= smask as u16;
+                }
                 ttx = btx;
                 let step = txa[1][1][y][x] as usize;
                 y += step;
@@ -234,7 +240,7 @@ fn mask_edges_inter(
 
 #[inline]
 fn mask_edges_intra(
-    masks: &[[[[AtomicU16; 2]; 3]; 32]; 2],
+    masks: &[[[[UnsafeCell<u16>; 2]; 3]; 32]; 2],
     by4: usize,
     bx4: usize,
     w4: usize,
@@ -254,8 +260,10 @@ fn mask_edges_intra(
         let mask = 1u32 << (by4 + y);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        masks[0][bx4][cmp::min(twl4c, l[y]) as usize][sidx]
-            .fetch_or(smask as u16, Ordering::Relaxed);
+        // SAFETY: Other threads may not access the same element of `masks` concurrently.
+        unsafe {
+            *masks[0][bx4][cmp::min(twl4c, l[y]) as usize][sidx].get() |= smask as u16;
+        }
     }
 
     // top block edge
@@ -263,10 +271,10 @@ fn mask_edges_intra(
         let mask = 1u32 << (bx4 + x);
         let sidx = (mask >= 0x10000) as usize;
         let smask = mask >> (sidx << 4);
-        // SAFETY: No other mutable references to this sub-slice exist on other
-        // threads.
-        masks[1][by4][cmp::min(thl4c, a[x]) as usize][sidx]
-            .fetch_or(smask as u16, Ordering::Relaxed);
+        // SAFETY: Other threads may not access the same element of `masks` concurrently.
+        unsafe {
+            *masks[1][by4][cmp::min(thl4c, a[x]) as usize][sidx].get() |= smask as u16;
+        }
     }
 
     // inner (tx) left|right edges
@@ -275,13 +283,17 @@ fn mask_edges_intra(
     let inner = (((t as u64) << h4) - (t as u64)) as u32;
     let inner = [inner as u16, (inner >> 16) as u16];
     for x in (hstep..w4).step_by(hstep) {
-        // SAFETY: No other mutable references to this sub-slice exist on other
-        // threads.
         if inner[0] != 0 {
-            masks[0][bx4 + x][twl4c as usize][0].fetch_or(inner[0], Ordering::Relaxed);
+            // SAFETY: Other threads may not access the same element of `masks` concurrently.
+            unsafe {
+                *masks[0][bx4 + x][twl4c as usize][0].get() |= inner[0];
+            }
         }
         if inner[1] != 0 {
-            masks[0][bx4 + x][twl4c as usize][1].fetch_or(inner[1], Ordering::Relaxed);
+            // SAFETY: Other threads may not access the same element of `masks` concurrently.
+            unsafe {
+                *masks[0][bx4 + x][twl4c as usize][1].get() |= inner[1];
+            }
         }
     }
 
@@ -294,10 +306,16 @@ fn mask_edges_intra(
     let inner = [inner as u16, (inner >> 16) as u16];
     for y in (vstep..h4).step_by(vstep) {
         if inner[0] != 0 {
-            masks[1][by4 + y][thl4c as usize][0].fetch_or(inner[0], Ordering::Relaxed);
+            // SAFETY: Other threads may not access the same element of `masks` concurrently.
+            unsafe {
+                *masks[1][by4 + y][thl4c as usize][0].get() |= inner[0];
+            }
         }
         if inner[1] != 0 {
-            masks[1][by4 + y][thl4c as usize][1].fetch_or(inner[1], Ordering::Relaxed);
+            // SAFETY: Other threads may not access the same element of `masks` concurrently.
+            unsafe {
+                *masks[1][by4 + y][thl4c as usize][1].get() |= inner[1];
+            }
         }
     }
 
@@ -312,7 +330,7 @@ fn mask_edges_intra(
 }
 
 fn mask_edges_chroma(
-    masks: &[[[[AtomicU16; 2]; 2]; 32]; 2],
+    masks: &[[[[UnsafeCell<u16>; 2]; 2]; 32]; 2],
     cby4: usize,
     cbx4: usize,
     cw4: usize,
@@ -341,8 +359,10 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cby4 + y);
         let sidx = (mask >= vmax) as usize;
         let smask = mask >> (sidx << vbits);
-        masks[0][cbx4][cmp::min(twl4c, l[y]) as usize][sidx]
-            .fetch_or(smask as u16, Ordering::Relaxed);
+        // SAFETY: Other threads may not access the same element of `masks` concurrently.
+        unsafe {
+            *masks[0][cbx4][cmp::min(twl4c, l[y]) as usize][sidx].get() |= smask as u16;
+        }
     }
 
     // top block edge
@@ -350,8 +370,10 @@ fn mask_edges_chroma(
         let mask = 1u32 << (cbx4 + x);
         let sidx = (mask >= hmax) as usize;
         let smask = mask >> (sidx << hbits);
-        masks[1][cby4][cmp::min(thl4c, a[x]) as usize][sidx]
-            .fetch_or(smask as u16, Ordering::Relaxed);
+        // SAFETY: Other threads may not access the same element of `masks` concurrently.
+        unsafe {
+            *masks[1][cby4][cmp::min(thl4c, a[x]) as usize][sidx].get() |= smask as u16;
+        }
     }
 
     if !skip_inter {
@@ -362,10 +384,16 @@ fn mask_edges_chroma(
         let inner = [(inner & ((1 << vmask) - 1)) as u16, (inner >> vmask) as u16];
         for x in (hstep..cw4).step_by(hstep) {
             if inner[0] != 0 {
-                masks[0][cbx4 + x][twl4c as usize][0].fetch_or(inner[0], Ordering::Relaxed);
+                // SAFETY: Other threads may not access the same element of `masks` concurrently.
+                unsafe {
+                    *masks[0][cbx4 + x][twl4c as usize][0].get() |= inner[0];
+                }
             }
             if inner[1] != 0 {
-                masks[0][cbx4 + x][twl4c as usize][1].fetch_or(inner[1], Ordering::Relaxed);
+                // SAFETY: Other threads may not access the same element of `masks` concurrently.
+                unsafe {
+                    *masks[0][cbx4 + x][twl4c as usize][1].get() |= inner[1];
+                }
             }
         }
 
@@ -378,10 +406,16 @@ fn mask_edges_chroma(
         let inner = [(inner & ((1 << hmask) - 1)) as u16, (inner >> hmask) as u16];
         for y in (vstep..ch4).step_by(vstep) {
             if inner[0] != 0 {
-                masks[1][cby4 + y][thl4c as usize][0].fetch_or(inner[0], Ordering::Relaxed);
+                // SAFETY: Other threads may not access the same element of `masks` concurrently.
+                unsafe {
+                    *masks[1][cby4 + y][thl4c as usize][0].get() |= inner[0];
+                }
             }
             if inner[1] != 0 {
-                masks[1][cby4 + y][thl4c as usize][1].fetch_or(inner[1], Ordering::Relaxed);
+                // SAFETY: Other threads may not access the same element of `masks` concurrently.
+                unsafe {
+                    *masks[1][cby4 + y][thl4c as usize][1].get() |= inner[1];
+                }
             }
         }
     }

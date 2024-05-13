@@ -1552,23 +1552,23 @@ unsafe fn decode_b(
         } as usize;
         let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
         let cur_idx = t.cur_sb_cdef_idx + idx;
-        if cdef_idx[cur_idx].load(Ordering::Relaxed) == -1 {
+        if *cdef_idx[cur_idx].get() == -1 {
             let v = rav1d_msac_decode_bools(&mut ts_c.msac, frame_hdr.cdef.n_bits as c_uint) as i8;
-            cdef_idx[cur_idx].store(v, Ordering::Relaxed);
+            *cdef_idx[cur_idx].get() = v;
             if bw4 > 16 {
-                cdef_idx[cur_idx + 1].store(v, Ordering::Relaxed)
+                *cdef_idx[cur_idx + 1].get() = v;
             }
             if bh4 > 16 {
-                cdef_idx[cur_idx + 2].store(v, Ordering::Relaxed)
+                *cdef_idx[cur_idx + 2].get() = v;
             }
             if bw4 == 32 && bh4 == 32 {
-                cdef_idx[cur_idx + 3].store(v, Ordering::Relaxed)
+                *cdef_idx[cur_idx + 3].get() = v;
             }
 
             if debug_block_info!(f, t.b) {
                 println!(
                     "Post-cdef_idx[{}]: r={}",
-                    cdef_idx[t.cur_sb_cdef_idx].load(Ordering::Relaxed),
+                    *cdef_idx[t.cur_sb_cdef_idx].get(),
                     ts_c.msac.rng
                 );
             }
@@ -3262,13 +3262,14 @@ unsafe fn decode_b(
     if b.skip == 0 {
         let mask = !0u32 >> 32 - bw4 << (bx4 & 15);
         let bx_idx = (bx4 & 16) >> 4;
-        for noskip_mask in &f.lf.mask[t.lf_mask.unwrap()].noskip_mask[by4 as usize >> 1..]
+        let lf_mask = &f.lf.mask[t.lf_mask.unwrap()];
+        for noskip_mask in &lf_mask.noskip_mask[by4 as usize >> 1..]
             [..(bh4 as usize + 1) / 2]
         {
-            noskip_mask[bx_idx as usize].fetch_or(mask as u16, Ordering::Relaxed);
+            *noskip_mask[bx_idx as usize].get() |= mask as u16;
             if bw4 == 32 {
                 // this should be mask >> 16, but it's 0xffffffff anyway
-                noskip_mask[1].fetch_or(mask as u16, Ordering::Relaxed);
+                *noskip_mask[1].get() |= mask as u16;
             }
         }
     }
@@ -4238,16 +4239,17 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
         if c.flush.load(Ordering::Acquire) {
             return Err(());
         }
+        {
         let cdef_idx = &f.lf.mask[t.lf_mask.unwrap()].cdef_idx;
         if root_bl == BlockLevel::Bl128x128 {
             for cdef_idx in cdef_idx {
-                cdef_idx.store(-1, Ordering::Relaxed);
+                *cdef_idx.get() = -1;
             }
             t.cur_sb_cdef_idx = 0;
         } else {
             t.cur_sb_cdef_idx = (((t.b.x & 16) >> 4) + ((t.b.y & 16) >> 3)) as usize;
-            let cdef_idx = &cdef_idx[t.cur_sb_cdef_idx..];
-            cdef_idx[0].store(-1, Ordering::Relaxed);
+            *cdef_idx[t.cur_sb_cdef_idx].get() = -1;
+        }
         }
         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
         // Restoration filter

@@ -248,6 +248,17 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         &mut *self.inner.get_mut()
     }
 
+    pub fn raw_index_mut<I>(
+        &self,
+        index: I,
+    ) -> *mut <I as DisjointMutIndex<[<T as AsMutPtr>::Target]>>::Output
+    where
+        I: DisjointMutIndex<[<T as AsMutPtr>::Target]>,
+    {
+        // SAFETY: Slice pointer is valid and dereferencable
+        unsafe { index.get_mut(self.as_mut_slice()) }
+    }
+
     /// Mutably borrow a slice or element.
     ///
     /// This mutable borrow may be unchecked and callers must ensure that no
