@@ -3240,6 +3240,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     b: &Av1Block,
     inter: &Av1BlockInter,
 ) -> Result<(), ()> {
+    let bd = BD::from_c(f.bitdepth_max);
     let ts = &f.ts[t.ts];
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
@@ -3401,7 +3402,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     bh4 * 4,
                     seg_mask.as_mut_ptr(),
                     inter.nd.one_d.mask_sign as c_int,
-                    BD::from_c(f.bitdepth_max),
+                    bd,
                 );
                 mask = &seg_mask[..];
             }
@@ -3601,7 +3602,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 0,
                 tl_edge_array,
                 tl_edge_offset,
-                BD::from_c(f.bitdepth_max),
+                bd,
             );
             let tl_edge = &tl_edge_array[tl_edge_offset..];
             let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
@@ -3614,7 +3615,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 0,
                 0,
                 0,
-                BD::from_c(f.bitdepth_max),
+                bd,
             );
             let ii_mask = match interintra_type {
                 InterIntraType::Blend => {
@@ -3928,7 +3929,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             0,
                             tl_edge_array,
                             tl_edge_offset,
-                            BD::from_c(f.bitdepth_max),
+                            bd,
                         );
                         let tl_edge = &tl_edge_array[tl_edge_offset..];
                         let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
@@ -3941,7 +3942,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             0,
                             0,
                             0,
-                            BD::from_c(f.bitdepth_max),
+                            bd,
                         );
                         (f.dsp.mc.blend)(
                             uvdst.cast(),
