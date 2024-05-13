@@ -2488,10 +2488,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
         && (bh4 > ss_ver || t.b.y & 1 != 0);
     let t_dim = &dav1d_txfm_dimensions[intra.tx as usize];
     let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
+
+    // coefficient coding
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
+
     let intra_edge_filter = f.seq_hdr.as_ref().unwrap().intra_edge_filter;
     let intra_edge_filter_flag = (intra_edge_filter as c_int) << 10;
+
     for init_y in (0..h4).step_by(16) {
         let sub_h4 = cmp::min(h4, 16 + init_y);
         let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
@@ -2541,6 +2545,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     );
                 }
             }
+
             let intra_flags = sm_flag(&f.a[t.a], bx4 as usize)
                 | sm_flag(&mut t.l, by4 as usize)
                 | intra_edge_filter_flag;
@@ -2642,6 +2647,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             4 * f.bh - 4 * t.b.y,
                             BD::from_c(f.bitdepth_max),
                         );
+
                         if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                             hex_dump::<BD>(
                                 edge.offset(-(t_dim.h as isize * 4)),
@@ -2667,6 +2673,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             );
                         }
                     }
+
                     if b.skip == 0 {
                         let mut cf_guard;
                         let cf;
@@ -2779,12 +2786,16 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 t.b.y += t_dim.h as c_int;
             }
             t.b.y -= y;
+
             if !has_chroma {
                 continue;
             }
+
             let stride = f.cur.stride[1];
+
             if intra.uv_mode == CFL_PRED {
                 assert!(init_x == 0 && init_y == 0);
+
                 let scratch = t.scratch.inter_intra_mut();
                 let ac = scratch.ac_txtp_map.ac_mut();
                 let y_src = (f.cur.data.as_ref().unwrap().data[0] as *mut BD::Pixel)
@@ -2797,6 +2808,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel).offset(uv_off),
                     (f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel).offset(uv_off),
                 ];
+
                 let furthest_r = (cw4 << ss_hor) + t_dim.w as c_int - 1 & !(t_dim.w as c_int - 1);
                 let furthest_b = (ch4 << ss_ver) + t_dim.h as c_int - 1 & !(t_dim.h as c_int - 1);
                 f.dsp.ipred.cfl_ac[f.cur.p.layout.try_into().unwrap()].call::<BD>(
@@ -2915,6 +2927,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         scratch.pal_idx_uv.as_slice(),
                     )
                 };
+
                 f.dsp.ipred.pal_pred.call::<BD>(
                     (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel).offset(uv_dstoff),
                     f.cur.stride[1],
@@ -2948,6 +2961,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     );
                 }
             }
+
             let sm_uv_fl =
                 sm_uv_flag(&f.a[t.a], cbx4 as usize) | sm_uv_flag(&mut t.l, cby4 as usize);
             let uv_sb_has_tr = if init_x + 16 >> ss_hor < cw4 {
@@ -2990,6 +3004,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             || intra.pal_sz[1] != 0)
                         {
                             angle = intra.uv_angle as c_int;
+                            // This probably looks weird because we're using
+                            // luma flags in a chroma loop, but that's because
+                            // `rav1d_prepare_intra_edges` expects luma flags as input.
                             edge_flags = EdgeFlags::I444_TOP_HAS_RIGHT.select(
                                 !((y > init_y >> ss_ver || !uv_sb_has_tr)
                                     && x + uv_t_dim.w as c_int >= sub_cw4),
@@ -3093,6 +3110,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 );
                             }
                         }
+
                         if b.skip == 0 {
                             let mut txtp = DCT_DCT;
                             let eob;
