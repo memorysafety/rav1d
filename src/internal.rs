@@ -666,14 +666,14 @@ impl TxLpfRightEdge {
 
     pub fn copy_from_slice_y(&self, index: Range<usize>, src: &[u8]) {
         #[allow(unused_mut)]
-        let mut slice_mut = unsafe { self.inner.index_mut(index) };
+        let mut slice_mut = self.inner.index_mut(index);
         slice_mut.copy_from_slice(src);
     }
 
     pub fn copy_from_slice_uv(&self, index: Range<usize>, src: &[u8]) {
         let mid = self.inner.len() / 2;
         #[allow(unused_mut)]
-        let mut slice_mut = unsafe { self.inner.index_mut(index.start + mid..index.end + mid) };
+        let mut slice_mut = self.inner.index_mut(index.start + mid..index.end + mid);
         slice_mut.copy_from_slice(src);
     }
 }
