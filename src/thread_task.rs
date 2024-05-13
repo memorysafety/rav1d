@@ -598,7 +598,7 @@ fn abort_frame(c: &Rav1dContext, fc: &Rav1dFrameContext, error: Rav1dResult) {
         progress[0].store(FRAME_ERROR, Ordering::SeqCst);
         progress[1].store(FRAME_ERROR, Ordering::SeqCst);
     }
-    rav1d_decode_frame_exit(c, fc, error);
+    let _ = rav1d_decode_frame_exit(c, fc, error);
     fc.task_thread.cond.notify_one();
 }
 
@@ -1037,7 +1037,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                                             unreachable!();
                                         }
                                         drop(f);
-                                        rav1d_decode_frame_exit(c, fc, Err(ENOMEM));
+                                        let _ = rav1d_decode_frame_exit(c, fc, Err(ENOMEM));
                                         fc.task_thread.cond.notify_one();
                                     } else {
                                         drop(
@@ -1139,7 +1139,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                             {
                                 error_0 = fc.task_thread.error.load(Ordering::SeqCst);
                                 drop(f);
-                                rav1d_decode_frame_exit(
+                                let _ = rav1d_decode_frame_exit(
                                     c,
                                     fc,
                                     if error_0 == 1 {
@@ -1316,7 +1316,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                     && fc.task_thread.done[1].load(Ordering::SeqCst) != 0
                 {
                     error_0 = fc.task_thread.error.load(Ordering::SeqCst);
-                    rav1d_decode_frame_exit(
+                    let _ = rav1d_decode_frame_exit(
                         c,
                         fc,
                         if error_0 == 1 {
@@ -1371,7 +1371,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                 && (uses_2pass_0 == 0 || fc.task_thread.done[1].load(Ordering::SeqCst) != 0)
             {
                 error_0 = fc.task_thread.error.load(Ordering::SeqCst);
-                rav1d_decode_frame_exit(
+                let _ = rav1d_decode_frame_exit(
                     c,
                     fc,
                     if error_0 == 1 {
