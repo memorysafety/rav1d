@@ -2412,8 +2412,8 @@ unsafe fn warp_affine<BD: BitDepth>(
                 ref_stride = 32 * ::core::mem::size_of::<BD::Pixel>() as isize;
             } else {
                 ref_ptr = (refp.p.data.as_ref().unwrap().data[pl] as *const BD::Pixel)
-                    .offset((BD::pxstride(ref_stride) * dy as isize) as isize)
-                    .add(dx as usize);
+                    .offset(BD::pxstride(ref_stride) * dy as isize)
+                    .offset(dx as isize);
             }
             match dst {
                 MaybeTempPixels::Temp {
@@ -2658,7 +2658,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             );
                             hex_dump::<BD>(edge, 0, 1, 1, "tl");
                             hex_dump::<BD>(
-                                edge.offset(1),
+                                edge.add(1),
                                 t_dim.w as usize * 4,
                                 t_dim.w as usize * 4,
                                 2,
@@ -2777,7 +2777,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             },
                         );
                     }
-                    dst = dst.offset(4 * t_dim.w as isize);
+                    dst = dst.add(4 * t_dim.w as usize);
                     x += t_dim.w as c_int;
                     t.b.x += t_dim.w as c_int;
                 }
@@ -2799,7 +2799,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 let scratch = t.scratch.inter_intra_mut();
                 let ac = scratch.ac_txtp_map.ac_mut();
                 let y_src = (f.cur.data.as_ref().unwrap().data[0] as *mut BD::Pixel)
-                    .offset((4 * (t.b.x & !ss_hor)) as isize)
+                    .add((4 * (t.b.x & !ss_hor)) as usize)
                     .offset((4 * (t.b.y & !ss_ver)) as isize * BD::pxstride(f.cur.stride[0]));
                 let uv_off = 4
                     * ((t.b.x >> ss_hor) as isize
@@ -3091,7 +3091,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 );
                                 hex_dump::<BD>(edge, 0, 1, 1, "tl");
                                 hex_dump::<BD>(
-                                    edge.offset(1),
+                                    edge.add(1),
                                     uv_t_dim.w as usize * 4,
                                     uv_t_dim.w as usize * 4,
                                     2,
@@ -3217,7 +3217,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 },
                             );
                         }
-                        dst = dst.offset(uv_t_dim.w as isize * 4);
+                        dst = dst.add(uv_t_dim.w as usize * 4);
                         x += uv_t_dim.w as c_int;
                         t.b.x += (uv_t_dim.w as c_int) << ss_hor;
                     }
