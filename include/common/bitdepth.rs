@@ -2,13 +2,14 @@ use crate::include::common::intops::clip;
 use crate::src::align::Align16;
 use crate::src::align::Align8;
 use crate::src::align::ArrayDefault;
+use crate::src::internal::Grain;
+use crate::src::internal::GrainBD;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::fmt;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use std::mem;
 use std::ops::Add;
 use std::ops::Div;
 use std::ops::Mul;
@@ -234,23 +235,9 @@ pub trait BitDepth: Clone + Copy {
 
     const PREP_BIAS: i16;
 
-    unsafe fn select<T>(bd: &BitDepthUnion<T>) -> &T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy;
+    fn select_grain(grain: &Grain) -> &GrainBD<Self>;
 
-    unsafe fn select_mut<T>(bd: &mut BitDepthUnion<T>) -> &mut T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy;
-
-    unsafe fn _select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy;
+    fn select_grain_mut(bd: &mut Grain) -> &mut GrainBD<Self>;
 }
 
 #[derive(Clone, Copy)]
@@ -304,31 +291,22 @@ impl BitDepth for BitDepth8 {
     /// Output in interval `[-5132, 9212]`; fits in [`i16`] as is.
     const PREP_BIAS: i16 = 0;
 
-    unsafe fn select<T>(bd: &BitDepthUnion<T>) -> &T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy,
-    {
-        &bd.bpc8
+    fn select_grain(grain: &Grain) -> &GrainBD<Self> {
+        match grain {
+            Grain::Bpc8(grain) => grain,
+            _ => unreachable!(),
+        }
     }
 
-    unsafe fn select_mut<T>(bd: &mut BitDepthUnion<T>) -> &mut T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy,
-    {
-        &mut bd.bpc8
-    }
+    fn select_grain_mut(grain: &mut Grain) -> &mut GrainBD<Self> {
+        if !matches!(grain, Grain::Bpc8(..)) {
+            *grain = Grain::Bpc8(Default::default());
+        }
 
-    unsafe fn _select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy,
-    {
-        bd.bpc8
+        match grain {
+            Grain::Bpc8(grain) => grain,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -385,31 +363,22 @@ impl BitDepth for BitDepth16 {
     /// Subtract a bias to ensure the output fits in [`i16`].
     const PREP_BIAS: i16 = 8192;
 
-    unsafe fn select<T>(bd: &BitDepthUnion<T>) -> &T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy,
-    {
-        &bd.bpc16
+    fn select_grain(grain: &Grain) -> &GrainBD<Self> {
+        match grain {
+            Grain::Bpc16(grain) => grain,
+            _ => unreachable!(),
+        }
     }
 
-    unsafe fn select_mut<T>(bd: &mut BitDepthUnion<T>) -> &mut T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy,
-    {
-        &mut bd.bpc16
-    }
+    fn select_grain_mut(grain: &mut Grain) -> &mut GrainBD<Self> {
+        if !matches!(grain, Grain::Bpc16(..)) {
+            *grain = Grain::Bpc16(Default::default());
+        }
 
-    unsafe fn _select_into<T>(bd: BitDepthUnion<T>) -> T::T<Self>
-    where
-        T: BitDepthDependentType,
-        T::T<BitDepth8>: Copy,
-        T::T<BitDepth16>: Copy,
-    {
-        bd.bpc16
+        match grain {
+            Grain::Bpc16(grain) => grain,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -443,58 +412,6 @@ pub struct DynScaling([u8; 1]);
 
 pub type LeftPixelRow<Pixel> = [Pixel; 4];
 pub type LeftPixelRow2px<Pixel> = [Pixel; 2];
-
-pub trait BitDepthDependentType {
-    type T<BD: BitDepth>;
-}
-
-// #[derive(Clone, Copy)]
-pub union BitDepthUnion<T: BitDepthDependentType>
-where
-    T::T<BitDepth8>: Copy,
-    T::T<BitDepth16>: Copy,
-{
-    bpc8: T::T<BitDepth8>,
-    bpc16: T::T<BitDepth16>,
-}
-
-// Implemented manually to not require `T: Copy`.
-impl<T: BitDepthDependentType> Copy for BitDepthUnion<T>
-where
-    T::T<BitDepth8>: Copy,
-    T::T<BitDepth16>: Copy,
-{
-}
-
-// Implemented manually to not require `T: Clone`.
-impl<T: BitDepthDependentType> Clone for BitDepthUnion<T>
-where
-    T::T<BitDepth8>: Copy,
-    T::T<BitDepth16>: Copy,
-{
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<T: BitDepthDependentType> Default for BitDepthUnion<T>
-where
-    T::T<BitDepth8>: Default + Copy,
-    T::T<BitDepth16>: Default + Copy,
-{
-    fn default() -> Self {
-        // Create as default whichever variant is larger.
-        if mem::size_of::<T::T<BitDepth8>>() > mem::size_of::<T::T<BitDepth16>>() {
-            Self {
-                bpc8: Default::default(),
-            }
-        } else {
-            Self {
-                bpc16: Default::default(),
-            }
-        }
-    }
-}
 
 /// Select and declare a [`BitDepth`]-dependent `extern "C" fn`.
 ///

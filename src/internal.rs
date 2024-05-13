@@ -1,8 +1,6 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::BitDepthDependentType;
-use crate::include::common::bitdepth::BitDepthUnion;
 use crate::include::common::bitdepth::BPC;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
@@ -286,10 +284,12 @@ impl<BD: BitDepth> Default for GrainBD<BD> {
     }
 }
 
-pub struct Grain;
-
-impl BitDepthDependentType for Grain {
-    type T<BD: BitDepth> = GrainBD<BD>;
+#[derive(Default)]
+pub enum Grain {
+    #[default]
+    Uninit,
+    Bpc8(GrainBD<BitDepth8>),
+    Bpc16(GrainBD<BitDepth16>),
 }
 
 #[derive(Default)]
@@ -298,7 +298,7 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub in_0: Rav1dPicture,
     pub out: Rav1dPicture,
     pub type_0: TaskType,
-    pub grain: BitDepthUnion<Grain>,
+    pub grain: Grain,
 }
 
 // TODO(SJC): Remove when TaskThreadData_delayed_fg is thread-safe

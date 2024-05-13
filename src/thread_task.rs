@@ -627,7 +627,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut delayed_fg.out,
                         &delayed_fg.in_0,
-                        BitDepth8::select_mut(&mut delayed_fg.grain),
+                        BitDepth8::select_grain_mut(&mut delayed_fg.grain),
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
@@ -636,7 +636,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut delayed_fg.out,
                         &delayed_fg.in_0,
-                        BitDepth16::select_mut(&mut delayed_fg.grain),
+                        BitDepth16::select_grain_mut(&mut delayed_fg.grain),
                     );
                 }
                 _ => {
@@ -674,7 +674,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &delayed_fg.out,
                         &delayed_fg.in_0,
-                        BitDepth8::select(&delayed_fg.grain),
+                        BitDepth8::select_grain(&delayed_fg.grain),
                         row as usize,
                     );
                 }
@@ -684,7 +684,7 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &delayed_fg.out,
                         &delayed_fg.in_0,
-                        BitDepth16::select(&delayed_fg.grain),
+                        BitDepth16::select_grain(&delayed_fg.grain),
                         row as usize,
                     );
                 }
