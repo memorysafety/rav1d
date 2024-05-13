@@ -1251,7 +1251,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct(
 impl mct::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        tmp: *mut i16,
+        tmp: &mut [i16],
         src: *const BD::Pixel,
         src_stride: ptrdiff_t,
         w: c_int,
@@ -1260,6 +1260,7 @@ impl mct::Fn {
         my: c_int,
         bd: BD,
     ) {
+        let tmp = tmp.as_mut_ptr();
         let src = src.cast();
         let bd = bd.into_c();
         self.get()(tmp, src, src_stride, w, h, mx, my, bd)
@@ -1282,7 +1283,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct_scaled(
 impl mct_scaled::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        tmp: *mut i16,
+        tmp: &mut [i16],
         src: *const BD::Pixel,
         src_stride: ptrdiff_t,
         w: c_int,
@@ -1293,6 +1294,7 @@ impl mct_scaled::Fn {
         dy: c_int,
         bd: BD,
     ) {
+        let tmp = tmp.as_mut_ptr();
         let src = src.cast();
         let bd = bd.into_c();
         self.get()(tmp, src, src_stride, w, h, mx, my, dx, dy, bd)
@@ -1313,8 +1315,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8t(
 impl warp8x8t::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        tmp: *mut i16,
-        tmp_stride: ptrdiff_t,
+        tmp: &mut [i16],
+        tmp_stride: usize,
         src: *const BD::Pixel,
         src_stride: ptrdiff_t,
         abcd: &[i16; 4],
@@ -1322,6 +1324,8 @@ impl warp8x8t::Fn {
         my: c_int,
         bd: BD,
     ) {
+        let tmp = tmp.as_mut_ptr();
+        let tmp_stride = tmp_stride as isize;
         let src = src.cast();
         let bd = bd.into_c();
         self.get()(tmp, tmp_stride, src, src_stride, abcd, mx, my, bd)

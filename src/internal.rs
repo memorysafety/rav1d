@@ -1041,8 +1041,8 @@ impl BitDepthDependentType for AlPal {
 #[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
 pub struct ScratchCompinter {
-    pub compinter: [[i16; 16384]; 2],
-    pub seg_mask: [u8; 16384],
+    pub compinter: [[i16; 128 * 128]; 2],
+    pub seg_mask: [u8; 128 * 128],
 }
 
 // Larger of the two between `ScratchCompinter` and `[BD::Pixel; 128 * 32]`.
