@@ -1018,14 +1018,10 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     // number of pixels to extend (left, right, top, bottom)
     let left_ext = iclip(-x as c_int, 0 as c_int, bw as c_int - 1);
     let right_ext = iclip((x + bw - iw) as c_int, 0 as c_int, bw as c_int - 1);
-    if !(((left_ext + right_ext) as isize) < bw) {
-        unreachable!();
-    }
+    assert!(((left_ext + right_ext) as isize) < bw);
     let top_ext = iclip(-y as c_int, 0 as c_int, bh as c_int - 1);
     let bottom_ext = iclip((y + bh - ih) as c_int, 0 as c_int, bh as c_int - 1);
-    if !(((top_ext + bottom_ext) as isize) < bh) {
-        unreachable!();
-    }
+    assert!(((top_ext + bottom_ext) as isize) < bh);
 
     // copy visible portion first
     let mut blk: *mut BD::Pixel =
