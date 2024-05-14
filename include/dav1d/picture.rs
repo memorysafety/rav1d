@@ -1,5 +1,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -98,7 +99,7 @@ pub struct Dav1dPicture {
 }
 
 pub struct Rav1dPictureData {
-    pub(crate) data: [*mut c_void; 3],
+    data: [*mut c_void; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -111,6 +112,13 @@ impl Drop for Rav1dPictureData {
             ref allocator,
         } = *self;
         allocator.dealloc_picture_data(data, allocator_data);
+    }
+}
+
+impl Rav1dPictureData {
+    #[inline(always)]
+    pub fn data<BD: BitDepth>(&self) -> [*mut BD::Pixel; 3] {
+        self.data.map(|data| data.cast())
     }
 }
 
