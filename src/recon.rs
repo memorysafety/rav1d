@@ -4502,8 +4502,7 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
 
         let uv_off = (x_off * 4 >> ss_hor) as isize
             + (((t.b.y + f.sb_step) * 4 >> ss_ver) - 1) as isize * BD::pxstride(f.cur.stride[1]);
-        let mut pl = 1;
-        while pl <= 2 {
+        for pl in 1..3 {
             let ipred_edge_off =
                 (f.ipred_edge_off * pl) + (sby_off + (x_off * 4 >> ss_hor)) as usize;
             let n = 4 * (ts.tiling.col_end - x_off) as usize >> ss_hor;
@@ -4519,7 +4518,6 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
                 ),
                 n,
             );
-            pl += 1;
         }
     }
 }
