@@ -1026,26 +1026,30 @@ pub enum TileStateRef {
     Local,
 }
 
+/// Array of 32 * 32 coef elements (either `i16` or `i32`).
 #[derive(FromZeroes)]
 #[repr(align(64))]
-pub struct Cf([u8; 4 * 32 * 32]); // 32 * 32 elements of either `i16` or `i32`.
+pub struct Cf([i32; 32 * 32]);
 
 impl Cf {
     pub fn select<BD: BitDepth>(&self) -> &[BD::Coef; 32 * 32] {
-        FromBytes::ref_from_prefix(&self.0).unwrap()
+        FromBytes::ref_from_prefix(AsBytes::as_bytes(&self.0)).unwrap()
     }
 
     pub fn select_mut<BD: BitDepth>(&mut self) -> &mut [BD::Coef; 32 * 32] {
-        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+        FromBytes::mut_from_prefix(AsBytes::as_bytes_mut(&mut self.0)).unwrap()
     }
 }
 
+/// 4D array of pixel elements (either `u8` or `u16`).
+///
+/// Indices are `[2 a/l][32 bx/y4][3 plane][8 palette_idx]`.
 #[derive(FromZeroes)]
-pub struct AlPal([u8; 2 * 8 * 3 * 32 * 2]); /* [2 a/l][32 bx/y4][3 plane][8 palette_idx] of `u8` or `u16` */
+pub struct AlPal([u16; 8 * 3 * 32 * 2]);
 
 impl AlPal {
     pub fn select_mut<BD: BitDepth>(&mut self) -> &mut [[[[BD::Pixel; 8]; 3]; 32]; 2] {
-        FromBytes::mut_from_prefix(&mut self.0).unwrap()
+        FromBytes::mut_from_prefix(AsBytes::as_bytes_mut(&mut self.0)).unwrap()
     }
 }
 
