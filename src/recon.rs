@@ -4365,7 +4365,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     let sbsz = f.sb_step;
     let y = sby * sbsz * 4;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
-    let p: [*const BD::Pixel; 3] = [
+    let p = [
         f.cur.data.as_ref().unwrap().data[f.lf.p[0]]
             .cast::<BD::Pixel>()
             .offset(y as isize * BD::pxstride(f.cur.stride[0])),
@@ -4376,7 +4376,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
             .cast::<BD::Pixel>()
             .offset(y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver),
     ];
-    let sr_p: [*mut BD::Pixel; 3] = [
+    let sr_p = [
         f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[0]]
             .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[0])) as isize),
@@ -4392,11 +4392,10 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     while pl < 1 + 2 * has_chroma {
         let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
         let h_start = 8 * (sby != 0) as c_int >> ss_ver;
-        let dst_stride: ptrdiff_t = f.sr_cur.p.stride[(pl != 0) as usize];
-        let dst: *mut BD::Pixel =
-            sr_p[pl].offset(-((h_start as isize * BD::pxstride(dst_stride)) as isize));
-        let src_stride: ptrdiff_t = f.cur.stride[(pl != 0) as usize];
-        let src: *const BD::Pixel = p[pl].offset(-(h_start as isize * BD::pxstride(src_stride)));
+        let dst_stride = f.sr_cur.p.stride[(pl != 0) as usize];
+        let dst = sr_p[pl].offset(-((h_start as isize * BD::pxstride(dst_stride)) as isize));
+        let src_stride = f.cur.stride[(pl != 0) as usize];
+        let src = p[pl].offset(-(h_start as isize * BD::pxstride(src_stride)));
         let h_end = 4 * (sbsz - 2 * ((sby + 1) < f.sbh) as c_int) >> ss_ver;
         let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
         let dst_w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
