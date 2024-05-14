@@ -19,6 +19,7 @@ use crate::include::dav1d::headers::RAV1D_PRIMARY_REF_NONE;
 use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::Align16;
 use crate::src::align::AlignedVec64;
+use crate::src::c_arc::CArc;
 use crate::src::cdf::rav1d_cdf_thread_alloc;
 use crate::src::cdf::rav1d_cdf_thread_copy;
 use crate::src::cdf::rav1d_cdf_thread_init_static;
@@ -3843,7 +3844,7 @@ fn setup_tile(
     sb128w: i32,
     lf: &mut Rav1dFrameContext_lf,
     in_cdf: &CdfThreadContext,
-    data: &[u8],
+    data: CArc<[u8]>,
     tile_row: usize,
     tile_col: usize,
     tile_start_off: usize,
@@ -3883,8 +3884,7 @@ fn setup_tile(
     ts.last_qidx = frame_hdr.quant.yac.into();
     ts.last_delta_lf = Default::default();
 
-    // SAFETY: `data` comes from `f.tiles`, which will live at least as long as the created `MsacContext`.
-    ts_c.msac = unsafe { MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac) };
+    ts_c.msac = MsacContext::new(data, frame_hdr.disable_cdf_update != 0, &c.dsp.msac);
 
     ts.tiling.row = tile_row as i32;
     ts.tiling.col = tile_col as i32;
@@ -4612,7 +4612,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
         let start = tile.hdr.start.try_into().unwrap();
         let end: usize = tile.hdr.end.try_into().unwrap();
 
-        let mut data = tile.data.as_ref();
+        let mut data = tile.data.data.clone().unwrap();
         for (j, (ts, tile_start_off)) in iter::zip(
             &mut f.ts[..end + 1],
             if uses_2pass {
@@ -4633,7 +4633,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                 if n_bytes > data.len() {
                     return Err(EINVAL);
                 }
-                let (cur_data, rest_data) = data.split_at(n_bytes);
+                let (cur_data, rest_data) = CArc::split_at(data, n_bytes);
                 let tile_sz = cur_data
                     .iter()
                     .enumerate()
@@ -4647,7 +4647,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
                 tile_sz
             };
 
-            let (cur_data, rest_data) = data.split_at(tile_sz);
+            let (cur_data, rest_data) = CArc::split_at(data, tile_sz);
             setup_tile(
                 c,
                 ts,
