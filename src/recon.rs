@@ -4201,8 +4201,8 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         return;
     }
     let y = sby * f.sb_step * 4;
-    let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
 
     let (mut p, p_offset) = {
         let y_stride = BD::pxstride((*f).cur.stride[0]);
