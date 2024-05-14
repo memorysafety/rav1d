@@ -1093,41 +1093,33 @@ unsafe fn resize_rust<BD: BitDepth>(
 ) {
     loop {
         let mut mx = mx0;
-        let mut src_x = -(1 as c_int);
+        let mut src_x = -1;
         let mut x = 0;
         while x < dst_w {
             let F = &dav1d_resize_filter[(mx >> 8) as usize];
             *dst.offset(x as isize) = bd.iclip_pixel(
                 -(F[0] as c_int
-                    * (*src.offset(iclip(src_x - 3, 0 as c_int, src_w - 1) as isize))
-                        .as_::<c_int>()
+                    * (*src.offset(iclip(src_x - 3, 0, src_w - 1) as isize)).as_::<c_int>()
                     + F[1] as c_int
-                        * (*src.offset(iclip(src_x - 2, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
+                        * (*src.offset(iclip(src_x - 2, 0, src_w - 1) as isize)).as_::<c_int>()
                     + F[2] as c_int
-                        * (*src.offset(iclip(src_x - 1, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
+                        * (*src.offset(iclip(src_x - 1, 0, src_w - 1) as isize)).as_::<c_int>()
                     + F[3] as c_int
-                        * (*src.offset(iclip(src_x + 0, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
+                        * (*src.offset(iclip(src_x + 0, 0, src_w - 1) as isize)).as_::<c_int>()
                     + F[4] as c_int
-                        * (*src.offset(iclip(src_x + 1, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
+                        * (*src.offset(iclip(src_x + 1, 0, src_w - 1) as isize)).as_::<c_int>()
                     + F[5] as c_int
-                        * (*src.offset(iclip(src_x + 2, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
+                        * (*src.offset(iclip(src_x + 2, 0, src_w - 1) as isize)).as_::<c_int>()
                     + F[6] as c_int
-                        * (*src.offset(iclip(src_x + 3, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
+                        * (*src.offset(iclip(src_x + 3, 0, src_w - 1) as isize)).as_::<c_int>()
                     + F[7] as c_int
-                        * (*src.offset(iclip(src_x + 4, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>())
+                        * (*src.offset(iclip(src_x + 4, 0, src_w - 1) as isize)).as_::<c_int>())
                     + 64
                     >> 7,
             );
             mx += dx;
             src_x += mx >> 14;
-            mx &= 0x3fff as c_int;
+            mx &= 0x3fff;
             x += 1;
         }
         dst = dst.offset(BD::pxstride(dst_stride));
