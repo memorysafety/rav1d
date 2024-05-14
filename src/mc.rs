@@ -1097,9 +1097,9 @@ unsafe fn resize_rust<BD: BitDepth>(
         let mut src_x = -1;
         let src = std::slice::from_raw_parts(src_ptr, src_w as usize);
         let dst = std::slice::from_raw_parts_mut(dst_ptr, dst_w as usize);
-        for x in 0..dst_w {
+        for dst in dst {
             let F = &dav1d_resize_filter[(mx >> 8) as usize];
-            dst[x as usize] = bd.iclip_pixel(
+            *dst = bd.iclip_pixel(
                 -(F[0] as c_int * src[iclip(src_x - 3, 0, max) as usize].as_::<c_int>()
                     + F[1] as c_int * src[iclip(src_x - 2, 0, max) as usize].as_::<c_int>()
                     + F[2] as c_int * src[iclip(src_x - 1, 0, max) as usize].as_::<c_int>()
