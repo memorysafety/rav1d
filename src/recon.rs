@@ -4388,8 +4388,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
             .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[1]) >> ss_ver) as isize),
     ];
     let has_chroma = (f.cur.p.layout != Rav1dPixelLayout::I400) as usize;
-    let mut pl = 0;
-    while pl < 1 + 2 * has_chroma {
+    for pl in 0..1 + 2 * has_chroma {
         let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
         let h_start = 8 * (sby != 0) as c_int >> ss_ver;
         let dst_stride = f.sr_cur.p.stride[(pl != 0) as usize];
@@ -4413,7 +4412,6 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
             f.resize_start[(pl != 0) as usize],
             f.bitdepth_max,
         );
-        pl += 1;
     }
 }
 
