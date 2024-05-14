@@ -3986,16 +3986,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         );
         if has_chroma {
             hex_dump::<BD>(
-                &mut *(f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel)
-                    .offset(uvdstoff as isize),
+                (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel).offset(uvdstoff as isize),
                 f.cur.stride[1] as usize,
                 cbw4 as usize * 4,
                 cbh4 as usize * 4,
                 "u-pred",
             );
             hex_dump::<BD>(
-                &mut *(f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel)
-                    .offset(uvdstoff as isize),
+                (f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel).offset(uvdstoff as isize),
                 f.cur.stride[1] as usize,
                 cbw4 as usize * 4,
                 cbh4 as usize * 4,
@@ -4061,7 +4059,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         tx_split,
                         x_off,
                         y_off,
-                        Some(dst.offset((x * 4) as isize)),
+                        Some(dst.add(x as usize * 4)),
                     );
                     t.b.x += ytx.w as c_int;
                     x += ytx.w as c_int;
@@ -4171,7 +4169,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 }
                                 (f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize])
                                     .expect("non-null function pointer")(
-                                    uvdst.offset((4 * x) as isize).cast(),
+                                    uvdst.add(4 * x as usize).cast(),
                                     f.cur.stride[1],
                                     cf.as_mut_ptr().cast(),
                                     eob,
@@ -4179,7 +4177,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 );
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
-                                        &mut *uvdst.offset((4 * x) as isize),
+                                        uvdst.add(4 * x as usize),
                                         f.cur.stride[1] as usize,
                                         uvtx.w as usize * 4,
                                         uvtx.h as usize * 4,
