@@ -1096,30 +1096,30 @@ unsafe fn resize_rust<BD: BitDepth>(
         let mut src_x = -(1 as c_int);
         let mut x = 0;
         while x < dst_w {
-            let F: *const i8 = (dav1d_resize_filter[(mx >> 8) as usize]).as_ptr();
+            let F = &dav1d_resize_filter[(mx >> 8) as usize];
             *dst.offset(x as isize) = bd.iclip_pixel(
-                -(*F.offset(0) as c_int
+                -(F[0] as c_int
                     * (*src.offset(iclip(src_x - 3, 0 as c_int, src_w - 1) as isize))
                         .as_::<c_int>()
-                    + *F.offset(1) as c_int
+                    + F[1] as c_int
                         * (*src.offset(iclip(src_x - 2, 0 as c_int, src_w - 1) as isize))
                             .as_::<c_int>()
-                    + *F.offset(2) as c_int
+                    + F[2] as c_int
                         * (*src.offset(iclip(src_x - 1, 0 as c_int, src_w - 1) as isize))
                             .as_::<c_int>()
-                    + *F.offset(3) as c_int
+                    + F[3] as c_int
                         * (*src.offset(iclip(src_x + 0, 0 as c_int, src_w - 1) as isize))
                             .as_::<c_int>()
-                    + *F.offset(4) as c_int
+                    + F[4] as c_int
                         * (*src.offset(iclip(src_x + 1, 0 as c_int, src_w - 1) as isize))
                             .as_::<c_int>()
-                    + *F.offset(5) as c_int
+                    + F[5] as c_int
                         * (*src.offset(iclip(src_x + 2, 0 as c_int, src_w - 1) as isize))
                             .as_::<c_int>()
-                    + *F.offset(6) as c_int
+                    + F[6] as c_int
                         * (*src.offset(iclip(src_x + 3, 0 as c_int, src_w - 1) as isize))
                             .as_::<c_int>()
-                    + *F.offset(7) as c_int
+                    + F[7] as c_int
                         * (*src.offset(iclip(src_x + 4, 0 as c_int, src_w - 1) as isize))
                             .as_::<c_int>())
                     + 64
