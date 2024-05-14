@@ -4214,7 +4214,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         let uv_height = y_height >> ss_ver;
         let uv_span = (uv_height - 1) as isize * uv_stride;
 
-        let p: [&mut [BD::Pixel]; 3] = [
+        let p = [
             slice::from_raw_parts_mut(
                 f.cur.data.as_ref().unwrap().data[f.lf.p[0]]
                     .cast::<BD::Pixel>()
@@ -4234,7 +4234,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
         ];
-        let p_offset: [usize; 2] = [
+        let p_offset = [
             (cmp::max(0, -y_span) + y as isize * y_stride) as usize,
             (cmp::max(0, -uv_span) + y as isize * uv_stride >> ss_ver) as usize,
         ];
