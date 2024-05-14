@@ -4400,6 +4400,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
         let dst_w = f.sr_cur.p.p.w + ss_hor >> ss_hor;
         let src_w = 4 * f.bw + ss_hor >> ss_hor;
         let img_h = f.cur.p.h - sbsz * 4 * sby + ss_ver >> ss_ver;
+
         (f.dsp.mc.resize)(
             dst.cast(),
             dst_stride,
