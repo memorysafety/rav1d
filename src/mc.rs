@@ -1,6 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::intops::clip;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
@@ -1015,23 +1016,20 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     let ref_stride = BD::pxstride(ref_stride);
 
     // find offset in reference of visible block to copy
-    r#ref = r#ref.offset(
-        iclip(y as c_int, 0 as c_int, ih as c_int - 1) as isize * ref_stride
-            + iclip(x as c_int, 0 as c_int, iw as c_int - 1) as isize,
-    );
+    r#ref = r#ref.offset(clip(y, 0, ih - 1) as isize * ref_stride + clip(x, 0, iw - 1) as isize);
 
     // number of pixels to extend (left, right, top, bottom)
-    let left_ext = iclip(-x as c_int, 0 as c_int, bw as c_int - 1);
-    let right_ext = iclip((x + bw - iw) as c_int, 0 as c_int, bw as c_int - 1);
+    let left_ext = clip(-x, 0, bw - 1);
+    let right_ext = clip(x + bw - iw, 0, bw - 1);
     assert!(((left_ext + right_ext) as isize) < bw);
-    let top_ext = iclip(-y as c_int, 0 as c_int, bh as c_int - 1);
-    let bottom_ext = iclip((y + bh - ih) as c_int, 0 as c_int, bh as c_int - 1);
+    let top_ext = clip(-y, 0, bh - 1);
+    let bottom_ext = clip(y + bh - ih, 0, bh - 1);
     assert!(((top_ext + bottom_ext) as isize) < bh);
 
     // copy visible portion first
     let mut blk = top_ext as usize * dst_stride;
-    let center_w = (bw - left_ext as isize - right_ext as isize) as c_int;
-    let center_h = (bh - top_ext as isize - bottom_ext as isize) as c_int;
+    let center_w = bw - left_ext - right_ext;
+    let center_h = bh - top_ext - bottom_ext;
     for _ in 0..center_h {
         BD::pixel_copy(
             &mut dst[blk + left_ext as usize..][..center_w as usize],
