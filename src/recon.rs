@@ -4431,7 +4431,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     let y = sby * f.sb_step * 4;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let h = f.sr_cur.p.p.h + 127 & !127;
-    let mut sr_p: [&mut [BD::Pixel]; 3] = [
+    let mut sr_p = [
         slice::from_raw_parts_mut(
             f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[0]].cast::<BD::Pixel>(),
             (h as isize * BD::pxstride(f.sr_cur.p.stride[0])) as usize,
@@ -4445,7 +4445,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
             (h as isize * BD::pxstride(f.sr_cur.p.stride[1])) as usize >> ss_ver,
         ),
     ];
-    let sr_p_offset: [usize; 2] = [
+    let sr_p_offset = [
         (y as isize * BD::pxstride(f.sr_cur.p.stride[0])) as usize,
         (y as isize * BD::pxstride(f.sr_cur.p.stride[1]) >> ss_ver) as usize,
     ];
