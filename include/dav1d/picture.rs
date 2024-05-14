@@ -23,6 +23,7 @@ use crate::src::error::Rav1dError::EINVAL;
 use crate::src::error::Rav1dResult;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
+use std::array;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
@@ -105,8 +106,15 @@ type AlignedPixelChunk = Align64<[MaybeUninit<u8>; RAV1D_PICTURE_ALIGNMENT]>;
 const _: () = assert!(mem::align_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 const _: () = assert!(mem::size_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 
+pub struct Rav1dPictureDataComponent {
+    ptr: NonNull<AlignedPixelChunk>,
+
+    /// Length of [`Self::ptr`] in bytes.
+    len: usize,
+}
+
 pub struct Rav1dPictureData {
-    data: [NonNull<AlignedPixelChunk>; 3],
+    data: [Rav1dPictureDataComponent; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -116,16 +124,16 @@ impl Drop for Rav1dPictureData {
         let Self {
             data,
             allocator_data,
-            ref allocator,
-        } = *self;
-        allocator.dealloc_picture_data(data, allocator_data);
+            allocator,
+        } = self;
+        allocator.dealloc_picture_data(data, *allocator_data);
     }
 }
 
 impl Rav1dPictureData {
     #[inline(always)]
     pub fn data<BD: BitDepth>(&self) -> [*mut BD::Pixel; 3] {
-        self.data.map(|data| data.as_ptr().cast())
+        self.data.each_ref().map(|data| data.ptr.as_ptr().cast())
     }
 }
 
@@ -216,7 +224,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             data: data
                 .as_ref()
-                .map(|arc| arc.data.map(|data| Some(data.cast())))
+                .map(|arc| arc.data.each_ref().map(|data| Some(data.ptr.cast())))
                 .unwrap_or_default(),
             stride,
             p: p.into(),
@@ -443,13 +451,15 @@ impl Rav1dPicAllocator {
         let data = pic_c.data;
         let allocator_data = pic_c.allocator_data;
         let mut pic = pic_c.to::<Rav1dPicture>();
+        let len = pic.p.pic_len(pic.stride);
         // TODO fallible allocation
         pic.data = Some(Arc::new(Rav1dPictureData {
             // SAFETY: `MaybeUninit<u8>` should be safe for anything.
-            data: data.map(|data| {
-                let data = data.unwrap().cast::<AlignedPixelChunk>();
-                assert!(data.is_aligned());
-                data
+            data: array::from_fn(|i| {
+                let ptr = data[i].unwrap().cast::<AlignedPixelChunk>();
+                assert!(ptr.is_aligned());
+                let len = len[(i != 0) as usize];
+                Rav1dPictureDataComponent { ptr, len }
             }),
             allocator_data,
             allocator: self.clone(),
@@ -459,10 +469,10 @@ impl Rav1dPicAllocator {
 
     pub fn dealloc_picture_data(
         &self,
-        data: [NonNull<AlignedPixelChunk>; 3],
+        data: &[Rav1dPictureDataComponent; 3],
         allocator_data: Option<NonNull<c_void>>,
     ) {
-        let data = data.map(|data| Some(data.cast()));
+        let data = data.each_ref().map(|data| Some(data.ptr.cast()));
         let mut pic_c = Dav1dPicture {
             data,
             allocator_data,
