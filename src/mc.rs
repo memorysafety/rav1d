@@ -1082,7 +1082,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
 unsafe fn resize_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
-    mut src: *const BD::Pixel,
+    mut src_ptr: *const BD::Pixel,
     src_stride: ptrdiff_t,
     dst_w: c_int,
     h: c_int,
@@ -1094,25 +1094,18 @@ unsafe fn resize_rust<BD: BitDepth>(
     for _ in 0..h {
         let mut mx = mx0;
         let mut src_x = -1;
+        let src = std::slice::from_raw_parts(src_ptr, src_w as usize);
         for x in 0..dst_w {
             let F = &dav1d_resize_filter[(mx >> 8) as usize];
             *dst.offset(x as isize) = bd.iclip_pixel(
-                -(F[0] as c_int
-                    * (*src.offset(iclip(src_x - 3, 0, src_w - 1) as isize)).as_::<c_int>()
-                    + F[1] as c_int
-                        * (*src.offset(iclip(src_x - 2, 0, src_w - 1) as isize)).as_::<c_int>()
-                    + F[2] as c_int
-                        * (*src.offset(iclip(src_x - 1, 0, src_w - 1) as isize)).as_::<c_int>()
-                    + F[3] as c_int
-                        * (*src.offset(iclip(src_x + 0, 0, src_w - 1) as isize)).as_::<c_int>()
-                    + F[4] as c_int
-                        * (*src.offset(iclip(src_x + 1, 0, src_w - 1) as isize)).as_::<c_int>()
-                    + F[5] as c_int
-                        * (*src.offset(iclip(src_x + 2, 0, src_w - 1) as isize)).as_::<c_int>()
-                    + F[6] as c_int
-                        * (*src.offset(iclip(src_x + 3, 0, src_w - 1) as isize)).as_::<c_int>()
-                    + F[7] as c_int
-                        * (*src.offset(iclip(src_x + 4, 0, src_w - 1) as isize)).as_::<c_int>())
+                -(F[0] as c_int * src[iclip(src_x - 3, 0, src_w - 1) as usize].as_::<c_int>()
+                    + F[1] as c_int * src[iclip(src_x - 2, 0, src_w - 1) as usize].as_::<c_int>()
+                    + F[2] as c_int * src[iclip(src_x - 1, 0, src_w - 1) as usize].as_::<c_int>()
+                    + F[3] as c_int * src[iclip(src_x + 0, 0, src_w - 1) as usize].as_::<c_int>()
+                    + F[4] as c_int * src[iclip(src_x + 1, 0, src_w - 1) as usize].as_::<c_int>()
+                    + F[5] as c_int * src[iclip(src_x + 2, 0, src_w - 1) as usize].as_::<c_int>()
+                    + F[6] as c_int * src[iclip(src_x + 3, 0, src_w - 1) as usize].as_::<c_int>()
+                    + F[7] as c_int * src[iclip(src_x + 4, 0, src_w - 1) as usize].as_::<c_int>())
                     + 64
                     >> 7,
             );
@@ -1121,7 +1114,7 @@ unsafe fn resize_rust<BD: BitDepth>(
             mx &= 0x3fff;
         }
         dst = dst.offset(BD::pxstride(dst_stride));
-        src = src.offset(BD::pxstride(src_stride));
+        src_ptr = src_ptr.offset(BD::pxstride(src_stride));
     }
 }
 
