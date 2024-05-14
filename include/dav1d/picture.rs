@@ -24,6 +24,7 @@ use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use to_method::To as _;
@@ -99,7 +100,7 @@ pub struct Dav1dPicture {
 }
 
 pub struct Rav1dPictureData {
-    data: [NonNull<c_void>; 3],
+    data: [NonNull<MaybeUninit<u8>>; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -209,7 +210,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             data: data
                 .as_ref()
-                .map(|arc| arc.data.map(Some))
+                .map(|arc| arc.data.map(|data| Some(data.cast())))
                 .unwrap_or_default(),
             stride,
             p: p.into(),
@@ -438,7 +439,8 @@ impl Rav1dPicAllocator {
         let mut pic = pic_c.to::<Rav1dPicture>();
         // TODO fallible allocation
         pic.data = Some(Arc::new(Rav1dPictureData {
-            data: data.map(|data| data.unwrap()),
+            // SAFETY: `MaybeUninit<u8>` should be safe for anything.
+            data: data.map(|data| data.unwrap().cast::<MaybeUninit<u8>>()),
             allocator_data,
             allocator: self.clone(),
         }));
@@ -447,10 +449,10 @@ impl Rav1dPicAllocator {
 
     pub fn dealloc_picture_data(
         &self,
-        data: [NonNull<c_void>; 3],
+        data: [NonNull<MaybeUninit<u8>>; 3],
         allocator_data: Option<NonNull<c_void>>,
     ) {
-        let data = data.map(Some);
+        let data = data.map(|data| Some(data.cast()));
         let mut pic_c = Dav1dPicture {
             data,
             allocator_data,
