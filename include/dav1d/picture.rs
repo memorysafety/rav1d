@@ -99,7 +99,7 @@ pub struct Dav1dPicture {
 }
 
 pub struct Rav1dPictureData {
-    data: [*mut c_void; 3],
+    data: [NonNull<c_void>; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -118,7 +118,7 @@ impl Drop for Rav1dPictureData {
 impl Rav1dPictureData {
     #[inline(always)]
     pub fn data<BD: BitDepth>(&self) -> [*mut BD::Pixel; 3] {
-        self.data.map(|data| data.cast())
+        self.data.map(|data| data.as_ptr().cast())
     }
 }
 
@@ -209,7 +209,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             data: data
                 .as_ref()
-                .map(|arc| arc.data.map(NonNull::new))
+                .map(|arc| arc.data.map(Some))
                 .unwrap_or_default(),
             stride,
             p: p.into(),
@@ -438,7 +438,7 @@ impl Rav1dPicAllocator {
         let mut pic = pic_c.to::<Rav1dPicture>();
         // TODO fallible allocation
         pic.data = Some(Arc::new(Rav1dPictureData {
-            data: data.map(|data| data.unwrap().as_ptr()),
+            data: data.map(|data| data.unwrap()),
             allocator_data,
             allocator: self.clone(),
         }));
@@ -447,10 +447,10 @@ impl Rav1dPicAllocator {
 
     pub fn dealloc_picture_data(
         &self,
-        data: [*mut c_void; 3],
+        data: [NonNull<c_void>; 3],
         allocator_data: Option<NonNull<c_void>>,
     ) {
-        let data = data.map(NonNull::new);
+        let data = data.map(Some);
         let mut pic_c = Dav1dPicture {
             data,
             allocator_data,
