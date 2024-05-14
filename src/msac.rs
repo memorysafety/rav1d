@@ -8,6 +8,7 @@ use std::ffi::c_uint;
 use std::mem;
 use std::ops::Range;
 use std::ptr;
+use std::slice;
 
 #[cfg(all(feature = "asm", target_feature = "sse2"))]
 extern "C" {
@@ -183,16 +184,22 @@ impl MsacContext {
         self.buf_end = end;
     }
 
-    fn with_buf(&mut self, mut f: impl FnMut(&[u8]) -> &[u8]) {
-        // # Safety
-        //
-        // [`Self::buf_pos`] and [`Self::buf_end`] are the start and end ptrs of the `buf` slice,
-        // and are only set in [`Self::set_buf`], which derives them from a valid slice.
-        let buf = unsafe {
+    /// # Safety
+    ///
+    /// Not actually `'static`, but the lifetime safety is
+    /// guaranteed by [`Self::new`]'s safety preconditions.
+    pub fn buf(&self) -> &'static [u8] {
+        // SAFETY: [`Self::buf_pos`] and [`Self::buf_end`] are the start and end ptrs of the `buf` slice,
+        // and are only set in [`Self::set_buf`] and [`Self::new`],
+        // which derive them from a valid slice.
+        unsafe {
             let len = self.buf_end.offset_from(self.buf_pos) as usize;
-            std::slice::from_raw_parts(self.buf_pos, len)
-        };
-        self.set_buf(f(buf));
+            slice::from_raw_parts(self.buf_pos, len)
+        }
+    }
+
+    fn with_buf(&mut self, mut f: impl FnMut(&[u8]) -> &[u8]) {
+        self.set_buf(f(self.buf()));
     }
 
     fn allow_update_cdf(&self) -> bool {
