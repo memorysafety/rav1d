@@ -15,6 +15,7 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
+use crate::src::align::Align64;
 use crate::src::c_arc::RawArc;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
@@ -24,6 +25,7 @@ use libc::ptrdiff_t;
 use libc::uintptr_t;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::mem;
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::sync::Arc;
@@ -99,8 +101,12 @@ pub struct Dav1dPicture {
     pub allocator_data: Option<NonNull<c_void>>,
 }
 
+type AlignedPixelChunk = Align64<[MaybeUninit<u8>; RAV1D_PICTURE_ALIGNMENT]>;
+const _: () = assert!(mem::align_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
+const _: () = assert!(mem::size_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
+
 pub struct Rav1dPictureData {
-    data: [NonNull<MaybeUninit<u8>>; 3],
+    data: [NonNull<AlignedPixelChunk>; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -440,7 +446,11 @@ impl Rav1dPicAllocator {
         // TODO fallible allocation
         pic.data = Some(Arc::new(Rav1dPictureData {
             // SAFETY: `MaybeUninit<u8>` should be safe for anything.
-            data: data.map(|data| data.unwrap().cast::<MaybeUninit<u8>>()),
+            data: data.map(|data| {
+                let data = data.unwrap().cast::<AlignedPixelChunk>();
+                assert!(data.is_aligned());
+                data
+            }),
             allocator_data,
             allocator: self.clone(),
         }));
@@ -449,7 +459,7 @@ impl Rav1dPicAllocator {
 
     pub fn dealloc_picture_data(
         &self,
-        data: [NonNull<MaybeUninit<u8>>; 3],
+        data: [NonNull<AlignedPixelChunk>; 3],
         allocator_data: Option<NonNull<c_void>>,
     ) {
         let data = data.map(|data| Some(data.cast()));
