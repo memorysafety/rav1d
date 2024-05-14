@@ -4482,7 +4482,7 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
     let sby_off = f.sb128w * 128 * sby;
     let x_off = ts.tiling.col_start;
 
-    let y: *const BD::Pixel = (f.cur.data.as_ref().unwrap().data[0] as *const BD::Pixel).offset(
+    let y = (f.cur.data.as_ref().unwrap().data[0] as *const BD::Pixel).offset(
         (x_off * 4) as isize
             + ((t.b.y + f.sb_step) * 4 - 1) as isize * BD::pxstride(f.cur.stride[0]),
     );
@@ -4500,7 +4500,7 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
         let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
         let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
 
-        let uv_off: ptrdiff_t = (x_off * 4 >> ss_hor) as isize
+        let uv_off = (x_off * 4 >> ss_hor) as isize
             + (((t.b.y + f.sb_step) * 4 >> ss_ver) - 1) as isize * BD::pxstride(f.cur.stride[1]);
         let mut pl = 1;
         while pl <= 2 {
@@ -4511,7 +4511,7 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
                 &mut f
                     .ipred_edge
                     .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
-                &slice::from_raw_parts(
+                slice::from_raw_parts(
                     f.cur.data.as_ref().unwrap().data[pl]
                         .cast::<BD::Pixel>()
                         .offset(uv_off),
