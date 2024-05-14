@@ -89,6 +89,16 @@ struct MemPoolBuf<T> {
     buf: Vec<T>,
 }
 
+impl Rav1dPictureParameters {
+    pub fn pic_len(&self, [y_stride, uv_stride]: [isize; 2]) -> [usize; 2] {
+        let ss_ver = (self.layout == Rav1dPixelLayout::I420) as u8;
+        let aligned_h = self.h as usize + 127 & !127;
+        let y_sz = y_stride.unsigned_abs() * aligned_h;
+        let uv_sz = uv_stride.unsigned_abs() * (aligned_h >> ss_ver);
+        [y_sz, uv_sz]
+    }
+}
+
 /// # Safety
 ///
 /// * `p_c` must be from a `&mut Dav1dPicture`.
@@ -101,9 +111,7 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
     let p = unsafe { p_c.read() }.to::<Rav1dPicture>();
     let hbd = (p.p.bpc > 8) as c_int;
     let aligned_w = p.p.w + 127 & !127;
-    let aligned_h = p.p.h + 127 & !127;
     let has_chroma = p.p.layout != Rav1dPixelLayout::I400;
-    let ss_ver = (p.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (p.p.layout != Rav1dPixelLayout::I444) as c_int;
     let mut y_stride = (aligned_w << hbd) as ptrdiff_t;
     let mut uv_stride = if has_chroma { y_stride >> ss_hor } else { 0 };
@@ -114,8 +122,7 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
         uv_stride += RAV1D_PICTURE_ALIGNMENT as isize;
     }
     let stride = [y_stride, uv_stride];
-    let y_sz = (y_stride * aligned_h as isize) as usize;
-    let uv_sz = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
+    let [y_sz, uv_sz] = p.p.pic_len(stride);
     let pic_size = y_sz + 2 * uv_sz;
 
     // SAFETY: Guaranteed by safety preconditions.
