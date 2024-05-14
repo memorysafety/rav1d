@@ -3241,6 +3241,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     inter: &Av1BlockInter,
 ) -> Result<(), ()> {
     let bd = BD::from_c(f.bitdepth_max);
+
     let ts = &f.ts[t.ts];
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
@@ -3267,6 +3268,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         .layout
         .try_into()
         .unwrap_or(Rav1dPixelLayoutSubSampled::I444);
+
+    // prediction
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let mut dst = (f.cur.data.as_ref().unwrap().data[0] as *mut BD::Pixel)
@@ -3275,6 +3278,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         * ((t.b.x >> ss_hor) as isize + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if frame_hdr.frame_type.is_key_or_intra() {
+        // intrabc
         assert!(!frame_hdr.size.super_res.enabled);
         let scratch = t.scratch.inter_mut();
         mc::<BD>(
@@ -3292,7 +3296,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             0,
             inter.nd.one_d.mv[0],
             &f.sr_cur,
-            0,
+            0, // unused
             Filter2d::Bilinear,
         )?;
         if has_chroma {
@@ -3313,20 +3317,23 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     pl,
                     inter.nd.one_d.mv[0],
                     &f.sr_cur,
-                    0,
+                    0, // unused
                     Filter2d::Bilinear,
                 )?;
             }
         }
     } else if let Some(comp_inter_type) = inter.comp_type {
         let filter_2d = inter.filter2d;
+        // Maximum super block size is 128x128
         let scratch = t.scratch.inter_mut();
         let scratch_inter = scratch.lap_inter.inter_mut();
         let tmp = &mut scratch_inter.compinter;
         let mut jnt_weight = 0;
         let seg_mask = &mut scratch_inter.seg_mask;
+
         for i in 0..2 {
             let refp = &f.refp[inter.r#ref[i] as usize];
+
             if inter.inter_mode == GLOBALMV_GLOBALMV
                 && f.gmv_warp_allowed[inter.r#ref[i] as usize] != 0
             {
@@ -3425,6 +3432,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 }
             }
         }
+
+        // chroma
         if has_chroma {
             for pl in 0..2 {
                 for i in 0..2 {
@@ -3513,6 +3522,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     } else {
         let refp = &f.refp[inter.r#ref[0] as usize];
         let filter_2d = inter.filter2d;
+
         if cmp::min(bw4, bh4) > 1
             && (inter.inter_mode == GLOBALMV && f.gmv_warp_allowed[inter.r#ref[0] as usize] != 0
                 || inter.motion_mode == MotionMode::Warp
@@ -3555,7 +3565,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 filter_2d,
             )?;
             if inter.motion_mode == MotionMode::Obmc {
-                obmc::<BD>(f, t, dst, (*f).cur.stride[0], b_dim, 0, bx4, by4, w4, h4)?;
+                obmc::<BD>(f, t, dst, f.cur.stride[0], b_dim, 0, bx4, by4, w4, h4)?;
             }
         }
         if let Some(interintra_type) = inter.interintra_type {
@@ -3634,7 +3644,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 ii_mask.as_ptr(),
             );
         }
+
         if has_chroma {
+            // sub8x8 derivation
             let mut is_sub8x8 = bw4 == ss_hor || bh4 == ss_ver;
             let r = if is_sub8x8 {
                 assert!(ss_hor == 1);
@@ -3653,6 +3665,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 &[] // Never actually used.
             };
 
+            // chroma prediction
             if is_sub8x8 {
                 let mut h_off = 0isize;
                 let mut v_off = 0isize;
@@ -3870,6 +3883,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     }
                 }
                 if let Some(interintra_type) = inter.interintra_type {
+                    // FIXME for 8x32 with 4:2:2 subsampling, this probably does
+                    // the wrong thing since it will select 4x16, not 4x32, as a
+                    // transform size...
                     let ii_mask = match interintra_type {
                         InterIntraType::Blend => {
                             dav1d_ii_masks[bs as usize][chr_layout_idx]
@@ -3880,6 +3896,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 [inter.nd.one_d.wedge_idx as usize]
                         }
                     };
+
                     for pl in 0..2 {
                         let interintra_edge_pal =
                             &mut t.scratch.inter_intra_mut().interintra_edge_pal;
@@ -3986,9 +4003,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             );
         }
     }
+
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
+
     if b.skip != 0 {
+        // reset coef contexts
         CaseSet::<32, false>::many(
             [&t.l, &f.a[t.a]],
             [bh4 as usize, bw4 as usize],
@@ -4011,11 +4031,14 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         }
         return Ok(());
     }
+
     let uvtx = &dav1d_txfm_dimensions[b.uvtx as usize];
     let ytx = &dav1d_txfm_dimensions[inter.max_ytx as usize];
     let tx_split = [inter.tx_split0 as u16, inter.tx_split1];
+
     for init_y in (0..bh4).step_by(16) {
         for init_x in (0..bw4).step_by(16) {
+            // coefficient coding & inverse transforms
             let mut y_off = (init_y != 0) as c_int;
             let mut y;
             dst = dst.offset(BD::pxstride(f.cur.stride[0]) * 4 * init_y as isize);
@@ -4052,6 +4075,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             }
             dst = dst.offset(-BD::pxstride(f.cur.stride[0]) * 4 * y as isize);
             t.b.y -= y;
+
+            // chroma coefs and inverse transform
             if has_chroma {
                 for pl in 0..2 {
                     let mut uvdst = (f.cur.data.as_ref().unwrap().data[(1 + pl) as usize]
