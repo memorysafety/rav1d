@@ -629,20 +629,26 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             match delayed_fg.out.p.bpc {
                 #[cfg(feature = "bitdepth_8")]
                 bpc @ 8 => {
+                    let Grain::Bpc8(grain) = &mut delayed_fg.grain else {
+                        unreachable!();
+                    };
                     rav1d_prep_grain::<BitDepth8>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut delayed_fg.out,
                         &delayed_fg.in_0,
-                        BitDepth8::select_grain_mut(&mut delayed_fg.grain),
+                        grain,
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
                 bpc @ 10 | bpc @ 12 => {
+                    let Grain::Bpc16(grain) = &mut delayed_fg.grain else {
+                        unreachable!();
+                    };
                     rav1d_prep_grain::<BitDepth16>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &mut delayed_fg.out,
                         &delayed_fg.in_0,
-                        BitDepth16::select_grain_mut(&mut delayed_fg.grain),
+                        grain,
                     );
                 }
                 _ => {
@@ -676,21 +682,27 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             match delayed_fg.out.p.bpc {
                 #[cfg(feature = "bitdepth_8")]
                 bpc @ 8 => {
+                    let Grain::Bpc8(grain) = &delayed_fg.grain else {
+                        unreachable!();
+                    };
                     rav1d_apply_grain_row::<BitDepth8>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &delayed_fg.out,
                         &delayed_fg.in_0,
-                        BitDepth8::select_grain(&delayed_fg.grain),
+                        grain,
                         row as usize,
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
                 bpc @ 10 | bpc @ 12 => {
+                    let Grain::Bpc16(grain) = &delayed_fg.grain else {
+                        unreachable!();
+                    };
                     rav1d_apply_grain_row::<BitDepth16>(
                         &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
                         &delayed_fg.out,
                         &delayed_fg.in_0,
-                        BitDepth16::select_grain(&delayed_fg.grain),
+                        grain,
                         row as usize,
                     );
                 }

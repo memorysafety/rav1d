@@ -2,8 +2,6 @@ use crate::include::common::intops::clip;
 use crate::src::align::Align16;
 use crate::src::align::Align8;
 use crate::src::align::ArrayDefault;
-use crate::src::internal::Grain;
-use crate::src::internal::GrainBD;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::ffi::c_void;
@@ -234,10 +232,6 @@ pub trait BitDepth: Clone + Copy {
     fn get_intermediate_bits(&self) -> u8;
 
     const PREP_BIAS: i16;
-
-    fn select_grain(grain: &Grain) -> &GrainBD<Self>;
-
-    fn select_grain_mut(bd: &mut Grain) -> &mut GrainBD<Self>;
 }
 
 #[derive(Clone, Copy)]
@@ -290,20 +284,6 @@ impl BitDepth for BitDepth8 {
 
     /// Output in interval `[-5132, 9212]`; fits in [`i16`] as is.
     const PREP_BIAS: i16 = 0;
-
-    fn select_grain(grain: &Grain) -> &GrainBD<Self> {
-        match grain {
-            Grain::Bpc8(grain) => grain,
-            _ => unreachable!(),
-        }
-    }
-
-    fn select_grain_mut(grain: &mut Grain) -> &mut GrainBD<Self> {
-        match grain {
-            Grain::Bpc8(grain) => grain,
-            _ => unreachable!(),
-        }
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -358,20 +338,6 @@ impl BitDepth for BitDepth16 {
     /// Output in interval `[-20588, 36956]` (10-bit), `[-20602, 36983]` (12-bit)
     /// Subtract a bias to ensure the output fits in [`i16`].
     const PREP_BIAS: i16 = 8192;
-
-    fn select_grain(grain: &Grain) -> &GrainBD<Self> {
-        match grain {
-            Grain::Bpc16(grain) => grain,
-            _ => unreachable!(),
-        }
-    }
-
-    fn select_grain_mut(grain: &mut Grain) -> &mut GrainBD<Self> {
-        match grain {
-            Grain::Bpc16(grain) => grain,
-            _ => unreachable!(),
-        }
-    }
 }
 
 pub struct DisplayPixel8(<BitDepth8 as BitDepth>::Pixel);
