@@ -20,7 +20,6 @@ use crate::src::env::get_uv_inter_txtp;
 use crate::src::internal::Bxy;
 use crate::src::internal::Cf;
 use crate::src::internal::CodedBlockInfo;
-use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::internal::Rav1dTaskContext;
@@ -138,6 +137,8 @@ macro_rules! debug_block_info {
     }};
 }
 pub(crate) use debug_block_info;
+
+const DEBUG_B_PIXELS: bool = false;
 
 pub(crate) type recon_b_intra_fn = unsafe fn(
     &Rav1dFrameData,
@@ -1779,7 +1780,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     }
                     CfSelect::Task => &mut BD::select_mut(&mut t.cf).0,
                 };
-                if debug_block_info!(f, t.b) && false {
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     coef_dump(
                         cf,
                         cmp::min(t_dim.h as usize, 8) * 4,
@@ -1796,7 +1797,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     eob,
                     f.bitdepth_max,
                 );
-                if debug_block_info!(f, t.b) && false {
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
                         dst,
                         f.cur.stride[0] as usize,
@@ -2411,8 +2412,8 @@ unsafe fn warp_affine<BD: BitDepth>(
                 ref_stride = 32 * ::core::mem::size_of::<BD::Pixel>() as isize;
             } else {
                 ref_ptr = (refp.p.data.as_ref().unwrap().data[pl] as *const BD::Pixel)
-                    .offset((BD::pxstride(ref_stride) * dy as isize) as isize)
-                    .add(dx as usize);
+                    .offset(BD::pxstride(ref_stride) * dy as isize)
+                    .offset(dx as isize);
             }
             match dst {
                 MaybeTempPixels::Temp {
@@ -2467,87 +2468,85 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
     b: &Av1Block,
     intra: &Av1BlockIntra,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
     let ts = &f.ts[t.ts];
 
-    let dsp: *const Rav1dBitDepthDSPContext = f.dsp;
     let bx4 = t.b.x & 31;
     let by4 = t.b.y & 31;
-    let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let ss_hor = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let cbx4 = bx4 >> ss_hor;
     let cby4 = by4 >> ss_ver;
-    let b_dim: *const u8 = (dav1d_block_dimensions[bs as usize]).as_ptr();
-    let bw4 = *b_dim.offset(0) as c_int;
-    let bh4 = *b_dim.offset(1) as c_int;
+    let b_dim = &dav1d_block_dimensions[bs as usize];
+    let bw4 = b_dim[0] as c_int;
+    let bh4 = b_dim[1] as c_int;
     let w4 = cmp::min(bw4, f.bw - t.b.x);
     let h4 = cmp::min(bh4, f.bh - t.b.y);
     let cw4 = w4 + ss_hor >> ss_hor;
     let ch4 = h4 + ss_ver >> ss_ver;
-    let has_chroma = (f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint
+    let has_chroma = f.cur.p.layout != Rav1dPixelLayout::I400
         && (bw4 > ss_hor || t.b.x & 1 != 0)
-        && (bh4 > ss_ver || t.b.y & 1 != 0)) as c_int;
-    let t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(intra.tx as isize) as *const TxfmInfo;
-    let uv_t_dim: *const TxfmInfo =
-        &*dav1d_txfm_dimensions.as_ptr().offset(b.uvtx as isize) as *const TxfmInfo;
+        && (bh4 > ss_ver || t.b.y & 1 != 0);
+    let t_dim = &dav1d_txfm_dimensions[intra.tx as usize];
+    let uv_t_dim = &dav1d_txfm_dimensions[b.uvtx as usize];
+
+    // coefficient coding
     let cbw4 = bw4 + ss_hor >> ss_hor;
     let cbh4 = bh4 + ss_ver >> ss_ver;
+
     let intra_edge_filter = f.seq_hdr.as_ref().unwrap().intra_edge_filter;
     let intra_edge_filter_flag = (intra_edge_filter as c_int) << 10;
-    let mut init_y = 0;
-    while init_y < h4 {
+
+    for init_y in (0..h4).step_by(16) {
         let sub_h4 = cmp::min(h4, 16 + init_y);
         let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
-        let mut init_x = 0;
-        while init_x < w4 {
+        for init_x in (0..w4).step_by(16) {
             if intra.pal_sz[0] != 0 {
                 let dst: *mut BD::Pixel = (f.cur.data.as_ref().unwrap().data[0] as *mut BD::Pixel)
-                    .offset(
-                        (4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0]) + t.b.x as isize))
-                            as isize,
-                    );
+                    .offset(4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0]) + t.b.x as isize));
                 let pal_idx_guard;
                 let scratch = t.scratch.inter_intra_mut();
                 let pal_idx = if t.frame_thread.pass != 0 {
-                    let p = t.frame_thread.pass & 1;
-                    let frame_thread = &ts.frame_thread[p as usize];
+                    let p = (t.frame_thread.pass & 1) as usize;
+                    let frame_thread = &ts.frame_thread[p];
                     let len = (bw4 * bh4 * 8) as usize;
                     let pal_idx = frame_thread.pal_idx.load(Ordering::Relaxed);
-                    pal_idx_guard = f.frame_thread.pal_idx.index(pal_idx..pal_idx + len);
+                    pal_idx_guard = f.frame_thread.pal_idx.index((pal_idx.., ..len));
                     frame_thread.pal_idx.store(pal_idx + len, Ordering::Relaxed);
                     &*pal_idx_guard
                 } else {
                     &scratch.pal_idx_y
                 };
                 let pal_guard;
-                let pal: *const BD::Pixel = if t.frame_thread.pass != 0 {
-                    let index = (((t.b.y as isize >> 1) + (t.b.x as isize & 1))
-                        * (f.b4_stride >> 1)
-                        + ((t.b.x >> 1) + (t.b.y & 1)) as isize)
-                        as isize;
-                    pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
-                    pal_guard[0].as_ptr()
+                let pal = if t.frame_thread.pass != 0 {
+                    let x = t.b.x as usize;
+                    let y = t.b.y as usize;
+                    let index =
+                        ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
+                    pal_guard = f.frame_thread.pal.index::<BD>(index);
+                    &pal_guard[0]
                 } else {
-                    scratch.interintra_edge_pal.pal.buf::<BD>()[0].as_ptr()
+                    &scratch.interintra_edge_pal.pal.buf::<BD>()[0]
                 };
                 f.dsp.ipred.pal_pred.call::<BD>(
                     dst,
                     f.cur.stride[0],
-                    pal,
+                    pal.as_ptr(),
                     pal_idx.as_ptr(),
                     bw4 * 4,
                     bh4 * 4,
                 );
-                if debug_block_info!(f, t.b) && 0 != 0 {
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
                         dst,
-                        BD::pxstride(f.cur.stride[0] as usize),
+                        BD::pxstride(f.cur.stride[0]) as usize,
                         bw4 as usize * 4,
                         bh4 as usize * 4,
                         "y-pal-pred",
                     );
                 }
             }
+
             let intra_flags = sm_flag(&f.a[t.a], bx4 as usize)
                 | sm_flag(&mut t.l, by4 as usize)
                 | intra_edge_filter_flag;
@@ -2573,24 +2572,24 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
             while y < sub_h4 {
                 let mut dst: *mut BD::Pixel =
                     (f.cur.data.as_ref().unwrap().data[0] as *mut BD::Pixel).offset(
-                        (4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0])
+                        4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0])
                             + t.b.x as isize
-                            + init_x as isize)) as isize,
+                            + init_x as isize),
                     );
                 x = init_x;
                 t.b.x += init_x;
                 while x < sub_w4 {
                     let mut angle;
-                    let edge_flags: EdgeFlags;
-                    let m: IntraPredMode;
+                    let edge_flags;
+                    let m;
                     if !(intra.pal_sz[0] != 0) {
                         angle = intra.y_angle as c_int;
                         edge_flags = EdgeFlags::union_all([
                             EdgeFlags::I444_TOP_HAS_RIGHT.select(
-                                !((y > init_y || !sb_has_tr) && x + (*t_dim).w as c_int >= sub_w4),
+                                !((y > init_y || !sb_has_tr) && x + t_dim.w as c_int >= sub_w4),
                             ),
                             EdgeFlags::I444_LEFT_HAS_BOTTOM.select(
-                                !(x > init_x || (!sb_has_bl && y + (*t_dim).h as c_int >= sub_h4)),
+                                !(x > init_x || (!sb_has_bl && y + t_dim.h as c_int >= sub_h4)),
                             ),
                         ]);
                         let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
@@ -2630,74 +2629,74 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             top_sb_edge_slice,
                             intra.y_mode as IntraPredMode,
                             &mut angle,
-                            (*t_dim).w as c_int,
-                            (*t_dim).h as c_int,
+                            t_dim.w as c_int,
+                            t_dim.h as c_int,
                             intra_edge_filter,
                             edge_array,
                             edge_offset,
-                            BD::from_c(f.bitdepth_max),
+                            bd,
                         );
                         let edge = edge_array.as_ptr().add(edge_offset);
-                        (*dsp).ipred.intra_pred[m as usize].call(
+                        f.dsp.ipred.intra_pred[m as usize].call(
                             dst,
                             f.cur.stride[0],
                             edge,
-                            (*t_dim).w as c_int * 4,
-                            (*t_dim).h as c_int * 4,
+                            t_dim.w as c_int * 4,
+                            t_dim.h as c_int * 4,
                             angle | intra_flags,
                             4 * f.bw - 4 * t.b.x,
                             4 * f.bh - 4 * t.b.y,
-                            BD::from_c(f.bitdepth_max),
+                            bd,
                         );
-                        if debug_block_info!(f, t.b) && 0 != 0 {
+
+                        if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                             hex_dump::<BD>(
-                                edge.offset(-(((*t_dim).h as c_int * 4) as isize)),
-                                (*t_dim).h as usize * 4,
-                                (*t_dim).h as usize * 4,
+                                edge.offset(-(t_dim.h as isize * 4)),
+                                t_dim.h as usize * 4,
+                                t_dim.h as usize * 4,
                                 2,
                                 "l",
                             );
                             hex_dump::<BD>(edge, 0, 1, 1, "tl");
                             hex_dump::<BD>(
-                                edge.offset(1),
-                                (*t_dim).w as usize * 4,
-                                (*t_dim).w as usize * 4,
+                                edge.add(1),
+                                t_dim.w as usize * 4,
+                                t_dim.w as usize * 4,
                                 2,
                                 "t",
                             );
                             hex_dump::<BD>(
                                 dst,
                                 f.cur.stride[0] as usize,
-                                (*t_dim).w as usize * 4,
-                                (*t_dim).h as usize * 4,
+                                t_dim.w as usize * 4,
+                                t_dim.h as usize * 4,
                                 "y-intra-pred",
                             );
                         }
                     }
+
                     if b.skip == 0 {
                         let mut cf_guard;
                         let cf;
                         let eob;
-                        let mut txtp: TxfmType = DCT_DCT;
+                        let mut txtp = DCT_DCT;
                         if t.frame_thread.pass != 0 {
-                            let p = t.frame_thread.pass & 1;
-                            let len = cmp::min((*t_dim).h as usize, 8)
+                            let p = (t.frame_thread.pass & 1) as usize;
+                            let len = cmp::min(t_dim.h as usize, 8)
                                 * 4
-                                * cmp::min((*t_dim).w as usize, 8)
+                                * cmp::min(t_dim.w as usize, 8)
                                 * 4;
-                            let cf_idx = ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
+                            let cf_idx = ts.frame_thread[p].cf.load(Ordering::Relaxed);
                             cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
                             cf = &mut *cf_guard;
-                            ts.frame_thread[p as usize]
-                                .cf
-                                .store(cf_idx + len, Ordering::Relaxed);
+                            ts.frame_thread[p].cf.store(cf_idx + len, Ordering::Relaxed);
                             let cbi = f.frame_thread.cbi
-                                [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize][0]
+                                [t.b.y as usize * f.b4_stride as usize + t.b.x as usize][0]
                                 .load(Ordering::Relaxed);
                             eob = cbi.eob().into();
                             txtp = cbi.txtp();
                         } else {
-                            let mut cf_ctx: u8 = 0;
+                            let mut cf_ctx = 0;
                             let a_start = (bx4 + x) as usize;
                             let l_start = (by4 + y) as usize;
                             eob = decode_coefs::<BD>(
@@ -2709,8 +2708,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 &mut t.cf,
                                 &mut f.a[t.a]
                                     .lcoef
-                                    .index_mut(a_start..a_start + (*t_dim).w as usize),
-                                &mut t.l.lcoef.index_mut(l_start..l_start + (*t_dim).h as usize),
+                                    .index_mut(a_start..a_start + t_dim.w as usize),
+                                &mut t.l.lcoef.index_mut(l_start..l_start + t_dim.h as usize),
                                 intra.tx as RectTxfmSize,
                                 bs,
                                 b,
@@ -2723,8 +2722,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             if debug_block_info!(f, t.b) {
                                 println!(
                                     "Post-y-cf-blk[tx={},txtp={},eob={}]: r={}",
-                                    intra.tx as c_int,
-                                    txtp as c_uint,
+                                    intra.tx,
+                                    txtp,
                                     eob,
                                     ts_c.as_deref().unwrap().msac.rng,
                                 );
@@ -2732,8 +2731,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             CaseSet::<16, true>::many(
                                 [&t.l, &f.a[t.a]],
                                 [
-                                    cmp::min((*t_dim).h as i32, f.bh - t.b.y) as usize,
-                                    cmp::min((*t_dim).w as i32, f.bw - t.b.x) as usize,
+                                    cmp::min(t_dim.h as i32, f.bh - t.b.y) as usize,
+                                    cmp::min(t_dim.w as i32, f.bw - t.b.x) as usize,
                                 ],
                                 [(by4 + y) as usize, (bx4 + x) as usize],
                                 |case, dir| {
@@ -2742,16 +2741,16 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             );
                         }
                         if eob >= 0 {
-                            if debug_block_info!(f, t.b) && 0 != 0 {
+                            if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 coef_dump(
                                     cf,
-                                    cmp::min((*t_dim).h as usize, 8) * 4,
-                                    cmp::min((*t_dim).w as usize, 8) * 4,
+                                    cmp::min(t_dim.h as usize, 8) * 4,
+                                    cmp::min(t_dim.w as usize, 8) * 4,
                                     3,
                                     "dq",
                                 );
                             }
-                            ((*dsp).itx.itxfm_add[intra.tx as usize][txtp as usize])
+                            (f.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize])
                                 .expect("non-null function pointer")(
                                 dst.cast(),
                                 f.cur.stride[0],
@@ -2759,12 +2758,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 eob,
                                 f.bitdepth_max,
                             );
-                            if debug_block_info!(f, t.b) && 0 != 0 {
+                            if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 hex_dump::<BD>(
                                     dst,
                                     f.cur.stride[0] as usize,
-                                    (*t_dim).w as usize * 4,
-                                    (*t_dim).h as usize * 4,
+                                    t_dim.w as usize * 4,
+                                    t_dim.h as usize * 4,
                                     "recon",
                                 );
                             }
@@ -2772,490 +2771,464 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     } else if t.frame_thread.pass == 0 {
                         CaseSet::<16, false>::many(
                             [&t.l, &f.a[t.a]],
-                            [(*t_dim).h as usize, (*t_dim).w as usize],
+                            [t_dim.h as usize, t_dim.w as usize],
                             [(by4 + y) as usize, (bx4 + x) as usize],
                             |case, dir| {
                                 case.set_disjoint(&dir.lcoef, 0x40);
                             },
                         );
                     }
-                    dst = dst.offset((4 * (*t_dim).w as c_int) as isize);
-                    x += (*t_dim).w as c_int;
-                    t.b.x += (*t_dim).w as c_int;
+                    dst = dst.add(4 * t_dim.w as usize);
+                    x += t_dim.w as c_int;
+                    t.b.x += t_dim.w as c_int;
                 }
                 t.b.x -= x;
-                y += (*t_dim).h as c_int;
-                t.b.y += (*t_dim).h as c_int;
+                y += t_dim.h as c_int;
+                t.b.y += t_dim.h as c_int;
             }
             t.b.y -= y;
-            if !(has_chroma == 0) {
-                let stride: ptrdiff_t = f.cur.stride[1];
-                if intra.uv_mode as c_int == CFL_PRED as c_int {
-                    assert!(init_x == 0 && init_y == 0);
-                    let scratch = t.scratch.inter_intra_mut();
-                    let ac = scratch.ac_txtp_map.ac_mut();
-                    let y_src: *mut BD::Pixel = (f.cur.data.as_ref().unwrap().data[0]
-                        as *mut BD::Pixel)
-                        .offset((4 * (t.b.x & !ss_hor)) as isize)
-                        .offset(
-                            ((4 * (t.b.y & !ss_ver)) as isize
-                                * BD::pxstride(f.cur.stride[0] as usize) as isize)
-                                as isize,
-                        );
-                    let uv_off: ptrdiff_t = 4
-                        * ((t.b.x >> ss_hor) as isize
-                            + (t.b.y >> ss_ver) as isize * BD::pxstride(stride));
-                    let uv_dst: [*mut BD::Pixel; 2] = [
-                        (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel)
-                            .offset(uv_off as isize),
-                        (f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel)
-                            .offset(uv_off as isize),
-                    ];
-                    let furthest_r =
-                        (cw4 << ss_hor) + (*t_dim).w as c_int - 1 & !((*t_dim).w as c_int - 1);
-                    let furthest_b =
-                        (ch4 << ss_ver) + (*t_dim).h as c_int - 1 & !((*t_dim).h as c_int - 1);
-                    (*dsp).ipred.cfl_ac[f.cur.p.layout.try_into().unwrap()].call::<BD>(
-                        ac.as_mut_ptr(),
-                        y_src,
-                        f.cur.stride[0],
-                        cbw4 - (furthest_r >> ss_hor),
-                        cbh4 - (furthest_b >> ss_ver),
-                        cbw4 * 4,
-                        cbh4 * 4,
+
+            if !has_chroma {
+                continue;
+            }
+
+            let stride = f.cur.stride[1];
+
+            if intra.uv_mode == CFL_PRED {
+                assert!(init_x == 0 && init_y == 0);
+
+                let scratch = t.scratch.inter_intra_mut();
+                let ac = scratch.ac_txtp_map.ac_mut();
+                let y_src = (f.cur.data.as_ref().unwrap().data[0] as *mut BD::Pixel)
+                    .add((4 * (t.b.x & !ss_hor)) as usize)
+                    .offset((4 * (t.b.y & !ss_ver)) as isize * BD::pxstride(f.cur.stride[0]));
+                let uv_off = 4
+                    * ((t.b.x >> ss_hor) as isize
+                        + (t.b.y >> ss_ver) as isize * BD::pxstride(stride));
+                let uv_dst = [
+                    (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel).offset(uv_off),
+                    (f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel).offset(uv_off),
+                ];
+
+                let furthest_r = (cw4 << ss_hor) + t_dim.w as c_int - 1 & !(t_dim.w as c_int - 1);
+                let furthest_b = (ch4 << ss_ver) + t_dim.h as c_int - 1 & !(t_dim.h as c_int - 1);
+                f.dsp.ipred.cfl_ac[f.cur.p.layout.try_into().unwrap()].call::<BD>(
+                    ac.as_mut_ptr(),
+                    y_src,
+                    f.cur.stride[0],
+                    cbw4 - (furthest_r >> ss_hor),
+                    cbh4 - (furthest_b >> ss_ver),
+                    cbw4 * 4,
+                    cbh4 * 4,
+                );
+                for pl in 0..2 {
+                    if intra.cfl_alpha[pl] == 0 {
+                        continue;
+                    }
+                    let mut angle = 0;
+                    let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
+                        let sby = t.b.y >> f.sb_shift;
+                        let offset = (f.ipred_edge_off * (pl + 1)) as isize
+                            + (f.sb128w * 128 * (sby - 1)) as isize;
+                        Some((&f.ipred_edge, offset))
+                    } else {
+                        None
+                    };
+                    let xpos = t.b.x >> ss_hor;
+                    let ypos = t.b.y >> ss_ver;
+                    let xstart = ts.tiling.col_start >> ss_hor;
+                    let ystart = ts.tiling.row_start >> ss_ver;
+                    let edge_array = scratch.interintra_edge_pal.edge.buf_mut::<BD>();
+                    let edge_offset = 128;
+                    let data_stride = BD::pxstride(f.cur.stride[1]);
+                    let data_width = 4 * ts.tiling.col_end >> ss_hor;
+                    let data_height = 4 * ts.tiling.row_end >> ss_ver;
+                    let data_diff = (data_height - 1) as isize * data_stride;
+                    let uvdst_slice = slice::from_raw_parts(
+                        (f.cur.data.as_ref().unwrap().data[1 + pl] as *const BD::Pixel)
+                            .offset(cmp::min(data_diff, 0)),
+                        data_diff.unsigned_abs() + data_width as usize,
                     );
-                    let mut pl = 0;
-                    while pl < 2 {
-                        if !(intra.cfl_alpha[pl as usize] == 0) {
-                            let mut angle = 0;
+                    let m: IntraPredMode = rav1d_prepare_intra_edges(
+                        xpos,
+                        xpos > xstart,
+                        ypos,
+                        ypos > ystart,
+                        ts.tiling.col_end >> ss_hor,
+                        ts.tiling.row_end >> ss_ver,
+                        EdgeFlags::empty(),
+                        uvdst_slice,
+                        stride,
+                        top_sb_edge_slice,
+                        DC_PRED,
+                        &mut angle,
+                        uv_t_dim.w as c_int,
+                        uv_t_dim.h as c_int,
+                        0,
+                        edge_array,
+                        edge_offset,
+                        bd,
+                    );
+                    let edge = edge_array.as_ptr().add(edge_offset);
+                    f.dsp.ipred.cfl_pred[m as usize].call(
+                        uv_dst[pl],
+                        stride,
+                        edge,
+                        uv_t_dim.w as c_int * 4,
+                        uv_t_dim.h as c_int * 4,
+                        ac.as_mut_ptr(),
+                        intra.cfl_alpha[pl] as c_int,
+                        bd,
+                    );
+                }
+                if debug_block_info!(&*f, t.b) && DEBUG_B_PIXELS {
+                    ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
+                    hex_dump::<BD>(
+                        uv_dst[0],
+                        stride as usize,
+                        cbw4 as usize * 4,
+                        cbh4 as usize * 4,
+                        "u-cfl-pred",
+                    );
+                    hex_dump::<BD>(
+                        uv_dst[1],
+                        stride as usize,
+                        cbw4 as usize * 4,
+                        cbh4 as usize * 4,
+                        "v-cfl-pred",
+                    );
+                }
+            } else if intra.pal_sz[1] != 0 {
+                let uv_dstoff = 4
+                    * ((t.b.x >> ss_hor) as isize
+                        + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
+                let pal_idx_guard;
+                let pal_guard;
+                let (pal, pal_idx) = if t.frame_thread.pass != 0 {
+                    let p = (t.frame_thread.pass & 1) as usize;
+                    let x = t.b.x as usize;
+                    let y = t.b.y as usize;
+                    let index =
+                        ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
+                    let pal_idx_offset = ts.frame_thread[p].pal_idx.load(Ordering::Relaxed);
+                    let len = (cbw4 * cbh4 * 8) as usize;
+                    pal_idx_guard = f
+                        .frame_thread
+                        .pal_idx
+                        .index(pal_idx_offset..pal_idx_offset + len);
+                    ts.frame_thread[p]
+                        .pal_idx
+                        .store(pal_idx_offset + len, Ordering::Relaxed);
+                    pal_guard = f.frame_thread.pal.index::<BD>(index);
+                    (&*pal_guard, &*pal_idx_guard)
+                } else {
+                    let scratch = t.scratch.inter_intra_mut();
+                    (
+                        scratch.interintra_edge_pal.pal.buf::<BD>(),
+                        scratch.pal_idx_uv.as_slice(),
+                    )
+                };
+
+                f.dsp.ipred.pal_pred.call::<BD>(
+                    (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel).offset(uv_dstoff),
+                    f.cur.stride[1],
+                    pal[1].as_ptr(),
+                    pal_idx.as_ptr(),
+                    cbw4 * 4,
+                    cbh4 * 4,
+                );
+                f.dsp.ipred.pal_pred.call::<BD>(
+                    (f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel).offset(uv_dstoff),
+                    f.cur.stride[1],
+                    pal[2].as_ptr(),
+                    pal_idx.as_ptr(),
+                    cbw4 * 4,
+                    cbh4 * 4,
+                );
+                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
+                    hex_dump::<BD>(
+                        (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel).offset(uv_dstoff),
+                        BD::pxstride(f.cur.stride[1] as usize),
+                        cbw4 as usize * 4,
+                        cbh4 as usize * 4,
+                        "u-pal-pred",
+                    );
+                    hex_dump::<BD>(
+                        (f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel).offset(uv_dstoff),
+                        BD::pxstride(f.cur.stride[1] as usize),
+                        cbw4 as usize * 4,
+                        cbh4 as usize * 4,
+                        "v-pal-pred",
+                    );
+                }
+            }
+
+            let sm_uv_fl =
+                sm_uv_flag(&f.a[t.a], cbx4 as usize) | sm_uv_flag(&mut t.l, cby4 as usize);
+            let uv_sb_has_tr = if init_x + 16 >> ss_hor < cw4 {
+                true
+            } else if init_y != 0 {
+                false
+            } else {
+                intra_edge_flags.contains(EdgeFlags::I420_TOP_HAS_RIGHT >> f.cur.p.layout)
+            };
+            let uv_sb_has_bl = if init_x != 0 {
+                false
+            } else if init_y + 16 >> ss_ver < ch4 {
+                true
+            } else {
+                intra_edge_flags.contains(EdgeFlags::I420_LEFT_HAS_BOTTOM >> f.cur.p.layout)
+            };
+            let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
+            for pl in 0..2 {
+                y = init_y >> ss_ver;
+                t.b.y += init_y;
+                while y < sub_ch4 {
+                    let mut dst = (f.cur.data.as_ref().unwrap().data[(1 + pl) as usize]
+                        as *mut BD::Pixel)
+                        .offset(
+                            4 * ((t.b.y >> ss_ver) as isize * BD::pxstride(stride)
+                                + (t.b.x + init_x >> ss_hor) as isize),
+                        );
+                    x = init_x >> ss_hor;
+                    t.b.x += init_x;
+                    while x < sub_cw4 {
+                        let mut angle;
+                        let edge_flags;
+                        let uv_mode;
+                        let xpos;
+                        let ypos;
+                        let xstart;
+                        let ystart;
+                        let m;
+                        if !(intra.uv_mode == CFL_PRED && intra.cfl_alpha[pl] != 0
+                            || intra.pal_sz[1] != 0)
+                        {
+                            angle = intra.uv_angle as c_int;
+                            // This probably looks weird because we're using
+                            // luma flags in a chroma loop, but that's because
+                            // `rav1d_prepare_intra_edges` expects luma flags as input.
+                            edge_flags = EdgeFlags::I444_TOP_HAS_RIGHT.select(
+                                !((y > init_y >> ss_ver || !uv_sb_has_tr)
+                                    && x + uv_t_dim.w as c_int >= sub_cw4),
+                            ) | EdgeFlags::I444_LEFT_HAS_BOTTOM.select(
+                                !(x > init_x >> ss_hor
+                                    || !uv_sb_has_bl && y + uv_t_dim.h as c_int >= sub_ch4),
+                            );
                             let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
                                 let sby = t.b.y >> f.sb_shift;
-                                let offset = (f.ipred_edge_off * (pl + 1)) as isize
+                                let offset = (f.ipred_edge_off * (1 + pl)) as isize
                                     + (f.sb128w * 128 * (sby - 1)) as isize;
                                 Some((&f.ipred_edge, offset))
                             } else {
                                 None
                             };
-                            let xpos = t.b.x >> ss_hor;
-                            let ypos = t.b.y >> ss_ver;
-                            let xstart = ts.tiling.col_start >> ss_hor;
-                            let ystart = ts.tiling.row_start >> ss_ver;
-                            let edge_array = scratch.interintra_edge_pal.edge.buf_mut::<BD>();
+                            uv_mode = if intra.uv_mode == CFL_PRED {
+                                DC_PRED
+                            } else {
+                                intra.uv_mode
+                            };
+                            xpos = t.b.x >> ss_hor;
+                            ypos = t.b.y >> ss_ver;
+                            xstart = ts.tiling.col_start >> ss_hor;
+                            ystart = ts.tiling.row_start >> ss_ver;
+                            let edge_array = t
+                                .scratch
+                                .inter_intra_mut()
+                                .interintra_edge_pal
+                                .edge
+                                .buf_mut::<BD>();
                             let edge_offset = 128;
                             let data_stride = BD::pxstride(f.cur.stride[1]);
                             let data_width = 4 * ts.tiling.col_end >> ss_hor;
                             let data_height = 4 * ts.tiling.row_end >> ss_ver;
                             let data_diff = (data_height - 1) as isize * data_stride;
-                            let uvdst_slice = slice::from_raw_parts(
+                            let dstuv_slice = slice::from_raw_parts(
                                 (f.cur.data.as_ref().unwrap().data[1 + pl as usize]
                                     as *const BD::Pixel)
                                     .offset(cmp::min(data_diff, 0)),
                                 data_diff.unsigned_abs() + data_width as usize,
                             );
-                            let m: IntraPredMode = rav1d_prepare_intra_edges(
+                            m = rav1d_prepare_intra_edges(
                                 xpos,
                                 xpos > xstart,
                                 ypos,
                                 ypos > ystart,
                                 ts.tiling.col_end >> ss_hor,
                                 ts.tiling.row_end >> ss_ver,
-                                EdgeFlags::empty(),
-                                uvdst_slice,
+                                edge_flags,
+                                dstuv_slice,
                                 stride,
                                 top_sb_edge_slice,
-                                DC_PRED,
+                                uv_mode,
                                 &mut angle,
-                                (*uv_t_dim).w as c_int,
-                                (*uv_t_dim).h as c_int,
-                                0,
+                                uv_t_dim.w as c_int,
+                                uv_t_dim.h as c_int,
+                                intra_edge_filter,
                                 edge_array,
                                 edge_offset,
-                                BD::from_c(f.bitdepth_max),
+                                bd,
                             );
+                            angle |= intra_edge_filter_flag;
                             let edge = edge_array.as_ptr().add(edge_offset);
-                            (*dsp).ipred.cfl_pred[m as usize].call(
-                                uv_dst[pl as usize],
+                            f.dsp.ipred.intra_pred[m as usize].call(
+                                dst,
                                 stride,
                                 edge,
-                                (*uv_t_dim).w as c_int * 4,
-                                (*uv_t_dim).h as c_int * 4,
-                                ac.as_mut_ptr(),
-                                intra.cfl_alpha[pl as usize] as c_int,
-                                BD::from_c(f.bitdepth_max),
+                                uv_t_dim.w as c_int * 4,
+                                uv_t_dim.h as c_int * 4,
+                                angle | sm_uv_fl,
+                                4 * f.bw + ss_hor - 4 * (t.b.x & !ss_hor) >> ss_hor,
+                                4 * f.bh + ss_ver - 4 * (t.b.y & !ss_ver) >> ss_ver,
+                                bd,
                             );
-                        }
-                        pl += 1;
-                    }
-                    if debug_block_info!(&*f, t.b) && 0 != 0 {
-                        ac_dump(ac, 4 * cbw4 as usize, 4 * cbh4 as usize, "ac");
-                        hex_dump::<BD>(
-                            uv_dst[0],
-                            stride as usize,
-                            cbw4 as usize * 4,
-                            cbh4 as usize * 4,
-                            "u-cfl-pred",
-                        );
-                        hex_dump::<BD>(
-                            uv_dst[1],
-                            stride as usize,
-                            cbw4 as usize * 4,
-                            cbh4 as usize * 4,
-                            "v-cfl-pred",
-                        );
-                    }
-                } else if intra.pal_sz[1] != 0 {
-                    let uv_dstoff: ptrdiff_t = 4
-                        * ((t.b.x >> ss_hor) as isize
-                            + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
-                    let pal_idx_guard;
-                    let pal_guard;
-                    let (pal, pal_idx) = if t.frame_thread.pass != 0 {
-                        let p = t.frame_thread.pass & 1;
-                        let index = (((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
-                            + ((t.b.x as isize >> 1) as isize + (t.b.y as isize & 1)) as isize)
-                            as isize;
-                        let pal_idx_offset =
-                            ts.frame_thread[p as usize].pal_idx.load(Ordering::Relaxed);
-                        let len = (cbw4 * cbh4 * 8) as usize;
-                        pal_idx_guard = f
-                            .frame_thread
-                            .pal_idx
-                            .index(pal_idx_offset..pal_idx_offset + len);
-                        ts.frame_thread[p as usize]
-                            .pal_idx
-                            .store(pal_idx_offset + len, Ordering::Relaxed);
-                        pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
-                        (&*pal_guard, &*pal_idx_guard)
-                    } else {
-                        let scratch = t.scratch.inter_intra_mut();
-                        (
-                            scratch.interintra_edge_pal.pal.buf::<BD>(),
-                            scratch.pal_idx_uv.as_slice(),
-                        )
-                    };
-                    f.dsp.ipred.pal_pred.call::<BD>(
-                        (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel)
-                            .offset(uv_dstoff as isize),
-                        f.cur.stride[1],
-                        pal[1].as_ptr(),
-                        pal_idx.as_ptr(),
-                        cbw4 * 4,
-                        cbh4 * 4,
-                    );
-                    f.dsp.ipred.pal_pred.call::<BD>(
-                        (f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel)
-                            .offset(uv_dstoff as isize),
-                        f.cur.stride[1],
-                        pal[2].as_ptr(),
-                        pal_idx.as_ptr(),
-                        cbw4 * 4,
-                        cbh4 * 4,
-                    );
-                    if debug_block_info!(f, t.b) && 0 != 0 {
-                        hex_dump::<BD>(
-                            (f.cur.data.as_ref().unwrap().data[1] as *mut BD::Pixel)
-                                .offset(uv_dstoff as isize),
-                            BD::pxstride(f.cur.stride[1] as usize),
-                            cbw4 as usize * 4,
-                            cbh4 as usize * 4,
-                            "u-pal-pred",
-                        );
-                        hex_dump::<BD>(
-                            (f.cur.data.as_ref().unwrap().data[2] as *mut BD::Pixel)
-                                .offset(uv_dstoff as isize),
-                            BD::pxstride(f.cur.stride[1] as usize),
-                            cbw4 as usize * 4,
-                            cbh4 as usize * 4,
-                            "v-pal-pred",
-                        );
-                    }
-                }
-                let sm_uv_fl =
-                    sm_uv_flag(&f.a[t.a], cbx4 as usize) | sm_uv_flag(&mut t.l, cby4 as usize);
-                let uv_sb_has_tr = if init_x + 16 >> ss_hor < cw4 {
-                    true
-                } else if init_y != 0 {
-                    false
-                } else {
-                    intra_edge_flags.contains(EdgeFlags::I420_TOP_HAS_RIGHT >> f.cur.p.layout)
-                };
-                let uv_sb_has_bl = if init_x != 0 {
-                    false
-                } else if init_y + 16 >> ss_ver < ch4 {
-                    true
-                } else {
-                    intra_edge_flags.contains(EdgeFlags::I420_LEFT_HAS_BOTTOM >> f.cur.p.layout)
-                };
-                let sub_cw4 = cmp::min(cw4, init_x + 16 >> ss_hor);
-                let mut pl = 0;
-                while pl < 2 {
-                    y = init_y >> ss_ver;
-                    t.b.y += init_y;
-                    while y < sub_ch4 {
-                        let mut dst: *mut BD::Pixel = (f.cur.data.as_ref().unwrap().data
-                            [(1 + pl) as usize]
-                            as *mut BD::Pixel)
-                            .offset(
-                                (4 * ((t.b.y >> ss_ver) as isize * BD::pxstride(stride)
-                                    + (t.b.x + init_x >> ss_hor) as isize))
-                                    as isize,
-                            );
-                        x = init_x >> ss_hor;
-                        t.b.x += init_x;
-                        while x < sub_cw4 {
-                            let mut angle;
-                            let edge_flags: EdgeFlags;
-                            let uv_mode: IntraPredMode;
-                            let xpos;
-                            let ypos;
-                            let xstart;
-                            let ystart;
-                            let m: IntraPredMode;
-                            if !(intra.uv_mode as c_int == CFL_PRED as c_int
-                                && intra.cfl_alpha[pl as usize] as c_int != 0
-                                || intra.pal_sz[1] as c_int != 0)
-                            {
-                                angle = intra.uv_angle as c_int;
-                                edge_flags = (if (y > init_y >> ss_ver || !uv_sb_has_tr)
-                                    && x + (*uv_t_dim).w as c_int >= sub_cw4
-                                {
-                                    EdgeFlags::empty()
-                                } else {
-                                    EdgeFlags::I444_TOP_HAS_RIGHT
-                                }) | (if x > init_x >> ss_hor
-                                    || !uv_sb_has_bl && y + (*uv_t_dim).h as c_int >= sub_ch4
-                                {
-                                    EdgeFlags::empty()
-                                } else {
-                                    EdgeFlags::I444_LEFT_HAS_BOTTOM
-                                });
-                                let top_sb_edge_slice = if t.b.y & !ss_ver & f.sb_step - 1 == 0 {
-                                    let sby = t.b.y >> f.sb_shift;
-                                    let offset = (f.ipred_edge_off * (1 + pl)) as isize
-                                        + (f.sb128w * 128 * (sby - 1)) as isize;
-                                    Some((&f.ipred_edge, offset))
-                                } else {
-                                    None
-                                };
-                                uv_mode = (if intra.uv_mode as c_int == CFL_PRED as c_int {
-                                    DC_PRED as c_int
-                                } else {
-                                    intra.uv_mode as c_int
-                                }) as IntraPredMode;
-                                xpos = t.b.x >> ss_hor;
-                                ypos = t.b.y >> ss_ver;
-                                xstart = (*ts).tiling.col_start >> ss_hor;
-                                ystart = (*ts).tiling.row_start >> ss_ver;
-                                let edge_array = t
-                                    .scratch
-                                    .inter_intra_mut()
-                                    .interintra_edge_pal
-                                    .edge
-                                    .buf_mut::<BD>();
-                                let edge_offset = 128;
-                                let data_stride = BD::pxstride(f.cur.stride[1]);
-                                let data_width = 4 * ts.tiling.col_end >> ss_hor;
-                                let data_height = 4 * ts.tiling.row_end >> ss_ver;
-                                let data_diff = (data_height - 1) as isize * data_stride;
-                                let dstuv_slice = slice::from_raw_parts(
-                                    (f.cur.data.as_ref().unwrap().data[1 + pl as usize]
-                                        as *const BD::Pixel)
-                                        .offset(cmp::min(data_diff, 0)),
-                                    data_diff.unsigned_abs() + data_width as usize,
+                            if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
+                                hex_dump::<BD>(
+                                    edge.offset(-(uv_t_dim.h as isize * 4)),
+                                    uv_t_dim.h as usize * 4,
+                                    uv_t_dim.h as usize * 4,
+                                    2,
+                                    "l",
                                 );
-                                m = rav1d_prepare_intra_edges(
-                                    xpos,
-                                    xpos > xstart,
-                                    ypos,
-                                    ypos > ystart,
-                                    ts.tiling.col_end >> ss_hor,
-                                    ts.tiling.row_end >> ss_ver,
-                                    edge_flags,
-                                    dstuv_slice,
-                                    stride,
-                                    top_sb_edge_slice,
-                                    uv_mode,
-                                    &mut angle,
-                                    (*uv_t_dim).w as c_int,
-                                    (*uv_t_dim).h as c_int,
-                                    intra_edge_filter,
-                                    edge_array,
-                                    edge_offset,
-                                    BD::from_c(f.bitdepth_max),
+                                hex_dump::<BD>(edge, 0, 1, 1, "tl");
+                                hex_dump::<BD>(
+                                    edge.add(1),
+                                    uv_t_dim.w as usize * 4,
+                                    uv_t_dim.w as usize * 4,
+                                    2,
+                                    "t",
                                 );
-                                angle |= intra_edge_filter_flag;
-                                let edge = edge_array.as_ptr().add(edge_offset);
-                                (*dsp).ipred.intra_pred[m as usize].call(
+                                hex_dump::<BD>(
                                     dst,
-                                    stride,
-                                    edge,
-                                    (*uv_t_dim).w as c_int * 4,
-                                    (*uv_t_dim).h as c_int * 4,
-                                    angle | sm_uv_fl,
-                                    4 * f.bw + ss_hor - 4 * (t.b.x & !ss_hor) >> ss_hor,
-                                    4 * f.bh + ss_ver - 4 * (t.b.y & !ss_ver) >> ss_ver,
-                                    BD::from_c(f.bitdepth_max),
+                                    stride as usize,
+                                    uv_t_dim.w as usize * 4,
+                                    uv_t_dim.h as usize * 4,
+                                    if pl != 0 {
+                                        "v-intra-pred"
+                                    } else {
+                                        "u-intra-pred"
+                                    },
                                 );
-                                if debug_block_info!(f, t.b) && 0 != 0 {
-                                    hex_dump::<BD>(
-                                        edge.offset(-(((*uv_t_dim).h as c_int * 4) as isize)),
-                                        (*uv_t_dim).h as usize * 4,
-                                        (*uv_t_dim).h as usize * 4,
-                                        2,
-                                        "l",
-                                    );
-                                    hex_dump::<BD>(edge, 0, 1, 1, "tl");
-                                    hex_dump::<BD>(
-                                        edge.offset(1),
-                                        (*uv_t_dim).w as usize * 4,
-                                        (*uv_t_dim).w as usize * 4,
-                                        2,
-                                        "t",
-                                    );
-                                    hex_dump::<BD>(
-                                        dst,
-                                        stride as usize,
-                                        (*uv_t_dim).w as usize * 4,
-                                        (*uv_t_dim).h as usize * 4,
-                                        if pl != 0 {
-                                            "v-intra-pred"
-                                        } else {
-                                            "u-intra-pred"
-                                        },
-                                    );
-                                }
                             }
-                            if b.skip == 0 {
-                                let mut txtp: TxfmType = DCT_DCT;
-                                let eob;
-                                let mut cf_guard;
-                                let cf;
-                                if t.frame_thread.pass != 0 {
-                                    let p = t.frame_thread.pass & 1;
-                                    let len =
-                                        (*uv_t_dim).w as usize * 4 * (*uv_t_dim).h as usize * 4;
-                                    let cf_idx =
-                                        ts.frame_thread[p as usize].cf.load(Ordering::Relaxed);
-                                    cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
-                                    cf = &mut *cf_guard;
-                                    ts.frame_thread[p as usize]
-                                        .cf
-                                        .store(cf_idx + len, Ordering::Relaxed);
-                                    let cbi = f.frame_thread.cbi
-                                        [(t.b.y as isize * f.b4_stride + t.b.x as isize) as usize]
-                                        [(pl + 1) as usize]
-                                        .load(Ordering::Relaxed);
-                                    eob = cbi.eob().into();
-                                    txtp = cbi.txtp();
-                                } else {
-                                    let mut cf_ctx: u8 = 0;
-                                    let a_start = (cbx4 + x) as usize;
-                                    let a_ccoef = &f.a[t.a].ccoef[pl];
-                                    let l_start = (cby4 + y) as usize;
-                                    let l_ccoef = &t.l.ccoef[pl];
-                                    eob = decode_coefs::<BD>(
-                                        f,
-                                        t.ts,
-                                        ts_c.as_deref_mut().unwrap(),
-                                        debug_block_info!(f, t.b),
-                                        &mut t.scratch,
-                                        &mut t.cf,
-                                        &mut a_ccoef
-                                            .index_mut(a_start..a_start + (*uv_t_dim).w as usize),
-                                        &mut l_ccoef
-                                            .index_mut(l_start..l_start + (*uv_t_dim).h as usize),
-                                        b.uvtx as RectTxfmSize,
-                                        bs,
-                                        b,
-                                        1 + pl,
-                                        CfSelect::Task,
-                                        &mut txtp,
-                                        &mut cf_ctx,
-                                    );
-                                    cf = &mut BD::select_mut(&mut t.cf).0;
-                                    if debug_block_info!(f, t.b) {
-                                        println!(
+                        }
+
+                        if b.skip == 0 {
+                            let mut txtp = DCT_DCT;
+                            let eob;
+                            let mut cf_guard;
+                            let cf;
+                            if t.frame_thread.pass != 0 {
+                                let p = (t.frame_thread.pass & 1) as usize;
+                                let len = uv_t_dim.w as usize * 4 * uv_t_dim.h as usize * 4;
+                                let cf_idx = ts.frame_thread[p].cf.load(Ordering::Relaxed);
+                                cf_guard = f.frame_thread.cf.mut_slice_as(cf_idx..cf_idx + len);
+                                cf = &mut *cf_guard;
+                                ts.frame_thread[p].cf.store(cf_idx + len, Ordering::Relaxed);
+                                let cbi = f.frame_thread.cbi
+                                    [t.b.y as usize * f.b4_stride as usize + t.b.x as usize]
+                                    [pl + 1]
+                                    .load(Ordering::Relaxed);
+                                eob = cbi.eob().into();
+                                txtp = cbi.txtp();
+                            } else {
+                                let mut cf_ctx: u8 = 0;
+                                let a_start = (cbx4 + x) as usize;
+                                let a_ccoef = &f.a[t.a].ccoef[pl];
+                                let l_start = (cby4 + y) as usize;
+                                let l_ccoef = &t.l.ccoef[pl];
+                                eob = decode_coefs::<BD>(
+                                    f,
+                                    t.ts,
+                                    ts_c.as_deref_mut().unwrap(),
+                                    debug_block_info!(f, t.b),
+                                    &mut t.scratch,
+                                    &mut t.cf,
+                                    &mut a_ccoef.index_mut(a_start..a_start + uv_t_dim.w as usize),
+                                    &mut l_ccoef.index_mut(l_start..l_start + uv_t_dim.h as usize),
+                                    b.uvtx as RectTxfmSize,
+                                    bs,
+                                    b,
+                                    1 + pl,
+                                    CfSelect::Task,
+                                    &mut txtp,
+                                    &mut cf_ctx,
+                                );
+                                cf = &mut BD::select_mut(&mut t.cf).0;
+                                if debug_block_info!(f, t.b) {
+                                    println!(
                                             "Post-uv-cf-blk[pl={},tx={},txtp={},eob={}]: r={} [x={},cbx4={}]",
                                             pl,
-                                            b.uvtx as c_int,
-                                            txtp as c_uint,
+                                            b.uvtx,
+                                            txtp,
                                             eob,
                                             ts_c.as_deref().unwrap().msac.rng,
                                             x,
                                             cbx4,
                                         );
-                                    }
-                                    CaseSet::<16, true>::many(
-                                        [l_ccoef, a_ccoef],
-                                        [
-                                            cmp::min(
-                                                (*uv_t_dim).h as i32,
-                                                f.bh - t.b.y + ss_ver >> ss_ver,
-                                            ) as usize,
-                                            cmp::min(
-                                                (*uv_t_dim).w as i32,
-                                                f.bw - t.b.x + ss_hor >> ss_hor,
-                                            ) as usize,
-                                        ],
-                                        [(cby4 + y) as usize, (cbx4 + x) as usize],
-                                        |case, dir| {
-                                            case.set_disjoint(dir, cf_ctx);
-                                        },
-                                    );
                                 }
-                                if eob >= 0 {
-                                    if debug_block_info!(f, t.b) && 0 != 0 {
-                                        coef_dump(
-                                            cf,
-                                            (*uv_t_dim).h as usize * 4,
-                                            (*uv_t_dim).w as usize * 4,
-                                            3,
-                                            "dq",
-                                        );
-                                    }
-                                    ((*dsp).itx.itxfm_add[b.uvtx as usize][txtp as usize])
-                                        .expect("non-null function pointer")(
-                                        dst.cast(),
-                                        stride,
-                                        cf.as_mut_ptr().cast(),
-                                        eob,
-                                        f.bitdepth_max,
-                                    );
-                                    if debug_block_info!(f, t.b) && 0 != 0 {
-                                        hex_dump::<BD>(
-                                            dst,
-                                            stride as usize,
-                                            (*uv_t_dim).w as usize * 4,
-                                            (*uv_t_dim).h as usize * 4,
-                                            "recon",
-                                        );
-                                    }
-                                }
-                            } else if t.frame_thread.pass == 0 {
-                                CaseSet::<16, false>::many(
-                                    [&t.l, &f.a[t.a]],
-                                    [(*uv_t_dim).h as usize, (*uv_t_dim).w as usize],
+                                CaseSet::<16, true>::many(
+                                    [l_ccoef, a_ccoef],
+                                    [
+                                        cmp::min(uv_t_dim.h as i32, f.bh - t.b.y + ss_ver >> ss_ver)
+                                            as usize,
+                                        cmp::min(uv_t_dim.w as i32, f.bw - t.b.x + ss_hor >> ss_hor)
+                                            as usize,
+                                    ],
                                     [(cby4 + y) as usize, (cbx4 + x) as usize],
                                     |case, dir| {
-                                        case.set_disjoint(&dir.ccoef[pl as usize], 0x40);
+                                        case.set_disjoint(dir, cf_ctx);
                                     },
                                 );
                             }
-                            dst = dst.offset(((*uv_t_dim).w as c_int * 4) as isize);
-                            x += (*uv_t_dim).w as c_int;
-                            t.b.x += ((*uv_t_dim).w as c_int) << ss_hor;
+                            if eob >= 0 {
+                                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
+                                    coef_dump(
+                                        cf,
+                                        uv_t_dim.h as usize * 4,
+                                        uv_t_dim.w as usize * 4,
+                                        3,
+                                        "dq",
+                                    );
+                                }
+                                (f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize])
+                                    .expect("non-null function pointer")(
+                                    dst.cast(),
+                                    stride,
+                                    cf.as_mut_ptr().cast(),
+                                    eob,
+                                    f.bitdepth_max,
+                                );
+                                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
+                                    hex_dump::<BD>(
+                                        dst,
+                                        stride as usize,
+                                        uv_t_dim.w as usize * 4,
+                                        uv_t_dim.h as usize * 4,
+                                        "recon",
+                                    );
+                                }
+                            }
+                        } else if t.frame_thread.pass == 0 {
+                            CaseSet::<16, false>::many(
+                                [&t.l, &f.a[t.a]],
+                                [uv_t_dim.h as usize, uv_t_dim.w as usize],
+                                [(cby4 + y) as usize, (cbx4 + x) as usize],
+                                |case, dir| {
+                                    case.set_disjoint(&dir.ccoef[pl], 0x40);
+                                },
+                            );
                         }
-                        t.b.x -= x << ss_hor;
-                        y += (*uv_t_dim).h as c_int;
-                        t.b.y += ((*uv_t_dim).h as c_int) << ss_ver;
+                        dst = dst.add(uv_t_dim.w as usize * 4);
+                        x += uv_t_dim.w as c_int;
+                        t.b.x += (uv_t_dim.w as c_int) << ss_hor;
                     }
-                    t.b.y -= y << ss_ver;
-                    pl += 1;
+                    t.b.x -= x << ss_hor;
+                    y += uv_t_dim.h as c_int;
+                    t.b.y += (uv_t_dim.h as c_int) << ss_ver;
                 }
+                t.b.y -= y << ss_ver;
             }
-            init_x += 16 as c_int;
         }
-        init_y += 16 as c_int;
     }
 }
 
@@ -3985,7 +3958,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         t.tl_4x4_filter = filter_2d;
     }
 
-    if debug_block_info!(f, t.b) && 0 != 0 {
+    if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
         hex_dump::<BD>(
             dst,
             f.cur.stride[0] as usize,
@@ -4161,7 +4134,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 );
                             }
                             if eob >= 0 {
-                                if debug_block_info!(f, t.b) && 0 != 0 {
+                                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     coef_dump(
                                         cf,
                                         uvtx.h as usize * 4,
@@ -4178,7 +4151,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                     eob,
                                     f.bitdepth_max,
                                 );
-                                if debug_block_info!(f, t.b) && 0 != 0 {
+                                if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
                                         &mut *uvdst.offset((4 * x) as isize),
                                         f.cur.stride[1] as usize,
