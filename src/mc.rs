@@ -1085,17 +1085,16 @@ unsafe fn resize_rust<BD: BitDepth>(
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     dst_w: c_int,
-    mut h: c_int,
+    h: c_int,
     src_w: c_int,
     dx: c_int,
     mx0: c_int,
     bd: BD,
 ) {
-    loop {
+    for _ in 0..h {
         let mut mx = mx0;
         let mut src_x = -1;
-        let mut x = 0;
-        while x < dst_w {
+        for x in 0..dst_w {
             let F = &dav1d_resize_filter[(mx >> 8) as usize];
             *dst.offset(x as isize) = bd.iclip_pixel(
                 -(F[0] as c_int
@@ -1120,14 +1119,9 @@ unsafe fn resize_rust<BD: BitDepth>(
             mx += dx;
             src_x += mx >> 14;
             mx &= 0x3fff;
-            x += 1;
         }
         dst = dst.offset(BD::pxstride(dst_stride));
         src = src.offset(BD::pxstride(src_stride));
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
     }
 }
 
