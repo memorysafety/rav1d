@@ -1032,8 +1032,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     let mut blk = top_ext as usize * dst_stride;
     let center_w = (bw - left_ext as isize - right_ext as isize) as c_int;
     let center_h = (bh - top_ext as isize - bottom_ext as isize) as c_int;
-    let mut y_0 = 0;
-    while y_0 < center_h {
+    for _ in 0..center_h {
         BD::pixel_copy(
             &mut dst[blk + left_ext as usize..][..center_w as usize],
             std::slice::from_raw_parts(r#ref, center_w as usize),
@@ -1051,14 +1050,12 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
         }
         r#ref = r#ref.offset(ref_stride);
         blk += dst_stride;
-        y_0 += 1;
     }
 
     // copy top
     let mut dst_off = 0;
     let blk = top_ext as usize * dst_stride;
-    let mut y_1 = 0;
-    while y_1 < top_ext {
+    for _ in 0..top_ext {
         let (front, back) = dst.split_at_mut(blk);
         BD::pixel_copy(
             &mut front[dst_off..][..bw as usize],
@@ -1066,13 +1063,11 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             bw as usize,
         );
         dst_off += dst_stride;
-        y_1 += 1;
     }
 
     // copy bottom
     dst_off += center_h as usize * dst_stride;
-    let mut y_2 = 0;
-    while y_2 < bottom_ext {
+    for _ in 0..bottom_ext {
         let (front, back) = dst.split_at_mut(dst_off);
         BD::pixel_copy(
             &mut back[..bw as usize],
@@ -1080,7 +1075,6 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             bw as usize,
         );
         dst_off += dst_stride;
-        y_2 += 1;
     }
 }
 
