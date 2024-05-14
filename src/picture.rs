@@ -15,7 +15,6 @@ use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::include::dav1d::picture::Dav1dPicture;
 use crate::include::dav1d::picture::Rav1dPicAllocator;
 use crate::include::dav1d::picture::Rav1dPicture;
-use crate::include::dav1d::picture::Rav1dPictureData;
 use crate::include::dav1d::picture::Rav1dPictureParameters;
 use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::error::Dav1dResult;
@@ -195,63 +194,6 @@ impl Rav1dPicAllocator {
         let release = self.release_picture_callback == dav1d_default_picture_release;
         assert!(alloc == release); // This should be impossible since these `fn`s are private.
         alloc && release
-    }
-}
-
-impl Rav1dPicAllocator {
-    pub fn alloc_picture_data(
-        &self,
-        w: c_int,
-        h: c_int,
-        seq_hdr: Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>,
-        frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
-    ) -> Rav1dResult<Rav1dPicture> {
-        let pic = Rav1dPicture {
-            p: Rav1dPictureParameters {
-                w,
-                h,
-                layout: seq_hdr.layout,
-                bpc: 8 + 2 * seq_hdr.hbd,
-            },
-            seq_hdr: Some(seq_hdr),
-            frame_hdr,
-            ..Default::default()
-        };
-        let mut pic_c = pic.to::<Dav1dPicture>();
-        // Safety: `pic_c` is a valid `Dav1dPicture` with `data`, `stride`, `allocator_data` unset.
-        let result = unsafe { (self.alloc_picture_callback)(&mut pic_c, self.cookie) };
-        result.try_to::<Rav1dResult>().unwrap()?;
-        // `data`, `stride`, and `allocator_data` are the only fields set by the allocator.
-        // Of those, only `data` and `allocator_data` are read through `r#ref`,
-        // so we need to read those directly first and allocate the `Arc`.
-        let data = pic_c.data;
-        let allocator_data = pic_c.allocator_data;
-        let mut pic = pic_c.to::<Rav1dPicture>();
-        // TODO fallible allocation
-        pic.data = Some(Arc::new(Rav1dPictureData {
-            data: data.map(|data| data.unwrap().as_ptr()),
-            allocator_data,
-            allocator: self.clone(),
-        }));
-        Ok(pic)
-    }
-
-    pub fn dealloc_picture_data(
-        &self,
-        data: [*mut c_void; 3],
-        allocator_data: Option<NonNull<c_void>>,
-    ) {
-        let data = data.map(NonNull::new);
-        let mut pic_c = Dav1dPicture {
-            data,
-            allocator_data,
-            ..Default::default()
-        };
-        // Safety: `pic_c` contains the same `data` and `allocator_data`
-        // that `Self::alloc_picture_data` set, which now get deallocated here.
-        unsafe {
-            (self.release_picture_callback)(&mut pic_c, self.cookie);
-        }
     }
 }
 
