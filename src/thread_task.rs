@@ -16,6 +16,7 @@ use crate::src::error::Rav1dError::ENOMEM;
 use crate::src::error::Rav1dResult;
 use crate::src::fg_apply::rav1d_apply_grain_row;
 use crate::src::fg_apply::rav1d_prep_grain;
+use crate::src::internal::Grain;
 use crate::src::internal::Rav1dBitDepthDSPContext;
 use crate::src::internal::Rav1dContext;
 use crate::src::internal::Rav1dFrameContext;
@@ -442,6 +443,11 @@ pub(crate) fn rav1d_task_delayed_fg(
         delayed_fg.in_0 = in_0.clone();
         delayed_fg.out = out.clone();
         delayed_fg.type_0 = TaskType::FgPrep;
+        delayed_fg.grain = match out.p.bpc {
+            8 => Grain::Bpc8(Default::default()),
+            10 | 12 => Grain::Bpc16(Default::default()),
+            _ => unreachable!(),
+        }
     }
     let task_thread_lock = ttd.lock.lock().unwrap();
     ttd.delayed_fg_exec.store(1, Ordering::Relaxed);

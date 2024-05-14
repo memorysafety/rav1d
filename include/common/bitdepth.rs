@@ -299,10 +299,6 @@ impl BitDepth for BitDepth8 {
     }
 
     fn select_grain_mut(grain: &mut Grain) -> &mut GrainBD<Self> {
-        if !matches!(grain, Grain::Bpc8(..)) {
-            *grain = Grain::Bpc8(Default::default());
-        }
-
         match grain {
             Grain::Bpc8(grain) => grain,
             _ => unreachable!(),
@@ -371,10 +367,6 @@ impl BitDepth for BitDepth16 {
     }
 
     fn select_grain_mut(grain: &mut Grain) -> &mut GrainBD<Self> {
-        if !matches!(grain, Grain::Bpc16(..)) {
-            *grain = Grain::Bpc16(Default::default());
-        }
-
         match grain {
             Grain::Bpc16(grain) => grain,
             _ => unreachable!(),
