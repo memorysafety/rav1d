@@ -4429,8 +4429,8 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
         return;
     }
     let y = sby * f.sb_step * 4;
-    let ss_ver = (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-    let h = (*f).sr_cur.p.p.h + 127 & !127;
+    let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+    let h = f.sr_cur.p.p.h + 127 & !127;
     let mut sr_p: [&mut [BD::Pixel]; 3] = [
         slice::from_raw_parts_mut(
             f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[0]].cast::<BD::Pixel>(),
