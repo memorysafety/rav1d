@@ -4309,6 +4309,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
         rav1d_loopfilter_sbrow_rows::<BD>(f, &mut p, &p_offset, mask_offset as usize, sby);
     }
     if cdef != 0 || f.lf.restore_planes != 0 {
+        // Store loop filtered pixels required by CDEF / LR.
         rav1d_copy_lpf::<BD>(c, f, &p, &p_offset, sby);
     }
 }
