@@ -4482,9 +4482,10 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
     let sby_off = f.sb128w * 128 * sby;
     let x_off = ts.tiling.col_start;
 
-    let y: *const BD::Pixel = (f.cur.data.as_ref().unwrap().data[0] as *const BD::Pixel)
-        .offset((x_off * 4) as isize)
-        .offset((((t.b.y + f.sb_step) * 4 - 1) as isize * BD::pxstride(f.cur.stride[0])) as isize);
+    let y: *const BD::Pixel = (f.cur.data.as_ref().unwrap().data[0] as *const BD::Pixel).offset(
+        (x_off * 4) as isize
+            + ((t.b.y + f.sb_step) * 4 - 1) as isize * BD::pxstride(f.cur.stride[0]),
+    );
     let ipred_edge_off = (f.ipred_edge_off * 0) + (sby_off + x_off * 4) as usize;
     let n = 4 * (ts.tiling.col_end - x_off) as usize;
     BD::pixel_copy(
@@ -4495,11 +4496,9 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
         n,
     );
 
-    if f.cur.p.layout as c_uint != Rav1dPixelLayout::I400 as c_int as c_uint {
-        let ss_ver =
-            (f.cur.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-        let ss_hor =
-            (f.cur.p.layout as c_uint != Rav1dPixelLayout::I444 as c_int as c_uint) as c_int;
+    if f.cur.p.layout != Rav1dPixelLayout::I400 {
+        let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
+        let ss_hor = (f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
 
         let uv_off: ptrdiff_t = (x_off * 4 >> ss_hor) as isize
             + (((t.b.y + f.sb_step) * 4 >> ss_ver) - 1) as isize * BD::pxstride(f.cur.stride[1]);
