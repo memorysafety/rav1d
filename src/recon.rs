@@ -4532,9 +4532,10 @@ pub(crate) unsafe fn rav1d_copy_pal_block_y<BD: BitDepth>(
 ) {
     let pal_guard;
     let pal = if t.frame_thread.pass != 0 {
-        let index = ((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
-            + ((t.b.x >> 1) + (t.b.y & 1)) as isize;
-        pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
+        let x = t.b.x as usize;
+        let y = t.b.y as usize;
+        let index = ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
+        pal_guard = f.frame_thread.pal.index::<BD>(index);
         &pal_guard[0]
     } else {
         &t.scratch.inter_intra().interintra_edge_pal.pal.buf::<BD>()[0]
@@ -4557,15 +4558,16 @@ pub(crate) unsafe fn rav1d_copy_pal_block_uv<BD: BitDepth>(
 ) {
     let pal_guard;
     let pal = if t.frame_thread.pass != 0 {
-        let index = ((t.b.y >> 1) + (t.b.x & 1)) as isize * (f.b4_stride >> 1)
-            + ((t.b.x >> 1) + (t.b.y & 1)) as isize;
-        pal_guard = f.frame_thread.pal.index::<BD>(index as usize);
+        let x = t.b.x as usize;
+        let y = t.b.y as usize;
+        let index = ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
+        pal_guard = f.frame_thread.pal.index::<BD>(index);
         &pal_guard
     } else {
         t.scratch.inter_intra().interintra_edge_pal.pal.buf::<BD>()
     };
     // see aomedia bug 2183 for why we use luma coordinates here
-    for pl in 1..=2 {
+    for pl in 1..3 {
         for x in 0..bw4 {
             BD::select_mut(&mut t.al_pal)[0][bx4 + x][pl] = pal[pl];
         }
