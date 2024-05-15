@@ -590,15 +590,11 @@ impl Pal {
     /// Caller must ensure that no elements of the resulting borrowed element is
     /// concurrently borrowed (immutably or mutably) at all during the lifetime
     /// of the returned mutable borrow.
-    pub unsafe fn index_mut<'a: 'b, 'b, BD: BitDepth>(
+    pub fn index_mut<'a: 'b, 'b, BD: BitDepth>(
         &'a self,
         index: usize,
     ) -> DisjointMutGuard<'b, AlignedVec64<u8>, PalArray<BD>> {
-        // SAFETY: The preconditions of our `index_mut` safety imply that the
-        // indexed region we are mutably borrowing is not concurrently borrowed
-        // and will not be borrowed during the lifetime of the returned
-        // reference.
-        unsafe { self.data.mut_element_as(index) }
+        self.data.mut_element_as(index)
     }
 }
 
