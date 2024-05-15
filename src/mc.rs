@@ -719,8 +719,8 @@ unsafe fn w_avg_rust<BD: BitDepth>(
 unsafe fn mask_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
-    mut tmp1: *const i16,
-    mut tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: usize,
     h: usize,
     mut mask: *const u8,
@@ -730,18 +730,20 @@ unsafe fn mask_rust<BD: BitDepth>(
     let sh = intermediate_bits + 6;
     let rnd = (32 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 64;
     let dst_stride = BD::pxstride(dst_stride);
+    let mut tmp1 = tmp1.as_slice();
+    let mut tmp2 = tmp2.as_slice();
     for _ in 0..h {
         for x in 0..w {
             *dst.offset(x as isize) = bd.iclip_pixel(
-                (*tmp1.offset(x as isize) as i32 * *mask.offset(x as isize) as i32
-                    + *tmp2.offset(x as isize) as i32 * (64 - *mask.offset(x as isize) as i32)
+                (tmp1[x] as i32 * *mask.offset(x as isize) as i32
+                    + tmp2[x] as i32 * (64 - *mask.offset(x as isize) as i32)
                     + rnd)
                     >> sh,
             );
         }
 
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
+        tmp1 = &tmp1[w..];
+        tmp2 = &tmp2[w..];
         mask = mask.offset(w as isize);
         dst = dst.offset(dst_stride as isize);
     }
@@ -820,8 +822,8 @@ unsafe fn blend_h_rust<BD: BitDepth>(
 unsafe fn w_mask_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     dst_stride: usize,
-    tmp1: *const i16,
-    tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: usize,
     h: usize,
     mask: *mut u8,
@@ -833,7 +835,6 @@ unsafe fn w_mask_rust<BD: BitDepth>(
     let dst_stride = BD::pxstride(dst_stride);
     let dst =
         std::slice::from_raw_parts_mut(dst, if h == 0 { 0 } else { (h - 1) * dst_stride + w });
-    let [tmp1, tmp2] = [tmp1, tmp2].map(|tmp| std::slice::from_raw_parts(tmp, h * w));
     let mut mask =
         std::slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
     let sign = sign as u8;
@@ -1329,8 +1330,8 @@ pub type w_avg_fn = unsafe extern "C" fn(
 pub type mask_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
-    *const i16,
-    *const i16,
+    &[i16; COMPINTER_LEN],
+    &[i16; COMPINTER_LEN],
     c_int,
     c_int,
     *const u8,
@@ -1340,8 +1341,8 @@ pub type mask_fn = unsafe extern "C" fn(
 wrap_fn_ptr!(pub unsafe extern "C" fn w_mask(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const i16,
-    tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: c_int,
     h: c_int,
     mask: *mut u8,
@@ -1354,8 +1355,8 @@ impl w_mask::Fn {
         &self,
         dst: *mut BD::Pixel,
         dst_stride: ptrdiff_t,
-        tmp1: *const i16,
-        tmp2: *const i16,
+        tmp1: &[i16; COMPINTER_LEN],
+        tmp2: &[i16; COMPINTER_LEN],
         w: c_int,
         h: c_int,
         mask: *mut u8,
@@ -1730,8 +1731,8 @@ pub(crate) unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const i16,
-    tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: c_int,
     h: c_int,
     mask: *const u8,
@@ -1753,8 +1754,8 @@ pub(crate) unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const i16,
-    tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: c_int,
     h: c_int,
     mask: *mut u8,
@@ -1781,8 +1782,8 @@ pub(crate) unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const i16,
-    tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: c_int,
     h: c_int,
     mask: *mut u8,
@@ -1809,8 +1810,8 @@ pub(crate) unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const i16,
-    tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: c_int,
     h: c_int,
     mask: *mut u8,
@@ -2021,8 +2022,8 @@ macro_rules! decl_fn {
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
-            tmp1: *const i16,
-            tmp2: *const i16,
+            tmp1: &[i16; COMPINTER_LEN],
+            tmp2: &[i16; COMPINTER_LEN],
             w: c_int,
             h: c_int,
             mask: *const u8,
