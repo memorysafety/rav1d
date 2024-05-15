@@ -54,14 +54,13 @@ unsafe fn put_rust<BD: BitDepth>(
 
 #[inline(never)]
 unsafe fn prep_rust<BD: BitDepth>(
-    tmp: *mut i16,
+    tmp: &mut [i16],
     src: *const BD::Pixel,
     src_stride: usize,
     w: usize,
     h: usize,
     bd: BD,
 ) {
-    let tmp = slice::from_raw_parts_mut(tmp, w * h);
     let src = slice::from_raw_parts(src, if h == 0 { 0 } else { src_stride * (h - 1) + w });
     let intermediate_bits = bd.get_intermediate_bits();
     for (tmp, src) in iter::zip(tmp.chunks_exact_mut(w), src.chunks(src_stride)).take(h) {
@@ -285,7 +284,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
 
 #[inline(never)]
 unsafe fn prep_8tap_rust<BD: BitDepth>(
-    mut tmp: *mut i16,
+    mut tmp: &mut [i16],
     mut src: *const BD::Pixel,
     src_stride: usize,
     w: usize,
@@ -295,6 +294,8 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
     (h_filter_type, v_filter_type): (Rav1dFilterMode, Rav1dFilterMode),
     bd: BD,
 ) {
+    let mut tmp_ptr = tmp.as_mut_ptr(); // TODO: Remove
+
     let intermediate_bits = bd.get_intermediate_bits();
     let fh = get_filter(mx, w, h_filter_type);
     let fv = get_filter(my, h, v_filter_type);
@@ -319,7 +320,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             mid_ptr = &mut mid[128 * 3..];
             for _ in 0..h {
                 for x in 0..w {
-                    *tmp.offset(x as isize) =
+                    *tmp_ptr.offset(x as isize) =
                         (rav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6)
                             - i32::from(BD::PREP_BIAS))
                         .try_into()
@@ -327,29 +328,29 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
-                tmp = tmp.offset(w as isize);
+                tmp_ptr = tmp_ptr.offset(w as isize);
             }
         } else {
             for _ in 0..h {
                 for x in 0..w {
-                    *tmp.offset(x as isize) =
+                    *tmp_ptr.offset(x as isize) =
                         (rav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits)
                             - i32::from(BD::PREP_BIAS)) as i16;
                 }
 
-                tmp = tmp.offset(w as isize);
+                tmp_ptr = tmp_ptr.offset(w as isize);
                 src = src.offset(src_stride as isize);
             }
         }
     } else if let Some(fv) = fv {
         for _ in 0..h {
             for x in 0..w {
-                *tmp.offset(x as isize) =
+                *tmp_ptr.offset(x as isize) =
                     (rav1d_filter_8tap_rnd(src, x, fv, src_stride, 6 - intermediate_bits)
                         - i32::from(BD::PREP_BIAS)) as i16;
             }
 
-            tmp = tmp.offset(w as isize);
+            tmp_ptr = tmp_ptr.offset(w as isize);
             src = src.offset(src_stride as isize);
         }
     } else {
@@ -551,7 +552,7 @@ unsafe fn put_bilin_scaled_rust<BD: BitDepth>(
 }
 
 unsafe fn prep_bilin_rust<BD: BitDepth>(
-    mut tmp: *mut i16,
+    mut tmp: &mut [i16],
     mut src: *const BD::Pixel,
     src_stride: usize,
     w: usize,
@@ -560,6 +561,8 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
     my: usize,
     bd: BD,
 ) {
+    let mut tmp_ptr = tmp.as_mut_ptr(); // TODO: Remove
+
     let intermediate_bits = bd.get_intermediate_bits();
     let src_stride = BD::pxstride(src_stride);
     if mx != 0 {
@@ -579,35 +582,35 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
             mid_ptr = &mut mid[..];
             for _ in 0..h {
                 for x in 0..w {
-                    *tmp.offset(x as isize) = (filter_bilin_rnd(mid_ptr.as_ptr(), x, my, 128, 4)
-                        - i32::from(BD::PREP_BIAS))
-                        as i16;
+                    *tmp_ptr.offset(x as isize) =
+                        (filter_bilin_rnd(mid_ptr.as_ptr(), x, my, 128, 4)
+                            - i32::from(BD::PREP_BIAS)) as i16;
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
-                tmp = tmp.offset(w as isize);
+                tmp_ptr = tmp_ptr.offset(w as isize);
             }
         } else {
             for _ in 0..h {
                 for x in 0..w {
-                    *tmp.offset(x as isize) =
+                    *tmp_ptr.offset(x as isize) =
                         (filter_bilin_rnd(src, x, mx, 1, 4 - intermediate_bits)
                             - i32::from(BD::PREP_BIAS)) as i16;
                 }
 
-                tmp = tmp.offset(w as isize);
+                tmp_ptr = tmp_ptr.offset(w as isize);
                 src = src.offset(src_stride as isize);
             }
         }
     } else if my != 0 {
         for _ in 0..h {
             for x in 0..w {
-                *tmp.offset(x as isize) =
+                *tmp_ptr.offset(x as isize) =
                     (filter_bilin_rnd(src, x, my, src_stride, 4 - intermediate_bits)
                         - i32::from(BD::PREP_BIAS)) as i16;
             }
 
-            tmp = tmp.offset(w as isize);
+            tmp_ptr = tmp_ptr.offset(w as isize);
             src = src.offset(src_stride as isize);
         }
     } else {
@@ -1219,6 +1222,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct(
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
+    tmp_len: usize,
 ) -> ());
 
 impl mct::Fn {
@@ -1233,10 +1237,19 @@ impl mct::Fn {
         my: c_int,
         bd: BD,
     ) {
-        let tmp = tmp.as_mut_ptr();
         let src = src.cast();
         let bd = bd.into_c();
-        self.get()(tmp, src, src_stride, w, h, mx, my, bd)
+        self.get()(
+            tmp.as_mut_ptr(),
+            src,
+            src_stride,
+            w,
+            h,
+            mx,
+            my,
+            bd,
+            tmp.len(),
+        )
     }
 }
 
@@ -1488,7 +1501,9 @@ macro_rules! filter_fns {
                 mx: c_int,
                 my: c_int,
                 bitdepth_max: c_int,
+                tmp_len: usize,
             ) {
+                let tmp = std::slice::from_raw_parts_mut(tmp, tmp_len);
                 prep_8tap_rust(
                     tmp,
                     src.cast(),
@@ -1614,7 +1629,9 @@ pub(crate) unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
+    tmp_len: usize,
 ) {
+    let tmp = std::slice::from_raw_parts_mut(tmp, tmp_len);
     prep_bilin_rust(
         tmp,
         src.cast(),
