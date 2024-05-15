@@ -323,7 +323,9 @@ unsafe fn create_filter_sbrow(
         let mut frame = fc.frame_thread_progress.frame.try_write().unwrap();
         frame.clear();
         frame.resize_with(prog_sz, || AtomicU32::new(0));
-        let mut copy_lpf = fc.frame_thread_progress.copy_lpf.try_write().unwrap();
+        // copy_lpf is read during task selection, so we are seeing contention
+        // here. This seems rare enough that it is not worth optimizing.
+        let mut copy_lpf = fc.frame_thread_progress.copy_lpf.write().unwrap();
         copy_lpf.clear();
         copy_lpf.resize_with(prog_sz, || AtomicU32::new(0));
         fc.frame_thread_progress.deblock.store(0, Ordering::SeqCst);
