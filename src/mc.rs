@@ -9,6 +9,7 @@ use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
+use crate::src::internal::COMPINTER_LEN;
 use crate::src::internal::EMU_EDGE_LEN;
 use crate::src::levels::Filter2d;
 use crate::src::tables::dav1d_mc_subpel_filters;
@@ -662,8 +663,8 @@ unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
 unsafe fn avg_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
-    mut tmp1: *const i16,
-    mut tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: usize,
     h: usize,
     bd: BD,
@@ -672,16 +673,16 @@ unsafe fn avg_rust<BD: BitDepth>(
     let sh = intermediate_bits + 1;
     let rnd = (1 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 2;
     let dst_stride = BD::pxstride(dst_stride);
+    let mut tmp1 = tmp1.as_slice();
+    let mut tmp2 = tmp2.as_slice();
     for _ in 0..h {
         for x in 0..w {
-            *dst.offset(x as isize) = bd.iclip_pixel(
-                ((*tmp1.offset(x as isize) as i32 + *tmp2.offset(x as isize) as i32 + rnd) >> sh)
-                    .to::<i32>(),
-            );
+            *dst.offset(x as isize) =
+                bd.iclip_pixel(((tmp1[x] as i32 + tmp2[x] as i32 + rnd) >> sh).to::<i32>());
         }
 
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
+        tmp1 = &tmp1[w..];
+        tmp2 = &tmp2[w..];
         dst = dst.offset(dst_stride as isize);
     }
 }
@@ -689,8 +690,8 @@ unsafe fn avg_rust<BD: BitDepth>(
 unsafe fn w_avg_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     dst_stride: usize,
-    mut tmp1: *const i16,
-    mut tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: usize,
     h: usize,
     weight: i32,
@@ -700,18 +701,17 @@ unsafe fn w_avg_rust<BD: BitDepth>(
     let sh = intermediate_bits + 4;
     let rnd = (8 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 16;
     let dst_stride = BD::pxstride(dst_stride);
+    let mut tmp1 = tmp1.as_slice();
+    let mut tmp2 = tmp2.as_slice();
     for _ in 0..h {
         for x in 0..w {
             *dst.offset(x as isize) = bd.iclip_pixel(
-                (*tmp1.offset(x as isize) as i32 * weight
-                    + *tmp2.offset(x as isize) as i32 * (16 - weight)
-                    + rnd)
-                    >> sh,
+                (tmp1[x] as i32 * weight + tmp2[x] as i32 * (16 - weight) + rnd) >> sh,
             );
         }
 
-        tmp1 = tmp1.offset(w as isize);
-        tmp2 = tmp2.offset(w as isize);
+        tmp1 = &tmp1[w..];
+        tmp2 = &tmp2[w..];
         dst = dst.offset(dst_stride as isize);
     }
 }
@@ -1308,8 +1308,8 @@ impl warp8x8t::Fn {
 pub type avg_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
-    *const i16,
-    *const i16,
+    &[i16; COMPINTER_LEN],
+    &[i16; COMPINTER_LEN],
     c_int,
     c_int,
     c_int,
@@ -1318,8 +1318,8 @@ pub type avg_fn = unsafe extern "C" fn(
 pub type w_avg_fn = unsafe extern "C" fn(
     *mut DynPixel,
     ptrdiff_t,
-    *const i16,
-    *const i16,
+    &[i16; COMPINTER_LEN],
+    &[i16; COMPINTER_LEN],
     c_int,
     c_int,
     c_int,
@@ -1686,8 +1686,8 @@ pub(crate) unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const i16,
-    tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: c_int,
     h: c_int,
     bitdepth_max: c_int,
@@ -1707,8 +1707,8 @@ pub(crate) unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
 pub(crate) unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp1: *const i16,
-    tmp2: *const i16,
+    tmp1: &[i16; COMPINTER_LEN],
+    tmp2: &[i16; COMPINTER_LEN],
     w: c_int,
     h: c_int,
     weight: c_int,
@@ -1996,8 +1996,8 @@ macro_rules! decl_fn {
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
-            tmp1: *const i16,
-            tmp2: *const i16,
+            tmp1: &[i16; COMPINTER_LEN],
+            tmp2: &[i16; COMPINTER_LEN],
             w: c_int,
             h: c_int,
             bitdepth_max: c_int,
@@ -2008,8 +2008,8 @@ macro_rules! decl_fn {
         pub(crate) fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
-            tmp1: *const i16,
-            tmp2: *const i16,
+            tmp1: &[i16; COMPINTER_LEN],
+            tmp2: &[i16; COMPINTER_LEN],
             w: c_int,
             h: c_int,
             weight: c_int,

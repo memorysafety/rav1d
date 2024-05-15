@@ -3373,8 +3373,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 (f.dsp.mc.avg)(
                     dst.cast(),
                     f.cur.stride[0],
-                    tmp[0].as_mut_ptr(),
-                    tmp[1].as_mut_ptr(),
+                    &tmp[0],
+                    &tmp[1],
                     bw4 * 4,
                     bh4 * 4,
                     f.bitdepth_max,
@@ -3386,8 +3386,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 (f.dsp.mc.w_avg)(
                     dst.cast(),
                     f.cur.stride[0],
-                    tmp[0].as_mut_ptr(),
-                    tmp[1].as_mut_ptr(),
+                    &tmp[0],
+                    &tmp[1],
                     bw4 * 4,
                     bh4 * 4,
                     jnt_weight,
@@ -3479,8 +3479,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         (f.dsp.mc.avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
-                            tmp[0].as_mut_ptr(),
-                            tmp[1].as_mut_ptr(),
+                            &tmp[0],
+                            &tmp[1],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             f.bitdepth_max,
@@ -3490,8 +3490,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         (f.dsp.mc.w_avg)(
                             uvdst.cast(),
                             f.cur.stride[1],
-                            tmp[0].as_mut_ptr(),
-                            tmp[1].as_mut_ptr(),
+                            &tmp[0],
+                            &tmp[1],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             jnt_weight,

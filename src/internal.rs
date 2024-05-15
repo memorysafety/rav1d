@@ -1060,10 +1060,12 @@ impl AlPal {
     }
 }
 
+pub const COMPINTER_LEN: usize = 128 * 128;
+
 #[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
 pub struct ScratchCompinter {
-    pub compinter: [[i16; 128 * 128]; 2],
+    pub compinter: [[i16; COMPINTER_LEN]; 2],
     pub seg_mask: [u8; 128 * 128],
 }
 
