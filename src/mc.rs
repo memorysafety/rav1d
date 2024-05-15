@@ -1042,12 +1042,12 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
         // extend left edge for this line
         if left_ext != 0 {
             let val = dst[blk + left_ext];
-            dst[blk..][..left_ext].fill(val);
+            BD::pixel_set(&mut dst[blk..], val, left_ext);
         }
         // extend right edge for this line
         if right_ext != 0 {
             let val = dst[blk + left_ext + center_w - 1];
-            dst[blk + left_ext + center_w..][..right_ext].fill(val);
+            BD::pixel_set(&mut dst[blk + left_ext + center_w..], val, right_ext);
         }
         r#ref = r#ref.offset(ref_stride);
         blk += dst_stride;
@@ -1056,9 +1056,9 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     // copy top
     let mut dst_off = 0;
     let blk = top_ext * dst_stride;
+    let (front, back) = dst.split_at_mut(blk);
     for _ in 0..top_ext {
-        let (front, back) = dst.split_at_mut(blk);
-        BD::pixel_copy(&mut front[dst_off..][..bw], &mut back[..bw], bw);
+        BD::pixel_copy(&mut front[dst_off..][..bw], &back[..bw], bw);
         dst_off += dst_stride;
     }
 
@@ -1066,11 +1066,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     dst_off += center_h * dst_stride;
     for _ in 0..bottom_ext {
         let (front, back) = dst.split_at_mut(dst_off);
-        BD::pixel_copy(
-            &mut back[..bw],
-            &mut front[dst_off - dst_stride..][..bw],
-            bw,
-        );
+        BD::pixel_copy(&mut back[..bw], &front[dst_off - dst_stride..][..bw], bw);
         dst_off += dst_stride;
     }
 }
