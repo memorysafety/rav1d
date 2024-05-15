@@ -1,8 +1,6 @@
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::BitDepth16;
 use crate::include::common::bitdepth::BitDepth8;
-use crate::include::common::bitdepth::BitDepthDependentType;
-use crate::include::common::bitdepth::BitDepthUnion;
 use crate::include::common::bitdepth::BPC;
 use crate::include::dav1d::common::Rav1dDataProps;
 use crate::include::dav1d::data::Rav1dData;
@@ -268,8 +266,6 @@ pub(crate) struct Rav1dContext_frame_thread {
 
 pub type GrainLut<Entry> = [[Entry; GRAIN_WIDTH]; GRAIN_HEIGHT + 1];
 
-#[derive(Clone, Copy)]
-#[repr(C)]
 pub struct GrainBD<BD: BitDepth> {
     pub grain_lut: Align16<[GrainLut<BD::Entry>; 3]>,
     // TODO(kkysen) can use `BD::SCALING_LEN` directly with `#![feature(generic_const_exprs)]` when stabilized
@@ -286,10 +282,25 @@ impl<BD: BitDepth> Default for GrainBD<BD> {
     }
 }
 
-pub struct Grain;
+pub enum Grain {
+    #[cfg(feature = "bitdepth_8")]
+    Bpc8(GrainBD<BitDepth8>),
+    #[cfg(feature = "bitdepth_16")]
+    Bpc16(GrainBD<BitDepth16>),
+}
 
-impl BitDepthDependentType for Grain {
-    type T<BD: BitDepth> = GrainBD<BD>;
+impl Default for Grain {
+    fn default() -> Self {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "bitdepth_8")] {
+                Self::Bpc8(Default::default())
+            } else if #[cfg(feature = "bitdepth_16")] {
+                Self::Bpc16(Default::default())
+            } else {
+                compile_error!("No bitdepths enabled");
+            }
+        }
+    }
 }
 
 #[derive(Default)]
@@ -298,7 +309,7 @@ pub(crate) struct TaskThreadData_delayed_fg {
     pub in_0: Rav1dPicture,
     pub out: Rav1dPicture,
     pub type_0: TaskType,
-    pub grain: BitDepthUnion<Grain>,
+    pub grain: Grain,
 }
 
 // TODO(SJC): Remove when TaskThreadData_delayed_fg is thread-safe
