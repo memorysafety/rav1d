@@ -266,8 +266,6 @@ pub(crate) struct Rav1dContext_frame_thread {
 
 pub type GrainLut<Entry> = [[Entry; GRAIN_WIDTH]; GRAIN_HEIGHT + 1];
 
-#[derive(Clone, Copy)]
-#[repr(C)]
 pub struct GrainBD<BD: BitDepth> {
     pub grain_lut: Align16<[GrainLut<BD::Entry>; 3]>,
     // TODO(kkysen) can use `BD::SCALING_LEN` directly with `#![feature(generic_const_exprs)]` when stabilized
@@ -284,12 +282,25 @@ impl<BD: BitDepth> Default for GrainBD<BD> {
     }
 }
 
-#[derive(Default)]
 pub enum Grain {
-    #[default]
-    Uninit,
+    #[cfg(feature = "bitdepth_8")]
     Bpc8(GrainBD<BitDepth8>),
+    #[cfg(feature = "bitdepth_16")]
     Bpc16(GrainBD<BitDepth16>),
+}
+
+impl Default for Grain {
+    fn default() -> Self {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "bitdepth_8")] {
+                Self::Bpc8(Default::default())
+            } else if #[cfg(feature = "bitdepth_16")] {
+                Self::Bpc16(Default::default())
+            } else {
+                compile_error!("No bitdepths enabled");
+            }
+        }
+    }
 }
 
 #[derive(Default)]

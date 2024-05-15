@@ -1,4 +1,3 @@
-use crate::include::common::bitdepth::BitDepth;
 #[cfg(feature = "bitdepth_16")]
 use crate::include::common::bitdepth::BitDepth16;
 #[cfg(feature = "bitdepth_8")]
@@ -443,9 +442,18 @@ pub(crate) fn rav1d_task_delayed_fg(
         delayed_fg.in_0 = in_0.clone();
         delayed_fg.out = out.clone();
         delayed_fg.type_0 = TaskType::FgPrep;
-        delayed_fg.grain = match out.p.bpc {
-            8 => Grain::Bpc8(Default::default()),
-            10 | 12 => Grain::Bpc16(Default::default()),
+
+        // This initialization is done once per call to [`dav1d_apply_grain`].
+        // Nevertheless, it is a 48 KB zero initialization that C avoids,
+        // so we avoid reinitializing here if it already has the correct variant.
+        //
+        // NOTE: If only one bitdepth is enabled `grain` will already be
+        // initialzed to the correct variant, so no update here is needed.
+        #[cfg(all(feature = "bitdepth_8", feature = "bitdepth_16"))]
+        match (out.p.bpc, &delayed_fg.grain) {
+            (8, Grain::Bpc8(_)) | (10 | 12, Grain::Bpc16(_)) => {}
+            (8, _) => delayed_fg.grain = Grain::Bpc8(Default::default()),
+            (10 | 12, _) => delayed_fg.grain = Grain::Bpc16(Default::default()),
             _ => unreachable!(),
         }
     }
@@ -626,33 +634,28 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             let mut delayed_fg_guard = ttd.delayed_fg.try_write().unwrap();
             // re-borrow to allow independent field borrows
             let delayed_fg = &mut *delayed_fg_guard;
-            match delayed_fg.out.p.bpc {
+            let dsp = &Rav1dBitDepthDSPContext::get(delayed_fg.out.p.bpc)
+                .as_ref()
+                .unwrap()
+                .fg;
+            match &mut delayed_fg.grain {
                 #[cfg(feature = "bitdepth_8")]
-                bpc @ 8 => {
-                    let Grain::Bpc8(grain) = &mut delayed_fg.grain else {
-                        unreachable!();
-                    };
+                Grain::Bpc8(grain) => {
                     rav1d_prep_grain::<BitDepth8>(
-                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
+                        dsp,
                         &mut delayed_fg.out,
                         &delayed_fg.in_0,
                         grain,
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
-                bpc @ 10 | bpc @ 12 => {
-                    let Grain::Bpc16(grain) = &mut delayed_fg.grain else {
-                        unreachable!();
-                    };
+                Grain::Bpc16(grain) => {
                     rav1d_prep_grain::<BitDepth16>(
-                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
+                        dsp,
                         &mut delayed_fg.out,
                         &delayed_fg.in_0,
                         grain,
                     );
-                }
-                _ => {
-                    abort();
                 }
             }
             delayed_fg.type_0 = TaskType::FgApply;
@@ -679,14 +682,15 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
             let _ = task_thread_lock.take();
         }
         {
-            match delayed_fg.out.p.bpc {
+            let dsp = &Rav1dBitDepthDSPContext::get(delayed_fg.out.p.bpc)
+                .as_ref()
+                .unwrap()
+                .fg;
+            match &delayed_fg.grain {
                 #[cfg(feature = "bitdepth_8")]
-                bpc @ 8 => {
-                    let Grain::Bpc8(grain) = &delayed_fg.grain else {
-                        unreachable!();
-                    };
+                Grain::Bpc8(grain) => {
                     rav1d_apply_grain_row::<BitDepth8>(
-                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
+                        dsp,
                         &delayed_fg.out,
                         &delayed_fg.in_0,
                         grain,
@@ -694,20 +698,14 @@ unsafe fn delayed_fg_task<'l, 'ttd: 'l>(
                     );
                 }
                 #[cfg(feature = "bitdepth_16")]
-                bpc @ 10 | bpc @ 12 => {
-                    let Grain::Bpc16(grain) = &delayed_fg.grain else {
-                        unreachable!();
-                    };
+                Grain::Bpc16(grain) => {
                     rav1d_apply_grain_row::<BitDepth16>(
-                        &Rav1dBitDepthDSPContext::get(bpc).as_ref().unwrap().fg,
+                        dsp,
                         &delayed_fg.out,
                         &delayed_fg.in_0,
                         grain,
                         row as usize,
                     );
-                }
-                _ => {
-                    abort();
                 }
             }
         }
