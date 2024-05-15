@@ -947,7 +947,7 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
 }
 
 unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
-    mut tmp: &mut [i16],
+    tmp: &mut [i16],
     tmp_stride: usize,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
@@ -980,6 +980,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     }
 
     for y in 0..8 {
+        let tmp = &mut tmp[y * tmp_stride..];
         let my = my + y as c_int * abcd[3] as c_int;
         for x in 0..8 {
             let tmy = my + x as c_int * abcd[2] as c_int;
@@ -996,7 +997,6 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
         }
-        tmp = &mut tmp[tmp_stride..];
     }
 }
 
