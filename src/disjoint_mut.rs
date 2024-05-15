@@ -338,14 +338,13 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     /// references to avoid other potential memory safety issues due to racy
     /// access.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub unsafe fn mut_slice_as<'a, I, V>(&'a self, index: I) -> DisjointMutGuard<'a, T, [V]>
+    pub fn mut_slice_as<'a, I, V>(&'a self, index: I) -> DisjointMutGuard<'a, T, [V]>
     where
         I: Into<Bounds> + Clone + SliceIndex<[V]>,
         V: AsBytes + FromBytes,
     {
         let bounds = index.into().multiply(mem::size_of::<V>());
-        // SAFETY: Same safety requirements as this method.
-        let byte_guard = unsafe { self.index_mut(bounds.range) };
+        let byte_guard = self.index_mut(bounds.range);
         byte_guard.cast_slice()
     }
 
@@ -367,13 +366,12 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     /// references to avoid other potential memory safety issues due to racy
     /// access.
     #[cfg_attr(debug_assertions, track_caller)]
-    pub unsafe fn mut_element_as<'a, V>(&'a self, index: usize) -> DisjointMutGuard<'a, T, V>
+    pub fn mut_element_as<'a, V>(&'a self, index: usize) -> DisjointMutGuard<'a, T, V>
     where
         V: AsBytes + FromBytes,
     {
         let bounds = Bounds::from(index).multiply(mem::size_of::<V>());
-        // SAFETY: Same safety requirements as this method.
-        let byte_guard = unsafe { self.index_mut(bounds.range) };
+        let byte_guard = self.index_mut(bounds.range);
         byte_guard.cast()
     }
 
