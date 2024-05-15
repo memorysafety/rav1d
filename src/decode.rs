@@ -4865,8 +4865,8 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
 pub(crate) fn rav1d_decode_frame_exit(
     c: &Rav1dContext,
     fc: &Rav1dFrameContext,
-    retval: Rav1dResult,
-) {
+    mut retval: Rav1dResult,
+) -> Rav1dResult {
     let task_thread = &fc.task_thread;
     // We use a blocking lock here because we have rare contention with other
     // threads.
@@ -4878,6 +4878,18 @@ pub(crate) fn rav1d_decode_frame_exit(
     if c.fc.len() > 1 && retval.is_err() {
         cf.fill_with(Default::default);
     }
+
+    if retval.is_ok() && c.fc.len() > 1 && c.strict_std_compliance {
+        if f.refp.iter().any(|rf| {
+            rf.p.frame_hdr.is_some()
+                && rf.progress.as_ref().unwrap()[1].load(Ordering::SeqCst) == FRAME_ERROR
+        }) {
+            retval = Err(EINVAL);
+            task_thread.error.store(1, Ordering::SeqCst);
+            f.sr_cur.progress.as_mut().unwrap()[1].store(FRAME_ERROR, Ordering::SeqCst);
+        }
+    }
+
     let _ = mem::take(&mut f.refp);
     let _ = mem::take(&mut f.ref_mvs);
     let _ = mem::take(&mut f.cur);
@@ -4903,6 +4915,7 @@ pub(crate) fn rav1d_decode_frame_exit(
     f.tiles.clear();
     task_thread.finished.store(true, Ordering::SeqCst);
     *task_thread.retval.try_lock().unwrap() = retval.err();
+    retval
 }
 
 pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext) -> Rav1dResult {
@@ -4952,8 +4965,7 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext
             }
         }
     }
-    rav1d_decode_frame_exit(c, fc, res);
-    res
+    rav1d_decode_frame_exit(c, fc, res)
 }
 
 fn get_upscale_x0(in_w: c_int, out_w: c_int, step: c_int) -> c_int {

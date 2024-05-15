@@ -645,7 +645,7 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     }
     if c.fc.len() > 1 {
         for fc in wrapping_iter(c.fc.iter(), c.frame_thread.next as usize) {
-            rav1d_decode_frame_exit(c, fc, Err(EGeneric));
+            let _ = rav1d_decode_frame_exit(c, fc, Err(EGeneric));
             *fc.task_thread.retval.try_lock().unwrap() = None;
             let out_delayed = &mut c.frame_thread.out_delayed[fc.index];
             if out_delayed.p.frame_hdr.is_some() {
