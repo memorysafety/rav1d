@@ -61,6 +61,10 @@ impl<T: AsMutPtr> DisjointMut<T> {
             bounds: debug::DisjointMutAllBounds::new(),
         }
     }
+
+    pub fn into_inner(self) -> T {
+        self.inner.into_inner()
+    }
 }
 
 #[cfg_attr(not(debug_assertions), repr(transparent))]

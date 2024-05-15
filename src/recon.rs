@@ -2098,8 +2098,12 @@ unsafe fn mc<BD: BitDepth>(
         let w;
         let h;
 
-        if refp.p.data.as_ref().unwrap().data::<BD>()[0]
-            != f.cur.data.as_ref().unwrap().data::<BD>()[0]
+        if refp.p.data.as_ref().unwrap().data[0]
+            .as_mut_ptr()
+            .cast::<BD::Pixel>()
+            != f.cur.data.as_ref().unwrap().data[0]
+                .as_mut_ptr()
+                .cast::<BD::Pixel>()
         {
             w = f.cur.p.w + ss_hor >> ss_hor;
             h = f.cur.p.h + ss_ver >> ss_ver;
@@ -2122,7 +2126,10 @@ unsafe fn mc<BD: BitDepth>(
                 (dy - (my != 0) as c_int * 3) as intptr_t,
                 emu_edge_buf.as_mut_ptr().cast(),
                 192 * mem::size_of::<BD::Pixel>(),
-                refp.p.data.as_ref().unwrap().data::<BD>()[pl].cast(),
+                refp.p.data.as_ref().unwrap().data[pl]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
+                    .cast(),
                 ref_stride,
             );
             r#ref = emu_edge_buf
@@ -2130,7 +2137,9 @@ unsafe fn mc<BD: BitDepth>(
                 .add((192 * (my != 0) as c_int * 3 + (mx != 0) as c_int * 3) as usize);
             ref_stride = 192 * ::core::mem::size_of::<BD::Pixel>() as isize;
         } else {
-            r#ref = refp.p.data.as_ref().unwrap().data::<BD>()[pl]
+            r#ref = refp.p.data.as_ref().unwrap().data[pl]
+                .as_mut_ptr()
+                .cast::<BD::Pixel>()
                 .offset(BD::pxstride(ref_stride) * dy as isize)
                 .add(dx as usize);
         }
@@ -2194,7 +2203,10 @@ unsafe fn mc<BD: BitDepth>(
                 (top - 3) as intptr_t,
                 emu_edge_buf.as_mut_ptr().cast(),
                 320 * mem::size_of::<BD::Pixel>(),
-                refp.p.data.as_ref().unwrap().data::<BD>()[pl].cast(),
+                refp.p.data.as_ref().unwrap().data[pl]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
+                    .cast(),
                 ref_stride,
             );
             r#ref = emu_edge_buf.as_mut_ptr().add((320 * 3 + 3) as usize);
@@ -2203,7 +2215,9 @@ unsafe fn mc<BD: BitDepth>(
                 println!("Emu");
             }
         } else {
-            r#ref = refp.p.data.as_ref().unwrap().data::<BD>()[pl]
+            r#ref = refp.p.data.as_ref().unwrap().data[pl]
+                .as_mut_ptr()
+                .cast::<BD::Pixel>()
                 .offset(BD::pxstride(ref_stride) * top as isize)
                 .offset(left as isize);
         }
@@ -2402,13 +2416,18 @@ unsafe fn warp_affine<BD: BitDepth>(
                     (dy - 3) as intptr_t,
                     emu_edge_buf.as_mut_ptr().cast(),
                     32 * mem::size_of::<BD::Pixel>(),
-                    refp.p.data.as_ref().unwrap().data::<BD>()[pl].cast(),
+                    refp.p.data.as_ref().unwrap().data[pl]
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>()
+                        .cast(),
                     ref_stride,
                 );
                 ref_ptr = emu_edge_buf.as_ptr().add(32 * 3 + 3);
                 ref_stride = 32 * ::core::mem::size_of::<BD::Pixel>() as isize;
             } else {
-                ref_ptr = refp.p.data.as_ref().unwrap().data::<BD>()[pl]
+                ref_ptr = refp.p.data.as_ref().unwrap().data[pl]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
                     .cast_const()
                     .offset(BD::pxstride(ref_stride) * dy as isize)
                     .offset(dx as isize);
@@ -2500,7 +2519,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
         let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
         for init_x in (0..w4).step_by(16) {
             if intra.pal_sz[0] != 0 {
-                let dst: *mut BD::Pixel = f.cur.data.as_ref().unwrap().data::<BD>()[0]
+                let dst = f.cur.data.as_ref().unwrap().data[0]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
                     .offset(4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0]) + t.b.x as isize));
                 let pal_idx_guard;
                 let scratch = t.scratch.inter_intra_mut();
@@ -2568,11 +2589,14 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
             y = init_y;
             t.b.y += init_y;
             while y < sub_h4 {
-                let mut dst: *mut BD::Pixel = f.cur.data.as_ref().unwrap().data::<BD>()[0].offset(
-                    4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0])
-                        + t.b.x as isize
-                        + init_x as isize),
-                );
+                let mut dst = f.cur.data.as_ref().unwrap().data[0]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
+                    .offset(
+                        4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0])
+                            + t.b.x as isize
+                            + init_x as isize),
+                    );
                 x = init_x;
                 t.b.x += init_x;
                 while x < sub_w4 {
@@ -2609,7 +2633,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         let data_height = 4 * ts.tiling.row_end;
                         let data_diff = (data_height - 1) as isize * data_stride;
                         let dst_slice = slice::from_raw_parts(
-                            f.cur.data.as_ref().unwrap().data::<BD>()[0]
+                            f.cur.data.as_ref().unwrap().data[0]
+                                .as_mut_ptr()
+                                .cast::<BD::Pixel>()
                                 .cast_const()
                                 .offset(cmp::min(data_diff, 0)),
                             data_diff.unsigned_abs() + data_width as usize,
@@ -2797,15 +2823,23 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
 
                 let scratch = t.scratch.inter_intra_mut();
                 let ac = scratch.ac_txtp_map.ac_mut();
-                let y_src = f.cur.data.as_ref().unwrap().data::<BD>()[0]
+                let y_src = f.cur.data.as_ref().unwrap().data[0]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
                     .add((4 * (t.b.x & !ss_hor)) as usize)
                     .offset((4 * (t.b.y & !ss_ver)) as isize * BD::pxstride(f.cur.stride[0]));
                 let uv_off = 4
                     * ((t.b.x >> ss_hor) as isize
                         + (t.b.y >> ss_ver) as isize * BD::pxstride(stride));
                 let uv_dst = [
-                    f.cur.data.as_ref().unwrap().data::<BD>()[1].offset(uv_off),
-                    f.cur.data.as_ref().unwrap().data::<BD>()[2].offset(uv_off),
+                    f.cur.data.as_ref().unwrap().data[1]
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>()
+                        .offset(uv_off),
+                    f.cur.data.as_ref().unwrap().data[2]
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>()
+                        .offset(uv_off),
                 ];
 
                 let furthest_r = (cw4 << ss_hor) + t_dim.w as c_int - 1 & !(t_dim.w as c_int - 1);
@@ -2843,7 +2877,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let data_height = 4 * ts.tiling.row_end >> ss_ver;
                     let data_diff = (data_height - 1) as isize * data_stride;
                     let uvdst_slice = slice::from_raw_parts(
-                        f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl]
+                        f.cur.data.as_ref().unwrap().data[1 + pl]
+                            .as_mut_ptr()
+                            .cast::<BD::Pixel>()
                             .cast_const()
                             .offset(cmp::min(data_diff, 0)),
                         data_diff.unsigned_abs() + data_width as usize,
@@ -2929,7 +2965,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 };
 
                 f.dsp.ipred.pal_pred.call::<BD>(
-                    f.cur.data.as_ref().unwrap().data::<BD>()[1].offset(uv_dstoff),
+                    f.cur.data.as_ref().unwrap().data[1]
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>()
+                        .offset(uv_dstoff),
                     f.cur.stride[1],
                     pal[1].as_ptr(),
                     pal_idx.as_ptr(),
@@ -2937,7 +2976,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     cbh4 * 4,
                 );
                 f.dsp.ipred.pal_pred.call::<BD>(
-                    f.cur.data.as_ref().unwrap().data::<BD>()[2].offset(uv_dstoff),
+                    f.cur.data.as_ref().unwrap().data[2]
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>()
+                        .offset(uv_dstoff),
                     f.cur.stride[1],
                     pal[2].as_ptr(),
                     pal_idx.as_ptr(),
@@ -2946,14 +2988,20 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 );
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
-                        f.cur.data.as_ref().unwrap().data::<BD>()[1].offset(uv_dstoff),
+                        f.cur.data.as_ref().unwrap().data[1]
+                            .as_mut_ptr()
+                            .cast::<BD::Pixel>()
+                            .offset(uv_dstoff),
                         BD::pxstride(f.cur.stride[1] as usize),
                         cbw4 as usize * 4,
                         cbh4 as usize * 4,
                         "u-pal-pred",
                     );
                     hex_dump::<BD>(
-                        f.cur.data.as_ref().unwrap().data::<BD>()[2].offset(uv_dstoff),
+                        f.cur.data.as_ref().unwrap().data[2]
+                            .as_mut_ptr()
+                            .cast::<BD::Pixel>()
+                            .offset(uv_dstoff),
                         BD::pxstride(f.cur.stride[1] as usize),
                         cbw4 as usize * 4,
                         cbh4 as usize * 4,
@@ -2983,7 +3031,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 y = init_y >> ss_ver;
                 t.b.y += init_y;
                 while y < sub_ch4 {
-                    let mut dst = f.cur.data.as_ref().unwrap().data::<BD>()[(1 + pl) as usize]
+                    let mut dst = f.cur.data.as_ref().unwrap().data[1 + pl]
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>()
                         .offset(
                             4 * ((t.b.y >> ss_ver) as isize * BD::pxstride(stride)
                                 + (t.b.x + init_x >> ss_hor) as isize),
@@ -3042,7 +3092,9 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             let data_height = 4 * ts.tiling.row_end >> ss_ver;
                             let data_diff = (data_height - 1) as isize * data_stride;
                             let dstuv_slice = slice::from_raw_parts(
-                                f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl as usize]
+                                f.cur.data.as_ref().unwrap().data[1 + pl]
+                                    .as_mut_ptr()
+                                    .cast::<BD::Pixel>()
                                     .cast_const()
                                     .offset(cmp::min(data_diff, 0)),
                                 data_diff.unsigned_abs() + data_width as usize,
@@ -3270,7 +3322,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
     // prediction
     let cbh4 = bh4 + ss_ver >> ss_ver;
     let cbw4 = bw4 + ss_hor >> ss_hor;
-    let mut dst = f.cur.data.as_ref().unwrap().data::<BD>()[0]
+    let mut dst = f.cur.data.as_ref().unwrap().data[0]
+        .as_mut_ptr()
+        .cast::<BD::Pixel>()
         .offset(4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0]) + t.b.x as isize));
     let uvdstoff = 4
         * ((t.b.x >> ss_hor) as isize + (t.b.y >> ss_ver) as isize * BD::pxstride(f.cur.stride[1]));
@@ -3304,7 +3358,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     &mut scratch.emu_edge,
                     t.b,
                     MaybeTempPixels::NonTemp {
-                        dst: f.cur.data.as_ref().unwrap().data::<BD>()[pl].offset(uvdstoff),
+                        dst: f.cur.data.as_ref().unwrap().data[pl]
+                            .as_mut_ptr()
+                            .cast::<BD::Pixel>()
+                            .offset(uvdstoff),
                         dst_stride: f.cur.stride[1],
                     },
                     bw4 << (bw4 == ss_hor) as c_int,
@@ -3474,7 +3531,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                     }
                 }
 
-                let uvdst = f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl].offset(uvdstoff);
+                let uvdst = f.cur.data.as_ref().unwrap().data[1 + pl]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
+                    .offset(uvdstoff);
                 match comp_inter_type {
                     CompInterType::Avg => {
                         (f.dsp.mc.avg)(
@@ -3585,7 +3645,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             let data_height = 4 * ts.tiling.row_end;
             let data_diff = (data_height - 1) as isize * data_stride;
             let dst_slice = slice::from_raw_parts(
-                f.cur.data.as_ref().unwrap().data::<BD>()[0]
+                f.cur.data.as_ref().unwrap().data[0]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
                     .cast_const()
                     .offset(cmp::min(data_diff, 0)),
                 data_diff.unsigned_abs() + data_width as usize,
@@ -3673,7 +3735,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut t.scratch.inter_mut().emu_edge,
                             t.b,
                             MaybeTempPixels::NonTemp {
-                                dst: f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl]
+                                dst: f.cur.data.as_ref().unwrap().data[1 + pl]
+                                    .as_mut_ptr()
+                                    .cast::<BD::Pixel>()
                                     .offset(uvdstoff),
                                 dst_stride: f.cur.stride[1],
                             },
@@ -3714,7 +3778,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut t.scratch.inter_mut().emu_edge,
                             t.b,
                             MaybeTempPixels::NonTemp {
-                                dst: f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl]
+                                dst: f.cur.data.as_ref().unwrap().data[1 + pl]
+                                    .as_mut_ptr()
+                                    .cast::<BD::Pixel>()
                                     .offset(uvdstoff + v_off),
                                 dst_stride: f.cur.stride[1],
                             },
@@ -3752,7 +3818,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut t.scratch.inter_mut().emu_edge,
                             t.b,
                             MaybeTempPixels::NonTemp {
-                                dst: f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl]
+                                dst: f.cur.data.as_ref().unwrap().data[1 + pl]
+                                    .as_mut_ptr()
+                                    .cast::<BD::Pixel>()
                                     .offset(uvdstoff + h_off),
                                 dst_stride: f.cur.stride[1],
                             },
@@ -3786,7 +3854,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         &mut t.scratch.inter_mut().emu_edge,
                         t.b,
                         MaybeTempPixels::NonTemp {
-                            dst: f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl]
+                            dst: f.cur.data.as_ref().unwrap().data[1 + pl]
+                                .as_mut_ptr()
+                                .cast::<BD::Pixel>()
                                 .offset(uvdstoff + h_off + v_off),
                             dst_stride: f.cur.stride[1],
                         },
@@ -3814,7 +3884,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut t.scratch.inter_mut().emu_edge,
                             t.b,
                             MaybeTempPixels::NonTemp {
-                                dst: f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl]
+                                dst: f.cur.data.as_ref().unwrap().data[1 + pl]
+                                    .as_mut_ptr()
+                                    .cast::<BD::Pixel>()
                                     .offset(uvdstoff),
                                 dst_stride: f.cur.stride[1],
                             },
@@ -3835,7 +3907,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             &mut t.scratch.inter_mut().emu_edge,
                             t.b,
                             MaybeTempPixels::NonTemp {
-                                dst: f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl]
+                                dst: f.cur.data.as_ref().unwrap().data[1 + pl]
+                                    .as_mut_ptr()
+                                    .cast::<BD::Pixel>()
                                     .offset(uvdstoff),
                                 dst_stride: f.cur.stride[1],
                             },
@@ -3853,7 +3927,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             obmc::<BD>(
                                 f,
                                 t,
-                                f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl].offset(uvdstoff),
+                                f.cur.data.as_ref().unwrap().data[1 + pl]
+                                    .as_mut_ptr()
+                                    .cast::<BD::Pixel>()
+                                    .offset(uvdstoff),
                                 f.cur.stride[1],
                                 b_dim,
                                 1 + pl,
@@ -3890,8 +3967,10 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             mode => mode as IntraPredMode,
                         };
                         let mut angle = 0;
-                        let uvdst =
-                            f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl].offset(uvdstoff);
+                        let uvdst = f.cur.data.as_ref().unwrap().data[1 + pl]
+                            .as_mut_ptr()
+                            .cast::<BD::Pixel>()
+                            .offset(uvdstoff);
                         let top_sb_edge_slice = if t.b.y & f.sb_step - 1 == 0 {
                             let sby = t.b.y >> f.sb_shift;
                             let offset = (f.ipred_edge_off * (pl + 1)) as isize
@@ -3905,7 +3984,9 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         let data_height = 4 * ts.tiling.row_end >> ss_ver;
                         let data_diff = (data_height - 1) as isize * data_stride;
                         let dstuv_slice = slice::from_raw_parts(
-                            f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl as usize]
+                            f.cur.data.as_ref().unwrap().data[1 + pl]
+                                .as_mut_ptr()
+                                .cast::<BD::Pixel>()
                                 .cast_const()
                                 .offset(cmp::min(data_diff, 0)),
                             data_diff.unsigned_abs() + data_width as usize,
@@ -3968,14 +4049,20 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
         );
         if has_chroma {
             hex_dump::<BD>(
-                f.cur.data.as_ref().unwrap().data::<BD>()[1].offset(uvdstoff),
+                f.cur.data.as_ref().unwrap().data[1]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
+                    .offset(uvdstoff),
                 f.cur.stride[1] as usize,
                 cbw4 as usize * 4,
                 cbh4 as usize * 4,
                 "u-pred",
             );
             hex_dump::<BD>(
-                f.cur.data.as_ref().unwrap().data::<BD>()[2].offset(uvdstoff),
+                f.cur.data.as_ref().unwrap().data[2]
+                    .as_mut_ptr()
+                    .cast::<BD::Pixel>()
+                    .offset(uvdstoff),
                 f.cur.stride[1] as usize,
                 cbw4 as usize * 4,
                 cbh4 as usize * 4,
@@ -4059,9 +4146,13 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
             // chroma coefs and inverse transform
             if has_chroma {
                 for pl in 0..2 {
-                    let mut uvdst = f.cur.data.as_ref().unwrap().data::<BD>()[1 + pl].offset(
-                        uvdstoff + (BD::pxstride(f.cur.stride[1]) * init_y as isize * 4 >> ss_ver),
-                    );
+                    let mut uvdst = f.cur.data.as_ref().unwrap().data[1 + pl]
+                        .as_mut_ptr()
+                        .cast::<BD::Pixel>()
+                        .offset(
+                            uvdstoff
+                                + (BD::pxstride(f.cur.stride[1]) * init_y as isize * 4 >> ss_ver),
+                        );
                     y = init_y >> ss_ver;
                     t.b.y += init_y;
                     while y < cmp::min(ch4, init_y + 16 >> ss_ver) {
@@ -4210,19 +4301,22 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
 
         let p = [
             slice::from_raw_parts_mut(
-                f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[0]]
+                f.cur.data.as_ref().unwrap().data[f.lf.p[0]]
+                    .as_mut_ptr()
                     .cast::<BD::Pixel>()
                     .offset(cmp::min(y_span, 0)),
                 y_span.unsigned_abs() + y_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
             slice::from_raw_parts_mut(
-                f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[1]]
+                f.cur.data.as_ref().unwrap().data[f.lf.p[1]]
+                    .as_mut_ptr()
                     .cast::<BD::Pixel>()
                     .offset(cmp::min(uv_span, 0)),
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
             slice::from_raw_parts_mut(
-                f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[2]]
+                f.cur.data.as_ref().unwrap().data[f.lf.p[2]]
+                    .as_mut_ptr()
                     .cast::<BD::Pixel>()
                     .offset(cmp::min(uv_span, 0)),
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
@@ -4268,19 +4362,22 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
 
         let p = [
             slice::from_raw_parts_mut(
-                f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[0]]
+                f.cur.data.as_ref().unwrap().data[f.lf.p[0]]
+                    .as_mut_ptr()
                     .cast::<BD::Pixel>()
                     .offset(cmp::min(y_span, 0)),
                 y_span.unsigned_abs() + y_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
             slice::from_raw_parts_mut(
-                f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[1]]
+                f.cur.data.as_ref().unwrap().data[f.lf.p[1]]
+                    .as_mut_ptr()
                     .cast::<BD::Pixel>()
                     .offset(cmp::min(uv_span, 0)),
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
             ),
             slice::from_raw_parts_mut(
-                f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[2]]
+                f.cur.data.as_ref().unwrap().data[f.lf.p[2]]
+                    .as_mut_ptr()
                     .cast::<BD::Pixel>()
                     .offset(cmp::min(uv_span, 0)),
                 uv_span.unsigned_abs() + uv_width as usize + RAV1D_PICTURE_ALIGNMENT,
@@ -4321,13 +4418,16 @@ pub(crate) unsafe fn rav1d_filter_sbrow_cdef<BD: BitDepth>(
     let y = sby * sbsz * 4;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let p = [
-        f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[0]]
+        f.cur.data.as_ref().unwrap().data[f.lf.p[0]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.cur.stride[0])) as isize),
-        f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[1]]
+        f.cur.data.as_ref().unwrap().data[f.lf.p[1]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
-        f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[2]]
+        f.cur.data.as_ref().unwrap().data[f.lf.p[2]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver) as isize),
     ];
@@ -4360,24 +4460,30 @@ pub(crate) unsafe fn rav1d_filter_sbrow_resize<BD: BitDepth>(
     let y = sby * sbsz * 4;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let p = [
-        f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[0]]
+        f.cur.data.as_ref().unwrap().data[f.lf.p[0]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset(y as isize * BD::pxstride(f.cur.stride[0])),
-        f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[1]]
+        f.cur.data.as_ref().unwrap().data[f.lf.p[1]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset(y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver),
-        f.cur.data.as_ref().unwrap().data::<BD>()[f.lf.p[2]]
+        f.cur.data.as_ref().unwrap().data[f.lf.p[2]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset(y as isize * BD::pxstride(f.cur.stride[1]) >> ss_ver),
     ];
     let sr_p = [
-        f.sr_cur.p.data.as_ref().unwrap().data::<BD>()[f.lf.sr_p[0]]
+        f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[0]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[0])) as isize),
-        f.sr_cur.p.data.as_ref().unwrap().data::<BD>()[f.lf.sr_p[1]]
+        f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[1]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[1]) >> ss_ver) as isize),
-        f.sr_cur.p.data.as_ref().unwrap().data::<BD>()[f.lf.sr_p[2]]
+        f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[2]]
+            .as_mut_ptr()
             .cast::<BD::Pixel>()
             .offset((y as isize * BD::pxstride(f.sr_cur.p.stride[1]) >> ss_ver) as isize),
     ];
@@ -4427,15 +4533,21 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     let h = f.sr_cur.p.p.h + 127 & !127;
     let mut sr_p = [
         slice::from_raw_parts_mut(
-            f.sr_cur.p.data.as_ref().unwrap().data::<BD>()[f.lf.sr_p[0]].cast::<BD::Pixel>(),
+            f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[0]]
+                .as_mut_ptr()
+                .cast::<BD::Pixel>(),
             (h as isize * BD::pxstride(f.sr_cur.p.stride[0])) as usize,
         ),
         slice::from_raw_parts_mut(
-            f.sr_cur.p.data.as_ref().unwrap().data::<BD>()[f.lf.sr_p[1]].cast::<BD::Pixel>(),
+            f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[1]]
+                .as_mut_ptr()
+                .cast::<BD::Pixel>(),
             (h as isize * BD::pxstride(f.sr_cur.p.stride[1])) as usize >> ss_ver,
         ),
         slice::from_raw_parts_mut(
-            f.sr_cur.p.data.as_ref().unwrap().data::<BD>()[f.lf.sr_p[2]].cast::<BD::Pixel>(),
+            f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[2]]
+                .as_mut_ptr()
+                .cast::<BD::Pixel>(),
             (h as isize * BD::pxstride(f.sr_cur.p.stride[1])) as usize >> ss_ver,
         ),
     ];
@@ -4476,7 +4588,9 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
     let sby_off = f.sb128w * 128 * sby;
     let x_off = ts.tiling.col_start;
 
-    let y = f.cur.data.as_ref().unwrap().data::<BD>()[0]
+    let y = f.cur.data.as_ref().unwrap().data[0]
+        .as_mut_ptr()
+        .cast::<BD::Pixel>()
         .cast_const()
         .offset(
             (x_off * 4) as isize
@@ -4507,7 +4621,8 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
                     .ipred_edge
                     .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
                 slice::from_raw_parts(
-                    f.cur.data.as_ref().unwrap().data::<BD>()[pl]
+                    f.cur.data.as_ref().unwrap().data[pl]
+                        .as_mut_ptr()
                         .cast::<BD::Pixel>()
                         .offset(uv_off),
                     n,

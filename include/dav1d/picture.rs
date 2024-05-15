@@ -1,6 +1,5 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
-use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -17,6 +16,8 @@ use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
 use crate::src::align::Align64;
 use crate::src::c_arc::RawArc;
+use crate::src::disjoint_mut::AsMutPtr;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
@@ -113,8 +114,25 @@ pub struct Rav1dPictureDataComponent {
     len: usize,
 }
 
+// SAFETY: We only store the raw pointer, so we never materialize a `&mut`.
+unsafe impl AsMutPtr for Rav1dPictureDataComponent {
+    type Target = MaybeUninit<u8>;
+
+    #[inline(always)] // Inline so callers can see our over-alignment.
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
+        // SAFETY: Safe to dereference by unsafe preconditions.
+        // Since we don't store any `&mut`s, just a raw ptr, we can have a `&Self`.
+        let this = unsafe { &*ptr };
+        this.ptr.cast().as_ptr()
+    }
+
+    fn len(&self) -> usize {
+        self.len
+    }
+}
+
 pub struct Rav1dPictureData {
-    data: [Rav1dPictureDataComponent; 3],
+    pub data: [DisjointMut<Rav1dPictureDataComponent>; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -127,13 +145,6 @@ impl Drop for Rav1dPictureData {
             allocator,
         } = self;
         allocator.dealloc_picture_data(data, *allocator_data);
-    }
-}
-
-impl Rav1dPictureData {
-    #[inline(always)]
-    pub fn data<BD: BitDepth>(&self) -> [*mut BD::Pixel; 3] {
-        self.data.each_ref().map(|data| data.ptr.as_ptr().cast())
     }
 }
 
@@ -224,7 +235,11 @@ impl From<Rav1dPicture> for Dav1dPicture {
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             data: data
                 .as_ref()
-                .map(|arc| arc.data.each_ref().map(|data| Some(data.ptr.cast())))
+                .map(|arc| {
+                    arc.data
+                        .each_ref()
+                        .map(|data| Some(NonNull::new(data.as_mut_ptr()).unwrap().cast()))
+                })
                 .unwrap_or_default(),
             stride,
             p: p.into(),
@@ -459,7 +474,7 @@ impl Rav1dPicAllocator {
                 let ptr = data[i].unwrap().cast::<AlignedPixelChunk>();
                 assert!(ptr.is_aligned());
                 let len = len[(i != 0) as usize];
-                Rav1dPictureDataComponent { ptr, len }
+                DisjointMut::new(Rav1dPictureDataComponent { ptr, len })
             }),
             allocator_data,
             allocator: self.clone(),
@@ -469,10 +484,10 @@ impl Rav1dPicAllocator {
 
     pub fn dealloc_picture_data(
         &self,
-        data: &[Rav1dPictureDataComponent; 3],
+        data: &mut [DisjointMut<Rav1dPictureDataComponent>; 3],
         allocator_data: Option<NonNull<c_void>>,
     ) {
-        let data = data.each_ref().map(|data| Some(data.ptr.cast()));
+        let data = data.each_mut().map(|data| Some(data.get_mut().ptr.cast()));
         let mut pic_c = Dav1dPicture {
             data,
             allocator_data,
