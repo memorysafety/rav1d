@@ -1080,62 +1080,43 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
 }
 
 unsafe fn resize_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
+    mut dst_ptr: *mut BD::Pixel,
     dst_stride: ptrdiff_t,
-    mut src: *const BD::Pixel,
+    mut src_ptr: *const BD::Pixel,
     src_stride: ptrdiff_t,
     dst_w: c_int,
-    mut h: c_int,
+    h: c_int,
     src_w: c_int,
     dx: c_int,
     mx0: c_int,
     bd: BD,
 ) {
-    loop {
+    let max = src_w - 1;
+    for _ in 0..h {
         let mut mx = mx0;
-        let mut src_x = -(1 as c_int);
-        let mut x = 0;
-        while x < dst_w {
-            let F: *const i8 = (dav1d_resize_filter[(mx >> 8) as usize]).as_ptr();
-            *dst.offset(x as isize) = bd.iclip_pixel(
-                -(*F.offset(0) as c_int
-                    * (*src.offset(iclip(src_x - 3, 0 as c_int, src_w - 1) as isize))
-                        .as_::<c_int>()
-                    + *F.offset(1) as c_int
-                        * (*src.offset(iclip(src_x - 2, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
-                    + *F.offset(2) as c_int
-                        * (*src.offset(iclip(src_x - 1, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
-                    + *F.offset(3) as c_int
-                        * (*src.offset(iclip(src_x + 0, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
-                    + *F.offset(4) as c_int
-                        * (*src.offset(iclip(src_x + 1, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
-                    + *F.offset(5) as c_int
-                        * (*src.offset(iclip(src_x + 2, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
-                    + *F.offset(6) as c_int
-                        * (*src.offset(iclip(src_x + 3, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>()
-                    + *F.offset(7) as c_int
-                        * (*src.offset(iclip(src_x + 4, 0 as c_int, src_w - 1) as isize))
-                            .as_::<c_int>())
+        let mut src_x = -1;
+        let src = std::slice::from_raw_parts(src_ptr, src_w as usize);
+        let dst = std::slice::from_raw_parts_mut(dst_ptr, dst_w as usize);
+        for dst in dst {
+            let F = &dav1d_resize_filter[(mx >> 8) as usize];
+            *dst = bd.iclip_pixel(
+                -(F[0] as c_int * src[iclip(src_x - 3, 0, max) as usize].as_::<c_int>()
+                    + F[1] as c_int * src[iclip(src_x - 2, 0, max) as usize].as_::<c_int>()
+                    + F[2] as c_int * src[iclip(src_x - 1, 0, max) as usize].as_::<c_int>()
+                    + F[3] as c_int * src[iclip(src_x + 0, 0, max) as usize].as_::<c_int>()
+                    + F[4] as c_int * src[iclip(src_x + 1, 0, max) as usize].as_::<c_int>()
+                    + F[5] as c_int * src[iclip(src_x + 2, 0, max) as usize].as_::<c_int>()
+                    + F[6] as c_int * src[iclip(src_x + 3, 0, max) as usize].as_::<c_int>()
+                    + F[7] as c_int * src[iclip(src_x + 4, 0, max) as usize].as_::<c_int>())
                     + 64
                     >> 7,
             );
             mx += dx;
             src_x += mx >> 14;
-            mx &= 0x3fff as c_int;
-            x += 1;
+            mx &= 0x3fff;
         }
-        dst = dst.offset(BD::pxstride(dst_stride));
-        src = src.offset(BD::pxstride(src_stride));
-        h -= 1;
-        if !(h != 0) {
-            break;
-        }
+        dst_ptr = dst_ptr.offset(BD::pxstride(dst_stride));
+        src_ptr = src_ptr.offset(BD::pxstride(src_stride));
     }
 }
 
