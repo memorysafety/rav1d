@@ -420,7 +420,8 @@ fn neg_deinterleave(diff: u8, r#ref: u8, max: u8) -> u8 {
     if r#ref == 0 {
         diff
     } else if r#ref + 1 >= max {
-        max - diff - 1
+        // The C code returns a signed integer which is immediately cast to `uint8_t`
+        max.wrapping_sub(diff + 1)
     } else if 2 * r#ref < max {
         if diff <= 2 * r#ref {
             if diff & 1 != 0 {
@@ -439,7 +440,8 @@ fn neg_deinterleave(diff: u8, r#ref: u8, max: u8) -> u8 {
                 r#ref - (diff >> 1)
             }
         } else {
-            max - (diff + 1)
+            // The C code returns a signed integer which is immediately cast to `uint8_t`
+            max.wrapping_sub(diff + 1)
         }
     }
 }
