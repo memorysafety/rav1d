@@ -294,8 +294,6 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
     (h_filter_type, v_filter_type): (Rav1dFilterMode, Rav1dFilterMode),
     bd: BD,
 ) {
-    let mut tmp_ptr = tmp.as_mut_ptr(); // TODO: Remove
-
     let intermediate_bits = bd.get_intermediate_bits();
     let fh = get_filter(mx, w, h_filter_type);
     let fv = get_filter(my, h, v_filter_type);
@@ -320,37 +318,34 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
             mid_ptr = &mut mid[128 * 3..];
             for _ in 0..h {
                 for x in 0..w {
-                    *tmp_ptr.offset(x as isize) =
-                        (rav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6)
-                            - i32::from(BD::PREP_BIAS))
-                        .try_into()
-                        .unwrap();
+                    tmp[x] = (rav1d_filter_8tap_rnd(mid_ptr.as_ptr(), x, fv, 128, 6)
+                        - i32::from(BD::PREP_BIAS))
+                    .try_into()
+                    .unwrap();
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
-                tmp_ptr = tmp_ptr.offset(w as isize);
+                tmp = &mut tmp[w..]
             }
         } else {
             for _ in 0..h {
                 for x in 0..w {
-                    *tmp_ptr.offset(x as isize) =
-                        (rav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits)
-                            - i32::from(BD::PREP_BIAS)) as i16;
+                    tmp[x] = (rav1d_filter_8tap_rnd(src, x, fh, 1, 6 - intermediate_bits)
+                        - i32::from(BD::PREP_BIAS)) as i16;
                 }
 
-                tmp_ptr = tmp_ptr.offset(w as isize);
+                tmp = &mut tmp[w..];
                 src = src.offset(src_stride as isize);
             }
         }
     } else if let Some(fv) = fv {
         for _ in 0..h {
             for x in 0..w {
-                *tmp_ptr.offset(x as isize) =
-                    (rav1d_filter_8tap_rnd(src, x, fv, src_stride, 6 - intermediate_bits)
-                        - i32::from(BD::PREP_BIAS)) as i16;
+                tmp[x] = (rav1d_filter_8tap_rnd(src, x, fv, src_stride, 6 - intermediate_bits)
+                    - i32::from(BD::PREP_BIAS)) as i16;
             }
 
-            tmp_ptr = tmp_ptr.offset(w as isize);
+            tmp = &mut tmp[w..];
             src = src.offset(src_stride as isize);
         }
     } else {
@@ -561,8 +556,6 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
     my: usize,
     bd: BD,
 ) {
-    let mut tmp_ptr = tmp.as_mut_ptr(); // TODO: Remove
-
     let intermediate_bits = bd.get_intermediate_bits();
     let src_stride = BD::pxstride(src_stride);
     if mx != 0 {
@@ -582,35 +575,32 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
             mid_ptr = &mut mid[..];
             for _ in 0..h {
                 for x in 0..w {
-                    *tmp_ptr.offset(x as isize) =
-                        (filter_bilin_rnd(mid_ptr.as_ptr(), x, my, 128, 4)
-                            - i32::from(BD::PREP_BIAS)) as i16;
+                    tmp[x] = (filter_bilin_rnd(mid_ptr.as_ptr(), x, my, 128, 4)
+                        - i32::from(BD::PREP_BIAS)) as i16;
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
-                tmp_ptr = tmp_ptr.offset(w as isize);
+                tmp = &mut tmp[w..];
             }
         } else {
             for _ in 0..h {
                 for x in 0..w {
-                    *tmp_ptr.offset(x as isize) =
-                        (filter_bilin_rnd(src, x, mx, 1, 4 - intermediate_bits)
-                            - i32::from(BD::PREP_BIAS)) as i16;
+                    tmp[x] = (filter_bilin_rnd(src, x, mx, 1, 4 - intermediate_bits)
+                        - i32::from(BD::PREP_BIAS)) as i16;
                 }
 
-                tmp_ptr = tmp_ptr.offset(w as isize);
+                tmp = &mut tmp[w..];
                 src = src.offset(src_stride as isize);
             }
         }
     } else if my != 0 {
         for _ in 0..h {
             for x in 0..w {
-                *tmp_ptr.offset(x as isize) =
-                    (filter_bilin_rnd(src, x, my, src_stride, 4 - intermediate_bits)
-                        - i32::from(BD::PREP_BIAS)) as i16;
+                tmp[x] = (filter_bilin_rnd(src, x, my, src_stride, 4 - intermediate_bits)
+                    - i32::from(BD::PREP_BIAS)) as i16;
             }
 
-            tmp_ptr = tmp_ptr.offset(w as isize);
+            tmp = &mut tmp[w..];
             src = src.offset(src_stride as isize);
         }
     } else {
