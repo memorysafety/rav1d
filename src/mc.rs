@@ -1,6 +1,7 @@
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
+use crate::include::common::intops::clip;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
@@ -8,6 +9,7 @@ use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
+use crate::src::internal::EMU_EDGE_LEN;
 use crate::src::levels::Filter2d;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
@@ -1004,78 +1006,68 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     ih: intptr_t,
     x: intptr_t,
     y: intptr_t,
-    mut dst: *mut BD::Pixel,
-    dst_stride: ptrdiff_t,
+    dst: *mut [BD::Pixel; EMU_EDGE_LEN],
+    dst_stride: usize,
     mut r#ref: *const BD::Pixel,
     ref_stride: ptrdiff_t,
 ) {
-    r#ref = r#ref.offset(
-        iclip(y as c_int, 0 as c_int, ih as c_int - 1) as isize * BD::pxstride(ref_stride)
-            + iclip(x as c_int, 0 as c_int, iw as c_int - 1) as isize,
-    );
-    let left_ext = iclip(-x as c_int, 0 as c_int, bw as c_int - 1);
-    let right_ext = iclip((x + bw - iw) as c_int, 0 as c_int, bw as c_int - 1);
-    if !(((left_ext + right_ext) as isize) < bw) {
-        unreachable!();
-    }
-    let top_ext = iclip(-y as c_int, 0 as c_int, bh as c_int - 1);
-    let bottom_ext = iclip((y + bh - ih) as c_int, 0 as c_int, bh as c_int - 1);
-    if !(((top_ext + bottom_ext) as isize) < bh) {
-        unreachable!();
-    }
-    let mut blk: *mut BD::Pixel =
-        dst.offset((top_ext as isize * BD::pxstride(dst_stride)) as isize);
-    let center_w = (bw - left_ext as isize - right_ext as isize) as c_int;
-    let center_h = (bh - top_ext as isize - bottom_ext as isize) as c_int;
-    let mut y_0 = 0;
-    while y_0 < center_h {
+    let dst = &mut *dst;
+    let dst_stride = BD::pxstride(dst_stride);
+    let ref_stride = BD::pxstride(ref_stride);
+
+    // find offset in reference of visible block to copy
+    r#ref = r#ref.offset(clip(y, 0, ih - 1) * ref_stride + clip(x, 0, iw - 1));
+
+    // number of pixels to extend (left, right, top, bottom)
+    let left_ext = clip(-x, 0, bw - 1) as usize;
+    let right_ext = clip(x + bw - iw, 0, bw - 1) as usize;
+    assert!(((left_ext + right_ext) as isize) < bw);
+    let top_ext = clip(-y, 0, bh - 1) as usize;
+    let bottom_ext = clip(y + bh - ih, 0, bh - 1) as usize;
+    assert!(((top_ext + bottom_ext) as isize) < bh);
+
+    let bw = bw as usize;
+    let bh = bh as usize;
+
+    // copy visible portion first
+    let mut blk = top_ext * dst_stride;
+    let center_w = bw - left_ext - right_ext;
+    let center_h = bh - top_ext - bottom_ext;
+    for _ in 0..center_h {
         BD::pixel_copy(
-            std::slice::from_raw_parts_mut(blk.offset(left_ext as isize), center_w as usize),
-            std::slice::from_raw_parts(r#ref, center_w as usize),
-            center_w as usize,
+            &mut dst[blk + left_ext..][..center_w],
+            std::slice::from_raw_parts(r#ref, center_w),
+            center_w,
         );
+        // extend left edge for this line
         if left_ext != 0 {
-            BD::pixel_set(
-                std::slice::from_raw_parts_mut(blk, left_ext as usize),
-                *blk.offset(left_ext as isize),
-                left_ext as usize,
-            );
+            let val = dst[blk + left_ext];
+            BD::pixel_set(&mut dst[blk..], val, left_ext);
         }
+        // extend right edge for this line
         if right_ext != 0 {
-            BD::pixel_set(
-                std::slice::from_raw_parts_mut(
-                    blk.offset(left_ext as isize).offset(center_w as isize),
-                    right_ext as usize,
-                ),
-                *blk.offset((left_ext + center_w - 1) as isize),
-                right_ext as usize,
-            );
+            let val = dst[blk + left_ext + center_w - 1];
+            BD::pixel_set(&mut dst[blk + left_ext + center_w..], val, right_ext);
         }
-        r#ref = r#ref.offset(BD::pxstride(ref_stride));
-        blk = blk.offset(BD::pxstride(dst_stride));
-        y_0 += 1;
+        r#ref = r#ref.offset(ref_stride);
+        blk += dst_stride;
     }
-    blk = dst.offset((top_ext as isize * BD::pxstride(dst_stride)) as isize);
-    let mut y_1 = 0;
-    while y_1 < top_ext {
-        BD::pixel_copy(
-            std::slice::from_raw_parts_mut(dst, bw as usize),
-            std::slice::from_raw_parts(blk, bw as usize),
-            bw as usize,
-        );
-        dst = dst.offset(BD::pxstride(dst_stride));
-        y_1 += 1;
+
+    // copy top
+    let mut dst_off = 0;
+    let blk = top_ext * dst_stride;
+    let (front, back) = dst.split_at_mut(blk);
+    for _ in 0..top_ext {
+        BD::pixel_copy(&mut front[dst_off..][..bw], &back[..bw], bw);
+        dst_off += dst_stride;
     }
-    dst = dst.offset((center_h as isize * BD::pxstride(dst_stride)) as isize);
-    let mut y_2 = 0;
-    while y_2 < bottom_ext {
-        BD::pixel_copy(
-            std::slice::from_raw_parts_mut(dst, bw as usize),
-            std::slice::from_raw_parts(dst.offset(-BD::pxstride(dst_stride)), bw as usize),
-            bw as usize,
-        );
-        dst = dst.offset(BD::pxstride(dst_stride));
-        y_2 += 1;
+
+    // copy bottom
+    dst_off += center_h * dst_stride;
+    for _ in 0..bottom_ext {
+        let (front, back) = dst.split_at_mut(dst_off);
+        BD::pixel_copy(&mut back[..bw], &front[dst_off - dst_stride..][..bw], bw);
+        dst_off += dst_stride;
     }
 }
 
@@ -1389,8 +1381,8 @@ pub type emu_edge_fn = unsafe extern "C" fn(
     intptr_t,
     intptr_t,
     intptr_t,
-    *mut DynPixel,
-    ptrdiff_t,
+    *mut [DynPixel; EMU_EDGE_LEN],
+    usize,
     *const DynPixel,
     ptrdiff_t,
 ) -> ();
@@ -1948,8 +1940,8 @@ pub(crate) unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     ih: intptr_t,
     x: intptr_t,
     y: intptr_t,
-    dst: *mut DynPixel,
-    dst_stride: ptrdiff_t,
+    dst: *mut [DynPixel; EMU_EDGE_LEN],
+    dst_stride: usize,
     r#ref: *const DynPixel,
     ref_stride: ptrdiff_t,
 ) {
@@ -2067,8 +2059,8 @@ macro_rules! decl_fn {
             ih: intptr_t,
             x: intptr_t,
             y: intptr_t,
-            dst: *mut DynPixel,
-            dst_stride: ptrdiff_t,
+            dst: *mut [DynPixel; EMU_EDGE_LEN],
+            dst_stride: usize,
             src: *const DynPixel,
             src_stride: ptrdiff_t,
         );
