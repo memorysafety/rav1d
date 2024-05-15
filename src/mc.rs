@@ -947,8 +947,8 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
 }
 
 unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
-    mut tmp: *mut i16,
-    tmp_stride: ptrdiff_t,
+    mut tmp: &mut [i16],
+    tmp_stride: usize,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     abcd: &[i16; 4],
@@ -984,7 +984,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
         for x in 0..8 {
             let tmy = my + x as c_int * abcd[2] as c_int;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
-            *tmp.add(x) = ((filter[0] as c_int * mid[y + 0][x] as c_int
+            tmp[x] = ((filter[0] as c_int * mid[y + 0][x] as c_int
                 + filter[1] as c_int * mid[y + 1][x] as c_int
                 + filter[2] as c_int * mid[y + 2][x] as c_int
                 + filter[3] as c_int * mid[y + 3][x] as c_int
@@ -996,7 +996,7 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
         }
-        tmp = tmp.offset(tmp_stride);
+        tmp = &mut tmp[tmp_stride..];
     }
 }
 
@@ -1277,13 +1277,14 @@ impl mct_scaled::Fn {
 
 wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8t(
     tmp: *mut i16,
-    tmp_stride: ptrdiff_t,
+    tmp_stride: usize,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
     abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
+    tmp_len: usize,
 ) -> ());
 
 impl warp8x8t::Fn {
@@ -1298,11 +1299,19 @@ impl warp8x8t::Fn {
         my: c_int,
         bd: BD,
     ) {
-        let tmp = tmp.as_mut_ptr();
-        let tmp_stride = tmp_stride as isize;
         let src = src.cast();
         let bd = bd.into_c();
-        self.get()(tmp, tmp_stride, src, src_stride, abcd, mx, my, bd)
+        self.get()(
+            tmp.as_mut_ptr(),
+            tmp_stride,
+            src,
+            src_stride,
+            abcd,
+            mx,
+            my,
+            bd,
+            tmp.len(),
+        )
     }
 }
 
@@ -1913,14 +1922,16 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
     tmp: *mut i16,
-    tmp_stride: ptrdiff_t,
+    tmp_stride: usize,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
     abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
+    tmp_len: usize,
 ) {
+    let tmp = std::slice::from_raw_parts_mut(tmp, tmp_len);
     warp_affine_8x8t_rust(
         tmp,
         tmp_stride,
