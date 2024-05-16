@@ -1422,8 +1422,7 @@ pub struct Rav1dMCDSPContext {
 macro_rules! filter_fns {
     ($mc_kind:ident, $type_h:expr, $type_v:expr) => {
         paste::paste! {
-            // TODO(legare): Temporarily pub until init fns are deduplicated.
-            pub(crate) unsafe extern "C" fn [<put_8tap_ $mc_kind _c_erased>]<BD: BitDepth>(
+            unsafe extern "C" fn [<put_8tap_ $mc_kind _c_erased>]<BD: BitDepth>(
                 dst: *mut DynPixel,
                 dst_stride: ptrdiff_t,
                 src: *const DynPixel,
@@ -1448,8 +1447,7 @@ macro_rules! filter_fns {
                 );
             }
 
-            // TODO(legare): Temporarily pub until init fns are deduplicated.
-            pub(crate) unsafe extern "C" fn [<put_8tap_ $mc_kind _scaled_c_erased>]<BD: BitDepth>(
+            unsafe extern "C" fn [<put_8tap_ $mc_kind _scaled_c_erased>]<BD: BitDepth>(
                 dst: *mut DynPixel,
                 dst_stride: ptrdiff_t,
                 src: *const DynPixel,
@@ -1478,8 +1476,7 @@ macro_rules! filter_fns {
                 );
             }
 
-            // TODO(legare): Temporarily pub until init fns are deduplicated.
-            pub(crate) unsafe extern "C" fn [<prep_8tap_ $mc_kind _c_erased>]<BD: BitDepth>(
+            unsafe extern "C" fn [<prep_8tap_ $mc_kind _c_erased>]<BD: BitDepth>(
                 tmp: *mut i16,
                 src: *const DynPixel,
                 src_stride: ptrdiff_t,
@@ -1502,8 +1499,7 @@ macro_rules! filter_fns {
                 );
             }
 
-            // TODO(legare): Temporarily pub until init fns are deduplicated.
-            pub(crate) unsafe extern "C" fn [<prep_8tap_ $mc_kind _scaled_c_erased>]<BD: BitDepth>(
+            unsafe extern "C" fn [<prep_8tap_ $mc_kind _scaled_c_erased>]<BD: BitDepth>(
                 tmp: *mut i16,
                 src: *const DynPixel,
                 src_stride: ptrdiff_t,
@@ -1579,8 +1575,7 @@ filter_fns!(
     Rav1dFilterMode::Smooth8Tap
 );
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn put_bilin_c_erased<BD: BitDepth>(
+unsafe extern "C" fn put_bilin_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     src: *const DynPixel,
@@ -1604,8 +1599,7 @@ pub(crate) unsafe extern "C" fn put_bilin_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
+unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
     tmp: *mut i16,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
@@ -1627,8 +1621,7 @@ pub(crate) unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn put_bilin_scaled_c_erased<BD: BitDepth>(
+unsafe extern "C" fn put_bilin_scaled_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     src: *const DynPixel,
@@ -1656,8 +1649,7 @@ pub(crate) unsafe extern "C" fn put_bilin_scaled_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
+unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
     tmp: *mut i16,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
@@ -1683,8 +1675,7 @@ pub(crate) unsafe extern "C" fn prep_bilin_scaled_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
+unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp1: &[i16; COMPINTER_LEN],
@@ -1704,8 +1695,7 @@ pub(crate) unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
+unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp1: &[i16; COMPINTER_LEN],
@@ -1727,8 +1717,7 @@ pub(crate) unsafe extern "C" fn w_avg_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
+unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp1: &[i16; COMPINTER_LEN],
@@ -1750,8 +1739,7 @@ pub(crate) unsafe extern "C" fn mask_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
+unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp1: &[i16; COMPINTER_LEN],
@@ -1778,8 +1766,7 @@ pub(crate) unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
+unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp1: &[i16; COMPINTER_LEN],
@@ -1806,8 +1793,7 @@ pub(crate) unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
+unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp1: &[i16; COMPINTER_LEN],
@@ -1834,8 +1820,7 @@ pub(crate) unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     );
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
+unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp: *const DynPixel,
@@ -1853,8 +1838,7 @@ pub(crate) unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
+unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp: *const DynPixel,
@@ -1870,8 +1854,7 @@ pub(crate) unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
+unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp: *const DynPixel,
@@ -1887,8 +1870,7 @@ pub(crate) unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
+unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     src: *const DynPixel,
@@ -1910,8 +1892,7 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
+unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
     tmp: *mut i16,
     tmp_stride: ptrdiff_t,
     src: *const DynPixel,
@@ -1933,8 +1914,7 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
+unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     bw: intptr_t,
     bh: intptr_t,
     iw: intptr_t,
@@ -1960,8 +1940,7 @@ pub(crate) unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Temporarily pub until init fns are deduplicated.
-pub(crate) unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
+unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     src: *const DynPixel,
@@ -1987,14 +1966,13 @@ pub(crate) unsafe extern "C" fn resize_c_erased<BD: BitDepth>(
     )
 }
 
-// TODO(legare): Generated fns are temporarily pub until init fns are deduplicated.
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
 macro_rules! decl_fn {
     (avg, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
             tmp1: &[i16; COMPINTER_LEN],
@@ -2006,7 +1984,7 @@ macro_rules! decl_fn {
     };
 
     (w_avg, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
             tmp1: &[i16; COMPINTER_LEN],
@@ -2019,7 +1997,7 @@ macro_rules! decl_fn {
     };
 
     (mask, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
             tmp1: &[i16; COMPINTER_LEN],
@@ -2032,7 +2010,7 @@ macro_rules! decl_fn {
     };
 
     (blend, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
             tmp: *const DynPixel,
@@ -2043,7 +2021,7 @@ macro_rules! decl_fn {
     };
 
     (blend_dir, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
             tmp: *const DynPixel,
@@ -2053,7 +2031,7 @@ macro_rules! decl_fn {
     };
 
     (emu_edge, $name:ident) => {
-        pub(crate) fn $name(
+        fn $name(
             bw: intptr_t,
             bh: intptr_t,
             iw: intptr_t,
