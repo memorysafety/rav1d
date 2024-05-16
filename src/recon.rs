@@ -1570,7 +1570,7 @@ enum CfSelect {
 }
 
 impl CfSelect {
-    unsafe fn set<BD: BitDepth>(
+    fn set<BD: BitDepth>(
         self,
         f: &Rav1dFrameData,
         task_cf: &mut Cf,
@@ -1579,7 +1579,7 @@ impl CfSelect {
     ) {
         match self {
             CfSelect::Frame(offset) => {
-                let mut cf = unsafe { f.frame_thread.cf.mut_element_as(offset + index) };
+                let mut cf = f.frame_thread.cf.mut_element_as(offset + index);
                 *cf = value;
             }
             CfSelect::Task => {
