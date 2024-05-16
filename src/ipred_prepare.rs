@@ -208,7 +208,7 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
         if have_left {
             let px_have = cmp::min(sz, (h - y << 2) as usize);
             for i in 0..px_have {
-                left[sz - 1 - i] = dst[i * stride as usize + dst_offset - 1];
+                left[sz - 1 - i] = dst[(i as isize * stride + dst_offset as isize - 1) as usize];
             }
             if px_have < sz {
                 BD::pixel_set(left, left[sz - px_have], sz - px_have);
@@ -237,7 +237,8 @@ pub fn rav1d_prepare_intra_edges<BD: BitDepth>(
             if have_bottomleft {
                 let px_have = cmp::min(sz, (h - y - th << 2) as usize);
                 for i in 0..px_have {
-                    bottom_left[sz - 1 - i] = dst[(sz + i) * stride as usize + dst_offset - 1];
+                    bottom_left[sz - 1 - i] =
+                        dst[((sz + i) as isize * stride + dst_offset as isize - 1) as usize];
                 }
                 if px_have < sz {
                     BD::pixel_set(bottom_left, bottom_left[sz - px_have], sz - px_have);
