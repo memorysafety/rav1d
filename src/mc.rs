@@ -812,8 +812,8 @@ unsafe fn blend_h_rust<BD: BitDepth>(
 }
 
 unsafe fn w_mask_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: usize,
+    mut dst: *mut BD::Pixel,
+    dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: usize,
@@ -825,7 +825,6 @@ unsafe fn w_mask_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let dst_stride = BD::pxstride(dst_stride);
-    let dst = slice::from_raw_parts_mut(dst, if h == 0 { 0 } else { (h - 1) * dst_stride + w });
     let mut mask = slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
     let sign = sign as u8;
 
@@ -837,17 +836,16 @@ unsafe fn w_mask_rust<BD: BitDepth>(
     let rnd = (32 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 64;
     let mask_sh = bitdepth + intermediate_bits - 4;
     let mask_rnd = 1 << (mask_sh - 5);
-    for (h, ((tmp1, tmp2), dst)) in iter::zip(tmp1.chunks_exact(w), tmp2.chunks_exact(w))
-        .zip(dst.chunks_mut(dst_stride))
-        .enumerate()
-    {
+    let mut tmp1 = tmp1.as_slice();
+    let mut tmp2 = tmp2.as_slice();
+    for h in 0..h {
         let mut x = 0;
         while x < w {
             let m = cmp::min(
                 38 + (tmp1[x].abs_diff(tmp2[x]).saturating_add(mask_rnd) >> mask_sh),
                 64,
             ) as u8;
-            dst[x] = bd.iclip_pixel(
+            *dst.add(x) = bd.iclip_pixel(
                 (tmp1[x] as i32 * m as i32 + tmp2[x] as i32 * (64 - m as i32) + rnd) >> sh,
             );
 
@@ -858,7 +856,7 @@ unsafe fn w_mask_rust<BD: BitDepth>(
                     38 + (tmp1[x].abs_diff(tmp2[x]).saturating_add(mask_rnd) >> mask_sh),
                     64,
                 ) as u8;
-                dst[x] = bd.iclip_pixel(
+                *dst.add(x) = bd.iclip_pixel(
                     (tmp1[x] as i32 * n as i32 + tmp2[x] as i32 * (64 - n as i32) + rnd) >> sh,
                 );
 
@@ -875,6 +873,9 @@ unsafe fn w_mask_rust<BD: BitDepth>(
             x += 1;
         }
 
+        tmp1 = &tmp1[w..];
+        tmp2 = &tmp2[w..];
+        dst = dst.offset(dst_stride);
         if !ss_ver || h & 1 != 0 {
             mask = &mut mask[w >> ss_hor as usize..];
         }
@@ -1746,7 +1747,7 @@ unsafe extern "C" fn w_mask_444_c_erased<BD: BitDepth>(
     debug_assert!(sign == 1 || sign == 0);
     w_mask_rust(
         dst.cast(),
-        dst_stride as usize,
+        dst_stride,
         tmp1,
         tmp2,
         w as usize,
@@ -1773,7 +1774,7 @@ unsafe extern "C" fn w_mask_422_c_erased<BD: BitDepth>(
     debug_assert!(sign == 1 || sign == 0);
     w_mask_rust(
         dst.cast(),
-        dst_stride as usize,
+        dst_stride,
         tmp1,
         tmp2,
         w as usize,
@@ -1800,7 +1801,7 @@ unsafe extern "C" fn w_mask_420_c_erased<BD: BitDepth>(
     debug_assert!(sign == 1 || sign == 0);
     w_mask_rust(
         dst.cast(),
-        dst_stride as usize,
+        dst_stride,
         tmp1,
         tmp2,
         w as usize,
