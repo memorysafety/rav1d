@@ -1838,13 +1838,7 @@ unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
     w: c_int,
     h: c_int,
 ) {
-    blend_v_rust::<BD>(
-        dst.cast(),
-        dst_stride,
-        tmp.cast(),
-        w as usize,
-        h as usize,
-    )
+    blend_v_rust::<BD>(dst.cast(), dst_stride, tmp.cast(), w as usize, h as usize)
 }
 
 unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
@@ -1854,13 +1848,7 @@ unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
     w: c_int,
     h: c_int,
 ) {
-    blend_h_rust::<BD>(
-        dst.cast(),
-        dst_stride,
-        tmp.cast(),
-        w as usize,
-        h as usize,
-    )
+    blend_h_rust::<BD>(dst.cast(), dst_stride, tmp.cast(), w as usize, h as usize)
 }
 
 unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
