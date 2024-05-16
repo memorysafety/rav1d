@@ -654,7 +654,7 @@ unsafe fn prep_bilin_scaled_rust<BD: BitDepth>(
 
 unsafe fn avg_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    dst_stride: usize,
+    dst_stride: isize,
     tmp1: &[i16; COMPINTER_LEN],
     tmp2: &[i16; COMPINTER_LEN],
     w: usize,
@@ -675,7 +675,7 @@ unsafe fn avg_rust<BD: BitDepth>(
 
         tmp1 = &tmp1[w..];
         tmp2 = &tmp2[w..];
-        dst = dst.offset(dst_stride as isize);
+        dst = dst.offset(dst_stride);
     }
 }
 
@@ -1679,7 +1679,7 @@ unsafe extern "C" fn avg_c_erased<BD: BitDepth>(
 ) {
     avg_rust(
         dst.cast(),
-        dst_stride as usize,
+        dst_stride,
         tmp1,
         tmp2,
         w as usize,
