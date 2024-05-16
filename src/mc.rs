@@ -58,7 +58,7 @@ unsafe fn put_rust<BD: BitDepth>(
 #[inline(never)]
 unsafe fn prep_rust<BD: BitDepth>(
     tmp: &mut [i16],
-    mut src: *const BD::Pixel,
+    mut src_ptr: *const BD::Pixel,
     src_stride: isize,
     w: usize,
     h: usize,
@@ -66,11 +66,11 @@ unsafe fn prep_rust<BD: BitDepth>(
 ) {
     let intermediate_bits = bd.get_intermediate_bits();
     for tmp in tmp.chunks_exact_mut(w).take(h) {
+        let src = slice::from_raw_parts(src_ptr, w);
         for x in 0..w {
-            tmp[x] =
-                (((*src.add(x)).as_::<i32>() << intermediate_bits) - (BD::PREP_BIAS as i32)) as i16
+            tmp[x] = ((src[x].as_::<i32>() << intermediate_bits) - (BD::PREP_BIAS as i32)) as i16
         }
-        src = src.offset(src_stride);
+        src_ptr = src_ptr.offset(src_stride);
     }
 }
 
