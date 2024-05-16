@@ -791,7 +791,7 @@ unsafe fn blend_v_rust<BD: BitDepth>(
 
 unsafe fn blend_h_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    dst_stride: usize,
+    dst_stride: isize,
     mut tmp: *const BD::Pixel,
     w: usize,
     h: usize,
@@ -805,7 +805,7 @@ unsafe fn blend_h_rust<BD: BitDepth>(
                 blend_px::<BD>(*dst.offset(x as isize), *tmp.offset(x as isize), mask[y]);
         }
 
-        dst = dst.offset(dst_stride as isize);
+        dst = dst.offset(dst_stride);
         tmp = tmp.offset(w as isize);
     }
 }
@@ -1856,7 +1856,7 @@ unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
 ) {
     blend_h_rust::<BD>(
         dst.cast(),
-        dst_stride as usize,
+        dst_stride,
         tmp.cast(),
         w as usize,
         h as usize,
