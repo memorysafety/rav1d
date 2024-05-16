@@ -114,6 +114,14 @@ pub struct Rav1dPictureDataComponent {
     len: usize,
 }
 
+impl Rav1dPictureDataComponent {
+    fn new(ptr: NonNull<AlignedPixelChunk>, len: usize) -> Self {
+        assert!(ptr.is_aligned());
+        assert!(len % mem::align_of::<AlignedPixelChunk>() == 0);
+        Self { ptr, len }
+    }
+}
+
 // SAFETY: We only store the raw pointer, so we never materialize a `&mut`.
 unsafe impl AsMutPtr for Rav1dPictureDataComponent {
     type Target = MaybeUninit<u8>;
@@ -472,9 +480,8 @@ impl Rav1dPicAllocator {
             // SAFETY: `MaybeUninit<u8>` should be safe for anything.
             data: array::from_fn(|i| {
                 let ptr = data[i].unwrap().cast::<AlignedPixelChunk>();
-                assert!(ptr.is_aligned());
                 let len = len[(i != 0) as usize];
-                DisjointMut::new(Rav1dPictureDataComponent { ptr, len })
+                DisjointMut::new(Rav1dPictureDataComponent::new(ptr, len))
             }),
             allocator_data,
             allocator: self.clone(),
