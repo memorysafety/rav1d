@@ -1212,7 +1212,6 @@ wrap_fn_ptr!(pub unsafe extern "C" fn mct(
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
-    tmp_len: usize,
 ) -> ());
 
 impl mct::Fn {
@@ -1227,19 +1226,10 @@ impl mct::Fn {
         my: c_int,
         bd: BD,
     ) {
+        let tmp = tmp.as_mut_ptr();
         let src = src.cast();
         let bd = bd.into_c();
-        self.get()(
-            tmp.as_mut_ptr(),
-            src,
-            src_stride,
-            w,
-            h,
-            mx,
-            my,
-            bd,
-            tmp.len(),
-        )
+        self.get()(tmp, src, src_stride, w, h, mx, my, bd)
     }
 }
 
@@ -1491,9 +1481,8 @@ macro_rules! filter_fns {
                 mx: c_int,
                 my: c_int,
                 bitdepth_max: c_int,
-                tmp_len: usize,
             ) {
-                let tmp = std::slice::from_raw_parts_mut(tmp, tmp_len);
+                let tmp = std::slice::from_raw_parts_mut(tmp, (w * h) as usize);
                 prep_8tap_rust(
                     tmp,
                     src.cast(),
@@ -1619,9 +1608,8 @@ pub(crate) unsafe extern "C" fn prep_bilin_c_erased<BD: BitDepth>(
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
-    tmp_len: usize,
 ) {
-    let tmp = std::slice::from_raw_parts_mut(tmp, tmp_len);
+    let tmp = std::slice::from_raw_parts_mut(tmp, (w * h) as usize);
     prep_bilin_rust(
         tmp,
         src.cast(),
