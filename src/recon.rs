@@ -4324,7 +4324,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
         ];
         let p_offset = [
             (cmp::max(0, -y_span) + y as isize * y_stride) as usize,
-            (cmp::max(0, -uv_span) + y as isize * uv_stride >> ss_ver) as usize,
+            (cmp::max(0, -uv_span) + (y as isize * uv_stride >> ss_ver)) as usize,
         ];
         (p, p_offset)
     };
@@ -4385,7 +4385,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
         ];
         let p_offset = [
             (cmp::max(0, -y_span) + y as isize * y_stride) as usize,
-            (cmp::max(0, -uv_span) + y as isize * uv_stride >> ss_ver) as usize,
+            (cmp::max(0, -uv_span) + (y as isize * uv_stride >> ss_ver)) as usize,
         ];
         (p, p_offset)
     };
@@ -4531,29 +4531,38 @@ pub(crate) unsafe fn rav1d_filter_sbrow_lr<BD: BitDepth>(
     let y = sby * f.sb_step * 4;
     let ss_ver = (f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let h = f.sr_cur.p.p.h + 127 & !127;
+    let pxstride = f.sr_cur.p.stride.map(BD::pxstride);
+    let plane_size = [h as isize * pxstride[0], h as isize * pxstride[1] >> ss_ver];
+    let offset = [
+        cmp::min(plane_size[0] - pxstride[0], 0),
+        cmp::min(plane_size[1] - pxstride[1], 0),
+    ];
     let mut sr_p = [
         slice::from_raw_parts_mut(
             f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[0]]
                 .as_mut_ptr()
-                .cast::<BD::Pixel>(),
-            (h as isize * BD::pxstride(f.sr_cur.p.stride[0])) as usize,
+                .cast::<BD::Pixel>()
+                .offset(offset[0]),
+            plane_size[0].unsigned_abs(),
         ),
         slice::from_raw_parts_mut(
             f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[1]]
                 .as_mut_ptr()
-                .cast::<BD::Pixel>(),
-            (h as isize * BD::pxstride(f.sr_cur.p.stride[1])) as usize >> ss_ver,
+                .cast::<BD::Pixel>()
+                .offset(offset[1]),
+            plane_size[1].unsigned_abs(),
         ),
         slice::from_raw_parts_mut(
             f.sr_cur.p.data.as_ref().unwrap().data[f.lf.sr_p[2]]
                 .as_mut_ptr()
-                .cast::<BD::Pixel>(),
-            (h as isize * BD::pxstride(f.sr_cur.p.stride[1])) as usize >> ss_ver,
+                .cast::<BD::Pixel>()
+                .offset(offset[1]),
+            plane_size[1].unsigned_abs(),
         ),
     ];
     let sr_p_offset = [
-        (y as isize * BD::pxstride(f.sr_cur.p.stride[0])) as usize,
-        (y as isize * BD::pxstride(f.sr_cur.p.stride[1]) >> ss_ver) as usize,
+        (y as isize * pxstride[0] - offset[0]) as usize,
+        ((y as isize * pxstride[1] >> ss_ver) - offset[1]) as usize,
     ];
     rav1d_lr_sbrow::<BD>(c, f, &mut sr_p, &sr_p_offset, sby);
 }

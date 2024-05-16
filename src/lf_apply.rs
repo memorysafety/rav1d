@@ -179,12 +179,12 @@ pub(crate) unsafe fn rav1d_copy_lpf<BD: BitDepth>(
     let y_stride = BD::pxstride(lr_stride[0]);
     let uv_stride = BD::pxstride(lr_stride[1]);
 
-    let y_offset = (tt_off as isize * y_stride) as usize;
-    let uv_offset = (tt_off as isize * uv_stride) as usize;
+    let y_offset = tt_off as isize * y_stride;
+    let uv_offset = tt_off as isize * uv_stride;
     let dst_offset = [
-        f.lf.lr_lpf_line[0] + y_offset,
-        f.lf.lr_lpf_line[1] + uv_offset,
-        f.lf.lr_lpf_line[2] + uv_offset,
+        f.lf.lr_lpf_line[0].wrapping_add_signed(y_offset),
+        f.lf.lr_lpf_line[1].wrapping_add_signed(uv_offset),
+        f.lf.lr_lpf_line[2].wrapping_add_signed(uv_offset),
     ];
 
     // TODO Also check block level restore type to reduce copying.
