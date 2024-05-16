@@ -217,10 +217,10 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
 
 #[inline(never)]
 unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: usize,
+    mut dst: *mut BD::Pixel,
+    dst_stride: isize,
     mut src: *const BD::Pixel,
-    src_stride: usize,
+    src_stride: isize,
     w: usize,
     h: usize,
     mx: usize,
@@ -237,9 +237,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     let mut mid_ptr = &mut mid[..];
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
-    let mut dst = slice::from_raw_parts_mut(dst, dst_stride * h);
-
-    src = src.offset(-((src_stride * 3) as isize));
+    src = src.offset(-src_stride * 3);
     for _ in 0..tmp_h {
         let mut imx = mx;
         let mut ioff = 0;
@@ -256,14 +254,14 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         }
 
         mid_ptr = &mut mid_ptr[128..];
-        src = src.offset(src_stride as isize);
+        src = src.offset(src_stride);
     }
     mid_ptr = &mut mid[128 * 3..];
     for _ in 0..h {
         let fv = get_filter(my >> 6, h, v_filter_type);
 
         for x in 0..w {
-            dst[x] = match fv {
+            *dst.add(x) = match fv {
                 Some(fv) => {
                     rav1d_filter_8tap_clip(bd, mid_ptr.as_ptr(), x, fv, 128, 6 + intermediate_bits)
                 }
@@ -276,7 +274,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
         my += dy;
         mid_ptr = &mut mid_ptr[(my >> 10) * 128..];
         my &= 0x3ff;
-        dst = &mut dst[dst_stride..];
+        dst = dst.offset(dst_stride);
     }
 }
 
@@ -1455,9 +1453,9 @@ macro_rules! filter_fns {
             ) {
                 put_8tap_scaled_rust(
                     dst.cast(),
-                    dst_stride as usize,
+                    dst_stride,
                     src.cast(),
-                    src_stride as usize,
+                    src_stride,
                     w as usize,
                     h as usize,
                     mx as usize,
