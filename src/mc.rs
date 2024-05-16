@@ -21,6 +21,7 @@ use libc::intptr_t;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
+use std::iter;
 use std::slice;
 use to_method::To;
 
@@ -835,9 +836,10 @@ unsafe fn w_mask_rust<BD: BitDepth>(
     let rnd = (32 << intermediate_bits) + i32::from(BD::PREP_BIAS) * 64;
     let mask_sh = bitdepth + intermediate_bits - 4;
     let mask_rnd = 1 << (mask_sh - 5);
-    let mut tmp1 = tmp1.as_slice();
-    let mut tmp2 = tmp2.as_slice();
-    for h in 0..h {
+    for (h, (tmp1, tmp2)) in iter::zip(tmp1.chunks_exact(w), tmp2.chunks_exact(w))
+        .take(h)
+        .enumerate()
+    {
         let mut x = 0;
         while x < w {
             let m = cmp::min(
@@ -872,8 +874,6 @@ unsafe fn w_mask_rust<BD: BitDepth>(
             x += 1;
         }
 
-        tmp1 = &tmp1[w..];
-        tmp2 = &tmp2[w..];
         dst = dst.offset(dst_stride);
         if !ss_ver || h & 1 != 0 {
             mask = &mut mask[w >> ss_hor as usize..];
