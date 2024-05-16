@@ -22,6 +22,7 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::iter;
+use std::slice;
 use to_method::To;
 
 #[cfg(all(
@@ -44,8 +45,8 @@ unsafe fn put_rust<BD: BitDepth>(
 ) {
     let [dst_len, src_len] =
         [dst_stride, src_stride].map(|stride| if h == 0 { 0 } else { stride * (h - 1) + w });
-    let dst = std::slice::from_raw_parts_mut(dst, dst_len);
-    let src = std::slice::from_raw_parts(src, src_len);
+    let dst = slice::from_raw_parts_mut(dst, dst_len);
+    let src = slice::from_raw_parts(src, src_len);
     for (dst, src) in iter::zip(dst.chunks_mut(dst_stride), src.chunks(src_stride)) {
         BD::pixel_copy(dst, src, w);
     }
@@ -60,8 +61,8 @@ unsafe fn prep_rust<BD: BitDepth>(
     h: usize,
     bd: BD,
 ) {
-    let tmp = std::slice::from_raw_parts_mut(tmp, w * h);
-    let src = std::slice::from_raw_parts(src, if h == 0 { 0 } else { src_stride * (h - 1) + w });
+    let tmp = slice::from_raw_parts_mut(tmp, w * h);
+    let src = slice::from_raw_parts(src, if h == 0 { 0 } else { src_stride * (h - 1) + w });
     let intermediate_bits = bd.get_intermediate_bits();
     for (tmp, src) in iter::zip(tmp.chunks_exact_mut(w), src.chunks(src_stride)).take(h) {
         for (tmp, src) in iter::zip(tmp, &src[..w]) {
@@ -156,7 +157,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
 
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
-    let mut dst = std::slice::from_raw_parts_mut(dst, dst_stride * h);
+    let mut dst = slice::from_raw_parts_mut(dst, dst_stride * h);
 
     if let Some(fh) = fh {
         if let Some(fv) = fv {
@@ -191,7 +192,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
                 dst = &mut dst[dst_stride..];
             }
         } else {
-            let mut src = std::slice::from_raw_parts(src, src_stride * h);
+            let mut src = slice::from_raw_parts(src, src_stride * h);
             for _ in 0..h {
                 for x in 0..w {
                     dst[x] =
@@ -203,7 +204,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             }
         }
     } else if let Some(fv) = fv {
-        let mut src = std::slice::from_raw_parts(src, src_stride * h);
+        let mut src = slice::from_raw_parts(src, src_stride * h);
         for _ in 0..h {
             for x in 0..w {
                 dst[x] = rav1d_filter_8tap_clip(bd, src.as_ptr(), x, fv, src_stride, 6);
@@ -239,7 +240,7 @@ unsafe fn put_8tap_scaled_rust<BD: BitDepth>(
     let mut mid_ptr = &mut mid[..];
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
 
-    let mut dst = std::slice::from_raw_parts_mut(dst, dst_stride * h);
+    let mut dst = slice::from_raw_parts_mut(dst, dst_stride * h);
 
     src = src.offset(-((src_stride * 3) as isize));
     for _ in 0..tmp_h {
@@ -833,10 +834,8 @@ unsafe fn w_mask_rust<BD: BitDepth>(
     bd: BD,
 ) {
     let dst_stride = BD::pxstride(dst_stride);
-    let dst =
-        std::slice::from_raw_parts_mut(dst, if h == 0 { 0 } else { (h - 1) * dst_stride + w });
-    let mut mask =
-        std::slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
+    let dst = slice::from_raw_parts_mut(dst, if h == 0 { 0 } else { (h - 1) * dst_stride + w });
+    let mut mask = slice::from_raw_parts_mut(mask, (w >> ss_hor as usize) * (h >> ss_ver as usize));
     let sign = sign as u8;
 
     // store mask at 2x2 resolution, i.e. store 2x1 sum for even rows,
@@ -947,8 +946,8 @@ unsafe fn warp_affine_8x8_rust<BD: BitDepth>(
 }
 
 unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
-    mut tmp: *mut i16,
-    tmp_stride: ptrdiff_t,
+    tmp: &mut [i16],
+    tmp_stride: usize,
     mut src: *const BD::Pixel,
     src_stride: ptrdiff_t,
     abcd: &[i16; 4],
@@ -980,11 +979,12 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     }
 
     for y in 0..8 {
+        let tmp = &mut tmp[y * tmp_stride..];
         let my = my + y as c_int * abcd[3] as c_int;
         for x in 0..8 {
             let tmy = my + x as c_int * abcd[2] as c_int;
             let filter = &dav1d_mc_warp_filter[(64 + (tmy + 512 >> 10)) as usize];
-            *tmp.add(x) = ((filter[0] as c_int * mid[y + 0][x] as c_int
+            tmp[x] = ((filter[0] as c_int * mid[y + 0][x] as c_int
                 + filter[1] as c_int * mid[y + 1][x] as c_int
                 + filter[2] as c_int * mid[y + 2][x] as c_int
                 + filter[3] as c_int * mid[y + 3][x] as c_int
@@ -996,7 +996,6 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
                 >> 7)
                 - i32::from(BD::PREP_BIAS)) as i16;
         }
-        tmp = tmp.offset(tmp_stride);
     }
 }
 
@@ -1037,7 +1036,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     for _ in 0..center_h {
         BD::pixel_copy(
             &mut dst[blk + left_ext..][..center_w],
-            std::slice::from_raw_parts(r#ref, center_w),
+            slice::from_raw_parts(r#ref, center_w),
             center_w,
         );
         // extend left edge for this line
@@ -1088,8 +1087,8 @@ unsafe fn resize_rust<BD: BitDepth>(
     for _ in 0..h {
         let mut mx = mx0;
         let mut src_x = -1;
-        let src = std::slice::from_raw_parts(src_ptr, src_w as usize);
-        let dst = std::slice::from_raw_parts_mut(dst_ptr, dst_w as usize);
+        let src = slice::from_raw_parts(src_ptr, src_w as usize);
+        let dst = slice::from_raw_parts_mut(dst_ptr, dst_w as usize);
         for dst in dst {
             let F = &dav1d_resize_filter[(mx >> 8) as usize];
             *dst = bd.iclip_pixel(
@@ -1277,13 +1276,14 @@ impl mct_scaled::Fn {
 
 wrap_fn_ptr!(pub unsafe extern "C" fn warp8x8t(
     tmp: *mut i16,
-    tmp_stride: ptrdiff_t,
+    tmp_stride: usize,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
     abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
+    tmp_len: usize,
 ) -> ());
 
 impl warp8x8t::Fn {
@@ -1298,11 +1298,11 @@ impl warp8x8t::Fn {
         my: c_int,
         bd: BD,
     ) {
+        let tmp_len = tmp.len();
         let tmp = tmp.as_mut_ptr();
-        let tmp_stride = tmp_stride as isize;
         let src = src.cast();
         let bd = bd.into_c();
-        self.get()(tmp, tmp_stride, src, src_stride, abcd, mx, my, bd)
+        self.get()(tmp, tmp_stride, src, src_stride, abcd, mx, my, bd, tmp_len)
     }
 }
 
@@ -1913,14 +1913,16 @@ pub(crate) unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
 // TODO(legare): Temporarily pub until init fns are deduplicated.
 pub(crate) unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
     tmp: *mut i16,
-    tmp_stride: ptrdiff_t,
+    tmp_stride: usize,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
     abcd: &[i16; 4],
     mx: c_int,
     my: c_int,
     bitdepth_max: c_int,
+    tmp_len: usize,
 ) {
+    let tmp = slice::from_raw_parts_mut(tmp, tmp_len);
     warp_affine_8x8t_rust(
         tmp,
         tmp_stride,
