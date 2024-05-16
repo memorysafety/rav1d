@@ -354,7 +354,7 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
 unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     mut tmp: *mut i16,
     mut src: *const BD::Pixel,
-    src_stride: usize,
+    src_stride: isize,
     w: usize,
     h: usize,
     mx: usize,
@@ -370,7 +370,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     let mut mid_ptr = &mut mid[..];
     let src_stride = BD::pxstride(src_stride);
 
-    src = src.offset(-((src_stride * 3) as isize));
+    src = src.offset(-src_stride * 3);
     for _ in 0..tmp_h {
         let mut imx = mx;
         let mut ioff = 0;
@@ -386,7 +386,7 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
         }
 
         mid_ptr = &mut mid_ptr[128..];
-        src = src.offset(src_stride as isize);
+        src = src.offset(src_stride);
     }
 
     mid_ptr = &mut mid[128 * 3..];
@@ -1506,7 +1506,7 @@ macro_rules! filter_fns {
                 prep_8tap_scaled_rust(
                     tmp,
                     src.cast(),
-                    src_stride as usize,
+                    src_stride,
                     w as usize,
                     h as usize,
                     mx as usize,
