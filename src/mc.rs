@@ -36,19 +36,22 @@ use crate::include::common::bitdepth::{bpc_fn, BPC};
 
 #[inline(never)]
 unsafe fn put_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: usize,
-    src: *const BD::Pixel,
-    src_stride: usize,
+    mut dst: *mut BD::Pixel,
+    dst_stride: isize,
+    mut src: *const BD::Pixel,
+    src_stride: isize,
     w: usize,
     h: usize,
 ) {
-    let [dst_len, src_len] =
-        [dst_stride, src_stride].map(|stride| if h == 0 { 0 } else { stride * (h - 1) + w });
-    let dst = slice::from_raw_parts_mut(dst, dst_len);
-    let src = slice::from_raw_parts(src, src_len);
-    for (dst, src) in iter::zip(dst.chunks_mut(dst_stride), src.chunks(src_stride)) {
-        BD::pixel_copy(dst, src, w);
+    for _ in 0..h {
+        BD::pixel_copy(
+            slice::from_raw_parts_mut(dst, w),
+            slice::from_raw_parts(src, w),
+            w,
+        );
+
+        dst = dst.offset(dst_stride);
+        src = src.offset(src_stride);
     }
 }
 
@@ -70,11 +73,11 @@ unsafe fn prep_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn filter_8tap<T: Into<i32>>(src: *const T, x: usize, f: &[i8; 8], stride: usize) -> i32 {
+unsafe fn filter_8tap<T: Into<i32>>(src: *const T, x: usize, f: &[i8; 8], stride: isize) -> i32 {
     f.into_iter()
         .enumerate()
         .map(|(i, &f)| {
-            let [i, x, stride] = [i, x, stride].map(|it| it as isize);
+            let [i, x] = [i, x].map(|it| it as isize);
             let j = x + (i - 3) * stride;
             i32::from(f) * src.offset(j).read().into()
         })
@@ -85,7 +88,7 @@ unsafe fn rav1d_filter_8tap_rnd<T: Into<i32>>(
     src: *const T,
     x: usize,
     f: &[i8; 8],
-    stride: usize,
+    stride: isize,
     sh: u8,
 ) -> i32 {
     (filter_8tap(src, x, f, stride) + ((1 << sh) >> 1)) >> sh
@@ -95,7 +98,7 @@ unsafe fn rav1d_filter_8tap_rnd2<T: Into<i32>>(
     src: *const T,
     x: usize,
     f: &[i8; 8],
-    stride: usize,
+    stride: isize,
     rnd: u8,
     sh: u8,
 ) -> i32 {
@@ -107,7 +110,7 @@ unsafe fn rav1d_filter_8tap_clip<BD: BitDepth, T: Into<i32>>(
     src: *const T,
     x: usize,
     f: &[i8; 8],
-    stride: usize,
+    stride: isize,
     sh: u8,
 ) -> BD::Pixel {
     bd.iclip_pixel(rav1d_filter_8tap_rnd(src, x, f, stride, sh))
@@ -118,7 +121,7 @@ unsafe fn rav1d_filter_8tap_clip2<BD: BitDepth, T: Into<i32>>(
     src: *const T,
     x: usize,
     f: &[i8; 8],
-    stride: usize,
+    stride: isize,
     rnd: u8,
     sh: u8,
 ) -> BD::Pixel {
@@ -137,10 +140,10 @@ fn get_filter(m: usize, d: usize, filter_type: Rav1dFilterMode) -> Option<&'stat
 
 #[inline(never)]
 unsafe fn put_8tap_rust<BD: BitDepth>(
-    dst: *mut BD::Pixel,
-    dst_stride: usize,
+    mut dst: *mut BD::Pixel,
+    dst_stride: isize,
     mut src: *const BD::Pixel,
-    src_stride: usize,
+    src_stride: isize,
     w: usize,
     h: usize,
     mx: usize,
@@ -155,8 +158,6 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
     let fv = get_filter(my, h, v_filter_type);
 
     let [dst_stride, src_stride] = [dst_stride, src_stride].map(BD::pxstride);
-
-    let mut dst = slice::from_raw_parts_mut(dst, dst_stride * h);
 
     if let Some(fh) = fh {
         if let Some(fv) = fv {
@@ -177,7 +178,7 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
             mid_ptr = &mut mid[128 * 3..];
             for _ in 0..h {
                 for x in 0..w {
-                    dst[x] = rav1d_filter_8tap_clip(
+                    *dst.add(x) = rav1d_filter_8tap_clip(
                         bd,
                         mid_ptr.as_ptr(),
                         x,
@@ -188,32 +189,29 @@ unsafe fn put_8tap_rust<BD: BitDepth>(
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
-                dst = &mut dst[dst_stride..];
+                dst = dst.offset(dst_stride);
             }
         } else {
-            let mut src = slice::from_raw_parts(src, src_stride * h);
             for _ in 0..h {
                 for x in 0..w {
-                    dst[x] =
-                        rav1d_filter_8tap_clip2(bd, src.as_ptr(), x, fh, 1, intermediate_rnd, 6);
+                    *dst.add(x) = rav1d_filter_8tap_clip2(bd, src, x, fh, 1, intermediate_rnd, 6);
                 }
 
-                dst = &mut dst[dst_stride..];
-                src = &src[src_stride..];
+                dst = dst.offset(dst_stride);
+                src = src.offset(src_stride);
             }
         }
     } else if let Some(fv) = fv {
-        let mut src = slice::from_raw_parts(src, src_stride * h);
         for _ in 0..h {
             for x in 0..w {
-                dst[x] = rav1d_filter_8tap_clip(bd, src.as_ptr(), x, fv, src_stride, 6);
+                *dst.add(x) = rav1d_filter_8tap_clip(bd, src, x, fv, src_stride, 6);
             }
 
-            dst = &mut dst[dst_stride..];
-            src = &src[src_stride..];
+            dst = dst.offset(dst_stride);
+            src = src.offset(src_stride);
         }
     } else {
-        put_rust::<BD>(dst.as_mut_ptr(), dst_stride, src, src_stride, w, h);
+        put_rust::<BD>(dst, dst_stride, src, src_stride, w, h);
     }
 }
 
@@ -341,8 +339,9 @@ unsafe fn prep_8tap_rust<BD: BitDepth>(
     } else if let Some(fv) = fv {
         for _ in 0..h {
             for x in 0..w {
-                tmp[x] = (rav1d_filter_8tap_rnd(src, x, fv, src_stride, 6 - intermediate_bits)
-                    - i32::from(BD::PREP_BIAS)) as i16;
+                tmp[x] =
+                    (rav1d_filter_8tap_rnd(src, x, fv, src_stride as isize, 6 - intermediate_bits)
+                        - i32::from(BD::PREP_BIAS)) as i16;
             }
 
             tmp = &mut tmp[w..];
@@ -408,8 +407,9 @@ unsafe fn prep_8tap_scaled_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn filter_bilin<T: Into<i32>>(src: *const T, x: usize, mxy: usize, stride: usize) -> i32 {
-    let src = |i: usize| -> i32 { src.offset(i as isize).read().into() };
+unsafe fn filter_bilin<T: Into<i32>>(src: *const T, x: usize, mxy: usize, stride: isize) -> i32 {
+    let x = x as isize;
+    let src = |i| -> i32 { src.offset(i).read().into() };
     16 * src(x) + ((mxy as i32) * (src(x + stride) - src(x)))
 }
 
@@ -417,7 +417,7 @@ unsafe fn filter_bilin_rnd<T: Into<i32>>(
     src: *const T,
     x: usize,
     mxy: usize,
-    stride: usize,
+    stride: isize,
     sh: u8,
 ) -> i32 {
     (filter_bilin(src, x, mxy, stride) + ((1 << sh) >> 1)) >> sh
@@ -428,7 +428,7 @@ unsafe fn filter_bilin_clip<BD: BitDepth, T: Into<i32>>(
     src: *const T,
     x: usize,
     mxy: usize,
-    stride: usize,
+    stride: isize,
     sh: u8,
 ) -> BD::Pixel {
     bd.iclip_pixel(filter_bilin_rnd(src, x, mxy, stride, sh))
@@ -436,9 +436,9 @@ unsafe fn filter_bilin_clip<BD: BitDepth, T: Into<i32>>(
 
 unsafe fn put_bilin_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    dst_stride: usize,
+    dst_stride: isize,
     mut src: *const BD::Pixel,
-    src_stride: usize,
+    src_stride: isize,
     w: usize,
     h: usize,
     mx: usize,
@@ -461,7 +461,7 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
-                src = src.offset(src_stride as isize);
+                src = src.offset(src_stride);
             }
             mid_ptr = &mut mid[..];
             for _ in 0..h {
@@ -471,7 +471,7 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
                 }
 
                 mid_ptr = &mut mid_ptr[128..];
-                dst = dst.offset(dst_stride as isize);
+                dst = dst.offset(dst_stride);
             }
         } else {
             for _ in 0..h {
@@ -481,8 +481,8 @@ unsafe fn put_bilin_rust<BD: BitDepth>(
                         bd.iclip_pixel((px + intermediate_rnd) >> intermediate_bits);
                 }
 
-                dst = dst.offset(dst_stride as isize);
-                src = src.offset(src_stride as isize);
+                dst = dst.offset(dst_stride);
+                src = src.offset(src_stride);
             }
         }
     } else if my != 0 {
@@ -596,7 +596,7 @@ unsafe fn prep_bilin_rust<BD: BitDepth>(
     } else if my != 0 {
         for _ in 0..h {
             for x in 0..w {
-                tmp[x] = (filter_bilin_rnd(src, x, my, src_stride, 4 - intermediate_bits)
+                tmp[x] = (filter_bilin_rnd(src, x, my, src_stride as isize, 4 - intermediate_bits)
                     - i32::from(BD::PREP_BIAS)) as i16;
             }
 
@@ -1428,9 +1428,9 @@ macro_rules! filter_fns {
             ) {
                 put_8tap_rust(
                     dst.cast(),
-                    dst_stride as usize,
+                    dst_stride,
                     src.cast(),
-                    src_stride as usize,
+                    src_stride,
                     w as usize,
                     h as usize,
                     mx as usize,
@@ -1582,9 +1582,9 @@ unsafe extern "C" fn put_bilin_c_erased<BD: BitDepth>(
 ) {
     put_bilin_rust(
         dst.cast(),
-        dst_stride as usize,
+        dst_stride,
         src.cast(),
-        src_stride as usize,
+        src_stride,
         w as usize,
         h as usize,
         mx as usize,
