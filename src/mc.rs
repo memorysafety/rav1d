@@ -21,7 +21,6 @@ use libc::intptr_t;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
-use std::iter;
 use std::slice;
 use to_method::To;
 
@@ -748,7 +747,7 @@ fn blend_px<BD: BitDepth>(a: BD::Pixel, b: BD::Pixel, m: u8) -> BD::Pixel {
 
 unsafe fn blend_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
-    dst_stride: usize,
+    dst_stride: isize,
     mut tmp: *const BD::Pixel,
     w: usize,
     h: usize,
@@ -764,7 +763,7 @@ unsafe fn blend_rust<BD: BitDepth>(
             )
         }
 
-        dst = dst.offset(dst_stride as isize);
+        dst = dst.offset(dst_stride);
         tmp = tmp.offset(w as isize);
         mask = mask.offset(w as isize);
     }
@@ -1824,7 +1823,7 @@ unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
 ) {
     blend_rust::<BD>(
         dst.cast(),
-        dst_stride as usize,
+        dst_stride,
         tmp.cast(),
         w as usize,
         h as usize,
