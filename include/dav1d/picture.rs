@@ -1,3 +1,5 @@
+#![deny(unsafe_op_in_unsafe_fn)]
+
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -12,16 +14,24 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
+use crate::src::align::Align64;
 use crate::src::c_arc::RawArc;
+use crate::src::disjoint_mut::AsMutPtr;
+use crate::src::disjoint_mut::DisjointMut;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
+use crate::src::error::Rav1dResult;
 use libc::ptrdiff_t;
 use libc::uintptr_t;
+use std::array;
 use std::ffi::c_int;
 use std::ffi::c_void;
+use std::mem;
+use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::sync::Arc;
+use to_method::To as _;
 
 pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
 pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;
@@ -93,8 +103,44 @@ pub struct Dav1dPicture {
     pub allocator_data: Option<NonNull<c_void>>,
 }
 
+type AlignedPixelChunk = Align64<[MaybeUninit<u8>; RAV1D_PICTURE_ALIGNMENT]>;
+const _: () = assert!(mem::align_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
+const _: () = assert!(mem::size_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
+
+pub struct Rav1dPictureDataComponent {
+    ptr: NonNull<AlignedPixelChunk>,
+
+    /// Length of [`Self::ptr`] in bytes.
+    len: usize,
+}
+
+impl Rav1dPictureDataComponent {
+    fn new(ptr: NonNull<AlignedPixelChunk>, len: usize) -> Self {
+        assert!(ptr.is_aligned());
+        assert!(len % mem::align_of::<AlignedPixelChunk>() == 0);
+        Self { ptr, len }
+    }
+}
+
+// SAFETY: We only store the raw pointer, so we never materialize a `&mut`.
+unsafe impl AsMutPtr for Rav1dPictureDataComponent {
+    type Target = MaybeUninit<u8>;
+
+    #[inline(always)] // Inline so callers can see our over-alignment.
+    unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
+        // SAFETY: Safe to dereference by unsafe preconditions.
+        // Since we don't store any `&mut`s, just a raw ptr, we can have a `&Self`.
+        let this = unsafe { &*ptr };
+        this.ptr.cast().as_ptr()
+    }
+
+    fn len(&self) -> usize {
+        self.len
+    }
+}
+
 pub struct Rav1dPictureData {
-    pub(crate) data: [*mut c_void; 3],
+    pub data: [DisjointMut<Rav1dPictureDataComponent>; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -104,9 +150,9 @@ impl Drop for Rav1dPictureData {
         let Self {
             data,
             allocator_data,
-            ref allocator,
-        } = *self;
-        allocator.dealloc_picture_data(data, allocator_data);
+            allocator,
+        } = self;
+        allocator.dealloc_picture_data(data, *allocator_data);
     }
 }
 
@@ -197,7 +243,11 @@ impl From<Rav1dPicture> for Dav1dPicture {
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             data: data
                 .as_ref()
-                .map(|arc| arc.data.map(NonNull::new))
+                .map(|arc| {
+                    arc.data
+                        .each_ref()
+                        .map(|data| Some(NonNull::new(data.as_mut_ptr()).unwrap().cast()))
+                })
                 .unwrap_or_default(),
             stride,
             p: p.into(),
@@ -391,6 +441,69 @@ impl From<Rav1dPicAllocator> for Dav1dPicAllocator {
             cookie,
             alloc_picture_callback: Some(alloc_picture_callback),
             release_picture_callback: Some(release_picture_callback),
+        }
+    }
+}
+
+impl Rav1dPicAllocator {
+    pub fn alloc_picture_data(
+        &self,
+        w: c_int,
+        h: c_int,
+        seq_hdr: Arc<DRav1d<Rav1dSequenceHeader, Dav1dSequenceHeader>>,
+        frame_hdr: Option<Arc<DRav1d<Rav1dFrameHeader, Dav1dFrameHeader>>>,
+    ) -> Rav1dResult<Rav1dPicture> {
+        let pic = Rav1dPicture {
+            p: Rav1dPictureParameters {
+                w,
+                h,
+                layout: seq_hdr.layout,
+                bpc: 8 + 2 * seq_hdr.hbd,
+            },
+            seq_hdr: Some(seq_hdr),
+            frame_hdr,
+            ..Default::default()
+        };
+        let mut pic_c = pic.to::<Dav1dPicture>();
+        // Safety: `pic_c` is a valid `Dav1dPicture` with `data`, `stride`, `allocator_data` unset.
+        let result = unsafe { (self.alloc_picture_callback)(&mut pic_c, self.cookie) };
+        result.try_to::<Rav1dResult>().unwrap()?;
+        // `data`, `stride`, and `allocator_data` are the only fields set by the allocator.
+        // Of those, only `data` and `allocator_data` are read through `r#ref`,
+        // so we need to read those directly first and allocate the `Arc`.
+        let data = pic_c.data;
+        let allocator_data = pic_c.allocator_data;
+        let mut pic = pic_c.to::<Rav1dPicture>();
+        let len = pic.p.pic_len(pic.stride);
+        // TODO fallible allocation
+        pic.data = Some(Arc::new(Rav1dPictureData {
+            // SAFETY: `MaybeUninit<u8>` should be safe for anything.
+            data: array::from_fn(|i| {
+                let ptr = data[i].unwrap().cast::<AlignedPixelChunk>();
+                let len = len[(i != 0) as usize];
+                DisjointMut::new(Rav1dPictureDataComponent::new(ptr, len))
+            }),
+            allocator_data,
+            allocator: self.clone(),
+        }));
+        Ok(pic)
+    }
+
+    pub fn dealloc_picture_data(
+        &self,
+        data: &mut [DisjointMut<Rav1dPictureDataComponent>; 3],
+        allocator_data: Option<NonNull<c_void>>,
+    ) {
+        let data = data.each_mut().map(|data| Some(data.get_mut().ptr.cast()));
+        let mut pic_c = Dav1dPicture {
+            data,
+            allocator_data,
+            ..Default::default()
+        };
+        // Safety: `pic_c` contains the same `data` and `allocator_data`
+        // that `Self::alloc_picture_data` set, which now get deallocated here.
+        unsafe {
+            (self.release_picture_callback)(&mut pic_c, self.cookie);
         }
     }
 }

@@ -43,7 +43,7 @@ pub mod src {
     mod data;
     mod decode;
     mod dequant_tables;
-    mod disjoint_mut;
+    pub(crate) mod disjoint_mut;
     pub(crate) mod enum_map;
     mod env;
     pub(crate) mod error;
