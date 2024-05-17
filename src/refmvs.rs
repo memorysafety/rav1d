@@ -18,11 +18,8 @@ use crate::src::intra_edge::EdgeFlags;
 use crate::src::levels::mv;
 use crate::src::levels::BlockSize;
 use crate::src::tables::dav1d_block_dimensions;
-use libc::ptrdiff_t;
 use std::array;
 use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_uint;
 use std::marker::PhantomData;
 use std::mem;
 use std::ptr;
@@ -33,20 +30,20 @@ extern "C" {
     fn dav1d_splat_mv_sse2(
         rr: *mut *mut refmvs_block,
         rmv: *const Align16<refmvs_block>,
-        bx4: c_int,
-        bw4: c_int,
-        bh4: c_int,
+        bx4: i32,
+        bw4: i32,
+        bh4: i32,
         _rr_len: usize,
     );
     fn dav1d_save_tmvs_ssse3(
         rp: *mut refmvs_temporal_block,
-        stride: ptrdiff_t,
+        stride: isize,
         rr: *const [*const refmvs_block; 31],
         ref_sign: *const [u8; 7],
-        col_end8: c_int,
-        row_end8: c_int,
-        col_start8: c_int,
-        row_start8: c_int,
+        col_end8: i32,
+        row_end8: i32,
+        col_start8: i32,
+        row_start8: i32,
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
         _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
@@ -57,11 +54,11 @@ extern "C" {
 extern "C" {
     fn dav1d_load_tmvs_sse4(
         rf: *const refmvs_frame,
-        tile_row_idx: c_int,
-        col_start8: c_int,
-        col_end8: c_int,
-        row_start8: c_int,
-        row_end8: c_int,
+        tile_row_idx: i32,
+        col_start8: i32,
+        col_end8: i32,
+        row_start8: i32,
+        row_end8: i32,
         _rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
         _rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
     );
@@ -72,41 +69,41 @@ extern "C" {
     fn dav1d_splat_mv_avx512icl(
         rr: *mut *mut refmvs_block,
         rmv: *const Align16<refmvs_block>,
-        bx4: c_int,
-        bw4: c_int,
-        bh4: c_int,
+        bx4: i32,
+        bw4: i32,
+        bh4: i32,
         _rr_len: usize,
     );
     fn dav1d_splat_mv_avx2(
         rr: *mut *mut refmvs_block,
         rmv: *const Align16<refmvs_block>,
-        bx4: c_int,
-        bw4: c_int,
-        bh4: c_int,
+        bx4: i32,
+        bw4: i32,
+        bh4: i32,
         _rr_len: usize,
     );
     fn dav1d_save_tmvs_avx2(
         rp: *mut refmvs_temporal_block,
-        stride: ptrdiff_t,
+        stride: isize,
         rr: *const [*const refmvs_block; 31],
         ref_sign: *const [u8; 7],
-        col_end8: c_int,
-        row_end8: c_int,
-        col_start8: c_int,
-        row_start8: c_int,
+        col_end8: i32,
+        row_end8: i32,
+        col_start8: i32,
+        row_start8: i32,
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
         _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
     );
     fn dav1d_save_tmvs_avx512icl(
         rp: *mut refmvs_temporal_block,
-        stride: ptrdiff_t,
+        stride: isize,
         rr: *const [*const refmvs_block; 31],
         ref_sign: *const [u8; 7],
-        col_end8: c_int,
-        row_end8: c_int,
-        col_start8: c_int,
-        row_start8: c_int,
+        col_end8: i32,
+        row_end8: i32,
+        col_start8: i32,
+        row_start8: i32,
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
         _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
@@ -118,9 +115,9 @@ extern "C" {
     fn dav1d_splat_mv_neon(
         rr: *mut *mut refmvs_block,
         rmv: *const Align16<refmvs_block>,
-        bx4: c_int,
-        bw4: c_int,
-        bh4: c_int,
+        bx4: i32,
+        bw4: i32,
+        bh4: i32,
         _rr_len: usize,
     );
 }
@@ -174,45 +171,45 @@ pub(crate) struct refmvs_frame<'a> {
     /// However, the [`Self::frm_hdr`] pointer is not accessed in such a function (see [`load_tmvs_c`]).
     /// But we need to keep the layout the same, so we store a `*const ()` null ptr.
     _frm_hdr: *const (),
-    pub iw4: c_int,
-    pub ih4: c_int,
-    pub iw8: c_int,
-    pub ih8: c_int,
-    pub sbsz: c_int,
-    pub use_ref_frame_mvs: c_int,
+    pub iw4: i32,
+    pub ih4: i32,
+    pub iw8: i32,
+    pub ih8: i32,
+    pub sbsz: i32,
+    pub use_ref_frame_mvs: i32,
     pub sign_bias: [u8; 7],
     pub mfmv_sign: [u8; 7],
     pub pocdiff: [i8; 7],
     pub mfmv_ref: [u8; 3],
-    pub mfmv_ref2cur: [c_int; 3],
-    pub mfmv_ref2ref: [[c_int; 7]; 3],
-    pub n_mfmvs: c_int,
+    pub mfmv_ref2cur: [i32; 3],
+    pub mfmv_ref2ref: [[i32; 7]; 3],
+    pub n_mfmvs: i32,
     pub rp: *mut refmvs_temporal_block,
     pub rp_ref: *const *mut refmvs_temporal_block,
     pub rp_proj: *mut refmvs_temporal_block,
-    pub rp_stride: ptrdiff_t,
+    pub rp_stride: isize,
     pub r: *mut refmvs_block,
-    pub r_stride: ptrdiff_t,
-    pub n_tile_rows: c_int,
-    pub n_tile_threads: c_int,
-    pub n_frame_threads: c_int,
+    pub r_stride: isize,
+    pub n_tile_rows: i32,
+    pub n_tile_threads: i32,
+    pub n_frame_threads: i32,
 }
 
 #[derive(Default)]
 pub struct RefMvsFrame {
-    pub iw4: c_int,
-    pub ih4: c_int,
-    pub iw8: c_int,
-    pub ih8: c_int,
-    pub sbsz: c_int,
-    pub use_ref_frame_mvs: c_int,
+    pub iw4: i32,
+    pub ih4: i32,
+    pub iw8: i32,
+    pub ih8: i32,
+    pub sbsz: i32,
+    pub use_ref_frame_mvs: i32,
     pub sign_bias: [u8; 7],
     pub mfmv_sign: [u8; 7],
     pub pocdiff: [i8; 7],
     pub mfmv_ref: [u8; 3],
-    pub mfmv_ref2cur: [c_int; 3],
-    pub mfmv_ref2ref: [[c_int; 7]; 3],
-    pub n_mfmvs: c_int,
+    pub mfmv_ref2cur: [i32; 3],
+    pub mfmv_ref2ref: [[i32; 7]; 3],
+    pub n_mfmvs: i32,
     pub rp_proj: DisjointMut<AlignedVec64<refmvs_temporal_block>>,
     pub rp_stride: u32,
     pub r: DisjointMut<AlignedVec64<refmvs_block>>,
@@ -225,8 +222,8 @@ pub struct RefMvsFrame {
 #[derive(Default)]
 #[repr(C)]
 pub struct refmvs_tile_range {
-    pub start: c_int,
-    pub end: c_int,
+    pub start: i32,
+    pub end: i32,
 }
 
 pub struct refmvs_tile {
@@ -260,29 +257,29 @@ impl Default for refmvs_tile {
 #[repr(C)]
 pub struct refmvs_candidate {
     pub mv: refmvs_mvpair,
-    pub weight: c_int,
+    pub weight: i32,
 }
 
 pub(crate) type load_tmvs_fn = unsafe extern "C" fn(
     rf: *const refmvs_frame,
-    tile_row_idx: c_int,
-    col_start8: c_int,
-    col_end8: c_int,
-    row_start8: c_int,
-    row_end8: c_int,
+    tile_row_idx: i32,
+    col_start8: i32,
+    col_end8: i32,
+    row_start8: i32,
+    row_end8: i32,
     rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
     rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
 ) -> ();
 
 pub type save_tmvs_fn = unsafe extern "C" fn(
     rp: *mut refmvs_temporal_block,
-    stride: ptrdiff_t,
+    stride: isize,
     rr: *const [*const refmvs_block; 31],
     ref_sign: *const [u8; 7],
-    col_end8: c_int,
-    row_end8: c_int,
-    col_start8: c_int,
-    row_start8: c_int,
+    col_end8: i32,
+    row_end8: i32,
+    col_start8: i32,
+    row_start8: i32,
     r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
     ri: &[usize; 31],
     rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
@@ -292,13 +289,13 @@ pub type save_tmvs_fn = unsafe extern "C" fn(
 extern "C" {
     fn dav1d_save_tmvs_neon(
         rp: *mut refmvs_temporal_block,
-        stride: ptrdiff_t,
+        stride: isize,
         rr: *const [*const refmvs_block; 31],
         ref_sign: *const [u8; 7],
-        col_end8: c_int,
-        row_end8: c_int,
-        col_start8: c_int,
-        row_start8: c_int,
+        col_end8: i32,
+        row_end8: i32,
+        col_start8: i32,
+        row_start8: i32,
         _r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
         _ri: &[usize; 31],
         _rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
@@ -308,9 +305,9 @@ extern "C" {
 pub type splat_mv_fn = unsafe extern "C" fn(
     rr: *mut *mut refmvs_block,
     rmv: *const Align16<refmvs_block>,
-    bx4: c_int,
-    bw4: c_int,
-    bh4: c_int,
+    bx4: i32,
+    bw4: i32,
+    bh4: i32,
     // Extra args, unused by asm.F
     rr_len: usize,
 ) -> ();
@@ -327,11 +324,11 @@ impl Rav1dRefmvsDSPContext {
         rf: &RefMvsFrame,
         rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
         rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
-        tile_row_idx: c_int,
-        col_start8: c_int,
-        col_end8: c_int,
-        row_start8: c_int,
-        row_end8: c_int,
+        tile_row_idx: i32,
+        col_start8: i32,
+        col_end8: i32,
+        row_start8: i32,
+        row_end8: i32,
     ) {
         let RefMvsFrame {
             iw4,
@@ -408,13 +405,13 @@ impl Rav1dRefmvsDSPContext {
         rt: &refmvs_tile,
         rf: &RefMvsFrame,
         rp: &Option<DisjointMutArcSlice<refmvs_temporal_block>>,
-        col_start8: c_int,
-        col_end8: c_int,
-        row_start8: c_int,
-        row_end8: c_int,
+        col_start8: i32,
+        col_end8: i32,
+        row_start8: i32,
+        row_end8: i32,
     ) {
         assert!(row_start8 >= 0);
-        assert!((row_end8 - row_start8) as c_uint <= 16);
+        assert!((row_end8 - row_start8) as u32 <= 16);
 
         let rp = &*rp.as_ref().unwrap();
 
@@ -505,12 +502,12 @@ impl Rav1dRefmvsDSPContext {
 fn add_spatial_candidate(
     mvstack: &mut [refmvs_candidate],
     cnt: &mut usize,
-    weight: c_int,
+    weight: i32,
     b: refmvs_block,
     r#ref: refmvs_refpair,
     gmv: &[mv; 2],
-    have_newmv_match: &mut c_int,
-    have_refmv_match: &mut c_int,
+    have_newmv_match: &mut i32,
+    have_refmv_match: &mut i32,
 ) {
     if b.mv.mv[0].is_invalid() {
         // intra block, no intrabc
@@ -528,7 +525,7 @@ fn add_spatial_candidate(
                 };
 
                 *have_refmv_match = 1;
-                *have_newmv_match |= b.mf as c_int >> 1;
+                *have_newmv_match |= b.mf as i32 >> 1;
 
                 let last = *cnt;
                 for cand in &mut mvstack[..last] {
@@ -564,7 +561,7 @@ fn add_spatial_candidate(
         };
 
         *have_refmv_match = 1;
-        *have_newmv_match |= b.mf as c_int >> 1;
+        *have_newmv_match |= b.mf as i32 >> 1;
 
         let last = *cnt;
         for cand in &mut mvstack[..last] {
@@ -590,17 +587,17 @@ fn scan_row(
     gmv: &[mv; 2],
     r: &DisjointMut<AlignedVec64<refmvs_block>>,
     b_offset: usize,
-    bw4: c_int,
-    w4: c_int,
-    max_rows: c_int,
-    step: c_int,
-    have_newmv_match: &mut c_int,
-    have_refmv_match: &mut c_int,
-) -> c_int {
+    bw4: i32,
+    w4: i32,
+    max_rows: i32,
+    step: i32,
+    have_newmv_match: &mut i32,
+    have_refmv_match: &mut i32,
+) -> i32 {
     let mut cand_b = *r.index(b_offset);
     let first_cand_bs = cand_b.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
-    let mut cand_bw4 = first_cand_b_dim[0] as c_int;
+    let mut cand_bw4 = first_cand_b_dim[0] as i32;
     let mut len = cmp::max(step, cmp::min(bw4, cand_bw4));
 
     if bw4 <= cand_bw4 {
@@ -611,7 +608,7 @@ fn scan_row(
         let weight = if bw4 == 1 {
             2
         } else {
-            cmp::max(2, cmp::min(2 * max_rows, first_cand_b_dim[1] as c_int))
+            cmp::max(2, cmp::min(2 * max_rows, first_cand_b_dim[1] as i32))
         };
         add_spatial_candidate(
             mvstack,
@@ -646,7 +643,7 @@ fn scan_row(
             return 1;
         }
         cand_b = *r.index(b_offset + x as usize);
-        cand_bw4 = dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
+        cand_bw4 = dav1d_block_dimensions[cand_b.bs as usize][0] as i32;
         assert!(cand_bw4 < bw4);
         len = cmp::max(step, cand_bw4);
     }
@@ -659,18 +656,18 @@ fn scan_col(
     gmv: &[mv; 2],
     r: &DisjointMut<AlignedVec64<refmvs_block>>,
     b: &[usize],
-    bh4: c_int,
-    h4: c_int,
-    bx4: c_int,
-    max_cols: c_int,
-    step: c_int,
-    have_newmv_match: &mut c_int,
-    have_refmv_match: &mut c_int,
-) -> c_int {
+    bh4: i32,
+    h4: i32,
+    bx4: i32,
+    max_cols: i32,
+    step: i32,
+    have_newmv_match: &mut i32,
+    have_refmv_match: &mut i32,
+) -> i32 {
     let mut cand_b = *r.index(b[0] + bx4 as usize);
     let first_cand_bs = cand_b.bs;
     let first_cand_b_dim = &dav1d_block_dimensions[first_cand_bs as usize];
-    let mut cand_bh4 = first_cand_b_dim[1] as c_int;
+    let mut cand_bh4 = first_cand_b_dim[1] as i32;
     let mut len = cmp::max(step, cmp::min(bh4, cand_bh4));
 
     if bh4 <= cand_bh4 {
@@ -681,7 +678,7 @@ fn scan_col(
         let weight = if bh4 == 1 {
             2
         } else {
-            cmp::max(2, cmp::min(2 * max_cols, first_cand_b_dim[0] as c_int))
+            cmp::max(2, cmp::min(2 * max_cols, first_cand_b_dim[0] as i32))
         };
         add_spatial_candidate(
             mvstack,
@@ -716,23 +713,23 @@ fn scan_col(
             return 1;
         }
         cand_b = *r.index(b[y as usize] + bx4 as usize);
-        cand_bh4 = dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
+        cand_bh4 = dav1d_block_dimensions[cand_b.bs as usize][1] as i32;
         assert!(cand_bh4 < bh4);
         len = cmp::max(step, cand_bh4);
     }
 }
 
 #[inline]
-fn mv_projection(mv: mv, num: c_int, den: c_int) -> mv {
+fn mv_projection(mv: mv, num: i32, den: i32) -> mv {
     static div_mult: [u16; 32] = [
         0, 16384, 8192, 5461, 4096, 3276, 2730, 2340, 2048, 1820, 1638, 1489, 1365, 1260, 1170,
         1092, 1024, 963, 910, 862, 819, 780, 744, 712, 682, 655, 630, 606, 585, 564, 546, 528,
     ];
     assert!(den > 0 && den < 32);
     assert!(num > -32 && num < 32);
-    let frac = num * div_mult[den as usize] as c_int;
-    let y = mv.y as c_int * frac;
-    let x = mv.x as c_int * frac;
+    let frac = num * div_mult[den as usize] as i32;
+    let y = mv.y as i32 * frac;
+    let x = mv.x as i32 * frac;
     // Round and clip according to AV1 spec section 7.9.3
     let max = (1 << 14) - 1;
     return mv {
@@ -747,7 +744,7 @@ fn add_temporal_candidate(
     cnt: &mut usize,
     rb: refmvs_temporal_block,
     r#ref: refmvs_refpair,
-    globalmv: Option<(&mut c_int, &[mv; 2])>,
+    globalmv: Option<(&mut i32, &[mv; 2])>,
     frame_hdr: &Rav1dFrameHeader,
 ) {
     if rb.mv.is_invalid() {
@@ -756,15 +753,15 @@ fn add_temporal_candidate(
 
     let mut mv = mv_projection(
         rb.mv,
-        rf.pocdiff[r#ref.r#ref[0] as usize - 1] as c_int,
-        rb.r#ref as c_int,
+        rf.pocdiff[r#ref.r#ref[0] as usize - 1] as i32,
+        rb.r#ref as i32,
     );
     fix_mv_precision(frame_hdr, &mut mv);
 
     let last = *cnt;
     if r#ref.r#ref[1] == -1 {
         if let Some((globalmv_ctx, gmv)) = globalmv {
-            *globalmv_ctx = ((mv.x - gmv[0].x).abs() | (mv.y - gmv[0].y).abs() >= 16) as c_int;
+            *globalmv_ctx = ((mv.x - gmv[0].x).abs() | (mv.y - gmv[0].y).abs() >= 16) as i32;
         }
 
         for cand in &mut mvstack[..last] {
@@ -785,8 +782,8 @@ fn add_temporal_candidate(
                 mv,
                 mv_projection(
                     rb.mv,
-                    rf.pocdiff[r#ref.r#ref[1] as usize - 1] as c_int,
-                    rb.r#ref as c_int,
+                    rf.pocdiff[r#ref.r#ref[1] as usize - 1] as i32,
+                    rb.r#ref as i32,
                 ),
             ],
         };
@@ -937,18 +934,18 @@ pub(crate) fn rav1d_refmvs_find(
     rf: &RefMvsFrame,
     mvstack: &mut [refmvs_candidate; 8],
     cnt: &mut usize,
-    ctx: &mut c_int,
+    ctx: &mut i32,
     r#ref: refmvs_refpair,
     bs: BlockSize,
     edge_flags: EdgeFlags,
-    by4: c_int,
-    bx4: c_int,
+    by4: i32,
+    bx4: i32,
     frame_hdr: &Rav1dFrameHeader,
 ) {
     let b_dim = &dav1d_block_dimensions[bs as usize];
-    let bw4 = b_dim[0] as c_int;
+    let bw4 = b_dim[0] as i32;
     let w4 = cmp::min(cmp::min(bw4, 16), rt.tile_col.end - bx4);
-    let bh4 = b_dim[1] as c_int;
+    let bh4 = b_dim[1] as i32;
     let h4 = cmp::min(cmp::min(bh4, 16), rt.tile_row.end - by4);
     let mut gmv = [mv::default(); 2];
     let mut tgmv = [mv::default(); 2];
@@ -1005,7 +1002,7 @@ pub(crate) fn rav1d_refmvs_find(
     let b_top;
     let b_top_offset;
     if by4 > rt.tile_row.start {
-        max_rows = cmp::min(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as c_int) as c_uint;
+        max_rows = cmp::min(by4 - rt.tile_row.start + 1 >> 1, 2 + (bh4 > 1) as i32) as u32;
         let i = rt.r[(by4 as usize & 31) + 5 - 1] + bx4 as usize;
         // We can't offset below 0.
         b_top_offset = match i {
@@ -1022,11 +1019,11 @@ pub(crate) fn rav1d_refmvs_find(
             b_top + b_top_offset,
             bw4,
             w4,
-            max_rows as c_int,
+            max_rows as i32,
             if bw4 >= 16 { 4 } else { 1 },
             &mut have_newmv,
             &mut have_row_mvs,
-        ) as c_uint;
+        ) as u32;
     } else {
         max_rows = 0;
         n_rows = !0;
@@ -1039,7 +1036,7 @@ pub(crate) fn rav1d_refmvs_find(
     let n_cols;
     let b_left;
     if bx4 > rt.tile_col.start {
-        max_cols = cmp::min(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as c_int) as c_uint;
+        max_cols = cmp::min(bx4 - rt.tile_col.start + 1 >> 1, 2 + (bw4 > 1) as i32) as u32;
         b_left = &rt.r[(by4 as usize & 31) + 5..];
         n_cols = scan_col(
             mvstack,
@@ -1051,11 +1048,11 @@ pub(crate) fn rav1d_refmvs_find(
             bh4,
             h4,
             bx4 - 1,
-            max_cols as c_int,
+            max_cols as i32,
             if bh4 >= 16 { 4 } else { 1 },
             &mut have_newmv,
             &mut have_col_mvs,
-        ) as c_uint;
+        ) as u32;
     } else {
         max_cols = 0;
         n_cols = !0;
@@ -1087,7 +1084,7 @@ pub(crate) fn rav1d_refmvs_find(
     }
 
     // temporal
-    let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs as c_int;
+    let mut globalmv_ctx = frame_hdr.use_ref_frame_mvs as i32;
     if rf.use_ref_frame_mvs != 0 {
         let stride = rf.rp_stride as usize;
         let by8 = by4 >> 1;
@@ -1158,8 +1155,7 @@ pub(crate) fn rav1d_refmvs_find(
     let mut n_cols = n_cols;
     for n in 2..=3 {
         if n > n_rows && n <= max_rows {
-            let ri =
-                rt.r[(((by4 & 31) - 2 * n as c_int + 1 | 1) + 5) as usize] + (bx4 as usize | 1);
+            let ri = rt.r[(((by4 & 31) - 2 * n as i32 + 1 | 1) + 5) as usize] + (bx4 as usize | 1);
             n_rows = n_rows.wrapping_add(scan_row(
                 mvstack,
                 cnt,
@@ -1173,7 +1169,7 @@ pub(crate) fn rav1d_refmvs_find(
                 if bw4 >= 16 { 4 } else { 2 },
                 &mut have_dummy_newmv_match,
                 &mut have_row_mvs,
-            ) as c_uint);
+            ) as u32);
         }
         if n > n_cols && n <= max_cols {
             n_cols = n_cols.wrapping_add(scan_col(
@@ -1185,12 +1181,12 @@ pub(crate) fn rav1d_refmvs_find(
                 &rt.r[(by4 as usize & 31 | 1) + 5..],
                 bh4,
                 h4,
-                bx4 - n as c_int * 2 + 1 | 1,
+                bx4 - n as i32 * 2 + 1 | 1,
                 (1 + max_cols - n) as _,
                 if bh4 >= 16 { 4 } else { 2 },
                 &mut have_dummy_newmv_match,
                 &mut have_col_mvs,
-            ) as c_uint);
+            ) as u32);
         }
     }
     assert!(*cnt <= 8);
@@ -1199,7 +1195,7 @@ pub(crate) fn rav1d_refmvs_find(
 
     // context build-up
     let (refmv_ctx, newmv_ctx) = match nearest_match {
-        0 => (cmp::min(2, ref_match_count), (ref_match_count > 0) as c_int),
+        0 => (cmp::min(2, ref_match_count), (ref_match_count > 0) as i32),
         1 => (cmp::min(ref_match_count * 3, 4), 3 - have_newmv),
         2 => (5, 5 - have_newmv),
         _ => (0, 0),
@@ -1234,7 +1230,7 @@ pub(crate) fn rav1d_refmvs_find(
                         r#ref,
                         &rf.sign_bias,
                     );
-                    x += dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
+                    x += dav1d_block_dimensions[cand_b.bs as usize][0] as i32;
                 }
             }
 
@@ -1252,7 +1248,7 @@ pub(crate) fn rav1d_refmvs_find(
                         r#ref,
                         &rf.sign_bias,
                     );
-                    y += dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
+                    y += dav1d_block_dimensions[cand_b.bs as usize][1] as i32;
                 }
             }
 
@@ -1310,10 +1306,10 @@ pub(crate) fn rav1d_refmvs_find(
 
         for cand in &mut mvstack[..n_refmvs] {
             let mv = &mut cand.mv.mv;
-            mv[0].x = iclip(mv[0].x as c_int, left, right) as i16;
-            mv[0].y = iclip(mv[0].y as c_int, top, bottom) as i16;
-            mv[1].x = iclip(mv[1].x as c_int, left, right) as i16;
-            mv[1].y = iclip(mv[1].y as c_int, top, bottom) as i16;
+            mv[0].x = iclip(mv[0].x as i32, left, right) as i16;
+            mv[0].y = iclip(mv[0].y as i32, top, bottom) as i16;
+            mv[1].x = iclip(mv[1].x as i32, left, right) as i16;
+            mv[1].y = iclip(mv[1].y as i32, top, bottom) as i16;
         }
 
         *ctx = match refmv_ctx >> 1 {
@@ -1334,7 +1330,7 @@ pub(crate) fn rav1d_refmvs_find(
             while x < sz4 && *cnt < 2 {
                 let cand_b = *rf.r.index(b_top + x as usize + b_top_offset);
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
-                x += dav1d_block_dimensions[cand_b.bs as usize][0] as c_int;
+                x += dav1d_block_dimensions[cand_b.bs as usize][0] as i32;
             }
         }
 
@@ -1344,7 +1340,7 @@ pub(crate) fn rav1d_refmvs_find(
             while y < sz4 && *cnt < 2 {
                 let cand_b = *rf.r.index(b_left[y as usize] + bx4 as usize - 1);
                 add_single_extended_candidate(mvstack, cnt, cand_b, sign, &rf.sign_bias);
-                y += dav1d_block_dimensions[cand_b.bs as usize][1] as c_int;
+                y += dav1d_block_dimensions[cand_b.bs as usize][1] as i32;
             }
         }
     }
@@ -1360,8 +1356,8 @@ pub(crate) fn rav1d_refmvs_find(
 
         for cand in &mut mvstack[..n_refmvs] {
             let mv = &mut cand.mv.mv;
-            mv[0].x = iclip(mv[0].x as c_int, left, right) as i16;
-            mv[0].y = iclip(mv[0].y as c_int, top, bottom) as i16;
+            mv[0].x = iclip(mv[0].x as i32, left, right) as i16;
+            mv[0].y = iclip(mv[0].y as i32, top, bottom) as i16;
         }
     }
 
@@ -1376,13 +1372,13 @@ pub(crate) fn rav1d_refmvs_find(
 
 pub(crate) fn rav1d_refmvs_tile_sbrow_init(
     rf: &RefMvsFrame,
-    tile_col_start4: c_int,
-    tile_col_end4: c_int,
-    tile_row_start4: c_int,
-    tile_row_end4: c_int,
-    sby: c_int,
-    mut tile_row_idx: c_int,
-    pass: c_int,
+    tile_col_start4: i32,
+    tile_col_end4: i32,
+    tile_row_start4: i32,
+    tile_row_end4: i32,
+    sby: i32,
+    mut tile_row_idx: i32,
+    pass: i32,
 ) -> refmvs_tile {
     if rf.n_tile_threads == 1 {
         tile_row_idx = 0;
@@ -1436,11 +1432,11 @@ pub(crate) fn rav1d_refmvs_tile_sbrow_init(
 
 unsafe extern "C" fn load_tmvs_c(
     rf: *const refmvs_frame,
-    mut tile_row_idx: c_int,
-    col_start8: c_int,
-    col_end8: c_int,
-    row_start8: c_int,
-    mut row_end8: c_int,
+    mut tile_row_idx: i32,
+    col_start8: i32,
+    col_end8: i32,
+    row_start8: i32,
+    mut row_end8: i32,
     rp_proj: *const FFISafe<DisjointMut<AlignedVec64<refmvs_temporal_block>>>,
     rp_ref: *const FFISafe<[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7]>,
 ) {
@@ -1452,7 +1448,7 @@ unsafe extern "C" fn load_tmvs_c(
         tile_row_idx = 0;
     }
     assert!(row_start8 >= 0);
-    assert!((row_end8 - row_start8) as c_uint <= 16);
+    assert!((row_end8 - row_start8) as u32 <= 16);
     row_end8 = cmp::min(row_end8, rf.ih8);
     let col_start8i = cmp::max(col_start8 - 8, 0);
     let col_end8i = cmp::min(col_end8 + 8, rf.iw8);
@@ -1493,9 +1489,9 @@ unsafe extern "C" fn load_tmvs_c(
                 }
                 let offset = mv_projection(rb.mv, ref2cur, ref2ref);
                 let mut pos_x =
-                    x + apply_sign((offset.x as c_int).abs() >> 6, offset.x as c_int ^ ref_sign);
+                    x + apply_sign((offset.x as i32).abs() >> 6, offset.x as i32 ^ ref_sign);
                 let pos_y =
-                    y + apply_sign((offset.y as c_int).abs() >> 6, offset.y as c_int ^ ref_sign);
+                    y + apply_sign((offset.y as i32).abs() >> 6, offset.y as i32 ^ ref_sign);
                 if pos_y >= y_proj_start && pos_y < y_proj_end {
                     let pos = (pos_y & 15) as usize * stride;
                     loop {
@@ -1543,13 +1539,13 @@ unsafe extern "C" fn load_tmvs_c(
 
 unsafe extern "C" fn save_tmvs_c(
     _rp: *mut refmvs_temporal_block,
-    stride: ptrdiff_t,
+    stride: isize,
     _rr: *const [*const refmvs_block; 31],
     ref_sign: *const [u8; 7],
-    col_end8: c_int,
-    row_end8: c_int,
-    col_start8: c_int,
-    row_start8: c_int,
+    col_end8: i32,
+    row_end8: i32,
+    col_start8: i32,
+    row_start8: i32,
     r: *const FFISafe<DisjointMut<AlignedVec64<refmvs_block>>>,
     ri: &[usize; 31],
     rp: *const FFISafe<DisjointMutArcSlice<refmvs_temporal_block>>,
@@ -1591,8 +1587,8 @@ pub(crate) fn rav1d_refmvs_init_frame(
     rf: &mut RefMvsFrame,
     seq_hdr: &Rav1dSequenceHeader,
     frm_hdr: &Rav1dFrameHeader,
-    ref_poc: &[c_uint; 7],
-    ref_ref_poc: &[[c_uint; 7]; 7],
+    ref_poc: &[u32; 7],
+    ref_ref_poc: &[[u32; 7]; 7],
     rp_ref: &[Option<DisjointMutArcSlice<refmvs_temporal_block>>; 7],
     n_tile_threads: u32,
     n_frame_threads: u32,
@@ -1628,13 +1624,13 @@ pub(crate) fn rav1d_refmvs_init_frame(
     rf.n_tile_rows = n_tile_rows;
     rf.n_tile_threads = n_tile_threads;
     rf.n_frame_threads = n_frame_threads;
-    let poc = frm_hdr.frame_offset as c_uint;
+    let poc = frm_hdr.frame_offset as u32;
     for i in 0..7 {
-        let poc_diff = get_poc_diff(seq_hdr.order_hint_n_bits, ref_poc[i] as c_int, poc as c_int);
+        let poc_diff = get_poc_diff(seq_hdr.order_hint_n_bits, ref_poc[i] as i32, poc as i32);
         rf.sign_bias[i] = (poc_diff > 0) as u8;
         rf.mfmv_sign[i] = (poc_diff < 0) as u8;
         rf.pocdiff[i] = iclip(
-            get_poc_diff(seq_hdr.order_hint_n_bits, poc as c_int, ref_poc[i] as c_int),
+            get_poc_diff(seq_hdr.order_hint_n_bits, poc as i32, ref_poc[i] as i32),
             -31,
             31,
         ) as i8;
@@ -1652,8 +1648,8 @@ pub(crate) fn rav1d_refmvs_init_frame(
         if rp_ref[4].is_some()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
-                ref_poc[4] as c_int,
-                frm_hdr.frame_offset as c_int,
+                ref_poc[4] as i32,
+                frm_hdr.frame_offset as i32,
             ) > 0
         {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 4; // bwd
@@ -1662,8 +1658,8 @@ pub(crate) fn rav1d_refmvs_init_frame(
         if rp_ref[5].is_some()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
-                ref_poc[5] as c_int,
-                frm_hdr.frame_offset as c_int,
+                ref_poc[5] as i32,
+                frm_hdr.frame_offset as i32,
             ) > 0
         {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 5; // altref2
@@ -1673,8 +1669,8 @@ pub(crate) fn rav1d_refmvs_init_frame(
             && rp_ref[6].is_some()
             && get_poc_diff(
                 seq_hdr.order_hint_n_bits,
-                ref_poc[6] as c_int,
-                frm_hdr.frame_offset as c_int,
+                ref_poc[6] as i32,
+                frm_hdr.frame_offset as i32,
             ) > 0
         {
             rf.mfmv_ref[rf.n_mfmvs as usize] = 6; // altref
@@ -1689,8 +1685,8 @@ pub(crate) fn rav1d_refmvs_init_frame(
             let rpoc = ref_poc[rf.mfmv_ref[n] as usize];
             let diff1 = get_poc_diff(
                 seq_hdr.order_hint_n_bits,
-                rpoc as c_int,
-                frm_hdr.frame_offset as c_int,
+                rpoc as i32,
+                frm_hdr.frame_offset as i32,
             );
             if diff1.abs() > 31 {
                 rf.mfmv_ref2cur[n] = i32::MIN;
@@ -1698,15 +1694,14 @@ pub(crate) fn rav1d_refmvs_init_frame(
                 rf.mfmv_ref2cur[n] = if rf.mfmv_ref[n] < 4 { -diff1 } else { diff1 };
                 for m in 0..7 {
                     let rrpoc = ref_ref_poc[rf.mfmv_ref[n] as usize][m];
-                    let diff2 =
-                        get_poc_diff(seq_hdr.order_hint_n_bits, rpoc as c_int, rrpoc as c_int);
+                    let diff2 = get_poc_diff(seq_hdr.order_hint_n_bits, rpoc as i32, rrpoc as i32);
                     // unsigned comparison also catches the < 0 case
-                    rf.mfmv_ref2ref[n][m] = if diff2 as c_uint > 31 { 0 } else { diff2 };
+                    rf.mfmv_ref2ref[n][m] = if diff2 as u32 > 31 { 0 } else { diff2 };
                 }
             }
         }
     }
-    rf.use_ref_frame_mvs = (rf.n_mfmvs > 0) as c_int;
+    rf.use_ref_frame_mvs = (rf.n_mfmvs > 0) as i32;
 
     Ok(())
 }
@@ -1714,9 +1709,9 @@ pub(crate) fn rav1d_refmvs_init_frame(
 unsafe extern "C" fn splat_mv_rust(
     rr: *mut *mut refmvs_block,
     rmv: *const Align16<refmvs_block>,
-    bx4: c_int,
-    bw4: c_int,
-    bh4: c_int,
+    bx4: i32,
+    bw4: i32,
+    bh4: i32,
     rr_len: usize,
 ) {
     let rmv = &*rmv;
