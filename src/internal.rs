@@ -1071,13 +1071,14 @@ pub struct ScratchCompinter {
 
 // Larger of the two between `ScratchCompinter` and `[BD::Pixel; 128 * 32]`.
 const SCRATCH_COMPINTER_SIZE: usize = mem::size_of::<ScratchCompinter>();
+pub const SCRATCH_LAP_LEN: usize = 128 * 32;
 
 #[derive(FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
 pub struct ScratchLapInter([u8; SCRATCH_COMPINTER_SIZE]);
 
 impl ScratchLapInter {
-    pub fn lap_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; 128 * 32] {
+    pub fn lap_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; SCRATCH_LAP_LEN] {
         FromBytes::mut_from_prefix(&mut self.0).unwrap()
     }
 

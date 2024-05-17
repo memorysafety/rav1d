@@ -2258,7 +2258,7 @@ unsafe fn obmc<BD: BitDepth>(
     assert!(t.b.x & 1 == 0 && t.b.y & 1 == 0);
     let r = &t.rt.r[(t.b.y as usize & 31) + 5 - 1..];
     let scratch = t.scratch.inter_mut();
-    let lap = scratch.lap_inter.lap_mut::<BD>().as_mut_ptr();
+    let lap = scratch.lap_inter.lap_mut::<BD>();
     let ss_ver = (pl != 0 && f.cur.p.layout == Rav1dPixelLayout::I420) as c_int;
     let ss_hor = (pl != 0 && f.cur.p.layout != Rav1dPixelLayout::I444) as c_int;
     let h_mul = 4 >> ss_hor;
@@ -2284,7 +2284,7 @@ unsafe fn obmc<BD: BitDepth>(
                     &mut scratch.emu_edge,
                     t.b,
                     MaybeTempPixels::NonTemp {
-                        dst: lap,
+                        dst: lap.as_mut_ptr(),
                         dst_stride: ow4 as isize
                             * h_mul as isize
                             * ::core::mem::size_of::<BD::Pixel>() as isize,
@@ -2303,7 +2303,7 @@ unsafe fn obmc<BD: BitDepth>(
                 (f.dsp.mc.blend_h)(
                     dst.add((x * h_mul) as usize).cast(),
                     dst_stride,
-                    lap.cast(),
+                    lap.as_ptr().cast(),
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
                 );
@@ -2330,7 +2330,7 @@ unsafe fn obmc<BD: BitDepth>(
                     &mut scratch.emu_edge,
                     t.b,
                     MaybeTempPixels::NonTemp {
-                        dst: lap,
+                        dst: lap.as_mut_ptr(),
                         dst_stride: h_mul as isize
                             * ow4 as isize
                             * ::core::mem::size_of::<BD::Pixel>() as isize,
@@ -2350,7 +2350,7 @@ unsafe fn obmc<BD: BitDepth>(
                     dst.offset((y * v_mul) as isize * BD::pxstride(dst_stride))
                         .cast(),
                     dst_stride,
-                    lap.cast(),
+                    lap.as_ptr().cast(),
                     h_mul * ow4 as c_int,
                     v_mul * oh4 as c_int,
                 );

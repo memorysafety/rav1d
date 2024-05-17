@@ -11,6 +11,7 @@ use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
 use crate::src::internal::COMPINTER_LEN;
 use crate::src::internal::EMU_EDGE_LEN;
+use crate::src::internal::SCRATCH_LAP_LEN;
 use crate::src::levels::Filter2d;
 use crate::src::tables::dav1d_mc_subpel_filters;
 use crate::src::tables::dav1d_mc_warp_filter;
@@ -782,41 +783,43 @@ unsafe fn blend_rust<BD: BitDepth>(
 unsafe fn blend_v_rust<BD: BitDepth>(
     mut dst_ptr: *mut BD::Pixel,
     dst_stride: isize,
-    mut tmp: *const BD::Pixel,
+    tmp: &[BD::Pixel; SCRATCH_LAP_LEN],
     w: usize,
     h: usize,
 ) {
     let mask = &dav1d_obmc_masks.0[w..];
     let dst_stride = BD::pxstride(dst_stride);
+    let mut tmp = tmp.as_slice();
     for _ in 0..h {
         let dst = slice::from_raw_parts_mut(dst_ptr, w * 3 >> 2);
         for (x, dst) in dst.iter_mut().enumerate() {
-            *dst = blend_px::<BD>(*dst, *tmp.offset(x as isize), mask[x])
+            *dst = blend_px::<BD>(*dst, tmp[x], mask[x])
         }
 
         dst_ptr = dst_ptr.offset(dst_stride);
-        tmp = tmp.offset(w as isize);
+        tmp = &tmp[w..];
     }
 }
 
 unsafe fn blend_h_rust<BD: BitDepth>(
     mut dst_ptr: *mut BD::Pixel,
     dst_stride: isize,
-    mut tmp: *const BD::Pixel,
+    tmp: &[BD::Pixel; SCRATCH_LAP_LEN],
     w: usize,
     h: usize,
 ) {
     let mask = &dav1d_obmc_masks.0[h..];
     let h = h * 3 >> 2;
     let dst_stride = BD::pxstride(dst_stride);
+    let mut tmp = tmp.as_slice();
     for y in 0..h {
         let dst = slice::from_raw_parts_mut(dst_ptr, w);
         for (x, dst) in dst.iter_mut().enumerate() {
-            *dst = blend_px::<BD>(*dst, *tmp.offset(x as isize), mask[y]);
+            *dst = blend_px::<BD>(*dst, tmp[x], mask[y]);
         }
 
         dst_ptr = dst_ptr.offset(dst_stride);
-        tmp = tmp.offset(w as isize);
+        tmp = &tmp[w..];
     }
 }
 
@@ -1374,8 +1377,13 @@ impl w_mask::Fn {
 pub type blend_fn =
     unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const DynPixel, c_int, c_int, *const u8) -> ();
 
-pub type blend_dir_fn =
-    unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *const DynPixel, c_int, c_int) -> ();
+pub type blend_dir_fn = unsafe extern "C" fn(
+    *mut DynPixel,
+    ptrdiff_t,
+    *const [DynPixel; SCRATCH_LAP_LEN],
+    c_int,
+    c_int,
+) -> ();
 
 pub type emu_edge_fn = unsafe extern "C" fn(
     intptr_t,
@@ -1845,21 +1853,21 @@ unsafe extern "C" fn blend_c_erased<BD: BitDepth>(
 unsafe extern "C" fn blend_v_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp: *const DynPixel,
+    tmp: *const [DynPixel; SCRATCH_LAP_LEN],
     w: c_int,
     h: c_int,
 ) {
-    blend_v_rust::<BD>(dst.cast(), dst_stride, tmp.cast(), w as usize, h as usize)
+    blend_v_rust::<BD>(dst.cast(), dst_stride, &*tmp.cast(), w as usize, h as usize)
 }
 
 unsafe extern "C" fn blend_h_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
-    tmp: *const DynPixel,
+    tmp: *const [DynPixel; SCRATCH_LAP_LEN],
     w: c_int,
     h: c_int,
 ) {
-    blend_h_rust::<BD>(dst.cast(), dst_stride, tmp.cast(), w as usize, h as usize)
+    blend_h_rust::<BD>(dst.cast(), dst_stride, &*tmp.cast(), w as usize, h as usize)
 }
 
 unsafe extern "C" fn warp_affine_8x8_c_erased<BD: BitDepth>(
@@ -2018,7 +2026,7 @@ macro_rules! decl_fn {
         fn $name(
             dst: *mut DynPixel,
             dst_stride: ptrdiff_t,
-            tmp: *const DynPixel,
+            tmp: *const [DynPixel; SCRATCH_LAP_LEN],
             w: c_int,
             h: c_int,
         );
