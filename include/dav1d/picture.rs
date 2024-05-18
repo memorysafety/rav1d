@@ -15,10 +15,12 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
-use crate::src::align::Align64;
 use crate::src::c_arc::RawArc;
 use crate::src::disjoint_mut::AsMutPtr;
+use crate::src::disjoint_mut::DisjointImmutGuard;
 use crate::src::disjoint_mut::DisjointMut;
+use crate::src::disjoint_mut::DisjointMutGuard;
+use crate::src::disjoint_mut::SliceBounds;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError;
 use crate::src::error::Rav1dError::EINVAL;
@@ -32,6 +34,9 @@ use std::mem;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use to_method::To as _;
+use zerocopy::AsBytes;
+use zerocopy::FromBytes;
+use zerocopy::FromZeroes;
 
 pub(crate) const RAV1D_PICTURE_ALIGNMENT: usize = 64;
 pub const DAV1D_PICTURE_ALIGNMENT: usize = RAV1D_PICTURE_ALIGNMENT;
@@ -103,7 +108,10 @@ pub struct Dav1dPicture {
     pub allocator_data: Option<NonNull<c_void>>,
 }
 
-type AlignedPixelChunk = Align64<[u8; RAV1D_PICTURE_ALIGNMENT]>;
+#[derive(Clone, FromZeroes, FromBytes, AsBytes)]
+#[repr(C, align(64))]
+pub struct AlignedPixelChunk([u8; RAV1D_PICTURE_ALIGNMENT]);
+
 const _: () = assert!(mem::align_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 const _: () = assert!(mem::size_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 
@@ -152,17 +160,18 @@ impl Rav1dPictureDataComponentInner {
 
 // SAFETY: We only store the raw pointer, so we never materialize a `&mut`.
 unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
-    type Target = AlignedPixelChunk;
+    type Target = u8;
 
+    #[inline] // Inline so callers can see our over-alignment.
     unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
         // SAFETY: Safe to dereference by unsafe preconditions.
         // Since we don't store any `&mut`s, just a raw ptr, we can have a `&Self`.
         let this = unsafe { &*ptr };
-        this.ptr.cast().as_ptr()
+        this.ptr.cast::<u8>().as_ptr()
     }
 
     fn len(&self) -> usize {
-        self.len
+        self.len * mem::size_of::<AlignedPixelChunk>()
     }
 }
 
@@ -192,7 +201,7 @@ impl Rav1dPictureDataComponent {
 
     /// Strided ptr to chunks.
     fn as_chunk_mut_ptr(&self) -> *mut AlignedPixelChunk {
-        let ptr = self.0.as_mut_ptr();
+        let ptr = self.0.as_mut_ptr().cast::<AlignedPixelChunk>();
         let stride = self.chunk_stride();
         if stride < 0 {
             // SAFETY: This puts `ptr` one element past the end of the slice of pixels.
@@ -226,7 +235,51 @@ impl Rav1dPictureDataComponent {
     pub fn copy_from(&self, src: &Self) {
         let dst = &mut *self.0.index_mut(..);
         let src = &*src.0.index(..);
-        dst.copy_from_slice(src);
+        dst.clone_from_slice(src);
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn index<'a, BD: BitDepth>(
+        &'a self,
+        index: usize,
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+        self.0.element_as(index)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn index_mut<'a, BD: BitDepth>(
+        &'a self,
+        index: usize,
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, BD::Pixel> {
+        self.0.mut_element_as(index)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn slice<'a, BD, I>(
+        &'a self,
+        index: I,
+    ) -> DisjointImmutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]>
+    where
+        BD: BitDepth,
+        I: SliceBounds,
+    {
+        self.0.slice_as(index)
+    }
+
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
+    #[cfg_attr(debug_assertions, track_caller)]
+    pub fn slice_mut<'a, BD, I>(
+        &'a self,
+        index: I,
+    ) -> DisjointMutGuard<'a, Rav1dPictureDataComponentInner, [BD::Pixel]>
+    where
+        BD: BitDepth,
+        I: SliceBounds,
+    {
+        self.0.mut_slice_as(index)
     }
 }
 

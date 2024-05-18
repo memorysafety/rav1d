@@ -357,7 +357,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn mut_slice_as<'a, I, V>(&'a self, index: I) -> DisjointMutGuard<'a, T, [V]>
     where
-        I: SliceBounds + Into<Bounds> + Clone + SliceIndex<[V]>,
+        I: SliceBounds,
         V: AsBytes + FromBytes,
     {
         self.index_mut(index.mul(mem::size_of::<V>())).cast_slice()
@@ -417,7 +417,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn slice_as<'a, I, V>(&'a self, index: I) -> DisjointImmutGuard<'a, T, [V]>
     where
-        I: SliceBounds + Into<Bounds> + Clone + SliceIndex<[V]>,
+        I: SliceBounds,
         V: FromBytes + Sized,
     {
         self.index(index.mul(mem::size_of::<V>())).cast_slice()
