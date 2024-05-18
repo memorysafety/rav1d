@@ -6,10 +6,7 @@ use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::GrainBD;
-use libc::memcpy;
 use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_void;
 
 fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
     let mut scaling_array = ArrayDefault::default();
@@ -114,89 +111,19 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     // Copy over the non-modified planes
     // TODO: eliminate in favor of per-plane refs
     assert!(out.stride[0] == r#in.stride[0]);
-    if data.num_y_points == 0 {
-        let stride = out.stride[0];
-        let sz = out.p.h as isize * stride;
-        if sz < 0 {
-            memcpy(
-                out.data.as_ref().unwrap().data[0]
-                    .as_byte_mut_ptr()
-                    .offset(sz as isize)
-                    .offset(-(stride as isize)) as *mut c_void,
-                r#in.data.as_ref().unwrap().data[0]
-                    .as_byte_ptr()
-                    .offset(sz as isize)
-                    .offset(-(stride as isize)) as *const c_void,
-                -sz as usize,
-            );
-        } else {
-            memcpy(
-                out.data.as_ref().unwrap().data[0]
-                    .as_byte_mut_ptr()
-                    .cast::<c_void>(),
-                r#in.data.as_ref().unwrap().data[0]
-                    .as_byte_ptr()
-                    .cast::<c_void>(),
-                sz as usize,
-            );
-        }
-    }
-
-    if r#in.p.layout != Rav1dPixelLayout::I400 && !data.chroma_scaling_from_luma {
+    let has_chroma = r#in.p.layout != Rav1dPixelLayout::I400 && !data.chroma_scaling_from_luma;
+    if has_chroma {
         assert!(out.stride[1] == r#in.stride[1]);
-        let ss_ver = (r#in.p.layout == Rav1dPixelLayout::I420) as c_int;
-        let stride = out.stride[1];
-        let sz = (out.p.h + ss_ver >> ss_ver) as isize * stride;
-        if sz < 0 {
-            if data.num_uv_points[0] == 0 {
-                memcpy(
-                    out.data.as_ref().unwrap().data[1]
-                        .as_byte_mut_ptr()
-                        .offset(sz as isize)
-                        .offset(-(stride as isize)) as *mut c_void,
-                    r#in.data.as_ref().unwrap().data[1]
-                        .as_byte_ptr()
-                        .offset(sz as isize)
-                        .offset(-(stride as isize)) as *const c_void,
-                    -sz as usize,
-                );
-            }
-            if data.num_uv_points[1] == 0 {
-                memcpy(
-                    out.data.as_ref().unwrap().data[2]
-                        .as_byte_mut_ptr()
-                        .offset(sz as isize)
-                        .offset(-(stride as isize)) as *mut c_void,
-                    r#in.data.as_ref().unwrap().data[2]
-                        .as_byte_ptr()
-                        .offset(sz as isize)
-                        .offset(-(stride as isize)) as *const c_void,
-                    -sz as usize,
-                );
-            }
-        } else {
-            if data.num_uv_points[0] == 0 {
-                memcpy(
-                    out.data.as_ref().unwrap().data[1]
-                        .as_byte_mut_ptr()
-                        .cast::<c_void>(),
-                    r#in.data.as_ref().unwrap().data[1]
-                        .as_byte_ptr()
-                        .cast::<c_void>(),
-                    sz as usize,
-                );
-            }
-            if data.num_uv_points[1] == 0 {
-                memcpy(
-                    out.data.as_ref().unwrap().data[2]
-                        .as_byte_mut_ptr()
-                        .cast::<c_void>(),
-                    r#in.data.as_ref().unwrap().data[2]
-                        .as_byte_ptr()
-                        .cast::<c_void>(),
-                    sz as usize,
-                );
-            }
+    }
+    let num_points = [
+        data.num_y_points,
+        data.num_uv_points[0],
+        data.num_uv_points[1],
+    ];
+    let [in_data, out_data] = [r#in, out].map(|p| &p.data.as_ref().unwrap().data);
+    for i in 0..3 {
+        if (i == 0 || has_chroma) && num_points[i] == 0 {
+            out_data[i].copy_from(&in_data[i]);
         }
     }
 }

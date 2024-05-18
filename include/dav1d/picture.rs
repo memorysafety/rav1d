@@ -205,16 +205,6 @@ impl Rav1dPictureDataComponent {
         }
     }
 
-    /// Strided ptr to bytes.
-    pub fn as_byte_mut_ptr(&self) -> *mut u8 {
-        self.as_chunk_mut_ptr().cast()
-    }
-
-    /// Strided ptr to bytes.
-    pub fn as_byte_ptr(&self) -> *const u8 {
-        self.as_byte_mut_ptr().cast_const()
-    }
-
     /// Strided ptr to pixels.
     pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
         self.as_chunk_mut_ptr().cast()
@@ -231,6 +221,12 @@ impl Rav1dPictureDataComponent {
         } else {
             NonNull::new(self.as_chunk_mut_ptr().cast())
         }
+    }
+
+    pub fn copy_from(&self, src: &Self) {
+        let dst = &mut *self.0.index_mut(..);
+        let src = &*src.0.index(..);
+        dst.copy_from_slice(src);
     }
 }
 
