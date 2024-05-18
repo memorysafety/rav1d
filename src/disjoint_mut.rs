@@ -64,6 +64,14 @@ impl<T: AsMutPtr> DisjointMut<T> {
         }
     }
 
+    /// # Safety
+    ///
+    /// The returned ptr has the safety requirements of [`UnsafeCell::get`].
+    /// In particular, the ptr returned by [`AsMutPtr::as_mut_ptr`] may be in use.
+    pub const fn inner(&self) -> *mut T {
+        self.inner.get()
+    }
+
     pub fn into_inner(self) -> T {
         self.inner.into_inner()
     }

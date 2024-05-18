@@ -1,5 +1,6 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
+use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::validate::validate_input;
 use crate::include::dav1d::common::Dav1dDataProps;
 use crate::include::dav1d::common::Rav1dDataProps;
@@ -106,26 +107,53 @@ type AlignedPixelChunk = Align64<[u8; RAV1D_PICTURE_ALIGNMENT]>;
 const _: () = assert!(mem::align_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 const _: () = assert!(mem::size_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 
-pub struct Rav1dPictureDataComponent {
+pub struct Rav1dPictureDataComponentInner {
+    /// A ptr to the start of this slice of [`BitDepth::Pixel`]s*,
+    /// even if [`Self::stride`] is negative.
     ptr: NonNull<AlignedPixelChunk>,
 
-    /// Length of [`Self::ptr`] in bytes.
+    /// The length of [`Self::ptr`] in [`AlignedPixelChunk`] chunks.
     len: usize,
+
+    /// The stride of [`Self::ptr`] in [`AlignedPixelChunk`] chunks.
+    stride: isize,
 }
 
-impl Rav1dPictureDataComponent {
-    fn new(ptr: NonNull<AlignedPixelChunk>, len: usize) -> Self {
+impl Rav1dPictureDataComponentInner {
+    /// `len` and `stride` are in terms of [`u8`] bytes.
+    ///
+    /// # Safety
+    ///
+    /// `ptr`, `len`, and `stride` must follow the requirements of [`Dav1dPicAllocator::alloc_picture_callback`].
+    unsafe fn new(ptr: NonNull<AlignedPixelChunk>, len: usize, stride: isize) -> Self {
+        let ptr = if stride < 0 {
+            let ptr = ptr.as_ptr();
+            // SAFETY: According to `Dav1dPicAllocator::alloc_picture_callback`,
+            // if the `stride` is negative, this is how we get the start of the data.
+            // `.offset(-stride)` puts us at one element past the end of the slice,
+            // and `.sub(len)` puts us back at the start of the slice.
+            let ptr = unsafe { ptr.byte_offset(-stride).byte_sub(len) };
+            NonNull::new(ptr).unwrap()
+        } else {
+            ptr
+        };
         assert!(ptr.is_aligned());
-        assert!(len % mem::align_of::<AlignedPixelChunk>() == 0);
-        Self { ptr, len }
+        const CHUNK_SIZE: usize = mem::size_of::<AlignedPixelChunk>();
+        const _: () = assert!(CHUNK_SIZE == mem::align_of::<AlignedPixelChunk>());
+        // Guaranteed by `Dav1dPicAllocator::alloc_picture_callback`.
+        assert!(len % CHUNK_SIZE == 0);
+        let len = len / CHUNK_SIZE;
+        // Guaranteed by `Dav1dPicAllocator::alloc_picture_callback` to be a multiple of 128 pixels.
+        assert!(stride % CHUNK_SIZE as isize == 0);
+        let stride = stride / CHUNK_SIZE as isize;
+        Self { ptr, len, stride }
     }
 }
 
 // SAFETY: We only store the raw pointer, so we never materialize a `&mut`.
-unsafe impl AsMutPtr for Rav1dPictureDataComponent {
-    type Target = u8;
+unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
+    type Target = AlignedPixelChunk;
 
-    #[inline(always)] // Inline so callers can see our over-alignment.
     unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
         // SAFETY: Safe to dereference by unsafe preconditions.
         // Since we don't store any `&mut`s, just a raw ptr, we can have a `&Self`.
@@ -138,8 +166,76 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponent {
     }
 }
 
+pub struct Rav1dPictureDataComponent(DisjointMut<Rav1dPictureDataComponentInner>);
+
+impl Rav1dPictureDataComponent {
+    fn chunk_len(&self) -> usize {
+        // SAFETY: We're only accessing the `stride` fields, not `ptr`.
+        unsafe { (*self.0.inner()).len }
+    }
+
+    /// Length in number of pixels.
+    pub fn len<BD: BitDepth>(&self) -> usize {
+        self.chunk_len() * (mem::size_of::<AlignedPixelChunk>() / mem::size_of::<BD::Pixel>())
+    }
+
+    fn chunk_stride(&self) -> isize {
+        // SAFETY: We're only accessing the `stride` fields, not `ptr`.
+        unsafe { (*self.0.inner()).stride }
+    }
+
+    /// Stride in number of pixels.
+    pub fn stride<BD: BitDepth>(&self) -> isize {
+        self.chunk_stride()
+            * (mem::size_of::<AlignedPixelChunk>() / mem::size_of::<BD::Pixel>()) as isize
+    }
+
+    /// Strided ptr to chunks.
+    fn as_chunk_mut_ptr(&self) -> *mut AlignedPixelChunk {
+        let ptr = self.0.as_mut_ptr();
+        let stride = self.chunk_stride();
+        if stride < 0 {
+            // SAFETY: This puts `ptr` one element past the end of the slice of pixels.
+            let ptr = unsafe { ptr.add(self.chunk_len()) };
+            // SAFETY: `stride` is negative and `-stride < len`, so this should stay in bounds.
+            let ptr = unsafe { ptr.offset(stride) };
+            ptr
+        } else {
+            ptr
+        }
+    }
+
+    /// Strided ptr to bytes.
+    pub fn as_byte_mut_ptr(&self) -> *mut u8 {
+        self.as_chunk_mut_ptr().cast()
+    }
+
+    /// Strided ptr to bytes.
+    pub fn as_byte_ptr(&self) -> *const u8 {
+        self.as_byte_mut_ptr().cast_const()
+    }
+
+    /// Strided ptr to pixels.
+    pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
+        self.as_chunk_mut_ptr().cast()
+    }
+
+    /// Strided ptr to pixels.
+    pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
+        self.as_mut_ptr::<BD>().cast_const()
+    }
+
+    fn as_dav1d(&self) -> Option<NonNull<c_void>> {
+        if self.chunk_len() == 0 {
+            None
+        } else {
+            NonNull::new(self.as_chunk_mut_ptr().cast())
+        }
+    }
+}
+
 pub struct Rav1dPictureData {
-    pub data: [DisjointMut<Rav1dPictureDataComponent>; 3],
+    pub data: [Rav1dPictureDataComponent; 3],
     pub(crate) allocator_data: Option<NonNull<c_void>>,
     pub(crate) allocator: Rav1dPicAllocator,
 }
@@ -242,11 +338,7 @@ impl From<Rav1dPicture> for Dav1dPicture {
             frame_hdr: frame_hdr.as_ref().map(|arc| (&arc.as_ref().dav1d).into()),
             data: data
                 .as_ref()
-                .map(|arc| {
-                    arc.data
-                        .each_ref()
-                        .map(|data| Some(NonNull::new(data.as_mut_ptr()).unwrap().cast()))
-                })
+                .map(|arc| arc.data.each_ref().map(|data| data.as_dav1d()))
                 .unwrap_or_default(),
             stride,
             p: p.into(),
@@ -490,12 +582,15 @@ impl Rav1dPicAllocator {
         // TODO fallible allocation
         pic.data = Some(Arc::new(Rav1dPictureData {
             data: array::from_fn(|i| {
-                let ptr = data[i]
-                    // Need to cast before `NonNull::dangling` to get the right alignment.
-                    .map(|ptr| ptr.cast::<AlignedPixelChunk>())
-                    .unwrap_or_else(NonNull::dangling);
+                // SAFETY: We'll check size and alignment in `Rav1dPictureDataComponentInner::new`.
+                let ptr = data[i].map(|ptr| ptr.cast::<AlignedPixelChunk>());
+                // Need to cast before `NonNull::dangling` to get the right alignment.
+                let ptr = ptr.unwrap_or_else(NonNull::dangling);
                 let len = len[(i != 0) as usize];
-                DisjointMut::new(Rav1dPictureDataComponent::new(ptr, len))
+                let stride = pic.stride[(i != 0) as usize];
+                // SAFETY: These args come from `Self::alloc_picture_callback`.
+                let component = unsafe { Rav1dPictureDataComponentInner::new(ptr, len, stride) };
+                Rav1dPictureDataComponent(DisjointMut::new(component))
             }),
             allocator_data,
             allocator: self.clone(),
@@ -505,10 +600,10 @@ impl Rav1dPicAllocator {
 
     pub fn dealloc_picture_data(
         &self,
-        data: &mut [DisjointMut<Rav1dPictureDataComponent>; 3],
+        data: &mut [Rav1dPictureDataComponent; 3],
         allocator_data: Option<NonNull<c_void>>,
     ) {
-        let data = data.each_mut().map(|data| Some(data.get_mut().ptr.cast()));
+        let data = data.each_mut().map(|data| data.as_dav1d());
         let mut pic_c = Dav1dPicture {
             data,
             allocator_data,
