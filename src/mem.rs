@@ -34,7 +34,9 @@ impl<T> MemPool<T> {
     {
         if let Some(mut buf) = self.bufs.lock().unwrap().pop() {
             // TODO fallible allocation
-            buf.resize(size, init_value);
+            if buf.len() < size {
+                buf.resize(size, init_value);
+            }
             return buf;
         }
         // TODO fallible allocation

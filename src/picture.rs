@@ -131,7 +131,7 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
     let buf = pool.pop_init(pic_cap, 0);
     // We have to `Box` this because `Dav1dPicture::allocator_data` is only 8 bytes.
     let mut buf = Box::new(MemPoolBuf { pool, buf });
-    let data = &mut buf.buf[..];
+    let data = &mut buf.buf[..pic_cap];
     // SAFETY: `Rav1dPicAllocator::alloc_picture_callback` requires that these are `RAV1D_PICTURE_ALIGNMENT`-aligned.
     let align_offset = data.as_ptr().align_offset(RAV1D_PICTURE_ALIGNMENT);
     let data = &mut data[align_offset..][..pic_size];
