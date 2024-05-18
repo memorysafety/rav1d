@@ -11,7 +11,7 @@ impl<T> MemPool<T> {
         }
     }
 
-    pub fn pop(&self, size: usize) -> Vec<T> {
+    pub fn _pop(&self, size: usize) -> Vec<T> {
         if let Some(mut buf) = self.bufs.lock().unwrap().pop() {
             if size > buf.capacity() {
                 // TODO fallible allocation
@@ -21,6 +21,24 @@ impl<T> MemPool<T> {
         }
         // TODO fallible allocation
         Vec::with_capacity(size)
+    }
+
+    /// A version of [`Self::pop`] that initializes the [`Vec`].
+    /// This allows it to use [`vec!`], which, if used with `0`,
+    /// calls [`alloc_zeroed`], and thus can leave zero initialization to the OS.
+    ///
+    /// [`alloc_zeroed`]: std::alloc::alloc_zeroed
+    pub fn pop_init(&self, size: usize, init_value: T) -> Vec<T>
+    where
+        T: Copy,
+    {
+        if let Some(mut buf) = self.bufs.lock().unwrap().pop() {
+            // TODO fallible allocation
+            buf.resize(size, init_value);
+            return buf;
+        }
+        // TODO fallible allocation
+        vec![init_value; size]
     }
 
     pub fn push(&self, buf: Vec<T>) {

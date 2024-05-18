@@ -92,7 +92,6 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::mem;
-use std::mem::MaybeUninit;
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Deref;
@@ -427,7 +426,7 @@ pub struct Rav1dContext {
 
     pub(crate) logger: Option<Rav1dLogger>,
 
-    pub(crate) picture_pool: Arc<MemPool<MaybeUninit<u8>>>,
+    pub(crate) picture_pool: Arc<MemPool<u8>>,
 }
 
 // TODO(SJC): Remove when Rav1dContext is thread-safe
