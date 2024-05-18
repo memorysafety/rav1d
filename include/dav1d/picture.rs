@@ -479,7 +479,10 @@ impl Rav1dPicAllocator {
         pic.data = Some(Arc::new(Rav1dPictureData {
             // SAFETY: `MaybeUninit<u8>` should be safe for anything.
             data: array::from_fn(|i| {
-                let ptr = data[i].unwrap().cast::<AlignedPixelChunk>();
+                let ptr = data[i]
+                    // Need to cast before `NonNull::dangling` to get the right alignment.
+                    .map(|ptr| ptr.cast::<AlignedPixelChunk>())
+                    .unwrap_or_else(NonNull::dangling);
                 let len = len[(i != 0) as usize];
                 DisjointMut::new(Rav1dPictureDataComponent::new(ptr, len))
             }),
