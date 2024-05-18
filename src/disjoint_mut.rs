@@ -79,14 +79,14 @@ pub struct DisjointMutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
     bounds: debug::DisjointMutBounds,
 }
 
-impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
+impl<'a, T: AsMutPtr, U: AsBytes + FromBytes> DisjointMutGuard<'a, T, [U]> {
     fn cast_slice<V: AsBytes + FromBytes>(self) -> DisjointMutGuard<'a, T, [V]> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
         let mut old_guard = ManuallyDrop::new(self);
-        let bytes = mem::take(&mut old_guard.slice);
+        let slice = mem::take(&mut old_guard.slice);
         DisjointMutGuard {
-            slice: V::mut_slice_from(bytes).unwrap(),
+            slice: V::mut_slice_from(slice.as_bytes_mut()).unwrap(),
             phantom: old_guard.phantom,
             #[cfg(debug_assertions)]
             parent: old_guard.parent,
@@ -99,9 +99,9 @@ impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
         let mut old_guard = ManuallyDrop::new(self);
-        let bytes = mem::take(&mut old_guard.slice);
+        let slice = mem::take(&mut old_guard.slice);
         DisjointMutGuard {
-            slice: V::mut_from(bytes).unwrap(),
+            slice: V::mut_from(slice.as_bytes_mut()).unwrap(),
             phantom: old_guard.phantom,
             #[cfg(debug_assertions)]
             parent: old_guard.parent,
@@ -137,14 +137,14 @@ pub struct DisjointImmutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
     bounds: debug::DisjointMutBounds,
 }
 
-impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
+impl<'a, T: AsMutPtr, U: AsBytes> DisjointImmutGuard<'a, T, [U]> {
     fn cast_slice<V: FromBytes>(self) -> DisjointImmutGuard<'a, T, [V]> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
         let mut old_guard = ManuallyDrop::new(self);
         let bytes = mem::take(&mut old_guard.slice);
         DisjointImmutGuard {
-            slice: V::slice_from(bytes).unwrap(),
+            slice: V::slice_from(bytes.as_bytes()).unwrap(),
             phantom: old_guard.phantom,
             #[cfg(debug_assertions)]
             parent: old_guard.parent,
@@ -159,7 +159,7 @@ impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
         let mut old_guard = ManuallyDrop::new(self);
         let bytes = mem::take(&mut old_guard.slice);
         DisjointImmutGuard {
-            slice: V::ref_from(bytes).unwrap(),
+            slice: V::ref_from(bytes.as_bytes()).unwrap(),
             phantom: old_guard.phantom,
             #[cfg(debug_assertions)]
             parent: old_guard.parent,
@@ -323,7 +323,11 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
     }
 }
 
-impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
+impl<T, U> DisjointMut<T>
+where
+    T: AsMutPtr<Target = U>,
+    U: AsBytes + FromBytes,
+{
     /// Mutably borrow a slice of a convertible type.
     ///
     /// This method accesses a slice of elements of a type that implements
@@ -346,6 +350,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     where
         I: Into<Bounds> + Clone + SliceIndex<[V]>,
         V: AsBytes + FromBytes,
+        U: 'a,
     {
         let bounds = index.into().multiply(mem::size_of::<V>());
         let byte_guard = self.index_mut(bounds.range);
@@ -373,6 +378,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     pub fn mut_element_as<'a, V>(&'a self, index: usize) -> DisjointMutGuard<'a, T, V>
     where
         V: AsBytes + FromBytes,
+        U: 'a,
     {
         let bounds = Bounds::from(index).multiply(mem::size_of::<V>());
         let byte_guard = self.index_mut(bounds.range);
@@ -407,6 +413,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     where
         I: Into<Bounds> + Clone + SliceIndex<[V]>,
         V: FromBytes + Sized,
+        U: 'a,
     {
         let bounds = index.into().multiply(mem::size_of::<V>());
         self.index(bounds.range).cast_slice()
@@ -439,6 +446,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     pub fn element_as<'a, V>(&'a self, index: usize) -> DisjointImmutGuard<'a, T, V>
     where
         V: FromBytes + Sized,
+        U: 'a,
     {
         let bounds = Bounds::from(index).multiply(mem::size_of::<V>());
         self.index(bounds.range).cast()
