@@ -37,6 +37,7 @@ use crate::output::output::output_open;
 use crate::output::output::output_verify;
 use crate::output::output::output_write;
 use crate::output::output::MuxerContext;
+use libc::calloc;
 use libc::fclose;
 use libc::fflush;
 use libc::fileno;
@@ -45,7 +46,6 @@ use libc::fprintf;
 use libc::fputs;
 use libc::free;
 use libc::isatty;
-use libc::malloc;
 use libc::memset;
 use libc::ptrdiff_t;
 use libc::snprintf;
@@ -236,7 +236,10 @@ unsafe extern "C" fn picture_alloc(p: *mut Dav1dPicture, _: *mut c_void) -> Dav1
     let y_sz: usize = (y_stride * aligned_h as isize) as usize;
     let uv_sz: usize = (uv_stride * (aligned_h >> ss_ver) as isize) as usize;
     let pic_size: usize = y_sz.wrapping_add(2 * uv_sz);
-    let buf: *mut u8 = malloc(pic_size.wrapping_add(DAV1D_PICTURE_ALIGNMENT)) as *mut u8;
+    // Change for new `rav1d` safety requirement to initialize picture data.
+    // `calloc` of a large size should be optimized to OS zero pages,
+    // removing the overhead, and guaranteeing initialization safety.
+    let buf: *mut u8 = calloc(pic_size.wrapping_add(DAV1D_PICTURE_ALIGNMENT), 1) as *mut u8;
     if buf.is_null() {
         return Dav1dResult(-12);
     }
