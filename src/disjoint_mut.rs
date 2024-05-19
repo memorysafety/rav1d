@@ -669,7 +669,7 @@ where
         // requires that we can immutably dereference `slice`.
         let len = unsafe { (*slice).len() };
         let Range { start, end } = self.to_range(len);
-        if start <= end && start < len && end <= len {
+        if start <= end && end <= len {
             // SAFETY: We have checked that `start` is less than the
             // allocation length therefore cannot overflow. `slice` is a
             // valid pointer into an allocation of sufficient length.
@@ -684,9 +684,6 @@ where
                 }
                 if end > len {
                     panic!("range end index {end} out of range for slice of length {len}");
-                }
-                if start >= len {
-                    panic!("range start index {start} out of range for slice of length {len}")
                 }
                 unreachable!();
             }
