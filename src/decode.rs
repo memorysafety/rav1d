@@ -2659,7 +2659,7 @@ unsafe fn decode_b(
                     CompInterType::Seg
                 };
 
-                mask_sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac) as u8;
+                mask_sign = rav1d_msac_decode_bool_equi(&mut ts_c.msac);
                 if debug_block_info!(f, t.b) {
                     println!(
                         "Post-seg/wedge[{},wedge_idx={},sign={}]: r={}",
@@ -2676,7 +2676,7 @@ unsafe fn decode_b(
                 nd: Av1BlockInter1d {
                     mv: mv1d,
                     wedge_idx,
-                    mask_sign,
+                    mask_sign: mask_sign as u8,
                     ..Default::default()
                 }
                 .into(),

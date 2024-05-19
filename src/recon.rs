@@ -3457,12 +3457,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 f.dsp.mc.w_mask[chr_layout_idx_w_mask].call(
                     dst,
                     f.cur.stride[0],
-                    &tmp[inter.nd.one_d.mask_sign as usize],
-                    &tmp[(inter.nd.one_d.mask_sign == 0) as usize],
+                    &tmp[inter.nd.one_d.mask_sign() as usize],
+                    &tmp[!inter.nd.one_d.mask_sign() as usize],
                     bw4 * 4,
                     bh4 * 4,
                     seg_mask.as_mut_ptr(),
-                    inter.nd.one_d.mask_sign as c_int,
+                    inter.nd.one_d.mask_sign() as c_int,
                     bd,
                 );
                 mask = &seg_mask[..];
@@ -3472,8 +3472,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 (f.dsp.mc.mask)(
                     dst.cast(),
                     f.cur.stride[0],
-                    &tmp[inter.nd.one_d.mask_sign as usize],
-                    &tmp[(inter.nd.one_d.mask_sign == 0) as usize],
+                    &tmp[inter.nd.one_d.mask_sign() as usize],
+                    &tmp[!inter.nd.one_d.mask_sign() as usize],
                     bw4 * 4,
                     bh4 * 4,
                     mask.as_ptr(),
@@ -3481,7 +3481,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 );
                 if has_chroma {
                     mask = dav1d_wedge_masks[bs as usize][chr_layout_idx]
-                        [inter.nd.one_d.mask_sign as usize]
+                        [inter.nd.one_d.mask_sign() as usize]
                         [inter.nd.one_d.wedge_idx as usize];
                 }
             }
@@ -3563,8 +3563,8 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                         (f.dsp.mc.mask)(
                             uvdst.cast(),
                             f.cur.stride[1],
-                            &tmp[inter.nd.one_d.mask_sign as usize],
-                            &tmp[(inter.nd.one_d.mask_sign == 0) as usize],
+                            &tmp[inter.nd.one_d.mask_sign() as usize],
+                            &tmp[!inter.nd.one_d.mask_sign() as usize],
                             bw4 * 4 >> ss_hor,
                             bh4 * 4 >> ss_ver,
                             mask.as_ptr(),

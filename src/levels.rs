@@ -364,11 +364,20 @@ impl From<MaskedInterIntraPredMode> for InterIntraPredMode {
 pub struct Av1BlockInter1d {
     pub mv: [mv; 2],
     pub wedge_idx: u8,
+
+    /// Stored as a [`u8`] since [`bool`] is not [`FromBytes`].
     pub mask_sign: u8,
+
     pub interintra_mode: MaskedInterIntraPredMode,
 
     /// For `impl `[`AsBytes`].
     pub _padding: u8,
+}
+
+impl Av1BlockInter1d {
+    pub fn mask_sign(&self) -> bool {
+        self.mask_sign != 0
+    }
 }
 
 #[derive(Clone, FromZeroes, FromBytes, AsBytes)]
