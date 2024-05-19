@@ -137,6 +137,7 @@ fn backup4xU<BD: BitDepth>(
     if src_stride < 0 {
         for (src, dst) in src[src_offset - (u - 1) as usize * abs_px_stride..]
             .chunks(abs_px_stride)
+            .take(u as usize)
             .rev()
             .zip(&mut dst[..u as usize])
         {
