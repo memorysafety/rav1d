@@ -259,7 +259,7 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
     }
 
     pub fn get_mut(&mut self) -> &mut T {
-        &mut *self.inner.get_mut()
+        self.inner.get_mut()
     }
 
     /// Mutably borrow a slice or element.
