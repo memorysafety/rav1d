@@ -23,6 +23,7 @@ use std::ops::IndexMut;
 use std::ops::Range;
 use std::ops::RangeBounds;
 use std::ops::RangeFrom;
+use std::ops::RangeFull;
 use std::ops::RangeInclusive;
 use std::ops::RangeTo;
 use std::ops::RangeToInclusive;
@@ -476,7 +477,10 @@ pub struct Bounds {
 impl Display for Bounds {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let Range { start, mut end } = self.range;
-        write!(f, "{start}..")?;
+        if start != 0 {
+            write!(f, "{start}")?;
+        }
+        write!(f, "..")?;
         if end != usize::MAX {
             write!(f, "{end}")?;
         }
@@ -550,6 +554,14 @@ impl From<RangeToInclusive<usize>> for Bounds {
     }
 }
 
+impl From<RangeFull> for Bounds {
+    fn from(range: RangeFull) -> Self {
+        Self {
+            range: 0..usize::MAX,
+        }
+    }
+}
+
 /// A majority of our slice ranges are of the form `[start..][..len]`.
 /// This is easy to express with normal slices where we can do the slicing multiple times,
 /// but with [`DisjointMut`], that's harder, so this adds support for
@@ -571,6 +583,7 @@ impl SliceBounds for RangeFrom<usize> {}
 impl SliceBounds for RangeInclusive<usize> {}
 impl SliceBounds for RangeTo<usize> {}
 impl SliceBounds for RangeToInclusive<usize> {}
+impl SliceBounds for RangeFull {}
 impl SliceBounds for (RangeFrom<usize>, RangeTo<usize>) {}
 
 impl<T> DisjointMutIndex<[T]> for usize {
