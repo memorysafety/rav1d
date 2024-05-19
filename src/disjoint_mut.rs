@@ -8,6 +8,7 @@
 use crate::src::align::AlignedByteChunk;
 use crate::src::align::AlignedVec;
 use std::cell::UnsafeCell;
+use std::convert::Infallible;
 use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -273,6 +274,7 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
     ///
     /// [`index`]: DisjointMut::index
     /// [`index_mut`]: DisjointMut::index_mut
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index_mut<'a, I>(&'a self, index: I) -> DisjointMutGuard<'a, T, I::Output>
     where
@@ -308,6 +310,7 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
     /// during the lifetime of the returned borrow.
     ///
     /// [`index_mut`]: DisjointMut::index_mut
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index<'a, I>(&'a self, index: I) -> DisjointImmutGuard<'a, T, I::Output>
     where
@@ -342,6 +345,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     /// referenced data must be plain data and not contain any pointers or
     /// references to avoid other potential memory safety issues due to racy
     /// access.
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn mut_slice_as<'a, I, V>(&'a self, index: I) -> DisjointMutGuard<'a, T, [V]>
     where
@@ -368,6 +372,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     /// referenced data must be plain data and not contain any pointers or
     /// references to avoid other potential memory safety issues due to racy
     /// access.
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn mut_element_as<'a, V>(&'a self, index: usize) -> DisjointMutGuard<'a, T, V>
     where
@@ -400,6 +405,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     /// during the lifetime of the returned borrow.
     ///
     /// [`index_mut`]: DisjointMut::index_mut
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn slice_as<'a, I, V>(&'a self, index: I) -> DisjointImmutGuard<'a, T, [V]>
     where
@@ -432,6 +438,7 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     /// during the lifetime of the returned borrow.
     ///
     /// [`index_mut`]: DisjointMut::index_mut
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn element_as<'a, V>(&'a self, index: usize) -> DisjointImmutGuard<'a, T, V>
     where
@@ -631,18 +638,25 @@ impl SliceBounds for (RangeFrom<usize>, RangeTo<usize>) {}
 impl<T> DisjointMutIndex<[T]> for usize {
     type Output = <[T] as Index<usize>>::Output;
 
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
         // SAFETY: The safety precondition for this trait method requires that
         // we can immutably dereference `slice`.
+        let index = self;
         let len = unsafe { (*slice).len() };
-        if self < len {
+        if index < len {
             // SAFETY: We have checked that `self` is less than the allocation
             // length therefore cannot overflow. `slice` is a valid pointer into
             // an allocation of sufficient length.
-            unsafe { (slice as *mut T).add(self) }
+            unsafe { (slice as *mut T).add(index) }
         } else {
-            panic!("index out of bounds: the len is {len} but the index is {self}");
+            #[inline(never)]
+            #[cfg_attr(debug_assertions, track_caller)]
+            fn out_of_bounds(index: usize, len: usize) -> ! {
+                panic!("index out of bounds: the len is {len} but the index is {index}")
+            }
+            out_of_bounds(index, len);
         }
     }
 }
@@ -653,6 +667,7 @@ where
 {
     type Output = <[T] as Index<Range<usize>>>::Output;
 
+    #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     unsafe fn get_mut(self, slice: *mut [T]) -> *mut Self::Output {
         // SAFETY: The safety precondition for this trait method
@@ -667,16 +682,21 @@ where
             let data = unsafe { (slice as *mut T).add(start) };
             ptr::slice_from_raw_parts_mut(data, end - start)
         } else {
-            if start > end {
-                panic!("slice index starts at {start} but ends at {end}");
+            #[inline(never)]
+            #[cfg_attr(debug_assertions, track_caller)]
+            fn out_of_bounds(start: usize, end: usize, len: usize) -> ! {
+                if start > end {
+                    panic!("slice index starts at {start} but ends at {end}");
+                }
+                if end > len {
+                    panic!("range end index {end} out of range for slice of length {len}");
+                }
+                if start >= len {
+                    panic!("range start index {start} out of range for slice of length {len}")
+                }
+                unreachable!();
             }
-            if end > len {
-                panic!("range end index {end} out of range for slice of length {len}");
-            }
-            if start >= len {
-                panic!("range start index {start} out of range for slice of length {len}")
-            }
-            unreachable!();
+            out_of_bounds(start, end, len);
         }
     }
 }
