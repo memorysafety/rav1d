@@ -15,6 +15,7 @@ use crate::include::dav1d::headers::Rav1dITUTT35;
 use crate::include::dav1d::headers::Rav1dMasteringDisplay;
 use crate::include::dav1d::headers::Rav1dPixelLayout;
 use crate::include::dav1d::headers::Rav1dSequenceHeader;
+use crate::src::assume::assume;
 use crate::src::c_arc::RawArc;
 use crate::src::disjoint_mut::AsMutPtr;
 use crate::src::disjoint_mut::DisjointImmutGuard;
@@ -167,6 +168,13 @@ unsafe impl AsMutPtr for Rav1dPictureDataComponentInner {
         // SAFETY: Safe to dereference by unsafe preconditions.
         // Since we don't store any `&mut`s, just a raw ptr, we can have a `&Self`.
         let this = unsafe { &*ptr };
+
+        // Assume this so that the compiler knows `ptr` is aligned.
+        // Normally we'd store this as a slice so the compiler would know,
+        // but since it's a ptr due to `DisjointMut`, we explicitly assume it here.
+        // SAFETY: We already checked this in `Self::new`.
+        unsafe { assume(this.ptr.is_aligned()) };
+
         this.ptr.cast::<u8>().as_ptr()
     }
 
