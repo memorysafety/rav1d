@@ -90,6 +90,7 @@ pub struct DisjointMutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
 }
 
 impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
+    #[inline] // Inline to see alignment to potentially elide checks.
     fn cast_slice<V: AsBytes + FromBytes>(self) -> DisjointMutGuard<'a, T, [V]> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -105,6 +106,7 @@ impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
         }
     }
 
+    #[inline] // Inline to see alignment to potentially elide checks.
     fn cast<V: AsBytes + FromBytes>(self) -> DisjointMutGuard<'a, T, V> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -148,6 +150,7 @@ pub struct DisjointImmutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
 }
 
 impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
+    #[inline] // Inline to see alignment to potentially elide checks.
     fn cast_slice<V: FromBytes>(self) -> DisjointImmutGuard<'a, T, [V]> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -163,6 +166,7 @@ impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
         }
     }
 
+    #[inline] // Inline to see alignment to potentially elide checks.
     fn cast<V: FromBytes>(self) -> DisjointImmutGuard<'a, T, V> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
