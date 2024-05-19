@@ -565,49 +565,55 @@ impl From<usize> for Bounds {
     }
 }
 
-impl From<Range<usize>> for Bounds {
-    fn from(range: Range<usize>) -> Self {
-        Self { range }
-    }
-}
-
-impl From<RangeFrom<usize>> for Bounds {
-    fn from(range: RangeFrom<usize>) -> Self {
+impl<T: SliceBounds> From<T> for Bounds {
+    fn from(range: T) -> Self {
         Self {
-            range: range.start..usize::MAX,
+            range: range.to_range(usize::MAX),
         }
     }
 }
 
-impl From<RangeInclusive<usize>> for Bounds {
-    fn from(range: RangeInclusive<usize>) -> Self {
-        Self {
-            range: *range.start()..*range.end() + 1,
-        }
+pub trait SliceBounds: TranslateRange + Into<Bounds> + Clone + Debug {
+    fn to_range(&self, len: usize) -> Range<usize>;
+}
+
+impl SliceBounds for Range<usize> {
+    fn to_range(&self, len: usize) -> Range<usize> {
+        let Self { start, end } = *self;
+        start..end
     }
 }
 
-impl From<RangeTo<usize>> for Bounds {
-    fn from(range: RangeTo<usize>) -> Self {
-        Self {
-            range: 0..range.end,
-        }
+impl SliceBounds for RangeFrom<usize> {
+    fn to_range(&self, len: usize) -> Range<usize> {
+        let Self { start } = *self;
+        start..len
     }
 }
 
-impl From<RangeToInclusive<usize>> for Bounds {
-    fn from(range: RangeToInclusive<usize>) -> Self {
-        Self {
-            range: 0..range.end + 1,
-        }
+impl SliceBounds for RangeInclusive<usize> {
+    fn to_range(&self, len: usize) -> Range<usize> {
+        *self.start()..*self.end() + 1
     }
 }
 
-impl From<RangeFull> for Bounds {
-    fn from(range: RangeFull) -> Self {
-        Self {
-            range: 0..usize::MAX,
-        }
+impl SliceBounds for RangeTo<usize> {
+    fn to_range(&self, len: usize) -> Range<usize> {
+        let Self { end } = *self;
+        0..end
+    }
+}
+
+impl SliceBounds for RangeToInclusive<usize> {
+    fn to_range(&self, len: usize) -> Range<usize> {
+        let Self { end } = *self;
+        0..end + 1
+    }
+}
+
+impl SliceBounds for RangeFull {
+    fn to_range(&self, len: usize) -> Range<usize> {
+        0..len
     }
 }
 
@@ -617,23 +623,12 @@ impl From<RangeFull> for Bounds {
 /// `.index((start.., ..len))` to achieve the same.
 /// It's not as clear what it means initially, but we use this idiom so much
 /// I think it might be worth it for clarity through brevity.
-impl From<(RangeFrom<usize>, RangeTo<usize>)> for Bounds {
-    fn from((start, len): (RangeFrom<usize>, RangeTo<usize>)) -> Self {
-        Self {
-            range: start.start..start.start + len.end,
-        }
+impl SliceBounds for (RangeFrom<usize>, RangeTo<usize>) {
+    fn to_range(&self, len: usize) -> Range<usize> {
+        let (RangeFrom { start }, RangeTo { end: range_len }) = *self;
+        start..start + range_len
     }
 }
-
-pub trait SliceBounds: TranslateRange + Into<Bounds> + Clone + Debug {}
-
-impl SliceBounds for Range<usize> {}
-impl SliceBounds for RangeFrom<usize> {}
-impl SliceBounds for RangeInclusive<usize> {}
-impl SliceBounds for RangeTo<usize> {}
-impl SliceBounds for RangeToInclusive<usize> {}
-impl SliceBounds for RangeFull {}
-impl SliceBounds for (RangeFrom<usize>, RangeTo<usize>) {}
 
 impl<T> DisjointMutIndex<[T]> for usize {
     type Output = <[T] as Index<usize>>::Output;
@@ -673,8 +668,7 @@ where
         // SAFETY: The safety precondition for this trait method
         // requires that we can immutably dereference `slice`.
         let len = unsafe { (*slice).len() };
-        let Range { start, end } = self.clone().into().range;
-        let end = if end == usize::MAX { len } else { end };
+        let Range { start, end } = self.to_range(len);
         if start <= end && start < len && end <= len {
             // SAFETY: We have checked that `start` is less than the
             // allocation length therefore cannot overflow. `slice` is a
