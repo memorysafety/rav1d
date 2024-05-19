@@ -7,6 +7,7 @@
 
 use crate::src::align::AlignedByteChunk;
 use crate::src::align::AlignedVec;
+use crate::src::assume::assume;
 use std::cell::UnsafeCell;
 use std::convert::Infallible;
 use std::fmt;
@@ -340,6 +341,24 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
 }
 
 impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
+    /// When we slice with [`Self::index`] or [`Self::index_mut`]
+    /// on a scaled/translated range, the multiplication can overflow,
+    /// causing the compiler to not be able to reason about the length of the slice anymore.
+    /// Instead of checking for overflows, we can instead just check
+    /// if the length of the casted slice is as expected.
+    ///
+    /// If the overflow was impossible (e.x. the range was casted from [`u32`] to [`usize`]),
+    /// this will be optimized out.
+    #[inline] // Inline to see the check.
+    fn check_cast_slice_len<I, V>(&self, index: I, slice: &[V])
+    where
+        I: SliceBounds,
+    {
+        let range = index.to_range(self.len() / mem::size_of::<V>());
+        let range_len = range.end - range.start;
+        assert!(slice.len() == range_len);
+    }
+
     /// Mutably borrow a slice of a convertible type.
     ///
     /// This method accesses a slice of elements of a type that implements
@@ -364,7 +383,9 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
         I: SliceBounds,
         V: AsBytes + FromBytes,
     {
-        self.index_mut(index.mul(mem::size_of::<V>())).cast_slice()
+        let slice = self.index_mut(index.mul(mem::size_of::<V>())).cast_slice();
+        self.check_cast_slice_len(index, &slice);
+        slice
     }
 
     /// Mutably borrow an element of a convertible type.
@@ -424,7 +445,9 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
         I: SliceBounds,
         V: FromBytes + Sized,
     {
-        self.index(index.mul(mem::size_of::<V>())).cast_slice()
+        let slice = self.index(index.mul(mem::size_of::<V>())).cast_slice();
+        self.check_cast_slice_len(index, &slice);
+        slice
     }
 
     /// Immutably borrow an element of a convertible type.
