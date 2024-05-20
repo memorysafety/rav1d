@@ -11,6 +11,7 @@ use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
 use crate::src::internal::SCRATCH_AC_TXTP_LEN;
+use crate::src::internal::SCRATCH_EDGE_LEN;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
@@ -61,6 +62,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn angular_ipred(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    topleft_off: usize,
 ) -> ());
 
 impl angular_ipred::Fn {
@@ -68,7 +70,8 @@ impl angular_ipred::Fn {
         &self,
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
-        topleft: *const BD::Pixel,
+        topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+        topleft_off: usize,
         width: c_int,
         height: c_int,
         angle: c_int,
@@ -77,10 +80,19 @@ impl angular_ipred::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let topleft = topleft.cast();
+        let topleft = topleft.as_ptr().add(topleft_off).cast();
         let bd = bd.into_c();
         self.get()(
-            dst, stride, topleft, width, height, angle, max_width, max_height, bd,
+            dst,
+            stride,
+            topleft,
+            width,
+            height,
+            angle,
+            max_width,
+            max_height,
+            bd,
+            topleft_off,
         )
     }
 }
@@ -120,6 +132,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
+    topleft_off: usize,
 ) -> ());
 
 impl cfl_pred::Fn {
@@ -127,7 +140,8 @@ impl cfl_pred::Fn {
         &self,
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
-        topleft: *const BD::Pixel,
+        topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+        topleft_off: usize,
         width: c_int,
         height: c_int,
         ac: &[i16; SCRATCH_AC_TXTP_LEN],
@@ -135,9 +149,19 @@ impl cfl_pred::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
-        let topleft = topleft.cast();
+        let topleft = topleft.as_ptr().add(topleft_off).cast();
         let bd = bd.into_c();
-        self.get()(dst, stride, topleft, width, height, ac, alpha, bd)
+        self.get()(
+            dst,
+            stride,
+            topleft,
+            width,
+            height,
+            ac,
+            alpha,
+            bd,
+            topleft_off,
+        )
     }
 }
 
@@ -336,6 +360,7 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     _max_width: c_int,
     _max_height: c_int,
     bitdepth_max: c_int,
+    topleft_off: usize,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
     splat_dc(
@@ -357,6 +382,7 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
+    topleft_off: usize,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
     let dc: c_uint = dc_gen.call::<BD>(topleft.cast(), width, height);
@@ -382,6 +408,7 @@ unsafe extern "C" fn ipred_dc_128_c_erased<BD: BitDepth>(
     _max_width: c_int,
     _max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
@@ -397,6 +424,7 @@ unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     let bd = BD::from_c(bitdepth_max);
     let dc = bd.bitdepth_max().as_::<c_int>() + 1 >> 1;
@@ -438,6 +466,7 @@ unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     ipred_v_rust(
         dst.cast(),
@@ -487,6 +516,7 @@ unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     ipred_h_rust(
         dst.cast(),
@@ -548,6 +578,7 @@ unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     ipred_paeth_rust(
         dst.cast(),
@@ -605,6 +636,7 @@ unsafe extern "C" fn ipred_smooth_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     ipred_smooth_rust(
         dst.cast(),
@@ -657,6 +689,7 @@ unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     ipred_smooth_v_rust(
         dst.cast(),
@@ -709,6 +742,7 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     ipred_smooth_h_rust(
         dst.cast(),
@@ -1186,6 +1220,7 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     [ipred_z1_rust, ipred_z2_rust, ipred_z3_rust][Z - 1](
         dst.cast(),
@@ -1305,6 +1340,7 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
+    _topleft_off: usize,
 ) {
     ipred_filter_rust(
         dst.cast(),

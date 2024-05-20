@@ -2660,11 +2660,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             edge_offset,
                             bd,
                         );
-                        let edge = edge_array.as_ptr().add(edge_offset);
                         f.dsp.ipred.intra_pred[m as usize].call(
                             dst,
                             f.cur.stride[0],
-                            edge,
+                            edge_array,
+                            edge_offset,
                             t_dim.w as c_int * 4,
                             t_dim.h as c_int * 4,
                             angle | intra_flags,
@@ -2674,6 +2674,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         );
 
                         if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
+                            let edge = edge_array.as_ptr().add(edge_offset);
                             hex_dump::<BD>(
                                 edge.offset(-(t_dim.h as isize * 4)),
                                 t_dim.h as usize * 4,
@@ -2904,11 +2905,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         edge_offset,
                         bd,
                     );
-                    let edge = edge_array.as_ptr().add(edge_offset);
                     f.dsp.ipred.cfl_pred[m as usize].call(
                         uv_dst[pl],
                         stride,
-                        edge,
+                        edge_array,
+                        edge_offset,
                         uv_t_dim.w as c_int * 4,
                         uv_t_dim.h as c_int * 4,
                         ac,
@@ -3120,11 +3121,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 bd,
                             );
                             angle |= intra_edge_filter_flag;
-                            let edge = edge_array.as_ptr().add(edge_offset);
                             f.dsp.ipred.intra_pred[m as usize].call(
                                 dst,
                                 stride,
-                                edge,
+                                edge_array,
+                                edge_offset,
                                 uv_t_dim.w as c_int * 4,
                                 uv_t_dim.h as c_int * 4,
                                 angle | sm_uv_fl,
@@ -3133,6 +3134,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 bd,
                             );
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
+                                let edge = edge_array.as_ptr().add(edge_offset);
                                 hex_dump::<BD>(
                                     edge.offset(-(uv_t_dim.h as isize * 4)),
                                     uv_t_dim.h as usize * 4,
@@ -3672,12 +3674,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                 tl_edge_offset,
                 bd,
             );
-            let tl_edge = &tl_edge_array[tl_edge_offset..];
             let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
             f.dsp.ipred.intra_pred[m as usize].call(
                 tmp.as_mut_ptr(),
                 4 * bw4 as isize * ::core::mem::size_of::<BD::Pixel>() as isize,
-                tl_edge.as_ptr(),
+                tl_edge_array,
+                tl_edge_offset,
                 bw4 * 4,
                 bh4 * 4,
                 0,
@@ -4011,12 +4013,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                             tl_edge_offset,
                             bd,
                         );
-                        let tl_edge = &tl_edge_array[tl_edge_offset..];
                         let tmp = interintra_edge_pal.interintra.buf_mut::<BD>();
                         f.dsp.ipred.intra_pred[m as usize].call(
                             tmp.as_mut_ptr(),
                             cbw4 as isize * 4 * ::core::mem::size_of::<BD::Pixel>() as isize,
-                            tl_edge.as_ptr(),
+                            tl_edge_array,
+                            tl_edge_offset,
                             cbw4 * 4,
                             cbh4 * 4,
                             0,
