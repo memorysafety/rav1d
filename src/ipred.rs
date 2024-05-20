@@ -285,34 +285,47 @@ unsafe fn cfl_pred<BD: BitDepth>(
     }
 }
 
-unsafe fn dc_gen_top<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int) -> c_uint {
+fn dc_gen_top<BD: BitDepth>(
+    topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    offset: usize,
+    width: c_int,
+) -> c_uint {
     let mut dc = width as u32 >> 1;
-    for i in 0..width {
-        dc += (*topleft.offset((1 + i) as isize)).as_::<c_uint>();
+    for i in 0..width as usize {
+        dc += topleft[offset + 1 + i].as_::<c_uint>();
     }
     return dc >> width.trailing_zeros();
 }
 
-unsafe fn dc_gen_left<BD: BitDepth>(topleft: *const BD::Pixel, height: c_int) -> c_uint {
+fn dc_gen_left<BD: BitDepth>(
+    topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    offset: usize,
+    height: c_int,
+) -> c_uint {
     let mut dc = height as u32 >> 1;
-    for i in 0..height {
-        dc += (*topleft.offset(-(1 + i) as isize)).as_::<c_uint>();
+    for i in 0..height as usize {
+        dc += topleft[offset - (1 + i)].as_::<c_uint>();
     }
     return dc >> height.trailing_zeros();
 }
 
-unsafe fn dc_gen<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int, height: c_int) -> c_uint {
+fn dc_gen<BD: BitDepth>(
+    topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    offset: usize,
+    width: c_int,
+    height: c_int,
+) -> c_uint {
     let (multiplier_1x2, multiplier_1x4, base_shift) = match BD::BPC {
         BPC::BPC8 => (0x5556, 0x3334, 16),
         BPC::BPC16 => (0xAAAB, 0x6667, 17),
     };
 
     let mut dc = (width + height >> 1) as u32;
-    for i in 0..width {
-        dc = dc.wrapping_add((*topleft.offset((i + 1) as isize)).as_::<c_uint>());
+    for i in 0..width as usize {
+        dc += topleft[offset + i + 1].as_::<c_uint>();
     }
-    for i in 0..height {
-        dc = dc.wrapping_add((*topleft.offset(-(i + 1) as isize)).as_::<c_uint>());
+    for i in 0..height as usize {
+        dc += topleft[offset - (i + 1)].as_::<c_uint>();
     }
     dc >>= (width + height).trailing_zeros();
 
@@ -336,16 +349,17 @@ enum DcGen {
 }
 
 impl DcGen {
-    unsafe fn call<BD: BitDepth>(
+    fn call<BD: BitDepth>(
         &self,
-        topleft: *const BD::Pixel,
+        topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+        offset: usize,
         width: c_int,
         height: c_int,
     ) -> c_uint {
         match self {
-            Self::Top => dc_gen_top::<BD>(topleft, width),
-            Self::Left => dc_gen_left::<BD>(topleft, height),
-            Self::TopLeft => dc_gen::<BD>(topleft, width, height),
+            Self::Top => dc_gen_top::<BD>(topleft, offset, width),
+            Self::Left => dc_gen_left::<BD>(topleft, offset, height),
+            Self::TopLeft => dc_gen::<BD>(topleft, offset, width, height),
         }
     }
 }
@@ -363,12 +377,16 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     topleft_off: usize,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
+    let topleft = &*topleft
+        .cast::<BD::Pixel>()
+        .offset(-(topleft_off as isize))
+        .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>();
     splat_dc(
         dst.cast(),
         stride,
         width,
         height,
-        dc_gen.call::<BD>(topleft.cast(), width, height) as c_int,
+        dc_gen.call::<BD>(topleft, topleft_off, width, height) as c_int,
         BD::from_c(bitdepth_max),
     );
 }
@@ -385,7 +403,11 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     topleft_off: usize,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
-    let dc: c_uint = dc_gen.call::<BD>(topleft.cast(), width, height);
+    let topleft = &*topleft
+        .cast::<BD::Pixel>()
+        .offset(-(topleft_off as isize))
+        .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>();
+    let dc: c_uint = dc_gen.call::<BD>(topleft, topleft_off, width, height);
     cfl_pred(
         dst.cast(),
         stride,
