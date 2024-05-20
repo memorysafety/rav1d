@@ -35,9 +35,8 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
-use std::ffi::c_ulonglong;
 use std::ffi::c_void;
+use std::mem;
 use std::slice;
 use strum::FromRepr;
 
@@ -181,51 +180,36 @@ unsafe fn splat_dc<BD: BitDepth>(
     dc: c_int,
     bd: BD,
 ) {
+    let stride = BD::pxstride(stride);
     match BD::BPC {
         BPC::BPC8 => {
             assert!(dc <= 0xff);
             if width > 4 {
                 let dcN = dc as u64 * 0x101010101010101;
-                let mut y = 0;
-                while y < height {
-                    let mut x = 0;
-                    while x < width {
+                for _ in 0..height {
+                    for x in (0..width).step_by(mem::size_of::<u64>()) {
                         *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut u64) = dcN;
-                        x = (x as c_ulong).wrapping_add(::core::mem::size_of::<u64>() as c_ulong)
-                            as c_int as c_int;
                     }
-                    dst = dst.offset(stride as isize);
-                    y += 1;
+                    dst = dst.offset(stride);
                 }
             } else {
                 let dcN = dc as u32 * 0x1010101;
-                let mut y_0 = 0;
-                while y_0 < height {
-                    let mut x_0 = 0;
-                    while x_0 < width {
-                        *(&mut *dst.offset(x_0 as isize) as *mut BD::Pixel as *mut c_uint) = dcN;
-                        x_0 = (x_0 as c_ulong)
-                            .wrapping_add(::core::mem::size_of::<c_uint>() as c_ulong)
-                            as c_int as c_int;
+                for _ in 0..height {
+                    for x in (0..width).step_by(mem::size_of::<u32>()) {
+                        *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut c_uint) = dcN;
                     }
-                    dst = dst.offset(stride as isize);
-                    y_0 += 1;
+                    dst = dst.offset(stride);
                 }
             };
         }
         BPC::BPC16 => {
             assert!(dc <= bd.bitdepth_max().as_::<c_int>());
             let dcN = dc as u64 * 0x1000100010001;
-            let mut y = 0;
-            while y < height {
-                let mut x = 0;
-                while x < width {
+            for _ in 0..height {
+                for x in (0..width).step_by(mem::size_of::<u64>() >> 1) {
                     *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut u64) = dcN;
-                    x = (x as c_ulong).wrapping_add(::core::mem::size_of::<u64>() as c_ulong >> 1)
-                        as c_int as c_int;
                 }
-                dst = dst.offset(BD::pxstride(stride));
-                y += 1;
+                dst = dst.offset(stride);
             }
         }
     }
