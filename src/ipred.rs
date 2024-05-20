@@ -116,7 +116,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: *const i16,
+    ac: &[i16; 1024],
     alpha: c_int,
     bitdepth_max: c_int,
 ) -> ());
@@ -129,7 +129,7 @@ impl cfl_pred::Fn {
         topleft: *const BD::Pixel,
         width: c_int,
         height: c_int,
-        ac: *const i16,
+        ac: &[i16; 1024],
         alpha: c_int,
         bd: BD,
     ) {
@@ -243,16 +243,17 @@ unsafe fn cfl_pred<BD: BitDepth>(
     width: c_int,
     height: c_int,
     dc: c_int,
-    mut ac: *const i16,
+    ac: &[i16; 1024],
     alpha: c_int,
     bd: BD,
 ) {
+    let mut ac = ac.as_slice();
     for _ in 0..height {
         for x in 0..width {
-            let diff = alpha * *ac.offset(x as isize) as c_int;
+            let diff = alpha * ac[x as usize] as c_int;
             *dst.offset(x as isize) = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
         }
-        ac = ac.offset(width as isize);
+        ac = &ac[width as usize..];
         dst = dst.offset(BD::pxstride(stride));
     }
 }
@@ -357,7 +358,7 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: *const i16,
+    ac: &[i16; 1024],
     alpha: c_int,
     bitdepth_max: c_int,
 ) {
@@ -397,7 +398,7 @@ unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     _topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: *const i16,
+    ac: &[i16; 1024],
     alpha: c_int,
     bitdepth_max: c_int,
 ) {
