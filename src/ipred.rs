@@ -290,14 +290,14 @@ unsafe fn dc_gen<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int, height: 
     for i in 0..height {
         dc = dc.wrapping_add((*topleft.offset(-(i + 1) as isize)).as_::<c_uint>());
     }
-    dc >>= ctz((width + height) as c_uint);
+    dc >>= (width + height).trailing_zeros();
 
     if width != height {
-        dc = dc.wrapping_mul(if width > height * 2 || height > width * 2 {
+        dc *= if width > height * 2 || height > width * 2 {
             multiplier_1x4
         } else {
             multiplier_1x2
-        });
+        };
         dc >>= base_shift;
     }
     return dc;
