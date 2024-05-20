@@ -247,17 +247,13 @@ unsafe fn cfl_pred<BD: BitDepth>(
     alpha: c_int,
     bd: BD,
 ) {
-    let mut y = 0;
-    while y < height {
-        let mut x = 0;
-        while x < width {
+    for _ in 0..height {
+        for x in 0..width {
             let diff = alpha * *ac.offset(x as isize) as c_int;
             *dst.offset(x as isize) = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
-            x += 1;
         }
         ac = ac.offset(width as isize);
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
