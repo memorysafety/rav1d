@@ -272,7 +272,7 @@ unsafe fn dc_gen_top<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int) -> c
 unsafe fn dc_gen_left<BD: BitDepth>(topleft: *const BD::Pixel, height: c_int) -> c_uint {
     let mut dc = height as u32 >> 1;
     for i in 0..height {
-        dc = dc.wrapping_add((*topleft.offset(-(1 + i) as isize)).as_::<c_uint>());
+        dc += (*topleft.offset(-(1 + i) as isize)).as_::<c_uint>();
     }
     return dc >> height.trailing_zeros();
 }
