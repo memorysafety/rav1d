@@ -283,7 +283,7 @@ unsafe fn dc_gen<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int, height: 
         BPC::BPC16 => (0xAAAB, 0x6667, 17),
     };
 
-    let mut dc: c_uint = (width + height >> 1) as c_uint;
+    let mut dc = (width + height >> 1) as u32;
     for i in 0..width {
         dc = dc.wrapping_add((*topleft.offset((i + 1) as isize)).as_::<c_uint>());
     }
