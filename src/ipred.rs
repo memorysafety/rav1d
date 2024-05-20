@@ -284,17 +284,14 @@ unsafe fn dc_gen<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int, height: 
     };
 
     let mut dc: c_uint = (width + height >> 1) as c_uint;
-    let mut i = 0;
-    while i < width {
+    for i in 0..width {
         dc = dc.wrapping_add((*topleft.offset((i + 1) as isize)).as_::<c_uint>());
-        i += 1;
     }
-    let mut i_0 = 0;
-    while i_0 < height {
-        dc = dc.wrapping_add((*topleft.offset(-(i_0 + 1) as isize)).as_::<c_uint>());
-        i_0 += 1;
+    for i in 0..height {
+        dc = dc.wrapping_add((*topleft.offset(-(i + 1) as isize)).as_::<c_uint>());
     }
     dc >>= ctz((width + height) as c_uint);
+
     if width != height {
         dc = dc.wrapping_mul(if width > height * 2 || height > width * 2 {
             multiplier_1x4
