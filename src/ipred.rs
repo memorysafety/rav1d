@@ -263,10 +263,8 @@ unsafe fn cfl_pred<BD: BitDepth>(
 
 unsafe fn dc_gen_top<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int) -> c_uint {
     let mut dc: c_uint = (width >> 1) as c_uint;
-    let mut i = 0;
-    while i < width {
+    for i in 0..width {
         dc = dc.wrapping_add((*topleft.offset((1 + i) as isize)).as_::<c_uint>());
-        i += 1;
     }
     return dc >> ctz(width as c_uint);
 }
