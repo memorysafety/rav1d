@@ -248,12 +248,14 @@ unsafe fn cfl_pred<BD: BitDepth>(
     bd: BD,
 ) {
     let mut ac = ac.as_slice();
+    let width = width as usize;
     for _ in 0..height {
-        for x in 0..width {
-            let diff = alpha * ac[x as usize] as c_int;
-            *dst.offset(x as isize) = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
+        let slice = slice::from_raw_parts_mut(dst, width);
+        for (x, dst) in slice.iter_mut().enumerate() {
+            let diff = alpha * ac[x] as c_int;
+            *dst = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
         }
-        ac = &ac[width as usize..];
+        ac = &ac[width..];
         dst = dst.offset(BD::pxstride(stride));
     }
 }
