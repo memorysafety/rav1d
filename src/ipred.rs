@@ -262,11 +262,11 @@ unsafe fn cfl_pred<BD: BitDepth>(
 }
 
 unsafe fn dc_gen_top<BD: BitDepth>(topleft: *const BD::Pixel, width: c_int) -> c_uint {
-    let mut dc: c_uint = (width >> 1) as c_uint;
+    let mut dc = width as u32 >> 1;
     for i in 0..width {
         dc = dc.wrapping_add((*topleft.offset((1 + i) as isize)).as_::<c_uint>());
     }
-    return dc >> ctz(width as c_uint);
+    return dc >> width.trailing_zeros();
 }
 
 unsafe fn dc_gen_left<BD: BitDepth>(topleft: *const BD::Pixel, height: c_int) -> c_uint {
