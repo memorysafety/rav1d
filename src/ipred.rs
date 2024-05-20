@@ -183,9 +183,7 @@ unsafe fn splat_dc<BD: BitDepth>(
 ) {
     match BD::BPC {
         BPC::BPC8 => {
-            if !(dc <= 0xff as c_int) {
-                unreachable!();
-            }
+            assert!(dc <= 0xff);
             if width > 4 {
                 let dcN: u64 =
                     (dc as c_ulonglong).wrapping_mul(0x101010101010101 as c_ulonglong) as u64;
@@ -217,9 +215,7 @@ unsafe fn splat_dc<BD: BitDepth>(
             };
         }
         BPC::BPC16 => {
-            if !(dc <= bd.bitdepth_max().as_::<c_int>()) {
-                unreachable!();
-            }
+            assert!(dc <= bd.bitdepth_max().as_::<c_int>());
             let dcN: u64 = (dc as c_ulonglong).wrapping_mul(0x1000100010001 as c_ulonglong) as u64;
             let mut y = 0;
             while y < height {
