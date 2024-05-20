@@ -2089,6 +2089,7 @@ mod neon {
         max_width: c_int,
         max_height: c_int,
         bitdepth_max: c_int,
+        _topleft_off: usize,
     ) {
         [ipred_z1_neon, ipred_z2_neon, ipred_z3_neon][Z - 1](
             dst.cast(),
