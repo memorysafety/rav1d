@@ -187,16 +187,16 @@ unsafe fn splat_dc<BD: BitDepth>(
             if width > 4 {
                 let dcN = dc as u64 * 0x101010101010101;
                 for _ in 0..height {
-                    for x in (0..width).step_by(mem::size_of::<u64>()) {
-                        *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut u64) = dcN;
+                    for x in (0..width as usize).step_by(mem::size_of::<u64>()) {
+                        *dst.add(x).cast::<u64>() = dcN;
                     }
                     dst = dst.offset(stride);
                 }
             } else {
                 let dcN = dc as u32 * 0x1010101;
                 for _ in 0..height {
-                    for x in (0..width).step_by(mem::size_of::<u32>()) {
-                        *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut c_uint) = dcN;
+                    for x in (0..width as usize).step_by(mem::size_of::<u32>()) {
+                        *dst.add(x).cast::<u32>() = dcN;
                     }
                     dst = dst.offset(stride);
                 }
@@ -206,8 +206,8 @@ unsafe fn splat_dc<BD: BitDepth>(
             assert!(dc <= bd.bitdepth_max().as_::<c_int>());
             let dcN = dc as u64 * 0x1000100010001;
             for _ in 0..height {
-                for x in (0..width).step_by(mem::size_of::<u64>() >> 1) {
-                    *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut u64) = dcN;
+                for x in (0..width as usize).step_by(mem::size_of::<u64>() >> 1) {
+                    *dst.add(x).cast::<u64>() = dcN;
                 }
                 dst = dst.offset(stride);
             }
