@@ -545,26 +545,23 @@ unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
 unsafe fn ipred_paeth_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    tl_ptr: *const BD::Pixel,
+    tl: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    tl_off: usize,
     width: c_int,
     height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bd: BD,
 ) {
-    let topleft = (*tl_ptr.offset(0)).as_::<c_int>();
-    let mut y = 0;
-    while y < height {
-        let left = (*tl_ptr.offset(-(y + 1) as isize)).as_::<c_int>();
-        let mut x = 0;
-        while x < width {
-            let top = (*tl_ptr.offset((1 + x) as isize)).as_::<c_int>();
+    let topleft = tl[tl_off].as_::<c_int>();
+    for y in 0..height as usize {
+        let left = tl[tl_off - (y + 1)].as_::<c_int>();
+        let dst_slice = slice::from_raw_parts_mut(dst, width as usize);
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            let top = tl[tl_off + 1 + x].as_::<c_int>();
             let base = left + top - topleft;
             let ldiff = (left - base).abs();
             let tdiff = (top - base).abs();
             let tldiff = (topleft - base).abs();
-            *dst.offset(x as isize) = (if ldiff <= tdiff && ldiff <= tldiff {
+
+            *dst = (if ldiff <= tdiff && ldiff <= tldiff {
                 left
             } else if tdiff <= tldiff {
                 top
@@ -572,10 +569,8 @@ unsafe fn ipred_paeth_rust<BD: BitDepth>(
                 topleft
             })
             .as_::<BD::Pixel>();
-            x += 1;
         }
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
@@ -585,23 +580,14 @@ unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
     tl_ptr: *const DynPixel,
     width: c_int,
     height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-    _topleft_off: usize,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    _bitdepth_max: c_int,
+    topleft_off: usize,
 ) {
-    ipred_paeth_rust(
-        dst.cast(),
-        stride,
-        tl_ptr.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
-    );
+    let topleft = reconstruct_topleft::<BD>(tl_ptr, topleft_off);
+    ipred_paeth_rust::<BD>(dst.cast(), stride, topleft, topleft_off, width, height);
 }
 
 unsafe fn ipred_smooth_rust<BD: BitDepth>(
