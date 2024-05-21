@@ -478,7 +478,7 @@ unsafe fn ipred_v_rust<BD: BitDepth>(
     width: c_int,
     height: c_int,
 ) {
-    let width = width.try_into().unwrap();
+    let width = width as usize;
 
     for _ in 0..height {
         BD::pixel_copy(
