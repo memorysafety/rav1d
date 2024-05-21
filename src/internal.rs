@@ -1137,12 +1137,14 @@ impl ScratchInterintraBuf {
     }
 }
 
+pub const SCRATCH_EDGE_LEN: usize = 257;
+
 #[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
-pub struct ScratchEdgeBuf([u8; 257 * 2 + 62]); // 257 Pixel elements + 62 padding bytes
+pub struct ScratchEdgeBuf([u8; SCRATCH_EDGE_LEN * 2 + 62]); // 257 Pixel elements + 62 padding bytes
 
 impl ScratchEdgeBuf {
-    pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; 257] {
+    pub fn buf_mut<BD: BitDepth>(&mut self) -> &mut [BD::Pixel; SCRATCH_EDGE_LEN] {
         FromBytes::mut_from_prefix(&mut self.0).unwrap()
     }
 }
