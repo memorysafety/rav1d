@@ -545,15 +545,16 @@ unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
 unsafe fn ipred_paeth_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    tl_ptr: *const BD::Pixel,
+    tl: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    tl_off: usize,
     width: c_int,
     height: c_int,
 ) {
-    let topleft = (*tl_ptr.offset(0)).as_::<c_int>();
-    for y in 0..height {
-        let left = (*tl_ptr.offset(-(y + 1) as isize)).as_::<c_int>();
-        for x in 0..width {
-            let top = (*tl_ptr.offset((1 + x) as isize)).as_::<c_int>();
+    let topleft = tl[tl_off].as_::<c_int>();
+    for y in 0..height as usize {
+        let left = tl[tl_off - (y + 1)].as_::<c_int>();
+        for x in 0..width as usize {
+            let top = tl[tl_off + 1 + x].as_::<c_int>();
             let base = left + top - topleft;
             let ldiff = (left - base).abs();
             let tdiff = (top - base).abs();
@@ -581,15 +582,10 @@ unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
     _max_width: c_int,
     _max_height: c_int,
     _bitdepth_max: c_int,
-    _topleft_off: usize,
+    topleft_off: usize,
 ) {
-    ipred_paeth_rust::<BD>(
-        dst.cast(),
-        stride,
-        tl_ptr.cast(),
-        width,
-        height,
-    );
+    let topleft = reconstruct_topleft::<BD>(tl_ptr, topleft_off);
+    ipred_paeth_rust::<BD>(dst.cast(), stride, topleft, topleft_off, width, height);
 }
 
 unsafe fn ipred_smooth_rust<BD: BitDepth>(
