@@ -364,6 +364,29 @@ impl DcGen {
     }
 }
 
+/// Reconstructs the reference to the topleft edge array from a pointer into the
+/// array and an offset from the start of the array.
+///
+/// The topleft pointer passed to asm is always a pointer into a buffer of
+/// length [`SCRATCH_EDGE_LEN`]. For the Rust fallbacks we also pass in the
+/// offset from the front of the buffer so that we can reconstruct the original
+/// array reference in order to use safe array operations within the fallbacks.
+///
+/// # Safety
+///
+/// `topleft_ptr` must be a pointer into an array of length [`SCRATCH_EDGE_LEN`]
+/// and is `topleft_off` elements from the beginning of the array. This should
+/// be guaranteed by the logic in `angular_ipred::call`.
+unsafe fn reconstruct_topleft<'a, BD: BitDepth>(
+    topleft_ptr: *const DynPixel,
+    topleft_off: usize,
+) -> &'a [BD::Pixel; SCRATCH_EDGE_LEN] {
+    &*topleft_ptr
+        .cast::<BD::Pixel>()
+        .sub(topleft_off)
+        .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>()
+}
+
 unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
@@ -377,10 +400,7 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     topleft_off: usize,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
-    let topleft = &*topleft
-        .cast::<BD::Pixel>()
-        .sub(topleft_off)
-        .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>();
+    let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
     splat_dc(
         dst.cast(),
         stride,
@@ -403,10 +423,7 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     topleft_off: usize,
 ) {
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
-    let topleft = &*topleft
-        .cast::<BD::Pixel>()
-        .sub(topleft_off)
-        .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>();
+    let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
     let dc: c_uint = dc_gen.call::<BD>(topleft, topleft_off, width, height);
     cfl_pred(
         dst.cast(),
@@ -484,13 +501,7 @@ unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
     _bitdepth_max: c_int,
     _topleft_off: usize,
 ) {
-    ipred_v_rust::<BD>(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-    );
+    ipred_v_rust::<BD>(dst.cast(), stride, topleft.cast(), width, height);
 }
 
 unsafe fn ipred_h_rust<BD: BitDepth>(
