@@ -2911,7 +2911,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         edge,
                         uv_t_dim.w as c_int * 4,
                         uv_t_dim.h as c_int * 4,
-                        ac.as_mut_ptr(),
+                        ac,
                         intra.cfl_alpha[pl] as c_int,
                         bd,
                     );

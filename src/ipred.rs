@@ -10,6 +10,7 @@ use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
+use crate::src::internal::SCRATCH_AC_TXTP_LEN;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
@@ -116,7 +117,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: *const i16,
+    ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
 ) -> ());
@@ -129,7 +130,7 @@ impl cfl_pred::Fn {
         topleft: *const BD::Pixel,
         width: c_int,
         height: c_int,
-        ac: *const i16,
+        ac: &[i16; SCRATCH_AC_TXTP_LEN],
         alpha: c_int,
         bd: BD,
     ) {
@@ -243,21 +244,20 @@ unsafe fn cfl_pred<BD: BitDepth>(
     width: c_int,
     height: c_int,
     dc: c_int,
-    mut ac: *const i16,
+    ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bd: BD,
 ) {
-    let mut y = 0;
-    while y < height {
-        let mut x = 0;
-        while x < width {
-            let diff = alpha * *ac.offset(x as isize) as c_int;
-            *dst.offset(x as isize) = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
-            x += 1;
+    let width = width as usize;
+    let mut ac = &ac[..width * height as usize];
+    for _ in 0..height {
+        let slice = slice::from_raw_parts_mut(dst, width);
+        for (x, dst) in slice.iter_mut().enumerate() {
+            let diff = alpha * ac[x] as c_int;
+            *dst = bd.iclip_pixel(dc + apply_sign(diff.abs() + 32 >> 6, diff));
         }
-        ac = ac.offset(width as isize);
+        ac = &ac[width..];
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
@@ -361,7 +361,7 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: *const i16,
+    ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
 ) {
@@ -401,7 +401,7 @@ unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     _topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: *const i16,
+    ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
 ) {
