@@ -661,18 +661,14 @@ unsafe fn ipred_smooth_v_rust<BD: BitDepth>(
 ) {
     let weights_ver: *const u8 = &*dav1d_sm_weights.0.as_ptr().offset(height as isize) as *const u8;
     let bottom = (*topleft.offset(-height as isize)).as_::<c_int>();
-    let mut y = 0;
-    while y < height {
-        let mut x = 0;
-        while x < width {
+    for y in 0..height {
+        for x in 0..width {
             let pred = *weights_ver.offset(y as isize) as c_int
                 * (*topleft.offset((1 + x) as isize)).as_::<c_int>()
                 + (256 - *weights_ver.offset(y as isize) as c_int) * bottom;
             *dst.offset(x as isize) = (pred + 128 >> 8).as_::<BD::Pixel>();
-            x += 1;
         }
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
