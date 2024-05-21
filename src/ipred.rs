@@ -662,10 +662,11 @@ unsafe fn ipred_smooth_v_rust<BD: BitDepth>(
     let bottom = topleft[topleft_off - height].as_::<c_int>();
 
     for y in 0..height {
-        for x in 0..width {
+        let dst_slice = slice::from_raw_parts_mut(dst, width);
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
             let pred = weights_ver[y] as c_int * topleft[topleft_off + 1 + x].as_::<c_int>()
                 + (256 - weights_ver[y] as c_int) * bottom;
-            *dst.offset(x as isize) = (pred + 128 >> 8).as_::<BD::Pixel>();
+            *dst = (pred + 128 >> 8).as_::<BD::Pixel>();
         }
         dst = dst.offset(BD::pxstride(stride));
     }
