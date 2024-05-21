@@ -2674,17 +2674,16 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         );
 
                         if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-                            let edge = edge_array.as_ptr().add(edge_offset);
                             hex_dump::<BD>(
-                                edge.offset(-(t_dim.h as isize * 4)),
+                                edge_array[edge_offset - t_dim.h as usize * 4..].as_ptr(),
                                 t_dim.h as usize * 4,
                                 t_dim.h as usize * 4,
                                 2,
                                 "l",
                             );
-                            hex_dump::<BD>(edge, 0, 1, 1, "tl");
+                            hex_dump::<BD>(edge_array[edge_offset..].as_ptr(), 0, 1, 1, "tl");
                             hex_dump::<BD>(
-                                edge.add(1),
+                                edge_array[edge_offset + 1..].as_ptr(),
                                 t_dim.w as usize * 4,
                                 t_dim.w as usize * 4,
                                 2,
@@ -3134,17 +3133,16 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                 bd,
                             );
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
-                                let edge = edge_array.as_ptr().add(edge_offset);
                                 hex_dump::<BD>(
-                                    edge.offset(-(uv_t_dim.h as isize * 4)),
+                                    edge_array[edge_offset - uv_t_dim.h as usize * 4..].as_ptr(),
                                     uv_t_dim.h as usize * 4,
                                     uv_t_dim.h as usize * 4,
                                     2,
                                     "l",
                                 );
-                                hex_dump::<BD>(edge, 0, 1, 1, "tl");
+                                hex_dump::<BD>(edge_array[edge_offset..].as_ptr(), 0, 1, 1, "tl");
                                 hex_dump::<BD>(
-                                    edge.add(1),
+                                    edge_array[edge_offset + 1..].as_ptr(),
                                     uv_t_dim.w as usize * 4,
                                     uv_t_dim.w as usize * 4,
                                     2,
