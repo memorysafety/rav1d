@@ -379,7 +379,7 @@ unsafe extern "C" fn ipred_dc_c_erased<BD: BitDepth, const DC_GEN: u8>(
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
     let topleft = &*topleft
         .cast::<BD::Pixel>()
-        .offset(-(topleft_off as isize))
+        .sub(topleft_off)
         .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>();
     splat_dc(
         dst.cast(),
@@ -405,7 +405,7 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     let dc_gen = DcGen::from_repr(DC_GEN).unwrap();
     let topleft = &*topleft
         .cast::<BD::Pixel>()
-        .offset(-(topleft_off as isize))
+        .sub(topleft_off)
         .cast::<[BD::Pixel; SCRATCH_EDGE_LEN]>();
     let dc: c_uint = dc_gen.call::<BD>(topleft, topleft_off, width, height);
     cfl_pred(
