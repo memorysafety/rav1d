@@ -32,12 +32,10 @@ impl<T> MemPool<T> {
     where
         T: Copy,
     {
-        if let Some(mut buf) = self.bufs.lock().unwrap().pop() {
-            // TODO fallible allocation
-            if buf.len() < size {
-                buf.resize(size, init_value);
+        if let Some(buf) = self.bufs.lock().unwrap().pop() {
+            if size <= buf.len() {
+                return buf;
             }
-            return buf;
         }
         // TODO fallible allocation
         vec![init_value; size]
