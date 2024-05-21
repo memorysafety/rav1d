@@ -519,15 +519,13 @@ unsafe fn ipred_h_rust<BD: BitDepth>(
 ) {
     let width = width.try_into().unwrap();
 
-    let mut y = 0;
-    while y < height {
+    for y in 0..height {
         BD::pixel_set(
             slice::from_raw_parts_mut(dst, width),
             *topleft.offset(-(1 + y) as isize),
             width,
         );
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
