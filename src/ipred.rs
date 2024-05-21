@@ -548,10 +548,6 @@ unsafe fn ipred_paeth_rust<BD: BitDepth>(
     tl_ptr: *const BD::Pixel,
     width: c_int,
     height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bd: BD,
 ) {
     let topleft = (*tl_ptr.offset(0)).as_::<c_int>();
     for y in 0..height {
@@ -581,22 +577,18 @@ unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
     tl_ptr: *const DynPixel,
     width: c_int,
     height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    _bitdepth_max: c_int,
     _topleft_off: usize,
 ) {
-    ipred_paeth_rust(
+    ipred_paeth_rust::<BD>(
         dst.cast(),
         stride,
         tl_ptr.cast(),
         width,
         height,
-        a,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
     );
 }
 
