@@ -459,10 +459,6 @@ unsafe fn ipred_v_rust<BD: BitDepth>(
     topleft: *const BD::Pixel,
     width: c_int,
     height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bd: BD,
 ) {
     let width = width.try_into().unwrap();
 
@@ -482,22 +478,18 @@ unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    _bitdepth_max: c_int,
     _topleft_off: usize,
 ) {
-    ipred_v_rust(
+    ipred_v_rust::<BD>(
         dst.cast(),
         stride,
         topleft.cast(),
         width,
         height,
-        a,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
     );
 }
 
