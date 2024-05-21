@@ -553,13 +553,15 @@ unsafe fn ipred_paeth_rust<BD: BitDepth>(
     let topleft = tl[tl_off].as_::<c_int>();
     for y in 0..height as usize {
         let left = tl[tl_off - (y + 1)].as_::<c_int>();
-        for x in 0..width as usize {
+        let dst_slice = slice::from_raw_parts_mut(dst, width as usize);
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
             let top = tl[tl_off + 1 + x].as_::<c_int>();
             let base = left + top - topleft;
             let ldiff = (left - base).abs();
             let tdiff = (top - base).abs();
             let tldiff = (topleft - base).abs();
-            *dst.offset(x as isize) = (if ldiff <= tdiff && ldiff <= tldiff {
+
+            *dst = (if ldiff <= tdiff && ldiff <= tldiff {
                 left
             } else if tdiff <= tldiff {
                 top
