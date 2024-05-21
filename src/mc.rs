@@ -1235,7 +1235,7 @@ impl mct::Fn {
         my: i32,
         bd: BD,
     ) {
-        let tmp = tmp.as_mut_ptr();
+        let tmp = tmp[..(w * h) as usize].as_mut_ptr();
         let src = src.cast();
         let bd = bd.into_c();
         self.get()(tmp, src, src_stride, w, h, mx, my, bd)
@@ -1269,7 +1269,7 @@ impl mct_scaled::Fn {
         dy: i32,
         bd: BD,
     ) {
-        let tmp = tmp.as_mut_ptr();
+        let tmp = tmp[..(w * h) as usize].as_mut_ptr();
         let src = src.cast();
         let bd = bd.into_c();
         self.get()(tmp, src, src_stride, w, h, mx, my, dx, dy, bd)
