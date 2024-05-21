@@ -554,11 +554,9 @@ unsafe fn ipred_paeth_rust<BD: BitDepth>(
     _bd: BD,
 ) {
     let topleft = (*tl_ptr.offset(0)).as_::<c_int>();
-    let mut y = 0;
-    while y < height {
+    for y in 0..height {
         let left = (*tl_ptr.offset(-(y + 1) as isize)).as_::<c_int>();
-        let mut x = 0;
-        while x < width {
+        for x in 0..width {
             let top = (*tl_ptr.offset((1 + x) as isize)).as_::<c_int>();
             let base = left + top - topleft;
             let ldiff = (left - base).abs();
@@ -572,10 +570,8 @@ unsafe fn ipred_paeth_rust<BD: BitDepth>(
                 topleft
             })
             .as_::<BD::Pixel>();
-            x += 1;
         }
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
