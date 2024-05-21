@@ -699,13 +699,16 @@ unsafe fn ipred_smooth_h_rust<BD: BitDepth>(
     _max_height: c_int,
     _bd: BD,
 ) {
-    let weights_hor: *const u8 = &*dav1d_sm_weights.0.as_ptr().offset(width as isize) as *const u8;
+    let [width, height] = [width, height].map(|it| it as usize);
+
+    let weights_hor = &dav1d_sm_weights.0[width..];
     let right = (*topleft.offset(width as isize)).as_::<c_int>();
+
     for y in 0..height {
         for x in 0..width {
-            let pred = *weights_hor.offset(x as isize) as c_int
-                * (*topleft.offset(-(y + 1) as isize)).as_::<c_int>()
-                + (256 - *weights_hor.offset(x as isize) as c_int) * right;
+            let pred = weights_hor[x] as c_int
+                * (*topleft.offset(-(y as isize + 1))).as_::<c_int>()
+                + (256 - weights_hor[x] as c_int) * right;
             *dst.offset(x as isize) = (pred + 128 >> 8).as_::<BD::Pixel>();
         }
         dst = dst.offset(BD::pxstride(stride));
