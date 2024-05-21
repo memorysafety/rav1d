@@ -917,10 +917,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                             let p = t.type_0 == TaskType::EntropyProgress;
                             let error = fc.task_thread.error.load(Ordering::SeqCst);
                             let done = fc.task_thread.done[p as usize].load(Ordering::SeqCst);
-                            if !(done == 0 || error != 0) {
-                                dbg!(done, error);
-                            }
-                            assert!(done == 0 || error != 0);
+                            assert!(done == 0 || error != 0, "done: {done}, error: {error}");
                             let frame_hdr = fc.frame_hdr();
                             let tile_row_base = frame_hdr.tiling.cols as c_int
                                 * f.frame_thread.next_tile_row[p as usize].load(Ordering::Relaxed);
@@ -1151,8 +1148,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                             1 as c_int + (t.type_0 == TaskType::TileReconstruction) as c_int
                         };
                         if error_0 == 0 {
-                            // SAFETY: TODO make safe
-                            error_0 = match unsafe { rav1d_decode_tile_sbrow(c, &mut tc, &f) } {
+                            error_0 = match rav1d_decode_tile_sbrow(c, &mut tc, &f) {
                                 Ok(()) => 0,
                                 Err(()) => 1,
                             };
