@@ -514,7 +514,7 @@ unsafe fn ipred_h_rust<BD: BitDepth>(
     width: c_int,
     height: c_int,
 ) {
-    let width = width.try_into().unwrap();
+    let width = width as usize;
 
     for y in 0..height as usize {
         BD::pixel_set(
