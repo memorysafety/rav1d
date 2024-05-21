@@ -1172,20 +1172,22 @@ pub struct ScratchInterintraEdgePal {
     _padding: [u8; 16],
 }
 
+pub const SCRATCH_AC_TXTP_LEN: usize = 32 * 32;
+
 #[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
 #[repr(C, align(64))]
-pub struct ScratchAcTxtpMap([u8; 1024 * 2]);
+pub struct ScratchAcTxtpMap([u8; SCRATCH_AC_TXTP_LEN * 2]);
 
 impl ScratchAcTxtpMap {
-    pub fn ac_mut(&mut self) -> &mut [i16; 1024] {
+    pub fn ac_mut(&mut self) -> &mut [i16; SCRATCH_AC_TXTP_LEN] {
         FromBytes::mut_from_prefix(&mut self.0).unwrap()
     }
 
-    pub fn txtp_map(&self) -> &[TxfmType; 1024] {
+    pub fn txtp_map(&self) -> &[TxfmType; SCRATCH_AC_TXTP_LEN] {
         FromBytes::ref_from_prefix(&self.0).unwrap()
     }
 
-    pub fn txtp_map_mut(&mut self) -> &mut [TxfmType; 1024] {
+    pub fn txtp_map_mut(&mut self) -> &mut [TxfmType; SCRATCH_AC_TXTP_LEN] {
         FromBytes::mut_from_prefix(&mut self.0).unwrap()
     }
 }

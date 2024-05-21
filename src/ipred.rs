@@ -10,6 +10,7 @@ use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
+use crate::src::internal::SCRATCH_AC_TXTP_LEN;
 use crate::src::levels::DC_128_PRED;
 use crate::src::levels::DC_PRED;
 use crate::src::levels::FILTER_PRED;
@@ -116,7 +117,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_pred(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: &[i16; 1024],
+    ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
 ) -> ());
@@ -129,7 +130,7 @@ impl cfl_pred::Fn {
         topleft: *const BD::Pixel,
         width: c_int,
         height: c_int,
-        ac: &[i16; 1024],
+        ac: &[i16; SCRATCH_AC_TXTP_LEN],
         alpha: c_int,
         bd: BD,
     ) {
@@ -243,7 +244,7 @@ unsafe fn cfl_pred<BD: BitDepth>(
     width: c_int,
     height: c_int,
     dc: c_int,
-    ac: &[i16; 1024],
+    ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bd: BD,
 ) {
@@ -360,7 +361,7 @@ unsafe extern "C" fn ipred_cfl_c_erased<BD: BitDepth, const DC_GEN: u8>(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: &[i16; 1024],
+    ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
 ) {
@@ -400,7 +401,7 @@ unsafe extern "C" fn ipred_cfl_128_c_erased<BD: BitDepth>(
     _topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    ac: &[i16; 1024],
+    ac: &[i16; SCRATCH_AC_TXTP_LEN],
     alpha: c_int,
     bitdepth_max: c_int,
 ) {
