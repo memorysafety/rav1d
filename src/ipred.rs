@@ -248,8 +248,8 @@ unsafe fn cfl_pred<BD: BitDepth>(
     alpha: c_int,
     bd: BD,
 ) {
-    let mut ac = ac.as_slice();
     let width = width as usize;
+    let mut ac = &ac[..width * height as usize];
     for _ in 0..height {
         let slice = slice::from_raw_parts_mut(dst, width);
         for (x, dst) in slice.iter_mut().enumerate() {
