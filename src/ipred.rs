@@ -691,19 +691,19 @@ unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
 unsafe fn ipred_smooth_h_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft: *const BD::Pixel,
+    topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_off: usize,
     width: c_int,
     height: c_int,
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
     let weights_hor = &dav1d_sm_weights.0[width..];
-    let right = (*topleft.offset(width as isize)).as_::<c_int>();
+    let right = topleft[topleft_off + width].as_::<c_int>();
 
     for y in 0..height {
         for x in 0..width {
-            let pred = weights_hor[x] as c_int
-                * (*topleft.offset(-(y as isize + 1))).as_::<c_int>()
+            let pred = weights_hor[x] as c_int * topleft[topleft_off - (y + 1)].as_::<c_int>()
                 + (256 - weights_hor[x] as c_int) * right;
             *dst.offset(x as isize) = (pred + 128 >> 8).as_::<BD::Pixel>();
         }
@@ -721,9 +721,10 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
     _max_width: c_int,
     _max_height: c_int,
     _bitdepth_max: c_int,
-    _topleft_off: usize,
+    topleft_off: usize,
 ) {
-    ipred_smooth_h_rust::<BD>(dst.cast(), stride, topleft.cast(), width, height);
+    let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
+    ipred_smooth_h_rust::<BD>(dst.cast(), stride, topleft, topleft_off, width, height);
 }
 
 #[inline(never)]
