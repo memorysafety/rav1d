@@ -509,16 +509,17 @@ unsafe extern "C" fn ipred_v_c_erased<BD: BitDepth>(
 unsafe fn ipred_h_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft: *const BD::Pixel,
+    topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_off: usize,
     width: c_int,
     height: c_int,
 ) {
     let width = width.try_into().unwrap();
 
-    for y in 0..height {
+    for y in 0..height as usize {
         BD::pixel_set(
             slice::from_raw_parts_mut(dst, width),
-            *topleft.offset(-(1 + y) as isize),
+            topleft[topleft_off - (1 + y)],
             width,
         );
         dst = dst.offset(BD::pxstride(stride));
@@ -535,15 +536,10 @@ unsafe extern "C" fn ipred_h_c_erased<BD: BitDepth>(
     _max_width: c_int,
     _max_height: c_int,
     _bitdepth_max: c_int,
-    _topleft_off: usize,
+    topleft_off: usize,
 ) {
-    ipred_h_rust::<BD>(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-    );
+    let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
+    ipred_h_rust::<BD>(dst.cast(), stride, topleft, topleft_off, width, height);
 }
 
 unsafe fn ipred_paeth_rust<BD: BitDepth>(
