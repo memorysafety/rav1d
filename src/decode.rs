@@ -1182,7 +1182,7 @@ fn obmc_lowest_px(
     }
 }
 
-unsafe fn decode_b(
+fn decode_b(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
@@ -1240,7 +1240,10 @@ unsafe fn decode_b(
     if t.frame_thread.pass == 2 {
         match &b.ii {
             Av1BlockIntraInter::Intra(intra) => {
-                bd_fn.recon_b_intra(f, t, None, bs, intra_edge_flags, b, intra);
+                // SAFETY: Function call with all safe args, will be marked safe.
+                unsafe {
+                    bd_fn.recon_b_intra(f, t, None, bs, intra_edge_flags, b, intra);
+                }
 
                 let y_mode = intra.y_mode;
                 let y_mode_nofilt = if y_mode == FILTER_PRED {
@@ -1319,7 +1322,11 @@ unsafe fn decode_b(
                         }
                     }
                 }
-                bd_fn.recon_b_inter(f, t, None, bs, b, inter)?;
+
+                // SAFETY: Function call with all safe args, will be marked safe.
+                unsafe {
+                    bd_fn.recon_b_inter(f, t, None, bs, b, inter)?;
+                }
 
                 let filter = &dav1d_filter_dir[inter.filter2d as usize];
                 CaseSet::<32, false>::many(
@@ -1818,15 +1825,18 @@ unsafe fn decode_b(
                     println!("Post-y_pal[{}]: r={}", use_y_pal, ts_c.msac.rng);
                 }
                 if use_y_pal {
-                    pal_sz[0] = (bd_fn.read_pal_plane)(
-                        t,
-                        f,
-                        ts_c,
-                        false,
-                        sz_ctx,
-                        bx4 as usize,
-                        by4 as usize,
-                    );
+                    // SAFETY: Function call with all safe args, will be marked safe.
+                    pal_sz[0] = unsafe {
+                        (bd_fn.read_pal_plane)(
+                            t,
+                            f,
+                            ts_c,
+                            false,
+                            sz_ctx,
+                            bx4 as usize,
+                            by4 as usize,
+                        )
+                    };
                 }
             }
 
@@ -1841,7 +1851,11 @@ unsafe fn decode_b(
                 }
                 if use_uv_pal {
                     // see aomedia bug 2183 for why we use luma coordinates
-                    pal_sz[1] = (bd_fn.read_pal_uv)(t, f, ts_c, sz_ctx, bx4 as usize, by4 as usize);
+                    //
+                    // SAFETY: Function call with all safe args, will be marked safe.
+                    pal_sz[1] = unsafe {
+                        (bd_fn.read_pal_uv)(t, f, ts_c, sz_ctx, bx4 as usize, by4 as usize)
+                    };
                 }
             }
         }
@@ -1984,9 +1998,11 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            bd_fn.read_coef_blocks(f, t, ts_c, bs, b);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
         } else {
-            bd_fn.recon_b_intra(f, t, Some(ts_c), bs, intra_edge_flags, b, &intra);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.recon_b_intra(f, t, Some(ts_c), bs, intra_edge_flags, b, &intra) };
         }
 
         if f.frame_hdr().loopfilter.level_y != [0, 0] {
@@ -2065,7 +2081,17 @@ unsafe fn decode_b(
             },
         );
         if pal_sz[0] != 0 {
-            (bd_fn.copy_pal_block_y)(t, f, bx4 as usize, by4 as usize, bw4 as usize, bh4 as usize);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe {
+                (bd_fn.copy_pal_block_y)(
+                    t,
+                    f,
+                    bx4 as usize,
+                    by4 as usize,
+                    bw4 as usize,
+                    bh4 as usize,
+                )
+            };
         }
         if has_chroma {
             CaseSet::<32, false>::many(
@@ -2077,14 +2103,17 @@ unsafe fn decode_b(
                 },
             );
             if pal_sz[1] != 0 {
-                (bd_fn.copy_pal_block_uv)(
-                    t,
-                    f,
-                    bx4 as usize,
-                    by4 as usize,
-                    bw4 as usize,
-                    bh4 as usize,
-                );
+                // SAFEETY: Function call with all safe args, will be marked safe.
+                unsafe {
+                    (bd_fn.copy_pal_block_uv)(
+                        t,
+                        f,
+                        bx4 as usize,
+                        by4 as usize,
+                        bw4 as usize,
+                        bh4 as usize,
+                    );
+                }
             }
         }
         let frame_hdr = f.frame_hdr();
@@ -2238,9 +2267,11 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            bd_fn.read_coef_blocks(f, t, ts_c, bs, b);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
         } else {
-            bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)?;
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)? };
         }
 
         splat_intrabc_mv(c, t, &f.rf, bs, r#ref, bw4 as usize, bh4 as usize);
@@ -3140,9 +3171,11 @@ unsafe fn decode_b(
 
         // reconstruction
         if t.frame_thread.pass == 1 {
-            bd_fn.read_coef_blocks(f, t, ts_c, bs, b);
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.read_coef_blocks(f, t, ts_c, bs, b) };
         } else {
-            bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)?;
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { bd_fn.recon_b_inter(f, t, Some(ts_c), bs, b, &inter)? };
         }
 
         let frame_hdr = f.frame_hdr();
@@ -3517,7 +3550,7 @@ unsafe fn decode_b(
     Ok(())
 }
 
-unsafe fn decode_sb(
+fn decode_sb(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
@@ -4151,7 +4184,7 @@ fn read_restoration_info(
     }
 }
 
-pub(crate) unsafe fn rav1d_decode_tile_sbrow(
+pub(crate) fn rav1d_decode_tile_sbrow(
     c: &Rav1dContext,
     t: &mut Rav1dTaskContext,
     f: &Rav1dFrameData,
@@ -4210,7 +4243,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
                 t.a += 1;
             }
         }
-        (f.bd_fn().backup_ipred_edge)(f, t);
+        // SAFETY: Function call with all safe args, will be marked safe.
+        unsafe {
+            (f.bd_fn().backup_ipred_edge)(f, t);
+        }
         return Ok(());
     }
 
@@ -4342,7 +4378,10 @@ pub(crate) unsafe fn rav1d_decode_tile_sbrow(
 
     // backup pre-loopfilter pixels for intra prediction of the next sbrow
     if t.frame_thread.pass != 1 {
-        (f.bd_fn().backup_ipred_edge)(f, t);
+        // Function call with all safe args, will be marked safe.
+        unsafe {
+            (f.bd_fn().backup_ipred_edge)(f, t);
+        }
     }
 
     // backup t->a/l.tx_lpf_y/uv at tile boundaries to use them to "fix"
@@ -4801,7 +4840,7 @@ pub(crate) fn rav1d_decode_frame_init_cdf(
     Ok(())
 }
 
-unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dResult {
+fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> Rav1dResult {
     assert!(c.tc.len() == 1);
 
     let Rav1dContextTaskType::Single(t) = &c.tc[0].task else {
@@ -4855,7 +4894,9 @@ unsafe fn rav1d_decode_frame_main(c: &Rav1dContext, f: &mut Rav1dFrameData) -> R
             }
 
             // loopfilter + cdef + restoration
-            (f.bd_fn().filter_sbrow)(c, f, &mut t, sby);
+            //
+            // SAFETY: Function call with all safe args, will be marked safe.
+            unsafe { (f.bd_fn().filter_sbrow)(c, f, &mut t, sby) };
         }
     }
 
