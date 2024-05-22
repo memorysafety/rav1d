@@ -4186,11 +4186,12 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     _t: &mut Rav1dTaskContext,
     sby: c_int,
 ) {
-    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    if !c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK) {
+        return;
+    }
 
-    if !c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
-        || frame_hdr.loopfilter.level_y == [0; 2]
-    {
+    let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
+    if frame_hdr.loopfilter.level_y == [0; 2] {
         return;
     }
 
