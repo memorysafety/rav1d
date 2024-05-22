@@ -141,11 +141,14 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let frame_hdr = &***out.frame_hdr.as_ref().unwrap();
     let data = &frame_hdr.film_grain.data;
     let data_c = &data.clone().into();
+    let in_data = &r#in.data.as_ref().unwrap().data;
+    let out_data = &out.data.as_ref().unwrap().data;
+
     let ss_y = (r#in.p.layout == Rav1dPixelLayout::I420) as usize;
     let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as usize;
     let cpw = out.p.w as usize + ss_x >> ss_x;
     let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
-    let luma_src = r#in.data.as_ref().unwrap().data[0]
+    let luma_src = in_data[0]
         .as_mut_ptr::<BD>()
         .offset(((row * 32) as isize * BD::pxstride(r#in.stride[0])) as isize);
     let bitdepth_max = (1 << out.p.bpc) - 1;
@@ -154,7 +157,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if data.num_y_points != 0 {
         let bh = cmp::min(out.p.h as usize - row * 32, 32);
         dsp.fgy_32x32xn.call(
-            out.data.as_ref().unwrap().data[0]
+            out_data[0]
                 .as_mut_ptr::<BD>()
                 .offset(((row * 32) as isize * BD::pxstride(out.stride[0])) as isize),
             luma_src.cast(),
@@ -188,12 +191,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if data.chroma_scaling_from_luma {
         for pl in 0..2 {
             dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
-                out.data.as_ref().unwrap().data[1 + pl]
-                    .as_mut_ptr::<BD>()
-                    .offset(uv_off as isize),
-                r#in.data.as_ref().unwrap().data[1 + pl]
-                    .as_ptr::<BD>()
-                    .offset(uv_off as isize),
+                out_data[1 + pl].as_mut_ptr::<BD>().offset(uv_off as isize),
+                in_data[1 + pl].as_ptr::<BD>().offset(uv_off as isize),
                 r#in.stride[1],
                 data,
                 cpw,
@@ -212,12 +211,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         for pl in 0..2 {
             if data.num_uv_points[pl] != 0 {
                 dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
-                    out.data.as_ref().unwrap().data[1 + pl]
-                        .as_mut_ptr::<BD>()
-                        .offset(uv_off as isize),
-                    r#in.data.as_ref().unwrap().data[1 + pl]
-                        .as_ptr::<BD>()
-                        .offset(uv_off as isize),
+                    out_data[1 + pl].as_mut_ptr::<BD>().offset(uv_off as isize),
+                    in_data[1 + pl].as_ptr::<BD>().offset(uv_off as isize),
                     r#in.stride[1],
                     data_c,
                     cpw,
