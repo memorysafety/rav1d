@@ -4189,7 +4189,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_cols<BD: BitDepth>(
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
 
     if !c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
-        || frame_hdr.loopfilter.level_y[0] == 0 && frame_hdr.loopfilter.level_y[1] == 0
+        || frame_hdr.loopfilter.level_y == [0; 2]
     {
         return;
     }
@@ -4302,7 +4302,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow_deblock_rows<BD: BitDepth>(
     let mask_offset = (sby >> (sb128 == 0) as c_int) * f.sb128w;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     if c.inloop_filters.contains(Rav1dInloopFilterType::DEBLOCK)
-        && (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0)
+        && (frame_hdr.loopfilter.level_y != [0; 2])
     {
         rav1d_loopfilter_sbrow_rows::<BD>(f, &mut p, &p_offset, mask_offset as usize, sby);
     }
