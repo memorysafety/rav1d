@@ -20,6 +20,7 @@ use crate::src::tables::dav1d_resize_filter;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::iter;
+use std::mem;
 use std::slice;
 use to_method::To;
 
@@ -1400,11 +1401,12 @@ impl emu_edge::Fn {
         x: isize,
         y: isize,
         dst: &mut [BD::Pixel; EMU_EDGE_LEN],
-        dst_stride: usize,
+        dst_pxstride: usize,
         src: *const BD::Pixel,
         src_stride: isize,
     ) {
         let dst = dst.as_mut_ptr().cast();
+        let dst_stride = dst_pxstride * mem::size_of::<BD::Pixel>();
         let src = src.cast();
         self.get()(bw, bh, iw, ih, x, y, dst, dst_stride, src, src_stride)
     }

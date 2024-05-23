@@ -105,7 +105,6 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::mem;
 use std::ops::BitOr;
 use std::ptr;
 use std::slice;
@@ -2121,7 +2120,7 @@ unsafe fn mc<BD: BitDepth>(
                 (dx - (mx != 0) as c_int * 3) as intptr_t,
                 (dy - (my != 0) as c_int * 3) as intptr_t,
                 emu_edge_buf,
-                192 * mem::size_of::<BD::Pixel>(),
+                192,
                 ref_data[pl].as_ptr::<BD>(),
                 ref_stride,
             );
@@ -2194,7 +2193,7 @@ unsafe fn mc<BD: BitDepth>(
                 (left - 3) as intptr_t,
                 (top - 3) as intptr_t,
                 emu_edge_buf,
-                320 * mem::size_of::<BD::Pixel>(),
+                320,
                 ref_data[pl].as_ptr::<BD>(),
                 ref_stride,
             );
@@ -2404,7 +2403,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     (dx - 3) as intptr_t,
                     (dy - 3) as intptr_t,
                     emu_edge_buf,
-                    32 * mem::size_of::<BD::Pixel>(),
+                    32,
                     ref_data[pl].as_ptr::<BD>(),
                     ref_stride,
                 );
