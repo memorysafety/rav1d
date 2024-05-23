@@ -1609,6 +1609,8 @@ unsafe fn read_coef_tree<BD: BitDepth>(
     y_off: c_int,
     mut dst: Option<*mut BD::Pixel>,
 ) {
+    let bd = BD::from_c(f.bitdepth_max);
+
     let ts = &f.ts[t.ts];
     let t_dim = &dav1d_txfm_dimensions[ytx as usize];
     let txw = t_dim.w;
@@ -1783,13 +1785,12 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                         "dq",
                     );
                 }
-                (f.dsp.itx.itxfm_add[ytx as usize][txtp as usize])
-                    .expect("non-null function pointer")(
-                    dst.cast(),
+                f.dsp.itx.itxfm_add[ytx as usize][txtp as usize].call::<BD>(
+                    dst,
                     f.cur.stride[0],
-                    cf.as_mut_ptr().cast(),
+                    cf.as_mut_ptr(),
                     eob,
-                    f.bitdepth_max,
+                    bd,
                 );
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
@@ -2750,13 +2751,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                     "dq",
                                 );
                             }
-                            (f.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize])
-                                .expect("non-null function pointer")(
-                                dst.cast(),
+                            f.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize].call::<BD>(
+                                dst,
                                 f.cur.stride[0],
-                                cf.as_mut_ptr().cast(),
+                                cf.as_mut_ptr(),
                                 eob,
-                                f.bitdepth_max,
+                                bd,
                             );
                             if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                 hex_dump::<BD>(
@@ -3190,13 +3190,12 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         "dq",
                                     );
                                 }
-                                (f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize])
-                                    .expect("non-null function pointer")(
-                                    dst.cast(),
+                                f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize].call::<BD>(
+                                    dst,
                                     stride,
-                                    cf.as_mut_ptr().cast(),
+                                    cf.as_mut_ptr(),
                                     eob,
-                                    f.bitdepth_max,
+                                    bd,
                                 );
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
@@ -4145,13 +4144,12 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                         "dq",
                                     );
                                 }
-                                (f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize])
-                                    .expect("non-null function pointer")(
-                                    uvdst.add(4 * x as usize).cast(),
+                                f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize].call::<BD>(
+                                    uvdst.add(4 * x as usize),
                                     f.cur.stride[1],
-                                    cf.as_mut_ptr().cast(),
+                                    cf.as_mut_ptr(),
                                     eob,
-                                    f.bitdepth_max,
+                                    bd,
                                 );
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
