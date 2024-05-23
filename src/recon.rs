@@ -1771,7 +1771,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                     CfSelect::Frame(offset) => {
                         let len =
                             cmp::min(t_dim.h as usize, 8) * 4 * cmp::min(t_dim.w as usize, 8) * 4;
-                        cf_guard = f.frame_thread.cf.mut_slice_as(offset..offset + len);
+                        cf_guard = f.frame_thread.cf.mut_slice_as((offset.., ..len));
                         &mut *cf_guard
                     }
                     CfSelect::Task => t.cf.select_mut::<BD>(),
@@ -1788,7 +1788,7 @@ unsafe fn read_coef_tree<BD: BitDepth>(
                 f.dsp.itx.itxfm_add[ytx as usize][txtp as usize].call::<BD>(
                     dst,
                     f.cur.stride[0],
-                    cf.as_mut_ptr(),
+                    cf,
                     eob,
                     bd,
                 );
@@ -2754,7 +2754,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                             f.dsp.itx.itxfm_add[intra.tx as usize][txtp as usize].call::<BD>(
                                 dst,
                                 f.cur.stride[0],
-                                cf.as_mut_ptr(),
+                                cf,
                                 eob,
                                 bd,
                             );
@@ -3190,13 +3190,8 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                                         "dq",
                                     );
                                 }
-                                f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize].call::<BD>(
-                                    dst,
-                                    stride,
-                                    cf.as_mut_ptr(),
-                                    eob,
-                                    bd,
-                                );
+                                f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize]
+                                    .call::<BD>(dst, stride, cf, eob, bd);
                                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                                     hex_dump::<BD>(
                                         dst,
@@ -4147,7 +4142,7 @@ pub(crate) unsafe fn rav1d_recon_b_inter<BD: BitDepth>(
                                 f.dsp.itx.itxfm_add[b.uvtx as usize][txtp as usize].call::<BD>(
                                     uvdst.add(4 * x as usize),
                                     f.cur.stride[1],
-                                    cf.as_mut_ptr(),
+                                    cf,
                                     eob,
                                     bd,
                                 );

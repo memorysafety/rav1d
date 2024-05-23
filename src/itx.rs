@@ -174,12 +174,12 @@ impl itxfm::Fn {
         &self,
         dst: *mut BD::Pixel,
         dst_stride: ptrdiff_t,
-        coeff: *mut BD::Coef,
+        coeff: &mut [BD::Coef],
         eob: c_int,
         bd: BD,
     ) {
         let dst = dst.cast();
-        let coeff = coeff.cast();
+        let coeff = coeff.as_mut_ptr().cast();
         let bd = bd.into_c();
         self.get()(dst, dst_stride, coeff, eob, bd)
     }
