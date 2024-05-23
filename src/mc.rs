@@ -1399,12 +1399,12 @@ impl emu_edge::Fn {
         ih: isize,
         x: isize,
         y: isize,
-        dst: *mut [BD::Pixel; EMU_EDGE_LEN],
+        dst: &mut [BD::Pixel; EMU_EDGE_LEN],
         dst_stride: usize,
         src: *const BD::Pixel,
         src_stride: isize,
     ) {
-        let dst = dst.cast();
+        let dst = dst.as_mut_ptr().cast();
         let src = src.cast();
         self.get()(bw, bh, iw, ih, x, y, dst, dst_stride, src, src_stride)
     }
