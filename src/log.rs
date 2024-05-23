@@ -125,22 +125,27 @@ mod marker {
         unsafe { std::mem::transmute(callback) }
     }
 
-    /// Create an empty [`Dav1dLoggerCallback`] for use as a marker `fn`
-    /// for special `fn`s stored in [`Dav1dLogger::callback`].
-    macro_rules! create {
-        ($name:ident) => {{
-            extern "C" fn $name(_cookie: *mut c_void, _fmt: *const c_char) {
-                // The `fn` needs a unique body so that
-                // multiple ones don't get optimized into the same `fn`.
-                unimplemented!(stringify!($name));
-            }
+    pub const STDOUT: Dav1dLoggerCallback = {
+        /// Create an empty [`Dav1dLoggerCallback`] for use as a marker `fn`
+        /// for special `fn`s stored in [`Dav1dLogger::callback`].
+        extern "C" fn stdout(_cookie: *mut c_void, _fmt: *const c_char) {
+            // The `fn` needs a unique body so that
+            // multiple ones don't get optimized into the same `fn`.
+            unimplemented!(stringify!(stdout));
+        }
+        cast(stdout)
+    };
 
-            cast($name)
-        }};
-    }
-
-    pub const STDOUT: Dav1dLoggerCallback = create!(stdout);
-    pub const STDERR: Dav1dLoggerCallback = create!(stderr);
+    pub const STDERR: Dav1dLoggerCallback = {
+        /// Create an empty [`Dav1dLoggerCallback`] for use as a marker `fn`
+        /// for special `fn`s stored in [`Dav1dLogger::callback`].
+        extern "C" fn stderr(_cookie: *mut c_void, _fmt: *const c_char) {
+            // The `fn` needs a unique body so that
+            // multiple ones don't get optimized into the same `fn`.
+            unimplemented!(stringify!(stderr));
+        }
+        cast(stderr)
+    };
 }
 
 impl From<Dav1dLogger> for Option<Rav1dLogger> {
