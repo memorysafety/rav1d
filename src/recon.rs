@@ -161,7 +161,7 @@ pub(crate) type recon_b_inter_fn = unsafe fn(
 pub(crate) type filter_sbrow_fn =
     unsafe fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
 
-pub(crate) type backup_ipred_edge_fn = unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
+pub(crate) type backup_ipred_edge_fn = fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
 
 pub(crate) type read_coef_blocks_fn = unsafe fn(
     &Rav1dFrameData,
@@ -4492,10 +4492,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
-    f: &Rav1dFrameData,
-    t: &mut Rav1dTaskContext,
-) {
+pub(crate) fn rav1d_backup_ipred_edge<BD: BitDepth>(f: &Rav1dFrameData, t: &mut Rav1dTaskContext) {
     let cur_data = &f.cur.data.as_ref().unwrap().data;
 
     let ts = &f.ts[t.ts];
