@@ -150,7 +150,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
     let luma_src = in_data[0]
         .as_mut_ptr::<BD>()
-        .offset(((row * 32) as isize * BD::pxstride(r#in.stride[0])) as isize);
+        .offset(row as isize * 32 * BD::pxstride(r#in.stride[0]));
     let bitdepth_max = (1 << out.p.bpc) - 1;
     let bd = BD::from_c(bitdepth_max);
 
@@ -159,7 +159,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         dsp.fgy_32x32xn.call(
             out_data[0]
                 .as_mut_ptr::<BD>()
-                .offset(((row * 32) as isize * BD::pxstride(out.stride[0])) as isize),
+                .offset(row as isize * 32 * BD::pxstride(out.stride[0])),
             luma_src,
             out.stride[0],
             data,
@@ -183,11 +183,11 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         let mut ptr = luma_src;
         for _ in 0..bh {
             *ptr.offset(out.p.w as isize) = *ptr.offset((out.p.w - 1) as isize);
-            ptr = ptr.offset(((BD::pxstride(r#in.stride[0])) << ss_y) as isize);
+            ptr = ptr.offset(BD::pxstride(r#in.stride[0]) << ss_y);
         }
     }
 
-    let uv_off = (row * 32) as isize * BD::pxstride(out.stride[1]) >> ss_y;
+    let uv_off = row as isize * 32 as isize * BD::pxstride(out.stride[1]) >> ss_y;
     if data.chroma_scaling_from_luma {
         for pl in 0..2 {
             dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
@@ -228,7 +228,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
                 );
             }
         }
-    };
+    }
 }
 
 pub(crate) unsafe fn rav1d_apply_grain<BD: BitDepth>(
