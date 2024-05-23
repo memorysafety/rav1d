@@ -182,7 +182,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if out.p.w as usize & ss_x != 0 {
         let mut ptr = luma_src;
         for _ in 0..bh {
-            *ptr.offset(out.p.w as isize) = *ptr.offset((out.p.w - 1) as isize);
+            *ptr.add(out.p.w as usize) = *ptr.add((out.p.w - 1) as usize);
             ptr = ptr.offset(BD::pxstride(r#in.stride[0]) << ss_y);
         }
     }
