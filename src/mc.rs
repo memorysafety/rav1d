@@ -1378,16 +1378,16 @@ pub type blend_dir_fn =
     unsafe extern "C" fn(*mut DynPixel, isize, *const [DynPixel; SCRATCH_LAP_LEN], i32, i32) -> ();
 
 pub type emu_edge_fn = unsafe extern "C" fn(
-    isize,
-    isize,
-    isize,
-    isize,
-    isize,
-    isize,
-    *mut [DynPixel; EMU_EDGE_LEN],
-    usize,
-    *const DynPixel,
-    isize,
+    bw: isize,
+    bh: isize,
+    iw: isize,
+    ih: isize,
+    x: isize,
+    y: isize,
+    dst: *mut [DynPixel; EMU_EDGE_LEN],
+    dst_stride: usize,
+    src: *const DynPixel,
+    src_stride: isize,
 ) -> ();
 
 pub type resize_fn = unsafe extern "C" fn(
