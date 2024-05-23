@@ -149,6 +149,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
 
     let ss_y = (r#in.p.layout == Rav1dPixelLayout::I420) as usize;
     let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as usize;
+    let layout = r#in.p.layout.try_into().unwrap();
     let cpw = w + ss_x >> ss_x;
     let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
     let luma_src = in_data[0]
@@ -193,7 +194,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let uv_off = (row * BLOCK_SIZE) as isize * BD::pxstride(out.stride[1]) >> ss_y;
     if data.chroma_scaling_from_luma {
         for pl in 0..2 {
-            dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
+            dsp.fguv_32x32xn[layout].call(
                 out_data[1 + pl].as_mut_ptr::<BD>().offset(uv_off as isize),
                 in_data[1 + pl].as_ptr::<BD>().offset(uv_off as isize),
                 r#in.stride[1],
@@ -213,7 +214,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     } else {
         for pl in 0..2 {
             if data.num_uv_points[pl] != 0 {
-                dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
+                dsp.fguv_32x32xn[layout].call(
                     out_data[1 + pl].as_mut_ptr::<BD>().offset(uv_off as isize),
                     in_data[1 + pl].as_ptr::<BD>().offset(uv_off as isize),
                     r#in.stride[1],
