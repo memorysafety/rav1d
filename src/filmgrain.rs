@@ -37,7 +37,7 @@ use crate::include::common::bitdepth::bd_fn;
 pub const GRAIN_WIDTH: usize = 82;
 pub const GRAIN_HEIGHT: usize = 73;
 
-const BLOCK_SIZE: usize = 32;
+pub const BLOCK_SIZE: usize = 32;
 
 const SUB_GRAIN_WIDTH: usize = 44;
 const SUB_GRAIN_HEIGHT: usize = 38;
