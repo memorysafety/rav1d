@@ -1386,7 +1386,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn emu_edge(
     x: isize,
     y: isize,
     dst: *mut [DynPixel; EMU_EDGE_LEN],
-    dst_stride: usize,
+    dst_stride: isize,
     src: *const DynPixel,
     src_stride: isize,
 ) -> ());
@@ -1406,7 +1406,7 @@ impl emu_edge::Fn {
         src_stride: isize,
     ) {
         let dst = dst.as_mut_ptr().cast();
-        let dst_stride = dst_pxstride * mem::size_of::<BD::Pixel>();
+        let dst_stride = (dst_pxstride * mem::size_of::<BD::Pixel>()) as isize;
         let src = src.cast();
         self.get()(bw, bh, iw, ih, x, y, dst, dst_stride, src, src_stride)
     }
@@ -1938,7 +1938,7 @@ unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     x: isize,
     y: isize,
     dst: *mut [DynPixel; EMU_EDGE_LEN],
-    dst_stride: usize,
+    dst_stride: isize,
     r#ref: *const DynPixel,
     ref_stride: isize,
 ) {
@@ -1950,7 +1950,8 @@ unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
         x,
         y,
         dst.cast(),
-        dst_stride,
+        // Is `usize` in `fn emu_edge::Fn::call`.
+        dst_stride as usize,
         r#ref.cast(),
         ref_stride,
     )
