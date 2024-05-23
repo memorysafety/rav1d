@@ -2113,16 +2113,16 @@ unsafe fn mc<BD: BitDepth>(
             || dy + bh4 * v_mul + (my != 0) as c_int * 4 > h
         {
             let emu_edge_buf = emu_edge.buf_mut::<BD>();
-            (f.dsp.mc.emu_edge)(
+            f.dsp.mc.emu_edge.call::<BD>(
                 (bw4 * h_mul + (mx != 0) as c_int * 7) as intptr_t,
                 (bh4 * v_mul + (my != 0) as c_int * 7) as intptr_t,
                 w as intptr_t,
                 h as intptr_t,
                 (dx - (mx != 0) as c_int * 3) as intptr_t,
                 (dy - (my != 0) as c_int * 3) as intptr_t,
-                emu_edge_buf.as_mut_ptr().cast(),
+                emu_edge_buf,
                 192 * mem::size_of::<BD::Pixel>(),
-                ref_data[pl].as_ptr::<BD>().cast(),
+                ref_data[pl].as_ptr::<BD>(),
                 ref_stride,
             );
             r#ref = emu_edge_buf
@@ -2186,16 +2186,16 @@ unsafe fn mc<BD: BitDepth>(
         let h = refp.p.p.h + ss_ver >> ss_ver;
         if left < 3 || top < 3 || right + 4 > w || bottom + 4 > h {
             let emu_edge_buf = emu_edge.buf_mut::<BD>();
-            (f.dsp.mc.emu_edge)(
+            f.dsp.mc.emu_edge.call::<BD>(
                 (right - left + 7) as intptr_t,
                 (bottom - top + 7) as intptr_t,
                 w as intptr_t,
                 h as intptr_t,
                 (left - 3) as intptr_t,
                 (top - 3) as intptr_t,
-                emu_edge_buf.as_mut_ptr().cast(),
+                emu_edge_buf,
                 320 * mem::size_of::<BD::Pixel>(),
-                ref_data[pl].as_ptr::<BD>().cast(),
+                ref_data[pl].as_ptr::<BD>(),
                 ref_stride,
             );
             r#ref = emu_edge_buf.as_mut_ptr().add((320 * 3 + 3) as usize);
@@ -2396,16 +2396,16 @@ unsafe fn warp_affine<BD: BitDepth>(
 
             if dx < 3 || dx + 8 + 4 > width || dy < 3 || dy + 8 + 4 > height {
                 let emu_edge_buf = emu_edge.buf_mut::<BD>();
-                (f.dsp.mc.emu_edge)(
+                f.dsp.mc.emu_edge.call::<BD>(
                     15,
                     15,
                     width as intptr_t,
                     height as intptr_t,
                     (dx - 3) as intptr_t,
                     (dy - 3) as intptr_t,
-                    emu_edge_buf.as_mut_ptr().cast(),
+                    emu_edge_buf,
                     32 * mem::size_of::<BD::Pixel>(),
-                    ref_data[pl].as_ptr::<BD>().cast(),
+                    ref_data[pl].as_ptr::<BD>(),
                     ref_stride,
                 );
                 ref_ptr = emu_edge_buf.as_ptr().add(32 * 3 + 3);
