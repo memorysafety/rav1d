@@ -159,8 +159,15 @@ pub unsafe fn inv_txfm_add_rust<
     }
 }
 
-pub type itxfm_fn =
-    Option<unsafe extern "C" fn(*mut DynPixel, ptrdiff_t, *mut DynCoef, c_int, c_int) -> ()>;
+pub type itxfm_fn = Option<
+    unsafe extern "C" fn(
+        dst: *mut DynPixel,
+        dst_stride: ptrdiff_t,
+        coeff: *mut DynCoef,
+        eob: c_int,
+        bitdepth_max: c_int,
+    ) -> (),
+>;
 
 pub struct Rav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm_fn; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
