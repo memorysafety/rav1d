@@ -160,7 +160,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             out_data[0]
                 .as_mut_ptr::<BD>()
                 .offset(((row * 32) as isize * BD::pxstride(out.stride[0])) as isize),
-            luma_src.cast(),
+            luma_src,
             out.stride[0],
             data,
             out.p.w as usize,
