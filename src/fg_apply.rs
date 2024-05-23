@@ -143,10 +143,12 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let data_c = &data.clone().into();
     let in_data = &r#in.data.as_ref().unwrap().data;
     let out_data = &out.data.as_ref().unwrap().data;
+    let w = out.p.w as usize;
+    let h = out.p.h as usize;
 
     let ss_y = (r#in.p.layout == Rav1dPixelLayout::I420) as usize;
     let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as usize;
-    let cpw = out.p.w as usize + ss_x >> ss_x;
+    let cpw = w + ss_x >> ss_x;
     let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
     let luma_src = in_data[0]
         .as_mut_ptr::<BD>()
@@ -155,7 +157,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let bd = BD::from_c(bitdepth_max);
 
     if data.num_y_points != 0 {
-        let bh = cmp::min(out.p.h as usize - row * 32, 32);
+        let bh = cmp::min(h - row * 32, 32);
         dsp.fgy_32x32xn.call(
             out_data[0]
                 .as_mut_ptr::<BD>()
@@ -163,7 +165,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             luma_src,
             out.stride[0],
             data,
-            out.p.w as usize,
+            w,
             &scaling[0],
             &grain_lut[0],
             bh,
@@ -176,7 +178,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         return;
     }
 
-    let bh = cmp::min(out.p.h as usize - row * 32, 32) + ss_y >> ss_y;
+    let bh = cmp::min(h - row * 32, 32) + ss_y >> ss_y;
 
     // extend padding pixels
     if out.p.w as usize & ss_x != 0 {
