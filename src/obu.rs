@@ -2256,9 +2256,9 @@ unsafe fn parse_obus(
             c.operating_point_idc = seq_hdr.operating_points[op_idx as usize].idc as c_uint;
             let spatial_mask = c.operating_point_idc >> 8;
             c.max_spatial_id = if spatial_mask != 0 {
-                ulog2(spatial_mask) != 0
+                ulog2(spatial_mask) as u8
             } else {
-                false
+                0
             };
 
             // If we have read a sequence header which is different from the old one,

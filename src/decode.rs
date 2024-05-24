@@ -5203,6 +5203,7 @@ pub fn rav1d_submit_frame(c: &mut Rav1dContext) -> Rav1dResult {
         c.content_light.clone(),
         c.mastering_display.clone(),
         c.output_invisible_frames,
+        c.max_spatial_id,
         &c.frame_flags,
         &mut f,
         bpc,
