@@ -1410,7 +1410,7 @@ unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const 
     );
 }
 
-unsafe fn pal_pred_rust<BD: BitDepth>(
+fn pal_pred_rust<BD: BitDepth>(
     dst: &Rav1dPictureDataComponent,
     mut dst_offset: usize,
     pal: &[BD::Pixel; 8],
@@ -1436,6 +1436,7 @@ unsafe fn pal_pred_rust<BD: BitDepth>(
     }
 }
 
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     dst_ptr: *mut DynPixel,
     _stride: ptrdiff_t,
@@ -1453,7 +1454,7 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     // SAFETY: Undoing dyn cast in `pal_pred::Fn::call`.
     let pal = unsafe { &*pal.cast() };
     // SAFETY: Length sliced in `pal_pred::Fn::call`.
-    let idx = slice::from_raw_parts(idx, (w * h) as usize / 2);
+    let idx = unsafe { slice::from_raw_parts(idx, (w * h) as usize / 2) };
     pal_pred_rust::<BD>(dst, dst_offset, pal, idx, w, h)
 }
 
