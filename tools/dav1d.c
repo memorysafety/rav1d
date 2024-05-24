@@ -164,7 +164,10 @@ static int picture_alloc(Dav1dPicture *const p, void *const _) {
     const size_t uv_sz = uv_stride * (aligned_h >> ss_ver);
     const size_t pic_size = y_sz + 2 * uv_sz;
 
-    uint8_t *const buf = malloc(pic_size + DAV1D_PICTURE_ALIGNMENT * 2);
+    // Change for new `rav1d` safety requirement to initialize picture data.
+    // `calloc` of a large size should be optimized to OS zero pages,
+    // removing the overhead, and guaranteeing initialization safety.
+    uint8_t *const buf = calloc(pic_size + DAV1D_PICTURE_ALIGNMENT * 2, 1);
     if (!buf) return DAV1D_ERR(ENOMEM);
     p->allocator_data = buf;
 

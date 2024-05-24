@@ -28,7 +28,6 @@ use std::array;
 use std::ffi::c_int;
 use std::ffi::c_void;
 use std::mem;
-use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::sync::Arc;
 use to_method::To as _;
@@ -103,7 +102,7 @@ pub struct Dav1dPicture {
     pub allocator_data: Option<NonNull<c_void>>,
 }
 
-type AlignedPixelChunk = Align64<[MaybeUninit<u8>; RAV1D_PICTURE_ALIGNMENT]>;
+type AlignedPixelChunk = Align64<[u8; RAV1D_PICTURE_ALIGNMENT]>;
 const _: () = assert!(mem::align_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 const _: () = assert!(mem::size_of::<AlignedPixelChunk>() == RAV1D_PICTURE_ALIGNMENT);
 
@@ -124,7 +123,7 @@ impl Rav1dPictureDataComponent {
 
 // SAFETY: We only store the raw pointer, so we never materialize a `&mut`.
 unsafe impl AsMutPtr for Rav1dPictureDataComponent {
-    type Target = MaybeUninit<u8>;
+    type Target = u8;
 
     #[inline(always)] // Inline so callers can see our over-alignment.
     unsafe fn as_mut_ptr(ptr: *mut Self) -> *mut Self::Target {
@@ -288,6 +287,19 @@ pub struct Dav1dPicAllocator {
     /// # Safety
     ///
     /// If frame threading is used, accesses to [`Self::cookie`] must be thread-safe.
+    ///
+    /// ### Additional `rav1d` requirement:
+    ///
+    /// The allocated data must be initialized.
+    /// If newly (e.x. not reused) allocated data is zero initialized using OS APIs,
+    /// it is possible for this to not be slower than an uninitialized allocation.
+    /// For example, see `dav1d_default_picture_alloc` and `MemPool::pop_init`.
+    ///
+    /// If the allocated data is not initialized,
+    /// it is possible there will be reads of uninitialized data.
+    /// `rav1d` should not read this data before writing to it first,
+    /// but it does not guarantee that it does so.
+    /// Instead, initializing the allocated data guarantees all uses of it will be sound.
     ///
     /// # Args
     ///
@@ -477,7 +489,6 @@ impl Rav1dPicAllocator {
         let len = pic.p.pic_len(pic.stride);
         // TODO fallible allocation
         pic.data = Some(Arc::new(Rav1dPictureData {
-            // SAFETY: `MaybeUninit<u8>` should be safe for anything.
             data: array::from_fn(|i| {
                 let ptr = data[i]
                     // Need to cast before `NonNull::dangling` to get the right alignment.
