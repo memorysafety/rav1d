@@ -224,6 +224,14 @@ impl Rav1dPictureDataComponent {
         BD::pxstride(self.stride())
     }
 
+    pub fn pixel_offset<BD: BitDepth>(&self) -> usize {
+        let stride = self.stride();
+        if stride >= 0 {
+            return 0;
+        }
+        BD::pxstride(self.len() - (-stride) as usize)
+    }
+
     /// Strided ptr to [`u8`] bytes.
     fn as_byte_mut_ptr(&self) -> *mut u8 {
         let ptr = self.0.as_mut_ptr();
