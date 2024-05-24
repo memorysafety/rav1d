@@ -20,6 +20,7 @@ use crate::src::tables::dav1d_resize_filter;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use std::cmp;
 use std::iter;
+use std::mem;
 use std::slice;
 use to_method::To;
 
@@ -1377,18 +1378,39 @@ pub type blend_fn =
 pub type blend_dir_fn =
     unsafe extern "C" fn(*mut DynPixel, isize, *const [DynPixel; SCRATCH_LAP_LEN], i32, i32) -> ();
 
-pub type emu_edge_fn = unsafe extern "C" fn(
-    isize,
-    isize,
-    isize,
-    isize,
-    isize,
-    isize,
-    *mut [DynPixel; EMU_EDGE_LEN],
-    usize,
-    *const DynPixel,
-    isize,
-) -> ();
+wrap_fn_ptr!(pub unsafe extern "C" fn emu_edge(
+    bw: isize,
+    bh: isize,
+    iw: isize,
+    ih: isize,
+    x: isize,
+    y: isize,
+    dst: *mut [DynPixel; EMU_EDGE_LEN],
+    dst_stride: isize,
+    src: *const DynPixel,
+    src_stride: isize,
+) -> ());
+
+impl emu_edge::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        bw: isize,
+        bh: isize,
+        iw: isize,
+        ih: isize,
+        x: isize,
+        y: isize,
+        dst: &mut [BD::Pixel; EMU_EDGE_LEN],
+        dst_pxstride: usize,
+        src: *const BD::Pixel,
+        src_stride: isize,
+    ) {
+        let dst = dst.as_mut_ptr().cast();
+        let dst_stride = (dst_pxstride * mem::size_of::<BD::Pixel>()) as isize;
+        let src = src.cast();
+        self.get()(bw, bh, iw, ih, x, y, dst, dst_stride, src, src_stride)
+    }
+}
 
 pub type resize_fn = unsafe extern "C" fn(
     *mut DynPixel,
@@ -1417,7 +1439,7 @@ pub struct Rav1dMCDSPContext {
     pub blend_h: blend_dir_fn,
     pub warp8x8: warp8x8::Fn,
     pub warp8x8t: warp8x8t::Fn,
-    pub emu_edge: emu_edge_fn,
+    pub emu_edge: emu_edge::Fn,
     pub resize: resize_fn,
 }
 
@@ -1916,7 +1938,7 @@ unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     x: isize,
     y: isize,
     dst: *mut [DynPixel; EMU_EDGE_LEN],
-    dst_stride: usize,
+    dst_stride: isize,
     r#ref: *const DynPixel,
     ref_stride: isize,
 ) {
@@ -1928,7 +1950,8 @@ unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
         x,
         y,
         dst.cast(),
-        dst_stride,
+        // Is `usize` in `fn emu_edge::Fn::call`.
+        dst_stride as usize,
         r#ref.cast(),
         ref_stride,
     )
@@ -2024,21 +2047,6 @@ macro_rules! decl_fn {
         );
     };
 
-    (emu_edge, $name:ident) => {
-        fn $name(
-            bw: isize,
-            bh: isize,
-            iw: isize,
-            ih: isize,
-            x: isize,
-            y: isize,
-            dst: *mut [DynPixel; EMU_EDGE_LEN],
-            dst_stride: usize,
-            src: *const DynPixel,
-            src_stride: isize,
-        );
-    };
-
     (resize, $name:ident) => {
         pub(crate) fn $name(
             dst: *mut DynPixel,
@@ -2091,7 +2099,6 @@ extern "C" {
     decl_fns!(blend_dir, dav1d_blend_v);
     decl_fns!(blend_dir, dav1d_blend_h);
 
-    decl_fns!(emu_edge, dav1d_emu_edge);
     decl_fns!(resize, dav1d_resize);
 }
 
@@ -2103,8 +2110,6 @@ extern "C" {
     decl_fns!(blend, dav1d_blend, neon);
     decl_fns!(blend_dir, dav1d_blend_v, neon);
     decl_fns!(blend_dir, dav1d_blend_h, neon);
-
-    decl_fns!(emu_edge, dav1d_emu_edge, neon);
 }
 
 impl Rav1dMCDSPContext {
@@ -2171,7 +2176,7 @@ impl Rav1dMCDSPContext {
             blend_h: blend_h_c_erased::<BD>,
             warp8x8: warp8x8::Fn::new(warp_affine_8x8_c_erased::<BD>),
             warp8x8t: warp8x8t::Fn::new(warp_affine_8x8t_c_erased::<BD>),
-            emu_edge: emu_edge_c_erased::<BD>,
+            emu_edge: emu_edge::Fn::new(emu_edge_c_erased::<BD>),
             resize: resize_c_erased::<BD>,
         }
     }
@@ -2269,7 +2274,7 @@ impl Rav1dMCDSPContext {
         self.blend_h = bd_fn!(BD, blend_h, ssse3);
         self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, ssse3);
         self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, ssse3);
-        self.emu_edge = bd_fn!(BD, emu_edge, ssse3);
+        self.emu_edge = bd_fn!(emu_edge::decl_fn, BD, emu_edge, ssse3);
         self.resize = bd_fn!(BD, resize, ssse3);
 
         if !flags.contains(CpuFlags::SSE41) {
@@ -2351,7 +2356,7 @@ impl Rav1dMCDSPContext {
             self.blend_h = bd_fn!(BD, blend_h, avx2);
             self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, avx2);
             self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, avx2);
-            self.emu_edge = bd_fn!(BD, emu_edge, avx2);
+            self.emu_edge = bd_fn!(emu_edge::decl_fn, BD, emu_edge, avx2);
             self.resize = bd_fn!(BD, resize, avx2);
 
             if !flags.contains(CpuFlags::AVX512ICL) {
@@ -2454,7 +2459,7 @@ impl Rav1dMCDSPContext {
 
         self.warp8x8 = bd_fn!(warp8x8::decl_fn, BD, warp_affine_8x8, neon);
         self.warp8x8t = bd_fn!(warp8x8t::decl_fn, BD, warp_affine_8x8t, neon);
-        self.emu_edge = bd_fn!(BD, emu_edge, neon);
+        self.emu_edge = bd_fn!(emu_edge::decl_fn, BD, emu_edge, neon);
 
         self
     }
