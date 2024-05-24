@@ -304,6 +304,7 @@ impl Rav1dTasks {
         Some(self.index(t).clone())
     }
 
+    #[inline]
     fn index<'a>(&'a self, index: Rav1dTaskIndex) -> impl Deref<Target = Rav1dTask> + 'a {
         if let Some(index) = index.raw_index() {
             RwLockReadGuard::map(self.tasks.try_read().unwrap(), |tasks| {
@@ -379,10 +380,7 @@ impl Add<u32> for Rav1dTaskIndex {
     type Output = Self;
 
     fn add(self, rhs: u32) -> Self::Output {
-        match self.0 {
-            Some(i) => Self(NonZeroU32::new(i.get() + rhs)),
-            None => panic!("Cannot add to None"),
-        }
+        Self(self.0.and_then(|i| NonZeroU32::new(i.get() + rhs)))
     }
 }
 
@@ -441,8 +439,7 @@ fn create_filter_sbrow(fc: &Rav1dFrameContext, f: &Rav1dFrameData, pass: c_int) 
         sby: 0,
         recon_progress: 1,
         deblock_progress: 0,
-        deps_skip: AtomicI32::new(0),
-        next: Default::default(),
+        ..Default::default()
     };
     fc.task_thread.tasks.add_pending(t);
     Ok(())
@@ -488,7 +485,7 @@ pub(crate) fn rav1d_task_create_tile_sbrow(
 pub(crate) fn rav1d_task_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) {
     fc.task_thread.init_done.store(0, Ordering::SeqCst);
     let init_task = Rav1dTask::init(fc.index as c_uint);
-    fc.task_thread.insert_task(c, init_task, 1 as c_int);
+    fc.task_thread.insert_task(c, init_task, 1);
 }
 
 pub(crate) fn rav1d_task_delayed_fg(
@@ -581,8 +578,8 @@ fn check_tile(
     if error == 0 && frame_mt != 0 && !frame_hdr.frame_type.is_key_or_intra() {
         // check reference state
         let p = &f.sr_cur;
-        let ss_ver = (p.p.p.layout as c_uint == Rav1dPixelLayout::I420 as c_int as c_uint) as c_int;
-        let p_b: c_uint = ((t.sby + 1) << f.sb_shift + 2) as c_uint;
+        let ss_ver = (p.p.p.layout == Rav1dPixelLayout::I420) as c_int;
+        let p_b = ((t.sby + 1) << f.sb_shift + 2) as c_uint;
         let tile_sby = t.sby - (ts.tiling.row_start >> f.sb_shift);
         let lowest_px = f
             .lowest_pixel_mem
@@ -1081,7 +1078,7 @@ pub fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskContext_tas
                             let mut p_0 = 1;
                             while p_0 <= 2 {
                                 let f = fc.data.try_read().unwrap();
-                                let res_1 = rav1d_task_create_tile_sbrow(fc, &f, p_0, 0 as c_int);
+                                let res_1 = rav1d_task_create_tile_sbrow(fc, &f, p_0, 0);
                                 if res_1.is_err() {
                                     assert!(
                                         task_thread_lock.is_none(),
