@@ -195,12 +195,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if data.chroma_scaling_from_luma {
         for pl in 0..2 {
             dsp.fguv_32x32xn[layout].call(
-                out_data[1 + pl]
-                    .as_strided_mut_ptr::<BD>()
-                    .offset(uv_off as isize),
-                in_data[1 + pl]
-                    .as_strided_ptr::<BD>()
-                    .offset(uv_off as isize),
+                out_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uv_off),
+                in_data[1 + pl].as_strided_ptr::<BD>().offset(uv_off),
                 r#in.stride[1],
                 data,
                 cpw,
@@ -219,12 +215,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         for pl in 0..2 {
             if data.num_uv_points[pl] != 0 {
                 dsp.fguv_32x32xn[layout].call(
-                    out_data[1 + pl]
-                        .as_strided_mut_ptr::<BD>()
-                        .offset(uv_off as isize),
-                    in_data[1 + pl]
-                        .as_strided_ptr::<BD>()
-                        .offset(uv_off as isize),
+                    out_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uv_off),
+                    in_data[1 + pl].as_strided_ptr::<BD>().offset(uv_off),
                     r#in.stride[1],
                     data_c,
                     cpw,
