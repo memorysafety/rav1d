@@ -2504,9 +2504,10 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
         let sub_ch4 = cmp::min(ch4, init_y + 16 >> ss_ver);
         for init_x in (0..w4).step_by(16) {
             if intra.pal_sz[0] != 0 {
-                let dst = cur_data[0]
-                    .as_strided_mut_ptr::<BD>()
-                    .offset(4 * (t.b.y as isize * BD::pxstride(f.cur.stride[0]) + t.b.x as isize));
+                let dst = &cur_data[0];
+                let dst_offset = dst.pixel_offset::<BD>().wrapping_add_signed(
+                    4 * (t.b.y as isize * dst.pixel_stride::<BD>() + t.b.x as isize),
+                );
                 let pal_idx_guard;
                 let scratch = t.scratch.inter_intra_mut();
                 let pal_idx = if t.frame_thread.pass != 0 {
@@ -2533,7 +2534,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 };
                 f.dsp.ipred.pal_pred.call::<BD>(
                     dst,
-                    f.cur.stride[0],
+                    dst_offset,
                     &pal[0],
                     pal_idx,
                     bw4 * 4,
@@ -2541,7 +2542,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 );
                 if debug_block_info!(f, t.b) && DEBUG_B_PIXELS {
                     hex_dump::<BD>(
-                        dst,
+                        dst.as_mut_ptr::<BD>().add(dst_offset),
                         BD::pxstride(f.cur.stride[0]) as usize,
                         bw4 as usize * 4,
                         bh4 as usize * 4,
@@ -2916,10 +2917,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                         ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
                     let pal_idx_offset = ts.frame_thread[p].pal_idx.load(Ordering::Relaxed);
                     let len = (cbw4 * cbh4 * 8) as usize;
-                    pal_idx_guard = f
-                        .frame_thread
-                        .pal_idx
-                        .index(pal_idx_offset..pal_idx_offset + len);
+                    pal_idx_guard = f.frame_thread.pal_idx.index((pal_idx_offset.., ..len));
                     ts.frame_thread[p]
                         .pal_idx
                         .store(pal_idx_offset + len, Ordering::Relaxed);
@@ -2934,16 +2932,20 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 };
 
                 f.dsp.ipred.pal_pred.call::<BD>(
-                    cur_data[1].as_strided_mut_ptr::<BD>().offset(uv_dstoff),
-                    f.cur.stride[1],
+                    &cur_data[1],
+                    cur_data[1]
+                        .pixel_offset::<BD>()
+                        .wrapping_add_signed(uv_dstoff),
                     &pal[1],
                     pal_idx,
                     cbw4 * 4,
                     cbh4 * 4,
                 );
                 f.dsp.ipred.pal_pred.call::<BD>(
-                    cur_data[2].as_strided_mut_ptr::<BD>().offset(uv_dstoff),
-                    f.cur.stride[1],
+                    &cur_data[2],
+                    cur_data[2]
+                        .pixel_offset::<BD>()
+                        .wrapping_add_signed(uv_dstoff),
                     &pal[2],
                     pal_idx,
                     cbw4 * 4,

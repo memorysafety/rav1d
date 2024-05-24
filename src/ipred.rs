@@ -6,10 +6,12 @@ use crate::include::common::bitdepth::BPC;
 use crate::include::common::intops::apply_sign;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
+use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
+use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::SCRATCH_AC_TXTP_LEN;
 use crate::src::internal::SCRATCH_EDGE_LEN;
 use crate::src::levels::DC_128_PRED;
@@ -165,28 +167,33 @@ impl cfl_pred::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
-    dst: *mut DynPixel,
+    dst_ptr: *mut DynPixel,
     stride: ptrdiff_t,
     pal: *const [DynPixel; 8],
     idx: *const u8,
     w: c_int,
     h: c_int,
+    _dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl pal_pred::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        dst: *mut BD::Pixel,
-        stride: ptrdiff_t,
+        dst: &Rav1dPictureDataComponent,
+        dst_offset: usize,
         pal: &[BD::Pixel; 8],
         idx: &[u8],
         w: c_int,
         h: c_int,
     ) {
-        let dst = dst.cast();
+        // SAFETY: `DisjointMut` is unchecked for asm `fn`s,
+        // but passed through as an extra arg for the fallback `fn`.
+        let dst_ptr = dst.as_mut_ptr::<BD>().add(dst_offset).cast();
+        let stride = dst.stride();
         let pal = pal.as_ptr().cast();
         let idx = idx.as_ptr();
-        self.get()(dst, stride, pal, idx, w, h)
+        let dst = FFISafe::new(dst);
+        self.get()(dst_ptr, stride, pal, idx, w, h, dst)
     }
 }
 
@@ -1404,38 +1411,43 @@ unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const 
 }
 
 unsafe fn pal_pred_rust<BD: BitDepth>(
-    mut dst: *mut BD::Pixel,
-    stride: ptrdiff_t,
+    dst: &Rav1dPictureDataComponent,
+    mut dst_offset: usize,
     pal: &[BD::Pixel; 8],
     mut idx: *const u8,
     w: c_int,
     h: c_int,
 ) {
-    let mut y = 0;
-    while y < h {
-        let mut x = 0;
-        while x < w {
+    for _ in 0..h as usize {
+        for x in (0..w as usize).step_by(2) {
             let i = *idx;
-            assert!((i & 0x88) == 0);
-            *dst.offset(x as isize) = pal[(i & 7) as usize];
-            *dst.offset(x as isize + 1) = pal[(i >> 4) as usize];
             idx = idx.offset(1);
-            x += 2;
+            assert!((i & 0x88) == 0);
+            let dst = &mut *dst.slice_mut::<BD, _>((dst_offset + x.., ..2));
+            dst[0] = pal[(i & 7) as usize];
+            dst[1] = pal[(i >> 4) as usize];
         }
-        dst = dst.offset(BD::pxstride(stride));
-        y += 1;
+        dst_offset = dst_offset.wrapping_add_signed(dst.pixel_stride::<BD>());
     }
 }
 
 unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
+    dst_ptr: *mut DynPixel,
+    _stride: ptrdiff_t,
     pal: *const [DynPixel; 8],
     idx: *const u8,
     w: c_int,
     h: c_int,
+    dst: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    pal_pred_rust::<BD>(dst.cast(), stride, &*pal.cast(), idx, w, h);
+    let dst_ptr = dst_ptr.cast::<BD::Pixel>();
+    // SAFETY: Was passed as `FFISafe::new(dst)` in `pal_pred::Fn::call`.
+    let dst = unsafe { FFISafe::get(dst) };
+    // SAFETY: Reverse of what was done in `pal_pred::Fn::call`.
+    let dst_offset = unsafe { dst_ptr.offset_from(dst.as_mut_ptr::<BD>()) } as usize;
+    // SAFETY: Undoing dyn cast in `pal_pred::Fn::call`.
+    let pal = unsafe { &*pal.cast() };
+    pal_pred_rust::<BD>(dst, dst_offset, pal, idx, w, h)
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]

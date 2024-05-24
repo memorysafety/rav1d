@@ -214,7 +214,7 @@ impl Rav1dPictureDataComponent {
     }
 
     /// Stride in number of [`u8`] bytes.
-    fn stride(&self) -> isize {
+    pub fn stride(&self) -> isize {
         // SAFETY: We're only accessing the `stride` fields, not `ptr`.
         unsafe { (*self.0.inner()).stride }
     }
