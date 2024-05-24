@@ -614,8 +614,8 @@ unsafe fn ipred_smooth_rust<BD: BitDepth>(
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
-    let weights_hor = &dav1d_sm_weights.0[width..];
-    let weights_ver = &dav1d_sm_weights.0[height..];
+    let weights_hor = &dav1d_sm_weights.0[width..][..width];
+    let weights_ver = &dav1d_sm_weights.0[height..][..height];
     let right = topleft[topleft_off + width].as_::<c_int>();
     let bottom = topleft[topleft_off - height].as_::<c_int>();
 
@@ -658,7 +658,7 @@ unsafe fn ipred_smooth_v_rust<BD: BitDepth>(
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
-    let weights_ver = &dav1d_sm_weights.0[height..];
+    let weights_ver = &dav1d_sm_weights.0[height..][..height];
     let bottom = topleft[topleft_off - height].as_::<c_int>();
 
     for y in 0..height {
@@ -698,7 +698,7 @@ unsafe fn ipred_smooth_h_rust<BD: BitDepth>(
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
 
-    let weights_hor = &dav1d_sm_weights.0[width..];
+    let weights_hor = &dav1d_sm_weights.0[width..][..width];
     let right = topleft[topleft_off + width].as_::<c_int>();
 
     for y in 0..height {
