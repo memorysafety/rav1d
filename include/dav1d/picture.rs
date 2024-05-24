@@ -271,6 +271,11 @@ impl Rav1dPictureDataComponent {
         dst.clone_from_slice(src);
     }
 
+    /// Determine if they reference the same data.
+    pub fn ref_eq(&self, other: &Self) -> bool {
+        self.0.as_mut_ptr() == other.0.as_mut_ptr()
+    }
+
     #[inline] // Inline to see bounds checks in order to potentially elide them.
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn index<'a, BD: BitDepth>(

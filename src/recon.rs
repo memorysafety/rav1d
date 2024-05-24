@@ -2100,7 +2100,7 @@ unsafe fn mc<BD: BitDepth>(
         let w;
         let h;
 
-        if ref_data[0].as_ptr::<BD>() != cur_data[0].as_ptr::<BD>() {
+        if !ref_data[0].ref_eq(&cur_data[0]) {
             w = f.cur.p.w + ss_hor >> ss_hor;
             h = f.cur.p.h + ss_ver >> ss_ver;
         } else {
