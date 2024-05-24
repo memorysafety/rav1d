@@ -258,6 +258,22 @@ impl Rav1dPictureDataComponent {
         self.as_mut_ptr::<BD>().cast_const()
     }
 
+    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
+    ///
+    /// Bounds checked, but not [`DisjointMut`]-checked.
+    pub fn as_mut_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *mut BD::Pixel {
+        assert!(pixel_offset <= self.pixel_len::<BD>());
+        // SAFETY: We just checked that `pixel_offset` is in bounds.
+        unsafe { self.as_mut_ptr::<BD>().add(pixel_offset) }
+    }
+
+    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
+    ///
+    /// Bounds checked, but not [`DisjointMut`]-checked.
+    pub fn as_ptr_at<BD: BitDepth>(&self, offset: usize) -> *const BD::Pixel {
+        self.as_mut_ptr_at::<BD>(offset).cast_const()
+    }
+
     /// Strided ptr to [`BitDepth::Pixel`]s.
     pub fn as_strided_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
         // SAFETY: Transmutation is safe because we verify this with `zerocopy` in `Self::slice`.

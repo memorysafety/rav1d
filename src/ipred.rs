@@ -177,7 +177,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
 ) -> ());
 
 impl pal_pred::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         dst: &Rav1dPictureDataComponent,
         dst_offset: usize,
@@ -188,12 +188,13 @@ impl pal_pred::Fn {
     ) {
         // SAFETY: `DisjointMut` is unchecked for asm `fn`s,
         // but passed through as an extra arg for the fallback `fn`.
-        let dst_ptr = dst.as_mut_ptr::<BD>().add(dst_offset).cast();
+        let dst_ptr = dst.as_mut_ptr_at::<BD>(dst_offset).cast();
         let stride = dst.stride();
         let pal = pal.as_ptr().cast();
         let idx = idx[..(w * h) as usize / 2].as_ptr();
         let dst = FFISafe::new(dst);
-        self.get()(dst_ptr, stride, pal, idx, w, h, dst)
+        // SAFETY: Fallback `fn pal_pred_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(dst_ptr, stride, pal, idx, w, h, dst) }
     }
 }
 
