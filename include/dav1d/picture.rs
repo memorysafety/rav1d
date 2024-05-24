@@ -371,7 +371,7 @@ pub(crate) struct Rav1dPicAllocator {
     /// # Safety
     ///
     /// If [`Self::is_default`]`()`, then this cookie is a reference to
-    /// [`Rav1dContext::picture_pool`], a `&Arc<MemPool<MaybeUninit<u8>>`.
+    /// [`Rav1dContext::picture_pool`], a `&Arc<MemPool<u8>`.
     /// Thus, its lifetime is that of `&c.picture_pool`,
     /// so the lifetime of the `&`[`Rav1dContext`].
     /// This is used from `dav1d_default_picture_alloc`
@@ -380,7 +380,7 @@ pub(crate) struct Rav1dPicAllocator {
     /// which is called further up on the call stack with a `&`[`Rav1dContext`].
     /// Thus, the lifetime will always be valid where used.
     ///
-    /// Note that this is an `&Arc<MemPool<MaybeUninit<u8>>` turned into a raw pointer,
+    /// Note that this is an `&Arc<MemPool<u8>` turned into a raw pointer,
     /// not an [`Arc::into_raw`] of that [`Arc`].
     /// This is because storing the [`Arc`] would require C to
     /// free data owned by a [`Dav1dPicAllocator`] potentially,
