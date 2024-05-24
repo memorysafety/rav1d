@@ -37,9 +37,8 @@ use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_ulong;
-use std::ffi::c_ulonglong;
 use std::ffi::c_void;
+use std::mem;
 use std::slice;
 use strum::FromRepr;
 
@@ -206,56 +205,39 @@ unsafe fn splat_dc<BD: BitDepth>(
     dc: c_int,
     bd: BD,
 ) {
+    let stride = BD::pxstride(stride);
+    let width = width as usize;
     match BD::BPC {
         BPC::BPC8 => {
-            if !(dc <= 0xff as c_int) {
-                unreachable!();
-            }
+            assert!(dc <= 0xff);
             if width > 4 {
-                let dcN: u64 =
-                    (dc as c_ulonglong).wrapping_mul(0x101010101010101 as c_ulonglong) as u64;
-                let mut y = 0;
-                while y < height {
-                    let mut x = 0;
-                    while x < width {
-                        *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut u64) = dcN;
-                        x = (x as c_ulong).wrapping_add(::core::mem::size_of::<u64>() as c_ulong)
-                            as c_int as c_int;
-                    }
-                    dst = dst.offset(stride as isize);
-                    y += 1;
+                let dcN = dc as u64 * 0x101010101010101;
+                for _ in 0..height {
+                    let slice =
+                        slice::from_raw_parts_mut(dst.cast::<u64>(), width / mem::size_of::<u64>());
+                    slice.fill(dcN);
+                    dst = dst.offset(stride);
                 }
             } else {
-                let dcN_0: c_uint = (dc as c_uint).wrapping_mul(0x1010101 as c_uint);
-                let mut y_0 = 0;
-                while y_0 < height {
-                    let mut x_0 = 0;
-                    while x_0 < width {
-                        *(&mut *dst.offset(x_0 as isize) as *mut BD::Pixel as *mut c_uint) = dcN_0;
-                        x_0 = (x_0 as c_ulong)
-                            .wrapping_add(::core::mem::size_of::<c_uint>() as c_ulong)
-                            as c_int as c_int;
-                    }
-                    dst = dst.offset(stride as isize);
-                    y_0 += 1;
+                let dcN = dc as u32 * 0x1010101;
+                for _ in 0..height {
+                    let slice =
+                        slice::from_raw_parts_mut(dst.cast::<u32>(), width / mem::size_of::<u32>());
+                    slice.fill(dcN);
+                    dst = dst.offset(stride);
                 }
             };
         }
         BPC::BPC16 => {
-            if !(dc <= bd.bitdepth_max().as_::<c_int>()) {
-                unreachable!();
-            }
-            let dcN: u64 = (dc as c_ulonglong).wrapping_mul(0x1000100010001 as c_ulonglong) as u64;
-            let mut y = 0;
-            while y < height {
-                let mut x = 0;
-                while x < width {
-                    *(&mut *dst.offset(x as isize) as *mut BD::Pixel as *mut u64) = dcN;
-                    x = (x as c_ulong).wrapping_add(::core::mem::size_of::<u64>() as c_ulong >> 1)
-                        as c_int as c_int;
-                }
-                dst = dst.offset(BD::pxstride(stride));
-                y += 1;
+            assert!(dc <= bd.bitdepth_max().as_::<c_int>());
+            let dcN = dc as u64 * 0x1000100010001;
+            for _ in 0..height {
+                let slice = slice::from_raw_parts_mut(
+                    dst.cast::<u64>(),
+                    width / (mem::size_of::<u64>() >> 1),
+                );
+                slice.fill(dcN);
+                dst = dst.offset(stride);
             }
         }
     }
