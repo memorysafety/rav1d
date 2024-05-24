@@ -141,7 +141,13 @@ unsafe extern "C" fn dav1d_default_picture_alloc(
     // Note that `data[1]` and `data[2]`
     // were previously null instead of an empty slice when `!has_chroma`,
     // but this way is simpler and more uniform, especially when we move to slices.
-    let data = [data0, data1, data2].map(|data| data.as_mut_ptr().cast());
+    let data = [data0, data1, data2].map(|data| {
+        if data.is_empty() {
+            ptr::null_mut()
+        } else {
+            data.as_mut_ptr().cast()
+        }
+    });
 
     // SAFETY: Guaranteed by safety preconditions.
     let p_c = unsafe { &mut *p_c };

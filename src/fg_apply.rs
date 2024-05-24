@@ -6,10 +6,7 @@ use crate::include::dav1d::picture::Rav1dPicture;
 use crate::src::align::ArrayDefault;
 use crate::src::filmgrain::Rav1dFilmGrainDSPContext;
 use crate::src::internal::GrainBD;
-use libc::memcpy;
 use std::cmp;
-use std::ffi::c_int;
-use std::ffi::c_void;
 
 fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
     let mut scaling_array = ArrayDefault::default();
@@ -114,89 +111,19 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     // Copy over the non-modified planes
     // TODO: eliminate in favor of per-plane refs
     assert!(out.stride[0] == r#in.stride[0]);
-    if data.num_y_points == 0 {
-        let stride = out.stride[0];
-        let sz = out.p.h as isize * stride;
-        if sz < 0 {
-            memcpy(
-                out.data.as_ref().unwrap().data[0]
-                    .as_mut_ptr()
-                    .offset(sz as isize)
-                    .offset(-(stride as isize)) as *mut c_void,
-                r#in.data.as_ref().unwrap().data[0]
-                    .as_mut_ptr()
-                    .offset(sz as isize)
-                    .offset(-(stride as isize)) as *const c_void,
-                -sz as usize,
-            );
-        } else {
-            memcpy(
-                out.data.as_ref().unwrap().data[0]
-                    .as_mut_ptr()
-                    .cast::<c_void>(),
-                r#in.data.as_ref().unwrap().data[0]
-                    .as_mut_ptr()
-                    .cast::<c_void>(),
-                sz as usize,
-            );
-        }
-    }
-
-    if r#in.p.layout != Rav1dPixelLayout::I400 && !data.chroma_scaling_from_luma {
+    let has_chroma = r#in.p.layout != Rav1dPixelLayout::I400 && !data.chroma_scaling_from_luma;
+    if has_chroma {
         assert!(out.stride[1] == r#in.stride[1]);
-        let ss_ver = (r#in.p.layout == Rav1dPixelLayout::I420) as c_int;
-        let stride = out.stride[1];
-        let sz = (out.p.h + ss_ver >> ss_ver) as isize * stride;
-        if sz < 0 {
-            if data.num_uv_points[0] == 0 {
-                memcpy(
-                    out.data.as_ref().unwrap().data[1]
-                        .as_mut_ptr()
-                        .offset(sz as isize)
-                        .offset(-(stride as isize)) as *mut c_void,
-                    r#in.data.as_ref().unwrap().data[1]
-                        .as_mut_ptr()
-                        .offset(sz as isize)
-                        .offset(-(stride as isize)) as *const c_void,
-                    -sz as usize,
-                );
-            }
-            if data.num_uv_points[1] == 0 {
-                memcpy(
-                    out.data.as_ref().unwrap().data[2]
-                        .as_mut_ptr()
-                        .offset(sz as isize)
-                        .offset(-(stride as isize)) as *mut c_void,
-                    r#in.data.as_ref().unwrap().data[2]
-                        .as_mut_ptr()
-                        .offset(sz as isize)
-                        .offset(-(stride as isize)) as *const c_void,
-                    -sz as usize,
-                );
-            }
-        } else {
-            if data.num_uv_points[0] == 0 {
-                memcpy(
-                    out.data.as_ref().unwrap().data[1]
-                        .as_mut_ptr()
-                        .cast::<c_void>(),
-                    r#in.data.as_ref().unwrap().data[1]
-                        .as_mut_ptr()
-                        .cast::<c_void>(),
-                    sz as usize,
-                );
-            }
-            if data.num_uv_points[1] == 0 {
-                memcpy(
-                    out.data.as_ref().unwrap().data[2]
-                        .as_mut_ptr()
-                        .cast::<c_void>(),
-                    r#in.data.as_ref().unwrap().data[2]
-                        .as_mut_ptr()
-                        .cast::<c_void>(),
-                    sz as usize,
-                );
-            }
+    }
+    let num_points = [
+        data.num_y_points,
+        data.num_uv_points[0],
+        data.num_uv_points[1],
+    ];
+    let [in_data, out_data] = [r#in, out].map(|p| &p.data.as_ref().unwrap().data);
+    for i in 0..3 {
+        if (i == 0 || has_chroma) && num_points[i] == 0 {
+            out_data[i].copy_from(&in_data[i]);
         }
     }
 }
@@ -219,8 +146,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let cpw = out.p.w as usize + ss_x >> ss_x;
     let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
     let luma_src = r#in.data.as_ref().unwrap().data[0]
-        .as_mut_ptr()
-        .cast::<BD::Pixel>()
+        .as_mut_ptr::<BD>()
         .offset(((row * 32) as isize * BD::pxstride(r#in.stride[0])) as isize);
     let bitdepth_max = (1 << out.p.bpc) - 1;
     let bd = BD::from_c(bitdepth_max);
@@ -229,8 +155,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         let bh = cmp::min(out.p.h as usize - row * 32, 32);
         dsp.fgy_32x32xn.call(
             out.data.as_ref().unwrap().data[0]
-                .as_mut_ptr()
-                .cast::<BD::Pixel>()
+                .as_mut_ptr::<BD>()
                 .offset(((row * 32) as isize * BD::pxstride(out.stride[0])) as isize),
             luma_src.cast(),
             out.stride[0],
@@ -264,13 +189,10 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         for pl in 0..2 {
             dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
                 out.data.as_ref().unwrap().data[1 + pl]
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>()
+                    .as_mut_ptr::<BD>()
                     .offset(uv_off as isize),
                 r#in.data.as_ref().unwrap().data[1 + pl]
-                    .as_mut_ptr()
-                    .cast::<BD::Pixel>()
-                    .cast_const()
+                    .as_ptr::<BD>()
                     .offset(uv_off as isize),
                 r#in.stride[1],
                 data,
@@ -291,13 +213,10 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
             if data.num_uv_points[pl] != 0 {
                 dsp.fguv_32x32xn[r#in.p.layout.try_into().unwrap()].call(
                     out.data.as_ref().unwrap().data[1 + pl]
-                        .as_mut_ptr()
-                        .cast::<BD::Pixel>()
+                        .as_mut_ptr::<BD>()
                         .offset(uv_off as isize),
                     r#in.data.as_ref().unwrap().data[1 + pl]
-                        .as_mut_ptr()
-                        .cast::<BD::Pixel>()
-                        .cast_const()
+                        .as_ptr::<BD>()
                         .offset(uv_off as isize),
                     r#in.stride[1],
                     data_c,

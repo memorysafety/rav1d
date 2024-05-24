@@ -7,6 +7,7 @@
 
 use crate::src::align::AlignedByteChunk;
 use crate::src::align::AlignedVec;
+use crate::src::assume::assume;
 use std::cell::UnsafeCell;
 use std::convert::Infallible;
 use std::fmt;
@@ -64,6 +65,14 @@ impl<T: AsMutPtr> DisjointMut<T> {
         }
     }
 
+    /// # Safety
+    ///
+    /// The returned ptr has the safety requirements of [`UnsafeCell::get`].
+    /// In particular, the ptr returned by [`AsMutPtr::as_mut_ptr`] may be in use.
+    pub const fn inner(&self) -> *mut T {
+        self.inner.get()
+    }
+
     pub fn into_inner(self) -> T {
         self.inner.into_inner()
     }
@@ -82,6 +91,7 @@ pub struct DisjointMutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
 }
 
 impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
+    #[inline] // Inline to see alignment to potentially elide checks.
     fn cast_slice<V: AsBytes + FromBytes>(self) -> DisjointMutGuard<'a, T, [V]> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -97,6 +107,7 @@ impl<'a, T: AsMutPtr> DisjointMutGuard<'a, T, [u8]> {
         }
     }
 
+    #[inline] // Inline to see alignment to potentially elide checks.
     fn cast<V: AsBytes + FromBytes>(self) -> DisjointMutGuard<'a, T, V> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -140,6 +151,7 @@ pub struct DisjointImmutGuard<'a, T: ?Sized + AsMutPtr, V: ?Sized> {
 }
 
 impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
+    #[inline] // Inline to see alignment to potentially elide checks.
     fn cast_slice<V: FromBytes>(self) -> DisjointImmutGuard<'a, T, [V]> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -155,6 +167,7 @@ impl<'a, T: AsMutPtr> DisjointImmutGuard<'a, T, [u8]> {
         }
     }
 
+    #[inline] // Inline to see alignment to potentially elide checks.
     fn cast<V: FromBytes>(self) -> DisjointImmutGuard<'a, T, V> {
         // We don't want to drop the old guard, because we aren't changing or
         // removing the bounds from parent here.
@@ -251,7 +264,7 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
     }
 
     pub fn get_mut(&mut self) -> &mut T {
-        &mut *self.inner.get_mut()
+        self.inner.get_mut()
     }
 
     /// Mutably borrow a slice or element.
@@ -328,6 +341,24 @@ impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
 }
 
 impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
+    /// When we slice with [`Self::index`] or [`Self::index_mut`]
+    /// on a scaled/translated range, the multiplication can overflow,
+    /// causing the compiler to not be able to reason about the length of the slice anymore.
+    /// Instead of checking for overflows, we can instead just check
+    /// if the length of the casted slice is as expected.
+    ///
+    /// If the overflow was impossible (e.x. the range was casted from [`u32`] to [`usize`]),
+    /// this will be optimized out.
+    #[inline] // Inline to see the check.
+    fn check_cast_slice_len<I, V>(&self, index: I, slice: &[V])
+    where
+        I: SliceBounds,
+    {
+        let range = index.to_range(self.len() / mem::size_of::<V>());
+        let range_len = range.end - range.start;
+        assert!(slice.len() == range_len);
+    }
+
     /// Mutably borrow a slice of a convertible type.
     ///
     /// This method accesses a slice of elements of a type that implements
@@ -349,10 +380,12 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn mut_slice_as<'a, I, V>(&'a self, index: I) -> DisjointMutGuard<'a, T, [V]>
     where
-        I: SliceBounds + Into<Bounds> + Clone + SliceIndex<[V]>,
+        I: SliceBounds,
         V: AsBytes + FromBytes,
     {
-        self.index_mut(index.mul(mem::size_of::<V>())).cast_slice()
+        let slice = self.index_mut(index.mul(mem::size_of::<V>())).cast_slice();
+        self.check_cast_slice_len(index, &slice);
+        slice
     }
 
     /// Mutably borrow an element of a convertible type.
@@ -409,10 +442,12 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn slice_as<'a, I, V>(&'a self, index: I) -> DisjointImmutGuard<'a, T, [V]>
     where
-        I: SliceBounds + Into<Bounds> + Clone + SliceIndex<[V]>,
+        I: SliceBounds,
         V: FromBytes + Sized,
     {
-        self.index(index.mul(mem::size_of::<V>())).cast_slice()
+        let slice = self.index(index.mul(mem::size_of::<V>())).cast_slice();
+        self.check_cast_slice_len(index, &slice);
+        slice
     }
 
     /// Immutably borrow an element of a convertible type.
