@@ -167,7 +167,7 @@ impl cfl_pred::Fn {
 wrap_fn_ptr!(pub unsafe extern "C" fn pal_pred(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    pal: *const DynPixel,
+    pal: *const [DynPixel; 8],
     idx: *const u8,
     w: c_int,
     h: c_int,
@@ -178,13 +178,14 @@ impl pal_pred::Fn {
         &self,
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
-        pal: *const BD::Pixel,
-        idx: *const u8,
+        pal: &[BD::Pixel; 8],
+        idx: &[u8],
         w: c_int,
         h: c_int,
     ) {
         let dst = dst.cast();
-        let pal = pal.cast();
+        let pal = pal.as_ptr().cast();
+        let idx = idx.as_ptr();
         self.get()(dst, stride, pal, idx, w, h)
     }
 }
@@ -1445,7 +1446,7 @@ unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const 
 unsafe fn pal_pred_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    pal: *const BD::Pixel,
+    pal: &[BD::Pixel; 8],
     mut idx: *const u8,
     w: c_int,
     h: c_int,
@@ -1456,8 +1457,8 @@ unsafe fn pal_pred_rust<BD: BitDepth>(
         while x < w {
             let i = *idx;
             assert!((i & 0x88) == 0);
-            *dst.offset(x as isize) = *pal.offset((i & 7) as isize);
-            *dst.offset(x as isize + 1) = *pal.offset((i >> 4) as isize);
+            *dst.offset(x as isize) = pal[(i & 7) as usize];
+            *dst.offset(x as isize + 1) = pal[(i >> 4) as usize];
             idx = idx.offset(1);
             x += 2;
         }
@@ -1469,12 +1470,12 @@ unsafe fn pal_pred_rust<BD: BitDepth>(
 unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
-    pal: *const DynPixel,
+    pal: *const [DynPixel; 8],
     idx: *const u8,
     w: c_int,
     h: c_int,
 ) {
-    pal_pred_rust::<BD>(dst.cast(), stride, pal.cast(), idx, w, h);
+    pal_pred_rust::<BD>(dst.cast(), stride, &*pal.cast(), idx, w, h);
 }
 
 #[cfg(all(feature = "asm", target_arch = "aarch64"))]

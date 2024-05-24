@@ -2527,15 +2527,15 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     let index =
                         ((y >> 1) + (x & 1)) * (f.b4_stride as usize >> 1) + (x >> 1) + (y & 1);
                     pal_guard = f.frame_thread.pal.index::<BD>(index);
-                    &pal_guard[0]
+                    &*pal_guard
                 } else {
-                    &scratch.interintra_edge_pal.pal.buf::<BD>()[0]
+                    scratch.interintra_edge_pal.pal.buf::<BD>()
                 };
                 f.dsp.ipred.pal_pred.call::<BD>(
                     dst,
                     f.cur.stride[0],
-                    pal.as_ptr(),
-                    pal_idx.as_ptr(),
+                    &pal[0],
+                    pal_idx,
                     bw4 * 4,
                     bh4 * 4,
                 );
@@ -2934,16 +2934,16 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 f.dsp.ipred.pal_pred.call::<BD>(
                     cur_data[1].as_mut_ptr::<BD>().offset(uv_dstoff),
                     f.cur.stride[1],
-                    pal[1].as_ptr(),
-                    pal_idx.as_ptr(),
+                    &pal[1],
+                    pal_idx,
                     cbw4 * 4,
                     cbh4 * 4,
                 );
                 f.dsp.ipred.pal_pred.call::<BD>(
                     cur_data[2].as_mut_ptr::<BD>().offset(uv_dstoff),
                     f.cur.stride[1],
-                    pal[2].as_ptr(),
-                    pal_idx.as_ptr(),
+                    &pal[2],
+                    pal_idx,
                     cbw4 * 4,
                     cbh4 * 4,
                 );
