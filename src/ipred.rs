@@ -576,33 +576,28 @@ unsafe extern "C" fn ipred_paeth_c_erased<BD: BitDepth>(
 unsafe fn ipred_smooth_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft: *const BD::Pixel,
+    topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_off: usize,
     width: c_int,
     height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bd: BD,
 ) {
-    let weights_hor: *const u8 = &*dav1d_sm_weights.0.as_ptr().offset(width as isize) as *const u8;
-    let weights_ver: *const u8 = &*dav1d_sm_weights.0.as_ptr().offset(height as isize) as *const u8;
-    let right = (*topleft.offset(width as isize)).as_::<c_int>();
-    let bottom = (*topleft.offset(-height as isize)).as_::<c_int>();
-    let mut y = 0;
-    while y < height {
-        let mut x = 0;
-        while x < width {
-            let pred = *weights_ver.offset(y as isize) as c_int
-                * (*topleft.offset((1 + x) as isize)).as_::<c_int>()
-                + (256 - *weights_ver.offset(y as isize) as c_int) * bottom
-                + *weights_hor.offset(x as isize) as c_int
-                    * (*topleft.offset(-(1 + y) as isize)).as_::<c_int>()
-                + (256 - *weights_hor.offset(x as isize) as c_int) * right;
-            *dst.offset(x as isize) = (pred + 256 >> 9).as_::<BD::Pixel>();
-            x += 1;
+    let [width, height] = [width, height].map(|it| it as usize);
+
+    let weights_hor = &dav1d_sm_weights.0[width..][..width];
+    let weights_ver = &dav1d_sm_weights.0[height..][..height];
+    let right = topleft[topleft_off + width].as_::<c_int>();
+    let bottom = topleft[topleft_off - height].as_::<c_int>();
+
+    for y in 0..height {
+        let dst_slice = slice::from_raw_parts_mut(dst, width);
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            let pred = weights_ver[y] as c_int * topleft[topleft_off + 1 + x].as_::<c_int>()
+                + (256 - weights_ver[y] as c_int) * bottom
+                + weights_hor[x] as c_int * topleft[topleft_off - (1 + y)].as_::<c_int>()
+                + (256 - weights_hor[x] as c_int) * right;
+            *dst = (pred + 256 >> 9).as_::<BD::Pixel>();
         }
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
@@ -612,50 +607,37 @@ unsafe extern "C" fn ipred_smooth_c_erased<BD: BitDepth>(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-    _topleft_off: usize,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    _bitdepth_max: c_int,
+    topleft_off: usize,
 ) {
-    ipred_smooth_rust(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
-    );
+    let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
+    ipred_smooth_rust::<BD>(dst.cast(), stride, topleft, topleft_off, width, height);
 }
 
 unsafe fn ipred_smooth_v_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft: *const BD::Pixel,
+    topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_off: usize,
     width: c_int,
     height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bd: BD,
 ) {
-    let weights_ver: *const u8 = &*dav1d_sm_weights.0.as_ptr().offset(height as isize) as *const u8;
-    let bottom = (*topleft.offset(-height as isize)).as_::<c_int>();
-    let mut y = 0;
-    while y < height {
-        let mut x = 0;
-        while x < width {
-            let pred = *weights_ver.offset(y as isize) as c_int
-                * (*topleft.offset((1 + x) as isize)).as_::<c_int>()
-                + (256 - *weights_ver.offset(y as isize) as c_int) * bottom;
-            *dst.offset(x as isize) = (pred + 128 >> 8).as_::<BD::Pixel>();
-            x += 1;
+    let [width, height] = [width, height].map(|it| it as usize);
+
+    let weights_ver = &dav1d_sm_weights.0[height..][..height];
+    let bottom = topleft[topleft_off - height].as_::<c_int>();
+
+    for y in 0..height {
+        let dst_slice = slice::from_raw_parts_mut(dst, width);
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            let pred = weights_ver[y] as c_int * topleft[topleft_off + 1 + x].as_::<c_int>()
+                + (256 - weights_ver[y] as c_int) * bottom;
+            *dst = (pred + 128 >> 8).as_::<BD::Pixel>();
         }
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
@@ -665,50 +647,37 @@ unsafe extern "C" fn ipred_smooth_v_c_erased<BD: BitDepth>(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-    _topleft_off: usize,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    _bitdepth_max: c_int,
+    topleft_off: usize,
 ) {
-    ipred_smooth_v_rust(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
-    );
+    let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
+    ipred_smooth_v_rust::<BD>(dst.cast(), stride, topleft, topleft_off, width, height);
 }
 
 unsafe fn ipred_smooth_h_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft: *const BD::Pixel,
+    topleft: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_off: usize,
     width: c_int,
     height: c_int,
-    _a: c_int,
-    _max_width: c_int,
-    _max_height: c_int,
-    _bd: BD,
 ) {
-    let weights_hor: *const u8 = &*dav1d_sm_weights.0.as_ptr().offset(width as isize) as *const u8;
-    let right = (*topleft.offset(width as isize)).as_::<c_int>();
-    let mut y = 0;
-    while y < height {
-        let mut x = 0;
-        while x < width {
-            let pred = *weights_hor.offset(x as isize) as c_int
-                * (*topleft.offset(-(y + 1) as isize)).as_::<c_int>()
-                + (256 - *weights_hor.offset(x as isize) as c_int) * right;
-            *dst.offset(x as isize) = (pred + 128 >> 8).as_::<BD::Pixel>();
-            x += 1;
+    let [width, height] = [width, height].map(|it| it as usize);
+
+    let weights_hor = &dav1d_sm_weights.0[width..][..width];
+    let right = topleft[topleft_off + width].as_::<c_int>();
+
+    for y in 0..height {
+        let dst_slice = slice::from_raw_parts_mut(dst, width);
+        for (x, dst) in dst_slice.iter_mut().enumerate() {
+            let pred = weights_hor[x] as c_int * topleft[topleft_off - (y + 1)].as_::<c_int>()
+                + (256 - weights_hor[x] as c_int) * right;
+            *dst = (pred + 128 >> 8).as_::<BD::Pixel>();
         }
         dst = dst.offset(BD::pxstride(stride));
-        y += 1;
     }
 }
 
@@ -718,23 +687,14 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
     topleft: *const DynPixel,
     width: c_int,
     height: c_int,
-    a: c_int,
-    max_width: c_int,
-    max_height: c_int,
-    bitdepth_max: c_int,
-    _topleft_off: usize,
+    _a: c_int,
+    _max_width: c_int,
+    _max_height: c_int,
+    _bitdepth_max: c_int,
+    topleft_off: usize,
 ) {
-    ipred_smooth_h_rust(
-        dst.cast(),
-        stride,
-        topleft.cast(),
-        width,
-        height,
-        a,
-        max_width,
-        max_height,
-        BD::from_c(bitdepth_max),
-    );
+    let topleft = reconstruct_topleft::<BD>(topleft, topleft_off);
+    ipred_smooth_h_rust::<BD>(dst.cast(), stride, topleft, topleft_off, width, height);
 }
 
 #[inline(never)]
