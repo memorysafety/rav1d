@@ -180,12 +180,13 @@ impl pal_pred::Fn {
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
         pal: &[BD::Pixel; 8],
-        idx: *const u8,
+        idx: &[u8],
         w: c_int,
         h: c_int,
     ) {
         let dst = dst.cast();
         let pal = pal.as_ptr().cast();
+        let idx = idx.as_ptr();
         self.get()(dst, stride, pal, idx, w, h)
     }
 }

@@ -2535,7 +2535,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     dst,
                     f.cur.stride[0],
                     &pal[0],
-                    pal_idx.as_ptr(),
+                    pal_idx,
                     bw4 * 4,
                     bh4 * 4,
                 );
@@ -2935,7 +2935,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     cur_data[1].as_mut_ptr::<BD>().offset(uv_dstoff),
                     f.cur.stride[1],
                     &pal[1],
-                    pal_idx.as_ptr(),
+                    pal_idx,
                     cbw4 * 4,
                     cbh4 * 4,
                 );
@@ -2943,7 +2943,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                     cur_data[2].as_mut_ptr::<BD>().offset(uv_dstoff),
                     f.cur.stride[1],
                     &pal[2],
-                    pal_idx.as_ptr(),
+                    pal_idx,
                     cbw4 * 4,
                     cbh4 * 4,
                 );
