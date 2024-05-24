@@ -1165,7 +1165,7 @@ impl ScratchPalBuf {
 
 #[derive(Clone, Copy, FromZeroes, FromBytes, AsBytes)]
 #[repr(C)]
-pub struct ScratchInterintraEdgePal {
+pub struct ScratchInterIntraEdgePal {
     pub interintra: ScratchInterintraBuf,
     pub edge: ScratchEdgeBuf,
     pub pal: ScratchPalBuf,
@@ -1201,7 +1201,7 @@ pub struct ScratchInterIntra {
     pub ac_txtp_map: ScratchAcTxtpMap,
     pub pal_idx_y: [u8; 32 * 64],
     pub pal_idx_uv: [u8; 64 * 64], // also used as pre-pack scratch buffer
-    pub interintra_edge_pal: ScratchInterintraEdgePal,
+    pub interintra_edge_pal: ScratchInterIntraEdgePal,
 }
 
 // Larger of the two between `ScratchInter` and `ScratchInterIntra`.
