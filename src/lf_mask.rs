@@ -689,7 +689,7 @@ pub(crate) fn rav1d_calc_lf_values(
         1
     };
 
-    if hdr.loopfilter.level_y[0] == 0 && hdr.loopfilter.level_y[1] == 0 {
+    if hdr.loopfilter.level_y == [0; 2] {
         lflvl_values[..n_seg].fill_with(Default::default);
         return;
     }

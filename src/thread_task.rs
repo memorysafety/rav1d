@@ -305,8 +305,7 @@ unsafe fn create_filter_sbrow(
     pass: c_int,
 ) -> Rav1dResult<Rav1dTaskIndex> {
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-    let has_deblock =
-        (frame_hdr.loopfilter.level_y[0] != 0 || frame_hdr.loopfilter.level_y[1] != 0) as c_int;
+    let has_deblock = (frame_hdr.loopfilter.level_y != [0; 2]) as c_int;
     let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
     let has_cdef = seq_hdr.cdef;
     let has_resize = (frame_hdr.size.width[0] != frame_hdr.size.width[1]) as c_int;
@@ -1208,9 +1207,7 @@ pub unsafe fn rav1d_worker_task(c: &Rav1dContext, task_thread: Arc<Rav1dTaskCont
                         // signal deblock progress
                         let seq_hdr = &***f.seq_hdr.as_ref().unwrap();
                         let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
-                        if frame_hdr.loopfilter.level_y[0] != 0
-                            || frame_hdr.loopfilter.level_y[1] != 0
-                        {
+                        if frame_hdr.loopfilter.level_y != [0; 2] {
                             drop(f);
                             error_0 = fc.task_thread.error.load(Ordering::SeqCst);
                             fc.frame_thread_progress.deblock.store(
