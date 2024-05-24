@@ -191,7 +191,7 @@ impl pal_pred::Fn {
         let dst_ptr = dst.as_mut_ptr::<BD>().add(dst_offset).cast();
         let stride = dst.stride();
         let pal = pal.as_ptr().cast();
-        let idx = idx.as_ptr();
+        let idx = idx[..(w * h) as usize / 2].as_ptr();
         let dst = FFISafe::new(dst);
         self.get()(dst_ptr, stride, pal, idx, w, h, dst)
     }
@@ -1414,14 +1414,19 @@ unsafe fn pal_pred_rust<BD: BitDepth>(
     dst: &Rav1dPictureDataComponent,
     mut dst_offset: usize,
     pal: &[BD::Pixel; 8],
-    mut idx: *const u8,
+    idx: &[u8],
     w: c_int,
     h: c_int,
 ) {
-    for _ in 0..h as usize {
-        for x in (0..w as usize).step_by(2) {
-            let i = *idx;
-            idx = idx.offset(1);
+    let w = w as usize;
+    let h = h as usize;
+    let idx = &idx[..w * h / 2];
+
+    let mut j = 0;
+    for _ in 0..h {
+        for x in (0..w).step_by(2) {
+            let i = idx[j];
+            j += 1;
             assert!((i & 0x88) == 0);
             let dst = &mut *dst.slice_mut::<BD, _>((dst_offset + x.., ..2));
             dst[0] = pal[(i & 7) as usize];
@@ -1447,6 +1452,8 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     let dst_offset = unsafe { dst_ptr.offset_from(dst.as_mut_ptr::<BD>()) } as usize;
     // SAFETY: Undoing dyn cast in `pal_pred::Fn::call`.
     let pal = unsafe { &*pal.cast() };
+    // SAFETY: Length sliced in `pal_pred::Fn::call`.
+    let idx = slice::from_raw_parts(idx, (w * h) as usize / 2);
     pal_pred_rust::<BD>(dst, dst_offset, pal, idx, w, h)
 }
 
