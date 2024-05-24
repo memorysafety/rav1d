@@ -23,6 +23,7 @@ use std::ops::IndexMut;
 use std::ops::Range;
 use std::ops::RangeBounds;
 use std::ops::RangeFrom;
+use std::ops::RangeFull;
 use std::ops::RangeInclusive;
 use std::ops::RangeTo;
 use std::ops::RangeToInclusive;
@@ -344,12 +345,10 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn mut_slice_as<'a, I, V>(&'a self, index: I) -> DisjointMutGuard<'a, T, [V]>
     where
-        I: Into<Bounds> + Clone + SliceIndex<[V]>,
+        I: SliceBounds + Into<Bounds> + Clone + SliceIndex<[V]>,
         V: AsBytes + FromBytes,
     {
-        let bounds = index.into().multiply(mem::size_of::<V>());
-        let byte_guard = self.index_mut(bounds.range);
-        byte_guard.cast_slice()
+        self.index_mut(index.mul(mem::size_of::<V>())).cast_slice()
     }
 
     /// Mutably borrow an element of a convertible type.
@@ -374,9 +373,8 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     where
         V: AsBytes + FromBytes,
     {
-        let bounds = Bounds::from(index).multiply(mem::size_of::<V>());
-        let byte_guard = self.index_mut(bounds.range);
-        byte_guard.cast()
+        self.index_mut((index..index + 1).mul(mem::size_of::<V>()))
+            .cast()
     }
 
     /// Immutably borrow a slice of a convertible type.
@@ -405,11 +403,10 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn slice_as<'a, I, V>(&'a self, index: I) -> DisjointImmutGuard<'a, T, [V]>
     where
-        I: Into<Bounds> + Clone + SliceIndex<[V]>,
+        I: SliceBounds + Into<Bounds> + Clone + SliceIndex<[V]>,
         V: FromBytes + Sized,
     {
-        let bounds = index.into().multiply(mem::size_of::<V>());
-        self.index(bounds.range).cast_slice()
+        self.index(index.mul(mem::size_of::<V>())).cast_slice()
     }
 
     /// Immutably borrow an element of a convertible type.
@@ -440,8 +437,8 @@ impl<T: AsMutPtr<Target = u8>> DisjointMut<T> {
     where
         V: FromBytes + Sized,
     {
-        let bounds = Bounds::from(index).multiply(mem::size_of::<V>());
-        self.index(bounds.range).cast()
+        self.index((index..index + 1).mul(mem::size_of::<V>()))
+            .cast()
     }
 }
 
@@ -466,6 +463,58 @@ pub trait DisjointMutIndex<T: ?Sized> {
     unsafe fn get_mut(self, slice: *mut T) -> *mut Self::Output;
 }
 
+pub trait TranslateRange {
+    fn mul(&self, by: usize) -> Self;
+}
+
+impl TranslateRange for usize {
+    fn mul(&self, by: usize) -> Self {
+        *self * by
+    }
+}
+
+impl TranslateRange for Range<usize> {
+    fn mul(&self, by: usize) -> Self {
+        self.start * by..self.end * by
+    }
+}
+
+impl TranslateRange for RangeFrom<usize> {
+    fn mul(&self, by: usize) -> Self {
+        self.start * by..
+    }
+}
+
+impl TranslateRange for RangeInclusive<usize> {
+    fn mul(&self, by: usize) -> Self {
+        *self.start() * by..=*self.end() * by
+    }
+}
+
+impl TranslateRange for RangeTo<usize> {
+    fn mul(&self, by: usize) -> Self {
+        ..self.end * by
+    }
+}
+
+impl TranslateRange for RangeToInclusive<usize> {
+    fn mul(&self, by: usize) -> Self {
+        ..=self.end * by
+    }
+}
+
+impl TranslateRange for RangeFull {
+    fn mul(&self, _by: usize) -> Self {
+        *self
+    }
+}
+
+impl TranslateRange for (RangeFrom<usize>, RangeTo<usize>) {
+    fn mul(&self, by: usize) -> Self {
+        (self.0.start * by.., ..self.1.end * by)
+    }
+}
+
 #[derive(Clone, Default, PartialEq, Eq, Hash)]
 pub struct Bounds {
     /// A [`Range::end`]` == `[`usize::MAX`] is considered unbounded,
@@ -476,7 +525,10 @@ pub struct Bounds {
 impl Display for Bounds {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let Range { start, mut end } = self.range;
-        write!(f, "{start}..")?;
+        if start != 0 {
+            write!(f, "{start}")?;
+        }
+        write!(f, "..")?;
         if end != usize::MAX {
             write!(f, "{end}")?;
         }
@@ -495,12 +547,6 @@ impl Bounds {
         let a = &self.range;
         let b = &other.range;
         a.start < b.end && b.start < a.end
-    }
-
-    fn multiply(self, multiple: usize) -> Bounds {
-        let start = self.range.start * multiple;
-        let end = self.range.end * multiple;
-        Self { range: start..end }
     }
 }
 
@@ -550,6 +596,14 @@ impl From<RangeToInclusive<usize>> for Bounds {
     }
 }
 
+impl From<RangeFull> for Bounds {
+    fn from(range: RangeFull) -> Self {
+        Self {
+            range: 0..usize::MAX,
+        }
+    }
+}
+
 /// A majority of our slice ranges are of the form `[start..][..len]`.
 /// This is easy to express with normal slices where we can do the slicing multiple times,
 /// but with [`DisjointMut`], that's harder, so this adds support for
@@ -564,13 +618,14 @@ impl From<(RangeFrom<usize>, RangeTo<usize>)> for Bounds {
     }
 }
 
-trait SliceBounds: Into<Bounds> + Clone + Debug {}
+pub trait SliceBounds: TranslateRange + Into<Bounds> + Clone + Debug {}
 
 impl SliceBounds for Range<usize> {}
 impl SliceBounds for RangeFrom<usize> {}
 impl SliceBounds for RangeInclusive<usize> {}
 impl SliceBounds for RangeTo<usize> {}
 impl SliceBounds for RangeToInclusive<usize> {}
+impl SliceBounds for RangeFull {}
 impl SliceBounds for (RangeFrom<usize>, RangeTo<usize>) {}
 
 impl<T> DisjointMutIndex<[T]> for usize {
