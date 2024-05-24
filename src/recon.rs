@@ -161,7 +161,7 @@ pub(crate) type recon_b_inter_fn = unsafe fn(
 pub(crate) type filter_sbrow_fn =
     unsafe fn(&Rav1dContext, &Rav1dFrameData, &mut Rav1dTaskContext, c_int) -> ();
 
-pub(crate) type backup_ipred_edge_fn = unsafe fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
+pub(crate) type backup_ipred_edge_fn = fn(&Rav1dFrameData, &mut Rav1dTaskContext) -> ();
 
 pub(crate) type read_coef_blocks_fn = unsafe fn(
     &Rav1dFrameData,
@@ -4492,10 +4492,7 @@ pub(crate) unsafe fn rav1d_filter_sbrow<BD: BitDepth>(
     }
 }
 
-pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
-    f: &Rav1dFrameData,
-    t: &mut Rav1dTaskContext,
-) {
+pub(crate) fn rav1d_backup_ipred_edge<BD: BitDepth>(f: &Rav1dFrameData, t: &mut Rav1dTaskContext) {
     let cur_data = &f.cur.data.as_ref().unwrap().data;
 
     let ts = &f.ts[t.ts];
@@ -4503,17 +4500,16 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
     let sby_off = f.sb128w * 128 * sby;
     let x_off = ts.tiling.col_start;
 
-    let y = cur_data[0].as_ptr::<BD>().offset(
-        (x_off * 4) as isize
-            + ((t.b.y + f.sb_step) * 4 - 1) as isize * BD::pxstride(f.cur.stride[0]),
-    );
+    let y = &cur_data[0];
+    let y_offset = (y.pixel_offset::<BD>() + x_off as usize * 4)
+        .wrapping_add_signed(((t.b.y + f.sb_step) * 4 - 1) as isize * y.pixel_stride::<BD>());
     let ipred_edge_off = (f.ipred_edge_off * 0) + (sby_off + x_off * 4) as usize;
     let n = 4 * (ts.tiling.col_end - x_off) as usize;
     BD::pixel_copy(
         &mut f
             .ipred_edge
             .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
-        slice::from_raw_parts(y, n),
+        &y.slice::<BD, _>((y_offset.., ..n)),
         n,
     );
 
@@ -4527,11 +4523,13 @@ pub(crate) unsafe fn rav1d_backup_ipred_edge<BD: BitDepth>(
             let ipred_edge_off =
                 (f.ipred_edge_off * pl) + (sby_off + (x_off * 4 >> ss_hor)) as usize;
             let n = 4 * (ts.tiling.col_end - x_off) as usize >> ss_hor;
+            let uv = &cur_data[pl];
+            let uv_offset = uv.pixel_offset::<BD>().wrapping_add_signed(uv_off);
             BD::pixel_copy(
                 &mut f
                     .ipred_edge
                     .mut_slice_as(ipred_edge_off..ipred_edge_off + n),
-                slice::from_raw_parts(cur_data[pl].as_ptr::<BD>().offset(uv_off), n),
+                &uv.slice::<BD, _>((uv_offset.., ..n)),
                 n,
             );
         }
