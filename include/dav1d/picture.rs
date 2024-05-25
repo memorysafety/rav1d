@@ -261,6 +261,7 @@ impl Rav1dPictureDataComponent {
     /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
     ///
     /// Bounds checked, but not [`DisjointMut`]-checked.
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn as_mut_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *mut BD::Pixel {
         assert!(pixel_offset <= self.pixel_len::<BD>());
         // SAFETY: We just checked that `pixel_offset` is in bounds.
@@ -270,6 +271,7 @@ impl Rav1dPictureDataComponent {
     /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
     ///
     /// Bounds checked, but not [`DisjointMut`]-checked.
+    #[cfg_attr(debug_assertions, track_caller)]
     pub fn as_ptr_at<BD: BitDepth>(&self, offset: usize) -> *const BD::Pixel {
         self.as_mut_ptr_at::<BD>(offset).cast_const()
     }
