@@ -158,29 +158,41 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fguv_32x32xn(
 impl fguv_32x32xn::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        dst_row: *mut BD::Pixel,
-        src_row: *const BD::Pixel,
-        stride: ptrdiff_t,
+        layout: Rav1dPixelLayoutSubSampled,
+        dst: &Rav1dPictureDataComponent,
+        src: &Rav1dPictureDataComponent,
         data: &Rav1dFilmGrainData,
         pw: usize,
         scaling: &BD::Scaling,
         grain_lut: &GrainLut<BD::Entry>,
         bh: usize,
         row_num: usize,
-        luma_row: *const BD::Pixel,
-        luma_stride: ptrdiff_t,
+        luma: &Rav1dPictureDataComponent,
         is_uv: bool,
         is_id: bool,
         bd: BD,
     ) {
-        let dst_row = dst_row.cast();
-        let src_row = src_row.cast();
+        let ss_y = (layout == Rav1dPixelLayoutSubSampled::I420) as usize;
+        let row_strides = (row_num * BLOCK_SIZE) as isize;
+        let dst_row_offset = dst
+            .pixel_offset::<BD>()
+            .wrapping_add_signed(row_strides * dst.pixel_stride::<BD>() >> ss_y);
+        let src_row_offset = src
+            .pixel_offset::<BD>()
+            .wrapping_add_signed(row_strides * src.pixel_stride::<BD>() >> ss_y);
+        let dst_row = dst.as_mut_ptr_at::<BD>(dst_row_offset).cast();
+        let src_row = src.as_ptr_at::<BD>(src_row_offset).cast();
+        let stride = dst.stride();
         let data = &data.clone().into();
         let scaling = (scaling as *const BD::Scaling).cast();
         let grain_lut = (grain_lut as *const GrainLut<BD::Entry>).cast();
         let bh = bh as c_int;
         let row_num = row_num as c_int;
-        let luma_row = luma_row.cast();
+        let luma_row_offset = luma
+            .pixel_offset::<BD>()
+            .wrapping_add_signed(row_strides * luma.pixel_stride::<BD>());
+        let luma_row = luma.as_ptr_at::<BD>(luma_row_offset).cast();
+        let luma_stride = luma.stride();
         let uv_pl = is_uv as c_int;
         let is_id = is_id as c_int;
         let bd = bd.into_c();
