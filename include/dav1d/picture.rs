@@ -214,7 +214,7 @@ impl Rav1dPictureDataComponent {
     }
 
     /// Stride in number of [`u8`] bytes.
-    fn stride(&self) -> isize {
+    pub fn stride(&self) -> isize {
         // SAFETY: We're only accessing the `stride` fields, not `ptr`.
         unsafe { (*self.0.inner()).stride }
     }
@@ -233,7 +233,7 @@ impl Rav1dPictureDataComponent {
     }
 
     /// Strided ptr to [`u8`] bytes.
-    fn as_byte_mut_ptr(&self) -> *mut u8 {
+    fn as_strided_byte_mut_ptr(&self) -> *mut u8 {
         let ptr = self.0.as_mut_ptr();
         let stride = self.stride();
         if stride < 0 {
@@ -247,21 +247,49 @@ impl Rav1dPictureDataComponent {
         }
     }
 
-    /// Strided ptr to pixels.
+    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s.
     pub fn as_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
-        self.as_byte_mut_ptr().cast()
+        // SAFETY: Transmutation is safe because we verify this with `zerocopy` in `Self::slice`.
+        self.0.as_mut_ptr().cast()
     }
 
-    /// Strided ptr to pixels.
+    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s.
     pub fn as_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
         self.as_mut_ptr::<BD>().cast_const()
+    }
+
+    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
+    ///
+    /// Bounds checked, but not [`DisjointMut`]-checked.
+    pub fn as_mut_ptr_at<BD: BitDepth>(&self, pixel_offset: usize) -> *mut BD::Pixel {
+        assert!(pixel_offset <= self.pixel_len::<BD>());
+        // SAFETY: We just checked that `pixel_offset` is in bounds.
+        unsafe { self.as_mut_ptr::<BD>().add(pixel_offset) }
+    }
+
+    /// Non-strided, absolute ptr to [`BitDepth::Pixel`]s starting at `offset`.
+    ///
+    /// Bounds checked, but not [`DisjointMut`]-checked.
+    pub fn as_ptr_at<BD: BitDepth>(&self, offset: usize) -> *const BD::Pixel {
+        self.as_mut_ptr_at::<BD>(offset).cast_const()
+    }
+
+    /// Strided ptr to [`BitDepth::Pixel`]s.
+    pub fn as_strided_mut_ptr<BD: BitDepth>(&self) -> *mut BD::Pixel {
+        // SAFETY: Transmutation is safe because we verify this with `zerocopy` in `Self::slice`.
+        self.as_strided_byte_mut_ptr().cast()
+    }
+
+    /// Strided ptr to [`BitDepth::Pixel`]s.
+    pub fn as_strided_ptr<BD: BitDepth>(&self) -> *const BD::Pixel {
+        self.as_strided_mut_ptr::<BD>().cast_const()
     }
 
     fn as_dav1d(&self) -> Option<NonNull<c_void>> {
         if self.len() == 0 {
             None
         } else {
-            NonNull::new(self.as_byte_mut_ptr().cast())
+            NonNull::new(self.as_strided_byte_mut_ptr().cast())
         }
     }
 

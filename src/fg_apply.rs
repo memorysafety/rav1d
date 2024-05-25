@@ -153,7 +153,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let cpw = w + ss_x >> ss_x;
     let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
     let luma_src = in_data[0]
-        .as_mut_ptr::<BD>()
+        .as_strided_mut_ptr::<BD>()
         .offset((row * BLOCK_SIZE) as isize * BD::pxstride(r#in.stride[0]));
     let bitdepth_max = (1 << out.p.bpc) - 1;
     let bd = BD::from_c(bitdepth_max);
@@ -162,7 +162,7 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         let bh = cmp::min(h - row * BLOCK_SIZE, BLOCK_SIZE);
         dsp.fgy_32x32xn.call(
             out_data[0]
-                .as_mut_ptr::<BD>()
+                .as_strided_mut_ptr::<BD>()
                 .offset((row * BLOCK_SIZE) as isize * BD::pxstride(out.stride[0])),
             luma_src,
             out.stride[0],
@@ -195,8 +195,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if data.chroma_scaling_from_luma {
         for pl in 0..2 {
             dsp.fguv_32x32xn[layout].call(
-                out_data[1 + pl].as_mut_ptr::<BD>().offset(uv_off as isize),
-                in_data[1 + pl].as_ptr::<BD>().offset(uv_off as isize),
+                out_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uv_off),
+                in_data[1 + pl].as_strided_ptr::<BD>().offset(uv_off),
                 r#in.stride[1],
                 data,
                 cpw,
@@ -215,8 +215,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         for pl in 0..2 {
             if data.num_uv_points[pl] != 0 {
                 dsp.fguv_32x32xn[layout].call(
-                    out_data[1 + pl].as_mut_ptr::<BD>().offset(uv_off as isize),
-                    in_data[1 + pl].as_ptr::<BD>().offset(uv_off as isize),
+                    out_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uv_off),
+                    in_data[1 + pl].as_strided_ptr::<BD>().offset(uv_off),
                     r#in.stride[1],
                     data_c,
                     cpw,
