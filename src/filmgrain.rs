@@ -10,6 +10,7 @@ use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Dav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dFilmGrainData;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
+use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::src::assume::assume;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
@@ -105,9 +106,8 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fgy_32x32xn(
 impl fgy_32x32xn::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        dst_row: *mut BD::Pixel,
-        src_row: *const BD::Pixel,
-        stride: ptrdiff_t,
+        dst: &Rav1dPictureDataComponent,
+        src: &Rav1dPictureDataComponent,
         data: &Rav1dFilmGrainData,
         pw: usize,
         scaling: &BD::Scaling,
@@ -116,8 +116,16 @@ impl fgy_32x32xn::Fn {
         row_num: usize,
         bd: BD,
     ) {
-        let dst_row = dst_row.cast();
-        let src_row = src_row.cast();
+        let row_strides = (row_num * BLOCK_SIZE) as isize;
+        let dst_row_offset = dst
+            .pixel_offset::<BD>()
+            .wrapping_add_signed(row_strides * dst.pixel_stride::<BD>());
+        let src_row_offset = src
+            .pixel_offset::<BD>()
+            .wrapping_add_signed(row_strides * src.pixel_stride::<BD>());
+        let dst_row = dst.as_mut_ptr_at::<BD>(dst_row_offset).cast();
+        let src_row = src.as_ptr_at::<BD>(src_row_offset).cast();
+        let stride = dst.stride();
         let data = &data.clone().into();
         let scaling = ptr::from_ref(scaling).cast();
         let grain_lut = ptr::from_ref(grain_lut).cast();

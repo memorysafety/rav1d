@@ -160,11 +160,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if data.num_y_points != 0 {
         let bh = cmp::min(h - row * BLOCK_SIZE, BLOCK_SIZE);
         dsp.fgy_32x32xn.call(
-            out_data[0]
-                .as_strided_mut_ptr::<BD>()
-                .offset((row * BLOCK_SIZE) as isize * BD::pxstride(out.stride[0])),
-            luma_src,
-            out.stride[0],
+            &out_data[0],
+            &in_data[0],
             data,
             w,
             &scaling[0],
