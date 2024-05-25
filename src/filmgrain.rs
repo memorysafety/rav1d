@@ -26,6 +26,7 @@ use std::ffi::c_uint;
 use std::ops::Add;
 use std::ops::Shl;
 use std::ops::Shr;
+use std::ptr;
 use to_method::To;
 
 #[cfg(all(
@@ -118,8 +119,8 @@ impl fgy_32x32xn::Fn {
         let dst_row = dst_row.cast();
         let src_row = src_row.cast();
         let data = &data.clone().into();
-        let scaling = (scaling as *const BD::Scaling).cast();
-        let grain_lut = (grain_lut as *const GrainLut<BD::Entry>).cast();
+        let scaling = ptr::from_ref(scaling).cast();
+        let grain_lut = ptr::from_ref(grain_lut).cast();
         let bh = bh as c_int;
         let row_num = row_num as c_int;
         let bd = bd.into_c();
