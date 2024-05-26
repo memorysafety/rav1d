@@ -1317,8 +1317,7 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
 ) {
     let mut y;
     let mut x: i32;
-    let mut ac = ac.as_mut_ptr();
-    let ac_orig: *mut i16 = ac;
+    let mut aci = 0;
     if !(w_pad >= 0 && (w_pad * 4) < width) {
         unreachable!();
     }
@@ -1341,51 +1340,51 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
                         .as_::<c_int>();
                 }
             }
-            *ac.offset(x as isize) =
+            ac[aci + x as usize] =
                 (ac_sum << 1 + (ss_ver == 0) as c_int + (ss_hor == 0) as c_int) as i16;
             x += 1;
         }
         while x < width {
-            *ac.offset(x as isize) = *ac.offset((x - 1) as isize);
+            ac[aci + x as usize] = ac[aci + x as usize - 1];
             x += 1;
         }
-        ac = ac.offset(width as isize);
+        aci += width as usize;
         ypx = ypx.offset(BD::pxstride(stride) << ss_ver);
         y += 1;
     }
     while y < height {
         memcpy(
-            ac as *mut c_void,
-            &mut *ac.offset(-width as isize) as *mut i16 as *const c_void,
+            ac[aci..].as_mut_ptr() as *mut c_void,
+            ac[aci..].as_mut_ptr().offset(-width as isize) as *mut i16 as *const c_void,
             (width as usize).wrapping_mul(::core::mem::size_of::<i16>()),
         );
-        ac = ac.offset(width as isize);
+        aci += width as usize;
         y += 1;
     }
     let log2sz = ctz(width as c_uint) + ctz(height as c_uint);
     let mut sum = (1 as c_int) << log2sz >> 1;
-    ac = ac_orig;
+    aci = 0;
     y = 0 as c_int;
     while y < height {
         x = 0 as c_int;
         while x < width {
-            sum += *ac.offset(x as isize) as c_int;
+            sum += ac[aci + x as usize] as c_int;
             x += 1;
         }
-        ac = ac.offset(width as isize);
+        aci += width as usize;
         y += 1;
     }
     sum >>= log2sz;
-    ac = ac_orig;
+    aci = 0;
     y = 0 as c_int;
     while y < height {
         x = 0 as c_int;
         while x < width {
-            let ref mut fresh0 = *ac.offset(x as isize);
+            let ref mut fresh0 = ac[aci + x as usize];
             *fresh0 = (*fresh0 as c_int - sum) as i16;
             x += 1;
         }
-        ac = ac.offset(width as isize);
+        aci += width as usize;
         y += 1;
     }
 }
