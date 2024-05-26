@@ -69,7 +69,7 @@ fn generate_scaling<BD: BitDepth>(bd: BD, points: &[[u8; 2]]) -> BD::Scaling {
     scaling_array
 }
 
-pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
+pub(crate) fn rav1d_prep_grain<BD: BitDepth>(
     dsp: &Rav1dFilmGrainDSPContext,
     out: &mut Rav1dPicture,
     r#in: &Rav1dPicture,
