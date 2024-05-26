@@ -1316,12 +1316,8 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     let mut y;
     let mut x: i32;
     let mut aci = 0;
-    if !(w_pad >= 0 && (w_pad * 4) < width) {
-        unreachable!();
-    }
-    if !(h_pad >= 0 && (h_pad * 4) < height) {
-        unreachable!();
-    }
+    assert!(w_pad >= 0 && (w_pad * 4) < width);
+    assert!(h_pad >= 0 && (h_pad * 4) < height);
     y = 0 as c_int;
     while y < height - 4 * h_pad {
         x = 0 as c_int;
