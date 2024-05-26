@@ -536,7 +536,7 @@ pub unsafe extern "C" fn dav1d_get_picture(
     .into()
 }
 
-pub(crate) unsafe fn rav1d_apply_grain(
+pub(crate) fn rav1d_apply_grain(
     c: &mut Rav1dContext,
     out: &mut Rav1dPicture,
     in_0: &Rav1dPicture,
