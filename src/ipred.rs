@@ -99,7 +99,7 @@ impl angular_ipred::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
-    ac: *mut i16,
+    ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
     y: *const DynPixel,
     stride: ptrdiff_t,
     w_pad: c_int,
@@ -111,7 +111,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
 impl cfl_ac::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
-        ac: *mut i16,
+        ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
         y: *const BD::Pixel,
         stride: ptrdiff_t,
         w_pad: c_int,
@@ -1305,7 +1305,7 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
 
 #[inline(never)]
 unsafe fn cfl_ac_rust<BD: BitDepth>(
-    mut ac: *mut i16,
+    ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
     mut ypx: *const BD::Pixel,
     stride: ptrdiff_t,
     w_pad: c_int,
@@ -1317,6 +1317,7 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
 ) {
     let mut y;
     let mut x: i32;
+    let mut ac = ac.as_mut_ptr();
     let ac_orig: *mut i16 = ac;
     if !(w_pad >= 0 && (w_pad * 4) < width) {
         unreachable!();
@@ -1390,7 +1391,7 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
 }
 
 unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const IS_SS_VER: bool>(
-    ac: *mut i16,
+    ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
     ypx: *const DynPixel,
     stride: ptrdiff_t,
     w_pad: c_int,
