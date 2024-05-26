@@ -151,9 +151,6 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     let ss_x = (r#in.p.layout != Rav1dPixelLayout::I444) as usize;
     let cpw = w + ss_x >> ss_x;
     let is_id = seq_hdr.mtrx == Rav1dMatrixCoefficients::IDENTITY;
-    let luma_src = in_data[0]
-        .as_strided_mut_ptr::<BD>()
-        .offset((row * BLOCK_SIZE) as isize * BD::pxstride(r#in.stride[0]));
     let bitdepth_max = (1 << out.p.bpc) - 1;
     let bd = BD::from_c(bitdepth_max);
 
@@ -180,10 +177,14 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
 
     // extend padding pixels
     if out.p.w as usize & ss_x != 0 {
-        let mut ptr = luma_src;
+        let luma = &in_data[0];
+        let mut offset = luma
+            .pixel_offset::<BD>()
+            .wrapping_add_signed((row * BLOCK_SIZE) as isize * luma.pixel_stride::<BD>());
         for _ in 0..bh {
-            *ptr.add(out.p.w as usize) = *ptr.add((out.p.w - 1) as usize);
-            ptr = ptr.offset(BD::pxstride(r#in.stride[0]) << ss_y);
+            let padding = &mut *luma.slice_mut::<BD, _>((offset + out.p.w as usize - 1.., ..2));
+            padding[1] = padding[0];
+            offset = offset.wrapping_add_signed(luma.pixel_stride::<BD>() << ss_y);
         }
     }
 
