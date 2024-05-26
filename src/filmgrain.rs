@@ -53,7 +53,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn generate_grain_y(
 ) -> ());
 
 impl generate_grain_y::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         buf: &mut GrainLut<BD::Entry>,
         data: &Rav1dFilmGrainData,
@@ -62,7 +62,8 @@ impl generate_grain_y::Fn {
         let buf = ptr::from_mut(buf).cast();
         let data = &data.clone().into();
         let bd = bd.into_c();
-        self.get()(buf, data, bd)
+        // SAFETY: Fallback `fn generate_grain_y_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(buf, data, bd) }
     }
 }
 
@@ -75,7 +76,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn generate_grain_uv(
 ) -> ());
 
 impl generate_grain_uv::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         buf: &mut GrainLut<BD::Entry>,
         buf_y: &GrainLut<BD::Entry>,
@@ -88,7 +89,8 @@ impl generate_grain_uv::Fn {
         let data = &data.clone().into();
         let uv = is_uv.into();
         let bd = bd.into_c();
-        self.get()(buf, buf_y, data, uv, bd)
+        // SAFETY: Fallback `fn generate_grain_uv_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(buf, buf_y, data, uv, bd) }
     }
 }
 
