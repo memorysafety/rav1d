@@ -1316,6 +1316,7 @@ fn cfl_ac_rust<BD: BitDepth>(
     is_ss_hor: bool,
     is_ss_ver: bool,
 ) {
+    let ac = &mut ac[..width * height];
     let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| usize::try_from(pad).unwrap() * 4);
     assert!(w_pad < width);
     assert!(h_pad < height);
