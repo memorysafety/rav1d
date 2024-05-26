@@ -1313,9 +1313,10 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     ss_ver: bool,
 ) {
     let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| usize::try_from(pad).unwrap() * 4);
-    let mut aci = 0;
     assert!(w_pad < width);
     assert!(h_pad < height);
+
+    let mut aci = 0;
     for _ in 0..height - h_pad {
         for x in 0..width - w_pad {
             let mut ac_sum = (*ypx.add(x << ss_hor as u8)).as_::<c_int>();
@@ -1343,9 +1344,10 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
         dst[..width].copy_from_slice(&src[src.len() - width..]);
         aci += width;
     }
+
     let log2sz = width.trailing_zeros() + height.trailing_zeros();
     let mut sum = 1 << log2sz >> 1;
-    aci = 0;
+    let mut aci = 0;
     for _ in 0..height {
         for x in 0..width {
             sum += ac[aci + x] as i32;
@@ -1353,7 +1355,9 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
         aci += width;
     }
     let sum = (sum >> log2sz) as i16;
-    aci = 0;
+
+    // subtract DC
+    let mut aci = 0;
     for _ in 0..height {
         for x in 0..width {
             ac[aci + x] -= sum;
