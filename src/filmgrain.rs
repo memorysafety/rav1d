@@ -28,6 +28,7 @@ use std::ops::Add;
 use std::ops::Shl;
 use std::ops::Shr;
 use std::ptr;
+use std::slice;
 use to_method::To;
 
 #[cfg(all(
@@ -634,6 +635,14 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
 
         static W: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
 
+        let noise_y = |src: BD::Pixel, grain| {
+            let noise = round2(
+                scaling.as_ref()[src.to::<usize>()] as c_int * grain,
+                data.scaling_shift,
+            );
+            iclip(src.as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>()
+        };
+
         let add_noise_y = |x, y, grain| {
             let src = src_row
                 .offset(y as isize * BD::pxstride(stride))
@@ -643,11 +652,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 .offset(y as isize * BD::pxstride(stride))
                 .add(x)
                 .add(bx);
-            let noise = round2(
-                scaling.as_ref()[(*src).to::<usize>()] as c_int * grain,
-                data.scaling_shift,
-            );
-            *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+            *dst = noise_y(*src, grain);
         };
 
         for y in ystart..bh {
@@ -770,27 +775,15 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 
         static W: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
 
-        let add_noise_uv = |x, y, grain| {
-            let lx = bx.wrapping_add(x) << sx;
-            let ly = y << sy;
-            let luma = luma_row
-                .offset(ly as isize * BD::pxstride(luma_stride))
-                .offset(lx as isize);
-            let mut avg = *luma.offset(0);
+        let noise_uv = |src: BD::Pixel, grain, luma: &[BD::Pixel]| {
+            let mut avg = luma[0];
             if is_sx {
-                avg = ((avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1) >> 1)
-                    .as_::<BD::Pixel>();
+                avg = ((avg.as_::<c_int>() + luma[1].as_::<c_int>() + 1) >> 1).as_::<BD::Pixel>();
             }
-            let src = src_row
-                .offset(y as isize * BD::pxstride(stride))
-                .add(bx.wrapping_add(x));
-            let dst = dst_row
-                .offset(y as isize * BD::pxstride(stride))
-                .add(bx.wrapping_add(x));
             let mut val = avg.as_::<c_int>();
             if !data.chroma_scaling_from_luma {
                 let combined = avg.as_::<c_int>() * data.uv_luma_mult[uv]
-                    + (*src).as_::<c_int>() * data.uv_mult[uv];
+                    + src.as_::<c_int>() * data.uv_mult[uv];
                 val = bd
                     .iclip_pixel((combined >> 6) + data.uv_offset[uv] * (1 << bitdepth_min_8))
                     .as_::<c_int>();
@@ -801,7 +794,22 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 scaling.as_ref()[val as usize % scaling.as_ref().len()] as c_int * grain,
                 data.scaling_shift,
             );
-            *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+            iclip(src.as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>()
+        };
+
+        let add_noise_uv = |x, y, grain| {
+            let lx = bx.wrapping_add(x) << sx;
+            let ly = y << sy;
+            let luma = luma_row
+                .offset(ly as isize * BD::pxstride(luma_stride))
+                .offset(lx as isize);
+            let src = src_row
+                .offset(y as isize * BD::pxstride(stride))
+                .add(bx.wrapping_add(x));
+            let dst = dst_row
+                .offset(y as isize * BD::pxstride(stride))
+                .add(bx.wrapping_add(x));
+            *dst = noise_uv(*src, grain, slice::from_raw_parts(luma, 1 + sx));
         };
 
         for y in ystart..bh {
