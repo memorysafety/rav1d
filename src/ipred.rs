@@ -1313,11 +1313,12 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     ss_hor: c_int,
     ss_ver: c_int,
 ) {
+    let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| pad * 4);
     let mut aci = 0;
-    assert!(w_pad >= 0 && (w_pad * 4) < width);
-    assert!(h_pad >= 0 && (h_pad * 4) < height);
-    for _ in 0..height - 4 * h_pad {
-        for x in 0..width - 4 * w_pad {
+    assert!(w_pad >= 0 && w_pad < width);
+    assert!(h_pad >= 0 && h_pad < height);
+    for _ in 0..height - h_pad {
+        for x in 0..width - w_pad {
             let mut ac_sum = (*ypx.offset((x << ss_hor) as isize)).as_::<c_int>();
             if ss_hor != 0 {
                 ac_sum += (*ypx.offset((x * 2 + 1) as isize)).as_::<c_int>();
@@ -1333,13 +1334,13 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
             ac[aci + x as usize] =
                 (ac_sum << 1 + (ss_ver == 0) as c_int + (ss_hor == 0) as c_int) as i16;
         }
-        for x in width - 4 * w_pad..width {
+        for x in width - w_pad..width {
             ac[aci + x as usize] = ac[aci + x as usize - 1];
         }
         aci += width as usize;
         ypx = ypx.offset(BD::pxstride(stride) << ss_ver);
     }
-    for _ in height - 4 * h_pad..height {
+    for _ in height - h_pad..height {
         let (src, dst) = ac.split_at_mut(aci);
         dst[..width as usize].copy_from_slice(&src[src.len() - width as usize..]);
         aci += width as usize;
