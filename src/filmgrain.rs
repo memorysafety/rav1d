@@ -59,7 +59,7 @@ impl generate_grain_y::Fn {
         data: &Rav1dFilmGrainData,
         bd: BD,
     ) {
-        let buf = (buf as *mut GrainLut<BD::Entry>).cast();
+        let buf = ptr::from_mut(buf).cast();
         let data = &data.clone().into();
         let bd = bd.into_c();
         self.get()(buf, data, bd)
@@ -83,8 +83,8 @@ impl generate_grain_uv::Fn {
         is_uv: bool,
         bd: BD,
     ) {
-        let buf = (buf as *mut GrainLut<BD::Entry>).cast();
-        let buf_y = (buf_y as *const GrainLut<BD::Entry>).cast();
+        let buf = ptr::from_mut(buf).cast();
+        let buf_y = ptr::from_ref(buf_y).cast();
         let data = &data.clone().into();
         let uv = is_uv.into();
         let bd = bd.into_c();
