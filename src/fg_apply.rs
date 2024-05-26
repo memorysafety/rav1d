@@ -80,27 +80,16 @@ pub(crate) unsafe fn rav1d_prep_grain<BD: BitDepth>(
     let data = &frame_hdr.film_grain.data;
     let bitdepth_max = (1 << out.p.bpc) - 1;
     let bd = BD::from_c(bitdepth_max);
+    let layout = || r#in.p.layout.try_into().unwrap();
 
     // Generate grain LUTs as needed
     let [grain_lut_0, grain_lut_1, grain_lut_2] = &mut grain_lut.0;
     dsp.generate_grain_y.call(grain_lut_0, data, bd);
     if data.num_uv_points[0] != 0 || data.chroma_scaling_from_luma {
-        dsp.generate_grain_uv[r#in.p.layout.try_into().unwrap()].call(
-            grain_lut_1,
-            grain_lut_0,
-            data,
-            false,
-            bd,
-        );
+        dsp.generate_grain_uv[layout()].call(grain_lut_1, grain_lut_0, data, false, bd);
     }
     if data.num_uv_points[1] != 0 || data.chroma_scaling_from_luma {
-        dsp.generate_grain_uv[r#in.p.layout.try_into().unwrap()].call(
-            grain_lut_2,
-            grain_lut_0,
-            data,
-            true,
-            bd,
-        );
+        dsp.generate_grain_uv[layout()].call(grain_lut_2, grain_lut_0, data, true, bd);
     }
 
     // Generate scaling LUTs as needed
