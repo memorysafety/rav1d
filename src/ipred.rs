@@ -1345,20 +1345,19 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
         aci += width;
     }
     let log2sz = width.trailing_zeros() + height.trailing_zeros();
-    let mut sum = (1 as c_int) << log2sz >> 1;
+    let mut sum = 1 << log2sz >> 1;
     aci = 0;
     for _ in 0..height {
         for x in 0..width {
-            sum += ac[aci + x] as c_int;
+            sum += ac[aci + x] as i32;
         }
         aci += width;
     }
-    sum >>= log2sz;
+    let sum = (sum >> log2sz) as i16;
     aci = 0;
     for _ in 0..height {
         for x in 0..width {
-            let ref mut fresh0 = ac[aci + x];
-            *fresh0 = (*fresh0 as c_int - sum) as i16;
+            ac[aci + x] -= sum;
         }
         aci += width;
     }
