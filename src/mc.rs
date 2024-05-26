@@ -5,10 +5,12 @@ use crate::include::common::intops::clip;
 use crate::include::common::intops::iclip;
 use crate::include::dav1d::headers::Rav1dFilterMode;
 use crate::include::dav1d::headers::Rav1dPixelLayoutSubSampled;
+use crate::include::dav1d::picture::Rav1dPictureDataComponent;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::enum_map;
 use crate::src::enum_map::enum_map_ty;
 use crate::src::enum_map::DefaultValue;
+use crate::src::ffi_safe::FFISafe;
 use crate::src::internal::COMPINTER_LEN;
 use crate::src::internal::EMU_EDGE_LEN;
 use crate::src::internal::SCRATCH_LAP_LEN;
@@ -1002,24 +1004,24 @@ unsafe fn warp_affine_8x8t_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn emu_edge_rust<BD: BitDepth>(
+fn emu_edge_rust<BD: BitDepth>(
     bw: isize,
     bh: isize,
     iw: isize,
     ih: isize,
     x: isize,
     y: isize,
-    dst: *mut [BD::Pixel; EMU_EDGE_LEN],
+    dst: &mut [BD::Pixel; EMU_EDGE_LEN],
     dst_stride: usize,
-    mut r#ref: *const BD::Pixel,
-    ref_stride: isize,
+    r#ref: &Rav1dPictureDataComponent,
 ) {
-    let dst = &mut *dst;
     let dst_stride = BD::pxstride(dst_stride);
-    let ref_stride = BD::pxstride(ref_stride);
+    let ref_stride = r#ref.pixel_stride::<BD>();
 
     // find offset in reference of visible block to copy
-    r#ref = r#ref.offset(clip(y, 0, ih - 1) * ref_stride + clip(x, 0, iw - 1));
+    let mut ref_offset = r#ref
+        .pixel_offset::<BD>()
+        .wrapping_add_signed(clip(y, 0, ih - 1) * ref_stride + clip(x, 0, iw - 1));
 
     // number of pixels to extend (left, right, top, bottom)
     let left_ext = clip(-x, 0, bw - 1) as usize;
@@ -1039,7 +1041,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
     for _ in 0..center_h {
         BD::pixel_copy(
             &mut dst[blk + left_ext..][..center_w],
-            slice::from_raw_parts(r#ref, center_w),
+            &r#ref.slice::<BD, _>((ref_offset.., ..center_w)),
             center_w,
         );
         // extend left edge for this line
@@ -1052,7 +1054,7 @@ unsafe fn emu_edge_rust<BD: BitDepth>(
             let val = dst[blk + left_ext + center_w - 1];
             BD::pixel_set(&mut dst[blk + left_ext + center_w..], val, right_ext);
         }
-        r#ref = r#ref.offset(ref_stride);
+        ref_offset = ref_offset.wrapping_add_signed(ref_stride);
         blk += dst_stride;
     }
 
@@ -1387,12 +1389,13 @@ wrap_fn_ptr!(pub unsafe extern "C" fn emu_edge(
     y: isize,
     dst: *mut [DynPixel; EMU_EDGE_LEN],
     dst_stride: isize,
-    src: *const DynPixel,
+    src_ptr: *const DynPixel,
     src_stride: isize,
+    _src: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl emu_edge::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         bw: isize,
         bh: isize,
@@ -1402,13 +1405,19 @@ impl emu_edge::Fn {
         y: isize,
         dst: &mut [BD::Pixel; EMU_EDGE_LEN],
         dst_pxstride: usize,
-        src: *const BD::Pixel,
-        src_stride: isize,
+        src: &Rav1dPictureDataComponent,
     ) {
         let dst = dst.as_mut_ptr().cast();
         let dst_stride = (dst_pxstride * mem::size_of::<BD::Pixel>()) as isize;
-        let src = src.cast();
-        self.get()(bw, bh, iw, ih, x, y, dst, dst_stride, src, src_stride)
+        let src_ptr = src.as_strided_ptr::<BD>().cast();
+        let src_stride = src.stride();
+        let src = FFISafe::new(src);
+        // SAFETY: Fallback `fn emu_edge_rust` is safe; asm is supposed to do the same.
+        unsafe {
+            self.get()(
+                bw, bh, iw, ih, x, y, dst, dst_stride, src_ptr, src_stride, src,
+            )
+        }
     }
 }
 
@@ -1930,6 +1939,7 @@ unsafe extern "C" fn warp_affine_8x8t_c_erased<BD: BitDepth>(
     )
 }
 
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     bw: isize,
     bh: isize,
@@ -1939,22 +1949,17 @@ unsafe extern "C" fn emu_edge_c_erased<BD: BitDepth>(
     y: isize,
     dst: *mut [DynPixel; EMU_EDGE_LEN],
     dst_stride: isize,
-    r#ref: *const DynPixel,
-    ref_stride: isize,
+    _ref_ptr: *const DynPixel,
+    _ref_stride: isize,
+    r#ref: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    emu_edge_rust::<BD>(
-        bw,
-        bh,
-        iw,
-        ih,
-        x,
-        y,
-        dst.cast(),
-        // Is `usize` in `fn emu_edge::Fn::call`.
-        dst_stride as usize,
-        r#ref.cast(),
-        ref_stride,
-    )
+    // SAFETY: Reverse cast is done in `fn emu_edge::Fn::call`.
+    let dst = unsafe { &mut *dst.cast() };
+    // Is `usize` in `fn emu_edge::Fn::call`.
+    let dst_stride = dst_stride as usize;
+    // SAFETY: Was passed as `FFISafe::new(_)` in `fn emu_edge::Fn::call`.
+    let r#ref = unsafe { FFISafe::get(r#ref) };
+    emu_edge_rust::<BD>(bw, bh, iw, ih, x, y, dst, dst_stride, r#ref)
 }
 
 unsafe extern "C" fn resize_c_erased<BD: BitDepth>(

@@ -2123,8 +2123,7 @@ unsafe fn mc<BD: BitDepth>(
                 (dy - (my != 0) as c_int * 3) as intptr_t,
                 emu_edge_buf,
                 192,
-                ref_data[pl].as_strided_ptr::<BD>(),
-                ref_stride,
+                &ref_data[pl],
             );
             r#ref = emu_edge_buf
                 .as_mut_ptr()
@@ -2196,8 +2195,7 @@ unsafe fn mc<BD: BitDepth>(
                 (top - 3) as intptr_t,
                 emu_edge_buf,
                 320,
-                ref_data[pl].as_strided_ptr::<BD>(),
-                ref_stride,
+                &ref_data[pl],
             );
             r#ref = emu_edge_buf.as_mut_ptr().add((320 * 3 + 3) as usize);
             ref_stride = 320 * ::core::mem::size_of::<BD::Pixel>() as isize;
@@ -2406,8 +2404,7 @@ unsafe fn warp_affine<BD: BitDepth>(
                     (dy - 3) as intptr_t,
                     emu_edge_buf,
                     32,
-                    ref_data[pl].as_strided_ptr::<BD>(),
-                    ref_stride,
+                    &ref_data[pl],
                 );
                 ref_ptr = emu_edge_buf.as_ptr().add(32 * 3 + 3);
                 ref_stride = 32 * ::core::mem::size_of::<BD::Pixel>() as isize;
