@@ -326,12 +326,16 @@ fn row_seed(rows: usize, row_num: usize, data: &Rav1dFilmGrainData) -> [c_uint; 
     seed
 }
 
+/// # Safety
+///
+/// Must be called by [`generate_grain_y::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     buf: *mut GrainLut<DynEntry>,
     data: &Dav1dFilmGrainData,
     bitdepth_max: c_int,
 ) {
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // Safety: Casting back to the original type from the `generate_grain_y::Fn::call`.
     let buf = unsafe { &mut *buf.cast() };
     let data = &data.clone().into();
     let bd = BD::from_c(bitdepth_max);
@@ -518,6 +522,10 @@ fn generate_grain_uv_rust<BD: BitDepth>(
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`generate_grain_uv::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 #[inline(never)]
 unsafe extern "C" fn generate_grain_uv_c_erased<
     BD: BitDepth,
@@ -531,9 +539,9 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     uv: intptr_t,
     bitdepth_max: c_int,
 ) {
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // Safety: Casting back to the original type from the `generate_grain_uv::Fn::call`.
     let buf = unsafe { &mut *buf.cast() };
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // Safety: Casting back to the original type from the `generate_grain_uv::Fn::call`.
     let buf_y = unsafe { &*buf_y.cast() };
     let data = &data.clone().into();
     let is_uv = uv != 0;
