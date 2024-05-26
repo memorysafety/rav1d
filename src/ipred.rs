@@ -1321,10 +1321,10 @@ fn cfl_ac_rust<BD: BitDepth>(
     assert!(w_pad < width);
     assert!(h_pad < height);
     let [ss_hor, ss_ver] = [is_ss_hor, is_ss_ver].map(|is_ss| is_ss as u8);
-
-    let mut aci = 0;
     let y_pxstride = y_src.pixel_stride::<BD>();
-    for _ in 0..height - h_pad {
+
+    for y in 0..height - h_pad {
+        let aci = y * width;
         let y_src = |i| (*y_src.index::<BD>(y_src_offset.wrapping_add_signed(i))).as_::<i32>();
         for x in 0..width - w_pad {
             let sx = (x << ss_hor) as isize;
@@ -1343,33 +1343,30 @@ fn cfl_ac_rust<BD: BitDepth>(
         for x in width - w_pad..width {
             ac[aci + x] = ac[aci + x - 1];
         }
-        aci += width;
         y_src_offset = y_src_offset.wrapping_add_signed(y_pxstride << ss_ver);
     }
-    for _ in height - h_pad..height {
+    for y in height - h_pad..height {
+        let aci = y * width;
         let (src, dst) = ac.split_at_mut(aci);
         dst[..width].copy_from_slice(&src[src.len() - width..]);
-        aci += width;
     }
 
     let log2sz = width.trailing_zeros() + height.trailing_zeros();
     let mut sum = 1 << log2sz >> 1;
-    let mut aci = 0;
-    for _ in 0..height {
+    for y in 0..height {
+        let aci = y * width;
         for x in 0..width {
             sum += ac[aci + x] as i32;
         }
-        aci += width;
     }
     let sum = (sum >> log2sz) as i16;
 
     // subtract DC
-    let mut aci = 0;
-    for _ in 0..height {
+    for y in 0..height {
+        let aci = y * width;
         for x in 0..width {
             ac[aci + x] -= sum;
         }
-        aci += width;
     }
 }
 
