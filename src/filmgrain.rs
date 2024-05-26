@@ -108,7 +108,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fgy_32x32xn(
 ) -> ());
 
 impl fgy_32x32xn::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         dst: &Rav1dPictureDataComponent,
         src: &Rav1dPictureDataComponent,
@@ -138,9 +138,12 @@ impl fgy_32x32xn::Fn {
         let bd = bd.into_c();
         let dst = FFISafe::new(dst);
         let src = FFISafe::new(src);
-        self.get()(
-            dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd, dst, src,
-        )
+        // SAFETY: Fallback `fn fgy_32x32xn_rust` is safe; asm is supposed to do the same.
+        unsafe {
+            self.get()(
+                dst_row, src_row, stride, data, pw, scaling, grain_lut, bh, row_num, bd, dst, src,
+            )
+        }
     }
 }
 
@@ -165,7 +168,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn fguv_32x32xn(
 ) -> ());
 
 impl fguv_32x32xn::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         layout: Rav1dPixelLayoutSubSampled,
         dst: &Rav1dPictureDataComponent,
@@ -208,25 +211,28 @@ impl fguv_32x32xn::Fn {
         let dst = FFISafe::new(dst);
         let src = FFISafe::new(src);
         let luma = FFISafe::new(luma);
-        self.get()(
-            dst_row,
-            src_row,
-            stride,
-            data,
-            pw,
-            scaling,
-            grain_lut,
-            bh,
-            row_num,
-            luma_row,
-            luma_stride,
-            uv_pl,
-            is_id,
-            bd,
-            dst,
-            src,
-            luma,
-        )
+        // SAFETY: Fallback `fn fguv_32x32xn_rust` is safe; asm is supposed to do the same.
+        unsafe {
+            self.get()(
+                dst_row,
+                src_row,
+                stride,
+                data,
+                pw,
+                scaling,
+                grain_lut,
+                bh,
+                row_num,
+                luma_row,
+                luma_stride,
+                uv_pl,
+                is_id,
+                bd,
+                dst,
+                src,
+                luma,
+            )
+        }
     }
 }
 
@@ -561,6 +567,7 @@ fn sample_lut<BD: BitDepth>(
 /// # Safety
 ///
 /// Must be called by [`fgy_32x32xn::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     dst_row: *mut DynPixel,
     src_row: *const DynPixel,
@@ -606,7 +613,7 @@ unsafe extern "C" fn fgy_32x32xn_c_erased<BD: BitDepth>(
     )
 }
 
-unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
+fn fgy_32x32xn_rust<BD: BitDepth>(
     dst: &Rav1dPictureDataComponent,
     dst_row_offset: usize,
     src: &Rav1dPictureDataComponent,
@@ -745,7 +752,7 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
     }
 }
 
-unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
+fn fguv_32x32xn_rust<BD: BitDepth>(
     dst: &Rav1dPictureDataComponent,
     dst_row_offset: usize,
     src: &Rav1dPictureDataComponent,
@@ -915,6 +922,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
 /// # Safety
 ///
 /// Must be called by [`fguv_32x32xn::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 #[inline(never)]
 unsafe extern "C" fn fguv_32x32xn_c_erased<
     BD: BitDepth,
