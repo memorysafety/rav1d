@@ -1313,15 +1313,11 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     ss_hor: c_int,
     ss_ver: c_int,
 ) {
-    let mut y;
-    let mut x: i32;
     let mut aci = 0;
     assert!(w_pad >= 0 && (w_pad * 4) < width);
     assert!(h_pad >= 0 && (h_pad * 4) < height);
-    y = 0 as c_int;
-    while y < height - 4 * h_pad {
-        x = 0 as c_int;
-        while x < width - 4 * w_pad {
+    for _ in 0..height - 4 * h_pad {
+        for x in 0..width - 4 * w_pad {
             let mut ac_sum = (*ypx.offset((x << ss_hor) as isize)).as_::<c_int>();
             if ss_hor != 0 {
                 ac_sum += (*ypx.offset((x * 2 + 1) as isize)).as_::<c_int>();
@@ -1336,47 +1332,35 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
             }
             ac[aci + x as usize] =
                 (ac_sum << 1 + (ss_ver == 0) as c_int + (ss_hor == 0) as c_int) as i16;
-            x += 1;
         }
-        while x < width {
+        for x in width - 4 * w_pad..width {
             ac[aci + x as usize] = ac[aci + x as usize - 1];
-            x += 1;
         }
         aci += width as usize;
         ypx = ypx.offset(BD::pxstride(stride) << ss_ver);
-        y += 1;
     }
-    while y < height {
+    for _ in height - 4 * h_pad..height {
         let (src, dst) = ac.split_at_mut(aci);
         dst[..width as usize].copy_from_slice(&src[src.len() - width as usize..]);
         aci += width as usize;
-        y += 1;
     }
     let log2sz = ctz(width as c_uint) + ctz(height as c_uint);
     let mut sum = (1 as c_int) << log2sz >> 1;
     aci = 0;
-    y = 0 as c_int;
-    while y < height {
-        x = 0 as c_int;
-        while x < width {
+    for _ in 0..height {
+        for x in 0..width {
             sum += ac[aci + x as usize] as c_int;
-            x += 1;
         }
         aci += width as usize;
-        y += 1;
     }
     sum >>= log2sz;
     aci = 0;
-    y = 0 as c_int;
-    while y < height {
-        x = 0 as c_int;
-        while x < width {
+    for _ in 0..height {
+        for x in 0..width {
             let ref mut fresh0 = ac[aci + x as usize];
             *fresh0 = (*fresh0 as c_int - sum) as i16;
-            x += 1;
         }
         aci += width as usize;
-        y += 1;
     }
 }
 
