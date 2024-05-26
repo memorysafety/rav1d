@@ -107,7 +107,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
 ) -> ());
 
 impl cfl_ac::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
         y: &Rav1dPictureDataComponent,
@@ -120,7 +120,8 @@ impl cfl_ac::Fn {
         let y_ptr = y.as_ptr_at::<BD>(y_offset).cast();
         let stride = y.stride();
         let y = FFISafe::new(y);
-        self.get()(ac, y_ptr, stride, w_pad, h_pad, cw, ch, y)
+        // SAFETY: Fallback `fn cfl_ac_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(ac, y_ptr, stride, w_pad, h_pad, cw, ch, y) }
     }
 }
 
@@ -1304,7 +1305,7 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe fn cfl_ac_rust<BD: BitDepth>(
+fn cfl_ac_rust<BD: BitDepth>(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
     y_src: &Rav1dPictureDataComponent,
     mut y_src_offset: usize,
@@ -1374,6 +1375,7 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
 /// # Safety
 ///
 /// Must be called by [`cfl_ac::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const IS_SS_VER: bool>(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
     y_ptr: *const DynPixel,
