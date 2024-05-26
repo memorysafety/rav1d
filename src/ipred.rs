@@ -1309,35 +1309,36 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     h_pad: c_int,
     width: usize,
     height: usize,
-    ss_hor: bool,
-    ss_ver: bool,
+    is_ss_hor: bool,
+    is_ss_ver: bool,
 ) {
     let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| usize::try_from(pad).unwrap() * 4);
     assert!(w_pad < width);
     assert!(h_pad < height);
+    let [ss_hor, ss_ver] = [is_ss_hor, is_ss_ver].map(|is_ss| is_ss as u8);
 
     let mut aci = 0;
     for _ in 0..height - h_pad {
         for x in 0..width - w_pad {
-            let mut ac_sum = (*ypx.add(x << ss_hor as u8)).as_::<c_int>();
-            if ss_hor {
-                ac_sum += (*ypx.add(x * 2 + 1)).as_::<c_int>();
+            let mut ac_sum = (*ypx.add(x << ss_hor)).as_::<c_int>();
+            if is_ss_hor {
+                ac_sum += (*ypx.add((x << ss_hor) + 1)).as_::<c_int>();
             }
-            if ss_ver {
-                ac_sum += (*ypx.offset((x << ss_hor as u8) as isize + BD::pxstride(stride)))
-                    .as_::<c_int>();
-                if ss_hor {
-                    ac_sum +=
-                        (*ypx.offset((x * 2 + 1) as isize + BD::pxstride(stride))).as_::<c_int>();
+            if is_ss_ver {
+                ac_sum +=
+                    (*ypx.offset((x << ss_hor) as isize + BD::pxstride(stride))).as_::<c_int>();
+                if is_ss_hor {
+                    ac_sum += (*ypx.offset(((x << ss_hor) + 1) as isize + BD::pxstride(stride)))
+                        .as_::<c_int>();
                 }
             }
-            ac[aci + x] = (ac_sum << 1 + !ss_ver as u8 + !ss_hor as u8) as i16;
+            ac[aci + x] = (ac_sum << 1 + !is_ss_ver as u8 + !is_ss_hor as u8) as i16;
         }
         for x in width - w_pad..width {
             ac[aci + x] = ac[aci + x - 1];
         }
         aci += width;
-        ypx = ypx.offset(BD::pxstride(stride) << ss_ver as u8);
+        ypx = ypx.offset(BD::pxstride(stride) << ss_ver);
     }
     for _ in height - h_pad..height {
         let (src, dst) = ac.split_at_mut(aci);
