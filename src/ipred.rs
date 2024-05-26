@@ -1309,8 +1309,8 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     h_pad: c_int,
     width: c_int,
     height: c_int,
-    ss_hor: c_int,
-    ss_ver: c_int,
+    ss_hor: bool,
+    ss_ver: bool,
 ) {
     let [width, height] = [width, height].map(|it| it as usize);
     let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| usize::try_from(pad).unwrap() * 4);
@@ -1319,25 +1319,25 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     assert!(h_pad < height);
     for _ in 0..height - h_pad {
         for x in 0..width - w_pad {
-            let mut ac_sum = (*ypx.add(x << ss_hor)).as_::<c_int>();
-            if ss_hor != 0 {
+            let mut ac_sum = (*ypx.add(x << ss_hor as u8)).as_::<c_int>();
+            if ss_hor {
                 ac_sum += (*ypx.add(x * 2 + 1)).as_::<c_int>();
             }
-            if ss_ver != 0 {
-                ac_sum +=
-                    (*ypx.offset((x << ss_hor) as isize + BD::pxstride(stride))).as_::<c_int>();
-                if ss_hor != 0 {
+            if ss_ver {
+                ac_sum += (*ypx.offset((x << ss_hor as u8) as isize + BD::pxstride(stride)))
+                    .as_::<c_int>();
+                if ss_hor {
                     ac_sum +=
                         (*ypx.offset((x * 2 + 1) as isize + BD::pxstride(stride))).as_::<c_int>();
                 }
             }
-            ac[aci + x] = (ac_sum << 1 + (ss_ver == 0) as c_int + (ss_hor == 0) as c_int) as i16;
+            ac[aci + x] = (ac_sum << 1 + !ss_ver as u8 + !ss_hor as u8) as i16;
         }
         for x in width - w_pad..width {
             ac[aci + x] = ac[aci + x - 1];
         }
         aci += width;
-        ypx = ypx.offset(BD::pxstride(stride) << ss_ver);
+        ypx = ypx.offset(BD::pxstride(stride) << ss_ver as u8);
     }
     for _ in height - h_pad..height {
         let (src, dst) = ac.split_at_mut(aci);
@@ -1380,8 +1380,8 @@ unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const 
         h_pad,
         cw,
         ch,
-        IS_SS_HOR as c_int,
-        IS_SS_VER as c_int,
+        IS_SS_HOR,
+        IS_SS_VER,
     );
 }
 
