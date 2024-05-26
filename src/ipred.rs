@@ -1,4 +1,3 @@
-use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -1345,7 +1344,7 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
         dst[..width].copy_from_slice(&src[src.len() - width..]);
         aci += width;
     }
-    let log2sz = ctz(width as c_uint) + ctz(height as c_uint);
+    let log2sz = width.trailing_zeros() + height.trailing_zeros();
     let mut sum = (1 as c_int) << log2sz >> 1;
     aci = 0;
     for _ in 0..height {
