@@ -1307,12 +1307,11 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     stride: ptrdiff_t,
     w_pad: c_int,
     h_pad: c_int,
-    width: c_int,
-    height: c_int,
+    width: usize,
+    height: usize,
     ss_hor: bool,
     ss_ver: bool,
 ) {
-    let [width, height] = [width, height].map(|it| it as usize);
     let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| usize::try_from(pad).unwrap() * 4);
     let mut aci = 0;
     assert!(w_pad < width);
@@ -1372,17 +1371,10 @@ unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const 
     cw: c_int,
     ch: c_int,
 ) {
-    cfl_ac_rust::<BD>(
-        ac,
-        ypx.cast(),
-        stride,
-        w_pad,
-        h_pad,
-        cw,
-        ch,
-        IS_SS_HOR,
-        IS_SS_VER,
-    );
+    let ypx = ypx.cast();
+    let cw = cw as usize;
+    let ch = ch as usize;
+    cfl_ac_rust::<BD>(ac, ypx, stride, w_pad, h_pad, cw, ch, IS_SS_HOR, IS_SS_VER);
 }
 
 fn pal_pred_rust<BD: BitDepth>(
