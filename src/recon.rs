@@ -2800,10 +2800,11 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
 
                 let scratch = t.scratch.inter_intra_mut();
                 let ac = scratch.ac_txtp_map.ac_mut();
-                let y_src = cur_data[0]
-                    .as_strided_ptr::<BD>()
-                    .add((4 * (t.b.x & !ss_hor)) as usize)
-                    .offset((4 * (t.b.y & !ss_ver)) as isize * BD::pxstride(f.cur.stride[0]));
+                let y_src = &cur_data[0];
+                let y_src_offset = y_src.pixel_offset::<BD>().wrapping_add_signed(
+                    (4 * (t.b.x & !ss_hor)) as isize
+                        + (4 * (t.b.y & !ss_ver)) as isize * y_src.pixel_stride::<BD>(),
+                );
                 let uv_off = 4
                     * ((t.b.x >> ss_hor) as isize
                         + (t.b.y >> ss_ver) as isize * BD::pxstride(stride));
@@ -2818,7 +2819,7 @@ pub(crate) unsafe fn rav1d_recon_b_intra<BD: BitDepth>(
                 f.dsp.ipred.cfl_ac[layout].call::<BD>(
                     ac,
                     y_src,
-                    f.cur.stride[0],
+                    y_src_offset,
                     cbw4 - (furthest_r >> ss_hor),
                     cbh4 - (furthest_b >> ss_ver),
                     cbw4 * 4,

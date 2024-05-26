@@ -97,27 +97,30 @@ impl angular_ipred::Fn {
 
 wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
-    y: *const DynPixel,
+    y_ptr: *const DynPixel,
     stride: ptrdiff_t,
     w_pad: c_int,
     h_pad: c_int,
     cw: c_int,
     ch: c_int,
+    _y: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl cfl_ac::Fn {
     pub unsafe fn call<BD: BitDepth>(
         &self,
         ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
-        y: *const BD::Pixel,
-        stride: ptrdiff_t,
+        y: &Rav1dPictureDataComponent,
+        y_offset: usize,
         w_pad: c_int,
         h_pad: c_int,
         cw: c_int,
         ch: c_int,
     ) {
-        let y = y.cast();
-        self.get()(ac, y, stride, w_pad, h_pad, cw, ch)
+        let y_ptr = y.as_ptr_at::<BD>(y_offset).cast();
+        let stride = y.stride();
+        let y = FFISafe::new(y);
+        self.get()(ac, y_ptr, stride, w_pad, h_pad, cw, ch, y)
     }
 }
 
@@ -1303,8 +1306,8 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
 #[inline(never)]
 unsafe fn cfl_ac_rust<BD: BitDepth>(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
-    mut ypx: *const BD::Pixel,
-    stride: ptrdiff_t,
+    y_src: &Rav1dPictureDataComponent,
+    mut y_src_offset: usize,
     w_pad: c_int,
     h_pad: c_int,
     width: usize,
@@ -1318,18 +1321,19 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     let [ss_hor, ss_ver] = [is_ss_hor, is_ss_ver].map(|is_ss| is_ss as u8);
 
     let mut aci = 0;
+    let y_pxstride = y_src.pixel_stride::<BD>();
     for _ in 0..height - h_pad {
+        let y_src = |i| (*y_src.index::<BD>(y_src_offset.wrapping_add_signed(i))).as_::<i32>();
         for x in 0..width - w_pad {
-            let sx = x << ss_hor;
-            let mut ac_sum = (*ypx.add(sx)).as_::<c_int>();
+            let sx = (x << ss_hor) as isize;
+            let mut ac_sum = y_src(sx);
             if is_ss_hor {
-                ac_sum += (*ypx.add(sx + 1)).as_::<c_int>();
+                ac_sum += y_src(sx + 1);
             }
             if is_ss_ver {
-                ac_sum += (*ypx.offset(sx as isize + BD::pxstride(stride))).as_::<c_int>();
+                ac_sum += y_src(sx + y_pxstride);
                 if is_ss_hor {
-                    ac_sum +=
-                        (*ypx.offset((sx + 1) as isize + BD::pxstride(stride))).as_::<c_int>();
+                    ac_sum += y_src(sx + y_pxstride + 1);
                 }
             }
             ac[aci + x] = (ac_sum << 1 + !is_ss_ver as u8 + !is_ss_hor as u8) as i16;
@@ -1338,7 +1342,7 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
             ac[aci + x] = ac[aci + x - 1];
         }
         aci += width;
-        ypx = ypx.offset(BD::pxstride(stride) << ss_ver);
+        y_src_offset = y_src_offset.wrapping_add_signed(y_pxstride << ss_ver);
     }
     for _ in height - h_pad..height {
         let (src, dst) = ac.split_at_mut(aci);
@@ -1367,19 +1371,26 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`cfl_ac::Fn::call`].
 unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const IS_SS_VER: bool>(
     ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
-    ypx: *const DynPixel,
-    stride: ptrdiff_t,
+    y_ptr: *const DynPixel,
+    _stride: ptrdiff_t,
     w_pad: c_int,
     h_pad: c_int,
     cw: c_int,
     ch: c_int,
+    y: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    let ypx = ypx.cast();
+    // SAFETY: Was passed as `FFISafe::new(_)` in `cfl_ac::Fn::call`.
+    let y = unsafe { FFISafe::get(y) };
+    // SAFETY: Reverse of what was done in `cfl_ac::Fn::call`.
+    let y_offset = unsafe { y_ptr.cast::<BD::Pixel>().offset_from(y.as_ptr::<BD>()) } as usize;
     let cw = cw as usize;
     let ch = ch as usize;
-    cfl_ac_rust::<BD>(ac, ypx, stride, w_pad, h_pad, cw, ch, IS_SS_HOR, IS_SS_VER);
+    cfl_ac_rust::<BD>(ac, y, y_offset, w_pad, h_pad, cw, ch, IS_SS_HOR, IS_SS_VER);
 }
 
 fn pal_pred_rust<BD: BitDepth>(
