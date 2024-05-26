@@ -34,12 +34,10 @@ use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use cfg_if::cfg_if;
-use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 use std::mem;
 use std::slice;
 use strum::FromRepr;
@@ -1353,11 +1351,8 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
         y += 1;
     }
     while y < height {
-        memcpy(
-            ac[aci..].as_mut_ptr() as *mut c_void,
-            ac[aci..].as_mut_ptr().offset(-width as isize) as *mut i16 as *const c_void,
-            (width as usize).wrapping_mul(::core::mem::size_of::<i16>()),
-        );
+        let (src, dst) = ac.split_at_mut(aci);
+        dst[..width as usize].copy_from_slice(&src[src.len() - width as usize..]);
         aci += width as usize;
         y += 1;
     }
@@ -1466,6 +1461,8 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
 mod neon {
     use super::*;
 
+    use libc::memcpy;
+    use std::ffi::c_void;
     use to_method::To;
 
     #[cfg(feature = "bitdepth_8")]
