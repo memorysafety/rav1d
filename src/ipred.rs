@@ -1319,16 +1319,16 @@ unsafe fn cfl_ac_rust<BD: BitDepth>(
     assert!(h_pad < height);
     for _ in 0..height - h_pad {
         for x in 0..width - w_pad {
-            let mut ac_sum = (*ypx.offset((x << ss_hor) as isize)).as_::<c_int>();
+            let mut ac_sum = (*ypx.add(x << ss_hor)).as_::<c_int>();
             if ss_hor != 0 {
-                ac_sum += (*ypx.offset((x * 2 + 1) as isize)).as_::<c_int>();
+                ac_sum += (*ypx.add(x * 2 + 1)).as_::<c_int>();
             }
             if ss_ver != 0 {
-                ac_sum += (*ypx.offset(((x << ss_hor) as isize + BD::pxstride(stride)) as isize))
-                    .as_::<c_int>();
+                ac_sum +=
+                    (*ypx.offset((x << ss_hor) as isize + BD::pxstride(stride))).as_::<c_int>();
                 if ss_hor != 0 {
-                    ac_sum += (*ypx.offset(((x * 2 + 1) as isize + BD::pxstride(stride)) as isize))
-                        .as_::<c_int>();
+                    ac_sum +=
+                        (*ypx.offset((x * 2 + 1) as isize + BD::pxstride(stride))).as_::<c_int>();
                 }
             }
             ac[aci + x] = (ac_sum << 1 + (ss_ver == 0) as c_int + (ss_hor == 0) as c_int) as i16;
