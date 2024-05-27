@@ -30,6 +30,11 @@ bitflags! {
     }
 }
 
+/// CDEF operates entirely on pre-filter data.
+/// If bottom/right edges are present (according to `edges`),
+/// then the pre-filter data is located in `dst`.
+/// However, the edge pixels above `dst` may be post-filter,
+/// so in order to get access to pre-filter top pixels, use `top`.
 pub type cdef_fn = unsafe extern "C" fn(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
