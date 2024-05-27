@@ -391,7 +391,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     adj_y_pri_lvl,
                                     y_sec_lvl.into(),
                                     dir,
-                                    damping.into(),
+                                    damping,
                                     edges,
                                     bd,
                                 );
@@ -406,7 +406,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                 0,
                                 y_sec_lvl.into(),
                                 0,
-                                damping.into(),
+                                damping,
                                 edges,
                                 bd,
                             );
@@ -487,7 +487,7 @@ pub(crate) unsafe fn rav1d_cdef_brow<BD: BitDepth>(
                                     uv_pri_lvl.into(),
                                     uv_sec_lvl.into(),
                                     uvdir,
-                                    (damping - 1).into(),
+                                    damping - 1,
                                     edges,
                                     bd,
                                 );

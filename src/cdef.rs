@@ -64,7 +64,7 @@ impl cdef::Fn {
         pri_strength: c_int,
         sec_strength: c_int,
         dir: c_int,
-        damping: c_int,
+        damping: u8,
         edges: CdefEdgeFlags,
         bd: BD,
     ) {
@@ -72,6 +72,7 @@ impl cdef::Fn {
         let left = left.cast();
         let top = top.cast();
         let bottom = bottom.cast();
+        let damping = damping as c_int;
         let bd = bd.into_c();
         self.get()(
             dst,
