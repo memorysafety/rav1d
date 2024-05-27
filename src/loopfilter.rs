@@ -2,6 +2,7 @@ use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
+use crate::src::align::Align16;
 use crate::src::cpu::CpuFlags;
 use crate::src::lf_mask::Av1FilterLUT;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
@@ -22,7 +23,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     mask: *const u32,
     lvl: *const [u8; 4],
     lvl_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
 ) -> ());
@@ -35,7 +36,7 @@ impl loopfilter_sb::Fn {
         mask: &[u32],
         lvl: &[[u8; 4]],
         lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
+        lut: &Align16<Av1FilterLUT>,
         w: c_int,
         bd: BD,
     ) {
@@ -384,7 +385,7 @@ unsafe extern "C" fn loop_filter_h_sb128y_c_erased<BD: BitDepth>(
     vmask: *const u32,
     l: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     h: c_int,
     bitdepth_max: c_int,
 ) {
@@ -406,7 +407,7 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
     vmask: *const u32,
     mut l: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     _h: c_int,
     bd: BD,
 ) {
@@ -421,8 +422,8 @@ unsafe fn loop_filter_h_sb128y_rust<BD: BitDepth>(
             };
             if !(L == 0) {
                 let H = L >> 4;
-                let E = (*lut).e[L as usize] as c_int;
-                let I = (*lut).i[L as usize] as c_int;
+                let E = lut.0.e[L as usize] as c_int;
+                let I = lut.0.i[L as usize] as c_int;
                 let idx = if *vmask.offset(2) & y != 0 {
                     2 as c_int
                 } else {
@@ -452,7 +453,7 @@ unsafe extern "C" fn loop_filter_v_sb128y_c_erased<BD: BitDepth>(
     vmask: *const u32,
     l: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
 ) {
@@ -474,7 +475,7 @@ unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
     vmask: *const u32,
     mut l: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     _w: c_int,
     bd: BD,
 ) {
@@ -489,8 +490,8 @@ unsafe fn loop_filter_v_sb128y_rust<BD: BitDepth>(
             };
             if !(L == 0) {
                 let H = L >> 4;
-                let E = (*lut).e[L as usize] as c_int;
-                let I = (*lut).i[L as usize] as c_int;
+                let E = lut.0.e[L as usize] as c_int;
+                let I = lut.0.i[L as usize] as c_int;
                 let idx = if *vmask.offset(2) & x != 0 {
                     2 as c_int
                 } else {
@@ -520,7 +521,7 @@ unsafe extern "C" fn loop_filter_h_sb128uv_c_erased<BD: BitDepth>(
     vmask: *const u32,
     l: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     h: c_int,
     bitdepth_max: c_int,
 ) {
@@ -542,7 +543,7 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
     vmask: *const u32,
     mut l: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     _h: c_int,
     bd: BD,
 ) {
@@ -557,8 +558,8 @@ unsafe fn loop_filter_h_sb128uv_rust<BD: BitDepth>(
             };
             if !(L == 0) {
                 let H = L >> 4;
-                let E = (*lut).e[L as usize] as c_int;
-                let I = (*lut).i[L as usize] as c_int;
+                let E = lut.0.e[L as usize] as c_int;
+                let I = lut.0.i[L as usize] as c_int;
                 let idx = (*vmask.offset(1) & y != 0) as c_int;
                 loop_filter(
                     dst,
@@ -584,7 +585,7 @@ unsafe extern "C" fn loop_filter_v_sb128uv_c_erased<BD: BitDepth>(
     vmask: *const u32,
     l: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     w: c_int,
     bitdepth_max: c_int,
 ) {
@@ -606,7 +607,7 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
     vmask: *const u32,
     mut l: *const [u8; 4],
     b4_stride: ptrdiff_t,
-    lut: *const Av1FilterLUT,
+    lut: &Align16<Av1FilterLUT>,
     _w: c_int,
     bd: BD,
 ) {
@@ -621,8 +622,8 @@ unsafe fn loop_filter_v_sb128uv_rust<BD: BitDepth>(
             };
             if !(L == 0) {
                 let H = L >> 4;
-                let E = (*lut).e[L as usize] as c_int;
-                let I = (*lut).i[L as usize] as c_int;
+                let E = lut.0.e[L as usize] as c_int;
+                let I = lut.0.i[L as usize] as c_int;
                 let idx = (*vmask.offset(1) & x != 0) as c_int;
                 loop_filter(
                     dst,

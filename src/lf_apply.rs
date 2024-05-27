@@ -423,7 +423,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 &hmask,
                 &lvl[x..],
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 endy4 - starty4,
                 bd,
             );
@@ -467,7 +467,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 1),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 w,
                 bd,
             );
@@ -518,7 +518,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 2),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 endy4 - starty4,
                 bd,
             );
@@ -528,7 +528,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
                 &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 3),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 endy4 - starty4,
                 bd,
             );
@@ -573,7 +573,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 2),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 w,
                 bd,
             );
@@ -583,7 +583,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
                 &vmask,
                 unaligned_lvl_slice(&lvl[0..], 3),
                 b4_stride,
-                &f.lf.lim_lut.0,
+                &f.lf.lim_lut,
                 w,
                 bd,
             );
