@@ -707,8 +707,8 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
 }
 
 #[inline(never)]
-fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
-    if is_sm != 0 {
+fn get_filter_strength(wh: c_int, angle: c_int, is_sm: bool) -> c_int {
+    if is_sm {
         if wh <= 8 {
             if angle >= 64 {
                 return 2;
@@ -800,8 +800,8 @@ unsafe fn filter_edge<BD: BitDepth>(
 }
 
 #[inline]
-fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> bool {
-    angle < 40 && wh <= (16 >> is_sm)
+fn get_upsample(wh: c_int, angle: c_int, is_sm: bool) -> bool {
+    angle < 40 && wh <= (16 >> is_sm as u8)
 }
 
 #[inline(never)]
@@ -843,7 +843,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     _max_height: c_int,
     bd: BD,
 ) {
-    let is_sm = angle >> 9 & 0x1 as c_int;
+    let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as c_int;
     if !(angle < 90) {
@@ -936,7 +936,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     max_height: c_int,
     bd: BD,
 ) {
-    let is_sm = angle >> 9 & 0x1 as c_int;
+    let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as c_int;
     if !(angle > 90 && angle < 180) {
@@ -1073,7 +1073,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     _max_height: c_int,
     bd: BD,
 ) {
-    let is_sm = angle >> 9 & 0x1 as c_int;
+    let is_sm = (angle >> 9) & 1 != 0;
     let enable_intra_edge_filter = angle >> 10;
     angle &= 511 as c_int;
     if !(angle > 180) {
@@ -1651,7 +1651,7 @@ mod neon {
         _max_height: c_int,
         bd: BD,
     ) {
-        let is_sm = angle >> 9 & 0x1 as c_int;
+        let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511 as c_int;
         let mut dx = dav1d_dr_intra_derivative[(angle >> 1) as usize] as c_int;
@@ -1738,7 +1738,7 @@ mod neon {
         max_height: c_int,
         bd: BD,
     ) {
-        let is_sm = angle >> 9 & 0x1 as c_int;
+        let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511 as c_int;
         if !(angle > 90 && angle < 180) {
@@ -1914,7 +1914,7 @@ mod neon {
         _max_height: c_int,
         bd: BD,
     ) {
-        let is_sm = angle >> 9 & 0x1 as c_int;
+        let is_sm = (angle >> 9) & 1 != 0;
         let enable_intra_edge_filter = angle >> 10;
         angle &= 511 as c_int;
         if !(angle > 180) {
