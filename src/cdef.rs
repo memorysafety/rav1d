@@ -123,17 +123,6 @@ pub struct Rav1dCdefDSPContext {
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
 extern "C" {
-    fn dav1d_cdef_filter4_8bpc_neon(
-        dst: *mut DynPixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const u16,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        h: c_int,
-        edges: usize,
-    );
     fn dav1d_cdef_filter8_8bpc_neon(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
@@ -153,18 +142,6 @@ extern "C" {
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
 extern "C" {
-    fn dav1d_cdef_filter4_16bpc_neon(
-        dst: *mut DynPixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const u16,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        h: c_int,
-        edges: usize,
-        bitdepth_max: c_int,
-    );
     fn dav1d_cdef_filter8_16bpc_neon(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
@@ -692,6 +669,20 @@ wrap_fn_ptr!(unsafe extern "C" fn padding8(
     edges: CdefEdgeFlags,
 ) -> ());
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+wrap_fn_ptr!(unsafe extern "C" fn filter4(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp: *const u16,
+    pri_strength: c_int,
+    sec_strength: c_int,
+    dir: c_int,
+    damping: c_int,
+    h: c_int,
+    edges: usize,
+    bitdepth_max: c_int,
+) -> ());
+
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
@@ -765,35 +756,18 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased<BD: BitDepth>(
     bd_fn!(padding4::decl_fn, BD, cdef_padding4, neon).get()(
         tmp, dst, stride, left, top, bottom, 8, edges,
     );
-    match BD::BPC {
-        BPC::BPC8 => {
-            dav1d_cdef_filter4_8bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                8,
-                edges.bits() as usize,
-            );
-        }
-        BPC::BPC16 => {
-            dav1d_cdef_filter4_16bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                8,
-                edges.bits() as usize,
-                bitdepth_max,
-            );
-        }
-    }
+    bd_fn!(filter4::decl_fn, BD, cdef_filter4, neon).get()(
+        dst,
+        stride,
+        tmp,
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        8,
+        edges.bits() as usize,
+        bitdepth_max,
+    );
 }
 
 #[inline(always)]
@@ -816,35 +790,18 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
     bd_fn!(padding4::decl_fn, BD, cdef_padding4, neon).get()(
         tmp, dst, stride, left, top, bottom, 4, edges,
     );
-    match BD::BPC {
-        BPC::BPC8 => {
-            dav1d_cdef_filter4_8bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                4,
-                edges.bits() as usize,
-            );
-        }
-        BPC::BPC16 => {
-            dav1d_cdef_filter4_16bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                4,
-                edges.bits() as usize,
-                bitdepth_max,
-            );
-        }
-    }
+    bd_fn!(filter4::decl_fn, BD, cdef_filter4, neon).get()(
+        dst,
+        stride,
+        tmp,
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        4,
+        edges.bits() as usize,
+        bitdepth_max,
+    );
 }
 
 impl Rav1dCdefDSPContext {
