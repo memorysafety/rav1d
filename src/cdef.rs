@@ -123,16 +123,6 @@ pub struct Rav1dCdefDSPContext {
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
 extern "C" {
-    fn dav1d_cdef_padding8_8bpc_neon(
-        tmp: *mut u16,
-        src: *const DynPixel,
-        src_stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        h: c_int,
-        edges: CdefEdgeFlags,
-    );
     fn dav1d_cdef_filter4_8bpc_neon(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
@@ -163,16 +153,6 @@ extern "C" {
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
 extern "C" {
-    fn dav1d_cdef_padding8_16bpc_neon(
-        tmp: *mut u16,
-        src: *const DynPixel,
-        src_stride: ptrdiff_t,
-        left: *const LeftPixelRow2px<DynPixel>,
-        top: *const DynPixel,
-        bottom: *const DynPixel,
-        h: c_int,
-        edges: CdefEdgeFlags,
-    );
     fn dav1d_cdef_filter4_16bpc_neon(
         dst: *mut DynPixel,
         dst_stride: ptrdiff_t,
@@ -700,6 +680,18 @@ wrap_fn_ptr!(unsafe extern "C" fn padding4(
     edges: CdefEdgeFlags,
 ) -> ());
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+wrap_fn_ptr!(unsafe extern "C" fn padding8(
+    tmp: *mut u16,
+    src: *const DynPixel,
+    src_stride: ptrdiff_t,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
+    h: c_int,
+    edges: CdefEdgeFlags,
+) -> ());
+
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
@@ -719,9 +711,11 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
 
     let mut tmp_buf = Align16([0; 200]);
     let tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
+    bd_fn!(padding8::decl_fn, BD, cdef_padding8, neon).get()(
+        tmp, dst, stride, left, top, bottom, 8, edges,
+    );
     match BD::BPC {
         BPC::BPC8 => {
-            dav1d_cdef_padding8_8bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
             dav1d_cdef_filter8_8bpc_neon(
                 dst,
                 stride,
@@ -735,7 +729,6 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
             );
         }
         BPC::BPC16 => {
-            dav1d_cdef_padding8_16bpc_neon(tmp, dst, stride, left, top, bottom, 8, edges);
             dav1d_cdef_filter8_16bpc_neon(
                 dst,
                 stride,
