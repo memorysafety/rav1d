@@ -16,14 +16,14 @@ use std::ffi::c_uint;
 use crate::include::common::bitdepth::BPC;
 
 pub type loopfilter_sb_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const u32,
-    *const [u8; 4],
-    ptrdiff_t,
-    *const Av1FilterLUT,
-    c_int,
-    c_int,
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    mask: *const u32,
+    lvl: *const [u8; 4],
+    lvl_stride: ptrdiff_t,
+    lut: *const Av1FilterLUT,
+    w: c_int,
+    bitdepth_max: c_int,
 ) -> ();
 
 pub struct Rav1dLoopFilterDSPContext {
