@@ -98,6 +98,8 @@ pub type cdef_dir_fn = unsafe extern "C" fn(
 
 pub struct Rav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
+
+    /// 444/luma, 422, 420
     pub fb: [cdef::Fn; 3],
 }
 
