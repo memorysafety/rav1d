@@ -709,57 +709,33 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
 #[inline(never)]
 fn get_filter_strength(wh: c_int, angle: c_int, is_sm: bool) -> c_int {
     if is_sm {
-        if wh <= 8 {
-            if angle >= 64 {
-                return 2;
-            }
-            if angle >= 40 {
-                return 1;
-            }
-        } else if wh <= 16 {
-            if angle >= 48 {
-                return 2;
-            }
-            if angle >= 20 {
-                return 1;
-            }
-        } else if wh <= 24 {
-            if angle >= 4 {
-                return 3;
-            }
-        } else {
-            return 3;
+        match (wh, angle) {
+            (..=8, 64..) => 2,
+            (..=8, 40..) => 1,
+            (..=8, ..) => 0,
+            (..=16, 48..) => 2,
+            (..=16, 20..) => 1,
+            (..=16, ..) => 0,
+            (..=24, 4..) => 3,
+            (..=24, ..) => 0,
+            (.., _) => 3,
         }
-    } else if wh <= 8 {
-        if angle >= 56 {
-            return 1;
-        }
-    } else if wh <= 16 {
-        if angle >= 40 {
-            return 1;
-        }
-    } else if wh <= 24 {
-        if angle >= 32 {
-            return 3;
-        }
-        if angle >= 16 {
-            return 2;
-        }
-        if angle >= 8 {
-            return 1;
-        }
-    } else if wh <= 32 {
-        if angle >= 32 {
-            return 3;
-        }
-        if angle >= 4 {
-            return 2;
-        }
-        return 1;
     } else {
-        return 3;
+        match (wh, angle) {
+            (..=8, 56..) => 1,
+            (..=8, ..) => 0,
+            (..=16, 40..) => 1,
+            (..=16, ..) => 0,
+            (..=24, 32..) => 3,
+            (..=24, 16..) => 2,
+            (..=24, 8..) => 1,
+            (..=24, ..) => 0,
+            (..=32, 32..) => 3,
+            (..=32, 4..) => 2,
+            (..=32, ..) => 1,
+            (.., _) => 3,
+        }
     }
-    return 0;
 }
 
 #[inline(never)]
