@@ -801,7 +801,7 @@ unsafe fn filter_edge<BD: BitDepth>(
 
 #[inline]
 fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
-    return (angle < 40 && wh <= 16 >> is_sm) as c_int;
+    (angle < 40 && wh <= 16 >> is_sm) as c_int
 }
 
 #[inline(never)]
