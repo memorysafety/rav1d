@@ -14,14 +14,14 @@ use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 
-#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-use crate::include::common::bitdepth::{bd_fn, bpc_fn};
-
 #[cfg(all(
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::{bd_fn, BPC};
+
+#[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
+use crate::include::common::bitdepth::bpc_fn;
 
 bitflags! {
     #[repr(transparent)]
@@ -89,15 +89,29 @@ impl cdef::Fn {
     }
 }
 
-pub type cdef_dir_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn cdef_dir(
     dst: *const DynPixel,
     dst_stride: ptrdiff_t,
     var: *mut c_uint,
     bitdepth_max: c_int,
-) -> c_int;
+) -> c_int);
+
+impl cdef_dir::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *const BD::Pixel,
+        dst_stride: ptrdiff_t,
+        var: *mut c_uint,
+        bd: BD,
+    ) -> c_int {
+        let dst = dst.cast();
+        let bd = bd.into_c();
+        self.get()(dst, dst_stride, var, bd)
+    }
+}
 
 pub struct Rav1dCdefDSPContext {
-    pub dir: cdef_dir_fn,
+    pub dir: cdef_dir::Fn,
 
     /// 444/luma, 422, 420
     pub fb: [cdef::Fn; 3],
@@ -106,75 +120,9 @@ pub struct Rav1dCdefDSPContext {
 #[cfg(all(
     feature = "asm",
     feature = "bitdepth_8",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_cdef_dir_8bpc_sse4(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-    fn dav1d_cdef_dir_8bpc_ssse3(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_16",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_cdef_dir_16bpc_sse4(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-    fn dav1d_cdef_dir_16bpc_ssse3(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-}
-
-#[cfg(all(feature = "asm", feature = "bitdepth_8", target_arch = "x86_64",))]
-extern "C" {
-    fn dav1d_cdef_dir_8bpc_avx2(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-}
-
-#[cfg(all(feature = "asm", feature = "bitdepth_16", target_arch = "x86_64",))]
-extern "C" {
-    fn dav1d_cdef_dir_16bpc_avx2(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_8",
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
 extern "C" {
-    fn dav1d_cdef_find_dir_8bpc_neon(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
     fn dav1d_cdef_padding4_8bpc_neon(
         tmp: *mut u16,
         src: *const DynPixel,
@@ -225,12 +173,6 @@ extern "C" {
     any(target_arch = "arm", target_arch = "aarch64"),
 ))]
 extern "C" {
-    fn dav1d_cdef_find_dir_16bpc_neon(
-        dst: *const DynPixel,
-        dst_stride: ptrdiff_t,
-        var: *mut c_uint,
-        bitdepth_max: c_int,
-    ) -> c_int;
     fn dav1d_cdef_padding4_16bpc_neon(
         tmp: *mut u16,
         src: *const DynPixel,
@@ -921,7 +863,7 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
 impl Rav1dCdefDSPContext {
     pub const fn default<BD: BitDepth>() -> Self {
         Self {
-            dir: cdef_find_dir_c_erased::<BD>,
+            dir: cdef_dir::Fn::new(cdef_find_dir_c_erased::<BD>),
             fb: [
                 cdef::Fn::new(cdef_filter_block_8x8_c_erased::<BD>),
                 cdef::Fn::new(cdef_filter_block_4x8_c_erased::<BD>),
@@ -947,10 +889,7 @@ impl Rav1dCdefDSPContext {
             return self;
         }
 
-        self.dir = match BD::BPC {
-            BPC::BPC8 => dav1d_cdef_dir_8bpc_ssse3,
-            BPC::BPC16 => dav1d_cdef_dir_16bpc_ssse3,
-        };
+        self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_dir, ssse3);
         self.fb[0] = bd_fn!(cdef::decl_fn, BD, cdef_filter_8x8, ssse3);
         self.fb[1] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x8, ssse3);
         self.fb[2] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x4, ssse3);
@@ -959,10 +898,7 @@ impl Rav1dCdefDSPContext {
             return self;
         }
 
-        self.dir = match BD::BPC {
-            BPC::BPC8 => dav1d_cdef_dir_8bpc_sse4,
-            BPC::BPC16 => dav1d_cdef_dir_16bpc_sse4,
-        };
+        self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_dir, sse4);
         if matches!(BD::BPC, BPC::BPC8) {
             self.fb[0] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_8x8, sse4);
             self.fb[1] = bpc_fn!(cdef::decl_fn, 8 bpc, cdef_filter_4x8, sse4);
@@ -975,10 +911,7 @@ impl Rav1dCdefDSPContext {
                 return self;
             }
 
-            self.dir = match BD::BPC {
-                BPC::BPC8 => dav1d_cdef_dir_8bpc_avx2,
-                BPC::BPC16 => dav1d_cdef_dir_16bpc_avx2,
-            };
+            self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_dir, avx2);
             self.fb[0] = bd_fn!(cdef::decl_fn, BD, cdef_filter_8x8, avx2);
             self.fb[1] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x8, avx2);
             self.fb[2] = bd_fn!(cdef::decl_fn, BD, cdef_filter_4x4, avx2);
@@ -1002,10 +935,7 @@ impl Rav1dCdefDSPContext {
             return self;
         }
 
-        self.dir = match BD::BPC {
-            BPC::BPC8 => dav1d_cdef_find_dir_8bpc_neon,
-            BPC::BPC16 => dav1d_cdef_find_dir_16bpc_neon,
-        };
+        self.dir = bd_fn!(cdef_dir::decl_fn, BD, cdef_find_dir, neon);
         self.fb[0] = cdef::Fn::new(cdef_filter_8x8_neon_erased::<BD>);
         self.fb[1] = cdef::Fn::new(cdef_filter_4x8_neon_erased::<BD>);
         self.fb[2] = cdef::Fn::new(cdef_filter_4x4_neon_erased::<BD>);
