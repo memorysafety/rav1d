@@ -401,7 +401,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
     // filter edges between columns (e.g. block1 | block2)
     for x in 0..w as usize {
         if !(!have_left && x == 0) {
-            let mut hmask: [u32; 4] = [0; 4];
+            let mut hmask: [u32; 3] = [0; 3];
             if starty4 == 0 {
                 hmask[0] = mask[x][0][0].load(Ordering::Relaxed) as u32;
                 hmask[1] = mask[x][1][0].load(Ordering::Relaxed) as u32;
@@ -416,7 +416,6 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
                 hmask[1] = mask[x][1][1].load(Ordering::Relaxed) as u32;
                 hmask[2] = mask[x][2][1].load(Ordering::Relaxed) as u32;
             }
-            // hmask[3] = 0; already initialized above
             f.dsp.lf.loop_filter_sb[0][0].call::<BD>(
                 dst.as_mut_ptr().add(dst_offset + x * 4),
                 ls,
@@ -452,14 +451,13 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
     //                                 block2
     for (y, lvl) in (starty4..endy4).zip(lvl.chunks(b4_stride as usize)) {
         if !(!have_top && y == 0) {
-            let vmask: [u32; 4] = [
+            let vmask = [
                 mask[y as usize][0][0].load(Ordering::Relaxed) as u32
                     | (mask[y as usize][0][1].load(Ordering::Relaxed) as u32) << 16,
                 mask[y as usize][1][0].load(Ordering::Relaxed) as u32
                     | (mask[y as usize][1][1].load(Ordering::Relaxed) as u32) << 16,
                 mask[y as usize][2][0].load(Ordering::Relaxed) as u32
                     | (mask[y as usize][2][1].load(Ordering::Relaxed) as u32) << 16,
-                0,
             ];
             f.dsp.lf.loop_filter_sb[0][1].call::<BD>(
                 dst.as_mut_ptr().add(dst_offset),
