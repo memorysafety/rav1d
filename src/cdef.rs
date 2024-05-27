@@ -62,7 +62,7 @@ impl cdef::Fn {
         top: *const BD::Pixel,
         bottom: *const BD::Pixel,
         pri_strength: c_int,
-        sec_strength: c_int,
+        sec_strength: u8,
         dir: c_int,
         damping: u8,
         edges: CdefEdgeFlags,
@@ -72,6 +72,7 @@ impl cdef::Fn {
         let left = left.cast();
         let top = top.cast();
         let bottom = bottom.cast();
+        let sec_strength = sec_strength as c_int;
         let damping = damping as c_int;
         let bd = bd.into_c();
         self.get()(
