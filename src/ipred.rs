@@ -707,7 +707,7 @@ unsafe extern "C" fn ipred_smooth_h_c_erased<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
+fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     if is_sm != 0 {
         if wh <= 8 {
             if angle >= 64 {
