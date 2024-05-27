@@ -4,6 +4,7 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::src::cpu::CpuFlags;
 use crate::src::lf_mask::Av1FilterLUT;
+use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
@@ -13,9 +14,9 @@ use std::ffi::c_uint;
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
-use crate::include::common::bitdepth::BPC;
+use crate::include::common::bitdepth::bd_fn;
 
-pub type loopfilter_sb_fn = unsafe extern "C" fn(
+wrap_fn_ptr!(pub unsafe extern "C" fn loopfilter_sb(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     mask: *const u32,
@@ -24,370 +25,28 @@ pub type loopfilter_sb_fn = unsafe extern "C" fn(
     lut: *const Av1FilterLUT,
     w: c_int,
     bitdepth_max: c_int,
-) -> ();
+) -> ());
+
+impl loopfilter_sb::Fn {
+    pub unsafe fn call<BD: BitDepth>(
+        &self,
+        dst: *mut BD::Pixel,
+        stride: ptrdiff_t,
+        mask: *const u32,
+        lvl: *const [u8; 4],
+        lvl_stride: ptrdiff_t,
+        lut: *const Av1FilterLUT,
+        w: c_int,
+        bd: BD,
+    ) {
+        let dst = dst.cast();
+        let bd = bd.into_c();
+        self.get()(dst, stride, mask, lvl, lvl_stride, lut, w, bd)
+    }
+}
 
 pub struct Rav1dLoopFilterDSPContext {
-    pub loop_filter_sb: [[loopfilter_sb_fn; 2]; 2],
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_8",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_lpf_v_sb_uv_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_y_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_y_8bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-}
-
-#[cfg(all(feature = "asm", feature = "bitdepth_8", target_arch = "x86_64",))]
-extern "C" {
-    fn dav1d_lpf_v_sb_uv_8bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_8bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_y_8bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_y_8bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_uv_8bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_8bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_y_8bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_y_8bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_8",
-    any(target_arch = "arm", target_arch = "aarch64")
-))]
-extern "C" {
-    fn dav1d_lpf_h_sb_uv_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_y_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_y_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_uv_8bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_16",
-    any(target_arch = "x86", target_arch = "x86_64"),
-))]
-extern "C" {
-    fn dav1d_lpf_v_sb_uv_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_y_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_y_16bpc_ssse3(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-}
-
-#[cfg(all(feature = "asm", feature = "bitdepth_16", target_arch = "x86_64",))]
-extern "C" {
-    fn dav1d_lpf_v_sb_uv_16bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_16bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_y_16bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_y_16bpc_avx512icl(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_uv_16bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_16bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_y_16bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_y_16bpc_avx2(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_16",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
-extern "C" {
-    fn dav1d_lpf_v_sb_uv_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_uv_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_v_sb_y_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
-    fn dav1d_lpf_h_sb_y_16bpc_neon(
-        dst: *mut DynPixel,
-        stride: ptrdiff_t,
-        mask: *const u32,
-        lvl: *const [u8; 4],
-        lvl_stride: ptrdiff_t,
-        lut: *const Av1FilterLUT,
-        w: c_int,
-        bitdepth_max: c_int,
-    );
+    pub loop_filter_sb: [[loopfilter_sb::Fn; 2]; 2],
 }
 
 #[inline(never)]
@@ -986,12 +645,12 @@ impl Rav1dLoopFilterDSPContext {
         Self {
             loop_filter_sb: [
                 [
-                    loop_filter_h_sb128y_c_erased::<BD>,
-                    loop_filter_v_sb128y_c_erased::<BD>,
+                    loopfilter_sb::Fn::new(loop_filter_h_sb128y_c_erased::<BD>),
+                    loopfilter_sb::Fn::new(loop_filter_v_sb128y_c_erased::<BD>),
                 ],
                 [
-                    loop_filter_h_sb128uv_c_erased::<BD>,
-                    loop_filter_v_sb128uv_c_erased::<BD>,
+                    loopfilter_sb::Fn::new(loop_filter_h_sb128uv_c_erased::<BD>),
+                    loopfilter_sb::Fn::new(loop_filter_v_sb128uv_c_erased::<BD>),
                 ],
             ],
         }
@@ -1004,66 +663,34 @@ impl Rav1dLoopFilterDSPContext {
             return self;
         }
 
-        match BD::BPC {
-            BPC::BPC8 => {
-                self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_ssse3;
-                self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_ssse3;
-                self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_ssse3;
-                self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_ssse3;
+        self.loop_filter_sb[0][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, ssse3);
+        self.loop_filter_sb[0][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, ssse3);
+        self.loop_filter_sb[1][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, ssse3);
+        self.loop_filter_sb[1][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, ssse3);
 
-                #[cfg(target_arch = "x86_64")]
-                {
-                    if !flags.contains(CpuFlags::AVX2) {
-                        return self;
-                    }
-
-                    self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx2;
-                    self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx2;
-                    self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx2;
-                    self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx2;
-
-                    if !flags.contains(CpuFlags::AVX512ICL) {
-                        return self;
-                    }
-
-                    self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_avx512icl;
-                    self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_avx512icl;
-
-                    if !flags.contains(CpuFlags::SLOW_GATHER) {
-                        self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_avx512icl;
-                        self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_avx512icl;
-                    }
-                }
+        #[cfg(target_arch = "x86_64")]
+        {
+            if !flags.contains(CpuFlags::AVX2) {
+                return self;
             }
-            BPC::BPC16 => {
-                self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_ssse3;
-                self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_ssse3;
-                self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_ssse3;
-                self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_ssse3;
 
-                #[cfg(target_arch = "x86_64")]
-                {
-                    if !flags.contains(CpuFlags::AVX2) {
-                        return self;
-                    }
+            self.loop_filter_sb[0][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, avx2);
+            self.loop_filter_sb[0][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, avx2);
+            self.loop_filter_sb[1][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, avx2);
+            self.loop_filter_sb[1][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, avx2);
 
-                    self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx2;
-                    self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx2;
-                    self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx2;
-                    self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx2;
+            if !flags.contains(CpuFlags::AVX512ICL) {
+                return self;
+            }
 
-                    if !flags.contains(CpuFlags::AVX512ICL) {
-                        return self;
-                    }
+            self.loop_filter_sb[0][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, avx512icl);
+            self.loop_filter_sb[1][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, avx512icl);
 
-                    self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_avx512icl;
-                    self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_avx512icl;
-
-                    if !flags.contains(CpuFlags::SLOW_GATHER) {
-                        self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_avx512icl;
-                        self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_avx512icl;
-                    }
-                }
+            if !flags.contains(CpuFlags::SLOW_GATHER) {
+                self.loop_filter_sb[0][0] =
+                    bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, avx512icl);
+                self.loop_filter_sb[1][0] =
+                    bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, avx512icl);
             }
         }
 
@@ -1077,20 +704,10 @@ impl Rav1dLoopFilterDSPContext {
             return self;
         }
 
-        match BD::BPC {
-            BPC::BPC8 => {
-                self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_8bpc_neon;
-                self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_8bpc_neon;
-                self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_8bpc_neon;
-                self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_8bpc_neon;
-            }
-            BPC::BPC16 => {
-                self.loop_filter_sb[0][0] = dav1d_lpf_h_sb_y_16bpc_neon;
-                self.loop_filter_sb[0][1] = dav1d_lpf_v_sb_y_16bpc_neon;
-                self.loop_filter_sb[1][0] = dav1d_lpf_h_sb_uv_16bpc_neon;
-                self.loop_filter_sb[1][1] = dav1d_lpf_v_sb_uv_16bpc_neon;
-            }
-        }
+        self.loop_filter_sb[0][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_y, neon);
+        self.loop_filter_sb[0][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_y, neon);
+        self.loop_filter_sb[1][0] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_h_sb_uv, neon);
+        self.loop_filter_sb[1][1] = bd_fn!(loopfilter_sb::decl_fn, BD, lpf_v_sb_uv, neon);
 
         self
     }
