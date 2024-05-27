@@ -31,17 +31,17 @@ bitflags! {
 }
 
 pub type cdef_fn = unsafe extern "C" fn(
-    *mut DynPixel,
-    ptrdiff_t,
-    *const LeftPixelRow2px<DynPixel>,
-    *const DynPixel,
-    *const DynPixel,
-    c_int,
-    c_int,
-    c_int,
-    c_int,
-    CdefEdgeFlags,
-    c_int,
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    left: *const LeftPixelRow2px<DynPixel>,
+    top: *const DynPixel,
+    bottom: *const DynPixel,
+    pri_strength: c_int,
+    sec_strength: c_int,
+    dir: c_int,
+    damping: c_int,
+    edges: CdefEdgeFlags,
+    bitdepth_max: c_int,
 ) -> ();
 
 pub type cdef_dir_fn =
