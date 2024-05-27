@@ -92,7 +92,7 @@ impl cdef::Fn {
 wrap_fn_ptr!(pub unsafe extern "C" fn cdef_dir(
     dst: *const DynPixel,
     dst_stride: ptrdiff_t,
-    var: *mut c_uint,
+    variance: &mut c_uint,
     bitdepth_max: c_int,
 ) -> c_int);
 
@@ -101,12 +101,12 @@ impl cdef_dir::Fn {
         &self,
         dst: *const BD::Pixel,
         dst_stride: ptrdiff_t,
-        var: *mut c_uint,
+        variance: &mut c_uint,
         bd: BD,
     ) -> c_int {
         let dst = dst.cast();
         let bd = bd.into_c();
-        self.get()(dst, dst_stride, var, bd)
+        self.get()(dst, dst_stride, variance, bd)
     }
 }
 
@@ -488,16 +488,16 @@ unsafe extern "C" fn cdef_filter_block_8x8_c_erased<BD: BitDepth>(
 unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
     img: *const DynPixel,
     stride: ptrdiff_t,
-    var: *mut c_uint,
+    variance: &mut c_uint,
     bitdepth_max: c_int,
 ) -> c_int {
-    cdef_find_dir_rust(img.cast(), stride, var, BD::from_c(bitdepth_max))
+    cdef_find_dir_rust(img.cast(), stride, variance, BD::from_c(bitdepth_max))
 }
 
 unsafe fn cdef_find_dir_rust<BD: BitDepth>(
     mut img: *const BD::Pixel,
     stride: ptrdiff_t,
-    var: *mut c_uint,
+    variance: &mut c_uint,
     bd: BD,
 ) -> c_int {
     let bitdepth_min_8 = bd.bitdepth().as_::<c_int>() - 8;
@@ -602,7 +602,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
         }
         n_2 += 1;
     }
-    *var = best_cost.wrapping_sub(cost[(best_dir ^ 4 as c_int) as usize]) >> 10;
+    *variance = best_cost.wrapping_sub(cost[(best_dir ^ 4 as c_int) as usize]) >> 10;
     return best_dir;
 }
 
