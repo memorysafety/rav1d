@@ -2062,7 +2062,7 @@ impl Rav1dIntraPredDSPContext {
             }),
             cfl_pred: {
                 // Not all elements are initialized with fns,
-                // so we default initialize first so that there is no unitialized memory.
+                // so we default initialize first so that there is no uninitialized memory.
                 // The defaults just call `unimplemented!()`,
                 // which shouldn't slow down the other code paths at all.
                 let mut a = [DefaultValue::DEFAULT; 6];
