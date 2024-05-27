@@ -800,8 +800,8 @@ unsafe fn filter_edge<BD: BitDepth>(
 }
 
 #[inline]
-fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
-    (angle < 40 && wh <= 16 >> is_sm) as c_int
+fn get_upsample(wh: c_int, angle: c_int, is_sm: c_int) -> bool {
+    angle < 40 && wh <= 16 >> is_sm
 }
 
 #[inline(never)]
@@ -856,9 +856,9 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
     let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 90 - angle, is_sm)
     } else {
-        0 as c_int
+        false
     };
-    if upsample_above != 0 {
+    if upsample_above {
         upsample_edge::<BD>(
             top_out.as_mut_ptr(),
             width + height,
@@ -894,7 +894,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
             max_base_x = width + cmp::min(width, height) - 1;
         }
     }
-    let base_inc = 1 + upsample_above;
+    let base_inc = 1 + upsample_above as c_int;
     let mut y = 0;
     let mut xpos = dx;
     while y < height {
@@ -947,16 +947,16 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, 180 - angle, is_sm)
     } else {
-        0 as c_int
+        false
     };
     let upsample_above = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 90, is_sm)
     } else {
-        0 as c_int
+        false
     };
     let mut edge: [BD::Pixel; 129] = [0.into(); 129];
     let topleft: *mut BD::Pixel = &mut *edge.as_mut_ptr().offset(64) as *mut BD::Pixel;
-    if upsample_above != 0 {
+    if upsample_above {
         upsample_edge::<BD>(topleft, width + 1, topleft_in, 0 as c_int, width + 1, bd);
         dx <<= 1;
     } else {
@@ -985,7 +985,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
             );
         }
     }
-    if upsample_left != 0 {
+    if upsample_left {
         upsample_edge::<BD>(
             &mut *topleft.offset((-height * 2) as isize),
             height + 1,
@@ -1027,16 +1027,16 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         }
     }
     *topleft = *topleft_in;
-    let base_inc_x = 1 + upsample_above;
+    let base_inc_x = 1 + upsample_above as c_int;
     let left: *const BD::Pixel =
-        &mut *topleft.offset(-(1 + upsample_left) as isize) as *mut BD::Pixel;
+        &mut *topleft.offset(-(1 + upsample_left as isize)) as *mut BD::Pixel;
     let mut y = 0;
-    let mut xpos = (1 + upsample_above << 6) - dx;
+    let mut xpos = (1 + (upsample_above as c_int) << 6) - dx;
     while y < height {
         let mut base_x = xpos >> 6;
         let frac_x = xpos & 0x3e as c_int;
         let mut x = 0;
-        let mut ypos = (y << 6 + upsample_left) - dy;
+        let mut ypos = (y << 6 + upsample_left as c_int) - dy;
         while x < width {
             let v;
             if base_x >= 0 {
@@ -1044,7 +1044,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                     + (*topleft.offset((base_x + 1) as isize)).as_::<c_int>() * frac_x;
             } else {
                 let base_y = ypos >> 6;
-                if !(base_y >= -(1 + upsample_left)) {
+                if !(base_y >= -(1 + upsample_left as c_int)) {
                     unreachable!();
                 }
                 let frac_y = ypos & 0x3e as c_int;
@@ -1086,9 +1086,9 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
     let upsample_left = if enable_intra_edge_filter != 0 {
         get_upsample(width + height, angle - 180, is_sm)
     } else {
-        0 as c_int
+        false
     };
-    if upsample_left != 0 {
+    if upsample_left {
         upsample_edge::<BD>(
             left_out.as_mut_ptr(),
             width + height,
@@ -1127,7 +1127,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
             max_base_y = height + cmp::min(width, height) - 1;
         }
     }
-    let base_inc = 1 + upsample_left;
+    let base_inc = 1 + upsample_left as c_int;
     let mut x = 0;
     let mut ypos = dy;
     while x < width {
@@ -1661,9 +1661,9 @@ mod neon {
         let upsample_above = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, 90 - angle, is_sm)
         } else {
-            0 as c_int
+            false
         };
-        if upsample_above != 0 {
+        if upsample_above {
             bd_fn!(z1_upsample_edge::decl_fn, BD, ipred_z1_upsample_edge, neon).call(
                 top_out.as_mut_ptr(),
                 width + height,
@@ -1697,14 +1697,14 @@ mod neon {
                 );
             }
         }
-        let base_inc = 1 + upsample_above;
+        let base_inc = 1 + upsample_above as c_int;
         let pad_pixels = width + 15;
         rav1d_ipred_pixel_set_neon::<BD>(
             top_out.as_mut_ptr().offset((max_base_x + 1) as isize),
             top_out[max_base_x as usize],
             (pad_pixels * base_inc) as c_int,
         );
-        if upsample_above != 0 {
+        if upsample_above {
             bd_fn!(z13_fill::decl_fn, BD, ipred_z1_fill2, neon).call::<BD>(
                 dst,
                 stride,
@@ -1757,15 +1757,15 @@ mod neon {
         let upsample_left = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, 180 - angle, is_sm)
         } else {
-            0 as c_int
+            false
         };
         let upsample_above = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, angle - 90, is_sm)
         } else {
-            0 as c_int
+            false
         };
 
-        if upsample_above != 0 {
+        if upsample_above {
             bd_fn!(z2_upsample_edge::decl_fn, BD, ipred_z2_upsample_edge, neon).call(
                 buf.as_mut_ptr().offset(top_offset),
                 width,
@@ -1806,7 +1806,7 @@ mod neon {
             }
         }
 
-        if upsample_left != 0 {
+        if upsample_left {
             buf[flipped_offset as usize] = *topleft_in;
             bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                 buf.as_mut_ptr().offset(1 + flipped_offset),
@@ -1863,11 +1863,11 @@ mod neon {
         buf[top_offset as usize] = *topleft_in;
         buf[left_offset as usize] = *topleft_in;
 
-        if upsample_above != 0 && upsample_left != 0 {
+        if upsample_above && upsample_left {
             unreachable!();
         }
 
-        if upsample_above == 0 && upsample_left == 0 {
+        if !upsample_above && !upsample_left {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill1, neon).call::<BD>(
                 dst,
                 stride,
@@ -1878,7 +1878,7 @@ mod neon {
                 dx,
                 dy,
             );
-        } else if upsample_above != 0 {
+        } else if upsample_above {
             bd_fn!(z2_fill::decl_fn, BD, ipred_z2_fill2, neon).call::<BD>(
                 dst,
                 stride,
@@ -1927,9 +1927,9 @@ mod neon {
         let upsample_left = if enable_intra_edge_filter != 0 {
             get_upsample(width + height, angle - 180, is_sm)
         } else {
-            0 as c_int
+            false
         };
-        if upsample_left != 0 {
+        if upsample_left {
             flipped[0] = *topleft_in.offset(0);
             bd_fn!(reverse::decl_fn, BD, ipred_reverse, neon).call::<BD>(
                 flipped.as_mut_ptr().offset(1),
@@ -1975,14 +1975,14 @@ mod neon {
                 max_base_y = height + cmp::min(width, height) - 1;
             }
         }
-        let base_inc = 1 + upsample_left;
+        let base_inc = 1 + upsample_left as c_int;
         let pad_pixels = cmp::max(64 - max_base_y - 1, height + 15);
         rav1d_ipred_pixel_set_neon::<BD>(
             left_out.as_mut_ptr().offset((max_base_y + 1) as isize),
             left_out[max_base_y as usize],
             (pad_pixels * base_inc) as c_int,
         );
-        if upsample_left != 0 {
+        if upsample_left {
             bd_fn!(z13_fill::decl_fn, BD, ipred_z3_fill2, neon).call::<BD>(
                 dst,
                 stride,
