@@ -539,7 +539,7 @@ extern "C" {
 }
 
 #[inline]
-pub unsafe fn constrain(diff: c_int, threshold: c_int, shift: c_int) -> c_int {
+pub fn constrain(diff: c_int, threshold: c_int, shift: c_int) -> c_int {
     let adiff = diff.abs();
     return apply_sign(
         cmp::min(adiff, cmp::max(0 as c_int, threshold - (adiff >> shift))),
