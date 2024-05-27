@@ -89,8 +89,12 @@ impl cdef::Fn {
     }
 }
 
-pub type cdef_dir_fn =
-    unsafe extern "C" fn(*const DynPixel, ptrdiff_t, *mut c_uint, c_int) -> c_int;
+pub type cdef_dir_fn = unsafe extern "C" fn(
+    dst: *const DynPixel,
+    dst_stride: ptrdiff_t,
+    var: *mut c_uint,
+    bitdepth_max: c_int,
+) -> c_int;
 
 pub struct Rav1dCdefDSPContext {
     pub dir: cdef_dir_fn,
