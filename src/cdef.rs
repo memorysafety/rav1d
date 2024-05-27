@@ -18,10 +18,10 @@ use std::ffi::c_uint;
     feature = "asm",
     not(any(target_arch = "riscv64", target_arch = "riscv32"))
 ))]
-use crate::include::common::bitdepth::{bd_fn, BPC};
+use crate::include::common::bitdepth::bd_fn;
 
 #[cfg(all(feature = "asm", any(target_arch = "x86", target_arch = "x86_64")))]
-use crate::include::common::bitdepth::bpc_fn;
+use crate::include::common::bitdepth::{bpc_fn, BPC};
 
 bitflags! {
     #[repr(transparent)]
@@ -115,45 +115,6 @@ pub struct Rav1dCdefDSPContext {
 
     /// 444/luma, 422, 420
     pub fb: [cdef::Fn; 3],
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_8",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
-extern "C" {
-    fn dav1d_cdef_filter8_8bpc_neon(
-        dst: *mut DynPixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const u16,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        h: c_int,
-        edges: usize,
-    );
-}
-
-#[cfg(all(
-    feature = "asm",
-    feature = "bitdepth_16",
-    any(target_arch = "arm", target_arch = "aarch64"),
-))]
-extern "C" {
-    fn dav1d_cdef_filter8_16bpc_neon(
-        dst: *mut DynPixel,
-        dst_stride: ptrdiff_t,
-        tmp: *const u16,
-        pri_strength: c_int,
-        sec_strength: c_int,
-        dir: c_int,
-        damping: c_int,
-        h: c_int,
-        edges: usize,
-        bitdepth_max: c_int,
-    );
 }
 
 #[inline]
@@ -683,6 +644,20 @@ wrap_fn_ptr!(unsafe extern "C" fn filter4(
     bitdepth_max: c_int,
 ) -> ());
 
+#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
+wrap_fn_ptr!(unsafe extern "C" fn filter8(
+    dst: *mut DynPixel,
+    dst_stride: ptrdiff_t,
+    tmp: *const u16,
+    pri_strength: c_int,
+    sec_strength: c_int,
+    dir: c_int,
+    damping: c_int,
+    h: c_int,
+    edges: usize,
+    bitdepth_max: c_int,
+) -> ());
+
 #[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
@@ -705,35 +680,18 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
     bd_fn!(padding8::decl_fn, BD, cdef_padding8, neon).get()(
         tmp, dst, stride, left, top, bottom, 8, edges,
     );
-    match BD::BPC {
-        BPC::BPC8 => {
-            dav1d_cdef_filter8_8bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                8,
-                edges.bits() as usize,
-            );
-        }
-        BPC::BPC16 => {
-            dav1d_cdef_filter8_16bpc_neon(
-                dst,
-                stride,
-                tmp,
-                pri_strength,
-                sec_strength,
-                dir,
-                damping,
-                8,
-                edges.bits() as usize,
-                bitdepth_max,
-            );
-        }
-    }
+    bd_fn!(filter8::decl_fn, BD, cdef_filter8, neon).get()(
+        dst,
+        stride,
+        tmp,
+        pri_strength,
+        sec_strength,
+        dir,
+        damping,
+        8,
+        edges.bits() as usize,
+        bitdepth_max,
+    );
 }
 
 #[inline(always)]
