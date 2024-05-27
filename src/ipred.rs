@@ -711,55 +711,55 @@ fn get_filter_strength(wh: c_int, angle: c_int, is_sm: c_int) -> c_int {
     if is_sm != 0 {
         if wh <= 8 {
             if angle >= 64 {
-                return 2 as c_int;
+                return 2;
             }
             if angle >= 40 {
-                return 1 as c_int;
+                return 1;
             }
         } else if wh <= 16 {
             if angle >= 48 {
-                return 2 as c_int;
+                return 2;
             }
             if angle >= 20 {
-                return 1 as c_int;
+                return 1;
             }
         } else if wh <= 24 {
             if angle >= 4 {
-                return 3 as c_int;
+                return 3;
             }
         } else {
-            return 3 as c_int;
+            return 3;
         }
     } else if wh <= 8 {
         if angle >= 56 {
-            return 1 as c_int;
+            return 1;
         }
     } else if wh <= 16 {
         if angle >= 40 {
-            return 1 as c_int;
+            return 1;
         }
     } else if wh <= 24 {
         if angle >= 32 {
-            return 3 as c_int;
+            return 3;
         }
         if angle >= 16 {
-            return 2 as c_int;
+            return 2;
         }
         if angle >= 8 {
-            return 1 as c_int;
+            return 1;
         }
     } else if wh <= 32 {
         if angle >= 32 {
-            return 3 as c_int;
+            return 3;
         }
         if angle >= 4 {
-            return 2 as c_int;
+            return 2;
         }
-        return 1 as c_int;
+        return 1;
     } else {
-        return 3 as c_int;
+        return 3;
     }
-    return 0 as c_int;
+    return 0;
 }
 
 #[inline(never)]
