@@ -32,7 +32,7 @@ impl loopfilter_sb::Fn {
         &self,
         dst: *mut BD::Pixel,
         stride: ptrdiff_t,
-        mask: *const u32,
+        mask: &[u32],
         lvl: *const [u8; 4],
         lvl_stride: ptrdiff_t,
         lut: *const Av1FilterLUT,
@@ -40,6 +40,7 @@ impl loopfilter_sb::Fn {
         bd: BD,
     ) {
         let dst = dst.cast();
+        let mask = mask.as_ptr();
         let bd = bd.into_c();
         self.get()(dst, stride, mask, lvl, lvl_stride, lut, w, bd)
     }

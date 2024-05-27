@@ -420,7 +420,7 @@ unsafe fn filter_plane_cols_y<BD: BitDepth>(
             f.dsp.lf.loop_filter_sb[0][0].call::<BD>(
                 dst.as_mut_ptr().add(dst_offset + x * 4),
                 ls,
-                hmask.as_mut_ptr(),
+                &hmask,
                 lvl[x..].as_ptr(),
                 b4_stride,
                 &f.lf.lim_lut.0,
@@ -464,7 +464,7 @@ unsafe fn filter_plane_rows_y<BD: BitDepth>(
             f.dsp.lf.loop_filter_sb[0][1].call::<BD>(
                 dst.as_mut_ptr().add(dst_offset),
                 ls,
-                vmask.as_ptr(),
+                &vmask,
                 unaligned_lvl_slice(&lvl[0..], 1).as_ptr(),
                 b4_stride,
                 &f.lf.lim_lut.0,
@@ -515,7 +515,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
             f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
                 u.as_mut_ptr().add(uv_offset + x * 4),
                 ls,
-                hmask.as_mut_ptr(),
+                &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 2).as_ptr(),
                 b4_stride,
                 &f.lf.lim_lut.0,
@@ -525,7 +525,7 @@ unsafe fn filter_plane_cols_uv<BD: BitDepth>(
             f.dsp.lf.loop_filter_sb[1][0].call::<BD>(
                 v.as_mut_ptr().add(uv_offset + x * 4),
                 ls,
-                hmask.as_mut_ptr(),
+                &hmask,
                 unaligned_lvl_slice(&lvl[x as usize..], 3).as_ptr(),
                 b4_stride,
                 &f.lf.lim_lut.0,
@@ -570,7 +570,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
             f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
                 u.as_mut_ptr().offset(off_l),
                 ls,
-                vmask.as_ptr(),
+                &vmask,
                 unaligned_lvl_slice(&lvl[0..], 2).as_ptr(),
                 b4_stride,
                 &f.lf.lim_lut.0,
@@ -580,7 +580,7 @@ unsafe fn filter_plane_rows_uv<BD: BitDepth>(
             f.dsp.lf.loop_filter_sb[1][1].call::<BD>(
                 v.as_mut_ptr().offset(off_l),
                 ls,
-                vmask.as_ptr(),
+                &vmask,
                 unaligned_lvl_slice(&lvl[0..], 3).as_ptr(),
                 b4_stride,
                 &f.lf.lim_lut.0,
