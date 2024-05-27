@@ -4967,12 +4967,12 @@ pub(crate) unsafe fn rav1d_decode_frame(c: &Rav1dContext, fc: &Rav1dFrameContext
         // wait until all threads have completed
         if res.is_ok() {
             if c.tc.len() > 1 {
-                res = rav1d_task_create_tile_sbrow(c, fc, &f, 0, 1);
+                res = rav1d_task_create_tile_sbrow(fc, &f, 0, 1);
                 drop(f); // release the frame data before waiting for the other threads
                 let mut task_thread_lock = (*fc.task_thread.ttd).lock.lock().unwrap();
                 (*fc.task_thread.ttd).cond.notify_one();
                 if res.is_ok() {
-                    while fc.task_thread.done[0].load(Ordering::Relaxed) == 0
+                    while fc.task_thread.done[0].load(Ordering::SeqCst) == 0
                         || fc.task_thread.task_counter.load(Ordering::SeqCst) > 0
                     {
                         task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();

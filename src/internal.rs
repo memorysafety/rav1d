@@ -84,21 +84,16 @@ use crate::src::refmvs::refmvs_temporal_block;
 use crate::src::refmvs::refmvs_tile;
 use crate::src::refmvs::Rav1dRefmvsDSPContext;
 use crate::src::refmvs::RefMvsFrame;
+use crate::src::thread_task::Rav1dTaskIndex;
+use crate::src::thread_task::Rav1dTasks;
 use atomig::Atom;
 use atomig::Atomic;
 use libc::ptrdiff_t;
-use std::cell::UnsafeCell;
-use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::mem;
-use std::ops::Add;
-use std::ops::AddAssign;
 use std::ops::Deref;
-use std::ops::Index;
-use std::ops::IndexMut;
 use std::ops::Range;
-use std::ops::Sub;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU16;
@@ -434,13 +429,12 @@ unsafe impl Send for Rav1dContext {}
 // TODO(SJC): Remove when Rav1dContext is thread-safe
 unsafe impl Sync for Rav1dContext {}
 
-// We assume Rav1dTask is small enough to cheaply clone to avoid borrow check
-// issues. If it grows too large for that, this should be revisited.
-#[derive(Clone, Default)]
+#[derive(Default)]
 #[repr(C)]
 pub struct Rav1dTask {
     // frame thread id
     pub frame_idx: c_uint,
+    pub tile_idx: c_uint,
     // task work
     pub type_0: TaskType,
     // sbrow
@@ -449,9 +443,45 @@ pub struct Rav1dTask {
     // task dependencies
     pub recon_progress: c_int,
     pub deblock_progress: c_int,
-    pub deps_skip: c_int,
+    pub deps_skip: AtomicI32,
     // only used in task queue
-    pub next: Option<Rav1dTaskIndex>,
+    pub next: Atomic<Rav1dTaskIndex>,
+}
+
+impl Rav1dTask {
+    pub fn init(frame_idx: c_uint) -> Self {
+        Self {
+            type_0: TaskType::Init,
+            frame_idx,
+            sby: 0,
+            deblock_progress: 0,
+            recon_progress: 0,
+            ..Default::default()
+        }
+    }
+
+    pub fn next(&self) -> Rav1dTaskIndex {
+        self.next.load(Ordering::SeqCst)
+    }
+
+    pub fn set_next(&self, next: Rav1dTaskIndex) {
+        self.next.store(next, Ordering::SeqCst)
+    }
+}
+
+impl Clone for Rav1dTask {
+    fn clone(&self) -> Self {
+        Self {
+            frame_idx: self.frame_idx,
+            tile_idx: self.tile_idx,
+            type_0: self.type_0,
+            sby: self.sby,
+            recon_progress: self.recon_progress,
+            deblock_progress: self.deblock_progress,
+            deps_skip: AtomicI32::new(self.deps_skip.load(Ordering::Relaxed)),
+            next: Atomic::new(Rav1dTaskIndex::None),
+        }
+    }
 }
 
 #[derive(Default)]
@@ -714,119 +744,8 @@ pub struct Rav1dFrameContext_lf {
 #[derive(Default)]
 #[repr(C)]
 pub struct Rav1dFrameContext_task_thread_pending_tasks {
-    pub head: Option<Rav1dTaskIndex>,
-    pub tail: Option<Rav1dTaskIndex>,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum Rav1dTaskIndex {
-    Task(usize),
-    TileTask(usize),
-    Init,
-}
-
-impl Rav1dTaskIndex {
-    pub fn raw_index(self) -> Option<usize> {
-        match self {
-            Self::Task(i) => Some(i),
-            Self::TileTask(i) => Some(i),
-            Self::Init => None,
-        }
-    }
-}
-
-impl Sub for Rav1dTaskIndex {
-    type Output = Self;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (Self::Task(x), Self::Task(y)) => Self::Task(x - y),
-            (Self::TileTask(x), Self::TileTask(y)) => Self::TileTask(x - y),
-            _ => panic!("Cannot subtract {rhs:?} from {self:?}"),
-        }
-    }
-}
-
-impl PartialOrd for Rav1dTaskIndex {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        match (self, other) {
-            (Self::Task(x), Self::Task(y)) => x.partial_cmp(y),
-            (Self::TileTask(x), Self::TileTask(y)) => x.partial_cmp(y),
-            _ => None,
-        }
-    }
-}
-
-impl Add<usize> for Rav1dTaskIndex {
-    type Output = Self;
-
-    fn add(self, rhs: usize) -> Self::Output {
-        match self {
-            Self::Task(i) => Self::Task(i + rhs),
-            Self::TileTask(i) => Self::TileTask(i + rhs),
-            Self::Init => panic!("Cannot add to the init task"),
-        }
-    }
-}
-
-impl AddAssign<usize> for Rav1dTaskIndex {
-    fn add_assign(&mut self, rhs: usize) {
-        *self = *self + rhs;
-    }
-}
-
-#[derive(Default)]
-pub struct Rav1dTasks {
-    tasks: Vec<Rav1dTask>,
-    tile_tasks_vec: Vec<Rav1dTask>,
-    init_task: Rav1dTask,
-    pub tile_tasks: [Option<Rav1dTaskIndex>; 2],
-    pub head: Option<Rav1dTaskIndex>,
-    pub tail: Option<Rav1dTaskIndex>,
-    // Points to the task directly before the cur pointer in the queue.
-    // This cur pointer is theoretical here, we actually keep track of the
-    // "prev_t" variable. This is needed to not loose the tasks in
-    // [head;cur-1] when picking one for execution.
-    pub cur_prev: Option<Rav1dTaskIndex>,
-}
-
-impl Rav1dTasks {
-    pub fn grow_tasks(&mut self, new_len: usize) {
-        if new_len > self.tasks.len() {
-            self.tasks.clear();
-            self.tasks.resize_with(new_len, Default::default);
-        }
-    }
-
-    pub fn grow_tile_tasks(&mut self, new_len: usize) {
-        if new_len > self.tile_tasks_vec.len() {
-            self.tile_tasks_vec.clear();
-            self.tile_tasks_vec.resize_with(new_len, Default::default);
-            self.tile_tasks[0] = Some(Rav1dTaskIndex::TileTask(0));
-        }
-    }
-}
-
-impl Index<Rav1dTaskIndex> for Rav1dTasks {
-    type Output = Rav1dTask;
-
-    fn index(&self, index: Rav1dTaskIndex) -> &Self::Output {
-        match index {
-            Rav1dTaskIndex::Task(index) => &self.tasks[index],
-            Rav1dTaskIndex::TileTask(index) => &self.tile_tasks_vec[index],
-            Rav1dTaskIndex::Init => &self.init_task,
-        }
-    }
-}
-
-impl IndexMut<Rav1dTaskIndex> for Rav1dTasks {
-    fn index_mut(&mut self, index: Rav1dTaskIndex) -> &mut Self::Output {
-        match index {
-            Rav1dTaskIndex::Task(index) => &mut self.tasks[index],
-            Rav1dTaskIndex::TileTask(index) => &mut self.tile_tasks_vec[index],
-            Rav1dTaskIndex::Init => &mut self.init_task,
-        }
-    }
+    pub head: Rav1dTaskIndex,
+    pub tail: Rav1dTaskIndex,
 }
 
 #[derive(Default)]
@@ -835,7 +754,7 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub lock: Mutex<()>,
     pub cond: Condvar,
     pub ttd: Arc<TaskThreadData>,
-    pub tasks: UnsafeCell<Rav1dTasks>,
+    pub tasks: Rav1dTasks,
     pub init_done: AtomicI32,
     pub done: [AtomicI32; 2],
     pub retval: Mutex<Option<Rav1dError>>,
@@ -843,15 +762,6 @@ pub(crate) struct Rav1dFrameContext_task_thread {
     pub update_set: AtomicBool, // whether we need to update CDF reference
     pub error: AtomicI32,
     pub task_counter: AtomicI32,
-    // async task insertion
-    pub pending_tasks_merge: AtomicI32,
-    pub pending_tasks: Mutex<Rav1dFrameContext_task_thread_pending_tasks>,
-}
-
-impl Rav1dFrameContext_task_thread {
-    pub fn tasks(&self) -> *mut Rav1dTasks {
-        self.tasks.get()
-    }
 }
 
 #[derive(Default)]
