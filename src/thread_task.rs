@@ -751,29 +751,23 @@ fn delayed_fg_task<'l, 'ttd: 'l>(
             match &delayed_fg.grain {
                 #[cfg(feature = "bitdepth_8")]
                 Grain::Bpc8(grain) => {
-                    // SAFETY: TODO make safe
-                    unsafe {
-                        rav1d_apply_grain_row::<BitDepth8>(
-                            dsp,
-                            &delayed_fg.out,
-                            &delayed_fg.in_0,
-                            grain,
-                            row as usize,
-                        );
-                    }
+                    rav1d_apply_grain_row::<BitDepth8>(
+                        dsp,
+                        &delayed_fg.out,
+                        &delayed_fg.in_0,
+                        grain,
+                        row as usize,
+                    );
                 }
                 #[cfg(feature = "bitdepth_16")]
                 Grain::Bpc16(grain) => {
-                    // SAFETY: TODO make safe
-                    unsafe {
-                        rav1d_apply_grain_row::<BitDepth16>(
-                            dsp,
-                            &delayed_fg.out,
-                            &delayed_fg.in_0,
-                            grain,
-                            row as usize,
-                        );
-                    }
+                    rav1d_apply_grain_row::<BitDepth16>(
+                        dsp,
+                        &delayed_fg.out,
+                        &delayed_fg.in_0,
+                        grain,
+                        row as usize,
+                    );
                 }
             }
         }
