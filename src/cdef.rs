@@ -605,7 +605,6 @@ wrap_fn_ptr!(unsafe extern "C" fn filter8(
     bitdepth_max: c_int,
 ) -> ());
 
-#[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
     dst: *mut DynPixel,
@@ -641,7 +640,6 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
     );
 }
 
-#[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn cdef_filter_4x8_neon_erased<BD: BitDepth>(
     dst: *mut DynPixel,
@@ -675,7 +673,6 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased<BD: BitDepth>(
     );
 }
 
-#[inline(always)]
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
 unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
     dst: *mut DynPixel,
