@@ -745,7 +745,8 @@ unsafe fn filter_edge<BD: BitDepth>(
     sz: c_int,
     lim_from: c_int,
     lim_to: c_int,
-    in_0: *const BD::Pixel,
+    in_0: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    in_off: usize,
     from: c_int,
     to: c_int,
     strength: c_int,
@@ -757,14 +758,15 @@ unsafe fn filter_edge<BD: BitDepth>(
     let mut i = 0;
     while i < cmp::min(sz, lim_from) {
         out[out_off.wrapping_add_signed(i as isize)] =
-            *in_0.offset(iclip(i, from, to - 1) as isize);
+            in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
         i += 1;
     }
     while i < cmp::min(lim_to, sz) {
         let mut s = 0;
         let mut j = 0;
         while j < 5 {
-            s += (*in_0.offset(iclip(i - 2 + j, from, to - 1) as isize)).as_::<c_int>()
+            s += in_0[in_off.wrapping_add_signed(iclip(i - 2 + j, from, to - 1) as isize)]
+                .as_::<c_int>()
                 * kernel[(strength - 1) as usize][j as usize] as c_int;
             j += 1;
         }
@@ -773,7 +775,7 @@ unsafe fn filter_edge<BD: BitDepth>(
     }
     while i < sz {
         out[out_off.wrapping_add_signed(i as isize)] =
-            *in_0.offset(iclip(i, from, to - 1) as isize);
+            in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
         i += 1;
     }
 }
@@ -863,7 +865,8 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
                 width + height,
                 0 as c_int,
                 width + height,
-                topleft_in[topleft_in_off + 1..].as_ptr(),
+                topleft_in,
+                topleft_in_off + 1,
                 -(1 as c_int),
                 width + cmp::min(width, height),
                 filter_strength,
@@ -961,7 +964,8 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                 width,
                 0 as c_int,
                 max_width,
-                topleft_in[topleft_in_off + 1..].as_ptr(),
+                topleft_in,
+                topleft_in_off + 1,
                 -(1 as c_int),
                 width,
                 filter_strength,
@@ -998,7 +1002,8 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                 height,
                 height - max_height,
                 height,
-                topleft_in[topleft_in_off - height as usize..].as_ptr(),
+                topleft_in,
+                topleft_in_off - height as usize,
                 0 as c_int,
                 height + 1,
                 filter_strength_0,
@@ -1100,7 +1105,8 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
                 width + height,
                 0 as c_int,
                 width + height,
-                topleft_in[topleft_in_off - (width + height) as usize..].as_ptr(),
+                topleft_in,
+                topleft_in_off - (width + height) as usize,
                 cmp::max(width - height, 0 as c_int),
                 width + height + 1,
                 filter_strength,
