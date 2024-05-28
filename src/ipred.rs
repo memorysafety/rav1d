@@ -814,7 +814,8 @@ unsafe fn upsample_edge<BD: BitDepth>(
 unsafe fn ipred_z1_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft_in: *const BD::Pixel,
+    topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_in_off: usize,
     width: c_int,
     height: c_int,
     mut angle: c_int,
@@ -841,7 +842,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
         upsample_edge::<BD>(
             &mut top_out,
             width + height,
-            &*topleft_in.offset(1),
+            topleft_in[topleft_in_off + 1..].as_ptr(),
             -(1 as c_int),
             width + cmp::min(width, height),
             bd,
@@ -862,7 +863,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
                 width + height,
                 0 as c_int,
                 width + height,
-                &*topleft_in.offset(1),
+                topleft_in[topleft_in_off + 1..].as_ptr(),
                 -(1 as c_int),
                 width + cmp::min(width, height),
                 filter_strength,
@@ -870,7 +871,7 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
             top = top_out.as_mut_ptr();
             max_base_x = width + height - 1;
         } else {
-            top = &*topleft_in.offset(1) as *const BD::Pixel;
+            top = topleft_in[topleft_in_off + 1..].as_ptr();
             max_base_x = width + cmp::min(width, height) - 1;
         }
     }
@@ -908,7 +909,8 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
 unsafe fn ipred_z2_rust<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft_in: *const BD::Pixel,
+    topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_in_off: usize,
     width: c_int,
     height: c_int,
     mut angle: c_int,
@@ -940,7 +942,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         upsample_edge::<BD>(
             &mut edge[topleft..],
             width + 1,
-            topleft_in,
+            topleft_in[topleft_in_off..].as_ptr(),
             0 as c_int,
             width + 1,
             bd,
@@ -959,7 +961,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                 width,
                 0 as c_int,
                 max_width,
-                &*topleft_in.offset(1),
+                topleft_in[topleft_in_off + 1..].as_ptr(),
                 -(1 as c_int),
                 width,
                 filter_strength,
@@ -968,7 +970,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
             let width = width.try_into().unwrap();
             BD::pixel_copy(
                 &mut edge[topleft + 1..][..width],
-                &slice::from_raw_parts(topleft_in, width + 1)[1..],
+                &topleft_in[topleft_in_off + 1..][..width],
                 width,
             );
         }
@@ -977,7 +979,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         upsample_edge::<BD>(
             &mut edge[topleft - height as usize * 2..],
             height + 1,
-            &*topleft_in.offset(-height as isize),
+            topleft_in[topleft_in_off - height as usize..].as_ptr(),
             0 as c_int,
             height + 1,
             bd,
@@ -996,7 +998,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
                 height,
                 height - max_height,
                 height,
-                &*topleft_in.offset(-height as isize),
+                topleft_in[topleft_in_off - height as usize..].as_ptr(),
                 0 as c_int,
                 height + 1,
                 filter_strength_0,
@@ -1004,15 +1006,12 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         } else {
             BD::pixel_copy(
                 &mut edge[topleft - height as usize..][..height as usize],
-                slice::from_raw_parts(
-                    topleft_in.offset(-height as isize),
-                    height.try_into().unwrap(),
-                ),
+                &topleft_in[topleft_in_off - height as usize..][..height as usize],
                 height.try_into().unwrap(),
             );
         }
     }
-    edge[topleft] = *topleft_in;
+    edge[topleft] = topleft_in[topleft_in_off];
     let base_inc_x = 1 + upsample_above as c_int;
     let left = edge[topleft - (1 + upsample_left as usize)..].as_mut_ptr();
     let mut y = 0;
@@ -1050,7 +1049,8 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
 unsafe fn ipred_z3_rust<BD: BitDepth>(
     dst: *mut BD::Pixel,
     stride: ptrdiff_t,
-    topleft_in: *const BD::Pixel,
+    topleft_in: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    topleft_in_off: usize,
     width: c_int,
     height: c_int,
     mut angle: c_int,
@@ -1077,7 +1077,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
         upsample_edge::<BD>(
             &mut left_out,
             width + height,
-            &*topleft_in.offset(-(width + height) as isize),
+            topleft_in[topleft_in_off - (width + height) as usize..].as_ptr(),
             cmp::max(width - height, 0 as c_int),
             width + height + 1,
             bd,
@@ -1100,7 +1100,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
                 width + height,
                 0 as c_int,
                 width + height,
-                &*topleft_in.offset(-(width + height) as isize),
+                topleft_in[topleft_in_off - (width + height) as usize..].as_ptr(),
                 cmp::max(width - height, 0 as c_int),
                 width + height + 1,
                 filter_strength,
@@ -1109,7 +1109,7 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
                 &mut *left_out.as_mut_ptr().offset((width + height - 1) as isize) as *mut BD::Pixel;
             max_base_y = width + height - 1;
         } else {
-            left = &*topleft_in.offset(-(1 as c_int) as isize) as *const BD::Pixel;
+            left = topleft_in[topleft_in_off - 1..].as_ptr();
             max_base_y = height + cmp::min(width, height) - 1;
         }
     }
@@ -1155,12 +1155,14 @@ unsafe extern "C" fn ipred_z_c_erased<BD: BitDepth, const Z: usize>(
     max_width: c_int,
     max_height: c_int,
     bitdepth_max: c_int,
-    _topleft_off: usize,
+    topleft_off: usize,
 ) {
+    let topleft_in = reconstruct_topleft::<BD>(topleft_in, topleft_off);
     [ipred_z1_rust, ipred_z2_rust, ipred_z3_rust][Z - 1](
         dst.cast(),
         stride,
-        topleft_in.cast(),
+        topleft_in,
+        topleft_off,
         width,
         height,
         angle,
