@@ -20,13 +20,14 @@ use crate::include::dav1d::picture::RAV1D_PICTURE_ALIGNMENT;
 use crate::src::error::Dav1dResult;
 use crate::src::error::Rav1dError::EGeneric;
 use crate::src::error::Rav1dResult;
-use crate::src::internal::Rav1dContext;
+use crate::src::internal::Rav1dFrameContext;
 use crate::src::internal::Rav1dFrameData;
 use crate::src::log::Rav1dLog as _;
 use crate::src::log::Rav1dLogger;
 use crate::src::mem::MemPool;
 use atomig::Atom;
 use atomig::AtomLogic;
+use atomig::Atomic;
 use bitflags::bitflags;
 use libc::ptrdiff_t;
 use parking_lot::Mutex;
@@ -238,39 +239,45 @@ pub fn rav1d_picture_copy_props(
 // itut_t35 was taken out of the c.itut_t35 originally, but that violates Rust
 // borrowing rules so we need to pass it to this function explicitly.
 pub(crate) fn rav1d_thread_picture_alloc(
-    c: &Rav1dContext,
+    fc: &Box<[Rav1dFrameContext]>,
+    logger: &Option<Rav1dLogger>,
+    allocator: &Rav1dPicAllocator,
+    content_light: Option<Arc<Rav1dContentLightLevel>>,
+    mastering_display: Option<Arc<Rav1dMasteringDisplay>>,
+    output_invisible_frames: bool,
+    frame_flags: &Atomic<PictureFlags>,
     f: &mut Rav1dFrameData,
     bpc: u8,
     itut_t35: Arc<Mutex<Vec<Rav1dITUTT35>>>,
 ) -> Rav1dResult {
     let p = &mut f.sr_cur;
-    let have_frame_mt = c.fc.len() > 1;
+    let have_frame_mt = fc.len() > 1;
     let frame_hdr = &***f.frame_hdr.as_ref().unwrap();
     picture_alloc_with_edges(
-        &c.logger,
+        logger,
         &mut p.p,
         frame_hdr.size.width[1],
         frame_hdr.size.height,
         f.seq_hdr.clone(),
         f.frame_hdr.clone(),
         bpc,
-        &c.allocator,
+        allocator,
     )?;
 
     rav1d_picture_copy_props(
         &mut p.p,
-        c.content_light.clone(),
-        c.mastering_display.clone(),
+        content_light,
+        mastering_display,
         Rav1dITUTT35::to_immut(itut_t35),
         f.tiles[0].data.m.clone(),
     );
 
-    let flags_mask = if frame_hdr.show_frame != 0 || c.output_invisible_frames {
+    let flags_mask = if frame_hdr.show_frame != 0 || output_invisible_frames {
         PictureFlags::empty()
     } else {
         PictureFlags::NEW_SEQUENCE | PictureFlags::NEW_OP_PARAMS_INFO
     };
-    p.flags = c.frame_flags.fetch_and(flags_mask, Ordering::Relaxed);
+    p.flags = frame_flags.fetch_and(flags_mask, Ordering::Relaxed);
     p.visible = frame_hdr.show_frame != 0;
     p.showable = frame_hdr.showable_frame != 0;
     p.progress = if have_frame_mt {
@@ -282,13 +289,13 @@ pub(crate) fn rav1d_thread_picture_alloc(
 }
 
 pub(crate) fn rav1d_picture_alloc_copy(
-    c: &Rav1dContext,
+    logger: &Option<Rav1dLogger>,
     dst: &mut Rav1dPicture,
     w: c_int,
     src: &Rav1dPicture,
 ) -> Rav1dResult {
     picture_alloc_with_edges(
-        &c.logger,
+        logger,
         dst,
         w,
         src.p.h,

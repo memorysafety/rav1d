@@ -545,7 +545,7 @@ pub(crate) fn rav1d_apply_grain(
         *out = in_0.clone();
         return Ok(());
     }
-    let res = rav1d_picture_alloc_copy(c, out, in_0.p.w, in_0);
+    let res = rav1d_picture_alloc_copy(&c.logger, out, in_0.p.w, in_0);
     if res.is_err() {
         let _ = mem::take(out);
         return res;
