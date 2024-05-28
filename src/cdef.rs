@@ -397,7 +397,7 @@ unsafe fn cdef_filter_block_c<BD: BitDepth>(
     };
 }
 
-unsafe extern "C" fn cdef_filter_block_4x4_c_erased<BD: BitDepth>(
+unsafe extern "C" fn cdef_filter_block_c_erased<BD: BitDepth, const W: usize, const H: usize>(
     dst: *mut DynPixel,
     stride: ptrdiff_t,
     left: *const LeftPixelRow2px<DynPixel>,
@@ -410,81 +410,26 @@ unsafe extern "C" fn cdef_filter_block_4x4_c_erased<BD: BitDepth>(
     edges: CdefEdgeFlags,
     bitdepth_max: c_int,
 ) {
+    let dst = dst.cast();
+    let left = left.cast();
+    let top = top.cast();
+    let bottom = bottom.cast();
+    let bd = BD::from_c(bitdepth_max);
     cdef_filter_block_c(
-        dst.cast(),
+        dst,
         stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
+        left,
+        top,
+        bottom,
         pri_strength,
         sec_strength,
         dir,
         damping,
-        4 as c_int,
-        4 as c_int,
+        W as c_int,
+        H as c_int,
         edges,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn cdef_filter_block_4x8_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    cdef_filter_block_c(
-        dst.cast(),
-        stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        4 as c_int,
-        8 as c_int,
-        edges,
-        BD::from_c(bitdepth_max),
-    );
-}
-
-unsafe extern "C" fn cdef_filter_block_8x8_c_erased<BD: BitDepth>(
-    dst: *mut DynPixel,
-    stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    edges: CdefEdgeFlags,
-    bitdepth_max: c_int,
-) {
-    cdef_filter_block_c(
-        dst.cast(),
-        stride,
-        left.cast(),
-        top.cast(),
-        bottom.cast(),
-        pri_strength,
-        sec_strength,
-        dir,
-        damping,
-        8 as c_int,
-        8 as c_int,
-        edges,
-        BD::from_c(bitdepth_max),
-    );
+        bd,
+    )
 }
 
 unsafe extern "C" fn cdef_find_dir_c_erased<BD: BitDepth>(
@@ -769,9 +714,9 @@ impl Rav1dCdefDSPContext {
         Self {
             dir: cdef_dir::Fn::new(cdef_find_dir_c_erased::<BD>),
             fb: [
-                cdef::Fn::new(cdef_filter_block_8x8_c_erased::<BD>),
-                cdef::Fn::new(cdef_filter_block_4x8_c_erased::<BD>),
-                cdef::Fn::new(cdef_filter_block_4x4_c_erased::<BD>),
+                cdef::Fn::new(cdef_filter_block_c_erased::<BD, 8, 8>),
+                cdef::Fn::new(cdef_filter_block_c_erased::<BD, 4, 8>),
+                cdef::Fn::new(cdef_filter_block_c_erased::<BD, 4, 4>),
             ],
         }
     }
