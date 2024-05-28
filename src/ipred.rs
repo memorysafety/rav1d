@@ -739,7 +739,7 @@ fn get_filter_strength(wh: c_int, angle: c_int, is_sm: bool) -> c_int {
 }
 
 #[inline(never)]
-unsafe fn filter_edge<BD: BitDepth>(
+fn filter_edge<BD: BitDepth>(
     out: &mut [BD::Pixel],
     out_off: usize,
     sz: c_int,
@@ -786,7 +786,7 @@ fn get_upsample(wh: c_int, angle: c_int, is_sm: bool) -> bool {
 }
 
 #[inline(never)]
-unsafe fn upsample_edge<BD: BitDepth>(
+fn upsample_edge<BD: BitDepth>(
     out: &mut [BD::Pixel],
     hsz: c_int,
     in_0: &[BD::Pixel; SCRATCH_EDGE_LEN],
