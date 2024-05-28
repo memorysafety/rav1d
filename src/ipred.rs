@@ -1437,6 +1437,9 @@ fn pal_pred_rust<BD: BitDepth>(
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`pal_pred::Fn::call`].
 #[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     dst_ptr: *mut DynPixel,
@@ -1451,7 +1454,7 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
     // SAFETY: Was passed as `FFISafe::new(dst)` in `pal_pred::Fn::call`.
     let dst = unsafe { FFISafe::get(dst) };
     // SAFETY: Reverse of what was done in `pal_pred::Fn::call`.
-    let dst_offset = unsafe { dst_ptr.offset_from(dst.as_mut_ptr::<BD>()) } as usize;
+    let dst_offset = unsafe { dst_ptr.offset_from(dst.as_ptr::<BD>()) } as usize;
     // SAFETY: Undoing dyn cast in `pal_pred::Fn::call`.
     let pal = unsafe { &*pal.cast() };
     // SAFETY: Length sliced in `pal_pred::Fn::call`.
