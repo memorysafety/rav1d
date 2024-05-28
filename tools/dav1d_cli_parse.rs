@@ -435,12 +435,57 @@ unsafe fn parse_optional_fraction(
 
 // TODO: add other architectures supported by dav1d
 cfg_if! {
-    if #[cfg(any(target_arch = "arm", target_arch = "aarch64"))] {
-        static mut cpu_mask_tbl: [EnumParseTable; 1] = [
+    if #[cfg(any(target_arch = "arm"))] {
+        static mut cpu_mask_tbl: [EnumParseTable; 3] = [
             {
                 EnumParseTable {
                     str_0: b"neon\0" as *const u8 as *const c_char,
                     val: CpuFlags::NEON.bits() as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"dotprod\0" as *const u8 as *const c_char,
+                    val: CpuFlags::DOTPROD.bits() as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"i8mm\0" as *const u8 as *const c_char,
+                    val: CpuFlags::I8MM.bits() as c_int,
+                }
+            },
+        ];
+    } else if #[cfg(any(target_arch = "aarch64"))] {
+        static mut cpu_mask_tbl: [EnumParseTable; 5] = [
+            {
+                EnumParseTable {
+                    str_0: b"neon\0" as *const u8 as *const c_char,
+                    val: CpuFlags::NEON.bits() as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"dotprod\0" as *const u8 as *const c_char,
+                    val: CpuFlags::DOTPROD.bits() as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"i8mm\0" as *const u8 as *const c_char,
+                    val: CpuFlags::I8MM.bits() as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"sve\0" as *const u8 as *const c_char,
+                    val: CpuFlags::SVE.bits() as c_int,
+                }
+            },
+            {
+                EnumParseTable {
+                    str_0: b"sve2\0" as *const u8 as *const c_char,
+                    val: CpuFlags::SVE2.bits() as c_int,
                 }
             },
         ];
