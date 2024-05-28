@@ -5,7 +5,23 @@ use crate::include::common::bitdepth::DynPixel;
 use crate::include::common::intops::iclip;
 use crate::src::cpu::CpuFlags;
 use crate::src::enum_map::DefaultValue;
+use crate::src::itx_1d::rav1d_inv_adst16_1d_c;
+use crate::src::itx_1d::rav1d_inv_adst4_1d_c;
+use crate::src::itx_1d::rav1d_inv_adst8_1d_c;
+use crate::src::itx_1d::rav1d_inv_dct16_1d_c;
+use crate::src::itx_1d::rav1d_inv_dct32_1d_c;
+use crate::src::itx_1d::rav1d_inv_dct4_1d_c;
+use crate::src::itx_1d::rav1d_inv_dct64_1d_c;
+use crate::src::itx_1d::rav1d_inv_dct8_1d_c;
+use crate::src::itx_1d::rav1d_inv_flipadst16_1d_c;
+use crate::src::itx_1d::rav1d_inv_flipadst4_1d_c;
+use crate::src::itx_1d::rav1d_inv_flipadst8_1d_c;
+use crate::src::itx_1d::rav1d_inv_identity16_1d_c;
+use crate::src::itx_1d::rav1d_inv_identity32_1d_c;
+use crate::src::itx_1d::rav1d_inv_identity4_1d_c;
+use crate::src::itx_1d::rav1d_inv_identity8_1d_c;
 use crate::src::itx_1d::rav1d_inv_wht4_1d_c;
+use crate::src::levels::TxfmType;
 use crate::src::levels::ADST_ADST;
 use crate::src::levels::ADST_DCT;
 use crate::src::levels::ADST_FLIPADST;
@@ -62,31 +78,30 @@ use crate::include::common::bitdepth::bpc_fn;
 
 pub type itx_1d_fn = fn(c: &mut [i32], stride: NonZeroUsize, min: c_int, max: c_int);
 
-pub unsafe fn inv_txfm_add_rust<
-    const W: usize,
-    const H: usize,
-    const SHIFT: u8,
-    const HAS_DC_ONLY: bool,
-    BD: BitDepth,
->(
+#[inline(never)]
+unsafe fn inv_txfm_add<BD: BitDepth>(
     mut dst: *mut BD::Pixel,
     stride: ptrdiff_t,
     coeff: *mut BD::Coef,
     eob: c_int,
+    w: usize,
+    h: usize,
+    shift: u8,
     first_1d_fn: itx_1d_fn,
     second_1d_fn: itx_1d_fn,
+    has_dc_only: bool,
     bd: BD,
 ) {
     let bitdepth_max = bd.bitdepth_max().as_::<c_int>();
 
-    assert!(W >= 4 && W <= 64);
-    assert!(H >= 4 && H <= 64);
+    assert!(w >= 4 && w <= 64);
+    assert!(h >= 4 && h <= 64);
     assert!(eob >= 0);
 
-    let is_rect2 = W * 2 == H || H * 2 == W;
-    let rnd = 1 << SHIFT >> 1;
+    let is_rect2 = w * 2 == h || h * 2 == w;
+    let rnd = 1 << shift >> 1;
 
-    if eob < HAS_DC_ONLY as c_int {
+    if eob < has_dc_only as c_int {
         let coeff = slice::from_raw_parts_mut(coeff, 1);
 
         let mut dc = coeff[0].as_::<c_int>();
@@ -95,10 +110,10 @@ pub unsafe fn inv_txfm_add_rust<
             dc = dc * 181 + 128 >> 8;
         }
         dc = dc * 181 + 128 >> 8;
-        dc = dc + rnd >> SHIFT;
+        dc = dc + rnd >> shift;
         dc = dc * 181 + 128 + 2048 >> 12;
-        for _ in 0..H {
-            for x in 0..W {
+        for _ in 0..h {
+            for x in 0..w {
                 *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + dc);
             }
             dst = dst.offset(BD::pxstride(stride));
@@ -106,8 +121,8 @@ pub unsafe fn inv_txfm_add_rust<
         return;
     }
 
-    let sh = cmp::min(H, 32);
-    let sw = cmp::min(W, 32);
+    let sh = cmp::min(h, 32);
+    let sw = cmp::min(w, 32);
 
     let coeff = slice::from_raw_parts_mut(coeff, sh * sw);
 
@@ -136,29 +151,145 @@ pub unsafe fn inv_txfm_add_rust<
             }
         }
         first_1d_fn(c, 1.try_into().unwrap(), row_clip_min, row_clip_max);
-        c = &mut c[W..];
+        c = &mut c[w..];
     }
 
     coeff.fill(0.into());
-    for i in 0..W * sh {
-        tmp[i] = iclip(tmp[i] + rnd >> SHIFT, col_clip_min, col_clip_max);
+    for i in 0..w * sh {
+        tmp[i] = iclip(tmp[i] + rnd >> shift, col_clip_min, col_clip_max);
     }
 
-    for x in 0..W {
+    for x in 0..w {
         second_1d_fn(
             &mut tmp[x..],
-            W.try_into().unwrap(),
+            w.try_into().unwrap(),
             col_clip_min,
             col_clip_max,
         );
     }
 
-    for y in 0..H {
-        for x in 0..W {
-            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + (tmp[y * W + x] + 8 >> 4));
+    for y in 0..h {
+        for x in 0..w {
+            *dst.add(x) = bd.iclip_pixel((*dst.add(x)).as_::<c_int>() + (tmp[y * w + x] + 8 >> 4));
         }
         dst = dst.offset(BD::pxstride(stride));
     }
+}
+
+unsafe fn inv_txfm_add_rust<const W: usize, const H: usize, const TYPE: TxfmType, BD: BitDepth>(
+    dst: *mut BD::Pixel,
+    stride: ptrdiff_t,
+    coeff: *mut BD::Coef,
+    eob: c_int,
+    bd: BD,
+) {
+    let shift = match (W, H) {
+        (4, 4) => 0,
+        (4, 8) => 0,
+        (4, 16) => 1,
+        (8, 4) => 0,
+        (8, 8) => 1,
+        (8, 16) => 1,
+        (8, 32) => 2,
+        (16, 4) => 1,
+        (16, 8) => 1,
+        (16, 16) => 2,
+        (16, 32) => 1,
+        (16, 64) => 2,
+        (32, 8) => 2,
+        (32, 16) => 1,
+        (32, 32) => 2,
+        (32, 64) => 1,
+        (64, 16) => 2,
+        (64, 32) => 1,
+        (64, 64) => 2,
+        _ => unreachable!(),
+    };
+    let has_dc_only = TYPE == DCT_DCT;
+
+    enum Type {
+        Identity,
+        Dct,
+        Adst,
+        FlipAdst,
+    }
+    use Type::*;
+    // For some reason, this is flipped.
+    let (second, first) = match TYPE {
+        IDTX => (Identity, Identity),
+        DCT_DCT => (Dct, Dct),
+        ADST_DCT => (Adst, Dct),
+        FLIPADST_DCT => (FlipAdst, Dct),
+        H_DCT => (Identity, Dct),
+        DCT_ADST => (Dct, Adst),
+        ADST_ADST => (Adst, Adst),
+        FLIPADST_ADST => (FlipAdst, Adst),
+        DCT_FLIPADST => (Dct, FlipAdst),
+        ADST_FLIPADST => (Adst, FlipAdst),
+        FLIPADST_FLIPADST => (FlipAdst, FlipAdst),
+        V_DCT => (Dct, Identity),
+        H_ADST => (Identity, Adst),
+        H_FLIPADST => (Identity, FlipAdst),
+        V_ADST => (Adst, Identity),
+        V_FLIPADST => (FlipAdst, Identity),
+        _ => unreachable!(),
+    };
+
+    fn resolve_1d_fn(r#type: Type, n: usize) -> itx_1d_fn {
+        match (r#type, n) {
+            (Identity, 4) => rav1d_inv_identity4_1d_c,
+            (Identity, 8) => rav1d_inv_identity8_1d_c,
+            (Identity, 16) => rav1d_inv_identity16_1d_c,
+            (Identity, 32) => rav1d_inv_identity32_1d_c,
+            (Dct, 4) => rav1d_inv_dct4_1d_c,
+            (Dct, 8) => rav1d_inv_dct8_1d_c,
+            (Dct, 16) => rav1d_inv_dct16_1d_c,
+            (Dct, 32) => rav1d_inv_dct32_1d_c,
+            (Dct, 64) => rav1d_inv_dct64_1d_c,
+            (Adst, 4) => rav1d_inv_adst4_1d_c,
+            (Adst, 8) => rav1d_inv_adst8_1d_c,
+            (Adst, 16) => rav1d_inv_adst16_1d_c,
+            (FlipAdst, 4) => rav1d_inv_flipadst4_1d_c,
+            (FlipAdst, 8) => rav1d_inv_flipadst8_1d_c,
+            (FlipAdst, 16) => rav1d_inv_flipadst16_1d_c,
+            _ => unreachable!(),
+        }
+    }
+
+    let first_1d_fn = resolve_1d_fn(first, W);
+    let second_1d_fn = resolve_1d_fn(second, H);
+
+    inv_txfm_add(
+        dst,
+        stride,
+        coeff,
+        eob,
+        W,
+        H,
+        shift,
+        first_1d_fn,
+        second_1d_fn,
+        has_dc_only,
+        bd,
+    )
+}
+
+unsafe extern "C" fn inv_txfm_add_c_erased<
+    const W: usize,
+    const H: usize,
+    const TYPE: TxfmType,
+    BD: BitDepth,
+>(
+    dst: *mut DynPixel,
+    stride: ptrdiff_t,
+    coeff: *mut DynCoef,
+    eob: c_int,
+    bitdepth_max: c_int,
+) {
+    let dst = dst.cast();
+    let coeff = coeff.cast();
+    let bd = BD::from_c(bitdepth_max);
+    inv_txfm_add_rust::<W, H, TYPE, BD>(dst, stride, coeff, eob, bd)
 }
 
 wrap_fn_ptr!(unsafe extern "C" fn itxfm(
@@ -188,90 +319,6 @@ impl itxfm::Fn {
 pub struct Rav1dInvTxfmDSPContext {
     pub itxfm_add: [[itxfm::Fn; N_TX_TYPES_PLUS_LL]; N_RECT_TX_SIZES],
 }
-
-macro_rules! inv_txfm_fn {
-    ($type1:ident, $type2:ident, $w:literal, $h:literal, $shift:literal, $has_dconly:literal) => {
-        paste::paste! {
-            unsafe extern "C" fn [<inv_txfm_add_ $type1 _ $type2 _ $w x $h _c_erased>] <BD: BitDepth> (
-                dst: *mut DynPixel,
-                stride: ptrdiff_t,
-                coeff: *mut DynCoef,
-                eob: c_int,
-                bitdepth_max: c_int,
-            ) {
-                use crate::src::itx_1d::*;
-                inv_txfm_add_rust::<$w, $h, $shift, $has_dconly, BD>(
-                    dst.cast(),
-                    stride,
-                    coeff.cast(),
-                    eob,
-                    [<rav1d_inv_ $type1 $w _1d_c>],
-                    [<rav1d_inv_ $type2 $h _1d_c>],
-                    BD::from_c(bitdepth_max),
-                );
-            }
-        }
-    };
-}
-
-macro_rules! inv_txfm_fn64 {
-    ($w:literal, $h:literal, $shift:literal) => {
-        inv_txfm_fn!(dct, dct, $w, $h, $shift, true);
-    };
-}
-
-macro_rules! inv_txfm_fn32 {
-    ($w:literal, $h:literal, $shift:literal) => {
-        inv_txfm_fn64!($w, $h, $shift);
-        inv_txfm_fn!(identity, identity, $w, $h, $shift, false);
-    };
-}
-
-macro_rules! inv_txfm_fn16 {
-    ($w:literal, $h:literal, $shift:literal) => {
-        inv_txfm_fn32!($w, $h, $shift);
-        inv_txfm_fn!(adst, dct, $w, $h, $shift, false);
-        inv_txfm_fn!(dct, adst, $w, $h, $shift, false);
-        inv_txfm_fn!(adst, adst, $w, $h, $shift, false);
-        inv_txfm_fn!(dct, flipadst, $w, $h, $shift, false);
-        inv_txfm_fn!(flipadst, dct, $w, $h, $shift, false);
-        inv_txfm_fn!(adst, flipadst, $w, $h, $shift, false);
-        inv_txfm_fn!(flipadst, adst, $w, $h, $shift, false);
-        inv_txfm_fn!(flipadst, flipadst, $w, $h, $shift, false);
-        inv_txfm_fn!(identity, dct, $w, $h, $shift, false);
-        inv_txfm_fn!(dct, identity, $w, $h, $shift, false);
-    };
-}
-
-macro_rules! inv_txfm_fn84 {
-    ($w:literal, $h:literal, $shift:literal) => {
-        inv_txfm_fn16!($w, $h, $shift);
-        inv_txfm_fn!(identity, flipadst, $w, $h, $shift, false);
-        inv_txfm_fn!(flipadst, identity, $w, $h, $shift, false);
-        inv_txfm_fn!(identity, adst, $w, $h, $shift, false);
-        inv_txfm_fn!(adst, identity, $w, $h, $shift, false);
-    };
-}
-
-inv_txfm_fn84!(4, 4, 0);
-inv_txfm_fn84!(4, 8, 0);
-inv_txfm_fn84!(4, 16, 1);
-inv_txfm_fn84!(8, 4, 0);
-inv_txfm_fn84!(8, 8, 1);
-inv_txfm_fn84!(8, 16, 1);
-inv_txfm_fn32!(8, 32, 2);
-inv_txfm_fn84!(16, 4, 1);
-inv_txfm_fn84!(16, 8, 1);
-inv_txfm_fn16!(16, 16, 2);
-inv_txfm_fn32!(16, 32, 1);
-inv_txfm_fn64!(16, 64, 2);
-inv_txfm_fn32!(32, 8, 2);
-inv_txfm_fn32!(32, 16, 1);
-inv_txfm_fn32!(32, 32, 2);
-inv_txfm_fn64!(32, 64, 1);
-inv_txfm_fn64!(64, 16, 2);
-inv_txfm_fn64!(64, 32, 1);
-inv_txfm_fn64!(64, 64, 2);
 
 pub(crate) unsafe extern "C" fn inv_txfm_add_wht_wht_4x4_c_erased<BD: BitDepth>(
     dst: *mut DynPixel,
@@ -526,23 +573,26 @@ macro_rules! assign_itx16_fn {
     }};
 }
 
+macro_rules! assign_itx_all_fn {
+    ($c:expr, $BD:ty, $w:expr, $h:expr, $tx:expr, $type:expr) => {{
+        $c.itxfm_add[$tx as usize][$type as usize] =
+            itxfm::Fn::new(inv_txfm_add_c_erased::<$w, $h, $type, $BD>);
+    }};
+}
+
 macro_rules! assign_itx_all_fn64 {
     ($c:ident, $BD:ty, $w:literal, $h:literal) => {{
         use paste::paste;
 
-        paste! {
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_dct_dct_ $w x $h _c_erased >]::<BD>);
-        }
+        let tx = paste! { [<TX_ $w X $h>] };
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_DCT);
     }};
 
     ($c:ident, $BD:ty, $w:literal, $h:literal, $pfx:ident) => {{
         use paste::paste;
 
-        paste! {
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_dct_dct_ $w x $h _c_erased >]::<BD>);
-        }
+        let tx = paste! { [<$pfx TX_ $w X $h>] };
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_DCT);
     }};
 }
 
@@ -551,20 +601,16 @@ macro_rules! assign_itx_all_fn32 {
         use paste::paste;
 
         assign_itx_all_fn64!($c, BD, $w, $h);
-        paste! {
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][IDTX as usize]
-                = itxfm::Fn::new([< inv_txfm_add_identity_identity_ $w x $h _c_erased >]::<BD>);
-        }
+        let tx = paste! { [<TX_ $w X $h>] };
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, IDTX);
     }};
 
     ($c:ident, $BD:ty, $w:literal, $h:literal, $pfx:ident) => {{
         use paste::paste;
 
         assign_itx_all_fn64!($c, BD, $w, $h, $pfx);
-        paste! {
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][IDTX as usize]
-                = itxfm::Fn::new([< inv_txfm_add_identity_identity_ $w x $h _c_erased >]::<BD>);
-        }
+        let tx = paste! { [<$pfx TX_ $w X $h>] };
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, IDTX);
     }};
 }
 
@@ -573,56 +619,34 @@ macro_rules! assign_itx_all_fn16 {
         use paste::paste;
 
         assign_itx_all_fn32!($c, BD, $w, $h);
-        paste! {
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_adst_dct_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_dct_adst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_adst_adst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_flipadst_adst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_adst_flipadst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_flipadst_dct_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_dct_flipadst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_flipadst_flipadst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_dct_identity_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_identity_dct_ $w x $h _c_erased >]::<BD>);
-        }
+        let tx = paste! { [<TX_ $w X $h>] };
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_ADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_DCT);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_ADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_ADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_DCT);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_DCT);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_DCT);
     }};
 
     ($c:ident, $BD:ty, $w:literal, $h:literal, $pfx:ident) => {{
         use paste::paste;
 
         assign_itx_all_fn32!($c, BD, $w, $h, $pfx);
-        paste! {
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_adst_dct_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_dct_adst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_adst_adst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][ADST_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_flipadst_adst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_adst_flipadst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][DCT_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_flipadst_dct_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_dct_flipadst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][FLIPADST_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_flipadst_flipadst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_dct_identity_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_DCT as usize]
-                = itxfm::Fn::new([< inv_txfm_add_identity_dct_ $w x $h _c_erased >]::<BD>);
-        }
+        let tx = paste! { [<$pfx TX_ $w X $h>] };
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_ADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_DCT);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_ADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, ADST_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_ADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, DCT_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_DCT);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, FLIPADST_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_DCT);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_DCT);
     }};
 }
 
@@ -631,32 +655,22 @@ macro_rules! assign_itx_all_fn84 {
         use paste::paste;
 
         assign_itx_all_fn16!($c, BD, $w, $h);
-        paste! {
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_flipadst_identity_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_identity_flipadst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][H_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_adst_identity_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<TX_ $w X $h>] as usize][V_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_identity_adst_ $w x $h _c_erased >]::<BD>);
-        }
+        let tx = paste! { [<TX_ $w X $h>] };
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_ADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_ADST);
     }};
 
     ($c:ident, $BD:ty, $w:literal, $h:literal, $pfx:ident) => {{
         use paste::paste;
 
         assign_itx_all_fn16!($c, BD, $w, $h, $pfx);
-        paste! {
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_flipadst_identity_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_FLIPADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_identity_flipadst_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][H_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_adst_identity_ $w x $h _c_erased >]::<BD>);
-            $c.itxfm_add[[<$pfx TX_ $w X $h>] as usize][V_ADST as usize]
-                = itxfm::Fn::new([< inv_txfm_add_identity_adst_ $w x $h _c_erased >]::<BD>);
-        }
+        let tx = paste! { [<$pfx TX_ $w X $h>] };
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_FLIPADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, H_ADST);
+        assign_itx_all_fn!($c, $BD, $w, $h, tx, V_ADST);
     }};
 }
 
