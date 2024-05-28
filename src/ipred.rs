@@ -930,10 +930,17 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     } else {
         false
     };
-    let mut edge: [BD::Pixel; 129] = [0.into(); 129];
-    let topleft: *mut BD::Pixel = &mut *edge.as_mut_ptr().offset(64) as *mut BD::Pixel;
+    let mut edge = [0.into(); 129];
+    let topleft = 64;
     if upsample_above {
-        upsample_edge::<BD>(topleft, width + 1, topleft_in, 0 as c_int, width + 1, bd);
+        upsample_edge::<BD>(
+            edge[topleft..].as_mut_ptr(),
+            width + 1,
+            topleft_in,
+            0 as c_int,
+            width + 1,
+            bd,
+        );
         dx <<= 1;
     } else {
         let filter_strength = if enable_intra_edge_filter != 0 {
@@ -943,7 +950,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         };
         if filter_strength != 0 {
             filter_edge::<BD>(
-                &mut *topleft.offset(1),
+                edge[topleft + 1..].as_mut_ptr(),
                 width,
                 0 as c_int,
                 max_width,
@@ -955,7 +962,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         } else {
             let width = width.try_into().unwrap();
             BD::pixel_copy(
-                &mut slice::from_raw_parts_mut(topleft, width + 1)[1..],
+                &mut edge[topleft + 1..][..width],
                 &slice::from_raw_parts(topleft_in, width + 1)[1..],
                 width,
             );
@@ -963,7 +970,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
     }
     if upsample_left {
         upsample_edge::<BD>(
-            &mut *topleft.offset((-height * 2) as isize),
+            edge[topleft - height as usize * 2..].as_mut_ptr(),
             height + 1,
             &*topleft_in.offset(-height as isize),
             0 as c_int,
@@ -979,7 +986,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         };
         if filter_strength_0 != 0 {
             filter_edge::<BD>(
-                &mut *topleft.offset(-height as isize),
+                edge[topleft - height as usize..].as_mut_ptr(),
                 height,
                 height - max_height,
                 height,
@@ -990,10 +997,7 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
             );
         } else {
             BD::pixel_copy(
-                slice::from_raw_parts_mut(
-                    topleft.offset(-height as isize),
-                    height.try_into().unwrap(),
-                ),
+                &mut edge[topleft - height as usize..][..height as usize],
                 slice::from_raw_parts(
                     topleft_in.offset(-height as isize),
                     height.try_into().unwrap(),
@@ -1002,10 +1006,9 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
             );
         }
     }
-    *topleft = *topleft_in;
+    edge[topleft] = *topleft_in;
     let base_inc_x = 1 + upsample_above as c_int;
-    let left: *const BD::Pixel =
-        &mut *topleft.offset(-(1 + upsample_left as isize)) as *mut BD::Pixel;
+    let left = edge[topleft - (1 + upsample_left as usize)..].as_mut_ptr();
     let mut y = 0;
     let mut xpos = (1 + (upsample_above as c_int) << 6) - dx;
     while y < height {
@@ -1016,8 +1019,8 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         while x < width {
             let v;
             if base_x >= 0 {
-                v = (*topleft.offset(base_x as isize)).as_::<c_int>() * (64 - frac_x)
-                    + (*topleft.offset((base_x + 1) as isize)).as_::<c_int>() * frac_x;
+                v = edge[topleft + base_x as usize].as_::<c_int>() * (64 - frac_x)
+                    + edge[topleft + base_x as usize + 1].as_::<c_int>() * frac_x;
             } else {
                 let base_y = ypos >> 6;
                 if !(base_y >= -(1 + upsample_left as c_int)) {
