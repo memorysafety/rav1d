@@ -1,5 +1,6 @@
 use crate::src::enum_map::EnumKey;
 use atomig::Atomic;
+use parking_lot::Mutex;
 use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::fmt;
@@ -11,7 +12,6 @@ use std::ops::Deref;
 use std::ops::Sub;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::sync::Mutex;
 use strum::EnumCount;
 use strum::FromRepr;
 
@@ -826,7 +826,7 @@ impl Rav1dITUTT35 {
     pub fn to_immut(
         mutable: Arc<Mutex<Vec<Rav1dITUTT35>>>,
     ) -> Arc<DRav1d<Box<[Rav1dITUTT35]>, Box<[Dav1dITUTT35]>>> {
-        let mutable = Arc::into_inner(mutable).unwrap().into_inner().unwrap();
+        let mutable = Arc::into_inner(mutable).unwrap().into_inner();
         let immutable = mutable.into_boxed_slice();
         let rav1d = immutable;
         let dav1d = rav1d.iter().cloned().map(Dav1dITUTT35::from).collect();

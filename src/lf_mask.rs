@@ -16,12 +16,12 @@ use crate::src::levels::TX_4X4;
 use crate::src::tables::dav1d_block_dimensions;
 use crate::src::tables::dav1d_txfm_dimensions;
 use libc::ptrdiff_t;
+use parking_lot::RwLock;
 use std::cmp;
 use std::ffi::c_int;
 use std::sync::atomic::AtomicI8;
 use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering;
-use std::sync::RwLock;
 
 #[repr(C)]
 pub struct Av1FilterLUT {

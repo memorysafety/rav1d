@@ -753,12 +753,12 @@ mod release {
 #[cfg(debug_assertions)]
 mod debug {
     use super::*;
+    use parking_lot::Mutex;
     use std::backtrace::Backtrace;
     use std::backtrace::BacktraceStatus;
     use std::fmt::Debug;
     use std::ops::Bound;
     use std::panic::Location;
-    use std::sync::Mutex;
     use std::thread;
     use std::thread::ThreadId;
 
@@ -854,10 +854,10 @@ mod debug {
     impl<T: ?Sized + AsMutPtr> DisjointMut<T> {
         #[track_caller]
         fn add_mut_bounds(&self, current: DisjointMutBounds) {
-            for existing in self.bounds.immutable.lock().unwrap().iter() {
+            for existing in self.bounds.immutable.lock().iter() {
                 current.check_overlaps(existing);
             }
-            let mut mut_bounds = self.bounds.mutable.lock().unwrap();
+            let mut mut_bounds = self.bounds.mutable.lock();
             for existing in mut_bounds.iter() {
                 current.check_overlaps(existing);
             }
@@ -866,23 +866,18 @@ mod debug {
 
         #[track_caller]
         fn add_immut_bounds(&self, current: DisjointMutBounds) {
-            let mut_bounds = self.bounds.mutable.lock().unwrap();
+            let mut_bounds = self.bounds.mutable.lock();
             for existing in mut_bounds.iter() {
                 current.check_overlaps(existing);
             }
-            self.bounds.immutable.lock().unwrap().push(current);
+            self.bounds.immutable.lock().push(current);
         }
 
         fn remove_bound(&self, bounds: &DisjointMutBounds) {
-            let all_bounds = if bounds.mutable {
+            let mut all_bounds = if bounds.mutable {
                 self.bounds.mutable.lock()
             } else {
                 self.bounds.immutable.lock()
-            };
-            let Ok(mut all_bounds) = all_bounds else {
-                // Another thread has panicked holding a range lock. We can't
-                // remove anything.
-                return;
             };
             let idx = all_bounds
                 .iter()

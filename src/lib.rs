@@ -46,6 +46,8 @@ use crate::src::picture::Rav1dThreadPicture;
 use crate::src::thread_task::rav1d_task_delayed_fg;
 use crate::src::thread_task::rav1d_worker_task;
 use crate::src::thread_task::FRAME_ERROR;
+use parking_lot::Condvar;
+use parking_lot::Mutex;
 use std::cmp;
 use std::ffi::c_char;
 use std::ffi::c_uint;
@@ -61,8 +63,6 @@ use std::sync::atomic::AtomicI32;
 use std::sync::atomic::AtomicU32;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
-use std::sync::Condvar;
-use std::sync::Mutex;
 use std::sync::Once;
 use std::thread;
 use to_method::To as _;
@@ -253,7 +253,7 @@ pub(crate) unsafe fn rav1d_open(c_out: &mut *mut Rav1dContext, s: &Rav1dSettings
     for fc in (*c).fc.iter_mut() {
         fc.task_thread.finished = AtomicBool::new(true);
         fc.task_thread.ttd = Arc::clone(&(*c).task_thread);
-        let f = fc.data.get_mut().unwrap();
+        let f = fc.data.get_mut();
         f.lf.last_sharpness = u8::MAX;
     }
     (*c).tc = (0..n_tc)
@@ -387,9 +387,9 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
     for _ in 0..c.fc.len() {
         let next = c.frame_thread.next;
         let fc = &c.fc[next as usize];
-        let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
+        let mut task_thread_lock = c.task_thread.lock.lock();
         while !fc.task_thread.finished.load(Ordering::SeqCst) {
-            task_thread_lock = fc.task_thread.cond.wait(task_thread_lock).unwrap();
+            fc.task_thread.cond.wait(&mut task_thread_lock);
         }
         let out_delayed = &mut c.frame_thread.out_delayed[next as usize];
         if out_delayed.p.data.is_some() || fc.task_thread.error.load(Ordering::SeqCst) != 0 {
@@ -418,7 +418,7 @@ unsafe fn drain_picture(c: &mut Rav1dContext, out: &mut Rav1dPicture) -> Rav1dRe
         mem::take(&mut *fc.task_thread.retval.try_lock().unwrap())
             .err_or(())
             .inspect_err(|_| {
-                *c.cached_error_props.get_mut().unwrap() = out_delayed.p.m.clone();
+                *c.cached_error_props.get_mut() = out_delayed.p.m.clone();
                 let _ = mem::take(out_delayed);
             })?;
         if out_delayed.p.data.is_some() {
@@ -622,10 +622,10 @@ pub(crate) unsafe fn rav1d_flush(c: &mut Rav1dContext) {
     }
     c.flush.store(true, Ordering::SeqCst);
     if c.tc.len() > 1 {
-        let mut task_thread_lock = c.task_thread.lock.lock().unwrap();
+        let mut task_thread_lock = c.task_thread.lock.lock();
         for tc in c.tc.iter() {
             while !tc.flushed() {
-                task_thread_lock = tc.thread_data.cond.wait(task_thread_lock).unwrap();
+                tc.thread_data.cond.wait(&mut task_thread_lock);
             }
         }
         for fc in c.fc.iter_mut() {
@@ -692,7 +692,7 @@ impl Drop for Rav1dContext {
         unsafe {
             if self.tc.len() > 1 {
                 let ttd: &TaskThreadData = &*self.task_thread;
-                let task_thread_lock = ttd.lock.lock().unwrap();
+                let task_thread_lock = ttd.lock.lock();
                 for tc in self.tc.iter() {
                     tc.thread_data.die.store(true, Ordering::Relaxed);
                 }
@@ -707,13 +707,13 @@ impl Drop for Rav1dContext {
             }
             let fc_len = self.fc.len();
             for fc in self.fc.iter_mut() {
-                let f = fc.data.get_mut().unwrap();
+                let f = fc.data.get_mut();
                 if fc_len > 1 {
                     let _ = mem::take(&mut f.lowest_pixel_mem); // TODO: remove when context is owned
                 }
-                mem::take(fc.in_cdf.get_mut().unwrap()); // TODO: remove when context is owned
-                mem::take(fc.frame_thread_progress.frame.get_mut().unwrap()); // TODO: remove when context is owned
-                mem::take(fc.frame_thread_progress.copy_lpf.get_mut().unwrap()); // TODO: remove when context is owned
+                mem::take(fc.in_cdf.get_mut()); // TODO: remove when context is owned
+                mem::take(fc.frame_thread_progress.frame.get_mut()); // TODO: remove when context is owned
+                mem::take(fc.frame_thread_progress.copy_lpf.get_mut()); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.frame_thread); // TODO: remove when context is owned
                 mem::take(&mut fc.task_thread.tasks); // TODO: remove when context is owned
                 let _ = mem::take(&mut f.ts); // TODO: remove when context is owned
@@ -786,7 +786,7 @@ pub unsafe extern "C" fn dav1d_get_decode_error_data_props(
     (|| {
         validate_input!((!c.is_null(), EINVAL))?;
         validate_input!((!out.is_null(), EINVAL))?;
-        out.write(mem::take(&mut *((*c).cached_error_props).get_mut().unwrap()).into());
+        out.write(mem::take(&mut *((*c).cached_error_props).get_mut()).into());
         Ok(())
     })()
     .into()
