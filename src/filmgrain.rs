@@ -28,6 +28,7 @@ use std::ops::Add;
 use std::ops::Shl;
 use std::ops::Shr;
 use std::ptr;
+use std::slice;
 use to_method::To;
 
 #[cfg(all(
@@ -632,56 +633,63 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
             0
         };
 
-        static w: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
+        static W: [[c_int; 2]; 2] = [[27, 17], [17, 27]];
 
-        let add_noise_y = |x, y, grain| {
-            let src = src_row
-                .offset(y as isize * BD::pxstride(stride))
-                .add(x)
-                .add(bx);
-            let dst = dst_row
-                .offset(y as isize * BD::pxstride(stride))
-                .add(x)
-                .add(bx);
+        let src_row_y = |y| {
+            let src = src_row.offset(y as isize * BD::pxstride(stride)).add(bx);
+            slice::from_raw_parts(src, bw)
+        };
+        let dst_row_y = |y| {
+            let dst = dst_row.offset(y as isize * BD::pxstride(stride)).add(bx);
+            slice::from_raw_parts_mut(dst, bw)
+        };
+
+        let noise_y = |src: BD::Pixel, grain| {
             let noise = round2(
-                scaling.as_ref()[(*src).to::<usize>()] as c_int * grain,
+                scaling.as_ref()[src.to::<usize>()] as c_int * grain,
                 data.scaling_shift,
             );
-            *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+            iclip(src.as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>()
         };
 
         for y in ystart..bh {
+            let src = src_row_y(y);
+            let dst = dst_row_y(y);
+
             // Non-overlapped image region (straightforward)
             for x in xstart..bw {
                 let grain = sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y);
-                add_noise_y(x, y, grain);
+                dst[x] = noise_y(src[x], grain);
             }
 
             // Special case for overlapped column
-            for (x, wx) in w[..xstart].iter().enumerate() {
+            for x in 0..xstart {
                 let grain = sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y);
                 let old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, false, x, y);
-                let grain = round2(old * wx[0] + grain * wx[1], 5);
+                let grain = round2(old * W[x][0] + grain * W[x][1], 5);
                 let grain = iclip(grain, grain_min, grain_max);
-                add_noise_y(x, y, grain);
+                dst[x] = noise_y(src[x], grain);
             }
         }
-        for (y, wy) in w[..ystart].iter().enumerate() {
+        for y in 0..ystart {
+            let src = src_row_y(y);
+            let dst = dst_row_y(y);
+
             // Special case for overlapped row (sans corner)
             for x in xstart..bw {
                 let grain = sample_lut::<BD>(grain_lut, &offsets, false, false, false, false, x, y);
                 let old = sample_lut::<BD>(grain_lut, &offsets, false, false, false, true, x, y);
-                let grain = round2(old * wy[0] + grain * wy[1], 5);
+                let grain = round2(old * W[y][0] + grain * W[y][1], 5);
                 let grain = iclip(grain, grain_min, grain_max);
-                add_noise_y(x, y, grain);
+                dst[x] = noise_y(src[x], grain);
             }
 
             // Special case for doubly-overlapped corner
-            for (x, wx) in w[..xstart].iter().enumerate() {
+            for x in 0..xstart {
                 // Blend the top pixel with the top left block
                 let top = sample_lut::<BD>(grain_lut, &offsets, false, false, false, true, x, y);
                 let old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, true, x, y);
-                let top = round2(old * wx[0] + top * wx[1], 5);
+                let top = round2(old * W[x][0] + top * W[x][1], 5);
                 let top = iclip(top, grain_min, grain_max);
 
                 // Blend the current pixel with the left block
@@ -689,11 +697,11 @@ unsafe fn fgy_32x32xn_rust<BD: BitDepth>(
                 let old = sample_lut::<BD>(grain_lut, &offsets, false, false, true, false, x, y);
 
                 // Mix the row rows together and apply grain
-                let grain = round2(old * wx[0] + grain * wx[1], 5);
+                let grain = round2(old * W[x][0] + grain * W[x][1], 5);
                 let grain = iclip(grain, grain_min, grain_max);
-                let grain = round2(top * wy[0] + grain * wy[1], 5);
+                let grain = round2(top * W[y][0] + grain * W[y][1], 5);
                 let grain = iclip(grain, grain_min, grain_max);
-                add_noise_y(x, y, grain);
+                dst[x] = noise_y(src[x], grain);
             }
         }
     }
@@ -768,29 +776,32 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
             0
         };
 
-        static w: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
+        static W: [[[c_int; 2]; 2 /* off */]; 2 /* sub */] = [[[27, 17], [17, 27]], [[23, 22], [0; 2]]];
 
-        let add_noise_uv = |x, y, grain| {
-            let lx = bx.wrapping_add(x) << sx;
-            let ly = y << sy;
+        let luma_row_uv = |y| {
             let luma = luma_row
-                .offset(ly as isize * BD::pxstride(luma_stride))
-                .offset(lx as isize);
-            let mut avg = *luma.offset(0);
+                .offset((y << sy) as isize * BD::pxstride(luma_stride))
+                .add(bx << sx);
+            slice::from_raw_parts(luma, bw << sx)
+        };
+        let src_row_uv = |y| {
+            let src = src_row.offset(y as isize * BD::pxstride(stride)).add(bx);
+            slice::from_raw_parts(src, bw)
+        };
+        let dst_row_uv = |y| {
+            let dst = dst_row.offset(y as isize * BD::pxstride(stride)).add(bx);
+            slice::from_raw_parts_mut(dst, bw)
+        };
+
+        let noise_uv = |src: BD::Pixel, grain, luma: &[BD::Pixel]| {
+            let mut avg = luma[0];
             if is_sx {
-                avg = ((avg.as_::<c_int>() + (*luma.offset(1)).as_::<c_int>() + 1) >> 1)
-                    .as_::<BD::Pixel>();
+                avg = ((avg.as_::<c_int>() + luma[1].as_::<c_int>() + 1) >> 1).as_::<BD::Pixel>();
             }
-            let src = src_row
-                .offset(y as isize * BD::pxstride(stride))
-                .add(bx.wrapping_add(x));
-            let dst = dst_row
-                .offset(y as isize * BD::pxstride(stride))
-                .add(bx.wrapping_add(x));
             let mut val = avg.as_::<c_int>();
             if !data.chroma_scaling_from_luma {
                 let combined = avg.as_::<c_int>() * data.uv_luma_mult[uv]
-                    + (*src).as_::<c_int>() * data.uv_mult[uv];
+                    + src.as_::<c_int>() * data.uv_mult[uv];
                 val = bd
                     .iclip_pixel((combined >> 6) + data.uv_offset[uv] * (1 << bitdepth_min_8))
                     .as_::<c_int>();
@@ -801,33 +812,41 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 scaling.as_ref()[val as usize % scaling.as_ref().len()] as c_int * grain,
                 data.scaling_shift,
             );
-            *dst = iclip((*src).as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>();
+            iclip(src.as_::<c_int>() + noise, min_value, max_value).as_::<BD::Pixel>()
         };
 
         for y in ystart..bh {
+            let luma = luma_row_uv(y);
+            let src = src_row_uv(y);
+            let dst = dst_row_uv(y);
+
             // Non-overlapped image region (straightforward)
             for x in xstart..bw {
                 let grain = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y);
-                add_noise_uv(x, y, grain);
+                dst[x] = noise_uv(src[x], grain, &luma[x << sx..]);
             }
 
             // Special case for overlapped column
             for x in 0..xstart {
                 let grain = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y);
                 let old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, false, x, y);
-                let grain = round2(old * w[sx][x][0] + grain * w[sx][x][1], 5);
+                let grain = round2(old * W[sx][x][0] + grain * W[sx][x][1], 5);
                 let grain = iclip(grain, grain_min, grain_max);
-                add_noise_uv(x, y, grain);
+                dst[x] = noise_uv(src[x], grain, &luma[x << sx..]);
             }
         }
         for y in 0..ystart {
+            let luma = luma_row_uv(y);
+            let src = src_row_uv(y);
+            let dst = dst_row_uv(y);
+
             // Special case for overlapped row (sans corner)
             for x in xstart..bw {
                 let grain = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, false, x, y);
                 let old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, true, x, y);
-                let grain = round2(old * w[sy][y][0] + grain * w[sy][y][1], 5);
+                let grain = round2(old * W[sy][y][0] + grain * W[sy][y][1], 5);
                 let grain = iclip(grain, grain_min, grain_max);
-                add_noise_uv(x, y, grain);
+                dst[x] = noise_uv(src[x], grain, &luma[x << sx..]);
             }
 
             // Special case for doubly-overlapped corner
@@ -835,7 +854,7 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 // Blend the top pixel with the top left block
                 let top = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, false, true, x, y);
                 let old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, true, x, y);
-                let top = round2(old * w[sx][x][0] + top * w[sx][x][1], 5);
+                let top = round2(old * W[sx][x][0] + top * W[sx][x][1], 5);
                 let top = iclip(top, grain_min, grain_max);
 
                 // Blend the current pixel with the left block
@@ -843,11 +862,11 @@ unsafe fn fguv_32x32xn_rust<BD: BitDepth>(
                 let old = sample_lut::<BD>(grain_lut, &offsets, is_sx, is_sy, true, false, x, y);
 
                 // Mix the row rows together and apply to image
-                let grain = round2(old * w[sx][x][0] + grain * w[sx][x][1], 5);
+                let grain = round2(old * W[sx][x][0] + grain * W[sx][x][1], 5);
                 let grain = iclip(grain, grain_min, grain_max);
-                let grain = round2(top * w[sy][y][0] + grain * w[sy][y][1], 5);
+                let grain = round2(top * W[sy][y][0] + grain * W[sy][y][1], 5);
                 let grain = iclip(grain, grain_min, grain_max);
-                add_noise_uv(x, y, grain);
+                dst[x] = noise_uv(src[x], grain, &luma[x << sx..]);
             }
         }
     }
