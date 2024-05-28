@@ -647,7 +647,7 @@ pub struct Rav1dFrameContext_frame_thread {
     /// Indexed using `t.b.y * f.b4_stride + t.b.x`.
     pub b: DisjointMut<Vec<Av1Block>>,
 
-    pub cbi: Vec<[Atomic<CodedBlockInfo>; 3]>,
+    pub cbi: Vec<Atomic<CodedBlockInfo>>,
 
     /// Indexed using `(t.b.y >> 1) * (f.b4_stride >> 1) + (t.b.x >> 1)`.
     /// Inner indices are `[3 plane][8 idx]`.
@@ -899,6 +899,7 @@ pub struct Rav1dTileState_tiling {
 #[repr(C)]
 pub struct Rav1dTileState_frame_thread {
     pub pal_idx: AtomicUsize, // Offset into `f.frame_thread.pal_idx`
+    pub cbi_idx: AtomicUsize, // Offset into `f.frame_thread.cbi`
     pub cf: AtomicUsize,      // Offset into `f.frame_thread.cf`
 }
 

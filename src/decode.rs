@@ -3991,6 +3991,14 @@ fn setup_tile(
             },
             Ordering::Relaxed,
         );
+        ts.frame_thread[p].cbi_idx.store(
+            if !frame_thread.cbi.is_empty() {
+                tile_start_off * size_mul[0] as usize / 64
+            } else {
+                0
+            },
+            Ordering::Relaxed,
+        );
         ts.frame_thread[p].cf.store(
             if !frame_thread.cf.is_empty() {
                 let bpc = BPC::from_bitdepth_max(bitdepth_max);
@@ -4472,6 +4480,12 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
             }
         }
 
+        let cbi_sz = num_sb128 * size_mul[0] as c_int;
+        // TODO: Fallible allocation
+        f.frame_thread
+            .cbi
+            .resize_with(cbi_sz as usize * 32 * 32 / 4, Default::default);
+
         let cf_sz = (num_sb128 * size_mul[0] as c_int) << hbd;
         // TODO: Fallible allocation
         f.frame_thread
@@ -4607,11 +4621,6 @@ pub(crate) fn rav1d_decode_frame_init(c: &Rav1dContext, fc: &Rav1dFrameContext) 
         // TODO: Fallible allocation
         f.frame_thread
             .b
-            .resize_with(num_sb128 as usize * 32 * 32, Default::default);
-
-        // TODO: fallible allocation
-        f.frame_thread
-            .cbi
             .resize_with(num_sb128 as usize * 32 * 32, Default::default);
     }
 
