@@ -554,7 +554,7 @@ unsafe fn cdef_find_dir_rust<BD: BitDepth>(
 }
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-wrap_fn_ptr!(unsafe extern "C" fn padding4(
+wrap_fn_ptr!(unsafe extern "C" fn padding(
     tmp: *mut u16,
     src: *const DynPixel,
     src_stride: ptrdiff_t,
@@ -566,33 +566,7 @@ wrap_fn_ptr!(unsafe extern "C" fn padding4(
 ) -> ());
 
 #[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-wrap_fn_ptr!(unsafe extern "C" fn padding8(
-    tmp: *mut u16,
-    src: *const DynPixel,
-    src_stride: ptrdiff_t,
-    left: *const LeftPixelRow2px<DynPixel>,
-    top: *const DynPixel,
-    bottom: *const DynPixel,
-    h: c_int,
-    edges: CdefEdgeFlags,
-) -> ());
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-wrap_fn_ptr!(unsafe extern "C" fn filter4(
-    dst: *mut DynPixel,
-    dst_stride: ptrdiff_t,
-    tmp: *const u16,
-    pri_strength: c_int,
-    sec_strength: c_int,
-    dir: c_int,
-    damping: c_int,
-    h: c_int,
-    edges: usize,
-    bitdepth_max: c_int,
-) -> ());
-
-#[cfg(all(feature = "asm", any(target_arch = "arm", target_arch = "aarch64")))]
-wrap_fn_ptr!(unsafe extern "C" fn filter8(
+wrap_fn_ptr!(unsafe extern "C" fn filter(
     dst: *mut DynPixel,
     dst_stride: ptrdiff_t,
     tmp: *const u16,
@@ -623,10 +597,10 @@ unsafe extern "C" fn cdef_filter_8x8_neon_erased<BD: BitDepth>(
 
     let mut tmp_buf = Align16([0; 200]);
     let tmp = tmp_buf.0.as_mut_ptr().offset(2 * 16).offset(8);
-    bd_fn!(padding8::decl_fn, BD, cdef_padding8, neon).get()(
+    bd_fn!(padding::decl_fn, BD, cdef_padding8, neon).get()(
         tmp, dst, stride, left, top, bottom, 8, edges,
     );
-    bd_fn!(filter8::decl_fn, BD, cdef_filter8, neon).get()(
+    bd_fn!(filter::decl_fn, BD, cdef_filter8, neon).get()(
         dst,
         stride,
         tmp,
@@ -656,10 +630,10 @@ unsafe extern "C" fn cdef_filter_4x8_neon_erased<BD: BitDepth>(
 ) {
     let mut tmp_buf: [u16; 104] = [0; 104];
     let tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
-    bd_fn!(padding4::decl_fn, BD, cdef_padding4, neon).get()(
+    bd_fn!(padding::decl_fn, BD, cdef_padding4, neon).get()(
         tmp, dst, stride, left, top, bottom, 8, edges,
     );
-    bd_fn!(filter4::decl_fn, BD, cdef_filter4, neon).get()(
+    bd_fn!(filter::decl_fn, BD, cdef_filter4, neon).get()(
         dst,
         stride,
         tmp,
@@ -689,10 +663,10 @@ unsafe extern "C" fn cdef_filter_4x4_neon_erased<BD: BitDepth>(
 ) {
     let mut tmp_buf = [0; 104];
     let tmp = tmp_buf.as_mut_ptr().offset(2 * 8).offset(8);
-    bd_fn!(padding4::decl_fn, BD, cdef_padding4, neon).get()(
+    bd_fn!(padding::decl_fn, BD, cdef_padding4, neon).get()(
         tmp, dst, stride, left, top, bottom, 4, edges,
     );
-    bd_fn!(filter4::decl_fn, BD, cdef_filter4, neon).get()(
+    bd_fn!(filter::decl_fn, BD, cdef_filter4, neon).get()(
         dst,
         stride,
         tmp,
