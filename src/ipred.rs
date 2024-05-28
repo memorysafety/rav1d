@@ -792,7 +792,7 @@ fn upsample_edge<BD: BitDepth>(
 ) {
     static kernel: [i8; 4] = [-1, 9, 9, -1];
     for i in 0..hsz - 1 {
-        out[(i * 2) as usize] = in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
+        out[(i * 2) as usize] = in_0[in_off + iclip(i, from, to - 1) as usize];
         let mut s = 0;
         for j in 0..4 {
             s += in_0[in_off.wrapping_add_signed(iclip(i + j - 1, from, to - 1) as isize)]
@@ -803,7 +803,7 @@ fn upsample_edge<BD: BitDepth>(
             iclip(s + 8 >> 4, 0 as c_int, bd.bitdepth_max().as_::<c_int>()).as_::<BD::Pixel>();
     }
     let i = hsz - 1;
-    out[(i * 2) as usize] = in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
+    out[(i * 2) as usize] = in_0[in_off + iclip(i, from, to - 1) as usize];
 }
 
 unsafe fn ipred_z1_rust<BD: BitDepth>(
