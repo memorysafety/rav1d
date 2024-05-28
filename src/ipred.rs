@@ -1,4 +1,3 @@
-use crate::include::common::attributes::ctz;
 use crate::include::common::bitdepth::AsPrimitive;
 use crate::include::common::bitdepth::BitDepth;
 use crate::include::common::bitdepth::DynPixel;
@@ -34,12 +33,10 @@ use crate::src::tables::dav1d_filter_intra_taps;
 use crate::src::tables::dav1d_sm_weights;
 use crate::src::wrap_fn_ptr::wrap_fn_ptr;
 use cfg_if::cfg_if;
-use libc::memcpy;
 use libc::ptrdiff_t;
 use std::cmp;
 use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::ffi::c_void;
 use std::mem;
 use std::slice;
 use strum::FromRepr;
@@ -99,28 +96,32 @@ impl angular_ipred::Fn {
 }
 
 wrap_fn_ptr!(pub unsafe extern "C" fn cfl_ac(
-    ac: *mut i16,
-    y: *const DynPixel,
+    ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
+    y_ptr: *const DynPixel,
     stride: ptrdiff_t,
     w_pad: c_int,
     h_pad: c_int,
     cw: c_int,
     ch: c_int,
+    _y: *const FFISafe<Rav1dPictureDataComponent>,
 ) -> ());
 
 impl cfl_ac::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
-        ac: *mut i16,
-        y: *const BD::Pixel,
-        stride: ptrdiff_t,
+        ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
+        y: &Rav1dPictureDataComponent,
+        y_offset: usize,
         w_pad: c_int,
         h_pad: c_int,
         cw: c_int,
         ch: c_int,
     ) {
-        let y = y.cast();
-        self.get()(ac, y, stride, w_pad, h_pad, cw, ch)
+        let y_ptr = y.as_ptr_at::<BD>(y_offset).cast();
+        let stride = y.stride();
+        let y = FFISafe::new(y);
+        // SAFETY: Fallback `fn cfl_ac_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(ac, y_ptr, stride, w_pad, h_pad, cw, ch, y) }
     }
 }
 
@@ -1304,111 +1305,92 @@ unsafe extern "C" fn ipred_filter_c_erased<BD: BitDepth>(
 }
 
 #[inline(never)]
-unsafe fn cfl_ac_rust<BD: BitDepth>(
-    mut ac: *mut i16,
-    mut ypx: *const BD::Pixel,
-    stride: ptrdiff_t,
+fn cfl_ac_rust<BD: BitDepth>(
+    ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
+    y_src: &Rav1dPictureDataComponent,
+    mut y_src_offset: usize,
     w_pad: c_int,
     h_pad: c_int,
-    width: c_int,
-    height: c_int,
-    ss_hor: c_int,
-    ss_ver: c_int,
+    width: usize,
+    height: usize,
+    is_ss_hor: bool,
+    is_ss_ver: bool,
 ) {
-    let mut y;
-    let mut x: i32;
-    let ac_orig: *mut i16 = ac;
-    if !(w_pad >= 0 && (w_pad * 4) < width) {
-        unreachable!();
-    }
-    if !(h_pad >= 0 && (h_pad * 4) < height) {
-        unreachable!();
-    }
-    y = 0 as c_int;
-    while y < height - 4 * h_pad {
-        x = 0 as c_int;
-        while x < width - 4 * w_pad {
-            let mut ac_sum = (*ypx.offset((x << ss_hor) as isize)).as_::<c_int>();
-            if ss_hor != 0 {
-                ac_sum += (*ypx.offset((x * 2 + 1) as isize)).as_::<c_int>();
+    let ac = &mut ac[..width * height];
+    let [w_pad, h_pad] = [w_pad, h_pad].map(|pad| usize::try_from(pad).unwrap() * 4);
+    assert!(w_pad < width);
+    assert!(h_pad < height);
+    let [ss_hor, ss_ver] = [is_ss_hor, is_ss_ver].map(|is_ss| is_ss as u8);
+    let y_pxstride = y_src.pixel_stride::<BD>();
+
+    for y in 0..height - h_pad {
+        let aci = y * width;
+        let y_src = |i| (*y_src.index::<BD>(y_src_offset.wrapping_add_signed(i))).as_::<i32>();
+        for x in 0..width - w_pad {
+            let sx = (x << ss_hor) as isize;
+            let mut ac_sum = y_src(sx);
+            if is_ss_hor {
+                ac_sum += y_src(sx + 1);
             }
-            if ss_ver != 0 {
-                ac_sum += (*ypx.offset(((x << ss_hor) as isize + BD::pxstride(stride)) as isize))
-                    .as_::<c_int>();
-                if ss_hor != 0 {
-                    ac_sum += (*ypx.offset(((x * 2 + 1) as isize + BD::pxstride(stride)) as isize))
-                        .as_::<c_int>();
+            if is_ss_ver {
+                ac_sum += y_src(sx + y_pxstride);
+                if is_ss_hor {
+                    ac_sum += y_src(sx + y_pxstride + 1);
                 }
             }
-            *ac.offset(x as isize) =
-                (ac_sum << 1 + (ss_ver == 0) as c_int + (ss_hor == 0) as c_int) as i16;
-            x += 1;
+            ac[aci + x] = (ac_sum << 1 + !is_ss_ver as u8 + !is_ss_hor as u8) as i16;
         }
-        while x < width {
-            *ac.offset(x as isize) = *ac.offset((x - 1) as isize);
-            x += 1;
+        for x in width - w_pad..width {
+            ac[aci + x] = ac[aci + x - 1];
         }
-        ac = ac.offset(width as isize);
-        ypx = ypx.offset(BD::pxstride(stride) << ss_ver);
-        y += 1;
+        y_src_offset = y_src_offset.wrapping_add_signed(y_pxstride << ss_ver);
     }
-    while y < height {
-        memcpy(
-            ac as *mut c_void,
-            &mut *ac.offset(-width as isize) as *mut i16 as *const c_void,
-            (width as usize).wrapping_mul(::core::mem::size_of::<i16>()),
-        );
-        ac = ac.offset(width as isize);
-        y += 1;
+    for y in height - h_pad..height {
+        let aci = y * width;
+        let (src, dst) = ac.split_at_mut(aci);
+        dst[..width].copy_from_slice(&src[src.len() - width..]);
     }
-    let log2sz = ctz(width as c_uint) + ctz(height as c_uint);
-    let mut sum = (1 as c_int) << log2sz >> 1;
-    ac = ac_orig;
-    y = 0 as c_int;
-    while y < height {
-        x = 0 as c_int;
-        while x < width {
-            sum += *ac.offset(x as isize) as c_int;
-            x += 1;
+
+    let log2sz = width.trailing_zeros() + height.trailing_zeros();
+    let mut sum = 1 << log2sz >> 1;
+    for y in 0..height {
+        let aci = y * width;
+        for x in 0..width {
+            sum += ac[aci + x] as i32;
         }
-        ac = ac.offset(width as isize);
-        y += 1;
     }
-    sum >>= log2sz;
-    ac = ac_orig;
-    y = 0 as c_int;
-    while y < height {
-        x = 0 as c_int;
-        while x < width {
-            let ref mut fresh0 = *ac.offset(x as isize);
-            *fresh0 = (*fresh0 as c_int - sum) as i16;
-            x += 1;
+    let sum = (sum >> log2sz) as i16;
+
+    // subtract DC
+    for y in 0..height {
+        let aci = y * width;
+        for x in 0..width {
+            ac[aci + x] -= sum;
         }
-        ac = ac.offset(width as isize);
-        y += 1;
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`cfl_ac::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn cfl_ac_c_erased<BD: BitDepth, const IS_SS_HOR: bool, const IS_SS_VER: bool>(
-    ac: *mut i16,
-    ypx: *const DynPixel,
-    stride: ptrdiff_t,
+    ac: &mut [i16; SCRATCH_AC_TXTP_LEN],
+    y_ptr: *const DynPixel,
+    _stride: ptrdiff_t,
     w_pad: c_int,
     h_pad: c_int,
     cw: c_int,
     ch: c_int,
+    y: *const FFISafe<Rav1dPictureDataComponent>,
 ) {
-    cfl_ac_rust::<BD>(
-        ac,
-        ypx.cast(),
-        stride,
-        w_pad,
-        h_pad,
-        cw,
-        ch,
-        IS_SS_HOR as c_int,
-        IS_SS_VER as c_int,
-    );
+    // SAFETY: Was passed as `FFISafe::new(_)` in `cfl_ac::Fn::call`.
+    let y = unsafe { FFISafe::get(y) };
+    // SAFETY: Reverse of what was done in `cfl_ac::Fn::call`.
+    let y_offset = unsafe { y_ptr.cast::<BD::Pixel>().offset_from(y.as_ptr::<BD>()) } as usize;
+    let cw = cw as usize;
+    let ch = ch as usize;
+    cfl_ac_rust::<BD>(ac, y, y_offset, w_pad, h_pad, cw, ch, IS_SS_HOR, IS_SS_VER);
 }
 
 fn pal_pred_rust<BD: BitDepth>(
@@ -1466,6 +1448,8 @@ unsafe extern "C" fn pal_pred_c_erased<BD: BitDepth>(
 mod neon {
     use super::*;
 
+    use libc::memcpy;
+    use std::ffi::c_void;
     use to_method::To;
 
     #[cfg(feature = "bitdepth_8")]
