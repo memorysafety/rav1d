@@ -789,7 +789,8 @@ fn get_upsample(wh: c_int, angle: c_int, is_sm: bool) -> bool {
 unsafe fn upsample_edge<BD: BitDepth>(
     out: &mut [BD::Pixel],
     hsz: c_int,
-    in_0: *const BD::Pixel,
+    in_0: &[BD::Pixel; SCRATCH_EDGE_LEN],
+    in_off: usize,
     from: c_int,
     to: c_int,
     bd: BD,
@@ -798,11 +799,12 @@ unsafe fn upsample_edge<BD: BitDepth>(
     let mut i;
     i = 0 as c_int;
     while i < hsz - 1 {
-        out[(i * 2) as usize] = *in_0.offset(iclip(i, from, to - 1) as isize);
+        out[(i * 2) as usize] = in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
         let mut s = 0;
         let mut j = 0;
         while j < 4 {
-            s += (*in_0.offset(iclip(i + j - 1, from, to - 1) as isize)).as_::<c_int>()
+            s += in_0[in_off.wrapping_add_signed(iclip(i + j - 1, from, to - 1) as isize)]
+                .as_::<c_int>()
                 * kernel[j as usize] as c_int;
             j += 1;
         }
@@ -810,7 +812,7 @@ unsafe fn upsample_edge<BD: BitDepth>(
             iclip(s + 8 >> 4, 0 as c_int, bd.bitdepth_max().as_::<c_int>()).as_::<BD::Pixel>();
         i += 1;
     }
-    out[(i * 2) as usize] = *in_0.offset(iclip(i, from, to - 1) as isize);
+    out[(i * 2) as usize] = in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
 }
 
 unsafe fn ipred_z1_rust<BD: BitDepth>(
@@ -844,7 +846,8 @@ unsafe fn ipred_z1_rust<BD: BitDepth>(
         upsample_edge::<BD>(
             &mut top_out,
             width + height,
-            topleft_in[topleft_in_off + 1..].as_ptr(),
+            topleft_in,
+            topleft_in_off + 1,
             -(1 as c_int),
             width + cmp::min(width, height),
             bd,
@@ -945,7 +948,8 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         upsample_edge::<BD>(
             &mut edge[topleft..],
             width + 1,
-            topleft_in[topleft_in_off..].as_ptr(),
+            topleft_in,
+            topleft_in_off,
             0 as c_int,
             width + 1,
             bd,
@@ -983,7 +987,8 @@ unsafe fn ipred_z2_rust<BD: BitDepth>(
         upsample_edge::<BD>(
             &mut edge[topleft - height as usize * 2..],
             height + 1,
-            topleft_in[topleft_in_off - height as usize..].as_ptr(),
+            topleft_in,
+            topleft_in_off - height as usize,
             0 as c_int,
             height + 1,
             bd,
@@ -1082,7 +1087,8 @@ unsafe fn ipred_z3_rust<BD: BitDepth>(
         upsample_edge::<BD>(
             &mut left_out,
             width + height,
-            topleft_in[topleft_in_off - (width + height) as usize..].as_ptr(),
+            topleft_in,
+            topleft_in_off - (width + height) as usize,
             cmp::max(width - height, 0 as c_int),
             width + height + 1,
             bd,
