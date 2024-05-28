@@ -160,11 +160,8 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     if data.num_y_points != 0 {
         let bh = cmp::min(h - row * BLOCK_SIZE, BLOCK_SIZE);
         dsp.fgy_32x32xn.call(
-            out_data[0]
-                .as_strided_mut_ptr::<BD>()
-                .offset((row * BLOCK_SIZE) as isize * BD::pxstride(out.stride[0])),
-            luma_src,
-            out.stride[0],
+            &out_data[0],
+            &in_data[0],
             data,
             w,
             &scaling[0],
@@ -191,21 +188,19 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
     }
 
     let layout = r#in.p.layout.try_into().unwrap();
-    let uv_off = (row * BLOCK_SIZE) as isize * BD::pxstride(out.stride[1]) >> ss_y;
     if data.chroma_scaling_from_luma {
         for pl in 0..2 {
             dsp.fguv_32x32xn[layout].call(
-                out_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uv_off),
-                in_data[1 + pl].as_strided_ptr::<BD>().offset(uv_off),
-                r#in.stride[1],
+                layout,
+                &out_data[1 + pl],
+                &in_data[1 + pl],
                 data,
                 cpw,
                 &scaling[0],
                 &grain_lut[1 + pl],
                 bh,
                 row,
-                luma_src,
-                r#in.stride[0],
+                &in_data[0],
                 pl != 0,
                 is_id,
                 bd,
@@ -215,17 +210,16 @@ pub(crate) unsafe fn rav1d_apply_grain_row<BD: BitDepth>(
         for pl in 0..2 {
             if data.num_uv_points[pl] != 0 {
                 dsp.fguv_32x32xn[layout].call(
-                    out_data[1 + pl].as_strided_mut_ptr::<BD>().offset(uv_off),
-                    in_data[1 + pl].as_strided_ptr::<BD>().offset(uv_off),
-                    r#in.stride[1],
+                    layout,
+                    &out_data[1 + pl],
+                    &in_data[1 + pl],
                     data_c,
                     cpw,
                     &scaling[1 + pl],
                     &grain_lut[1 + pl],
                     bh,
                     row,
-                    luma_src,
-                    r#in.stride[0],
+                    &in_data[0],
                     pl != 0,
                     is_id,
                     bd,
