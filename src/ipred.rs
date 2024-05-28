@@ -791,22 +791,18 @@ fn upsample_edge<BD: BitDepth>(
     bd: BD,
 ) {
     static kernel: [i8; 4] = [-1, 9, 9, -1];
-    let mut i;
-    i = 0 as c_int;
-    while i < hsz - 1 {
+    for i in 0..hsz - 1 {
         out[(i * 2) as usize] = in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
         let mut s = 0;
-        let mut j = 0;
-        while j < 4 {
+        for j in 0..4 {
             s += in_0[in_off.wrapping_add_signed(iclip(i + j - 1, from, to - 1) as isize)]
                 .as_::<c_int>()
                 * kernel[j as usize] as c_int;
-            j += 1;
         }
         out[(i * 2 + 1) as usize] =
             iclip(s + 8 >> 4, 0 as c_int, bd.bitdepth_max().as_::<c_int>()).as_::<BD::Pixel>();
-        i += 1;
     }
+    let i = hsz - 1;
     out[(i * 2) as usize] = in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
 }
 
