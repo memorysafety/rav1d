@@ -755,8 +755,7 @@ fn filter_edge<BD: BitDepth>(
     assert!(strength > 0);
     let mut i = 0;
     while i < cmp::min(sz, lim_from) {
-        out[out_off.wrapping_add_signed(i as isize)] =
-            in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
+        out[out_off + i as usize] = in_0[in_off + iclip(i, from, to - 1) as usize];
         i += 1;
     }
     while i < cmp::min(lim_to, sz) {
@@ -766,12 +765,11 @@ fn filter_edge<BD: BitDepth>(
                 .as_::<c_int>()
                 * kernel[(strength - 1) as usize][j as usize] as c_int;
         }
-        out[out_off.wrapping_add_signed(i as isize)] = (s + 8 >> 4).as_::<BD::Pixel>();
+        out[out_off + i as usize] = (s + 8 >> 4).as_::<BD::Pixel>();
         i += 1;
     }
     while i < sz {
-        out[out_off.wrapping_add_signed(i as isize)] =
-            in_0[in_off.wrapping_add_signed(iclip(i, from, to - 1) as isize)];
+        out[out_off + i as usize] = in_0[in_off + iclip(i, from, to - 1) as usize];
         i += 1;
     }
 }
