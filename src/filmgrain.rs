@@ -53,16 +53,17 @@ wrap_fn_ptr!(pub unsafe extern "C" fn generate_grain_y(
 ) -> ());
 
 impl generate_grain_y::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         buf: &mut GrainLut<BD::Entry>,
         data: &Rav1dFilmGrainData,
         bd: BD,
     ) {
-        let buf = (buf as *mut GrainLut<BD::Entry>).cast();
+        let buf = ptr::from_mut(buf).cast();
         let data = &data.clone().into();
         let bd = bd.into_c();
-        self.get()(buf, data, bd)
+        // SAFETY: Fallback `fn generate_grain_y_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(buf, data, bd) }
     }
 }
 
@@ -75,7 +76,7 @@ wrap_fn_ptr!(pub unsafe extern "C" fn generate_grain_uv(
 ) -> ());
 
 impl generate_grain_uv::Fn {
-    pub unsafe fn call<BD: BitDepth>(
+    pub fn call<BD: BitDepth>(
         &self,
         buf: &mut GrainLut<BD::Entry>,
         buf_y: &GrainLut<BD::Entry>,
@@ -83,12 +84,13 @@ impl generate_grain_uv::Fn {
         is_uv: bool,
         bd: BD,
     ) {
-        let buf = (buf as *mut GrainLut<BD::Entry>).cast();
-        let buf_y = (buf_y as *const GrainLut<BD::Entry>).cast();
+        let buf = ptr::from_mut(buf).cast();
+        let buf_y = ptr::from_ref(buf_y).cast();
         let data = &data.clone().into();
         let uv = is_uv.into();
         let bd = bd.into_c();
-        self.get()(buf, buf_y, data, uv, bd)
+        // SAFETY: Fallback `fn generate_grain_uv_rust` is safe; asm is supposed to do the same.
+        unsafe { self.get()(buf, buf_y, data, uv, bd) }
     }
 }
 
@@ -326,12 +328,16 @@ fn row_seed(rows: usize, row_num: usize, data: &Rav1dFilmGrainData) -> [c_uint; 
     seed
 }
 
+/// # Safety
+///
+/// Must be called by [`generate_grain_y::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
     buf: *mut GrainLut<DynEntry>,
     data: &Dav1dFilmGrainData,
     bitdepth_max: c_int,
 ) {
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // Safety: Casting back to the original type from the `generate_grain_y::Fn::call`.
     let buf = unsafe { &mut *buf.cast() };
     let data = &data.clone().into();
     let bd = BD::from_c(bitdepth_max);
@@ -340,7 +346,7 @@ unsafe extern "C" fn generate_grain_y_c_erased<BD: BitDepth>(
 
 const AR_PAD: usize = 3;
 
-unsafe fn generate_grain_y_rust<BD: BitDepth>(
+fn generate_grain_y_rust<BD: BitDepth>(
     buf: &mut GrainLut<BD::Entry>,
     data: &Rav1dFilmGrainData,
     bd: BD,
@@ -365,7 +371,7 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
 
     for y in 0..GRAIN_HEIGHT - AR_PAD {
         for x in 0..GRAIN_WIDTH - 2 * AR_PAD {
-            let mut coeff = (data.ar_coeffs_y).as_ptr();
+            let mut coeff = &data.ar_coeffs_y[..];
             let mut sum = 0;
             for (dy, buf_row) in buf[y..][AR_PAD - ar_lag..=AR_PAD].iter().enumerate() {
                 for (dx, &buf_val) in buf_row[x..][AR_PAD - ar_lag..=AR_PAD + ar_lag]
@@ -375,19 +381,19 @@ unsafe fn generate_grain_y_rust<BD: BitDepth>(
                     if dx == ar_lag && dy == ar_lag {
                         break;
                     }
-                    sum += *coeff as c_int * buf_val.as_::<c_int>();
-                    coeff = coeff.offset(1);
+                    sum += coeff[0] as c_int * buf_val.as_::<c_int>();
+                    coeff = &coeff[1..];
                 }
             }
 
             let buf_yx = &mut buf[y + AR_PAD][x + AR_PAD];
             let grain = (*buf_yx).as_::<c_int>() + round2(sum, data.ar_coeff_shift);
-            (*buf_yx) = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+            *buf_yx = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
     }
 }
 
-unsafe fn generate_grain_uv_rust<BD: BitDepth>(
+fn generate_grain_uv_rust<BD: BitDepth>(
     buf: &mut GrainLut<BD::Entry>,
     buf_y: &GrainLut<BD::Entry>,
     data: &Rav1dFilmGrainData,
@@ -479,7 +485,7 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
 
     for y in 0..is_sub.len().0 {
         for x in 0..is_sub.len().1 {
-            let mut coeff = (data.ar_coeffs_uv[uv]).as_ptr();
+            let mut coeff = &data.ar_coeffs_uv[uv][..];
             let mut sum = 0;
             for (dy, buf_row) in buf[y..][AR_PAD - ar_lag..=AR_PAD].iter().enumerate() {
                 for (dx, &buf_val) in buf_row[x..][AR_PAD - ar_lag..=AR_PAD + ar_lag]
@@ -503,21 +509,25 @@ unsafe fn generate_grain_uv_rust<BD: BitDepth>(
                         }
                         luma = round2(luma, is_sub.y as u8 + is_sub.x as u8);
 
-                        sum += luma * *coeff as c_int;
+                        sum += luma * coeff[0] as c_int;
                         break;
                     }
-                    sum += *coeff as c_int * buf_val.as_::<c_int>();
-                    coeff = coeff.offset(1);
+                    sum += coeff[0] as c_int * buf_val.as_::<c_int>();
+                    coeff = &coeff[1..];
                 }
             }
 
             let buf_yx = &mut buf[y + AR_PAD][x + AR_PAD];
             let grain = (*buf_yx).as_::<c_int>() + round2(sum, data.ar_coeff_shift);
-            (*buf_yx) = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
+            *buf_yx = iclip(grain, grain_min, grain_max).as_::<BD::Entry>();
         }
     }
 }
 
+/// # Safety
+///
+/// Must be called by [`generate_grain_uv::Fn::call`].
+#[deny(unsafe_op_in_unsafe_fn)]
 #[inline(never)]
 unsafe extern "C" fn generate_grain_uv_c_erased<
     BD: BitDepth,
@@ -531,9 +541,9 @@ unsafe extern "C" fn generate_grain_uv_c_erased<
     uv: intptr_t,
     bitdepth_max: c_int,
 ) {
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // Safety: Casting back to the original type from the `generate_grain_uv::Fn::call`.
     let buf = unsafe { &mut *buf.cast() };
-    // Safety: Casting back to the original type from the `fn` ptr call.
+    // Safety: Casting back to the original type from the `generate_grain_uv::Fn::call`.
     let buf_y = unsafe { &*buf_y.cast() };
     let data = &data.clone().into();
     let is_uv = uv != 0;
