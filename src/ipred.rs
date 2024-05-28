@@ -752,9 +752,7 @@ fn filter_edge<BD: BitDepth>(
     strength: c_int,
 ) {
     static kernel: [[u8; 5]; 3] = [[0, 4, 8, 4, 0], [0, 5, 6, 5, 0], [2, 4, 4, 4, 2]];
-    if !(strength > 0) {
-        unreachable!();
-    }
+    assert!(strength > 0);
     let mut i = 0;
     while i < cmp::min(sz, lim_from) {
         out[out_off.wrapping_add_signed(i as isize)] =
